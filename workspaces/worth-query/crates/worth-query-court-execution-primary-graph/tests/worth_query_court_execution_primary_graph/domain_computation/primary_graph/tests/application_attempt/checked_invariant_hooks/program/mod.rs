@@ -43,7 +43,7 @@ pub fn prepare(
             let account = selected
                 .resolve_entity(
                     &phase,
-                    AccountStatus::reference(),
+                    AccountStatus::at("AccountStatus"),
                     "open".to_owned(),
                     scope,
                     WorthQueryPrincipalResolutionMode::Ordinary,
@@ -71,7 +71,7 @@ pub fn prepare(
                     &admission,
                     |reader, projected| {
                         reader
-                            .require_decision_field(projected, AccountStatus::reference())
+                            .require_decision_field(projected, AccountStatus::at("AccountStatus"))
                             .unwrap();
                     },
                     worth_execution::ExecutionAllocationPolicy::SystemAllocation,
@@ -98,7 +98,7 @@ pub fn prepare(
             effects
                 .write_field(
                     &account,
-                    AccountStatus::reference(),
+                    AccountStatus::at("AccountStatus"),
                     "checked-rule".to_owned(),
                 )
                 .unwrap();

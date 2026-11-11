@@ -7,7 +7,13 @@ pub(crate) use catalog_admission::{
 mod history;
 mod intent;
 pub(crate) use history::{HomeTransitionAdmission, ReadmittedHomeProgramTransitions};
+pub(crate) mod completion;
+mod opening;
 mod owner;
+pub use completion::{
+    ApplicationHomeTransitionCompletionDenial, ApplicationHomeTransitionStepRejected,
+};
+pub use opening::{select_home_program_opening, ApplicationHomeProgramOpening};
 mod publication;
 use publication::HomeIntentPublication;
 pub use publication::{
@@ -42,9 +48,16 @@ use worth_store::physical_runtime::{
 
 #[derive(Debug)]
 pub enum ApplicationHomeOwnerAdmissionDenial {
+    QueryObligations(worth_query_execution::facade::program_support::QueryProgramSupportDenial),
+    QueryCorrections(
+        worth_query_execution::facade::correction_material::QueryCorrectionMaterialDenial,
+    ),
+    QueryDispatch(crate::query_dispatch::ApplicationHomeDispatchJournalDenial),
     Execution(worth_execution::WorkCeilingDenial),
     NativeRecoveryRequired,
     NativeCodecTransitionPending,
+    ProgramTransitionRequired,
+    TransitionAdmission(ApplicationHomeTransitionIntentDenial),
     JournalUnavailable {
         journal: &'static str,
         cause: OrderedJournalDenial,
@@ -89,10 +102,45 @@ pub(crate) fn require_no_pending_home_journals(
     for journal in HOME_JOURNALS {
         match journal.admission {
             HomeJournalAdmission::Native | HomeJournalAdmission::World => {}
+            HomeJournalAdmission::Transition => {
+                if !context
+                    .transition
+                    .settled(&context.descriptor.binding)
+                    .map_err(ApplicationHomeOwnerAdmissionDenial::TransitionAdmission)?
+                {
+                    require_empty_journal(context, journal.name, request)?;
+                }
+            }
+            HomeJournalAdmission::QueryObligations => {
+                context
+                    .query_obligations
+                    .require_admitted(request)
+                    .map_err(ApplicationHomeOwnerAdmissionDenial::QueryObligations)?;
+            }
+            HomeJournalAdmission::QueryCorrections => {
+                context
+                    .query_corrections
+                    .require_admitted(request)
+                    .map_err(ApplicationHomeOwnerAdmissionDenial::QueryCorrections)?;
+            }
+            HomeJournalAdmission::QueryDispatch => {
+                context
+                    .query_dispatch
+                    .require_admitted(request)
+                    .map_err(ApplicationHomeOwnerAdmissionDenial::QueryDispatch)?;
+            }
             HomeJournalAdmission::RequireAbsent => {
                 require_empty_journal(context, journal.name, request)?;
             }
         }
+    }
+    if context.transition.required().is_some()
+        && !context
+            .transition
+            .settled(&context.descriptor.binding)
+            .map_err(ApplicationHomeOwnerAdmissionDenial::TransitionAdmission)?
+    {
+        return Err(ApplicationHomeOwnerAdmissionDenial::ProgramTransitionRequired);
     }
     Ok(())
 }

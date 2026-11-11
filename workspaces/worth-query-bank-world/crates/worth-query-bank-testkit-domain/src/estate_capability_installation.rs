@@ -82,7 +82,9 @@ pub fn installed_bank_at(
         1,
         0,
     ))
-    .application_schema(BankSchema::declaration().unwrap())
+    .application_schema(
+        worth_query_decl::facade::application_schema::fragment::declare(BankSchema).unwrap(),
+    )
     .validate()
     .unwrap();
     let admitted = WorthQueryInstallationAdmissionProfile::new("support-v1", "config-v1")
@@ -90,7 +92,9 @@ pub fn installed_bank_at(
         .unwrap();
     let index = WorthQueryInstalledPackageIndex::build(runtime, generation, [admitted]).unwrap();
     let bank = index
-        .bind_application_schema(BankSchema::declaration().unwrap())
+        .bind_application_schema(
+            worth_query_decl::facade::application_schema::fragment::declare(BankSchema).unwrap(),
+        )
         .unwrap();
     (index, bank)
 }

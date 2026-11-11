@@ -398,7 +398,7 @@ pub use crate::diagnostics::{
 pub use crate::durability::{
     ApplicationHomeBinding, ApplicationHomeBindingDescriptionDenial, CheckpointAdmissionCut,
     CheckpointAdmissionScope, CheckpointProductBindingIdentity, CompositeAttemptAssociation,
-    CompositeAttemptAssociationOwnerMismatch, DurableArtifactRetention,
+    CompositeAttemptAssociationOwnerMismatch, DispatchAttemptIdentity, DurableArtifactRetention,
     DurableCompositeCommitIdentity, DurableCompositePublicationAttemptIdentity, DurableIdentity,
     DurableOwnerFamily, DurableProductBranchIdentity, DurableProductBranchIncarnation,
     DurableProductBranchNameDenial, DurableProductBranchReference,
@@ -406,16 +406,21 @@ pub use crate::durability::{
     DurableProductUnpublishedOwnerEffectsIdentity, DurableQueryOutputSettlement,
     DurableStateFamily, DurableWorldBootstrapAttemptIdentity, DurableWorldOwnerIdentity,
     HomeIdentity, HomeIdentityDenial, HomeIncarnation, HomeIncarnationExhausted,
-    HomeProgramBinding, HomeProgramTransitionBodyDigest, HomeProgramTransitionCaller,
-    HomeProgramTransitionCallerDenial, HomeProgramTransitionCatalogDigest,
-    HomeProgramTransitionDescriptionDenial, HomeProgramTransitionIdentity,
+    HomeProgramBinding, HomeProgramRevisionBoundary, HomeProgramTransitionBodyDigest,
+    HomeProgramTransitionCaller, HomeProgramTransitionCallerDenial,
+    HomeProgramTransitionCatalogDigest, HomeProgramTransitionDescriptionDenial,
+    HomeProgramTransitionIdentity, HomeProgramTransitionInstallationBinding,
     HomeProgramTransitionPlanDescription, HomeProgramTransitionPlanDigest,
-    HomeProgramTransitionStepAssociation, HomeProgramTransitionStepRole,
-    HomeProgramTransitionTargetMeaning, MemoryProductBranchReference,
-    NativeCheckpointBranchObservation, NativeCheckpointBranchReference,
-    NativeCheckpointBranchTarget, RecordedCompositePublicationAttemptIdentity,
-    RecordedProductBranchReference, RetentionClass, UnsupportedDurableOwnerTag,
-    WorldDurableJournal, WorldOwnerCoordinate, WorldOwnerSlotIdentity,
+    HomeProgramTransitionProgramStep, HomeProgramTransitionSchemaCarrierDigest,
+    HomeProgramTransitionSchemaDigest, HomeProgramTransitionStepAssociation,
+    HomeProgramTransitionStepRole, HomeProgramTransitionTargetMeaning,
+    MemoryProductBranchReference, NativeCheckpointBranchObservation,
+    NativeCheckpointBranchReference, NativeCheckpointBranchTarget,
+    ProgramSupportObligationIdentity, ProgramSupportObligationKind, ProgramSupportStatus,
+    RecordedCompositePublicationAttemptIdentity, RecordedProductBranchReference, RetentionClass,
+    UncleanRecoveryUnsupported, UnsupportedDurableOwnerTag, WorkflowEndingActorDecodeDenial,
+    WorkflowEndingActorProvenance, WorldDurableJournal, WorldOwnerCoordinate,
+    WorldOwnerSlotIdentity,
 };
 pub use crate::durable_publication::DurablePublicationFate;
 pub use crate::execution::{
@@ -728,16 +733,22 @@ pub use crate::responsibilities::{foundational_responsibilities, ResponsibilityA
 pub use crate::value_shape::{
     decode_binary_value, decode_binary_value_with_admission, decode_canonical_value,
     decode_canonical_value_with_admission, decode_delegated_canonical_value,
-    decode_delegated_canonical_value_with_admission, encode_binary_value, encode_canonical_value,
-    encode_delegated_canonical_value, value_decode_error, ArrayDelegate, BinaryValueDelegate,
+    decode_delegated_canonical_value_with_admission, decode_stored_canonical_value,
+    encode_binary_value, encode_canonical_value, encode_delegated_canonical_value,
+    encode_stored_canonical_value, value_decode_error, ArrayDelegate, BinaryValueDelegate,
     BinaryValueWriter, BoxDelegate, CanonicalDocumentCodec, CanonicalValue, CanonicalValueSeed,
-    DelegatedValueSeed, OptionalDelegate, PairDelegate, SequenceDelegate, UsizeDelegate,
-    ValueCodecDenial, ValueDecodeAdmission, ValueDecodeBounds, ValueDecodeControl, ValueDelegate,
-    ValueFieldDefinition, ValueFieldShape, ValuePrimitive, ValueSeedDelegate, ValueShape,
-    ValueShapeBody, ValueShapeDefinition, ValueShapeDepth, ValueShapeEdge,
+    DelegatedValueSeed, OptionalDelegate, PairDelegate, SequenceDelegate, StoredValueText,
+    UsizeDelegate, ValueCodecDenial, ValueDecodeAdmission, ValueDecodeBounds, ValueDecodeControl,
+    ValueDelegate, ValueFieldDefinition, ValueFieldShape, ValuePrimitive, ValueSeedDelegate,
+    ValueShape, ValueShapeBody, ValueShapeDefinition, ValueShapeDepth, ValueShapeEdge,
     ValueTaggedVariantDefinition, ValueTaggedVariantShape, ValueVariantDefinition,
     ValueVariantShape,
 };
 pub use worth_value_shape_derive::{ChargedBytes, WorthValue};
 
 pub use crate::projected_candidate_content::ProjectedCandidateContentV1;
+
+pub use crate::durability::{
+    CorrectionMaterialPinIdentity, CorrectionMaterialPinOwner, CorrectionMaterialPinTerminal,
+    WorldOriginalFate,
+};

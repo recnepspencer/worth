@@ -7,7 +7,7 @@ pub use worth_query_host::facade::worth_query_structured_value_binding;
 pub use super::*;
 
 worth_query_operation!(pub UnlinkReviewRequirement for DocumentRetentionSchema, input ReviewRequirementInputBinding);
-worth_query_operation_reads!(UnlinkReviewRequirement => [DocumentIdentityField, ReviewRequired]);
+worth_query_operation_reads!(UnlinkReviewRequirement => [ReviewRequired]);
 worth_query_operation_unlinks!(UnlinkReviewRequirement => [ReviewRequired]);
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -48,17 +48,8 @@ impl ApplicationMutationBinding<DocumentRetentionSchema> for UnlinkReviewRequire
     const IDEMPOTENCY_IDENTITY: &'static str =
         "worth.query.certification.review-requirement-unlink-command.v1";
 
-    fn scope_field() -> ApplicationFieldRef<
-        DocumentRetentionSchema,
-        Document,
-        DocumentFacts,
-        DocumentIdentityField,
-        String,
-        ReadOnly,
-        EqualityPredicate,
-        NoApplicationUnit,
-    > {
-        DocumentIdentityField::reference()
+    fn scope_field() -> DocumentIdentityField {
+        DocumentIdentityField::at("DocumentIdentityField")
     }
     fn principal_binding() -> ApplicationPrincipalBindingRef<
         DocumentRetentionSchema,
@@ -83,7 +74,7 @@ impl ApplicationMutationIntent<DocumentRetentionSchema> for UnlinkReviewRequirem
     }
     fn scope_binding(&self) -> ReviewRequirementScope {
         ReviewRequirementScope::new(
-            DocumentIdentityField::reference(),
+            DocumentIdentityField::at("DocumentIdentityField"),
             self.input.resource.clone(),
         )
     }
@@ -104,15 +95,17 @@ impl OperationHandler<DocumentRetentionSchema, UnlinkReviewRequirementBinding>
             UnlinkReviewRequirementBinding,
         >,
     ) -> HandlerResult<ReviewRequirementTargets, ReviewRequirementDenial> {
-        let resource = match reader
-            .resolve_entity(DocumentIdentityField::reference(), input.resource.clone())
-        {
+        let resource = match reader.resolve_entity(
+            DocumentIdentityField::at("DocumentIdentityField"),
+            input.resource.clone(),
+        ) {
             Ok(value) => value,
             Err(error) => return HandlerResult::ExecutionDenied(error),
         };
-        let related = match reader
-            .resolve_entity(DocumentIdentityField::reference(), input.related.clone())
-        {
+        let related = match reader.resolve_entity(
+            DocumentIdentityField::at("DocumentIdentityField"),
+            input.related.clone(),
+        ) {
             Ok(value) => value,
             Err(error) => return HandlerResult::ExecutionDenied(error),
         };
@@ -172,7 +165,10 @@ pub fn declare(
                 .finish(),
         )
         .operation_projection_work_budget(operation, 32)
-        .operation_read_field(operation, DocumentIdentityField::reference())
+        .operation_read_field(
+            operation,
+            DocumentIdentityField::at("DocumentIdentityField"),
+        )
         .operation_read_relation(operation, ReviewRequired::reference())
         .operation_unlink(operation, ReviewRequired::reference())
         .application_mutation_binding::<UnlinkReviewRequirementBinding>()

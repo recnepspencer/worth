@@ -7,6 +7,18 @@ use worth_query_installation::facade::{
 };
 
 impl<Schema: ApplicationSchemaComposition, Program> PreparedHomeApplication<Schema, Program> {
+    pub fn home_world_resources(
+        &self,
+    ) -> (
+        worth_runtime_world::facade::RuntimeWorldBudgets,
+        worth_runtime_world::facade::RuntimeWorldClock,
+        worth_foundational::ExecutionRequestPolicy,
+        Option<std::sync::Arc<worth_execution::ExecutionAuthority>>,
+        worth_signal::facade::runtime::SignalConditionalEvaluationBudget,
+    ) {
+        self.state.home_world_resources()
+    }
+
     pub fn admitted_home_binding(
         &self,
     ) -> Result<

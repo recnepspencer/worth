@@ -1,4 +1,5 @@
 use crate::domain_capabilities::identity::domain_capability_scope_encoder;
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::evidence_identity::{WorthQueryEvidenceIdentity, WorthQueryEvidenceTag};
 
 use super::super::common::{
@@ -21,7 +22,7 @@ fn compose_invariant_capability_payload_identity(
     graph_capability: Option<&WorthQueryGraphCapabilityRuntimeSemantics>,
     graph_invariant_denial: Option<&WorthQueryGraphInvariantDenialRuntimeSemantics>,
     invariant_registration: Option<&WorthQueryInvariantRegistrationRuntimeSemantics>,
-) -> WorthQueryEvidenceIdentity {
+) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
     let mut identity = domain_capability_scope_encoder("worth_query_domain_capability_payload_v3")
         .field_shape(
             WorthQueryEvidenceTag::new("category"),
@@ -33,14 +34,14 @@ fn compose_invariant_capability_payload_identity(
     identity = match graph_capability {
         Some(semantics) => identity.field_evidence_identity(
             WorthQueryEvidenceTag::new("graph_capability"),
-            &compose_graph_capability_identity(semantics),
+            &compose_graph_capability_identity(semantics)?,
         ),
         None => identity.field_shape(WorthQueryEvidenceTag::new("graph_capability"), "none"),
     };
     identity = match graph_invariant_denial {
         Some(semantics) => identity.field_evidence_identity(
             WorthQueryEvidenceTag::new("graph_invariant_denial"),
-            &compose_graph_invariant_denial_identity(semantics),
+            &compose_graph_invariant_denial_identity(semantics)?,
         ),
         None => identity.field_shape(WorthQueryEvidenceTag::new("graph_invariant_denial"), "none"),
     };
@@ -51,7 +52,7 @@ fn compose_invariant_capability_payload_identity(
         ),
         None => identity.field_shape(WorthQueryEvidenceTag::new("invariant_registration"), "none"),
     };
-    identity.seal()
+    Ok(identity.seal()?)
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -70,8 +71,13 @@ impl WorthQueryInvariantCapabilityContributionPayload {
         posture: WorthQueryInvariantCapabilityContributionPosture,
         semantic_code: impl Into<String>,
         detail: impl Into<String>,
-    ) -> Self {
-        Self::with_graph_capability(posture, semantic_code, detail, None)
+    ) -> Result<Self, IdentityDerivationDenial> {
+        Ok(Self::with_graph_capability(
+            posture,
+            semantic_code,
+            detail,
+            None,
+        )?)
     }
 
     pub fn with_graph_capability(
@@ -79,8 +85,15 @@ impl WorthQueryInvariantCapabilityContributionPayload {
         semantic_code: impl Into<String>,
         detail: impl Into<String>,
         graph_capability: Option<WorthQueryGraphCapabilityRuntimeSemantics>,
-    ) -> Self {
-        Self::with_runtime_semantics(posture, semantic_code, detail, graph_capability, None, None)
+    ) -> Result<Self, IdentityDerivationDenial> {
+        Ok(Self::with_runtime_semantics(
+            posture,
+            semantic_code,
+            detail,
+            graph_capability,
+            None,
+            None,
+        )?)
     }
 
     pub fn with_graph_invariant_denial(
@@ -88,15 +101,15 @@ impl WorthQueryInvariantCapabilityContributionPayload {
         semantic_code: impl Into<String>,
         detail: impl Into<String>,
         graph_invariant_denial: Option<WorthQueryGraphInvariantDenialRuntimeSemantics>,
-    ) -> Self {
-        Self::with_runtime_semantics(
+    ) -> Result<Self, IdentityDerivationDenial> {
+        Ok(Self::with_runtime_semantics(
             posture,
             semantic_code,
             detail,
             None,
             graph_invariant_denial,
             None,
-        )
+        )?)
     }
 
     pub fn with_invariant_registration(
@@ -104,15 +117,15 @@ impl WorthQueryInvariantCapabilityContributionPayload {
         semantic_code: impl Into<String>,
         detail: impl Into<String>,
         invariant_registration: Option<WorthQueryInvariantRegistrationRuntimeSemantics>,
-    ) -> Self {
-        Self::with_runtime_semantics(
+    ) -> Result<Self, IdentityDerivationDenial> {
+        Ok(Self::with_runtime_semantics(
             posture,
             semantic_code,
             detail,
             None,
             None,
             invariant_registration,
-        )
+        )?)
     }
 
     pub fn with_runtime_semantics(
@@ -122,7 +135,7 @@ impl WorthQueryInvariantCapabilityContributionPayload {
         graph_capability: Option<WorthQueryGraphCapabilityRuntimeSemantics>,
         graph_invariant_denial: Option<WorthQueryGraphInvariantDenialRuntimeSemantics>,
         invariant_registration: Option<WorthQueryInvariantRegistrationRuntimeSemantics>,
-    ) -> Self {
+    ) -> Result<Self, IdentityDerivationDenial> {
         let semantic_code = semantic_code.into();
         let detail = detail.into();
         let payload_identity = compose_invariant_capability_payload_identity(
@@ -132,8 +145,8 @@ impl WorthQueryInvariantCapabilityContributionPayload {
             graph_capability.as_ref(),
             graph_invariant_denial.as_ref(),
             invariant_registration.as_ref(),
-        );
-        Self {
+        )?;
+        Ok(Self {
             posture,
             semantic_code,
             detail,
@@ -141,7 +154,7 @@ impl WorthQueryInvariantCapabilityContributionPayload {
             graph_invariant_denial,
             invariant_registration,
             payload_identity,
-        }
+        })
     }
 
     pub fn category(&self) -> WorthQueryDomainCapabilityCategory {

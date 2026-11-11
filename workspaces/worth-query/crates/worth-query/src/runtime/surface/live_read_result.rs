@@ -96,3 +96,6 @@ impl WorthQueryLiveReadResult {
         }
     }
 }
+#[cfg(test)]
+#[path = "live_read_result_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;

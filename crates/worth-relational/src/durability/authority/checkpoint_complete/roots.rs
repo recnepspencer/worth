@@ -46,4 +46,12 @@ impl CapturedRoots {
     pub(super) fn get(&self, commit: CommitId) -> Option<&Arc<RelationalBranchRoot>> {
         self.rows.get(&commit)
     }
+    /// Whether this capture holds the exact root an index selection was carried to.
+    pub(super) fn retains_basis(&self, basis: &crate::indexes::data::IndexBasisCheckpoint) -> bool {
+        self.rows.get(&basis.commit).is_some_and(|root| {
+            root.commit_receipt()
+                .is_some_and(|receipt| receipt.version_id == basis.version)
+                && root.schema_authority().schema_version() == basis.schema
+        })
+    }
 }

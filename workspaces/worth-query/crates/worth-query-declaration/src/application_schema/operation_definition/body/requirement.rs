@@ -30,6 +30,9 @@ pub struct ApplicationOperationBodyRequirement<Schema, Operation> {
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum ApplicationOperationBodyRequirementDenial {
     InvalidName,
+    InvalidRecordField {
+        field: crate::application_schema::ApplicationFieldBindingLocus,
+    },
     DuplicateOperand,
     DuplicateRequirement,
     MissingTarget,

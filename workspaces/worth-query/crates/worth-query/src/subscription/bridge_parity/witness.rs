@@ -164,7 +164,13 @@ pub fn build_query_subscription_manual_bridge_witness(
         activation.evidence_identity(),
         assembly_posture.as_str(),
         lowering.bridge_slices(),
-    );
+    )
+    .map_err(|cause| {
+        QuerySubscriptionBridgeParityError::identity_refused(
+            cause,
+            declaration.declaration_identity().clone(),
+        )
+    })?;
 
     Ok(QuerySubscriptionManualBridgeWitness {
         query_family_label: declaration.family().as_str().to_string(),

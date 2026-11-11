@@ -12,7 +12,10 @@ fn inline_domain_predicate_refuses_corrupt_and_unobserved_values_but_preserves_a
     let contract = application
         .installed_schema()
         .native_contracts()
-        .aspect("Number", "NumberFacts")
+        .aspect(
+            "Number",
+            super::super::model::schema::NumberFacts::reference().name(),
+        )
         .unwrap()
         .contract();
     // Independent descriptive provider fixture, validated by the installed contract.

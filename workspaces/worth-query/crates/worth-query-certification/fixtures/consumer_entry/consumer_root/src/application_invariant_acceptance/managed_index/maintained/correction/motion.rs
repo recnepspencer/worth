@@ -3,7 +3,7 @@ use super::super::{bounds::Coordinates, geometry::schema::*};
 use super::*;
 use worth_query_decl::facade::{application_operation::*, *};
 
-#[derive(Clone, Debug, serde::Serialize)]
+#[derive(Clone, Debug, serde::Serialize, serde::Deserialize)]
 pub struct Input {
     pub directory: String,
     pub vertex: String,
@@ -19,8 +19,8 @@ worth_query_structured_value_binding!(pub InputBinding for Input { identity: "ma
 worth_query_structured_value_binding!(pub ResultBinding for Changed { identity: "maintained-catalog.recorded-motion.result.v1" });
 worth_query_structured_value_binding!(pub DenialBinding for Denial { identity: "maintained-catalog.recorded-motion.denial.v1" });
 worth_query_operation!(pub MoveVertex for Catalog, input InputBinding);
-worth_query_operation_reads!(MoveVertex => [DirectoryIdentity, Vertex, VertexIdentity, VertexRegion]);
-worth_query_operation_writes!(MoveVertex => [VertexRegion]);
+worth_query_operation_reads!(MoveVertex => [Vertex]);
+
 fn scope(input: &Input) -> String {
     input.directory.clone()
 }
@@ -34,8 +34,8 @@ worth_query_mutation_binding!(
     outputs NoApplicationMutationOutputs,
     principal CatalogPrincipal, mapping ExternalMapping, principal_entity Principal,
     principal_identity u64, identity_binding U64ApplicationValueBinding,
-    scope Directory, DirectoryFacts, DirectoryIdentity, String, ReadOnly, NoApplicationUnit,
-    field DirectoryIdentity::reference(), value scope,
+    scope DirectoryIdentity,
+    field DirectoryIdentity::at("DirectoryIdentity"), value scope,
 );
 impl ApplicationDeclaredOperation<Catalog> for MoveVertex {
     fn declare_access(
@@ -44,11 +44,11 @@ impl ApplicationDeclaredOperation<Catalog> for MoveVertex {
         let op = Self::reference();
         schema
             .operation_projection_work_budget(op, 32)
-            .operation_read_field(op, DirectoryIdentity::reference())
+            .operation_read_field(op, DirectoryIdentity::at("DirectoryIdentity"))
             .operation_read_entity(op, Vertex::reference())
-            .operation_read_field(op, VertexIdentity::reference())
-            .operation_read_field(op, VertexRegion::reference())
-            .operation_write(op, VertexRegion::reference())
+            .operation_read_field(op, VertexIdentity::at("VertexIdentity"))
+            .operation_read_field(op, VertexRegion::at("VertexRegion"))
+            .operation_write(op, VertexRegion::at("VertexRegion"))
     }
 }
 pub struct Handler;
@@ -59,9 +59,12 @@ impl OperationHandler<Catalog, Binding> for Handler {
         reader: &mut DecisionReader<'_, '_, '_, Catalog, Binding>,
     ) -> HandlerResult<WorthQueryInvariantMutationTarget<Catalog, Vertex>, Denial> {
         let result = (|| {
-            let vertex =
-                reader.resolve_entity(VertexIdentity::reference(), input.vertex.clone())?;
-            if reader.field(&vertex, VertexRegion::reference())?.is_none() {
+            let vertex = reader
+                .resolve_entity(VertexIdentity::at("VertexIdentity"), input.vertex.clone())?;
+            if reader
+                .field(&vertex, VertexRegion::at("VertexRegion"))?
+                .is_none()
+            {
                 return Ok(None);
             }
             reader.mutation_target(&vertex).map(Some)
@@ -83,7 +86,7 @@ impl OperationHandler<Catalog, Binding> for Handler {
             .map_err(HandlerExecutionDenial::new)
             .and_then(|entity| {
                 writer
-                    .write_field(&entity, VertexRegion::reference(), input.replacement)
+                    .write_field(&entity, VertexRegion::at("VertexRegion"), input.replacement)
                     .map_err(HandlerExecutionDenial::new)
             });
         match result {

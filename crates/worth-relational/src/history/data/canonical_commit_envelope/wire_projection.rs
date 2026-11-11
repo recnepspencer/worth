@@ -26,6 +26,8 @@ pub(super) fn serialize<S: serde::Serializer>(
         authored_index_writes,
         required_output_codec_retirements,
         required_output_origin,
+        coupled_authored_publication,
+        historical_output_selection,
         required_output_materialization,
         commit,
         branch_context,
@@ -60,7 +62,9 @@ pub(super) fn serialize<S: serde::Serializer>(
     let omitted_indexes = DerivedIndexArtifacts::default();
     let field_count = 32
         + usize::from(!authored_index_writes.is_unavailable())
-        + usize::from(producer_cascade_retirement.is_some());
+        + usize::from(producer_cascade_retirement.is_some())
+        + usize::from(coupled_authored_publication.is_some())
+        + usize::from(historical_output_selection.is_some());
     let mut fields = serializer.serialize_struct("CanonicalCommitEnvelope", field_count)?;
     fields.serialize_field("caller_association", caller_association)?;
     fields.serialize_field("index_definition_delta", index_definition_delta)?;
@@ -73,6 +77,12 @@ pub(super) fn serialize<S: serde::Serializer>(
         required_output_codec_retirements,
     )?;
     fields.serialize_field("required_output_origin", required_output_origin)?;
+    if let Some(group) = coupled_authored_publication {
+        fields.serialize_field("coupled_authored_publication", group)?;
+    }
+    if let Some(selection) = historical_output_selection {
+        fields.serialize_field("historical_output_selection", selection)?;
+    }
     if producer_cascade_retirement.is_some() {
         fields.serialize_field("producer_cascade_retirement", producer_cascade_retirement)?;
     }

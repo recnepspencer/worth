@@ -16,6 +16,7 @@ pub use home_program_transition::{
     home_program_transition_body_digest, PreparedRelationalHomeProgramContracts,
     RelationalHomeProgramBodyDenial, RelationalHomeProgramCatalogReadmissionSource,
     RelationalHomeProgramCatalogReceipt, RelationalHomeProgramContractDenial,
+    RelationalHomeProgramPlanningSource, RelationalHomeProgramPromotionRefused,
     RelationalHomeProgramStepContracts,
 };
 pub(crate) use home_program_transition::{
@@ -54,10 +55,13 @@ pub use crate::visibility::materialization::read_records::{
     PinnedStructuralWalkVisit, PositionedRelationalSnapshot, QueryLeasedReadOutcome,
     QueryReadExecutionStop, QueryReadPacketDenial, RelationProjectionRecord,
     RelationRecordProjection, RelationalAdjacencyDirection, RelationalAdjacencySupportDenial,
-    RelationalAdjacencyVisit, RelationalAspectPresenceSupportDenial,
+    RelationalAdjacencyVisit, RelationalAppliedCandidateReadIdentity,
+    RelationalAppliedCandidateReadQualification, RelationalAspectPresenceSupportDenial,
     RelationalBorrowedRecordReadDenial, RelationalEntityMetadata,
     RelationalEntityMetadataPinDenial, RelationalEntityRetirement,
-    RelationalFieldSupportComparisonDenial, RelationalPinnedEntityMetadata, RelationalPinnedRead,
+    RelationalFieldSupportComparisonDenial, RelationalHistoricalSelectionRead,
+    RelationalHistoricalSelectionReadDenial, RelationalHistoricalSourcePresence,
+    RelationalHistoricalSourceReadDenial, RelationalPinnedEntityMetadata, RelationalPinnedRead,
     RelationalPinnedReadAdmissionDenial, RelationalProjectedFieldObservation,
     RelationalRelationMetadata, RelationalSnapshotPositionAdmissionStop, SnapshotPositionDenial,
     VisibilityProjectionView, VisibilityReadContext,
@@ -101,25 +105,25 @@ pub(crate) use state::{
     BranchTransitionPublication, BranchTransitionRecordError, CanonicalCheckpointAdmissionError,
     CanonicalPositionAdmission, CanonicalPublicationRecordError, CapturedIndexDefinitionCatalog,
     ColdSymbolDirectoryDenial, CommitStrategiesSubsystem, DurabilitySubsystem,
-    FrozenCheckpointIndexes, HistorySubsystem, IndexCatalogCoverage, IndexingState,
-    IndexingSubsystem, LineageIdentityAllocator, LineageState, LineageSubsystem,
-    MirrorResidencyDemandBinding, OriginalCheckpointIndexes, PartitionEdition,
+    FrozenCheckpointIndexes, HistorySubsystem, IndexCatalogCoverage, IndexDefinitionCatalog,
+    IndexSelectionState, IndexingState, IndexingSubsystem, LineageIdentityAllocator, LineageState,
+    LineageSubsystem, MirrorResidencyDemandBinding, OriginalCheckpointIndexes, PartitionEdition,
     PatchPositionReservationAdmission, PendingRecordAllocations, PendingSymbolMeanings,
     PerformedCheckpointSelection, PreparedCanonicalPublicationRoute, PreparedCommitSequence,
-    PreparedGenerationBatch, PreparedRecoveredVersionedArtifactPublication,
-    PreparedSymbolPublication, PreparedVersionedArtifactAccelerators,
-    PreparedVersionedArtifactPublication, PublicationSubsystem, PublishedSnapshotCapacityOwner,
-    PublishedSnapshotCloseout, PublishedSnapshotReleaseObservation,
-    PublishedSnapshotReservationDenial, PublishedSnapshotSlotReservation, ReclaimedRecordSlot,
-    RecordIdentitySubsystem, RelationalCandidateRegistrationDenial,
-    RelationalCanonicalPublicationRoutes, RelationalCheckpointManifestPublication,
-    RelationalCheckpointManifestSelection, RelationalDiagnosticArtifactStore,
-    RelationalDiagnosticOperationCapture, RelationalForkMaterializationCost,
-    RelationalForkOwnerBinding, RelationalPreparationHistory, RelationalPreparationOwnerBinding,
-    RelationalPreparationRuntime, RelationalRuntimeConfigurationBinding,
-    RelationalRuntimeConfigurationSnapshot, RelationalRuntimeOwnerBinding,
-    RelationalRuntimePublicationBinding, ResidentLineageEventPage, ResidentLineageNode,
-    ResidentMirrorTarget, ResidentPartitionEdition, ResidentPartitionEntry,
+    PreparedGenerationBatch, PreparedIndexBasisSelection,
+    PreparedRecoveredVersionedArtifactPublication, PreparedSymbolPublication,
+    PreparedVersionedArtifactAccelerators, PreparedVersionedArtifactPublication,
+    PublicationSubsystem, PublishedSnapshotCapacityOwner, PublishedSnapshotCloseout,
+    PublishedSnapshotReleaseObservation, PublishedSnapshotReservationDenial,
+    PublishedSnapshotSlotReservation, ReclaimedRecordSlot, RecordIdentitySubsystem,
+    RelationalCandidateRegistrationDenial, RelationalCanonicalPublicationRoutes,
+    RelationalCheckpointManifestPublication, RelationalCheckpointManifestSelection,
+    RelationalDiagnosticArtifactStore, RelationalDiagnosticOperationCapture,
+    RelationalForkMaterializationCost, RelationalForkOwnerBinding, RelationalPreparationHistory,
+    RelationalPreparationOwnerBinding, RelationalPreparationRuntime,
+    RelationalRuntimeConfigurationBinding, RelationalRuntimeConfigurationSnapshot,
+    RelationalRuntimeOwnerBinding, RelationalRuntimePublicationBinding, ResidentLineageEventPage,
+    ResidentLineageNode, ResidentMirrorTarget, ResidentPartitionEdition, ResidentPartitionEntry,
     RetainedCanonicalPosition, RuntimeInstrumentation, RuntimeServices, RuntimeSubsystem,
     RuntimeSymbolTable, SchemaContractRuntimeSubsystem, SnapshotHandleBinding, StorageSubsystem,
     SymbolReservationDenial, ValidatedLineageEventBatch, VisibilityResidency, VisibilitySubsystem,
@@ -128,6 +132,10 @@ pub(crate) use state::{
     PendingRelationalPublicationSettlement, PerformedRelationalSettlement,
     RelationalPendingSettlementReservation, RelationalSettlementClaim,
     RelationalSettlementReservationDenial, ReservedRelationalSettlement,
+};
+pub use state::{
+    PreparedRelationalIndexDefinitions, RelationalIndexDefinitionPreparation,
+    RelationalIndexDefinitionPreparationDenial,
 };
 pub use state::{
     PreparedRelationalSourceClose, RelationalSourceClose, RelationalSourceCloseDenial,
@@ -144,3 +152,8 @@ pub use state::{
 
 pub use state::RelationalSymbolTableForTest;
 pub(crate) use state::TryPartitionMutationDenied;
+#[cfg(test)]
+#[path = "mod_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;
+
+pub(crate) use crate::visibility::materialization::read_records::CheckpointProjectionContext;

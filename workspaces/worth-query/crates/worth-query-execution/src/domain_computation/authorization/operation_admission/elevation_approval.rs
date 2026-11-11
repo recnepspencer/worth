@@ -18,7 +18,7 @@ impl WorthQueryAdmittedOperation {
         ),
     > {
         if !matches!(
-            self.authorization_basis,
+            self.data.authorization_basis,
             ErasedAuthorizationBasis::Capability
         ) {
             return Err((
@@ -26,7 +26,7 @@ impl WorthQueryAdmittedOperation {
                     WorthQueryOperationAuthorizationDenialKind::Refused(
                         AuthorizationRefusal::InconsistentDecision,
                     ),
-                    &self.operation,
+                    &self.data.operation,
                 ),
                 binding,
             ));
@@ -40,13 +40,13 @@ impl WorthQueryAdmittedOperation {
                 return Err((
                     crate::domain_computation::authorization::denial::relational_read_denial(
                         stop.into(),
-                        &self.operation,
+                        &self.data.operation,
                     ),
                     binding,
                 ))
             }
         };
-        self.authorization_basis = ErasedAuthorizationBasis::ElevationApproval {
+        self.data.authorization_basis = ErasedAuthorizationBasis::ElevationApproval {
             binding: Box::new(binding),
             _binding_memory: memory,
         };
@@ -56,7 +56,7 @@ impl WorthQueryAdmittedOperation {
     pub(in crate::domain_computation) fn elevation_approval_binding(
         &self,
     ) -> Option<&WorthQueryElevationApprovalBinding> {
-        match &self.authorization_basis {
+        match &self.data.authorization_basis {
             ErasedAuthorizationBasis::ElevationApproval { binding, .. } => Some(binding),
             _ => None,
         }
@@ -66,7 +66,7 @@ impl WorthQueryAdmittedOperation {
         &mut self,
     ) -> Option<WorthQueryElevationApprovalBinding> {
         match std::mem::replace(
-            &mut self.authorization_basis,
+            &mut self.data.authorization_basis,
             ErasedAuthorizationBasis::Capability,
         ) {
             ErasedAuthorizationBasis::ElevationApproval {
@@ -78,7 +78,7 @@ impl WorthQueryAdmittedOperation {
                 Some(binding)
             }
             other => {
-                self.authorization_basis = other;
+                self.data.authorization_basis = other;
                 None
             }
         }

@@ -10,11 +10,11 @@ means `worth_query_decl::facade::` and `host::` means
 
 | Meaning | Representation and current qualified entry |
 |---|---|
-| Independently referenced or edited object | `decl::worth_query_entity!` and `application_schema::ApplicationSchemaDeclarationBuilder::entity`; declare a unique semantic key with `unique_field`. Native owns the occurrence, partition and generation. |
-| Link between objects | `decl::worth_query_relation!` and `ApplicationSchemaDeclarationBuilder::relation`. A key or `EntityRef` hidden in another value does not provide relation topology or dependency tracking. |
+| Independently referenced or edited object | A unit marker implementing `decl::application_schema::fragment::Entity`, listed in its fragment’s `Members`; a record field becomes unique through `.unique()`. Native owns the occurrence, partition and generation. |
+| Link between objects | A unit marker implementing `fragment::Relation`, listed once in the source entity’s `Relations`. A key or `EntityRef` hidden in another value does not provide relation topology or dependency tracking. |
 | Fixed tuple of references | Separate named typed relations for each semantic role; no stored position is needed. |
-| Flat facts | `decl::worth_query_aspect!`, `decl::worth_query_field!`, then builder `aspect` and `field` for flat Struct fields. For a qualified primitive whole-aspect scalar, use `scalar_aspect_field`. These are distinct layouts. |
-| Alternative record classes | A required scalar class field and one `optional_aspect` per class, with required payload fields and an installed commit invariant. See the candidate-only pattern below. |
+| Flat facts | An `Aspect` with its `Row`, listed in the entity’s `Aspects`. `Record<T>` and `Scalar<T>` implementations on the fragment’s binding set lower that row to ordinary native scalar columns. |
+| Alternative record classes | An `Exclusive<Group>` member of the entity’s `Aspects`. `Group::Cases` lists the case aspects; owner `From<CaseRow>` implementations construct its enum. SDK writes clear siblings atomically and reads refuse multiple cases. |
 | Keyed set or graph | Named entities, unique keys and typed membership/adjacency relations. No artificial position; declare traversal and negative dependencies. See [source subgraphs](source-subgraphs.md). |
 | Cycle with Native orbit meaning | `decl::application_schema::ApplicationRelationIntegrity::orbit`, the ordinary typed relation declaration, and `decl::application_query::ApplicationQueryOrbitRef`/query builder `orbit`. Host decision/invariant `orbit` reads retain the actual native cycle contract. |
 | True ordered sequence | Classify it first. This lane qualifies no positioned-sequence helper or relation-field carrier. Report the actual ordering/edit/inverse requirement before choosing an unqualified representation. |
@@ -23,8 +23,8 @@ means `worth_query_decl::facade::` and `host::` means
 | Compiled pack-owned parameters awaiting a finer carrier | An explicit canonical atom exception with owner, wire shape, bounds/policy and reason. Its guard must reject hidden independently mutable objects or references; it is not a graph container. |
 | External input/output document | JSON at a named ingress or terminal projection boundary; admit ingress before native effects. Terminal text grants no native authority. |
 
-The builder names in the table belong to
-`decl::application_schema::ApplicationSchemaDeclarationBuilder`.
+The declaration traits in the table belong to
+`decl::application_schema::fragment`.
 `BoolApplicationValueBinding`, `I64ApplicationValueBinding`,
 `U64ApplicationValueBinding` and `StringApplicationValueBinding` live in
 `decl::application_schema`. Other scalar families require an actual entry-owned
@@ -36,48 +36,22 @@ native scalar alone does not prove those domain laws.
 
 No new list, variant or nested `AspectShape` form is implied by this table.
 
-## One class, one optional aspect
+## Exclusive class aspects
 
-The [one-of fixture](../workspaces/worth-query/crates/worth-query-court-decl-host/tests/worth_query_court_decl_host/aspect_patterns/one_of/mod.rs)
-declares a required class field in a required flat aspect and three optional
-class aspects. Each class aspect's fields remain Required. An installed
-`host::application_invariants::WorthQueryApplicationInvariantRule` checks the final
-candidate: exactly the named class aspect must be present. Required content is
-also enforced by the installed native contract validator.
+An entity lists `Exclusive<Form>` in `Aspects`; `Form::Cases` lists the case
+aspects once. The enum owner supplies `From<CaseRow>` for every distinct row.
+Use `Option<Exclusive<Form>>` when absence is lawful.
 
-Resolve invariant fields with
-`host::application_invariants::WorthQueryApplicationInvariantSchemaResolver::typed_field`.
-In the candidate, a Required field under an absent Optional aspect reads `None`;
-a missing Required field in a present aspect refuses. The invariant typed field
-reader currently supports Struct children; this does not qualify whole-scalar
-aspect reads through that invariant view.
+A whole-case write through `CandidateWriter::fragment` clears its sibling cases
+in that transaction. Reading the group uses actual aspect presence: exactly one
+case is required, or zero for an optional group. Multiple present cases are a
+typed corruption refusal before any case constructor runs. Applications do not
+maintain a discriminator. The SDK owns any indexing scalar it requires.
 
-Prepare scope from the class field **and every class-aspect field** with
-`host::application_invariants::WorthQueryApplicationInvariantReadView::touched_entities`.
-The current planner
-reports touched entities by kind, including aspect removal; it does not promise
-field-filtered scope. Keep the explicit complete field inventory so additions
-cannot silently escape the rule. Checked preparation/evaluation must retain the
-original work and cancellation checks.
-
-The operation declares its reads, writes and aspect-removal grants using
-`decl::worth_query_operation!`. Through `host::primary_graph::DecisionReader`
-and `CandidateWriter`, change the class, remove the old aspect and initialize
-the complete new aspect in one transaction. `CandidateWriter::remove_aspect`
-and `write_field` participate in the same final candidate. Removing the named
-aspect alone, adding another alone, changing only the class, or omitting a
-required payload all refuse through the real commit path.
-
-This is **candidate-only**. SDK revision `c478117afa` refused the lawful fixture
-because invariant reads did not distinguish Optional aspect absence from
-missing Required content. The candidate fixes that private reader and composes
-the entity's aspect effects. The pattern requires the planned repin; there is
-no weakened at-pin variant. Courts also cover actual correction, retirement,
-native recovery, original cancellation and an expired original deadline.
-
-The directional correction retains the class plus old First value: 18 logical
-bytes including scalar tags. It does not qualify arbitrary absent-field or
-graph-wide preimage capture.
+The [fragment courts](../workspaces/worth-query/crates/worth-query-court-decl-host-native-fragments/tests/worth_query_court_decl_host_native_fragments/native_fragments/mod.rs)
+exercise actual sibling removal, optional absence and corrupt multiple presence.
+See [native schema fragments](native-schema-fragments.md) for the declaration and
+operation-record grants.
 
 ## Absence cost and the class scalar
 
@@ -96,10 +70,10 @@ Every mode records one equality lookup and one index candidate. Other captured
 projection categories are zero. These are acquisition counters, not physical
 I/O, total retained native facts, invalidation breadth or per-read latency.
 
-For callers that already know which class to read, absence work is flat and
-**the class scalar could go**. Discovering the active class by reading every
-aspect remains linear. Retain or remove the tag according to that actual access
-pattern and an installed exclusivity rule, not a guessed absence penalty.
+For callers that already know which class to read, absence work is flat.
+Discovering a case by scanning its siblings remains linear. The SDK owns
+exclusivity and any index it needs; applications author neither a tag nor a
+second exclusivity rule.
 
 ## Canonical atoms retain whole-value grain
 
@@ -113,10 +87,8 @@ crate may own the underlying value without importing Query.
 The installed grammar can describe recursive structures, enums, arrays,
 sequences, pairs and opaque delegates. Those grammar paths are **not native
 field paths**. Read, replace, touch, invalidate and serialize the whole canonical
-atom at its enclosing native field; there is no inner-field patch. Current
-installation refuses this structured canonical carrier in
-`ApplicationSchemaDeclarationBuilder::scalar_aspect_field`; use a Struct field
-for the qualified canonical binding path.
+atom at its enclosing native field; there is no inner-field patch. Records lower the qualified canonical binding to an ordinary scalar field
+inside the existing Struct aspect shape.
 
 Record the owner, binding identity/version, shape, domain bounds/policy, reason
 and no-hidden-reference guard for each exception. Use existing owner policy;

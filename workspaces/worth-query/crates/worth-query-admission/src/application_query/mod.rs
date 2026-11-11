@@ -8,8 +8,9 @@ mod tests;
 pub use lane::WorthQueryApplicationQueryLane;
 pub use parameter_binding::{
     admit_application_query_parameters, admit_application_query_parameters_admitted,
-    readmit_application_query_parameters, WorthQueryAdmittedApplicationQueryParameters,
-    WorthQueryApplicationQueryParameterDenial, WorthQueryApplicationQueryParameterDenialKind,
+    readmit_application_query_parameters, readmit_recorded_application_query_parameters,
+    WorthQueryAdmittedApplicationQueryParameters, WorthQueryApplicationQueryParameterDenial,
+    WorthQueryApplicationQueryParameterDenialKind, WorthQueryCanonicalSourceRequest,
     WorthQueryParameterPreparationStop,
 };
 pub use parameter_canonical_basis::WorthQueryApplicationParameterCanonicalArtifact;

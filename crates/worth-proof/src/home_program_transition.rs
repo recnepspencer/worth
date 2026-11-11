@@ -1,10 +1,16 @@
 //! Exact Home-owner admission across transition reservation and execution.
 use crate::HomeIncarnationFence;
 use std::sync::Arc;
+mod completion;
+pub use completion::CompletedHomeProgramTransitionSteps;
+mod successor;
+pub use successor::AdmittedHomeProgramTransitionSuccessor;
 mod catalog;
 pub use catalog::AdmittedHomeProgramTransitionCatalog;
 mod execution;
 pub use execution::AdmittedHomeProgramTransitionExecution;
+mod planning_request;
+pub use planning_request::AdmittedHomeProgramTransitionPlanningRequest;
 mod lifecycle;
 pub use lifecycle::{HomeProgramTransitionBindingCommitted, HomeProgramTransitionRequired};
 
@@ -76,6 +82,7 @@ pub enum HomeProgramTransitionAdmissionDenial {
     ForeignOwner,
     CommitmentMismatch,
     CallerAssociationMismatch,
+    SourceMismatch,
 }
 
 impl HomeProgramTransitionOwner {
@@ -193,6 +200,19 @@ impl HomeProgramTransitionAuthority {
         presented: &[u8; 32],
         expected: &[u8; 32],
     ) -> Result<(), HomeProgramTransitionAdmissionDenial> {
+        self.admit_owner(occurrence, home, incarnation)?;
+        if presented != expected {
+            return Err(HomeProgramTransitionAdmissionDenial::CommitmentMismatch);
+        }
+        Ok(())
+    }
+
+    fn admit_owner(
+        &self,
+        occurrence: &Arc<TransitionOccurrence>,
+        home: [u8; 16],
+        incarnation: HomeIncarnationFence,
+    ) -> Result<(), HomeProgramTransitionAdmissionDenial> {
         use HomeProgramTransitionAdmissionDenial as Denial;
         // Admit Home scope and fence before commitment inspection or owner effects.
         if self.home != home {
@@ -206,9 +226,6 @@ impl HomeProgramTransitionAuthority {
             })?;
         if !Arc::ptr_eq(&self.occurrence, occurrence) {
             return Err(Denial::ForeignOwner);
-        }
-        if presented != expected {
-            return Err(Denial::CommitmentMismatch);
         }
         Ok(())
     }

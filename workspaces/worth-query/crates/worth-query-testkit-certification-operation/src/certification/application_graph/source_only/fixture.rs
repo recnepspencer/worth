@@ -24,7 +24,7 @@ impl ApplicationMutationIntent<SourceOnlyRetentionSchema> for OriginalRetention 
         &self,
     ) -> <SetRetentionBinding as ApplicationMutationBinding<SourceOnlyRetentionSchema>>::ScopeBinding
     {
-        <SetRetentionBinding as ApplicationMutationBinding<SourceOnlyRetentionSchema>>::ScopeBinding::new(DocumentIdentityField::reference(), self.input.identity.clone())
+        <SetRetentionBinding as ApplicationMutationBinding<SourceOnlyRetentionSchema>>::ScopeBinding::new(DocumentIdentityField::at("DocumentIdentityField"), self.input.identity.clone())
     }
 }
 pub struct RetentionCompletion;
@@ -89,10 +89,12 @@ pub fn operation_with_expected(
     key: u64,
     expected: &str,
 ) -> Operation {
-    let conditions = TypedMutationPreconditions::new().expect_fact(
-        DocumentIdentityField::reference(),
-        ApplicationEncodedScalarValue::try_new(expected.to_owned()).unwrap(),
-    );
+    let conditions = TypedMutationPreconditions::new()
+        .expect_fact(
+            DocumentIdentityField::at("DocumentIdentityField"),
+            ApplicationEncodedScalarValue::try_new(expected.to_owned()).unwrap(),
+        )
+        .unwrap();
     request
         .mutate(OriginalRetention {
             input: SetRetentionInput {

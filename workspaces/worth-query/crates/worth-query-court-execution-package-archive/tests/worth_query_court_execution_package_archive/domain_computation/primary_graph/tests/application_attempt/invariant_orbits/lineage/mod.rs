@@ -65,7 +65,7 @@ pub fn name(
             execution,
             product,
             |reader| {
-                let root = reader.resolve_entity(NodeKey::reference(), key).unwrap();
+                let root = reader.resolve_entity(NodeKey::at("NodeKey"), key).unwrap();
                 let orbit = reader.orbit(Next::reference(), &root).unwrap();
                 (
                     orbit.member(0).unwrap().entity_id(),

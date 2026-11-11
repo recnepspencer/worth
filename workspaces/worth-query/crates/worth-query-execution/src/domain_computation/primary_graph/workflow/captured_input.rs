@@ -69,6 +69,27 @@ pub enum WorkflowCapturedInputDenial {
 }
 
 impl WorkflowCapturedInputContract {
+    pub(in crate::domain_computation::primary_graph) fn matches_recorded_node(
+        &self,
+        node: &super::definition::CompiledWorkflowNode,
+    ) -> bool {
+        match node.kind() {
+            super::definition::CompiledWorkflowNodeKind::Operation {
+                binding: Some(binding),
+                input_type,
+                requires_workflow_authority: true,
+                ..
+            } => binding == &self.binding && input_type == &self.input_type,
+            super::definition::CompiledWorkflowNodeKind::Operation { .. }
+            | super::definition::CompiledWorkflowNodeKind::Assessment { .. }
+            | super::definition::CompiledWorkflowNodeKind::Condition(_)
+            | super::definition::CompiledWorkflowNodeKind::Approval { .. }
+            | super::definition::CompiledWorkflowNodeKind::EvidenceJoin { .. }
+            | super::definition::CompiledWorkflowNodeKind::Terminal
+            | super::definition::CompiledWorkflowNodeKind::AwaitInbound { .. } => false,
+        }
+    }
+
     /// Compare the complete original request after fresh native authorization,
     /// but before its source owner or any effect is consumed. Descriptive equality
     /// does not replace currentness, capability or workflow-slot admission.

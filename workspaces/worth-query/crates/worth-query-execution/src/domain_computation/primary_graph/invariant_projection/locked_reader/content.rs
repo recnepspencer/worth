@@ -1,18 +1,18 @@
 //! Content references retain field absence evidence instead of collapsing it into Option.
+use super::super::read_basis::NativeProjectionRead;
 use super::WorthQueryApplicationInvariantProjectionReader as Reader;
-use crate::domain_computation::primary_graph::{
-    application_attempt::observe_field_observation_borrowed_admitted,
-    WorthQueryValueDecodeDenial as Stop,
-};
+use crate::domain_computation::primary_graph::WorthQueryValueDecodeDenial as Stop;
 use worth_foundational::facade::{AspectFieldLocator, ContentRefId};
-use worth_query_declaration::facade::application_schema::ContentRefApplicationValueBinding;
+use worth_query_declaration::facade::application_schema::ApplicationContentReferenceBinding;
 use worth_query_installation::facade::ApplicationSchema;
 use worth_relational::facade::{
     identity::{EntityId, KindId},
     runtime::RelationalProjectedFieldObservation as Raw,
 };
 impl<S: ApplicationSchema> Reader<'_, S> {
-    pub(in crate::domain_computation::primary_graph::invariant_projection) fn content_reference(
+    pub(in crate::domain_computation::primary_graph::invariant_projection) fn content_reference<
+        Binding: ApplicationContentReferenceBinding,
+    >(
         &mut self,
         entity: EntityId,
         kind: KindId,
@@ -20,7 +20,7 @@ impl<S: ApplicationSchema> Reader<'_, S> {
         locator: &AspectFieldLocator,
     ) -> Result<Option<ContentRefId>, Stop> {
         ContentRead {
-            runtime: self.runtime,
+            native: &self.native,
             execution: self.execution,
             snapshot: self.snapshot,
             decode: self.value_decode,
@@ -34,13 +34,14 @@ impl<S: ApplicationSchema> Reader<'_, S> {
             kind,
             locus,
             locator,
+            decode: decode_reference::<Binding>,
             optional_field: self.layout.field_is_optional(locus.0, locator),
             optional_aspect: self.layout.aspect_is_optional(locus.0, locator),
         })
     }
 }
-struct ContentRead<'borrow, 'run, 'host> {
-    runtime: &'borrow worth_relational::facade::runtime::RelationalRuntime,
+struct ContentRead<'borrow, 'runtime, 'run, 'host> {
+    native: &'borrow NativeProjectionRead<'runtime>,
     execution: &'borrow worth_execution::ExecutionRequest<'run, 'host>,
     snapshot: &'borrow worth_relational::facade::snapshots::SnapshotHandle,
     decode: &'borrow crate::domain_computation::primary_graph::value_decode::ValueDecodeSession<
@@ -52,7 +53,7 @@ struct ContentRead<'borrow, 'run, 'host> {
     native_stop:
         &'borrow mut Option<worth_relational::facade::transactions::RelationalExecutionDenialCause>,
 }
-impl ContentRead<'_, '_, '_> {
+impl ContentRead<'_, '_, '_, '_> {
     fn run(self, field: ContentFieldRead<'_>) -> Result<Option<ContentRefId>, Stop> {
         let decode = self.decode;
         let result = self.read(field);
@@ -77,7 +78,7 @@ impl ContentRead<'_, '_, '_> {
         }
         self.scope.record(field.entity);
         read_reference(
-            self.runtime,
+            self.native,
             self.execution,
             self.snapshot,
             self.decode,
@@ -100,12 +101,13 @@ struct ContentFieldRead<'a> {
     kind: KindId,
     locus: (&'a str, &'a str, &'a str),
     locator: &'a AspectFieldLocator,
+    decode: DecodeReference,
     optional_field: bool,
     optional_aspect: bool,
 }
 // One concrete observation engine is shared by every application's typed wrapper.
 fn read_reference(
-    runtime: &worth_relational::facade::runtime::RelationalRuntime,
+    native: &NativeProjectionRead<'_>,
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
     decode: &crate::domain_computation::primary_graph::value_decode::ValueDecodeSession<'_>,
@@ -113,8 +115,7 @@ fn read_reference(
     field: ContentFieldRead<'_>,
 ) -> Result<Option<ContentRefId>, Stop> {
     let (name, aspect, key) = field.locus;
-    let observed = observe_field_observation_borrowed_admitted(
-        runtime,
+    let observed = native.observe_field(
         execution,
         snapshot,
         field.entity,
@@ -123,8 +124,7 @@ fn read_reference(
         |raw| {
             work.record_fields(1);
             match raw {
-                Raw::Present(value) => decode
-                    .decode::<ContentRefApplicationValueBinding>(name, aspect, key, value)
+                Raw::Present(value) => (field.decode)(decode, name, aspect, key, value)
                     .map(Some)
                     .ok_or_else(|| match decode.denial() {
                         Some(cause) => cause,
@@ -139,4 +139,24 @@ fn read_reference(
     )
     .map_err(|cause| Stop::Content(cause.into()))?;
     observed.ok_or(Stop::ContentBasisUnavailable)?
+}
+
+type DecodeReference = fn(
+    &crate::domain_computation::primary_graph::value_decode::ValueDecodeSession<'_>,
+    &str,
+    &str,
+    &str,
+    &worth_foundational::facade::AspectValue,
+) -> Option<ContentRefId>;
+fn decode_reference<Binding: ApplicationContentReferenceBinding>(
+    decode: &crate::domain_computation::primary_graph::value_decode::ValueDecodeSession<'_>,
+    entity: &str,
+    aspect: &str,
+    field: &str,
+    value: &worth_foundational::facade::AspectValue,
+) -> Option<ContentRefId> {
+    decode
+        .decode::<Binding>(entity, aspect, field, value)
+        .as_ref()
+        .map(Binding::reference)
 }

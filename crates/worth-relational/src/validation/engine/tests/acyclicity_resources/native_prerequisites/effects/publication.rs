@@ -66,38 +66,34 @@ fn a_native_publication_failure_blocks_custom_preparation_while_a_commit_effect_
             assert_eq!(hooks.observed(), (0, 0));
         } else {
             let candidate = outcome.unwrap();
-            let result = &candidate.state.snapshot_publication;
-            assert_eq!(result.results().len(), 3);
-            assert_eq!(
-                result.results()[0].execution_point,
-                Point::SnapshotPublication
-            );
-            assert_eq!(result.results()[0].failure_effect, Effect::BlockCommit);
+            let result = &candidate.state.invariants;
+            let results = result
+                .results()
+                .iter()
+                .filter(|r| r.execution_point == Point::SnapshotPublication)
+                .collect::<Vec<_>>();
+            assert_eq!(results.len(), 3);
+            assert_eq!(results[0].execution_point, Point::SnapshotPublication);
+            assert_eq!(results[0].failure_effect, Effect::BlockCommit);
             assert!(matches!(
-                &result.results()[0].rule,
+                &results[0].rule,
                 InvariantReportedRule::Native(InvariantRule::MaxSnapshotEntities(0))
             ));
             assert!(
-                matches!(&result.results()[0].verdict, InvariantVerdict::Violation(violation)
+                matches!(&results[0].verdict, InvariantVerdict::Violation(violation)
                 if matches!(violation.fields, InvariantViolationFields::SnapshotEntityLimit { visible_entities: 1, limit: 0, .. }))
             );
             assert!(matches!(
-                &result.results()[1].rule,
+                &results[1].rule,
                 InvariantReportedRule::Native(InvariantRule::ConnectivityMinimumContract(contract))
                     if contract.contract_id.as_str() == "reachable_anchor"
             ));
-            assert!(matches!(
-                result.results()[1].verdict,
-                InvariantVerdict::Pass
-            ));
-            assert!(matches!(
-                &result.results()[2].rule,
-                InvariantReportedRule::Custom(_)
-            ));
-            assert_eq!(result.decision_log().len(), 3);
+            assert!(matches!(results[1].verdict, InvariantVerdict::Pass));
+            assert!(matches!(&results[2].rule, InvariantReportedRule::Custom(_)));
+            assert_eq!(result.decision_log().len(), result.results().len());
             assert_eq!(
                 result.metadata().proof_boundary().unwrap().packet_count(),
-                3
+                result.results().len()
             );
             assert_eq!(hooks.observed(), (1, 1));
             drop(candidate);

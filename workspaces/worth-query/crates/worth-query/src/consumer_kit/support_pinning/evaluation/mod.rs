@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 mod finding;
 mod report;
 
@@ -29,10 +30,10 @@ pub(crate) fn evaluate_support_pin_contract(
             Some(contract.schema_identity().to_string()),
             Some(snapshot.schema_identity().to_string()),
             true,
-        ));
+        )?);
     }
 
-    let expected_vocabulary = support_pin_vocabulary_identity()
+    let expected_vocabulary = support_pin_vocabulary_identity()?
         .terminal_projection_for_reporting()
         .to_string();
     if contract.pinned_vocabulary_identity() != expected_vocabulary {
@@ -43,7 +44,7 @@ pub(crate) fn evaluate_support_pin_contract(
             Some(expected_vocabulary),
             Some(contract.pinned_vocabulary_identity().to_string()),
             true,
-        ));
+        )?);
     }
 
     if contract.source_matrix_digest() != snapshot.source_matrix_digest() {
@@ -54,14 +55,14 @@ pub(crate) fn evaluate_support_pin_contract(
             Some(contract.source_matrix_digest().to_string()),
             Some(snapshot.source_matrix_digest().to_string()),
             false,
-        ));
+        )?);
     }
 
     for requirement in contract.requirements() {
         match index.optional_row(requirement.family()) {
             Some(row) => {
                 matched_required_count += 1;
-                findings.extend(evaluate_requirement(requirement, row));
+                findings.extend(evaluate_requirement(requirement, row)?);
             }
             None => findings.push(make_finding(
                 WorthQuerySupportPinFindingKind::RequiredRowMissing,
@@ -70,13 +71,13 @@ pub(crate) fn evaluate_support_pin_contract(
                 Some(requirement.family().as_str().to_string()),
                 None,
                 true,
-            )),
+            )?),
         }
     }
 
     for observed in contract.observed_rows() {
         match index.optional_row(observed.family()) {
-            Some(row) => findings.extend(evaluate_observed_row(observed, row)),
+            Some(row) => findings.extend(evaluate_observed_row(observed, row)?),
             None => findings.push(make_finding(
                 WorthQuerySupportPinFindingKind::ObservedRowMissing,
                 Some(observed.family()),
@@ -84,14 +85,14 @@ pub(crate) fn evaluate_support_pin_contract(
                 Some(observed.family().as_str().to_string()),
                 None,
                 false,
-            )),
+            )?),
         }
     }
 
     let finding_identities = findings
         .iter()
         .map(derive_support_pin_finding_identity)
-        .collect::<Vec<_>>();
+        .collect::<Result<Vec<_>, _>>()?;
     let report_digest = derive_support_pin_report_identity(
         contract.consumer_name(),
         contract.contract_digest(),
@@ -103,7 +104,7 @@ pub(crate) fn evaluate_support_pin_contract(
         matched_required_count,
         snapshot.rows().len(),
         &finding_identities,
-    )
+    )?
     .terminal_projection_for_reporting()
     .to_string();
 
@@ -125,7 +126,7 @@ pub(crate) fn evaluate_support_pin_contract(
 fn evaluate_requirement(
     requirement: &WorthQuerySupportPinRequirement,
     row: &WorthQuerySupportSnapshotRow,
-) -> Vec<WorthQuerySupportPinFinding> {
+) -> Result<Vec<WorthQuerySupportPinFinding>, IdentityDerivationDenial> {
     let mut findings = Vec::new();
     if requirement.required_status().as_str() != row.status() {
         findings.push(make_finding(
@@ -135,7 +136,7 @@ fn evaluate_requirement(
             Some(requirement.required_status().as_str().to_string()),
             Some(row.status().to_string()),
             true,
-        ));
+        )?);
     }
     if requirement.required_teaching_posture().as_str() != row.teaching_posture() {
         findings.push(make_finding(
@@ -145,7 +146,7 @@ fn evaluate_requirement(
             Some(requirement.required_teaching_posture().as_str().to_string()),
             Some(row.teaching_posture().to_string()),
             true,
-        ));
+        )?);
     }
     if requirement.pinned_live_row_digest() != row.live_row_digest() {
         findings.push(make_finding(
@@ -155,15 +156,15 @@ fn evaluate_requirement(
             Some(requirement.pinned_live_row_digest().to_string()),
             Some(row.live_row_digest().to_string()),
             true,
-        ));
+        )?);
     }
-    findings
+    Ok(findings)
 }
 
 fn evaluate_observed_row(
     observed: &WorthQueryObservedSupportPin,
     row: &WorthQuerySupportSnapshotRow,
-) -> Vec<WorthQuerySupportPinFinding> {
+) -> Result<Vec<WorthQuerySupportPinFinding>, IdentityDerivationDenial> {
     let mut findings = Vec::new();
     if observed.observed_status() != row.status() {
         findings.push(make_finding(
@@ -173,7 +174,7 @@ fn evaluate_observed_row(
             Some(observed.observed_status().to_string()),
             Some(row.status().to_string()),
             false,
-        ));
+        )?);
     }
     if observed.observed_teaching_posture() != row.teaching_posture() {
         findings.push(make_finding(
@@ -183,7 +184,7 @@ fn evaluate_observed_row(
             Some(observed.observed_teaching_posture().to_string()),
             Some(row.teaching_posture().to_string()),
             false,
-        ));
+        )?);
     }
     if observed.observed_live_row_digest() != Some(row.live_row_digest()) {
         findings.push(make_finding(
@@ -193,9 +194,9 @@ fn evaluate_observed_row(
             observed.observed_live_row_digest().map(str::to_string),
             Some(row.live_row_digest().to_string()),
             false,
-        ));
+        )?);
     }
-    findings
+    Ok(findings)
 }
 
 fn make_finding(
@@ -205,7 +206,7 @@ fn make_finding(
     expected: Option<String>,
     found: Option<String>,
     blocking: bool,
-) -> WorthQuerySupportPinFinding {
+) -> Result<WorthQuerySupportPinFinding, IdentityDerivationDenial> {
     let surface = surface.into();
     let provisional = WorthQuerySupportPinFinding::new(
         kind,
@@ -216,8 +217,10 @@ fn make_finding(
         blocking,
         String::new(),
     );
-    let digest = derive_support_pin_finding_identity(&provisional)
+    let digest = derive_support_pin_finding_identity(&provisional)?
         .terminal_projection_for_reporting()
         .to_string();
-    WorthQuerySupportPinFinding::new(kind, family, surface, expected, found, blocking, digest)
+    Ok(WorthQuerySupportPinFinding::new(
+        kind, family, surface, expected, found, blocking, digest,
+    ))
 }

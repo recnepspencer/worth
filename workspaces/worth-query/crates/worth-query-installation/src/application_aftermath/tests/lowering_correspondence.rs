@@ -9,17 +9,16 @@ use super::super::{
     WorthQueryAftermathInstallationDenialKind,
 };
 use super::{
-    binding, digest, protocol, recorded_inverse, recorded_inverse_at, Account, AftermathInstall,
-    Balance, FixtureSchema, OtherAccount, OtherAccountBalance, OtherAccountState, OtherBalance,
-    OtherState, OtherStateBalance, SecretField, State,
+    binding, digest, protocol, recorded_inverse, recorded_inverse_at, AftermathInstall, Balance,
+    OtherAccountBalance, OtherBalance, OtherStateBalance, SecretField,
 };
 
 #[test]
 fn preimage_demand_must_be_covered_by_declared_reads() {
     let denial = AftermathInstall::new(binding(digest(17), digest(18), 1), "freeze-account")
-        .reads::<Balance>()
+        .reads(Balance::at("balance"))
         .install(DeclaredApplicationAftermathContract::runtime_alone(
-            recorded_inverse::<SecretField>(),
+            recorded_inverse(SecretField::at("secret-field")),
         ))
         .expect_err("uncovered pre-image demand must deny");
     assert_eq!(
@@ -37,7 +36,7 @@ fn an_operation_declaring_no_reads_denies_distinctly_from_a_missed_slot() {
     // unreachable, so the denial kind existed without ever being able to fire.
     let denial = AftermathInstall::new(binding(digest(21), digest(22), 1), "freeze-account")
         .install(DeclaredApplicationAftermathContract::runtime_alone(
-            recorded_inverse::<Balance>(),
+            recorded_inverse(Balance::at("balance")),
         ))
         .expect_err("an operation with no declared reads cannot cover a demand");
     assert_eq!(
@@ -49,9 +48,9 @@ fn an_operation_declaring_no_reads_denies_distinctly_from_a_missed_slot() {
 #[test]
 fn preimage_covered_demand_installs() {
     let installed = AftermathInstall::new(binding(digest(19), digest(20), 1), "freeze-account")
-        .reads::<Balance>()
+        .reads(Balance::at("balance"))
         .install(DeclaredApplicationAftermathContract::runtime_alone(
-            recorded_inverse::<Balance>(),
+            recorded_inverse(Balance::at("balance")),
         ))
         .expect("covered pre-image demand must install");
     assert_eq!(
@@ -64,15 +63,15 @@ fn preimage_covered_demand_installs() {
 fn same_named_field_on_another_entity_or_aspect_cannot_cover_demand() {
     let owner = binding(digest(41), digest(42), 1);
     let entity_denial = AftermathInstall::new(owner.clone(), "freeze-account")
-        .reads_at::<OtherAccount, OtherAccountState, OtherAccountBalance>()
+        .reads(OtherAccountBalance::at("balance"))
         .install(DeclaredApplicationAftermathContract::runtime_alone(
-            recorded_inverse::<Balance>(),
+            recorded_inverse(Balance::at("balance")),
         ))
         .expect_err("same field name on another entity must not cover demand");
     let aspect_denial = AftermathInstall::new(owner, "freeze-account")
-        .reads_at::<Account, OtherState, OtherStateBalance>()
+        .reads(OtherStateBalance::at("balance"))
         .install(DeclaredApplicationAftermathContract::runtime_alone(
-            recorded_inverse::<Balance>(),
+            recorded_inverse(Balance::at("balance")),
         ))
         .expect_err("same field name on another aspect must not cover demand");
     for denial in [entity_denial, aspect_denial] {
@@ -86,12 +85,12 @@ fn same_named_field_on_another_entity_or_aspect_cannot_cover_demand() {
 #[test]
 fn installed_identity_carries_every_exact_preimage_axis_and_bound() {
     let owner = binding(digest(43), digest(44), 1);
-    let baseline = install_exact::<Account, State, Balance>(&owner, 64);
+    let baseline = install_exact(Balance::at("balance"), &owner, 64);
     for changed in [
-        install_exact::<OtherAccount, OtherAccountState, OtherAccountBalance>(&owner, 64),
-        install_exact::<Account, OtherState, OtherStateBalance>(&owner, 64),
-        install_exact::<Account, State, OtherBalance>(&owner, 64),
-        install_exact::<Account, State, Balance>(&owner, 65),
+        install_exact(OtherAccountBalance::at("balance"), &owner, 64),
+        install_exact(OtherStateBalance::at("balance"), &owner, 64),
+        install_exact(OtherBalance::at("other-balance"), &owner, 64),
+        install_exact(Balance::at("balance"), &owner, 65),
     ] {
         assert_ne!(baseline.identity().bytes(), changed.identity().bytes());
     }
@@ -106,7 +105,7 @@ fn installed_identity_carries_every_exact_preimage_axis_and_bound() {
         .expect("baseline installs one exact pre-image locus");
     assert_eq!(
         (locus.entity(), locus.aspect(), locus.field()),
-        ("Account", "State", "balance")
+        ("Account", Balance::at("balance").aspect(), "balance")
     );
 }
 
@@ -122,10 +121,10 @@ fn installed_identity_carries_every_exact_preimage_axis_and_bound() {
 #[test]
 fn an_operation_that_escapes_cannot_install_as_reversible() {
     let denial = AftermathInstall::new(binding(digest(19), digest(20), 1), "freeze-account")
-        .reads::<Balance>()
+        .reads(Balance::at("balance"))
         .escaping()
         .install(DeclaredApplicationAftermathContract::runtime_alone(
-            recorded_inverse::<Balance>(),
+            recorded_inverse(Balance::at("balance")),
         ))
         .expect_err("an escaping operation cannot be reversible");
     assert_eq!(
@@ -139,29 +138,17 @@ fn an_operation_that_escapes_cannot_install_as_reversible() {
     );
 }
 
-fn install_exact<Entity, Aspect, Field>(
+fn install_exact<
+    Field: worth_query_declaration::facade::application_schema::fragment::RecordSelection,
+>(
+    field: Field,
     owner: &worth_query_declaration::facade::application_schema::ApplicationSchemaBindingIdentity,
     bound: usize,
-) -> super::super::WorthQueryInstalledAftermathContract
-where
-    Entity: worth_query_declaration::facade::application_schema::ApplicationEntityMarkerIdentity<
-        FixtureSchema,
-    >,
-    Aspect: worth_query_declaration::facade::application_schema::ApplicationAspectMarkerIdentity<
-        FixtureSchema,
-        Entity,
-    >,
-    Field: worth_query_declaration::facade::application_schema::ApplicationFieldMarkerIdentity<
-        FixtureSchema,
-        Entity,
-        Aspect,
-        Value = u64,
-    >,
-{
+) -> super::super::WorthQueryInstalledAftermathContract {
     AftermathInstall::new(owner.clone(), "freeze-account")
-        .reads_at::<Entity, Aspect, Field>()
+        .reads(field)
         .install(DeclaredApplicationAftermathContract::runtime_alone(
-            recorded_inverse_at::<Entity, Aspect, Field>(bound),
+            recorded_inverse_at(field, bound),
         ))
         .unwrap()
 }

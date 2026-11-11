@@ -4,6 +4,7 @@ use crate::branch::{
     AdmittedRelationalBranchBasis, RelationalMaterializationCustody,
     RelationalMaterializationRecord,
 };
+use crate::history::data::canonical_commit_envelope::OutputOriginHistory;
 use crate::history::data::{
     CanonicalRequiredOutputMaterialization as Event,
     CanonicalRequiredOutputMaterializationRecord as Member,
@@ -21,7 +22,8 @@ pub(crate) fn capture_materialization_producers(
     basis: &AdmittedRelationalBranchBasis,
     manifest: &[RelationalMaterializationRecord],
 ) -> Result<(Vec<CommitId>, Vec<Member>, ExecutionMemoryReservation), TransactionCommitError> {
-    if basis.descriptor().runtime_instance_id() != runtime.runtime_instance_id()
+    let runtime = &crate::history::data::codec_retirement_closure::history_request::RuntimeHistoryRequest::new(runtime, execution);
+    if basis.descriptor().runtime_instance_id() != runtime.runtime.runtime_instance_id()
         || !basis.is_current()
     {
         return Err(crate::mvcc::origin_denial(
@@ -40,7 +42,7 @@ pub(crate) fn capture_materialization_producers(
     basis
         .inner
         .root
-        .demand_regions_full(execution, &runtime.services.symbols, regions)
+        .demand_regions_full(execution, &runtime.runtime.services.symbols, regions)
         .map_err(|failure| stop(Stop::Request(failure.into())))?;
     execution
         .in_scope(|lease| {
@@ -57,13 +59,21 @@ pub(crate) fn capture_materialization_producers(
                     let memory = super::super::reserve(lease, bytes).map_err(stop)?;
                     let mut publications = Vec::with_capacity(manifest.len());
                     let mut records = Vec::with_capacity(manifest.len());
+                    let mut origin_frames = OutputOriginHistory::default();
+                    let validated_history = &mut origin_frames;
                     for record in manifest {
-                        let selected =
-                            match selection::at_source(runtime, basis, record, context, lease) {
-                                Ok(Some(selected)) => selected,
-                                Ok(None) => continue,
-                                Err(cause) => return Err(cause),
-                            };
+                        let selected = match selection::at_source(
+                            runtime,
+                            basis,
+                            record,
+                            validated_history,
+                            context,
+                            lease,
+                        ) {
+                            Ok(Some(selected)) => selected,
+                            Ok(None) => continue,
+                            Err(cause) => return Err(cause),
+                        };
                         let origin = selected.validate_output_membership_header().map_err(stop)?;
                         charge(context, publications.len() + 1).map_err(stop)?;
                         if publications.contains(&origin.commit.commit_id) {
@@ -86,6 +96,7 @@ pub(crate) fn capture_materialization_producers(
                                     &selected,
                                     member.id,
                                     row.extra().authoritative_aspect_state(),
+                                    validated_history,
                                     context,
                                     lease,
                                 )?;
@@ -100,6 +111,7 @@ pub(crate) fn capture_materialization_producers(
                                 runtime,
                                 &basis.inner.root,
                                 &origin,
+                                validated_history,
                                 context,
                                 lease,
                             )
@@ -121,18 +133,19 @@ pub(crate) fn capture_materialization_producers(
                             }
                         };
                         charge(context, publications.len() + 1).map_err(stop)?;
-                        if !publications.iter().any(|publication| {
-                            runtime
-                                .history
-                                .canonical_envelope(*publication)
-                                .and_then(|envelope| {
-                                    envelope
-                                        .required_output_origin
-                                        .as_ref()
-                                        .map(|origin| header::owns(origin, &record))
-                                })
-                                .unwrap_or(false)
-                        }) {
+                        let mut owned = false;
+                        for publication in &publications {
+                            let envelope = runtime.commit(*publication).map_err(stop)?;
+                            if envelope
+                                .as_ref()
+                                .and_then(|envelope| envelope.required_output_origin.as_ref())
+                                .is_some_and(|origin| header::owns(origin, &record))
+                            {
+                                owned = true;
+                                break;
+                            }
+                        }
+                        if !owned {
                             continue;
                         }
                         let before_write = match record {
@@ -184,6 +197,7 @@ pub(crate) fn prepare_materialization_continuity(
     custody: &RelationalMaterializationCustody,
     candidate: &WorkingState,
 ) -> Result<Option<Arc<Event>>, TransactionCommitError> {
+    let runtime = &crate::history::data::codec_retirement_closure::history_request::RuntimeHistoryRequest::new(runtime, execution);
     let captured = custody.data();
     if captured.producer_publications.is_empty() {
         return Ok(None);
@@ -198,8 +212,7 @@ pub(crate) fn prepare_materialization_continuity(
                     for publication in &captured.producer_publications {
                         charge(context, 1)?;
                         let original = runtime
-                            .history
-                            .canonical_envelope(*publication)
+                            .commit(*publication)?
                             .ok_or("materialization original producer history absent")?;
                         if payload::candidate_matches(
                             runtime,
@@ -219,18 +232,19 @@ pub(crate) fn prepare_materialization_continuity(
                     let mut records = Vec::with_capacity(captured.producer_records.len());
                     for record in &captured.producer_records {
                         charge(context, publications.len() + 1)?;
-                        if publications.iter().any(|publication| {
-                            runtime
-                                .history
-                                .canonical_envelope(*publication)
-                                .and_then(|envelope| {
-                                    envelope
-                                        .required_output_origin
-                                        .as_ref()
-                                        .map(|origin| header::owns(origin, &record.record))
-                                })
-                                .unwrap_or(false)
-                        }) {
+                        let mut owned = false;
+                        for publication in &publications {
+                            let envelope = runtime.commit(*publication)?;
+                            if envelope
+                                .as_ref()
+                                .and_then(|envelope| envelope.required_output_origin.as_ref())
+                                .is_some_and(|origin| header::owns(origin, &record.record))
+                            {
+                                owned = true;
+                                break;
+                            }
+                        }
+                        if owned {
                             records.push(record.clone());
                         }
                     }

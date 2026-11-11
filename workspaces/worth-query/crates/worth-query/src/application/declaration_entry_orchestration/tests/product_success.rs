@@ -101,10 +101,12 @@ fn envelope_product_orchestration_matches_explicit_envelope_digest_and_intent() 
             WorthQueryDeclarationRouteIntent::RelationalOnly,
         )
         .unwrap_or_else(|_| panic!("orchestrated envelope should succeed"));
-    let proof = handle.orchestrate_envelope_from_progressed_proof_with_intent(
-        progressed,
-        WorthQueryDeclarationRouteIntent::RelationalOnly,
-    );
+    let proof = handle
+        .orchestrate_envelope_from_progressed_proof_with_intent(
+            progressed,
+            WorthQueryDeclarationRouteIntent::RelationalOnly,
+        )
+        .expect("fixture digest must fit");
 
     assert_eq!(explicit.envelope_digest(), orchestrated.envelope_digest());
     assert_eq!(

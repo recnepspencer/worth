@@ -1,0 +1,44 @@
+[
+  {
+    "binary": "worth-relational",
+    "test": "inline_type_sizes::owned_carriers_stay_within_declared_inline_ceilings",
+    "ignored": false,
+    "selected": true
+  },
+  {
+    "binary": "worth-relational",
+    "test": "runtime::state::subsystems::indexing::generation_publication_gate::tests::abandoning_publication_allows_the_next_waiting_owner",
+    "ignored": false,
+    "selected": true
+  },
+  {
+    "binary": "worth-relational",
+    "test": "runtime::state::subsystems::indexing::generation_publication_gate::tests::publication_wait_polls_outside_its_coordination_mutex",
+    "ignored": false,
+    "selected": true
+  },
+  {
+    "binary": "worth-relational",
+    "test": "runtime::state::subsystems::indexing::prepared_publication::tests::admitted_installation_retains_payload_backing_and_unused_keys_until_retirement",
+    "ignored": false,
+    "selected": true
+  },
+  {
+    "binary": "worth-relational",
+    "test": "runtime::state::subsystems::indexing::prepared_publication::tests::an_empty_admitted_batch_completes_without_installing_a_generation",
+    "ignored": false,
+    "selected": true
+  },
+  {
+    "binary": "worth-relational",
+    "test": "runtime::state::subsystems::indexing::prepared_publication::tests::cancelled_catalog_wait_keeps_the_unpublished_payload_and_releases_no_foreign_permit",
+    "ignored": false,
+    "selected": true
+  },
+  {
+    "binary": "worth-relational",
+    "test": "runtime::state::subsystems::indexing::prepared_publication::tests::deferred_admission_prices_the_catalog_after_intervening_publication",
+    "ignored": false,
+    "selected": true
+  }
+]

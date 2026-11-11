@@ -16,7 +16,7 @@ fn capability_and_declared_disclosure_meaning_compare_canonically_before_closed_
     )
     .expect("the governed field must encode through its installed binding");
 
-    let definition = queries::estate_legal_compliance_definition();
+    let definition = queries::estate_legal_compliance_definition().into_erased();
     let disclosure_rules = definition.disclosure().rules();
     assert!(!disclosure_rules.is_empty());
     let disclosure_value = disclosure_rules[0].disclosure_value().clone();

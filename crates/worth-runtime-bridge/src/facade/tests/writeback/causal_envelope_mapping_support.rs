@@ -120,7 +120,7 @@ pub(super) fn writeback_admission_digest(
     record: &crate::facade::BridgeWritebackFamilyAdmissionRecord,
 ) -> String {
     crate::diagnostics::causal_envelope::retained_mapping::retained_artifact_digest::writeback::writeback_admission_digest(record)
-        .as_str()
+        .expect("bounded digest fixture").as_str()
         .to_string()
 }
 
@@ -128,7 +128,7 @@ pub(super) fn writeback_mapper_envelope_digest(
     envelope: &crate::facade::BridgeWritebackMapperEnvelope,
 ) -> String {
     crate::diagnostics::causal_envelope::retained_mapping::retained_artifact_digest::writeback::writeback_mapper_envelope_artifact_digest(envelope)
-        .as_str()
+        .expect("bounded digest fixture").as_str()
         .to_string()
 }
 
@@ -136,7 +136,7 @@ pub(super) fn writeback_mapped_input_digest(
     mapped_input: &crate::facade::BridgeMappedWritebackFamilyInput,
 ) -> String {
     crate::diagnostics::causal_envelope::retained_mapping::retained_artifact_digest::writeback::writeback_mapped_family_input_artifact_digest(mapped_input)
-        .as_str()
+        .expect("bounded digest fixture").as_str()
         .to_string()
 }
 
@@ -144,7 +144,7 @@ pub(super) fn writeback_mapper_record_digest(
     record: &crate::facade::BridgeWritebackMapperRecord,
 ) -> String {
     crate::diagnostics::causal_envelope::retained_mapping::retained_artifact_digest::writeback::writeback_mapper_record_artifact_digest(record)
-        .as_str()
+        .expect("bounded digest fixture").as_str()
         .to_string()
 }
 
@@ -152,7 +152,7 @@ pub(super) fn writeback_execution_digest(
     record: &crate::facade::BridgeWritebackExecutionRecord,
 ) -> String {
     crate::diagnostics::causal_envelope::retained_mapping::retained_artifact_digest::writeback::writeback_execution_artifact_digest(record)
-        .as_str()
+        .expect("bounded digest fixture").as_str()
         .to_string()
 }
 
@@ -160,6 +160,6 @@ pub(super) fn writeback_replay_digest(
     record: &crate::facade::BridgeWritebackReplayRecord,
 ) -> String {
     crate::diagnostics::causal_envelope::retained_mapping::retained_artifact_digest::writeback::writeback_replay_artifact_digest(record)
-        .as_str()
+        .expect("bounded digest fixture").as_str()
         .to_string()
 }

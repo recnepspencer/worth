@@ -88,3 +88,6 @@ impl WorthQueryElevationCommitCurrentness {
         }
     }
 }
+#[cfg(test)]
+#[path = "elevation_currentness_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;

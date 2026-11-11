@@ -16,6 +16,7 @@ fn host(budget: &SerialMemoryBudget) -> SerialRequest {
     SerialRequest::from_memory(budget.clone(), CancellationSource::new().token(), None)
 }
 mod fixture;
+mod storage_footprint;
 use fixture::*;
 #[test]
 fn controlled_field_lowering_preserves_original_winners_order_and_wire() {
@@ -113,14 +114,14 @@ fn controlled_field_lowering_refuses_before_copy_and_preserves_typed_causes() {
         Err(CandidateDenial::Request(_))
     ));
     assert_eq!(zero.charged_memory_bytes(), 0);
-    let limited = SerialMemoryBudget::new(Some(4096));
-    let host = super::tests::host(&limited);
-    let request = ExecutionRequest::serial(&host);
     let wide = super::tests::plan(true);
     let source = AspectFieldPatch::from_locator(
         planned_single_field_locator(key("a.struct"), field("title")),
         text("ok"),
     );
+    let limited = SerialMemoryBudget::new(Some(storage_footprint::lower_peak(&source, &wide)));
+    let host = super::tests::host(&limited);
+    let request = ExecutionRequest::serial(&host);
     let candidate = lower(
         &request,
         &source,
@@ -232,31 +233,8 @@ fn controlled_field_lowering_releases_scratch_before_retaining_small_patch() {
         AspectContractRevision(1),
         ScalarAspectType::String,
     );
-    let budget = SerialMemoryBudget::new(Some(4096));
-    let host = host(&budget);
-    let request = ExecutionRequest::serial(&host);
-    let patch = record_aspect_patch::readmit_field_authoring(
-        &request,
-        &source,
-        PortablePatchReadmissionPurpose::RecordCreation,
-        Some(&plan),
-        target(),
-        FieldAuthoringDomain::Entity,
-    )
-    .unwrap();
-    let (_, value) = patch.as_patch().whole_aspect_sets().next().unwrap();
-    let independent = (std::mem::size_of::<ContractValidatedAspectValue>()
-        + value.owned_allocation_capacity_bytes()) as u64;
-    assert_eq!(budget.charged_memory_bytes(), independent);
-    assert!(independent < 1024);
-    assert_eq!(
-        value.view(),
-        ContractValidatedAspectValueView::Scalar(&text("ok"))
-    );
-    drop(patch);
-    assert_eq!(budget.charged_memory_bytes(), 0);
-
-    // A struct declaration Vec's spare slots are not copied by Clone either.
+    // c65d042399/6df49ed086 share the immutable declaration. Its retained
+    // spare backing is owned; the source text/vector spare capacity is not copied.
     let AspectShape::Struct(shape) = plan.executable_bindings[1].contract.shape() else {
         panic!("actual struct plan")
     };
@@ -279,6 +257,39 @@ fn controlled_field_lowering_releases_scratch_before_retaining_small_patch() {
         planned_single_field_locator(key("a.struct"), field("title")),
         text("ok"),
     );
+    let peak = storage_footprint::full_peak(&source, &plan)
+        .max(storage_footprint::full_peak(&struct_fields, &plan));
+    let budget = SerialMemoryBudget::new(Some(peak));
+    let host = host(&budget);
+    let request = ExecutionRequest::serial(&host);
+    let patch = record_aspect_patch::readmit_field_authoring(
+        &request,
+        &source,
+        PortablePatchReadmissionPurpose::RecordCreation,
+        Some(&plan),
+        target(),
+        FieldAuthoringDomain::Entity,
+    )
+    .unwrap();
+    let (_, value) = patch.as_patch().whole_aspect_sets().next().unwrap();
+    let independent = (std::mem::size_of::<ContractValidatedAspectValue>()
+        + value.owned_allocation_capacity_bytes()) as u64;
+    assert_eq!(budget.charged_memory_bytes(), independent);
+    assert!(
+        independent
+            - (plan.executable_bindings[0]
+                .contract
+                .owned_allocation_capacity_bytes() as u64)
+            < 1024,
+        "only the shared definition is large; discarded/source scalar backing is not copied"
+    );
+    assert_eq!(
+        value.view(),
+        ContractValidatedAspectValueView::Scalar(&text("ok"))
+    );
+    drop(patch);
+    assert_eq!(budget.charged_memory_bytes(), 0);
+
     let output = record_aspect_patch::readmit_field_authoring(
         &request,
         &struct_fields,
@@ -288,7 +299,14 @@ fn controlled_field_lowering_releases_scratch_before_retaining_small_patch() {
         FieldAuthoringDomain::Entity,
     )
     .unwrap();
-    assert!(budget.charged_memory_bytes() < 2048);
+    assert!(
+        budget.charged_memory_bytes()
+            - (plan.executable_bindings[1]
+                .contract
+                .owned_allocation_capacity_bytes() as u64)
+            < 2048,
+        "tree/cell output stays small beyond its shared definition"
+    );
     drop(output);
     assert_eq!(budget.charged_memory_bytes(), 0);
 

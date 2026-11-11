@@ -1,0 +1,8 @@
+{
+  "path": "workspaces/worth-ui/Cargo.lock",
+  "head": "5d41be299030a2e9d90dae61dfc36da9a86cb385",
+  "before_sha256": "1f53c2419803f1257a2003c3c2c82ebf5e06c3dd0487c1da488800f79c4960f1",
+  "restored_sha256": "35cd33a440ded34e99e25f1d5975a894f57bc13d618491458d42fbaa3a293950",
+  "cached_diff_empty": true,
+  "reason": "Owned metadata probes introduced 503 lockfile lines; initial state was clean; no UI source changed."
+}

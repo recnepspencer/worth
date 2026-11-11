@@ -21,6 +21,7 @@ fn effect_delivery_routes_from_live_trigger_with_expression_metadata() {
                 WorthQueryEffectTrigger::live_view(&live, test_aspect_touches(["title"])),
                 "ui.badges",
             )
+            .expect("fixture digest must fit")
             .with_condition(WorthQueryEffectCondition::expression(
                 "expr.title.badge",
                 test_aspect_touches(["title"]),
@@ -163,11 +164,17 @@ fn effect_delivery_routes_from_computed_trigger_after_computed_patch() {
         )
         .expect("computed should declare");
     let effect = runtime
-        .declare_effect::<WorthQueryUnrefinedLiveShape>(WorthQueryEffectDeclaration::deliver(
-            "ui.summary-badges",
-            WorthQueryEffectTrigger::computed_view(&titles, test_aspect_touches(["title.summary"])),
-            "ui.summary",
-        ))
+        .declare_effect::<WorthQueryUnrefinedLiveShape>(
+            WorthQueryEffectDeclaration::deliver(
+                "ui.summary-badges",
+                WorthQueryEffectTrigger::computed_view(
+                    &titles,
+                    test_aspect_touches(["title.summary"]),
+                ),
+                "ui.summary",
+            )
+            .expect("fixture digest must fit"),
+        )
         .expect("computed-triggered effect should declare");
 
     let write = runtime
@@ -248,11 +255,17 @@ fn computed_effect_does_not_replay_stale_undrained_computed_patch() {
         )
         .expect("computed should declare");
     let effect = runtime
-        .declare_effect::<WorthQueryUnrefinedLiveShape>(WorthQueryEffectDeclaration::deliver(
-            "ui.stale-summary-badges",
-            WorthQueryEffectTrigger::computed_view(&titles, test_aspect_touches(["title.summary"])),
-            "ui.summary",
-        ))
+        .declare_effect::<WorthQueryUnrefinedLiveShape>(
+            WorthQueryEffectDeclaration::deliver(
+                "ui.stale-summary-badges",
+                WorthQueryEffectTrigger::computed_view(
+                    &titles,
+                    test_aspect_touches(["title.summary"]),
+                ),
+                "ui.summary",
+            )
+            .expect("fixture digest must fit"),
+        )
         .expect("computed-triggered effect should declare");
 
     let first_write = runtime

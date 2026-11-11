@@ -76,7 +76,10 @@ pub fn assert_financial_host_curve_delivery(
         .iter()
         .map(|delivery| {
             let dependency = delivery.truth().change_set().dependency();
-            assert_eq!(dependency.contract().key().as_str(), "CurveFacts");
+            assert_eq!(
+                dependency.contract().key().as_str(),
+                schema::CurveFacts::reference().name()
+            );
             dependency.dependency_ordinal()
         })
         .collect::<std::collections::BTreeSet<_>>();

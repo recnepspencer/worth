@@ -21,8 +21,7 @@ worth_query_structured_value_binding!(pub InputBinding for Calculate { identity:
 worth_query_structured_value_binding!(pub ResultBinding for Published { identity: "numeric-scalar.calculate-result.v1" });
 worth_query_structured_value_binding!(pub DenialBinding for SourceChanged { identity: "numeric-scalar.calculate-denial.v1" });
 worth_query_operation!(pub CalculateScalar for NumericSchema, input InputBinding);
-worth_query_operation_reads!(CalculateScalar => [Key, Primary, Calculated, Value, Total]);
-worth_query_operation_writes!(CalculateScalar => [Calculated, Total]);
+
 pub struct Outputs;
 pub struct NumberOutput;
 impl WorthQueryApplicationOutputRole for NumberOutput {
@@ -37,15 +36,7 @@ impl ApplicationMutationOutputContract<NumericSchema> for Outputs {
     const ROLES: &'static [ApplicationMutationOutputRoleDescriptor] = &[NumberOutput::DESCRIPTOR];
 }
 pub struct Binding;
-type Scope = ApplicationMutationFieldScope<
-    NumericSchema,
-    Number,
-    NumberFacts,
-    Key,
-    String,
-    ReadOnly,
-    NoApplicationUnit,
->;
+type Scope = ApplicationMutationFieldScope<Key>;
 impl ApplicationMutationBinding<NumericSchema> for Binding {
     type Input = Calculate;
     type InputBinding = InputBinding;
@@ -70,17 +61,8 @@ impl ApplicationMutationBinding<NumericSchema> for Binding {
     fn workflow_execution_requirements() -> ApplicationWorkflowExecutionRequirements {
         ApplicationWorkflowExecutionRequirements::not_applicable()
     }
-    fn scope_field() -> ApplicationFieldRef<
-        NumericSchema,
-        Number,
-        NumberFacts,
-        Key,
-        String,
-        ReadOnly,
-        EqualityPredicate,
-        NoApplicationUnit,
-    > {
-        Key::reference()
+    fn scope_field() -> Key {
+        Key::at("Key")
     }
     fn principal_binding() -> ApplicationPrincipalBindingRef<
         NumericSchema,
@@ -99,7 +81,7 @@ impl ApplicationMutationIntent<NumericSchema> for Calculate {
         self
     }
     fn scope_binding(&self) -> Scope {
-        Scope::new(Key::reference(), self.key.clone())
+        Scope::new(Key::at("Key"), self.key.clone())
     }
 }
 pub struct Handler;
@@ -110,26 +92,26 @@ impl OperationHandler<NumericSchema, Binding> for Handler {
         reader: &mut DecisionReader<'_, '_, '_, NumericSchema, Binding>,
     ) -> HandlerResult<WorthQueryInvariantMutationTarget<NumericSchema, Number>, SourceChanged>
     {
-        let target = match reader.resolve_entity(Key::reference(), input.key.clone()) {
+        let target = match reader.resolve_entity(Key::at("Key"), input.key.clone()) {
             Ok(target) => target,
             Err(cause) => return HandlerResult::ExecutionDenied(cause),
         };
-        match reader.field(&target, Primary::reference()) {
-            Ok(Some(value)) if value == input.primary => {}
+        match reader.field(&target, Primary::at("Primary")) {
+            Ok(Some(value)) if value.0 == input.primary => {}
             Ok(_) => return HandlerResult::DomainDenied(SourceChanged),
             Err(cause) => return HandlerResult::ExecutionDenied(cause),
         }
-        match reader.field(&target, Value::reference()) {
+        match reader.field(&target, Value::at("Value")) {
             Ok(value) if value == input.scalar => {}
             Ok(_) => return HandlerResult::DomainDenied(SourceChanged),
             Err(cause) => return HandlerResult::ExecutionDenied(cause),
         }
-        match reader.field(&target, Calculated::reference()) {
+        match reader.field(&target, Calculated::at("Calculated")) {
             Ok(Some(_)) => {}
             Ok(None) => return HandlerResult::DomainDenied(SourceChanged),
             Err(cause) => return HandlerResult::ExecutionDenied(cause),
         }
-        if let Err(cause) = reader.field(&target, Total::reference()) {
+        if let Err(cause) = reader.field(&target, Total::at("Total")) {
             return HandlerResult::ExecutionDenied(cause);
         }
         match reader.mutation_target(&target) {
@@ -146,12 +128,12 @@ impl OperationHandler<NumericSchema, Binding> for Handler {
         let result = writer.projected_entity(&target).and_then(|target| {
             writer.write_field(
                 &target,
-                Calculated::reference(),
+                Calculated::at("Calculated"),
                 input.primary * 2 + 1 + input.scalar.unwrap_or(0),
             )?;
             writer.write_field(
                 &target,
-                Total::reference(),
+                Total::at("Total"),
                 input.primary * 3 + 2 + 7 * (input.scalar.unwrap_or(0) % 4),
             )?;
             writer.preserve_output::<NumberOutput>(&target)
@@ -232,12 +214,12 @@ pub fn declare(
                 .finish(),
         )
         .operation_projection_work_budget(CalculateScalar::reference(), 8)
-        .operation_read_field(CalculateScalar::reference(), Key::reference())
-        .operation_read_field(CalculateScalar::reference(), Primary::reference())
-        .operation_read_field(CalculateScalar::reference(), Value::reference())
-        .operation_read_field(CalculateScalar::reference(), Calculated::reference())
-        .operation_read_field(CalculateScalar::reference(), Total::reference())
-        .operation_write(CalculateScalar::reference(), Calculated::reference())
-        .operation_write(CalculateScalar::reference(), Total::reference())
+        .operation_read_field(CalculateScalar::reference(), Key::at("Key"))
+        .operation_read_field(CalculateScalar::reference(), Primary::at("Primary"))
+        .operation_read_field(CalculateScalar::reference(), Value::at("Value"))
+        .operation_read_field(CalculateScalar::reference(), Calculated::at("Calculated"))
+        .operation_read_field(CalculateScalar::reference(), Total::at("Total"))
+        .operation_write(CalculateScalar::reference(), Calculated::at("Calculated"))
+        .operation_write(CalculateScalar::reference(), Total::at("Total"))
         .application_mutation_binding::<Binding>()
 }

@@ -68,13 +68,16 @@ fn project_estate(
     expected_estate: EstateCaseId,
 ) -> Result<(), BankEstateReleaseProjectionDenial> {
     let observed = reader
-        .decision_field(estate, EstateCaseIdentityField::reference())?
+        .decision_field(
+            estate,
+            EstateCaseIdentityField::at("EstateCaseIdentityField"),
+        )?
         .ok_or(BankEstateReleaseProjectionDenial::MissingEstateIdentity)?;
     if observed != expected_estate {
         return Err(BankEstateReleaseProjectionDenial::EstateMismatch);
     }
     let status = reader
-        .decision_field(estate, EstateCaseStatusField::reference())?
+        .decision_field(estate, EstateCaseStatusField::at("EstateCaseStatusField"))?
         .ok_or(BankEstateReleaseProjectionDenial::MissingEstateStatus)?;
     if status != EstateCaseStatus::Open {
         return Err(BankEstateReleaseProjectionDenial::EstateNotOpen);
@@ -90,13 +93,21 @@ fn project_executor(
     estate: &WorthQueryInvariantEntityIdentity<BankSchema, EstateCase>,
     command: super::ReleaseCommand,
 ) -> Result<(), BankEstateReleaseProjectionDenial> {
-    let executor = reader.resolve_entity(PrincipalIdentityField::reference(), command.executor)?;
+    let executor = reader.resolve_entity(
+        PrincipalIdentityField::at("PrincipalIdentityField"),
+        command.executor,
+    )?;
     require_selected_executor_identity(reader, &executor, command.executor)?;
-    let authority =
-        reader.resolve_entity(LegalAuthorityIdentityField::reference(), command.authority)?;
+    let authority = reader.resolve_entity(
+        LegalAuthorityIdentityField::at("LegalAuthorityIdentityField"),
+        command.authority,
+    )?;
     require_selected_authority_identity(reader, &authority, command.authority)?;
     let recognized = reader
-        .decision_field(&authority, LegalAuthorityRecognizedField::reference())?
+        .decision_field(
+            &authority,
+            LegalAuthorityRecognizedField::at("LegalAuthorityRecognizedField"),
+        )?
         .ok_or(BankEstateReleaseProjectionDenial::LegalAuthorityRecognitionMissing)?;
     if !recognized {
         return Err(BankEstateReleaseProjectionDenial::RecognizedExecutorAuthorityMissing);
@@ -116,7 +127,10 @@ fn require_selected_executor_identity(
     expected: BankPrincipalId,
 ) -> Result<(), BankEstateReleaseProjectionDenial> {
     let observed = reader
-        .decision_field(executor, PrincipalIdentityField::reference())?
+        .decision_field(
+            executor,
+            PrincipalIdentityField::at("PrincipalIdentityField"),
+        )?
         .ok_or(BankEstateReleaseProjectionDenial::ExecutorIdentityMissing)?;
     if observed != expected {
         return Err(BankEstateReleaseProjectionDenial::ExecutorIdentityMismatch);
@@ -133,7 +147,10 @@ fn require_selected_authority_identity(
     expected: bank_domain::estate::LegalAuthorityId,
 ) -> Result<(), BankEstateReleaseProjectionDenial> {
     let observed = reader
-        .decision_field(authority, LegalAuthorityIdentityField::reference())?
+        .decision_field(
+            authority,
+            LegalAuthorityIdentityField::at("LegalAuthorityIdentityField"),
+        )?
         .ok_or(BankEstateReleaseProjectionDenial::LegalAuthorityIdentityMissing)?;
     if observed != expected {
         return Err(BankEstateReleaseProjectionDenial::LegalAuthorityIdentityMismatch);
@@ -193,19 +210,30 @@ fn project_release_review(
     estate: &WorthQueryInvariantEntityIdentity<BankSchema, EstateCase>,
     expected_review: bank_domain::estate::MandatoryReviewId,
 ) -> Result<(), BankEstateReleaseProjectionDenial> {
-    let review =
-        reader.resolve_entity(MandatoryReviewIdentityField::reference(), expected_review)?;
+    let review = reader.resolve_entity(
+        MandatoryReviewIdentityField::at("MandatoryReviewIdentityField"),
+        expected_review,
+    )?;
     reader
-        .decision_field(&review, MandatoryReviewIdentityField::reference())?
+        .decision_field(
+            &review,
+            MandatoryReviewIdentityField::at("MandatoryReviewIdentityField"),
+        )?
         .ok_or(BankEstateReleaseProjectionDenial::ReviewIdentityMissing)?;
     let kind = reader
-        .decision_field(&review, MandatoryReviewKindField::reference())?
+        .decision_field(
+            &review,
+            MandatoryReviewKindField::at("MandatoryReviewKindField"),
+        )?
         .ok_or(BankEstateReleaseProjectionDenial::ReleaseReviewMissing)?;
     if kind != MandatoryReviewKind::EstateRelease {
         return Err(BankEstateReleaseProjectionDenial::ReleaseReviewWrongKind);
     }
     let status = reader
-        .decision_field(&review, MandatoryReviewStatusField::reference())?
+        .decision_field(
+            &review,
+            MandatoryReviewStatusField::at("MandatoryReviewStatusField"),
+        )?
         .ok_or(BankEstateReleaseProjectionDenial::ReleaseReviewMissing)?;
     if status != MandatoryReviewStatus::Completed {
         return Err(BankEstateReleaseProjectionDenial::ReleaseReviewIncomplete);
@@ -228,7 +256,10 @@ fn project_release_review(
         );
     };
     reader
-        .decision_field(reviewer.from(), PrincipalIdentityField::reference())?
+        .decision_field(
+            reviewer.from(),
+            PrincipalIdentityField::at("PrincipalIdentityField"),
+        )?
         .ok_or(BankEstateReleaseProjectionDenial::ReviewPrincipalIdentityMissing)?;
     Ok(())
 }

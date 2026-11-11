@@ -6,6 +6,8 @@ use crate::schema::data::{ProposedSchemaTransition, SchemaReconciliationPolicy};
 pub(crate) struct AdmittedRelationalHomeProgramTarget {
     pub(crate) step: worth_foundational::facade::HomeProgramTransitionStepAssociation,
     pub(crate) meaning: Arc<RelationalRootExecutionContracts>,
+    pub(crate) receiver_epoch: crate::runtime::RelationalRuntimeConfigurationSnapshot,
+    pub(crate) index_definitions: Option<Arc<crate::runtime::PreparedRelationalIndexDefinitions>>,
     _memory: Option<ExecutionMemoryReservation>,
 }
 
@@ -20,6 +22,8 @@ impl RelationalRuntime {
     ) -> Result<crate::mvcc::BranchBoundRelationalTransaction, RelationalHomeProgramContractDenial>
     {
         use RelationalHomeProgramContractDenial as Denial;
+        let receiver_epoch = target.receiver_epoch.clone();
+        let index_definitions = target.index_definitions.clone();
         let target = target.meaning.clone();
         if target.runtime != self.runtime_instance_id()
             || basis.identity().runtime_instance_id() != self.runtime_instance_id()
@@ -27,12 +31,7 @@ impl RelationalRuntime {
             return Err(Denial::ForeignRuntime);
         }
         let epoch = self.configuration_binding().snapshot();
-        if !Arc::ptr_eq(&epoch.config, &target.configuration)
-            || !Arc::ptr_eq(
-                &epoch.schema_contract_runtime,
-                &target.configuration_contracts,
-            )
-        {
+        if !receiver_epoch.same_epoch(&epoch) {
             return Err(Denial::SourceContractChanged);
         }
         let mut intent = crate::mvcc::RelationalTransactionIntent::ordinary();
@@ -63,9 +62,7 @@ impl RelationalRuntime {
             )
             .map_err(Denial::Transaction)?;
         transaction.schema_authority_input = Some(
-            crate::schema::SchemaContinuityAuthorityInput::from_shared_registry(
-                target.schema.registry_arc(),
-                target.schema.descriptor_semantics_version(),
+            target.schema.continuity_input(
                 epoch
                     .config
                     .schema
@@ -76,6 +73,8 @@ impl RelationalRuntime {
         transaction.home_target = Some(Arc::new(AdmittedRelationalHomeProgramTarget {
             step: target_step,
             meaning: target,
+            receiver_epoch,
+            index_definitions,
             _memory: memory,
         }));
         Ok(transaction)

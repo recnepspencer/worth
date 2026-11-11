@@ -1,0 +1,22 @@
+[
+  [
+    "pa-merge-closure-native-lint-driver",
+    0
+  ],
+  [
+    "pa-merge-closure-topology-lint-driver",
+    0
+  ],
+  [
+    "pa-merge-closure-line-caps",
+    0
+  ],
+  [
+    "pa-merge-closure-boundary-driver",
+    1
+  ],
+  [
+    "pa-merge-closure-context-driver",
+    0
+  ]
+]

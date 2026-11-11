@@ -184,7 +184,7 @@ fn parse_package_identity(value: &str) -> Result<WorthQueryPortableDomainPackage
         return Err(Error::InvalidPackageIdentity);
     }
     let mut bytes = [0_u8; 32];
-    for (index, pair) in value.as_bytes().chunks_exact(2).enumerate() {
+    for (index, pair) in value.as_bytes().as_chunks::<2>().0.iter().enumerate() {
         bytes[index] = decode_hex_byte(pair).ok_or(Error::InvalidPackageIdentity)?;
     }
     Ok(WorthQueryPortableDomainPackageIdentity::from_untrusted_bytes(bytes))

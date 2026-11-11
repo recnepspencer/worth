@@ -46,6 +46,7 @@ fn test_delta_display_identity(delta: &crate::memory_workspace::WorthQueryMutati
     if let Some(upstream_view) = delta.collection().strip_prefix("derived:")
         && delta.entity_identity
             == crate::memory_workspace::admit_authored_entity_label(upstream_view)
+                .expect("fixture digest must fit")
     {
         return upstream_view.to_string();
     }
@@ -67,7 +68,8 @@ impl WorthQueryDerivedViewMaintainer for TitleListMaintainer {
         materialization.push_retained_row(retained_row.clone());
         WorthQueryDerivedPatch::incremental(
             view.name(),
-            crate::memory_workspace::admit_external_commit_label("derived-test-commit"),
+            crate::memory_workspace::admit_external_commit_label("derived-test-commit")
+                .expect("fixture digest must fit"),
             delta.entity_identity.clone(),
             if view.produced_aspect_touches().is_empty() {
                 delta.admitted_touched_aspects().to_vec()
@@ -93,7 +95,8 @@ impl WorthQueryDerivedViewMaintainer for SummaryMaintainer {
         materialization.replace_retained_rows([retained_row.clone()]);
         WorthQueryDerivedPatch::incremental(
             view.name(),
-            crate::memory_workspace::admit_external_commit_label("derived-summary-commit"),
+            crate::memory_workspace::admit_external_commit_label("derived-summary-commit")
+                .expect("fixture digest must fit"),
             delta.entity_identity.clone(),
             if view.produced_aspect_touches().is_empty() {
                 delta.admitted_touched_aspects().to_vec()
@@ -119,7 +122,8 @@ impl WorthQueryDerivedViewMaintainer for RefreshCountMaintainer {
         materialization.replace_retained_rows([retained_row.clone()]);
         WorthQueryDerivedPatch::incremental(
             view.name(),
-            crate::memory_workspace::admit_external_commit_label("refresh-count-incremental"),
+            crate::memory_workspace::admit_external_commit_label("refresh-count-incremental")
+                .expect("fixture digest must fit"),
             delta.entity_identity.clone(),
             if view.produced_aspect_touches().is_empty() {
                 delta.admitted_touched_aspects().to_vec()
@@ -145,7 +149,8 @@ impl WorthQueryDerivedViewMaintainer for RefreshCountMaintainer {
         materialization.replace_retained_rows([retained_row.clone()]);
         Some(WorthQueryDerivedPatch::whole_refresh_materialized(
             view.name(),
-            crate::memory_workspace::admit_external_commit_label("refresh-count-rebuild"),
+            crate::memory_workspace::admit_external_commit_label("refresh-count-rebuild")
+                .expect("fixture digest must fit"),
             if view.produced_aspect_touches().is_empty() {
                 view.dependency_aspect_touches().to_vec()
             } else {

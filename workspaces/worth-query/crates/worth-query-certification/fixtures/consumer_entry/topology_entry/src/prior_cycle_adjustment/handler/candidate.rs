@@ -12,7 +12,7 @@ pub(super) fn adjust_prior_cycle<Schema: TopologySchemaBinding>(
             .projected_entity(&member.target)
             .map_err(HandlerExecutionDenial::new)?;
         writer
-            .write_field(&entity, PositionY::reference(), member.replacement_y)
+            .write_field(&entity, PositionY::at("PositionY"), member.replacement_y)
             .map_err(HandlerExecutionDenial::new)?;
         adjusted_roles.push(member.role);
     }

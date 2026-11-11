@@ -16,13 +16,16 @@ fn an_exact_sibling_product_cannot_substitute_at_provider_plan_binding() {
                 phase,
                 &world,
                 retained_program(
-                    &host_custody.phase_for_application_for_test(&world.application),
+                    &host_custody
+                        .phase_for_application_for_test(&world.application)
+                        .test_host_request_for_test(),
                     &world,
                     "product-owner",
                 ),
                 idempotency(193, 194),
             );
             let (
+                _coupled_outputs,
                 _admission,
                 lease,
                 _provider_attempt,
@@ -72,13 +75,16 @@ fn the_exact_selected_product_binds_at_provider_plan_boundary() {
                 phase,
                 &world,
                 retained_program(
-                    &host_custody.phase_for_application_for_test(&world.application),
+                    &host_custody
+                        .phase_for_application_for_test(&world.application)
+                        .test_host_request_for_test(),
                     &world,
                     "product-owner",
                 ),
                 idempotency(195, 196),
             );
             let (
+                _coupled_outputs,
                 _admission,
                 lease,
                 _provider_attempt,
@@ -130,7 +136,7 @@ fn foreign_installed_phase_refuses_provider_readmission_before_read_or_charge() 
                 start(
                     &phase,
                     &a,
-                    retained_program(&phase, &a, "readmission-a"),
+                    retained_program(&phase.test_host_request_for_test(), &a, "readmission-a"),
                     idempotency(181, 181),
                 )
             })
@@ -141,7 +147,7 @@ fn foreign_installed_phase_refuses_provider_readmission_before_read_or_charge() 
                 start(
                     &phase,
                     &b,
-                    retained_program(&phase, &b, "readmission-b"),
+                    retained_program(&phase.test_host_request_for_test(), &b, "readmission-b"),
                     idempotency(182, 182),
                 )
             })
@@ -190,6 +196,7 @@ fn foreign_installed_phase_refuses_provider_readmission_before_read_or_charge() 
             })
             .unwrap();
         let (
+            _coupled_outputs,
             _a_admission,
             a_lease,
             _a_attempt,
@@ -205,6 +212,7 @@ fn foreign_installed_phase_refuses_provider_readmission_before_read_or_charge() 
         ) = arun.into_parts_for_test();
         finish_uncommitted(a_mutation_run, a_running, a_lease);
         let (
+            _coupled_outputs,
             _b_admission,
             b_lease,
             _b_attempt,

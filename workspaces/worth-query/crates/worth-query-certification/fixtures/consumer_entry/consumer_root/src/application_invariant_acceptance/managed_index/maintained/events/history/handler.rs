@@ -29,7 +29,8 @@ fn directory(
     reader: &mut Reader<'_, '_, '_>,
     name: &str,
 ) -> Result<Target<Directory>, HandlerExecutionDenial> {
-    let entity = reader.resolve_entity(DirectoryIdentity::reference(), name.to_owned())?;
+    let entity =
+        reader.resolve_entity(DirectoryIdentity::at("DirectoryIdentity"), name.to_owned())?;
     reader
         .reader()
         .require_decision_entity(&entity, Directory::reference())
@@ -54,7 +55,8 @@ fn decide(
     };
     match input {
         Edit::Previous { previous, .. } => {
-            let entity = reader.resolve_entity(DirectoryIdentity::reference(), name.clone())?;
+            let entity =
+                reader.resolve_entity(DirectoryIdentity::at("DirectoryIdentity"), name.clone())?;
             for edge in reader
                 .relations_from(Previous::reference(), &entity)
                 .map_err(HandlerExecutionDenial::new)?
@@ -67,7 +69,8 @@ fn decide(
                 .transpose()?;
         }
         Edit::Retirement { item, .. } | Edit::Introduction { item, .. } => {
-            let event = reader.resolve_entity(DirectoryIdentity::reference(), name.clone())?;
+            let event =
+                reader.resolve_entity(DirectoryIdentity::at("DirectoryIdentity"), name.clone())?;
             match input {
                 Edit::Retirement { .. } => {
                     reader
@@ -81,7 +84,7 @@ fn decide(
                 }
                 Edit::Previous { .. } => unreachable!(),
             }
-            let entity = reader.resolve_entity(ItemIdentity::reference(), item.clone())?;
+            let entity = reader.resolve_entity(ItemIdentity::at("ItemIdentity"), item.clone())?;
             reader
                 .reader()
                 .require_decision_entity(&entity, Item::reference())

@@ -20,8 +20,9 @@ pub(in crate::domain_computation) use application_attempt_affinity::WorthQueryAp
 pub(in crate::domain_computation) use application_attempt_affinity::WorthQueryApplicationAttemptBasis;
 pub(crate) use external_dispatch::WorthQueryPerformedExternalRedispatchSeal;
 pub use external_dispatch::{
-    WorthQueryExternalDispatchAttemptDenial, WorthQueryExternalDispatchPreparationDenial,
-    WorthQueryExternalRedispatchDenial, WorthQueryExternalTransportInstallationDenial,
+    WorthQueryDurableDispatchRecordDenial, WorthQueryExternalDispatchAttemptDenial,
+    WorthQueryExternalDispatchPreparationDenial, WorthQueryExternalRedispatchDenial,
+    WorthQueryExternalTransportInstallationDenial,
 };
 pub(in crate::domain_computation) use outcome::{
     progression_denied, WorthQueryProviderProgressionOutcome,
@@ -34,3 +35,11 @@ pub(in crate::domain_computation) use phase::{
 pub(in crate::domain_computation) use resource_request::application_resource_request;
 
 pub(in crate::domain_computation::primary_graph) use phase::ReadmittedCommitProgram;
+#[cfg(test)]
+#[path = "provider_execution_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;
+
+pub(in crate::domain_computation::primary_graph) use phase::{
+    inspect_coupled_application, prepare_coupled_application, register_coupled_application,
+    ApprovedCoupledWriter, CommitPreparedCoupledWriter, InspectedCoupledWriter,
+};

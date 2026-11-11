@@ -7,8 +7,7 @@ use std::sync::{
 use worth_query_consumer_values::{PlanarAdjustmentResult, PlanarMutationDenial};
 use worth_query_decl::facade::{
     application_operation::*, application_program::*, application_query::*, application_schema::*,
-    worth_query_aspect, worth_query_entity, worth_query_field, worth_query_operation,
-    worth_query_operation_creates, worth_query_operation_reads, worth_query_operation_writes,
+    worth_query_operation, worth_query_operation_creates, worth_query_operation_reads,
     worth_query_portable_type, worth_query_structured_value_binding, worth_query_value_binding,
 };
 use worth_query_host::facade::{
@@ -25,7 +24,8 @@ mod value;
 use value::{Contributor, Measure, Snapshot, SnapshotBinding};
 mod binding;
 mod collection;
-mod members;
+pub(crate) mod members;
+use members::{Body, BodyKey, Length, PlanarMutationScope, PositionX, PositionY};
 mod producer;
 mod program;
 mod publication;

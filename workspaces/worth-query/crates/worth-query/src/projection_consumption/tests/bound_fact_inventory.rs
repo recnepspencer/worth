@@ -18,7 +18,8 @@ fn bound_fact_inventory_preserves_requested_kind_and_field_shape() {
             .display_field_path(field_path())
             .derived_field_path(field_path()),
     )
-    .bind_contract();
+    .bind_contract()
+    .expect("fixture digest must fit");
 
     let kinds = contract
         .fact_families()

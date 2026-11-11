@@ -29,7 +29,7 @@ use super::{
 
 #[derive(Debug)]
 pub enum BankEstateProgressionDenial {
-    ProgramAction(WorthQueryApplicationCommitDenial),
+    ProgramAction(Box<WorthQueryApplicationCommitDenial>),
     ProgramMismatch,
     PrincipalBindingInstallation(WorthQueryPrincipalBindingInstallationDenial),
     IdentityEncoding(
@@ -40,7 +40,7 @@ pub enum BankEstateProgressionDenial {
     ),
     PrincipalResolution(WorthQueryPrincipalResolutionDenial),
     ApplicationEntry(
-        worth_query_host::facade::application_entry::WorthQueryApplicationRequestMutationDenial,
+        Box<worth_query_host::facade::application_entry::WorthQueryApplicationRequestMutationDenial>,
     ),
     ProductSelection(worth_query_host::facade::product::WorthQueryProductBranchAdmissionDenial),
     CapabilityInstallation(crate::BankApplicationCapabilityInstallationDenialKind),
@@ -58,7 +58,7 @@ pub enum BankEstateProgressionDenial {
     CapabilityRevocationProjection(BankCapabilityRevocationProjectionDenial),
     Idempotency(BankEstateIdempotencyResolutionDenial),
     LifecycleProjection(BankEstateLifecycleProjectionDenial),
-    Attempt(crate::BankCommitPreparationDenial),
+    Attempt(Box<crate::BankCommitPreparationDenial>),
     Recovery(BankRecoveryDenial),
 }
 
@@ -132,8 +132,10 @@ impl BankRecoveryDenial {
         use BankRecoveryDenialKind as Bank;
         use WorthQueryRecoveryHandleDenialKind as Query;
         let kind = match denial.kind() {
+            Query::AdmissionAuthorization(cause) => Bank::AdmissionAuthorization(
+                crate::BankAuthorizationDenial::from_kind(cause, 0).kind(),
+            ),
             Query::CompletionExecutionRequest(cause) => Bank::CompletionExecutionRequest(cause),
-            Query::AdmissionAuthorization(cause) => Bank::AdmissionAuthorization(cause.into()),
             Query::RecoveryNotAdmitted => Bank::RecoveryNotAdmitted,
             Query::StaleIncarnation => Bank::StaleIncarnation,
             Query::RecoveryAlreadyMinted => Bank::RecoveryAlreadyMinted,
@@ -283,7 +285,7 @@ impl BankEstateProgressionDenial {
     }
 
     pub(crate) fn from_attempt(denial: WorthQueryApplicationAttemptDenial) -> Self {
-        Self::Attempt(denial.into())
+        Self::Attempt(Box::new(denial.into()))
     }
 
     pub(crate) fn from_recovery(denial: WorthQueryRecoveryHandleDenial) -> Self {
@@ -293,7 +295,7 @@ impl BankEstateProgressionDenial {
 
 impl From<WorthQueryApplicationAttemptDenial> for BankEstateProgressionDenial {
     fn from(denial: WorthQueryApplicationAttemptDenial) -> Self {
-        Self::Attempt(denial.into())
+        Self::Attempt(Box::new(denial.into()))
     }
 }
 

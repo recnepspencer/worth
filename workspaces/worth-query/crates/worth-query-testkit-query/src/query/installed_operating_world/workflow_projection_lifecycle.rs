@@ -51,7 +51,7 @@ pub fn settle_workflow(
         )
         .unwrap()
         .start_workflow(workspace)
-        .unwrap();
+        .unwrap().unwrap();
     let trace = run
         .advance(
             "start",

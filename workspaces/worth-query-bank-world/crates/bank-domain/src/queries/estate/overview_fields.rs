@@ -1,23 +1,11 @@
 use worth_query_decl::facade::application_query::ApplicationQueryResultFieldRef;
-use worth_query_decl::facade::application_schema::{
-    EqualityPredicate, NoApplicationUnit, ReadOnly, ReadWrite,
-};
 
-use crate::estate::{
-    BranchId, DeathNoticeId, DeathNoticeStatus, EstateCaseId, EstateCaseStatus,
-    EstateWorkflowStage, LegalAuthorityId, LegalAuthorityKind, MandatoryReviewId,
-    MandatoryReviewKind, MandatoryReviewStatus,
-};
-use crate::model::{AccountId, AccountName, BankPrincipalId, EmployeeAssignmentId, EmployeeRole};
 use crate::schema::{
-    Account, AccountDisplayName, AccountIdentity, AccountProfile, AccountState, AccountStatus,
-    AssignmentRole, BankSchema, Branch, BranchIdentity, BranchIdentityField, DeathNotice,
-    DeathNoticeIdentityField, DeathNoticeRecord, DeathNoticeStatusField, EmployeeAssignment,
-    EmployeeAssignmentIdentityField, EmployeeScope, EstateCase, EstateCaseIdentityField,
-    EstateCaseRecord, EstateCaseStatusField, EstateWorkflowStageField, Identity, LegalAuthority,
+    AccountDisplayName, AccountIdentity, AssignmentRole, BankSchema, BranchIdentityField,
+    DeathNoticeIdentityField, DeathNoticeStatusField, EmployeeAssignmentIdentityField,
+    EstateCaseIdentityField, EstateCaseStatusField, EstateWorkflowStageField,
     LegalAuthorityIdentityField, LegalAuthorityKindField, LegalAuthorityRecognizedField,
-    LegalAuthorityRecord, MandatoryReview, MandatoryReviewIdentityField, MandatoryReviewKindField,
-    MandatoryReviewRecord, MandatoryReviewStatusField, Principal, PrincipalIdentity,
+    MandatoryReviewIdentityField, MandatoryReviewKindField, MandatoryReviewStatusField,
     PrincipalIdentityField, Status,
 };
 
@@ -81,19 +69,9 @@ macro_rules! selector {
         $write:ty,
         $alias:literal
     ) => {
-        pub(super) fn $name() -> ApplicationQueryResultFieldRef<
-            EstateCaseOverviewQuery,
-            $slot,
-            BankSchema,
-            $entity,
-            $aspect,
-            $field,
-            $value,
-            $write,
-            EqualityPredicate,
-            NoApplicationUnit,
-        > {
-            ApplicationQueryResultFieldRef::new($alias, <$field>::reference())
+        pub(super) fn $name(
+        ) -> ApplicationQueryResultFieldRef<EstateCaseOverviewQuery, $slot, BankSchema, $field> {
+            ApplicationQueryResultFieldRef::new($alias, <$field>::at(stringify!($field)))
         }
     };
 }

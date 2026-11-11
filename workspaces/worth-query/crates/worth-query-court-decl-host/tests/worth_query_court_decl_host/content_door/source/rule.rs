@@ -41,8 +41,10 @@ pub fn resolve(
         calls,
     })
 }
-fn error(cause: impl std::fmt::Debug) -> WorthQueryApplicationInvariantExecutionError {
-    WorthQueryApplicationInvariantExecutionError::new(format!("{cause:?}"))
+fn error(
+    cause: impl Into<WorthQueryApplicationInvariantError>,
+) -> WorthQueryApplicationInvariantError {
+    cause.into()
 }
 impl WorthQueryApplicationInvariantRule<Schema> for Rule {
     type Scope = WorthQueryPreparedInvariantManagedIndex<Schema, Index>;
@@ -54,33 +56,29 @@ impl WorthQueryApplicationInvariantRule<Schema> for Rule {
     fn prepare_scope(
         &self,
         planner: &mut WorthQueryApplicationInvariantScopePlanner<'_, '_, Schema>,
-    ) -> Result<Self::Scope, WorthQueryApplicationInvariantPreparationError> {
-        planner.retain_managed_index(&self.index).map_err(|cause| {
-            WorthQueryApplicationInvariantPreparationError::new(format!("{cause:?}"))
-        })
+    ) -> Result<Self::Scope, WorthQueryApplicationInvariantError> {
+        planner
+            .retain_managed_index(&self.index)
+            .map_err(Into::into)
     }
     fn prepare_scope_checked(
         &self,
         planner: &mut WorthQueryApplicationInvariantScopePlanner<'_, '_, Schema>,
         budget: &dyn CustomInvariantLeaseBudget,
-    ) -> Option<Result<Self::Scope, WorthQueryApplicationInvariantPreparationError>> {
+    ) -> Option<Result<Self::Scope, WorthQueryApplicationInvariantError>> {
         Some(if budget.checkpoint(1) {
             self.prepare_scope(planner)
         } else {
-            Err(WorthQueryApplicationInvariantPreparationError::new(
-                "content Source preparation stopped",
-            ))
+            Err(WorthQueryApplicationInvariantError::Stopped)
         })
     }
     fn evaluate(
         &self,
         _: &WorthQueryApplicationInvariantContext<'_, '_, Schema>,
         _: &Self::Scope,
-    ) -> Result<
-        WorthQueryApplicationInvariantVerdict<()>,
-        WorthQueryApplicationInvariantExecutionError,
-    > {
-        Err(error("checked content Source budget required"))
+    ) -> Result<WorthQueryApplicationInvariantVerdict<()>, WorthQueryApplicationInvariantError>
+    {
+        Err(WorthQueryApplicationInvariantError::CheckedHookRequired)
     }
     fn evaluate_checked(
         &self,
@@ -88,14 +86,11 @@ impl WorthQueryApplicationInvariantRule<Schema> for Rule {
         scope: &Self::Scope,
         budget: &dyn CustomInvariantLeaseBudget,
     ) -> Option<
-        Result<
-            WorthQueryApplicationInvariantVerdict<()>,
-            WorthQueryApplicationInvariantExecutionError,
-        >,
+        Result<WorthQueryApplicationInvariantVerdict<()>, WorthQueryApplicationInvariantError>,
     > {
         Some((|| {
             if !budget.checkpoint(1) {
-                return Err(error("content Source stopped"));
+                return Err(WorthQueryApplicationInvariantError::Stopped);
             }
             let pair = context.refined_managed_index(scope).map_err(error)?;
             let after = pair.proposed().query(&10u64).map_err(error)?;
@@ -114,7 +109,7 @@ impl WorthQueryApplicationInvariantRule<Schema> for Rule {
                     |sum, key| sum + size_of::<String>() + key.capacity(),
                 );
             if !budget.claim_result(bytes as u64) {
-                return Err(error("content Source observation storage stopped"));
+                return Err(WorthQueryApplicationInvariantError::Stopped);
             }
             self.calls.records.lock().unwrap().push((before, after));
             Ok(WorthQueryApplicationInvariantVerdict::Pass)

@@ -21,6 +21,9 @@ pub(super) fn assemble_and_check(
     let denial = foreign
         .assemble_conditional_causal_envelope(request(observation))
         .unwrap_err();
+    let crate::facade::BridgeCausalEnvelopeConstructionStop::Denied(denial) = denial else {
+        panic!("expected domain denial, got {denial:?}")
+    };
     assert_eq!(denial.kind(), Denial::ForeignNativeObservation);
     assert_eq!(denial.counters().evidence_reference_count(), 0);
     assert_eq!(denial.counters().bridge_retained_lookup_count(), 0);
@@ -113,6 +116,9 @@ fn reject_projection_only(envelope: &BridgeCausalExplanationEnvelope) {
         .diagnostics()
         .assemble_causal_explanation_envelope(descriptor)
         .unwrap_err();
+    let crate::facade::BridgeCausalEnvelopeConstructionStop::Denied(denial) = denial else {
+        panic!("expected domain denial, got {denial:?}")
+    };
     assert_eq!(denial.kind(), Denial::NativeObservationRequired);
     assert_eq!(denial.counters().bridge_retained_lookup_count(), 0);
     assert_eq!(
@@ -130,5 +136,8 @@ fn reject_mismatched_query_association() {
         vec![query_reference("different-query-observation")],
     )
     .unwrap_err();
+    let crate::facade::BridgeCausalEnvelopeConstructionStop::Denied(denial) = denial else {
+        panic!("expected domain denial, got {denial:?}")
+    };
     assert_eq!(denial.kind(), Denial::QueryObservationAssociationMismatch);
 }

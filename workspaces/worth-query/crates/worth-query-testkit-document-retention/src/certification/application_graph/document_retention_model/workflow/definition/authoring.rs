@@ -21,10 +21,6 @@ pub fn publish_definition<
     WorkflowDefinitionPublicationOutcome,
     WorthQueryWorkflowDefinitionPublicationPreparationDenial,
 > {
-    let contract = application
-        .workflow_spec()
-        .bind_definition(definition)
-        .expect("definition matches the installed Spec");
     let runtime = application.runtime();
     let scope = request_scope();
     let principal = authenticate_operator(runtime.installed_schema(), &scope);
@@ -33,6 +29,17 @@ pub fn publish_definition<
         WorkflowDefinitionExpectedPredecessor::Published(predecessor) => predecessor.branch(),
         WorkflowDefinitionExpectedPredecessor::Absent => runtime.current_world(),
     };
+    let installed = application
+        .with_host_advancement(|phase| {
+            application
+                .vocabulary()
+                .workflow_spec_on(&phase, branch)
+                .expect("the definition's selected branch remains admitted")
+        })
+        .expect("the installed host opens the authoring selection");
+    let contract = installed
+        .bind_definition(definition)
+        .expect("definition matches the selected installed Spec");
     runtime
         .request(&principal, &scope)
         .on_branch(branch)

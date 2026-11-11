@@ -107,7 +107,7 @@ impl<'a> WorthQueryWorkspaceDerivedMaterializationIntentAdmissionReview<'a> {
             })?;
         let execution_binding = self
             .workspace
-            .into_runtime_derived_materialization_binding(handoff.clone());
+            .into_runtime_derived_materialization_binding(handoff.clone())?;
         Ok(WorthQueryAdmittedWorkspaceDerivedMaterializationIntent {
             workspace: self.workspace,
             review: self.review,
@@ -244,7 +244,7 @@ impl<'a> WorthQueryWorkspaceDerivedInspectionIntentAdmissionReview<'a> {
             })?;
         let execution_binding = self
             .workspace
-            .into_runtime_derived_inspection_binding(handoff.clone());
+            .into_runtime_derived_inspection_binding(handoff.clone())?;
         Ok(WorthQueryAdmittedWorkspaceDerivedInspectionIntent {
             workspace: self.workspace,
             review: self.review,

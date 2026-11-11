@@ -3,6 +3,7 @@ use super::{
     SubscriptionActivationReceipt, WriteAuthorityExecutionReceipt,
 };
 use crate::declarative_live::DeclarativeLiveQueryRequest;
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::memory_workspace::{
     WorthQueryEntity, WorthQueryEntityIdentity, WorthQueryLivePatch, WorthQueryLiveViewHandle,
     WorthQueryMutationKind, WorthQueryMutationReceipt, WorthQuerySnapshotIdentity,
@@ -321,8 +322,10 @@ pub trait WorthQueryRuntimeSchemaAdapter {
         &self,
         name: &str,
         request: &DeclarativeLiveQueryRequest,
-    ) -> LiveViewDeclarationAdmissionReceipt {
-        LiveViewDeclarationAdmissionReceipt::from_request(name, request)
+    ) -> Result<LiveViewDeclarationAdmissionReceipt, IdentityDerivationDenial> {
+        Ok(LiveViewDeclarationAdmissionReceipt::from_request(
+            name, request,
+        )?)
     }
 
     fn build_live_view_declaration_boundary_receipt(
@@ -330,7 +333,7 @@ pub trait WorthQueryRuntimeSchemaAdapter {
         name: &str,
         request: &DeclarativeLiveQueryRequest,
         admission_receipt: LiveViewDeclarationAdmissionReceipt,
-    ) -> LiveViewDeclarationAdmissionBoundaryReceipt {
+    ) -> Result<LiveViewDeclarationAdmissionBoundaryReceipt, IdentityDerivationDenial> {
         LiveViewDeclarationAdmissionBoundaryReceipt::from_request(name, request, admission_receipt)
     }
 

@@ -1,0 +1,12 @@
+COMMAND: ["python", "target/lane-evidence/principal_after_pdb.py", "target/lane-evidence/principal-final-focused/topology/build/binaries.json"]
+HEAD: dbe3280daa804f95a9ec6375f85ae78d1cbcc6dd
+CLEAN: false
+START: 2026-11-08T19:33:06.113686+00:00
+ENV: removed stale external linker override; RUST_MIN_STACK unset in parent
+  File "C:\programming\worth worktees\worktrees\m3-host-home\target\lane-evidence\principal_after_pdb.py", line 1
+    ï»¿"""Read only the built image/PDB; no test body or product mutation."""
+     ^
+SyntaxError: invalid character '»' (U+00BB)
+
+END: 2026-11-08T19:33:08.303342+00:00
+EXIT: 1

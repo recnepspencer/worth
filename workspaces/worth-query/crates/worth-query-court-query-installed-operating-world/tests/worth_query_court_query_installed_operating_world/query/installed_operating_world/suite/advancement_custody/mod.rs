@@ -14,7 +14,9 @@ fn workflow_start_refuses_before_any_stage_or_reader() {
             .admit_workflow_resources(execution_resource_request(), &admitted_workspace)
             .unwrap();
         let before = reads();
-        let control = admitted.start_workflow(&mut admitted_workspace);
+        let control = admitted
+            .start_workflow(&mut admitted_workspace)
+            .expect("fixture digest must fit");
         assert!(
             matches!(control, TransitionOutcome::Success(_)),
             "admitted workflow starts"
@@ -33,7 +35,10 @@ fn workflow_start_refuses_before_any_stage_or_reader() {
             let _restore = refuse(zero_memory, placement);
             let before = reads();
             reports();
-            let TransitionOutcome::Denied(denial) = admitted.start_workflow(&mut workspace) else {
+            let TransitionOutcome::Denied(denial) = admitted
+                .start_workflow(&mut workspace)
+                .expect("fixture digest must fit")
+            else {
                 panic!("the root refuses before workflow preparation");
             };
             assert_eq!(

@@ -9,7 +9,9 @@ use worth_foundational::facade::WorldDurableJournal;
 use worth_proof::AuthorityMarker;
 mod capture_reservation;
 mod committed;
+mod home_program;
 pub(crate) use committed::WorldCommittedPublication;
+pub(crate) use home_program::HomeProgramBindingReservation;
 
 /// The exact subject acknowledged by the attached medium. Its constructor is
 /// private to this binding's actual Committed branch.
@@ -48,6 +50,7 @@ struct PublicationGates {
     occurrences: JournalFlight,
     custody: JournalFlight,
     capture_reserved: bool,
+    home_binding_reserved: bool,
 }
 impl PublicationGates {
     fn journal(&mut self, journal: WorldDurableJournal) -> &mut JournalFlight {
@@ -63,6 +66,7 @@ impl PublicationGates {
 #[derive(Debug)]
 pub(crate) struct WorldDurableMediumBinding {
     medium: Arc<dyn RuntimeWorldDurableMedium>,
+    current_home_binding: std::sync::OnceLock<WorldDurableHomeBinding>,
     gates: Mutex<PublicationGates>,
     pub(in crate::durability) checkpoint_acknowledgement:
         Mutex<super::checkpoint::WorldCheckpointAcknowledgement>,
@@ -83,6 +87,7 @@ impl WorldDurableMediumBinding {
             .map_err(WorldDurableMediumDenial::Request)?;
         Ok(Arc::new(Self {
             medium,
+            current_home_binding: std::sync::OnceLock::new(),
             gates: Mutex::new(PublicationGates::default()),
             checkpoint_acknowledgement: Mutex::new(Default::default()),
             checkpoint_origin: Mutex::new(Default::default()),
@@ -96,7 +101,15 @@ impl WorldDurableMediumBinding {
         self.medium.retire_for_home(request)
     }
     pub(crate) fn binding(&self) -> &WorldDurableHomeBinding {
-        self.medium.binding()
+        self.current_home_binding
+            .get()
+            .unwrap_or_else(|| self.medium.binding())
+    }
+
+    pub(crate) fn install_home_binding(&self, binding: WorldDurableHomeBinding) {
+        self.current_home_binding
+            .set(binding)
+            .expect("the before-service Home receiver is promoted once");
     }
     pub(crate) fn capture_checkpoint_source(
         self: &Arc<Self>,
@@ -134,7 +147,7 @@ impl WorldDurableMediumBinding {
     pub(crate) fn try_admit_close(&self) -> Result<(), crate::lifecycle::RuntimeWorldCloseDenial> {
         use crate::lifecycle::RuntimeWorldCloseDenial as Denial;
         let gates = self.gates.try_lock().map_err(|_| Denial::Busy)?;
-        if gates.capture_reserved {
+        if gates.capture_reserved || gates.home_binding_reserved {
             return Err(Denial::Busy);
         }
         if gates.branches.in_caller || gates.custody.in_caller || gates.occurrences.in_caller {
@@ -155,7 +168,7 @@ impl WorldDurableMediumBinding {
     ) -> Result<WorldCommittedPublication, WorldDurablePublicationStop> {
         {
             let mut gates = self.gates.lock().unwrap_or_else(|e| e.into_inner());
-            if gates.capture_reserved {
+            if gates.capture_reserved || gates.home_binding_reserved {
                 return Err(WorldDurablePublicationStop::Busy);
             }
             let flight = gates.journal(subject.journal());

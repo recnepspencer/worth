@@ -4,56 +4,56 @@ impl WorthQueryAdmittedOperation {
     pub(in crate::domain_computation) fn graph_work_session_identity(
         &self,
     ) -> crate::domain_computation::provider_session::WorthQueryGraphWorkSessionIdentity {
-        self.graph_work.identity()
+        self.data.graph_work.identity()
     }
 
     pub(in crate::domain_computation) fn graph_work_managed_run_identity(
         &self,
     ) -> crate::domain_computation::provider_session::WorthQueryGraphWorkManagedRunIdentity {
-        self.graph_work.managed_run_identity()
+        self.data.graph_work.managed_run_identity()
     }
 
     pub(in crate::domain_computation) fn graph_work_branch(
         &self,
     ) -> &worth_relational::facade::history::BranchId {
-        self.graph_work.branch().relational()
+        self.data.graph_work.branch().relational()
     }
 
     pub(in crate::domain_computation) fn graph_work_decision_fact_count(&self) -> usize {
-        self.graph_work.retained_decision_facts()
+        self.data.graph_work.retained_decision_facts()
     }
 
     pub(in crate::domain_computation) fn graph_work_runtime_ordinal(&self) -> u64 {
-        self.graph_work.runtime_ordinal()
+        self.data.graph_work.runtime_ordinal()
     }
 
     pub fn graph_work_principal_entity_id(&self) -> worth_relational::facade::identity::EntityId {
-        self.graph_work.principal()
+        self.data.graph_work.principal()
     }
 
     pub(in crate::domain_computation) fn graph_work_scope_entity_id(
         &self,
     ) -> Option<worth_relational::facade::identity::EntityId> {
-        self.graph_work.entity_access_context()
+        self.data.graph_work.entity_access_context()
     }
 
     pub(in crate::domain_computation) fn graph_work_capability_identity(&self) -> Option<[u8; 32]> {
-        self.graph_work.capability_access_context()
+        self.data.graph_work.capability_access_context()
     }
 
     pub(in crate::domain_computation) fn graph_work_provider(&self) -> &str {
-        self.graph_work.provider()
+        self.data.graph_work.provider()
     }
 
     pub(in crate::domain_computation) fn graph_work_mut(
         &mut self,
     ) -> &mut crate::domain_computation::provider_session::WorthQueryManagedGraphWorkSession {
-        &mut self.graph_work
+        &mut self.data.graph_work
     }
 
     pub(in crate::domain_computation) const fn graph_work(
         &self,
     ) -> &crate::domain_computation::provider_session::WorthQueryManagedGraphWorkSession {
-        &self.graph_work
+        &self.data.graph_work
     }
 }

@@ -64,7 +64,7 @@ impl WorthQueryBackendAdmissibleMutation {
             crate::runtime::native_aspect_contracts::WorthQueryMutationContractDenial::portable_export_denied,
         )?;
         Ok(Self {
-            shape: WorthQueryBackendAdmissibleMutationShape::from_admitted_command(command),
+            shape: WorthQueryBackendAdmissibleMutationShape::from_admitted_command(command)?,
             authoritative_patch,
             portable_patch,
         })

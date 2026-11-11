@@ -1,7 +1,7 @@
 use super::checkpoint_wire::CheckpointWire;
 use super::manifest_capture::corrupt;
 use super::member_source::InlineCheckpointSource;
-use super::{DecodedNativeCheckpoint, DurabilityError, RecoveryFailureClass};
+use super::DecodedNativeCheckpoint;
 use crate::durability::data::RelationalRecoveryStop;
 use crate::durability::medium::RelationalDurableColdSource;
 use std::sync::Arc;
@@ -48,15 +48,7 @@ fn decode(
     execution
         .check_live()
         .map_err(|stop| RelationalRecoveryStop::Request(stop.into()))?;
-    let payload = bytes.strip_prefix(super::CHECKPOINT_MAGIC).ok_or_else(|| {
-        DurabilityError::new(
-            RecoveryFailureClass::UnsupportedLegacySemantics,
-            format!(
-                "unsupported native checkpoint frame; {} required",
-                String::from_utf8_lossy(super::CHECKPOINT_MAGIC).trim_end(),
-            ),
-        )
-    })?;
+    let payload = super::checkpoint_payload(bytes)?;
     let memory =
         crate::durability::checkpoint_history::inventory::prepare_decode(payload, execution)?;
     let _member_memory = super::member_sequence::reserve(payload, execution)?;
@@ -70,7 +62,10 @@ fn decode(
     }
     crate::durability::checkpoint_history::inventory::validate(&wire.manifest, execution)?;
     let manifest = wire.manifest.seal_ordinary();
-    let facts = super::manifest_validation::validate(&manifest)?;
+    let facts =
+        crate::storage::substrate::maintenance::ReconstructionLane::enter_reconstruction(|lane| {
+            super::manifest_validation::validate(lane, &manifest)
+        })?;
     let inline = !wire.members.is_empty();
     let source: Arc<dyn RelationalDurableColdSource> = if !inline {
         external.ok_or_else(|| corrupt("external checkpoint requires its cold source"))?

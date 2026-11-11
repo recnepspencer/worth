@@ -39,7 +39,7 @@ pub fn retirement_image(
         .with_host_advancement(|phase| {
             selected.resolve_entity(
                 &phase,
-                AccountStatus::reference(),
+                AccountStatus::at("AccountStatus"),
                 "open".to_owned(),
                 &live_scope(),
                 WorthQueryPrincipalResolutionMode::Ordinary,

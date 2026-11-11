@@ -19,13 +19,21 @@ fn checkpoint_resume_replays_queued_delivery_and_preserves_one_shot_meaning() {
 
     let mut workspace = task_workspace(request_execution, "managed-live-resume-replay");
     let handle = open_task_resource(request_execution, &mut workspace, "tasks.resume-replay");
-    let checkpoint = checkpointed(handle.checkpoint(&mut workspace));
+    let checkpoint = checkpointed(
+        handle
+            .checkpoint(&mut workspace)
+            .expect("fixture digest must fit"),
+    );
 
     workspace
         .write(request_execution, task_insert("Arrived while suspended"))
         .expect("write should remain Query-routed while the continuation owns the resource");
 
-    let resumed = resumed(checkpoint.resume(&mut workspace));
+    let resumed = resumed(
+        checkpoint
+            .resume(&mut workspace)
+            .expect("fixture digest must fit"),
+    );
     assert_eq!(resumed.receipt().pending_delivery_batch_count(), 1);
     assert_eq!(resumed.receipt().resumed_delivery_sequence(), Some(1));
     let handle = resumed.into_handle();
@@ -64,7 +72,11 @@ fn checkpoint_and_resume_receipts_preserve_delivery_already_waiting_at_checkpoin
         .write(request_execution, task_insert("Queued before checkpoint"))
         .expect("write should queue a delivery before checkpoint");
 
-    let continuation = checkpointed(handle.checkpoint(&mut workspace));
+    let continuation = checkpointed(
+        handle
+            .checkpoint(&mut workspace)
+            .expect("fixture digest must fit"),
+    );
     assert_eq!(continuation.checkpoint().pending_delivery_batch_count(), 1);
     assert_eq!(continuation.checkpoint().last_delivery_sequence(), Some(1));
     assert_eq!(
@@ -72,7 +84,11 @@ fn checkpoint_and_resume_receipts_preserve_delivery_already_waiting_at_checkpoin
         WorthQueryManagedLiveContinuationDurability::RuntimeBound
     );
 
-    let resumed = resumed(continuation.resume(&mut workspace));
+    let resumed = resumed(
+        continuation
+            .resume(&mut workspace)
+            .expect("fixture digest must fit"),
+    );
     assert_eq!(resumed.receipt().pending_delivery_batch_count(), 1);
     assert_eq!(resumed.receipt().resumed_delivery_sequence(), Some(1));
     let handle = resumed.into_handle();
@@ -96,10 +112,15 @@ fn foreign_workspace_resume_stops_without_consuming_recovery_authority() {
     let mut foreign = task_workspace(request_execution, "managed-live-resume-foreign");
     let continuation = checkpointed(
         open_task_resource(request_execution, &mut owner, "tasks.resume-owner")
-            .checkpoint(&mut owner),
+            .checkpoint(&mut owner)
+            .expect("fixture digest must fit"),
     );
 
-    let stop = stopped(continuation.resume(&mut foreign));
+    let stop = stopped(
+        continuation
+            .resume(&mut foreign)
+            .expect("fixture digest must fit"),
+    );
     assert_eq!(
         stop.kind(),
         WorthQueryManagedLiveResumeStopKind::ForeignWorkspace
@@ -108,7 +129,11 @@ fn foreign_workspace_resume_stops_without_consuming_recovery_authority() {
         stop.next_action(),
         WorthQueryManagedLiveResumeNextAction::UseOwningWorkspace
     );
-    let resumed = resumed(stop.into_continuation().resume(&mut owner));
+    let resumed = resumed(
+        stop.into_continuation()
+            .resume(&mut owner)
+            .expect("fixture digest must fit"),
+    );
     assert!(closed(resumed.into_handle().close(&mut owner)).lane_terminal());
 }
 
@@ -124,10 +149,15 @@ fn policy_drift_requires_authority_rebind_before_resume() {
             &mut workspace,
             "tasks.resume-policy-drift",
         )
-        .checkpoint(&mut workspace),
+        .checkpoint(&mut workspace)
+        .expect("fixture digest must fit"),
     );
 
-    let stop = stopped(continuation.resume(&mut workspace));
+    let stop = stopped(
+        continuation
+            .resume(&mut workspace)
+            .expect("fixture digest must fit"),
+    );
     assert_eq!(
         stop.kind(),
         WorthQueryManagedLiveResumeStopKind::AuthorityRebindRequired
@@ -154,11 +184,13 @@ fn stale_basis_cannot_cross_a_managed_resume_boundary() {
             &mut workspace,
             "tasks.resume-stale-basis",
         )
-        .checkpoint(&mut workspace),
+        .checkpoint(&mut workspace)
+        .expect("fixture digest must fit"),
     );
     let name = continuation.checkpoint().resource_name().to_string();
     let (_, generation) = live_subscription_async_identity(&workspace.runtime, &name);
-    let drifted_basis = runtime_async_checkpoint_label_identity("basis:drifted-after-checkpoint");
+    let drifted_basis = runtime_async_checkpoint_label_identity("basis:drifted-after-checkpoint")
+        .expect("fixture digest must fit");
     workspace
         .runtime
         .project_async_result_state(
@@ -168,13 +200,18 @@ fn stale_basis_cannot_cross_a_managed_resume_boundary() {
                     BridgeAsyncCompletionDenialClass::SignalLifecycleDenied,
                 ),
                 "async:stale-resume",
-            ),
+            )
+            .expect("fixture digest must fit"),
             &drifted_basis,
             &generation,
         )
         .expect("hostile async basis drift should project");
 
-    let stop = stopped(continuation.resume(&mut workspace));
+    let stop = stopped(
+        continuation
+            .resume(&mut workspace)
+            .expect("fixture digest must fit"),
+    );
     assert_eq!(stop.kind(), WorthQueryManagedLiveResumeStopKind::StaleBasis);
     assert_eq!(
         stop.next_action(),
@@ -215,7 +252,8 @@ fn managed_observation_keeps_temporal_and_async_causes_distinct() {
             &WorthQueryRuntimeAsyncResultProjection::completion_state(
                 BridgeAsyncCompletionState::Admitted(BridgeAsyncCompletionClass::Fulfilled),
                 "async:managed-current",
-            ),
+            )
+            .expect("fixture digest must fit"),
             &basis,
             &generation,
         )
@@ -265,7 +303,10 @@ fn preview_binding_never_moves_managed_authority_or_delivery_into_preview_truth(
             )
             .expect("preview should open");
         let binding = preview.use_view(handle.view());
-        assert!(preview.discard().discarded());
+        assert!(preview
+            .discard()
+            .expect("fixture digest must fit")
+            .discarded());
         binding
     };
 
@@ -303,7 +344,8 @@ fn abandoned_continuation_is_reaped_before_subsequent_runtime_work() {
             &mut workspace,
             "tasks.abandoned-continuation",
         )
-        .checkpoint(&mut workspace),
+        .checkpoint(&mut workspace)
+        .expect("fixture digest must fit"),
     );
     drop(continuation);
 
@@ -321,53 +363,9 @@ fn abandoned_continuation_is_reaped_before_subsequent_runtime_work() {
         .is_empty());
 }
 
-fn checkpointed(
-    outcome: WorthQueryManagedLiveCheckpointOutcome,
-) -> crate::ordinary::live::WorthQueryManagedLiveContinuation {
-    match outcome {
-        WorthQueryManagedLiveCheckpointOutcome::Checkpointed(completion) => {
-            completion.into_continuation()
-        }
-        WorthQueryManagedLiveCheckpointOutcome::Stopped(stop) => {
-            panic!(
-                "managed checkpoint unexpectedly stopped: {:?}",
-                stop.error()
-            )
-        }
-    }
-}
-
-fn resumed(
-    outcome: WorthQueryManagedLiveResumeOutcome,
-) -> crate::ordinary::live::WorthQueryManagedLiveResumeCompletion {
-    match outcome {
-        WorthQueryManagedLiveResumeOutcome::Resumed(completion) => completion,
-        WorthQueryManagedLiveResumeOutcome::Stopped(stop) => {
-            panic!("managed resume unexpectedly stopped: {:?}", stop.kind())
-        }
-    }
-}
-
-fn stopped(
-    outcome: WorthQueryManagedLiveResumeOutcome,
-) -> crate::ordinary::live::WorthQueryManagedLiveResumeStop {
-    match outcome {
-        WorthQueryManagedLiveResumeOutcome::Stopped(stop) => stop,
-        WorthQueryManagedLiveResumeOutcome::Resumed(_) => {
-            panic!("hostile managed resume unexpectedly succeeded")
-        }
-    }
-}
-
-fn task_insert(title: &str) -> crate::runtime::WorthQueryWriteCommand {
-    insert_command(
-        "Task",
-        [
-            ("identity.id", test_string_aspect_value("")),
-            ("title.value", test_string_aspect_value(title)),
-        ],
-    )
-}
+#[path = "live_continuation/task_insert.rs"]
+mod task_insert;
+use task_insert::task_insert;
 
 fn policy_drift_workspace(
     request_execution: &worth_execution::ExecutionRequest<'_, '_>,
@@ -389,3 +387,7 @@ fn policy_drift_workspace(
         .workspace("managed-live-policy-drift")
         .expect("policy-drift workspace should open")
 }
+
+#[path = "live_continuation/outcomes.rs"]
+mod outcomes;
+use outcomes::{checkpointed, resumed, stopped};

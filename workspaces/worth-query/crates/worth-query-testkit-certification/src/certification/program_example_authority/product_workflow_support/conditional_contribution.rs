@@ -70,13 +70,11 @@ impl WorthQueryApplicationConditionalBinding<TemporalHostSchema> for TemporalCon
         WorthQueryApplicationConditionalPackageContract,
         worth_query_host::facade::application_contribution::WorthQueryOutputReadinessContractDenial,
     > {
-        Ok({
-            WorthQueryApplicationConditionalPackageContract::new(
-                contract::operation_definition().into_portable(),
-                contract::conditional_binding().portable().clone(),
-                TemporalReadyNode::reference().node_identity(),
-            )
-        })
+        Ok(WorthQueryApplicationConditionalPackageContract::new(
+            contract::operation_definition().into_portable(),
+            contract::conditional_binding().portable().clone(),
+            TemporalReadyNode::reference().node_identity(),
+        ))
     }
 
     fn install(
@@ -120,9 +118,9 @@ impl WorthQueryApplicationConditionalBinding<TemporalHostSchema> for TemporalCon
         let execution = primary_graph::WorthQueryTemporalOperationExecution::with_authorization(
             Arc::clone(&invariant),
             Invoker,
-            IntentIdentityField::reference(),
-            IntentRevisionField::reference(),
-            IntentLifecycleField::reference(),
+            IntentIdentityField::at("IntentIdentityField"),
+            IntentRevisionField::at("IntentRevisionField"),
+            IntentLifecycleField::at("IntentLifecycleField"),
             "active".to_owned(),
             configuration.completed_lifecycle,
             primary_graph::WorthQueryPublicTemporalOperationAuthorization,
@@ -131,7 +129,7 @@ impl WorthQueryApplicationConditionalBinding<TemporalHostSchema> for TemporalCon
         let reconstruction = primary_graph::WorthQueryTemporalReconstructionAccess::new(
             principal_binding,
             PrincipalSource::new(authentication),
-            IntentIdentityField::reference(),
+            IntentIdentityField::at("IntentIdentityField"),
             "intent-1".to_owned(),
         )
         .expect("the temporal reconstruction source is installed");

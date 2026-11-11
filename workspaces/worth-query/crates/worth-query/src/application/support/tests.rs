@@ -22,7 +22,7 @@ fn query_disabled_application_facade() -> WorthQueryApplicationFacade {
 fn support_report_publishes_verified_query_composition_profile_and_deferred_neighbors() {
     let facade = WorthQueryApplicationFacade::runtime_backed_default();
     let support = facade.support_matrix();
-    let report = facade.support_report();
+    let report = facade.support_report().expect("fixture digest must fit");
     let expected_profile = runtime_backed_query_composition_support_profile();
 
     assert_eq!(
@@ -175,7 +175,7 @@ fn support_report_publishes_verified_query_composition_profile_and_deferred_neig
 fn support_report_hides_query_composition_profile_when_query_capability_is_disabled() {
     let facade = query_disabled_application_facade();
     let support = facade.support_matrix();
-    let report = facade.support_report();
+    let report = facade.support_report().expect("fixture digest must fit");
 
     assert_eq!(
         support
@@ -192,8 +192,12 @@ fn support_report_hides_query_composition_profile_when_query_capability_is_disab
 
 #[test]
 fn support_report_digest_tracks_query_composition_profile_publication_posture() {
-    let admitted_report = WorthQueryApplicationFacade::runtime_backed_default().support_report();
-    let denied_report = query_disabled_application_facade().support_report();
+    let admitted_report = WorthQueryApplicationFacade::runtime_backed_default()
+        .support_report()
+        .expect("fixture digest must fit");
+    let denied_report = query_disabled_application_facade()
+        .support_report()
+        .expect("fixture digest must fit");
 
     let admitted_profile = admitted_report
         .query_composition_support_profile()

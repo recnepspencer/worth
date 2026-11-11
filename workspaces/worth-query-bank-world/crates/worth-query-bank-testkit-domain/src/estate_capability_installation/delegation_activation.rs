@@ -21,7 +21,9 @@ pub use super::{installed_bank, installed_program_targets, InstalledProgramTarge
 pub fn write(field: &str) -> InstalledProgramTarget {
     InstalledProgramTarget::Write {
         entity: "CapabilityGrant".to_owned(),
-        aspect: "CapabilityGrantRecord".to_owned(),
+        aspect: bank_domain::schema::CapabilityGrantRecord::reference()
+            .name()
+            .to_owned(),
         path: worth_foundational::facade::CanonicalFieldPath::single(
             worth_foundational::facade::FieldKey::new(field).unwrap(),
         ),

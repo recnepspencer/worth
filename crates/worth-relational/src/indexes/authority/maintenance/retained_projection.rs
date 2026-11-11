@@ -2,6 +2,7 @@
 use super::*;
 use crate::history::retention::RelationalRetentionOwnerRelationship;
 use crate::identity::data::VersionId;
+use crate::runtime::VisibilityProjectionView;
 use worth_execution::ExecutionRequest;
 
 impl IndexAuthority<'_> {

@@ -1,56 +1,101 @@
 //! Genuine public authoring/installation for the ResourceRead admission court.
+#[path = "resource_fixture/records.rs"]
+mod storage_model;
+pub use storage_model::*;
 use worth_query_declaration::facade::{
     application_query::*, application_resource::*, application_schema::*, authentication::*,
 };
 use worth_query_declaration::{
-    worth_query_application_query, worth_query_application_schema, worth_query_aspect,
-    worth_query_entity, worth_query_field, worth_query_portable_type,
-    worth_query_principal_binding, worth_query_query_binding, worth_query_relation,
+    worth_query_application_query, worth_query_portable_type, worth_query_query_binding,
     worth_query_structured_value_binding,
 };
 use worth_query_installation::facade::*;
 
-worth_query_application_schema! {pub(super) schema Schema {owner: resource_admission_court,
-version: (1, 0), members: |schema| {schema.entity(Mapping::reference()).entity(Principal::reference())
-    .aspect(Mapping::reference(), MappingFacts::reference()).aspect(Principal::reference(), PrincipalFacts::reference())
-    .field(Mapping::reference(), MappingIdentity::reference()).field(Mapping::reference(), MappingStatus::reference())
-    .field(Principal::reference(), PrincipalIdentity::reference())
-    .relation(Target::reference(), Mapping::reference(), Principal::reference())
-    .principal_binding(PrincipalBinding::reference()).application_query(query())
-    .application_resource(definition())}}}
-worth_query_entity!(pub(super) Mapping for Schema);
-worth_query_entity!(pub(super) Principal for Schema);
-worth_query_aspect!(pub(super) MappingFacts for Schema, Mapping; identity=AspectIdentity(0x9181_8011), revision=AspectContractRevision(1),);
-worth_query_aspect!(pub(super) PrincipalFacts for Schema, Principal; identity=AspectIdentity(0x9181_8012), revision=AspectContractRevision(1),);
-worth_query_field!(pub(super) MappingIdentity for Schema, Mapping, MappingFacts:
-    WorthQueryExternalPrincipalIdentity => WorthQueryExternalPrincipalIdentityBinding, read_only, equality);
-worth_query_field!(pub(super) MappingStatus for Schema, Mapping, MappingFacts:
-    WorthQueryPrincipalMappingStatus => WorthQueryPrincipalMappingStatusBinding, read_write, equality);
-worth_query_field!(pub(super) PrincipalIdentity for Schema, Principal, PrincipalFacts:
-    u64 => U64ApplicationValueBinding, read_only, equality);
-worth_query_relation!(pub(super) Target in Schema, Mapping => Principal; integrity=same_context_unbounded_retain_dangling);
-worth_query_principal_binding!(pub(super) PrincipalBinding in Schema, mapping Mapping {
-    identity: MappingIdentity, status: MappingStatus, target: Target => Principal, principal_identity: PrincipalIdentity});
+use worth_query_declaration::facade::application_schema::fragment::{self, *};
 #[derive(Clone, Copy)]
-pub(super) struct ReadIntent;
-pub(super) struct Parameters;
-pub(super) struct ReadResult;
+pub struct Schema;
+impl Fragment for Schema {
+    const NAME: &'static str = "Schema";
+    type Bindings = NoBindings;
+    type Members = (ResourceModel, Contracts);
+}
+impl ApplicationSchema for Schema {
+    const OWNER: &'static str = "resource_admission_court";
+    const NAME: &'static str = <Self as Fragment>::NAME;
+    const MAJOR: u32 = 1;
+    const MINOR: u32 = 0;
+    fn declaration(
+    ) -> Result<ApplicationSchemaDeclaration<Self>, ApplicationSchemaDeclarationDenial> {
+        fragment::declare(Self)
+    }
+}
+impl Schema {
+    pub fn declaration(
+    ) -> Result<ApplicationSchemaDeclaration<Self>, ApplicationSchemaDeclarationDenial> {
+        <Self as ApplicationSchema>::declaration()
+    }
+}
+pub struct Contracts;
+impl Registration<Schema> for Contracts {
+    fn register(
+        schema: ApplicationSchemaDeclarationBuilder<Schema>,
+    ) -> Result<ApplicationSchemaDeclarationBuilder<Schema>, ApplicationSchemaDeclarationDenial>
+    {
+        Ok(schema
+            .principal_binding(PrincipalBinding::reference())
+            .application_query(query())
+            .application_resource(definition()))
+    }
+}
+
+pub struct PrincipalBinding;
+impl PrincipalBinding {
+    pub fn reference() -> ApplicationPrincipalBindingRef<
+        Schema,
+        Self,
+        Mapping,
+        Principal,
+        <PrincipalIdentity as RecordSelection>::Value,
+        <PrincipalIdentity as RecordSelection>::Binding,
+    > {
+        ApplicationPrincipalBindingRef::from_requirements(
+            "PrincipalBinding",
+            ApplicationPrincipalBindingRequirements {
+                mapping_identity: ApplicationPrincipalMappingIdentityRequirement::from_field(
+                    MappingIdentity::at("MappingIdentity"),
+                ),
+                mapping_status: ApplicationPrincipalMappingStatusRequirement::from_field(
+                    MappingStatus::at("MappingStatus"),
+                ),
+                target: ApplicationPrincipalTargetRequirement::from_relation(Target::reference()),
+                principal_identity: ApplicationPrincipalIdentityRequirement::from_field(
+                    PrincipalIdentity::at("PrincipalIdentity"),
+                ),
+            },
+        )
+    }
+}
+
+#[derive(Clone, Copy)]
+pub struct ReadIntent;
+pub struct Parameters;
+pub struct ReadResult;
 struct Slot;
-worth_query_structured_value_binding!(pub(super) InputBinding for ReadIntent {identity:"worth.court.resource.input"});
-worth_query_structured_value_binding!(pub(super) ParametersBinding for Parameters {identity:"worth.court.resource.parameters"});
-worth_query_structured_value_binding!(pub(super) ReadResultBinding for ReadResult {identity:"worth.court.resource.read-result"});
+worth_query_structured_value_binding!(pub InputBinding for ReadIntent {identity:"worth.court.resource.input"});
+worth_query_structured_value_binding!(pub ParametersBinding for Parameters {identity:"worth.court.resource.parameters"});
+worth_query_structured_value_binding!(pub ReadResultBinding for ReadResult {identity:"worth.court.resource.read-result"});
 worth_query_portable_type!(Slot => "worth.court.resource.slot");
-worth_query_application_query!(pub(super) Query for Schema, identity "worth.court.resource.query",
+worth_query_application_query!(pub Query for Schema, identity "worth.court.resource.query",
     parameters ParametersBinding, result ReadResultBinding, scope Principal => "Principal", name "ResourceScope");
-worth_query_query_binding!(pub(super) Access for ReadIntent, schema Schema,
+worth_query_query_binding!(pub Access for ReadIntent, schema Schema,
     identity "worth.court.resource.access", input InputBinding, query Query,
     parameters ParametersBinding => |_| ApplicationQueryParameterSet::new(), result ReadResultBinding,
     principal PrincipalBinding, mapping Mapping, principal_entity Principal,
     principal_identity u64, identity_binding U64ApplicationValueBinding,
-    scope Principal, PrincipalFacts, PrincipalIdentity, u64, ReadOnly, NoApplicationUnit,
-    principal_field PrincipalIdentity::reference(), limits results 1);
+    scope PrincipalIdentity,
+    principal_field PrincipalIdentity::at("PrincipalIdentity"), limits results 1);
 
-fn query() -> ApplicationQueryDefinition<Schema, Query, Parameters, ReadResult, Principal> {
+fn query() -> ApplicationQueryDefinitionBuilder<Schema, Query, Parameters, ReadResult, Principal> {
     let shape = ApplicationQueryResultShapeBuilder::<
         Schema,
         Query,
@@ -58,18 +103,10 @@ fn query() -> ApplicationQueryDefinition<Schema, Query, Parameters, ReadResult, 
         ReadResult,
         ReadResultBinding,
     >::new(Principal::reference())
-    .field(ApplicationQueryResultFieldRef::<
-        Query,
-        Slot,
-        _,
-        _,
-        _,
-        _,
-        _,
-        _,
-        _,
-        _,
-    >::new("identity", PrincipalIdentity::reference()))
+    .field(ApplicationQueryResultFieldRef::<Query, Slot, _, _>::new(
+        "identity",
+        PrincipalIdentity::at("PrincipalIdentity"),
+    ))
     .build();
     ApplicationQueryDefinitionBuilder::declare(Query::reference())
         .root(Principal::reference())
@@ -80,11 +117,9 @@ fn query() -> ApplicationQueryDefinition<Schema, Query, Parameters, ReadResult, 
         .basis_support(ApplicationQueryBasisSupport::current_and_pinned())
         .lanes(ApplicationQueryLaneEligibility::one_shot())
         .public()
-        .build()
-        .unwrap()
 }
-pub(super) struct Resource;
-pub(super) struct Provider;
+pub struct Resource;
+pub struct Provider;
 worth_query_portable_type!(Resource => "worth.court.resource");
 worth_query_portable_type!(Provider => "worth.court.resource.provider");
 impl ApplicationResourceBinding<Schema> for Resource {
@@ -120,7 +155,7 @@ fn definition() -> ApplicationResourceDefinition<Schema, Resource> {
     )
     .unwrap()
 }
-pub(super) fn installed() -> WorthQueryInstalledApplicationSchema<Schema> {
+pub fn installed() -> WorthQueryInstalledApplicationSchema<Schema> {
     let declaration = Schema::declaration().unwrap();
     let package = WorthQueryPortableDomainPackage::new(WorthQueryPortableDomainIdentity::new(
         "resource_admission_court",

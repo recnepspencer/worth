@@ -19,33 +19,11 @@ pub struct KeySlot;
 pub struct DataSlot;
 worth_query_portable_type!(KeySlot=>"proposal-application.claims-key-slot.v1");
 worth_query_portable_type!(DataSlot=>"proposal-application.claims-data-slot.v1");
-fn key() -> ApplicationQueryResultFieldRef<
-    ClaimQuery,
-    KeySlot,
-    Schema,
-    AcceptanceClaim,
-    ClaimFacts,
-    ClaimName,
-    String,
-    ReadOnly,
-    EqualityPredicate,
-    NoApplicationUnit,
-> {
-    ApplicationQueryResultFieldRef::new("key", ClaimName::reference())
+fn key() -> ApplicationQueryResultFieldRef<ClaimQuery, KeySlot, Schema, ClaimName> {
+    ApplicationQueryResultFieldRef::new("key", ClaimName::at("ClaimName"))
 }
-fn data() -> ApplicationQueryResultFieldRef<
-    ClaimQuery,
-    DataSlot,
-    Schema,
-    AcceptanceClaim,
-    ClaimFacts,
-    ClaimData,
-    StoredClaim,
-    ReadOnly,
-    EqualityPredicate,
-    NoApplicationUnit,
-> {
-    ApplicationQueryResultFieldRef::new("data", ClaimData::reference())
+fn data() -> ApplicationQueryResultFieldRef<ClaimQuery, DataSlot, Schema, ClaimData> {
+    ApplicationQueryResultFieldRef::new("data", ClaimData::at("ClaimData"))
 }
 impl WorthQueryApplicationProjection<Schema, ClaimQuery> for ClaimRow {
     fn project(
@@ -76,8 +54,8 @@ worth_query_query_binding!(pub Binding for ReadClaims,schema Schema,
     query ClaimQuery,parameters ParametersBinding=>|_| ApplicationQueryParameterSet::new(),result ResultBinding,
     principal PrincipalBinding,mapping ExternalMapping,principal_entity Principal,
     principal_identity u64,identity_binding U64ApplicationValueBinding,
-    scope Model,ModelFacts,ModelName,String,ReadOnly,NoApplicationUnit,
-    field ModelName::reference(),value scope,limits results 32);
+    scope ModelName,
+    field ModelName::at("ModelName"),value scope,limits results 32);
 pub fn declare(
     builder: ApplicationSchemaDeclarationBuilder<Schema>,
 ) -> ApplicationSchemaDeclarationBuilder<Schema> {
@@ -88,15 +66,17 @@ pub fn declare(
         access::ReadDomain::reference(),
     )
     .use_field_by(
-        ModelName::reference(),
+        ModelName::at("ModelName"),
         access::encoded(1),
         influence.clone(),
     )
+    .expect("owned record field matches its declaration")
     .use_field_by(
-        ClaimName::reference(),
+        ClaimName::at("ClaimName"),
         access::encoded(1),
         influence.clone(),
     )
+    .expect("owned record field matches its declaration")
     .disclose_field_by(key(), access::encoded(1), influence.clone())
     .disclose_field_by(data(), access::encoded(1), influence);
     let definition = ApplicationQueryDefinitionBuilder::declare(ClaimQuery::reference())
@@ -122,9 +102,7 @@ pub fn declare(
         .root_path(
             ApplicationQueryRootPath::from(Model::reference()).forward(ModelClaim::reference()),
         )
-        .order_by(key(), ApplicationQueryOrderingDirection::Ascending)
-        .build()
-        .unwrap();
+        .order_by(key(), ApplicationQueryOrderingDirection::Ascending);
     builder
         .application_query(definition)
         .application_query_binding::<Binding>()

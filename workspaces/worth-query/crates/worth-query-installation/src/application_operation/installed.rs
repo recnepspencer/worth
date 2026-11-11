@@ -171,6 +171,7 @@ impl<Schema, Operation, Input> WorthQueryInstalledApplicationOperation<Schema, O
             capability.contract().clone(),
         );
         let obligations = bind_capability_operation_obligations(
+            schema.identity_budget,
             &binding_identity,
             declaration.operation(),
             declaration.input_type(),
@@ -233,6 +234,7 @@ impl<Schema, Operation, Input> WorthQueryInstalledApplicationOperation<Schema, O
         let capability_requirements =
             operation_capability_requirements(schema, operation, input_type);
         let obligations = bind_operation_obligations(
+            schema.identity_budget,
             &binding_identity,
             operation,
             input_type,
@@ -256,7 +258,12 @@ impl<Schema, Operation, Input> WorthQueryInstalledApplicationOperation<Schema, O
             input_type,
             obligations.identity(),
         );
-        let definition_identity = definition_identity(&binding_identity, operation, input_type)?;
+        let definition_identity = definition_identity(
+            schema.identity_budget,
+            &binding_identity,
+            operation,
+            input_type,
+        )?;
         #[expect(
             clippy::disallowed_methods,
             reason = "Rust type identity is kept for exact admission equality; it never orders operations"

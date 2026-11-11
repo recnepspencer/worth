@@ -8,7 +8,7 @@ use worth_foundational::facade::{
 use super::Denial;
 use crate::domain_computation::application_aftermath::{
     ExternalEffectCorrelationIdentity, WorthQueryDispatchOutboxLayout,
-    WorthQueryDispatchOutboxRecord, WorthQueryDispatchOutboxRestoredFields,
+    WorthQueryDispatchOutboxRestoredFields,
 };
 
 pub(super) fn required_fields(
@@ -37,9 +37,9 @@ pub(super) fn required_fields(
     .collect()
 }
 
-pub(super) fn restore_record(
+pub(super) fn decode_fields(
     values: Vec<AspectValue>,
-) -> Result<WorthQueryDispatchOutboxRecord, Denial> {
+) -> Result<WorthQueryDispatchOutboxRestoredFields, Denial> {
     let [correlation, family, effect, protocol_identity, protocol_version, maximum, payload, outcome, operation_slot]: [AspectValue; 9] =
         values.try_into().map_err(|_| Denial::Malformed)?;
     let correlation = decode_digest(raw_string(correlation)?)?;
@@ -57,9 +57,13 @@ pub(super) fn restore_record(
     let AspectValue::UInt64(outcome) = outcome else {
         return Err(Denial::Malformed);
     };
-    WorthQueryDispatchOutboxRecord::restore(WorthQueryDispatchOutboxRestoredFields {
+    Ok(WorthQueryDispatchOutboxRestoredFields {
         correlation: ExternalEffectCorrelationIdentity::from_digest(correlation),
-        correlation_family: raw_string(family)?,
+        correlation_family:
+            worth_query_installation::facade::WorthQueryExternalEffectCorrelationFamily::new(
+                raw_string(family)?,
+            )
+            .map_err(|_| Denial::Malformed)?,
         effect: raw_string(effect)?,
         protocol_identity: BoundaryProtocolIdentity::parse(raw_string(protocol_identity)?)
             .map_err(|_| Denial::Malformed)?,
@@ -72,11 +76,14 @@ pub(super) fn restore_record(
             slot => Some(slot.to_owned()),
         },
     })
-    .ok_or(Denial::Malformed)
 }
 
 fn raw_string(value: AspectValue) -> Result<String, Denial> {
     match value {
+        AspectValue::String(InternedString::Stored(value)) => {
+            let value = value.as_string();
+            Ok(value.to_owned())
+        }
         AspectValue::String(InternedString::Raw(value)) => Ok(value),
         _ => Err(Denial::Malformed),
     }

@@ -1,3 +1,6 @@
+use crate::durability::data::RelationalRecoveryStop;
+use complete::CapturedCompleteRegion;
+use worth_execution::ExecutionRequest;
 mod complete;
 pub(crate) use complete::{RegionCheckpointAcknowledgementDenial, RetiredRegionCheckpointBindings};
 use std::sync::Arc;
@@ -12,7 +15,7 @@ use crate::storage::data::{
     RelationalStorageSubject, RelationalStorageUnavailable,
     RelationalStorageUnavailableCause as Cause,
 };
-use crate::storage::overlay::{PartitionContentCommitment, PartitionContentDigestError};
+use crate::storage::overlay::PartitionContentCommitment;
 use crate::symbols::data::StringInterner;
 
 #[derive(Debug, Clone)]
@@ -116,7 +119,7 @@ impl RelationalRegionResidency {
                 .collect();
             (recorded, members)
         } else {
-            let (lease, commitment, captured) = loop {
+            let (lease, commitment, captured, directory) = loop {
                 let lease = self
                     .lease_checkpoint_contents()?
                     .ok_or_else(|| self.capture_failure(Cause::SourceUnavailable))?;
@@ -126,31 +129,13 @@ impl RelationalRegionResidency {
                 } else {
                     symbols.clone()
                 };
-                let (commitment, _) =
-                    PartitionContentCommitment::capture_layered(partition, &content_symbols)
-                        .map_err(|error| match error {
-                            PartitionContentDigestError::Request(cause) => {
-                                super::RelationalResidencyDemandFailure::Request(cause)
-                            }
-                            PartitionContentDigestError::UnresolvedContentSymbol(symbol) => {
-                                RelationalStorageUnavailable {
-                                    subject: RelationalStorageSubject::Symbols {
-                                        first: symbol,
-                                        last: symbol,
-                                    },
-                                    cause: Cause::SourceUnavailable,
-                                }
-                                .into()
-                            }
-                            PartitionContentDigestError::InvalidHistoryCoverage
-                            | PartitionContentDigestError::Encoding
-                            | PartitionContentDigestError::AllocationAccountingOverflow => {
-                                self.capture_failure(Cause::IntegrityMismatch).into()
-                            }
-                        })?;
-                let captured =
-                    super::capture_region_members(partition, &commitment, schema, schema_digest)
-                        .map_err(|cause| self.capture_failure(cause))?;
+                let (commitment, captured, directory) = crate::storage::substrate::maintenance::ReconstructionLane::enter_reconstruction(|lane| {
+                    let (commitment, _) = PartitionContentCommitment::capture_layered(lane, execution, partition, &content_symbols)
+                        .map_err(|error| super::content_capture::restore_failure_with_cause(partition.partition_id, error, Cause::IntegrityMismatch))?;
+                    let captured = super::capture_region_members(lane, execution, partition, &commitment, schema, schema_digest)?;
+                    let directory = captured.directory.portable(lane, execution).map_err(|error| error.into_failure(partition.partition_id))?;
+                    Ok::<_,super::RelationalResidencyDemandFailure>((commitment,captured,directory))
+                })?;
                 if full.is_none()
                     && super::history_capture_bound::needs_consolidation(
                         &captured.history_members,
@@ -164,13 +149,15 @@ impl RelationalRegionResidency {
                     )?);
                     continue;
                 }
-                break (lease, commitment, captured);
+                break (lease, commitment, captured, directory);
             };
             let partition = lease.checkpoint_contents();
             let leaf = RelationalCheckpointRegion {
                 kind_authority: captured.kind_authority,
                 partition_id: partition.partition_id,
                 content_digest: commitment.digest(partition.partition_id),
+                directory,
+                live_counts: super::LiveRecordCounts::from_partition(partition),
                 entity_slots: partition.entity_arena.slot_count(),
                 relation_slots: partition.relation_arena.slot_count(),
                 unavailable_records: partition.entity_arena.lifecycle_counts().unavailable
@@ -224,5 +211,64 @@ impl RelationalRegionResidency {
             subject: RelationalStorageSubject::Region(self.partition_id),
             cause,
         }
+    }
+}
+
+/// Verify the complete directory at checkpoint export; never return the capability.
+pub(crate) fn verify_checkpoint_directory(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    directory: &super::RegionRecordDirectory,
+    expected: &super::PortableRecordDirectory,
+) -> Result<bool, super::RelationalResidencyDemandFailure> {
+    crate::storage::substrate::maintenance::ReconstructionLane::enter_reconstruction(|lane| {
+        directory
+            .portable(lane, execution)
+            .map(|actual| actual.as_ref() == expected)
+            .map_err(|error| error.into_failure(directory.partition_id()))
+    })
+}
+
+impl RelationalRegionResidency {
+    pub(crate) fn capture_complete_for_request(
+        self: &Arc<Self>,
+        request: &ExecutionRequest<'_, '_>,
+        schema: &RelationalBranchRootSchemaAuthority,
+        schema_digest: [u8; 32],
+        symbols: &dyn crate::symbols::data::SymbolTextLookup,
+    ) -> Result<CapturedCompleteRegion, RelationalRecoveryStop> {
+        request
+            .consult()
+            .map_err(|cause| RelationalRecoveryStop::Request(cause.into()))?;
+        let lease = match self.lease_resident_full()? {
+            Some(lease) => lease,
+            None => self.demand_full(
+                request,
+                super::history_capture_bound::FULL_HISTORY_READ_LIMIT,
+                None,
+            )?,
+        };
+        lease.capture_checkpoint_data_for_request(request, schema, schema_digest, symbols)
+    }
+}
+
+/// DATA projection consumes the actual same-cell counted Full observation.
+impl super::RelationalResidencyLease<super::Full> {
+    pub(crate) fn capture_checkpoint_data_for_request(
+        &self,
+        request: &ExecutionRequest<'_, '_>,
+        schema: &RelationalBranchRootSchemaAuthority,
+        schema_digest: [u8; 32],
+        symbols: &dyn crate::symbols::data::SymbolTextLookup,
+    ) -> Result<CapturedCompleteRegion, RelationalRecoveryStop> {
+        crate::storage::substrate::maintenance::ReconstructionLane::enter_reconstruction(|lane| {
+            self.cell().capture_full_contents_for_request(
+                lane,
+                self,
+                request,
+                schema,
+                schema_digest,
+                symbols,
+            )
+        })
     }
 }

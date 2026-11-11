@@ -56,7 +56,7 @@ fn one_approval_transition_cannot_commit_twice_under_different_client_keys() {
             selected
                 .resolve_entity(
                     &host_phase,
-                    DocumentIdentityField::reference(),
+                    DocumentIdentityField::at("DocumentIdentityField"),
                     DOCUMENT_IDENTITY.to_owned(),
                     &scope,
                     WorthQueryPrincipalResolutionMode::Ordinary,

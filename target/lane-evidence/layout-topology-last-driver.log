@@ -1,0 +1,46 @@
+COMMAND: ["python", "target/lane-evidence/layout_topology_last.py"]
+HEAD: b2ba8dc3b102d71b899052d7ccc95a0718b76bbf
+CLEAN: false
+START: 2026-11-07T08:07:12.528593+00:00
+ENV: removed stale external linker override; RUST_MIN_STACK unset in parent
+C_FREE_BYTES 412112269312
+prebuild: cargo check --message-format=json --manifest-path "C:\programming\worth worktees\worktrees\m3-host-home\Cargo.toml" -p worth-court-runtime-bridge --tests --keep-going --unit-graph -Z unstable-options
+prebuild: cargo check --message-format=json --manifest-path "C:\programming\worth worktees\worktrees\m3-host-home\Cargo.toml" -p worth-court-runtime-bridge --tests --keep-going
+    Checking worth-testkit-compiler v0.1.0 (C:\programming\worth worktees\worktrees\m3-host-home\crates\worth-testkit-compiler)
+    Checking worth-foundational v0.1.0 (C:\programming\worth worktees\worktrees\m3-host-home\crates\worth-foundational)
+    Checking worth-execution v0.1.0 (C:\programming\worth worktees\worktrees\m3-host-home\crates\worth-execution)
+    Checking worth-signal v0.1.0 (C:\programming\worth worktees\worktrees\m3-host-home\crates\worth-signal)
+    Checking worth-relational v0.1.0 (C:\programming\worth worktees\worktrees\m3-host-home\crates\worth-relational)
+    Checking worth-runtime-bridge v0.1.0 (C:\programming\worth worktees\worktrees\m3-host-home\crates\worth-runtime-bridge)
+    Checking worth-court-runtime-bridge v0.1.0 (C:\programming\worth worktees\worktrees\m3-host-home\crates\worth-court-runtime-bridge)
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 1m 16s
+RESULT root-check 0
+C_FREE_BYTES 410490404864
+prebuild: cargo check --message-format=json --manifest-path "C:\programming\worth worktees\worktrees\m3-host-home\workspaces\worth-store\Cargo.toml" -p worth-store --tests --keep-going --unit-graph -Z unstable-options
+prebuild: cargo check --message-format=json --manifest-path "C:\programming\worth worktees\worktrees\m3-host-home\workspaces\worth-store\Cargo.toml" -p worth-store --tests --keep-going
+    Checking worth-store v0.1.0 (C:\programming\worth worktees\worktrees\m3-host-home\workspaces\worth-store\crates\worth-store)
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 5.89s
+RESULT store-check 0
+C_FREE_BYTES 410361737216
+prebuild: cargo metadata --offline --format-version 1 --manifest-path "C:\programming\worth worktees\worktrees\m3-host-home\Cargo.toml"
+prebuild: cargo test --message-format=json --no-run --package worth-court-runtime-bridge --test worth_court_runtime_bridge --profile dev --manifest-path "C:\programming\worth worktees\worktrees\m3-host-home\Cargo.toml" --unit-graph -Z unstable-options
+prebuild: cargo nextest list --cargo-message-format=json --package worth-court-runtime-bridge --test worth_court_runtime_bridge --cargo-profile dev --manifest-path "C:\programming\worth worktees\worktrees\m3-host-home\Cargo.toml" --list-type binaries-only --message-format json
+   Compiling worth-court-runtime-bridge v0.1.0 (C:\programming\worth worktees\worktrees\m3-host-home\crates\worth-court-runtime-bridge)
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 5.05s
+RESULT bridge-court-build 0
+prebuild: cargo nextest list --cargo-metadata "C:\programming\worth worktees\worktrees\m3-host-home\target\lane-evidence\layout-topology-last\bridge-court\build\cargo-metadata.json" --binaries-metadata "C:\programming\worth worktees\worktrees\m3-host-home\target\lane-evidence\layout-topology-last\bridge-court\build\binaries.json" --message-format json --ignore-default-filter -E "test(=runtime_bridge::original_lowering::original_lowering_charge_lives_until_the_last_shared_template_drops) + test(=runtime_bridge::original_lowering::original_budget_refuses_lowering_backing_without_retaining_a_charge) + test(=runtime_bridge::original_lowering::cancelled_original_request_refuses_lowering_backing)"
+prebuild: cargo nextest run --cargo-metadata "C:\programming\worth worktees\worktrees\m3-host-home\target\lane-evidence\layout-topology-last\bridge-court\build\cargo-metadata.json" --binaries-metadata "C:\programming\worth worktees\worktrees\m3-host-home\target\lane-evidence\layout-topology-last\bridge-court\build\binaries.json" --profile ci --config-file "C:\programming\worth worktees\worktrees\m3-host-home\target\lane-evidence\layout-topology-last\bridge-court\nextest.toml" --ignore-default-filter --no-fail-fast --no-tests=fail --message-format libtest-json --success-output immediate -E "test(=runtime_bridge::original_lowering::original_lowering_charge_lives_until_the_last_shared_template_drops) + test(=runtime_bridge::original_lowering::original_budget_refuses_lowering_backing_without_retaining_a_charge) + test(=runtime_bridge::original_lowering::cancelled_original_request_refuses_lowering_backing)"
+RESULT bridge-court-run 0
+C_FREE_BYTES 410339340288
+prebuild: cargo metadata --offline --format-version 1 --manifest-path "C:\programming\worth worktees\worktrees\m3-host-home\workspaces\worth-store\Cargo.toml"
+prebuild: cargo test --message-format=json --no-run --package worth-store --lib --profile dev --manifest-path "C:\programming\worth worktees\worktrees\m3-host-home\workspaces\worth-store\Cargo.toml" --unit-graph -Z unstable-options
+prebuild: cargo nextest list --cargo-message-format=json --package worth-store --lib --cargo-profile dev --manifest-path "C:\programming\worth worktees\worktrees\m3-host-home\workspaces\worth-store\Cargo.toml" --list-type binaries-only --message-format json
+   Compiling worth-store v0.1.0 (C:\programming\worth worktees\worktrees\m3-host-home\workspaces\worth-store\crates\worth-store)
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 8.32s
+RESULT store-build 0
+prebuild: cargo nextest list --cargo-metadata "C:\programming\worth worktees\worktrees\m3-host-home\target\lane-evidence\layout-topology-last\store\build\cargo-metadata.json" --binaries-metadata "C:\programming\worth worktees\worktrees\m3-host-home\target\lane-evidence\layout-topology-last\store\build\binaries.json" --message-format json --ignore-default-filter -E test(=inline_type_sizes::owned_carriers_stay_within_declared_inline_ceilings)
+prebuild: cargo nextest run --cargo-metadata "C:\programming\worth worktees\worktrees\m3-host-home\target\lane-evidence\layout-topology-last\store\build\cargo-metadata.json" --binaries-metadata "C:\programming\worth worktees\worktrees\m3-host-home\target\lane-evidence\layout-topology-last\store\build\binaries.json" --profile ci --config-file "C:\programming\worth worktees\worktrees\m3-host-home\target\lane-evidence\layout-topology-last\store\nextest.toml" --ignore-default-filter --no-fail-fast --no-tests=fail --message-format libtest-json --success-output immediate -E test(=inline_type_sizes::owned_carriers_stay_within_declared_inline_ceilings)
+RESULT store-run 0
+
+END: 2026-11-07T08:09:05.696666+00:00
+EXIT: 0

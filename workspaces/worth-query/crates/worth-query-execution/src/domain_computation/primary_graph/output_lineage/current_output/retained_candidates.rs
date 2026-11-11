@@ -7,6 +7,7 @@ use worth_relational::facade::mvcc::CompanionPreflightStop;
 /// The latest output one binding recorded for a source, with everything
 /// selection compares before it reuses that output.
 pub struct WorthQueryRetainedOutputCandidate {
+    pub(in crate::domain_computation::primary_graph) required_publication: Option<worth_relational::facade::mvcc::RelationalRequiredOutputPublication>,
     pub(in crate::domain_computation::primary_graph) producing_implementation: Option<worth_relational::facade::mvcc::RequiredOutputProducingImplementation>,
     pub(in crate::domain_computation::primary_graph) binding: TypeId,
     pub(in crate::domain_computation::primary_graph) correspondence:
@@ -28,6 +29,10 @@ pub struct WorthQueryRetainedOutputCandidate {
         Arc<crate::domain_computation::primary_graph::output_lineage::RecordedSettlementIdentity>,
 
     pub(in crate::domain_computation::primary_graph) idempotency_key_identity: [u8; 32],
+    /// Only a row a graph selection transported; its own coordinate, never an alias's.
+    pub(in crate::domain_computation::primary_graph) consumed_outputs: Arc<[crate::domain_computation::primary_graph::invariant_projection::ConsumedOutputEvidence]>,
+    pub(in crate::domain_computation::primary_graph) historical_selection:
+        Option<Arc<super::super::HistoricalSelectionCoordinate>>,
 }
 
 impl WorthQueryApplicationOutputLineage {
@@ -81,6 +86,7 @@ impl WorthQueryApplicationOutputLineage {
                 if let Some(recorded) = recorded {
                     candidates.push(WorthQueryRetainedOutputCandidate {
                         producing_implementation: recorded.producing_implementation,
+                        required_publication: recorded.required_publication.clone(),
                         binding: *output_binding,
                         correspondence: Arc::clone(&recorded.correspondence),
                         source_identity: recorded.source_identity,
@@ -100,6 +106,8 @@ impl WorthQueryApplicationOutputLineage {
                         settlement_identity: Arc::clone(&recorded.settlement_identity),
 
                         idempotency_key_identity: recorded.idempotency_key_identity,
+                        historical_selection: recorded.historical_selection.clone(),
+                        consumed_outputs: Arc::clone(&recorded.consumed_outputs),
                     });
                     break;
                 }

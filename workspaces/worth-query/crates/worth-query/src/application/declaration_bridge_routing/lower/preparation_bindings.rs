@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use worth_foundational::facade::AspectKey;
 use worth_runtime_bridge::facade::{
     BridgeRequestKind, BridgeRouteIdentity, BridgeSubscriptionContinuationCandidateInput,
@@ -24,7 +25,7 @@ pub(super) fn preview_promotion_binding<
     envelope: &WorthQueryDeclarationEnvelope<D, I>,
     lowering: &BridgeLoweringContext,
     request: WorthQueryDeclarationBridgeContinuationRequest,
-) -> WorthQueryPreviewPromotionContinuationBinding {
+) -> Result<WorthQueryPreviewPromotionContinuationBinding, IdentityDerivationDenial> {
     let preview_basis_digest = lowering.truth_view_basis_digest(envelope, request.truth_context());
     let promotion_continuation_digest = crate::evidence_identity::worth_query_evidence_identity(
         crate::evidence_identity::WorthQueryEvidenceScope::PreviewPromotionContinuation,
@@ -46,14 +47,14 @@ pub(super) fn preview_promotion_binding<
             .id()
             .as_str(),
     )
-    .seal()
+    .seal()?
     .as_str()
     .to_string();
-    WorthQueryPreviewPromotionContinuationBinding::new(
+    Ok(WorthQueryPreviewPromotionContinuationBinding::new(
         preview_basis_digest,
         promotion_continuation_digest,
         envelope.declaration_digest().to_string(),
-    )
+    ))
 }
 
 pub(super) fn subscription_preparation_request<
@@ -63,23 +64,25 @@ pub(super) fn subscription_preparation_request<
     envelope: &WorthQueryDeclarationEnvelope<D, I>,
     lowering: &BridgeLoweringContext,
     request: WorthQueryDeclarationBridgeContinuationRequest,
-) -> BridgeSubscriptionContinuationCandidateInput {
+) -> Result<BridgeSubscriptionContinuationCandidateInput, IdentityDerivationDenial> {
     let authority = bridge_lowering_bridge_evidence_identity(
         "subscription-authority",
         lowering.truth_view_basis_digest(envelope, request.truth_context()),
-    );
+    )?;
     let locality = bridge_lowering_bridge_evidence_identity(
         "subscription-locality",
         envelope.declaration_family_key(),
-    );
+    )?;
     let child_basis = bridge_lowering_bridge_evidence_identity(
         "subscription-child-basis",
         envelope.declaration_digest(),
-    );
-    BridgeSubscriptionContinuationCandidateInput::branch_local_continue_from_evidence(
-        &authority,
-        &locality,
-        &child_basis,
+    )?;
+    Ok(
+        BridgeSubscriptionContinuationCandidateInput::branch_local_continue_from_evidence(
+            &authority,
+            &locality,
+            &child_basis,
+        ),
     )
 }
 
@@ -90,14 +93,14 @@ pub(super) fn writeback_preparation_request<
     envelope: &WorthQueryDeclarationEnvelope<D, I>,
     lowering: &BridgeLoweringContext,
     request: WorthQueryDeclarationBridgeContinuationRequest,
-) -> WorthQueryWritebackPreparationBinding {
+) -> Result<WorthQueryWritebackPreparationBinding, IdentityDerivationDenial> {
     let basis_digest = lowering.truth_view_basis_digest(envelope, request.truth_context());
     let declaration = BridgeWritebackDeclaration::writeback_capable(
         BridgeWritebackDeclarationIdentity::from_bridge_evidence(
             &bridge_lowering_bridge_evidence_identity(
                 "writeback-declaration",
                 envelope.declaration_digest(),
-            ),
+            )?,
         ),
         BridgeRequestKind::Authoritative,
         BridgeWritebackFamilyKind::ProjectedStateDiff,
@@ -107,7 +110,7 @@ pub(super) fn writeback_preparation_request<
     );
     let causality = BridgeWritebackNativeCausalityInputs::new(
         BridgeWritebackCausalityIdentity::from_bridge_evidence(
-            &bridge_lowering_bridge_evidence_identity("writeback-causality", &basis_digest),
+            &bridge_lowering_bridge_evidence_identity("writeback-causality", &basis_digest)?,
         ),
         query_truth_commit_identity("truth-trigger", envelope.handle_identity_digest()),
         BridgeRouteIdentity::from_bridge_evidence(
@@ -128,5 +131,9 @@ pub(super) fn writeback_preparation_request<
     )
     .expect("query writeback preparation effect intent should validate");
 
-    WorthQueryWritebackPreparationBinding::new(declaration, causality, effect_intent)
+    Ok(WorthQueryWritebackPreparationBinding::new(
+        declaration,
+        causality,
+        effect_intent,
+    ))
 }

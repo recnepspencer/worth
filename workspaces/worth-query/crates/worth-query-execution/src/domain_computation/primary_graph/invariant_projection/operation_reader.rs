@@ -3,16 +3,21 @@ use std::sync::Arc;
 
 use worth_query_declaration::facade::application_schema::ApplicationEntityMarkerIdentity;
 use worth_query_installation::facade::{
-    ApplicationFieldRef, ApplicationFieldUnit, ApplicationReadableScalarValueBinding,
-    ApplicationRelationRef, ApplicationSchema, ApplicationSignedAggregateValueBinding,
-    DeclaredApplicationFieldValue, EqualityPredicate, OperationReads,
-    WorthQueryCompiledApplicationOperationContracts, WritePosture,
+    ApplicationReadableScalarValueBinding, ApplicationRelationRef, ApplicationSchema,
+    ApplicationSignedAggregateValueBinding, OperationReads,
+    WorthQueryCompiledApplicationOperationContracts,
 };
 
 mod admitted;
 mod admitted_projection;
+mod applied;
+mod inspection_reader;
+pub(in crate::domain_computation::primary_graph) use applied::AppliedOperationProjection;
 mod borrowed;
 mod content;
+mod fragment;
+mod fragment_native;
+mod mutation_target;
 mod prepared_inputs;
 pub(in crate::domain_computation::primary_graph) use borrowed::BorrowedOperationProjection;
 pub(in crate::domain_computation::primary_graph) use prepared_inputs::PreparedCurrentInputs;
@@ -35,7 +40,9 @@ pub use output_availability::{
     WorthQueryObservedOutputAvailability, WorthQueryOutputAvailabilityDenial,
     WorthQueryOutputAvailabilityState,
 };
+mod predecessor;
 mod prior_output;
+pub use predecessor::{PredecessorDecisionReader, PredecessorEntity, PredecessorRelation};
 
 pub(in crate::domain_computation::primary_graph) use computation_calls::{
     CallSequenceDenial, CallShape, CallShapeTransition, CallVisit, ComputationCallCharge,
@@ -171,29 +178,7 @@ where
     > {
         let completed = self.project(
             phase,
-            |reader| {
-                let mut decision_facts = DecisionReads::default();
-                let mut operation_reader =
-                    WorthQueryApplicationOperationInvariantProjectionReader {
-                        reader,
-                        source_query: None,
-                        source_context_use: None,
-                        admitted_contracts: None,
-                        runtime_authority: self.runtime_authority,
-                        binding_identity: &self.binding_identity,
-                        admission_identity: None,
-                        selected_product: None,
-                        admitted_root: None,
-                        admitted_principal: None,
-                        query_context: None,
-                        operation_scope: None,
-                        decision_facts: &mut decision_facts,
-                        _operation: PhantomData,
-                        request_local: PhantomData,
-                    };
-                let output = projection(&mut operation_reader);
-                (output, decision_facts)
-            },
+            |reader| self.inspect_reader(reader, None, None, projection),
             allocation_policy,
         )?;
         let ((output, _), snapshot, work) = completed.into_parts();
@@ -224,29 +209,7 @@ where
             execution,
             None,
             product.relational_basis().clone(),
-            |reader| {
-                let mut decision_facts = DecisionReads::default();
-                let mut operation_reader =
-                    WorthQueryApplicationOperationInvariantProjectionReader {
-                        reader,
-                        source_query: None,
-                        source_context_use: None,
-                        admitted_contracts: None,
-                        runtime_authority: self.runtime_authority,
-                        binding_identity: &self.binding_identity,
-                        admission_identity: None,
-                        selected_product: Some(product),
-                        admitted_root: None,
-                        admitted_principal: None,
-                        query_context: None,
-                        operation_scope: None,
-                        decision_facts: &mut decision_facts,
-                        _operation: PhantomData,
-                        request_local: PhantomData,
-                    };
-                let output = projection(&mut operation_reader);
-                (output, decision_facts)
-            },
+            |reader| self.inspect_reader(reader, None, Some(product), projection),
             None,
             allocation_policy,
         )?;

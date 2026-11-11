@@ -29,6 +29,8 @@ fn project_live_async_result_state(
     let expected_checkpoint = state.async_source_binding.as_ref().map(
         super::async_source_binding::WorthQueryRuntimeAsyncSourceBinding::current_generation_identity,
     );
+    let expected_basis = expected_basis.transpose()?;
+    let expected_checkpoint = expected_checkpoint.transpose()?;
     let expected_basis = expected_basis
         .as_ref()
         .unwrap_or_else(|| state.installation.basis_binding_identity());

@@ -3,6 +3,9 @@ use super::super::consumer_support::routing::ConsumerStopRoute;
 
 pub(super) fn consumer_stop_route_key(route: &ConsumerStopRoute) -> String {
     match route {
+        ConsumerStopRoute::EvidenceIdentityDerivationDenied(denial) => {
+            format!("evidence_identity_derivation_denied:{denial:?}")
+        }
         ConsumerStopRoute::Advancement(denial) => format!("advancement:{denial:?}"),
         ConsumerStopRoute::ForeignPhase(_) => "foreign_phase".to_owned(),
         ConsumerStopRoute::InstalledDomainAuthorityDenied(kind) => {

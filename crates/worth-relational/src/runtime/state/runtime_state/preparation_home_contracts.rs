@@ -16,13 +16,12 @@ impl RelationalPreparationRuntime {
             None => basis.inner.root.execution_contracts.get(),
         };
         let mut runtime = self.clone();
-        let construction_contracts = self
-            .execution_contracts
-            .as_ref()
-            .map_or(&self.schema_contract_runtime, |selected| {
-                &selected.configuration_contracts
-            });
-        runtime.schema_contract_runtime = construction_contracts.clone();
+        if let Some(target) = target
+            && !target.receiver_epoch.same_epoch(&self.configuration_epoch)
+        {
+            return Err(required_contracts());
+        }
+        runtime.schema_contract_runtime = self.configuration_epoch.schema_contract_runtime.clone();
         runtime.execution_contracts = None;
         runtime.execution_registry = Some(match selected {
             Some(selected) => selected.schema.registry_arc(),
@@ -31,10 +30,7 @@ impl RelationalPreparationRuntime {
         runtime.home_target = target.cloned();
         match selected {
             Some(selected) => {
-                if selected.runtime != self.runtime_instance_id()
-                    || !Arc::ptr_eq(&selected.configuration, &self.config)
-                    || !Arc::ptr_eq(&selected.configuration_contracts, construction_contracts)
-                {
+                if selected.runtime != self.runtime_instance_id() {
                     return Err(required_contracts());
                 }
                 if target.is_none()

@@ -29,7 +29,7 @@ fn selected_data_stays_pinned_while_fresh_security_and_sibling_reads_progress() 
             selected
                 .resolve_entity(
                     &phase,
-                    IntentIdentityField::reference(),
+                    IntentIdentityField::at("IntentIdentityField"),
                     "intent-1".to_string(),
                     &request,
                     primary_graph::WorthQueryPrincipalResolutionMode::Ordinary,
@@ -99,7 +99,7 @@ fn selected_data_stays_pinned_while_fresh_security_and_sibling_reads_progress() 
                 selected
                     .resolve_entity(
                         &phase,
-                        IntentIdentityField::reference(),
+                        IntentIdentityField::at("IntentIdentityField"),
                         "intent-1".to_string(),
                         &request,
                         primary_graph::WorthQueryPrincipalResolutionMode::Ordinary,
@@ -175,7 +175,7 @@ fn revoke_after_product_query_admission_denies_a_and_leaves_b_security_independe
             selected_a
                 .resolve_entity(
                     &phase,
-                    IntentIdentityField::reference(),
+                    IntentIdentityField::at("IntentIdentityField"),
                     "intent-1".to_string(),
                     &request,
                     primary_graph::WorthQueryPrincipalResolutionMode::Ordinary,
@@ -209,7 +209,7 @@ fn revoke_after_product_query_admission_denies_a_and_leaves_b_security_independe
             selected_b
                 .resolve_entity(
                     &phase,
-                    IntentIdentityField::reference(),
+                    IntentIdentityField::at("IntentIdentityField"),
                     "intent-1".to_string(),
                     &request,
                     primary_graph::WorthQueryPrincipalResolutionMode::Ordinary,

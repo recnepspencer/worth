@@ -5,10 +5,16 @@ use super::observation::RelationalBranchSharingObservation;
 /// authoritative totals.
 ///
 /// Any change to what an existing metric means requires a new version rather
-/// than a silent redefinition. Version 6 identifies root metadata by its
+/// than a silent redefinition. Version 7 identifies root metadata by its
 /// physical allocation, including when distinct readmissions preserve one
-/// semantic root id. Shared payloads retain their node/value granularity.
-pub const RELATIONAL_SHARING_INSPECTION_VERSION: u16 = 6;
+/// semantic root id, and native storage nodes and payload carriers by their
+/// own allocation. It no longer claims an exact physical count for persistent
+/// aspect backing nested in an entity or relation payload carrier: each
+/// distinct carrier reports a checked declared upper bound of the bytes
+/// reachable from it, so backing that distinct carriers share is counted once
+/// per carrier. Exact deduplicated accounting of that nested backing is not
+/// provided; it belongs to the Milestone 3 cost-and-bounds cleanup (C2).
+pub const RELATIONAL_SHARING_INSPECTION_VERSION: u16 = 7;
 
 /// Explicit scope of the live authoritative byte totals in a sharing
 /// observation.
@@ -25,6 +31,14 @@ pub enum RelationalSharingByteMetricScope {
     /// root metadata and schema authority, persistent reachability structures
     /// and their replacement/removal storage, and the canonical commit
     /// artifact, payload, and envelope storage.
+    ///
+    /// Each distinct owner allocation reports its own exact extent, counted
+    /// once in the `unique_physical_*` totals. Persistent aspect backing nested
+    /// in an entity or relation payload carrier is the exception: it is a
+    /// checked declared upper bound per carrier that may count backing shared
+    /// between distinct carriers more than once. It never undercounts, and it
+    /// is never saturated: an unrepresentable bound or total refuses the
+    /// inspection instead.
     ///
     /// Branch reference metadata, diagnostics, retention metadata, allocator
     /// bookkeeping, and optional caches are excluded from these totals and are

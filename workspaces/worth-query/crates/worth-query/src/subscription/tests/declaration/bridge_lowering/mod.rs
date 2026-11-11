@@ -23,7 +23,8 @@ fn declaration_for_basis(
         view_family,
         QuerySubscriptionConstructionSource::FacadeLive,
         basis_posture,
-    );
+    )
+    .expect("fixture digest must fit");
     let selection = select_query_subscription_family(input, roomy_budget()).unwrap();
     declare_query_subscription(selection, roomy_slice_budget()).unwrap()
 }

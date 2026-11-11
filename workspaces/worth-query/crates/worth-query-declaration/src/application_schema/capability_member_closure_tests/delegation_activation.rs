@@ -5,11 +5,8 @@ use crate::application_schema::ApplicationOperationProgramTarget;
 mod identity_uniqueness;
 
 struct ActivationOperation;
-struct Identity;
 struct ActivationContextRelation;
 struct OtherCapability;
-struct OtherAction;
-declare_u64_field!(Identity, OtherAction);
 
 impl ApplicationOperationMarkerIdentity<Schema> for ActivationOperation {
     type InputBinding = UnitOperationInputBinding;
@@ -175,7 +172,7 @@ fn activated_contract(context_relation: ApplicationCapabilityRelationBinding) ->
         delegation_definition().with_activation(
             ApplicationCapabilityDelegationActivationDefinition::new(
                 ApplicationOperationRef::<Schema, ActivationOperation, ()>::from_declaration(),
-                binding::<Identity>("Identity"),
+                binding("Identity"),
             )
             .with_context_relations([context_relation]),
         ),
@@ -191,15 +188,15 @@ fn second_activated_contract(
     context_relation: ApplicationCapabilityRelationBinding,
 ) -> ErasedContract {
     let target = ApplicationCapabilityTargetDefinition::new(
-        ApplicationCapabilityValueBinding::new(field::<OtherAction>("OtherAction"), encoded(1_u64)),
+        ApplicationCapabilityValueBinding::new(field("OtherAction"), encoded(1_u64)).unwrap(),
         relation::<ResourceRelation, Grant, Resource>("ResourceRelation", "Grant", "Resource"),
         ApplicationCapabilityRelationDimension::Bound(relation::<ScopedRelation, Grant, Resource>(
             "ScopedRelation",
             "Grant",
             "Resource",
         )),
-        ApplicationCapabilityFieldDimension::bound(field::<Field>("Field")),
-        ApplicationCapabilityValueBinding::new(field::<Purpose>("Purpose"), encoded(1_u64)),
+        ApplicationCapabilityFieldDimension::bound(field("Field")).unwrap(),
+        ApplicationCapabilityValueBinding::new(field("Purpose"), encoded(1_u64)).unwrap(),
     );
     ApplicationCapabilityContractBuilder::new(
         ApplicationCapabilityRef::<Schema, OtherCapability>::from_schema_identifier(
@@ -214,7 +211,7 @@ fn second_activated_contract(
         delegation_definition().with_activation(
             ApplicationCapabilityDelegationActivationDefinition::new(
                 ApplicationOperationRef::<Schema, ActivationOperation, ()>::from_declaration(),
-                binding::<Identity>("Identity"),
+                binding("Identity"),
             )
             .with_context_relations([context_relation]),
         ),
@@ -260,7 +257,7 @@ fn exact_program() -> Vec<ApplicationOperationProgramTarget> {
 fn write(field: &str) -> ApplicationOperationProgramTarget {
     ApplicationOperationProgramTarget::Write {
         entity: "Grant".to_owned(),
-        aspect: "Facts".to_owned(),
+        aspect: crate::application_schema::capability_member_closure_tests::field_binding_fixture::field("Action").aspect().to_owned(),
         field: field.to_owned(),
     }
 }

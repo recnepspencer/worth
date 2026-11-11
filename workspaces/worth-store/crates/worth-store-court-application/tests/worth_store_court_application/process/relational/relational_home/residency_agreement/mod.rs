@@ -14,7 +14,14 @@ fn cold_warm_and_full_home_reads_and_retained_observations_agree_with_memory() {
     let reference = crate::workload::runtime_builder(crate::schema_transition::SOURCE)
         .build()
         .expect("valid native reference runtime configuration");
-    let home = crate::durable_run::open(&location, &execution).unwrap();
+    let fixture = crate::durable_run::world::open(
+        &location,
+        crate::schema_transition::SOURCE,
+        true,
+        &execution,
+    )
+    .unwrap();
+    let home = &fixture.home;
     let branch = BranchId("main".into());
     let mut entities = Vec::new();
     let mut history_commit = None;
@@ -40,6 +47,15 @@ fn cold_warm_and_full_home_reads_and_retained_observations_agree_with_memory() {
         };
         entities.push(entity);
         history_commit.get_or_insert(actual.commit.commit_id);
+        reference
+            .snapshots()
+            .release_snapshot(&expected.snapshot)
+            .unwrap();
+        home.relational()
+            .runtime()
+            .snapshots()
+            .release_snapshot(&actual.snapshot)
+            .unwrap();
     }
     let historical_id = history_commit.unwrap();
     let bound = std::num::NonZeroUsize::new(16).unwrap();
@@ -56,8 +72,15 @@ fn cold_warm_and_full_home_reads_and_retained_observations_agree_with_memory() {
             .collect::<Vec<_>>(),
     );
     home.checkpoint(&execution).unwrap();
-    home.close(&execution);
-    let home = crate::durable_run::open(&location, &execution).unwrap();
+    crate::durable_run::world::close(fixture, &execution);
+    let fixture = crate::durable_run::world::open(
+        &location,
+        crate::schema_transition::SOURCE,
+        false,
+        &execution,
+    )
+    .unwrap();
+    let home = &fixture.home;
     let reopened = home.relational().cold_storage_reads();
     assert_eq!(
         reopened.member_reads, 0,
@@ -121,8 +144,20 @@ fn cold_warm_and_full_home_reads_and_retained_observations_agree_with_memory() {
     // Retain the selected root while new publications replace its live carriers.
     for step in 0..3 {
         let batch = crate::batches::update(entities[0], 1000 + step);
-        crate::workload::commit(&reference, &execution, &branch, batch.clone()).unwrap();
-        crate::workload::commit(home.relational().runtime(), &execution, &branch, batch).unwrap();
+        let expected =
+            crate::workload::commit(&reference, &execution, &branch, batch.clone()).unwrap();
+        let actual =
+            crate::workload::commit(home.relational().runtime(), &execution, &branch, batch)
+                .unwrap();
+        reference
+            .snapshots()
+            .release_snapshot(&expected.snapshot)
+            .unwrap();
+        home.relational()
+            .runtime()
+            .snapshots()
+            .release_snapshot(&actual.snapshot)
+            .unwrap();
         home.checkpoint(&execution).unwrap();
         assert_eq!(
             render(
@@ -148,12 +183,19 @@ fn cold_warm_and_full_home_reads_and_retained_observations_agree_with_memory() {
         crate::workload::artifacts_of(&execution, &reference)
     );
     drop(selected);
-    home.close(&execution);
-    let home = crate::durable_run::open(&location, &execution).unwrap();
+    crate::durable_run::world::close(fixture, &execution);
+    let fixture = crate::durable_run::world::open(
+        &location,
+        crate::schema_transition::SOURCE,
+        false,
+        &execution,
+    )
+    .unwrap();
+    let home = &fixture.home;
     assert_eq!(home.relational().cold_storage_reads().member_reads, 0);
     assert_eq!(
         crate::workload::states_of(home.relational().runtime(), &records),
         crate::workload::states_of(&reference, &records)
     );
-    home.close(&execution);
+    crate::durable_run::world::close(fixture, &execution);
 }

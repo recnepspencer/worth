@@ -14,3 +14,24 @@ pub(crate) struct PreparationPlanningContext {
     pub(crate) schema_registry_entry_count: usize,
     pub(crate) invariant_registration_count: usize,
 }
+
+impl PreparationPlanningContext {
+    /// Specialize the shared proposal proof to one declared family's read view.
+    /// Every other authority/basis field is preserved exactly.
+    pub(crate) fn for_registration(&self, point: InvariantExecutionPoint) -> Option<Self> {
+        if !self.execution_point.includes(point) {
+            return None;
+        }
+        let mut selected = self.clone();
+        if self.execution_point == InvariantExecutionPoint::ProposedState {
+            selected.execution_point = point;
+            if point == InvariantExecutionPoint::CommitBoundary {
+                selected.observation_kind = InvariantObservationKind::Committed;
+                selected.version_id = self.current_version_id;
+            } else {
+                selected.observation_kind = InvariantObservationKind::Speculative;
+            }
+        }
+        Some(selected)
+    }
+}

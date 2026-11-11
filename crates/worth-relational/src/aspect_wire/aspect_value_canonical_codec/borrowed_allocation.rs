@@ -50,7 +50,11 @@ pub(crate) fn body_decoded_bytes<E>(
             0
         }
         tags::STRING => match input.byte()? {
-            tags::RAW_STRING => input.string()?,
+            tags::RAW_STRING => {
+                let capacity = input.string()?;
+                worth_foundational::facade::StoredValueText::fresh_decode_allocation_bytes(capacity)
+                    .ok_or_else(&input.malformed)?
+            }
             tags::SYMBOL_STRING => {
                 input.skip(4)?;
                 0
@@ -109,8 +113,8 @@ impl<E, F: FnMut() -> Result<u8, E>, M: Fn() -> E> Input<F, M> {
     fn string(&mut self) -> Result<usize, E> {
         let length = self.length()?;
         self.skip(length)?;
-        // Canonical numeric constructors only move their validated String;
-        // raw text similarly owns exactly this decoded spelling.
+        // The concrete decoder's read_string copies a borrowed UTF-8 slice.
+        // The raw-string caller separately adds Stored box/proof backing.
         Ok(length)
     }
     fn length(&mut self) -> Result<usize, E> {

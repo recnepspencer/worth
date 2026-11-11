@@ -1,12 +1,15 @@
 use worth_foundational::facade::{AspectFieldLocator, AspectKey, AspectValue};
 use worth_relational::facade::identity::{EntityId, KindId, RelationId};
-use worth_relational::facade::indexes::{DerivedIndexDefinition, DerivedIndexId};
+use worth_relational::facade::indexes::DerivedIndexId;
 
 pub(crate) mod adjacency;
 mod dependency_key;
+mod effect_support;
 mod entity_touch;
 mod equality;
+mod image;
 pub(crate) mod indexed_entity_selection;
+pub(in crate::domain_computation::primary_graph) use indexed_entity_selection::applied::observe as observe_applied_indexed_entity_selection;
 mod locator_identity;
 pub(crate) mod managed_source_read;
 pub(crate) mod movement;
@@ -22,9 +25,11 @@ mod workflow_definition_predecessor;
 pub(crate) mod workflow_history_basis;
 pub(in crate::domain_computation) use workflow_history_basis::WorkflowHistoryRequirement;
 pub(crate) mod workflow_instance_capacity;
-pub(in crate::domain_computation::primary_graph) use adjacency::observe_adjacency;
 pub(in crate::domain_computation::primary_graph) use adjacency::observe_adjacency_with_work;
 pub(in crate::domain_computation::primary_graph) use adjacency::observe_audit_outgoing_adjacency;
+pub(in crate::domain_computation::primary_graph) use adjacency::{
+    observe_adjacency, observe_adjacency_in_pin,
+};
 pub(in crate::domain_computation::primary_graph) use adjacency::{
     observe_adjacency_checked, AdjacencyObservationDenial,
 };
@@ -195,7 +200,7 @@ pub enum WorthQueryApplicationObservedFact {
     /// check-then-create race without exposing raw index authority.
     IndexedEntitySelection {
         index_id: DerivedIndexId,
-        definition: std::sync::Arc<DerivedIndexDefinition>,
+        definition: worth_relational::facade::indexes::RetainedDerivedIndexDefinition,
         entity_kind: KindId,
         locator: AspectFieldLocator,
         value: AspectValue,
@@ -284,4 +289,5 @@ pub use managed_source_read::ManagedSourceReadKey;
 
 pub use source_read_authorization::SourceReadAuthorizationKey;
 
+pub(in crate::domain_computation::primary_graph) use effect_support::source_stop as candidate_support_source_stop;
 pub use source_read_authorization::SourceReadAuthorization;

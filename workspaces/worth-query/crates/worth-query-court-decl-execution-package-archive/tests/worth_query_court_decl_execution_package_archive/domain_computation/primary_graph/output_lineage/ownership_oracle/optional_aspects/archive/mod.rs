@@ -60,7 +60,7 @@ pub fn roundtrip<Schema: BirthSchema>() {
     assert_eq!(
         installed
             .native_contracts()
-            .aspect("OutputNode", "NodeFacts")
+            .aspect("OutputNode", Note::at("Note").aspect())
             .unwrap()
             .contract()
             .absence(),

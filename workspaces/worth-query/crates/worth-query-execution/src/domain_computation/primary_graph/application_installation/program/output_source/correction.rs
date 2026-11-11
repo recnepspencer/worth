@@ -34,6 +34,19 @@ where
             + WorthQueryApplicationRequiredOutputSource<Schema, RootConnection<Schema, Root>>,
         Source::Input: Clone + Send + Sync + 'static,
     {
+        if let Err(cause) = source.admit_receiver(
+            self.runtime()
+                .runtime
+                .product_runtime
+                .owner
+                .owner_identity(),
+        ) {
+            return Ok((
+                WorthQueryApplicationCommitOutcome::Denied(cause),
+                None,
+                None,
+            ));
+        }
         if !source.is_action_binding::<Source>()
             || !source.matches_input(identities.input_identity())
             || !source.requires_root(Some(TypeId::of::<Root>()))

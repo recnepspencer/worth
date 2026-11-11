@@ -98,10 +98,15 @@ where
                     worth_relational::facade::mvcc::RelationalPublicationDenial::CutoverDeadlineElapsed => NoEffectCause::CurrentReadDependency(crate::publication::CurrentProductReadDependencyDenial::CutoverDeadlineElapsed),
                     worth_relational::facade::mvcc::RelationalPublicationDenial::CanonicalArtifactEncoding(_)
                     | worth_relational::facade::mvcc::RelationalPublicationDenial::RetainedEntitySelectionDurabilityUnsupported
+                    | worth_relational::facade::mvcc::RelationalPublicationDenial::OwnedGraphSelectionDurabilityUnsupported { .. }
                     | worth_relational::facade::mvcc::RelationalPublicationDenial::RecoveredCodecTransitionRequired
                     | worth_relational::facade::mvcc::RelationalPublicationDenial::HomeProgramContractsRequired
+                    | worth_relational::facade::mvcc::RelationalPublicationDenial::HomeProgramIndexDefinitionsRequired
+                    | worth_relational::facade::mvcc::RelationalPublicationDenial::StaleIndexDefinitions
+                    | worth_relational::facade::mvcc::RelationalPublicationDenial::IndexDefinitionPublicationContended
                     | worth_relational::facade::mvcc::RelationalPublicationDenial::HomeProgramTransition(_)
                     | worth_relational::facade::mvcc::RelationalPublicationDenial::StaleInvariantGeneration { .. }
+                    | worth_relational::facade::mvcc::RelationalPublicationDenial::StaleConfigurationEpoch
                     | worth_relational::facade::mvcc::RelationalPublicationDenial::ForeignRuntime { .. }
                     | worth_relational::facade::mvcc::RelationalPublicationDenial::OwnerMismatch
                     | worth_relational::facade::mvcc::RelationalPublicationDenial::Archived

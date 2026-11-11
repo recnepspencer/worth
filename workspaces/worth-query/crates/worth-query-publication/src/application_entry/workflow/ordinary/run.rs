@@ -276,3 +276,6 @@ where
 }
 
 mod entry;
+#[cfg(test)]
+#[path = "run_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;

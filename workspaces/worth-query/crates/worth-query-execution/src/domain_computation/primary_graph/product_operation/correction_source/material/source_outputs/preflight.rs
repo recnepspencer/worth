@@ -15,10 +15,13 @@ pub fn validate_witness<S>(
     if field.source_binding_type() != source {
         return Err(Denial::ForeignWitness);
     }
-    if !manifest.contains(field.declaration()) {
+    let declaration = field
+        .declaration()
+        .map_err(|_| Denial::FieldMeaningMismatch)?;
+    if !manifest.contains(declaration) {
         return Err(Denial::UndeclaredField);
     }
-    let parts = field.declaration().parts();
+    let parts = declaration.parts();
     let installed = bindings
         .field(&parts.entity, &parts.aspect, &parts.field)
         .ok_or(Denial::FieldMeaningMismatch)?;
@@ -33,7 +36,12 @@ pub fn validate_witness<S>(
     {
         return Err(Denial::FieldMeaningMismatch);
     }
-    match (field.content_recipe(), installed.content_format()) {
+    match (
+        field
+            .content_recipe()
+            .map_err(|_| Denial::FieldMeaningMismatch)?,
+        installed.content_format(),
+    ) {
         (None, None) => {}
         (Some(a), Some(b))
             if a.declaration() == b.declaration()

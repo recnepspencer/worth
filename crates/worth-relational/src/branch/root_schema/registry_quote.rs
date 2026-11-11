@@ -15,8 +15,15 @@ pub(super) fn retained(
     )?;
     add(
         &mut bytes,
-        tree::<KindId, ()>(registry.aggregate_private_kinds.len())?,
+        tree::<KindId, ()>(registry.native_private_kinds.len())?,
     )?;
+    if let Some(storage) = &registry.current_publication_storage {
+        control.checkpoint().map_err(Denial::Request)?;
+        add(
+            &mut bytes,
+            array::<KindId>(storage.entity_kinds.capacity())?,
+        )?;
+    }
     add(
         &mut bytes,
         tree::<
@@ -77,10 +84,36 @@ pub(super) fn retained(
             )?)?,
         )?;
     }
+    let content = registry
+        .content_formats
+        .copy_geometry(control)
+        .map_err(Denial::Request)?;
+    use worth_foundational::facade::CanonicalDigestId;
+    if content.formats != 0 {
+        add(
+            &mut bytes,
+            tree::<CanonicalDigestId, crate::content::RelationalContentFormat>(content.formats)?,
+        )?;
+    }
+    if content.names != 0 {
+        add(
+            &mut bytes,
+            tree::<String, std::collections::BTreeMap<u32, CanonicalDigestId>>(content.names)?,
+        )?;
+    }
+    if content.bindings != 0 {
+        add(
+            &mut bytes,
+            tree::<CanonicalDigestId, CanonicalDigestId>(content.bindings)?,
+        )?;
+    }
+    // The reviewed tree quote is linear in its admitted node bound. Sum the
+    // actual per-name version roots rather than inventing a full catalog width.
     add(
         &mut bytes,
-        registry.content_formats.snapshot().owned_bytes(),
+        checked(tree::<u32, CanonicalDigestId>(0)?.checked_mul(size(content.version_node_bound)?))?,
     )?;
+    add(&mut bytes, size(content.name_bytes)?)?;
     Ok(bytes)
 }
 

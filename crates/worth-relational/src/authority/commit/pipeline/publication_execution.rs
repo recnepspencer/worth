@@ -1,6 +1,8 @@
 use super::artifact_execution::AssembledCommitExecution;
 use super::phase_backing::CommitPhaseBacking;
 
+mod index_omission;
+mod index_preparation;
 mod phase;
 mod preparation;
 mod prepared_candidate;
@@ -100,7 +102,9 @@ pub(super) fn prepare_commit_publication_execution(
             aspect_evaluation_traces,
             aspect_emission_traces,
             source_interpretation,
+            lineage_deferred,
         ) = assembled.into_parts();
+        let predecessor_root = std::sync::Arc::clone(selected_branch_state.state().root());
         let publication = {
             let recovered_codec_publication_custody = admitted
                 .validation_input()
@@ -111,6 +115,7 @@ pub(super) fn prepare_commit_publication_execution(
                 execution,
                 runtime,
                 PreparePublicationPhaseInput {
+                    lineage_deferred,
                     structural: &public_structural_summary,
                     validation: &invariant_executions,
                     caller_association,
@@ -136,6 +141,25 @@ pub(super) fn prepare_commit_publication_execution(
                 },
             )?
         };
+        let prepared_indexes = index_preparation::prepare(
+            execution,
+            &runtime.index_definitions,
+            runtime.commit_work_budget.as_ref(),
+            &predecessor_root,
+            publication.value().prepared_root(),
+            admitted
+                .validation_input()
+                .home_target()
+                .and_then(|target| target.index_definitions.as_deref()),
+            admitted
+                .validation_input()
+                .home_step()
+                .map(|step| step.index_budget),
+        )
+        .map_err(|error| {
+            let (_, _, _, _, commit_log, _) = admitted.phase_view().into_parts();
+            error.with_commit_log(commit_log.clone())
+        })?;
         PreparedCommitPublicationExecution {
             source_interpretation,
             admitted: CommitPhaseBacking::new(execution, admitted)?,
@@ -149,7 +173,7 @@ pub(super) fn prepare_commit_publication_execution(
             publication_snapshot,
             aspect_evaluation_traces,
             aspect_emission_traces,
-            prepared_indexes: None,
+            prepared_indexes,
         }
     };
     CommitPhaseBacking::new(execution, result)
@@ -287,5 +311,28 @@ impl PublishedCommitExecution {
         diagnostics: Vec<crate::diagnostics::data::RelationalDiagnosticArtifact>,
     ) {
         self.admitted.value_mut().append_diagnostics(diagnostics);
+    }
+}
+#[cfg(test)]
+#[path = "publication_execution_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;
+
+impl PreparedCommitPublicationCompletion {
+    pub(crate) fn admit_prepared_indexes(
+        &mut self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        expires_at: std::time::Instant,
+        maximum_lifetime_millis: u64,
+    ) -> Result<(), crate::mvcc::RelationalPublicationOutcome> {
+        if let Some(indexes) = &mut self.prepared_indexes {
+            indexes.admit_catalog(execution, expires_at, maximum_lifetime_millis)?;
+        }
+        Ok(())
+    }
+
+    pub(crate) fn install_prepared_indexes(&mut self) {
+        if let Some(indexes) = &mut self.prepared_indexes {
+            indexes.install_admitted();
+        }
     }
 }

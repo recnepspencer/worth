@@ -9,8 +9,8 @@ pub(super) struct Input {
 }
 worth_query_structured_value_binding!(pub(super) InputBinding for Input {identity:"availability-publication-input.v1"});
 worth_query_operation!(pub(super) PublishQuantity for Schema: TopologySchemaBinding, input InputBinding);
-worth_query_operation_reads!(PublishQuantity => [Body,BodyKey,Length,PopulationMember,MemberNumber,DemandKey,MemberKind,Quantity,QuantityKey,QuantitySnapshot]);
-worth_query_operation_writes!(PublishQuantity => [QuantityKey,QuantitySnapshot]);
+worth_query_operation_reads!(PublishQuantity =>[Body,PopulationMember,Quantity]);
+
 worth_query_operation_creates!(PublishQuantity => [Quantity]);
 macro_rules! binding {
     ($binding:ident,$outputs:ident,$role:ident,$action:ty,$id:literal) => {
@@ -40,7 +40,7 @@ macro_rules! binding {
             type IdempotencyKey = u64;
             type Denial = PlanarMutationDenial;
             type DenialBinding = PlanarMutationDenialBinding;
-            type ScopeBinding = PlanarMutationScope<Schema>;
+            type ScopeBinding = PlanarMutationScope;
             type PrincipalBinding = ConsumerPrincipalBinding;
             type Mapping = ExternalPrincipalMapping;
             type Principal = Principal;
@@ -54,17 +54,8 @@ macro_rules! binding {
             fn workflow_execution_requirements() -> ApplicationWorkflowExecutionRequirements {
                 ApplicationWorkflowExecutionRequirements::not_applicable()
             }
-            fn scope_field() -> ApplicationFieldRef<
-                Schema,
-                Body,
-                PlanarPosition,
-                BodyKey,
-                String,
-                ReadOnly,
-                EqualityPredicate,
-                NoApplicationUnit,
-            > {
-                BodyKey::reference()
+            fn scope_field() -> BodyKey {
+                BodyKey::at("BodyKey")
             }
             fn principal_binding() -> ApplicationPrincipalBindingRef<
                 Schema,
@@ -90,8 +81,8 @@ macro_rules! binding {
             }
         }
         impl ApplicationMutationInputScope<Schema, $binding> for Input {
-            fn scope_for_binding(&self) -> PlanarMutationScope<Schema> {
-                PlanarMutationScope::new(BodyKey::reference(), self.scope_key.clone())
+            fn scope_for_binding(&self) -> PlanarMutationScope {
+                PlanarMutationScope::new(BodyKey::at("BodyKey"), self.scope_key.clone())
             }
         }
     };
@@ -121,17 +112,17 @@ pub(super) fn declare(
         .operation_projection_work_budget(op, 1_000_000)
         .operation_read_entity(op, Body::reference())
         .operation_read_entity(op, Quantity::reference())
-        .operation_read_field(op, BodyKey::reference())
-        .operation_read_field(op, Length::reference())
-        .operation_read_field(op, MemberNumber::reference())
-        .operation_read_field(op, DemandKey::reference())
-        .operation_read_field(op, MemberKind::reference())
+        .operation_read_field(op, BodyKey::at("BodyKey"))
+        .operation_read_field(op, Length::at("Length"))
+        .operation_read_field(op, MemberNumber::at("MemberNumber"))
+        .operation_read_field(op, DemandKey::at("DemandKey"))
+        .operation_read_field(op, MemberKind::at("MemberKind"))
         .operation_read_relation(op, PopulationMember::reference())
-        .operation_read_field(op, QuantityKey::reference())
-        .operation_read_field(op, QuantitySnapshot::reference())
+        .operation_read_field(op, QuantityKey::at("QuantityKey"))
+        .operation_read_field(op, QuantitySnapshot::at("QuantitySnapshot"))
         .operation_create(op, Quantity::reference())
-        .operation_write(op, QuantityKey::reference())
-        .operation_write(op, QuantitySnapshot::reference())
+        .operation_write(op, QuantityKey::at("QuantityKey"))
+        .operation_write(op, QuantitySnapshot::at("QuantitySnapshot"))
         .application_mutation_binding::<Initial>()
         .application_mutation_binding::<Preserve>()
 }

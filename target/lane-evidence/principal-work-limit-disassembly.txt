@@ -1,0 +1,88 @@
+
+Dump of file C:\programming\worth worktees\worktrees\m3-host-home\workspaces\worth-query\crates\worth-query-certification\fixtures\consumer_entry\target\debug\deps\worth_query_topology_entry-66cad83484de97d5.exe
+
+File Type: EXECUTABLE IMAGE
+
+_RNCNvMNtNtNtCs5siKCtn0CSo_15worth_execution7backend5meter10checkpointNtB6_13KernelContext16checkpoint_inners_0Ba_:
+  0000000150FA0630: sub         rsp,88h
+  0000000150FA0637: mov         rax,rcx
+  0000000150FA063A: mov         qword ptr [rsp+28h],rax
+  0000000150FA063F: mov         rcx,qword ptr [rax]
+  0000000150FA0642: mov         rcx,qword ptr [rcx]
+  0000000150FA0645: mov         rax,qword ptr [rax+10h]
+  0000000150FA0649: mov         rdx,qword ptr [rax]
+  0000000150FA064C: call        _RNvMs7_NtCs7uUmbfRqPp3_4core3numy11checked_addCs5siKCtn0CSo_15worth_execution
+  0000000150FA0651: mov         qword ptr [rsp+30h],rax
+  0000000150FA0656: mov         r8,rdx
+  0000000150FA0659: mov         rdx,qword ptr [rsp+30h]
+  0000000150FA065E: lea         rcx,[rsp+58h]
+  0000000150FA0663: mov         r9d,2
+  0000000150FA0669: call        _RINvMNtCs7uUmbfRqPp3_4core6optionINtB3_6OptionyE5ok_orNtNtNtCs5siKCtn0CSo_15worth_execution7backend5meter10KernelStopEBW_
+  0000000150FA066E: lea         rcx,[rsp+48h]
+  0000000150FA0673: lea         rdx,[rsp+58h]
+  0000000150FA0678: call        _RNvXsp_NtCs7uUmbfRqPp3_4core6resultINtB5_6ResultyNtNtNtCs5siKCtn0CSo_15worth_execution7backend5meter10KernelStopENtNtNtB7_3ops9try_trait3Try6branchBR_
+  0000000150FA067D: mov         al,byte ptr [rsp+48h]
+  0000000150FA0681: and         al,1
+  0000000150FA0683: movzx       eax,al
+  0000000150FA0686: test        rax,1
+  0000000150FA068C: je          0000000150FA06A7
+  0000000150FA068E: mov         cl,byte ptr [rsp+49h]
+  0000000150FA0692: lea         rdx,[15193D1B0h]
+  0000000150FA0699: call        _RNvXsq_NtCs7uUmbfRqPp3_4core6resultINtB5_6ResultuNtNtNtCs5siKCtn0CSo_15worth_execution7backend5meter10KernelStopEINtNtNtB7_3ops9try_trait12FromResidualIBy_NtNtB7_7convert10InfallibleBL_EE13from_residualBR_
+  0000000150FA069E: mov         byte ptr [rsp+3Fh],al
+  0000000150FA06A2: jmp         0000000150FA0764
+  0000000150FA06A7: mov         rax,qword ptr [rsp+28h]
+  0000000150FA06AC: mov         rcx,qword ptr [rsp+50h]
+  0000000150FA06B1: mov         qword ptr [rsp+40h],rcx
+  0000000150FA06B6: mov         rax,qword ptr [rax+18h]
+  0000000150FA06BA: mov         rcx,qword ptr [rax]
+  0000000150FA06BD: mov         rdx,qword ptr [rax+8]
+  0000000150FA06C1: lea         r8,[rsp+40h]
+  0000000150FA06C6: call        _RINvMNtCs7uUmbfRqPp3_4core6optionINtB3_6OptionyE11is_some_andNCNCNvMNtNtNtCs5siKCtn0CSo_15worth_execution7backend5meter10checkpointNtB16_13KernelContext16checkpoint_inners_00EB1a_
+  0000000150FA06CB: test        al,1
+  0000000150FA06CD: jne         0000000150FA0726
+  0000000150FA06CF: mov         rax,qword ptr [rsp+28h]
+  0000000150FA06D4: mov         rcx,qword ptr [rax+8]
+  0000000150FA06D8: mov         rcx,qword ptr [rcx]
+  0000000150FA06DB: mov         rax,qword ptr [rax+10h]
+  0000000150FA06DF: mov         rdx,qword ptr [rax]
+  0000000150FA06E2: call        _RNvMs7_NtCs7uUmbfRqPp3_4core3numy11checked_addCs5siKCtn0CSo_15worth_execution
+  0000000150FA06E7: mov         qword ptr [rsp+20h],rax
+  0000000150FA06EC: mov         r8,rdx
+  0000000150FA06EF: mov         rdx,qword ptr [rsp+20h]
+  0000000150FA06F4: lea         rcx,[rsp+78h]
+  0000000150FA06F9: mov         r9d,2
+  0000000150FA06FF: call        _RINvMNtCs7uUmbfRqPp3_4core6optionINtB3_6OptionyE5ok_orNtNtNtCs5siKCtn0CSo_15worth_execution7backend5meter10KernelStopEBW_
+  0000000150FA0704: lea         rcx,[rsp+68h]
+  0000000150FA0709: lea         rdx,[rsp+78h]
+  0000000150FA070E: call        _RNvXsp_NtCs7uUmbfRqPp3_4core6resultINtB5_6ResultyNtNtNtCs5siKCtn0CSo_15worth_execution7backend5meter10KernelStopENtNtNtB7_3ops9try_trait3Try6branchBR_
+  0000000150FA0713: mov         al,byte ptr [rsp+68h]
+  0000000150FA0717: and         al,1
+  0000000150FA0719: movzx       eax,al
+  0000000150FA071C: test        rax,1
+  0000000150FA0722: jne         0000000150FA072D
+  0000000150FA0724: jmp         0000000150FA0743
+  0000000150FA0726: mov         byte ptr [rsp+3Fh],3
+  0000000150FA072B: jmp         0000000150FA0764
+  0000000150FA072D: mov         cl,byte ptr [rsp+69h]
+  0000000150FA0731: lea         rdx,[15193D198h]
+  0000000150FA0738: call        _RNvXsq_NtCs7uUmbfRqPp3_4core6resultINtB5_6ResultuNtNtNtCs5siKCtn0CSo_15worth_execution7backend5meter10KernelStopEINtNtNtB7_3ops9try_trait12FromResidualIBy_NtNtB7_7convert10InfallibleBL_EE13from_residualBR_
+  0000000150FA073D: mov         byte ptr [rsp+3Fh],al
+  0000000150FA0741: jmp         0000000150FA0764
+  0000000150FA0743: mov         rax,qword ptr [rsp+28h]
+  0000000150FA0748: mov         rcx,qword ptr [rsp+70h]
+  0000000150FA074D: mov         rdx,qword ptr [rax]
+  0000000150FA0750: mov         r8,qword ptr [rsp+40h]
+  0000000150FA0755: mov         qword ptr [rdx],r8
+  0000000150FA0758: mov         rax,qword ptr [rax+8]
+  0000000150FA075C: mov         qword ptr [rax],rcx
+  0000000150FA075F: mov         byte ptr [rsp+3Fh],0FFh
+  0000000150FA0764: mov         al,byte ptr [rsp+3Fh]
+  0000000150FA0768: add         rsp,88h
+  0000000150FA076F: ret
+_RNCNvMNtNtNtCs5siKCtn0CSo_15worth_execution7backend5meter10checkpointNtB6_13KernelContext22account_completed_work0Ba_:
+  0000000150FA0770: sub         rsp,28h
+
+  Summary
+
+    1132B000 .text

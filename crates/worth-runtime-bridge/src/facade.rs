@@ -103,8 +103,8 @@ pub use preview_session_liveness::{
 pub use request::BridgeRouteRequest;
 pub use runtime::RuntimeBridge;
 pub use runtime::{
-    BridgeHomeRetirementDenial, BridgeHomeRetirementProgress, RetiredRuntimeBridge,
-    RetiringRuntimeBridge, RetiringWorldCorrespondence,
+    BridgeHomeProgramMappingDenial, BridgeHomeRetirementDenial, BridgeHomeRetirementProgress,
+    RetiredRuntimeBridge, RetiringRuntimeBridge, RetiringWorldCorrespondence,
 };
 pub use runtime_world::{
     RecordedRuntimeWorldBaseline, RuntimeWorldBaselineRefusal,

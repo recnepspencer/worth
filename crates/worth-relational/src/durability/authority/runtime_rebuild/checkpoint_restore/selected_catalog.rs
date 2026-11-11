@@ -13,11 +13,28 @@ pub(super) fn admit(
     for entry in &directory.manifest.commits {
         let actual = RetainedCanonicalIndex::copy_original(entry, execution)
             .map_err(RelationalRecoveryStop::Request)?;
+        let artifact = crate::history::RelationalCommitArtifact::from_index(
+            actual.clone(),
+            directory.source.clone(),
+        )
+        .map_err(|cause| {
+            crate::durability::checkpoints::region_directory::corrupt(format!(
+                "indexed commit admission: {cause:?}"
+            ))
+        })?;
+        if let Some(admitted) = admitted(entry) {
+            artifact
+                .envelope_residency()
+                .bind_recovered_positioned(execution, &admitted)?;
+        }
+        let artifact = artifact
+            .prepare_catalog_owner(execution)
+            .map_err(RelationalRecoveryStop::Request)?;
         catalog
-            .append_indexed_recovery(actual.clone(), directory.source.clone(), admitted(entry))
+            .append_preencoded_recovery(artifact)
             .map_err(|cause| {
                 crate::durability::checkpoints::region_directory::corrupt(format!(
-                    "indexed commit admission: {cause:?}"
+                    "indexed commit insertion: {cause:?}"
                 ))
             })?;
         let cell = catalog

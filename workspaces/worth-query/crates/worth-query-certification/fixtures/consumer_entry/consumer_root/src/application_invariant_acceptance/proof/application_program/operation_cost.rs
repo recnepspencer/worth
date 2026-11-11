@@ -31,7 +31,7 @@ impl ApplicationMutationIntent<Schema> for Original {
     fn input(&self) -> &PlanarSourceAdjustment {
         &self.0
     }
-    fn scope_binding(&self) -> PlanarMutationScope<Schema> {
+    fn scope_binding(&self) -> PlanarMutationScope {
         <PlanarSourceAdjustment as ApplicationMutationIntent<Schema>>::scope_binding(&self.0)
     }
 }
@@ -53,10 +53,14 @@ fn retain(application: &Runtime, request: &Request<'_>, body: &str, key: u64) ->
     request
         .mutate(Original(input(body)))
         .expect_source(source)
-        .preconditions(TypedMutationPreconditions::new().expect_fact(
-            BodyKey::reference::<Schema>(),
-            ApplicationEncodedScalarValue::try_new(body.to_owned()).unwrap(),
-        ))
+        .preconditions(
+            TypedMutationPreconditions::new()
+                .expect_fact(
+                    BodyKey::at("BodyKey"),
+                    ApplicationEncodedScalarValue::try_new(body.to_owned()).unwrap(),
+                )
+                .expect("record field contract"),
+        )
         .idempotency_owned(key)
         .unwrap_or_else(|(_, _, denial)| panic!("input capture: {denial:?}"))
         .retain_operation::<Program, Action>(application)

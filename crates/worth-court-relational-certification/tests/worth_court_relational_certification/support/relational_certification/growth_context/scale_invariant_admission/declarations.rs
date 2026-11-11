@@ -32,7 +32,9 @@ pub(crate) fn assert_scale_fork_shares_complete_authority(
         runtime.main_branch_identity(),
         runtime.branch_identity(&child).unwrap(),
     ];
-    let sharing = runtime.observe_branch_sharing(&identities).unwrap();
+    let sharing = runtime
+        .observe_branch_sharing(execution, &identities)
+        .unwrap();
 
     assert_eq!(sharing.unique_root_count(), 1);
     assert_eq!(sharing.unique_canonical_commit_artifacts(), 1);

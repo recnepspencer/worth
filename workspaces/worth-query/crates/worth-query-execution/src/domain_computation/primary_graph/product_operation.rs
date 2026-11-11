@@ -3,11 +3,11 @@ pub(crate) mod shared_query_basis;
 pub(in crate::domain_computation::primary_graph) use shared_query_basis::SelectedQueryBasisRetentionStop;
 pub(in crate::domain_computation) use shared_query_basis::SharedSelectedProductOperation;
 mod branches;
-mod candidate_selectors;
 mod cleanup;
 mod close;
 mod conditional_definition;
 mod context;
+pub(in crate::domain_computation) mod current_read;
 pub(in crate::domain_computation::primary_graph) use context::SelectedQueryOrigin;
 pub(crate) mod correction_source;
 pub(crate) mod document_history;
@@ -103,3 +103,6 @@ pub use transaction::{
     WorthQueryAdmittedChange, WorthQueryAppliedProductTransaction, WorthQueryProductTransaction,
     WorthQueryProductTransactionCommitError,
 };
+#[cfg(test)]
+#[path = "product_operation_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;

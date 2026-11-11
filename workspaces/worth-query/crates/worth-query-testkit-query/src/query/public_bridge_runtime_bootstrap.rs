@@ -45,7 +45,8 @@ pub fn existing_task_binding(
                 worth_query::facade::foundation::QueryExternalIdentityToken::new(
                     std::sync::Arc::from(entity_token),
                 ),
-            ),
+            )
+            .expect("fixture digest must fit"),
         )
         .expect("existing entity target should build")
         .in_target_collection("Task")

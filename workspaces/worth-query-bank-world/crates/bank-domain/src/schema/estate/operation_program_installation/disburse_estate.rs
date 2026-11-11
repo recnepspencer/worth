@@ -16,19 +16,40 @@ pub(super) fn install(
     let operation = DisburseEstateOperation::reference();
     schema
         .operation_projection_work_budget(operation, 192)
-        .operation_read_field(operation, EstateCaseIdentityField::reference())
-        .operation_read_field(operation, EstateCaseStatusField::reference())
-        .operation_read_field(operation, PrincipalIdentityField::reference())
-        .operation_read_field(operation, LegalAuthorityIdentityField::reference())
-        .operation_read_field(operation, LegalAuthorityRecognizedField::reference())
-        .operation_read_field(operation, AccountIdentity::reference())
-        .operation_read_field(operation, AccountingRevision::reference())
-        .operation_read_field(operation, Status::reference())
-        .operation_read_field(operation, Kind::reference())
-        .operation_read_field(operation, AccountDisplayName::reference())
-        .operation_read_field(operation, InstitutionIdentityField::reference())
-        .operation_read_field(operation, BusinessIdentityField::reference())
-        .operation_read_field(operation, PostingAmount::reference())
+        .operation_read_field(
+            operation,
+            EstateCaseIdentityField::at("EstateCaseIdentityField"),
+        )
+        .operation_read_field(
+            operation,
+            EstateCaseStatusField::at("EstateCaseStatusField"),
+        )
+        .operation_read_field(
+            operation,
+            PrincipalIdentityField::at("PrincipalIdentityField"),
+        )
+        .operation_read_field(
+            operation,
+            LegalAuthorityIdentityField::at("LegalAuthorityIdentityField"),
+        )
+        .operation_read_field(
+            operation,
+            LegalAuthorityRecognizedField::at("LegalAuthorityRecognizedField"),
+        )
+        .operation_read_field(operation, AccountIdentity::at("AccountIdentity"))
+        .operation_read_field(operation, AccountingRevision::at("AccountingRevision"))
+        .operation_read_field(operation, Status::at("Status"))
+        .operation_read_field(operation, Kind::at("Kind"))
+        .operation_read_field(operation, AccountDisplayName::at("AccountDisplayName"))
+        .operation_read_field(
+            operation,
+            InstitutionIdentityField::at("InstitutionIdentityField"),
+        )
+        .operation_read_field(
+            operation,
+            BusinessIdentityField::at("BusinessIdentityField"),
+        )
+        .operation_read_field(operation, PostingAmount::at("PostingAmount"))
         .operation_read_relation(operation, EstateAccount::reference())
         .operation_read_relation(operation, EstateBeneficiary::reference())
         .operation_read_relation(operation, EstateJointOwner::reference())

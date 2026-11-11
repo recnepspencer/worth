@@ -711,6 +711,51 @@ Published briefs describe available support; live recovery uses the native
 owner-issued carrier. Relational owns commit ancestry and Runtime World owns
 composite publication.
 
+## Durable dispatch custody on a Directory Home
+
+A Directory Home records every physical external contact in its own
+`query.dispatch` journal. The attempt is durable before the installed transport
+is called, and exactly one observation is recorded after it:
+
+| Recorded observation | Meaning |
+|---|---|
+| `Completed` | The external owner reported the effect complete. It is never contacted again. |
+| `Acknowledged` | The external owner reported receipt and nothing further. |
+| `ProvenNoEffect(PayloadRejected)` | The external owner decoded the payload and refused it. Nothing happened. |
+| `ProvenNoEffect(ContactNotStarted)` | The attempt was recorded, but the runtime never called the transport. |
+| `Unresolved(cause)` | The contact left; its effect is unknown and stays unknown until its owner resolves it. |
+
+Read what the Home recorded with
+`runtime.durable_dispatch_custody(&correlation_token)`. The token is the one the
+committed outbox record carries
+(`receipt.dispatch_outbox()?.correlation().bytes()`) and the one every
+`WorthQueryExternalDispatchRequest` gives the transport. The answer is recorded
+data: it grants no dispatch authority. A memory-only Home returns `None`,
+because its dispatch custody is process-local.
+
+A Directory Home that has dispatched an external effect cannot close
+gracefully yet. The dispatched commit's basis stays owed to its dispatch owner,
+so close refuses before any seal and `resume()` returns the same Home with its
+recorded custody. Carrying outstanding dispatch across close and reopen is not
+yet delivered.
+
+A dispatch whose attempt record the Home refuses never reaches the transport.
+The commit's dispatch preparation reports
+`AttemptAdmissionDenied(DurableAttemptRecordDenied(cause))`.
+
+The attempt and its observation are recorded on the request that dispatches.
+If that request stops after the contact but before its observation is
+recorded, the Home keeps the observation and records it on the next dispatch
+or at graceful close; until then the Home is not quiescent. Graceful close
+settles the journal before it retires any graph or Store owner, and refuses
+while a contact is still in flight.
+
+Process death before an observation is recorded is not yet certified. A Home
+whose journal ends in an attempt with no recorded observation refuses to open,
+and `unclean_recovery_unsupported()` names the `Dispatch` owner and that
+effect. Inbound completion and recovery claims are not yet durable on a
+Directory Home.
+
 ## Recovery lifetime and scope
 
 Aftermath recovery handles belong to their runtime.

@@ -1,5 +1,7 @@
+mod complete_view;
 mod readmission;
 mod request_quote;
+pub(crate) use complete_view::CompleteIndexCheckpointView;
 pub(super) use request_quote::quote_decode;
 use std::borrow::Cow;
 use std::collections::{BTreeMap, BTreeSet};
@@ -17,7 +19,7 @@ use crate::indexes::data::{
 };
 use crate::schema::data::SchemaVersionId;
 
-const DIGEST_DOMAIN: &[u8] = b"worth.relational.derived-index-checkpoint.v2\0";
+const DIGEST_DOMAIN: &[u8] = b"worth.relational.derived-index-checkpoint.v3\0";
 
 /// Checkpoint-only deltas. Canonical envelopes remain the semantic authority.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -25,6 +27,7 @@ pub(crate) struct DerivedIndexCheckpointArtifacts {
     format_version: u16,
     generation_ids: Vec<DerivedIndexGenerationId>,
     generations: Vec<CheckpointGeneration>,
+    bases: Vec<crate::indexes::data::IndexBasisCheckpoint>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -72,7 +75,7 @@ impl<'a> CheckpointDigestHeader<'a> {
 }
 
 impl DerivedIndexCheckpointArtifacts {
-    pub(crate) const FORMAT_VERSION: u16 = 2;
+    pub(crate) const FORMAT_VERSION: u16 = 3;
 
     pub(crate) fn supports_outer_format(format: u16, has_payload: bool) -> bool {
         matches!(
@@ -81,8 +84,19 @@ impl DerivedIndexCheckpointArtifacts {
         )
     }
 
+    pub(crate) fn bases(&self) -> &[crate::indexes::data::IndexBasisCheckpoint] {
+        &self.bases
+    }
+    pub(in crate::durability::derived_index_artifacts) fn into_bases(
+        self,
+    ) -> Vec<crate::indexes::data::IndexBasisCheckpoint> {
+        self.bases
+    }
+
     pub(crate) fn capture(
+        _lane: &crate::storage::substrate::maintenance::ReconstructionLane<'_>,
         mut generations: Vec<Arc<DerivedIndexGeneration>>,
+        bases: Vec<crate::indexes::data::IndexBasisCheckpoint>,
     ) -> Result<Self, DurabilityError> {
         generations.sort_by_key(|generation| (generation.index_id, generation.generation_id));
         let mut previous = BTreeMap::<DerivedIndexId, (DerivedIndexGenerationId, Vec<u8>)>::new();
@@ -161,6 +175,7 @@ impl DerivedIndexCheckpointArtifacts {
             format_version: Self::FORMAT_VERSION,
             generation_ids: captured.iter().map(|entry| entry.generation_id).collect(),
             generations: captured,
+            bases,
         })
     }
 }
@@ -229,8 +244,12 @@ mod tests {
     }
 
     fn capture(generations: Vec<DerivedIndexGeneration>) -> DerivedIndexCheckpointArtifacts {
-        DerivedIndexCheckpointArtifacts::capture(generations.into_iter().map(Arc::new).collect())
-            .unwrap()
+        DerivedIndexCheckpointArtifacts::capture(
+            &crate::storage::substrate::maintenance::ReconstructionLane::oracle(),
+            generations.into_iter().map(Arc::new).collect(),
+            Vec::new(),
+        )
+        .unwrap()
     }
 
     #[test]
@@ -239,7 +258,12 @@ mod tests {
         let checkpoint = capture(generations.clone());
         let wire = rmp_serde::to_vec_named(&checkpoint).unwrap();
         let decoded: DerivedIndexCheckpointArtifacts = rmp_serde::from_slice(&wire).unwrap();
-        assert_eq!(decoded.readmit().unwrap(), generations);
+        assert_eq!(
+            decoded
+                .readmit(&crate::storage::substrate::maintenance::ReconstructionLane::oracle())
+                .unwrap(),
+            generations
+        );
         assert!(decoded.generations[1].shared_suffix_bytes > 0);
         assert!(wire.len() < rmp_serde::to_vec_named(&generations).unwrap().len());
     }
@@ -249,15 +273,23 @@ mod tests {
         let generations = vec![generation(1, 10), generation(2, 90)];
         let mut checkpoint = capture(generations);
         checkpoint.generations[1].changed_bytes[0] ^= 1;
-        assert!(checkpoint.readmit().is_err());
+        assert!(checkpoint
+            .readmit(&crate::storage::substrate::maintenance::ReconstructionLane::oracle())
+            .is_err());
         let mut checkpoint = capture(vec![generation(1, 10)]);
         checkpoint.generations[0].status = DerivedIndexPublicationStatus::BuildFailed;
-        assert!(checkpoint.readmit().is_err());
+        assert!(checkpoint
+            .readmit(&crate::storage::substrate::maintenance::ReconstructionLane::oracle())
+            .is_err());
         let mut checkpoint = capture(vec![generation(1, 10)]);
         checkpoint.generations.clear();
-        assert!(checkpoint.readmit().is_err());
+        assert!(checkpoint
+            .readmit(&crate::storage::substrate::maintenance::ReconstructionLane::oracle())
+            .is_err());
         checkpoint.format_version = 1;
-        assert!(checkpoint.readmit().is_err());
+        assert!(checkpoint
+            .readmit(&crate::storage::substrate::maintenance::ReconstructionLane::oracle())
+            .is_err());
     }
 
     #[test]
@@ -265,7 +297,9 @@ mod tests {
         let mut foreign = generation(1, 10);
         foreign.applicability.branch_id = BranchId("foreign".into());
         let checkpoint = capture(vec![foreign]);
-        let error = checkpoint.readmit().unwrap_err();
+        let error = checkpoint
+            .readmit(&crate::storage::substrate::maintenance::ReconstructionLane::oracle())
+            .unwrap_err();
         assert_eq!(error.class, RecoveryFailureClass::CorruptCheckpoint);
         assert!(error.detail.contains("branch affinity"));
     }

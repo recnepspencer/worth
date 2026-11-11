@@ -1,7 +1,4 @@
-use std::{
-    collections::{BTreeMap, BTreeSet},
-    mem::size_of,
-};
+use std::mem::size_of;
 
 use worth_foundational::PartitionIdentity;
 
@@ -41,6 +38,9 @@ impl ComponentPartitioner {
         let _reservation = funding.scratch(bytes)?;
         let _activity = funding.activity(bytes);
         funding.checkpoint(context, 1)?;
+        self.check_group_capacity(1).ok_or_else(|| {
+            PartitionUpdateDenial::Admission(LeaseDenial::charged_bytes_overflow())
+        })?;
         Ok(self.upsert_item(item))
     }
 
@@ -59,13 +59,9 @@ impl ComponentPartitioner {
         if self.adjacent[&a].contains(&b) {
             return Ok(PartitionWork::default());
         }
-        let a_identity = self.routes[&a];
-        let b_identity = self.routes[&b];
-        let losing = if a_identity < b_identity {
-            b_identity
-        } else {
-            a_identity
-        };
+        let a_identity = self.route(a).unwrap();
+        let b_identity = self.route(b).unwrap();
+        let (_, losing) = self.merge_sides(a_identity, b_identity);
         let moved = if a_identity == b_identity {
             0
         } else {
@@ -110,8 +106,8 @@ impl ComponentPartitioner {
         Ok(work)
     }
 
-    /// Checked removal of a coupling edge. The affected island is rebuilt as a
-    /// candidate; denial leaves the retained graph and routes unchanged.
+    /// Checked removal stages forest-cut discovery and replacement edges;
+    /// denial leaves the retained graph and routing witness unchanged.
     pub(super) fn remove_edge_structural_checked(
         &mut self,
         funding: &ComponentFunding<'_, '_>,
@@ -125,16 +121,11 @@ impl ComponentPartitioner {
         if !self.adjacent[&a].contains(&b) {
             return Ok(PartitionWork::default());
         }
-        let identity = self.routes[&a];
-        let work = self.rebuild_checked(funding, context, identity, None, Some((a, b)))?;
-        self.adjacent.get_mut(&a).unwrap().remove(&b);
-        self.adjacent.get_mut(&b).unwrap().remove(&a);
-        self.edge_count -= 1;
-        Ok(work)
+        let identity = self.route(a).unwrap();
+        self.remove_structural_checked(funding, context, identity, None, Some((a, b)))
     }
 
-    /// Checked removal of one item and its incident edges. Least-member
-    /// renaming and splits affect only the old island.
+    /// Discover only the forest pieces affected by the removed item's edges.
     pub(super) fn remove_item_structural_checked(
         &mut self,
         funding: &ComponentFunding<'_, '_>,
@@ -142,169 +133,114 @@ impl ComponentPartitioner {
         item: PartitionItemId,
     ) -> Result<PartitionWork, PartitionUpdateDenial> {
         funding.checkpoint(context, 0)?;
-        let Some(&identity) = self.routes.get(&item) else {
+        let Some(identity) = self.route(item) else {
             return Ok(PartitionWork::default());
         };
-        let mut work = self.rebuild_checked(funding, context, identity, Some(item), None)?;
-        let neighbors = self.adjacent.remove(&item).unwrap();
-        self.edge_count -= neighbors.len();
-        for neighbor in neighbors {
-            self.adjacent.get_mut(&neighbor).unwrap().remove(&item);
-        }
-        self.routes.remove(&item);
-        work.items_rerouted += 1;
-        Ok(work)
+        self.remove_structural_checked(funding, context, identity, Some(item), None)
     }
 
-    fn rebuild_checked(
+    fn remove_structural_checked(
         &mut self,
         funding: &ComponentFunding<'_, '_>,
         context: &mut KernelContext<'_, '_>,
         identity: PartitionIdentity,
-        excluded_item: Option<PartitionItemId>,
-        excluded_edge: Option<(PartitionItemId, PartitionItemId)>,
+        item: Option<PartitionItemId>,
+        edge: Option<(PartitionItemId, PartitionItemId)>,
     ) -> Result<PartitionWork, PartitionUpdateDenial> {
-        let old = &self.members[&identity];
-        let mut work = PartitionWork::default();
-        let mut degrees = 0_usize;
-        for item in old {
-            funding.checkpoint(context, 1)?;
-            work.members_visited += 1;
-            degrees = degrees
-                .checked_add(self.adjacent[item].len())
-                .ok_or_else(|| {
-                    PartitionUpdateDenial::Admission(
-                        crate::authority::LeaseDenial::charged_bytes_overflow(),
-                    )
-                })?;
-        }
-        // Parent links, rebuilt membership, and the transient candidate are
-        // conservatively reserved before the first candidate allocation.
-        let bytes = old
-            .len()
-            .checked_mul(MEMBER_SCRATCH_BYTES)
-            .and_then(|value| value.checked_add(degrees.checked_mul(DEGREE_SCRATCH_BYTES)?))
-            .and_then(|value| u64::try_from(value).ok())
-            .ok_or_else(|| {
-                PartitionUpdateDenial::Admission(
-                    crate::authority::LeaseDenial::charged_bytes_overflow(),
-                )
-            })?;
-        let _reservation = funding.scratch(bytes)?;
-        let _activity = funding.activity(bytes);
-
-        let mut parent: BTreeMap<_, _> = BTreeMap::new();
-        for item in old {
-            if Some(*item) == excluded_item {
-                continue;
-            }
-            funding.checkpoint(context, 1)?;
-            work.members_visited += 1;
-            parent.insert(*item, *item);
-        }
-        for item in old {
-            if Some(*item) == excluded_item {
-                continue;
-            }
-            for neighbor in &self.adjacent[item] {
-                funding.checkpoint(context, 1)?;
-                work.edges_visited += 1;
-                if Some(*neighbor) == excluded_item
-                    || !old.contains(neighbor)
-                    || item >= neighbor
-                    || excluded_edge.is_some_and(|(a, b)| {
-                        (*item == a && *neighbor == b) || (*item == b && *neighbor == a)
-                    })
-                {
-                    continue;
-                }
-                checked_union(&mut parent, *item, *neighbor, funding, context, &mut work)?;
-            }
-        }
-        let mut rebuilt: BTreeMap<PartitionIdentity, BTreeSet<PartitionItemId>> = BTreeMap::new();
-        let mut new_routes = BTreeMap::new();
-        for item in old {
-            if Some(*item) == excluded_item {
-                continue;
-            }
-            funding.checkpoint(context, 1)?;
-            work.members_visited += 1;
-            let next = PartitionIdentity::new(
-                checked_root(&mut parent, *item, funding, context, &mut work)?.0,
-            );
-            if self.routes[item] != next {
-                work.items_rerouted += 1;
-            }
-            rebuilt.entry(next).or_default().insert(*item);
-            new_routes.insert(*item, next);
-        }
-        // Publication traverses the old island to replace routes and moves the
-        // rebuilt membership sets. Edge/item cleanup is a second bounded
-        // atomic phase, admitted here before any retained state changes.
-        let members = u64::try_from(old.len()).map_err(|_| {
-            PartitionUpdateDenial::Stop(crate::backend::KernelStop::work_counter_overflow())
-        })?;
-        let cleanup_edges = if let Some(item) = excluded_item {
-            u64::try_from(self.adjacent[&item].len()).map_err(|_| {
-                PartitionUpdateDenial::Stop(crate::backend::KernelStop::work_counter_overflow())
-            })?
-        } else {
-            2
-        };
-        let commit_units = members
+        let seeds = item.map_or(2, |item| self.forest[&item].len());
+        let mut discovery = ChargedDiscovery::new(funding, context, seeds)?;
+        let mut plan = self.plan_removal(item, edge, &mut discovery)?;
+        self.check_group_capacity(plan.groups.len())
+            .ok_or_else(overflow)?;
+        let changed = plan
+            .groups
+            .iter()
+            .try_fold(0u64, |n, g| n.checked_add(g.len() as u64))
+            .ok_or_else(overflow)?;
+        let cleanup = item.map_or(2, |item| self.adjacent[&item].len() as u64);
+        let effects = changed
             .checked_mul(2)
-            .and_then(|value| value.checked_add(cleanup_edges))
-            .ok_or_else(|| {
-                PartitionUpdateDenial::Stop(crate::backend::KernelStop::work_counter_overflow())
-            })?;
-        funding.checkpoint(context, commit_units)?;
-        work.members_visited += members * 2;
-        work.edges_visited += cleanup_edges;
-        // No cancellation, admission, or fallible allocation check follows.
-        self.members.remove(&identity);
-        self.members.extend(rebuilt);
-        self.routes.extend(new_routes);
-        Ok(work)
+            .and_then(|n| n.checked_add(cleanup))
+            .and_then(|n| n.checked_add((plan.forest_edges.len() as u64).checked_mul(2)?))
+            .and_then(|n| n.checked_add(1))
+            .ok_or_else(overflow)?;
+        discovery.funding.checkpoint(discovery.context, effects)?;
+        plan.work.members_visited = plan
+            .work
+            .members_visited
+            .checked_add(changed)
+            .ok_or_else(overflow)?;
+        plan.work.edges_visited = plan
+            .work
+            .edges_visited
+            .checked_add(cleanup)
+            .ok_or_else(overflow)?;
+        Ok(self.apply_removal(identity, item, edge, plan))
     }
 }
 
-fn checked_root(
-    parent: &mut BTreeMap<PartitionItemId, PartitionItemId>,
-    item: PartitionItemId,
-    funding: &ComponentFunding<'_, '_>,
-    context: &mut KernelContext<'_, '_>,
-    work: &mut PartitionWork,
-) -> Result<PartitionItemId, PartitionUpdateDenial> {
-    let mut root = item;
-    while parent[&root] != root {
-        funding.checkpoint(context, 1)?;
-        work.members_visited += 1;
-        root = parent[&root];
-    }
-    let mut cursor = item;
-    while parent[&cursor] != root {
-        funding.checkpoint(context, 1)?;
-        work.members_visited += 1;
-        let next = parent[&cursor];
-        parent.insert(cursor, root);
-        cursor = next;
-    }
-    Ok(root)
+fn overflow() -> PartitionUpdateDenial {
+    PartitionUpdateDenial::Admission(LeaseDenial::charged_bytes_overflow())
 }
 
-fn checked_union(
-    parent: &mut BTreeMap<PartitionItemId, PartitionItemId>,
-    a: PartitionItemId,
-    b: PartitionItemId,
-    funding: &ComponentFunding<'_, '_>,
-    context: &mut KernelContext<'_, '_>,
-    work: &mut PartitionWork,
-) -> Result<(), PartitionUpdateDenial> {
-    let a = checked_root(parent, a, funding, context, work)?;
-    let b = checked_root(parent, b, funding, context, work)?;
-    if a != b {
-        let (least, other) = if a < b { (a, b) } else { (b, a) };
-        parent.insert(other, least);
+struct ChargedDiscovery<'stage, 'lease, 'lease_owner, 'meter, 'meter_owner> {
+    funding: &'stage ComponentFunding<'lease, 'lease_owner>,
+    context: &'stage mut KernelContext<'meter, 'meter_owner>,
+    memory: Option<crate::ExecutionMemoryReservation>,
+    activity: Option<crate::backend::MemoryActivityGuard>,
+    capacity: usize,
+    visits: usize,
+}
+impl<'stage, 'lease, 'lease_owner, 'meter, 'meter_owner>
+    ChargedDiscovery<'stage, 'lease, 'lease_owner, 'meter, 'meter_owner>
+{
+    fn new(
+        funding: &'stage ComponentFunding<'lease, 'lease_owner>,
+        context: &'stage mut KernelContext<'meter, 'meter_owner>,
+        seeds: usize,
+    ) -> Result<Self, PartitionUpdateDenial> {
+        let capacity = seeds
+            .max(1)
+            .checked_next_power_of_two()
+            .ok_or_else(overflow)?;
+        let bytes = scratch_bytes(capacity)?;
+        Ok(Self {
+            funding,
+            context,
+            memory: funding.scratch(bytes)?,
+            activity: funding.activity(bytes),
+            capacity,
+            visits: 0,
+        })
     }
-    Ok(())
+}
+impl super::discovery::Discovery for ChargedDiscovery<'_, '_, '_, '_, '_> {
+    type Error = PartitionUpdateDenial;
+    fn member(&mut self) -> Result<(), Self::Error> {
+        let next = self.visits.checked_add(1).ok_or_else(overflow)?;
+        if next > self.capacity {
+            let capacity = self.capacity.checked_mul(2).ok_or_else(overflow)?;
+            let bytes = scratch_bytes(capacity)?;
+            if let Some(memory) = &mut self.memory {
+                memory.resize(bytes).map_err(|cause| {
+                    PartitionUpdateDenial::Admission(LeaseDenial::MemoryExhausted(cause))
+                })?;
+            }
+            self.activity.take();
+            self.activity = self.funding.activity(bytes);
+            self.capacity = capacity;
+        }
+        self.funding.checkpoint(self.context, 1)?;
+        self.visits = next;
+        Ok(())
+    }
+    fn edge(&mut self) -> Result<(), Self::Error> {
+        self.funding.checkpoint(self.context, 1)
+    }
+}
+fn scratch_bytes(count: usize) -> Result<u64, PartitionUpdateDenial> {
+    count
+        .checked_mul(MEMBER_SCRATCH_BYTES)
+        .and_then(|n| u64::try_from(n).ok())
+        .ok_or_else(overflow)
 }

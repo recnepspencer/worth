@@ -98,7 +98,10 @@ its final owner drops. Cancellation and deadlines still apply to native calls.
 `ExecutionRequestArrayBuilder::allocate(request, count)` borrows the original
 request and shares the existing fixed array allocation owner. Push, initialized
 element replacement and seal check that request; the sealed array retains one
-backing reservation without retaining the borrowed request.
+backing reservation without retaining the borrowed request. Append checks
+cancellation immediately and consults full deadline/work controls between
+bounded chunks: at most 32 scalar moves, a 64 KiB inline granule, or one indivisible
+oversized value. Allocation, errors, replacements and seal check immediately.
 `replace_initialized(index, value)` moves within the initialized prefix, consumes
 input on every outcome, keeps the same allocation and ticket, and checks the
 original request before and after the move. Its physical
@@ -156,6 +159,15 @@ whole operation succeeds. The existing context-and-lease `*_checked` methods
 retain their admission contract. The
 [request courts](src/partition/components/request/tests.rs) exercise actual
 leased, serial, unaccounted, refusal and final-drop custody.
+
+Component removal maintains a spanning forest. Non-forest edge removal needs
+no connectivity reconstruction. A forest cut discovers the smaller pieces and
+searches their incidences for replacement edges; the largest piece retains its
+physical routing entries. Merges move only the smaller component's entries.
+A balanced cut can still require work proportional to the membership that
+changes or the affected replacement-edge search. The independent cold BFS and
+public-request growth courts are in
+[component delta](../worth-court-execution/tests/worth_court_execution/cost/execution/component_delta.rs).
 
 Component routing keys remain the least current member. They do not supply
 persistent aggregate identity; Query's component integration remains unfinished
@@ -454,8 +466,9 @@ Use these counts to inspect the maintenance performed by an advancement.
 
 The accounted example above retains cached costs and backing reservations.
 A fitting accounted range uses its cost summary; a tight
-ceiling descends to the original slot checkpoints. Its fresh request re-admits
-incoming backing, and each copied node owns its new grant. Both modes share
+ceiling descends to the original slot checkpoints. Existing cells keep their
+original grants; the fresh request admits only new nodes and actual evaluation
+backing. An accounted request cannot carry an unaccounted prior run. Both modes share
 unchanged nodes without retaining a chain of parent runs, and refusal preserves
 the prior run. Express removal and insertion through their respective change
 collections; express a move as remove-plus-insert. Returned runs own their
@@ -484,6 +497,9 @@ the previous root usable.
 
 For explicitly accounted payload bounds, `insert_cloned_in` requires
 `Clone + ChargedBytes` and admits the new key/value heap bound before copying.
+An edit plans its replacement path and admits its reachable new cells once.
+Each cell receives an independently releasable part of that owned admission;
+funding a cell does not re-enter the request's execution scope.
 Accounted entries and path nodes retain their actual grants through final drop;
 shared views retain those owners without predecessor-root chains. Use
 `accounted_bytes()` for the optional reachable-storage information. A populated
@@ -512,8 +528,19 @@ The existing persistent edit path and node layout are unchanged.
 
 `KeyedPartitioner::upsert_in`, `remove_in` and explicit full `kept_in` use this
 same storage with the current allocation policy. Edits update membership and
-structural counts. Accounted changed groups reserve their copies before
-allocation; unchanged groups retain their original reservations.
+structural counts. `members(partition)` returns a read-only `PartitionMembers`
+view with canonical `iter`, `len`, `is_empty` and `contains`. A membership edit
+copies only an ordered path, while unchanged member cells keep their grants.
+The explicit arbitrary-predicate subset operation still reconstructs its result.
+
+Reduction values and aggregates carry their admitted canonical bytes across
+immutable path copies. Only incoming values and actual combine outputs are
+encoded; cutoff compares the carried bytes. Current bounded ceilings still
+check payload and encoding lengths, and malformed new encodings refuse before
+publication. Retained values and clones keep their observable canonical bits
+stable. Native settled slots continue to use their own receipts and summaries.
+The [canonical admission court](src/reduction/tree/canonical_cost.rs) equates
+encoding work to actual new inputs and combine outputs.
 
 `ReductionTree::checked_full_build_cost_after_edits(&removed, &inserted, policy)`
 predicts the work/span of a cold full build from an accounted tree's shape.

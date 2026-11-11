@@ -10,6 +10,7 @@ mod denial;
 mod limits;
 mod profile;
 pub(crate) mod program;
+pub(in crate::domain_computation::primary_graph) use program::HistoryAdmittedChildSource;
 pub(in crate::domain_computation::primary_graph) use program::OriginalProgramRootCompletion;
 pub(in crate::domain_computation::primary_graph) use program::WorthQuerySupportedProgramRecord;
 pub(in crate::domain_computation::primary_graph) mod program_admission;
@@ -40,7 +41,7 @@ pub use program::{
     WorthQuerySigningOwnerInstallationDenial, WorthQuerySupportedProgramHandle,
     WorthQueryUnpublishedProgramOutputSource, WorthQueryWorkflowApplicationRuntime,
     WorthQueryWorkflowRuntimeBindingDenial, WorthQueryWorkflowRuntimeBindingRefusal,
-    WorthQueryWorkflowVocabulary,
+    WorthQueryWorkflowRuntimeConfiguration, WorthQueryWorkflowVocabulary,
 };
 use program_admission::WorthQueryProgramAdmissionStep;
 
@@ -176,4 +177,7 @@ where
     })?
 }
 
+#[cfg(test)]
+#[path = "mod_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;
 mod source_scope_ownership;

@@ -112,10 +112,10 @@ impl WorthQueryTemporalOperationInvoker<NumericSchema, Tick, Change, Number> for
         scope: &WorthQueryInvariantEntityIdentity<NumericSchema, Number>,
     ) -> Result<Self::Projection, WorthQueryTemporalInvocationFailure> {
         reader
-            .require_decision_field(scope, Key::reference())
+            .require_decision_field(scope, Key::at("Key"))
             .map_err(invocation_failure)?;
         reader
-            .decision_field(scope, Secondary::reference())
+            .decision_field(scope, Secondary::at("Secondary"))
             .map_err(invocation_failure)?;
         reader.mutation_target(scope).map_err(invocation_failure)
     }
@@ -134,7 +134,7 @@ impl WorthQueryTemporalOperationInvoker<NumericSchema, Tick, Change, Number> for
             .projected_entity(&target)
             .map_err(invocation_failure)?;
         effects
-            .write_field(&target, Secondary::reference(), input.value)
+            .write_field(&target, Secondary::at("Secondary"), input.value)
             .map_err(invocation_failure)
     }
 }

@@ -220,3 +220,6 @@ fn ordered(cause: ExecutionOrderedMapDenial) -> TransactionCommitError {
         ExecutionOrderedMapDenial::CapacityOverflow => overflow(),
     }
 }
+#[cfg(test)]
+#[path = "coverage_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;

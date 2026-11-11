@@ -100,7 +100,7 @@ fn version_eighteen_domain_operation_frame_matches_and_decodes_the_frozen_vector
         .unwrap();
     let bytes = encode_record_frame(operation, WorthQueryPackageArchiveLimits::DEFAULT).unwrap();
     let golden = decode_hex(
-        include_str!(concat!(env!("CARGO_MANIFEST_DIR"), "/../worth-query-testkit-package-archive/src/package_archive/archive_protocol/domain_operation_record/domain_operation_v18.hex"))
+        include_str!(concat!(env!("CARGO_MANIFEST_DIR"), "/../worth-query-testkit-package-archive/src/package_archive/archive_protocol/domain_operation_record/domain_operation_v18_policy_v2.hex"))
             .trim(),
     );
     assert_eq!(bytes, golden);

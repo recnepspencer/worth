@@ -2,9 +2,11 @@ use super::super::super::preview_isolation::{
     PreviewSubscriptionDiscardCloseout, PreviewSubscriptionIsolationArtifact,
     PreviewSubscriptionPromotionHandoff, PreviewSubscriptionResidueReport,
 };
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum SubscriptionLifecycleCertificationDenialKind {
+    EvidenceIdentityDerivationDenied(IdentityDerivationDenial),
     ActivationAdmissionMismatch,
     ActiveLaneSourceMismatch,
     AttachmentSourceMismatch,
@@ -21,6 +23,7 @@ pub enum SubscriptionLifecycleCertificationDenialKind {
 impl SubscriptionLifecycleCertificationDenialKind {
     pub fn as_str(&self) -> &'static str {
         match self {
+            Self::EvidenceIdentityDerivationDenied(_) => "evidence_identity_derivation_denied",
             Self::ActivationAdmissionMismatch => "activation_admission_mismatch",
             Self::ActiveLaneSourceMismatch => "active_lane_source_mismatch",
             Self::AttachmentSourceMismatch => "attachment_source_mismatch",

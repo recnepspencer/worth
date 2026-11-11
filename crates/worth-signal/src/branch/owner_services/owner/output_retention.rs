@@ -246,3 +246,6 @@ map_output_denial!(
     |branch_id| SignalBranchForkOperationDenial::OwnerCellMisuse { branch_id },
     |denial| SignalBranchForkOperationDenial::RetentionUnavailable { denial }
 );
+#[cfg(test)]
+#[path = "output_retention_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;

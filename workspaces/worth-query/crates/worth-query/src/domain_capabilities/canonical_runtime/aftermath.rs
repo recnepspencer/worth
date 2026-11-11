@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use worth_proof::TransitionOutcome;
 
 use crate::domain_capabilities::denials::{
@@ -62,62 +63,75 @@ impl WorthQueryAftermathProjectionConsumptionReview {
 
 pub fn materialize_canonical_aftermath_artifact<T>(
     contribution: WorthQueryMaterializationReadyAftermathContribution<T>,
-) -> WorthQueryCanonicalAftermathArtifact<T>
+) -> Result<WorthQueryCanonicalAftermathArtifact<T>, IdentityDerivationDenial>
 where
     T: WorthQueryDomainCapabilityTargetBinding,
 {
-    super::artifacts::materialize_domain_capability_canonical_runtime_artifact(contribution)
+    Ok(super::artifacts::materialize_domain_capability_canonical_runtime_artifact(contribution)?)
 }
 
 pub(crate) fn materialize_projection_consumption_eligibility<T>(
     contribution: WorthQueryMaterializationReadyAftermathContribution<T>,
-) -> WorthQueryDomainCapabilityTransitionOutcome<ProjectionConsumptionEligibility>
+) -> Result<
+    WorthQueryDomainCapabilityTransitionOutcome<ProjectionConsumptionEligibility>,
+    IdentityDerivationDenial,
+>
 where
     T: WorthQueryAftermathProjectionTarget,
 {
-    match materialize_projection_consumption_review(contribution) {
-        TransitionOutcome::Success(review) => {
-            TransitionOutcome::Success(review.eligibility().clone())
-        }
-        TransitionOutcome::Denied(denial) => TransitionOutcome::Denied(denial),
-        TransitionOutcome::Stale(stale) => TransitionOutcome::Stale(stale),
-        TransitionOutcome::RebindRequired(rebind) => TransitionOutcome::RebindRequired(rebind),
-        TransitionOutcome::Failed(failure) => TransitionOutcome::Failed(failure),
-        TransitionOutcome::Deferred(never) => match never {},
-    }
+    Ok(
+        match materialize_projection_consumption_review(contribution)? {
+            TransitionOutcome::Success(review) => {
+                TransitionOutcome::Success(review.eligibility().clone())
+            }
+            TransitionOutcome::Denied(denial) => TransitionOutcome::Denied(denial),
+            TransitionOutcome::Stale(stale) => TransitionOutcome::Stale(stale),
+            TransitionOutcome::RebindRequired(rebind) => TransitionOutcome::RebindRequired(rebind),
+            TransitionOutcome::Failed(failure) => TransitionOutcome::Failed(failure),
+            TransitionOutcome::Deferred(never) => match never {},
+        },
+    )
 }
 
 pub(crate) fn materialize_projection_consumption_support_report<T>(
     contribution: WorthQueryMaterializationReadyAftermathContribution<T>,
-) -> WorthQueryDomainCapabilityTransitionOutcome<ProjectionConsumptionSupportReport>
+) -> Result<
+    WorthQueryDomainCapabilityTransitionOutcome<ProjectionConsumptionSupportReport>,
+    IdentityDerivationDenial,
+>
 where
     T: WorthQueryAftermathProjectionTarget,
 {
-    match materialize_projection_consumption_review(contribution) {
-        TransitionOutcome::Success(review) => {
-            TransitionOutcome::Success(review.support_report().clone())
-        }
-        TransitionOutcome::Denied(denial) => TransitionOutcome::Denied(denial),
-        TransitionOutcome::Stale(stale) => TransitionOutcome::Stale(stale),
-        TransitionOutcome::RebindRequired(rebind) => TransitionOutcome::RebindRequired(rebind),
-        TransitionOutcome::Failed(failure) => TransitionOutcome::Failed(failure),
-        TransitionOutcome::Deferred(never) => match never {},
-    }
+    Ok(
+        match materialize_projection_consumption_review(contribution)? {
+            TransitionOutcome::Success(review) => {
+                TransitionOutcome::Success(review.support_report().clone())
+            }
+            TransitionOutcome::Denied(denial) => TransitionOutcome::Denied(denial),
+            TransitionOutcome::Stale(stale) => TransitionOutcome::Stale(stale),
+            TransitionOutcome::RebindRequired(rebind) => TransitionOutcome::RebindRequired(rebind),
+            TransitionOutcome::Failed(failure) => TransitionOutcome::Failed(failure),
+            TransitionOutcome::Deferred(never) => match never {},
+        },
+    )
 }
 
 pub(crate) fn materialize_projection_consumption_review<T>(
     contribution: WorthQueryMaterializationReadyAftermathContribution<T>,
-) -> WorthQueryDomainCapabilityTransitionOutcome<WorthQueryAftermathProjectionConsumptionReview>
+) -> Result<
+    WorthQueryDomainCapabilityTransitionOutcome<WorthQueryAftermathProjectionConsumptionReview>,
+    IdentityDerivationDenial,
+>
 where
     T: WorthQueryAftermathProjectionTarget,
 {
     let domain_contribution = contribution.payload();
     let payload = domain_contribution.payload();
     let Some(runtime_semantics) = payload.runtime_semantics() else {
-        return TransitionOutcome::Denied(missing_runtime_semantics_denial(
+        return Ok(TransitionOutcome::Denied(missing_runtime_semantics_denial(
             payload.semantic_code(),
             domain_contribution.request_identity().clone(),
-        ));
+        )));
     };
 
     let declaration = match declare_projection_consumption(
@@ -127,7 +141,7 @@ where
     ) {
         Ok(declaration) => declaration,
         Err(error) => {
-            return TransitionOutcome::Denied(WorthQueryDomainCapabilityProgressionDenial::new(
+            return Ok(TransitionOutcome::Denied(WorthQueryDomainCapabilityProgressionDenial::new(
                 WorthQueryDomainCapabilityProgressionDenialKind::UnsupportedCanonicalMaterializationPosture,
                 "consequence-aftermath",
                 domain_contribution.target().kind(),
@@ -137,30 +151,35 @@ where
                     payload.semantic_code(),
                     declaration_error_label(&error),
                 ),
-            ));
+            )));
         }
     };
 
-    let support_report = discover_projection_consumption_support(runtime_semantics.source());
-    let eligibility = evaluate_projection_consumption_eligibility(&declaration);
+    let support_report = discover_projection_consumption_support(runtime_semantics.source())?;
+    let eligibility = evaluate_projection_consumption_eligibility(&declaration)?;
 
-    TransitionOutcome::Success(WorthQueryAftermathProjectionConsumptionReview {
-        semantic_code: payload.semantic_code().to_string(),
-        request_identity: domain_contribution.request_identity().clone(),
-        target_kind: domain_contribution.target().kind(),
-        declaration,
-        support_report,
-        eligibility,
-    })
+    Ok(TransitionOutcome::Success(
+        WorthQueryAftermathProjectionConsumptionReview {
+            semantic_code: payload.semantic_code().to_string(),
+            request_identity: domain_contribution.request_identity().clone(),
+            target_kind: domain_contribution.target().kind(),
+            declaration,
+            support_report,
+            eligibility,
+        },
+    ))
 }
 
 pub(crate) fn materialize_admitted_projection_consumption<T>(
     contribution: WorthQueryMaterializationReadyAftermathContribution<T>,
-) -> WorthQueryDomainCapabilityTransitionOutcome<AdmittedProjectionConsumption>
+) -> Result<
+    WorthQueryDomainCapabilityTransitionOutcome<AdmittedProjectionConsumption>,
+    IdentityDerivationDenial,
+>
 where
     T: WorthQueryAftermathProjectionTarget,
 {
-    match materialize_projection_consumption_review(contribution) {
+    Ok(match materialize_projection_consumption_review(contribution)? {
         TransitionOutcome::Success(review) => match review.eligibility() {
             ProjectionConsumptionEligibility::Admitted(admitted) => {
                 TransitionOutcome::Success(admitted.clone())
@@ -214,25 +233,30 @@ where
         TransitionOutcome::RebindRequired(rebind) => TransitionOutcome::RebindRequired(rebind),
         TransitionOutcome::Failed(failure) => TransitionOutcome::Failed(failure),
         TransitionOutcome::Deferred(never) => match never {},
-    }
+    })
 }
 
 pub(crate) fn materialize_projection_consumption_contract<T>(
     contribution: WorthQueryMaterializationReadyAftermathContribution<T>,
-) -> WorthQueryDomainCapabilityTransitionOutcome<MaterializedProjectionContract>
+) -> Result<
+    WorthQueryDomainCapabilityTransitionOutcome<MaterializedProjectionContract>,
+    IdentityDerivationDenial,
+>
 where
     T: WorthQueryAftermathProjectionTarget,
 {
-    match materialize_admitted_projection_consumption(contribution) {
-        TransitionOutcome::Success(admitted) => {
-            TransitionOutcome::Success(admitted.bind_contract())
-        }
-        TransitionOutcome::Denied(denial) => TransitionOutcome::Denied(denial),
-        TransitionOutcome::Stale(stale) => TransitionOutcome::Stale(stale),
-        TransitionOutcome::RebindRequired(rebind) => TransitionOutcome::RebindRequired(rebind),
-        TransitionOutcome::Failed(failure) => TransitionOutcome::Failed(failure),
-        TransitionOutcome::Deferred(never) => match never {},
-    }
+    Ok(
+        match materialize_admitted_projection_consumption(contribution)? {
+            TransitionOutcome::Success(admitted) => {
+                TransitionOutcome::Success(admitted.bind_contract()?)
+            }
+            TransitionOutcome::Denied(denial) => TransitionOutcome::Denied(denial),
+            TransitionOutcome::Stale(stale) => TransitionOutcome::Stale(stale),
+            TransitionOutcome::RebindRequired(rebind) => TransitionOutcome::RebindRequired(rebind),
+            TransitionOutcome::Failed(failure) => TransitionOutcome::Failed(failure),
+            TransitionOutcome::Deferred(never) => match never {},
+        },
+    )
 }
 
 pub(crate) trait WorthQueryAftermathProjectionTarget:
@@ -264,6 +288,9 @@ fn missing_runtime_semantics_denial(
 
 fn declaration_error_label(error: &ProjectionConsumptionDeclarationError) -> &'static str {
     match error {
+        ProjectionConsumptionDeclarationError::EvidenceIdentityDerivationDenied(_) => {
+            "evidence-identity-derivation-denied"
+        }
         ProjectionConsumptionDeclarationError::NoRequestedFacts => "no-requested-facts",
         ProjectionConsumptionDeclarationError::SourceAuthorizedProjectionQueryMismatch {
             ..

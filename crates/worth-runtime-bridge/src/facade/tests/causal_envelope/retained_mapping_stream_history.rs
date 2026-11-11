@@ -152,6 +152,9 @@ fn causal_envelope_denies_missing_stream_checkpoint_without_unindexed_scan() {
         .diagnostics()
         .assemble_causal_explanation_envelope(request)
         .expect_err("missing stream checkpoint should deny");
+    let crate::facade::BridgeCausalEnvelopeConstructionStop::Denied(denial) = denial else {
+        panic!("expected domain denial, got {denial:?}")
+    };
 
     assert_eq!(
         denial.kind(),
@@ -283,12 +286,12 @@ fn historical_failure_digest(
     record: &crate::facade::BridgeHistoricalEvaluationFailureRecord,
 ) -> String {
     crate::diagnostics::causal_envelope::retained_mapping::retained_artifact_digest::planning_checkpoint::historical_evaluation_failure_digest(record)
-        .as_str()
+        .expect("bounded digest fixture").as_str()
         .to_string()
 }
 
 fn stream_checkpoint_digest(record: &crate::stream::ConsumerCheckpointToken) -> String {
     crate::diagnostics::causal_envelope::retained_mapping::retained_artifact_digest::planning_checkpoint::stream_checkpoint_digest(record)
-        .as_str()
+        .expect("bounded digest fixture").as_str()
         .to_string()
 }

@@ -27,6 +27,8 @@ pub mod required_publication;
 pub mod required_settlement;
 #[path = "resolution/mod.rs"]
 pub mod resolution;
+#[path = "restoration/mod.rs"]
+pub mod restoration;
 #[path = "retained_computation/mod.rs"]
 pub mod retained_computation;
 #[path = "semantic_source/mod.rs"]

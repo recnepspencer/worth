@@ -1,6 +1,7 @@
 //! External effects, recovery custody, and canonical recorded correction causality.
 
 mod correction;
+pub(crate) mod correction_material;
 pub(in crate::domain_computation) use correction::OriginalCorrectionDisclosure;
 pub(crate) mod commit_causality;
 pub(crate) use commit_causality::ApplicationCommitCausality;
@@ -8,11 +9,17 @@ pub(crate) mod causal_fact;
 mod correction_coordinates;
 pub use correction_coordinates::WorthQueryCorrectionSourceCoordinates;
 pub mod derivation_failure;
+pub mod dispatch_journal;
 pub mod external_effect;
 pub mod recovery_handle;
 mod recovery_posture;
 pub mod recovery_progression;
 pub mod retained_preimage;
+mod retained_relations;
+pub use retained_relations::{
+    WorthQueryRelationPreImageDenial, WorthQueryRelationPreImageFailure,
+    WorthQueryRetainedPreImageRelation,
+};
 
 pub use derivation_failure::WorthQueryAftermathDerivationFailure;
 
@@ -77,5 +84,8 @@ pub use retained_preimage::{
 // consumes it by name, and this phase does not export for consumers that do
 // not exist.
 
+#[cfg(test)]
+#[path = "mod_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;
 #[cfg(test)]
 mod retained_preimage_tests;

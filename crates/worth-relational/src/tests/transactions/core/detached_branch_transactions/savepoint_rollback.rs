@@ -75,7 +75,10 @@ fn savepoint_rollback_restores_overlay_footprint_and_cached_plan() {
         transaction
             .read_entity(execution, retained)
             .expect("retained mutation projects")
-            .staged_mutations(),
+            .staged_mutations()
+            .iter()
+            .cloned()
+            .collect::<Vec<_>>(),
         &[retained_mutation]
     );
     assert_eq!(

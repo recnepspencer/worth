@@ -5,10 +5,7 @@ use worth_query_declaration::facade::application_query::{
     ApplicationQueryResultTraversal, ExactlyOneResult, ManyResults, OptionalOneResult,
 };
 use worth_query_declaration::facade::portable_identity::WorthQueryPortableType;
-use worth_query_installation::facade::{
-    ApplicationFieldUnit, ApplicationReadableScalarValueBinding, OptionalApplicationFieldValue,
-    WritePosture,
-};
+use worth_query_installation::facade::ApplicationReadableScalarValueBinding;
 
 use super::{
     projection_denial, relation_cardinality_denial, WorthQueryApplicationProjectedRelation,
@@ -56,26 +53,18 @@ impl<Value> WorthQueryApplicationDisclosed<Value> {
 }
 
 impl<'row, Schema, Query> WorthQueryApplicationProjectionRow<'row, Schema, Query> {
-    pub fn disclosed_optional_field<Slot, Entity, Aspect, Field, Value, Write, Equality, Unit>(
+    pub fn disclosed_optional_field<Slot, Entity, Aspect, Field, Value>(
         &self,
-        selector: ApplicationQueryOptionalResultFieldRef<
-            Query,
-            Slot,
-            Schema,
-            Entity,
-            Aspect,
-            Field,
-            Value,
-            Write,
-            Equality,
-            Unit,
-        >,
+        selector: ApplicationQueryOptionalResultFieldRef<Query, Slot, Schema, Field>,
     ) -> Result<WorthQueryApplicationDisclosed<Option<Value>>, WorthQueryApplicationProjectionDenial>
     where
-        Field: OptionalApplicationFieldValue<Value = Value>,
+        Field: worth_query_declaration::facade::application_schema::fragment::RecordSelection<
+            Entity = Entity,
+            Aspect = Aspect,
+            Value = Value,
+        >,
         Field::Binding: ApplicationReadableScalarValueBinding,
-        Write: WritePosture,
-        Unit: ApplicationFieldUnit,
+
         Query: ApplicationQueryMarkerIdentity<Schema>,
         Slot: WorthQueryPortableType,
     {

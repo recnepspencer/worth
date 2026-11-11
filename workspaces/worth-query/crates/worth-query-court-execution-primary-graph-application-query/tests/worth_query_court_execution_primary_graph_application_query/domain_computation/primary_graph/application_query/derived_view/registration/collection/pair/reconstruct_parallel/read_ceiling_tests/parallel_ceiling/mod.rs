@@ -42,7 +42,7 @@ fn parallel_read_request_exhaustion_keeps_a_canonical_prefix_and_releases_memory
                 selected
                     .resolve_entity(
                         &phase,
-                        AccountStatus::reference(),
+                        AccountStatus::at("AccountStatus"),
                         status.to_owned(),
                         &scope,
                         WorthQueryPrincipalResolutionMode::Ordinary,

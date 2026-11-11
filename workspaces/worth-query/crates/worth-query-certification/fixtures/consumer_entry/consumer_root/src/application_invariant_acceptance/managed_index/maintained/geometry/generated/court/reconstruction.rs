@@ -35,7 +35,7 @@ pub(super) fn complete(
     reconstruction
         .field(
             &edge,
-            EdgeIdentity::reference(),
+            EdgeIdentity::at("EdgeIdentity"),
             "generated-edge".to_owned(),
         )
         .unwrap();
@@ -44,12 +44,16 @@ pub(super) fn complete(
         (&end, "generated-end", end_x),
     ] {
         reconstruction
-            .field(vertex, VertexIdentity::reference(), identity.to_owned())
+            .field(
+                vertex,
+                VertexIdentity::at("VertexIdentity"),
+                identity.to_owned(),
+            )
             .unwrap();
         reconstruction
             .field(
                 vertex,
-                VertexRegion::reference(),
+                VertexRegion::at("VertexRegion"),
                 Coordinates::new(x, 0, x, 0),
             )
             .unwrap();

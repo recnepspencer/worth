@@ -8,7 +8,9 @@ use worth_foundational::facade::{
 
 pub const PROTOCOL: BoundaryProtocolIdentity =
     BoundaryProtocolIdentity::new("worth.relational.source.initial-inputs");
-pub const VERSION: BoundaryProtocolVersion = BoundaryProtocolVersion::new(1);
+// Current original-input commitments bind canonical artifact v8. Older carriers
+// are refused before their commitment DATA is decoded or used.
+pub const VERSION: BoundaryProtocolVersion = BoundaryProtocolVersion::new(2);
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum RelationalInitialInputsPublicationDetail {
     UnsupportedProvider,

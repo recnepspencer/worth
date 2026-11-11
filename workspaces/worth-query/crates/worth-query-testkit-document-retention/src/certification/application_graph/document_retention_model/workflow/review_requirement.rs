@@ -10,18 +10,16 @@ pub use worth_query_host::facade::declaration::application_operation::{
     NoApplicationMutationOutputs, NoApplicationMutationSource,
 };
 pub use worth_query_host::facade::declaration::application_schema::{
-    ApplicationFieldRef, ApplicationPrincipalBindingRef, ApplicationRelationCardinality,
-    ApplicationRelationIntegrity, ApplicationSchemaDeclarationBuilder, EqualityPredicate,
-    NoApplicationUnit, ReadOnly, U64ApplicationValueBinding,
+    ApplicationPrincipalBindingRef, ApplicationRelationCardinality, ApplicationRelationIntegrity,
+    ApplicationSchemaDeclarationBuilder, EqualityPredicate, NoApplicationUnit, ReadOnly,
+    U64ApplicationValueBinding,
 };
 pub use worth_query_host::facade::primary_graph::{
     CandidateWriter, DecisionReader, HandlerExecutionDenial, HandlerResult, OperationHandler,
     WorthQueryInvariantMutationTarget,
 };
 pub use worth_query_host::facade::product::WorthQueryProductBranch;
-pub use worth_query_host::facade::{
-    worth_query_operation, worth_query_relation, worth_query_structured_value_binding,
-};
+pub use worth_query_host::facade::{worth_query_operation, worth_query_structured_value_binding};
 
 pub use super::super::host::DocumentWorkflowRuntime;
 pub use super::super::operator_identity::{authenticate_operator, request_scope};
@@ -38,10 +36,27 @@ pub use unlink::{
     UnlinkReviewRequirementHandler,
 };
 
-worth_query_relation!(pub ReviewRequired in DocumentRetentionSchema, Document => Document; integrity = ApplicationRelationIntegrity {
-    cardinality: ApplicationRelationCardinality::new(None, Some(1), None, None, None, Some(1)),
-    ..ApplicationRelationIntegrity::same_context_unbounded_retain_dangling()
-});
+pub struct ReviewRequired;
+impl worth_query_decl::facade::application_schema::fragment::Relation for ReviewRequired {
+    const NAME: &'static str = "ReviewRequired";
+    type To = Document;
+    const CARDINALITY: ApplicationRelationCardinality =
+        ApplicationRelationCardinality::new(None, Some(1), None, None, None, Some(1));
+}
+impl ReviewRequired {
+    pub fn reference() -> worth_query_decl::facade::application_schema::ApplicationRelationRef<
+        DocumentRetentionSchema,
+        Self,
+        Document,
+        Document,
+    > {
+        worth_query_decl::facade::application_schema::fragment::relation(
+            super::super::schema::RetentionModel,
+            Document,
+            Self,
+        )
+    }
+}
 
 #[derive(Clone, Debug, serde::Serialize)]
 pub struct ReviewRequirementInput {
@@ -52,7 +67,7 @@ worth_query_structured_value_binding!(pub ReviewRequirementInputBinding for Revi
     identity: "worth.query.certification.review-requirement-input.v1"
 });
 worth_query_operation!(pub LinkReviewRequirement for DocumentRetentionSchema, input ReviewRequirementInputBinding);
-worth_query_operation_reads!(LinkReviewRequirement => [DocumentIdentityField]);
+
 worth_query_operation_links!(LinkReviewRequirement => [ReviewRequired]);
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -69,15 +84,7 @@ worth_query_structured_value_binding!(pub ReviewRequirementDenialBinding for Rev
 });
 
 pub struct ReviewRequirementBinding;
-pub type ReviewRequirementScope = ApplicationMutationFieldScope<
-    DocumentRetentionSchema,
-    Document,
-    DocumentFacts,
-    DocumentIdentityField,
-    String,
-    ReadOnly,
-    NoApplicationUnit,
->;
+pub type ReviewRequirementScope = ApplicationMutationFieldScope<DocumentIdentityField>;
 pub struct ReviewRequirementTargets {
     pub resource: WorthQueryInvariantMutationTarget<DocumentRetentionSchema, Document>,
     pub related: WorthQueryInvariantMutationTarget<DocumentRetentionSchema, Document>,
@@ -114,17 +121,8 @@ impl ApplicationMutationBinding<DocumentRetentionSchema> for ReviewRequirementBi
     const IDEMPOTENCY_IDENTITY: &'static str =
         "worth.query.certification.review-requirement-command.v1";
 
-    fn scope_field() -> ApplicationFieldRef<
-        DocumentRetentionSchema,
-        Document,
-        DocumentFacts,
-        DocumentIdentityField,
-        String,
-        ReadOnly,
-        EqualityPredicate,
-        NoApplicationUnit,
-    > {
-        DocumentIdentityField::reference()
+    fn scope_field() -> DocumentIdentityField {
+        DocumentIdentityField::at("DocumentIdentityField")
     }
     fn principal_binding() -> ApplicationPrincipalBindingRef<
         DocumentRetentionSchema,
@@ -149,7 +147,7 @@ impl ApplicationMutationIntent<DocumentRetentionSchema> for ReviewRequirementInt
     }
     fn scope_binding(&self) -> ReviewRequirementScope {
         ReviewRequirementScope::new(
-            DocumentIdentityField::reference(),
+            DocumentIdentityField::at("DocumentIdentityField"),
             self.input.resource.clone(),
         )
     }
@@ -164,15 +162,17 @@ impl OperationHandler<DocumentRetentionSchema, ReviewRequirementBinding>
         input: &ReviewRequirementInput,
         reader: &mut DecisionReader<'_, '_, '_, DocumentRetentionSchema, ReviewRequirementBinding>,
     ) -> HandlerResult<ReviewRequirementTargets, ReviewRequirementDenial> {
-        let resource = match reader
-            .resolve_entity(DocumentIdentityField::reference(), input.resource.clone())
-        {
+        let resource = match reader.resolve_entity(
+            DocumentIdentityField::at("DocumentIdentityField"),
+            input.resource.clone(),
+        ) {
             Ok(value) => value,
             Err(error) => return HandlerResult::ExecutionDenied(error),
         };
-        let related = match reader
-            .resolve_entity(DocumentIdentityField::reference(), input.related.clone())
-        {
+        let related = match reader.resolve_entity(
+            DocumentIdentityField::at("DocumentIdentityField"),
+            input.related.clone(),
+        ) {
             Ok(value) => value,
             Err(error) => return HandlerResult::ExecutionDenied(error),
         };
@@ -221,11 +221,6 @@ pub fn declare(
     schema: ApplicationSchemaDeclarationBuilder<DocumentRetentionSchema>,
 ) -> ApplicationSchemaDeclarationBuilder<DocumentRetentionSchema> {
     let schema = schema
-        .relation(
-            ReviewRequired::reference(),
-            Document::reference(),
-            Document::reference(),
-        )
         .operation(
             LinkReviewRequirement::reference()
                 .definition()
@@ -236,7 +231,7 @@ pub fn declare(
         .operation_projection_work_budget(LinkReviewRequirement::reference(), 32)
         .operation_read_field(
             LinkReviewRequirement::reference(),
-            DocumentIdentityField::reference(),
+            DocumentIdentityField::at("DocumentIdentityField"),
         )
         .operation_link(
             LinkReviewRequirement::reference(),

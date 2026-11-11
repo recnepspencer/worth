@@ -4,8 +4,7 @@ use std::task::{Context, Poll, Waker};
 use std::time::{Duration, SystemTime};
 
 use worth_query_declaration::facade::application_schema::{
-    ApplicationEntityMarkerIdentity, ApplicationEntityRef, ApplicationSchema,
-    ApplicationSchemaDeclaration, ApplicationSchemaDeclarationBuilder,
+    ApplicationSchema, ApplicationSchemaDeclaration, ApplicationSchemaDeclarationBuilder,
 };
 use worth_query_declaration::facade::authentication::WorthQueryExternalPrincipalIdentity;
 use worth_query_installation::facade::{
@@ -19,8 +18,10 @@ use super::*;
 struct TestSchema;
 struct Principal;
 
-impl ApplicationEntityMarkerIdentity<TestSchema> for Principal {
-    const IDENTIFIER: &'static str = "Principal";
+impl worth_query_declaration::facade::application_schema::fragment::Entity for Principal {
+    const NAME: &'static str = "Principal";
+    type Aspects = ();
+    type Relations = ();
 }
 
 impl ApplicationSchema for TestSchema {
@@ -33,9 +34,7 @@ impl ApplicationSchema for TestSchema {
         ApplicationSchemaDeclaration<Self>,
         worth_query_declaration::facade::application_schema::ApplicationSchemaDeclarationDenial,
     > {
-        ApplicationSchemaDeclarationBuilder::<Self>::for_schema()
-            .entity(ApplicationEntityRef::<Self, Principal>::from_schema_identifier("Principal"))
-            .build()
+        ApplicationSchemaDeclarationBuilder::<Self>::from_fragment(FixtureRecords)?.build()
     }
 }
 
@@ -329,6 +328,7 @@ fn owned_monotonic_clock_holds_and_advances_authentication_and_deadlines() {
     )
     .unwrap();
     let proof = block_on(adapter.authenticate(TestCredential::Valid, &scope)).unwrap();
+    let copied = proof.clone();
     assert_eq!(clock.now(), held);
     assert_eq!(time.hold(), held);
     assert!(!proof.is_expired());
@@ -341,6 +341,10 @@ fn owned_monotonic_clock_holds_and_advances_authentication_and_deadlines() {
         held + Duration::from_secs(61)
     );
     assert!(proof.is_expired());
+    assert!(
+        copied.is_expired(),
+        "a copied proof retains its original clock"
+    );
     assert_eq!(scope.interruption(), None);
     time.advance(Duration::from_secs(59)).unwrap();
     assert_eq!(
@@ -369,4 +373,11 @@ fn authentication_rejects_a_request_from_another_clock_before_adapter_work() {
             .kind(),
         WorthQueryAuthenticationDenialKind::ForeignClock
     );
+}
+
+struct FixtureRecords;
+impl worth_query_declaration::facade::application_schema::fragment::Fragment for FixtureRecords {
+    const NAME: &'static str = "fixture_records";
+    type Bindings = worth_query_declaration::facade::application_schema::fragment::NoBindings;
+    type Members = (Principal,);
 }

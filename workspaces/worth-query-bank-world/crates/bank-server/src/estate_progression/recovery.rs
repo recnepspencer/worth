@@ -53,7 +53,7 @@ impl BankIdentityRuntime {
         let admission = self.admit_notification_operation(&phase, principal, action, request)?;
         self.resolve_admitted_idempotency(&phase, &admission, binding)
 
-        }).map_err(|cause| BankEstateProgressionDenial::ApplicationEntry(worth_query_host::facade::application_entry::WorthQueryApplicationRequestMutationDenial::ExecutionRequest(cause)))?
+        }).map_err(|cause| BankEstateProgressionDenial::ApplicationEntry(Box::new(worth_query_host::facade::application_entry::WorthQueryApplicationRequestMutationDenial::ExecutionRequest(cause))))?
     }
 
     /// Read exact committed idempotency before an HTTP recovery slot is reserved.
@@ -86,7 +86,7 @@ impl BankIdentityRuntime {
         let admission = self.admit_notification_operation(&phase, principal, action, request)?;
         self.application_runtime().resolve_admitted_recovery_claim_status(&phase, &admission, binding).map(|status| status.map(super::BankRecoveryClaimStatus::from_query)).map_err(BankEstateProgressionDenial::from_idempotency)
 
-        }).map_err(|cause| BankEstateProgressionDenial::ApplicationEntry(worth_query_host::facade::application_entry::WorthQueryApplicationRequestMutationDenial::ExecutionRequest(cause)))?
+        }).map_err(|cause| BankEstateProgressionDenial::ApplicationEntry(Box::new(worth_query_host::facade::application_entry::WorthQueryApplicationRequestMutationDenial::ExecutionRequest(cause))))?
     }
 
     fn resolve_admitted_idempotency<Operation>(
@@ -124,7 +124,7 @@ impl BankIdentityRuntime {
         let admission = self.admit_notification_operation(&phase, principal, action, request)?;
         self.resolve_admitted_commit_recovery(&phase, handle, admission)
 
-        }).map_err(|cause| BankEstateProgressionDenial::ApplicationEntry(worth_query_host::facade::application_entry::WorthQueryApplicationRequestMutationDenial::ExecutionRequest(cause)))?
+        }).map_err(|cause| BankEstateProgressionDenial::ApplicationEntry(Box::new(worth_query_host::facade::application_entry::WorthQueryApplicationRequestMutationDenial::ExecutionRequest(cause))))?
     }
 
     fn resolve_admitted_commit_recovery<Operation>(
@@ -180,9 +180,8 @@ impl BankIdentityRuntime {
             Ok(Ok(performed)) => performed,
             Ok(Err(denial)) => return Err(BankRecoverySafeRetryDenial::retained(denial, handle)),
             Err(cause) => return Err(BankRecoverySafeRetryDenial::retained(
-                BankEstateProgressionDenial::ApplicationEntry(
-                    worth_query_host::facade::application_entry::WorthQueryApplicationRequestMutationDenial::ExecutionRequest(cause),
-                ),
+                BankEstateProgressionDenial::ApplicationEntry(Box::new(
+                    worth_query_host::facade::application_entry::WorthQueryApplicationRequestMutationDenial::ExecutionRequest(cause))),
                 handle,
             )),
         };

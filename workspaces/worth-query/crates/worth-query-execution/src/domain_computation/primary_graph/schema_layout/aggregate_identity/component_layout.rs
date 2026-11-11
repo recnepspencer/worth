@@ -96,9 +96,9 @@ pub(super) fn retain(
 impl ComponentSetLayout {
     /// The selected root's borrowed Native contract proves existence even when
     /// the visible member universe is empty. Membership still requires Native reads.
-    pub(in crate::domain_computation::primary_graph) fn matches_native_definition<E>(
+    pub(in crate::domain_computation::primary_graph) fn matches_native_definition<E, Phase>(
         &self,
-        pin: &worth_relational::facade::runtime::RelationalPinnedRead,
+        pin: &worth_relational::facade::runtime::RelationalPinnedRead<Phase>,
         mut poll: impl FnMut() -> Result<(), E>,
     ) -> Result<bool, E> {
         poll()?;

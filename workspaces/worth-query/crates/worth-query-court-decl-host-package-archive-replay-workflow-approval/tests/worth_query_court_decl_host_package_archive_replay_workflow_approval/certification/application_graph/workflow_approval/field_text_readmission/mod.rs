@@ -217,3 +217,132 @@ fn approval_field_text_survives_current_checkpoint_and_fresh_authority_readmissi
         8
     );
 }
+
+#[test]
+fn cancelled_workflow_readmits_the_actual_ending_principal_with_fresh_audit_authority() {
+    use worth_query_host::facade::application_discovery::{
+        WorkflowEndingActorProvenance, WorthQueryWorkflowAudit,
+        WorthQueryWorkflowHistoricalPosture, WorthQueryWorkflowInstanceRead,
+        WorthQueryWorkflowObservedState,
+    };
+    use worth_query_host::facade::application_entry::WorkflowInstanceCancellationOutcome;
+    use worth_query_testkit_document_retention::facade::document_retention_model::workflow::{
+        WorkflowInstanceStartInput, WorkflowInstanceStartIntent,
+    };
+    let application = retain_workflow_for::<_, GovernedDocumentWorkflow>(
+        publish_on_first_program(),
+        workflow_resources(),
+    );
+    let definition = match publish_definition(
+        &application,
+        governed_reviewed_definition(),
+        WorkflowDefinitionExpectedPredecessor::Absent,
+        98_100,
+    )
+    .unwrap()
+    {
+        WorkflowDefinitionPublicationOutcome::Published(performed) => {
+            performed.definition().clone()
+        }
+        other => panic!("genuine definition must publish: {other:?}"),
+    };
+    let start = prepare_instance_start(&application, definition, 98_101).unwrap();
+    let original = start.discovery_intent();
+    let instance = match start.execute() {
+        WorkflowInstanceStartOutcome::Started(performed) => performed.instance().clone(),
+        other => panic!("genuine instance must start: {other:?}"),
+    };
+    let expected = {
+        let scope = request_scope();
+        let runtime = application.runtime();
+        let principal = authenticate_operator(runtime.installed_schema(), &scope);
+        let cancelled = runtime
+            .request(&principal, &scope)
+            .on_branch(instance.branch())
+            .mutate(WorkflowInstanceStartIntent {
+                input: WorkflowInstanceStartInput {
+                    document_identity: DOCUMENT_IDENTITY.to_owned(),
+                },
+            })
+            .without_source()
+            .idempotency(&98_102_u64)
+            .prepare_workflow_instance_cancellation(&application, instance)
+            .unwrap()
+            .execute();
+        let WorkflowInstanceCancellationOutcome::Cancelled(performed) = cancelled else {
+            panic!("the actual admitted cancellation must publish: {cancelled:?}");
+        };
+        let actor = performed.receipt().principal_scope().principal();
+        [
+            u64::from(actor.partition_id()),
+            actor.local_slot(),
+            u64::from(actor.generation()),
+        ]
+    };
+    let checkpoint = application
+        .runtime()
+        .with_host_advancement(|phase| {
+            application
+                .runtime()
+                .capture_application_checkpoint(
+                    &phase,
+                    WorthQueryCheckpointCapturePolicy::SystemAllocation,
+                )
+                .unwrap()
+        })
+        .unwrap();
+    drop(application);
+    let restored = retain_workflow_for::<_, GovernedDocumentWorkflow>(
+        restore_on_first_program(
+            checkpoint,
+            WorthQueryApplicationProgramRoster::new().support(validated_second_program()),
+        )
+        .unwrap(),
+        workflow_resources(),
+    );
+    // This fixture admits a fresh reader and also proves the ungranted reader refuses.
+    let found = reacquisition::read(&restored, &original);
+    let WorthQueryWorkflowInstanceRead::Historical {
+        posture: WorthQueryWorkflowHistoricalPosture::Ended,
+        observation,
+    } = found
+    else {
+        panic!("the same original intent must select the ended instance");
+    };
+    assert_eq!(
+        observation.state(),
+        WorthQueryWorkflowObservedState::Cancelled
+    );
+    match observation.audit() {
+        WorthQueryWorkflowAudit::Visible {
+            end: Some(WorkflowEndingActorProvenance::Principal(actor)),
+            ..
+        } => {
+            assert_eq!(
+                [
+                    u64::from(actor.partition_id.0),
+                    actor.local_slot.0,
+                    u64::from(actor.generation.0)
+                ],
+                expected
+            );
+            let provenance = WorkflowEndingActorProvenance::Principal(*actor);
+            assert_eq!(
+                WorkflowEndingActorProvenance::from_recorded_bytes(
+                    provenance.recorded_bytes().as_bytes()
+                ),
+                Ok(provenance)
+            );
+        }
+        WorthQueryWorkflowAudit::Visible {
+            end: Some(WorkflowEndingActorProvenance::HomeWorldOwner(_)),
+            ..
+        } => panic!("the cancelling actor was the admitted principal"),
+        WorthQueryWorkflowAudit::Visible { end: None, .. } => {
+            panic!("an ended instance requires complete ending provenance")
+        }
+        WorthQueryWorkflowAudit::Withheld => {
+            panic!("the fresh independent audit grant must disclose the actual ending actor")
+        }
+    }
+}

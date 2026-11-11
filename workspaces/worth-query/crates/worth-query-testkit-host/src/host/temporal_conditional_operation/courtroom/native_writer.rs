@@ -32,7 +32,7 @@ pub fn native_writer_commit_reconsiders_a_suppressed_wake(
         .publish_native_field_write_for_test(
             world.application.current_world(),
             world.intent_record_identity(),
-            IntentGateField::reference(),
+            IntentGateField::at("IntentGateField"),
             "ready".to_string(),
             &request_scope(),
         )
@@ -62,7 +62,7 @@ pub fn native_writer_commit_reconsiders_a_suppressed_wake(
     assert_eq!(batch.observation().signal_performed_delivery_count(), 1);
     assert_authoritative_value(
         &world,
-        IntentEffectField::reference(),
+        IntentEffectField::at("IntentEffectField"),
         "payload".to_string(),
     );
 }
@@ -95,7 +95,7 @@ pub fn busy_branch_heals_a_lagging_cursor_inside_observation(
                 .expect("the selected product branch remains admitted")
                 .resolve_entity(
                     &phase,
-                    UnrelatedValueField::reference(),
+                    UnrelatedValueField::at("UnrelatedValueField"),
                     0,
                     &request_scope(),
                     primary_graph::WorthQueryPrincipalResolutionMode::Certification,
@@ -109,7 +109,7 @@ pub fn busy_branch_heals_a_lagging_cursor_inside_observation(
         .publish_native_field_write_for_test(
             branch,
             world.intent_record_identity(),
-            IntentGateField::reference(),
+            IntentGateField::at("IntentGateField"),
             "ready".to_string(),
             &request_scope(),
         )
@@ -120,7 +120,7 @@ pub fn busy_branch_heals_a_lagging_cursor_inside_observation(
             .publish_native_field_write_for_test(
                 branch,
                 unrelated,
-                UnrelatedValueField::reference(),
+                UnrelatedValueField::at("UnrelatedValueField"),
                 value,
                 &request_scope(),
             )
@@ -149,7 +149,7 @@ pub fn busy_branch_heals_a_lagging_cursor_inside_observation(
     );
     assert_authoritative_value(
         &world,
-        IntentEffectField::reference(),
+        IntentEffectField::at("IntentEffectField"),
         "payload".to_string(),
     );
 }

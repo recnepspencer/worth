@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use std::sync::Arc;
 
 use crate::domain_installation::WorthQueryInstalledDomainAuthority;
@@ -30,7 +31,10 @@ impl<T> WorthQueryInstalledDomainContributionTarget<T>
 where
     T: WorthQueryDomainCapabilityTargetBinding,
 {
-    pub(crate) fn bind(authority: Arc<WorthQueryInstalledDomainAuthority>, target: T) -> Self {
+    pub(crate) fn bind(
+        authority: Arc<WorthQueryInstalledDomainAuthority>,
+        target: T,
+    ) -> Result<Self, IdentityDerivationDenial> {
         let target_identity = worth_query_evidence_identity(
             WorthQueryEvidenceScope::InstalledDomainContributionTarget,
         )
@@ -44,28 +48,28 @@ where
         )
         .field_evidence_identity(
             WorthQueryEvidenceTag::new("semantic_target"),
-            &target.target_identity(),
+            &target.target_identity()?,
         )
-        .seal();
+        .seal()?;
         let binding_identity = worth_query_evidence_identity(
             WorthQueryEvidenceScope::InstalledDomainContributionTarget,
         )
         .field_evidence_identity(WorthQueryEvidenceTag::new("target"), &target_identity)
         .field_evidence_identity(
             WorthQueryEvidenceTag::new("semantic_binding"),
-            &target.binding_identity(),
+            &target.binding_identity()?,
         )
-        .seal();
+        .seal()?;
         let target_digest = target_identity.as_str().to_string();
         let binding_digest = binding_identity.as_str().to_string();
-        Self {
+        Ok(Self {
             authority,
             target,
             target_identity,
             binding_identity,
             target_digest,
             binding_digest,
-        }
+        })
     }
 
     pub fn authority(&self) -> &WorthQueryInstalledDomainAuthority {
@@ -109,12 +113,12 @@ where
         &self.binding_digest
     }
 
-    fn target_identity(&self) -> WorthQueryEvidenceIdentity {
-        self.target_identity.clone()
+    fn target_identity(&self) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
+        Ok(self.target_identity.clone())
     }
 
-    fn binding_identity(&self) -> WorthQueryEvidenceIdentity {
-        self.binding_identity.clone()
+    fn binding_identity(&self) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
+        Ok(self.binding_identity.clone())
     }
 
     fn semantics(&self) -> &WorthQueryDomainCapabilityTargetSemantics {

@@ -19,9 +19,13 @@ pub(crate) fn write_matches(
     publication: CommitId,
     expected: VersionId,
     mut actual: VersionId,
-    lookup_commit: &mut impl FnMut(CommitId) -> Option<Arc<CanonicalCommitEnvelope>>,
-    lookup_version: &mut impl FnMut(VersionId) -> Option<Arc<CanonicalCommitEnvelope>>,
+    lookup_commit: &mut impl FnMut(CommitId) -> Result<Option<Arc<CanonicalCommitEnvelope>>, Stop>,
+    lookup_version: &mut impl FnMut(
+        VersionId,
+        &mut MapKernelContext<'_, '_>,
+    ) -> Result<Option<Arc<CanonicalCommitEnvelope>>, Stop>,
     maximum_hops: usize,
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     context: &mut MapKernelContext<'_, '_>,
 ) -> Result<bool, Stop> {
     for _ in 0..=maximum_hops {
@@ -32,11 +36,12 @@ pub(crate) fn write_matches(
             return Ok(false);
         }
         charge(context, 1)?;
-        let envelope = lookup_version(actual).ok_or("maintenance write position absent")?;
+        let envelope =
+            lookup_version(actual, context)?.ok_or("maintenance write position absent")?;
         let Some(event) = envelope.required_output_materialization.as_ref() else {
             return Ok(false);
         };
-        validate_header(&envelope, lookup_commit, maximum_hops, context)?;
+        validate_header(&envelope, lookup_commit, maximum_hops, execution, context)?;
         if !event.producer_publications.contains(&publication) {
             return Ok(false);
         }
@@ -52,16 +57,18 @@ pub(crate) fn write_matches(
 }
 
 pub(super) fn validate_semantics(
-    runtime: &crate::runtime::RelationalRuntime,
+    runtime: &crate::history::data::codec_retirement_closure::history_request::RuntimeHistoryRequest<'_, '_, '_>,
     envelope: &CanonicalCommitEnvelope,
     context: &mut MapKernelContext<'_, '_>,
     lease: Option<&worth_execution::ExecutionResourceLease<'_>>,
+    schema: &crate::branch::RelationalBranchRootSchemaAuthority,
 ) -> Result<(), super::PublicationHistoryFailure> {
     validate_header(
         envelope,
-        &mut |id| runtime.history.canonical_envelope(id),
-        runtime.history.catalog_len(),
+        &mut |id| runtime.commit(id),
+        runtime.runtime.history.catalog_len(),
+        &runtime.execution(),
         context,
     )?;
-    payload::validate(runtime, envelope, context, lease)
+    payload::validate(runtime, envelope, context, lease, schema)
 }

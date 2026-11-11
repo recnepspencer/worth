@@ -102,13 +102,14 @@ fn owned_readmission_sorts_disjoint_operations_once_and_applies_same_values() {
         bound.retained_bytes,
         2 * std::mem::size_of::<ContractValidatedAspectValue>()
     );
-    let application = patch.application_storage_bounds(None).unwrap();
+    let application = patch.application_retained_storage_bounds(None).unwrap();
     let TransitionOutcome::Success(Some(state)) = patch.apply_to_optional(None) else {
         panic!("valid creation")
     };
     let state = state.into_parts().into_parts().0;
     assert_eq!(state.aspects().len(), 2);
-    assert_eq!(application.retained_bytes, bound.retained_bytes);
+    // c65d042399: authoritative tree roots differ from authored patch rosters.
+    assert!(application.retained_bytes >= state.aspects().retained_storage_bytes().unwrap());
     assert!(matches!(
         state.get(a.key()).unwrap().view(),
         ContractValidatedAspectValueView::Scalar(AspectValue::Bool(true))

@@ -13,7 +13,7 @@ impl WorthQueryRuntime {
                 &self.current_snapshot_identity_with_request(execution),
                 journal_replay::published_artifact_replay_digest(
                     &self.published_artifact_diagnostics(),
-                ),
+                )?,
             )
             .map_err(WorthQueryRuntimeError::JournalReplayDenied)
     }

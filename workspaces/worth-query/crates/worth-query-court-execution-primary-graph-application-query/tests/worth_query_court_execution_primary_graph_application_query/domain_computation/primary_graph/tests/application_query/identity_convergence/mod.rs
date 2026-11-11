@@ -38,7 +38,7 @@ fn request_controls_do_not_become_query_or_parameter_identity() {
                 .expect("the selected product branch remains admitted")
                 .resolve_entity(
                     &host_custody.phase_for_application_for_test(&world.application),
-                    AccountStatus::reference(),
+                    AccountStatus::at("AccountStatus"),
                     "open".to_string(),
                     &request,
                     WorthQueryPrincipalResolutionMode::Ordinary,

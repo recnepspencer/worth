@@ -50,7 +50,7 @@ impl std::fmt::Display for RelationalCanonicalCommitArtifactFrameRefusal {
             }
             Self::UnsupportedVersion(reason) => write!(formatter, "canonical commit artifact version {} is unsupported ({:?})", reason.produced().get(), reason.posture()),
             Self::InvalidVersion => formatter.write_str("canonical commit artifact version zero is invalid"),
-            Self::InvalidPayloadShape => formatter.write_str("canonical v5 commitment fields are malformed"),
+            Self::InvalidPayloadShape => formatter.write_str("canonical v8 commitment fields are malformed"),
             Self::TruncatedPayload {
                 declared,
                 available,

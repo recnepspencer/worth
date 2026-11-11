@@ -1,14 +1,11 @@
 use super::capabilities::{
-    ApplicationFieldUnit, OperationCreates, OperationDeletes, OperationEmits, OperationLinks,
-    OperationUnlinks, OperationWrites,
+    OperationCreates, OperationDeletes, OperationEmits, OperationLinks, OperationUnlinks,
 };
-use super::field_reference::ApplicationFieldRef;
 use super::references::{
     ApplicationEffectRef, ApplicationEntityRef, ApplicationOperationRef, ApplicationRelationRef,
 };
 use super::{
-    ApplicationOperationProgramTarget, ApplicationSchemaDeclarationBuilder,
-    ApplicationSchemaMember, DeclaredApplicationFieldValue,
+    ApplicationOperationProgramTarget, ApplicationSchemaDeclarationBuilder, ApplicationSchemaMember,
 };
 mod aspect_removal;
 mod relation_initialization;
@@ -46,24 +43,17 @@ impl<Schema> ApplicationSchemaDeclarationBuilder<Schema> {
         )
     }
 
-    pub fn operation_write<Operation, Input, Entity, Aspect, Field, Value, Write, Equality, Unit>(
-        self,
+    #[inline(always)]
+    pub fn operation_write<Operation, Input, Field: super::fragment::RecordSelection>(
+        mut self,
         operation: ApplicationOperationRef<Schema, Operation, Input>,
-        field: ApplicationFieldRef<Schema, Entity, Aspect, Field, Value, Write, Equality, Unit>,
-    ) -> Self
-    where
-        Field: OperationWrites<Operation>,
-        Field: DeclaredApplicationFieldValue<Value = Value>,
-        Unit: ApplicationFieldUnit,
-    {
-        self.program(
-            operation.name(),
-            ApplicationOperationProgramTarget::Write {
-                entity: field.entity().to_string(),
-                aspect: field.aspect().to_string(),
-                field: field.field().to_string(),
-            },
-        )
+        field: Field,
+    ) -> Self {
+        let target = declared_column(
+            &mut self.member_provenance.fragments,
+            field.expected_recipe(),
+        );
+        self.program(operation.name(), target)
     }
 
     pub fn operation_link<Operation, Input, Relation, From, To>(
@@ -124,4 +114,18 @@ impl<Schema> ApplicationSchemaDeclarationBuilder<Schema> {
             target,
         })
     }
+}
+
+fn declared_column(
+    fragments: &mut super::fragment::provenance::FragmentProvenance,
+    recipe: super::ApplicationFieldBindingRecipe,
+) -> ApplicationOperationProgramTarget {
+    let locus = recipe.locus();
+    let target = ApplicationOperationProgramTarget::Write {
+        entity: locus.entity().to_owned(),
+        aspect: locus.aspect().to_owned(),
+        field: locus.field().to_owned(),
+    };
+    fragments.expect_field(recipe);
+    target
 }

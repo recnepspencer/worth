@@ -1,15 +1,12 @@
 use worth_query_declaration::facade::application_query::ApplicationQueryBinding;
 use worth_query_declaration::facade::application_query::ApplicationQueryBindingLimits;
 use worth_query_declaration::facade::application_query::ApplicationQueryFieldScope;
-use worth_query_declaration::facade::application_schema::NoApplicationUnit;
-use worth_query_declaration::facade::application_schema::ReadWrite;
 use worth_query_declaration::facade::application_schema::U64ApplicationValueBinding;
 
 use crate::domain_computation::primary_graph::tests::fixture::application_queries::AccountSummaryParameters;
 use crate::domain_computation::primary_graph::tests::fixture::application_queries::AccountSummaryQuery;
 use crate::domain_computation::primary_graph::tests::fixture::application_queries::AccountSummaryQueryParametersBinding;
 use crate::domain_computation::primary_graph::tests::fixture::application_queries::AccountSummaryQueryResultBinding;
-use crate::domain_computation::primary_graph::tests::fixture::Account;
 use crate::domain_computation::primary_graph::tests::fixture::AccountStatus;
 use crate::domain_computation::primary_graph::tests::fixture::ExternalMapping;
 use crate::domain_computation::primary_graph::tests::fixture::IdentityBinding;
@@ -24,15 +21,7 @@ impl ApplicationQueryBinding<IdentityExecutionSchema> for TestAccountSourceBindi
     type Query = AccountSummaryQuery;
     type ParameterBinding = AccountSummaryQueryParametersBinding;
     type ResultBinding = AccountSummaryQueryResultBinding;
-    type ScopeBinding = ApplicationQueryFieldScope<
-        IdentityExecutionSchema,
-        Account,
-        crate::domain_computation::primary_graph::tests::fixture::AccountPolicy,
-        AccountStatus,
-        String,
-        ReadWrite,
-        NoApplicationUnit,
-    >;
+    type ScopeBinding = ApplicationQueryFieldScope<AccountStatus>;
     type PrincipalBinding = IdentityBinding;
     type Mapping = ExternalMapping;
     type Principal = Principal;
@@ -42,17 +31,8 @@ impl ApplicationQueryBinding<IdentityExecutionSchema> for TestAccountSourceBindi
     const IDENTITY: &'static str = "worth.query.test.account-source.v1";
     const LIMITS: ApplicationQueryBindingLimits = ApplicationQueryBindingLimits::results(1);
 
-    fn scope_field() -> worth_query_declaration::facade::application_schema::ApplicationFieldRef<
-        IdentityExecutionSchema,
-        Account,
-        crate::domain_computation::primary_graph::tests::fixture::AccountPolicy,
-        AccountStatus,
-        String,
-        ReadWrite,
-        worth_query_declaration::facade::application_schema::EqualityPredicate,
-        NoApplicationUnit,
-    > {
-        AccountStatus::reference()
+    fn scope_field() -> AccountStatus {
+        AccountStatus::at("AccountStatus")
     }
 
     fn principal_binding(
@@ -77,15 +57,7 @@ impl ApplicationQueryBinding<IdentityExecutionSchema> for AlternateAccountSource
     type Query = AccountSummaryQuery;
     type ParameterBinding = AccountSummaryQueryParametersBinding;
     type ResultBinding = AccountSummaryQueryResultBinding;
-    type ScopeBinding = ApplicationQueryFieldScope<
-        IdentityExecutionSchema,
-        Account,
-        crate::domain_computation::primary_graph::tests::fixture::AccountPolicy,
-        AccountStatus,
-        String,
-        ReadWrite,
-        NoApplicationUnit,
-    >;
+    type ScopeBinding = ApplicationQueryFieldScope<AccountStatus>;
     type PrincipalBinding = IdentityBinding;
     type Mapping = ExternalMapping;
     type Principal = Principal;
@@ -95,17 +67,8 @@ impl ApplicationQueryBinding<IdentityExecutionSchema> for AlternateAccountSource
     const IDENTITY: &'static str = "worth.query.test.alternate-account-source.v1";
     const LIMITS: ApplicationQueryBindingLimits = ApplicationQueryBindingLimits::results(1);
 
-    fn scope_field() -> worth_query_declaration::facade::application_schema::ApplicationFieldRef<
-        IdentityExecutionSchema,
-        Account,
-        crate::domain_computation::primary_graph::tests::fixture::AccountPolicy,
-        AccountStatus,
-        String,
-        ReadWrite,
-        worth_query_declaration::facade::application_schema::EqualityPredicate,
-        NoApplicationUnit,
-    > {
-        AccountStatus::reference()
+    fn scope_field() -> AccountStatus {
+        AccountStatus::at("AccountStatus")
     }
 
     fn principal_binding(

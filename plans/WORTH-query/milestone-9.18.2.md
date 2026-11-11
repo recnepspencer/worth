@@ -9,6 +9,10 @@ contracts from [9.18.1](./milestone-9.18.1.md). This adds no dependency on 9.19.
 history reopening follow [Store integration](../database-foundation/roadmap.md).
 This milestone implements navigation, not a total-storage cap.
 
+The subsequent multi-entity increment (#53–#57) is governed by
+[declared owned models](./history-owned-models.md). Its qualification is separate
+from the completed single-record history evidence below.
+
 Each phase contains its own product contract, authority and failure rules,
 implementation boundary, test requirements, documentation and closure criteria.
 Dependencies name completed capabilities, not requirements deferred to a later

@@ -10,9 +10,7 @@ use bank_domain::schema::{
     RejectPaymentMutationBinding,
 };
 use worth_query_host::facade::declaration::application_operation::ApplicationMutationBinding;
-use worth_query_host::facade::domain::{
-    OperationCreates, OperationLinks, OperationReads, OperationWrites,
-};
+use worth_query_host::facade::domain::{OperationCreates, OperationLinks};
 use worth_query_host::facade::primary_graph::{
     CandidateWriter, DecisionReader, HandlerExecutionDenial, HandlerInterruption, HandlerResult,
     OperationHandler, WorthQueryApplicationEffectEntity, WorthQueryApplicationEntityKey,
@@ -167,20 +165,24 @@ fn author_payment_decision<Binding>(
 where
     Binding: ApplicationMutationBinding<BankSchema>,
     Approval: OperationCreates<Binding::Operation>,
-    PaymentIdentityField: OperationReads<Binding::Operation>,
-    PrincipalIdentityField: OperationReads<Binding::Operation>,
-    PaymentStatusField: OperationWrites<Binding::Operation>,
+
     PaymentApproval: OperationLinks<Binding::Operation>,
     ApprovalPrincipal: OperationLinks<Binding::Operation>,
 {
     let payment = candidate
-        .resolve_entity(PaymentIdentityField::reference(), replacement.id())
+        .resolve_entity(
+            PaymentIdentityField::at("PaymentIdentityField"),
+            replacement.id(),
+        )
         .map_err(HandlerExecutionDenial::new)?;
     let decider = replacement
         .deciding_principal()
         .ok_or_else(|| HandlerExecutionDenial::new(InvalidPaymentDecisionCandidate))?;
     let decider = candidate
-        .resolve_entity(PrincipalIdentityField::reference(), decider)
+        .resolve_entity(
+            PrincipalIdentityField::at("PrincipalIdentityField"),
+            decider,
+        )
         .map_err(HandlerExecutionDenial::new)?;
     let approval = candidate
         .create_entity_in_context(
@@ -193,7 +195,7 @@ where
     candidate
         .write_field(
             &payment,
-            PaymentStatusField::reference(),
+            PaymentStatusField::at("PaymentStatusField"),
             replacement.status(),
         )
         .map_err(HandlerExecutionDenial::new)?;

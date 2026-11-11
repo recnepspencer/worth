@@ -1,6 +1,6 @@
 use worth_query_decl::facade::{
     application_schema::ApplicationSchemaDeclarationBuilder, worth_query_operation_creates,
-    worth_query_operation_links, worth_query_operation_reads, worth_query_operation_writes,
+    worth_query_operation_links, worth_query_operation_reads,
 };
 
 use crate::schema::{
@@ -21,26 +21,9 @@ use super::{
 // Approver on the source account, so the initiation reads the account's
 // authorizations and authors one grant per approver.
 
-worth_query_operation_reads!(
-    InitiateBusinessPaymentOperation => [
-        AccountAuthorizedUser,
-        AuthorizationAccount,
-        AccountAuthorizationIdentity,
-        AuthorizationRole
-    ]
-);
+worth_query_operation_reads!(InitiateBusinessPaymentOperation => [AccountAuthorizedUser, AuthorizationAccount]);
 worth_query_operation_creates!(InitiateBusinessPaymentOperation => [ApprovedBusinessPaymentGrant]);
-worth_query_operation_writes!(
-    InitiateBusinessPaymentOperation => [
-        ApprovedBusinessPaymentGrantAction,
-        ApprovedBusinessPaymentGrantPurpose,
-        ApprovedBusinessPaymentGrantStatus,
-        ApprovedBusinessPaymentGrantWorkflow,
-        ApprovedBusinessPaymentGrantNotBefore,
-        ApprovedBusinessPaymentGrantNotAfter,
-        ApprovedBusinessPaymentGrantDelegationLimit
-    ]
-);
+
 worth_query_operation_links!(
     InitiateBusinessPaymentOperation => [
         ApprovedBusinessPaymentGrantResource,
@@ -56,30 +39,41 @@ pub(crate) fn install_payment_approval_grant_minting(
     schema
         .operation_read_relation(operation(), AccountAuthorizedUser::reference())
         .operation_read_relation(operation(), AuthorizationAccount::reference())
-        .operation_read_field(operation(), AccountAuthorizationIdentity::reference())
-        .operation_read_field(operation(), AuthorizationRole::reference())
+        .operation_read_field(
+            operation(),
+            AccountAuthorizationIdentity::at("AccountAuthorizationIdentity"),
+        )
+        .operation_read_field(operation(), AuthorizationRole::at("AuthorizationRole"))
         .operation_create(operation(), ApprovedBusinessPaymentGrant::reference())
-        .operation_write(operation(), ApprovedBusinessPaymentGrantAction::reference())
         .operation_write(
             operation(),
-            ApprovedBusinessPaymentGrantPurpose::reference(),
-        )
-        .operation_write(operation(), ApprovedBusinessPaymentGrantStatus::reference())
-        .operation_write(
-            operation(),
-            ApprovedBusinessPaymentGrantWorkflow::reference(),
+            ApprovedBusinessPaymentGrantAction::at("ApprovedBusinessPaymentGrantAction"),
         )
         .operation_write(
             operation(),
-            ApprovedBusinessPaymentGrantNotBefore::reference(),
+            ApprovedBusinessPaymentGrantPurpose::at("ApprovedBusinessPaymentGrantPurpose"),
         )
         .operation_write(
             operation(),
-            ApprovedBusinessPaymentGrantNotAfter::reference(),
+            ApprovedBusinessPaymentGrantStatus::at("ApprovedBusinessPaymentGrantStatus"),
         )
         .operation_write(
             operation(),
-            ApprovedBusinessPaymentGrantDelegationLimit::reference(),
+            ApprovedBusinessPaymentGrantWorkflow::at("ApprovedBusinessPaymentGrantWorkflow"),
+        )
+        .operation_write(
+            operation(),
+            ApprovedBusinessPaymentGrantNotBefore::at("ApprovedBusinessPaymentGrantNotBefore"),
+        )
+        .operation_write(
+            operation(),
+            ApprovedBusinessPaymentGrantNotAfter::at("ApprovedBusinessPaymentGrantNotAfter"),
+        )
+        .operation_write(
+            operation(),
+            ApprovedBusinessPaymentGrantDelegationLimit::at(
+                "ApprovedBusinessPaymentGrantDelegationLimit",
+            ),
         )
         .operation_link(
             operation(),

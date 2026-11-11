@@ -113,10 +113,7 @@ fn child_and_parent_share_exact_caller_byte_allowance() {
     assert_eq!(work.basis_preparations(), 2);
     assert_eq!(work.digest_derivations(), 2);
     assert_eq!(work.canonical_entries(), child_work.canonical_entries() + 6);
-    assert!(
-        work.canonical_material_allocation_bytes()
-            > child_work.canonical_material_allocation_bytes()
-    );
+    assert!(work.canonical_encoded_bytes() > child_work.canonical_encoded_bytes());
     let parent_bytes = exact - child_work.canonical_encoded_bytes();
     assert_eq!(
         work.sha256_compression_blocks(),

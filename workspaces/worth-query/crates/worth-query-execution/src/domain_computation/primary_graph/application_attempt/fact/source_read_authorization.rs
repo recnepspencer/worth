@@ -27,7 +27,7 @@ pub struct SourceReadAuthorizationKey {
 
 pub struct SourceReadAuthorization {
     key: SourceReadAuthorizationKey,
-    binding: WorthQueryInstalledApplicationQueryBindingObservation,
+    binding: Option<WorthQueryInstalledApplicationQueryBindingObservation>,
     session: WorthQueryGraphWorkSessionIdentity,
     support: SourceReadSupport,
     identity: [u8; 32],
@@ -77,7 +77,7 @@ impl SourceReadAuthorization {
                 principal: terminal.principal(),
                 scope: terminal.scope(),
             },
-            binding,
+            binding: Some(binding),
             session: terminal.session_identity(),
             support,
             identity,
@@ -93,13 +93,14 @@ impl SourceReadAuthorization {
         &self,
         binding: &WorthQueryInstalledApplicationQueryBindingObservation,
     ) -> bool {
-        self.binding == *binding
+        self.binding.as_ref() == Some(binding)
     }
     pub(in crate::domain_computation::primary_graph) fn validates_terminal(
         &self,
         terminal: &WorthQueryCompletedSourceRead,
     ) -> bool {
-        self.session == terminal.session_identity()
+        self.binding.is_some()
+            && self.session == terminal.session_identity()
             && self.support.belongs_to_session(self.session)
             && self.key.principal == terminal.principal()
             && self.key.scope == terminal.scope()
@@ -145,5 +146,54 @@ impl std::fmt::Debug for SourceReadAuthorization {
         f.debug_struct("SourceReadAuthorization")
             .field("key", &self.key)
             .finish_non_exhaustive()
+    }
+}
+
+impl SourceReadAuthorization {
+    /// A successful independent operation READ has its own conventional C
+    /// support. It cannot validate as a query completion or mint a query receipt.
+    pub(in crate::domain_computation) fn retain_operation(
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        operation: worth_query_installation::facade::InstalledOperationView<'_>,
+        issuer: &crate::domain_computation::authorization::BorrowedReadOperationAdmission<'_>,
+        authorization: WorthQueryRetainedAuthorizationDecisionFacts,
+        registry: &Arc<WorthQueryInstalledAuthorizationRegistry>,
+    ) -> Result<Arc<Self>, CompanionPreflightStop> {
+        let allocation =
+            SourceFactsAllocation::open(execution).map_err(CompanionPreflightStop::Execution)?;
+        allocation
+            .claim_arc::<Self>(execution)
+            .map_err(CompanionPreflightStop::Execution)?;
+        let support = SourceReadSupport::retain(execution, authorization, registry, &allocation)?;
+        let mut digest = Sha256::new();
+        digest.update(b"worth-query:operation-read-authorization:v1");
+        digest.update(operation.authority_identity_bytes());
+        for entity in [issuer.principal, issuer.scope] {
+            digest.update(entity.partition_value().to_be_bytes());
+            digest.update(entity.local_slot_value().to_be_bytes());
+            digest.update(entity.generation_value().to_be_bytes());
+        }
+        let conventional = support.visit_support(&mut |bytes| {
+            SourceFactsAllocation::work(execution, bytes.len() as u64)
+                .map_err(CompanionPreflightStop::Execution)?;
+            digest.update(bytes);
+            Ok::<_, CompanionPreflightStop>(())
+        })?;
+        if !conventional {
+            return Err(CompanionPreflightStop::SelectedSourceMismatch);
+        }
+        let identity = digest.finalize().into();
+        Ok(Arc::new(Self {
+            key: SourceReadAuthorizationKey {
+                source: operation.authority_identity_bytes(),
+                support: identity,
+                principal: issuer.principal,
+                scope: issuer.scope,
+            },
+            binding: None,
+            session: issuer.session,
+            support,
+            identity,
+        }))
     }
 }

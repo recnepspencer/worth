@@ -5,6 +5,43 @@ impl ApplicationCorrectionBinding<Schema> for Restore {
     type Source = edit::source::Binding;
     type InverseIntent = edit::source::Intent;
     type Disclosure = graph_read::source::Binding;
+
+    fn recover_source_input(
+        bytes: &[u8],
+        expected: worth_query_decl::facade::application_schema::CanonicalDigestId,
+        bounds: worth_query_decl::facade::application_schema::ValueDecodeBounds,
+    ) -> Result<
+        worth_query_decl::facade::application_operation::ApplicationEncodedInput<
+            <Self::Source as worth_query_decl::facade::application_operation::ApplicationMutationBinding<Schema>>::InputBinding,
+        >,
+        worth_query_decl::facade::application_operation::ApplicationRetainedInputDenial,
+    >{
+        worth_query_decl::facade::application_operation::ApplicationEncodedInput::decode_retained_with_seed(
+            bytes, expected, bounds,
+            worth_query_decl::facade::application_schema::CanonicalValueSeed::<<Self::Source as worth_query_decl::facade::application_operation::ApplicationMutationBinding<Schema>>::Input>::new(bounds),
+        )
+    }
+
+    fn recover_inverse_input(
+        bytes: &[u8],
+        expected: worth_query_decl::facade::application_schema::CanonicalDigestId,
+        bounds: worth_query_decl::facade::application_schema::ValueDecodeBounds,
+    ) -> Result<
+        worth_query_decl::facade::application_operation::ApplicationEncodedInput<
+            <worth_query_decl::facade::application_aftermath::ApplicationInverseBinding<
+                Schema,
+                Self,
+            > as worth_query_decl::facade::application_operation::ApplicationMutationBinding<
+                Schema,
+            >>::InputBinding,
+        >,
+        worth_query_decl::facade::application_operation::ApplicationRetainedInputDenial,
+    > {
+        worth_query_decl::facade::application_operation::ApplicationEncodedInput::decode_retained_with_seed(
+            bytes, expected, bounds,
+            worth_query_decl::facade::application_schema::CanonicalValueSeed::<<worth_query_decl::facade::application_aftermath::ApplicationInverseBinding<Schema, Self> as worth_query_decl::facade::application_operation::ApplicationMutationBinding<Schema>>::Input>::new(bounds),
+        )
+    }
     fn source_definition() -> ApplicationOperationDefinitionBuilder<
         Schema,
         edit::source::PatchSource,
@@ -25,13 +62,12 @@ impl ApplicationCorrectionBinding<Schema> for Restore {
         Ok(ApplicationQueryParameterSet::new())
     }
     fn mechanism() -> DeclaredCorrectionMechanism<Schema> {
-        DeclaredCorrectionMechanism::recorded_inverse_binding::<Self>(
-            DeclaredPreImageDemand::new(
-                [DeclaredPreImageLocus::from_field(SourceValue::reference())],
-                9,
-            )
-            .unwrap(),
-        )
+        DeclaredCorrectionMechanism::recorded_inverse_binding::<Self>(DeclaredPreImageDemand::new(
+            [DeclaredPreImageLocus::from_field(SourceValue::at(
+                "SourceValue",
+            ))],
+            9,
+        ))
     }
     fn derive_correction(
         original: &edit::source::Intent,
@@ -41,7 +77,9 @@ impl ApplicationCorrectionBinding<Schema> for Restore {
             return Err(ApplicationCorrectionDerivationDenial::UnsupportedSourceMeaning);
         };
         let value = prior
-            .field(&DeclaredPreImageLocus::from_field(SourceValue::reference()))
+            .field(&DeclaredPreImageLocus::from_field(SourceValue::at(
+                "SourceValue",
+            )))
             .ok_or(ApplicationCorrectionDerivationDenial::MissingPreImage)?;
         let value = U64ApplicationValueBinding::decode(value)
             .map_err(|_| ApplicationCorrectionDerivationDenial::InvalidPreImage)?;

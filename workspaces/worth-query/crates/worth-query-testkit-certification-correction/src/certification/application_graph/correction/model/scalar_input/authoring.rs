@@ -17,8 +17,7 @@ pub struct Edit {
 }
 worth_query_structured_value_binding!(pub InputBinding for Edit { identity: "numeric-scalar.edit-input.v1" });
 worth_query_operation!(pub SetScalar for NumericSchema, input InputBinding);
-worth_query_operation_reads!(SetScalar => [Key, Value]);
-worth_query_operation_writes!(SetScalar => [Value]);
+
 fn key(input: &Edit) -> String {
     input.key.clone()
 }
@@ -30,8 +29,8 @@ worth_query_mutation_binding!(pub Binding for Edit, schema NumericSchema,
     outputs NoApplicationMutationOutputs,
     principal ActorBinding, mapping ExternalMapping, principal_entity Principal,
     principal_identity u64, identity_binding U64ApplicationValueBinding,
-    scope Number, NumberFacts, Key, String, ReadOnly, NoApplicationUnit,
-    field Key::reference(), value key,);
+    scope Key,
+    field Key::at("Key"), value key,);
 pub struct Disclosure;
 impl ApplicationSourceDisclosureBinding<NumericSchema> for Disclosure {
     const IDENTITY: &'static str = "numeric-scalar.original-source.v1";
@@ -53,11 +52,11 @@ impl OperationHandler<NumericSchema, Binding> for Handler {
         input: &Edit,
         reader: &mut DecisionReader<'_, '_, '_, NumericSchema, Binding>,
     ) -> HandlerResult<WorthQueryInvariantMutationTarget<NumericSchema, Number>, MissingValue> {
-        let target = match reader.resolve_entity(Key::reference(), input.key.clone()) {
+        let target = match reader.resolve_entity(Key::at("Key"), input.key.clone()) {
             Ok(target) => target,
             Err(cause) => return HandlerResult::ExecutionDenied(cause),
         };
-        if let Err(cause) = reader.field(&target, Value::reference()) {
+        if let Err(cause) = reader.field(&target, Value::at("Value")) {
             return HandlerResult::ExecutionDenied(cause);
         }
         match reader.mutation_target(&target) {
@@ -73,7 +72,7 @@ impl OperationHandler<NumericSchema, Binding> for Handler {
     ) -> HandlerResult<Edited, MissingValue> {
         let result = writer
             .projected_entity(&target)
-            .and_then(|target| writer.write_field(&target, Value::reference(), input.value));
+            .and_then(|target| writer.write_field(&target, Value::at("Value"), input.value));
         match result {
             Ok(()) => HandlerResult::Completed(Edited),
             Err(cause) => HandlerResult::ExecutionDenied(HandlerExecutionDenial::new(cause)),
@@ -92,8 +91,8 @@ pub fn declare(
                 .finish(),
         )
         .operation_projection_work_budget(SetScalar::reference(), 8)
-        .operation_read_field(SetScalar::reference(), Key::reference())
-        .operation_read_field(SetScalar::reference(), Value::reference())
-        .operation_write(SetScalar::reference(), Value::reference())
+        .operation_read_field(SetScalar::reference(), Key::at("Key"))
+        .operation_read_field(SetScalar::reference(), Value::at("Value"))
+        .operation_write(SetScalar::reference(), Value::at("Value"))
         .application_mutation_binding::<Binding>()
 }

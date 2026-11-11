@@ -1,4 +1,5 @@
 use crate::basis::{ResolvedBasisProof, ResolvedSnapshotBasis};
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::identity::{BasisDigest, CanonicalQueryDigest};
 use crate::identity_authority::QueryCanonicalAuthority;
 
@@ -180,16 +181,16 @@ impl IdentityEvolutionQueryContext {
         operation_identity: &str,
         basis_capability_identity: &str,
         descriptor: LineageTraversalDescriptor,
-    ) -> Self {
-        Self {
+    ) -> Result<Self, IdentityDerivationDenial> {
+        Ok(Self {
             query_authority: query_authority.clone(),
             basis: ResolvedBasisProof::from_installed_operation(
                 operation_identity,
                 basis_capability_identity,
-            ),
+            )?,
             family: IdentityEvolutionQueryFamily::LineageTraversal,
             subject: IdentityEvolutionQuerySubject::LineageTraversal(descriptor),
-        }
+        })
     }
 
     pub(crate) fn installed_operation_correspondence(
@@ -197,12 +198,12 @@ impl IdentityEvolutionQueryContext {
         operation_identity: &str,
         basis_capability_identity: &str,
         comparison: CorrespondenceIdentityComparison,
-    ) -> Self {
+    ) -> Result<Self, IdentityDerivationDenial> {
         let basis = ResolvedBasisProof::from_installed_operation(
             operation_identity,
             basis_capability_identity,
-        );
-        Self {
+        )?;
+        Ok(Self {
             query_authority: query_authority.clone(),
             basis: basis.clone(),
             family: IdentityEvolutionQueryFamily::CorrespondenceIdentityComparison,
@@ -212,7 +213,7 @@ impl IdentityEvolutionQueryContext {
                 right_basis: basis,
                 comparison,
             },
-        }
+        })
     }
 
     pub fn correspondence_identity_comparison(

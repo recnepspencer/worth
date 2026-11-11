@@ -54,34 +54,8 @@ fn recovered_prior_correspondence_is_not_currentness_evidence_until_exact_readmi
         "RestoredOutputBinding",
     );
 
-    lineage.record_recovered_prior_output_for_test(
-        TypeId::of_for_test::<RestoredOutputBinding>(),
-        runtime_authority,
-        schema.clone(),
-        scope,
-        observation.lifecycle_incarnation(),
-        observation.reference_generation().get(),
-        Arc::clone(&correspondence),
-        source_identity,
-        partition,
-        None,
-        [0x41; 32],
-        None,
-    );
-    lineage.record_recovered_prior_output_for_test(
-        TypeId::of_for_test::<RestoredOutputBinding>(),
-        runtime_authority,
-        schema.clone(),
-        scope,
-        observation.lifecycle_incarnation(),
-        observation.reference_generation().get() + 1,
-        Arc::clone(&correspondence),
-        source_identity,
-        partition,
-        None,
-        [0x41; 32],
-        None,
-    );
+    lineage.record_prior_output_for_test(TypeId::of_for_test::<RestoredOutputBinding>(), runtime_authority, schema.clone(), scope, observation.lifecycle_incarnation(), observation.reference_generation().get(), Arc::clone(&correspondence), worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::restoration::PriorOutputOrigin::Recovered { source_identity, checkpoint: None }, partition, None, [0x41; 32]);
+    lineage.record_prior_output_for_test(TypeId::of_for_test::<RestoredOutputBinding>(), runtime_authority, schema.clone(), scope, observation.lifecycle_incarnation(), observation.reference_generation().get() + 1, Arc::clone(&correspondence), worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::restoration::PriorOutputOrigin::Recovered { source_identity, checkpoint: None }, partition, None, [0x41; 32]);
     let semantic_source = SemanticSource::new_for_test(
         runtime_authority,
         schema.clone(),

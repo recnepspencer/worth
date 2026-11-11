@@ -1,5 +1,7 @@
-use super::{digest_index::DigestIndex, hash_value, PartitionContentDigestError};
+mod reconstruction;
+use super::{hash_value, PartitionContentDigestError};
 use crate::storage::partition::SparseAdjacencyTable;
+use crate::storage::substrate::DigestIndex;
 use crate::storage::substrate::{SharedMap, StorageAllocationVisitor};
 
 #[derive(Debug, Clone, Default)]
@@ -10,77 +12,15 @@ pub(super) struct AdjacencyContentIndex {
 }
 
 impl AdjacencyContentIndex {
-    pub(super) fn capture_full(
-        table: &SparseAdjacencyTable,
-        request: super::full::Request<'_, '_, '_>,
-    ) -> Result<(Self, u64), PartitionContentDigestError> {
-        let mut count = 0usize;
-        for _ in table.iter() {
-            super::full::poll(request)?;
-            count = count
-                .checked_add(1)
-                .ok_or(PartitionContentDigestError::AllocationAccountingOverflow)?;
-        }
-        let _memory = super::full::rows_memory(count, request)?;
-        let mut slots = Vec::with_capacity(count);
-        let mut result = Self::default();
-        let mut hashed = 0u64;
-        for (&slot, adjacency) in table.iter() {
-            super::full::poll(request)?;
-            let ids = adjacency.current_ids();
-            let mut count = 0usize;
-            for _ in ids.iter() {
-                super::full::poll(request)?;
-                count = count
-                    .checked_add(1)
-                    .ok_or(PartitionContentDigestError::AllocationAccountingOverflow)?;
-            }
-            let _memory = super::full::rows_memory(count, request)?;
-            let mut rows = Vec::with_capacity(count);
-            for id in ids.iter() {
-                super::full::poll(request)?;
-                let key = ((id.partition_id.as_u32() as u128) << 96)
-                    | ((id.slot_index() as u128) << 32)
-                    | id.generation_value() as u128;
-                rows.push((key, hash_value(b"relation-membership", id)?));
-            }
-            rows.sort_unstable_by_key(|(key, _)| *key);
-            let membership = DigestIndex::from_sorted_entries_for_request(&rows, request)?;
-            slots.push((slot as u128, membership.digest()));
-            result.membership_bytes = result
-                .membership_bytes
-                .checked_add(membership.allocation_bytes())
-                .ok_or(PartitionContentDigestError::AllocationAccountingOverflow)?;
-            match request {
-                Some(request) => {
-                    result
-                        .memberships
-                        .insert_for_request(slot, membership, request)
-                        .map_err(PartitionContentDigestError::Request)?;
-                }
-                None => {
-                    result.memberships.insert(slot, membership);
-                }
-            }
-            hashed = hashed
-                .checked_add(rows.len() as u64)
-                .ok_or(PartitionContentDigestError::AllocationAccountingOverflow)?;
-        }
-        result.slots = DigestIndex::from_sorted_entries_for_request(&slots, request)?;
-        Ok((result, hashed))
-    }
-
     pub(super) fn update(
         &mut self,
         current: &SparseAdjacencyTable,
-        previous: Option<&SparseAdjacencyTable>,
+        previous: &SparseAdjacencyTable,
         slots: impl IntoIterator<Item = usize>,
     ) -> Result<u64, PartitionContentDigestError> {
         let mut hashed = 0;
-        let mut cold_slots = previous.is_none().then(Vec::new);
-        let mut cold_memberships = previous.is_none().then(Vec::new);
         for slot in slots {
-            let old = previous.and_then(|previous| previous.get(slot));
+            let old = previous.get(slot);
             let mut membership = self.memberships.get(&slot).cloned().unwrap_or_default();
             let old_bytes = membership.allocation_bytes();
             if let Some(current) = current.get(slot) {
@@ -96,40 +36,22 @@ impl AdjacencyContentIndex {
                     )?;
                     hashed += u64::from(present);
                 }
-                if let Some(entries) = &mut cold_slots {
-                    entries.push((slot as u128, membership.digest()));
-                } else {
-                    self.slots.set(slot as u128, Some(membership.digest()))?;
-                }
+                self.slots.set(slot as u128, Some(membership.digest()))?;
                 self.membership_bytes = self
                     .membership_bytes
                     .checked_sub(old_bytes)
                     .ok_or(PartitionContentDigestError::AllocationAccountingOverflow)?
                     .checked_add(membership.allocation_bytes())
                     .ok_or(PartitionContentDigestError::AllocationAccountingOverflow)?;
-                if let Some(entries) = &mut cold_memberships {
-                    entries.push((slot, membership));
-                } else {
-                    self.memberships.insert(slot, membership);
-                }
+                self.memberships.insert(slot, membership);
             } else {
-                if cold_slots.is_none() {
-                    self.slots.set(slot as u128, None)?;
-                    self.memberships.remove(&slot);
-                }
+                self.slots.set(slot as u128, None)?;
+                self.memberships.remove(&slot);
                 self.membership_bytes = self
                     .membership_bytes
                     .checked_sub(old_bytes)
                     .ok_or(PartitionContentDigestError::AllocationAccountingOverflow)?;
             }
-        }
-        if let Some(mut entries) = cold_slots {
-            entries.sort_unstable_by_key(|(slot, _)| *slot);
-            self.slots = DigestIndex::from_sorted_entries(&entries);
-        }
-        if let Some(mut entries) = cold_memberships {
-            entries.sort_unstable_by_key(|(slot, _)| *slot);
-            self.memberships = SharedMap::from_sorted_unique(entries);
         }
         Ok(hashed)
     }
@@ -143,8 +65,10 @@ impl AdjacencyContentIndex {
     pub(super) fn visit_allocations(&self, visitor: &mut dyn StorageAllocationVisitor) {
         self.slots.visit_allocations(visitor);
         self.memberships
-            .visit_allocations(false, visitor, &mut |set, _, visitor| {
-                set.visit_allocations(visitor);
+            .visit_allocations(false, visitor, &mut |set, allocation, visitor| {
+                if allocation.visit(visitor) {
+                    set.visit_allocations(visitor);
+                }
             });
     }
 }
@@ -176,10 +100,16 @@ mod tests {
         let slots = [0, 1, 64, 127];
         let mut cold = AdjacencyContentIndex::default();
         let mut incremental = AdjacencyContentIndex::default();
-        assert_eq!(cold.update(&table, None, slots).unwrap(), 2);
+        assert_eq!(
+            crate::storage::substrate::maintenance::ReconstructionLane::inspect_oracle(
+                |lane, work| cold.rebuild(lane, work, None, &table)
+            )
+            .unwrap(),
+            2
+        );
         assert_eq!(
             incremental
-                .update(&table, Some(&SparseAdjacencyTable::default()), slots)
+                .update(&table, &SparseAdjacencyTable::default(), slots)
                 .unwrap(),
             2
         );

@@ -7,12 +7,11 @@ use std::sync::Arc;
 use worth_query_admission::facade::authenticated_principal::WorthQueryCancellationSource;
 use worth_query_declaration::facade::application_schema::*;
 use worth_query_execution::facade::application_invariants::WorthQueryApplicationInvariantContext;
+use worth_query_execution::facade::application_invariants::WorthQueryApplicationInvariantError;
 use worth_query_execution::facade::application_invariants::WorthQueryApplicationInvariantRule;
 use worth_query_execution::facade::application_invariants::WorthQueryApplicationInvariantScopePlanner;
 use worth_query_execution::facade::application_invariants::WorthQueryApplicationInvariantVerdict;
-use worth_relational::facade::runtime::CustomInvariantExecutionError as WorthQueryApplicationInvariantExecutionError;
 use worth_relational::facade::runtime::CustomInvariantLeaseBudget;
-use worth_relational::facade::runtime::CustomInvariantPreparationError as WorthQueryApplicationInvariantPreparationError;
 
 pub const PREPARATION_UNITS: u64 = 3;
 pub const EVALUATION_UNITS: u64 = 5;
@@ -78,7 +77,7 @@ impl WorthQueryApplicationInvariantRule<HookSchema> for AccountingRule {
     fn prepare_scope(
         &self,
         _: &mut WorthQueryApplicationInvariantScopePlanner<'_, '_, HookSchema>,
-    ) -> Result<(), WorthQueryApplicationInvariantPreparationError> {
+    ) -> Result<(), WorthQueryApplicationInvariantError> {
         self.contacts.ordinary.fetch_add(1, Ordering::SeqCst);
         for _ in 0..if self.work { PREPARATION_UNITS } else { 0 } {
             self.contacts.visits.fetch_add(1, Ordering::SeqCst);
@@ -89,10 +88,8 @@ impl WorthQueryApplicationInvariantRule<HookSchema> for AccountingRule {
         &self,
         _: &WorthQueryApplicationInvariantContext<'_, '_, HookSchema>,
         _: &(),
-    ) -> Result<
-        WorthQueryApplicationInvariantVerdict<()>,
-        WorthQueryApplicationInvariantExecutionError,
-    > {
+    ) -> Result<WorthQueryApplicationInvariantVerdict<()>, WorthQueryApplicationInvariantError>
+    {
         self.contacts.ordinary.fetch_add(1, Ordering::SeqCst);
         for _ in 0..if self.work { EVALUATION_UNITS } else { 0 } {
             self.contacts.visits.fetch_add(1, Ordering::SeqCst);
@@ -106,12 +103,10 @@ impl WorthQueryApplicationInvariantRule<HookSchema> for AccountingRule {
         &self,
         _: &mut WorthQueryApplicationInvariantScopePlanner<'_, '_, HookSchema>,
         budget: &dyn CustomInvariantLeaseBudget,
-    ) -> Option<Result<(), WorthQueryApplicationInvariantPreparationError>> {
+    ) -> Option<Result<(), WorthQueryApplicationInvariantError>> {
         self.contacts.preparation.fetch_add(1, Ordering::SeqCst);
         if !budget.checkpoint(0) {
-            return Some(Err(WorthQueryApplicationInvariantPreparationError::new(
-                "caller stopped",
-            )));
+            return Some(Err(WorthQueryApplicationInvariantError::Stopped));
         }
         if self.contacts.armed.load(Ordering::SeqCst)
             && let Some(source) = &self.cancellation
@@ -119,15 +114,11 @@ impl WorthQueryApplicationInvariantRule<HookSchema> for AccountingRule {
             source.cancel();
         }
         if !budget.checkpoint(0) {
-            return Some(Err(WorthQueryApplicationInvariantPreparationError::new(
-                "caller stopped",
-            )));
+            return Some(Err(WorthQueryApplicationInvariantError::Stopped));
         }
         for _ in 0..if self.work { PREPARATION_UNITS } else { 0 } {
             if !budget.checkpoint(1) {
-                return Some(Err(WorthQueryApplicationInvariantPreparationError::new(
-                    "caller stopped",
-                )));
+                return Some(Err(WorthQueryApplicationInvariantError::Stopped));
             }
             self.contacts.visits.fetch_add(1, Ordering::SeqCst);
         }
@@ -139,22 +130,15 @@ impl WorthQueryApplicationInvariantRule<HookSchema> for AccountingRule {
         _: &(),
         budget: &dyn CustomInvariantLeaseBudget,
     ) -> Option<
-        Result<
-            WorthQueryApplicationInvariantVerdict<()>,
-            WorthQueryApplicationInvariantExecutionError,
-        >,
+        Result<WorthQueryApplicationInvariantVerdict<()>, WorthQueryApplicationInvariantError>,
     > {
         self.contacts.evaluation.fetch_add(1, Ordering::SeqCst);
         if !budget.checkpoint(0) {
-            return Some(Err(WorthQueryApplicationInvariantExecutionError::new(
-                "caller stopped",
-            )));
+            return Some(Err(WorthQueryApplicationInvariantError::Stopped));
         }
         for _ in 0..if self.work { EVALUATION_UNITS } else { 0 } {
             if !budget.checkpoint(1) {
-                return Some(Err(WorthQueryApplicationInvariantExecutionError::new(
-                    "caller stopped",
-                )));
+                return Some(Err(WorthQueryApplicationInvariantError::Stopped));
             }
             self.contacts.visits.fetch_add(1, Ordering::SeqCst);
         }

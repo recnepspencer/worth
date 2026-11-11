@@ -1,4 +1,5 @@
 mod close_order;
+mod observation_inventory;
 pub(crate) use close_order::PendingProductHeadClose;
 mod installation;
 #[cfg(test)]

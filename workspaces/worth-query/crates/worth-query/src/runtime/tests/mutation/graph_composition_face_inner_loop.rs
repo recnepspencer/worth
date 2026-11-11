@@ -192,10 +192,12 @@ fn compose_graph_supports_face_inner_loop_insertion_with_full_resolution_map() {
         .expect("graph composition receipt should expose program");
     let lifecycle = receipt
         .graph_composition_lifecycle_outcomes()
-        .expect("graph composition receipt should expose lifecycle");
+        .expect("graph composition receipt should expose lifecycle")
+        .expect("fixture digest must fit");
     let evidence = receipt
         .graph_composition_evidence()
-        .expect("graph composition receipt should expose evidence");
+        .expect("graph composition receipt should expose evidence")
+        .expect("fixture digest must fit");
     let resolution_map = receipt.graph_composition_resolution_map();
 
     assert_eq!(program.component_count(), 6);
@@ -215,6 +217,7 @@ fn compose_graph_supports_face_inner_loop_insertion_with_full_resolution_map() {
     assert_eq!(
         receipt
             .batch_mutation_evidence()
+            .expect("fixture digest must fit")
             .symbolic_resolution_count(),
         5
     );

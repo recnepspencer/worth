@@ -17,7 +17,7 @@ use worth_relational::facade::runtime::{
 use worth_relational::facade::storage::RecordLifecycleState;
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub(in crate::domain_computation::primary_graph) enum WorkflowAdoptionReadDenial {
+pub enum WorkflowAdoptionReadDenial {
     /// The caller's read request stopped.
     ReadExecution(worth_relational::facade::transactions::RelationalExecutionDenialCause),
 
@@ -223,6 +223,10 @@ impl WorkflowAdoptionEntity<'_> {
     ) -> Result<Option<String>, WorkflowAdoptionReadDenial> {
         match self.value(execution, locator)? {
             None => Ok(None),
+            Some(AspectValue::String(InternedString::Stored(text))) => {
+                let text = text.as_string();
+                Ok(Some(text.to_owned()))
+            }
             Some(AspectValue::String(InternedString::Raw(text))) => Ok(Some(text)),
             Some(_) => Err(self.unreadable()),
         }

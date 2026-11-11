@@ -22,6 +22,8 @@ pub(crate) struct FrozenCustomInvariantRegistry {
     registrations: Arc<[CustomInvariantRegistration]>,
     source_groups: Arc<SourcePreparationInventory>,
     source_postings: Arc<crate::validation::candidate_source::routing::SourceProgramPostings>,
+    points: Arc<[Vec<usize>; InvariantExecutionPoint::COUNT]>,
+    model_ownership_index: Option<usize>,
     pub(crate) source_history:
         Arc<crate::validation::candidate_source::authored_history::catalog::SourceHistoryCatalog>,
     index_by_identity_and_execution_point: Arc<
@@ -39,6 +41,17 @@ pub(crate) struct FrozenCustomInvariantRegistry {
 impl FrozenCustomInvariantRegistry {
     pub(crate) fn registrations(&self) -> &[CustomInvariantRegistration] {
         &self.registrations
+    }
+
+    /// The exact tagged registration; no request-time applicability scan or parallel meaning.
+    pub(crate) fn model_ownership(
+        &self,
+    ) -> Option<(
+        &CustomInvariantRegistration,
+        &crate::branch::RelationalModelOwnership,
+    )> {
+        let registration = self.registrations.get(self.model_ownership_index?)?;
+        Some((registration, registration.model_ownership.as_deref()?))
     }
 
     pub(crate) fn source_inventory(&self) -> Arc<SourcePreparationInventory> {
@@ -75,6 +88,14 @@ impl FrozenCustomInvariantRegistry {
             .collect()
     }
 
+    pub(crate) fn at(
+        &self,
+        point: InvariantExecutionPoint,
+    ) -> impl Iterator<Item = &CustomInvariantRegistration> {
+        self.points[point as usize]
+            .iter()
+            .map(|&i| &self.registrations[i])
+    }
     pub(crate) fn iter(&self) -> impl Iterator<Item = &CustomInvariantRegistration> {
         self.registrations.iter()
     }

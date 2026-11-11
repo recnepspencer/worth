@@ -1,14 +1,17 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::evidence_identity::{
     worth_query_evidence_identity, WorthQueryEvidenceIdentity, WorthQueryEvidenceScope,
     WorthQueryEvidenceTag,
 };
-use crate::runtime::WorthQueryAspectTouch;
+use crate::runtime::{
+    WorthQueryAspectTouch, WorthQueryDerivedMaterializationTarget, WorthQueryLiveArtifactTarget,
+};
 
 pub(super) fn evidence_value_identities(
     role: &'static str,
     values: &[String],
-) -> Vec<WorthQueryEvidenceIdentity> {
-    values
+) -> Result<Vec<WorthQueryEvidenceIdentity>, IdentityDerivationDenial> {
+    Ok(values
         .iter()
         .map(|value| {
             worth_query_evidence_identity(WorthQueryEvidenceScope::BatchWriteReceipt)
@@ -16,14 +19,14 @@ pub(super) fn evidence_value_identities(
                 .field_value(WorthQueryEvidenceTag::new("value"), value)
                 .seal()
         })
-        .collect()
+        .collect::<Result<Vec<_>, _>>()?)
 }
 
 pub(super) fn terminal_touch_projection_identities(
     role: &'static str,
     touches: &[WorthQueryAspectTouch],
-) -> Vec<WorthQueryEvidenceIdentity> {
-    touches
+) -> Result<Vec<WorthQueryEvidenceIdentity>, IdentityDerivationDenial> {
+    Ok(touches
         .iter()
         .map(|touch| {
             worth_query_evidence_identity(WorthQueryEvidenceScope::BatchWriteReceipt)
@@ -34,5 +37,23 @@ pub(super) fn terminal_touch_projection_identities(
                 )
                 .seal()
         })
+        .collect::<Result<Vec<_>, _>>()?)
+}
+
+pub(in crate::runtime) fn terminal_live_view_ids(
+    targets: &[WorthQueryLiveArtifactTarget],
+) -> Vec<String> {
+    targets
+        .iter()
+        .map(|target| target.view_name().to_string())
+        .collect()
+}
+
+pub(in crate::runtime) fn terminal_derived_view_ids(
+    targets: &[WorthQueryDerivedMaterializationTarget],
+) -> Vec<String> {
+    targets
+        .iter()
+        .map(|target| target.view_name().to_string())
         .collect()
 }

@@ -54,3 +54,6 @@ pub use shared_primary::{
     WorthQuerySharedPrimaryGranularMaintenancePerformed,
     WorthQuerySharedPrimaryGranularSelectionOutcome,
 };
+#[cfg(test)]
+#[path = "mod_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;

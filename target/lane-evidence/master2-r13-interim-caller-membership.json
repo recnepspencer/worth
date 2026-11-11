@@ -1,0 +1,11 @@
+{
+  "frozen_rows": 54,
+  "ported_missing": [
+    "workspaces/worth-query/crates/worth-query-court-decl-host-authored-ownership/tests/authored_ownership/co_history.rs",
+    "workspaces/worth-query/crates/worth-query-court-decl-host-authored-ownership/tests/authored_ownership/cold_owned_revision.rs",
+    "workspaces/worth-query/crates/worth-query-court-decl-host-authored-ownership/tests/authored_ownership/coupled/history.rs",
+    "workspaces/worth-query/crates/worth-query-court-decl-host-authored-ownership/tests/authored_ownership/current_roster.rs",
+    "workspaces/worth-query/crates/worth-query-court-decl-host-owned-codec-transition/tests/owned_codec_transition.rs",
+    "workspaces/worth-query/crates/worth-query-court-decl-host/tests/worth_query_court_decl_host/certification/document_history/owned_outputs/world.rs"
+  ]
+}

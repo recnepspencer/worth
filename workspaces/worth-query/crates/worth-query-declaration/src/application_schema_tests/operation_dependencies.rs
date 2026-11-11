@@ -8,25 +8,27 @@ use crate::application_schema::{
 };
 
 fn write_members() -> Vec<ApplicationSchemaMember> {
-    let declaration = ApplicationSchemaDeclarationBuilder::<Schema>::for_schema()
-        .entity(entity())
-        .aspect(entity(), aspect())
-        .field(entity(), field())
-        .operation(
-            schema_operation()
-                .definition()
-                .no_external_effect()
-                .no_aftermath()
-                .finish(),
-        )
-        .build()
-        .unwrap();
+    let declaration = ApplicationSchemaDeclarationBuilder::<Schema>::from_fragment(
+        application_schema_marker_identity_tests::Fixture,
+    )
+    .unwrap()
+    .operation(
+        schema_operation()
+            .definition()
+            .no_external_effect()
+            .no_aftermath()
+            .finish(),
+    )
+    .build()
+    .unwrap();
     let mut members = declaration.erased().members().to_vec();
     members.push(ApplicationSchemaMember::OperationProgram {
         operation: "SchemaOperation".to_owned(),
         target: ApplicationOperationProgramTarget::Write {
             entity: "Entity".to_owned(),
-            aspect: "Aspect".to_owned(),
+            aspect: application_schema_marker_identity_tests::selected_field()
+                .aspect()
+                .to_owned(),
             field: "Field".to_owned(),
         },
     });
@@ -46,9 +48,14 @@ fn operation_dependency_denial_identifies_the_missing_write_field() {
     assert!(matches!(&denial,
         ApplicationSchemaDeclarationDenial::MissingOperationProgramDependency {
             operation, dependency: Locus::ProgramTarget(Program::Write { entity, aspect, field })
-        } if operation == "SchemaOperation" && entity == "Entity" && aspect == "Aspect" && field == "Field"));
+        } if operation == "SchemaOperation" && entity == "Entity" && aspect == application_schema_marker_identity_tests::selected_field().aspect() && field == "Field"));
     let diagnostic = denial.to_string();
-    for locus in ["SchemaOperation", "Entity", "Aspect", "Field"] {
+    for locus in [
+        "SchemaOperation",
+        "Entity",
+        application_schema_marker_identity_tests::selected_field().aspect(),
+        "Field",
+    ] {
         assert!(
             diagnostic.contains(locus),
             "native declaration denial lost {locus}: {diagnostic}"
@@ -83,7 +90,9 @@ fn read_members(target: Read) -> Vec<Member> {
 fn decision_read_denial_identifies_the_missing_field() {
     let mut members = read_members(Read::Field {
         entity: "Entity".to_owned(),
-        aspect: "Aspect".to_owned(),
+        aspect: application_schema_marker_identity_tests::selected_field()
+            .aspect()
+            .to_owned(),
         field: "Field".to_owned(),
     });
     ApplicationSchemaDeclarationBuilder::<Schema>::from_test_members(members.clone())
@@ -96,7 +105,7 @@ fn decision_read_denial_identifies_the_missing_field() {
     assert!(matches!(denial,
         ApplicationSchemaDeclarationDenial::MissingOperationDecisionReadDependency {
             operation, dependency: Locus::DecisionReadTarget(Read::Field { entity, aspect, field })
-        } if operation == "SchemaOperation" && entity == "Entity" && aspect == "Aspect" && field == "Field"));
+        } if operation == "SchemaOperation" && entity == "Entity" && aspect == application_schema_marker_identity_tests::selected_field().aspect() && field == "Field"));
 }
 
 #[test]
@@ -129,7 +138,9 @@ fn decision_read_denial_identifies_the_missing_relation_and_endpoints() {
 fn mutation_precondition_denial_identifies_its_required_field_read() {
     let mut members = read_members(Read::Field {
         entity: "Entity".to_owned(),
-        aspect: "Aspect".to_owned(),
+        aspect: application_schema_marker_identity_tests::selected_field()
+            .aspect()
+            .to_owned(),
         field: "Field".to_owned(),
     });
     members.push(Member::OperationMutationPrecondition {
@@ -137,7 +148,7 @@ fn mutation_precondition_denial_identifies_its_required_field_read() {
         target: ApplicationMutationPreconditionTarget::field(
             ApplicationMutationPreconditionFamily::ExpectedFact,
             "Entity",
-            "Aspect",
+            application_schema_marker_identity_tests::selected_field().aspect(),
             "Field",
         ),
     });
@@ -162,6 +173,10 @@ fn mutation_precondition_denial_identifies_its_required_field_read() {
     );
     assert_eq!(
         (target.entity(), target.aspect(), target.field_name()),
-        ("Entity", "Aspect", "Field")
+        (
+            "Entity",
+            application_schema_marker_identity_tests::selected_field().aspect(),
+            "Field"
+        )
     );
 }

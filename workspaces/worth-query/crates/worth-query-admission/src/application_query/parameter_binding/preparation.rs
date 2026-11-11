@@ -33,7 +33,7 @@ pub fn admit_application_query_parameters_admitted<
     let values = parameters.bindings();
     let slots = values
         .len()
-        .checked_mul(std::mem::size_of::<(&'static str, AspectValue)>())
+        .checked_mul(std::mem::size_of::<(Cow<'static, str>, AspectValue)>())
         .ok_or(AccountingOverflow)?;
     admit(values.len(), slots).map_err(Admission)?;
     for (name, value) in values {
@@ -80,8 +80,11 @@ pub fn admit_application_query_parameters_admitted<
         width.checked_mul(2).ok_or(AccountingOverflow)?,
     )
     .map_err(Admission)?;
-    let mut bindings = values.to_vec();
-    bindings.sort_unstable_by_key(|(name, _)| *name);
+    let mut bindings: Vec<_> = values
+        .iter()
+        .map(|(name, value)| (Cow::Borrowed(*name), value.clone()))
+        .collect();
+    bindings.sort_unstable_by(|(left, _), (right, _)| left.cmp(right));
     validate_parameter_layout(query, &bindings).map_err(Parameters)?;
     let canonical = prepare_parameter_basis_admitted(
         &bindings,

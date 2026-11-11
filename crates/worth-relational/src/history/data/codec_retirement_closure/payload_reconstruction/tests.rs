@@ -1,5 +1,7 @@
 //! Finite original serial funding for pure payload reconstruction owners.
 use super::*;
+mod optional_output;
+mod storage_footprint;
 use crate::publication::patch::data::{
     PublishedAuthoritativeFieldSet, PublishedAuthoritativePatchOperation as Op,
     PublishedAuthoritativePatchValue as Value,
@@ -13,17 +15,16 @@ use worth_execution::{
 fn reconstruction_funds_portable_admission_and_output_until_drop() {
     let plan = scalar_plan();
     let source = scalar_patch(&plan, text("original payload"));
-    let budget = SerialMemoryBudget::new(Some(16_000));
+    let footprint = storage_footprint::quote(None, &source, &plan, true);
+    let budget = SerialMemoryBudget::new(Some(footprint.peak));
     let output = run(&budget, None, &source, &plan, true).unwrap();
     let state = output.state.as_ref().unwrap();
     assert_eq!(
         state.get(&key()).unwrap().view(),
         ContractValidatedAspectValueView::Scalar(&text("original payload"))
     );
-    assert_eq!(
-        budget.charged_memory_bytes(),
-        state.owned_allocation_capacity_bytes() as u64
-    );
+    assert_eq!(budget.charged_memory_bytes(), footprint.retained);
+    assert!(footprint.retained >= state.aspects().retained_storage_bytes().unwrap() as u64);
     assert!(budget.charged_memory_bytes() > 0);
     drop(output);
     assert_eq!(budget.charged_memory_bytes(), 0);
@@ -74,18 +75,24 @@ fn reconstruction_releases_large_replaced_payload_before_retaining_small_output(
     let source = scalar_patch(&plan, text("ok"));
     // Existing caller input is borrowed, never eight newly allocated copies.
     assert!(current.owned_allocation_capacity_bytes() > 4096);
-    let budget = SerialMemoryBudget::new(Some(4096));
+    // c65d042399/6df49ed086 add persistent-tree backing. The finite grant
+    // comes from that owner's actual geometry, not a newly observed peak.
+    let footprint = storage_footprint::quote(Some(&current), &source, &plan, false);
+    let small_current = state(&plan, text("before"));
+    assert_eq!(
+        footprint.peak,
+        storage_footprint::quote(Some(&small_current), &source, &plan, false).peak,
+        "discarded input payload is borrowed, never multiplied into construction"
+    );
+    let budget = SerialMemoryBudget::new(Some(footprint.peak));
     let output = run(&budget, Some(&current), &source, &plan, false).unwrap();
     let actual = output.state.as_ref().unwrap();
     assert_eq!(
         actual.get(&key()).unwrap().view(),
         ContractValidatedAspectValueView::Scalar(&text("ok"))
     );
-    assert_eq!(
-        budget.charged_memory_bytes(),
-        actual.owned_allocation_capacity_bytes() as u64
-    );
-    assert!(budget.charged_memory_bytes() < 512);
+    assert_eq!(budget.charged_memory_bytes(), footprint.retained);
+    assert!(actual.owned_allocation_capacity_bytes() < current.owned_allocation_capacity_bytes());
     drop(output);
     assert_eq!(budget.charged_memory_bytes(), 0);
 }
@@ -93,8 +100,25 @@ fn reconstruction_releases_large_replaced_payload_before_retaining_small_output(
 #[test]
 fn reconstruction_birth_canonicalizes_unique_fields_and_preserves_duplicate_refusal() {
     let plan = struct_plan();
-    let budget = SerialMemoryBudget::new(Some(16_000));
     let source = fields_patch(&plan, &["b", "a"]);
+    let changed = PublishedAuthoritativePatch::new(vec![Op::FieldLevelPatch {
+        aspect_key: key(),
+        aspect_identity: AspectIdentity(1),
+        contract_revision: AspectContractRevision(1),
+        binding: plan.executable_bindings[0].target.clone(),
+        field_sets: vec![PublishedAuthoritativeFieldSet {
+            field: field("a"),
+            value: text("replacement"),
+        }],
+        field_clears: vec![field("a"), field("b")],
+    }]);
+    let initial = storage_footprint::quote(None, &source, &plan, true);
+    let update = storage_footprint::quote(initial.next.as_ref(), &changed, &plan, false);
+    let budget = SerialMemoryBudget::new(Some(
+        initial
+            .peak
+            .max(initial.retained.checked_add(update.peak).unwrap()),
+    ));
     let output = run(&budget, None, &source, &plan, true).unwrap();
     let ContractValidatedAspectValueView::Struct(actual) =
         output.state.as_ref().unwrap().get(&key()).unwrap().view()
@@ -112,17 +136,6 @@ fn reconstruction_birth_canonicalizes_unique_fields_and_preserves_duplicate_refu
         actual,
         &StructAspectValue::new([(field("b"), text("b")), (field("a"), text("a"))]).unwrap()
     );
-    let changed = PublishedAuthoritativePatch::new(vec![Op::FieldLevelPatch {
-        aspect_key: key(),
-        aspect_identity: AspectIdentity(1),
-        contract_revision: AspectContractRevision(1),
-        binding: plan.executable_bindings[0].target.clone(),
-        field_sets: vec![PublishedAuthoritativeFieldSet {
-            field: field("a"),
-            value: text("replacement"),
-        }],
-        field_clears: vec![field("a"), field("b")],
-    }]);
     let updated = run(&budget, output.state.as_ref(), &changed, &plan, false).unwrap();
     drop(output);
     let ContractValidatedAspectValueView::Struct(value) =
@@ -132,14 +145,7 @@ fn reconstruction_birth_canonicalizes_unique_fields_and_preserves_duplicate_refu
     };
     assert_eq!(value.get(&field("a")), Some(&text("replacement")));
     assert!(value.get(&field("b")).is_none());
-    assert_eq!(
-        budget.charged_memory_bytes(),
-        updated
-            .state
-            .as_ref()
-            .unwrap()
-            .owned_allocation_capacity_bytes() as u64
-    );
+    assert_eq!(budget.charged_memory_bytes(), update.retained);
     drop(updated);
     assert_eq!(budget.charged_memory_bytes(), 0);
     assert!(

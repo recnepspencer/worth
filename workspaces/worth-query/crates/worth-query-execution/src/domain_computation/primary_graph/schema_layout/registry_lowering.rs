@@ -23,6 +23,7 @@ use super::{
 pub(super) fn lower_kind_ids(
     schema: &ErasedApplicationSchemaDeclaration,
     existing_registry: &RelationalSchemaRegistry,
+    roles: &mut super::physical_identity::PhysicalIdentityAllocation<'_>,
 ) -> Result<
     (BTreeMap<String, KindId>, BTreeMap<String, KindId>),
     WorthQueryPrimaryGraphInstallationDenial,
@@ -39,6 +40,19 @@ pub(super) fn lower_kind_ids(
             }
             _ => {}
         }
+    }
+    if roles.original().is_some() {
+        let mut entities = BTreeMap::new();
+        let mut relations = BTreeMap::new();
+        for name in entity_names {
+            let id = roles.entity(&name)?;
+            entities.insert(name, id);
+        }
+        for name in relation_names {
+            let id = roles.relation(&name)?;
+            relations.insert(name, id);
+        }
+        return Ok((entities, relations));
     }
     let mut next_kind = next_kind_id(existing_registry)?;
     let mut entity_kinds = BTreeMap::new();

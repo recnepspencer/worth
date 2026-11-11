@@ -50,6 +50,76 @@ impl RelationalDurableMediumTransfer {
 }
 
 impl RelationalDurableMediumBinding {
+    pub(crate) fn admit_home_program_planning(
+        &self,
+    ) -> Result<(), RelationalHomeProgramWriteDenial> {
+        use RelationalHomeProgramWriteDenial as Denial;
+        let phase = self.home_phase();
+        match phase.as_ref().ok_or(Denial::MediumMoved)? {
+            RelationalHomeProgramPhase::Pending(required) => self
+                .transition
+                .as_ref()
+                .ok_or(Denial::TransitionNotRequested)?
+                .admit_required(required)
+                .map_err(Denial::Admission),
+            RelationalHomeProgramPhase::Unrestricted => Err(Denial::TransitionNotRequested),
+            RelationalHomeProgramPhase::Bound { .. } => Err(Denial::TransitionAlreadyBound),
+            RelationalHomeProgramPhase::Refused(cause) => Err(Denial::Admission(*cause)),
+        }
+    }
+
+    pub(crate) fn admit_completed_home_steps<Source: PartialEq>(
+        &self,
+        completed: &worth_proof::CompletedHomeProgramTransitionSteps<Source>,
+        source: &Source,
+    ) -> Result<(), RelationalHomeProgramWriteDenial> {
+        use RelationalHomeProgramWriteDenial as Denial;
+        let phase = self.home_phase();
+        match phase.as_ref().ok_or(Denial::MediumMoved)? {
+            RelationalHomeProgramPhase::Pending(required) => self
+                .transition
+                .as_ref()
+                .ok_or(Denial::TransitionNotRequested)?
+                .admit_completed_steps(required, completed, completed.plan_commitment(), source)
+                .map_err(Denial::Admission),
+            RelationalHomeProgramPhase::Unrestricted => Err(Denial::TransitionNotRequested),
+            RelationalHomeProgramPhase::Bound { .. } => Err(Denial::TransitionAlreadyBound),
+            RelationalHomeProgramPhase::Refused(cause) => Err(Denial::Admission(*cause)),
+        }
+    }
+
+    pub(crate) fn install_acknowledged_home_receiver(
+        &self,
+        completed: HomeProgramTransitionBindingCommitted,
+        plan: [u8; 32],
+        install: impl FnOnce(),
+    ) -> Result<(), RelationalHomeProgramWriteDenial> {
+        use RelationalHomeProgramWriteDenial as Denial;
+        let mut phase = self.home_phase();
+        let required = match phase.as_ref().ok_or(Denial::MediumMoved)? {
+            RelationalHomeProgramPhase::Pending(required) => required.clone(),
+            RelationalHomeProgramPhase::Unrestricted => return Err(Denial::TransitionNotRequested),
+            RelationalHomeProgramPhase::Bound { .. } => return Err(Denial::TransitionAlreadyBound),
+            RelationalHomeProgramPhase::Refused(cause) => return Err(Denial::Admission(*cause)),
+        };
+        self.transition
+            .as_ref()
+            .ok_or(Denial::TransitionNotRequested)?
+            .admit_binding_committed(&required, &completed)
+            .map_err(Denial::Admission)?;
+        if completed.plan_commitment() != plan {
+            return Err(Denial::Admission(
+                worth_proof::HomeProgramTransitionAdmissionDenial::CommitmentMismatch,
+            ));
+        }
+        install();
+        *phase = Some(RelationalHomeProgramPhase::Bound {
+            required,
+            completed,
+        });
+        Ok(())
+    }
+
     pub(crate) fn requires_home_program_contracts(
         &self,
     ) -> Result<bool, RelationalHomeProgramWriteDenial> {
@@ -82,51 +152,18 @@ impl RelationalDurableMediumBinding {
                 (None, Some(_)) => Ok(()),
                 (None, None) | (Some(_), Some(_)) => Err(Denial::TransitionRequired),
             },
-            RelationalHomeProgramPhase::Bound { .. } => match step {
-                None => Ok(()),
-                Some(_) => Err(Denial::TransitionAlreadyBound),
-            },
-            RelationalHomeProgramPhase::Refused(cause) => Err(Denial::Admission(*cause)),
-        }
-    }
-
-    pub(crate) fn complete_home_program_transition(
-        &self,
-        completed: HomeProgramTransitionBindingCommitted,
-    ) -> Result<(), RelationalHomeProgramWriteDenial> {
-        use RelationalHomeProgramWriteDenial as Denial;
-        let mut phase = self.home_phase();
-        let current = phase.as_ref().ok_or(Denial::MediumMoved)?;
-        let authority = self
-            .transition
-            .as_ref()
-            .ok_or(Denial::TransitionNotRequested)?;
-        match current {
-            RelationalHomeProgramPhase::Pending(required) => {
-                authority
-                    .admit_binding_committed(required, &completed)
-                    .map_err(Denial::Admission)?;
-                *phase = Some(RelationalHomeProgramPhase::Bound {
-                    required: required.clone(),
-                    completed,
-                });
-                Ok(())
-            }
             RelationalHomeProgramPhase::Bound {
                 required,
-                completed: original,
-            } => {
-                authority
-                    .admit_binding_committed(required, &completed)
-                    .map_err(Denial::Admission)?;
-                if original.plan_commitment() != completed.plan_commitment() {
-                    return Err(Denial::Admission(
-                        worth_proof::HomeProgramTransitionAdmissionDenial::CommitmentMismatch,
-                    ));
-                }
-                Ok(())
-            }
-            RelationalHomeProgramPhase::Unrestricted => Err(Denial::TransitionNotRequested),
+                completed,
+            } => match step {
+                None => self
+                    .transition
+                    .as_ref()
+                    .ok_or(Denial::TransitionNotRequested)?
+                    .admit_binding_committed(required, completed)
+                    .map_err(Denial::Admission),
+                Some(_) => Err(Denial::TransitionAlreadyBound),
+            },
             RelationalHomeProgramPhase::Refused(cause) => Err(Denial::Admission(*cause)),
         }
     }

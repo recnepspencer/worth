@@ -20,55 +20,7 @@ impl RelationalPreparationRuntime {
 }
 
 impl PreparationInvariantAuthority<'_> {
-    pub(crate) fn enforce_commit_boundary_for_selected_branch(
-        &self,
-        selected: &SelectedRelationalBranchRead<'_>,
-        proposed: &WorkingState,
-        version: crate::identity::data::VersionId,
-        plan: RelationalSemanticPlan<'_>,
-        proposal: Option<&crate::mvcc::RelationalMutationProposalIdentity>,
-        aggregate: Option<crate::aggregate_identity::AggregateProposalBorrow<'_>>,
-        execution: &worth_execution::ExecutionRequest<'_, '_>,
-        control: &crate::validation::engine::InvariantPreparationControl<'_, '_>,
-    ) -> Result<InvariantExecutionResult, TransactionCommitError> {
-        let result = self.execute(
-            InvariantRequestProfile::CommitBoundary,
-            selected,
-            proposed,
-            None,
-            version,
-            plan,
-            proposal,
-            aggregate,
-            execution,
-            control,
-        )?;
-        match result.summary().blocking_failure() {
-            Some(failure) => {
-                crate::validation::invariant_authority::preparation_diagnostics::emit_preparation_diagnostics(
-                    self.runtime,
-                    &result,
-                );
-                let collect_all = crate::validation::invariant_authority::failure_diagnostics::emit_collect_all_failure_diagnostics(
-                    self.runtime,
-                    &result,
-                );
-                if !collect_all {
-                    crate::validation::invariant_authority::failure_diagnostics::emit_conflict_diagnostic(
-                        self.runtime,
-                        &result,
-                        failure,
-                    );
-                }
-                Err(TransactionCommitError::conflict(
-                    failure.clone().into_commit_conflict(),
-                ))
-            }
-            None => Ok(result),
-        }
-    }
-
-    pub(crate) fn enforce_mutation_sensitive_for_working_state(
+    pub(crate) fn begin_proposed_state(
         &self,
         selected: &SelectedRelationalBranchRead<'_>,
         working: &WorkingState,
@@ -78,48 +30,49 @@ impl PreparationInvariantAuthority<'_> {
         aggregate: Option<crate::aggregate_identity::AggregateProposalBorrow<'_>>,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         control: &crate::validation::engine::InvariantPreparationControl<'_, '_>,
-    ) -> Result<InvariantExecutionResult, TransactionCommitError> {
-        let result = self.execute(
-            InvariantRequestProfile::MutationSensitive,
+    ) -> Result<crate::validation::engine::PendingProposedPass, TransactionCommitError> {
+        let view = InvariantRuntimeView::from_preparation_for_state(
+            self.runtime,
+            selected.selected().state(),
+        );
+        let aggregate = aggregate.map(|source| source.invocation(plan.commands()));
+        let observation = InvariantObservation::committed_branch_with_proposed(
             selected,
             working,
-            None,
             version,
-            plan,
-            proposal,
-            aggregate,
+            proposal.cloned(),
+        )
+        .with_aggregate(aggregate);
+        let request = InvariantExecutionRequest::from_semantic_plan(
             execution,
+            InvariantRequestProfile::CommitBoundary,
+            &view,
+            observation,
+            selected.version_id(),
+            selected.version_id(),
+            Some(plan),
+            Some(plan.invariant_contract()),
             control,
         )?;
-        match result.summary().blocking_failure() {
-            Some(failure) => {
-                crate::validation::invariant_authority::preparation_diagnostics::emit_preparation_diagnostics(
-                    self.runtime,
-                    &result,
-                );
-                let collect_all = crate::validation::invariant_authority::failure_diagnostics::emit_collect_all_failure_diagnostics(
-                    self.runtime,
-                    &result,
-                );
-                if !collect_all {
-                    crate::validation::invariant_authority::failure_diagnostics::emit_conflict_diagnostic(
-                        self.runtime,
-                        &result,
-                        failure,
-                    );
-                }
-                Err(TransactionCommitError::conflict(
-                    failure.clone().into_commit_conflict(),
-                ))
+        let started = InvariantEngine::from_view(&view).begin_proposed(execution, request);
+        let started = match aggregate {
+            Some(source) => source.settle(started, execution, control),
+            None => started,
+        }?;
+        match started {
+            crate::validation::engine::StartedProposedPass::Pending(pending) => Ok(pending),
+            crate::validation::engine::StartedProposedPass::Refused(result) => {
+                self.admit_result(result)?;
+                unreachable!("the engine only finishes a refused native prefix")
             }
-            None => Ok(result),
         }
     }
 
-    pub(crate) fn enforce_snapshot_publication_for_working_state(
+    pub(crate) fn enforce_proposed_state(
         &self,
         selected: &SelectedRelationalBranchRead<'_>,
         working: &WorkingState,
+        pending: crate::validation::engine::PendingProposedPass,
         created_entities: &crate::transactions::data::CommitCreatedEntityBindings,
         version: crate::identity::data::VersionId,
         plan: RelationalSemanticPlan<'_>,
@@ -129,9 +82,10 @@ impl PreparationInvariantAuthority<'_> {
         control: &crate::validation::engine::InvariantPreparationControl<'_, '_>,
     ) -> Result<InvariantExecutionResult, TransactionCommitError> {
         let result = self.execute(
-            InvariantRequestProfile::SnapshotPublication,
+            InvariantRequestProfile::ProposedState,
             selected,
             working,
+            pending,
             Some(created_entities),
             version,
             plan,
@@ -140,7 +94,41 @@ impl PreparationInvariantAuthority<'_> {
             execution,
             control,
         )?;
-        match result.summary().publication_failure() {
+        self.admit_result(result)
+    }
+
+    fn admit_result(
+        &self,
+        result: InvariantExecutionResult,
+    ) -> Result<InvariantExecutionResult, TransactionCommitError> {
+        let enforced = |effect| {
+            result.results().iter().find_map(|row| {
+                if row.failure_effect != effect || !row.blocks_proposed_state() {
+                    return None;
+                }
+                let crate::validation::data::InvariantVerdict::Violation(violation) = &row.verdict
+                else {
+                    return None;
+                };
+                Some(crate::validation::engine::InvariantFailure::new(
+                    row.execution_point,
+                    effect,
+                    violation.clone(),
+                ))
+            })
+        };
+        if let Some(failure) =
+            enforced(crate::validation::data::InvariantFailureEffect::BlockCommit)
+        {
+            crate::validation::invariant_authority::preparation_diagnostics::emit_preparation_diagnostics(self.runtime, &result);
+            if !crate::validation::invariant_authority::failure_diagnostics::emit_collect_all_failure_diagnostics(self.runtime, &result) {
+                crate::validation::invariant_authority::failure_diagnostics::emit_conflict_diagnostic(self.runtime, &result, &failure);
+            }
+            return Err(TransactionCommitError::conflict(
+                failure.clone().into_commit_conflict(),
+            ));
+        }
+        match enforced(crate::validation::data::InvariantFailureEffect::BlockPublication) {
             Some(failure) => {
                 crate::validation::invariant_authority::preparation_diagnostics::emit_preparation_diagnostics(
                     self.runtime,
@@ -154,7 +142,7 @@ impl PreparationInvariantAuthority<'_> {
                     crate::validation::invariant_authority::failure_diagnostics::emit_publication_failure(
                         self.runtime,
                         &result,
-                        failure,
+                        &failure,
                     );
                 }
                 Err(TransactionCommitError::publication(
@@ -172,6 +160,7 @@ impl PreparationInvariantAuthority<'_> {
         profile: InvariantRequestProfile,
         selected: &SelectedRelationalBranchRead<'_>,
         working: &WorkingState,
+        pending: crate::validation::engine::PendingProposedPass,
         applied_created_entities: Option<&crate::transactions::data::CommitCreatedEntityBindings>,
         version: crate::identity::data::VersionId,
         plan: RelationalSemanticPlan<'_>,
@@ -186,6 +175,18 @@ impl PreparationInvariantAuthority<'_> {
             _ => version,
         };
         let observation = match profile {
+            InvariantRequestProfile::ProposedState => {
+                InvariantObservation::committed_branch_with_proposed(
+                    selected,
+                    working,
+                    version,
+                    proposal.cloned(),
+                )
+                .with_applied_created_entities(
+                    applied_created_entities
+                        .expect("applied proposal carries its created bindings"),
+                )
+            }
             InvariantRequestProfile::MutationSensitive
             | InvariantRequestProfile::SnapshotPublication => {
                 let overlay = crate::storage::overlay::OverlayStateView::new(selected, working);
@@ -240,6 +241,7 @@ impl PreparationInvariantAuthority<'_> {
             )));
         }
         let request = InvariantExecutionRequest::from_semantic_plan(
+            execution,
             profile,
             &view,
             observation,
@@ -261,7 +263,8 @@ impl PreparationInvariantAuthority<'_> {
                 request.proposal_identity(),
             )));
         }
-        let result = InvariantEngine::from_view(&view).execute(execution, request);
+        let result =
+            InvariantEngine::from_view(&view).complete_proposed(execution, request, pending);
         match aggregate {
             Some(source) => source.settle(result, execution, control),
             None => result,

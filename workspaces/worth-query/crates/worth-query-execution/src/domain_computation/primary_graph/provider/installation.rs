@@ -3,7 +3,7 @@ use std::sync::Arc;
 use super::{WorthQueryPrimaryGraphProvider, WorthQueryPrimaryLogicalGraph};
 
 impl WorthQueryPrimaryGraphProvider {
-    pub(in crate::domain_computation::primary_graph) fn install(graph: super::WorthQueryPrimaryGraphIntegrationHandle, fault_port: Arc<dyn super::fault_port::WorthQueryPrimaryGraphFaultPort>, maximum_concurrent_graph_work: std::num::NonZeroUsize, resource_support: super::WorthQueryPrimaryGraphResourceSupport) -> (
+    pub(in crate::domain_computation::primary_graph) fn install(graph: super::WorthQueryPrimaryGraphIntegrationHandle, fault_port: Arc<dyn super::fault_port::WorthQueryPrimaryGraphFaultPort>, maximum_concurrent_graph_work: std::num::NonZeroUsize, resource_support: super::WorthQueryPrimaryGraphResourceSupport, installed_operations: Arc<worth_query_installation::facade::InstalledOperationCatalog>) -> (
         Arc<crate::domain_computation::provider_session::graph_provider::bounded_step::provider_anchor::WorthQueryGraphProviderAnchor>,
         Arc<Self>,
     ){
@@ -11,6 +11,7 @@ impl WorthQueryPrimaryGraphProvider {
             publication_fault_control: Default::default(),
             managed_cleanup_control: Default::default(),
             graph,
+            installed_operations,
             resource_support,
             branch_commit_coordination:
                 super::branch_commit_coordination::WorthQueryApplicationBranchCommitCoordinator::new(),
@@ -37,6 +38,8 @@ impl WorthQueryPrimaryGraphProvider {
                 ),
             )),
             fault_port,
+            original_meaning_support: Default::default(),
+            correction_material: Default::default(),
             world_history: std::sync::OnceLock::new(),
             teardown_sentinel: Default::default(),
         });

@@ -15,6 +15,7 @@ use crate::domain_capabilities::eligibility::{
 };
 use crate::domain_capabilities::payloads::WorthQueryAftermathContributionPosture;
 use crate::domain_capabilities::WorthQueryDomainCapabilityTargetKind;
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::projection_consumption::{
     AdmittedProjectionConsumption, MaterializedProjectionContract, ProjectMaterializedFacts,
     ProjectionConsumptionBindingContext, ProjectionConsumptionEligibility,
@@ -22,8 +23,9 @@ use crate::projection_consumption::{
 };
 
 use super::admitted_plan::WorthQueryAdmittedPlanDomainContributionSurface;
+use super::materialization::materialize_common_lane;
 use super::projection_contract_request::WorthQueryProjectionContractRequest;
-use super::shared::{materialize_common_lane, qualify_semantic_code};
+use super::semantic_code::qualify_semantic_code;
 
 impl WorthQueryAdmittedPlanDomainContributionSurface {
     pub fn establishes_projection_contract(
@@ -131,9 +133,11 @@ pub struct WorthQueryAdmittedPlanAftermathContribution {
 impl WorthQueryAdmittedPlanAftermathContribution {
     pub fn try_review(
         self,
-    ) -> WorthQueryCheckedDomainCapabilityOutcome<WorthQueryAftermathProjectionConsumptionReview>
-    {
-        self.materialize_checked(materialize_projection_consumption_review)
+    ) -> Result<
+        WorthQueryCheckedDomainCapabilityOutcome<WorthQueryAftermathProjectionConsumptionReview>,
+        IdentityDerivationDenial,
+    > {
+        Ok(self.materialize_checked(materialize_projection_consumption_review)?)
     }
 
     pub fn review(
@@ -142,67 +146,82 @@ impl WorthQueryAdmittedPlanAftermathContribution {
         WorthQueryAftermathProjectionConsumptionReview,
         WorthQueryDomainCapabilityMaterializationError,
     > {
-        self.try_review().into_result()
+        self.try_review()?.into_result()
     }
 
     pub fn try_materialize_support_report(
         self,
-    ) -> WorthQueryCheckedDomainCapabilityOutcome<ProjectionConsumptionSupportReport> {
-        self.materialize_checked(materialize_projection_consumption_support_report)
+    ) -> Result<
+        WorthQueryCheckedDomainCapabilityOutcome<ProjectionConsumptionSupportReport>,
+        IdentityDerivationDenial,
+    > {
+        Ok(self.materialize_checked(materialize_projection_consumption_support_report)?)
     }
 
     pub fn materialize_support_report(
         self,
     ) -> Result<ProjectionConsumptionSupportReport, WorthQueryDomainCapabilityMaterializationError>
     {
-        self.try_materialize_support_report().into_result()
+        self.try_materialize_support_report()?.into_result()
     }
 
     pub fn try_materialize_eligibility(
         self,
-    ) -> WorthQueryCheckedDomainCapabilityOutcome<ProjectionConsumptionEligibility> {
-        self.materialize_checked(materialize_projection_consumption_eligibility)
+    ) -> Result<
+        WorthQueryCheckedDomainCapabilityOutcome<ProjectionConsumptionEligibility>,
+        IdentityDerivationDenial,
+    > {
+        Ok(self.materialize_checked(materialize_projection_consumption_eligibility)?)
     }
 
     pub fn materialize_eligibility(
         self,
     ) -> Result<ProjectionConsumptionEligibility, WorthQueryDomainCapabilityMaterializationError>
     {
-        self.try_materialize_eligibility().into_result()
+        self.try_materialize_eligibility()?.into_result()
     }
 
     pub fn try_materialize_admitted(
         self,
-    ) -> WorthQueryCheckedDomainCapabilityOutcome<AdmittedProjectionConsumption> {
-        self.materialize_checked(materialize_admitted_projection_consumption)
+    ) -> Result<
+        WorthQueryCheckedDomainCapabilityOutcome<AdmittedProjectionConsumption>,
+        IdentityDerivationDenial,
+    > {
+        Ok(self.materialize_checked(materialize_admitted_projection_consumption)?)
     }
 
     pub fn materialize_admitted(
         self,
     ) -> Result<AdmittedProjectionConsumption, WorthQueryDomainCapabilityMaterializationError> {
-        self.try_materialize_admitted().into_result()
+        self.try_materialize_admitted()?.into_result()
     }
 
     pub fn try_materialize(
         self,
-    ) -> WorthQueryCheckedDomainCapabilityOutcome<MaterializedProjectionContract> {
-        self.materialize_checked(materialize_projection_consumption_contract)
+    ) -> Result<
+        WorthQueryCheckedDomainCapabilityOutcome<MaterializedProjectionContract>,
+        IdentityDerivationDenial,
+    > {
+        Ok(self.materialize_checked(materialize_projection_consumption_contract)?)
     }
 
     pub fn materialize(
         self,
     ) -> Result<MaterializedProjectionContract, WorthQueryDomainCapabilityMaterializationError>
     {
-        self.try_materialize().into_result()
+        self.try_materialize()?.into_result()
     }
 
     fn into_requested(
         self,
-    ) -> crate::domain_capabilities::WorthQueryRequestedAftermathContribution<
-        crate::domain_capabilities::WorthQueryInstalledAdmittedPlanContributionTarget,
+    ) -> Result<
+        crate::domain_capabilities::WorthQueryRequestedAftermathContribution<
+            crate::domain_capabilities::WorthQueryInstalledAdmittedPlanContributionTarget,
+        >,
+        IdentityDerivationDenial,
     > {
         let semantic_code = qualify_semantic_code(self.target.authority(), &self.semantic_code);
-        match self.posture {
+        Ok(match self.posture {
             WorthQueryAftermathContributionPosture::EstablishesFact => {
                 WorthQueryAftermathContributionAuthoring::establishes_projection_contract(
                     semantic_code,
@@ -210,8 +229,8 @@ impl WorthQueryAdmittedPlanAftermathContribution {
                     self.source,
                     self.binding,
                     self.requested_facts,
-                )
-                .bind_to_installed_target(self.target)
+                )?
+                .bind_to_installed_target(self.target)?
             }
             WorthQueryAftermathContributionPosture::ConsumesFact => {
                 WorthQueryAftermathContributionAuthoring::consumes_projection_contract(
@@ -220,8 +239,8 @@ impl WorthQueryAdmittedPlanAftermathContribution {
                     self.source,
                     self.binding,
                     self.requested_facts,
-                )
-                .bind_to_installed_target(self.target)
+                )?
+                .bind_to_installed_target(self.target)?
             }
             WorthQueryAftermathContributionPosture::DeclaresResidue => {
                 WorthQueryAftermathContributionAuthoring::declares_projection_residue(
@@ -230,10 +249,10 @@ impl WorthQueryAdmittedPlanAftermathContribution {
                     self.source,
                     self.binding,
                     self.requested_facts,
-                )
-                .bind_to_installed_target(self.target)
+                )?
+                .bind_to_installed_target(self.target)?
             }
-        }
+        })
     }
 
     fn materialize_checked<Success>(
@@ -242,13 +261,16 @@ impl WorthQueryAdmittedPlanAftermathContribution {
             crate::domain_capabilities::WorthQueryMaterializationReadyAftermathContribution<
                 crate::domain_capabilities::WorthQueryInstalledAdmittedPlanContributionTarget,
             >,
-        ) -> crate::domain_capabilities::WorthQueryDomainCapabilityTransitionOutcome<Success>,
-    ) -> WorthQueryCheckedDomainCapabilityOutcome<Success> {
+        ) -> Result<
+            crate::domain_capabilities::WorthQueryDomainCapabilityTransitionOutcome<Success>,
+            IdentityDerivationDenial,
+        >,
+    ) -> Result<WorthQueryCheckedDomainCapabilityOutcome<Success>, IdentityDerivationDenial> {
         let posture = self.posture;
         let target = self.target.clone();
-        let requested = self.into_requested();
+        let requested = self.into_requested()?;
 
-        materialize_common_lane(
+        Ok(materialize_common_lane(
             "consequence-aftermath",
             WorthQueryDomainCapabilityTargetKind::AdmittedIntentPlan,
             posture.as_str(),
@@ -261,6 +283,6 @@ impl WorthQueryAdmittedPlanAftermathContribution {
                 )
             },
             materialize,
-        )
+        )?)
     }
 }

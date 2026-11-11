@@ -1,0 +1,640 @@
+{
+  "index_head": "398a656cd1d8838ad358ca21bbee0578b624d2bf",
+  "note": "Exact observed HEADs/dirty bits remain raw. Counts refer to named test bodies or genuine mains as stated; compile/gate lanes are not tests. Source-input equivalence map ties dirty source to later commit. Held and cleanup exits stay red.",
+  "lanes": [
+    {
+      "lane": "root check",
+      "log": "target/lane-evidence/execution-stack-root-check.log",
+      "header": {
+        "Command": "[\"cargo\", \"check\", \"--workspace\", \"--tests\", \"--message-format=json\", \"--keep-going\", \"--manifest-path\", \"C:\\\\programming\\\\worth worktees\\\\worktrees\\\\m3-host-home\\\\Cargo.toml\"]",
+        "HEAD": "592aaaae2f5e852a6bb2c7e7d8626e2f30921e85",
+        "Git status --short empty": "False",
+        "Start": "2026-11-08T13:48:15.051355+00:00"
+      },
+      "counts": {
+        "test_counts": "not applicable; compile lane"
+      }
+    },
+    {
+      "lane": "query check",
+      "log": "target/lane-evidence/execution-stack-query-check.log",
+      "header": {
+        "Command": "[\"cargo\", \"check\", \"--workspace\", \"--tests\", \"--message-format=json\", \"--keep-going\", \"--manifest-path\", \"C:\\\\programming\\\\worth worktees\\\\worktrees\\\\m3-host-home\\\\workspaces\\\\worth-query\\\\Cargo.toml\"]",
+        "HEAD": "592aaaae2f5e852a6bb2c7e7d8626e2f30921e85",
+        "Git status --short empty": "False",
+        "Start": "2026-11-08T13:55:30.542695+00:00"
+      },
+      "counts": {
+        "test_counts": "not applicable; compile lane"
+      }
+    },
+    {
+      "lane": "store check",
+      "log": "target/lane-evidence/execution-stack-store-check.log",
+      "header": {
+        "Command": "[\"cargo\", \"check\", \"--workspace\", \"--tests\", \"--message-format=json\", \"--keep-going\", \"--manifest-path\", \"C:\\\\programming\\\\worth worktees\\\\worktrees\\\\m3-host-home\\\\workspaces\\\\worth-store\\\\Cargo.toml\"]",
+        "HEAD": "592aaaae2f5e852a6bb2c7e7d8626e2f30921e85",
+        "Git status --short empty": "False",
+        "Start": "2026-11-08T14:03:58.509926+00:00"
+      },
+      "counts": {
+        "test_counts": "not applicable; compile lane"
+      }
+    },
+    {
+      "lane": "bank check",
+      "log": "target/lane-evidence/execution-stack-bank-check.log",
+      "header": {
+        "Command": "[\"cargo\", \"check\", \"--workspace\", \"--tests\", \"--message-format=json\", \"--keep-going\", \"--manifest-path\", \"C:\\\\programming\\\\worth worktees\\\\worktrees\\\\m3-host-home\\\\workspaces\\\\worth-query-bank-world\\\\Cargo.toml\"]",
+        "HEAD": "592aaaae2f5e852a6bb2c7e7d8626e2f30921e85",
+        "Git status --short empty": "False",
+        "Start": "2026-11-08T14:10:43.418778+00:00"
+      },
+      "counts": {
+        "test_counts": "not applicable; compile lane"
+      }
+    },
+    {
+      "lane": "fixture check",
+      "log": "target/lane-evidence/execution-stack-fixture-check.log",
+      "header": {
+        "Command": "[\"cargo\", \"check\", \"-p\", \"worth-query-topology-entry\", \"-p\", \"worth-query-parameter-entry\", \"-p\", \"worth-query-consumer-root\", \"--tests\", \"--message-format=json\", \"--keep-going\", \"--manifest-path\", \"C:\\\\programming\\\\worth worktees\\\\worktrees\\\\m3-host-home\\\\workspaces\\\\worth-query\\\\crates\\\\worth-query-certification\\\\fixtures\\\\consumer_entry\\\\Cargo.toml\"]",
+        "HEAD": "592aaaae2f5e852a6bb2c7e7d8626e2f30921e85",
+        "Git status --short empty": "False",
+        "Start": "2026-11-08T14:17:48.717054+00:00"
+      },
+      "counts": {
+        "test_counts": "not applicable; compile lane"
+      }
+    },
+    {
+      "lane": "wasm check",
+      "log": "target/lane-evidence/execution-stack-wasm-check.log",
+      "header": {
+        "Command": "[\"cargo\", \"check\", \"-p\", \"worth-signal-wasm\", \"--target\", \"wasm32-unknown-unknown\", \"--message-format=json\", \"--manifest-path\", \"C:\\\\programming\\\\worth worktees\\\\worktrees\\\\m3-host-home\\\\Cargo.toml\"]",
+        "HEAD": "592aaaae2f5e852a6bb2c7e7d8626e2f30921e85",
+        "Git status --short empty": "False",
+        "Start": "2026-11-08T14:25:11.297107+00:00"
+      },
+      "counts": {
+        "test_counts": "not applicable; compile lane"
+      }
+    },
+    {
+      "lane": "round2-root check",
+      "log": "target/lane-evidence/execution-stack-round2-root-check.log",
+      "header": {
+        "Command": "[\"cargo\", \"check\", \"-p\", \"worth-runtime-bridge\", \"--tests\", \"--message-format=json\", \"--keep-going\", \"--manifest-path\", \"C:\\\\programming\\\\worth worktees\\\\worktrees\\\\m3-host-home\\\\Cargo.toml\"]",
+        "HEAD": "592aaaae2f5e852a6bb2c7e7d8626e2f30921e85",
+        "Git status --short empty": "False",
+        "Start": "2026-11-08T14:57:49.363734+00:00"
+      },
+      "counts": {
+        "test_counts": "not applicable; compile lane"
+      }
+    },
+    {
+      "lane": "round2-query check",
+      "log": "target/lane-evidence/execution-stack-round2-query-check.log",
+      "header": {
+        "Command": "[\"cargo\", \"check\", \"-p\", \"worth-query-execution\", \"-p\", \"worth-query\", \"--tests\", \"--message-format=json\", \"--keep-going\", \"--manifest-path\", \"C:\\\\programming\\\\worth worktees\\\\worktrees\\\\m3-host-home\\\\workspaces\\\\worth-query\\\\Cargo.toml\"]",
+        "HEAD": "592aaaae2f5e852a6bb2c7e7d8626e2f30921e85",
+        "Git status --short empty": "False",
+        "Start": "2026-11-08T14:59:21.181726+00:00"
+      },
+      "counts": {
+        "test_counts": "not applicable; compile lane"
+      }
+    },
+    {
+      "lane": "execution-stack-verification/root-tests",
+      "log": "target/lane-evidence/execution-stack-verification/root/direct-run.log",
+      "header": {
+        "Command": "[\"C:\\\\programming\\\\worth worktees\\\\worktrees\\\\m3-host-home\\\\target\\\\debug\\\\deps\\\\worth_execution-26c2e1e339f0d2bf.exe\", \"--exact\", \"tests::execution_stack::execution_stack_preserves_non_send_borrows_results_and_the_caller_thread\", \"tests::execution_stack::execution_stack_unwind_drops_the_original_callback_value_once\", \"--nocapture\"]",
+        "HEAD": "592aaaae2f5e852a6bb2c7e7d8626e2f30921e85",
+        "Git status --short empty": "False",
+        "Start": "2026-11-08T14:27:16.456010+00:00"
+      },
+      "counts": {
+        "lane": "root-tests",
+        "exit": 0,
+        "selected": [
+          "tests::execution_stack::execution_stack_preserves_non_send_borrows_results_and_the_caller_thread",
+          "tests::execution_stack::execution_stack_unwind_drops_the_original_callback_value_once"
+        ],
+        "rust_min_stack_present": false,
+        "passed": 2,
+        "failed": 0,
+        "ignored": 0,
+        "unit": "test body"
+      }
+    },
+    {
+      "lane": "execution-stack-verification/consumer-mains-build",
+      "log": "target/lane-evidence/execution-stack-verification/consumer-mains-build.log",
+      "header": {
+        "Command": "[\"cargo\", \"build\", \"--manifest-path\", \"C:\\\\programming\\\\worth worktees\\\\worktrees\\\\m3-host-home\\\\workspaces\\\\worth-query\\\\crates\\\\worth-query-certification\\\\fixtures\\\\consumer_entry\\\\Cargo.toml\", \"-p\", \"worth-query-topology-entry\", \"-p\", \"worth-query-consumer-root\", \"--bins\", \"--examples\", \"--tests\", \"--message-format=json\"]",
+        "HEAD": "592aaaae2f5e852a6bb2c7e7d8626e2f30921e85",
+        "Git status --short empty": "False",
+        "Start": "2026-11-08T14:27:18.001173+00:00"
+      },
+      "counts": {
+        "lane": "consumer-mains-build",
+        "exit": 0
+      }
+    },
+    {
+      "lane": "execution-stack-verification/invariant_reads-main",
+      "log": "target/lane-evidence/execution-stack-verification/invariant_reads-main.log",
+      "header": {
+        "Command": "[\"C:\\\\programming\\\\worth worktees\\\\worktrees\\\\m3-host-home\\\\workspaces\\\\worth-query\\\\crates\\\\worth-query-certification\\\\fixtures\\\\consumer_entry\\\\target\\\\debug\\\\examples\\\\invariant_reads.exe\"]",
+        "HEAD": "592aaaae2f5e852a6bb2c7e7d8626e2f30921e85",
+        "Git status --short empty": "False",
+        "Start": "2026-11-08T14:39:32.483887+00:00"
+      },
+      "counts": {
+        "lane": "invariant_reads-main",
+        "exit": 0,
+        "pe_stack_reserve_bytes": 1048576,
+        "passed": 1,
+        "failed": 0,
+        "ignored": 0,
+        "unit": "genuine main process"
+      }
+    },
+    {
+      "lane": "execution-stack-verification/required_feature-main",
+      "log": "target/lane-evidence/execution-stack-verification/required_feature-main.log",
+      "header": {
+        "Command": "[\"C:\\\\programming\\\\worth worktees\\\\worktrees\\\\m3-host-home\\\\workspaces\\\\worth-query\\\\crates\\\\worth-query-certification\\\\fixtures\\\\consumer_entry\\\\target\\\\debug\\\\examples\\\\required_feature.exe\"]",
+        "HEAD": "592aaaae2f5e852a6bb2c7e7d8626e2f30921e85",
+        "Git status --short empty": "False",
+        "Start": "2026-11-08T14:39:34.650156+00:00"
+      },
+      "counts": {
+        "lane": "required_feature-main",
+        "exit": 0,
+        "pe_stack_reserve_bytes": 1048576,
+        "passed": 1,
+        "failed": 0,
+        "ignored": 0,
+        "unit": "genuine main process"
+      }
+    },
+    {
+      "lane": "execution-stack-verification/shared_execution-main",
+      "log": "target/lane-evidence/execution-stack-verification/shared_execution-main.log",
+      "header": {
+        "Command": "[\"C:\\\\programming\\\\worth worktees\\\\worktrees\\\\m3-host-home\\\\workspaces\\\\worth-query\\\\crates\\\\worth-query-certification\\\\fixtures\\\\consumer_entry\\\\target\\\\debug\\\\examples\\\\shared_execution.exe\"]",
+        "HEAD": "592aaaae2f5e852a6bb2c7e7d8626e2f30921e85",
+        "Git status --short empty": "False",
+        "Start": "2026-11-08T14:39:35.865772+00:00"
+      },
+      "counts": {
+        "lane": "shared_execution-main",
+        "exit": 101,
+        "pe_stack_reserve_bytes": 1048576,
+        "passed": 0,
+        "failed": 1,
+        "ignored": 0,
+        "unit": "genuine main process"
+      }
+    },
+    {
+      "lane": "execution-stack-verification/worth-query-consumer-root-main",
+      "log": "target/lane-evidence/execution-stack-verification/worth-query-consumer-root-main.log",
+      "header": {
+        "Command": "[\"C:\\\\programming\\\\worth worktees\\\\worktrees\\\\m3-host-home\\\\workspaces\\\\worth-query\\\\crates\\\\worth-query-certification\\\\fixtures\\\\consumer_entry\\\\target\\\\debug\\\\worth-query-consumer-root.exe\"]",
+        "HEAD": "592aaaae2f5e852a6bb2c7e7d8626e2f30921e85",
+        "Git status --short empty": "False",
+        "Start": "2026-11-08T14:39:37.533821+00:00"
+      },
+      "counts": {
+        "lane": "worth-query-consumer-root-main",
+        "exit": 3221225725,
+        "pe_stack_reserve_bytes": 1048576,
+        "passed": 0,
+        "failed": 1,
+        "ignored": 0,
+        "unit": "genuine main process"
+      }
+    },
+    {
+      "lane": "execution-stack-verification/retention-default",
+      "log": "target/lane-evidence/execution-stack-verification/retention-default-run.log",
+      "header": {
+        "Command": "[\"C:\\\\programming\\\\worth worktees\\\\worktrees\\\\m3-host-home\\\\workspaces\\\\worth-query\\\\crates\\\\worth-query-certification\\\\fixtures\\\\consumer_entry\\\\target\\\\debug\\\\deps\\\\worth_query_consumer_root-280f3d19ecd3a200.exe\", \"--exact\", \"application_invariant_acceptance::proof::application_program::discovered::retention::discovered_committed_retention_refuses_twice_then_promotes_original_carrier\", \"--nocapture\"]",
+        "HEAD": "592aaaae2f5e852a6bb2c7e7d8626e2f30921e85",
+        "Git status --short empty": "False",
+        "Start": "2026-11-08T14:39:43.967512+00:00"
+      },
+      "counts": {
+        "lane": "retention-default",
+        "exit": 101,
+        "selected": [
+          "application_invariant_acceptance::proof::application_program::discovered::retention::discovered_committed_retention_refuses_twice_then_promotes_original_carrier"
+        ],
+        "cleanup_assertion_may_remain": true,
+        "passed": 0,
+        "failed": 1,
+        "ignored": 0,
+        "unit": "test body"
+      }
+    },
+    {
+      "lane": "execution-stack-round2-verification/consumer-mains-build",
+      "log": "target/lane-evidence/execution-stack-round2-verification/consumer-mains-build.log",
+      "header": {
+        "Command": "[\"cargo\", \"build\", \"--manifest-path\", \"C:\\\\programming\\\\worth worktees\\\\worktrees\\\\m3-host-home\\\\workspaces\\\\worth-query\\\\crates\\\\worth-query-certification\\\\fixtures\\\\consumer_entry\\\\Cargo.toml\", \"-p\", \"worth-query-topology-entry\", \"-p\", \"worth-query-consumer-root\", \"--bins\", \"--examples\", \"--tests\", \"--message-format=json\"]",
+        "HEAD": "592aaaae2f5e852a6bb2c7e7d8626e2f30921e85",
+        "Git status --short empty": "False",
+        "Start": "2026-11-08T15:07:13.453201+00:00"
+      },
+      "counts": {
+        "lane": "consumer-mains-build",
+        "exit": 0
+      }
+    },
+    {
+      "lane": "execution-stack-round2-verification/invariant_reads-main",
+      "log": "target/lane-evidence/execution-stack-round2-verification/invariant_reads-main.log",
+      "header": {
+        "Command": "[\"C:\\\\programming\\\\worth worktees\\\\worktrees\\\\m3-host-home\\\\workspaces\\\\worth-query\\\\crates\\\\worth-query-certification\\\\fixtures\\\\consumer_entry\\\\target\\\\debug\\\\examples\\\\invariant_reads.exe\"]",
+        "HEAD": "592aaaae2f5e852a6bb2c7e7d8626e2f30921e85",
+        "Git status --short empty": "False",
+        "Start": "2026-11-08T15:10:00.166833+00:00"
+      },
+      "counts": {
+        "lane": "invariant_reads-main",
+        "exit": 0,
+        "pe_stack_reserve_bytes": 1048576,
+        "passed": 1,
+        "failed": 0,
+        "ignored": 0,
+        "unit": "genuine main process"
+      }
+    },
+    {
+      "lane": "execution-stack-round2-verification/required_feature-main",
+      "log": "target/lane-evidence/execution-stack-round2-verification/required_feature-main.log",
+      "header": {
+        "Command": "[\"C:\\\\programming\\\\worth worktees\\\\worktrees\\\\m3-host-home\\\\workspaces\\\\worth-query\\\\crates\\\\worth-query-certification\\\\fixtures\\\\consumer_entry\\\\target\\\\debug\\\\examples\\\\required_feature.exe\"]",
+        "HEAD": "592aaaae2f5e852a6bb2c7e7d8626e2f30921e85",
+        "Git status --short empty": "False",
+        "Start": "2026-11-08T15:10:02.957745+00:00"
+      },
+      "counts": {
+        "lane": "required_feature-main",
+        "exit": 0,
+        "pe_stack_reserve_bytes": 1048576,
+        "passed": 1,
+        "failed": 0,
+        "ignored": 0,
+        "unit": "genuine main process"
+      }
+    },
+    {
+      "lane": "execution-stack-round2-verification/shared_execution-main",
+      "log": "target/lane-evidence/execution-stack-round2-verification/shared_execution-main.log",
+      "header": {
+        "Command": "[\"C:\\\\programming\\\\worth worktees\\\\worktrees\\\\m3-host-home\\\\workspaces\\\\worth-query\\\\crates\\\\worth-query-certification\\\\fixtures\\\\consumer_entry\\\\target\\\\debug\\\\examples\\\\shared_execution.exe\"]",
+        "HEAD": "592aaaae2f5e852a6bb2c7e7d8626e2f30921e85",
+        "Git status --short empty": "False",
+        "Start": "2026-11-08T15:10:04.585713+00:00"
+      },
+      "counts": {
+        "lane": "shared_execution-main",
+        "exit": 101,
+        "pe_stack_reserve_bytes": 1048576,
+        "passed": 0,
+        "failed": 1,
+        "ignored": 0,
+        "unit": "genuine main process"
+      }
+    },
+    {
+      "lane": "execution-stack-round2-verification/worth-query-consumer-root-main",
+      "log": "target/lane-evidence/execution-stack-round2-verification/worth-query-consumer-root-main.log",
+      "header": {
+        "Command": "[\"C:\\\\programming\\\\worth worktees\\\\worktrees\\\\m3-host-home\\\\workspaces\\\\worth-query\\\\crates\\\\worth-query-certification\\\\fixtures\\\\consumer_entry\\\\target\\\\debug\\\\worth-query-consumer-root.exe\"]",
+        "HEAD": "592aaaae2f5e852a6bb2c7e7d8626e2f30921e85",
+        "Git status --short empty": "False",
+        "Start": "2026-11-08T15:10:06.462376+00:00"
+      },
+      "counts": {
+        "lane": "worth-query-consumer-root-main",
+        "exit": 0,
+        "pe_stack_reserve_bytes": 1048576,
+        "passed": 1,
+        "failed": 0,
+        "ignored": 0,
+        "unit": "genuine main process"
+      }
+    },
+    {
+      "lane": "execution-stack-round2-verification/retention-default",
+      "log": "target/lane-evidence/execution-stack-round2-verification/retention-default-run.log",
+      "header": {
+        "Command": "[\"C:\\\\programming\\\\worth worktees\\\\worktrees\\\\m3-host-home\\\\workspaces\\\\worth-query\\\\crates\\\\worth-query-certification\\\\fixtures\\\\consumer_entry\\\\target\\\\debug\\\\deps\\\\worth_query_consumer_root-280f3d19ecd3a200.exe\", \"--exact\", \"application_invariant_acceptance::proof::application_program::discovered::retention::discovered_committed_retention_refuses_twice_then_promotes_original_carrier\", \"--nocapture\"]",
+        "HEAD": "592aaaae2f5e852a6bb2c7e7d8626e2f30921e85",
+        "Git status --short empty": "False",
+        "Start": "2026-11-08T15:10:57.138225+00:00"
+      },
+      "counts": {
+        "lane": "retention-default",
+        "exit": 101,
+        "selected": [
+          "application_invariant_acceptance::proof::application_program::discovered::retention::discovered_committed_retention_refuses_twice_then_promotes_original_carrier"
+        ],
+        "cleanup_assertion_may_remain": true,
+        "passed": 0,
+        "failed": 1,
+        "ignored": 0,
+        "unit": "test body"
+      }
+    },
+    {
+      "lane": "execution-stack-round2-verification/bank-tests",
+      "log": "target/lane-evidence/execution-stack-round2-verification/bank/direct-run.log",
+      "header": {
+        "Command": "[\"C:\\\\programming\\\\worth worktees\\\\worktrees\\\\m3-host-home\\\\workspaces\\\\worth-query-bank-world\\\\target\\\\debug\\\\deps\\\\worth_query_bank_court_external_rail_server-c13c2d9ded46b1fb.exe\", \"--exact\", \"oracle::server_owned_effects::server::parallel_history::assessment_history::assessment_history_settles_at_each_request_width\", \"oracle::server_owned_effects::server::parallel_history::transfer_history::seeded_transfers_match_at_host_policy_and_each_request_width\", \"--nocapture\"]",
+        "HEAD": "592aaaae2f5e852a6bb2c7e7d8626e2f30921e85",
+        "Git status --short empty": "False",
+        "Start": "2026-11-08T15:19:56.604674+00:00"
+      },
+      "counts": {
+        "lane": "bank-tests",
+        "exit": 0,
+        "selected": [
+          "oracle::server_owned_effects::server::parallel_history::assessment_history::assessment_history_settles_at_each_request_width",
+          "oracle::server_owned_effects::server::parallel_history::transfer_history::seeded_transfers_match_at_host_policy_and_each_request_width"
+        ],
+        "rust_min_stack_present": false,
+        "passed": 2,
+        "failed": 0,
+        "ignored": 0,
+        "unit": "test body"
+      }
+    },
+    {
+      "lane": "execution-stack-final-transition/query-tests",
+      "log": "target/lane-evidence/execution-stack-final-transition/query/direct-run.log",
+      "header": {
+        "Command": "[\"C:\\\\programming\\\\worth worktees\\\\worktrees\\\\m3-host-home\\\\workspaces\\\\worth-query\\\\target\\\\debug\\\\deps\\\\worth_query_court_query_decl_host-48e8ef1ef558ddff.exe\", \"--exact\", \"host::application_home::program_transition::host_transition_plans_on_nonempty_a_then_serves_writes_closes_and_reopens_b\", \"--nocapture\"]",
+        "HEAD": "592aaaae2f5e852a6bb2c7e7d8626e2f30921e85",
+        "Git status --short empty": "False",
+        "Start": "2026-11-08T15:52:34.149502+00:00"
+      },
+      "counts": {
+        "lane": "query-tests",
+        "exit": 0,
+        "selected": [
+          "host::application_home::program_transition::host_transition_plans_on_nonempty_a_then_serves_writes_closes_and_reopens_b"
+        ],
+        "rust_min_stack_present": false,
+        "passed": 1,
+        "failed": 0,
+        "ignored": 0,
+        "unit": "test body"
+      }
+    },
+    {
+      "lane": "execution-stack-root-fmt",
+      "log": "target/lane-evidence/execution-stack-root-fmt.log",
+      "header": {
+        "COMMAND": "[\"cargo\", \"fmt\", \"--manifest-path\", \"Cargo.toml\", \"-p\", \"worth-execution\", \"-p\", \"worth-relational\", \"-p\", \"worth-runtime-bridge\", \"-p\", \"worth-signal\", \"--\", \"--check\"]",
+        "HEAD": "592aaaae2f5e852a6bb2c7e7d8626e2f30921e85",
+        "CLEAN": "false",
+        "START": "2026-11-08T15:20:08.523664+00:00"
+      },
+      "counts": {
+        "exit": 0,
+        "test_counts": "not applicable; gate lane"
+      }
+    },
+    {
+      "lane": "execution-stack-query-fmt",
+      "log": "target/lane-evidence/execution-stack-query-fmt.log",
+      "header": {
+        "COMMAND": "[\"cargo\", \"fmt\", \"--manifest-path\", \"workspaces/worth-query/Cargo.toml\", \"-p\", \"worth-query\", \"-p\", \"worth-query-execution\", \"-p\", \"worth-query-host\", \"--\", \"--check\"]",
+        "HEAD": "592aaaae2f5e852a6bb2c7e7d8626e2f30921e85",
+        "CLEAN": "false",
+        "START": "2026-11-08T15:20:29.237444+00:00"
+      },
+      "counts": {
+        "exit": 0,
+        "test_counts": "not applicable; gate lane"
+      }
+    },
+    {
+      "lane": "execution-stack-store-fmt",
+      "log": "target/lane-evidence/execution-stack-store-fmt.log",
+      "header": {
+        "COMMAND": "[\"cargo\", \"fmt\", \"--manifest-path\", \"workspaces/worth-store/Cargo.toml\", \"-p\", \"worth-store-court-application\", \"-p\", \"worth-store-court-recovery-runtime-replication\", \"--\", \"--check\"]",
+        "HEAD": "592aaaae2f5e852a6bb2c7e7d8626e2f30921e85",
+        "CLEAN": "false",
+        "START": "2026-11-08T15:20:48.649608+00:00"
+      },
+      "counts": {
+        "exit": 0,
+        "test_counts": "not applicable; gate lane"
+      }
+    },
+    {
+      "lane": "execution-stack-fixture-fmt",
+      "log": "target/lane-evidence/execution-stack-fixture-fmt.log",
+      "header": {
+        "COMMAND": "[\"cargo\", \"fmt\", \"--manifest-path\", \"workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/Cargo.toml\", \"-p\", \"worth-query-consumer-root\", \"--\", \"--check\"]",
+        "HEAD": "592aaaae2f5e852a6bb2c7e7d8626e2f30921e85",
+        "CLEAN": "false",
+        "START": "2026-11-08T15:20:50.941286+00:00"
+      },
+      "counts": {
+        "exit": 0,
+        "test_counts": "not applicable; gate lane"
+      }
+    },
+    {
+      "lane": "execution-stack-root-lint-driver",
+      "log": "target/lane-evidence/execution-stack-root-lint.log",
+      "header": {
+        "Command": "[\"cargo\", \"clippy\", \"--message-format=json\", \"-p\", \"worth-execution\", \"-p\", \"worth-relational\", \"-p\", \"worth-runtime-bridge\", \"-p\", \"worth-signal\", \"--lib\", \"--tests\", \"--keep-going\", \"--manifest-path\", \"C:\\\\programming\\\\worth worktees\\\\worktrees\\\\m3-host-home\\\\Cargo.toml\", \"--\", \"-D\", \"warnings\", \"-A\", \"dead-code\"]",
+        "HEAD": "592aaaae2f5e852a6bb2c7e7d8626e2f30921e85",
+        "Git status --short empty": "False",
+        "Start": "2026-11-08T15:21:14.373307+00:00"
+      },
+      "counts": {
+        "exit": 0,
+        "test_counts": "not applicable; gate lane"
+      }
+    },
+    {
+      "lane": "execution-stack-query-lint-driver",
+      "log": "target/lane-evidence/execution-stack-query-lint.log",
+      "header": {
+        "Command": "[\"cargo\", \"clippy\", \"--message-format=json\", \"-p\", \"worth-query-execution\", \"-p\", \"worth-query-host\", \"-p\", \"worth-query\", \"--lib\", \"--tests\", \"--keep-going\", \"--manifest-path\", \"C:\\\\programming\\\\worth worktees\\\\worktrees\\\\m3-host-home\\\\workspaces\\\\worth-query\\\\Cargo.toml\", \"--\", \"-D\", \"warnings\"]",
+        "HEAD": "592aaaae2f5e852a6bb2c7e7d8626e2f30921e85",
+        "Git status --short empty": "False",
+        "Start": "2026-11-08T15:25:12.427845+00:00"
+      },
+      "counts": {
+        "exit": 101,
+        "test_counts": "not applicable; gate lane"
+      }
+    },
+    {
+      "lane": "execution-stack-store-lint-driver",
+      "log": "target/lane-evidence/execution-stack-store-lint.log",
+      "header": {
+        "Command": "[\"cargo\", \"clippy\", \"--message-format=json\", \"-p\", \"worth-store-court-application\", \"-p\", \"worth-store-court-recovery-runtime-replication\", \"--all-targets\", \"--keep-going\", \"--manifest-path\", \"C:\\\\programming\\\\worth worktees\\\\worktrees\\\\m3-host-home\\\\workspaces\\\\worth-store\\\\Cargo.toml\", \"--\", \"-D\", \"warnings\"]",
+        "HEAD": "592aaaae2f5e852a6bb2c7e7d8626e2f30921e85",
+        "Git status --short empty": "False",
+        "Start": "2026-11-08T15:32:13.666145+00:00"
+      },
+      "counts": {
+        "exit": 0,
+        "test_counts": "not applicable; gate lane"
+      }
+    },
+    {
+      "lane": "execution-stack-fixture-lint-driver",
+      "log": "target/lane-evidence/execution-stack-fixture-lint.log",
+      "header": {
+        "Command": "[\"cargo\", \"clippy\", \"--message-format=json\", \"-p\", \"worth-query-topology-entry\", \"-p\", \"worth-query-parameter-entry\", \"-p\", \"worth-query-consumer-root\", \"--all-targets\", \"--keep-going\", \"--manifest-path\", \"C:\\\\programming\\\\worth worktees\\\\worktrees\\\\m3-host-home\\\\workspaces\\\\worth-query\\\\crates\\\\worth-query-certification\\\\fixtures\\\\consumer_entry\\\\Cargo.toml\", \"--\", \"-D\", \"warnings\"]",
+        "HEAD": "592aaaae2f5e852a6bb2c7e7d8626e2f30921e85",
+        "Git status --short empty": "False",
+        "Start": "2026-11-08T15:33:43.109192+00:00"
+      },
+      "counts": {
+        "exit": 0,
+        "test_counts": "not applicable; gate lane"
+      }
+    },
+    {
+      "lane": "execution-stack-line-caps",
+      "log": "target/lane-evidence/execution-stack-line-caps.log",
+      "header": {
+        "COMMAND": "[\"C:/Program Files/Git/bin/bash.exe\", \"scripts/ci/check_workspace_rust_line_caps.sh\", \"dirty\"]",
+        "HEAD": "592aaaae2f5e852a6bb2c7e7d8626e2f30921e85",
+        "CLEAN": "false",
+        "START": "2026-11-08T15:35:05.205908+00:00"
+      },
+      "counts": {
+        "exit": 0,
+        "test_counts": "not applicable; gate lane"
+      }
+    },
+    {
+      "lane": "execution-stack-lock-alignment",
+      "log": "target/lane-evidence/execution-stack-lock-alignment.log",
+      "header": {
+        "COMMAND": "[\"C:\\\\Users\\\\shepworth\\\\AppData\\\\Local\\\\Programs\\\\Python\\\\Python314\\\\python.exe\", \"scripts/ci/check_lockfile_alignment.py\"]",
+        "HEAD": "592aaaae2f5e852a6bb2c7e7d8626e2f30921e85",
+        "CLEAN": "false",
+        "START": "2026-11-08T15:35:22.835744+00:00"
+      },
+      "counts": {
+        "exit": 0,
+        "test_counts": "not applicable; gate lane"
+      }
+    },
+    {
+      "lane": "execution-stack-boundary-driver",
+      "log": "target/lane-evidence/execution-stack-boundary.log",
+      "header": {
+        "Command": "[\"cargo\", \"run\", \"--message-format=json\", \"--target-dir\", \"C:\\\\programming\\\\worth worktees\\\\worktrees\\\\m3-host-home\\\\target\\\\constitution-tools\", \"--manifest-path\", \"C:\\\\programming\\\\worth worktees\\\\worktrees\\\\m3-host-home\\\\tools\\\\boundary-check\\\\Cargo.toml\", \"--\", \"--root\", \"C:\\\\programming\\\\worth worktees\\\\worktrees\\\\m3-host-home\"]",
+        "HEAD": "592aaaae2f5e852a6bb2c7e7d8626e2f30921e85",
+        "Git status --short empty": "False",
+        "Start": "2026-11-08T15:35:35.360912+00:00"
+      },
+      "counts": {
+        "exit": 1,
+        "test_counts": "not applicable; gate lane"
+      }
+    },
+    {
+      "lane": "execution-stack-context-driver",
+      "log": "target/lane-evidence/execution-stack-context.log",
+      "header": {
+        "Command": "[\"cargo\", \"run\", \"--message-format=json\", \"--target-dir\", \"C:\\\\programming\\\\worth worktees\\\\worktrees\\\\m3-host-home\\\\target\\\\constitution-tools\", \"--manifest-path\", \"C:\\\\programming\\\\worth worktees\\\\worktrees\\\\m3-host-home\\\\tools\\\\agent-context\\\\Cargo.toml\", \"--\", \"check\"]",
+        "HEAD": "592aaaae2f5e852a6bb2c7e7d8626e2f30921e85",
+        "Git status --short empty": "False",
+        "Start": "2026-11-08T15:36:20.114075+00:00"
+      },
+      "counts": {
+        "exit": 0,
+        "test_counts": "not applicable; gate lane"
+      }
+    },
+    {
+      "lane": "execution-stack-final-query-lint-driver",
+      "log": "target/lane-evidence/execution-stack-final-query-lint.log",
+      "header": {
+        "Command": "[\"cargo\", \"clippy\", \"--message-format=json\", \"-p\", \"worth-query-host\", \"--lib\", \"--tests\", \"--keep-going\", \"--manifest-path\", \"C:\\\\programming\\\\worth worktees\\\\worktrees\\\\m3-host-home\\\\workspaces\\\\worth-query\\\\Cargo.toml\", \"--\", \"-D\", \"warnings\"]",
+        "HEAD": "592aaaae2f5e852a6bb2c7e7d8626e2f30921e85",
+        "Git status --short empty": "False",
+        "Start": "2026-11-08T15:40:17.867180+00:00"
+      },
+      "counts": {
+        "exit": 0,
+        "test_counts": "not applicable; gate lane"
+      }
+    },
+    {
+      "lane": "execution-stack-final-query-fmt",
+      "log": "target/lane-evidence/execution-stack-final-query-fmt.log",
+      "header": {
+        "COMMAND": "[\"cargo\", \"fmt\", \"--manifest-path\", \"workspaces/worth-query/Cargo.toml\", \"-p\", \"worth-query-host\", \"--\", \"--check\"]",
+        "HEAD": "592aaaae2f5e852a6bb2c7e7d8626e2f30921e85",
+        "CLEAN": "false",
+        "START": "2026-11-08T15:52:40.904327+00:00"
+      },
+      "counts": {
+        "exit": 0,
+        "test_counts": "not applicable; gate lane"
+      }
+    },
+    {
+      "lane": "execution-stack-final-line-caps",
+      "log": "target/lane-evidence/execution-stack-final-line-caps.log",
+      "header": {
+        "COMMAND": "[\"C:/Program Files/Git/bin/bash.exe\", \"scripts/ci/check_workspace_rust_line_caps.sh\", \"dirty\"]",
+        "HEAD": "592aaaae2f5e852a6bb2c7e7d8626e2f30921e85",
+        "CLEAN": "false",
+        "START": "2026-11-08T15:52:42.844488+00:00"
+      },
+      "counts": {
+        "exit": 0,
+        "test_counts": "not applicable; gate lane"
+      }
+    },
+    {
+      "lane": "execution-stack-final-boundary-driver",
+      "log": "target/lane-evidence/execution-stack-final-boundary.log",
+      "header": {
+        "Command": "[\"cargo\", \"run\", \"--message-format=json\", \"--target-dir\", \"C:\\\\programming\\\\worth worktees\\\\worktrees\\\\m3-host-home\\\\target\\\\constitution-tools\", \"--manifest-path\", \"C:\\\\programming\\\\worth worktees\\\\worktrees\\\\m3-host-home\\\\tools\\\\boundary-check\\\\Cargo.toml\", \"--\", \"--root\", \"C:\\\\programming\\\\worth worktees\\\\worktrees\\\\m3-host-home\"]",
+        "HEAD": "592aaaae2f5e852a6bb2c7e7d8626e2f30921e85",
+        "Git status --short empty": "False",
+        "Start": "2026-11-08T15:53:01.411655+00:00"
+      },
+      "counts": {
+        "exit": 1,
+        "test_counts": "not applicable; gate lane"
+      }
+    },
+    {
+      "lane": "execution-stack-final-context-driver",
+      "log": "target/lane-evidence/execution-stack-final-context.log",
+      "header": {
+        "Command": "[\"cargo\", \"run\", \"--message-format=json\", \"--target-dir\", \"C:\\\\programming\\\\worth worktees\\\\worktrees\\\\m3-host-home\\\\target\\\\constitution-tools\", \"--manifest-path\", \"C:\\\\programming\\\\worth worktees\\\\worktrees\\\\m3-host-home\\\\tools\\\\agent-context\\\\Cargo.toml\", \"--\", \"check\"]",
+        "HEAD": "592aaaae2f5e852a6bb2c7e7d8626e2f30921e85",
+        "Git status --short empty": "False",
+        "Start": "2026-11-08T15:53:35.663527+00:00"
+      },
+      "counts": {
+        "exit": 0,
+        "test_counts": "not applicable; gate lane"
+      }
+    }
+  ]
+}

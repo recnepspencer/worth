@@ -72,6 +72,22 @@ pub fn read<Schema>(
     instance: EntityId,
     support: &WorthQueryInstalledProgramSupport<Schema>,
 ) -> Result<ApplicationProgramRevision, StartProvenanceReadDenial> {
+    let recorded = read_recorded(execution, runtime, snapshot, layout, instance)?;
+    support
+        .rostered_for_revision_text(&recorded.render_hex())
+        .map(|entry| *entry.revision())
+        .ok_or(StartProvenanceReadDenial::Corrupt)
+}
+
+/// Immutable recorded DATA. It grants no interpretation, progression or disclosure.
+/// Carried instances may retain this predecessor even under a new effective revision.
+pub(in crate::domain_computation::primary_graph) fn read_recorded(
+    execution: &ExecutionRequest<'_, '_>,
+    runtime: &RelationalRuntime,
+    snapshot: &SnapshotHandle,
+    layout: &WorthQueryWorkflowLayout,
+    instance: EntityId,
+) -> Result<worth_foundational::facade::CanonicalDigestId, StartProvenanceReadDenial> {
     use StartProvenanceReadDenial as Denial;
     let version = observe_field_value_borrowed(
         runtime,
@@ -116,13 +132,13 @@ pub fn read<Schema>(
             RelationalPinnedReadAdmissionDenial::Request(cause) => Denial::Execution(cause),
             _ => Denial::Corrupt,
         })?;
-    let text = pin
-        .symbols()
-        .retained_text(symbol)
-        .filter(|text| text.is_managed())
-        .ok_or(Denial::Corrupt)?;
-    support
-        .rostered_for_revision_text(text.as_str())
-        .map(|entry| *entry.revision())
-        .ok_or(Denial::Corrupt)
+    pin.with_symbol_text(execution, symbol, |text| {
+        let text = text
+            .filter(|text| text.is_managed())
+            .ok_or(Denial::Corrupt)?;
+        worth_foundational::facade::CanonicalDigestId::parse_hex(text.as_str())
+            .filter(|digest| digest.render_hex() == text.as_str())
+            .ok_or(Denial::Corrupt)
+    })
+    .map_err(Denial::Execution)?
 }

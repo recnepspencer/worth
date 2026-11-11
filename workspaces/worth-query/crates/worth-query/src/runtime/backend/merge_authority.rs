@@ -103,7 +103,7 @@ impl WorthQueryBackendMergeAuthority {
                     WorthQueryEvidenceTag::new("source_basis"),
                     format!("{source_basis_descriptor:?}"),
                 )
-                .seal();
+                .seal()?;
         Ok(Self {
             target_branch,
             source_branch,

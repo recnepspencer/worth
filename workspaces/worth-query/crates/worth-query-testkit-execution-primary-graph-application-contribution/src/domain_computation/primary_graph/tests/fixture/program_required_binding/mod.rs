@@ -1,8 +1,6 @@
 use crate::domain_computation::primary_graph::tests::fixture::*;
 use worth_query_declaration::facade::application_operation::ApplicationMutationBinding;
 use worth_query_declaration::facade::application_operation::NoApplicationMutationOutputs;
-use worth_query_declaration::facade::application_schema::NoApplicationUnit;
-use worth_query_declaration::facade::application_schema::ReadWrite;
 use worth_query_declaration::facade::application_schema::U64ApplicationValueBinding;
 
 #[derive(Clone, Debug, Eq, PartialEq, serde::Serialize)]
@@ -45,7 +43,6 @@ worth_query_declaration::worth_query_operation_requires!(ProgramRequiredOperatio
 worth_query_declaration::worth_query_operation_reads!(ProgramRequiredOperation => [AccountStatus]);
 worth_query_declaration::worth_query_operation_writes!(ProgramRequiredOperation => [AccountStatus]);
 // Moved from the predecode admission court: the orphan rule keeps the marker with its operation.
-worth_query_declaration::worth_query_operation_reads!(ProgramRequiredOperation => [AccountLabel]);
 
 worth_query_declaration::worth_query_mutation_binding!(
     pub ProgramRequiredMutationBinding for ProgramRequiredInput,
@@ -65,8 +62,8 @@ worth_query_declaration::worth_query_mutation_binding!(
         principal_entity Principal,
         principal_identity u64,
         identity_binding U64ApplicationValueBinding,
-    scope Account, AccountPolicy, AccountStatus, String, ReadWrite, NoApplicationUnit,
-    field AccountStatus::reference(),
+    scope AccountStatus,
+    field AccountStatus::at("AccountStatus"),
     value program_required_scope,
 );
 
@@ -112,7 +109,7 @@ impl
         ProgramRequiredOutcome,
         ProgramRequiredOutcome,
     > {
-        let account = match candidate.resolve_entity(AccountStatus::reference(), decision.status) {
+        let account = match candidate.resolve_entity(AccountStatus::at("AccountStatus"), decision.status) {
             Ok(account) => account,
             Err(denial) => {
                 return worth_query_execution::facade::domain_computation::HandlerResult::ExecutionDenied(
@@ -122,7 +119,7 @@ impl
         };
         if let Err(denial) = candidate.write_field(
             &account,
-            AccountStatus::reference(),
+            AccountStatus::at("AccountStatus"),
             "program-owned".to_owned(),
         ) {
             return worth_query_execution::facade::domain_computation::HandlerResult::ExecutionDenied(
@@ -180,16 +177,7 @@ impl ApplicationMutationBinding<IdentityExecutionSchema> for ProgramRequiredSibl
     const IDEMPOTENCY_IDENTITY: &'static str =
         <Sibling as ApplicationMutationBinding<IdentityExecutionSchema>>::IDEMPOTENCY_IDENTITY;
 
-    fn scope_field() -> worth_query_declaration::facade::application_schema::ApplicationFieldRef<
-        IdentityExecutionSchema,
-        Account,
-        AccountPolicy,
-        AccountStatus,
-        String,
-        ReadWrite,
-        worth_query_declaration::facade::application_schema::EqualityPredicate,
-        NoApplicationUnit,
-    > {
+    fn scope_field() -> AccountStatus {
         <Sibling as ApplicationMutationBinding<IdentityExecutionSchema>>::scope_field()
     }
 

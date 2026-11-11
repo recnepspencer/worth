@@ -53,17 +53,18 @@ pub(super) fn decode<Output>(
                     "workflow approval text is not current native symbol storage",
                 ));
             };
-            let text = read
-                .symbols()
-                .resolve(Symbol(symbol.0))
-                .ok_or_else(|| denial("workflow approval symbol meaning is unavailable"))?;
-            facts.push(WorthQueryApplicationObservedFact::Field {
-                entity_id: entity,
-                kind,
-                locator: locator.clone(),
-                value: value.clone(),
-            });
-            decode(text)
+            read.with_symbol_text(execution, Symbol(symbol.0), |text| {
+                let text =
+                    text.ok_or_else(|| denial("workflow approval symbol meaning is unavailable"))?;
+                facts.push(WorthQueryApplicationObservedFact::Field {
+                    entity_id: entity,
+                    kind,
+                    locator: locator.clone(),
+                    value: value.clone(),
+                });
+                decode(text.as_str())
+            })
+            .map_err(|cause| Denial::relational_read_stopped(cause, "workflow approval text"))?
         },
     )
     .map_err(|cause| Denial::relational_read_stopped(cause, "workflow approval text"))?

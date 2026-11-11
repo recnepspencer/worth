@@ -73,6 +73,7 @@ where
     P: ApplicationProgramDefinition<S>,
     A: ApplicationAction<S, I::Binding>,
     Mode<S, I, A>: WorthQueryHistoryOperationMode<S, I, P, A>,
+    Outputs: WorthQueryHistoryOutputsMode<S, H>,
 {
     /// Deliberately discard an unselected candidate and its completed evidence.
     /// Native unpublished/indeterminate custody must settle before it can close.
@@ -127,6 +128,15 @@ where
                 }
             }
             Phase::Selecting(mut state) if state.selected.is_none() => {
+                let branch = state
+                    .candidate
+                    .as_ref()
+                    .expect("original candidate")
+                    .branch();
+                if let Err(cause) = self.document.outputs.discard_recording(request, branch) {
+                    self.phase = Some(Phase::Selecting(state));
+                    return Err((self, WorthQueryHistoryEditDenial::Outputs(cause)));
+                }
                 let completed = state.completed.take().unwrap();
                 let current = WorthQueryApplicationRequest {
                     application: self.document.owner.application(),

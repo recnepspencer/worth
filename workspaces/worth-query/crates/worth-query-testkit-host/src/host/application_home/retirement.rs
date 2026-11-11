@@ -3,7 +3,6 @@ use super::*;
 use std::sync::atomic::AtomicBool;
 use worth_query_decl::facade::application_schema::{
     ApplicationSchemaContribution, ApplicationSchemaContributionIdentity,
-    ApplicationSchemaDeclarationBuilder,
 };
 use worth_query_host::facade::{
     application_contribution::{
@@ -23,13 +22,8 @@ impl ApplicationSchemaContribution<HomeIdentitySchema> for RefusingNativeSurface
     // distinct program identity selects the explicit supplier implementation.
     const IDENTITY: ApplicationSchemaContributionIdentity =
         <HomeNativeSurface as ApplicationSchemaContribution<HomeIdentitySchema>>::IDENTITY;
-    fn register_members(
-        builder: ApplicationSchemaDeclarationBuilder<HomeIdentitySchema>,
-    ) -> ApplicationSchemaDeclarationBuilder<HomeIdentitySchema> {
-        <HomeNativeSurface as ApplicationSchemaContribution<HomeIdentitySchema>>::register_members(
-            builder,
-        )
-    }
+    type Members =
+        <HomeNativeSurface as ApplicationSchemaContribution<HomeIdentitySchema>>::Members;
 }
 impl WorthQueryApplicationContribution<HomeIdentitySchema> for RefusingNativeSurface {
     type Configuration = RefusingHandlerConfiguration;

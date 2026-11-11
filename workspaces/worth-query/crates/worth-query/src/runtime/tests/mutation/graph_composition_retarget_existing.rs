@@ -130,10 +130,12 @@ fn compose_graph_supports_existing_target_retarget_lifecycle() {
         .expect("graph composition receipt should expose program");
     let lifecycle = receipt
         .graph_composition_lifecycle_outcomes()
-        .expect("graph composition receipt should expose lifecycle");
+        .expect("graph composition receipt should expose lifecycle")
+        .expect("fixture digest must fit");
     let evidence = receipt
         .graph_composition_evidence()
-        .expect("graph composition receipt should expose evidence");
+        .expect("graph composition receipt should expose evidence")
+        .expect("fixture digest must fit");
 
     assert_eq!(
         program.steps()[1].kind(),
@@ -258,7 +260,8 @@ fn compose_graph_supports_verified_existing_target_retarget_lifecycle() {
         .expect("graph composition receipt should expose program");
     let lifecycle = receipt
         .graph_composition_lifecycle_outcomes()
-        .expect("graph composition receipt should expose lifecycle");
+        .expect("graph composition receipt should expose lifecycle")
+        .expect("fixture digest must fit");
 
     assert_eq!(program.component_count(), 1);
     assert_eq!(
@@ -276,7 +279,7 @@ fn compose_graph_supports_verified_existing_target_retarget_lifecycle() {
     assert_eq!(
         receipt
             .graph_composition_evidence()
-            .expect("graph composition receipt should expose evidence")
+            .expect("graph composition receipt should expose evidence").expect("fixture digest must fit")
             .counter_snapshot(),
         "components=1;symbolic_entities=0;symbolic_relations=0;symbolic_resolutions=0;affected_live_views=0;affected_derived_views=0;considered_computed_views=0;created=0;updated_identity_preserved=0;retargeted_identity_preserved=1;retired_current_truth=0;superseded_with_lineage=0;deleted_if_uncommitted=0;denied_before_execution=0"
     );

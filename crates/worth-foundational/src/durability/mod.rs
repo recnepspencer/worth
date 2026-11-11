@@ -6,8 +6,22 @@ pub use native_checkpoint_reference::{
     NativeCheckpointBranchObservation, NativeCheckpointBranchReference,
     NativeCheckpointBranchTarget,
 };
+mod dispatch_custody;
+pub use dispatch_custody::DispatchAttemptIdentity;
+mod program_support;
+mod workflow_ending_actor;
+pub use program_support::{
+    ProgramSupportObligationIdentity, ProgramSupportObligationKind, ProgramSupportStatus,
+};
+pub use workflow_ending_actor::{WorkflowEndingActorDecodeDenial, WorkflowEndingActorProvenance};
 mod home_binding;
+mod home_installation_transition;
+pub use home_installation_transition::HomeProgramTransitionInstallationBinding;
+mod home_program_revision;
 mod home_program_transition;
+pub use home_program_revision::HomeProgramRevisionBoundary;
+mod home_program_step;
+pub use home_program_step::HomeProgramTransitionProgramStep;
 mod home_transition_caller;
 mod home_transition_plan;
 mod home_transition_target;
@@ -25,7 +39,8 @@ pub use home_transition_plan::{
     HomeProgramTransitionDescriptionDenial, HomeProgramTransitionPlanDescription,
 };
 pub use home_transition_target::{
-    HomeProgramTransitionCatalogDigest, HomeProgramTransitionTargetMeaning,
+    HomeProgramTransitionCatalogDigest, HomeProgramTransitionSchemaCarrierDigest,
+    HomeProgramTransitionSchemaDigest, HomeProgramTransitionTargetMeaning,
 };
 mod world_identity;
 mod world_journal;
@@ -69,3 +84,13 @@ pub use home_identity::{HomeIdentity, HomeIdentityDenial};
 pub use home_incarnation::{HomeIncarnation, HomeIncarnationExhausted};
 pub use owner_family::{DurableOwnerFamily, UnsupportedDurableOwnerTag};
 pub use retention_class::{DurableArtifactRetention, RetentionClass};
+mod correction_material_pin;
+pub use correction_material_pin::{
+    CorrectionMaterialPinIdentity, CorrectionMaterialPinOwner, CorrectionMaterialPinTerminal,
+};
+
+mod world_original_fate;
+pub use world_original_fate::WorldOriginalFate;
+
+mod unclean_recovery;
+pub use unclean_recovery::UncleanRecoveryUnsupported;

@@ -22,14 +22,17 @@ use worth_testkit_relational::{
 };
 pub(super) struct MergeRecipe {
     original: ColdRecoverySourceFixture,
-    index: DerivedIndexId,
+    index: Option<DerivedIndexId>,
     expected_index_keys: Vec<AuthoritativeFieldComparisonKey>,
+    expected_merge_version: VersionId,
     symbol: Option<worth_relational::facade::symbols::Symbol>,
     expected: Arc<BTreeMap<EntityId, EntityReadRecord>>,
 }
-pub(super) struct MergeFixture{pub runtime:RelationalRuntime,pub source:Arc<worth_testkit_relational::durable_medium::immutable_members::ImmutableCheckpointMemberSource>,pub medium:Arc<TestDurableMedium>,pub directory:super::selected_directory::Directory,pub index:DerivedIndexId,pub expected_index_keys:Vec<AuthoritativeFieldComparisonKey>,pub symbol:Option<worth_relational::facade::symbols::Symbol>,pub expected:Arc<BTreeMap<EntityId,EntityReadRecord>>}
+pub(super) struct MergeFixture{pub runtime:RelationalRuntime,pub source:Arc<worth_testkit_relational::durable_medium::immutable_members::ImmutableCheckpointMemberSource>,pub medium:Arc<TestDurableMedium>,pub directory:super::selected_directory::Directory,pub index:Option<DerivedIndexId>,pub expected_index_keys:Vec<AuthoritativeFieldComparisonKey>,pub expected_merge_version:VersionId,pub symbol:Option<worth_relational::facade::symbols::Symbol>,pub expected:Arc<BTreeMap<EntityId,EntityReadRecord>>}
 impl MergeRecipe {
-    pub fn new(execution: &ExecutionRequest<'_, '_>, symbols: bool) -> Self {
+    /// `indexed` registers and builds the actual name index; a recovered
+    /// indexed runtime must rebuild it explicitly before Native merge commit.
+    pub fn new(execution: &ExecutionRequest<'_, '_>, symbols: bool, indexed: bool) -> Self {
         let medium = TestDurableMedium::new();
         let producer = durable_runtime(&medium);
         let symbol = if symbols {
@@ -61,32 +64,35 @@ impl MergeRecipe {
             &feature,
         );
         let member = create_entity(execution, &producer, "member-before");
-        let index = producer
-            .index_authority()
-            .register(DerivedIndexDefinition {
-                index_id: DerivedIndexId(0),
-                name: "merge-matrix-name".into(),
-                branch_scoped: true,
-                kind: DerivedIndexKind::EntityField {
-                    field_locator: aspect_field_locator(aspect_key("name"), field_key("name")),
-                },
-            })
-            .unwrap()
-            .index_id;
+        let index = indexed.then(|| {
+            producer
+                .index_authority()
+                .register(DerivedIndexDefinition {
+                    index_id: DerivedIndexId(0),
+                    name: "merge-matrix-name".into(),
+                    branch_scoped: true,
+                    kind: DerivedIndexKind::EntityField {
+                        field_locator: aspect_field_locator(aspect_key("name"), field_key("name")),
+                    },
+                })
+                .unwrap()
+                .index_id
+        });
         let branch = BranchId("main".into());
-        let (_, basis) = producer
-            .observe_branch(&producer.main_branch_identity())
-            .unwrap();
-        let built = producer.index_authority().build_for_commit(
-            execution,
-            DerivedIndexBuildRequest {
-                source_commit_id: basis.observation().commit_id().unwrap(),
-                branch_id: branch.clone(),
-                index_ids: vec![index],
-            },
-        );
-        assert!(built.failed_indexes.is_empty());
-        drop(basis);
+        if let Some(index) = index {
+            let (_, basis) = producer
+                .observe_branch(&producer.main_branch_identity())
+                .unwrap();
+            let built = producer.index_authority().build_for_commit(
+                execution,
+                DerivedIndexBuildRequest {
+                    source_commit_id: basis.observation().commit_id().unwrap(),
+                    branch_id: branch.clone(),
+                    index_ids: vec![index],
+                },
+            );
+            assert!(built.failed_indexes.is_empty());
+        }
         let reference = producer.fork().unwrap();
         let candidate = reference
             .prepare_merge_execution(execution, request(&reference))
@@ -94,6 +100,7 @@ impl MergeRecipe {
         let merged = reference
             .execute_prepared_merge(execution, candidate)
             .unwrap();
+        let expected_merge_version = merged.commit.version_id;
         let view = reference
             .read_truth()
             .read_snapshot(&merged.commit.snapshot, execution)
@@ -105,30 +112,35 @@ impl MergeRecipe {
                 .map(|r| (r.entity_id, r.clone()))
                 .collect(),
         );
-        let rebuilt = reference.index_authority().build_for_commit(
-            execution,
-            DerivedIndexBuildRequest {
-                source_commit_id: merged.commit.commit.commit_id,
-                branch_id: branch.clone(),
-                index_ids: vec![index],
-            },
-        );
-        assert!(rebuilt.failed_indexes.is_empty());
-        let generation = reference
-            .index_access()
-            .read_latest_generation(execution, index, &branch)
-            .unwrap()
-            .unwrap();
-        let DerivedIndexEntries::EntityField(entries) = &generation.entries else {
-            panic!("actual entity index")
+        let expected_index_keys = if let Some(index) = index {
+            let rebuilt = reference.index_authority().build_for_commit(
+                execution,
+                DerivedIndexBuildRequest {
+                    source_commit_id: merged.commit.commit.commit_id,
+                    branch_id: branch.clone(),
+                    index_ids: vec![index],
+                },
+            );
+            assert!(rebuilt.failed_indexes.is_empty());
+            let generation = reference
+                .index_access()
+                .read_latest_generation(execution, index, &branch)
+                .unwrap()
+                .unwrap();
+            let DerivedIndexEntries::EntityField(entries) = &generation.entries else {
+                panic!("actual entity index")
+            };
+            assert!(!entries.is_empty());
+            entries.keys().cloned().collect()
+        } else {
+            Vec::new()
         };
-        assert!(!entries.is_empty());
-        let expected_index_keys = entries.keys().cloned().collect();
         let original = capture_source(execution, producer, medium, member, false);
         Self {
             original,
             index,
             expected_index_keys,
+            expected_merge_version,
             symbol,
             expected,
         }
@@ -143,6 +155,7 @@ impl MergeRecipe {
                 directory: reader.directory,
                 index: self.index,
                 expected_index_keys: self.expected_index_keys.clone(),
+                expected_merge_version: self.expected_merge_version,
                 symbol: self.symbol,
                 expected: self.expected.clone(),
             }
@@ -152,6 +165,8 @@ impl MergeRecipe {
 pub(super) fn assert_merge_records(
     actual: &[EntityReadRecord],
     expected: &BTreeMap<EntityId, EntityReadRecord>,
+    expected_merge_version: VersionId,
+    actual_merge_version: VersionId,
 ) {
     assert_eq!(actual.len(), expected.len());
     let ids = actual
@@ -166,7 +181,13 @@ pub(super) fn assert_merge_records(
             .expect("each record has the independent memory reference value");
         assert_eq!(row.kind, counterpart.kind);
         assert_eq!(row.lifecycle, counterpart.lifecycle);
-        assert_eq!(row.created_at_version, counterpart.created_at_version);
+        // A record the reference merge created is created by the actual merge.
+        let expected_creation = if counterpart.created_at_version == expected_merge_version {
+            actual_merge_version
+        } else {
+            counterpart.created_at_version
+        };
+        assert_eq!(row.created_at_version, expected_creation);
         assert_eq!(row.retired_at_version, counterpart.retired_at_version);
         assert_eq!(row.lineage_id.is_some(), counterpart.lineage_id.is_some());
     }

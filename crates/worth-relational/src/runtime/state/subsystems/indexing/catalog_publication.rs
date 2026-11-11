@@ -22,7 +22,7 @@ impl CapturedIndexDefinitionCatalog {
     pub(crate) fn introduced(
         &self,
         base: u64,
-    ) -> impl Iterator<Item = &Arc<DerivedIndexDefinition>> {
+    ) -> impl Iterator<Item = &crate::indexes::RetainedDerivedIndexDefinition> {
         self.catalog
             .definitions
             .range(DerivedIndexId(base)..)
@@ -92,6 +92,7 @@ impl IndexingSubsystem {
         &self,
         delta: &CanonicalIndexDefinitionDelta,
     ) -> Result<(), &'static str> {
+        let _definitions = self.definition_publication.write();
         self.state.write().readmit_catalog_delta(delta)
     }
 }

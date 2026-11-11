@@ -104,7 +104,10 @@ fn invariant_denial_inspection_explains_failed_invariants_without_commit_identit
     assert!(inspection.snapshot_identity().is_some());
     assert_eq!(
         inspection.denial_digest(),
-        evidence.denial_digest().as_str()
+        evidence
+            .denial_digest()
+            .expect("fixture digest must fit")
+            .as_str()
     );
     assert!(!inspection.inspection_digest().is_empty());
 }
@@ -149,14 +152,17 @@ fn invariant_violation_intent_denies_with_evidence_without_partial_publication()
         )
         .expect("computed should declare");
     let delivery_effect = runtime
-        .declare_effect::<WorthQueryUnrefinedLiveShape>(WorthQueryEffectDeclaration::deliver(
-            "ui.invariant-denial",
-            WorthQueryEffectTrigger::computed_view(
-                &computed,
-                test_aspect_touches(["title.summary"]),
-            ),
-            "ui.invariant-denial",
-        ))
+        .declare_effect::<WorthQueryUnrefinedLiveShape>(
+            WorthQueryEffectDeclaration::deliver(
+                "ui.invariant-denial",
+                WorthQueryEffectTrigger::computed_view(
+                    &computed,
+                    test_aspect_touches(["title.summary"]),
+                ),
+                "ui.invariant-denial",
+            )
+            .expect("fixture digest must fit"),
+        )
         .expect("effect should declare");
 
     let error = runtime
@@ -197,7 +203,11 @@ fn invariant_violation_intent_denies_with_evidence_without_partial_publication()
             );
             assert!(evidence.attempt_digest().is_some());
             assert!(evidence.snapshot_identity().is_some());
-            assert!(!evidence.denial_digest().as_str().is_empty());
+            assert!(!evidence
+                .denial_digest()
+                .expect("fixture digest must fit")
+                .as_str()
+                .is_empty());
         }
         other => panic!("expected invariant admission denial, got {other:?}"),
     }

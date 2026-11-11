@@ -31,6 +31,16 @@ impl WorldCheckpointPort {
             binding: Arc::downgrade(binding),
         }
     }
+    pub fn observe_program_activation_history(
+        &self,
+        request: &ExecutionRequest<'_, '_>,
+    ) -> Result<super::WorldProgramActivationHistory, WorldReadmissionDenial> {
+        let binding = self
+            .binding
+            .upgrade()
+            .ok_or(WorldReadmissionDenial::Medium(Denial::Unavailable))?;
+        super::WorldProgramActivationHistory::capture(binding, request)
+    }
     /// The restricted Home composition owns the only selection/publication
     /// journey. This operation only prepares original owner meaning.
     pub fn prepare_home_checkpoint(
@@ -51,6 +61,7 @@ impl WorldCheckpointPort {
             source.as_ref(),
             binding.binding(),
             request,
+            None,
         )?;
         let bytes = image
             .encode(request)

@@ -391,3 +391,6 @@ fn completed_unobserved_event(
         _ => None,
     }
 }
+#[cfg(test)]
+#[path = "handle_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;

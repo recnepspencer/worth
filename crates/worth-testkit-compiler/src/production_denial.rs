@@ -3,7 +3,7 @@ use std::path::{Component, Path};
 
 use crate::denial::{check_outcome, RequiredEnvironment};
 use crate::semantic_denial::{
-    matches_error, semantic_errors, validate_requirement, RequiredDiagnostic,
+    matches_error, semantic_errors, validate_requirement, CompilerEnvironment, RequiredDiagnostic,
 };
 use crate::{paths, session, CompilerFixtureRefusal};
 
@@ -204,7 +204,7 @@ fn check_production_outcome(
             | ProductionDiagnosticExpectation::Uncoded { .. } => (),
         }
     }
-    let errors = semantic_errors(source, outcome, RequiredEnvironment::Production)?;
+    let errors = semantic_errors(source, outcome, CompilerEnvironment::Production)?;
     let candidates = requirements
         .iter()
         .map(|requirement| {

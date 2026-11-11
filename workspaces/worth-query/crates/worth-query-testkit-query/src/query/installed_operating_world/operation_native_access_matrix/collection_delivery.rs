@@ -143,7 +143,10 @@ pub fn required_patch(
     admitted: &domain::WorthQueryAdmittedConsumerInvalidation<'_>,
     workspace: &runtime::WorthQueryWorkspace,
 ) -> domain::WorthQueryCollectionPatch {
-    match consumer.plan_patch(request_execution, admitted, workspace) {
+    match consumer
+        .plan_patch(request_execution, admitted, workspace)
+        .expect("positive fixture identity fits canonical digest bounds")
+    {
         domain::WorthQueryCollectionDeliveryOutcome::Patch(patch) => patch,
         domain::WorthQueryCollectionDeliveryOutcome::NoDelivery(denial) => {
             panic!(

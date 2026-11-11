@@ -1,4 +1,5 @@
 //! HTTP projection of the managed receiver's original owned denial.
+pub(super) mod native_source;
 use super::*;
 pub(super) fn managed_index(
     cause: &worth_query_host::facade::primary_graph::WorthQueryManagedIndexDenial,
@@ -6,12 +7,15 @@ pub(super) fn managed_index(
     use worth_query_host::facade::admission::authenticated_principal::WorthQueryRequestInterruption as Stop;
     use worth_query_host::facade::primary_graph::WorthQueryManagedIndexDenialCause as Cause;
     match cause.cause() {
-        Cause::CurrentControl(cause) => super::query_denial(bank_server::BankApplicationQueryDenial::from_request_query(worth_query_host::facade::application_entry::WorthQueryApplicationRequestQueryDenial::OutputSettlement(cause.clone()))),
-        Cause::SourceVerification { execution: Some(cause), .. } => crate::http::server::relational_execution_denial::denial(cause),
-        Cause::SourceVerification { authorization: Some(cause), .. } => authorization_denial(cause.into()),
-        Cause::SourceVerification { .. } | Cause::NativeSource(_) => unavailable(),
+        Cause::CurrentControl(cause) => output_settlement(cause.kind().into()),
+        Cause::SourceVerification { kind, authorization, execution } => {
+            if let Some(cause) = execution { return crate::http::server::relational_execution_denial::denial(cause); }
+            if let Some(cause) = authorization { return authorization_denial(cause.into()); }
+            crate::http::server::estate_denial::attempt_kind(kind.into())
+        }
+        Cause::NativeSource(cause) => native_source::source(cause),
+        Cause::NativeAdmission(cause) => crate::http::server::relational_execution_denial::companion(cause.clone()),
         Cause::LiveAdmission(cause) => query_denial(BankApplicationQueryDenial::from_live_open(cause.clone())),
-        Cause::NativeAdmission(cause) => native_admission(cause),
         Cause::Request(stop) => crate::http::server::advancement_denial::request(stop),
         Cause::Interrupted(Stop::Cancelled) => cancelled(),
         Cause::Interrupted(Stop::DeadlineExceeded) => deadline(),
@@ -57,7 +61,7 @@ pub(super) fn source(
     }
 }
 
-fn allocation(
+pub(super) fn allocation(
     cause: &worth_query_host::facade::runtime::ExecutionAllocationDenial,
 ) -> BankHttpDenial {
     match cause.classify() {
@@ -80,37 +84,19 @@ pub(in crate::http::server) fn work(
         runtime::ExecutionRequestArrayDenial as Storage,
     };
     match cause {
-        Work::Controlled(Stop::Request(stop) | Stop::Storage(Storage::Request(stop))) => {
-            crate::http::server::advancement_denial::request(*stop)
+        Work::Controlled(Stop::Content(cause)) => {
+            crate::http::server::relational_execution_denial::content(*cause)
         }
-        Work::Controlled(Stop::Storage(Storage::Allocation(cause))) => allocation(cause),
         Work::Controlled(Stop::MaterialStorage(cause)) => {
             crate::http::server::relational_execution_denial::denial(*cause)
         }
-        Work::Controlled(Stop::OrderedStorage(cause)) => ordered_storage(cause),
-        Work::Controlled(Stop::Content(cause)) => {
-            crate::http::server::relational_execution_denial::denial(cause.into_execution_cause())
-        }
-        Work::Controlled(Stop::Projection(cause)) => {
-            projection(bank_server::BankApplicationProjectionDenialKind::from_query(cause.kind()))
-        }
-        Work::Controlled(Stop::ValueDecode(cause)) => value_decode(*cause),
-        Work::Controlled(Stop::NativeSource(cause)) => native_walk(cause),
-        Work::Controlled(Stop::NodeCapacityExceeded) => exhausted(),
+        Work::Controlled(Stop::NativeSource(cause)) => native_source::walk(*cause),
         Work::Controlled(
-            Stop::ForeignNode
-            | Stop::UnwrittenNode
-            | Stop::InvalidRoot
-            | Stop::ForeignSourceSlot
-            | Stop::SourceSlotUnavailable
-            | Stop::CapacityOverflow,
-        ) => internal_denied(),
-        Work::Controlled(
-            Stop::MembershipUnavailable
+            Stop::IncrementalUnavailable
+            | Stop::SourceStructureUnavailable
+            | Stop::MembershipUnavailable
             | Stop::RefinementUnavailable
-            | Stop::SummaryUnavailable
-            | Stop::IncrementalUnavailable
-            | Stop::SourceStructureUnavailable,
+            | Stop::SummaryUnavailable,
         ) => unavailable(),
         Work::Controlled(
             Stop::Coverage(_)
@@ -125,26 +111,25 @@ pub(in crate::http::server) fn work(
             | Stop::DuplicateNodeParent
             | Stop::SourceStructureCycle,
         ) => internal_denied(),
+        Work::Controlled(Stop::Request(stop) | Stop::Storage(Storage::Request(stop))) => {
+            crate::http::server::advancement_denial::request(*stop)
+        }
+        Work::Controlled(Stop::Storage(Storage::Allocation(cause))) => allocation(cause),
+        Work::Controlled(Stop::OrderedStorage(cause)) => ordered_storage(cause),
+        Work::Controlled(Stop::Projection(cause)) => {
+            projection(bank_server::BankApplicationProjectionDenialKind::from_query(cause.kind()))
+        }
+        Work::Controlled(Stop::ValueDecode(cause)) => value_decode(*cause),
+        Work::Controlled(Stop::NodeCapacityExceeded) => exhausted(),
+        Work::Controlled(
+            Stop::ForeignNode
+            | Stop::UnwrittenNode
+            | Stop::InvalidRoot
+            | Stop::ForeignSourceSlot
+            | Stop::SourceSlotUnavailable
+            | Stop::CapacityOverflow,
+        ) => internal_denied(),
         Work::Provider(_) => unavailable(),
-    }
-}
-
-fn native_walk(
-    cause: &worth_query_host::facade::primary_graph::StructuralWalkDenialKind,
-) -> BankHttpDenial {
-    use worth_query_host::facade::{
-        application_invariants::CustomInvariantInterruption as Stop,
-        primary_graph::StructuralWalkDenialKind as Denial,
-        runtime::{LeaseDenial, WorkCeilingDenial},
-    };
-    match cause {
-        Denial::Interrupted(Stop::Cancelled) => cancelled(),
-        Denial::Interrupted(Stop::DeadlineElapsed) => deadline(),
-        Denial::MemoryAdmission(cause) => crate::http::server::advancement_denial::request(
-            WorkCeilingDenial::Admission(LeaseDenial::MemoryExhausted(*cause)),
-        ),
-        Denial::MemoryBudgetExceeded => exhausted(),
-        Denial::Read(_) => unavailable(),
     }
 }
 
@@ -200,6 +185,29 @@ mod tests {
         ] {
             let cause = Work::Controlled(Stop::Request(WorkCeilingDenial::Stopped(stop)));
             assert_eq!(work(&cause), BankHttpDenial::new(expected, Next::Retry));
+        }
+    }
+    #[test]
+    fn native_source_work_and_access_failures_keep_distinct_instructions() {
+        use worth_query_host::facade::primary_graph::{
+            StructuralReadError as Read, StructuralWalkDenialKind as Native,
+        };
+        for (cause, expected) in [
+            (
+                Read::WorkBudgetExceeded,
+                BankHttpDenial::new(Kind::ResourceExhausted, Next::NarrowRequest),
+            ),
+            (
+                Read::OutsideDeclaredAccess,
+                BankHttpDenial::new(Kind::InternalDenied, Next::None),
+            ),
+            (
+                Read::RecordUnavailable,
+                BankHttpDenial::new(Kind::Unavailable, Next::Retry),
+            ),
+        ] {
+            let cause = Work::Controlled(Stop::NativeSource(Native::Read(cause)));
+            assert_eq!(work(&cause), expected);
         }
     }
     #[test]

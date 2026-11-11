@@ -26,25 +26,25 @@ where
 {
     ApplicationCapabilityContractBuilder::new(cap,op,WorkflowAuthoringGrant::reference())
     .target(ApplicationCapabilityTargetDefinition::new(
-        ApplicationCapabilityValueBinding::new(WorkflowGrantActionField::reference(),encoded(action.to_owned())),
+        ApplicationCapabilityValueBinding::new(WorkflowGrantActionField::at("WorkflowGrantActionField"),encoded(action.to_owned())).unwrap(),
         ApplicationCapabilityRelationBinding::from_reference(WorkflowGrantResource::reference()),
         ApplicationCapabilityRelationDimension::not_applicable(),ApplicationCapabilityFieldDimension::not_applicable(),
-        ApplicationCapabilityValueBinding::new(WorkflowGrantPurposeField::reference(),encoded("reviewed-document".to_owned()))))
+        ApplicationCapabilityValueBinding::new(WorkflowGrantPurposeField::at("WorkflowGrantPurposeField"),encoded("reviewed-document".to_owned())).unwrap()))
     .constraints(ApplicationCapabilityConstraintDefinition::new(
         ApplicationCapabilityMagnitudeDimension::not_applicable(),ApplicationCapabilityCardinalityDimension::One,
         ApplicationCapabilityCurrentnessDefinition::new(
-            ApplicationCapabilityValueBinding::new(WorkflowGrantStatusField::reference(),encoded("active".to_owned())),
+            ApplicationCapabilityValueBinding::new(WorkflowGrantStatusField::at("WorkflowGrantStatusField"),encoded("active".to_owned())).unwrap(),
             ApplicationCapabilityWorkflowDefinition::new(
-                ApplicationCapabilityFieldBinding::from_reference(WorkflowGrantWorkflowField::reference()),
-                ApplicationCapabilityFieldBinding::from_reference(DocumentIdentityField::reference())),
+                ApplicationCapabilityFieldBinding::from_reference(WorkflowGrantWorkflowField::at("WorkflowGrantWorkflowField")).unwrap(),
+                ApplicationCapabilityFieldBinding::from_reference(DocumentIdentityField::at("DocumentIdentityField")).unwrap()),
             ApplicationCapabilityValidityDefinition::new(ApplicationCapabilityValidityTimeline::UnixEpochSeconds,
-                ApplicationCapabilityFieldBinding::from_reference(WorkflowGrantNotBeforeField::reference()),
-                ApplicationCapabilityFieldBinding::from_reference(WorkflowGrantNotAfterField::reference()))),WorkflowReadContext::reference()))
+                ApplicationCapabilityFieldBinding::from_reference(WorkflowGrantNotBeforeField::at("WorkflowGrantNotBeforeField")).unwrap(),
+                ApplicationCapabilityFieldBinding::from_reference(WorkflowGrantNotAfterField::at("WorkflowGrantNotAfterField")).unwrap())),WorkflowReadContext::reference()))
     .delegation(ApplicationCapabilityDelegationDefinition::new(
         ApplicationCapabilityRelationBinding::from_reference(WorkflowGrantParent::reference()),
         ApplicationCapabilityRelationBinding::from_reference(WorkflowGrantGrantor::reference()),
         ApplicationCapabilityRelationBinding::from_reference(WorkflowGrantGrantee::reference()),
-        ApplicationCapabilityFieldBinding::from_reference(WorkflowGrantDelegationLimitField::reference()),WorkflowReadProvenance::reference()))
+        ApplicationCapabilityFieldBinding::from_reference(WorkflowGrantDelegationLimitField::at("WorkflowGrantDelegationLimitField")).unwrap(),WorkflowReadProvenance::reference()))
     .composition(super::super::contract::composition())
     .elevation(ApplicationCapabilityElevationRule::not_applicable()).build()
 }

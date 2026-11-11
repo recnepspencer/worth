@@ -8,10 +8,8 @@ impl<Schema: TopologyModelBinding> PositiveTurnRule<Schema> {
         context: &WorthQueryApplicationInvariantContext<'_, '_, Schema>,
         scope: &<Self as WorthQueryApplicationInvariantRule<Schema>>::Scope,
         budget: Option<&dyn CustomInvariantLeaseBudget>,
-    ) -> Result<
-        WorthQueryApplicationInvariantVerdict<()>,
-        WorthQueryApplicationInvariantExecutionError,
-    > {
+    ) -> Result<WorthQueryApplicationInvariantVerdict<()>, WorthQueryApplicationInvariantError>
+    {
         let outcome = self.evaluate_inner(context, scope, budget);
         self.observe(PlanarInvariantReadEvent::Evaluated {
             reads: context.reads(),
@@ -26,10 +24,8 @@ impl<Schema: TopologyModelBinding> PositiveTurnRule<Schema> {
         context: &WorthQueryApplicationInvariantContext<'_, '_, Schema>,
         scope: &<Self as WorthQueryApplicationInvariantRule<Schema>>::Scope,
         budget: Option<&dyn CustomInvariantLeaseBudget>,
-    ) -> Result<
-        WorthQueryApplicationInvariantVerdict<()>,
-        WorthQueryApplicationInvariantExecutionError,
-    > {
+    ) -> Result<WorthQueryApplicationInvariantVerdict<()>, WorthQueryApplicationInvariantError>
+    {
         evaluation_checkpoint(budget, 0)?;
         let proposed = context.proposed();
         if self.mode.load(Ordering::SeqCst) == INVARIANT_PROBE_EVALUATION_EXPANSION {
@@ -41,9 +37,7 @@ impl<Schema: TopologyModelBinding> PositiveTurnRule<Schema> {
                     if error.kind()
                         == WorthQueryInvariantAccessDenialKind::OutsidePreparedScope =>
                 {
-                    Err(WorthQueryApplicationInvariantExecutionError::new(
-                        error.to_string(),
-                    ))
+                    Err(WorthQueryApplicationInvariantError::from(error))
                 }
                 Ok(_) => Ok(WorthQueryApplicationInvariantVerdict::Pass),
                 Err(_) => Ok(WorthQueryApplicationInvariantVerdict::Pass),
@@ -70,11 +64,9 @@ impl<Schema: TopologyModelBinding> PositiveTurnRule<Schema> {
 fn evaluation_checkpoint(
     budget: Option<&dyn CustomInvariantLeaseBudget>,
     work: u64,
-) -> Result<(), WorthQueryApplicationInvariantExecutionError> {
+) -> Result<(), WorthQueryApplicationInvariantError> {
     if budget.is_some_and(|budget| !budget.checkpoint(work)) {
-        return Err(WorthQueryApplicationInvariantExecutionError::new(
-            "planar evaluation refused",
-        ));
+        return Err(WorthQueryApplicationInvariantError::Stopped);
     }
     Ok(())
 }
@@ -83,9 +75,9 @@ fn required_field<Schema: TopologyModelBinding>(
     view: &WorthQueryApplicationInvariantReadView<'_, Schema>,
     field: &WorthQueryApplicationInvariantFieldBinding<Schema, Body, PositiveLength>,
     entity: &WorthQueryApplicationInvariantEntity<Schema, Body>,
-    name: &str,
-) -> Result<PositiveLength, WorthQueryApplicationInvariantExecutionError> {
+    name: &'static str,
+) -> Result<PositiveLength, WorthQueryApplicationInvariantError> {
     view.field(field, entity)
-        .map_err(|error| WorthQueryApplicationInvariantExecutionError::new(error.to_string()))?
-        .ok_or_else(|| WorthQueryApplicationInvariantExecutionError::new(format!("{name} absent")))
+        .map_err(WorthQueryApplicationInvariantError::from)?
+        .ok_or(WorthQueryApplicationInvariantError::MissingRequiredField { field: name })
 }

@@ -5,6 +5,8 @@
 mod custom_invariant_execution_receipt;
 #[path = "validation/invariant_plan.rs"]
 mod invariant_plan;
+mod proposal_candidate;
+mod proposal_completion;
 #[path = "validation/proposal_footprint/mod.rs"]
 mod proposal_footprint;
 #[path = "validation/proposal_identity.rs"]
@@ -28,6 +30,7 @@ pub use custom_invariant_execution_receipt::CustomInvariantExecutionReceipt;
 pub use proposal_footprint::{
     ValidatedMutationFootprint, ValidatedMutationFootprintNotRequested,
     ValidatedMutationFootprintProjection, ValidatedMutationFootprintWork,
+    ValidatedRelationMutation, ValidatedRelationMutationFootprint,
 };
 pub use proposal_identity::RelationalMutationProposalIdentity;
 pub use proposal_touches::{
@@ -43,6 +46,7 @@ use crate::schema::data::{ProposedSchemaTransition, SchemaReconciliationPolicy};
 
 #[derive(Debug)]
 pub(crate) struct RelationalTransactionValidationInput {
+    coupled_proposal: Option<RelationalMutationProposalIdentity>,
     content: crate::content::RelationalContentAttachments,
     basis: AdmittedRelationalBranchBasis,
     intent: crate::mvcc::RelationalTransactionIntent,
@@ -62,7 +66,8 @@ pub(crate) struct RelationalTransactionValidationInput {
 
 impl PartialEq for RelationalTransactionValidationInput {
     fn eq(&self, other: &Self) -> bool {
-        self.content.same_staging(&other.content)
+        self.coupled_proposal == other.coupled_proposal
+            && self.content.same_staging(&other.content)
             && self.basis == other.basis
             && self.intent == other.intent
             && self.merge_parent_bases == other.merge_parent_bases
@@ -90,6 +95,14 @@ impl RelationalTransactionValidationInput {
         transaction: &crate::mvcc::BranchBoundRelationalTransaction,
     ) -> Self {
         Self {
+            coupled_proposal: transaction.authored_coupling.as_ref().and_then(|binding| {
+                binding
+                    .applied
+                    .lock()
+                    .unwrap_or_else(|e| e.into_inner())
+                    .as_ref()
+                    .map(|candidate| candidate.identity.clone())
+            }),
             content: transaction.content.clone(),
             basis: transaction.basis.clone(),
             intent: transaction.intent.clone(),
@@ -110,6 +123,7 @@ impl RelationalTransactionValidationInput {
 
     pub(crate) fn for_owner_basis(basis: &AdmittedRelationalBranchBasis) -> Self {
         Self {
+            coupled_proposal: None,
             content: Default::default(),
             basis: basis.clone(),
             intent: crate::mvcc::RelationalTransactionIntent::ordinary(),
@@ -124,6 +138,10 @@ impl RelationalTransactionValidationInput {
             retention: None,
             control: crate::mvcc::RelationalOperationControl::uninterrupted(),
         }
+    }
+
+    pub(crate) fn coupled_proposal(&self) -> Option<&RelationalMutationProposalIdentity> {
+        self.coupled_proposal.as_ref()
     }
 
     pub(crate) fn with_recovered_content(

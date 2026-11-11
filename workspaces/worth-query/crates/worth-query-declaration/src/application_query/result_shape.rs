@@ -1,12 +1,8 @@
 use crate::application_query::ApplicationQueryResultFieldPresence;
 use std::marker::PhantomData;
 
+use crate::application_schema::ApplicationScalarValueBinding;
 use crate::application_schema::ApplicationStructuredValueBinding;
-use crate::application_schema::{
-    ApplicationFieldRef, ApplicationFieldUnit, ApplicationScalarValueBinding,
-    DeclaredApplicationFieldValue, EqualityCapable, EqualityPredicate,
-    OptionalApplicationFieldValue, RequiredApplicationFieldValue,
-};
 
 use super::{
     ApplicationQueryMarkerIdentity, ApplicationQueryOptionalResultFieldRef,
@@ -87,19 +83,26 @@ impl ApplicationQueryResultShape {
 
 pub struct TypedApplicationQueryResultShape<Schema, Query, Entity, Result, ShapeBinding> {
     shape: ApplicationQueryResultShape,
+    field_expectations: Vec<crate::application_schema::ApplicationFieldBindingRecipe>,
     _marker: PhantomData<fn() -> (Schema, Query, Entity, Result, ShapeBinding)>,
 }
 
 impl<Schema, Query, Entity, Result, ShapeBinding>
     TypedApplicationQueryResultShape<Schema, Query, Entity, Result, ShapeBinding>
 {
-    pub(crate) fn into_erased(self) -> ApplicationQueryResultShape {
-        self.shape
+    pub(crate) fn into_parts(
+        self,
+    ) -> (
+        ApplicationQueryResultShape,
+        Vec<crate::application_schema::ApplicationFieldBindingRecipe>,
+    ) {
+        (self.shape, self.field_expectations)
     }
 }
 
 pub struct ApplicationQueryResultShapeBuilder<Schema, Query, Entity, Result, ShapeBinding> {
     root_entity: &'static str,
+    field_expectations: Vec<crate::application_schema::ApplicationFieldBindingRecipe>,
     fields: Vec<ApplicationQueryResultField>,
     relations: Vec<ApplicationQueryResultRelation>,
     _marker: PhantomData<fn() -> (Schema, Query, Entity, Result, ShapeBinding)>,
@@ -113,33 +116,27 @@ where
     pub fn new(root: crate::application_schema::ApplicationEntityRef<Schema, Entity>) -> Self {
         Self {
             root_entity: root.name(),
+            field_expectations: Vec::new(),
             fields: Vec::new(),
             relations: Vec::new(),
             _marker: PhantomData,
         }
     }
 
-    pub fn field<Slot, Aspect, Field, Value, Write, Equality, Unit>(
+    pub fn field<Slot, Aspect, Field, Value>(
         mut self,
-        field: ApplicationQueryResultFieldRef<
-            Query,
-            Slot,
-            Schema,
-            Entity,
-            Aspect,
-            Field,
-            Value,
-            Write,
-            Equality,
-            Unit,
-        >,
+        field: ApplicationQueryResultFieldRef<Query, Slot, Schema, Field>,
     ) -> Self
     where
-        Field: RequiredApplicationFieldValue<Value = Value>,
-        Unit: ApplicationFieldUnit,
+        Field: crate::application_schema::fragment::RecordSelection<
+            Entity = Entity,
+            Aspect = Aspect,
+            Value = Value,
+        >,
         Query: ApplicationQueryMarkerIdentity<Schema>,
         Slot: WorthQueryPortableType,
     {
+        self.field_expectations.push(field.binding_recipe());
         self.fields
             .push(ApplicationQueryResultField::from_untrusted_parts(
                 WorthQueryPortableApplicationQueryResultFieldParts {
@@ -157,27 +154,20 @@ where
         self
     }
 
-    pub fn optional_field<Slot, Aspect, Field, Value, Write, Equality, Unit>(
+    pub fn optional_field<Slot, Aspect, Field, Value>(
         mut self,
-        field: ApplicationQueryOptionalResultFieldRef<
-            Query,
-            Slot,
-            Schema,
-            Entity,
-            Aspect,
-            Field,
-            Value,
-            Write,
-            Equality,
-            Unit,
-        >,
+        field: ApplicationQueryOptionalResultFieldRef<Query, Slot, Schema, Field>,
     ) -> Self
     where
-        Field: OptionalApplicationFieldValue<Value = Value>,
-        Unit: ApplicationFieldUnit,
+        Field: crate::application_schema::fragment::RecordSelection<
+            Entity = Entity,
+            Aspect = Aspect,
+            Value = Value,
+        >,
         Query: ApplicationQueryMarkerIdentity<Schema>,
         Slot: WorthQueryPortableType,
     {
+        self.field_expectations.push(field.binding_recipe());
         self.fields
             .push(ApplicationQueryResultField::from_untrusted_parts(
                 WorthQueryPortableApplicationQueryResultFieldParts {
@@ -233,6 +223,8 @@ where
         NestedBinding: ApplicationStructuredValueBinding<Value = NestedResult>,
         Slot: WorthQueryPortableType,
     {
+        let (nested_shape, nested_fields) = nested.build().into_parts();
+        self.field_expectations.extend(nested_fields);
         self.relations
             .push(ApplicationQueryResultRelation::from_untrusted_parts(
                 WorthQueryPortableApplicationQueryResultRelationParts {
@@ -245,7 +237,7 @@ where
                     output_name: relation.output_name().to_owned(),
                     cardinality: relation.cardinality(),
                     predicate: None,
-                    nested_shape: nested.build().into_erased(),
+                    nested_shape,
                 },
             ));
         self
@@ -261,11 +253,7 @@ where
         Cardinality,
         NestedResult,
         NestedBinding,
-        Aspect,
         Field,
-        Value,
-        Write,
-        Unit,
         Parameter,
         Binding,
     >(
@@ -287,16 +275,7 @@ where
             NestedResult,
             NestedBinding,
         >,
-        field: ApplicationFieldRef<
-            Schema,
-            Child,
-            Aspect,
-            Field,
-            Value,
-            Write,
-            EqualityPredicate,
-            Unit,
-        >,
+        field: Field,
         parameter: ApplicationQueryParameterRef<Query, Parameter, Binding>,
     ) -> Self
     where
@@ -306,11 +285,13 @@ where
         Query: ApplicationQueryMarkerIdentity<Schema>,
         NestedBinding: ApplicationStructuredValueBinding<Value = NestedResult>,
         Slot: WorthQueryPortableType,
-        Binding: ApplicationScalarValueBinding<Value = Value>,
-        Field: DeclaredApplicationFieldValue<Value = Value, Binding = Binding>,
-        Unit: ApplicationFieldUnit,
-        EqualityPredicate: EqualityCapable,
+        Binding: crate::application_schema::ApplicationReadableScalarValueBinding,
+        Field:
+            crate::application_schema::fragment::RecordSelection<Entity = Child, Binding = Binding>,
     {
+        self.field_expectations.push(field.expected_recipe());
+        let (nested_shape, nested_fields) = nested.build().into_parts();
+        self.field_expectations.extend(nested_fields);
         self.relations
             .push(ApplicationQueryResultRelation::from_untrusted_parts(
                 WorthQueryPortableApplicationQueryResultRelationParts {
@@ -327,9 +308,9 @@ where
                         field.aspect().to_owned(),
                         field.field().to_owned(),
                         parameter.name().to_owned(),
-                        field.scalar_family(),
+                        Binding::SCALAR_FAMILY,
                     )),
-                    nested_shape: nested.build().into_erased(),
+                    nested_shape,
                 },
             ));
         self
@@ -344,6 +325,7 @@ where
         self.fields.sort();
         self.relations.sort();
         TypedApplicationQueryResultShape {
+            field_expectations: self.field_expectations,
             shape: ApplicationQueryResultShape {
                 query_type: Query::QUERY_TYPE_IDENTITY,
                 root_entity: self.root_entity.to_owned(),

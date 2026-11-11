@@ -3,6 +3,7 @@ use crate::application::{
     WorthQueryDeclarationFamilyMarker, WorthQueryDeclarationInput, WorthQueryDomainEntryMarker,
     WorthQueryLowerAuthorityRouteFamily,
 };
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 
 use super::{
     artifact::{
@@ -37,10 +38,10 @@ pub(crate) fn worth_query_checked_declaration_relational_routing<
     I: WorthQueryDeclarationInput<D>,
 >(
     input: WorthQueryDeclarationRelationalRoutingInput<D, I>,
-) -> WorthQueryDeclarationRelationalRoutingChecked<D, I> {
-    match input {
+) -> Result<WorthQueryDeclarationRelationalRoutingChecked<D, I>, IdentityDerivationDenial> {
+    Ok(match input {
         WorthQueryDeclarationRelationalRoutingInput::EnvelopeChecked(checked) => {
-            worth_query_checked_declaration_relational_routing(lower_checked_input(checked))
+            worth_query_checked_declaration_relational_routing(lower_checked_input(checked))?
         }
         WorthQueryDeclarationRelationalRoutingInput::Enveloped(envelope) => route_enveloped(envelope),
         WorthQueryDeclarationRelationalRoutingInput::Deferred(envelope) => {
@@ -72,7 +73,7 @@ pub(crate) fn worth_query_checked_declaration_relational_routing<
                 ),
             )
         }
-    }
+    })
 }
 
 pub(crate) fn worth_query_checked_declaration_relational_routing_on_handle<
@@ -83,15 +84,15 @@ pub(crate) fn worth_query_checked_declaration_relational_routing_on_handle<
     operating_context_identity_digest: &str,
     support_status: WorthQueryDeclarationRelationalTruthRoutingSupportStatus,
     input: WorthQueryDeclarationRelationalRoutingInput<D, I>,
-) -> WorthQueryDeclarationRelationalRoutingChecked<D, I> {
-    match input {
+) -> Result<WorthQueryDeclarationRelationalRoutingChecked<D, I>, IdentityDerivationDenial> {
+    Ok(match input {
         WorthQueryDeclarationRelationalRoutingInput::EnvelopeChecked(checked) => {
             worth_query_checked_declaration_relational_routing_on_handle(
                 handle_identity_digest,
                 operating_context_identity_digest,
                 support_status,
                 lower_checked_input(checked),
-            )
+            )?
         }
         WorthQueryDeclarationRelationalRoutingInput::Enveloped(envelope) => {
             if !envelope_matches_handle(
@@ -99,7 +100,7 @@ pub(crate) fn worth_query_checked_declaration_relational_routing_on_handle<
                 operating_context_identity_digest,
                 &envelope,
             ) {
-                return WorthQueryDeclarationRelationalRoutingChecked::Denied(
+                return Ok(WorthQueryDeclarationRelationalRoutingChecked::Denied(
                     WorthQueryDeclarationRelationalRoutingDenied::new(
                         envelope,
                         I::Family::relational_truth_contract().map(|contract| contract.truth_claim()),
@@ -107,11 +108,11 @@ pub(crate) fn worth_query_checked_declaration_relational_routing_on_handle<
                             .map(|contract| contract.authority_family()),
                         WorthQueryDeclarationRelationalRoutingDenialCause::RelationalEnvelopeMismatch,
                     ),
-                );
+                ));
             }
             if support_status != WorthQueryDeclarationRelationalTruthRoutingSupportStatus::Admitted
             {
-                return WorthQueryDeclarationRelationalRoutingChecked::Denied(
+                return Ok(WorthQueryDeclarationRelationalRoutingChecked::Denied(
                     WorthQueryDeclarationRelationalRoutingDenied::new(
                         envelope,
                         I::Family::relational_truth_contract().map(|contract| contract.truth_claim()),
@@ -119,7 +120,7 @@ pub(crate) fn worth_query_checked_declaration_relational_routing_on_handle<
                             .map(|contract| contract.authority_family()),
                         WorthQueryDeclarationRelationalRoutingDenialCause::RelationalAuthorityUnavailable,
                     ),
-                );
+                ));
             }
             route_enveloped(envelope)
         }
@@ -129,11 +130,11 @@ pub(crate) fn worth_query_checked_declaration_relational_routing_on_handle<
                 operating_context_identity_digest,
                 &other,
             ) {
-                return deny_non_success_mismatch(other);
+                return Ok(deny_non_success_mismatch(other));
             }
-            worth_query_checked_declaration_relational_routing(other)
+            worth_query_checked_declaration_relational_routing(other)?
         }
-    }
+    })
 }
 
 fn route_enveloped<D: WorthQueryDomainEntryMarker, I: WorthQueryDeclarationInput<D>>(

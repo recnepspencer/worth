@@ -12,7 +12,10 @@ fn request_paid_selected_field_refresh_leaves_unrelated_cold_index_unpublished()
             index_id: DerivedIndexId(0),
             name: "unrelated-cold-field".into(),
             kind: DerivedIndexKind::EntityField {
-                field_locator: aspect_field_locator(aspect_key("name"), field_key("name")),
+                field_locator: aspect_field_locator(
+                    aspect_key("unrelated"),
+                    field_key("unrelated"),
+                ),
             },
             branch_scoped: true,
         })
@@ -123,6 +126,27 @@ fn request_paid_selected_field_refresh_leaves_unrelated_cold_index_unpublished()
         .snapshot_for_observation(&basis.observation())
         .unwrap();
     let changed = create_entity_outcome(execution, &runtime, "changed-field");
+    // Exercise explicit selected maintenance after a deliberate catalog loss.
+    // Native publication already maintained the head; reconstruct only its predecessor.
+    runtime
+        .index_authority()
+        .discard_generations(crate::indexes::data::DerivedIndexDiscardRequest::all_bases(
+            selected,
+        ))
+        .unwrap();
+    assert!(runtime
+        .index_authority()
+        .build_for_basis(
+            execution,
+            DerivedIndexBuildRequest {
+                source_commit_id: basis.observation().commit_id().unwrap(),
+                branch_id: BranchId("main".into()),
+                index_ids: vec![selected],
+            },
+            &basis
+        )
+        .failed_indexes
+        .is_empty());
     let (_, changed_basis) = runtime
         .observe_branch(&runtime.main_branch_identity())
         .unwrap();

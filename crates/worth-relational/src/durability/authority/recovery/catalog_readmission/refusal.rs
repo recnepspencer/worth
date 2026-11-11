@@ -13,6 +13,7 @@ pub enum RelationalHomeProgramCatalogReadmissionDenial {
     PredecessorMismatch,
     AssignmentCount,
     TargetCatalogMismatch,
+    TargetMeaning(crate::runtime::RelationalHomeProgramContractDenial),
     PrefixMismatch,
     ConfigurationChanged,
     CurrentHeadChanged,
@@ -53,6 +54,7 @@ impl RefusedRelationalHomeProgramCatalogReadmission {
                 | RelationalHomeProgramCatalogReadmissionDenial::PredecessorMismatch
                 | RelationalHomeProgramCatalogReadmissionDenial::AssignmentCount
                 | RelationalHomeProgramCatalogReadmissionDenial::TargetCatalogMismatch
+                | RelationalHomeProgramCatalogReadmissionDenial::TargetMeaning(_)
                 | RelationalHomeProgramCatalogReadmissionDenial::PrefixMismatch
                 | RelationalHomeProgramCatalogReadmissionDenial::ConfigurationChanged
                 | RelationalHomeProgramCatalogReadmissionDenial::CurrentHeadChanged

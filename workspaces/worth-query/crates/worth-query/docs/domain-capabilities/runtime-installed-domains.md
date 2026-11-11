@@ -478,11 +478,12 @@ a new handle.
 
 ## Current Limits
 
-- Installed graph-obligation identity work has a fixed 4,096-entry / 1 MiB
-  ceiling. Distinct aspect contracts count once per identity; their references,
-  projection masks and other scope facts also count. Exhaustion retains requested
-  and maximum counts through the operation denial's `canonical_denial()`.
-  See the [installation budget contract](../../../worth-query-installation/README.md#canonicality).
+- Graph-obligation and authorization identity allowances derive from admitted
+  declaration size, with factor 16 for canonical entries and bytes. Distinct
+  contracts count once and complete field masks once per projection. Package
+  validation owns the shared 64 MiB declaration ceiling and byte-derived entry
+  bound; typed refusals retain requested and maximum counts. See the
+  [factor proof](../../../worth-query-installation/README.md#derived-identity-bound).
 - Runtime installation occurs before runtime publication.
 - Runtime-local application-aftermath recovery does not imply Store-backed
   handle reload or restart recovery.

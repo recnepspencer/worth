@@ -16,6 +16,8 @@ pub use shape_cost::ReductionShapeCostDenial;
 mod memory;
 mod native;
 pub use native::NativeReductionTree;
+#[cfg(test)]
+mod canonical_cost;
 mod recombine;
 mod retained_run;
 mod scheduled;
@@ -23,6 +25,7 @@ mod staged;
 mod structural_span;
 mod value_storage;
 pub(crate) use retained_run::{RunRange, RunTree};
+use value_storage::Admitted;
 
 use edit::{contains, delete, insert, update};
 pub use memory::{ReductionEditMemoryBoundError, ReductionInsertMemoryBoundError};
@@ -33,8 +36,8 @@ pub(super) type Link<T> = Option<Arc<Node<T>>>;
 
 pub(super) struct Node<T> {
     pub(super) identity: PartitionIdentity,
-    pub(super) value: T,
-    pub(super) aggregate: T,
+    value: Admitted<T>,
+    aggregate: Admitted<T>,
     pub(super) left: Link<T>,
     pub(super) right: Link<T>,
     pub(super) retained_bytes: Option<u64>,
@@ -80,6 +83,8 @@ impl<E: ChargedBytes> ChargedBytes for ReductionRunFailure<E> {
 /// Retained Cartesian reduction tree. Edits stage immutable path copies and
 /// publish one root only after every combine and validation succeeds.
 ///
+/// Values retain their admitted canonical bytes through immutable path copies;
+/// only incoming values and actual combine outputs are encoded again.
 /// Cutoff is decided by canonical bits. The tree's value bound does not
 /// permit substituting `PartialEq`: comparing its values is error E0369.
 ///

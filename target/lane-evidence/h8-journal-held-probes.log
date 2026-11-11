@@ -1,0 +1,13 @@
+COMMAND: ["python", "target/lane-evidence/h8_blocker_probes.py"]
+HEAD: 5d41be299030a2e9d90dae61dfc36da9a86cb385
+CLEAN: false
+START: 2026-11-08T23:30:06.983113+00:00
+ENV: removed stale external linker override; RUST_MIN_STACK unset in parent
+{"command": ["git", "-C", "C:\\programming\\worth worktees\\worktrees\\m3-p3-lifecycle", "diff", "--quiet", "e787b51b3e", "--", "workspaces/worth-query/crates/worth-query-execution/src/facade/application_home_integration.rs"], "exit": 1, "stdout": "", "stderr": "warning: in the working copy of 'workspaces/worth-query/crates/worth-query-execution/src/facade/application_home_integration.rs', LF will be replaced by CRLF the next time Git touches it\n"}
+{"command": ["git", "-C", "C:\\programming\\worth worktees\\worktrees\\m3-p3-lifecycle", "status", "--porcelain", "--", "workspaces/worth-query/crates/worth-query-execution/src/facade/application_home_integration.rs"], "exit": 0, "stdout": " M workspaces/worth-query/crates/worth-query-execution/src/facade/application_home_integration.rs\n", "stderr": ""}
+{"command": ["git", "-C", "C:\\programming\\worth worktees\\worktrees\\m3-p3-lifecycle", "diff", "--quiet", "e787b51b3e", "--", "workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_runtime/home_retirement.rs"], "exit": 1, "stdout": "", "stderr": ""}
+{"command": ["git", "-C", "C:\\programming\\worth worktees\\worktrees\\m3-p3-lifecycle", "status", "--porcelain", "--", "workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_runtime/home_retirement.rs"], "exit": 0, "stdout": "", "stderr": ""}
+CONFIRMED: both required owners are held; no peer files mutated
+
+END: 2026-11-08T23:30:09.009006+00:00
+EXIT: 0

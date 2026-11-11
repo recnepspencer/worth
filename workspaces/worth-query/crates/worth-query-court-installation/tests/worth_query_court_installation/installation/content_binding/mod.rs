@@ -4,15 +4,12 @@ use worth_query_declaration::facade::application_schema::*;
 use worth_query_installation::facade::{
     WorthQueryInstallationAdmissionProfile, WorthQueryInstallationGeneration,
     WorthQueryInstallationRuntimeIdentity, WorthQueryInstalledApplicationSchema,
-    WorthQueryInstalledApplicationSchemaDenial,
-    WorthQueryInstalledApplicationSchemaDenialKind as Kind, WorthQueryInstalledPackageIndex,
+    WorthQueryInstalledApplicationSchemaDenial, WorthQueryInstalledPackageIndex,
     WorthQueryPortableDomainIdentity, WorthQueryPortableDomainPackage,
 };
 pub(crate) mod codec;
 use codec::{Good, Impostor};
-trait Model: ApplicationSchema {}
 struct Schema<const MODE: u8>;
-impl<const MODE: u8> Model for Schema<MODE> {}
 impl<const MODE: u8> ApplicationSchema for Schema<MODE> {
     const OWNER: &'static str = "content.installation.tests";
     const NAME: &'static str = "ContentSchema";
@@ -20,31 +17,60 @@ impl<const MODE: u8> ApplicationSchema for Schema<MODE> {
     const MINOR: u32 = 0;
     fn declaration(
     ) -> Result<ApplicationSchemaDeclaration<Self>, ApplicationSchemaDeclarationDenial> {
-        let builder = ApplicationSchemaDeclarationBuilder::<Self>::for_schema()
-            .entity(Entity::reference())
-            .aspect(Entity::reference(), Samples::reference());
-        let builder = if MODE == 2 {
-            builder
-        } else {
-            builder.content_format::<Good>()
-        };
-        let builder = if MODE == 1 {
-            builder.content_field(
-                Entity::reference(),
-                content_field(Values::reference(), Impostor),
-            )
-        } else {
-            builder.content_field(
-                Entity::reference(),
-                content_field(Values::reference(), Good),
-            )
-        };
-        builder.build()
+        ApplicationSchemaDeclarationBuilder::<Self>::from_fragment(ContentRecords::<MODE>)?.build()
     }
 }
-worth_query_declaration::worth_query_entity!(Entity for S:Model);
-worth_query_declaration::worth_query_aspect!(Samples for S:Model,Entity; identity=AspectIdentity(3131),revision=AspectContractRevision(1));
-worth_query_declaration::worth_query_field!(Values for S:Model,Entity,Samples:ContentRefId=>ContentRefApplicationValueBinding,read_write,no_equality);
+use worth_query_declaration::facade::application_schema::fragment::{self, *};
+struct ContentRecords<const MODE: u8>;
+impl<const MODE: u8> Fragment for ContentRecords<MODE> {
+    const NAME: &'static str = "content_records";
+    type Bindings = ContentBindings<MODE>;
+    type Members = (Entity,);
+}
+struct ContentBindings<const MODE: u8>;
+impl<const MODE: u8> BindingSet for ContentBindings<MODE> {
+    type Work<'a> = ValueDecodeAdmission<'a>;
+    fn with_admission<T>(
+        work: &mut Self::Work<'_>,
+        run: impl FnOnce(&mut ValueDecodeAdmission<'_>) -> T,
+    ) -> T {
+        run(work)
+    }
+}
+impl<const MODE: u8> Scalar<ContentRefId> for ContentBindings<MODE> {
+    type Binding = ContentRefApplicationValueBinding;
+    fn content_format() -> Option<ApplicationContentBindingRecipe> {
+        if MODE == 2 {
+            None
+        } else if MODE == 1 {
+            Some(ApplicationContentBindingRecipe::of::<Impostor>())
+        } else {
+            Some(ApplicationContentBindingRecipe::of::<Good>())
+        }
+    }
+}
+struct Entity;
+impl fragment::Entity for Entity {
+    const NAME: &'static str = "Entity";
+    type Aspects = (Samples,);
+    type Relations = ();
+}
+struct Samples;
+impl Aspect for Samples {
+    const NAME: &'static str = "Samples";
+    type Row = SampleValue;
+}
+struct SampleValue(ContentRefId);
+impl<const MODE: u8> fragment::Record<SampleValue> for ContentBindings<MODE> {
+    fn record() -> impl Shape<SampleValue, Self> {
+        field("Values", |row: &SampleValue| row.0).build(
+            |value, _: &mut ValueDecodeAdmission<'_>| {
+                Ok::<_, std::convert::Infallible>(SampleValue(value))
+            },
+        )
+    }
+}
+type Values = FieldSelection<ContentRecords<0>, Entity, Samples, ContentRefId>;
 fn bind<const MODE: u8>() -> Result<
     WorthQueryInstalledApplicationSchema<Schema<MODE>>,
     WorthQueryInstalledApplicationSchemaDenial,
@@ -55,7 +81,7 @@ fn bind<const MODE: u8>() -> Result<
         1,
         0,
     ))
-    .application_schema(declaration.clone())
+    .application_schema(Schema::<0>::declaration().unwrap())
     .validate()
     .unwrap();
     let admitted = WorthQueryInstallationAdmissionProfile::new("support", "configuration")
@@ -74,7 +100,7 @@ fn content_installed_recipe_matches_the_actual_field_type_and_full_meaning_alias
     let installed = bind::<0>().unwrap();
     let binding = installed
         .value_bindings()
-        .field("Entity", "Samples", "Values")
+        .field("Entity", Values::at("Values").aspect(), "Values")
         .unwrap();
     assert!(binding.matches_content::<Good>());
     assert!(!binding.matches_content::<Impostor>());
@@ -95,16 +121,27 @@ fn content_installed_recipe_matches_the_actual_field_type_and_full_meaning_alias
     assert_ne!(binding.content_codec(), Some(Good::IDENTITY));
 }
 #[test]
-fn content_equal_descriptors_do_not_certify_a_foreign_field_binding_type() {
-    let denied = match bind::<1>() {
-        Ok(_) => panic!("a foreign typed field recipe installed"),
-        Err(cause) => cause,
-    };
-    assert_eq!(denied.kind(), Kind::ContentFormatMismatch);
+fn content_binding_set_owns_its_codec_even_when_descriptors_are_equal() {
+    let installed = bind::<1>().unwrap();
+    let binding = installed
+        .value_bindings()
+        .field("Entity", Values::at("Values").aspect(), "Values")
+        .unwrap();
+    assert!(binding.matches_content::<Impostor>());
+    assert!(!binding.matches_content::<Good>());
 }
 #[test]
 fn content_reference_without_a_declared_format_opens_no_installation_door() {
-    let denied = Schema::<2>::declaration().unwrap_err();
+    let declaration = Schema::<0>::declaration().unwrap();
+    let mut parts =
+        WorthQueryPortableApplicationSchemaRecord::project(declaration.erased()).into_parts();
+    parts
+        .members
+        .retain(|member| !matches!(member, ApplicationSchemaMember::ContentFormat { .. }));
+    let denied = validate_portable_application_schema_freshly(
+        WorthQueryPortableApplicationSchemaRecord::from_untrusted_parts(parts),
+    )
+    .unwrap_err();
     assert_eq!(
         denied,
         ApplicationSchemaDeclarationDenial::MissingContentFormat

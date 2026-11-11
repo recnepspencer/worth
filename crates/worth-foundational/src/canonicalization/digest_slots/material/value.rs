@@ -175,11 +175,7 @@ pub fn write_struct_aspect_value_identity_material<S: CanonicalMaterialSink>(
     material: &mut S,
 ) -> Result<(), S::Error> {
     append_token(material, "value.kind", "struct")?;
-    append_u64(
-        material,
-        "value.struct.field-count",
-        value.fields().count() as u64,
-    )?;
+    append_u64(material, "value.struct.field-count", value.len() as u64)?;
     for (field_key, field_value) in value.fields() {
         append_token(material, "value.struct.field", field_key.as_str())?;
         write_aspect_value_identity_material(field_value, material)?;

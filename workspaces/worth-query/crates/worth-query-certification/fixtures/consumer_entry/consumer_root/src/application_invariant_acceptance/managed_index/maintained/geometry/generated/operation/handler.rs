@@ -8,9 +8,12 @@ impl OperationHandler<Catalog, Binding> for Handler {
         reader: &mut DecisionReader<'_, '_, '_, Catalog, Binding>,
     ) -> HandlerResult<Decision, Denial> {
         HandlerResult::from_result((|| {
-            let a =
-                reader.resolve_entity(DirectoryIdentity::reference(), input.directory.clone())?;
-            let b = reader.resolve_entity(DirectoryIdentity::reference(), "B".to_owned())?;
+            let a = reader.resolve_entity(
+                DirectoryIdentity::at("DirectoryIdentity"),
+                input.directory.clone(),
+            )?;
+            let b = reader
+                .resolve_entity(DirectoryIdentity::at("DirectoryIdentity"), "B".to_owned())?;
             Ok(Decision {
                 a: reader.mutation_target(&a)?,
                 b: reader.mutation_target(&b)?,
@@ -48,12 +51,16 @@ impl OperationHandler<Catalog, Binding> for Handler {
                 [(&start, "generated-start", 0), (&end, "generated-end", 10)]
             {
                 writer
-                    .initialize_field(vertex, VertexIdentity::reference(), identity.to_owned())
+                    .initialize_field(
+                        vertex,
+                        VertexIdentity::at("VertexIdentity"),
+                        identity.to_owned(),
+                    )
                     .map_err(HandlerExecutionDenial::new)?;
                 writer
                     .initialize_field(
                         vertex,
-                        VertexRegion::reference(),
+                        VertexRegion::at("VertexRegion"),
                         super::super::super::super::bounds::Coordinates::new(x, 0, x, 0),
                     )
                     .map_err(HandlerExecutionDenial::new)?;
@@ -68,7 +75,7 @@ impl OperationHandler<Catalog, Binding> for Handler {
             writer
                 .initialize_field(
                     &edge,
-                    EdgeIdentity::reference(),
+                    EdgeIdentity::at("EdgeIdentity"),
                     "generated-edge".to_owned(),
                 )
                 .map_err(HandlerExecutionDenial::new)?;

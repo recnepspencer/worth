@@ -97,6 +97,7 @@ pub(super) fn stopped(
             | Kind::ProgramNotActiveOnOccurrence { .. }
             | Kind::ProgramSupportRetired
             | Kind::ProgramActivationUnresolved
+            | Kind::StaleIncarnation
             | Kind::CorrectionContextMismatch
             | Kind::CorrectionIdentityMismatch,
         ) => failed(identity, detail),

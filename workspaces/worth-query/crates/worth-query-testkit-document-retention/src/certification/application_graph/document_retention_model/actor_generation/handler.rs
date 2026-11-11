@@ -52,7 +52,8 @@ pub fn observe(
     input: &ActorLifecycleInput,
     reader: &mut DecisionReader<'_, '_, '_, DocumentRetentionSchema, ActorLifecycleBinding>,
 ) -> Result<Option<Targets>, HandlerExecutionDenial> {
-    let actor = reader.resolve_optional_entity(PrincipalIdentityField::reference(), 1_u64)?;
+    let actor = reader
+        .resolve_optional_entity(PrincipalIdentityField::at("PrincipalIdentityField"), 1_u64)?;
     if input.restore == actor.is_some() {
         return Ok(None);
     }
@@ -64,10 +65,12 @@ pub fn observe(
             .require_decision_entity(actor, Principal::reference())
             .map_err(HandlerExecutionDenial::new)?;
     }
-    let document =
-        reader.resolve_entity(DocumentIdentityField::reference(), input.identity.clone())?;
+    let document = reader.resolve_entity(
+        DocumentIdentityField::at("DocumentIdentityField"),
+        input.identity.clone(),
+    )?;
     let mapping = reader.resolve_entity(
-        ExternalIdentityField::reference(),
+        ExternalIdentityField::at("ExternalIdentityField"),
         super::super::operator_identity::operator_identity(),
     )?;
     // The mapping replacement must carry the actual observed field preimage
@@ -77,7 +80,9 @@ pub fn observe(
     } else {
         worth_query_decl::facade::authentication::WorthQueryPrincipalMappingStatus::Enabled
     };
-    if reader.field(&mapping, MappingStatusField::reference())? != Some(expected_status) {
+    if reader.field(&mapping, MappingStatusField::at("MappingStatusField"))?
+        != Some(expected_status)
+    {
         return Ok(None);
     }
     let mut grants = Vec::new();
@@ -87,8 +92,10 @@ pub fn observe(
         "workflow-advance-grant",
         "workflow-approval-grant",
     ] {
-        let grant =
-            reader.resolve_entity(WorkflowGrantIdentityField::reference(), key.to_owned())?;
+        let grant = reader.resolve_entity(
+            WorkflowGrantIdentityField::at("WorkflowGrantIdentityField"),
+            key.to_owned().into(),
+        )?;
         if let Some(actor) = &actor {
             reader
                 .reader()

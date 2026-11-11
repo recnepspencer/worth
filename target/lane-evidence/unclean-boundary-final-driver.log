@@ -1,0 +1,23 @@
+COMMAND: ["python", "target/lane-evidence/pa_merge_owned_cargo.py", "unclean-boundary-final", "tools/boundary-check/Cargo.toml", "run", "--target-dir", "target/constitution-tools", "--", "--root", "."]
+HEAD: 7e2a7b85ff02fa253c1d99649625fa666f90e306
+CLEAN: false
+START: 2026-11-08T17:01:30.122482+00:00
+ENV: removed stale external linker override; RUST_MIN_STACK unset in parent
+prebuild: cargo build --message-format=json --target-dir "C:\programming\worth worktees\worktrees\m3-host-home\target\constitution-tools" --manifest-path "C:\programming\worth worktees\worktrees\m3-host-home\tools\boundary-check\Cargo.toml" --unit-graph -Z unstable-options
+prebuild: cargo run --message-format=json --target-dir "C:\programming\worth worktees\worktrees\m3-host-home\target\constitution-tools" --manifest-path "C:\programming\worth worktees\worktrees\m3-host-home\tools\boundary-check\Cargo.toml" -- --root .
+    Finished `dev` profile [unoptimized] target(s) in 0.03s
+     Running `target\constitution-tools\debug\boundary-check.exe --root .`
+BC7013_CERTIFICATION_CONSTRUCTION_SEAL workspaces/worth-store/crates/worth-store-application/src/open/readmission/unclean/relational.rs: factory `discover_recovered_associated_effects` requires its owner or an exact caller
+belongs: tools/boundary-check/config/certification-construction-callers.txt; sealed construction references belong only to owners and the closed caller paths
+BC7013_CERTIFICATION_CONSTRUCTION_SEAL workspaces/worth-store/crates/worth-store-application/src/open/readmission/unclean/relational.rs: factory `world_recovery_authority` requires its owner or an exact caller
+belongs: tools/boundary-check/config/certification-construction-callers.txt; sealed construction references belong only to owners and the closed caller paths
+BC9002_TEST_TOPOLOGY crates/worth-relational/src/tests/durability/medium/cold_source.rs::file: {"source":"crates/worth-relational/src/tests/durability/medium/cold_source.rs","module":"file","roots":["ExecutionRequest"]}
+belongs: docs/coding-guidelines/iteration_laws.md; plans/database-foundation/test-convention.md; tools/boundary-check/config/test-workspaces.txt; src-court-baseline.json records existing source courts
+BC9002_TEST_TOPOLOGY crates/worth-relational/src/tests/durability/medium/cold_source/protected_reads.rs::file: {"source":"crates/worth-relational/src/tests/durability/medium/cold_source/protected_reads.rs","module":"file","roots":["ExecutionRequest"]}
+belongs: docs/coding-guidelines/iteration_laws.md; plans/database-foundation/test-convention.md; tools/boundary-check/config/test-workspaces.txt; src-court-baseline.json records existing source courts
+BC9002_TEST_TOPOLOGY crates/worth-relational/src/tests/support/durable_medium/runtime_attachment.rs::file: {"source":"crates/worth-relational/src/tests/support/durable_medium/runtime_attachment.rs","module":"file","roots":["ExecutionRequest","RelationalRuntime"]}
+belongs: docs/coding-guidelines/iteration_laws.md; plans/database-foundation/test-convention.md; tools/boundary-check/config/test-workspaces.txt; src-court-baseline.json records existing source courts
+error: process didn't exit successfully: `target\constitution-tools\debug\boundary-check.exe --root .` (exit code: 1)
+
+END: 2026-11-08T17:02:01.878468+00:00
+EXIT: 1

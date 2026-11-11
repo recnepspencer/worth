@@ -10,7 +10,12 @@ pub fn certification_semantic_denial(
     code: &str,
     symbols: &[&str],
 ) -> Result<(), CompilerFixtureRefusal> {
-    check_path(path.as_ref(), RequiredDiagnostic::Code(code), symbols)
+    check_path(
+        path.as_ref(),
+        RequiredDiagnostic::Code(code),
+        symbols,
+        CompilerEnvironment::Certification,
+    )
 }
 
 /// Require an explicitly uncoded certification/check error whose semantic cause
@@ -24,7 +29,36 @@ pub fn certification_uncoded_semantic_denial(
         path.as_ref(),
         RequiredDiagnostic::ExplicitNullCause(cause),
         symbols,
+        CompilerEnvironment::Certification,
     )
+}
+
+/// Require a denial in the ordinary production dependency graph.
+pub fn production_semantic_denial(
+    path: impl AsRef<Path>,
+    code: &str,
+    symbols: &[&str],
+) -> Result<(), CompilerFixtureRefusal> {
+    check_path(
+        path.as_ref(),
+        RequiredDiagnostic::Code(code),
+        symbols,
+        CompilerEnvironment::Production,
+    )
+}
+
+#[derive(Clone, Copy)]
+pub(crate) enum CompilerEnvironment {
+    Production,
+    Certification,
+}
+impl CompilerEnvironment {
+    fn name(self) -> &'static str {
+        match self {
+            Self::Production => "production",
+            Self::Certification => "certification",
+        }
+    }
 }
 
 #[derive(Clone, Copy)]
@@ -37,6 +71,7 @@ fn check_path(
     path: &Path,
     required: RequiredDiagnostic<'_>,
     symbols: &[&str],
+    environment: CompilerEnvironment,
 ) -> Result<(), CompilerFixtureRefusal> {
     let outcomes = session::outcomes()?;
     let source = path
@@ -45,22 +80,40 @@ fn check_path(
             path: path.to_path_buf(),
             reason: error.to_string(),
         })?;
-    check_semantic_outcome(
+    check_semantic_in_environment(
         &source,
         session::fixture(outcomes, &source)?,
         required,
         symbols,
+        environment,
     )
 }
 
+#[cfg(test)]
 pub(crate) fn check_semantic_outcome(
     source: &Path,
     outcome: &serde_json::Value,
     required: RequiredDiagnostic<'_>,
     symbols: &[&str],
 ) -> Result<(), CompilerFixtureRefusal> {
+    check_semantic_in_environment(
+        source,
+        outcome,
+        required,
+        symbols,
+        CompilerEnvironment::Certification,
+    )
+}
+
+pub(crate) fn check_semantic_in_environment(
+    source: &Path,
+    outcome: &serde_json::Value,
+    required: RequiredDiagnostic<'_>,
+    symbols: &[&str],
+    environment: CompilerEnvironment,
+) -> Result<(), CompilerFixtureRefusal> {
     validate_requirement(required, symbols)?;
-    let errors = semantic_errors(source, outcome, RequiredEnvironment::Certification)?;
+    let errors = semantic_errors(source, outcome, environment)?;
     if !errors
         .iter()
         .any(|message| matches_error(message, source, required, symbols))
@@ -106,10 +159,10 @@ pub(crate) fn validate_requirement(
 pub(crate) fn semantic_errors<'a>(
     source: &Path,
     outcome: &'a serde_json::Value,
-    required: RequiredEnvironment,
+    environment: CompilerEnvironment,
 ) -> Result<Vec<&'a serde_json::Value>, CompilerFixtureRefusal> {
-    let messages = denied_messages(source, outcome, required)?;
-    validate_semantic_observation(outcome, messages, required)?;
+    let messages = denied_messages(source, outcome, RequiredEnvironment::Any)?;
+    validate_semantic_observation(outcome, messages, environment)?;
     let mut errors = Vec::new();
     for message in messages.iter().filter(|message| {
         message["level"] == "error" && !crate::driver_summary::is_abort_summary(message)
@@ -165,7 +218,7 @@ fn requirement_name(required: RequiredDiagnostic<'_>) -> String {
 fn validate_semantic_observation(
     outcome: &serde_json::Value,
     messages: &[serde_json::Value],
-    required: RequiredEnvironment,
+    environment: CompilerEnvironment,
 ) -> Result<(), CompilerFixtureRefusal> {
     let fields = [
         "environment",
@@ -187,18 +240,10 @@ fn validate_semantic_observation(
             "unknown semantic observation field".into(),
         ));
     }
-    let environment = match required {
-        RequiredEnvironment::Certification => "certification",
-        RequiredEnvironment::Production => "production",
-        RequiredEnvironment::Any => {
-            return Err(CompilerFixtureRefusal::InvalidPrebuild(
-                "semantic denial requires an explicit compiler environment".into(),
-            ))
-        }
-    };
-    if outcome["environment"] != environment || outcome["proof_stage"] != "check" {
+    if outcome["environment"] != environment.name() || outcome["proof_stage"] != "check" {
         return Err(CompilerFixtureRefusal::InvalidPrebuild(format!(
-            "semantic denial requires {environment}/check evidence"
+            "semantic denial requires {}/check evidence",
+            environment.name()
         )));
     }
     for message in messages {

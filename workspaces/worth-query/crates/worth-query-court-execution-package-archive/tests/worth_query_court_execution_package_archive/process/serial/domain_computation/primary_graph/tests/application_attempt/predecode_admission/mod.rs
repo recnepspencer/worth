@@ -13,12 +13,13 @@ fn installed_handler_reader_admits_actual_raw_scalar_and_uses_declared_decoder()
                     let scope = reader.scope().clone();
                     reader.field_with_predecode_admission(
                         &scope,
-                        AccountStatus::reference(),
+                        AccountStatus::at("AccountStatus"),
                         |raw, check| {
                             check().unwrap();
-                            let AspectValue::String(InternedString::Raw(text)) = raw else {
+                            let AspectValue::String(text) = raw else {
                                 panic!("actual native string carrier expected")
                             };
+                            let text = text.raw_text().expect("native scalar text");
                             assert_eq!(text, "open");
                             assert_eq!(raw.semantic_byte_width(), 5);
                             assert!(raw.owned_allocation_capacity_bytes() >= text.len());
@@ -47,7 +48,7 @@ fn actual_admission_denial_is_preserved_without_a_decoded_value() {
                     let scope = reader.scope().clone();
                     reader.field_with_predecode_admission(
                         &scope,
-                        AccountStatus::reference(),
+                        AccountStatus::at("AccountStatus"),
                         |raw, _| Err(OwnerDenied(raw.semantic_byte_width())),
                     )
                 })
@@ -123,11 +124,12 @@ fn large_carrier_denial_allocates_only_projection_metadata_before_decoder() {
                         let region = stats_alloc::Region::new(&stats_alloc::INSTRUMENTED_SYSTEM);
                         let result = reader.decision_field_with_predecode_admission_for_test(
                             scope,
-                            AccountLabel::reference(),
+                            AccountLabel::at("AccountLabel"),
                             |raw, _| {
-                                let AspectValue::String(InternedString::Raw(actual)) = raw else {
+                                let AspectValue::String(actual) = raw else {
                                     panic!("actual label carrier expected")
                                 };
+                                let actual = actual.raw_text().expect("native label text");
                                 assert_eq!(actual.len(), payload.len());
                                 Err::<(), _>("owner-work-limit")
                             },
@@ -213,7 +215,7 @@ fn undeclared_and_foreign_reads_deny_before_raw_callback() {
                     &phase,
                     |reader| {
                         reader
-                            .resolve_entity(AccountStatus::reference(), "open".into())
+                            .resolve_entity(AccountStatus::at("AccountStatus"), "open".into())
                             .unwrap()
                     },
                     worth_execution::ExecutionAllocationPolicy::SystemAllocation,
@@ -230,7 +232,7 @@ fn undeclared_and_foreign_reads_deny_before_raw_callback() {
                 crate::domain_computation::primary_graph::tests::application_attempt::predecode_admission::projection::with_reader(&phase, &world, &request, |reader| {
                     reader.field_with_predecode_admission(
                         &foreign,
-                        AccountStatus::reference(),
+                        AccountStatus::at("AccountStatus"),
                         |_, _| {
                             called.set(true);
                             Ok::<_, ()>(())
@@ -257,7 +259,7 @@ fn undeclared_and_foreign_reads_deny_before_raw_callback() {
                     // ProgramRequiredOperation declares only AccountStatus, not AccountLabel.
                     reader.field_with_predecode_admission(
                         &scope,
-                        AccountLabel::reference(),
+                        AccountLabel::at("AccountLabel"),
                         |_, _| {
                             called.set(true);
                             Ok::<_, ()>(())

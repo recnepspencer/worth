@@ -5,8 +5,8 @@ use super::super::{
 };
 use super::*;
 use worth_relational::facade::runtime::RelationalAdjacencyDirection;
-pub(super) fn advance<E>(
-    basis: &RootPathReadBasis<'_, '_, '_>,
+pub(super) fn advance<E, Phase>(
+    basis: &RootPathReadBasis<'_, '_, '_, Phase>,
     layout: &WorthQueryPrimaryRelationLayout,
     located: PathStep<'_>,
     frontier: &mut Frontier,

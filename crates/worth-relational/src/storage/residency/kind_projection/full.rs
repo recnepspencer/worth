@@ -1,10 +1,12 @@
-//! Full-only kind projection with numeric, intrinsically admitted incidence rows.
+//! Full-only normalization with numeric, intrinsically admitted incidence rows.
 use crate::identity::data::{KindId, RelationId};
 use crate::storage::overlay::PartitionState;
 use crate::storage::partition::AdjacencyKindBasis;
 use crate::storage::residency::RegionContentFailure as Failure;
-use crate::storage::substrate::SharedMap;
+use crate::storage::substrate::{RelationEndpoints, SharedMap};
 use worth_execution::ExecutionRequest;
+
+mod commitment;
 
 type Incidence = (RelationId, bool, usize);
 
@@ -45,6 +47,7 @@ impl FullKindProjection {
     }
 
     pub(in crate::storage::residency) fn capture(
+        _lane: &crate::storage::substrate::maintenance::ReconstructionLane<'_>,
         partition: &PartitionState,
         basis: AdjacencyKindBasis,
         request: &ExecutionRequest<'_, '_>,
@@ -64,5 +67,127 @@ impl FullKindProjection {
             }
         }
         Ok(result)
+    }
+
+    pub(in crate::storage::residency) fn normalize(
+        lane: &crate::storage::substrate::maintenance::ReconstructionLane<'_>,
+        partition: &mut PartitionState,
+        request: &ExecutionRequest<'_, '_>,
+    ) -> Result<Self, Failure> {
+        // Validate ALL supplied kind claims before discarding owned history,
+        // exactly as ordinary canonical_history does before its peer filter.
+        let supplied = Self::capture(lane, partition, AdjacencyKindBasis::Historical, request)?;
+        let mut expected = Self::default();
+        for (&(relation, incoming, slot), &kind) in supplied.rows.iter() {
+            if relation.partition_id != partition.partition_id {
+                expected.insert(relation, KindId(kind), incoming, slot, request)?;
+            }
+        }
+        drop(supplied);
+        for slot in partition.relation_arena.occupied_slots_iter() {
+            request
+                .consult()
+                .map_err(|cause| Failure::Execution(cause.into()))?;
+            for metadata in partition
+                .relation_arena
+                .metadata_history_at(slot)
+                .into_iter()
+                .flatten()
+            {
+                expected.add_owned(
+                    partition,
+                    RelationId::new(partition.partition_id, slot as u64, metadata.generation),
+                    metadata.kind_id,
+                    &metadata.endpoints,
+                    request,
+                )?;
+            }
+            if let Some(view) = partition.relation_arena.get_slot(slot)
+                && let (Some(kind), Some(endpoints)) =
+                    (view.kind_id(), view.extra().endpoints.as_ref())
+            {
+                expected.add_owned(
+                    partition,
+                    RelationId::new(partition.partition_id, slot as u64, view.generation()),
+                    kind,
+                    endpoints,
+                    request,
+                )?;
+            }
+        }
+        expected.install(partition, request)?;
+        Ok(expected)
+    }
+
+    fn add_owned(
+        &mut self,
+        partition: &PartitionState,
+        relation: RelationId,
+        kind: KindId,
+        endpoints: &RelationEndpoints,
+        request: &ExecutionRequest<'_, '_>,
+    ) -> Result<(), Failure> {
+        if let Some((key, prior)) = self.rows.lower_bound(&(relation, false, 0))
+            && key.0 == relation
+            && *prior != kind.0
+        {
+            return Err(Failure::Adjacency);
+        }
+        if endpoints.source.partition_id == partition.partition_id
+            && partition
+                .adjacency
+                .get(endpoints.source.slot_index())
+                .is_some()
+        {
+            self.insert(
+                relation,
+                kind,
+                false,
+                endpoints.source.slot_index(),
+                request,
+            )?;
+        }
+        if endpoints.target.partition_id == partition.partition_id
+            && partition
+                .reverse_adjacency
+                .get(endpoints.target.slot_index())
+                .is_some()
+        {
+            self.insert(relation, kind, true, endpoints.target.slot_index(), request)?;
+        }
+        Ok(())
+    }
+
+    fn install(
+        &self,
+        partition: &mut PartitionState,
+        request: &ExecutionRequest<'_, '_>,
+    ) -> Result<(), Failure> {
+        for (incoming, table) in [
+            (false, &mut partition.adjacency),
+            (true, &mut partition.reverse_adjacency),
+        ] {
+            let original = table.clone();
+            for (&slot, _) in original.iter() {
+                let adjacency = table
+                    .get_mut_for_request(slot, request)
+                    .map_err(Failure::Execution)?
+                    .ok_or(Failure::Adjacency)?;
+                adjacency.reset_historical_kind_buckets_with_custody(None);
+            }
+            for (&(relation, side, slot), &kind) in self.rows.iter() {
+                if side != incoming {
+                    continue;
+                }
+                let adjacency = table
+                    .get_mut_for_request(slot, request)
+                    .map_err(Failure::Execution)?
+                    .ok_or(Failure::Adjacency)?;
+                adjacency
+                    .index_historical_kind_for_request(KindId(kind), relation, request)
+                    .map_err(Failure::Execution)?;
+            }
+        }
+        Ok(())
     }
 }

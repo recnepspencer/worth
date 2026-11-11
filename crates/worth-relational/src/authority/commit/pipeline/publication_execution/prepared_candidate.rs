@@ -1,8 +1,17 @@
 //! Read and consume the same funded, prepared publication candidate.
 use super::{PreparedCommitPublicationCompletion, PreparedCommitPublicationExecution};
 impl PreparedCommitPublicationExecution {
-    pub(crate) fn candidate_symbols(&self) -> crate::runtime::RuntimeSymbolTable {
-        self.publication.value().candidate_symbols.clone()
+    pub(crate) fn canonical_envelope(
+        &self,
+    ) -> &std::sync::Arc<crate::history::data::CanonicalCommitEnvelope> {
+        self.publication.value().canonical_envelope()
+    }
+    pub(crate) fn owned_graph_selection_model(&self) -> Option<crate::identity::data::EntityId> {
+        self.admitted
+            .value()
+            .semantic_plan()
+            .graph_selection()
+            .map(|graph| graph.model())
     }
 
     pub(crate) fn caller_association(&self) -> Option<crate::mvcc::RelationalCallerAssociation> {
@@ -47,6 +56,27 @@ impl PreparedCommitPublicationExecution {
         &self,
     ) -> Option<&std::sync::Arc<crate::runtime::AdmittedRelationalHomeProgramStep>> {
         self.admitted.value().validation_input().home_step()
+    }
+
+    pub(crate) fn home_index_definitions(
+        &self,
+    ) -> Option<std::sync::Arc<crate::runtime::PreparedRelationalIndexDefinitions>> {
+        self.admitted
+            .value()
+            .validation_input()
+            .home_target()
+            .and_then(|target| target.index_definitions.clone())
+    }
+
+    pub(crate) fn covers_home_definitions(
+        &self,
+        definitions: &crate::runtime::PreparedRelationalIndexDefinitions,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> Result<bool, worth_execution::WorkCeilingDenial> {
+        match &self.prepared_indexes {
+            Some(prepared) => prepared.covers_home_definitions(definitions, execution),
+            None => Ok(false),
+        }
     }
 
     pub(crate) fn has_prepared_indexes(&self) -> bool {

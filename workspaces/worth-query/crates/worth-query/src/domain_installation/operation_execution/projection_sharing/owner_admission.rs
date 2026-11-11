@@ -122,3 +122,6 @@ impl WorthQueryAdmittedProjectionSharing {
             }
     }
 }
+#[cfg(test)]
+#[path = "owner_admission_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;

@@ -1,7 +1,6 @@
 use worth_query_decl::facade::application_query::{
-    ApplicationQueryBasisSupport, ApplicationQueryCardinality, ApplicationQueryDefinition,
-    ApplicationQueryDefinitionBuilder, ApplicationQueryDisclosureContract,
-    ApplicationQueryLaneEligibility,
+    ApplicationQueryBasisSupport, ApplicationQueryCardinality, ApplicationQueryDefinitionBuilder,
+    ApplicationQueryDisclosureContract, ApplicationQueryLaneEligibility,
 };
 use worth_query_decl::facade::worth_query_application_query;
 
@@ -54,16 +53,14 @@ worth_query_decl::facade::worth_query_query_binding!(
     result EstateCaseOverviewQueryResultBinding,
     principal crate::schema::BankPrincipalBinding, mapping crate::schema::ExternalPrincipalMapping, principal_entity crate::schema::Principal,
         principal_identity crate::model::BankPrincipalId, identity_binding crate::schema::BankPrincipalIdBinding,
-    scope EstateCase, crate::schema::EstateCaseRecord, crate::schema::EstateCaseIdentityField,
-        EstateCaseId, worth_query_decl::facade::application_schema::ReadOnly,
-        worth_query_decl::facade::application_schema::NoApplicationUnit,
-    field crate::schema::EstateCaseIdentityField::reference(),
+    scope crate::schema::EstateCaseIdentityField,
+    field crate::schema::EstateCaseIdentityField::at("EstateCaseIdentityField"),
     value EstateCaseOverviewRequest::estate,
     limits results 1_024
 
 );
 
-pub fn estate_case_overview_definition() -> ApplicationQueryDefinition<
+pub fn estate_case_overview_definition() -> ApplicationQueryDefinitionBuilder<
     BankSchema,
     EstateCaseOverviewQuery,
     EstateCaseOverviewQueryParameters,
@@ -79,6 +76,4 @@ pub fn estate_case_overview_definition() -> ApplicationQueryDefinition<
         .basis_support(ApplicationQueryBasisSupport::current_and_pinned().with_preview())
         .lanes(ApplicationQueryLaneEligibility::one_shot().with_preview())
         .requires_ability(ViewEstateCase::reference())
-        .build()
-        .expect("bank estate overview query is statically canonical")
 }

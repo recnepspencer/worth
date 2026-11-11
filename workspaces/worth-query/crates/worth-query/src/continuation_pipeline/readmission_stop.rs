@@ -121,7 +121,7 @@ impl WorthQueryContinuationExecutionReadmissionStop {
             WorthQueryEvidenceTag::new("execution_attempts"),
             counters.execution_attempts().to_string(),
         )
-        .seal();
+        .seal().expect("fixed readmission stop grammar: enum labels and three primitive counters; reason is not digest material");
         Self {
             kind,
             next_action,

@@ -11,11 +11,11 @@
 //! | 8..10  | artifact format version (`u16`)         |
 //! | 10..18 | `PatchStreamPosition` (`u64`)           |
 //! | 18..26 | `CommitId` (`u64`)                      |
-//! | 26..58 | v5 composite payload commitment                  |
+//! | 26..58 | v8 composite payload commitment         |
 //! | 58..66 | payload length (`u64`)                  |
 //! | 66..   | payload: MessagePack named map          |
 //!
-//! Version 5 carries `{position, canonical, original_inputs}`. The canonical
+//! Version 8 carries `{position, canonical, original_inputs}`. The canonical
 //! projection and exact schema/policy input DATA have separate SHA-256 leaves;
 //! the composite commitment also binds the header position and commit. See
 //! `payload_digest` for its exact domain-separated grammar.

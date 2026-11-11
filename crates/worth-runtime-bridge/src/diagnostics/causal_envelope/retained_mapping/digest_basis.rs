@@ -1,3 +1,4 @@
+use super::super::BridgeCausalDigestRefusal;
 use std::sync::Arc;
 
 use worth_foundational::facade::{
@@ -106,18 +107,17 @@ impl RetainedCausalMappingDigestBasis {
 
     pub(crate) fn from_bulk_planning_failure_records(
         failures: &[BridgeBulkPlanningFailure],
-    ) -> Self {
+    ) -> Result<Self, crate::diagnostics::causal_envelope::BridgeCausalDigestRefusal> {
         let entries = failures
             .iter()
             .map(|failure| {
-                RetainedCausalMappingDigestBasisEntry::from_evidence(
-                    bulk_planning_failure_evidence_identity(failure),
-                )
+                bulk_planning_failure_evidence_identity(failure)
+                    .map(RetainedCausalMappingDigestBasisEntry::from_evidence)
             })
-            .collect::<Vec<_>>();
-        Self {
+            .collect::<Result<Vec<_>, _>>()?;
+        Ok(Self {
             entries: Arc::from(entries),
-        }
+        })
     }
 
     fn entries(&self) -> &[RetainedCausalMappingDigestBasisEntry] {
@@ -179,17 +179,17 @@ impl RetainedCausalMappingIdentityPart {
 
 pub(crate) fn bulk_planning_failure_evidence_identity(
     failure: &BridgeBulkPlanningFailure,
-) -> BridgeIdentityEvidence {
+) -> Result<BridgeIdentityEvidence, BridgeCausalDigestRefusal> {
     use crate::routing::planning::planning_failure_kind_label;
 
-    compose_retained_causal_mapping_evidence_identity(
+    Ok(compose_retained_causal_mapping_evidence_identity(
         RetainedCausalMappingDigestArtifact::BulkPlanningFailureRecord,
         &[
             retained_mapping_shape_part(planning_failure_kind_label(failure.kind())),
             retained_mapping_shape_part(failure.boundary()),
             retained_mapping_shape_part(failure.detail()),
         ],
-    )
+    )?)
 }
 
 pub(crate) fn retained_mapping_evidence_part(
@@ -217,29 +217,29 @@ pub(crate) fn retained_mapping_shape_part(
 pub(crate) fn compose_retained_causal_mapping_evidence_identity(
     artifact: RetainedCausalMappingDigestArtifact,
     parts: &[RetainedCausalMappingIdentityPart],
-) -> BridgeIdentityEvidence {
-    compose_retained_causal_mapping_evidence_identity_for_parts(
+) -> Result<BridgeIdentityEvidence, BridgeCausalDigestRefusal> {
+    Ok(compose_retained_causal_mapping_evidence_identity_for_parts(
         artifact,
         parts
             .iter()
             .map(RetainedCausalMappingIdentityPart::as_borrowed),
-    )
+    )?)
 }
 
 pub(crate) fn compose_retained_causal_mapping_evidence_identity_for_basis(
     artifact: RetainedCausalMappingDigestArtifact,
     basis: &RetainedCausalMappingDigestBasis,
-) -> BridgeIdentityEvidence {
-    compose_retained_causal_mapping_evidence_identity_for_parts(
+) -> Result<BridgeIdentityEvidence, BridgeCausalDigestRefusal> {
+    Ok(compose_retained_causal_mapping_evidence_identity_for_parts(
         artifact,
         basis.entries().iter().map(|entry| entry.part()),
-    )
+    )?)
 }
 
 fn compose_retained_causal_mapping_evidence_identity_for_parts(
     artifact: RetainedCausalMappingDigestArtifact,
     parts: impl IntoIterator<Item = RetainedCausalMappingIdentityPart>,
-) -> BridgeIdentityEvidence {
+) -> Result<BridgeIdentityEvidence, BridgeCausalDigestRefusal> {
     let mut count = 0usize;
     let mut entries = vec![
         retained_mapping_entry(
@@ -266,11 +266,16 @@ fn compose_retained_causal_mapping_evidence_identity_for_parts(
         CanonicalBasisEntryKind::Shape,
         count.to_string(),
     ));
-    let digest = derive_canonical_retained_mapping_identity(entries);
-    BridgeIdentityEvidence::from_canonical_bridge_evidence(
+    let digest = derive_canonical_retained_mapping_identity(entries).map_err(|cause| {
+        BridgeCausalDigestRefusal {
+            subject: artifact.digest_domain(),
+            cause,
+        }
+    })?;
+    Ok(BridgeIdentityEvidence::from_canonical_bridge_evidence(
         canonical_retained_mapping_identity_token(&digest),
         artifact.digest_domain(),
-    )
+    ))
 }
 
 fn sequence_locus(index: usize) -> String {
@@ -294,7 +299,7 @@ fn retained_mapping_entry(
 
 fn derive_canonical_retained_mapping_identity(
     entries: Vec<CanonicalBasisEntry>,
-) -> CanonicalDerivedDigest {
+) -> Result<CanonicalDerivedDigest, worth_foundational::facade::CanonicalDigestDerivationDenial> {
     let version = CanonicalizationRuleVersion::new(RETAINED_CAUSAL_MAPPING_IDENTITY_SCHEME)
         .expect("retained causal mapping evidence scheme must remain canonical");
     let ready = retained_mapping_basis_from_entries(version.clone(), entries);
@@ -304,13 +309,13 @@ fn derive_canonical_retained_mapping_identity(
             panic!("retained causal mapping identity bundle should prepare cleanly: {outcome:?}")
         }
     };
-    let digest_ready = match CanonicalDigestFrontDoor
-        .for_bundle(bundle, CanonicalDigestAlgorithmId::sha256())
-    {
-        TransitionOutcome::Success(ready) => ready,
-        outcome => panic!("retained causal mapping digest derivation should succeed: {outcome:?}"),
-    };
-    derive_canonical_digest(digest_ready)
+    let digest_ready =
+        match CanonicalDigestFrontDoor.for_bundle(bundle, CanonicalDigestAlgorithmId::sha256()) {
+            TransitionOutcome::Success(ready) => ready,
+            TransitionOutcome::Denied(cause) => return Err(cause),
+            _ => unreachable!("canonical digest admission only succeeds or denies"),
+        };
+    Ok(derive_canonical_digest(digest_ready))
 }
 
 fn retained_mapping_basis_from_entries(

@@ -1,12 +1,11 @@
-//! Readmit the initial program on the actual Home root before Query service.
+//! Bind the activation record identity; branch history owns revision admission.
 use super::*;
 
 impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphBootstrap<Schema> {
-    pub(in crate::domain_computation::primary_graph) fn readmit_home_initial_program(
+    pub(in crate::domain_computation::primary_graph) fn readmit_home_activation_record(
         &self,
         phase: &super::super::WorthQueryBootstrapAdvancementPhase<'_>,
         root: &worth_runtime_world::facade::ProductBranchObservation,
-        expected: &worth_query_declaration::facade::application_program::ApplicationProgramRevision,
     ) -> Result<(), WorthQueryPrimaryGraphInstallationDenial> {
         let published = self
             .program_activation
@@ -30,11 +29,8 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphBootstrap<Schema> {
                     &branch,
                     self.graph.layout.program_activation(),
                     usize::MAX,
-                    "Home root does not activate its admitted initial program",
-                    |rendering| {
-                        super::super::program_occurrence::program_revision_rendering(expected)
-                            == *rendering
-                    },
+                    "Home root activation record cannot be read",
+                    |_| true,
                 )?;
                 if actual != published {
                     return Err(home_activation_denial(

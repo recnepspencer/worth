@@ -14,3 +14,6 @@ pub use outcome::{
     WorthQueryApplicationLiveOutcome, WorthQueryApplicationLiveOverflow,
     WorthQueryApplicationLiveUpdate,
 };
+#[cfg(test)]
+#[path = "live_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;

@@ -239,3 +239,6 @@ impl WorthQuerySharedReadPinRegistryState {
         self.collect_retired_zero_pin_generations();
     }
 }
+#[cfg(test)]
+#[path = "registry_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;

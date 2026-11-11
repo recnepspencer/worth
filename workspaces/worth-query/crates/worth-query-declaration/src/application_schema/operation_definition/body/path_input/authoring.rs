@@ -3,31 +3,29 @@ use super::ApplicationOperationBodyPathInputExpectation as Guard;
 use crate::{
     application_query::ApplicationQueryRootPath,
     application_schema::{
-        ApplicationFieldBindingLocus, ApplicationFieldRef, ApplicationFieldUnit,
         ApplicationOperationBodyAuthoringDenial as Denial, ApplicationOperationBodyBuilder,
-        ApplicationOperationBodyPathFieldSource, ApplicationScalarValueBinding,
-        DeclaredApplicationFieldValue, OperationReads,
+        ApplicationOperationBodyPathFieldSource, ApplicationScalarValueBinding, OperationReads,
     },
 };
 impl<S, O, I> ApplicationOperationBodyBuilder<S, O, I> {
     /// Require one present terminal field to equal an original captured scalar.
     /// Each guard-free path hop must select one distinct live endpoint at execution.
-    pub fn expect_input_from_path<Root, Selected, A, F, V, W, Q, U>(
+    pub fn expect_input_from_path<Root, Selected, F>(
         mut self,
         path: ApplicationQueryRootPath<S, Root, Selected>,
-        field: ApplicationFieldRef<S, Selected, A, F, V, W, Q, U>,
+        field: F,
         member: &str,
     ) -> Result<Self, Denial>
     where
         Root: OperationReads<O>,
         Selected: OperationReads<O>,
-        F: OperationReads<O> + DeclaredApplicationFieldValue<Value = V>,
-        U: ApplicationFieldUnit,
+        F: crate::application_schema::fragment::RecordSelection<Entity = Selected>,
     {
+        let field = super::super::record_authoring::resolve(field)?;
         let source = ApplicationOperationBodyPathFieldSource {
             path: path.into_meaning(),
-            field: ApplicationFieldBindingLocus::new(field.entity(), field.aspect(), field.field()),
-            presence: F::PRESENCE,
+            field: field.locus().clone(),
+            presence: field.presence(),
         };
         if !source.has_supported_shape() || member.is_empty() || member.trim() != member {
             return Err(Denial::IncompatibleSourceBinding);

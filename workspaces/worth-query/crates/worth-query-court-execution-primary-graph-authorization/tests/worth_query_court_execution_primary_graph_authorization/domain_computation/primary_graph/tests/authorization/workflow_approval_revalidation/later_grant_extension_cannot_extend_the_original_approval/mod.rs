@@ -40,7 +40,7 @@ fn later_grant_extension_cannot_extend_the_original_approval() {
                 "capability-1",
                 field(
                     &world,
-                    worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::capability::CapabilityNotAfterField::reference(),
+                    worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::capability::CapabilityNotAfterField::at("CapabilityNotAfterField"),
                 ),
                 worth_foundational::facade::AspectValue::UInt64(500),
             )

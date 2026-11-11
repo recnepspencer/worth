@@ -99,7 +99,7 @@ pub fn node() -> domain::WorthQueryPortableConditionalNodeDeclaration {
         aspect(),
         mask(),
         domain::AspectBinding::EntityField {
-            field: domain::FieldKey::new("NumberFacts").unwrap(),
+            field: domain::FieldKey::new(crate::facade::certification::application_graph::correction::model::schema::NumberFacts::reference().name()).unwrap(),
         },
         domain::WorthQuerySemanticLocality::SourceRecord,
         [domain::AuthoritativeAspectChangeKind::FieldSet],
@@ -145,7 +145,7 @@ pub fn aspect() -> domain::AspectContract {
     worth_query_installation::facade::declared_application_aspect(
         NumericSchema::declaration().unwrap().erased(),
         "Number",
-        "NumberFacts",
+        crate::facade::certification::application_graph::correction::model::schema::NumberFacts::reference().name(),
     )
     .expect("the fixture's complete declared contract is valid")
     .contract()
@@ -163,12 +163,12 @@ pub fn projection() -> domain::WorthQueryOperationNativeProjectionContract {
 pub fn canonical_query(
 ) -> worth_query_host::facade::declaration::canonicalization::CanonicalQueryBundle {
     let query = DetailQueryBuilder::new(RootEntityKey::new("Number").unwrap())
-        .project(AspectFieldSelector::new("NumberFacts", "Primary").unwrap())
+        .project(AspectFieldSelector::new(crate::facade::certification::application_graph::correction::model::schema::NumberFacts::reference().name(), "Primary").unwrap())
         .build()
         .unwrap()
         .into_raw();
     let shape = DetailResultShapeBuilder::new()
-        .field(AuthoredResultShapeField::new("NumberFacts", "Primary", "definition").unwrap())
+        .field(AuthoredResultShapeField::new(crate::facade::certification::application_graph::correction::model::schema::NumberFacts::reference().name(), "Primary", "definition").unwrap())
         .build()
         .unwrap()
         .into_raw();

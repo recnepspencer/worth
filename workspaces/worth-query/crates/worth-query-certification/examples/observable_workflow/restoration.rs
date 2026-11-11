@@ -127,7 +127,19 @@ fn inspect_restored(
             ..
         } => {
             assert_eq!(actor(start), expected_start);
-            assert_eq!(actor(end), expected_start);
+            match end {
+                WorkflowEndingActorProvenance::Principal(principal) => assert_eq!(
+                    [
+                        u64::from(principal.partition_id.0),
+                        principal.local_slot.0,
+                        u64::from(principal.generation.0)
+                    ],
+                    expected_start,
+                ),
+                WorkflowEndingActorProvenance::HomeWorldOwner(_) => {
+                    panic!("the actual completing actor was the admitted operator")
+                }
+            }
         }
         _ => panic!("restored audit must retain genuine start and terminal advancer"),
     }

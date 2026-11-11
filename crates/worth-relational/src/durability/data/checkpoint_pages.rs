@@ -16,6 +16,14 @@ pub(crate) struct CheckpointPagesBuilder {
     _memory: Option<ExecutionMemoryReservation>,
 }
 impl CheckpointPages {
+    pub(crate) fn shares_backing(&self, other: &Self) -> bool {
+        match (&self.0, &other.0) {
+            (Some(left), Some(right)) => Arc::ptr_eq(left, right),
+            (None, None) => true,
+            (Some(_), None) | (None, Some(_)) => false,
+        }
+    }
+
     pub(crate) fn from_ordinary(rows: Vec<RelationalCheckpointPage>) -> Self {
         if rows.is_empty() {
             Self::default()

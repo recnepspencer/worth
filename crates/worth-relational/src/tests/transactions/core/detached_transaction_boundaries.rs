@@ -63,7 +63,10 @@ fn relation_overlays_and_validation_footprints_stay_exact_basis_local() {
         storm
             .read_relation(execution, relation)
             .expect("staged relation read projects")
-            .staged_mutations(),
+            .staged_mutations()
+            .iter()
+            .cloned()
+            .collect::<Vec<_>>(),
         &[storm_relation_mutation]
     );
     let maintenance_read = maintenance

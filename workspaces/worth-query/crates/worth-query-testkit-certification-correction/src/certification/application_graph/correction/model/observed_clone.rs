@@ -30,8 +30,8 @@ impl CloneNumber {
 }
 worth_query_structured_value_binding!(pub InputBinding for CloneNumber { identity: "numeric-observed-clone.input.v1" });
 worth_query_operation!(pub CloneOperation for NumericSchema, input InputBinding);
-worth_query_operation_reads!(CloneOperation => [Number, Key, Primary, Secondary, ReadEnabled, Ceiling, Calculated]);
-worth_query_operation_writes!(CloneOperation => [Key, Primary, Secondary, ReadEnabled, Ceiling, Calculated]);
+worth_query_operation_reads!(CloneOperation => [Number]);
+
 impl OperationCreates<CloneOperation> for Number {}
 
 pub struct Snapshot {
@@ -47,8 +47,8 @@ worth_query_mutation_binding!(
     handler identity "numeric-observed-clone.handler.v1", outputs CreatedOutputs,
     principal ActorBinding, mapping ExternalMapping, principal_entity Principal,
     principal_identity u64, identity_binding U64ApplicationValueBinding,
-    scope Number, NumberFacts, Key, String, ReadOnly, NoApplicationUnit,
-    field Key::reference(), value CloneNumber::scope_key,
+    scope Key,
+    field Key::at("Key"), value CloneNumber::scope_key,
 );
 impl ApplicationDeclaredOperation<NumericSchema> for CloneOperation {
     fn declare_access(
@@ -57,18 +57,18 @@ impl ApplicationDeclaredOperation<NumericSchema> for CloneOperation {
         schema
             .operation_projection_work_budget(Self::reference(), 16)
             .operation_read_entity(Self::reference(), Number::reference())
-            .operation_read_field(Self::reference(), Key::reference())
-            .operation_read_field(Self::reference(), Primary::reference())
-            .operation_read_field(Self::reference(), Secondary::reference())
-            .operation_read_field(Self::reference(), ReadEnabled::reference())
-            .operation_read_field(Self::reference(), Ceiling::reference())
-            .operation_read_field(Self::reference(), Calculated::reference())
-            .operation_write(Self::reference(), Key::reference())
-            .operation_write(Self::reference(), Primary::reference())
-            .operation_write(Self::reference(), Secondary::reference())
-            .operation_write(Self::reference(), ReadEnabled::reference())
-            .operation_write(Self::reference(), Ceiling::reference())
-            .operation_write(Self::reference(), Calculated::reference())
+            .operation_read_field(Self::reference(), Key::at("Key"))
+            .operation_read_field(Self::reference(), Primary::at("Primary"))
+            .operation_read_field(Self::reference(), Secondary::at("Secondary"))
+            .operation_read_field(Self::reference(), ReadEnabled::at("ReadEnabled"))
+            .operation_read_field(Self::reference(), Ceiling::at("Ceiling"))
+            .operation_read_field(Self::reference(), Calculated::at("Calculated"))
+            .operation_write(Self::reference(), Key::at("Key"))
+            .operation_write(Self::reference(), Primary::at("Primary"))
+            .operation_write(Self::reference(), Secondary::at("Secondary"))
+            .operation_write(Self::reference(), ReadEnabled::at("ReadEnabled"))
+            .operation_write(Self::reference(), Ceiling::at("Ceiling"))
+            .operation_write(Self::reference(), Calculated::at("Calculated"))
             .operation_create(Self::reference(), Number::reference())
     }
 }
@@ -83,6 +83,43 @@ impl ApplicationCorrectionBinding<NumericSchema> for UndoClone {
     type Source = Binding;
     type InverseIntent = Retire;
     type Disclosure = query::ReadBinding;
+
+    fn recover_source_input(
+        bytes: &[u8],
+        expected: worth_query_decl::facade::application_schema::CanonicalDigestId,
+        bounds: worth_query_decl::facade::application_schema::ValueDecodeBounds,
+    ) -> Result<
+        worth_query_decl::facade::application_operation::ApplicationEncodedInput<
+            <Self::Source as worth_query_decl::facade::application_operation::ApplicationMutationBinding<NumericSchema>>::InputBinding,
+        >,
+        worth_query_decl::facade::application_operation::ApplicationRetainedInputDenial,
+    >{
+        worth_query_decl::facade::application_operation::ApplicationEncodedInput::decode_retained_with_seed(
+            bytes, expected, bounds,
+            worth_query_decl::facade::application_schema::CanonicalValueSeed::<<Self::Source as worth_query_decl::facade::application_operation::ApplicationMutationBinding<NumericSchema>>::Input>::new(bounds),
+        )
+    }
+
+    fn recover_inverse_input(
+        bytes: &[u8],
+        expected: worth_query_decl::facade::application_schema::CanonicalDigestId,
+        bounds: worth_query_decl::facade::application_schema::ValueDecodeBounds,
+    ) -> Result<
+        worth_query_decl::facade::application_operation::ApplicationEncodedInput<
+            <worth_query_decl::facade::application_aftermath::ApplicationInverseBinding<
+                NumericSchema,
+                Self,
+            > as worth_query_decl::facade::application_operation::ApplicationMutationBinding<
+                NumericSchema,
+            >>::InputBinding,
+        >,
+        worth_query_decl::facade::application_operation::ApplicationRetainedInputDenial,
+    > {
+        worth_query_decl::facade::application_operation::ApplicationEncodedInput::decode_retained_with_seed(
+            bytes, expected, bounds,
+            worth_query_decl::facade::application_schema::CanonicalValueSeed::<<worth_query_decl::facade::application_aftermath::ApplicationInverseBinding<NumericSchema, Self> as worth_query_decl::facade::application_operation::ApplicationMutationBinding<NumericSchema>>::Input>::new(bounds),
+        )
+    }
 
     fn source_definition() -> ApplicationOperationDefinitionBuilder<
         NumericSchema,
@@ -114,7 +151,7 @@ impl ApplicationCorrectionBinding<NumericSchema> for UndoClone {
     }
     fn source_output_fields() -> Vec<ApplicationCorrectionOutputField<NumericSchema>> {
         vec![ApplicationCorrectionOutput::<Binding, Created>::field(
-            Key::reference(),
+            Key::at("Key"),
         )]
     }
     fn derive_correction(
@@ -128,7 +165,7 @@ impl ApplicationCorrectionBinding<NumericSchema> for UndoClone {
         let target = StringApplicationValueBinding::decode(
             fields
                 .field(&ApplicationCorrectionOutput::<Binding, Created>::field(
-                    Key::reference(),
+                    Key::at("Key"),
                 ))
                 .map_err(|_| UnsupportedSourceMeaning)?,
         )

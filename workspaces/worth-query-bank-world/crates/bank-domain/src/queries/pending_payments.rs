@@ -1,6 +1,6 @@
 use worth_query_decl::facade::{
     application_query::{
-        ApplicationQueryBasisSupport, ApplicationQueryCardinality, ApplicationQueryDefinition,
+        ApplicationQueryBasisSupport, ApplicationQueryCardinality,
         ApplicationQueryDefinitionBuilder, ApplicationQueryDisclosureContract,
         ApplicationQueryLaneEligibility, ApplicationQueryOrderingDirection,
         ApplicationQueryRootPath,
@@ -55,15 +55,13 @@ worth_query_decl::facade::worth_query_query_binding!(
     result PendingPaymentsQueryResultBinding,
     principal crate::schema::BankPrincipalBinding, mapping crate::schema::ExternalPrincipalMapping, principal_entity crate::schema::Principal,
         principal_identity crate::model::BankPrincipalId, identity_binding crate::schema::BankPrincipalIdBinding,
-    scope Principal, crate::schema::PrincipalIdentity, crate::schema::PrincipalIdentityField,
-        crate::model::BankPrincipalId, worth_query_decl::facade::application_schema::ReadOnly,
-        worth_query_decl::facade::application_schema::NoApplicationUnit,
-    principal_field crate::schema::PrincipalIdentityField::reference(),
+    scope crate::schema::PrincipalIdentityField,
+    principal_field crate::schema::PrincipalIdentityField::at("PrincipalIdentityField"),
     limits results 1_024
 
 );
 
-pub fn pending_payments_definition() -> ApplicationQueryDefinition<
+pub fn pending_payments_definition() -> ApplicationQueryDefinitionBuilder<
     BankSchema,
     PendingPaymentsQuery,
     PendingPaymentsQueryParameters,
@@ -91,19 +89,19 @@ pub fn pending_payments_definition() -> ApplicationQueryDefinition<
             ApplicationQueryRootPath::from(Principal::reference())
                 .forward(AccountAuthorizedUser::reference())
                 .where_equal(
-                    AuthorizationRole::reference(),
+                    AuthorizationRole::at("AuthorizationRole"),
                     crate::schema::encoded_bank_value(CustomerRole::Approver),
                 )
+                .expect("owned record selection is valid")
                 .forward(AuthorizationAccount::reference())
                 .reverse(PaymentSource::reference())
                 .where_equal(
-                    PaymentStatusField::reference(),
+                    PaymentStatusField::at("PaymentStatusField"),
                     crate::schema::encoded_bank_value(PaymentStatus::ApprovalRequired),
-                ),
+                )
+                .expect("owned record selection is valid"),
         )
         .order_by(identity, ApplicationQueryOrderingDirection::Ascending)
-        .build()
-        .expect("bank pending payments query is statically canonical")
 }
 
 impl WorthQueryApplicationProjection<BankSchema, PendingPaymentsQuery> for PaymentSummary {

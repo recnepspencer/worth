@@ -1,80 +1,51 @@
-use super::work::MaintenanceWork;
-use crate::identity::data::{EntityId, KindId, RelationId};
+//! Borrow the reached kind posting and read its native endpoint metadata.
+use super::{
+    record_metadata::{self, RelationMetadata},
+    root_view::IndexRootView,
+    work::MaintenanceWork,
+};
+use crate::identity::data::{EntityId, KindId};
 use crate::indexes::data::DerivedIndexMaintenanceDenialKind as Denial;
-use crate::runtime::VisibilityProjectionView;
-use crate::storage::data::{EntityReadRecord, RecordLifecycleState, RelationReadRecord};
-use std::collections::BTreeSet;
-
-pub(super) fn entity(
-    execution: &worth_execution::ExecutionRequest<'_, '_>,
-    view: Option<&VisibilityProjectionView>,
-    id: EntityId,
-    work: &mut MaintenanceWork,
-) -> Result<Option<EntityReadRecord>, Denial> {
-    let Some(view) = view else {
-        return Ok(None);
-    };
-    work.read()?;
-    Ok(view
-        .authoritative_entity_record(execution, id)
-        .map_err(Denial::Execution)?
-        .filter(|record| record.lifecycle == RecordLifecycleState::Live))
-}
-
-pub(super) fn relation(
-    execution: &worth_execution::ExecutionRequest<'_, '_>,
-    view: Option<&VisibilityProjectionView>,
-    id: RelationId,
-    work: &mut MaintenanceWork,
-) -> Result<Option<RelationReadRecord>, Denial> {
-    let Some(view) = view else {
-        return Ok(None);
-    };
-    work.read()?;
-    // Full index builds include audit-retained relations but not retired ones.
-    // A deleted endpoint alone does not remove field or ordering membership.
-    Ok(view
-        .authoritative_relation_record(execution, id)
-        .map_err(Denial::Execution)?
-        .filter(|record| {
-            matches!(
-                record.lifecycle,
-                RecordLifecycleState::Live | RecordLifecycleState::RetainedDanglingForAudit
-            )
-        }))
-}
-
+use crate::storage::partition::AdjacencyDirection;
 pub(super) fn adjacency(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-    view: &VisibilityProjectionView,
+    view: &IndexRootView,
     entity: EntityId,
     kind: KindId,
     outgoing: bool,
     work: &mut MaintenanceWork,
-) -> Result<Vec<RelationReadRecord>, Denial> {
-    work.charge(1)?;
-    let frontier = BTreeSet::from([entity]);
-    let result = view
-        .bounded_index_relations_for_frontier(
-            execution,
-            &frontier,
-            kind,
-            outgoing,
-            work.remaining(),
-        )
-        .map_err(Denial::Execution)?;
-    match result {
-        Ok(read) => {
-            let units = read.work_units();
-            work.charge(units)?;
-            work.note_adjacency_work_units(units);
-            Ok(read.into_records())
-        }
-        Err(exceeded) => {
-            let units = exceeded.consumed_work_units();
-            work.charge(units)?;
-            work.note_adjacency_work_units(units);
-            Err(work.bounded_scan_denial())
+) -> Result<Vec<RelationMetadata>, Denial> {
+    let Some(head) = view.head(execution, entity.partition_id, work)? else {
+        return Ok(Vec::new());
+    };
+    let table = head.adjacency(if outgoing {
+        AdjacencyDirection::Outgoing
+    } else {
+        AdjacencyDirection::Incoming
+    });
+    work.prepare(table.navigation_work_bound() as u64, 0)?;
+    let Some(posting) = table.get(entity.slot_index()) else {
+        return Ok(Vec::new());
+    };
+    work.prepare(posting.navigation_work_bound() as u64, 0)?;
+    let mut ids = posting
+        .kind_ids(kind)
+        .try_iter(|units, bytes| work.prepare(units, bytes))?;
+    let mut records = Vec::new();
+    while let Some(id) = ids.try_next(|units, bytes| work.prepare(units, bytes))? {
+        work.charge(1)?;
+        work.note_adjacency_work_units(1);
+        if let Some(record) = record_metadata::relation(execution, Some(view), *id, work)?
+            && record.kind == kind
+            && (if outgoing {
+                record.source
+            } else {
+                record.target
+            }) == entity
+        {
+            work.grow_vec(&mut records)?;
+            records.push(record);
         }
     }
+    Ok(records)
 }

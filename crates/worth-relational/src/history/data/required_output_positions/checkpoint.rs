@@ -30,6 +30,7 @@ impl Serialize for Node<'_> {
         let publication = match node.publication {
             RequiredOutputRoutePosition::Published(commit) => (0_u8, commit),
             RequiredOutputRoutePosition::CodecRetired(commit) => (1_u8, commit),
+            RequiredOutputRoutePosition::HistoricalAbsence(commit) => (2_u8, commit),
         };
         // The existing persistent AVL bounds recursion. Its actual shape is
         // carried, so sizing and emission need neither a traversal stack nor a
@@ -37,7 +38,10 @@ impl Serialize for Node<'_> {
         let mut record = serializer.serialize_struct("CheckpointOutputPositionNode", 6)?;
         record.serialize_field("family", &node.route.family)?;
         record.serialize_field("source", &node.route.source)?;
-        record.serialize_field("partition", &node.route.partition)?;
+        record.serialize_field(
+            "partition",
+            &worth_foundational::CanonicalDigestId::new(node.route.partition),
+        )?;
         record.serialize_field("publication", &publication)?;
         record.serialize_field("left", &Node(node.left.as_deref()))?;
         record.serialize_field("right", &Node(node.right.as_deref()))?;

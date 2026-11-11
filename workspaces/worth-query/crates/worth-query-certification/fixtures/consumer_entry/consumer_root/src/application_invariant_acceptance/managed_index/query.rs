@@ -30,47 +30,14 @@ worth_query_portable_type!(IdentitySlot => "managed-catalog.identity-slot.v1");
 worth_query_portable_type!(NameSlot => "managed-catalog.name-slot.v1");
 worth_query_portable_type!(EnabledSlot => "managed-catalog.enabled-slot.v1");
 
-pub fn identity<Q>() -> ApplicationQueryResultFieldRef<
-    Q,
-    IdentitySlot,
-    Catalog,
-    Item,
-    ItemFacts,
-    ItemIdentity,
-    String,
-    ReadOnly,
-    EqualityPredicate,
-    NoApplicationUnit,
-> {
-    ApplicationQueryResultFieldRef::new("identity", ItemIdentity::reference())
+pub fn identity<Q>() -> ApplicationQueryResultFieldRef<Q, IdentitySlot, Catalog, ItemIdentity> {
+    ApplicationQueryResultFieldRef::new("identity", ItemIdentity::at("ItemIdentity"))
 }
-pub fn name<Q>() -> ApplicationQueryResultFieldRef<
-    Q,
-    NameSlot,
-    Catalog,
-    Item,
-    ItemFacts,
-    ItemName,
-    String,
-    ReadWrite,
-    EqualityPredicate,
-    NoApplicationUnit,
-> {
-    ApplicationQueryResultFieldRef::new("name", ItemName::reference())
+pub fn name<Q>() -> ApplicationQueryResultFieldRef<Q, NameSlot, Catalog, ItemName> {
+    ApplicationQueryResultFieldRef::new("name", ItemName::at("ItemName"))
 }
-pub fn enabled<Q>() -> ApplicationQueryResultFieldRef<
-    Q,
-    EnabledSlot,
-    Catalog,
-    Item,
-    ItemFacts,
-    ItemEnabled,
-    bool,
-    ReadWrite,
-    EqualityPredicate,
-    NoApplicationUnit,
-> {
-    ApplicationQueryResultFieldRef::new("enabled", ItemEnabled::reference())
+pub fn enabled<Q>() -> ApplicationQueryResultFieldRef<Q, EnabledSlot, Catalog, ItemEnabled> {
+    ApplicationQueryResultFieldRef::new("enabled", ItemEnabled::at("ItemEnabled"))
 }
 pub(super) fn base<Q: ApplicationQueryMarkerIdentity<Catalog, ResultBinding = ResultBinding>>(
     reference: ApplicationQueryReference<Catalog, Q, Parameters, ItemRow, Directory>,
@@ -107,48 +74,39 @@ pub(super) fn authoring<
         .basis_support(basis)
         .lanes(lanes)
 }
-pub fn source_definition(
-    guarded: bool,
-) -> ApplicationQueryDefinition<Catalog, SourceQuery, Parameters, ItemRow, Directory> {
+/// A real Phase 1 Source shape outside the invariant Source compiler: its two
+/// disjoint guarded paths cover the actual complete Boolean field universe.
+pub fn guarded_source_definition(
+) -> ApplicationQueryDefinitionBuilder<Catalog, SourceQuery, Parameters, ItemRow, Directory> {
     let mut builder = base(
         SourceQuery::reference(),
         ApplicationQueryLaneEligibility::one_shot(),
     );
-    if guarded {
-        // Disjoint paths cover the complete Boolean field universe.
-        for enabled in [true, false] {
-            builder = builder.root_path(
-                ApplicationQueryRootPath::from(Directory::reference())
-                    .forward(Contains::reference())
-                    .where_equal(
-                        ItemEnabled::reference(),
-                        ApplicationEncodedScalarValue::try_new(enabled).unwrap(),
-                    ),
-            );
-        }
-    } else {
+    for enabled in [true, false] {
         builder = builder.root_path(
-            ApplicationQueryRootPath::from(Directory::reference()).forward(Contains::reference()),
+            ApplicationQueryRootPath::from(Directory::reference())
+                .forward(Contains::reference())
+                .where_equal(
+                    ItemEnabled::at("ItemEnabled"),
+                    ApplicationEncodedScalarValue::try_new(enabled).unwrap(),
+                )
+                .expect("record field contract"),
         );
     }
     builder
         .order_by(name(), ApplicationQueryOrderingDirection::Descending)
         .order_by(identity(), ApplicationQueryOrderingDirection::Descending)
-        .build()
-        .unwrap()
 }
 pub fn prefix_definition(
-) -> ApplicationQueryDefinition<Catalog, PrefixQuery, Parameters, ItemRow, Directory> {
+) -> ApplicationQueryDefinitionBuilder<Catalog, PrefixQuery, Parameters, ItemRow, Directory> {
     base(
         PrefixQuery::reference(),
         ApplicationQueryLaneEligibility::one_shot().with_live(),
     )
     .managed_index(PrefixIndex::reference(), probe())
     .parameter(enabled_parameter())
-    .where_equal(ItemEnabled::reference(), enabled_parameter())
+    .where_equal(ItemEnabled::at("ItemEnabled"), enabled_parameter())
     .order_by(identity(), ApplicationQueryOrderingDirection::Ascending)
-    .build()
-    .unwrap()
 }
 impl<Q: ApplicationQueryMarkerIdentity<Catalog>> WorthQueryApplicationProjection<Catalog, Q>
     for ItemRow
@@ -163,16 +121,13 @@ impl<Q: ApplicationQueryMarkerIdentity<Catalog>> WorthQueryApplicationProjection
                 row.entity_id().generation_value(),
             ),
             identity: row.field(identity())?,
-            name: row.field(name())?,
+            name: row.field(name())?.into(),
             enabled: row.field(enabled())?,
         })
     }
 }
 
-#[derive(Clone, Debug, worth_foundational::facade::WorthValue)]
-pub struct Probe {
-    pub prefix: String,
-}
+pub use crate::application_invariant_acceptance::managed_index::prefix_probe::Probe;
 worth_query_value_binding!(pub ProbeBinding for Probe {
     identity: "managed-catalog.prefix-probe.v1", scalar: String,
     canonical: ValueDecodeBounds::new(2048, 1024, 8, 8),
@@ -210,8 +165,8 @@ worth_query_query_binding!(pub SourceBinding for ReadSource, schema Catalog,
     query SourceQuery, parameters ParametersBinding => |_| ApplicationQueryParameterSet::new(),
     result ResultBinding, principal CatalogPrincipal, mapping ExternalMapping, principal_entity Principal,
     principal_identity u64, identity_binding U64ApplicationValueBinding,
-    scope Directory, DirectoryFacts, DirectoryIdentity, String, ReadOnly, NoApplicationUnit,
-    field DirectoryIdentity::reference(), value source_scope, limits results super::SOURCE_MAX_RESULTS
+    scope DirectoryIdentity,
+    field DirectoryIdentity::at("DirectoryIdentity"), value source_scope, limits results super::SOURCE_MAX_RESULTS
 );
 worth_query_query_binding!(pub PrefixBinding for FindPrefix, schema Catalog,
     identity "managed-catalog.prefix-binding.v1", input PrefixInputBinding,
@@ -221,8 +176,8 @@ worth_query_query_binding!(pub PrefixBinding for FindPrefix, schema Catalog,
     },
     result ResultBinding, principal CatalogPrincipal, mapping ExternalMapping, principal_entity Principal,
     principal_identity u64, identity_binding U64ApplicationValueBinding,
-    scope Directory, DirectoryFacts, DirectoryIdentity, String, ReadOnly, NoApplicationUnit,
-    field DirectoryIdentity::reference(), value prefix_scope, limits results 16
+    scope DirectoryIdentity,
+    field DirectoryIdentity::at("DirectoryIdentity"), value prefix_scope, limits results 16
 );
 // A genuine second nominal binding to the same compiled Parent Query.
 worth_query_query_binding!(pub PrefixAliasBinding for FindPrefixAlias, schema Catalog,
@@ -233,6 +188,6 @@ worth_query_query_binding!(pub PrefixAliasBinding for FindPrefixAlias, schema Ca
     },
     result ResultBinding, principal CatalogPrincipal, mapping ExternalMapping, principal_entity Principal,
     principal_identity u64, identity_binding U64ApplicationValueBinding,
-    scope Directory, DirectoryFacts, DirectoryIdentity, String, ReadOnly, NoApplicationUnit,
-    field DirectoryIdentity::reference(), value FindPrefixAlias::scope, limits results 16
+    scope DirectoryIdentity,
+    field DirectoryIdentity::at("DirectoryIdentity"), value FindPrefixAlias::scope, limits results 16
 );

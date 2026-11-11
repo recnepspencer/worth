@@ -57,6 +57,7 @@ where
         + worth_query_declaration::facade::application_program::ApplicationFixedOutputRoot,
     RootConnection<Schema, Root>: WorthQueryApplicationRequiredOutputConnection<Schema>,
 {
+    recording_recipes: Option<(std::sync::Arc<worth_query_execution::publication_boundary::document_history::WorthQueryHistoryRecordingOutputOrigin>, usize)>,
     source_binding:
         Option<source_binding::RequiredSourceBinding<Schema, Program, RootDemand<Schema, Root>>>,
     source_preparation: Option<
@@ -95,6 +96,14 @@ where
     RootDemand<Schema, Root>: Clone,
     Root::Dependents: ProgramOutputContinuationFactory<Schema, Program, RootDemand<Schema, Root>>,
 {
+    pub(in crate::application_entry) fn record_history_discovery(
+        mut self,
+        origin: std::sync::Arc<worth_query_execution::publication_boundary::document_history::WorthQueryHistoryRecordingOutputOrigin>,
+        index: usize,
+    ) -> Self {
+        self.recording_recipes = Some((origin, index));
+        self
+    }
     pub(in crate::application_entry) fn new(
         source_receipt: worth_query_execution::facade::primary_graph::WorthQueryApplicationCommitReceipt,
         preparation: worth_query_execution::facade::primary_graph::WorthQueryPreparedRequiredOutputSource,
@@ -107,6 +116,7 @@ where
         Root: worth_query_declaration::facade::application_program::ApplicationRequiredOutputRoot,
     {
         Self {
+            recording_recipes: None,
             source_binding: Some(source_binding::RequiredSourceBinding::of::<Root>()),
             source_preparation: Some(preparation),
             source_receipt: Some(source_receipt),
@@ -130,6 +140,7 @@ where
         controls: crate::application_entry::WorthQueryOutputDemandControls,
     ) -> Self {
         Self {
+            recording_recipes: None,
             source_binding: None,
             source_preparation: None,
             source_receipt: None,

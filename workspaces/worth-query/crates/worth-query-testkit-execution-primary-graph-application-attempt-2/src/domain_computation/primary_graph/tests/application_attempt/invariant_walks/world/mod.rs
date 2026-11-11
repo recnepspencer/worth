@@ -192,11 +192,11 @@ impl World {
                     .map(|edge| {
                         (
                             snapshot
-                                .field(&execution, edge.from(), NodeKey::reference())
+                                .field(&execution, edge.from(), NodeKey::at("NodeKey"))
                                 .unwrap()
                                 .unwrap(),
                             snapshot
-                                .field(&execution, edge.to(), NodeKey::reference())
+                                .field(&execution, edge.to(), NodeKey::at("NodeKey"))
                                 .unwrap()
                                 .unwrap(),
                         )

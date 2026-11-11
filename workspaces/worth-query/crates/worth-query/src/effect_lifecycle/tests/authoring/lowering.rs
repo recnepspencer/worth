@@ -154,7 +154,8 @@ fn admitted_writeback_plan_lowers_into_one_executable_effect_artifact() {
         WorthQueryEvidenceTag::new("basis"),
         binding.basis_identity(),
     )
-    .seal();
+    .seal()
+    .expect("fixture digest must fit");
     assert_eq!(
         writeback.causality_binding().basis_identity(),
         &expected_basis_identity
@@ -182,9 +183,12 @@ fn lowering_denials_stay_typed_for_admitted_but_invalid_merge_pairs() {
     );
     assert_eq!(
         denial.staleness_class(),
-        &WorkflowStalenessClass::ExactBasisPreserved
+        Some(&WorkflowStalenessClass::ExactBasisPreserved)
     );
     assert_eq!(denial.counters().lowering_denied_count(), 1);
     assert_eq!(denial.counters().effect_lowering_width(), 1);
-    assert!(!denial.denial_for_reporting().is_empty());
+    assert!(!denial
+        .denial_for_reporting()
+        .expect("fixture digest must fit")
+        .is_empty());
 }

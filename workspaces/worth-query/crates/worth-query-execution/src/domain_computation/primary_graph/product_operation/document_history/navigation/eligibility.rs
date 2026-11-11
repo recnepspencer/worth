@@ -35,7 +35,13 @@ pub(super) fn require<S: ApplicationSchema, H: ApplicationHistoryBinding<S>>(
         .navigation
         .as_ref()
         .ok_or_else(|| correction(Eligibility::NotDeclared))?;
-    if definition.model_domain != ApplicationHistoryModelDomain::ScopeEntityRecord {
+    if !matches!(
+        definition.model_domain,
+        ApplicationHistoryModelDomain::ScopeEntityRecord
+            | ApplicationHistoryModelDomain::OwnedModelGraph
+    ) || (definition.model_domain == ApplicationHistoryModelDomain::ScopeEntityRecord
+        && !definition.ownership.is_empty())
+    {
         return Err(correction(Eligibility::ModelDomain));
     }
     if source.model != *model {
@@ -43,7 +49,10 @@ pub(super) fn require<S: ApplicationSchema, H: ApplicationHistoryBinding<S>>(
             super::super::WorthQueryDocumentHistoryDenial::ForeignModel,
         ));
     }
-    if source.root_posture.is_some() && outputs.is_none() {
+    if source.root_posture.is_some()
+        && outputs.is_none()
+        && definition.model_domain == ApplicationHistoryModelDomain::ScopeEntityRecord
+    {
         return Err(correction(Eligibility::RequiredOutputs));
     }
     if installed.has_external_operation() {
@@ -109,23 +118,53 @@ pub(super) fn require<S: ApplicationSchema, H: ApplicationHistoryBinding<S>>(
         if profile.model != *model || profile.program != *current_program.revision() {
             return Err(correction(Eligibility::ProgramChanged));
         }
-        Some(
-            supported
-                .installed
-                .action_inventory()
-                .declarations()
-                .get(profile.delivery_index)
-                .and_then(|action| action.delivery())
-                .and_then(|delivery| delivery.output())
-                .filter(|output| {
-                    output.root_type() == profile.root
-                        && output.read().is_none_or(|read| read == &access)
-                })
-                .ok_or_else(|| correction(Eligibility::RequiredOutputs))?,
-        )
+        if let super::output_profile::HistoryOutputRegistration::ActionDelivery(delivery_index) =
+            profile.registration
+        {
+            Some(
+                supported
+                    .installed
+                    .action_inventory()
+                    .declarations()
+                    .get(delivery_index)
+                    .and_then(|action| action.delivery())
+                    .and_then(|delivery| delivery.output())
+                    .filter(|output| {
+                        output.root_type() == profile.root
+                            && output.read().is_none_or(|read| read == &access)
+                    })
+                    .ok_or_else(|| correction(Eligibility::RequiredOutputs))?,
+            )
+        } else {
+            None
+        }
     } else {
         None
     };
+    if let Some(profile) = outputs.filter(|profile| profile.is_output_forest()) {
+        let execution = phase
+            .checked_execution_request_for(&application.runtime.product_runtime)
+            .map_err(Denial::Stopped)?;
+        let work = profile
+            .tree_profiles()
+            .len()
+            .checked_mul(
+                supported
+                    .installed
+                    .action_inventory()
+                    .declarations()
+                    .len()
+                    .saturating_add(1),
+            )
+            .and_then(|work| u64::try_from(work).ok())
+            .ok_or(Denial::OutputLineage(
+                worth_relational::facade::mvcc::CompanionPreflightStop::WorkCounterOverflow,
+            ))?;
+        execution.run_native_with_checkpoint(|context| {
+            crate::domain_computation::primary_graph::admitted_capture::checkpoint(context, work)
+        }).map_err(|cause| Denial::Stopped(crate::domain_computation::primary_graph::application_contribution::advancement_denial(cause)))?
+            .0.map_err(|cause| Denial::Stopped(crate::domain_computation::primary_graph::application_contribution::advancement_denial(worth_execution::WorkCeilingDenial::Stopped(cause))))?;
+    }
     for action in supported.installed.action_inventory().declarations() {
         let output = action.delivery().and_then(|delivery| delivery.output());
         let relevant = action.operation_identifier() == navigation.parts().operation
@@ -137,7 +176,17 @@ pub(super) fn require<S: ApplicationSchema, H: ApplicationHistoryBinding<S>>(
             });
         if relevant
             && (action.required_output_source() || output.is_some())
-            && (expected_output.is_none() || output != expected_output)
+            && if let Some(profile) = outputs.filter(|profile| profile.uses_owned_model_graph()) {
+                output.is_some_and(|output| {
+                    output.read().is_some_and(|read| read != &access)
+                        || !profile
+                            .tree_profiles()
+                            .iter()
+                            .any(|tree| tree.root == output.root_type())
+                })
+            } else {
+                expected_output.is_none() || output != expected_output
+            }
         {
             return Err(correction(Eligibility::RequiredOutputs));
         }
@@ -155,6 +204,45 @@ pub(super) fn require<S: ApplicationSchema, H: ApplicationHistoryBinding<S>>(
         .primary_provider
         .graph
         .with_runtime(&execution, |native| {
+            if definition.model_domain == ApplicationHistoryModelDomain::OwnedModelGraph {
+                let layout = &application.runtime.primary_provider.graph.layout;
+                let ownership =
+                    layout
+                        .history_ownership(&definition.identity)
+                        .ok_or(Denial::Document(
+                            super::super::WorthQueryDocumentHistoryDenial::InstalledBindingMismatch,
+                        ))?;
+                let graph = native
+                    .prepare_owned_model_graph_selection(
+                        &execution,
+                        current.product().relational_basis(),
+                        historical.product().relational_basis(),
+                        ownership,
+                        layout.installed_history_ownership(),
+                        model.entity(),
+                    )
+                    .map_err(Denial::OwnedGraph)?;
+                let transaction = native
+                    .begin_branch_transaction(
+                        current.product().relational_basis(),
+                        RelationalTransactionIntent::ordinary(),
+                    )
+                    .map_err(Denial::Transaction)?;
+                let prepared = super::output_custody::prepare(
+                    &execution,
+                    native,
+                    application
+                        .runtime
+                        .primary_provider
+                        .graph
+                        .application_publication
+                        .as_deref(),
+                    transaction,
+                    graph,
+                )?;
+                drop(prepared);
+                return Ok(());
+            }
             let transaction = native
                 .begin_branch_transaction(
                     current.product().relational_basis(),

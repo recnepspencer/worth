@@ -10,6 +10,9 @@ mod replay_staging;
 /// It contains no reference to `RelationalRuntime`.
 #[derive(Debug)]
 pub struct BranchBoundRelationalTransaction {
+    pub(crate) prepared_coupled_commands:
+        std::sync::Mutex<Option<std::sync::Arc<super::OwnedNormalizedPlan>>>,
+    pub(crate) authored_coupling: Option<std::sync::Arc<crate::mvcc::BoundAuthoredCoupling>>,
     pub(crate) content: crate::content::RelationalContentAttachments,
     pub(crate) symbols: crate::runtime::RuntimeSymbolTable,
     pub(crate) read_leases: std::collections::BTreeMap<

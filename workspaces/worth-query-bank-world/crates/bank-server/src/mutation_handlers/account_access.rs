@@ -107,11 +107,14 @@ fn author_grant(
     candidate: &mut CandidateWriter<'_, BankSchema, GrantAccountAccessMutationBinding>,
 ) -> Result<AccountAccessResult, HandlerExecutionDenial> {
     let account = candidate
-        .resolve_entity(AccountIdentity::reference(), authorization.account())
+        .resolve_entity(
+            AccountIdentity::at("AccountIdentity"),
+            authorization.account(),
+        )
         .map_err(HandlerExecutionDenial::new)?;
     let principal = candidate
         .resolve_entity(
-            PrincipalIdentityField::reference(),
+            PrincipalIdentityField::at("PrincipalIdentityField"),
             authorization.principal(),
         )
         .map_err(HandlerExecutionDenial::new)?;
@@ -126,14 +129,14 @@ fn author_grant(
     candidate
         .initialize_field(
             &created,
-            AccountAuthorizationIdentity::reference(),
+            AccountAuthorizationIdentity::at("AccountAuthorizationIdentity"),
             authorization.id(),
         )
         .map_err(HandlerExecutionDenial::new)?;
     candidate
         .initialize_field(
             &created,
-            AuthorizationRole::reference(),
+            AuthorizationRole::at("AuthorizationRole"),
             authorization.role(),
         )
         .map_err(HandlerExecutionDenial::new)?;
@@ -169,17 +172,20 @@ fn author_revoke(
     candidate: &mut CandidateWriter<'_, BankSchema, RevokeAccountAccessMutationBinding>,
 ) -> Result<AccountAccessResult, HandlerExecutionDenial> {
     let account = candidate
-        .resolve_entity(AccountIdentity::reference(), authorization.account())
+        .resolve_entity(
+            AccountIdentity::at("AccountIdentity"),
+            authorization.account(),
+        )
         .map_err(HandlerExecutionDenial::new)?;
     let principal = candidate
         .resolve_entity(
-            PrincipalIdentityField::reference(),
+            PrincipalIdentityField::at("PrincipalIdentityField"),
             authorization.principal(),
         )
         .map_err(HandlerExecutionDenial::new)?;
     let authorization_entity = candidate
         .resolve_entity(
-            AccountAuthorizationIdentity::reference(),
+            AccountAuthorizationIdentity::at("AccountAuthorizationIdentity"),
             authorization.id(),
         )
         .map_err(HandlerExecutionDenial::new)?;

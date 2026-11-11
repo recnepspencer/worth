@@ -68,9 +68,7 @@ pub(super) fn declare(
     .order_by(
         ordinary::identity(),
         ApplicationQueryOrderingDirection::Descending,
-    )
-    .build()
-    .unwrap();
+    );
     let native = ordinary::authoring(
         NativeParent::reference(),
         ApplicationQueryLaneEligibility::one_shot(),
@@ -81,9 +79,7 @@ pub(super) fn declare(
     .order_by(
         ordinary::identity(),
         ApplicationQueryOrderingDirection::Ascending,
-    )
-    .build()
-    .unwrap();
+    );
     let completed = ordinary::authoring(
         CompletedParent::reference(),
         ApplicationQueryLaneEligibility::one_shot(),
@@ -94,9 +90,7 @@ pub(super) fn declare(
     .order_by(
         ordinary::identity(),
         ApplicationQueryOrderingDirection::Ascending,
-    )
-    .build()
-    .unwrap();
+    );
     schema
         .application_query(source)
         .application_query_binding::<SourceBinding>()
@@ -144,8 +138,8 @@ worth_query_query_binding!(pub SourceBinding for ReadSource, schema Catalog,
     query Source, parameters ordinary::ParametersBinding => |_| ApplicationQueryParameterSet::new(),
     result ordinary::ResultBinding, principal CatalogPrincipal, mapping ExternalMapping, principal_entity Principal,
     principal_identity u64, identity_binding U64ApplicationValueBinding,
-    scope Directory, DirectoryFacts, DirectoryIdentity, String, ReadOnly, NoApplicationUnit,
-    field DirectoryIdentity::reference(), value source_scope, limits results super::SOURCE_MAX_RESULTS);
+    scope DirectoryIdentity,
+    field DirectoryIdentity::at("DirectoryIdentity"), value source_scope, limits results super::SOURCE_MAX_RESULTS);
 worth_query_query_binding!(pub NativeBinding for FindNative, schema Catalog,
     identity "maintained-catalog.authorized-native.binding.v1", input NativeInputBinding,
     query NativeParent, parameters ordinary::ParametersBinding => |input: &FindNative| {
@@ -153,8 +147,8 @@ worth_query_query_binding!(pub NativeBinding for FindNative, schema Catalog,
     },
     result ordinary::ResultBinding, principal CatalogPrincipal, mapping ExternalMapping, principal_entity Principal,
     principal_identity u64, identity_binding U64ApplicationValueBinding,
-    scope Directory, DirectoryFacts, DirectoryIdentity, String, ReadOnly, NoApplicationUnit,
-    field DirectoryIdentity::reference(), value native_scope, limits results 16);
+    scope DirectoryIdentity,
+    field DirectoryIdentity::at("DirectoryIdentity"), value native_scope, limits results 16);
 worth_query_query_binding!(pub CompletedBinding for FindCompleted, schema Catalog,
     identity "maintained-catalog.authorized-completed.binding.v1", input CompletedInputBinding,
     query CompletedParent, parameters ordinary::ParametersBinding => |input: &FindCompleted| {
@@ -162,8 +156,8 @@ worth_query_query_binding!(pub CompletedBinding for FindCompleted, schema Catalo
     },
     result ordinary::ResultBinding, principal CatalogPrincipal, mapping ExternalMapping, principal_entity Principal,
     principal_identity u64, identity_binding U64ApplicationValueBinding,
-    scope Directory, DirectoryFacts, DirectoryIdentity, String, ReadOnly, NoApplicationUnit,
-    field DirectoryIdentity::reference(), value completed_scope, limits results 16);
+    scope DirectoryIdentity,
+    field DirectoryIdentity::at("DirectoryIdentity"), value completed_scope, limits results 16);
 
 #[derive(Clone, Default)]
 pub(super) struct Configuration {
@@ -184,4 +178,46 @@ pub(super) fn configure(
         .install()?;
     setup.handler::<expectation::NativeBinding, _>(super::mutation::Handler)?;
     setup.handler::<expectation::CompletedBinding, _>(super::mutation::Handler)
+}
+
+impl
+    crate::application_invariant_acceptance::managed_index::prefix_provider::PrefixSourceIndex<
+        Catalog,
+    > for NativeIndex
+{
+    fn with_name<R>(
+        row: &WorthQueryManagedIndexSourceRow<'_, Catalog, Self>,
+        visitor: impl FnOnce(&str) -> R,
+    ) -> Result<R, WorthQueryManagedIndexTextReadDenial> {
+        row.with_text(ordinary::name(), visitor)
+    }
+    #[cfg(test)]
+    fn inspect_text(
+        calls: &prefix_observation::Calls,
+        row: &WorthQueryManagedIndexSourceRow<'_, Catalog, Self>,
+    ) -> Result<(), crate::application_invariant_acceptance::managed_index::prefix_provider::Stop>
+    {
+        prefix::text_read::inspect(calls, row)
+    }
+}
+
+impl
+    crate::application_invariant_acceptance::managed_index::prefix_provider::PrefixSourceIndex<
+        Catalog,
+    > for CompletedIndex
+{
+    fn with_name<R>(
+        row: &WorthQueryManagedIndexSourceRow<'_, Catalog, Self>,
+        visitor: impl FnOnce(&str) -> R,
+    ) -> Result<R, WorthQueryManagedIndexTextReadDenial> {
+        row.with_text(ordinary::name(), visitor)
+    }
+    #[cfg(test)]
+    fn inspect_text(
+        calls: &prefix_observation::Calls,
+        row: &WorthQueryManagedIndexSourceRow<'_, Catalog, Self>,
+    ) -> Result<(), crate::application_invariant_acceptance::managed_index::prefix_provider::Stop>
+    {
+        prefix::text_read::inspect(calls, row)
+    }
 }

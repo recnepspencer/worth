@@ -121,6 +121,25 @@ impl FullReadDoor {
     pub(super) fn is_current_projection_scan(self) -> bool {
         matches!(self, Self::ProjectionScan(_, false))
     }
+    pub(super) fn is_current_relation_scan(self) -> bool {
+        matches!(
+            self,
+            Self::ProjectionScan(
+                super::full_projection_scans::ProjectionScanDoor::RelationKind
+                    | super::full_projection_scans::ProjectionScanDoor::RelationRecords,
+                false
+            )
+        )
+    }
+    pub(super) fn is_metadata_only_read(self) -> bool {
+        matches!(
+            self,
+            Self::SnapshotCapabilityPin
+                | Self::ViewCapabilityPin
+                | Self::SnapshotInspection
+                | Self::SnapshotPinInspection
+        )
+    }
     pub(super) fn is_checkpoint(self) -> bool {
         matches!(self, Self::MemoryCheckpoint | Self::EmbeddedCheckpoint)
     }

@@ -339,8 +339,8 @@ pub fn bind_activity(
                 Activity::reference(),
                 WorthQueryApplicationEntityKey::new(key).unwrap(),
             )
-            .field(ActivityIdentity::reference(), key.to_owned())
-            .field(ActivitySequence::reference(), sequence),
+            .field(ActivityIdentity::at("ActivityIdentity"), key.to_owned())
+            .field(ActivitySequence::at("ActivitySequence"), sequence),
         )
         .unwrap();
 }

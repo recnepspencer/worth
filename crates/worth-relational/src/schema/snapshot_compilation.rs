@@ -1,18 +1,17 @@
 //! One canonical descriptor assembly under configuration or the original request.
 use super::{data::*, SchemaCompilationControl};
 use crate::execution::RelationalExecutionDenialCause as Denial;
+mod allocation;
 mod recipes;
 
 impl RelationalSchemaRegistry {
-    pub fn authority_snapshot(&self) -> SchemaAuthoritySnapshot {
-        self.snapshot_for_compilation(SchemaCompilationControl::Configuration)
-            .expect("configuration descriptor assembly has no request refusal")
-    }
-
     pub(crate) fn snapshot_for_compilation(
         &self,
         control: SchemaCompilationControl<'_, '_>,
     ) -> Result<SchemaAuthoritySnapshot, Denial> {
+        let bytes = allocation::retained(self, control)?;
+        let memory =
+            control.reserve(usize::try_from(bytes).map_err(|_| Denial::MemoryOverflow)?)?;
         let mut basis = self
             .entity_kinds
             .values()
@@ -59,6 +58,7 @@ impl RelationalSchemaRegistry {
                     &declarations.partition_isolation_contracts,
                     &declarations.connectivity_minimum_contracts,
                     declarations.aggregate_identity.as_ref(),
+                    declarations.current_publication_storage.as_ref(),
                 )?;
             relation_kinds.push(SchemaAuthorityRelationSnapshot {
                 kind_id: *kind_id,
@@ -82,14 +82,17 @@ impl RelationalSchemaRegistry {
             projected_member_domains.push(recipes::domain(&domain.parts, control)?);
         }
         control.checkpoint()?;
-        Ok(SchemaAuthoritySnapshot {
-            content_formats: self.content_formats.snapshot(),
+        let parts = SchemaAuthoritySnapshotParts {
+            content_formats: self.content_formats.snapshot_for_compilation(control)?,
             primary_schema_id,
             primary_schema_version_id,
             entity_kinds,
             relation_kinds,
             derived_relations,
             projected_member_domains,
-        })
+        };
+        let snapshot = SchemaAuthoritySnapshot::from_compiled_parts(parts, memory);
+        schema_authority_snapshot_digest_for_compilation(&snapshot, control)?;
+        Ok(snapshot)
     }
 }

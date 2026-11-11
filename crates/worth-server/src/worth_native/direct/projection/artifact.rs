@@ -40,7 +40,10 @@ pub(crate) struct WorthServerDirectProjectionParts {
 }
 
 impl WorthServerDirectProjection {
-    pub(crate) fn from_authority(parts: WorthServerDirectProjectionParts) -> Self {
+    pub(crate) fn from_authority(
+        parts: WorthServerDirectProjectionParts,
+    ) -> Result<Self, worth_query::facade::runtime::WorthQueryEvidenceIdentityDerivationDenial>
+    {
         let WorthServerDirectProjectionParts {
             plan_proof,
             support_posture,
@@ -73,14 +76,15 @@ impl WorthServerDirectProjection {
             .narrowed_result_shape_digest()
             .to_string();
         let facts = authority.facts().clone();
-        let projection_consumption_envelope = authority.receipt().projection_consumption_envelope();
+        let projection_consumption_envelope =
+            authority.receipt().projection_consumption_envelope()?;
         let canonical_digest = format!(
             "worth-server-direct-projection-v1:{}:{}:{}",
             handoff_digest,
             fact_receipt.receipt_digest(),
             fact_receipt.materialization_digest().as_str()
         );
-        Self {
+        Ok(Self {
             plan_proof,
             support_posture,
             workspace_name,
@@ -96,7 +100,7 @@ impl WorthServerDirectProjection {
             projection_consumption_envelope,
             response_envelope,
             canonical_digest,
-        }
+        })
     }
 
     pub fn plan_proof(&self) -> &crate::WorthServerOperationPlanProof {

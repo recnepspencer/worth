@@ -29,6 +29,14 @@ pub enum RelationalStorageUnavailableCause {
     MissingMember,
     /// The source refused or failed without proving durable damage. Retryable.
     SourceUnavailable,
+    /// Owned successor admission lost its dictionary-specific predecessor proof.
+    /// This is retryable maintenance state loss, never proven region damage.
+    MissingSymbolMaintenancePredecessor,
+    CorruptCurrentOwnership {
+        publication: crate::history::data::CommitId,
+        source: crate::identity::data::EntityId,
+        record: crate::identity::data::EntityId,
+    },
     Damaged,
     IntegrityMismatch,
     LimitExceeded {
@@ -42,7 +50,10 @@ impl RelationalStorageUnavailableCause {
     pub(crate) fn is_proven_damage(self) -> bool {
         matches!(
             self,
-            Self::MissingMember | Self::Damaged | Self::IntegrityMismatch
+            Self::MissingMember
+                | Self::Damaged
+                | Self::IntegrityMismatch
+                | Self::CorruptCurrentOwnership { .. }
         )
     }
 }

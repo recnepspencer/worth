@@ -334,3 +334,6 @@ mod cancellation_spelling {
         .is_none());
     }
 }
+#[cfg(test)]
+#[path = "recovery_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;

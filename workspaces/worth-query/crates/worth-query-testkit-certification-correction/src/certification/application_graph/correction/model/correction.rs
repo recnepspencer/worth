@@ -11,6 +11,43 @@ impl ApplicationCorrectionBinding<NumericSchema> for RecordedEdit {
     type InverseIntent = OtherEdit;
     type Disclosure = query::ReadBinding;
 
+    fn recover_source_input(
+        bytes: &[u8],
+        expected: worth_query_decl::facade::application_schema::CanonicalDigestId,
+        bounds: worth_query_decl::facade::application_schema::ValueDecodeBounds,
+    ) -> Result<
+        worth_query_decl::facade::application_operation::ApplicationEncodedInput<
+            <Self::Source as worth_query_decl::facade::application_operation::ApplicationMutationBinding<NumericSchema>>::InputBinding,
+        >,
+        worth_query_decl::facade::application_operation::ApplicationRetainedInputDenial,
+    >{
+        worth_query_decl::facade::application_operation::ApplicationEncodedInput::decode_retained_with_seed(
+            bytes, expected, bounds,
+            worth_query_decl::facade::application_schema::CanonicalValueSeed::<<Self::Source as worth_query_decl::facade::application_operation::ApplicationMutationBinding<NumericSchema>>::Input>::new(bounds),
+        )
+    }
+
+    fn recover_inverse_input(
+        bytes: &[u8],
+        expected: worth_query_decl::facade::application_schema::CanonicalDigestId,
+        bounds: worth_query_decl::facade::application_schema::ValueDecodeBounds,
+    ) -> Result<
+        worth_query_decl::facade::application_operation::ApplicationEncodedInput<
+            <worth_query_decl::facade::application_aftermath::ApplicationInverseBinding<
+                NumericSchema,
+                Self,
+            > as worth_query_decl::facade::application_operation::ApplicationMutationBinding<
+                NumericSchema,
+            >>::InputBinding,
+        >,
+        worth_query_decl::facade::application_operation::ApplicationRetainedInputDenial,
+    > {
+        worth_query_decl::facade::application_operation::ApplicationEncodedInput::decode_retained_with_seed(
+            bytes, expected, bounds,
+            worth_query_decl::facade::application_schema::CanonicalValueSeed::<<worth_query_decl::facade::application_aftermath::ApplicationInverseBinding<NumericSchema, Self> as worth_query_decl::facade::application_operation::ApplicationMutationBinding<NumericSchema>>::Input>::new(bounds),
+        )
+    }
+
     fn disclosure_parameters(
         _: &Edit,
     ) -> Result<ApplicationQueryParameterSet<query::ReadQuery>, ApplicationCorrectionDerivationDenial>
@@ -23,16 +60,13 @@ impl ApplicationCorrectionBinding<NumericSchema> for RecordedEdit {
     }
     fn mechanism() -> DeclaredCorrectionMechanism<NumericSchema> {
         // Capture stores the binding's complete AspectValue representation.
-        let encoded_width = InlineCounterBinding::encode(&u64::MAX)
+        let encoded_width = InlineCounterBinding::encode(&Counter(u64::MAX))
             .unwrap()
             .semantic_byte_width();
-        DeclaredCorrectionMechanism::recorded_inverse_binding::<Self>(
-            DeclaredPreImageDemand::new(
-                [DeclaredPreImageLocus::from_field(Primary::reference())],
-                encoded_width,
-            )
-            .unwrap(),
-        )
+        DeclaredCorrectionMechanism::recorded_inverse_binding::<Self>(DeclaredPreImageDemand::new(
+            [DeclaredPreImageLocus::from_field(Primary::at("Primary"))],
+            encoded_width,
+        ))
     }
     fn derive_correction(
         original: &Edit,
@@ -46,10 +80,11 @@ impl ApplicationCorrectionBinding<NumericSchema> for RecordedEdit {
             Value::Primary(_) | Value::AdjacentPrimary(_) => Value::Primary(
                 InlineCounterBinding::decode(
                     preimage
-                        .field(&DeclaredPreImageLocus::from_field(Primary::reference()))
+                        .field(&DeclaredPreImageLocus::from_field(Primary::at("Primary")))
                         .ok_or(MissingPreImage)?,
                 )
-                .map_err(|_| InvalidPreImage)?,
+                .map_err(|_| InvalidPreImage)?
+                .0,
             ),
             _ => return Err(ApplicationCorrectionDerivationDenial::UnsupportedSourceMeaning),
         };

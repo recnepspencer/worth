@@ -44,5 +44,10 @@ fn invariant_denial_retains_typed_snapshot_identity() {
         Some(snapshot_identity),
         "inspection must retain the same typed snapshot handle"
     );
-    assert_eq!(inspection.denial_identity(), evidence.denial_digest());
+    assert_eq!(
+        inspection.denial_identity(),
+        evidence
+            .denial_digest()
+            .expect("fixture denial identity must fit")
+    );
 }

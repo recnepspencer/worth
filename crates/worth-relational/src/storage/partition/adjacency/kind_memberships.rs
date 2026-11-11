@@ -47,25 +47,4 @@ impl AdjacencySet {
         }
         Ok(())
     }
-
-    pub(crate) fn checkpoint_kind_memberships(
-        &self,
-        basis: AdjacencyKindBasis,
-    ) -> Vec<(KindId, Vec<RelationId>)> {
-        let entries = self.entries();
-        let selected = if matches!(basis, AdjacencyKindBasis::Historical) {
-            &entries.historical_by_kind
-        } else {
-            &entries.current_by_kind
-        };
-        selected
-            .as_ref()
-            .map(|kinds| {
-                kinds
-                    .iter()
-                    .map(|(&kind, ids)| (kind, ids.keys().copied().collect()))
-                    .collect()
-            })
-            .unwrap_or_default()
-    }
 }

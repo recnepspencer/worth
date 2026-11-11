@@ -342,3 +342,26 @@ impl<'runtime, Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'ru
 }
 
 mod court_doors_for_test;
+#[cfg(test)]
+#[path = "context_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;
+
+#[cfg(test)]
+fn collect_owned_inline_type_sizes(census: &mut crate::inline_type_sizes::Census) {
+    {
+        let mut owner = census.owner::<WorthQuerySelectedProductOperation<'static, ()>>("workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/product_operation/context.rs", "WorthQuerySelectedProductOperation", 128 * 1024);
+        owner.field::<&'static WorthQueryPrimaryGraphApplicationRuntime<()>>("application");
+        owner.field::<SelectedQueryOrigin>("selection_origin");
+        owner.field::<WorthQueryProductBranchLease>("product");
+        owner.field::<super::super::application_query::resource_lifecycle::WorthQueryApplicationBasisLease>("application_basis");
+        owner.field::<Result<
+            super::super::WorthQuerySelectedProgramInspection,
+            super::super::WorthQuerySelectedProgramInspectionDenial,
+        >>("selected_program");
+        owner.field::<Option<
+            std::sync::Arc<
+                super::super::application_output_demand::OriginalSettledProducerObservation,
+            >,
+        >>("producer");
+    }
+}

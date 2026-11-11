@@ -1,4 +1,5 @@
 use crate::evidence_identity::WorthQueryEvidenceIdentity;
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::memory_workspace::WorthQueryEntityIdentity;
 use crate::runtime::{
     WorthQueryMutationAuthorityIdentity, WorthQueryMutationEvidenceDigest,
@@ -38,8 +39,12 @@ pub struct WorthQueryContinuityMutationEvidence {
 
 impl WorthQueryContinuityMutationEvidence {
     #[cfg(test)]
-    pub(in crate::runtime) fn from_bridge(bundle: &BridgeContinuityMutationBundle) -> Self {
-        Self::from_bridge_with_query_context(bundle, None, None, None)
+    pub(in crate::runtime) fn from_bridge(
+        bundle: &BridgeContinuityMutationBundle,
+    ) -> Result<Self, IdentityDerivationDenial> {
+        Ok(Self::from_bridge_with_query_context(
+            bundle, None, None, None,
+        )?)
     }
 
     pub(in crate::runtime) fn from_bridge_with_query_context(
@@ -47,7 +52,7 @@ impl WorthQueryContinuityMutationEvidence {
         basis_binding_identity: Option<&WorthQueryEvidenceIdentity>,
         resolved_target_entity_identity: Option<&WorthQueryEntityIdentity>,
         target_collection: Option<&WorthQueryMutationTargetCollectionIdentity>,
-    ) -> Self {
+    ) -> Result<Self, IdentityDerivationDenial> {
         let family = match bundle.family() {
             BridgeContinuityMutationFamily::RebindExistingTarget => {
                 crate::runtime::WorthQueryContinuityMutationFamily::RebindExistingTarget
@@ -61,7 +66,7 @@ impl WorthQueryContinuityMutationEvidence {
             WorthQueryMutationAuthorityIdentity::from_bridge_continuity_authority(
                 "continuity-prior",
                 bundle.prior_authoritative_identity_handle(),
-            );
+            )?;
         let successor_authoritative_identities = bundle
             .successor_authoritative_identities()
             .iter()
@@ -71,10 +76,15 @@ impl WorthQueryContinuityMutationEvidence {
                     value,
                 )
             })
-            .collect::<Vec<_>>();
-        let basis_binding_digest = basis_binding_identity.map(|identity| {
-            WorthQueryMutationEvidenceDigest::source_identity("continuity-basis-binding", identity)
-        });
+            .collect::<Result<Vec<_>, _>>()?;
+        let basis_binding_digest = basis_binding_identity
+            .map(|identity| {
+                WorthQueryMutationEvidenceDigest::source_identity(
+                    "continuity-basis-binding",
+                    identity,
+                )
+            })
+            .transpose()?;
         let resolved_target_entity_identity = bundle
             .resolved_target_entity_identity()
             .and_then(RelationalBridgeRecordIdentityParts::from_bridge_entity_identity)
@@ -85,6 +95,7 @@ impl WorthQueryContinuityMutationEvidence {
             .map(|collection| {
                 WorthQueryMutationTargetCollectionIdentity::new("continuity-target", collection)
             })
+            .transpose()?
             .or_else(|| target_collection.cloned());
         let (lineage_digest, continuity_resolution_digest) =
             continuity_digests(ContinuityDigestInput {
@@ -95,8 +106,8 @@ impl WorthQueryContinuityMutationEvidence {
                 basis_binding: basis_binding_digest.as_ref(),
                 resolved_target: resolved_target_entity_identity.as_ref(),
                 target_collection: target_collection.as_ref(),
-            });
-        Self {
+            })?;
+        Ok(Self {
             family,
             outcome_class,
             prior_authoritative_identity,
@@ -106,7 +117,7 @@ impl WorthQueryContinuityMutationEvidence {
             target_collection,
             lineage_digest,
             continuity_resolution_digest,
-        }
+        })
     }
 
     pub(crate) fn from_intent(
@@ -114,7 +125,7 @@ impl WorthQueryContinuityMutationEvidence {
         basis_binding_identity: Option<&WorthQueryEvidenceIdentity>,
         resolved_target_entity_identity: Option<&WorthQueryEntityIdentity>,
         target_collection: Option<&WorthQueryMutationTargetCollectionIdentity>,
-    ) -> Self {
+    ) -> Result<Self, IdentityDerivationDenial> {
         let outcome_class = match intent.outcome_class() {
             crate::runtime::WorthQueryContinuityMutationOutcomeClass::ContinuesAsSingleSuccessor => {
                 WorthQueryContinuityOutcomeClass::ContinuesAsSingleSuccessor
@@ -129,9 +140,14 @@ impl WorthQueryContinuityMutationEvidence {
         let prior_authoritative_identity = intent.prior_authoritative_identity().clone();
         let successor_authoritative_identities =
             intent.successor_authoritative_identities().to_vec();
-        let basis_binding_digest = basis_binding_identity.map(|identity| {
-            WorthQueryMutationEvidenceDigest::source_identity("continuity-basis-binding", identity)
-        });
+        let basis_binding_digest = basis_binding_identity
+            .map(|identity| {
+                WorthQueryMutationEvidenceDigest::source_identity(
+                    "continuity-basis-binding",
+                    identity,
+                )
+            })
+            .transpose()?;
         let target_collection = target_collection.cloned();
         let (lineage_digest, continuity_resolution_digest) =
             continuity_digests(ContinuityDigestInput {
@@ -142,8 +158,8 @@ impl WorthQueryContinuityMutationEvidence {
                 basis_binding: basis_binding_digest.as_ref(),
                 resolved_target: resolved_target_entity_identity,
                 target_collection: target_collection.as_ref(),
-            });
-        Self {
+            })?;
+        Ok(Self {
             family: intent.family(),
             outcome_class,
             prior_authoritative_identity,
@@ -153,7 +169,7 @@ impl WorthQueryContinuityMutationEvidence {
             target_collection,
             lineage_digest,
             continuity_resolution_digest,
-        }
+        })
     }
 
     pub fn family(&self) -> crate::runtime::WorthQueryContinuityMutationFamily {

@@ -4,7 +4,6 @@ use worth_query_decl::facade::{
         WorthQueryApplicationDeclaredOutputRole, WorthQueryApplicationOutputRole,
         WorthQueryCreateOutput, WorthQueryExactlyOneOutput, WorthQueryRetireOutput,
     },
-    application_schema::{NoApplicationUnit, ReadOnly},
     worth_query_mutation_binding, worth_query_structured_value_binding,
 };
 
@@ -16,8 +15,8 @@ use super::{
     RevokeAccountAuthorizationInputBinding,
 };
 use crate::schema::{
-    Account, AccountAuthorization, AccountIdentity, BankPrincipalBinding, BankPrincipalIdBinding,
-    BankSchema, ExternalPrincipalMapping, GrantAccountAuthorizationOperation, Identity, Principal,
+    AccountAuthorization, AccountIdentity, BankPrincipalBinding, BankPrincipalIdBinding,
+    BankSchema, ExternalPrincipalMapping, GrantAccountAuthorizationOperation, Principal,
     RevokeAccountAuthorizationOperation,
 };
 
@@ -103,13 +102,8 @@ worth_query_mutation_binding!(
         principal_entity Principal,
         principal_identity BankPrincipalId,
         identity_binding BankPrincipalIdBinding,
-    scope Account,
-        Identity,
-        AccountIdentity,
-        AccountId,
-        ReadOnly,
-        NoApplicationUnit,
-    field AccountIdentity::reference(),
+    scope AccountIdentity,
+    field AccountIdentity::at("AccountIdentity"),
     value grant_scope,
 );
 
@@ -131,12 +125,7 @@ worth_query_mutation_binding!(
         principal_entity Principal,
         principal_identity BankPrincipalId,
         identity_binding BankPrincipalIdBinding,
-    scope Account,
-        Identity,
-        AccountIdentity,
-        AccountId,
-        ReadOnly,
-        NoApplicationUnit,
-    field AccountIdentity::reference(),
+    scope AccountIdentity,
+    field AccountIdentity::at("AccountIdentity"),
     value revoke_scope,
 );

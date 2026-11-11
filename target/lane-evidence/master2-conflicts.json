@@ -1,0 +1,1674 @@
+[
+  {
+    "status": "UU",
+    "path": "Cargo.lock"
+  },
+  {
+    "status": "UU",
+    "path": "crates/worth-court-relational-certification/Cargo.toml"
+  },
+  {
+    "status": "UU",
+    "path": "crates/worth-court-relational-certification/tests/worth_court_relational_certification/content/carried_export.rs"
+  },
+  {
+    "status": "UU",
+    "path": "crates/worth-court-relational-certification/tests/worth_court_relational_certification/cost/relational/checkpoint_stage.rs"
+  },
+  {
+    "status": "UU",
+    "path": "crates/worth-court-relational-certification/tests/worth_court_relational_certification/cost/relational/mod.rs"
+  },
+  {
+    "status": "UU",
+    "path": "crates/worth-court-relational-certification/tests/worth_court_relational_certification/relational/mod.rs"
+  },
+  {
+    "status": "UU",
+    "path": "crates/worth-court-relational-certification/tests/worth_court_relational_certification/support/leased_preparation/isolated_context/preimage/declarations.rs"
+  },
+  {
+    "status": "UU",
+    "path": "crates/worth-court-runtime-bridge/tests/worth_court_runtime_bridge/compile_fail/runtime_bridge/phase_boundaries_compile_fail/mod.rs"
+  },
+  {
+    "status": "UU",
+    "path": "crates/worth-court-server-certification-suite/tests/worth_court_server_certification_suite/server/compat_http_phase_thirteen/compat_http_phase_thirteen_parity_matrix_cases/mod.rs"
+  },
+  {
+    "status": "UU",
+    "path": "crates/worth-court-server-certification-suite/tests/worth_court_server_certification_suite/server/compat_http_phase_thirteen/compat_http_phase_thirteen_retry_precondition_cases/mod.rs"
+  },
+  {
+    "status": "UU",
+    "path": "crates/worth-court-signal-owner-services/tests/worth_court_signal_owner_services/sources/worth_signal/ui/async_keyed_node_capability_binding_fields_are_private.stderr"
+  },
+  {
+    "status": "UU",
+    "path": "crates/worth-execution/src/backend/meter.rs"
+  },
+  {
+    "status": "UU",
+    "path": "crates/worth-execution/src/storage/ordered.rs"
+  },
+  {
+    "status": "UU",
+    "path": "crates/worth-execution/src/storage/ordered/node.rs"
+  },
+  {
+    "status": "UU",
+    "path": "crates/worth-foundational/src/aspects/patches/application.rs"
+  },
+  {
+    "status": "UU",
+    "path": "crates/worth-foundational/src/aspects/patches/construction/combination.rs"
+  },
+  {
+    "status": "UU",
+    "path": "crates/worth-foundational/src/aspects/state/canonical_map.rs"
+  },
+  {
+    "status": "UU",
+    "path": "crates/worth-foundational/src/aspects/structs/struct_value.rs"
+  },
+  {
+    "status": "UU",
+    "path": "crates/worth-foundational/src/values/aspect_value.rs"
+  },
+  {
+    "status": "UU",
+    "path": "crates/worth-relational/Cargo.toml"
+  },
+  {
+    "status": "UU",
+    "path": "crates/worth-relational/src/authority/commit/phases/applied_mutation.rs"
+  },
+  {
+    "status": "UU",
+    "path": "crates/worth-relational/src/authority/commit/phases/prepare.rs"
+  },
+  {
+    "status": "UU",
+    "path": "crates/worth-relational/src/authority/commit/pipeline/artifact_execution.rs"
+  },
+  {
+    "status": "UU",
+    "path": "crates/worth-relational/src/authority/commit/pipeline/artifact_execution/authored_index_writes.rs"
+  },
+  {
+    "status": "UU",
+    "path": "crates/worth-relational/src/authority/commit/pipeline/artifact_execution/preparation.rs"
+  },
+  {
+    "status": "UU",
+    "path": "crates/worth-relational/src/authority/commit/pipeline/artifact_execution/preparation/authoritative_publication.rs"
+  },
+  {
+    "status": "UU",
+    "path": "crates/worth-relational/src/authority/commit/pipeline/boundary_validation.rs"
+  },
+  {
+    "status": "UU",
+    "path": "crates/worth-relational/src/authority/commit/pipeline/execution.rs"
+  },
+  {
+    "status": "UU",
+    "path": "crates/worth-relational/src/authority/commit/pipeline/history_binding.rs"
+  },
+  {
+    "status": "UU",
+    "path": "crates/worth-relational/src/authority/commit/pipeline/mutation_execution.rs"
+  },
+  {
+    "status": "UU",
+    "path": "crates/worth-relational/src/authority/commit/pipeline/publication_execution.rs"
+  },
+  {
+    "status": "UU",
+    "path": "crates/worth-relational/src/authority/commit/pipeline/publication_execution/preparation.rs"
+  },
+  {
+    "status": "UU",
+    "path": "crates/worth-relational/src/authority/commit/pipeline/snapshot_validation.rs"
+  },
+  {
+    "status": "UU",
+    "path": "crates/worth-relational/src/authority/commit/semantic_plan.rs"
+  },
+  {
+    "status": "UU",
+    "path": "crates/worth-relational/src/authority/mutation/mutation_context.rs"
+  },
+  {
+    "status": "UU",
+    "path": "crates/worth-relational/src/authority/mutation/record_changes.rs"
+  },
+  {
+    "status": "UU",
+    "path": "crates/worth-relational/src/authority/mutation/workspace.rs"
+  },
+  {
+    "status": "UU",
+    "path": "crates/worth-relational/src/branch/mod.rs"
+  },
+  {
+    "status": "UU",
+    "path": "crates/worth-relational/src/branch/root.rs"
+  },
+  {
+    "status": "UU",
+    "path": "crates/worth-relational/src/branch/root_capture_preparation.rs"
+  },
+  {
+    "status": "UU",
+    "path": "crates/worth-relational/src/branch/root_physical_linkage_tests.rs"
+  },
+  {
+    "status": "UU",
+    "path": "crates/worth-relational/src/branch/root_readmission.rs"
+  },
+  {
+    "status": "UU",
+    "path": "crates/worth-relational/src/branch/root_readmission/region_binding.rs"
+  },
+  {
+    "status": "UU",
+    "path": "crates/worth-relational/src/branch/root_regions.rs"
+  },
+  {
+    "status": "UU",
+    "path": "crates/worth-relational/src/branch/root_schema.rs"
+  },
+  {
+    "status": "UU",
+    "path": "crates/worth-relational/src/branch/root_tests.rs"
+  },
+  {
+    "status": "UU",
+    "path": "crates/worth-relational/src/branch/root_visibility.rs"
+  },
+  {
+    "status": "UU",
+    "path": "crates/worth-relational/src/durability/authority/checkpoint_native_capture.rs"
+  },
+  {
+    "status": "UU",
+    "path": "crates/worth-relational/src/durability/authority/runtime_rebuild.rs"
+  },
+  {
+    "status": "UU",
+    "path": "crates/worth-relational/src/durability/authority/runtime_rebuild/checkpoint_restore.rs"
+  },
+  {
+    "status": "UU",
+    "path": "crates/worth-relational/src/durability/authority/runtime_rebuild/checkpoint_restore/branch_root_images.rs"
+  },
+  {
+    "status": "UU",
+    "path": "crates/worth-relational/src/durability/authority/runtime_rebuild/checkpoint_restore/cold_directory.rs"
+  },
+  {
+    "status": "UU",
+    "path": "crates/worth-relational/src/durability/authority/runtime_rebuild/checkpoint_restore/root_schema_readmission.rs"
+  },
+  {
+    "status": "UU",
+    "path": "crates/worth-relational/src/durability/authority/runtime_rebuild/checkpoint_restore_tests.rs"
+  },
+  {
+    "status": "UU",
+    "path": "crates/worth-relational/src/durability/authority/runtime_rebuild/envelope_replay.rs"
+  },
+  {
+    "status": "UU",
+    "path": "crates/worth-relational/src/durability/authority/runtime_rebuild/history_parity.rs"
+  },
+  {
+    "status": "UU",
+    "path": "crates/worth-relational/src/durability/canonical_commit_artifact/frame.rs"
+  },
+  {
+    "status": "UU",
+    "path": "crates/worth-relational/src/durability/checkpoints/images.rs"
+  },
+  {
+    "status": "UU",
+    "path": "crates/worth-relational/src/durability/checkpoints/images/arena_images.rs"
+  },
+  {
+    "status": "UU",
+    "path": "crates/worth-relational/src/durability/checkpoints/region_directory.rs"
+  },
+  {
+    "status": "UU",
+    "path": "crates/worth-relational/src/durability/data/native_checkpoint.rs"
+  },
+  {
+    "status": "UU",
+    "path": "crates/worth-relational/src/durability/derived_index_artifacts.rs"
+  },
+  {
+    "status": "UU",
+    "path": "crates/worth-relational/src/durability/derived_index_artifacts/checkpoint_delta.rs"
+  },
+  {
+    "status": "UU",
+    "path": "crates/worth-relational/src/durability/log/native_checkpoint_codec.rs"
+  },
+  {
+    "status": "UU",
+    "path": "crates/worth-relational/src/durability/log/native_checkpoint_codec/checkpoint_decoding.rs"
+  },
+  {
+    "status": "UU",
+    "path": "crates/worth-relational/src/durability/log/native_checkpoint_codec/checkpoint_encoding.rs"
+  },
+  {
+    "status": "UU",
+    "path": "crates/worth-relational/src/durability/log/native_checkpoint_codec/expanded_checkpoint.rs"
+  },
+  {
+    "status": "UU",
+    "path": "crates/worth-relational/src/durability/log/native_checkpoint_codec/inspection.rs"
+  },
+  {
+    "status": "UU",
+    "path": "crates/worth-relational/src/durability/log/native_checkpoint_codec/kind_authentication_tests.rs"
+  },
+  {
+    "status": "UU",
+    "path": "crates/worth-relational/src/durability/log/native_checkpoint_codec/manifest_capture.rs"
+  },
+  {
+    "status": "UU",
+    "path": "crates/worth-relational/src/durability/log/native_checkpoint_codec/manifest_integrity_tests.rs"
+  },
+  {
+    "status": "UU",
+    "path": "crates/worth-relational/src/facade.rs"
+  },
+  {
+    "status": "UU",
+    "path": "crates/worth-relational/src/facade/mvcc.rs"
+  },
+  {
+    "status": "UU",
+    "path": "crates/worth-relational/src/facade/schema.rs"
+  },
+  {
+    "status": "UU",
+    "path": "crates/worth-relational/src/history/commit/artifact.rs"
+  },
+  {
+    "status": "UU",
+    "path": "crates/worth-relational/src/history/commit/envelope_residency.rs"
+  },
+  {
+    "status": "UU",
+    "path": "crates/worth-relational/src/history/data/canonical_commit_envelope.rs"
+  },
+  {
+    "status": "UU",
+    "path": "crates/worth-relational/src/history/data/canonical_commit_envelope/authoritative_artifact_encoding.rs"
+  },
+  {
+    "status": "DU",
+    "path": "crates/worth-relational/src/history/data/canonical_commit_envelope/construction.rs"
+  },
+  {
+    "status": "UU",
+    "path": "crates/worth-relational/src/history/data/canonical_commit_envelope/embedded_checkpoint.rs"
+  },
+  {
+    "status": "UU",
+    "path": "crates/worth-relational/src/history/data/canonical_commit_envelope/required_output_origin.rs"
+  },
+  {
+    "status": "UU",
+    "path": "crates/worth-relational/src/history/data/canonical_commit_envelope/required_output_origin/authored_cascade.rs"
+  },
+  {
+    "status": "UU",
+    "path": "crates/worth-relational/src/history/data/canonical_commit_envelope/required_output_origin/authored_restoration.rs"
+  },
+  {
+    "status": "UU",
+    "path": "crates/worth-relational/src/history/data/canonical_commit_envelope/required_output_origin/installation.rs"
+  },
+  {
+    "status": "UU",
+    "path": "crates/worth-relational/src/history/data/canonical_commit_envelope/required_output_origin/installation/predecessor.rs"
+  },
+  {
+    "status": "UU",
+    "path": "crates/worth-relational/src/history/data/canonical_commit_envelope/required_output_origin/installation/producer_cascade.rs"
+  },
+  {
+    "status": "UU",
+    "path": "crates/worth-relational/src/history/data/canonical_commit_envelope/text_wire/seed.rs"
+  },
+  {
+    "status": "UU",
+    "path": "crates/worth-relational/src/history/data/codec_retirement_closure.rs"
+  },
+  {
+    "status": "UU",
+    "path": "crates/worth-relational/src/history/data/codec_retirement_closure/authored_cascade.rs"
+  },
+  {
+    "status": "UU",
+    "path": "crates/worth-relational/src/history/data/codec_retirement_closure/authored_restoration.rs"
+  },
+  {
+    "status": "UU",
+    "path": "crates/worth-relational/src/history/data/codec_retirement_closure/authored_retirement.rs"
+  },
+  {
+    "status": "UU",
+    "path": "crates/worth-relational/src/history/data/codec_retirement_closure/codec_disposition.rs"
+  },
+  {
+    "status": "UU",
+    "path": "crates/worth-relational/src/history/data/codec_retirement_closure/materialization/capture.rs"
+  },
+  {
+    "status": "UU",
+    "path": "crates/worth-relational/src/history/data/codec_retirement_closure/materialization/capture/selection.rs"
+  },
+  {
+    "status": "UU",
+    "path": "crates/worth-relational/src/history/data/codec_retirement_closure/materialization/header.rs"
+  },
+  {
+    "status": "UU",
+    "path": "crates/worth-relational/src/history/data/codec_retirement_closure/materialization/payload.rs"
+  },
+  {
+    "status": "UU",
+    "path": "crates/worth-relational/src/history/data/codec_retirement_closure/membership.rs"
+  },
+  {
+    "status": "UU",
+    "path": "crates/worth-relational/src/history/data/codec_retirement_closure/output_correspondence.rs"
+  },
+  {
+    "status": "UU",
+    "path": "crates/worth-relational/src/history/data/codec_retirement_closure/producer_retirement.rs"
+  },
+  {
+    "status": "UU",
+    "path": "crates/worth-relational/src/history/data/codec_retirement_closure/publication_succession.rs"
+  },
+  {
+    "status": "UU",
+    "path": "crates/worth-relational/src/history/data/codec_retirement_closure/relation_payload.rs"
+  },
+  {
+    "status": "UU",
+    "path": "crates/worth-relational/src/history/data/codec_retirement_closure/relations.rs"
+  },
+  {
+    "status": "UU",
+    "path": "crates/worth-relational/src/history/data/codec_retirement_closure/relations/association.rs"
+  },
+  {
+    "status": "UU",
+    "path": "crates/worth-relational/src/history/data/codec_retirement_closure/restoration_payload.rs"
+  },
+  {
+    "status": "UU",
+    "path": "crates/worth-relational/src/history/data/codec_retirement_closure/scope_dependents.rs"
+  },
+  {
+    "status": "UU",
+    "path": "crates/worth-relational/src/history/data/codec_retirement_closure/source_scope_closure.rs"
+  },
+  {
+    "status": "UU",
+    "path": "crates/worth-relational/src/history/data/codec_retirement_preservation.rs"
+  },
+  {
+    "status": "UU",
+    "path": "crates/worth-relational/src/history/data/mod.rs"
+  },
+  {
+    "status": "UU",
+    "path": "crates/worth-relational/src/history/data/publication_relations.rs"
+  },
+  {
+    "status": "UU",
+    "path": "crates/worth-relational/src/history/data/publication_relations/creation.rs"
+  },
+  {
+    "status": "UU",
+    "path": "crates/worth-relational/src/history/data/publication_relations/incidence.rs"
+  },
+  {
+    "status": "UU",
+    "path": "crates/worth-relational/src/history/data/required_output_positions.rs"
+  },
+  {
+    "status": "UD",
+    "path": "crates/worth-relational/src/indexes/authority/maintenance/candidate.rs"
+  },
+  {
+    "status": "UU",
+    "path": "crates/worth-relational/src/indexes/authority/maintenance/changes.rs"
+  },
+  {
+    "status": "UU",
+    "path": "crates/worth-relational/src/indexes/authority/maintenance/field.rs"
+  },
+  {
+    "status": "UU",
+    "path": "crates/worth-relational/src/indexes/authority/maintenance/field_keys.rs"
+  },
+  {
+    "status": "UU",
+    "path": "crates/worth-relational/src/indexes/authority/maintenance/mod.rs"
+  },
+  {
+    "status": "UU",
+    "path": "crates/worth-relational/src/indexes/authority/maintenance/refresh_preparation.rs"
+  },
+  {
+    "status": "UU",
+    "path": "crates/worth-relational/src/indexes/authority/mod.rs"
+  },
+  {
+    "status": "UU",
+    "path": "crates/worth-relational/src/indexes/mod.rs"
+  },
+  {
+    "status": "UU",
+    "path": "crates/worth-relational/src/mvcc/mod.rs"
+  },
+  {
+    "status": "UU",
+    "path": "crates/worth-relational/src/mvcc/publication/application_publication.rs"
+  },
+  {
+    "status": "UU",
+    "path": "crates/worth-relational/src/mvcc/publication/application_publication/authored_retirement.rs"
+  },
+  {
+    "status": "UU",
+    "path": "crates/worth-relational/src/mvcc/publication/application_publication/custody.rs"
+  },
+  {
+    "status": "UU",
+    "path": "crates/worth-relational/src/mvcc/publication/application_publication/tests.rs"
+  },
+  {
+    "status": "UU",
+    "path": "crates/worth-relational/src/mvcc/publication/authority.rs"
+  },
+  {
+    "status": "UU",
+    "path": "crates/worth-relational/src/mvcc/publication/mod.rs"
+  },
+  {
+    "status": "UU",
+    "path": "crates/worth-relational/src/mvcc/transaction/commit_plan.rs"
+  },
+  {
+    "status": "UU",
+    "path": "crates/worth-relational/src/mvcc/transaction/overlay.rs"
+  },
+  {
+    "status": "UU",
+    "path": "crates/worth-relational/src/mvcc/transaction/preparation_round.rs"
+  },
+  {
+    "status": "UU",
+    "path": "crates/worth-relational/src/mvcc/transaction/read_projection.rs"
+  },
+  {
+    "status": "UU",
+    "path": "crates/worth-relational/src/mvcc/transaction/read_view.rs"
+  },
+  {
+    "status": "UU",
+    "path": "crates/worth-relational/src/mvcc/validation/proposal_round.rs"
+  },
+  {
+    "status": "UU",
+    "path": "crates/worth-relational/src/mvcc/validation/proposal_touches/authored_restoration.rs"
+  },
+  {
+    "status": "UU",
+    "path": "crates/worth-relational/src/mvcc/validation/proposal_touches/preparation.rs"
+  },
+  {
+    "status": "UU",
+    "path": "crates/worth-relational/src/mvcc/validation/proposal_validation.rs"
+  },
+  {
+    "status": "UU",
+    "path": "crates/worth-relational/src/query/data/canonical_digest/scope_terms.rs"
+  },
+  {
+    "status": "UU",
+    "path": "crates/worth-relational/src/query/data/planned_packets.rs"
+  },
+  {
+    "status": "UU",
+    "path": "crates/worth-relational/src/runtime/mod.rs"
+  },
+  {
+    "status": "UU",
+    "path": "crates/worth-relational/src/runtime/state/mod.rs"
+  },
+  {
+    "status": "UU",
+    "path": "crates/worth-relational/src/runtime/state/runtime_state/mod.rs"
+  },
+  {
+    "status": "UU",
+    "path": "crates/worth-relational/src/runtime/state/runtime_state/preparation_runtime.rs"
+  },
+  {
+    "status": "UU",
+    "path": "crates/worth-relational/src/runtime/state/subsystems/canonical_publication_routes/performed_stream.rs"
+  },
+  {
+    "status": "UU",
+    "path": "crates/worth-relational/src/runtime/state/subsystems/durability/state.rs"
+  },
+  {
+    "status": "UU",
+    "path": "crates/worth-relational/src/runtime/state/subsystems/history_retention.rs"
+  },
+  {
+    "status": "UU",
+    "path": "crates/worth-relational/src/runtime/state/subsystems/indexing.rs"
+  },
+  {
+    "status": "UU",
+    "path": "crates/worth-relational/src/runtime/state/subsystems/indexing/admitted_selection.rs"
+  },
+  {
+    "status": "UU",
+    "path": "crates/worth-relational/src/runtime/state/subsystems/indexing/cold_checkpoint.rs"
+  },
+  {
+    "status": "UU",
+    "path": "crates/worth-relational/src/runtime/state/subsystems/indexing/definition_catalog.rs"
+  },
+  {
+    "status": "UU",
+    "path": "crates/worth-relational/src/runtime/state/subsystems/indexing/generation_catalog/admitted_publication.rs"
+  },
+  {
+    "status": "UU",
+    "path": "crates/worth-relational/src/runtime/state/subsystems/indexing/generation_catalog/mod.rs"
+  },
+  {
+    "status": "UU",
+    "path": "crates/worth-relational/src/runtime/state/subsystems/indexing/prepared_publication.rs"
+  },
+  {
+    "status": "UU",
+    "path": "crates/worth-relational/src/runtime/state/subsystems/mod.rs"
+  },
+  {
+    "status": "UU",
+    "path": "crates/worth-relational/src/runtime/state/subsystems/schema_contract_runtime/mod.rs"
+  },
+  {
+    "status": "UU",
+    "path": "crates/worth-relational/src/runtime/state/subsystems/services/symbol_residency.rs"
+  },
+  {
+    "status": "UU",
+    "path": "crates/worth-relational/src/runtime/state/subsystems/services/symbol_residency/tests.rs"
+  },
+  {
+    "status": "UU",
+    "path": "crates/worth-relational/src/runtime/state/subsystems/services/symbol_table.rs"
+  },
+  {
+    "status": "UU",
+    "path": "crates/worth-relational/src/runtime/state/subsystems/services/symbol_table/state.rs"
+  },
+  {
+    "status": "UU",
+    "path": "crates/worth-relational/src/runtime/state/subsystems/visibility/snapshot_handles/mod.rs"
+  },
+  {
+    "status": "UU",
+    "path": "crates/worth-relational/src/runtime/state/subsystems/visibility/snapshot_handles/published_registry.rs"
+  },
+  {
+    "status": "UU",
+    "path": "crates/worth-relational/src/schema/aspect_plans/relation_integrity_lowering.rs"
+  },
+  {
+    "status": "UU",
+    "path": "crates/worth-relational/src/schema/data/authority_snapshot.rs"
+  },
+  {
+    "status": "UU",
+    "path": "crates/worth-relational/src/schema/data/mod.rs"
+  },
+  {
+    "status": "UU",
+    "path": "crates/worth-relational/src/schema/data/relation_integrity/plan_revision.rs"
+  },
+  {
+    "status": "UU",
+    "path": "crates/worth-relational/src/storage/overlay/partition.rs"
+  },
+  {
+    "status": "UU",
+    "path": "crates/worth-relational/src/storage/overlay/partition_content.rs"
+  },
+  {
+    "status": "UU",
+    "path": "crates/worth-relational/src/storage/overlay/partition_content/head_commitment.rs"
+  },
+  {
+    "status": "UU",
+    "path": "crates/worth-relational/src/storage/overlay/partition_content/records.rs"
+  },
+  {
+    "status": "UU",
+    "path": "crates/worth-relational/src/storage/overlay/working_state/mod.rs"
+  },
+  {
+    "status": "UU",
+    "path": "crates/worth-relational/src/storage/partition/adjacency.rs"
+  },
+  {
+    "status": "UU",
+    "path": "crates/worth-relational/src/storage/partition/bitsets.rs"
+  },
+  {
+    "status": "UU",
+    "path": "crates/worth-relational/src/storage/partition/sparse_adjacency_table.rs"
+  },
+  {
+    "status": "UU",
+    "path": "crates/worth-relational/src/storage/residency/cell.rs"
+  },
+  {
+    "status": "UU",
+    "path": "crates/worth-relational/src/storage/residency/cell/observation.rs"
+  },
+  {
+    "status": "UU",
+    "path": "crates/worth-relational/src/storage/residency/cell/resident_head.rs"
+  },
+  {
+    "status": "UU",
+    "path": "crates/worth-relational/src/storage/residency/checkpoint_capture.rs"
+  },
+  {
+    "status": "UU",
+    "path": "crates/worth-relational/src/storage/residency/cross_region_forgery_tests.rs"
+  },
+  {
+    "status": "UU",
+    "path": "crates/worth-relational/src/storage/residency/head_history_kind_tests.rs"
+  },
+  {
+    "status": "UU",
+    "path": "crates/worth-relational/src/storage/residency/head_probe_tests.rs"
+  },
+  {
+    "status": "UU",
+    "path": "crates/worth-relational/src/storage/residency/history_fold.rs"
+  },
+  {
+    "status": "UU",
+    "path": "crates/worth-relational/src/storage/residency/kind_admission_tests.rs"
+  },
+  {
+    "status": "UU",
+    "path": "crates/worth-relational/src/storage/residency/kind_commitment.rs"
+  },
+  {
+    "status": "UU",
+    "path": "crates/worth-relational/src/storage/residency/kind_projection/reconstruction.rs"
+  },
+  {
+    "status": "UU",
+    "path": "crates/worth-relational/src/storage/residency/mod.rs"
+  },
+  {
+    "status": "UU",
+    "path": "crates/worth-relational/src/storage/residency/region_image.rs"
+  },
+  {
+    "status": "UU",
+    "path": "crates/worth-relational/src/storage/residency/region_load.rs"
+  },
+  {
+    "status": "UU",
+    "path": "crates/worth-relational/src/storage/residency/region_publication.rs"
+  },
+  {
+    "status": "UU",
+    "path": "crates/worth-relational/src/storage/residency/required_symbols.rs"
+  },
+  {
+    "status": "UU",
+    "path": "crates/worth-relational/src/storage/residency/resident_history.rs"
+  },
+  {
+    "status": "UU",
+    "path": "crates/worth-relational/src/storage/residency/symbol_admission_identity.rs"
+  },
+  {
+    "status": "UU",
+    "path": "crates/worth-relational/src/storage/substrate/digest_index.rs"
+  },
+  {
+    "status": "UU",
+    "path": "crates/worth-relational/src/storage/substrate/digest_index/append_frontier.rs"
+  },
+  {
+    "status": "AU",
+    "path": "crates/worth-relational/src/storage/substrate/digest_index/append_frontier/view.rs"
+  },
+  {
+    "status": "AU",
+    "path": "crates/worth-relational/src/storage/substrate/digest_index/carrier.rs"
+  },
+  {
+    "status": "AU",
+    "path": "crates/worth-relational/src/storage/substrate/digest_index/carrier_tests.rs"
+  },
+  {
+    "status": "AU",
+    "path": "crates/worth-relational/src/storage/substrate/digest_index/funding_tests.rs"
+  },
+  {
+    "status": "UU",
+    "path": "crates/worth-relational/src/storage/substrate/shared_map/iteration.rs"
+  },
+  {
+    "status": "UU",
+    "path": "crates/worth-relational/src/storage/substrate/shared_map/tests.rs"
+  },
+  {
+    "status": "UU",
+    "path": "crates/worth-relational/src/tests/durability/contracts/canonical_commit_artifact/refusals.rs"
+  },
+  {
+    "status": "UU",
+    "path": "crates/worth-relational/src/transactions/data/intents/mod.rs"
+  },
+  {
+    "status": "UU",
+    "path": "crates/worth-relational/src/transactions/data/outcomes/commit_validation.rs"
+  },
+  {
+    "status": "UU",
+    "path": "crates/worth-relational/src/validation/custom_registry.rs"
+  },
+  {
+    "status": "UU",
+    "path": "crates/worth-relational/src/validation/engine/request/construction.rs"
+  },
+  {
+    "status": "UU",
+    "path": "crates/worth-relational/src/validation/engine/request/relation_integrity_scopes.rs"
+  },
+  {
+    "status": "UU",
+    "path": "crates/worth-relational/src/validation/engine/runtime_view.rs"
+  },
+  {
+    "status": "UU",
+    "path": "crates/worth-relational/src/validation/engine/tests/acyclicity_resources.rs"
+  },
+  {
+    "status": "UU",
+    "path": "crates/worth-relational/src/validation/engine/tests/acyclicity_resources/native_prerequisites/effects/publication.rs"
+  },
+  {
+    "status": "UU",
+    "path": "crates/worth-relational/src/validation/engine/tests/acyclicity_resources/native_prerequisites/work_account.rs"
+  },
+  {
+    "status": "UU",
+    "path": "crates/worth-relational/src/validation/execution/planning/packet_selection/basis_tests.rs"
+  },
+  {
+    "status": "UU",
+    "path": "crates/worth-relational/src/validation/mod.rs"
+  },
+  {
+    "status": "UU",
+    "path": "crates/worth-relational/src/visibility/materialization/read_records/projection/streamed_basis_reads/record_clone_quotes.rs"
+  },
+  {
+    "status": "UU",
+    "path": "crates/worth-relational/src/visibility/materialization/read_records/read_work/record_quote.rs"
+  },
+  {
+    "status": "DU",
+    "path": "crates/worth-server/src/surfaces/compat_http/mutation_execution/retry_cache.rs"
+  },
+  {
+    "status": "UU",
+    "path": "crates/worth-testkit-compiler/src/lib.rs"
+  },
+  {
+    "status": "UU",
+    "path": "crates/worth-testkit-compiler/src/refusal.rs"
+  },
+  {
+    "status": "UU",
+    "path": "crates/worth-testkit-compiler/src/semantic_denial.rs"
+  },
+  {
+    "status": "UU",
+    "path": "crates/worth-testkit-relational/src/lib.rs"
+  },
+  {
+    "status": "UU",
+    "path": "crates/worth-testkit-server/assets/ui/construction/query_handoff/private_prepared_query_handoff_constructor.stderr"
+  },
+  {
+    "status": "UU",
+    "path": "crates/worth-testkit-server/assets/ui/construction/query_handoff/private_query_handoff_constructor.stderr"
+  },
+  {
+    "status": "UU",
+    "path": "crates/worth-testkit-server/assets/ui/construction/response/private_evidence_record_constructor.stderr"
+  },
+  {
+    "status": "UU",
+    "path": "crates/worth-testkit-server/assets/ui/construction/worth_native/private_prepared_session_constructor.stderr"
+  },
+  {
+    "status": "UU",
+    "path": "crates/worth-testkit-server/assets/ui/construction/worth_native/private_session_constructor.stderr"
+  },
+  {
+    "status": "UU",
+    "path": "docs/build-an-application.md"
+  },
+  {
+    "status": "UU",
+    "path": "docs/capability-index.md"
+  },
+  {
+    "status": "UU",
+    "path": "docs/how-it-works.md"
+  },
+  {
+    "status": "UU",
+    "path": "scripts/test_cost/test_unit_plan.py"
+  },
+  {
+    "status": "UU",
+    "path": "scripts/test_topology/src_door_callers.py"
+  },
+  {
+    "status": "UU",
+    "path": "tools/boundary-check/config/control-callers.txt"
+  },
+  {
+    "status": "UU",
+    "path": "workspaces/worth-query-bank-world/crates/bank-http-adapter/src/http/server/capability_revocation_custody/denial/recovery.rs"
+  },
+  {
+    "status": "UU",
+    "path": "workspaces/worth-query-bank-world/crates/bank-http-adapter/src/http/server/estate_denial.rs"
+  },
+  {
+    "status": "UU",
+    "path": "workspaces/worth-query-bank-world/crates/bank-http-adapter/src/http/server/estate_denial/recovery_instruction_tests.rs"
+  },
+  {
+    "status": "UU",
+    "path": "workspaces/worth-query-bank-world/crates/bank-http-adapter/src/http/server/mutation_application/commit_denial.rs"
+  },
+  {
+    "status": "UU",
+    "path": "workspaces/worth-query-bank-world/crates/bank-http-adapter/src/http/server/mutation_application/denial.rs"
+  },
+  {
+    "status": "UU",
+    "path": "workspaces/worth-query-bank-world/crates/bank-http-adapter/src/http/server/query_denial.rs"
+  },
+  {
+    "status": "UU",
+    "path": "workspaces/worth-query-bank-world/crates/bank-http-adapter/src/http/server/query_denial/managed_index.rs"
+  },
+  {
+    "status": "AA",
+    "path": "workspaces/worth-query-bank-world/crates/bank-http-adapter/src/http/server/query_denial/output_settlement.rs"
+  },
+  {
+    "status": "UU",
+    "path": "workspaces/worth-query-bank-world/crates/bank-http-adapter/src/http/server/relational_execution_denial.rs"
+  },
+  {
+    "status": "UU",
+    "path": "workspaces/worth-query-bank-world/crates/bank-http-adapter/src/http/server/tests/fixture/expiring_authentication.rs"
+  },
+  {
+    "status": "UU",
+    "path": "workspaces/worth-query-bank-world/crates/bank-http-adapter/src/http/server/tests/recovery/transport.rs"
+  },
+  {
+    "status": "UU",
+    "path": "workspaces/worth-query-bank-world/crates/bank-http-adapter/src/http/server/tests/resource_close.rs"
+  },
+  {
+    "status": "UU",
+    "path": "workspaces/worth-query-bank-world/crates/bank-server/src/application_query/denial.rs"
+  },
+  {
+    "status": "UU",
+    "path": "workspaces/worth-query-bank-world/crates/bank-server/src/estate_capability_admission/fixture/authorization_time.rs"
+  },
+  {
+    "status": "UU",
+    "path": "workspaces/worth-query-bank-world/crates/bank-server/src/identity_runtime/workflow_binding/tests.rs"
+  },
+  {
+    "status": "UU",
+    "path": "workspaces/worth-query-bank-world/crates/bank-server/src/lib.rs"
+  },
+  {
+    "status": "UU",
+    "path": "workspaces/worth-query-bank-world/crates/bank-server/src/operation_commit/commit_denial.rs"
+  },
+  {
+    "status": "UU",
+    "path": "workspaces/worth-query-bank-world/crates/bank-server/src/operation_commit/preparation_denial/application_attempt_kind.rs"
+  },
+  {
+    "status": "UU",
+    "path": "workspaces/worth-query-bank-world/crates/bank-server/src/operation_commit/unresolved_commit.rs"
+  },
+  {
+    "status": "UU",
+    "path": "workspaces/worth-query-bank-world/crates/worth-query-bank-court-external-rail-server/tests/worth_query_bank_court_external_rail_server/oracle/server_owned_effects/server/parallel_history/assessment_history/mod.rs"
+  },
+  {
+    "status": "UU",
+    "path": "workspaces/worth-query-bank-world/crates/worth-query-bank-testkit-domain/src/estate_schema_inventory.rs"
+  },
+  {
+    "status": "UU",
+    "path": "workspaces/worth-query-bank-world/crates/worth-query-bank-testkit-domain/src/schema_inventory/support.rs"
+  },
+  {
+    "status": "UU",
+    "path": "workspaces/worth-query-bank-world/crates/worth-query-bank-testkit-server/src/ordinary_mutations/authorization_time.rs"
+  },
+  {
+    "status": "UU",
+    "path": "workspaces/worth-query-bank-world/crates/worth-query-bank-testkit-server/src/support/mod.rs"
+  },
+  {
+    "status": "UU",
+    "path": "workspaces/worth-query/Cargo.lock"
+  },
+  {
+    "status": "UU",
+    "path": "workspaces/worth-query/crates/worth-query-certification/examples/observable_workflow.rs"
+  },
+  {
+    "status": "UU",
+    "path": "workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/installation/checkpoint_restore.rs"
+  },
+  {
+    "status": "UU",
+    "path": "workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/managed_index/boxes/mod.rs"
+  },
+  {
+    "status": "UU",
+    "path": "workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/managed_index/host.rs"
+  },
+  {
+    "status": "UU",
+    "path": "workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/managed_index/journey.rs"
+  },
+  {
+    "status": "UU",
+    "path": "workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/managed_index/lifecycle/installation/incompatible_version.rs"
+  },
+  {
+    "status": "UU",
+    "path": "workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/managed_index/maintained/correction/state.rs"
+  },
+  {
+    "status": "UU",
+    "path": "workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/managed_index/maintained/events/composition.rs"
+  },
+  {
+    "status": "UU",
+    "path": "workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/managed_index/maintained/events/court.rs"
+  },
+  {
+    "status": "UU",
+    "path": "workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/managed_index/maintained/geometry/court.rs"
+  },
+  {
+    "status": "UU",
+    "path": "workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/managed_index/maintained/host.rs"
+  },
+  {
+    "status": "UU",
+    "path": "workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/managed_index/maintained/host/catalog.rs"
+  },
+  {
+    "status": "UU",
+    "path": "workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/managed_index/maintained/nested/composition.rs"
+  },
+  {
+    "status": "UU",
+    "path": "workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/managed_index/maintained/protected.rs"
+  },
+  {
+    "status": "UU",
+    "path": "workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/managed_index/maintained/rule/evaluation.rs"
+  },
+  {
+    "status": "UU",
+    "path": "workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/managed_index/prefix.rs"
+  },
+  {
+    "status": "UU",
+    "path": "workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/managed_index/query.rs"
+  },
+  {
+    "status": "UU",
+    "path": "workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/managed_index/refusing/host.rs"
+  },
+  {
+    "status": "UU",
+    "path": "workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/managed_index/schema.rs"
+  },
+  {
+    "status": "UU",
+    "path": "workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/topology_entry/examples/invariant_reads.rs"
+  },
+  {
+    "status": "UU",
+    "path": "workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/topology_entry/examples/required_feature.rs"
+  },
+  {
+    "status": "UU",
+    "path": "workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/topology_entry/examples/shared_execution.rs"
+  },
+  {
+    "status": "UU",
+    "path": "workspaces/worth-query/crates/worth-query-court-decl-execution-package-archive/tests/worth_query_court_decl_execution_package_archive/domain_computation/primary_graph/output_lineage/ownership_oracle/birth/mod.rs"
+  },
+  {
+    "status": "UU",
+    "path": "workspaces/worth-query/crates/worth-query-court-decl-execution-package-archive/tests/worth_query_court_decl_execution_package_archive/domain_computation/primary_graph/output_lineage/ownership_oracle/mod.rs"
+  },
+  {
+    "status": "UU",
+    "path": "workspaces/worth-query/crates/worth-query-court-decl-execution-package-archive/tests/worth_query_court_decl_execution_package_archive/domain_computation/primary_graph/output_lineage/ownership_oracle/optional_aspects/court/mod.rs"
+  },
+  {
+    "status": "UU",
+    "path": "workspaces/worth-query/crates/worth-query-court-decl-execution-package-archive/tests/worth_query_court_decl_execution_package_archive/domain_computation/primary_graph/output_lineage/ownership_oracle/optional_aspects/court/output_revision/mod.rs"
+  },
+  {
+    "status": "UU",
+    "path": "workspaces/worth-query/crates/worth-query-court-decl-execution-package-archive/tests/worth_query_court_decl_execution_package_archive/domain_computation/primary_graph/output_lineage/ownership_oracle/optional_aspects/court/publication_state/mod.rs"
+  },
+  {
+    "status": "UU",
+    "path": "workspaces/worth-query/crates/worth-query-court-decl-execution-package-archive/tests/worth_query_court_decl_execution_package_archive/domain_computation/primary_graph/output_lineage/ownership_oracle/producer_observation/currentness/mod.rs"
+  },
+  {
+    "status": "UU",
+    "path": "workspaces/worth-query/crates/worth-query-court-decl-execution/tests/worth_query_court_decl_execution/domain_computation/primary_graph/provider/application_touch_admission/tests/fixture/relation/mod.rs"
+  },
+  {
+    "status": "UU",
+    "path": "workspaces/worth-query/crates/worth-query-court-decl-host-package-archive-replay-application-graph/tests/worth_query_court_decl_host_package_archive_replay_application_graph/certification/application_graph/workflow_definition_readmission/mod.rs"
+  },
+  {
+    "status": "UU",
+    "path": "workspaces/worth-query/crates/worth-query-court-decl-host/tests/worth_query_court_decl_host/aspect_patterns/one_of/world.rs"
+  },
+  {
+    "status": "UU",
+    "path": "workspaces/worth-query/crates/worth-query-court-decl-host/tests/worth_query_court_decl_host/content_door/world.rs"
+  },
+  {
+    "status": "UU",
+    "path": "workspaces/worth-query/crates/worth-query-court-decl-host/tests/worth_query_court_decl_host/producer_succession/checkpoint.rs"
+  },
+  {
+    "status": "UU",
+    "path": "workspaces/worth-query/crates/worth-query-court-decl-host/tests/worth_query_court_decl_host/producer_succession/world.rs"
+  },
+  {
+    "status": "UU",
+    "path": "workspaces/worth-query/crates/worth-query-court-execution-convergence-epoch-fixture/tests/worth_query_court_execution_convergence_epoch_fixture/domain_computation/primary_graph/application_installation/program/speculation/counted_read_stops/mod.rs"
+  },
+  {
+    "status": "UU",
+    "path": "workspaces/worth-query/crates/worth-query-court-execution-managed-run-provider-contract-violation/tests/worth_query_court_execution_managed_run_provider_contract_violation/domain_computation/primary_graph/entity_resolution/tests/mod.rs"
+  },
+  {
+    "status": "UU",
+    "path": "workspaces/worth-query/crates/worth-query-court-execution-package-archive/tests/worth_query_court_execution_package_archive/domain_computation/primary_graph/tests/application_attempt/invariant_orbits/declared_queries/metadata_only/mod.rs"
+  },
+  {
+    "status": "UU",
+    "path": "workspaces/worth-query/crates/worth-query-court-execution-primary-graph-application-attempt/tests/worth_query_court_execution_primary_graph_application_attempt/domain_computation/primary_graph/application_attempt/provider_execution/phase/prepared/running/progression/session_admission/comparison_scope_tests/mod.rs"
+  },
+  {
+    "status": "UU",
+    "path": "workspaces/worth-query/crates/worth-query-court-execution-primary-graph-application-attempt/tests/worth_query_court_execution_primary_graph_application_attempt/domain_computation/primary_graph/application_attempt/provider_execution/phase/prepared/running/progression/session_admission/overlay_conflict_tests/mod.rs"
+  },
+  {
+    "status": "UU",
+    "path": "workspaces/worth-query/crates/worth-query-court-execution-primary-graph-application-attempt/tests/worth_query_court_execution_primary_graph_application_attempt/domain_computation/primary_graph/application_attempt/provider_execution/phase/prepared/running/progression/session_admission/principal_comparison_tests/mod.rs"
+  },
+  {
+    "status": "UU",
+    "path": "workspaces/worth-query/crates/worth-query-court-execution-primary-graph-application-attempt/tests/worth_query_court_execution_primary_graph_application_attempt/domain_computation/primary_graph/application_attempt/provider_execution/phase/prepared/running/progression/session_admission/registration_conflict_tests/interrupted_registration_tests/interrupted_registration_tests.rs"
+  },
+  {
+    "status": "UU",
+    "path": "workspaces/worth-query/crates/worth-query-court-execution-primary-graph-application-attempt/tests/worth_query_court_execution_primary_graph_application_attempt/domain_computation/primary_graph/application_attempt/provider_execution/phase/prepared/running/progression/session_admission/registration_conflict_tests/registration_conflict_tests.rs"
+  },
+  {
+    "status": "UU",
+    "path": "workspaces/worth-query/crates/worth-query-court-execution-primary-graph-application-attempt/tests/worth_query_court_execution_primary_graph_application_attempt/domain_computation/primary_graph/invariant_projection/component/tests/mod.rs"
+  },
+  {
+    "status": "UU",
+    "path": "workspaces/worth-query/crates/worth-query-court-execution-primary-graph-application-attempt/tests/worth_query_court_execution_primary_graph_application_attempt/domain_computation/primary_graph/invariant_projection/component/tests/retirement/mod.rs"
+  },
+  {
+    "status": "UU",
+    "path": "workspaces/worth-query/crates/worth-query-court-execution-primary-graph-application-attempt/tests/worth_query_court_execution_primary_graph_application_attempt/domain_computation/primary_graph/invariant_projection/operation_reader/decision_plan/orbit/tests/mod.rs"
+  },
+  {
+    "status": "UU",
+    "path": "workspaces/worth-query/crates/worth-query-court-execution-primary-graph-application-attempt/tests/worth_query_court_execution_primary_graph_application_attempt/domain_computation/primary_graph/invariant_projection/walk/tests/mod.rs"
+  },
+  {
+    "status": "UU",
+    "path": "workspaces/worth-query/crates/worth-query-court-execution-primary-graph-application-contribution/tests/worth_query_court_execution_primary_graph_application_contribution/domain_computation/primary_graph/application_contribution/conditional/output_readiness_contract/typed/tests/composition_refusal/mod.rs"
+  },
+  {
+    "status": "UU",
+    "path": "workspaces/worth-query/crates/worth-query-court-execution-primary-graph-application-query/tests/worth_query_court_execution_primary_graph_application_query/domain_computation/primary_graph/application_query/derived_view/registration/collection/pair/reconstruct_parallel/read_ceiling_tests/pin_custody_tests/mod.rs"
+  },
+  {
+    "status": "UU",
+    "path": "workspaces/worth-query/crates/worth-query-court-execution-primary-graph-application-query/tests/worth_query_court_execution_primary_graph_application_query/domain_computation/primary_graph/tests/application_query/derived_view/leased_reconstruction/observation/mod.rs"
+  },
+  {
+    "status": "UU",
+    "path": "workspaces/worth-query/crates/worth-query-court-execution-primary-graph-application-query/tests/worth_query_court_execution_primary_graph_application_query/domain_computation/primary_graph/tests/application_query/derived_view/reconstruction_parity/mod.rs"
+  },
+  {
+    "status": "UU",
+    "path": "workspaces/worth-query/crates/worth-query-court-execution-primary-graph-authorization/tests/worth_query_court_execution_primary_graph_authorization/domain_computation/primary_graph/tests/authorization/capability_elevation/mutation/mod.rs"
+  },
+  {
+    "status": "UU",
+    "path": "workspaces/worth-query/crates/worth-query-court-execution/tests/worth_query_court_execution/domain_computation/primary_graph/output_lineage/input_cutoff/verification/tests/mod.rs"
+  },
+  {
+    "status": "UU",
+    "path": "workspaces/worth-query/crates/worth-query-court-execution/tests/worth_query_court_execution/domain_computation/primary_graph/output_lineage/invalidation/native_journey_tests/concurrent_first_writers/mod.rs"
+  },
+  {
+    "status": "UU",
+    "path": "workspaces/worth-query/crates/worth-query-court-execution/tests/worth_query_court_execution/domain_computation/primary_graph/output_lineage/invalidation/native_journey_tests/current_registration/mod.rs"
+  },
+  {
+    "status": "UU",
+    "path": "workspaces/worth-query/crates/worth-query-court-execution/tests/worth_query_court_execution/domain_computation/primary_graph/output_lineage/invalidation/native_journey_tests/dirty_clearance_tests/mod.rs"
+  },
+  {
+    "status": "UU",
+    "path": "workspaces/worth-query/crates/worth-query-court-execution/tests/worth_query_court_execution/domain_computation/primary_graph/output_lineage/invalidation/native_journey_tests/equal_field_write/mod.rs"
+  },
+  {
+    "status": "UU",
+    "path": "workspaces/worth-query/crates/worth-query-court-execution/tests/worth_query_court_execution/domain_computation/primary_graph/output_lineage/invalidation/native_journey_tests/equality/mod.rs"
+  },
+  {
+    "status": "UU",
+    "path": "workspaces/worth-query/crates/worth-query-court-execution/tests/worth_query_court_execution/domain_computation/primary_graph/output_lineage/invalidation/native_journey_tests/full_verification/mod.rs"
+  },
+  {
+    "status": "UU",
+    "path": "workspaces/worth-query/crates/worth-query-court-execution/tests/worth_query_court_execution/domain_computation/primary_graph/output_lineage/invalidation/native_journey_tests/local_requirement/mod.rs"
+  },
+  {
+    "status": "UU",
+    "path": "workspaces/worth-query/crates/worth-query-court-execution/tests/worth_query_court_execution/domain_computation/primary_graph/output_lineage/invalidation/native_journey_tests/mod.rs"
+  },
+  {
+    "status": "UU",
+    "path": "workspaces/worth-query/crates/worth-query-court-execution/tests/worth_query_court_execution/domain_computation/primary_graph/output_lineage/invalidation/native_journey_tests/pending_own_evidence/mod.rs"
+  },
+  {
+    "status": "UU",
+    "path": "workspaces/worth-query/crates/worth-query-court-execution/tests/worth_query_court_execution/domain_computation/primary_graph/output_lineage/invalidation/native_journey_tests/posting_continuation/mod.rs"
+  },
+  {
+    "status": "UU",
+    "path": "workspaces/worth-query/crates/worth-query-court-execution/tests/worth_query_court_execution/domain_computation/primary_graph/output_lineage/invalidation/native_journey_tests/precommit_chain/provider_precommit_refuses_earlier_three_hop_evidence_at_current/mod.rs"
+  },
+  {
+    "status": "UU",
+    "path": "workspaces/worth-query/crates/worth-query-court-execution/tests/worth_query_court_execution/domain_computation/primary_graph/output_lineage/invalidation/native_journey_tests/replay_propagation/mod.rs"
+  },
+  {
+    "status": "UU",
+    "path": "workspaces/worth-query/crates/worth-query-court-execution/tests/worth_query_court_execution/domain_computation/primary_graph/output_lineage/invalidation/native_journey_tests/required_hints/mod.rs"
+  },
+  {
+    "status": "UU",
+    "path": "workspaces/worth-query/crates/worth-query-court-execution/tests/worth_query_court_execution/domain_computation/primary_graph/output_lineage/invalidation/native_journey_tests/retained_headroom/no_history_quota/mod.rs"
+  },
+  {
+    "status": "UU",
+    "path": "workspaces/worth-query/crates/worth-query-court-execution/tests/worth_query_court_execution/domain_computation/primary_graph/output_lineage/invalidation/native_journey_tests/shared_fact_custody/mod.rs"
+  },
+  {
+    "status": "UU",
+    "path": "workspaces/worth-query/crates/worth-query-court-execution/tests/worth_query_court_execution/domain_computation/primary_graph/output_lineage/invalidation/native_journey_tests/transitive_propagation/mod.rs"
+  },
+  {
+    "status": "UU",
+    "path": "workspaces/worth-query/crates/worth-query-court-execution/tests/worth_query_court_execution/domain_computation/primary_graph/output_lineage/invalidation/native_journey_tests/unchanged_history/mod.rs"
+  },
+  {
+    "status": "UU",
+    "path": "workspaces/worth-query/crates/worth-query-court-execution/tests/worth_query_court_execution/domain_computation/primary_graph/output_lineage/invalidation/native_journey_tests/verified_current/mod.rs"
+  },
+  {
+    "status": "UU",
+    "path": "workspaces/worth-query/crates/worth-query-court-execution/tests/worth_query_court_execution/domain_computation/primary_graph/output_lineage/invalidation/query_coverage/tests/mod.rs"
+  },
+  {
+    "status": "UU",
+    "path": "workspaces/worth-query/crates/worth-query-court-execution/tests/worth_query_court_execution/domain_computation/primary_graph/output_lineage/tests/family_publications/mod.rs"
+  },
+  {
+    "status": "UU",
+    "path": "workspaces/worth-query/crates/worth-query-court-execution/tests/worth_query_court_execution/domain_computation/primary_graph/output_lineage/tests/input_cutoff_selection/mod.rs"
+  },
+  {
+    "status": "UU",
+    "path": "workspaces/worth-query/crates/worth-query-court-execution/tests/worth_query_court_execution/domain_computation/primary_graph/output_lineage/tests/partition_selection/mod.rs"
+  },
+  {
+    "status": "UU",
+    "path": "workspaces/worth-query/crates/worth-query-court-execution/tests/worth_query_court_execution/domain_computation/primary_graph/output_lineage/tests/republication/mod.rs"
+  },
+  {
+    "status": "UU",
+    "path": "workspaces/worth-query/crates/worth-query-court-execution/tests/worth_query_court_execution/domain_computation/primary_graph/output_lineage/tests/republication/rules/mod.rs"
+  },
+  {
+    "status": "UU",
+    "path": "workspaces/worth-query/crates/worth-query-court-query-decl-host/tests/worth_query_court_query_decl_host/host/temporal_conditional_operation/contribution_installation/checkpoint_transition/admission/mod.rs"
+  },
+  {
+    "status": "UU",
+    "path": "workspaces/worth-query/crates/worth-query-execution/src/domain_computation/authorization/admission/operation_observation.rs"
+  },
+  {
+    "status": "UU",
+    "path": "workspaces/worth-query/crates/worth-query-execution/src/domain_computation/authorization/operation_admission/capability_admission/preparation/observation/admitted_access.rs"
+  },
+  {
+    "status": "UU",
+    "path": "workspaces/worth-query/crates/worth-query-execution/src/domain_computation/authorization/operation_admission/capability_admission/preparation/observation/admitted_access/operation_progression.rs"
+  },
+  {
+    "status": "UU",
+    "path": "workspaces/worth-query/crates/worth-query-execution/src/domain_computation/authorization/operation_admission/output_demand.rs"
+  },
+  {
+    "status": "UU",
+    "path": "workspaces/worth-query/crates/worth-query-execution/src/domain_computation/authorization/operation_admission/selected_conventional.rs"
+  },
+  {
+    "status": "UU",
+    "path": "workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_attempt/compare_and_commit/commit_outcome/denial/execution.rs"
+  },
+  {
+    "status": "UU",
+    "path": "workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_attempt/compare_and_commit/commit_receipt/pending.rs"
+  },
+  {
+    "status": "UU",
+    "path": "workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_attempt/compare_and_commit/mod.rs"
+  },
+  {
+    "status": "UU",
+    "path": "workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_attempt/dependency_identity.rs"
+  },
+  {
+    "status": "UU",
+    "path": "workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_attempt/fact.rs"
+  },
+  {
+    "status": "UU",
+    "path": "workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_attempt/mod.rs"
+  },
+  {
+    "status": "UU",
+    "path": "workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_attempt/provider_execution.rs"
+  },
+  {
+    "status": "UU",
+    "path": "workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_attempt/provider_execution/phase/mod.rs"
+  },
+  {
+    "status": "UU",
+    "path": "workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_attempt/provider_execution/phase/prepared/running.rs"
+  },
+  {
+    "status": "UU",
+    "path": "workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_attempt/provider_execution/phase/prepared/running/progression.rs"
+  },
+  {
+    "status": "UU",
+    "path": "workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_attempt/provider_execution/phase/prepared/running/progression/commit_resolution.rs"
+  },
+  {
+    "status": "UU",
+    "path": "workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_attempt/provider_execution/phase/prepared/running/progression/progressed/cleanup_failure.rs"
+  },
+  {
+    "status": "UU",
+    "path": "workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_attempt/read_set.rs"
+  },
+  {
+    "status": "UU",
+    "path": "workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_checkpoint.rs"
+  },
+  {
+    "status": "UU",
+    "path": "workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_contribution/producer/execution/post_authorization/preparation.rs"
+  },
+  {
+    "status": "UU",
+    "path": "workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_installation/construction.rs"
+  },
+  {
+    "status": "UU",
+    "path": "workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_installation/program/demand/dependent/parent.rs"
+  },
+  {
+    "status": "UU",
+    "path": "workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_installation/program/speculation.rs"
+  },
+  {
+    "status": "UU",
+    "path": "workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_installation/program/speculation/discard_fault.rs"
+  },
+  {
+    "status": "UU",
+    "path": "workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_output_demand/mod.rs"
+  },
+  {
+    "status": "UU",
+    "path": "workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_output_demand/settlement/observation/provenance.rs"
+  },
+  {
+    "status": "UU",
+    "path": "workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_program.rs"
+  },
+  {
+    "status": "UU",
+    "path": "workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_query/basis/admission.rs"
+  },
+  {
+    "status": "UU",
+    "path": "workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_query/basis/product_admission.rs"
+  },
+  {
+    "status": "UU",
+    "path": "workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_runtime/certification_controls/correction_history_indexes.rs"
+  },
+  {
+    "status": "UU",
+    "path": "workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_runtime/certification_controls/native_field_write.rs"
+  },
+  {
+    "status": "UU",
+    "path": "workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_runtime/installation.rs"
+  },
+  {
+    "status": "UU",
+    "path": "workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/bootstrap/preparation.rs"
+  },
+  {
+    "status": "UU",
+    "path": "workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/component_selection.rs"
+  },
+  {
+    "status": "UU",
+    "path": "workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/denial.rs"
+  },
+  {
+    "status": "UU",
+    "path": "workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/facade.rs"
+  },
+  {
+    "status": "UU",
+    "path": "workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/index_refresh.rs"
+  },
+  {
+    "status": "UU",
+    "path": "workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/initial_schema_denial.rs"
+  },
+  {
+    "status": "UU",
+    "path": "workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/invariant_projection/aggregate/completed_scan.rs"
+  },
+  {
+    "status": "UU",
+    "path": "workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/invariant_projection/locked_reader.rs"
+  },
+  {
+    "status": "UU",
+    "path": "workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/invariant_projection/locked_reader/borrowed_snapshot.rs"
+  },
+  {
+    "status": "UU",
+    "path": "workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/invariant_projection/locked_reader/court_doors_for_test.rs"
+  },
+  {
+    "status": "UU",
+    "path": "workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/invariant_projection/operation_reader/computation_calls.rs"
+  },
+  {
+    "status": "UU",
+    "path": "workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/mod.rs"
+  },
+  {
+    "status": "UD",
+    "path": "workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/product_operation/candidate_selectors.rs"
+  },
+  {
+    "status": "UU",
+    "path": "workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/product_operation/document_history/group/member.rs"
+  },
+  {
+    "status": "UU",
+    "path": "workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/product_operation/document_history/mod.rs"
+  },
+  {
+    "status": "UU",
+    "path": "workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/product_operation/document_history/reservation.rs"
+  },
+  {
+    "status": "UU",
+    "path": "workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/product_operation/document_history/sealing.rs"
+  },
+  {
+    "status": "UU",
+    "path": "workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/product_operation/program_adoption/preparation/state.rs"
+  },
+  {
+    "status": "UU",
+    "path": "workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/product_operation/security_basis.rs"
+  },
+  {
+    "status": "UU",
+    "path": "workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/provider.rs"
+  },
+  {
+    "status": "UU",
+    "path": "workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/provider/application_attempt_state.rs"
+  },
+  {
+    "status": "UU",
+    "path": "workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/provider/application_attempt_state/commit_preparation/relational_commit/commit_execution.rs"
+  },
+  {
+    "status": "UU",
+    "path": "workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/provider/application_attempt_state/commit_preparation/relational_commit/commit_execution/publication.rs"
+  },
+  {
+    "status": "UU",
+    "path": "workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/provider/application_attempt_state/commit_preparation/relational_commit/commit_execution/touched_records.rs"
+  },
+  {
+    "status": "UU",
+    "path": "workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/provider/idempotency/snapshot_resolution.rs"
+  },
+  {
+    "status": "UU",
+    "path": "workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/provider/invariant_execution/relational_validation.rs"
+  },
+  {
+    "status": "UU",
+    "path": "workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/provider/pending_application_publication.rs"
+  },
+  {
+    "status": "UU",
+    "path": "workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/provider/session_commit/evidence.rs"
+  },
+  {
+    "status": "UU",
+    "path": "workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/provider/session_commit/receipt_basis_retention.rs"
+  },
+  {
+    "status": "UU",
+    "path": "workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/schema_layout.rs"
+  },
+  {
+    "status": "UU",
+    "path": "workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/typed_bootstrap.rs"
+  },
+  {
+    "status": "UU",
+    "path": "workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/workflow/instance/progression.rs"
+  },
+  {
+    "status": "UU",
+    "path": "workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/workflow/instance/start_provenance.rs"
+  },
+  {
+    "status": "UU",
+    "path": "workspaces/worth-query/crates/worth-query-execution/src/domain_computation/provider_session/protocol/execution_plan.rs"
+  },
+  {
+    "status": "UU",
+    "path": "workspaces/worth-query/crates/worth-query-execution/src/facade/primary_graph.rs"
+  },
+  {
+    "status": "UU",
+    "path": "workspaces/worth-query/crates/worth-query-host/AGENT_CONTEXT.md"
+  },
+  {
+    "status": "UU",
+    "path": "workspaces/worth-query/crates/worth-query-publication/src/application_entry/history/edit/sealing.rs"
+  },
+  {
+    "status": "UU",
+    "path": "workspaces/worth-query/crates/worth-query-publication/src/application_entry/history/mod.rs"
+  },
+  {
+    "status": "UU",
+    "path": "workspaces/worth-query/crates/worth-query-publication/src/application_entry/mod.rs"
+  },
+  {
+    "status": "UD",
+    "path": "workspaces/worth-query/crates/worth-query-testkit-certification-canonical/src/certification/application_graph/canonical_transition/successor/unchanged_revision.rs"
+  },
+  {
+    "status": "UU",
+    "path": "workspaces/worth-query/crates/worth-query-testkit-execution-primary-graph-application-attempt/src/domain_computation/primary_graph/tests/fixture/decision_read_world/schema/mod.rs"
+  },
+  {
+    "status": "UU",
+    "path": "workspaces/worth-query/crates/worth-query-testkit-execution-primary-graph-application-contribution/src/domain_computation/primary_graph/application_contribution/partitioned_computation/attribution_tests/mod.rs"
+  },
+  {
+    "status": "UU",
+    "path": "workspaces/worth-query/crates/worth-query-testkit-execution-primary-graph-application-contribution/src/domain_computation/primary_graph/tests/fixture/authorization_world_installation/mod.rs"
+  },
+  {
+    "status": "UU",
+    "path": "workspaces/worth-query/crates/worth-query-testkit-execution-primary-graph-application-contribution/src/domain_computation/primary_graph/tests/fixture/capability/declaration/mod.rs"
+  },
+  {
+    "status": "UU",
+    "path": "workspaces/worth-query/crates/worth-query-testkit-execution-primary-graph-application-contribution/src/domain_computation/primary_graph/tests/fixture/capability/elevated/mod.rs"
+  },
+  {
+    "status": "UU",
+    "path": "workspaces/worth-query/crates/worth-query-testkit-host/src/host/application_runtime_surface.rs"
+  },
+  {
+    "status": "UU",
+    "path": "workspaces/worth-query/crates/worth-query/src/domain_installation/operation_execution/workflow_execution/progression/frontier/tests/dispatch.rs"
+  },
+  {
+    "status": "UU",
+    "path": "workspaces/worth-query/crates/worth-query/src/effect_lifecycle/certification/closeout/closeout_oracles.rs"
+  },
+  {
+    "status": "UU",
+    "path": "workspaces/worth-query/crates/worth-query/src/effect_lifecycle/certification/closeout/closeout_receipts.rs"
+  },
+  {
+    "status": "UU",
+    "path": "workspaces/worth-query/crates/worth-query/src/effect_lifecycle/certification/phase4/phase4_boundary_rows.rs"
+  },
+  {
+    "status": "UU",
+    "path": "workspaces/worth-query/crates/worth-query/src/effect_lifecycle/certification/phase4/phase4_execution_rows.rs"
+  },
+  {
+    "status": "UU",
+    "path": "workspaces/worth-query/crates/worth-query/src/lower_runtime_routing/certification/surface/fixtures/phase_six/effect.rs"
+  },
+  {
+    "status": "UU",
+    "path": "workspaces/worth-query/crates/worth-query/src/memory_workspace/mod.rs"
+  },
+  {
+    "status": "UU",
+    "path": "workspaces/worth-query/crates/worth-query/src/runtime/error.rs"
+  },
+  {
+    "status": "UU",
+    "path": "workspaces/worth-store/crates/worth-store-court-recovery-runtime-replication/tests/worth_store_court_recovery_runtime_replication/sources/worth_store_recovery_runtime/ui/staged_recovery_cannot_be_forged.rs"
+  },
+  {
+    "status": "DU",
+    "path": "workspaces/worth-store/crates/worth-store-court-recovery-runtime-replication/tests/worth_store_court_recovery_runtime_replication/sources/worth_store_recovery_runtime/ui/staged_recovery_cannot_be_forged.stderr"
+  }
+]

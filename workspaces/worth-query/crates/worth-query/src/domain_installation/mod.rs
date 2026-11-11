@@ -64,3 +64,6 @@ pub(crate) use operation_authority_chain::{
     mint_operation_phase_proof, operation_phase_basis, WorthQueryInvalidationMaintenancePhase,
     WorthQueryInvalidationPublishedPhase, WorthQueryOperationPhaseProof,
 };
+#[cfg(test)]
+#[path = "mod_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;

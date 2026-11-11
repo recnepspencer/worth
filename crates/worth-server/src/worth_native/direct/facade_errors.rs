@@ -90,6 +90,10 @@ impl WorthServerWorthNativeDirectFacade {
         error: worth_query::facade::foundation::ProjectionFactConsumptionPathError,
     ) -> WorthServerDirectProjectionOutcome {
         match error {
+            worth_query::facade::foundation::ProjectionFactConsumptionPathError::EvidenceIdentityDerivationDenied(cause) => TransitionOutcome::Denied(crate::WorthServerQueryHandoffDenial::new(
+                crate::WorthServerQueryHandoffDenialCode::EvidenceIdentityDerivationDenied(cause),
+                self.admission.request_context().diagnostics_profile(), "projection identity exceeded canonical digest bounds",
+            )),
             worth_query::facade::foundation::ProjectionFactConsumptionPathError::Declaration(
                 detail,
             ) => TransitionOutcome::Denied(crate::WorthServerQueryHandoffDenial::new(

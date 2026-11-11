@@ -9,7 +9,6 @@ from compile_batch import prepare_environment, render_manifests, target_director
 from compiler_audiences import group, sources as fixture_sources
 from fixture_graph import configured_inputs, snapshot_audiences, snapshot_inputs
 from workspace import WORKSPACES
-from diagnostic_flags import FLAGS as DIAGNOSTIC_FLAGS
 from compiler_stages import partition, stage
 
 
@@ -69,8 +68,7 @@ def recipe_identity(repository, manifest, environment):
     manifests = {path: text.replace(Path(repository).as_posix(), '<workspace>')
                  for path, text in render_manifests(environment, manifest).items()}
     recipe = json.dumps({'manifests': manifests, 'profile': environment['profile'],
-                         'proof_stage': stage(environment).value,
-                         'diagnostic_flags': DIAGNOSTIC_FLAGS}, sort_keys=True)
+                         'proof_stage': stage(environment).value}, sort_keys=True)
     return hashlib.sha256(recipe.encode()).hexdigest()
 
 
@@ -83,7 +81,7 @@ def unit_inputs(output):
     (dependency / 'build.rs').write_text(
         'fn main() { assert_eq!(std::env::var("OPT_LEVEL").unwrap(), "0"); '
         'let flags=std::env::var("CARGO_ENCODED_RUSTFLAGS").unwrap(); '
-        'assert!(flags.contains("--verbose")); assert!(flags.contains("dead_code")); }\n', encoding='utf-8')
+        'assert!(flags.contains("overflow-checks=on")); }\n', encoding='utf-8')
     fixtures = root / 'fixtures'
     fixtures.mkdir(parents=True, exist_ok=True)
     for name in ('private_a', 'private_b'):
@@ -138,6 +136,12 @@ def prepare(repository, workspace, output, cargo_runner, scope=CompilerScope.ALL
                              'audience_identity': result['audience_identity'],
                              'proof_stage': observed['proof_stage'],
                              'fate': result['fate'], 'messages': result['messages']}
+    if workspace == 'query' and scope in (CompilerScope.ALL, CompilerScope.FIXTURES):
+        from query_compiler_inputs import prepare as query_inputs
+        consumer = query_inputs(repository, output / 'consumer', cargo_runner)
+        if outcomes.keys() & consumer.keys():
+            raise ValueError('consumer compiler source belongs to two environments')
+        outcomes.update(consumer)
     path = output / 'compiler-outcomes.json'
     path.write_text(json.dumps({'schema': 1, 'fixtures': outcomes}, indent=2) + '\n', encoding='utf-8')
     environment['WORTH_PREBUILT_COMPILER_OUTCOMES'] = str(path)

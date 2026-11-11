@@ -130,36 +130,10 @@ impl WorthQueryRequiredOutputSourcePreparationFailure {
     }
 }
 
-/// One installed program connection from a performed source operation to a required output.
-pub trait WorthQueryApplicationRequiredOutputConnection<Schema>: Sized + 'static
-where
-    Schema: ApplicationSchema,
-{
-    type Source: ApplicationMutationBinding<Schema>;
-    type Demand: WorthQueryApplicationOutputDemand<Schema>;
-
-    /// Canonical connection identity that must be present in the installed
-    /// validated program before the source operation may publish.
-    const IDENTITY: &'static str;
-
-    fn demand_from_source(
-        source: &<Self::Source as ApplicationMutationBinding<Schema>>::Input,
-    ) -> Result<Self::Demand, WorthQueryRequiredOutputConnectionDenial>;
-}
-
-/// One mutation binding admitted as a source for an installed required-output
-/// connection. Multiple operations owned by one feature may implement this for
-/// the same connection without duplicating the feature port.
-pub trait WorthQueryApplicationRequiredOutputSource<Schema, Connection>:
-    ApplicationMutationBinding<Schema>
-where
-    Schema: ApplicationSchema,
-    Connection: WorthQueryApplicationRequiredOutputConnection<Schema>,
-{
-    fn demand_from_source(
-        source: &Self::Input,
-    ) -> Result<Connection::Demand, WorthQueryRequiredOutputConnectionDenial>;
-}
+pub use worth_query_declaration::facade::application_program::{
+    WorthQueryApplicationRequiredOutputConnection, WorthQueryApplicationRequiredOutputSource,
+    WorthQueryRequiredOutputConnectionDenial,
+};
 
 /// A performed source whose required root demands are resolved by one typed
 /// query at that source publication's retained observation.
@@ -202,37 +176,6 @@ where
         discovery: &<<<Self::Discovery as ApplicationQueryIntent<Schema>>::Binding as ApplicationQueryBinding<Schema>>::ResultBinding as ApplicationStructuredValueBinding>::Value,
     ) -> Result<Vec<Self::Demand>, WorthQueryRequiredOutputConnectionDenial>;
 }
-
-/// Refusal, from an application's output connection, to derive a discovery
-/// query or output demands from its input.
-///
-/// Application code returns this from its connection functions; `subject`
-/// names what could not be connected.
-#[derive(Clone, Debug, Eq, PartialEq)]
-pub struct WorthQueryRequiredOutputConnectionDenial {
-    subject: String,
-}
-
-impl WorthQueryRequiredOutputConnectionDenial {
-    pub fn new(subject: impl Into<String>) -> Self {
-        Self {
-            subject: subject.into(),
-        }
-    }
-
-    pub fn subject(&self) -> &str {
-        &self.subject
-    }
-}
-
-impl std::fmt::Display for WorthQueryRequiredOutputConnectionDenial {
-    fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(
-            formatter,
-            "required output connection denied: {}",
-            self.subject
-        )
-    }
-}
-
-impl std::error::Error for WorthQueryRequiredOutputConnectionDenial {}
+#[cfg(test)]
+#[path = "application_program_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;

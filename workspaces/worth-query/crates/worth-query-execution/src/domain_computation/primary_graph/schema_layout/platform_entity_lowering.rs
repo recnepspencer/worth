@@ -5,7 +5,6 @@
 //! highest application aspect identity and the highest application kind, so an
 //! application declaration can neither name them nor collide with them.
 
-use worth_query_installation::facade::WorthQueryInstalledApplicationSchemaContractCatalog;
 use worth_relational::facade::identity::KindId;
 use worth_relational::facade::schema::{RelationalSchemaRegistry, SchemaId, SchemaVersionId};
 
@@ -41,14 +40,18 @@ pub(super) fn lower_platform_entities(
     registry: RelationalSchemaRegistry,
     schema_id: &SchemaId,
     schema_version_id: SchemaVersionId,
-    native_contracts: &WorthQueryInstalledApplicationSchemaContractCatalog,
+    maximum_application_identity: Option<worth_foundational::facade::AspectIdentity>,
     first_kind: KindId,
     subject_kinds: Vec<KindId>,
+    roles: &mut super::physical_identity::PhysicalIdentityAllocation<'_>,
 ) -> Result<
     (RelationalSchemaRegistry, WorthQueryPlatformEntityLayouts),
     WorthQueryPrimaryGraphInstallationDenial,
 > {
-    let identities = allocate_platform_aspect_identities(native_contracts)?;
+    let identities = match roles.platform_aspects() {
+        Some(identities) => identities,
+        None => allocate_platform_aspect_identities(maximum_application_identity)?,
+    };
     let (registry, provider_idempotency) = lower_provider_idempotency(
         registry,
         schema_id,

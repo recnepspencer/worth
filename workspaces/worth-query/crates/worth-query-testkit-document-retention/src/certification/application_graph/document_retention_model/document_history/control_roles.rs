@@ -15,13 +15,12 @@ mod grant;
 #[path = "control_roles/read.rs"]
 pub mod read;
 pub use grant::seed;
-use grant::*;
+pub use grant::*;
 pub const SUBJECT: &str = "record-history-payload-grant";
 const GRANT: &str = "control-history-navigation-grant";
 const ACTION: &str = "select-control-history";
 worth_query_capability!(pub ControlNavigationCapability in DocumentRetentionSchema);
 worth_query_operation!(pub SelectControlSnapshot for DocumentRetentionSchema, input read::InputBinding);
-worth_query_operation_reads!(SelectControlSnapshot => [WorkflowGrantIdentityField]);
 
 pub struct History;
 worth_query_portable_type!(History => "worth.query.document-retention.control-history.v1");
@@ -53,9 +52,13 @@ impl ApplicationCapabilityRequest<DocumentRetentionSchema, ControlNavigationCapa
     > {
         Ok(ApplicationCapabilityRequestProjection::new(
             ApplicationCapabilityEntitySelector::new(
-                WorkflowGrantIdentityField::reference(),
-                text(&self.identity),
-            ),
+                WorkflowGrantIdentityField::at("WorkflowGrantIdentityField"),
+                ApplicationEncodedScalarValue::<WorkflowGrantKeyBinding>::try_new(
+                    self.identity.clone().into(),
+                )
+                .expect("owned grant key encodes"),
+            )
+            .unwrap(),
             text(ACTION),
             encoded(),
             ApplicationCapabilityRequestContext::new(Self::Context::reference()),
@@ -76,7 +79,10 @@ pub fn declare(
                 .no_aftermath()
                 .finish(),
         )
-        .operation_read_field(operation, WorkflowGrantIdentityField::reference())
+        .operation_read_field(
+            operation,
+            WorkflowGrantIdentityField::at("WorkflowGrantIdentityField"),
+        )
         .capability(contract())
         .application_query(read::definition())
         .application_query_binding::<read::Binding>()
@@ -114,9 +120,10 @@ fn contract() -> ApplicationCapabilityContract<
             ApplicationCapabilityDisclosureRule::permit([
                 ApplicationCapabilityScopeGuard::requiring([
                     ApplicationCapabilityAcceptedValues::one_of(
-                        ControlGrantPurposeField::reference(),
+                        ControlGrantPurposeField::at("ControlGrantPurposeField"),
                         [encoded()],
-                    ),
+                    )
+                    .unwrap(),
                 ]),
             ]),
         ),
@@ -127,36 +134,52 @@ fn contract() -> ApplicationCapabilityContract<
         ControlGrant::reference(),
     )
     .target(ApplicationCapabilityTargetDefinition::new(
-        ApplicationCapabilityValueBinding::new(ControlGrantActionField::reference(), text(ACTION)),
+        ApplicationCapabilityValueBinding::new(
+            ControlGrantActionField::at("ControlGrantActionField"),
+            text(ACTION),
+        )
+        .unwrap(),
         ApplicationCapabilityRelationBinding::from_reference(ControlGrantResource::reference()),
         ApplicationCapabilityRelationDimension::not_applicable(),
-        ApplicationCapabilityFieldDimension::bound(ControlGrantPurposeField::reference()),
-        ApplicationCapabilityValueBinding::new(ControlGrantPurposeField::reference(), encoded()),
+        ApplicationCapabilityFieldDimension::bound(ControlGrantPurposeField::at(
+            "ControlGrantPurposeField",
+        ))
+        .unwrap(),
+        ApplicationCapabilityValueBinding::new(
+            ControlGrantPurposeField::at("ControlGrantPurposeField"),
+            encoded(),
+        )
+        .unwrap(),
     ))
     .constraints(ApplicationCapabilityConstraintDefinition::new(
         ApplicationCapabilityMagnitudeDimension::not_applicable(),
         ApplicationCapabilityCardinalityDimension::One,
         ApplicationCapabilityCurrentnessDefinition::new(
             ApplicationCapabilityValueBinding::new(
-                ControlGrantStatusField::reference(),
+                ControlGrantStatusField::at("ControlGrantStatusField"),
                 text("active"),
-            ),
+            )
+            .unwrap(),
             ApplicationCapabilityWorkflowDefinition::new(
-                ApplicationCapabilityFieldBinding::from_reference(
-                    ControlGrantWorkflowField::reference(),
-                ),
-                ApplicationCapabilityFieldBinding::from_reference(
-                    WorkflowGrantIdentityField::reference(),
-                ),
+                ApplicationCapabilityFieldBinding::from_reference(ControlGrantWorkflowField::at(
+                    "ControlGrantWorkflowField",
+                ))
+                .unwrap(),
+                ApplicationCapabilityFieldBinding::from_reference(WorkflowGrantIdentityField::at(
+                    "WorkflowGrantIdentityField",
+                ))
+                .unwrap(),
             ),
             ApplicationCapabilityValidityDefinition::new(
                 ApplicationCapabilityValidityTimeline::UnixEpochSeconds,
-                ApplicationCapabilityFieldBinding::from_reference(
-                    ControlGrantNotBeforeField::reference(),
-                ),
-                ApplicationCapabilityFieldBinding::from_reference(
-                    ControlGrantNotAfterField::reference(),
-                ),
+                ApplicationCapabilityFieldBinding::from_reference(ControlGrantNotBeforeField::at(
+                    "ControlGrantNotBeforeField",
+                ))
+                .unwrap(),
+                ApplicationCapabilityFieldBinding::from_reference(ControlGrantNotAfterField::at(
+                    "ControlGrantNotAfterField",
+                ))
+                .unwrap(),
             ),
         ),
         WorkflowReadContext::reference(),
@@ -165,9 +188,10 @@ fn contract() -> ApplicationCapabilityContract<
         ApplicationCapabilityRelationBinding::from_reference(ControlGrantParent::reference()),
         ApplicationCapabilityRelationBinding::from_reference(ControlGrantGrantor::reference()),
         ApplicationCapabilityRelationBinding::from_reference(ControlGrantGrantee::reference()),
-        ApplicationCapabilityFieldBinding::from_reference(
-            ControlGrantDelegationLimitField::reference(),
-        ),
+        ApplicationCapabilityFieldBinding::from_reference(ControlGrantDelegationLimitField::at(
+            "ControlGrantDelegationLimitField",
+        ))
+        .unwrap(),
         WorkflowReadProvenance::reference(),
     ))
     .composition(composition)

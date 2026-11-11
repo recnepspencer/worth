@@ -10,8 +10,10 @@ fn basis_admissions_emit_canonical_evidence_tokens() {
         crate::runtime::WorthQueryBasisAdmissionEvidenceRow::rows_from_values([
             "basis|one",
             "basis:two",
-        ]),
-    );
+        ])
+        .expect("fixture evidence rows must fit"),
+    )
+    .expect("fixture digest must fit");
     let branch = crate::runtime::WorthQueryBranchBasisAdmission::new(
         &authority,
         test_session_label("branch basis | punctuation"),
@@ -19,8 +21,10 @@ fn basis_admissions_emit_canonical_evidence_tokens() {
         crate::runtime::WorthQueryBasisAdmissionEvidenceRow::rows_from_values([
             "branch|one",
             "branch:two",
-        ]),
-    );
+        ])
+        .expect("fixture evidence rows must fit"),
+    )
+    .expect("fixture digest must fit");
 
     assert_canonical_evidence_identity_token(
         preview
@@ -134,7 +138,8 @@ fn preview_and_branch_receipts_compose_from_basis_admissions() {
         crate::WorthQueryEvidenceTag::new("basis_admission_identity"),
         &preview_basis_admission_identity,
     )
-    .seal();
+    .seal()
+    .expect("fixture digest must fit");
     assert_eq!(
         admitted_receipt.admission_identity().as_str(),
         manual_preview_admission.as_str()
@@ -150,7 +155,8 @@ fn preview_and_branch_receipts_compose_from_basis_admissions() {
         crate::WorthQueryEvidenceTag::new("posture"),
         "preview-local-staged-no-authoritative-execution",
     )
-    .seal();
+    .seal()
+    .expect("fixture digest must fit");
     assert_eq!(
         admitted_receipt.receipt_digest(),
         manual_preview_receipt.as_str()
@@ -227,7 +233,8 @@ fn preview_and_branch_receipts_compose_from_basis_admissions() {
         crate::WorthQueryEvidenceTag::new("basis_snapshot_identity"),
         &branch_receipt.basis_snapshot_identity().evidence_identity(),
     )
-    .seal();
+    .seal()
+    .expect("fixture digest must fit");
     assert_eq!(
         branch_receipt.admission_identity().as_str(),
         manual_branch_admission.as_str()
@@ -263,10 +270,16 @@ fn preview_and_branch_receipts_compose_from_basis_admissions() {
     match denied {
         WorthQueryRuntimeError::IntentCommitDenied { evidence, .. } => {
             assert_canonical_evidence_identity_token(
-                evidence.denial_digest().terminal_projection_for_reporting(),
+                evidence
+                    .denial_digest()
+                    .expect("fixture digest must fit")
+                    .terminal_projection_for_reporting(),
             );
             assert_eq!(
-                evidence.denial_digest().as_str(),
+                evidence
+                    .denial_digest()
+                    .expect("fixture digest must fit")
+                    .as_str(),
                 compose_denial_evidence_identity(&evidence).as_str()
             );
         }

@@ -12,25 +12,35 @@ pub(super) fn definition(
         MutationGrant::reference(),
     )
     .target(ApplicationCapabilityTargetDefinition::new(
-        ApplicationCapabilityValueBinding::new(GrantAction::reference(), encoded(2)),
+        ApplicationCapabilityValueBinding::new(GrantAction::at("GrantAction"), encoded(2)).unwrap(),
         ApplicationCapabilityRelationBinding::from_reference(MutationGrantResource::reference()),
         ApplicationCapabilityRelationDimension::not_applicable(),
         ApplicationCapabilityFieldDimension::not_applicable(),
-        ApplicationCapabilityValueBinding::new(GrantPurpose::reference(), encoded(1)),
+        ApplicationCapabilityValueBinding::new(GrantPurpose::at("GrantPurpose"), encoded(1))
+            .unwrap(),
     ))
     .constraints(ApplicationCapabilityConstraintDefinition::new(
         ApplicationCapabilityMagnitudeDimension::not_applicable(),
         ApplicationCapabilityCardinalityDimension::One,
         ApplicationCapabilityCurrentnessDefinition::new(
-            ApplicationCapabilityValueBinding::new(GrantStatus::reference(), encoded(1)),
+            ApplicationCapabilityValueBinding::new(GrantStatus::at("GrantStatus"), encoded(1))
+                .unwrap(),
             ApplicationCapabilityWorkflowDefinition::new(
-                ApplicationCapabilityFieldBinding::from_reference(GrantScope::reference()),
-                ApplicationCapabilityFieldBinding::from_reference(ModelName::reference()),
+                ApplicationCapabilityFieldBinding::from_reference(GrantScope::at("GrantScope"))
+                    .unwrap(),
+                ApplicationCapabilityFieldBinding::from_reference(ModelName::at("ModelName"))
+                    .unwrap(),
             ),
             ApplicationCapabilityValidityDefinition::new(
                 ApplicationCapabilityValidityTimeline::UnixEpochSeconds,
-                ApplicationCapabilityFieldBinding::from_reference(GrantNotBefore::reference()),
-                ApplicationCapabilityFieldBinding::from_reference(GrantNotAfter::reference()),
+                ApplicationCapabilityFieldBinding::from_reference(GrantNotBefore::at(
+                    "GrantNotBefore",
+                ))
+                .unwrap(),
+                ApplicationCapabilityFieldBinding::from_reference(GrantNotAfter::at(
+                    "GrantNotAfter",
+                ))
+                .unwrap(),
             ),
         ),
         EditContext::reference(),
@@ -39,7 +49,7 @@ pub(super) fn definition(
         ApplicationCapabilityRelationBinding::from_reference(MutationGrantParent::reference()),
         ApplicationCapabilityRelationBinding::from_reference(MutationGrantGrantor::reference()),
         ApplicationCapabilityRelationBinding::from_reference(MutationGrantGrantee::reference()),
-        ApplicationCapabilityFieldBinding::from_reference(GrantDepth::reference()),
+        ApplicationCapabilityFieldBinding::from_reference(GrantDepth::at("GrantDepth")).unwrap(),
         EditProvenance::reference(),
     ))
     .composition(ApplicationCapabilityComposition::new(

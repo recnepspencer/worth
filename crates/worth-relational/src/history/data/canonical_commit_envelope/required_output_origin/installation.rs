@@ -31,18 +31,24 @@ impl CanonicalCommitEnvelopeBody {
         admission
             .installed
             .demand_source_scope(execution, basis, &admission.publication)?;
+        let runtime = &crate::history::data::canonical_commit_envelope::required_output_origin::history_request::PreparationRuntimeRequest::new(runtime, execution);
         let result = execution
             .in_scope(|lease| {
                 worth_execution::ExecutionWorkCeiling::new(execution.work_ceiling())
                     .run_with_checkpoint(lease, None, |context| {
+                        let mut origin_frames = OutputOriginHistory::default();
+                        let validated_history = &mut origin_frames;
                         self.install_completion(
+                            execution,
                             runtime,
                             basis,
                             created,
                             created_relations,
                             state,
                             admission,
+                            None,
                             lease,
+                            validated_history,
                             context,
                         )
                     })
@@ -57,13 +63,16 @@ impl CanonicalCommitEnvelopeBody {
     #[allow(clippy::too_many_arguments)]
     pub(super) fn install_completion(
         &mut self,
-        runtime: &crate::runtime::RelationalPreparationRuntime,
+        execution: &ExecutionRequest<'_, '_>,
+        runtime: &crate::history::data::canonical_commit_envelope::required_output_origin::history_request::PreparationRuntimeRequest<'_, '_, '_>,
         basis: &AdmittedRelationalBranchBasis,
         created: &CommitCreatedEntityBindings,
         created_relations: &CommitCreatedRelationBindings,
         state: &WorkingState,
         admission: crate::mvcc::RequiredOutputPublicationAdmission,
+        contribution_records: Option<&[crate::transactions::data::RecordRef]>,
         lease: Option<&worth_execution::ExecutionResourceLease<'_>>,
+        validated_history: &mut OutputOriginHistory,
         context: &mut MapKernelContext<'_, '_>,
     ) -> Result<crate::history::data::RequiredOutputPublicationPositions, TransactionCommitError>
     {
@@ -74,9 +83,12 @@ impl CanonicalCommitEnvelopeBody {
         context
             .checkpoint(publication.admission_work())
             .map_err(origin_request)?;
-        if installed.runtime_instance_id != runtime.runtime_instance_id()
+        if installed.runtime_instance_id != runtime.runtime.runtime_instance_id()
             || installed.custom_invariant_generation
-                != runtime.schema_contract_runtime.custom_invariant_generation
+                != runtime
+                    .runtime
+                    .schema_contract_runtime
+                    .custom_invariant_generation
             || installed.schema_digest != basis.inner.root.schema_authority().authority_digest()
             || !publication.admitted_by(&installed)
             || self.branch_context != *basis.descriptor().branch_id()
@@ -88,6 +100,31 @@ impl CanonicalCommitEnvelopeBody {
             return Err(crate::mvcc::origin_denial(
                 "required-output installation changed before native preparation",
             ));
+        }
+        if let Publication::HistoricalSelection {
+            admission,
+            selections,
+        } = publication
+        {
+            return super::historical_selection::install(
+                self, basis, state, installed, &admission, selections, lease, context,
+            );
+        }
+        if let Publication::CoupledAuthored { group } = publication {
+            return super::coupled_authored::install(
+                self,
+                execution,
+                runtime,
+                basis,
+                created,
+                created_relations,
+                state,
+                installed,
+                group,
+                lease,
+                validated_history,
+                context,
+            );
         }
         if let Publication::AuthoredCascadeRestoration {
             admission,
@@ -102,9 +139,10 @@ impl CanonicalCommitEnvelopeBody {
                 created_relations,
                 state,
                 installed,
-                admission,
-                restoration,
+                Some(&admission),
+                &restoration,
                 lease,
+                validated_history,
                 context,
             );
         }
@@ -115,15 +153,17 @@ impl CanonicalCommitEnvelopeBody {
         {
             return super::authored_cascade::install(
                 self,
+                execution,
                 runtime,
                 basis,
                 created,
                 created_relations,
                 state,
                 installed,
-                admission,
+                &admission,
                 predecessor,
                 lease,
+                validated_history,
                 context,
             );
         }
@@ -164,11 +204,14 @@ impl CanonicalCommitEnvelopeBody {
                     predecessor,
                     meaning,
                     lease,
+                    validated_history,
                     context,
                 )?;
                 (meaning, roles, Some(origin))
             }
-            Publication::AuthoredCascadeRetirement { .. }
+            Publication::HistoricalSelection { .. }
+            | Publication::CoupledAuthored { .. }
+            | Publication::AuthoredCascadeRetirement { .. }
             | Publication::AuthoredCascadeRestoration { .. } => {
                 unreachable!("cascade consumed before ordinary installation")
             }
@@ -183,6 +226,7 @@ impl CanonicalCommitEnvelopeBody {
                     predecessor,
                     meaning,
                     lease,
+                    validated_history,
                     context,
                 )?;
                 super::source_scope_ownership::require_cascade(
@@ -201,6 +245,8 @@ impl CanonicalCommitEnvelopeBody {
             && let Some(prior) = previous
             && let Some(closure) = producer_cascade::prepare(
                 self,
+                execution,
+                basis,
                 runtime,
                 &installed,
                 prior,
@@ -218,6 +264,7 @@ impl CanonicalCommitEnvelopeBody {
                 state,
                 &installed,
                 route_completion::RouteCompletion {
+                    contribution_records,
                     producer,
                     dependency_identity,
                     meaning,
@@ -229,6 +276,7 @@ impl CanonicalCommitEnvelopeBody {
                 },
                 closure,
                 lease,
+                validated_history,
                 context,
             );
         }
@@ -265,6 +313,7 @@ impl CanonicalCommitEnvelopeBody {
             state,
             &installed,
             route_completion::RouteCompletion {
+                contribution_records,
                 producer,
                 dependency_identity,
                 meaning,
@@ -273,6 +322,7 @@ impl CanonicalCommitEnvelopeBody {
                 completion,
             },
             lease,
+            validated_history,
             context,
         )
     }

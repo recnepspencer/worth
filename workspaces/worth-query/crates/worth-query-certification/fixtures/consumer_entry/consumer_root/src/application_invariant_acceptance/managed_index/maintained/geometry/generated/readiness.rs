@@ -44,7 +44,7 @@ fn contract(
 ) -> Result<Contract, WorthQueryOutputReadinessContractDenial> {
     WorthQueryOutputReadinessContractBuilder::for_field(
         declaration,
-        EdgeIdentity::reference(),
+        EdgeIdentity::at("EdgeIdentity"),
         domain::WorthQueryDomainOperationIdentity::new("generated-geometry-readiness", 1),
         "generated-geometry-ready",
         canonical_query(),
@@ -54,7 +54,7 @@ fn contract(
     )?
     .field_dependency(
         declaration,
-        EdgeIdentity::reference(),
+        EdgeIdentity::at("EdgeIdentity"),
         WorthQueryReadinessFieldUse::DeliveryAndEligibility,
     )?
     .build_typed()
@@ -99,7 +99,7 @@ impl WorthQueryApplicationConditionalBinding<Catalog> for Readiness {
             .delivery_ordinal(
                 installation.installed_schema(),
                 node.declaration(),
-                EdgeIdentity::reference(),
+                EdgeIdentity::at("EdgeIdentity"),
             )
             .unwrap();
         installation.bind_output_readiness::<Producer, _, _, _, _, _, _>(node, ordinal)

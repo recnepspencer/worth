@@ -122,8 +122,8 @@ fn cold_retirement_requires_every_sibling_group_before_route_eligibility() {
         }
         assert!(entry.codec_retirement_headers_valid());
         let (bytes, _) = crate::durability::log::native_checkpoint_codec::encode_checkpoint(
-            &changed,
             execution,
+            &changed,
             execution.allocation_policy(),
         )
         .unwrap();
@@ -239,8 +239,8 @@ pub(super) fn cold_retired_route(
             event.publication = foreign;
         }
         let (bytes, _) = crate::durability::log::native_checkpoint_codec::encode_checkpoint(
-            &changed,
             execution,
+            &changed,
             execution.allocation_policy(),
         )
         .unwrap();

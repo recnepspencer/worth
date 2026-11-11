@@ -23,6 +23,8 @@ pub(super) struct IndexRecipe {
     pub entity: EntityId,
     pub index: DerivedIndexId,
     pub generation: Arc<DerivedIndexGeneration>,
+    /// A second index's generation carried unchanged past the last edit.
+    pub carried: Option<Arc<DerivedIndexGeneration>>,
     pub history_symbol: Option<Symbol>,
 }
 pub(super) struct IndexFixture {
@@ -32,12 +34,20 @@ pub(super) struct IndexFixture {
     pub entity: EntityId,
     pub index: DerivedIndexId,
     pub generation: Arc<DerivedIndexGeneration>,
+    pub carried: Option<Arc<DerivedIndexGeneration>>,
     pub member: RelationalDurableMemberLocator,
     pub directory: Directory,
     pub history_symbol: Option<Symbol>,
 }
 impl IndexRecipe {
     pub fn new(request: &ExecutionRequest<'_, '_>, historical: bool) -> Self {
+        Self::shape(request, historical, false)
+    }
+    /// The name index advances past a lifecycle index whose selection is carried.
+    pub fn carried(request: &ExecutionRequest<'_, '_>) -> Self {
+        Self::shape(request, false, true)
+    }
+    fn shape(request: &ExecutionRequest<'_, '_>, historical: bool, carried: bool) -> Self {
         let medium = TestDurableMedium::new();
         let producer = durable_runtime(&medium);
         let index = producer
@@ -52,6 +62,23 @@ impl IndexRecipe {
             })
             .unwrap()
             .index_id;
+        let stable_index = carried.then(|| {
+            producer
+                .index_authority()
+                .register(DerivedIndexDefinition {
+                    index_id: DerivedIndexId(0),
+                    name: "matrix-lifecycle".into(),
+                    branch_scoped: true,
+                    kind: DerivedIndexKind::EntityField {
+                        field_locator: aspect_field_locator(
+                            aspect_key("lifecycle"),
+                            field_key("lifecycle"),
+                        ),
+                    },
+                })
+                .unwrap()
+                .index_id
+        });
         let (entity, history_symbol, _retained) = if historical {
             admit_population(request, &producer);
             let (entity, before, symbol) = publish_text(
@@ -85,19 +112,33 @@ impl IndexRecipe {
             DerivedIndexBuildRequest {
                 source_commit_id: commit,
                 branch_id: branch.clone(),
-                index_ids: vec![index],
+                index_ids: std::iter::once(index).chain(stable_index).collect(),
             },
         );
         assert!(
             built.failed_indexes.is_empty(),
             "actual producer builds index"
         );
+        let carried = stable_index.map(|stable| {
+            producer
+                .index_access()
+                .read_latest_generation(request, stable, &branch)
+                .unwrap()
+                .unwrap()
+        });
+        if carried.is_some() {
+            update_entity(request, &producer, entity, "matrix-index-updated");
+        }
         let generation = producer
             .index_access()
             .read_latest_generation(request, index, &branch)
             .unwrap()
             .unwrap();
-        assert_eq!(generation.source_commit_id, commit);
+        if let Some(carried) = &carried {
+            assert!(carried.applicability.version_id < generation.applicability.version_id);
+        } else {
+            assert_eq!(generation.source_commit_id, commit);
+        }
         if historical {
             update_entity(request, &producer, entity, "matrix-index-after");
         }
@@ -112,6 +153,7 @@ impl IndexRecipe {
             entity,
             index,
             generation,
+            carried,
             history_symbol,
         }
     }
@@ -163,6 +205,7 @@ impl IndexRecipe {
             entity: self.entity,
             index: self.index,
             generation: self.generation.clone(),
+            carried: self.carried.clone(),
             member: directory.derived_indexes,
             directory,
             history_symbol: self.history_symbol,

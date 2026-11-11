@@ -10,6 +10,7 @@ use crate::contribution_composed_orchestration::{
     WorthQueryContributionComposedOrchestrationChecked,
     WorthQueryContributionComposedOrchestrationTranscript,
 };
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::grouped_authoring::{
     WorthQueryGroupedOrchestrationChecked, WorthQueryGroupedOrchestrationTranscript,
 };
@@ -121,15 +122,17 @@ impl<D: WorthQueryDomainEntryMarker, C: WorthQueryDomainOperatingContext<D>>
     pub fn recover_from_contribution_composed_checked<I: WorthQueryDeclarationInput<D>>(
         &self,
         checked: WorthQueryContributionComposedOrchestrationChecked<D, I>,
-    ) -> Option<WorthQueryRecoveryBrief> {
-        worth_query_recovery_brief_from_contribution_composed_checked(checked)
+    ) -> Result<Option<WorthQueryRecoveryBrief>, IdentityDerivationDenial> {
+        Ok(worth_query_recovery_brief_from_contribution_composed_checked(checked)?)
     }
 
     pub fn recover_from_contribution_composed_proof<I: WorthQueryDeclarationInput<D>>(
         &self,
         proof: WorthQueryContributionComposedOrchestrationTranscript<D, I>,
-    ) -> Option<WorthQueryRecoveryBrief> {
-        worth_query_recovery_brief_from_contribution_composed_proof(proof)
+    ) -> Result<Option<WorthQueryRecoveryBrief>, IdentityDerivationDenial> {
+        Ok(worth_query_recovery_brief_from_contribution_composed_proof(
+            proof,
+        )?)
     }
 
     pub fn recover_from_grouped_orchestration_checked<I: WorthQueryDeclarationInput<D>>(

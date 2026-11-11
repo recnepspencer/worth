@@ -146,17 +146,14 @@ impl VisibilitySubsystem {
         self.handles.is_known_snapshot(snapshot_id)
     }
 
-    pub(crate) fn active_versions(&self) -> Vec<crate::identity::data::VersionId> {
-        self.handles.active_versions()
-    }
-
     pub(crate) fn retention_fence_version(
         &self,
         published_version: crate::identity::data::VersionId,
     ) -> crate::identity::data::VersionId {
-        self.active_versions()
+        self.handles
+            .oldest_active_version()
             .into_iter()
-            .chain(self.replay_retention_versions())
+            .chain(self.replay_retention.read().oldest_version())
             .min()
             .unwrap_or(published_version)
     }
@@ -167,9 +164,7 @@ impl VisibilitySubsystem {
     ) -> crate::identity::data::VersionId {
         let retention_fence = self.retention_fence_version(published_version);
         self.handles
-            .published_versions()
-            .into_iter()
-            .min()
+            .oldest_published_version()
             .map_or(retention_fence, |version| version.min(retention_fence))
     }
 
@@ -266,12 +261,6 @@ impl VisibilitySubsystem {
         tracked_states: &[crate::visibility::snapshot_states::VisibilitySnapshotStateKey],
     ) {
         self.cache.clear_branch_head_residency(tracked_states);
-    }
-
-    /// Every version a replay pin currently retains, collected so the fence
-    /// computation never scans the index while holding its lock.
-    pub(crate) fn replay_retention_versions(&self) -> Vec<crate::identity::data::VersionId> {
-        self.replay_retention.read().versions().collect()
     }
 
     pub(crate) fn increment_replay_retention(

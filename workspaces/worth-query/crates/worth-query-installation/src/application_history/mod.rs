@@ -2,6 +2,7 @@
 mod catalog;
 mod denial;
 mod installed_binding;
+mod ownership;
 
 pub(crate) use catalog::WorthQueryInstalledApplicationHistoryCatalog;
 pub use denial::{

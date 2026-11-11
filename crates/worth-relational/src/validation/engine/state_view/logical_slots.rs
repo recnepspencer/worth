@@ -28,6 +28,9 @@ impl InvariantStateView<'_> {
         ))
     }
 
+    /// O(V+B) visits and two fixed inline iterator stacks. Rejected
+    /// reservations can make logical slots arbitrarily larger than row counts;
+    /// neither the allocator frontier nor a dense ordinal is a scan bound.
     pub(crate) fn try_relation_slots<Stop>(
         &self,
         partition_id: PartitionId,

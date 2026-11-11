@@ -15,11 +15,16 @@ impl SourceReadVerification<'_> {
             }
             Ok::<(), Cause>(())
         };
-        if !body
-            .layout()
-            .matches_native_definition(&self.pin, &poll)
-            .map_err(Failure::Execution)?
-        {
+        let matches = match &self.pin {
+            image::VerificationImage::Committed(pin) => {
+                body.layout().matches_native_definition(pin, &poll)
+            }
+            image::VerificationImage::Applied { pin, .. } => {
+                body.layout().matches_native_definition(pin, &poll)
+            }
+        }
+        .map_err(Failure::Execution)?;
+        if !matches {
             return Ok(false);
         }
         match body.aggregate_bodies() {
@@ -28,7 +33,13 @@ impl SourceReadVerification<'_> {
             },
             crate::domain_computation::primary_graph::component_selection::ComponentAggregateBodies::Derived(aggregates)=>{
                 let result=execution.run_native_with_checkpoint(|context| {
-                    for aggregate in aggregates {if !aggregate.remains_equal_at(&self.pin,execution,context,control)? {return Ok(false);}}
+                    for aggregate in aggregates {
+                        let equal = match &self.pin {
+                            image::VerificationImage::Committed(pin) => aggregate.remains_equal_at(pin,execution,context,control),
+                            image::VerificationImage::Applied { pin, .. } => aggregate.remains_equal_at(pin,execution,context,control),
+                        }?;
+                        if !equal {return Ok(false);}
+                    }
                     Ok(true)
                 });
                 let equal=match result {Ok((value,_))=>value?,Err(stop)=>return Err(Failure::Execution(stop.into()))};
@@ -50,7 +61,12 @@ impl SourceReadVerification<'_> {
             if !equal {
                 return Ok(());
             }
-            equal = fact.comparison(self.runtime, execution, self.pin.snapshot())?;
+            equal = fact.comparison_in_image(
+                self.runtime,
+                execution,
+                self.pin.before(),
+                self.pin.applied(),
+            )?;
             Ok(())
         })?;
         poll().map_err(Failure::Execution)?;

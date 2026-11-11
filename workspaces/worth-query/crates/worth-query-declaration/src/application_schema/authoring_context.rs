@@ -1,3 +1,6 @@
+mod denial;
+pub use denial::{ApplicationSchemaAuthoringDenial, ApplicationSchemaAuthoringDenialKind};
+
 use worth_foundational::facade::ScalarAspectType;
 
 use crate::portable_identity::WorthQueryPortableTypeIdentity;
@@ -172,6 +175,21 @@ impl ApplicationSchemaAuthoringContext {
         }
     }
 
+    pub(crate) fn admit_record_selection<Field: super::fragment::RecordSelection>(
+        &self,
+        field: Field,
+    ) -> Result<(), ApplicationSchemaAuthoringDenial> {
+        field
+            .installed(self.member_provenance.fragment_catalog())
+            .map(|_| ())
+            .map_err(|_| {
+                ApplicationSchemaAuthoringDenial::new(
+                    ApplicationSchemaAuthoringDenialKind::UnknownField,
+                    field.field(),
+                )
+            })
+    }
+
     pub(crate) fn admit_field(
         &self,
         field: ApplicationFieldAdmission<'_>,
@@ -332,60 +350,3 @@ impl ApplicationOperationProgramAdmission<'_> {
         }
     }
 }
-
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub enum ApplicationSchemaAuthoringDenialKind {
-    UnknownEntity,
-    UnknownField,
-    FieldFamilyMismatch,
-    FieldValueTypeMismatch,
-    FieldUnitMismatch,
-    FieldNotWritable,
-    FieldNotEqualityQueryable,
-    UnknownOperation,
-    OperationProvenanceMismatch,
-    OperationInputTypeMismatch,
-    UnknownEffect,
-    EffectProvenanceMismatch,
-    EffectPayloadTypeMismatch,
-    UnknownRelation,
-    OperationProgramNotInstalled,
-}
-
-#[derive(Clone, Debug, Eq, PartialEq)]
-pub struct ApplicationSchemaAuthoringDenial {
-    kind: ApplicationSchemaAuthoringDenialKind,
-    subject: String,
-}
-
-impl ApplicationSchemaAuthoringDenial {
-    pub(crate) fn new(
-        kind: ApplicationSchemaAuthoringDenialKind,
-        subject: impl Into<String>,
-    ) -> Self {
-        Self {
-            kind,
-            subject: subject.into(),
-        }
-    }
-
-    pub const fn kind(&self) -> ApplicationSchemaAuthoringDenialKind {
-        self.kind
-    }
-
-    pub fn subject(&self) -> &str {
-        &self.subject
-    }
-}
-
-impl std::fmt::Display for ApplicationSchemaAuthoringDenial {
-    fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(
-            formatter,
-            "application schema authoring denied: {:?} ({})",
-            self.kind, self.subject
-        )
-    }
-}
-
-impl std::error::Error for ApplicationSchemaAuthoringDenial {}

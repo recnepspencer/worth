@@ -58,7 +58,7 @@ pub(super) fn preview_proof(
             spec.collection,
         ))
         .expect("preview intent should stage");
-    let outcome = preview.discard();
+    let outcome = preview.discard().expect("fixture digest must fit");
     assert_eq!(
         preview_write.authority_lane(),
         WorthQueryAuthorityLane::PreviewTruth

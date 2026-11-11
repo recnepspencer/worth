@@ -82,3 +82,24 @@ fn cancelled_native_decode_stops_before_body_and_keeps_its_original_refusal() {
     assert!(!called.get());
     assert!((*state.memory_for_test()).borrow().is_none());
 }
+
+#[test]
+fn a_record_decoder_catching_original_cancellation_cannot_return_a_value() {
+    let cancellation = CancellationSource::new();
+    let backing = native_request(cancellation.token());
+    let request = ExecutionRequest::serial(&backing);
+    let state = ValueDecodeState::new(Default::default());
+    let immediate = Cell::new(None);
+    let denied = state.run_for_test(&request, |session| {
+        let decoded = session.with_record_admission_for_test(|admission| {
+            cancellation.cancel();
+            assert!(admission.admit(1, 0).is_err());
+            17
+        });
+        immediate.set(decoded.err());
+    });
+    let original = Stop::Checkpoint(MapKernelStop::Cancelled);
+    assert_eq!(immediate.get(), Some(original));
+    assert!(denied.is_err());
+    assert_eq!(state.denial_for_test(), Some(original));
+}

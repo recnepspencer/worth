@@ -61,35 +61,9 @@ pub fn unrelated_partition_selection(population: u64) {
         "RestoredOutputBinding",
     );
 
-    lineage.record_recovered_prior_output_for_test(
-        lineage.binding_type_for_test(source.output_binding_for_test()),
-        runtime_authority,
-        schema.clone(),
-        scope,
-        occurrence,
-        1,
-        Arc::clone(&target),
-        checkpoint_identity([0x31; 32]),
-        partition(0),
-        None,
-        [0x41; 32],
-        None,
-    );
+    lineage.record_prior_output_for_test(lineage.binding_type_for_test(source.output_binding_for_test()), runtime_authority, schema.clone(), scope, occurrence, 1, Arc::clone(&target), worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::restoration::PriorOutputOrigin::Recovered { source_identity: checkpoint_identity([0x31; 32]), checkpoint: None }, partition(0), None, [0x41; 32]);
     for number in 1..=population {
-        lineage.record_recovered_prior_output_for_test(
-            lineage.binding_type_for_test(source.output_binding_for_test()),
-            runtime_authority,
-            schema.clone(),
-            scope,
-            occurrence,
-            number + 1,
-            Arc::clone(&sibling),
-            checkpoint_identity([0x31; 32]),
-            partition(number),
-            None,
-            [0x41; 32],
-            None,
-        );
+        lineage.record_prior_output_for_test(lineage.binding_type_for_test(source.output_binding_for_test()), runtime_authority, schema.clone(), scope, occurrence, number + 1, Arc::clone(&sibling), worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::restoration::PriorOutputOrigin::Recovered { source_identity: checkpoint_identity([0x31; 32]), checkpoint: None }, partition(number), None, [0x41; 32]);
     }
     let coordinate = ProductCoordinate::new_for_test(occurrence, population + 1);
 
@@ -153,6 +127,7 @@ pub fn unrelated_partition_selection(population: u64) {
             producer_dependency_identity,
             idempotency_key_identity,
             mutable,
+            None,
         )
     };
     let cell = Arc::new(std::sync::OnceLock::new());

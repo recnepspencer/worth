@@ -40,6 +40,16 @@ pub fn with_bootstrap_advancement_from_request<R>(
     request: ExecutionRequest<'_, '_>,
     body: impl for<'scope> FnOnce(WorthQueryBootstrapAdvancementPhase<'scope>) -> R,
 ) -> Result<R, WorthQueryAdvancementDenial> {
+    worth_execution::run_with_execution_stack(move || {
+        with_bootstrap_advancement_from_request_on_execution_stack(request, body)
+    })
+}
+
+#[inline(never)]
+fn with_bootstrap_advancement_from_request_on_execution_stack<R>(
+    request: ExecutionRequest<'_, '_>,
+    body: impl for<'scope> FnOnce(WorthQueryBootstrapAdvancementPhase<'scope>) -> R,
+) -> Result<R, WorthQueryAdvancementDenial> {
     let _custody = OpeningCustody::enter()?;
     request.consult().map_err(advancement_denial)?;
     let mut unwind = None;

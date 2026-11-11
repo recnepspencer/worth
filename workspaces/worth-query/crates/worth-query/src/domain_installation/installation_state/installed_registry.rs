@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use std::any::TypeId;
 use std::collections::HashMap;
 use std::sync::atomic::{AtomicUsize, Ordering};
@@ -31,15 +32,15 @@ impl WorthQueryDomainInstallationRegistry {
         artifacts: Vec<WorthQueryInstalledDomainArtifact>,
         runtime_authority: WorthQueryRuntimeAuthorityIdentity,
         portable_index: Arc<worth_query_installation::facade::WorthQueryInstalledPackageIndex>,
-    ) -> Self {
+    ) -> Result<Self, IdentityDerivationDenial> {
         let generation = WorthQueryDomainInstallationGeneration::initial();
-        Self::from_artifacts_and_portable_index(
+        Ok(Self::from_artifacts_and_portable_index(
             artifacts,
             runtime_authority,
             generation,
             WorthQueryDomainInstallationGenerationLease::new(generation),
             portable_index,
-        )
+        )?)
     }
 
     fn from_artifacts_and_portable_index(
@@ -48,12 +49,12 @@ impl WorthQueryDomainInstallationRegistry {
         generation: WorthQueryDomainInstallationGeneration,
         generation_lease: WorthQueryDomainInstallationGenerationLease,
         portable_index: Arc<worth_query_installation::facade::WorthQueryInstalledPackageIndex>,
-    ) -> Self {
+    ) -> Result<Self, IdentityDerivationDenial> {
         let execution_index = WorthQueryInstalledDomainExecutionIndex::build(
             &artifacts,
             runtime_authority,
             portable_index.as_ref(),
-        );
+        )?;
         let (records, by_marker_type) = construct_installed_domain_records(
             artifacts,
             runtime_authority,
@@ -61,8 +62,8 @@ impl WorthQueryDomainInstallationRegistry {
             &generation_lease,
             &execution_index,
             portable_index.as_ref(),
-        );
-        Self {
+        )?;
+        Ok(Self {
             runtime_authority,
             generation,
             generation_lease,
@@ -71,7 +72,7 @@ impl WorthQueryDomainInstallationRegistry {
             execution_index,
             portable_index,
             handle_lookups: AtomicUsize::new(0),
-        }
+        })
     }
 
     pub(crate) fn domain<D: 'static>(
@@ -178,7 +179,7 @@ impl WorthQueryDomainInstallationRegistry {
 
     pub(crate) fn rebuild_execution_index_report(
         &self,
-    ) -> WorthQueryDomainExecutionIndexRebuildReport {
+    ) -> Result<WorthQueryDomainExecutionIndexRebuildReport, IdentityDerivationDenial> {
         let portable_rebuild = self.portable_index.rebuild();
         assert_eq!(
             self.portable_index.identity(),
@@ -194,19 +195,19 @@ impl WorthQueryDomainInstallationRegistry {
             &artifacts,
             self.runtime_authority,
             &portable_rebuild,
-        );
+        )?;
         let shape = rebuilt.shape();
-        WorthQueryDomainExecutionIndexRebuildReport::new(
+        Ok(WorthQueryDomainExecutionIndexRebuildReport::new(
             self.execution_index.identity().as_str().to_string(),
             rebuilt.identity().as_str().to_string(),
             shape,
-        )
+        ))
     }
 
     #[cfg(test)]
     pub(crate) fn destroy_and_rebuild_execution_index(
         &mut self,
-    ) -> WorthQueryDomainExecutionIndexRebuildReport {
+    ) -> Result<WorthQueryDomainExecutionIndexRebuildReport, IdentityDerivationDenial> {
         let artifacts = self
             .records
             .iter()
@@ -220,7 +221,7 @@ impl WorthQueryDomainInstallationRegistry {
             &[],
             self.runtime_authority,
             self.portable_index.as_ref(),
-        );
+        )?;
         let retired = std::mem::replace(&mut self.execution_index, empty);
         let retired_identity = retired.identity().as_str().to_string();
         drop(retired);
@@ -229,15 +230,19 @@ impl WorthQueryDomainInstallationRegistry {
             &artifacts,
             self.runtime_authority,
             self.portable_index.as_ref(),
-        );
+        )?;
         let rebuilt_identity = rebuilt.identity().as_str().to_string();
         let shape = rebuilt.shape();
         self.execution_index = rebuilt;
 
-        WorthQueryDomainExecutionIndexRebuildReport::new(retired_identity, rebuilt_identity, shape)
+        Ok(WorthQueryDomainExecutionIndexRebuildReport::new(
+            retired_identity,
+            rebuilt_identity,
+            shape,
+        ))
     }
 
-    pub(crate) fn prepare_runtime_reconstitution(&self) -> Self {
+    pub(crate) fn prepare_runtime_reconstitution(&self) -> Result<Self, IdentityDerivationDenial> {
         let artifacts = self
             .records
             .iter()
@@ -249,13 +254,13 @@ impl WorthQueryDomainInstallationRegistry {
         // Committing later advances the prior registry's separate lease, so a
         // failed conditional reconstitution leaves every published handle current.
         // Portable source authority stays exact: only runtime handles retire.
-        Self::from_artifacts_and_portable_index(
+        Ok(Self::from_artifacts_and_portable_index(
             artifacts,
             self.runtime_authority,
             generation,
             WorthQueryDomainInstallationGenerationLease::new(generation),
             portable_index,
-        )
+        )?)
     }
 
     #[cfg(test)]
@@ -289,5 +294,25 @@ impl WorthQueryDomainInstallationRegistry {
         self.by_marker_type
             .get(&TypeId::of::<D>())
             .and_then(|index| self.records.get(*index))
+    }
+}
+#[cfg(test)]
+#[path = "installed_registry_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;
+
+#[cfg(test)]
+fn collect_owned_inline_type_sizes(census: &mut crate::inline_type_sizes::Census) {
+    {
+        let mut owner = census.owner::<WorthQueryDomainInstallationRegistry>("workspaces/worth-query/crates/worth-query/src/domain_installation/installation_state/installed_registry.rs", "WorthQueryDomainInstallationRegistry", 128 * 1024);
+        owner.field::<WorthQueryRuntimeAuthorityIdentity>("runtime_authority");
+        owner.field::<WorthQueryDomainInstallationGeneration>("generation");
+        owner.field::<WorthQueryDomainInstallationGenerationLease>("generation_lease");
+        owner.field::<Vec<WorthQueryInstalledDomainRecord>>("records");
+        owner.field::<HashMap<TypeId, usize>>("by_marker_type");
+        owner.field::<WorthQueryInstalledDomainExecutionIndex>("execution_index");
+        owner.field::<Arc<worth_query_installation::facade::WorthQueryInstalledPackageIndex>>(
+            "portable_index",
+        );
+        owner.field::<AtomicUsize>("handle_lookups");
     }
 }

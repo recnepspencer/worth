@@ -69,6 +69,10 @@ pub(crate) enum RelationalRetentionOwnerRelationship {
 }
 
 impl RelationalBranchRetentionBinding {
+    pub(crate) fn same_owner(&self, other: &Self) -> bool {
+        self.owner.ptr_eq(&other.owner)
+    }
+
     pub(crate) fn has_root_obligation(&self, root_id: u64) -> bool {
         lock_lane(&self.lane)
             .root_obligations

@@ -1,0 +1,8 @@
+COMMAND: ["cargo", "fmt", "--manifest-path", "workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/Cargo.toml", "-p", "worth-query-topology-entry", "--", "--check"]
+HEAD: bb3e73655b80af464f5dfdbbd73a93b8e616d9d8
+CLEAN: false
+START: 2026-11-08T18:27:01.881534+00:00
+ENV: removed stale external linker override; RUST_MIN_STACK unset in parent
+
+END: 2026-11-08T18:27:03.593015+00:00
+EXIT: 0

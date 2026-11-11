@@ -21,6 +21,7 @@ fn effect_expression_suppression_and_failure_are_typed_and_counted() {
                 WorthQueryEffectTrigger::live_view(&live, test_aspect_touches(["title"])),
                 "ui.suppressed",
             )
+            .expect("fixture digest must fit")
             .with_condition(WorthQueryEffectCondition::expression(
                 "expr.needs-validation",
                 test_aspect_touches(["validation.state"]),
@@ -35,6 +36,7 @@ fn effect_expression_suppression_and_failure_are_typed_and_counted() {
                 WorthQueryEffectTrigger::live_view(&live, test_aspect_touches(["title"])),
                 "ui.failing",
             )
+            .expect("fixture digest must fit")
             .with_condition(WorthQueryEffectCondition::failing_expression(
                 "expr.fail.validation",
                 test_aspect_touches(["title"]),
@@ -117,6 +119,7 @@ fn meaningful_change_suppression_counts_semantic_delta_suppression() {
                 WorthQueryEffectTrigger::live_view(&live, test_aspect_touches(["title"])),
                 "ui.badges",
             )
+            .expect("fixture digest must fit")
             .with_meaningful_change_suppression(),
         )
         .expect("meaningful effect should declare");

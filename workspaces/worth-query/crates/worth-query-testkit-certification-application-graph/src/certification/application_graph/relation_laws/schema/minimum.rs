@@ -8,11 +8,25 @@ pub const MINIMUM_TWO: ApplicationRelationIntegrity =
 #[derive(Clone, Debug)]
 pub struct MinimumTwo;
 impl LawPolicy for MinimumTwo {
+    type Model = MinimumTwoRecords;
+    fn schema_declaration(
+    ) -> Result<ApplicationSchemaDeclaration<GraphSchema<Self>>, ApplicationSchemaDeclarationDenial>
+    {
+        fragment::declare(GraphSchema::<Self>(PhantomData))
+    }
+
     const INTEGRITY: ApplicationRelationIntegrity = MINIMUM_TWO;
 }
 #[derive(Clone, Debug)]
 pub struct LeafMinimumTwo;
 impl LawPolicy for LeafMinimumTwo {
+    type Model = LeafMinimumTwoRecords;
+    fn schema_declaration(
+    ) -> Result<ApplicationSchemaDeclaration<GraphSchema<Self>>, ApplicationSchemaDeclarationDenial>
+    {
+        fragment::declare(GraphSchema::<Self>(PhantomData))
+    }
+
     const INTEGRITY: ApplicationRelationIntegrity = Unrestricted::INTEGRITY;
     const FEEDS_INTEGRITY: ApplicationRelationIntegrity =
         ApplicationRelationIntegrity::same_context_unbounded_retain_dangling()
@@ -22,6 +36,13 @@ impl LawPolicy for LeafMinimumTwo {
 #[derive(Clone, Debug)]
 pub struct LeafAndPrincipalMinimumTwo;
 impl LawPolicy for LeafAndPrincipalMinimumTwo {
+    type Model = LeafAndPrincipalMinimumTwoRecords;
+    fn schema_declaration(
+    ) -> Result<ApplicationSchemaDeclaration<GraphSchema<Self>>, ApplicationSchemaDeclarationDenial>
+    {
+        fragment::declare(GraphSchema::<Self>(PhantomData))
+    }
+
     const INTEGRITY: ApplicationRelationIntegrity = Unrestricted::INTEGRITY;
     const FEEDS_INTEGRITY: ApplicationRelationIntegrity =
         ApplicationRelationIntegrity::same_context_unbounded_retain_dangling()

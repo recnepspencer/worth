@@ -53,7 +53,7 @@ macro_rules! binding {
             type IdempotencyKey = u64;
             type Denial = worth_query_consumer_values::PlanarMutationDenial;
             type DenialBinding = PlanarMutationDenialBinding;
-            type ScopeBinding = PlanarMutationScope<Schema>;
+            type ScopeBinding = PlanarMutationScope;
             type PrincipalBinding = ConsumerPrincipalBinding;
             type Mapping = ExternalPrincipalMapping;
             type Principal = Principal;
@@ -68,17 +68,8 @@ macro_rules! binding {
             fn workflow_execution_requirements() -> ApplicationWorkflowExecutionRequirements {
                 ApplicationWorkflowExecutionRequirements::not_applicable()
             }
-            fn scope_field() -> ApplicationFieldRef<
-                Schema,
-                Body,
-                PlanarPosition,
-                BodyKey,
-                String,
-                ReadOnly,
-                EqualityPredicate,
-                NoApplicationUnit,
-            > {
-                BodyKey::reference()
+            fn scope_field() -> BodyKey {
+                BodyKey::at("BodyKey")
             }
             fn principal_binding() -> ApplicationPrincipalBindingRef<
                 Schema,
@@ -137,15 +128,15 @@ binding!(
 impl ApplicationMutationInputScope<CheckpointSchema, InitialBinding<CheckpointSchema>>
     for RegionOutputInput
 {
-    fn scope_for_binding(&self) -> PlanarMutationScope<CheckpointSchema> {
-        PlanarMutationScope::new(BodyKey::reference(), self.scope_key.clone())
+    fn scope_for_binding(&self) -> PlanarMutationScope {
+        PlanarMutationScope::new(BodyKey::at("BodyKey"), self.scope_key.clone())
     }
 }
 impl ApplicationMutationInputScope<CheckpointSchema, PreserveBinding<CheckpointSchema>>
     for RegionOutputInput
 {
-    fn scope_for_binding(&self) -> PlanarMutationScope<CheckpointSchema> {
-        PlanarMutationScope::new(BodyKey::reference(), self.scope_key.clone())
+    fn scope_for_binding(&self) -> PlanarMutationScope {
+        PlanarMutationScope::new(BodyKey::at("BodyKey"), self.scope_key.clone())
     }
 }
 // compiled-example: end

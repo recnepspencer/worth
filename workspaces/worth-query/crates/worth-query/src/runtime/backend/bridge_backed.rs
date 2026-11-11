@@ -333,7 +333,7 @@ impl WorthQueryRuntimeBackend for WorthQueryBridgeBackedRuntimeBackend {
         let activation_receipt = self
             .subscription_activation
             .admit_activation(view_name, activation)?;
-        if let Some(message) = activation_receipt.drift_from_activation(view_name, activation) {
+        if let Some(message) = activation_receipt.drift_from_activation(view_name, activation)? {
             return Err(WorthQueryWorkspaceError::new(message));
         }
         Ok(activation_receipt.activation_receipt().clone())

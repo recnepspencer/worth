@@ -3,7 +3,7 @@ use worth_foundational::facade::{AspectFieldLocator, AspectValue};
 use crate::identity::data::{EntityId, KindId};
 use crate::snapshots::data::SnapshotHandle;
 
-use super::{DerivedIndexDefinition, DerivedIndexGenerationId, DerivedIndexId};
+use super::{DerivedIndexGenerationId, DerivedIndexId};
 
 /// Fixed width of the bounded relation-join lane. Complete entity-field
 /// selections instead use their caller's explicit finite candidate budget.
@@ -77,7 +77,7 @@ impl BoundedEntityFieldLookupRequest {
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct BoundedEntityFieldLookupOutcome {
-    definition: std::sync::Arc<DerivedIndexDefinition>,
+    definition: crate::indexes::RetainedDerivedIndexDefinition,
     generation_id: DerivedIndexGenerationId,
     candidate_entity_ids: Vec<EntityId>,
     examined_entry_count: usize,
@@ -87,7 +87,7 @@ pub struct BoundedEntityFieldLookupOutcome {
 
 impl BoundedEntityFieldLookupOutcome {
     pub(crate) fn new(
-        definition: std::sync::Arc<DerivedIndexDefinition>,
+        definition: crate::indexes::RetainedDerivedIndexDefinition,
         generation_id: DerivedIndexGenerationId,
         candidate_entity_ids: Vec<EntityId>,
         examined_entry_count: usize,
@@ -110,8 +110,8 @@ impl BoundedEntityFieldLookupOutcome {
 
     /// The installed semantic definition selected with this bounded lookup.
     /// A later generation may refresh without changing this definition.
-    pub fn retain_definition(&self) -> std::sync::Arc<DerivedIndexDefinition> {
-        std::sync::Arc::clone(&self.definition)
+    pub fn retain_definition(&self) -> crate::indexes::RetainedDerivedIndexDefinition {
+        self.definition.clone()
     }
 
     pub fn candidate_entity_ids(&self) -> &[EntityId] {

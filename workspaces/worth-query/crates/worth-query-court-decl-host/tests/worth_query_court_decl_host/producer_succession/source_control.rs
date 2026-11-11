@@ -1,11 +1,11 @@
 use super::*;
-#[derive(Clone, serde::Serialize)]
+#[derive(Clone, serde::Serialize, serde::Deserialize)]
 pub struct Control {
     pub key: String,
     pub width: u64,
 }
 worth_query_structured_value_binding!(pub Input for Control { identity: "succession.control.input" });
-worth_query_operation!(pub ControlSource for Schema, input Input; access { read_entities: [Node]; read_fields: [Key, Width]; writes: [Width]; });
+worth_query_operation!(pub ControlSource for Schema, input Input; access { read_entities: [Node]; read_fields: [Key::at("Key"), Width::at("Width")]; writes: [Width::at("Width")]; });
 pub fn scope(input: &Control) -> String {
     input.key.clone()
 }
@@ -14,7 +14,7 @@ worth_query_mutation_binding!(pub Binding for Control, schema Schema,
  idempotency u64, identity "succession.control.command", decision Target, denial DenialBinding,
  handler identity "succession.control.handler", outputs Outputs,
  principal PrincipalBinding, mapping Mapping, principal_entity Principal, principal_identity u64, identity_binding U64ApplicationValueBinding,
- scope Node, Facts, Key, String, ReadOnly, NoApplicationUnit, field Key::reference(), value scope,
+ scope Key, field Key::at("Key"), value scope,
 );
 pub struct Outputs;
 impl ApplicationMutationOutputContract<Schema> for Outputs {
@@ -28,8 +28,8 @@ impl OperationHandler<Schema, Binding> for Handler {
         reader: &mut DecisionReader<'_, '_, '_, Schema, Binding>,
     ) -> HandlerResult<Target, Denial> {
         let result = (|| {
-            let node = reader.resolve_entity(Key::reference(), input.key.clone())?;
-            reader.field(&node, Width::reference())?;
+            let node = reader.resolve_entity(Key::at("Key"), input.key.clone())?;
+            reader.field(&node, Width::at("Width"))?;
             reader.mutation_target(&node)
         })();
         match result {
@@ -45,7 +45,7 @@ impl OperationHandler<Schema, Binding> for Handler {
     ) -> HandlerResult<(), Denial> {
         let result = (|| {
             let node = writer.projected_entity(&target)?;
-            writer.write_field(&node, Width::reference(), input.width)
+            writer.write_field(&node, Width::at("Width"), input.width)
         })();
         match result {
             Ok(()) => HandlerResult::Completed(()),
@@ -56,5 +56,5 @@ impl OperationHandler<Schema, Binding> for Handler {
 pub fn declare(
     schema: ApplicationSchemaDeclarationBuilder<Schema>,
 ) -> ApplicationSchemaDeclarationBuilder<Schema> {
-    schema.correction::<correction::Resize>()
+    schema
 }

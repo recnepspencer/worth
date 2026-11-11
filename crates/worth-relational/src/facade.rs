@@ -103,7 +103,10 @@ pub mod history {
         RelationalReplayRetentionDenial, RelationalTouchAdjacencyDirection,
         SharedCanonicalCommitEnvelope, VersionGraphPolicy,
     };
-    pub use crate::history::{BoundedCanonicalCommitPatchDenial, HistoryAccess, HistoryAuthority};
+    pub use crate::history::{
+        BoundedCanonicalCommitPatchDenial, HistoryAccess, HistoryAuthority,
+        OutputOriginHeaderCorruptionForTest,
+    };
     pub use crate::history::{
         RelationalAuthoredEntityIndexDefinition, RelationalAuthoredManagedSourceImpact,
         RelationalAuthoredManagedSourceMaterial, RelationalAuthoredManagedSourcePayloads,
@@ -134,11 +137,10 @@ pub mod identity_authority {
     pub use crate::identity_authority::*;
 }
 
-#[path = "facade/inspection.rs"]
-pub mod inspection;
-
 #[path = "facade/indexes.rs"]
 pub mod indexes;
+#[path = "facade/inspection.rs"]
+pub mod inspection;
 
 pub mod lineage {
     pub use crate::lineage::access::{RelationalLineageDiscoveryDenial, RelationalLineageNodeRead};
@@ -217,6 +219,10 @@ pub mod runtime {
     pub use crate::presentation::facade::runtime::{
         ImmutableReadContract, RelationalBoundaryContract, RelationalRuntimeApi,
     };
+    #[doc(hidden)]
+    pub use crate::publication::ownership::{
+        CurrentOwnershipContactsForTest, CurrentOwnershipLocalityForTest,
+    };
     pub use crate::publication::{
         PostCommitConsumer, PostCommitConsumptionContext, PostCommitConsumptionFailure,
     };
@@ -235,12 +241,16 @@ pub mod runtime {
         QueryReadPacketDenial, RecoveredCheckpointProgramActivationUpdate,
         RelationProjectionRecord, RelationRecordProjection, RelationalAdjacencyDirection,
         RelationalAdjacencySupportDenial, RelationalAdjacencyVisit,
+        RelationalAppliedCandidateReadIdentity, RelationalAppliedCandidateReadQualification,
         RelationalAspectPresenceSupportDenial, RelationalBorrowedRecordReadDenial,
         RelationalCandidateInputCounters, RelationalEntityMetadata,
         RelationalEntityMetadataPinDenial, RelationalEntityRetirement,
-        RelationalFieldSupportComparisonDenial, RelationalHomeProgramBodyDenial,
+        RelationalFieldSupportComparisonDenial, RelationalHistoricalSelectionRead,
+        RelationalHistoricalSelectionReadDenial, RelationalHistoricalSourcePresence,
+        RelationalHistoricalSourceReadDenial, RelationalHomeProgramBodyDenial,
         RelationalHomeProgramCatalogReadmissionSource, RelationalHomeProgramCatalogReceipt,
-        RelationalHomeProgramContractDenial, RelationalHomeProgramStepContracts,
+        RelationalHomeProgramContractDenial, RelationalHomeProgramPlanningSource,
+        RelationalHomeProgramPromotionRefused, RelationalHomeProgramStepContracts,
         RelationalInitialSchemaInstallation, RelationalInitialSchemaInstallationDenial,
         RelationalInitialSchemaInstallationDenialKind, RelationalInitialSchemaInstallationReceipt,
         RelationalPatchPositionReservationCounters, RelationalPhase4ReferenceCostCounters,
@@ -369,6 +379,8 @@ pub mod storage {
         AuthoritativeFieldComparisonKeyDecodeDenialKind, RecordLifecycleState,
         RelationalStorageSubject, RelationalStorageUnavailable, RelationalStorageUnavailableCause,
     };
+    /// SDK-internal incremental maintenance contracts.
+    pub use crate::storage::substrate::maintenance;
 }
 
 pub mod symbols {

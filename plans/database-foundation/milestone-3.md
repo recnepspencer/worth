@@ -12,14 +12,197 @@ obligations, external custody and corrections. A retry after a lost response
 returns the original occurrence. Nothing an application was told is committed
 depends on process memory, orderly close or application-owned byte transport.
 
-This milestone is delivered in ten numbered phases. Each phase states its own
-requirements, design, required tests, oracle extension, documentation and exit
-criteria. The cross-cutting decisions below bind every phase. D17 decides how
-each invariant is enforced and where each new type lives.
+This milestone is delivered in two tracks:
+- a **happy track** (H3–H10), with every application-visible capability working across a graceful close and reopen;
+- a **cleanup track** (C1–C5), with crash and fault recovery, cost bounds and certification.
 
-## Moved courts
+Both tracks finish inside this milestone. The ten numbered phases below still state the requirements, design, tests, oracle, documentation and exit criteria. **Delivery tracks** decides which track each requirement and test belongs to, and when it lands. The cross-cutting decisions below bind every phase. D17 decides how each invariant is enforced and where each new type lives.
 
-### C4 - Injected faults
+## Delivery tracks
+
+**Authority.** Where a decision or phase section conflicts with this section on *timing* or *track*, this section governs. It never weakens a requirement. It only says whether the requirement is proven before the happy landing or before the milestone closes.
+
+### Landings
+
+| Landing | Contents | State |
+|---|---|---|
+| 1 | Phases 1–2 | Landed |
+| 2a: the first happy landing | H3–H5 and the coherent H6–H9 slices already merged; every other partial surface refuses with a typed reason | Integration branch `codex/m3-host-home`; final gate waits for H5 LANDED |
+| 2b: the remaining happy landing | Complete H6–H10 and remove each corresponding temporary refusal | After landing 2a |
+| 3: the cleanup landing | C1–C5; closes the milestone | After landing 2b |
+
+- **Landing 2a reaches master** after H5 LANDED, a reviewed batch merge, green affected Tier-2 lanes, one green final Tier-3 run and the coordinator's final certification. Its coherence ledger names a graceful court for every Supported surface and a typed, before-effect refusal court for every Refused surface. No PARTIAL row reaches master. Landing 2b completes the remaining happy requirements under the same coherence rule.
+  - A CLEANUP court that is red at that moment leaves the tree, with its restore reference listed under its C item ("Moved courts").
+  - It is never `#[ignore]`d, gated or weakened.
+- **Phases 5–9 lift their own D15 refusals** only for the families their merged graceful courts prove. The ledger ties each temporary H6–H9 family refusal to the H-phase that removes it in landing 2b; C-track refusals retain their C-phase removal obligation. H10 deletes `UnsupportedDurableFamily`.
+- **Consumers may build on landing 2a's Supported surfaces.** They support graceful close and reopen, and a kill between operations. Its Refused surfaces stop with their named typed reason. After an unclean kill, open refuses with a typed reason (D18).
+
+### The happy constraint (track H)
+
+A home is closed gracefully, or killed while no operation is executing (a *quiescent kill*). It is then reopened any number of times, in a fresh process, under the same or a changed application build identity.
+
+Each reopen:
+- recovers every owner's full acknowledged state;
+- answers every retry of an admitted key with its original occurrence or its typed no-effect posture, never with a second effect;
+- never reissues a committed identity;
+- serves only after its D8 typestate steps complete.
+
+Open custody retained at close is readmitted as recovered custody (D5 and D11 below), and work continues on it.
+
+**D18 (new, track H only): an unclean open refuses.** When the journal tail holds an associated owner effect with neither an occurrence nor a disposition, open refuses before service with `UncleanRecoveryUnsupported`. The refusal names the owner and the effect, and the tail scan finds it. It never guesses a fate. C5 deletes this refusal once C1 recovers that case.
+
+### Decision splits
+
+| Decision | Track H | Track C |
+|---|---|---|
+| D4 | Owner publication order; product movement as its own step | `Indeterminate` fates |
+| D5 | Association fields; disposition before live; recovered custody across graceful reopen (integration's recovered-custody service) | `OpenAttempt`; reconciliation after an unclean kill; pending settlement |
+| D8 | All typestate steps; refused openings expose no service | — |
+| D11 | Close as written; `CloseRefused { posture }`; retained custody readmitted at reopen | — |
+| D12 | The checkpoint is taken **only at a quiesced close** (no executing attempt, no external obligation); the explicit application checkpoint is allowed under the same condition | Automatic threshold triggers; exact Native component obligations under concurrency; the cross-owner capture cut while attempts execute; proportional reopen and backing budgets |
+| D13 | One interim door (`WorthQueryInterimCheckpointRestore`), frozen callers, no `in_memory` names, the authenticated World-original section | Deleting the door (C5) |
+| D14 | — | All of it |
+| D16 | Plan, intent, step-body fence, carrier, stable identity allocation, Host transition request, final promotion and binding | Resume from the first nondurable step; `TransitionPlanDrift`/`TransitionPending`; discard tombstones; kill courts |
+| D1–D3, D6, D7, D9, D10, D15, D17 | In full | — |
+
+- **Format stability is relaxed for track C.** A cleanup item may change a format landed in track H. The old format then refuses with a typed reason and is never migrated.
+- **Track H keeps clean cutover.** No compatibility shims.
+
+### Track H items
+
+Each H item's proof is its phase's graceful journeys, plus the graceful oracle.
+
+- **H3 (Phase 3): Home and host lifecycle.**
+  - One application home through the host open call. `RelationalStoreHome` and every `in_memory*` path are deleted.
+  - Newness, `initial_state` and `discard_home`.
+  - Descriptor binding and rebuild; D16's track-H scope.
+  - The Empty Signal/Bridge seed basics.
+  - Contention, incarnation fencing and close settlement; the frozen callers.
+  - The Memory suites; D18.
+  - **Graceful oracle:** port the M2 `relational_home` oracle, plus a minimal memory-only reference host with `DurableIdentityCorrespondence`. It compares owner state after graceful close/reopen and quiescent kills, with no fault injection.
+- **H4 (Phase 4): Durable occurrences and original-result retry.**
+  - World artifacts and home-scoped identity; durable before live; rebuild from tails.
+  - Artifact v3 association and the semantic result; the D9 receipts table.
+  - Deleting the evidence authority, `CommittedReceiptNotRetained` and the Server caches.
+  - Intent drift and affinity refusals.
+  - The decisive journey, retry refusals, receipt fields and concurrent same-key retries.
+  - History with no identity collision; Server restart.
+  - Released keys keep their meaning across reopen.
+- **H5 (Phase 5): Signal and Bridge authored state; mixed publication.**
+  - The authored/derived split and codec; the wasm port; artifacts and association.
+  - Identities and foreign-owner refusal; multi-branch readmission.
+  - The evidence tag; Bridge and stale-under-build; R2–R5.
+- **H6 (Phase 6): Programs, adoption and build identity.**
+  - Support lifecycle; activation on every branch.
+  - Adoption custody across graceful reopen; build identity.
+  - Retirement; unrostered and changed builds. This restores the producer directory court.
+- **H7 (Phase 7): Workflows, conditional operations and long-running work.**
+  - Workflow records and resume across reopen; transition dispositions.
+  - The managed cleanup obligation; R9 durable and process-local.
+  - The temporal key; managed and owned-async custody; the R7 route table.
+- **H8 (Phase 8): External dispatch and custody.**
+  - Outbox rebind; the attempt recorded before the call; `PayloadRejected`.
+  - Inbound custody and dedup; recovery-handle claims; rebuilt indexes.
+  - Deleting `StoreCapabilityRequired`; R13.
+  - An outstanding dispatch across a graceful close.
+- **H9 (Phase 9): Correction and original-owner advancement.** Phase 9's graceful paths, with every kill read as a close or a quiescent kill; durable history and branch retirement belong to C2.
+  - Durable original-interpretation membership is published at the acknowledged
+    World-open seam and jointly readmitted in
+    `application_installation/home_preparation/world/custody.rs`. Its funded
+    terminal disposal uses the protected World checkpoint source route in
+    `durability/checkpoint/original_observation.rs`, for released unpublished
+    originals only. Disposal of retired and inherited occurrences, together
+    with the durable history and branch retirement protocol, belongs to C2.
+    `AuthoritativeDurableHistory` and `DurableBranchPublicationRequired` are
+    Refused rows on track H. H6 keeps original-meaning
+    interpretations process-local and counts each retained meaning once; it
+    transfers none to durable membership.
+- **H10 (Phase 10): Public cutover.**
+  - Callers and examples on the open call. They run on their genuine main thread under the default stack in the dev profile. Entry-point stack growth through `stacker::maybe_grow` satisfies this main-thread requirement.
+  - The guides; deleting `UnsupportedDurableFamily`.
+  - A graceful full journey across every family.
+  - Documentation that states plainly that crash recovery is not yet certified.
+
+### Track C items
+
+- **C1: Crash core.**
+  - `OpenAttempt`; reconciliation; recovered publication after an unclean kill.
+  - Exact Native components; lazy discovery; unresolved fates and `ProvenNoEffect`.
+  - Transition resume and drift; discard completion and tombstones.
+  - The Phase 3 refusal matrix; the damaged descriptor; M2 unresolved forks.
+  - Crashes between commit and product movement; the release-kill case.
+- **C2: Cost and bounds.**
+  - Automatic checkpoint triggers; the cross-owner capture cut.
+  - Proportional reopen and request-funded cold materialization. The funding already done on P-A's branch lands here.
+  - Backing and work budgets; growth courts.
+  - Durable World history and branch retirement, including disposal of retired
+    and inherited occurrences. Track H retains funded disposal of released
+    unpublished originals.
+  - Close maintenance's 60-second wall-clock deadline is a timing trigger.
+    Graceful-close courts must not depend on it; never raise the deadline or
+    retry until green to certify them.
+  - **A frame and future size budget lane.** No `worth_*` function frame over a declared debug-profile ceiling, measured from the compiled binaries' unwind metadata. Reduce the large-frame census found on 2026-11-06 to that ceiling.
+- **C3: Owner crash cases for Phases 5–9.**
+  - Crashes between owner effects; damaged frames and basis mismatch; mixed kills.
+  - Adoption killed at each stage; mid-step workflow kills; R9 `Indeterminate`.
+  - Crashes after dispatch; R14; disappearance mid-dispatch.
+  - Split completion under a true kill; discarding derived caches (D14).
+- **C4: The court oracle.** The adversarial constraint in full:
+  - the media sweep, kills at every durable I/O boundary, and recovery interruption;
+  - the build and derived dimensions;
+  - the injected-fault and interrupted-publication courts held in the cleanup ledgers.
+- **C5: Retirement and certification.**
+  - Delete the D13 door and the D18 refusal.
+  - Boundary gates at zero; re-audit; no deleted callers.
+  - Tier 3 and the cumulative oracle; milestone certification.
+
+### Moved courts
+
+Cleanup courts moved out of the tree are listed under their C item, with `restore from <sha>:<path>`. Existing entries:
+- **C1:** the three transition-source recovery courts. They are listed in D16 under "Cleanup track: moved courts".
+- **C2 (cost and bounds): exact deduplicated physical accounting of nested persistent aspect backing.** No court has left the tree yet; the claim moved. Pending: 24 exact-accounting and cost-equality courts are still red after the master merge and are not yet classified court by court (exact-equality courts move here with a restore reference; bound-at-least-actual courts stay and must pass); and the full-inventory totals (`RecordArena::allocation_inventory`, `PartitionState::allocation_inventory`, the fork-materialized total in `branch/root.rs`) still saturate instead of refusing, which is open repair work until the coordinator accepts it as C2. `restore from 171d380829:crates/worth-relational/src/inspection/mvcc/sharing_authoritative_byte_metrics.rs` (lines 6–11, 25–28) and `restore from 171d380829:crates/worth-relational/src/inspection/mvcc/sharing_byte_metric_scope.rs` (lines 7–11, inspection version 6). Claim: `unique_physical_*` sums each distinct allocation exactly once, and shared payloads keep node and value granularity, including persistent aspect nodes and admitted values shared between distinct Extra carriers. Inspection version 7 reports that backing as a checked per-carrier upper bound that may count shared structure once per holder, and refuses an unrepresentable bound with a typed overflow. C2 supplies an allocation visitor that sees through shared nodes and values, restores the exact wording under a new version, and adds the court: two Extras sharing one aspect map contribute the shared backing once, and the rows sum to an allocator-observed union. C2 also makes full region inventories and reclamation counters refuse an unrepresentable bound instead of saturating.
+- **Phase 6 / H6:** the producer directory court (Phase 6, Required tests).
+
+Courts held out under D13 are listed the same way, under the H item whose Home capability they need. The second master merge (`171d380829`) brought in Query cold journeys that reach `WorthQueryInterimCheckpointRestore` from outside the frozen caller list, directly or through a shared reopen fixture. D13's list only shrinks, and Directory Home refuses their producers until the phases below land, so each court is deleted from the tree and returns through the Directory Home open, never through the interim door. The assertions move intact.
+
+- **Phase 6 / H6** (also needs H5 producer admission). All `restore from 171d380829:`.
+  - `workspaces/worth-query/crates/worth-query-court-decl-host-owned-codec-transition/` (whole crate) with its fixture `workspaces/worth-query/crates/worth-query-testkit-certification-canonical/src/certification/application_graph/source_owned_transition.rs` and its two `mod`/`pub use` lines. Also needs D16's Host transition request. Claim (`same_route_codec_retirement_covers_the_source_owned_origin`): a source-owned V1 output crosses an authenticated same-route codec transition with authored payload, source identity and original bytes preserved; the codec-retired route reopens; ordinary source deletion removes both publication and presence rows and stays removed across reopen; an independent branch produces a fresh V2 output and preserves it on edit.
+  - Under `workspaces/worth-query/crates/worth-query-court-decl-host/tests/worth_query_court_decl_host/certification/document_history/owned_outputs/`:
+    - `world.rs`: `restore_changed_build`, `restore_same_build`, `restore_program_checkpoint` (the shared cold fixture).
+    - `cold_selection.rs` (whole file): `cold_same_build_selection_retains_both_families_without_contacts`, `worker_only_cold_same_build_selection_retains_both_families_without_contacts`, `cold_role_outside_the_selected_publication_refuses_without_effect`, `worker_only_cold_refusal_keeps_data_without_native_custody`. Claim: same-build cold selection reuses both families with zero producer and source-projection contacts; a role outside the selected publication refuses with the original source, producer and family and no effect; the refusal outlives host teardown without retaining Native custody.
+    - `build_change.rs` (whole file): `changed_build_contacts_only_the_family_whose_publication_is_still_old`, `worker_only_changed_build_regenerates_only_the_old_family`. Claim: under a changed build, navigation reruns only the family whose publication is still old (value 2001, one contact).
+    - `hierarchy/cold_parent/{mod,fixture,program,corruption,meaning}.rs` (whole directory): `corrupt_non_leaf_parent_lineage_refuses_without_effect`, `changed_discovery_build_runs_real_parent_fallback_and_discovers_its_new_child`, `a_cold_two_family_model_edit_succeeds_the_current_owned_publications`, and the `worker_only_` twin of each. Claim: wrong cold parent lineage refuses atomically as `OutputPublicationCorrespondence` naming source, family and producer; a changed discovery build runs the real parent fallback and discovers its new child; a cold two-family model edit succeeds the current owned publications.
+    - `predecessor/courts.rs`: `cold_reopen_reports_unavailable_instead_of_substituting_current_values`; `predecessor/foreign.rs` (whole file): `an_old_foreign_value_is_not_a_current_dependency_and_current_output_reopens`. Claim: after cold reopen a predecessor read reports `PredecessorBasisUnavailable` and never substitutes a current value; a historical foreign value never becomes a current output dependency.
+  - A restored court reaches its doors through the landed H capability (the Directory Home open); the frozen caller lists never grow, so any caller row a restored court would need requires a fresh boundary ruling. Rows removed with these courts (`tools/boundary-check/config/control-callers.txt`, owner `workspaces/worth-query/crates/worth-query-execution/`): `owned_codec_transition.rs`, `build_change.rs`, `cold_selection.rs`, `hierarchy/cold_parent/corruption.rs`, `hierarchy/cold_parent/meaning.rs`. Restoring the codec-transition court crate also restores its `court-frontier-splits.toml` entry.
+- **Phase 9 / H9** (also needs H5 producer admission and H6 required-output custody; every journey executes a correction-bound Create, Retire or Edit). All `restore from 171d380829:workspaces/worth-query/crates/worth-query-court-decl-host-authored-ownership/tests/authored_ownership/<path>`.
+  - Shared fixtures: `coupled/history.rs` (`reopen`, `try_reopen`, `retire_sentinel`, `require_unique_edge_ownership`), `native_checkpoint_tamper.rs`, `co_checkpoint_tamper.rs`.
+  - `co_history.rs`: `corrupt_recorded_co_anchor_refuses_at_the_real_closure_owner_with_its_source_subject`. Claim: after retire and reverse, a cold-corrupted recorded co-anchor refuses at the authored-closure owner as `CorruptPublication` naming the source, leaves unrelated records readable, and the clean twin admits the same candidate.
+  - `cold_owned_revision.rs`: `an_ordinary_body_revision_settles_after_checkpoint_and_cold_reopen` (with private `reopen`, `edit`, `limits`; the `RequiredProgram` fixture stays in the tree). Claim: a performed source revision settles its required body before capture; after reopen the next revision settles, removes output 103 and exposes 104.
+  - `coupled/multi.rs`: `each_coupled_writer_owns_only_its_own_business_edges_even_with_a_shared_endpoint` and the `if MODE == 15` block of `two_bodies`. Claim: two writers of one coupled publication; a historical twin claiming the same recorded edge makes retirement refuse as `CorruptPublication` naming the source with a usable sentinel; clean history admits the candidate.
+  - `current_roster.rs`: `dropped_added_and_repointed_current_routes_refuse_after_real_frame_admission`, `a_pre_roster_store_cannot_be_read_as_empty_current_ownership`. Claim: roster changes 0/1/2 refuse during reopen with the exact owned-recovery subject; change 9 survives frame admission and fails the first ordinary mutation as `CorruptCurrentOwnership` with no record loss; a pre-roster store refuses as `UnsupportedLegacySemantics`.
+  - `coherent_roster.rs`: `coherent_whole_roster_and_route_drops_and_both_digest_corruptions_refuse_typed`. Claim: coherent whole-roster and route drops and both digest corruptions refuse typed, at reopen or at the first cold custody use, never as an opened fence.
+  - `current_history.rs`: `published_owned_history_cannot_replace_missing_current_presence_on_either_route_door`. `current_fence.rs`: `ordinary_source_edit_head_preserves_warm_and_cold_fence_decisions`. Claim: published history cannot stand in for missing current presence on either route door; warm and cold fence refusals are identical.
+  - `content/courts.rs`: `coupled_writers_read_and_publish_their_actual_content_across_checkpoint_and_correction`, `a_closed_owned_publication_restores_content_and_retains_it_after_checkpoint`. Claim: coupled writers decode and publish their actual Native content across a cold boundary and a correction; a restored owned publication keeps its content after reopen.
+  - `coupled/history_seams.rs`: `cold_coupled_history_refuses_an_authored_anchor_adopted_by_an_earlier_publication`, `cold_coupled_restoration_refuses_an_owner_whose_preceding_publication_has_no_live_member`. `coupled/owner_set_history.rs`: `cold_retirement_owner_roster_is_recomputed_from_preceding_facts`, `cold_restoration_owner_roster_is_recomputed_from_preceding_facts`. Claim: cold historical headers cannot adopt an authored anchor or lose a surviving writer; dropped, added or repointed group rosters refuse as `CorruptPublication` naming the recomputed owner.
+  - `parameter_inverse/adjacency_gap.rs`: `recorded_support_refuses_uncovered_native_adjacency_with_its_exact_relation_and_kind`. Claim: recorded correction support refuses uncovered Native adjacency as `IncompleteAdjacencyHistory` with the exact commit, relation and kind.
+  - `relation_splice/checkpoint.rs`: `coupled_stage_retirement_reuses_native_writer_custody_after_checkpoint_reopen`. Claim: after reopen, the next stage retirement drives the cold Preserve directly with one producer contact.
+  - A restored court reaches its doors through the landed H capability; the frozen caller lists never grow, so any caller row a restored court would need requires a fresh boundary ruling. Rows removed with these courts (`control-callers.txt`): owner `crates/worth-relational/` for `coherent_roster.rs`, `current_history.rs`, `current_roster.rs`; owner `workspaces/worth-query/crates/worth-query-execution/` for `coherent_roster.rs`, `current_history.rs`, `parameter_inverse/adjacency_gap.rs`.
+  - The Native subclaims of these courts (co-anchor closure, duplicate coupled-edge custody, current-roster corruption, codec-retirement semantics) are track H and are rebuilt as Native-owned courts through existing Native issuance; they never stand in for the Query journeys above.
+
+Landing 2a adapter closure (lane P-A, merged at `e4d3b01c8d`) moved these Native durability roots out, each with its restore reference:
+
+#### C4 - Injected faults
+
+Integration protocol restoration refresh (same per-claim disposition; no retired campaign is remounted):
+- `22e638d638e724fc2ca3947a583f43c45b56990f:crates/worth-relational/src/durability/authority/runtime_rebuild/checkpoint_restore/reuse_tests.rs`
+- `22e638d638e724fc2ca3947a583f43c45b56990f:crates/worth-relational/src/durability/log/native_checkpoint_codec/kind_authentication_tests.rs`
+- `22e638d638e724fc2ca3947a583f43c45b56990f:crates/worth-relational/src/history/commit/envelope_residency_tests.rs`
+- `22e638d638e724fc2ca3947a583f43c45b56990f:crates/worth-relational/src/storage/residency/cross_region_forgery_tests.rs`
+- `22e638d638e724fc2ca3947a583f43c45b56990f:crates/worth-relational/src/tests/durability/contracts/derived_index_checkpoint/artifact_affinity.rs`
+- `22e638d638e724fc2ca3947a583f43c45b56990f:crates/worth-relational/src/tests/durability/contracts/semantic_result/custom_versions.rs`
+- `22e638d638e724fc2ca3947a583f43c45b56990f:crates/worth-relational/src/tests/support/durability/canonical_commit_frame.rs`
+Restore the complete same-SHA `crates/worth-relational/src` tree, including original parent mounts, fixture/control/support/producer and reconstruction-lane dependencies. Preserve every original assertion/input/contrast and genuinely owned source boundary when migrating the campaign; never revive runtime_attachment discovery. These references retain integration revisions to the already moved private cost/fault families. Ordinary source functionality remains in the public counterparts.
+
 
 Custom enforcement decision corruption retains its full original campaign:
 - C4 full original semantic_result_preserves_custom_enforcement_version_distinct_from_aggregate_request, including callback tuple indices, exact decision rewrite, outer reseal and ValidationMismatch refusal: `f9a53a5d17e01562d503b39b4627252bb63d8639:crates/worth-relational/src/tests/durability/contracts/semantic_result/custom_versions.rs`, with OnePlannedEntity in that file, original semantic_result.rs/contracts/mod.rs parents and `f9a53a5d17e01562d503b39b4627252bb63d8639:crates/worth-relational/src/tests/support/durability/canonical_commit_frame.rs`.
@@ -50,6 +233,16 @@ the ordinary next-position/sequence and identical-retry rules stay live unchange
 
 
 Remaining pure cleanup roots (per-claim Landing 2a disposition):
+
+- C4: `branch_root_image_versions_refuse_before_restoration_and_current_recovers`,
+  introduced on the authorized integration base: restore the complete unsupported
+  version mutation/refusal/current-format control from
+  `22e638d638e724fc2ca3947a583f43c45b56990f:crates/worth-relational/src/tests/durability/contracts/branch_root_checkpoint/unsupported_root_version.rs`,
+  its same-SHA `branch_root_checkpoint.rs` parent and complete
+  `crates/worth-relational/src` fixture/codec/authority closure. This is the original
+  private malformed-plan campaign; ordinary current-format public recovery
+  remains mounted in `checkpoint_branch_targets.rs`.
+
 
 - `durability_contract_failure_missing_authoritative_parent_closure_is_explicit`: `restore from 86e84dc5cd738882bf50fced389fc7deaa31567f:crates/worth-relational/src/tests/durability/contracts/rejected_and_parent_closure.rs`.
 - `durable_fork_and_source_commit_complete_without_deferral` (also retains its original C2 cost/custody guards): `restore from 86e84dc5cd738882bf50fced389fc7deaa31567f:crates/worth-relational/src/tests/durability/medium/branch_transition_races.rs`.
@@ -197,6 +390,9 @@ Remaining pure cleanup roots (per-claim Landing 2a disposition):
 - `a_tail_that_does_not_continue_from_the_checkpoint_refuses`: `restore from f9f15bf8c8:crates/worth-relational/src/tests/durability/medium/recovery_refusals.rs`.
 - `a_checkpoint_filed_under_the_wrong_position_refuses_as_corrupt`: `restore from f9f15bf8c8:crates/worth-relational/src/tests/durability/medium/recovery_refusals.rs`.
 - `a_damaged_checkpoint_refuses_as_corrupt`: `restore from f9f15bf8c8:crates/worth-relational/src/tests/durability/medium/recovery_refusals.rs`.
+  These refusal courts and the `branch_transition/tampering.rs` courts were the only readers of the frame
+  refusal carried by `TestRecoverySourceRefusal` (`tests/support/durable_medium.rs`); its variants are
+  unit-only now, and a restore re-adds the `Commit`/`Transition` frame-refusal payloads.
 - `a_durable_publisher_waits_for_the_reservation_instead_of_deferring` (also holds a C2 cost/residency assertion): `restore from f9f15bf8c8:crates/worth-relational/src/tests/durability/medium/reservation_wait.rs`.
 - `a_cancelled_waiter_stops_before_any_effect` (also holds a C2 cost/residency assertion): `restore from f9f15bf8c8:crates/worth-relational/src/tests/durability/medium/reservation_wait.rs`.
 - `an_unresolved_publication_installs_nothing_and_refuses_every_later_commit_alike`: `restore from f9f15bf8c8:crates/worth-relational/src/tests/durability/medium/unresolved_fate.rs`.
@@ -276,7 +472,16 @@ Remaining pure cleanup roots (per-claim Landing 2a disposition):
   `cold_source/protected_reads.rs`. This is relocation, not retirement or
   weakened fault assertions.
 
-### C2 - Cost and bounds: backing and work budgets
+#### C2 - Cost and bounds: backing and work budgets
+
+Integration protocol restoration refresh (same per-claim disposition; no retired campaign is remounted):
+- `22e638d638e724fc2ca3947a583f43c45b56990f:crates/worth-relational/src/durability/authority/runtime_rebuild/checkpoint_restore_tests.rs`
+- `22e638d638e724fc2ca3947a583f43c45b56990f:crates/worth-relational/src/durability/authority/runtime_rebuild/checkpoint_restore/reuse_tests.rs`
+- `22e638d638e724fc2ca3947a583f43c45b56990f:crates/worth-relational/src/history/commit/artifact_tests.rs`
+- `22e638d638e724fc2ca3947a583f43c45b56990f:crates/worth-relational/src/history/commit/envelope_residency_tests.rs`
+- `22e638d638e724fc2ca3947a583f43c45b56990f:crates/worth-relational/src/runtime/state/subsystems/services/symbol_table/reservations/tests.rs`
+Restore the complete same-SHA `crates/worth-relational/src` tree, including original parent mounts, fixture/control/support/producer and reconstruction-lane dependencies. Preserve every original assertion/input/contrast and genuinely owned source boundary when migrating the campaign; never revive runtime_attachment discovery. These references retain integration revisions to the already moved private cost/fault families. Ordinary source functionality remains in the public counterparts.
+
 
 Generation selection private counter remainder:
 Generation case retains original two pre-recovery and two post-recovery definitions, nonreuse identity/generation inequalities, pinned old vs new field values, exact observed generation and candidate entity ids. Only exact generation_payload_reads delta1 and history_inventory_entries delta0 leave the functional case for C2; no public cost proxy. Complete immutable original at `14b6075657193d0f74ce944beab6124b5dec7b3c:crates/worth-relational/src/tests/query/indexes/generation_identity_recovery.rs`, plus same-SHA indexes/mod.rs, tests/support.rs, complete tests/support tree and complete `crates/worth-relational/src` implementation/control closure, preserving original counters/arming/input contrasts when restored through genuine owned source infrastructure; never restore runtime_attachment.
@@ -324,6 +529,16 @@ Shared exact fixture/control trees: `622f101e99a3bda26132bebf19c2f3c318a7b6f3:cr
 
 
 Remaining pure cleanup roots (per-claim Landing 2a disposition):
+
+- C4: `branch_root_image_versions_refuse_before_restoration_and_current_recovers`,
+  introduced on the authorized integration base: restore the complete unsupported
+  version mutation/refusal/current-format control from
+  `22e638d638e724fc2ca3947a583f43c45b56990f:crates/worth-relational/src/tests/durability/contracts/branch_root_checkpoint/unsupported_root_version.rs`,
+  its same-SHA `branch_root_checkpoint.rs` parent and complete
+  `crates/worth-relational/src` fixture/codec/authority closure. This is the original
+  private malformed-plan campaign; ordinary current-format public recovery
+  remains mounted in `checkpoint_branch_targets.rs`.
+
 
 - `positioned_agreement_uses_original_work_budget_and_preserves_authoritative_digest`: `restore from 86e84dc5cd738882bf50fced389fc7deaa31567f:crates/worth-relational/src/tests/durability/contracts/canonical_commit_artifact.rs`.
 - `native_custody_correction_last_actual_capture_abandonment_releases_shared_root_custody`: `restore from 86e84dc5cd738882bf50fced389fc7deaa31567f:crates/worth-relational/src/durability/data/native_checkpoint/component_custody/tests.rs`.
@@ -450,20 +665,19 @@ B2 schema/history consumer split (coordinator per-claim Landing 2a ruling):
 - `controlled_resident_cell_keeps_exact_charge_until_last_real_weak` and
   `controlled_resident_cell_refuses_exact_control_before_any_new_arc`:
   `restore from f9f15bf8c8:crates/worth-relational/src/storage/residency/cell/resident_full/tests.rs`.
-- `controlled_full_region_matches_prior_projection_preimages_and_legacy_truth` and
-  `controlled_full_commitment_clone_retains_only_its_actual_node_backing`:
-  `restore from f9f15bf8c8:crates/worth-relational/src/storage/residency/region_publication/full/tests.rs`.
-  These four assert the exact request-funded bills of `resident_for_request` and
-  `PreparedResidentRegion::initial_for_request`. The ordinary kind-commitment
-  preimage oracle of the third root is not moved: it stays in the tree on the
-  live producer as `full_region_kind_commitment_matches_independent_projection_preimages`
-  (`storage/residency/region_publication/kind_commitment_preimage_tests.rs`). Both constructors had no
-  production caller and were deleted with the 32 Native dead-code diagnostics
-  (`target/lane-evidence/landing2a-dead-code-deletion-notes.md`); the live Full
-  producer `PreparedResidentRegion::initial` takes no request, so the bills
-  cannot be observed through it. C2 restores the constructors with these roots
-  from the same SHA only if request-funded Full construction gains a production
-  caller; otherwise C2 states the equivalent bound on the live producer.
+  These two assert the exact request-funded charge of `resident_for_request`
+  (exact accounting, C2 by the sharing-bound ruling). The constructor is live:
+  the master merge made the Full `PreparedResidentRegion::initial`
+  (`storage/residency/region_initialization.rs`) its production caller, so C2
+  restores these roots against that producer's bound.
+- The Full region courts are not moved. On the live producer
+  `PreparedResidentRegion::initial`,
+  `controlled_full_region_matches_current_kind_preimages_and_truth` and
+  `controlled_full_commitment_clone_retains_only_its_actual_node_backing` stay in
+  `storage/residency/region_publication/full/tests.rs` and must pass.
+  `PreparedResidentRegion::initial_for_request` had no production caller and was
+  deleted with the 32 Native dead-code diagnostics
+  (`target/lane-evidence/landing2a-dead-code-deletion-notes.md`).
 
 - Instrumentation half of `execute_prepared_merge_reports_execution_counters_and_structural_summary`: `restore from f9f15bf8c8:crates/worth-relational/src/tests/history/milestone_7c_phase_e/execution_counters_diagnostics.rs`.
 - Instrumentation half of `execute_prepared_merge_records_attempt_without_success_on_failure`: `restore from f9f15bf8c8:crates/worth-relational/src/tests/history/milestone_7c_phase_e/failure_attempt_diagnostics.rs`.
@@ -694,13 +908,13 @@ retired runtime-discovery adapters.
 
 - C2: private per-runtime interner absence in current-scan cells of
   `residency_failure_matrix_full_read_subjects_cover_every_door_and_class`:
-  `restore from 14e282569e:crates/worth-relational/src/tests/durability/medium/cold_read_matrix/exhaustive.rs`.
+  `restore from 8283728aff:crates/worth-relational/src/tests/durability/medium/cold_read_matrix/exhaustive.rs`.
   The public counterpart keeps all 47 doors, three subjects, six causes, exact
   refusal/retry behavior, target reads, current-scan history noninterference and
   publication invariance. The existing request-funded version read is now public.
 - C2: exact receiver dictionary absence/admission/resolved text in
   `every_full_read_door_admits_its_runtime_dictionary_or_preserves_page_damage`:
-  `restore from 14e282569e:crates/worth-relational/src/tests/durability/medium/cold_symbol_read_doors.rs`.
+  `restore from 8283728aff:crates/worth-relational/src/tests/durability/medium/cold_symbol_read_doors.rs`.
   All original public success/refusal, sticky I/O, Head identity and frontier
   observations remain in `full_read_doors_preserve_history_symbol_refusals_and_current_head`.
 - C2: private Full/Head probes, metadata-history length, dictionary contents and
@@ -728,7 +942,7 @@ retired runtime-discovery adapters.
   against an issued main observation; an old receipt is not inferred to be a root.
 - C2: whole private allocation/inventory court
   `residency_cold_index_frontier_prevents_reissue_before_any_image_demand`:
-  `restore from 14e282569e:crates/worth-relational/src/tests/durability/medium/cold_index_frontier.rs`.
+  `restore from 8283728aff:crates/worth-relational/src/tests/durability/medium/cold_index_frontier.rs`.
   Restore all four actual IndexSubsystem reserve/publish/frontier/inventory
   sequences with their zero/positive source reads. Public actual builds retain
   monotonic generations and the original <old+16 bound; they do not stand in for
@@ -803,54 +1017,47 @@ retired runtime-discovery adapters.
   exact counted lineage-node equality, public Full record demand and emitted
   nonempty lineage directory. No root, mutable constructor or counter is exposed.
 
-## Phase map
+Merging lane P-A into the integration branch (2026-11-10) moved the private halves of
+three integration courts whose in-source fixture P-A retired. Their public halves keep
+the same test names in the cold-residency court
+(`cold_residency/index_selection_reads.rs`):
 
-| Phase | Name | Depends on | Lands |
-|---|---|---|---|
-| 1 | State survival audit | — | Landing 1 |
-| 2 | Store capacity, single writer and incarnation | — | Landing 1 |
-| 3 | Application home and host lifecycle | 2 | Landing 2 |
-| 4 | Durable occurrences and original-result retry | 3 | Landing 2 |
-| 5 | Signal and Bridge authored state; mixed publication | 4 | Landing 3 |
-| 6 | Programs, adoption and build identity | 4 | Landing 3 |
-| 7 | Workflows, conditional and long-running work | 5, 6 | Landing 3 |
-| 8 | External dispatch and custody | 4, 7 | Landing 3 |
-| 9 | Correction and original-owner advancement | 4, 6, 7 | Landing 3 |
-| 10 | Public cutover and milestone certification | 1–9 | Landing 3; closes the milestone |
+- C2: the `mutable` private index snapshot/install loop and the check that capture does
+  not admit the carried image, in
+  `cold_checkpoint_preserves_carried_index_selection_and_reads_postings_without_a_full_warmup`:
+  `restore from 8283728aff:crates/worth-relational/src/tests/durability/medium/cold_index_selections.rs`
+  (fixture: `restore from 8283728aff:crates/worth-relational/src/tests/durability/medium/cold_index_fixture.rs`).
+- C2: the private Complete codec checks (artifact format version, empty artifacts, roots
+  beside bases, exact bindings and `readmit`) in
+  `complete_checkpoint_saves_the_selection_carried_to_its_current_root` and
+  `reclose_before_any_image_demand_keeps_the_selections_the_image_carried`:
+  `restore from 8283728aff:crates/worth-relational/src/tests/durability/medium/complete_index_selections.rs`.
+- The two `resident_full` C2 charge courts above, restored from `f9f15bf8c8`, target
+  `resident_for_request`, which the integration branch's production region constructor
+  `PreparedResidentRegion::initial(lane, request, partition, symbols)` calls; restore them
+  against that signature. The Full region courts were not moved:
+  `controlled_full_region_matches_current_kind_preimages_and_truth` and
+  `controlled_full_commitment_clone_retains_only_its_actual_node_backing` stay in
+  `storage/residency/region_publication/full/tests.rs` with the v3 kind-commitment oracle
+  (`full/tests/kind_oracle.rs`) and its src-court baseline row.
 
-**Parallel work and landing order.**
+The integration branch's cleanup ledgers (`merge-cleanup-reds.md`, `merge-families.md`) become entries here when their courts leave the tree before landing 2.
 
-- Phases whose dependencies have landed may be built in parallel, but only
-  where their write scopes do not overlap.
-- Phases 5 to 10 integrate on one milestone integration branch. Each phase
-  merges into that branch when its own reviewer approves and its Tier-2 run
-  on the branch is green. A phase built in parallel merges the current
-  integration branch first.
+### Parallel work
 
-**Landing rule.** The milestone reaches master in three landings:
+H items whose dependencies have merged may be built in parallel where their write scopes do not overlap. Each one merges into the integration branch when its reviewer approves and its Tier-2 run there is green. A C item may start before landing 2 only where the coordinator assigns it and it does not slow an H item.
 
-| Landing | Contents | Why it is a separate landing |
-|---|---|---|
-| 1 | Phases 1–2 | Store foundations and the audit. Nothing is visible to applications. |
-| 2 | Phases 3–4 | The first application-visible durability: a home through the host, with original-result retry. Phases 3 and 4 cannot land apart, because a home that recovered graph state but not World occurrences would silently lose application history. |
-| 3 | Phases 5–10 | One broad cutover. Signal, programs, workflows, dispatch and correction become durable, and the interim paths are deleted in the same landing. |
+### Verification tiers by track
 
-- A landing reaches master only after its exit criteria hold and the
-  coordinator certifies it at the final gate.
-- Between landings 2 and 3, a directory home refuses every family that Phases
-  5–9 support (D15), and the interim checkpoint door (D13) serves those
-  families' callers. Master is never left half-recovered.
-- Within the landing-3 integration branch, each phase lifts its own refusals
-  as it merges.
-
-**Format stability.** An artifact format defined in a phase is final for the
-milestone. Later phases add new artifacts or new tagged entries in an
-extensible list the earlier phase declared; they do not change an existing
-format. A phase that must change a landed format states which development
-homes stop opening. Under clean cutover they refuse with a typed reason and
-are never migrated.
+| Track | What runs |
+|---|---|
+| H | Tiers 1–2 as below, plus the graceful oracle when the diff reaches its subject |
+| C | Adds the crash oracle at Tier 2 |
+| Tier 3 (the full matrix and the exhaustive cumulative oracle) | At landing 3 |
 
 ## Adversarial constraint
+
+The cleanup track certifies this constraint. The happy track meets the graceful constraint in Delivery tracks.
 
 A home is killed at any durable I/O boundary of any supported operation. That
 includes every owner's publication, product movement, program transitions,
@@ -1561,6 +1768,9 @@ include every resolution tagged with it.
 
   The phase's first deliverable is a per-kind table naming the route each run
   kind takes.
+  The [Phase 7 custody routes](milestone-3-long-running-custody.md) select those
+  routes and inventory every retained conditional decision. They distinguish
+  existing lifecycle contracts from the durable consumers still to implement.
 - **R8 (Phase 6).** General required-output custody is a durable obligation in
   `query.obligations`. That covers `DemandRecord` performed obligations and
   prerequisites, and `SourceCustody`. Ready outputs remain derived.
@@ -2508,8 +2718,11 @@ changed build identity is an oracle dimension rather than a single case.
 - **Producer directory build identity.** Restore
   `directory_changed_build_reuses_original_output_until_new_implementation_is_demanded`
   (restore from `5358b31d3083dc88eea961af716e948f759eac96:workspaces/worth-query/crates/worth-query-court-decl-host-package-archive-replay-application-graph/tests/worth_query_court_decl_host_package_archive_replay_application_graph/certification/application_graph/producer_predicate_checkpoint/changed_build.rs`): produce under A, reuse the
-  original accepted output under A, reopen under B without producer execution,
-  then regenerate only on demand.
+  original accepted output under A with its equivalence and ownership checks,
+  reopen under B without producer execution, then regenerate only on demand
+  while keeping the original entities. The filesystem court is moved out of
+  the Phase 3+4 tree until the Phase 6 authored Signal owner is available;
+  its uncommitted restoration has been removed without gating or weakening it.
 - **Retirement survives restart.** Retire support, kill, reopen: the status is
   still Retired, and interpretation refuses where the retirement requires it.
 - **Adoption resumes.** Adoption interrupted at each stage across a kill

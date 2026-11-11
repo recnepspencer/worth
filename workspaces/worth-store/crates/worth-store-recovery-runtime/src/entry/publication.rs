@@ -72,3 +72,6 @@ impl std::fmt::Debug for PhysicalRecoveryPublicationSettlementLedger {
         debug.finish()
     }
 }
+#[cfg(test)]
+#[path = "publication_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;

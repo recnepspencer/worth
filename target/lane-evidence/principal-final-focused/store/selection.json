@@ -1,0 +1,1639 @@
+{
+  "rust-build-meta": {
+    "target-directory": "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\workspaces\\worth-store\\target",
+    "build-directory": "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\workspaces\\worth-store\\target",
+    "base-output-directories": [
+      "ci-test"
+    ],
+    "non-test-binaries": {},
+    "build-script-out-dirs": {},
+    "build-script-info": {},
+    "linked-paths": [
+      "ci-test/build/psm-221f133cf8297633/out",
+      "ci-test/build/stacker-fd3632a1ce7601b2/out"
+    ],
+    "platforms": {
+      "host": {
+        "platform": {
+          "triple": "x86_64-pc-windows-msvc",
+          "target-features": "unknown"
+        },
+        "libdir": {
+          "status": "available",
+          "path": "C:\\Users\\shepworth\\.rustup\\toolchains\\1.99.1-x86_64-pc-windows-msvc\\lib\\rustlib\\x86_64-pc-windows-msvc\\lib"
+        }
+      },
+      "targets": []
+    },
+    "target-platforms": [
+      {
+        "triple": "x86_64-pc-windows-msvc",
+        "target-features": "unknown"
+      }
+    ],
+    "target-platform": null
+  },
+  "test-count": 199,
+  "rust-suites": {
+    "worth-store-court-application::worth_store_court_application": {
+      "package-name": "worth-store-court-application",
+      "binary-id": "worth-store-court-application::worth_store_court_application",
+      "binary-name": "worth_store_court_application",
+      "package-id": "path+file:///C:/programming/worth%20worktees/worktrees/m3-host-home/workspaces/worth-store/crates/worth-store-court-application#0.1.0",
+      "kind": "test",
+      "binary-path": "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\workspaces\\worth-store\\target\\ci-test\\deps\\worth_store_court_application-7b0ee097e9249d28.exe",
+      "build-platform": "target",
+      "cwd": "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\workspaces\\worth-store\\crates\\worth-store-court-application",
+      "status": "listed",
+      "testcases": {
+        "process::application::admission::changed_build::changed_host_build_keeps_initializer_closed_and_reaches_native_readmission": {
+          "kind": "test",
+          "ignored": false,
+          "filter-match": {
+            "status": "mismatch",
+            "reason": "expression"
+          }
+        },
+        "process::application::admission::ownership::competing_host_processes_admit_exactly_one_writer_until_process_death": {
+          "kind": "test",
+          "ignored": false,
+          "filter-match": {
+            "status": "mismatch",
+            "reason": "expression"
+          }
+        },
+        "process::application::admission::ownership::host_reader_child": {
+          "kind": "test",
+          "ignored": false,
+          "filter-match": {
+            "status": "mismatch",
+            "reason": "expression"
+          }
+        },
+        "process::application::admission::ownership::host_writer_child": {
+          "kind": "test",
+          "ignored": false,
+          "filter-match": {
+            "status": "mismatch",
+            "reason": "expression"
+          }
+        },
+        "process::application::admission::world_incarnation::reopened_world_refuses_old_live_selectors_and_readmits_original_durable_occurrence": {
+          "kind": "test",
+          "ignored": false,
+          "filter-match": {
+            "status": "mismatch",
+            "reason": "expression"
+          }
+        },
+        "process::application::discard::damaged_tombstone_directory_is_completed_without_losing_the_opening_fence": {
+          "kind": "test",
+          "ignored": false,
+          "filter-match": {
+            "status": "mismatch",
+            "reason": "expression"
+          }
+        },
+        "process::application::discard::discard_completes_damaged_store_and_namespace_identity_without_store_recovery": {
+          "kind": "test",
+          "ignored": false,
+          "filter-match": {
+            "status": "mismatch",
+            "reason": "expression"
+          }
+        },
+        "process::application::discard::discard_refuses_the_live_lease_and_closed_disposal_reinitializes_with_a_new_identity": {
+          "kind": "test",
+          "ignored": false,
+          "filter-match": {
+            "status": "mismatch",
+            "reason": "expression"
+          }
+        },
+        "process::application::discard::interruption::discard_child": {
+          "kind": "test",
+          "ignored": false,
+          "filter-match": {
+            "status": "mismatch",
+            "reason": "expression"
+          }
+        },
+        "process::application::discard::interruption::killed_discard_retains_the_tombstone_during_removal_and_retry_initializes": {
+          "kind": "test",
+          "ignored": false,
+          "filter-match": {
+            "status": "mismatch",
+            "reason": "expression"
+          }
+        },
+        "process::application::discard::torn_discard_intent_refuses_open_and_explicit_retry_finishes_it": {
+          "kind": "test",
+          "ignored": false,
+          "filter-match": {
+            "status": "mismatch",
+            "reason": "expression"
+          }
+        },
+        "process::application::failed_close::physical_close_worker_failure_retains_actual_inspection_evidence": {
+          "kind": "test",
+          "ignored": false,
+          "filter-match": {
+            "status": "mismatch",
+            "reason": "expression"
+          }
+        },
+        "process::application::host_oracle::abandonment::caller_abandonment_uses_the_actual_typed_outcome_and_retained_owner_effect": {
+          "kind": "test",
+          "ignored": false,
+          "filter-match": {
+            "status": "mismatch",
+            "reason": "expression"
+          }
+        },
+        "process::application::host_oracle::admission_retry::partial_released_key_admission_retries_same_home_without_duplicate_retention": {
+          "kind": "test",
+          "ignored": false,
+          "filter-match": {
+            "status": "mismatch",
+            "reason": "expression"
+          }
+        },
+        "process::application::host_oracle::concurrent::concurrent_same_key_retries_return_one_original_occurrence_without_reexecuting_its_retry": {
+          "kind": "test",
+          "ignored": false,
+          "filter-match": {
+            "status": "mismatch",
+            "reason": "expression"
+          }
+        },
+        "process::application::host_oracle::continuation::bounded_host_oracle_seed_one_continues_across_real_process_reopens": {
+          "kind": "test",
+          "ignored": false,
+          "filter-match": {
+            "status": "mismatch",
+            "reason": "expression"
+          }
+        },
+        "process::application::host_oracle::continuation::bounded_host_oracle_seed_zero_continues_across_real_process_reopens": {
+          "kind": "test",
+          "ignored": false,
+          "filter-match": {
+            "status": "mismatch",
+            "reason": "expression"
+          }
+        },
+        "process::application::host_oracle::correspondence::every_seed_generates_the_complete_host_vocabulary_and_explicit_owner_gates": {
+          "kind": "test",
+          "ignored": false,
+          "filter-match": {
+            "status": "mismatch",
+            "reason": "expression"
+          }
+        },
+        "process::application::host_oracle::correspondence::identity_correspondence_keeps_both_directions_and_refusal_is_atomic": {
+          "kind": "test",
+          "ignored": false,
+          "filter-match": {
+            "status": "mismatch",
+            "reason": "expression"
+          }
+        },
+        "process::application::host_oracle::correspondence::record_identity_admission_preserves_partition_correspondence_atomically": {
+          "kind": "test",
+          "ignored": false,
+          "filter-match": {
+            "status": "mismatch",
+            "reason": "expression"
+          }
+        },
+        "process::application::host_oracle::fate_correspondence::abandonment_fate_correspondence_requires_original_effect_and_unmoved_product": {
+          "kind": "test",
+          "ignored": false,
+          "filter-match": {
+            "status": "mismatch",
+            "reason": "expression"
+          }
+        },
+        "process::application::host_oracle::graceful::graceful_home_oracle_seed_one_preserves_relational_and_world_prefixes": {
+          "kind": "test",
+          "ignored": false,
+          "filter-match": {
+            "status": "matches"
+          }
+        },
+        "process::application::host_oracle::graceful::graceful_home_oracle_seed_zero_preserves_relational_and_world_prefixes": {
+          "kind": "test",
+          "ignored": false,
+          "filter-match": {
+            "status": "matches"
+          }
+        },
+        "process::application::host_oracle::no_effect_release::durable_open_before_native_child": {
+          "kind": "test",
+          "ignored": false,
+          "filter-match": {
+            "status": "mismatch",
+            "reason": "expression"
+          }
+        },
+        "process::application::host_oracle::no_effect_release::recovered_no_effect_release_permits_one_fresh_execution_of_the_original_key": {
+          "kind": "test",
+          "ignored": false,
+          "filter-match": {
+            "status": "mismatch",
+            "reason": "expression"
+          }
+        },
+        "process::application::host_oracle::opening::actual_host_opening_observes_every_owner_stage_without_granting_a_phase": {
+          "kind": "test",
+          "ignored": false,
+          "filter-match": {
+            "status": "mismatch",
+            "reason": "expression"
+          }
+        },
+        "process::application::host_oracle::original_source::original_key_resolution_completes_pending_query_settlement_without_another_effect": {
+          "kind": "test",
+          "ignored": false,
+          "filter-match": {
+            "status": "mismatch",
+            "reason": "expression"
+          }
+        },
+        "process::application::host_oracle::original_source::original_receipt_source_read_preserves_settled_effect_and_exposes_full_native_meaning": {
+          "kind": "test",
+          "ignored": false,
+          "filter-match": {
+            "status": "mismatch",
+            "reason": "expression"
+          }
+        },
+        "process::application::host_oracle::partition_reopen::reopened_host_never_reuses_a_committed_private_mutation_partition": {
+          "kind": "test",
+          "ignored": false,
+          "filter-match": {
+            "status": "mismatch",
+            "reason": "expression"
+          }
+        },
+        "process::application::host_oracle::recovered_custody::killed_after_continued_resumes_original_occurrence_and_forbids_release": {
+          "kind": "test",
+          "ignored": false,
+          "filter-match": {
+            "status": "mismatch",
+            "reason": "expression"
+          }
+        },
+        "process::application::host_oracle::recovered_custody::recovered_original_continue_kill_reopen_publishes_once": {
+          "kind": "test",
+          "ignored": false,
+          "filter-match": {
+            "status": "mismatch",
+            "reason": "expression"
+          }
+        },
+        "process::application::host_oracle::recovered_custody::recovered_original_release_kill_reopen_stays_released": {
+          "kind": "test",
+          "ignored": false,
+          "filter-match": {
+            "status": "mismatch",
+            "reason": "expression"
+          }
+        },
+        "process::application::host_oracle::released_original::memory_release_preserves_original_key_and_refuses_handler_replay": {
+          "kind": "test",
+          "ignored": false,
+          "filter-match": {
+            "status": "mismatch",
+            "reason": "expression"
+          }
+        },
+        "process::application::host_oracle::semantic_links::semantic_comparison_refuses_wrong_custody_targets_causes_and_native_occurrences": {
+          "kind": "test",
+          "ignored": false,
+          "filter-match": {
+            "status": "mismatch",
+            "reason": "expression"
+          }
+        },
+        "process::application::host_oracle::session::host_oracle_service_child": {
+          "kind": "test",
+          "ignored": false,
+          "filter-match": {
+            "status": "mismatch",
+            "reason": "expression"
+          }
+        },
+        "process::application::interrupted_close::cancellation_after_drain_retains_the_running_close_and_resume_releases_its_lease": {
+          "kind": "test",
+          "ignored": false,
+          "filter-match": {
+            "status": "mismatch",
+            "reason": "expression"
+          }
+        },
+        "process::application::interrupted_close::checkpoint::close_deadline_retains_the_original_coupled_checkpoint_and_retry_closes_the_same_home": {
+          "kind": "test",
+          "ignored": false,
+          "filter-match": {
+            "status": "mismatch",
+            "reason": "expression"
+          }
+        },
+        "process::application::interrupted_close::checkpoint::last_home_loss_keeps_original_checkpoint_input_tickets_until_actual_terminal": {
+          "kind": "test",
+          "ignored": false,
+          "filter-match": {
+            "status": "mismatch",
+            "reason": "expression"
+          }
+        },
+        "process::application::interrupted_close::checkpoint::overlapping_recovery_after_native_acknowledgement_cannot_clear_before_wal_start": {
+          "kind": "test",
+          "ignored": false,
+          "filter-match": {
+            "status": "mismatch",
+            "reason": "expression"
+          }
+        },
+        "process::application::interrupted_close::checkpoint::overlapping_recovery_observes_the_same_attempt_without_replacing_its_driver": {
+          "kind": "test",
+          "ignored": false,
+          "filter-match": {
+            "status": "mismatch",
+            "reason": "expression"
+          }
+        },
+        "process::application::interrupted_close::deadline_after_drain_retains_the_running_close_and_resume_releases_its_lease": {
+          "kind": "test",
+          "ignored": false,
+          "filter-match": {
+            "status": "mismatch",
+            "reason": "expression"
+          }
+        },
+        "process::application::native_components::admission_refusals::selected_home_admission_refuses_predecessors_missing_foreign_and_damaged_images": {
+          "kind": "test",
+          "ignored": false,
+          "filter-match": {
+            "status": "mismatch",
+            "reason": "expression"
+          }
+        },
+        "process::application::native_components::checkpoint::a_late_capture_cannot_regress_the_selected_transition_frontier_or_membership": {
+          "kind": "test",
+          "ignored": false,
+          "filter-match": {
+            "status": "mismatch",
+            "reason": "expression"
+          }
+        },
+        "process::application::native_components::checkpoint::known_checkpoint_failure_allows_close_and_reopen_preserves_the_journal_tail": {
+          "kind": "test",
+          "ignored": false,
+          "filter-match": {
+            "status": "mismatch",
+            "reason": "expression"
+          }
+        },
+        "process::application::native_components::checkpoint::selected_checkpoint_survives_observer_drop_online_history_and_mutation_before_ack_recovery": {
+          "kind": "test",
+          "ignored": false,
+          "filter-match": {
+            "status": "mismatch",
+            "reason": "expression"
+          }
+        },
+        "process::application::native_components::construction::cancelled_attachment_retains_admitted_home_until_explicit_never_attached_close": {
+          "kind": "test",
+          "ignored": false,
+          "filter-match": {
+            "status": "mismatch",
+            "reason": "expression"
+          }
+        },
+        "process::application::native_components::construction::duplicate_strategy_refuses_open_with_its_cause_and_releases_the_home": {
+          "kind": "test",
+          "ignored": false,
+          "filter-match": {
+            "status": "mismatch",
+            "reason": "expression"
+          }
+        },
+        "process::application::native_components::index_catalog::failed_checkpoint_cannot_acknowledge_catalog_before_a_later_actual_journal_commit": {
+          "kind": "test",
+          "ignored": false,
+          "filter-match": {
+            "status": "mismatch",
+            "reason": "expression"
+          }
+        },
+        "process::application::native_components::index_catalog::tail_only_directory_reopen_preserves_catalog_ids_duplicates_allocator_and_derived_build": {
+          "kind": "test",
+          "ignored": false,
+          "filter-match": {
+            "status": "mismatch",
+            "reason": "expression"
+          }
+        },
+        "process::application::native_components::member_scope::a_speculative_foreign_runtime_cannot_publish_a_home_checkpoint": {
+          "kind": "test",
+          "ignored": false,
+          "filter-match": {
+            "status": "mismatch",
+            "reason": "expression"
+          }
+        },
+        "process::application::no_pending_owners::admission_retirement::closed_home_keeps_transition_admission_funded_until_original_world_reclamation": {
+          "kind": "test",
+          "ignored": false,
+          "filter-match": {
+            "status": "mismatch",
+            "reason": "expression"
+          }
+        },
+        "process::application::no_pending_owners::journal_absence::each_unsupported_journal_entry_refuses_admission_and_returns_the_same_home": {
+          "kind": "test",
+          "ignored": false,
+          "filter-match": {
+            "status": "mismatch",
+            "reason": "expression"
+          }
+        },
+        "process::application::no_pending_owners::journal_absence::empty_unsupported_journals_admit_the_same_home_with_real_native_and_world_history": {
+          "kind": "test",
+          "ignored": false,
+          "filter-match": {
+            "status": "mismatch",
+            "reason": "expression"
+          }
+        },
+        "process::application::no_pending_owners::journal_absence::stopped_owner_admission_preserves_the_original_home_and_lease": {
+          "kind": "test",
+          "ignored": false,
+          "filter-match": {
+            "status": "mismatch",
+            "reason": "expression"
+          }
+        },
+        "process::application::no_pending_owners::transition_attestation::a_requested_home_refuses_ordinary_native_and_live_branch_writers_before_any_intent_or_effect": {
+          "kind": "test",
+          "ignored": false,
+          "filter-match": {
+            "status": "mismatch",
+            "reason": "expression"
+          }
+        },
+        "process::application::no_pending_owners::transition_body_fence::an_original_home_step_refuses_a_substituted_body_before_rules_or_publication": {
+          "kind": "test",
+          "ignored": false,
+          "filter-match": {
+            "status": "mismatch",
+            "reason": "expression"
+          }
+        },
+        "process::application::no_pending_owners::transition_body_fence::cancellation_inside_a_large_authored_value_stops_the_original_request_and_refunds_its_scope": {
+          "kind": "test",
+          "ignored": false,
+          "filter-match": {
+            "status": "mismatch",
+            "reason": "expression"
+          }
+        },
+        "process::application::no_pending_owners::transition_body_fence::changed_native_meaning_or_body_rosters_refuse_before_claiming_the_original_resumed_step": {
+          "kind": "test",
+          "ignored": false,
+          "filter-match": {
+            "status": "mismatch",
+            "reason": "expression"
+          }
+        },
+        "process::application::no_pending_owners::transition_catalog_identity::retained_catalog_receipts_keep_only_their_identity_charge_and_allow_same_home_reopen": {
+          "kind": "test",
+          "ignored": false,
+          "filter-match": {
+            "status": "mismatch",
+            "reason": "expression"
+          }
+        },
+        "process::application::no_pending_owners::transition_catalog_readmission::a_completed_transition_occurrence_restores_target_contracts_and_continues_only_its_missing_suffix": {
+          "kind": "test",
+          "ignored": false,
+          "filter-match": {
+            "status": "mismatch",
+            "reason": "expression"
+          }
+        },
+        "process::application::no_pending_owners::transition_compilation::cancellation_during_fresh_native_rule_emission_refunds_backing_before_publication_or_cutover": {
+          "kind": "test",
+          "ignored": false,
+          "filter-match": {
+            "status": "mismatch",
+            "reason": "expression"
+          }
+        },
+        "process::application::no_pending_owners::transition_compilation::cancellation_during_target_metadata_compilation_releases_backing_before_any_effect": {
+          "kind": "test",
+          "ignored": false,
+          "filter-match": {
+            "status": "mismatch",
+            "reason": "expression"
+          }
+        },
+        "process::application::no_pending_owners::transition_compilation::fresh_native_installation_refuses_original_memory_before_publication_and_funds_real_runtime_forks": {
+          "kind": "test",
+          "ignored": false,
+          "filter-match": {
+            "status": "mismatch",
+            "reason": "expression"
+          }
+        },
+        "process::application::no_pending_owners::transition_compilation::nonempty_source_and_native_rule_compilation_obeys_the_original_memory_and_cancellation_policy": {
+          "kind": "test",
+          "ignored": false,
+          "filter-match": {
+            "status": "mismatch",
+            "reason": "expression"
+          }
+        },
+        "process::application::no_pending_owners::transition_compilation::refused_target_schema_compilation_does_not_consume_an_authority_identity": {
+          "kind": "test",
+          "ignored": false,
+          "filter-match": {
+            "status": "mismatch",
+            "reason": "expression"
+          }
+        },
+        "process::application::no_pending_owners::transition_compilation::the_actual_target_root_keeps_its_compilation_budget_after_preparation_drops": {
+          "kind": "test",
+          "ignored": false,
+          "filter-match": {
+            "status": "mismatch",
+            "reason": "expression"
+          }
+        },
+        "process::application::no_pending_owners::transition_history::a_pending_transition_refuses_a_different_successor_before_predecessor_admission": {
+          "kind": "test",
+          "ignored": false,
+          "filter-match": {
+            "status": "mismatch",
+            "reason": "expression"
+          }
+        },
+        "process::application::no_pending_owners::transition_history::reopened_world_issuance_cannot_reuse_intent_only_attempt_assignments": {
+          "kind": "test",
+          "ignored": false,
+          "filter-match": {
+            "status": "mismatch",
+            "reason": "expression"
+          }
+        },
+        "process::application::no_pending_owners::transition_identity_space::prepared_identity_bounds_include_later_schema_roles_beyond_the_initial_installation": {
+          "kind": "test",
+          "ignored": false,
+          "filter-match": {
+            "status": "mismatch",
+            "reason": "expression"
+          }
+        },
+        "process::application::no_pending_owners::transition_indexes::a_retained_target_index_definition_holds_its_original_backing_after_home_abandonment": {
+          "kind": "test",
+          "ignored": false,
+          "filter-match": {
+            "status": "mismatch",
+            "reason": "expression"
+          }
+        },
+        "process::application::no_pending_owners::transition_indexes::abandoned_home_target_preserves_the_installed_index_catalog_and_history": {
+          "kind": "test",
+          "ignored": false,
+          "filter-match": {
+            "status": "mismatch",
+            "reason": "expression"
+          }
+        },
+        "process::application::no_pending_owners::transition_indexes::home_target_indexes_publish_the_prepared_catalog_and_exact_generations": {
+          "kind": "test",
+          "ignored": false,
+          "filter-match": {
+            "status": "mismatch",
+            "reason": "expression"
+          }
+        },
+        "process::application::no_pending_owners::transition_indexes::home_target_refuses_a_changed_index_catalog_before_native_effect": {
+          "kind": "test",
+          "ignored": false,
+          "filter-match": {
+            "status": "mismatch",
+            "reason": "expression"
+          }
+        },
+        "process::application::no_pending_owners::transition_indexes::home_target_refuses_an_incomplete_generation_batch_before_native_effect": {
+          "kind": "test",
+          "ignored": false,
+          "filter-match": {
+            "status": "mismatch",
+            "reason": "expression"
+          }
+        },
+        "process::application::no_pending_owners::transition_indexes::promotion::home_binding_promotes_the_original_receiver_only_after_all_actual_steps": {
+          "kind": "test",
+          "ignored": false,
+          "filter-match": {
+            "status": "mismatch",
+            "reason": "expression"
+          }
+        },
+        "process::application::no_pending_owners::transition_intent::edited_transition_plan_refuses_before_starting_the_original_intent": {
+          "kind": "test",
+          "ignored": false,
+          "filter-match": {
+            "status": "mismatch",
+            "reason": "expression"
+          }
+        },
+        "process::application::no_pending_owners::transition_intent::home_transition_intent_is_positioned_before_any_world_or_native_migration_effect": {
+          "kind": "test",
+          "ignored": false,
+          "filter-match": {
+            "status": "mismatch",
+            "reason": "expression"
+          }
+        },
+        "process::application::no_pending_owners::transition_intent::transition_intent_retains_the_exact_canonical_predecessor_and_world_assignments": {
+          "kind": "test",
+          "ignored": false,
+          "filter-match": {
+            "status": "mismatch",
+            "reason": "expression"
+          }
+        },
+        "process::application::no_pending_owners::transition_interruption::a_live_advancer_cannot_publish_an_intent_after_its_staging_request_is_cancelled": {
+          "kind": "test",
+          "ignored": false,
+          "filter-match": {
+            "status": "mismatch",
+            "reason": "expression"
+          }
+        },
+        "process::application::no_pending_owners::transition_native_effect::a_durable_native_transition_effect_continues_its_original_world_occurrence_without_execution": {
+          "kind": "test",
+          "ignored": false,
+          "filter-match": {
+            "status": "mismatch",
+            "reason": "expression"
+          }
+        },
+        "process::application::no_pending_owners::transition_native_effect::affinity::original_native_continuation_refuses_stale_and_foreign_grants_before_use": {
+          "kind": "test",
+          "ignored": false,
+          "filter-match": {
+            "status": "mismatch",
+            "reason": "expression"
+          }
+        },
+        "process::application::no_pending_owners::transition_native_effect::allocation::an_acknowledged_original_retains_its_native_custody_through_allocation_refusal_and_retry": {
+          "kind": "test",
+          "ignored": false,
+          "filter-match": {
+            "status": "mismatch",
+            "reason": "expression"
+          }
+        },
+        "process::application::no_pending_owners::transition_native_effect::interruption::consuming_original_world_movement_refusal_preserves_custody_for_actual_home_reopen": {
+          "kind": "test",
+          "ignored": false,
+          "filter-match": {
+            "status": "mismatch",
+            "reason": "expression"
+          }
+        },
+        "process::application::no_pending_owners::transition_native_effect::interruption::dropping_an_original_interruption_guard_disarms_only_its_receiver_control": {
+          "kind": "test",
+          "ignored": false,
+          "filter-match": {
+            "status": "mismatch",
+            "reason": "expression"
+          }
+        },
+        "process::application::no_pending_owners::transition_native_effect::interruption::unwind_at_the_actual_committed_world_head_keeps_the_original_in_reopen_required": {
+          "kind": "test",
+          "ignored": false,
+          "filter-match": {
+            "status": "mismatch",
+            "reason": "expression"
+          }
+        },
+        "process::application::no_pending_owners::transition_open_refusal::a_durable_open_retains_the_actual_owner_refusal_before_any_native_effect": {
+          "kind": "test",
+          "ignored": false,
+          "filter-match": {
+            "status": "mismatch",
+            "reason": "expression"
+          }
+        },
+        "process::application::no_pending_owners::transition_open_resume::a_readmitted_transition_open_keeps_its_original_attempt_commit_and_custody": {
+          "kind": "test",
+          "ignored": false,
+          "filter-match": {
+            "status": "mismatch",
+            "reason": "expression"
+          }
+        },
+        "process::application::no_pending_owners::transition_open_resume::rollback::a_transition_open_resource_refusal_restores_the_same_recovered_custody_for_retry": {
+          "kind": "test",
+          "ignored": false,
+          "filter-match": {
+            "status": "mismatch",
+            "reason": "expression"
+          }
+        },
+        "process::application::no_pending_owners::transition_planning::stopped_transition_planning_retains_the_source_without_issuing_attempt_assignments": {
+          "kind": "test",
+          "ignored": false,
+          "filter-match": {
+            "status": "mismatch",
+            "reason": "expression"
+          }
+        },
+        "process::application::no_pending_owners::transition_planning::transition_plan_reserves_original_attempts_without_publishing_future_heads_or_steps": {
+          "kind": "test",
+          "ignored": false,
+          "filter-match": {
+            "status": "mismatch",
+            "reason": "expression"
+          }
+        },
+        "process::application::no_pending_owners::transition_request::a_current_home_cannot_reserve_a_transition_without_an_open_request": {
+          "kind": "test",
+          "ignored": false,
+          "filter-match": {
+            "status": "mismatch",
+            "reason": "expression"
+          }
+        },
+        "process::application::no_pending_owners::transition_request::a_transition_intent_cannot_substitute_another_genuinely_admitted_successor": {
+          "kind": "test",
+          "ignored": false,
+          "filter-match": {
+            "status": "mismatch",
+            "reason": "expression"
+          }
+        },
+        "process::application::no_pending_owners::transition_step_affinity::a_committed_transition_grant_refuses_another_world_attempt_before_target_execution": {
+          "kind": "test",
+          "ignored": false,
+          "filter-match": {
+            "status": "mismatch",
+            "reason": "expression"
+          }
+        },
+        "process::application::no_pending_owners::transition_steps::a_transition_step_requires_the_original_committed_intent_and_can_be_claimed_only_once": {
+          "kind": "test",
+          "ignored": false,
+          "filter-match": {
+            "status": "mismatch",
+            "reason": "expression"
+          }
+        },
+        "process::application::no_pending_owners::transition_steps::an_original_transition_grant_refuses_its_successor_native_basis_before_execution": {
+          "kind": "test",
+          "ignored": false,
+          "filter-match": {
+            "status": "mismatch",
+            "reason": "expression"
+          }
+        },
+        "process::application::no_pending_owners::transition_steps::positioned_transition_steps_use_the_original_world_attempts_and_inherit_target_contracts": {
+          "kind": "test",
+          "ignored": false,
+          "filter-match": {
+            "status": "mismatch",
+            "reason": "expression"
+          }
+        },
+        "process::application::no_pending_owners::transition_unopened_resume::an_intent_only_restart_starts_its_original_assignment_once_and_keeps_refused_execution_for_retry": {
+          "kind": "test",
+          "ignored": false,
+          "filter-match": {
+            "status": "mismatch",
+            "reason": "expression"
+          }
+        },
+        "process::application::no_pending_owners::transition_unopened_resume::an_unopened_execution_witness_cannot_restart_a_durable_original_open": {
+          "kind": "test",
+          "ignored": false,
+          "filter-match": {
+            "status": "mismatch",
+            "reason": "expression"
+          }
+        },
+        "process::application::no_pending_owners::unresolved::an_unresolved_first_journal_publication_refuses_even_with_an_empty_durable_head": {
+          "kind": "test",
+          "ignored": false,
+          "filter-match": {
+            "status": "mismatch",
+            "reason": "expression"
+          }
+        },
+        "process::application::publication_close::performed_publication_custody_refuses_close_until_its_real_settlement": {
+          "kind": "test",
+          "ignored": false,
+          "filter-match": {
+            "status": "mismatch",
+            "reason": "expression"
+          }
+        },
+        "process::application::query_readmission::bootstrap_publication::directory_completion_covers_flushed_and_pending_batches_before_world_genesis": {
+          "kind": "test",
+          "ignored": false,
+          "filter-match": {
+            "status": "mismatch",
+            "reason": "expression"
+          }
+        },
+        "process::application::query_readmission::bootstrap_publication::failed_completion_retains_seed_history_and_same_home_without_retry_or_genesis": {
+          "kind": "test",
+          "ignored": false,
+          "filter-match": {
+            "status": "mismatch",
+            "reason": "expression"
+          }
+        },
+        "process::application::query_readmission::bootstrap_publication::memory_multibatch_bootstrap_publishes_the_same_completion_basis_as_directory": {
+          "kind": "test",
+          "ignored": false,
+          "filter-match": {
+            "status": "mismatch",
+            "reason": "expression"
+          }
+        },
+        "process::application::query_readmission::bootstrap_publication::retired_format::retired_bootstrap_completion_format_refuses_existing_home_without_replaying_seeds": {
+          "kind": "test",
+          "ignored": false,
+          "filter-match": {
+            "status": "mismatch",
+            "reason": "expression"
+          }
+        },
+        "process::application::query_readmission::native_artifacts::another_actual_home_world_basis_cannot_attach_to_this_existing_source": {
+          "kind": "test",
+          "ignored": false,
+          "filter-match": {
+            "status": "mismatch",
+            "reason": "expression"
+          }
+        },
+        "process::application::query_readmission::native_artifacts::epoch::equivalent_receiver_replacement_refuses_retained_proposals_and_candidates_before_movement": {
+          "kind": "test",
+          "ignored": false,
+          "filter-match": {
+            "status": "mismatch",
+            "reason": "expression"
+          }
+        },
+        "process::application::query_readmission::native_artifacts::epoch::target_inventory::real_home_target_refuses_old_receiver_epoch_and_executes_fresh_inventory": {
+          "kind": "test",
+          "ignored": false,
+          "filter-match": {
+            "status": "mismatch",
+            "reason": "expression"
+          }
+        },
+        "process::application::query_readmission::native_artifacts::home_close::expired_host_close_preserves_the_same_serving_home_and_a_live_retry_physically_closes": {
+          "kind": "test",
+          "ignored": false,
+          "filter-match": {
+            "status": "mismatch",
+            "reason": "expression"
+          }
+        },
+        "process::application::query_readmission::native_artifacts::home_close::fresh_read_host_physically_closes_with_original_retired_allocations_alive": {
+          "kind": "test",
+          "ignored": false,
+          "filter-match": {
+            "status": "mismatch",
+            "reason": "expression"
+          }
+        },
+        "process::application::query_readmission::native_artifacts::home_close::held_original_publication_receipt_refuses_close_and_same_home_resumes": {
+          "kind": "test",
+          "ignored": false,
+          "filter-match": {
+            "status": "mismatch",
+            "reason": "expression"
+          }
+        },
+        "process::application::query_readmission::native_artifacts::home_close::host_checkpoint_memory_failure_is_reported_while_original_retired_owners_remain_physically_closed": {
+          "kind": "test",
+          "ignored": false,
+          "filter-match": {
+            "status": "mismatch",
+            "reason": "expression"
+          }
+        },
+        "process::application::query_readmission::native_artifacts::home_close::killed_writer::killed_host_without_close_reopens_its_acknowledged_value_and_original_idempotency_record": {
+          "kind": "test",
+          "ignored": false,
+          "filter-match": {
+            "status": "mismatch",
+            "reason": "expression"
+          }
+        },
+        "process::application::query_readmission::native_artifacts::home_close::ordinary_mutation_host_physically_closes_with_original_retired_allocations_alive": {
+          "kind": "test",
+          "ignored": false,
+          "filter-match": {
+            "status": "mismatch",
+            "reason": "expression"
+          }
+        },
+        "process::application::query_readmission::native_artifacts::home_close::source_retirement::an_original_source_capable_fork_refuses_before_native_seal_and_same_home_retry_closes": {
+          "kind": "test",
+          "ignored": false,
+          "filter-match": {
+            "status": "mismatch",
+            "reason": "expression"
+          }
+        },
+        "process::application::query_readmission::native_artifacts::home_close::source_retirement::cold_and_materialized_original_sources_physically_close_while_metadata_and_retired_payloads_live": {
+          "kind": "test",
+          "ignored": false,
+          "filter-match": {
+            "status": "mismatch",
+            "reason": "expression"
+          }
+        },
+        "process::application::query_readmission::native_artifacts::idempotency::actual_binding_rows_refuse_malformed_keys_intents_duplicate_keys_and_outcomes": {
+          "kind": "test",
+          "ignored": false,
+          "filter-match": {
+            "status": "mismatch",
+            "reason": "expression"
+          }
+        },
+        "process::application::query_readmission::native_artifacts::idempotency::max_minus_one_recovery_leaves_the_first_new_outcome_mint_exhausted": {
+          "kind": "test",
+          "ignored": false,
+          "filter-match": {
+            "status": "mismatch",
+            "reason": "expression"
+          }
+        },
+        "process::application::query_readmission::native_artifacts::latest_native_owner_rows_refuse_their_actual_family_kind_and_record_before_service": {
+          "kind": "test",
+          "ignored": false,
+          "filter-match": {
+            "status": "mismatch",
+            "reason": "expression"
+          }
+        },
+        "process::application::query_readmission::native_artifacts::original_image::selected_home_image_preserves_original_binding_fields_and_world_publication": {
+          "kind": "test",
+          "ignored": false,
+          "filter-match": {
+            "status": "mismatch",
+            "reason": "expression"
+          }
+        },
+        "process::application::query_readmission::native_artifacts::selected::selected_completion_and_activation_failures_keep_owned_home_without_initializing": {
+          "kind": "test",
+          "ignored": false,
+          "filter-match": {
+            "status": "mismatch",
+            "reason": "expression"
+          }
+        },
+        "process::application::query_readmission::native_artifacts::stops::original_cancellation_and_memory_exhaustion_retain_the_same_pre_service_home": {
+          "kind": "test",
+          "ignored": false,
+          "filter-match": {
+            "status": "mismatch",
+            "reason": "expression"
+          }
+        },
+        "process::application::query_readmission::native_artifacts::successor_compilation::successor_query_compilation_prepares_changed_meaning_without_installing_or_publishing": {
+          "kind": "test",
+          "ignored": false,
+          "filter-match": {
+            "status": "mismatch",
+            "reason": "expression"
+          }
+        },
+        "process::application::query_readmission::native_artifacts::successor_compilation::successor_query_compilation_refuses_a_real_foreign_predecessor_before_installing": {
+          "kind": "test",
+          "ignored": false,
+          "filter-match": {
+            "status": "mismatch",
+            "reason": "expression"
+          }
+        },
+        "process::application::query_readmission::native_artifacts::unassociated_native_nine_cannot_replace_selected_world_eight_or_preflight_bridge_head": {
+          "kind": "test",
+          "ignored": false,
+          "filter-match": {
+            "status": "mismatch",
+            "reason": "expression"
+          }
+        },
+        "process::application::world_durable_release::child::original_world_attempt_child": {
+          "kind": "test",
+          "ignored": false,
+          "filter-match": {
+            "status": "mismatch",
+            "reason": "expression"
+          }
+        },
+        "process::application::world_durable_release::child::pending_bootstrap_survives_original_request_unwind_and_installs_only_its_selected_root": {
+          "kind": "test",
+          "ignored": false,
+          "filter-match": {
+            "status": "mismatch",
+            "reason": "expression"
+          }
+        },
+        "process::application::world_durable_release::graceful_source::released_native_effect_preserves_history_and_allows_a_fresh_edit_after_graceful_reopen": {
+          "kind": "test",
+          "ignored": false,
+          "filter-match": {
+            "status": "mismatch",
+            "reason": "expression"
+          }
+        },
+        "process::application::world_durable_release::killed_native_effect_reopens_original_world_custody_releases_and_reopens_again": {
+          "kind": "test",
+          "ignored": false,
+          "filter-match": {
+            "status": "mismatch",
+            "reason": "expression"
+          }
+        },
+        "process::application::world_durable_release::native_transitions::a_native_fork_from_a_released_predecessor_reopens_before_another_checkpoint": {
+          "kind": "test",
+          "ignored": false,
+          "filter-match": {
+            "status": "mismatch",
+            "reason": "expression"
+          }
+        },
+        "process::application::world_durable_release::published_predecessor::killed_native_after_two_publications_recovers_exact_unpublished_predecessor": {
+          "kind": "test",
+          "ignored": false,
+          "filter-match": {
+            "status": "mismatch",
+            "reason": "expression"
+          }
+        },
+        "process::application::world_durable_release::unclean::graceful_close_reopens_the_checkpointed_native_and_world_heads": {
+          "kind": "test",
+          "ignored": false,
+          "filter-match": {
+            "status": "matches"
+          }
+        },
+        "process::application::world_durable_release::unclean::quiescent::quiet_home_writer_child": {
+          "kind": "test",
+          "ignored": false,
+          "filter-match": {
+            "status": "mismatch",
+            "reason": "expression"
+          }
+        },
+        "process::application::world_durable_release::unclean::quiescent_kill_reopens_the_acknowledged_native_and_world_heads": {
+          "kind": "test",
+          "ignored": false,
+          "filter-match": {
+            "status": "matches"
+          }
+        },
+        "process::application::world_durable_release::unclean::unclean_native_tail_refuses_before_world_service_and_names_the_original_effect": {
+          "kind": "test",
+          "ignored": false,
+          "filter-match": {
+            "status": "matches"
+          }
+        },
+        "process::application::world_home::abandoned_world_delivery_refuses_before_close_and_can_be_delivered_then_closed": {
+          "kind": "test",
+          "ignored": false,
+          "filter-match": {
+            "status": "mismatch",
+            "reason": "expression"
+          }
+        },
+        "process::application::world_home::closed_world_releases_its_bridge_and_retains_the_same_native_home_until_external_reads_release": {
+          "kind": "test",
+          "ignored": false,
+          "filter-match": {
+            "status": "mismatch",
+            "reason": "expression"
+          }
+        },
+        "process::application::world_occurrence_readmission::late_history_refusal_retains_actual_partial_root_caps_and_home_lease_until_cleanup": {
+          "kind": "test",
+          "ignored": false,
+          "filter-match": {
+            "status": "mismatch",
+            "reason": "expression"
+          }
+        },
+        "process::application::world_occurrence_readmission::ordinary_occurrences_reopen_original_history_after_later_native_advance": {
+          "kind": "test",
+          "ignored": false,
+          "filter-match": {
+            "status": "mismatch",
+            "reason": "expression"
+          }
+        },
+        "process::application::world_original_observation::live_original_publication_reads_exact_native_source_after_a_later_publication": {
+          "kind": "test",
+          "ignored": false,
+          "filter-match": {
+            "status": "mismatch",
+            "reason": "expression"
+          }
+        },
+        "process::application::world_original_observation::native_subject_from_another_home_refuses_even_with_the_same_attempt_ordinal": {
+          "kind": "test",
+          "ignored": false,
+          "filter-match": {
+            "status": "mismatch",
+            "reason": "expression"
+          }
+        },
+        "process::relational::relational_home::incarnation::anchor_replay::high_anchor_child": {
+          "kind": "test",
+          "ignored": false,
+          "filter-match": {
+            "status": "mismatch",
+            "reason": "expression"
+          }
+        },
+        "process::relational::relational_home::incarnation::anchor_replay::wal_replays_the_thirty_second_anchor_advance_after_process_death": {
+          "kind": "test",
+          "ignored": false,
+          "filter-match": {
+            "status": "mismatch",
+            "reason": "expression"
+          }
+        },
+        "process::relational::relational_home::incarnation::contention_observer_child": {
+          "kind": "test",
+          "ignored": false,
+          "filter-match": {
+            "status": "mismatch",
+            "reason": "expression"
+          }
+        },
+        "process::relational::relational_home::incarnation::home_identity_is_stable_and_each_successful_open_advances_once": {
+          "kind": "test",
+          "ignored": false,
+          "filter-match": {
+            "status": "mismatch",
+            "reason": "expression"
+          }
+        },
+        "process::relational::relational_home::incarnation::media::incarnation_advance_media_sweep_preserves_identity_and_selects_one_complete_advance": {
+          "kind": "test",
+          "ignored": false,
+          "filter-match": {
+            "status": "mismatch",
+            "reason": "expression"
+          }
+        },
+        "process::relational::relational_home::incarnation::missing_record_family_with_only_namespace_identity_is_never_initialized": {
+          "kind": "test",
+          "ignored": false,
+          "filter-match": {
+            "status": "mismatch",
+            "reason": "expression"
+          }
+        },
+        "process::relational::relational_home::incarnation::missing_record_family_with_other_store_residue_is_never_initialized": {
+          "kind": "test",
+          "ignored": false,
+          "filter-match": {
+            "status": "mismatch",
+            "reason": "expression"
+          }
+        },
+        "process::relational::relational_home::incarnation::retired_descriptor_versions_and_the_retired_anchor_refuse_without_advancing": {
+          "kind": "test",
+          "ignored": false,
+          "filter-match": {
+            "status": "mismatch",
+            "reason": "expression"
+          }
+        },
+        "process::relational::relational_home::incarnation::schema_eleven_refuses_before_any_media_effect": {
+          "kind": "test",
+          "ignored": false,
+          "filter-match": {
+            "status": "mismatch",
+            "reason": "expression"
+          }
+        },
+        "process::relational::relational_home::incarnation::writable_ownership::competing_open_child": {
+          "kind": "test",
+          "ignored": false,
+          "filter-match": {
+            "status": "mismatch",
+            "reason": "expression"
+          }
+        },
+        "process::relational::relational_home::incarnation::writable_ownership::incarnation_advance_child": {
+          "kind": "test",
+          "ignored": false,
+          "filter-match": {
+            "status": "mismatch",
+            "reason": "expression"
+          }
+        },
+        "process::relational::relational_home::incarnation::writable_ownership::incarnation_advance_killed_at_every_store_seam_advances_exactly_once_if_durable": {
+          "kind": "test",
+          "ignored": false,
+          "filter-match": {
+            "status": "mismatch",
+            "reason": "expression"
+          }
+        },
+        "process::relational::relational_home::incarnation::writable_ownership::two_processes_open_empty_initialized_and_recovery_homes_with_one_writer": {
+          "kind": "test",
+          "ignored": false,
+          "filter-match": {
+            "status": "mismatch",
+            "reason": "expression"
+          }
+        },
+        "process::relational::relational_home::journeys::a_fork_committed_after_a_checkpoint_recovers": {
+          "kind": "test",
+          "ignored": false,
+          "filter-match": {
+            "status": "mismatch",
+            "reason": "expression"
+          }
+        },
+        "process::relational::relational_home::journeys::a_home_recovers_exactly_what_it_committed_and_keeps_going": {
+          "kind": "test",
+          "ignored": false,
+          "filter-match": {
+            "status": "mismatch",
+            "reason": "expression"
+          }
+        },
+        "process::relational::relational_home::journeys::the_reference_script_generates_for_every_seed": {
+          "kind": "test",
+          "ignored": false,
+          "filter-match": {
+            "status": "mismatch",
+            "reason": "expression"
+          }
+        },
+        "process::relational::relational_home::journeys::the_reference_script_is_deterministic": {
+          "kind": "test",
+          "ignored": false,
+          "filter-match": {
+            "status": "mismatch",
+            "reason": "expression"
+          }
+        },
+        "process::relational::relational_home::media_sweep::every_media_operation_of_a_branch_transition_recovers": {
+          "kind": "test",
+          "ignored": false,
+          "filter-match": {
+            "status": "mismatch",
+            "reason": "expression"
+          }
+        },
+        "process::relational::relational_home::media_sweep::every_media_operation_of_a_checkpoint_replacement_recovers": {
+          "kind": "test",
+          "ignored": false,
+          "filter-match": {
+            "status": "mismatch",
+            "reason": "expression"
+          }
+        },
+        "process::relational::relational_home::media_sweep::every_media_operation_of_a_cold_region_load_recovers": {
+          "kind": "test",
+          "ignored": false,
+          "filter-match": {
+            "status": "mismatch",
+            "reason": "expression"
+          }
+        },
+        "process::relational::relational_home::media_sweep::every_media_operation_of_a_schema_transition_commit_recovers": {
+          "kind": "test",
+          "ignored": false,
+          "filter-match": {
+            "status": "mismatch",
+            "reason": "expression"
+          }
+        },
+        "process::relational::relational_home::media_sweep::every_media_operation_of_archive_and_delete_transitions_recovers": {
+          "kind": "test",
+          "ignored": false,
+          "filter-match": {
+            "status": "mismatch",
+            "reason": "expression"
+          }
+        },
+        "process::relational::relational_home::media_sweep::every_media_operation_of_the_first_checkpoint_recovers": {
+          "kind": "test",
+          "ignored": false,
+          "filter-match": {
+            "status": "mismatch",
+            "reason": "expression"
+          }
+        },
+        "process::relational::relational_home::media_sweep::every_media_operation_of_the_first_commit_on_a_fork_recovers": {
+          "kind": "test",
+          "ignored": false,
+          "filter-match": {
+            "status": "mismatch",
+            "reason": "expression"
+          }
+        },
+        "process::relational::relational_home::media_sweep::every_media_operation_of_the_first_commit_recovers": {
+          "kind": "test",
+          "ignored": false,
+          "filter-match": {
+            "status": "mismatch",
+            "reason": "expression"
+          }
+        },
+        "process::relational::relational_home::open_refusals::a_checkpoint_record_store_accepts_but_relational_cannot_readmit_refuses": {
+          "kind": "test",
+          "ignored": false,
+          "filter-match": {
+            "status": "mismatch",
+            "reason": "expression"
+          }
+        },
+        "process::relational::relational_home::open_refusals::a_damaged_checkpoint_in_the_store_files_refuses_before_service": {
+          "kind": "test",
+          "ignored": false,
+          "filter-match": {
+            "status": "mismatch",
+            "reason": "expression"
+          }
+        },
+        "process::relational::relational_home::open_refusals::a_damaged_journal_entry_in_the_store_files_refuses_before_service": {
+          "kind": "test",
+          "ignored": false,
+          "filter-match": {
+            "status": "mismatch",
+            "reason": "expression"
+          }
+        },
+        "process::relational::relational_home::open_refusals::a_home_opened_as_another_runtime_refuses_as_foreign": {
+          "kind": "test",
+          "ignored": false,
+          "filter-match": {
+            "status": "mismatch",
+            "reason": "expression"
+          }
+        },
+        "process::relational::relational_home::open_refusals::a_journal_entry_store_accepts_but_relational_cannot_readmit_refuses": {
+          "kind": "test",
+          "ignored": false,
+          "filter-match": {
+            "status": "mismatch",
+            "reason": "expression"
+          }
+        },
+        "process::relational::relational_home::open_refusals::a_location_holding_something_else_is_refused_not_initialized_over": {
+          "kind": "test",
+          "ignored": false,
+          "filter-match": {
+            "status": "mismatch",
+            "reason": "expression"
+          }
+        },
+        "process::relational::relational_home::open_refusals::a_second_runtime_cannot_open_a_home_that_is_open": {
+          "kind": "test",
+          "ignored": false,
+          "filter-match": {
+            "status": "mismatch",
+            "reason": "expression"
+          }
+        },
+        "process::relational::relational_home::process_kill::a_branch_transition_killed_at_each_mutation_seam_recovers": {
+          "kind": "test",
+          "ignored": false,
+          "filter-match": {
+            "status": "mismatch",
+            "reason": "expression"
+          }
+        },
+        "process::relational::relational_home::process_kill::a_checkpoint_killed_at_each_mutation_seam_keeps_one_selected": {
+          "kind": "test",
+          "ignored": false,
+          "filter-match": {
+            "status": "mismatch",
+            "reason": "expression"
+          }
+        },
+        "process::relational::relational_home::process_kill::a_commit_killed_at_each_mutation_seam_recovers_durable_before_live": {
+          "kind": "test",
+          "ignored": false,
+          "filter-match": {
+            "status": "mismatch",
+            "reason": "expression"
+          }
+        },
+        "process::relational::relational_home::process_kill::a_home_killed_on_either_side_of_its_first_checkpoint_recovers": {
+          "kind": "test",
+          "ignored": false,
+          "filter-match": {
+            "status": "mismatch",
+            "reason": "expression"
+          }
+        },
+        "process::relational::relational_home::process_kill::a_late_mutation_seam_is_not_mistaken_for_a_finished_child": {
+          "kind": "test",
+          "ignored": false,
+          "filter-match": {
+            "status": "mismatch",
+            "reason": "expression"
+          }
+        },
+        "process::relational::relational_home::process_kill::acknowledged_locators_survive_each_physical_checkpoint_seam_and_return": {
+          "kind": "test",
+          "ignored": false,
+          "filter-match": {
+            "status": "mismatch",
+            "reason": "expression"
+          }
+        },
+        "process::relational::relational_home::process_kill::carried_members_survive_a_kill_at_each_manifest_mutation_seam": {
+          "kind": "test",
+          "ignored": false,
+          "filter-match": {
+            "status": "mismatch",
+            "reason": "expression"
+          }
+        },
+        "process::relational::relational_home::process_kill::child::relational_home_child": {
+          "kind": "test",
+          "ignored": false,
+          "filter-match": {
+            "status": "mismatch",
+            "reason": "expression"
+          }
+        },
+        "process::relational::relational_home::publication_refusals::a_commit_the_medium_refuses_before_any_effect_is_denied_and_not_installed": {
+          "kind": "test",
+          "ignored": false,
+          "filter-match": {
+            "status": "mismatch",
+            "reason": "expression"
+          }
+        },
+        "process::relational::relational_home::publication_refusals::a_conflicting_write_and_a_stale_candidate_publish_nothing": {
+          "kind": "test",
+          "ignored": false,
+          "filter-match": {
+            "status": "mismatch",
+            "reason": "expression"
+          }
+        },
+        "process::relational::relational_home::publication_refusals::an_invalid_transaction_publishes_nothing": {
+          "kind": "test",
+          "ignored": false,
+          "filter-match": {
+            "status": "mismatch",
+            "reason": "expression"
+          }
+        },
+        "process::relational::relational_home::publication_refusals::an_unresolved_commit_blocks_later_commits_until_reopen_then_resolves": {
+          "kind": "test",
+          "ignored": false,
+          "filter-match": {
+            "status": "mismatch",
+            "reason": "expression"
+          }
+        },
+        "process::relational::relational_home::recovery_interruption::a_recovery_killed_at_each_of_its_stages_recovers_the_same_home_three_times": {
+          "kind": "test",
+          "ignored": false,
+          "filter-match": {
+            "status": "mismatch",
+            "reason": "expression"
+          }
+        },
+        "process::relational::relational_home::recovery_interruption::recovery_interruption_child": {
+          "kind": "test",
+          "ignored": false,
+          "filter-match": {
+            "status": "mismatch",
+            "reason": "expression"
+          }
+        },
+        "process::relational::relational_home::residency_agreement::cold_warm_and_full_home_reads_and_retained_observations_agree_with_memory": {
+          "kind": "test",
+          "ignored": false,
+          "filter-match": {
+            "status": "mismatch",
+            "reason": "expression"
+          }
+        },
+        "process::relational::relational_home::residency_capture::a_one_partition_commit_publishes_constant_new_members_and_capture_reads_nothing": {
+          "kind": "test",
+          "ignored": false,
+          "filter-match": {
+            "status": "mismatch",
+            "reason": "expression"
+          }
+        },
+        "process::relational::relational_home::residency_digest::a_checksum_valid_substituted_member_refuses_its_digest_and_keeps_subject_damage_sticky": {
+          "kind": "test",
+          "ignored": false,
+          "filter-match": {
+            "status": "mismatch",
+            "reason": "expression"
+          }
+        },
+        "process::relational::relational_home::residency_media::a_damaged_member_in_store_files_is_a_sticky_typed_refusal_after_reopen": {
+          "kind": "test",
+          "ignored": false,
+          "filter-match": {
+            "status": "mismatch",
+            "reason": "expression"
+          }
+        },
+        "process::relational::relational_home::residency_media::missing_and_stale_member_locators_damage_only_their_region_and_never_answer_empty": {
+          "kind": "test",
+          "ignored": false,
+          "filter-match": {
+            "status": "mismatch",
+            "reason": "expression"
+          }
+        },
+        "process::relational::relational_home::residency_process::a_killed_home_stays_cold_and_an_interrupted_cold_restore_reopens_again": {
+          "kind": "test",
+          "ignored": false,
+          "filter-match": {
+            "status": "mismatch",
+            "reason": "expression"
+          }
+        },
+        "process::relational::relational_home::residency_process::residency_child": {
+          "kind": "test",
+          "ignored": false,
+          "filter-match": {
+            "status": "mismatch",
+            "reason": "expression"
+          }
+        },
+        "process::relational::relational_home::residency_reopen::a_cold_first_commit_on_a_fork_preserves_reference_artifacts_and_record_identities": {
+          "kind": "test",
+          "ignored": false,
+          "filter-match": {
+            "status": "mismatch",
+            "reason": "expression"
+          }
+        },
+        "process::relational::relational_home::residency_reopen::a_cold_schema_transition_replays_and_reframes_all_carriers_before_load_free_capture": {
+          "kind": "test",
+          "ignored": false,
+          "filter-match": {
+            "status": "mismatch",
+            "reason": "expression"
+          }
+        },
+        "process::relational::relational_home::residency_reopen::reopen_keeps_regions_cold_and_a_point_read_and_commit_demand_only_their_partition": {
+          "kind": "test",
+          "ignored": false,
+          "filter-match": {
+            "status": "mismatch",
+            "reason": "expression"
+          }
+        },
+        "process::relational::relational_home::schema_recovery::a_home_serves_only_the_schema_its_main_head_records": {
+          "kind": "test",
+          "ignored": false,
+          "filter-match": {
+            "status": "mismatch",
+            "reason": "expression"
+          }
+        },
+        "process::relational::relational_home::schema_recovery::a_registry_with_other_kind_contracts_refuses_before_service": {
+          "kind": "test",
+          "ignored": false,
+          "filter-match": {
+            "status": "mismatch",
+            "reason": "expression"
+          }
+        },
+        "process::relational::relational_home::schema_recovery::between_operations::schema_journey_child": {
+          "kind": "test",
+          "ignored": false,
+          "filter-match": {
+            "status": "mismatch",
+            "reason": "expression"
+          }
+        }
+      }
+    }
+  }
+}

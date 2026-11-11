@@ -138,7 +138,7 @@ pub fn capture_public(application: &App) -> Subjects<PublicChanges> {
             let scope = selected
                 .resolve_entity(
                     &phase,
-                    DocumentIdentityField::reference(),
+                    DocumentIdentityField::at("DocumentIdentityField"),
                     DOCUMENT_IDENTITY.to_owned(),
                     &request,
                     WorthQueryPrincipalResolutionMode::Ordinary,
@@ -195,7 +195,7 @@ pub fn capture_governed(application: &App) -> Subjects<GovernedChanges> {
             let scope = selected
                 .resolve_entity(
                     &phase,
-                    DocumentIdentityField::reference(),
+                    DocumentIdentityField::at("DocumentIdentityField"),
                     DOCUMENT_IDENTITY.to_owned(),
                     &request,
                     WorthQueryPrincipalResolutionMode::Ordinary,

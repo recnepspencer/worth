@@ -23,7 +23,10 @@ fn region_reuse_is_sensitive_to_empty_and_touched_deltas() {
     );
     let after_noop = inspect_main_regions(&world.runtime);
     let after_noop_sharing = inspect_main_sharing(&world.runtime);
-    let noop_cost = world.runtime.observe_mvcc_cost(&noop_scope).unwrap();
+    let noop_cost = world
+        .runtime
+        .observe_mvcc_cost(execution, &noop_scope)
+        .unwrap();
     assert_eq!(after_noop, baseline);
     assert_eq!(
         noop_cost
@@ -81,7 +84,10 @@ fn region_reuse_is_sensitive_to_empty_and_touched_deltas() {
         ),
     );
     let mutation = inspect_main_sharing(&world.runtime);
-    let cost = world.runtime.observe_mvcc_cost(&mutation_scope).unwrap();
+    let cost = world
+        .runtime
+        .observe_mvcc_cost(execution, &mutation_scope)
+        .unwrap();
     assert_eq!(
         cost.sharing_cost_delta().publication_touched_region_count,
         1

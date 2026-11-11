@@ -1,6 +1,6 @@
 //! Original occurrence, installed association and target incarnation form one retry intent.
 use super::*;
-use sha2::{Digest, Sha256};
+mod canonical_identity;
 use worth_query_declaration::facade::{
     application_aftermath::ApplicationInverseBinding,
     application_operation::ApplicationMutationBinding,
@@ -15,6 +15,9 @@ pub struct WorthQueryCorrectionIntent {
 }
 
 impl WorthQueryCorrectionIntent {
+    pub(super) const fn identity(&self) -> [u8; 32] {
+        self.identity
+    }
     pub(crate) fn causal_key(&self) -> String {
         use std::fmt::Write;
         let mut key = String::from("recorded-correction:");
@@ -32,60 +35,45 @@ impl WorthQueryCorrectionIntent {
         command_key: &WorthQueryCorrectionCommandKey,
         lineage: &crate::domain_computation::application_aftermath::WorthQueryCorrectionLineageBinding,
     ) -> Self {
-        let mut digest = Sha256::new();
+        use crate::domain_computation::application_aftermath::WorthQueryAftermathCausalRole as Role;
+        use canonical_identity::{Coordinate, CorrectionIntentFields};
         let occurrence = source.ancestry().source().identity();
         let branch = target.product().observation();
-        let original = source.occurrence().commit_evidence().original_authority();
+        let original_intent = source.occurrence().original_intent();
         let action = match lineage.role() {
-            crate::domain_computation::application_aftermath::WorthQueryAftermathCausalRole::RecordedReverse => ApplicationInverseBinding::<Schema, C>::IDENTITY,
-            _ => C::Source::IDENTITY,
+            Role::RecordedReverse => ApplicationInverseBinding::<Schema, C>::IDENTITY,
+            Role::RecordedReapply => C::Source::IDENTITY,
         };
-        for part in [
-            b"worth-query.recorded-correction.intent.v2".as_slice(),
-            C::IDENTITY.as_bytes(),
-            C::Source::IDENTITY.as_bytes(),
-            action.as_bytes(),
-            &lineage.role().code().to_be_bytes(),
-            &occurrence.owner_identity().get().to_be_bytes(),
-            &occurrence.ordinal().to_be_bytes(),
-            branch.branch_identity().name().as_str().as_bytes(),
-            &branch
-                .lifecycle_incarnation()
-                .owner_identity()
-                .get()
-                .to_be_bytes(),
-            &branch.lifecycle_incarnation().ordinal().to_be_bytes(),
-            original.idempotency_binding().intent_identity(),
-        ] {
-            digest.update((part.len() as u64).to_be_bytes());
-            digest.update(part);
-        }
-        for coordinate in [
-            Some(lineage.root()),
-            lineage.selected_alternative(),
-            lineage.active_reversal(),
-            lineage.prior_transition(),
-        ] {
-            digest.update([u8::from(coordinate.is_some())]);
-            if let Some(coordinate) = coordinate {
-                for part in [
-                    coordinate.world().owner_identity().get().to_be_bytes(),
-                    coordinate.world().ordinal().to_be_bytes(),
-                    coordinate.relational().commit_id.0.to_be_bytes(),
-                    coordinate.relational().version_id.0.to_be_bytes(),
-                ] {
-                    digest.update(part);
-                }
-                let branch = coordinate.relational().branch_id.0.as_bytes();
-                digest.update((branch.len() as u64).to_be_bytes());
-                digest.update(branch);
-            }
-        }
+        let owner = occurrence.owner_identity();
+        let lifecycle = branch.lifecycle_incarnation();
+        let target_owner = lifecycle.owner_identity();
+        let identity = canonical_identity::encode(CorrectionIntentFields {
+            bindings: [C::IDENTITY, C::Source::IDENTITY, action],
+            role: lineage.role(),
+            source_owner: canonical_identity::scope(owner.durable(), owner.get()),
+            source_commit: occurrence.ordinal(),
+            target_owner: canonical_identity::scope(target_owner.durable(), target_owner.get()),
+            target_branch: branch.branch_identity().name().as_str(),
+            target_lifecycle: lifecycle.ordinal(),
+            original_intent: &original_intent,
+            lineage: [
+                Some(lineage.root()),
+                lineage.selected_alternative(),
+                lineage.active_reversal(),
+                lineage.prior_transition(),
+            ]
+            .map(|coordinate| coordinate.map(Coordinate::from_source)),
+        });
         Self {
-            identity: digest.finalize().into(),
+            identity,
             command_key: *command_key,
             replay_definition_identity: None,
         }
+    }
+
+    pub(super) fn with_recorded_definition_data(mut self, definition: Option<[u8; 32]>) -> Self {
+        self.replay_definition_identity = definition;
+        self
     }
 
     pub(super) fn with_recorded_definition(

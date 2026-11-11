@@ -3,31 +3,34 @@ use super::membership::writes;
 use super::require_linear_history;
 use super::{charge, CodecRetirementClosureStop as Stop};
 use crate::history::data::canonical_commit_envelope::{
-    CanonicalOutputPublication, CanonicalRequiredOutputOrigin,
+    CanonicalOutputPublication, CanonicalRequiredOutputOrigin, OutputOriginHistory,
+    ValidatedOutputOrigins,
 };
 use crate::history::data::{CanonicalCommitEnvelope, CommitId};
 use crate::publication::patch::data::RecordStructuralChange;
-use crate::runtime::RelationalRuntime;
 use crate::transactions::data::RecordRef;
 use worth_execution::MapKernelContext;
 
 pub(super) fn validate_succession(
-    runtime: &RelationalRuntime,
-    envelope: &CanonicalCommitEnvelope,
+    runtime: &crate::history::data::codec_retirement_closure::history_request::RuntimeHistoryRequest<'_, '_, '_>,
+    view: ValidatedOutputOrigins<'_>,
     prior: &CanonicalRequiredOutputOrigin,
+    validated_history: &mut OutputOriginHistory,
     context: &mut MapKernelContext<'_, '_>,
+    schema: &crate::branch::RelationalBranchRootSchemaAuthority,
 ) -> Result<(), Stop> {
-    super::producer_retirement::validate(runtime, envelope, context)?;
-    validate_route(runtime, envelope, prior, context)
+    super::producer_retirement::validate(runtime, view, validated_history, context, schema)?;
+    validate_route(runtime, view, prior, context)
 }
 
 pub(super) fn validate_route(
-    runtime: &RelationalRuntime,
-    envelope: &CanonicalCommitEnvelope,
+    runtime: &crate::history::data::codec_retirement_closure::history_request::RuntimeHistoryRequest<'_, '_, '_>,
+    view: ValidatedOutputOrigins<'_>,
     prior: &CanonicalRequiredOutputOrigin,
     context: &mut MapKernelContext<'_, '_>,
 ) -> Result<(), Stop> {
-    let current = envelope.output_origin_for_route(&prior.meaning, context)?;
+    let envelope = view.envelope();
+    let current = view.output_origin_for_route(&prior.meaning, context)?;
     charge(
         context,
         current.members.len().saturating_add(prior.members.len()),
@@ -95,9 +98,10 @@ pub(super) fn validate_route(
                             prior.commit.commit_id,
                             old.after_write,
                             before,
-                            &mut |commit| runtime.history.canonical_envelope(commit),
-                            &mut |version| runtime.history.canonical_envelope_for_version(version),
-                            runtime.history.catalog_len(),
+                            &mut |commit| runtime.commit(commit),
+                            &mut |version, context| runtime.version(version, context),
+                            runtime.runtime.history.catalog_len(),
+                            &runtime.execution(),
                             context,
                         )
                     })
@@ -135,9 +139,10 @@ pub(super) fn validate_route(
                 prior.commit.commit_id,
                 old.after_write,
                 before,
-                &mut |commit| runtime.history.canonical_envelope(commit),
-                &mut |version| runtime.history.canonical_envelope_for_version(version),
-                runtime.history.catalog_len(),
+                &mut |commit| runtime.commit(commit),
+                &mut |version, context| runtime.version(version, context),
+                runtime.runtime.history.catalog_len(),
+                &runtime.execution(),
                 context,
             )? || relation.birth != old.birth
                 || relation.kind != old.kind
@@ -177,16 +182,17 @@ pub(super) fn validate_route(
 }
 
 pub(super) fn validate_gap(
-    runtime: &RelationalRuntime,
+    runtime: &crate::history::data::codec_retirement_closure::history_request::RuntimeHistoryRequest<'_, '_, '_>,
     current: &CanonicalCommitEnvelope,
     predecessor: CommitId,
     origin: &CanonicalRequiredOutputOrigin,
     context: &mut MapKernelContext<'_, '_>,
     lease: Option<&worth_execution::ExecutionResourceLease<'_>>,
     validate_payload: bool,
+    schema: &crate::branch::RelationalBranchRootSchemaAuthority,
 ) -> Result<(), Stop> {
     let mut next = current.commit.parents.first().copied();
-    let bound = runtime.history.catalog_len();
+    let bound = runtime.runtime.history.catalog_len();
     for _ in 0..bound {
         charge(context, bound)?;
         let commit = next.ok_or("publication predecessor is outside canonical ancestry")?;
@@ -194,8 +200,7 @@ pub(super) fn validate_gap(
             return Ok(());
         }
         let envelope = runtime
-            .history
-            .canonical_envelope(commit)
+            .commit(commit)?
             .ok_or("publication gap lost native history")?;
         require_linear_history(&envelope)?;
         for publication in envelope.output_origins() {
@@ -229,12 +234,15 @@ pub(super) fn validate_gap(
         }
         if let Some(event) = &envelope.required_output_materialization {
             if validate_payload {
-                super::materialization::validate_semantics(runtime, &envelope, context, lease)?;
+                super::materialization::validate_semantics(
+                    runtime, &envelope, context, lease, schema,
+                )?;
             } else {
                 super::materialization::validate_header(
                     &envelope,
-                    &mut |commit| runtime.history.canonical_envelope(commit),
+                    &mut |commit| runtime.commit(commit),
                     bound,
+                    &runtime.execution(),
                     context,
                 )?;
             }

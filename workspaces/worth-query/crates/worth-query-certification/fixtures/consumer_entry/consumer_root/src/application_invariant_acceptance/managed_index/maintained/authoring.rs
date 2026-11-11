@@ -56,11 +56,10 @@ worth_query_structured_value_binding!(pub InputBinding for Edit { identity: "mai
 worth_query_structured_value_binding!(pub ResultBinding for Changed { identity: "maintained-catalog.authoring.result.v1" });
 worth_query_structured_value_binding!(pub DenialBinding for Denial { identity: "maintained-catalog.authoring.denial.v1" });
 worth_query_operation!(pub AuthorCatalog for Catalog, input InputBinding);
-worth_query_operation_reads!(AuthorCatalog => [Directory, DirectoryIdentity, Item, ItemIdentity, ItemEnabled, Contains]);
+worth_query_operation_reads!(AuthorCatalog => [Directory,Item,Contains]);
 worth_query_operation_creates!(AuthorCatalog => [Directory, Item]);
 worth_query_operation_links!(AuthorCatalog => [Contains]);
 worth_query_operation_deletes!(AuthorCatalog => [Item]);
-worth_query_operation_writes!(AuthorCatalog => [DirectoryIdentity, DirectoryNote, ItemIdentity, ItemName, ItemEnabled, bounds::ItemBounds]);
 
 fn scope(_: &Edit) -> String {
     "catalog".into()
@@ -75,8 +74,8 @@ worth_query_mutation_binding!(
     outputs NoApplicationMutationOutputs,
     principal CatalogPrincipal, mapping ExternalMapping, principal_entity Principal,
     principal_identity u64, identity_binding U64ApplicationValueBinding,
-    scope Directory, DirectoryFacts, DirectoryIdentity, String, ReadOnly, NoApplicationUnit,
-    field DirectoryIdentity::reference(), value scope,
+    scope DirectoryIdentity,
+    field DirectoryIdentity::at("DirectoryIdentity"), value scope,
 );
 
 pub(super) fn declare(
@@ -87,20 +86,20 @@ pub(super) fn declare(
         .operation(op.definition().no_external_effect().no_aftermath().finish())
         .operation_projection_work_budget(op, 64)
         .operation_read_entity(op, Directory::reference())
-        .operation_read_field(op, DirectoryIdentity::reference())
+        .operation_read_field(op, DirectoryIdentity::at("DirectoryIdentity"))
         .operation_read_entity(op, Item::reference())
-        .operation_read_field(op, ItemIdentity::reference())
-        .operation_read_field(op, ItemEnabled::reference())
+        .operation_read_field(op, ItemIdentity::at("ItemIdentity"))
+        .operation_read_field(op, ItemEnabled::at("ItemEnabled"))
         .operation_read_relation(op, Contains::reference())
         .operation_create(op, Directory::reference())
         .operation_create(op, Item::reference())
         .operation_link(op, Contains::reference())
         .operation_delete(op, Item::reference())
-        .operation_write(op, DirectoryIdentity::reference())
-        .operation_write(op, DirectoryNote::reference())
-        .operation_write(op, ItemIdentity::reference())
-        .operation_write(op, ItemName::reference())
-        .operation_write(op, ItemEnabled::reference())
-        .operation_write(op, bounds::ItemBounds::reference())
+        .operation_write(op, DirectoryIdentity::at("DirectoryIdentity"))
+        .operation_write(op, DirectoryNote::at("DirectoryNote"))
+        .operation_write(op, ItemIdentity::at("ItemIdentity"))
+        .operation_write(op, ItemName::at("ItemName"))
+        .operation_write(op, ItemEnabled::at("ItemEnabled"))
+        .operation_write(op, bounds::ItemBounds::at("ItemBounds"))
         .application_mutation_binding::<Binding>()
 }

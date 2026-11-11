@@ -240,10 +240,12 @@ dependencies = [
  "bank-external-rail",
  "bank-server",
  "getrandom 0.4.3",
+ "serde",
  "serde_json",
  "tokio",
  "worth-foundational",
  "worth-query-bank-testkit",
+ "worth-query-decl",
  "worth-query-host",
 ]
 
@@ -2674,6 +2676,16 @@ dependencies = [
  "cfg-if",
  "cpufeatures 0.2.17",
  "digest",
+ "sha2-asm",
+]
+
+[[package]]
+name = "sha2-asm"
+version = "0.6.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b845214d6175804686b2bd482bcffe96651bb2d1200742b712003504a2dac1ab"
+dependencies = [
+ "cc",
 ]
 
 [[package]]
@@ -3614,6 +3626,7 @@ version = "0.1.0"
 dependencies = [
  "allocator-api2",
  "rayon",
+ "stacker",
  "worth-foundational",
  "worth-proof",
 ]
@@ -3622,6 +3635,7 @@ dependencies = [
 name = "worth-foundational"
 version = "0.1.0"
 dependencies = [
+ "im",
  "serde",
  "serde_json",
  "serde_stacker",
@@ -3846,6 +3860,7 @@ dependencies = [
 name = "worth-query-host"
 version = "0.1.0"
 dependencies = [
+ "sha2",
  "worth-execution",
  "worth-foundational",
  "worth-proof",
@@ -3854,6 +3869,9 @@ dependencies = [
  "worth-query-execution",
  "worth-query-installation",
  "worth-query-publication",
+ "worth-relational",
+ "worth-runtime-bridge",
+ "worth-runtime-world",
  "worth-store-application",
 ]
 
@@ -4001,6 +4019,7 @@ dependencies = [
  "worth-execution",
  "worth-foundational",
  "worth-proof",
+ "worth-query-execution",
  "worth-query-installation",
  "worth-relational",
  "worth-runtime-bridge",

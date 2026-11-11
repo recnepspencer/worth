@@ -56,7 +56,7 @@ pub fn open(host: &host::Host) -> Lease<'_> {
             let root = selected
                 .resolve_entity(
                     &phase,
-                    DocumentIdentityField::reference(),
+                    DocumentIdentityField::at("DocumentIdentityField"),
                     "root".to_owned(),
                     &scope,
                     WorthQueryPrincipalResolutionMode::Ordinary,
@@ -122,11 +122,13 @@ pub fn next(host: &host::Host, live: &mut Lease<'_>, work: u64) -> (Outcome, Exe
                 .unwrap();
             // The unchanged native phase lends the original request; decode's
             // existing in_scope contract selects this active admitted descendant.
-            ExecutionRequest::leased(&child)
-                .run(ExecutionWorkCeiling::new(Some(work)), |_| {
-                    live.next(&phase, &principal, &scope)
-                })
-                .expect("the actual live owner returns its typed first refusal")
+            super::super::request_funding::observe_decodes(host, || {
+                ExecutionRequest::leased(&child)
+                    .run(ExecutionWorkCeiling::new(Some(work)), |_| {
+                        live.next(&phase, &principal, &scope)
+                    })
+                    .expect("the actual live owner returns its typed first refusal")
+            })
         })
         .unwrap()
 }

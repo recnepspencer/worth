@@ -381,3 +381,6 @@ impl BridgeSealedRuntimeAssembly {
         self.runtime.owned_signal_active_node_count()
     }
 }
+#[cfg(test)]
+#[path = "sealed_runtime_assembly_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;

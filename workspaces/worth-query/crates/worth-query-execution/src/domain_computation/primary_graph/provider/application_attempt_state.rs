@@ -10,7 +10,14 @@ use std::{
 };
 
 mod commit_completion;
+mod coupled_extraction;
+mod coupled_preparation;
+mod coupled_settlement;
+pub(in crate::domain_computation::primary_graph) use coupled_preparation::{
+    CoupledApplicationMember, CoupledProducerPreparation,
+};
 pub(crate) mod commit_preparation;
+pub(in crate::domain_computation::primary_graph::provider) mod coupled_publication;
 pub(in crate::domain_computation::primary_graph::provider) use commit_preparation::publish_recovered;
 pub(in crate::domain_computation::primary_graph::provider) use commit_preparation::ManagedUnpublishedAttempt;
 mod phase;
@@ -25,14 +32,14 @@ mod staged;
 use commit_completion::WorthQueryPreparedProviderApplicationAttempt;
 pub(in crate::domain_computation::primary_graph::provider) use commit_preparation::commit_prepared_application;
 pub(in crate::domain_computation::primary_graph) use commit_preparation::RebaseVerificationFailure;
-pub(crate) use commit_preparation::WorthQueryRetainedPreImageSeal;
 pub use commit_preparation::{FactlessCurrentness, OwnEffectOnReads, RebaseVerificationReason};
 pub(in crate::domain_computation::primary_graph) use commit_preparation::{
     WorthQueryMutationWorkCommitSeal, WorthQueryPreImageRetentionWork,
     WorthQueryPrimaryGraphCommittedApplication,
 };
-#[cfg(test)]
-use phase::WorthQueryApplicationAttemptPhase;
+pub(crate) use commit_preparation::{
+    WorthQueryRetainedPreImageSeal, WorthQueryRetainedRelationPreImageSeal,
+};
 use phase::{WorthQueryApplicationAttemptState, WorthQueryPrimaryGraphOverlay};
 pub(super) use retained_basis::{
     WorthQueryAdmittedApplicationOverlay, WorthQueryApplicationIdempotencyBasis,
@@ -41,20 +48,8 @@ pub(super) use retained_basis::{
 
 use super::WorthQueryPrimaryGraphApplicationAttempt;
 
-#[derive(Clone, Copy, Debug, Eq, Ord, PartialEq, PartialOrd)]
-struct WorthQueryApplicationAttemptLookupKey(WorthQueryProviderSessionAffinityIdentity);
-
-impl WorthQueryApplicationAttemptLookupKey {
-    fn from_affinity(
-        affinity: &super::super::application_attempt::WorthQueryApplicationAttemptAffinity,
-    ) -> Self {
-        Self(affinity.lookup_identity())
-    }
-
-    const fn from_identity(identity: WorthQueryProviderSessionAffinityIdentity) -> Self {
-        Self(identity)
-    }
-}
+mod lookup_key;
+use lookup_key::WorthQueryApplicationAttemptLookupKey;
 
 #[derive(Default)]
 pub struct WorthQueryPrimaryGraphApplicationAttemptStore {
@@ -213,64 +208,29 @@ impl WorthQueryPrimaryGraphApplicationAttemptStore {
         state.approve(incoming)
     }
 
+    pub(super) fn retain_coupled_invariant_approved(
+        &mut self,
+        session: WorthQueryProviderSessionView<'_>,
+        evidence: worth_relational::facade::mvcc::RelationalMutationInvariantEvidence,
+        work: super::mutation_work::WorthQueryPrimaryMutationWorkCounters,
+    ) -> Result<(), &'static str> {
+        self.attempt_state_mut(session)
+            .ok_or("coupled writer is not registered")?
+            .approve_contribution(phase::ApprovedCoupledContribution { evidence, work })
+    }
+    pub(super) fn approved_invariant_evidence(
+        &self,
+        session: WorthQueryProviderSessionView<'_>,
+    ) -> Option<&worth_relational::facade::mvcc::RelationalMutationInvariantEvidence> {
+        self.attempt_state(session)?.approved_evidence()
+    }
+
     pub(super) fn is_staged_session_preparable(
         &self,
         session: WorthQueryProviderSessionView<'_>,
     ) -> bool {
         self.attempt_state(session)
             .is_some_and(WorthQueryApplicationAttemptState::is_preparable)
-    }
-
-    pub(super) fn has_invariant_approved_candidate(
-        &self,
-        session: WorthQueryProviderSessionView<'_>,
-    ) -> bool {
-        self.attempt_state(session)
-            .is_some_and(WorthQueryApplicationAttemptState::phase_is_commit_ready)
-    }
-
-    pub(super) fn approved_candidate(
-        &self,
-        session: WorthQueryProviderSessionView<'_>,
-    ) -> Option<&worth_relational::facade::mvcc::ValidatedRelationalProposal> {
-        self.attempt_state(session)?.approved_candidate()
-    }
-
-    fn take_commit_prepared(
-        &mut self,
-        session: WorthQueryProviderSessionView<'_>,
-        attempts: Arc<Mutex<Self>>,
-    ) -> Option<WorthQueryPreparedProviderApplicationAttempt> {
-        let key = WorthQueryApplicationAttemptLookupKey::from_identity(session.affinity_identity());
-        if !self
-            .attempt_state(session)
-            .is_some_and(|state| state.phase_is_commit_ready())
-        {
-            return None;
-        }
-        // The reserved index slot survives checkout. Replacing its phase value
-        // avoids removing/reinserting the large Native candidate through B-tree
-        // mutation frames and retains the same registration and completion key.
-        let entry = self
-            .attempts
-            .get_mut(&key)
-            .expect("commit-ready state exists");
-        let WorthQueryApplicationAttemptEntry::Registered { identity, .. } = entry else {
-            unreachable!("commit readiness excludes reservation entries")
-        };
-        let identity = *identity;
-        let WorthQueryApplicationAttemptEntry::Registered { state, .. } = std::mem::replace(
-            entry,
-            WorthQueryApplicationAttemptEntry::Committing { identity },
-        ) else {
-            unreachable!("commit readiness retains its registered state")
-        };
-        let (attempt, approved) = state
-            .take_commit_parts()
-            .expect("commit-ready state retains its prepared parts");
-        Some(WorthQueryPreparedProviderApplicationAttempt::new(
-            attempt, approved, attempts, key, identity,
-        ))
     }
 
     pub(super) fn discard_overlay(
@@ -380,3 +340,6 @@ pub(in crate::domain_computation::primary_graph) use commit_preparation::{
 pub(in crate::domain_computation) use commit_preparation::QueryPreparingApplicationCommit;
 pub(in crate::domain_computation::primary_graph::provider) use commit_preparation::RetainedQueryDurablePreparation;
 mod court_doors_for_test;
+#[cfg(test)]
+#[path = "application_attempt_state_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;

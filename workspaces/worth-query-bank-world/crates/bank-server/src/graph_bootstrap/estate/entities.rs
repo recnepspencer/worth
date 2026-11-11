@@ -29,7 +29,7 @@ fn bind_core(
                 Branch::reference(),
                 entity_key(branch(value.id.get())),
             )
-            .field(BranchIdentityField::reference(), value.id),
+            .field(BranchIdentityField::at("BranchIdentityField"), value.id),
         )?;
     }
     for value in world.death_notices() {
@@ -38,8 +38,14 @@ fn bind_core(
                 DeathNotice::reference(),
                 entity_key(notice(value.id.get())),
             )
-            .field(DeathNoticeIdentityField::reference(), value.id)
-            .field(DeathNoticeStatusField::reference(), value.status),
+            .field(
+                DeathNoticeIdentityField::at("DeathNoticeIdentityField"),
+                value.id,
+            )
+            .field(
+                DeathNoticeStatusField::at("DeathNoticeStatusField"),
+                value.status,
+            ),
         )?;
     }
     for value in world.cases() {
@@ -48,9 +54,18 @@ fn bind_core(
                 EstateCase::reference(),
                 entity_key(estate(value.id.get())),
             )
-            .field(EstateCaseIdentityField::reference(), value.id)
-            .field(EstateWorkflowStageField::reference(), value.stage)
-            .field(EstateCaseStatusField::reference(), value.status),
+            .field(
+                EstateCaseIdentityField::at("EstateCaseIdentityField"),
+                value.id,
+            )
+            .field(
+                EstateWorkflowStageField::at("EstateWorkflowStageField"),
+                value.stage,
+            )
+            .field(
+                EstateCaseStatusField::at("EstateCaseStatusField"),
+                value.status,
+            ),
         )?;
     }
     for value in world.legal_authorities() {
@@ -59,9 +74,18 @@ fn bind_core(
                 LegalAuthority::reference(),
                 entity_key(authority(value.id.get())),
             )
-            .field(LegalAuthorityIdentityField::reference(), value.id)
-            .field(LegalAuthorityKindField::reference(), value.kind)
-            .field(LegalAuthorityRecognizedField::reference(), value.recognized),
+            .field(
+                LegalAuthorityIdentityField::at("LegalAuthorityIdentityField"),
+                value.id,
+            )
+            .field(
+                LegalAuthorityKindField::at("LegalAuthorityKindField"),
+                value.kind,
+            )
+            .field(
+                LegalAuthorityRecognizedField::at("LegalAuthorityRecognizedField"),
+                value.recognized,
+            ),
         )?;
     }
     Ok(())
@@ -76,31 +100,49 @@ fn bind_capabilities(
             CapabilityGrant::reference(),
             entity_key(grant(value.id.get())),
         )
-        .field(CapabilityGrantIdentityField::reference(), value.id)
-        .field(CapabilityOperationField::reference(), value.scope.operation)
-        .field(CapabilityPurposeField::reference(), value.scope.purpose)
         .field(
-            CapabilityValidFromField::reference(),
+            CapabilityGrantIdentityField::at("CapabilityGrantIdentityField"),
+            value.id,
+        )
+        .field(
+            CapabilityOperationField::at("CapabilityOperationField"),
+            value.scope.operation,
+        )
+        .field(
+            CapabilityPurposeField::at("CapabilityPurposeField"),
+            value.scope.purpose,
+        )
+        .field(
+            CapabilityValidFromField::at("CapabilityValidFromField"),
             value.scope.validity.not_before(),
         )
         .field(
-            CapabilityValidThroughField::reference(),
+            CapabilityValidThroughField::at("CapabilityValidThroughField"),
             value.scope.validity.not_after(),
         )
         .field(
-            CapabilityDelegationLimitField::reference(),
+            CapabilityDelegationLimitField::at("CapabilityDelegationLimitField"),
             value.scope.delegation,
         )
         .field(
-            CapabilityWorkflowStageField::reference(),
+            CapabilityWorkflowStageField::at("CapabilityWorkflowStageField"),
             value.scope.workflow_stage,
         )
-        .field(CapabilityGrantStatusField::reference(), value.status);
+        .field(
+            CapabilityGrantStatusField::at("CapabilityGrantStatusField"),
+            value.status,
+        );
         if let Some(field) = value.scope.field {
-            seed = seed.field(CapabilityDisclosureField::reference(), field);
+            seed = seed.field(
+                CapabilityDisclosureField::at("CapabilityDisclosureField"),
+                field,
+            );
         }
         if let Some(amount) = value.scope.amount_ceiling {
-            seed = seed.field(CapabilityAmountCeilingField::reference(), amount);
+            seed = seed.field(
+                CapabilityAmountCeilingField::at("CapabilityAmountCeilingField"),
+                amount,
+            );
         }
         graph.bind_entity(seed)?;
     }
@@ -117,11 +159,26 @@ fn bind_emergency_access(
                 EmergencyAccess::reference(),
                 entity_key(emergency(value.id.get())),
             )
-            .field(EmergencyAccessIdentityField::reference(), value.id)
-            .field(EmergencyAccessReasonField::reference(), value.reason)
-            .field(EmergencyAccessStatusField::reference(), value.status)
-            .field(EmergencyAccessIssuedAtField::reference(), value.issued_at)
-            .field(EmergencyAccessExpiresAtField::reference(), value.expires_at),
+            .field(
+                EmergencyAccessIdentityField::at("EmergencyAccessIdentityField"),
+                value.id,
+            )
+            .field(
+                EmergencyAccessReasonField::at("EmergencyAccessReasonField"),
+                value.reason,
+            )
+            .field(
+                EmergencyAccessStatusField::at("EmergencyAccessStatusField"),
+                value.status,
+            )
+            .field(
+                EmergencyAccessIssuedAtField::at("EmergencyAccessIssuedAtField"),
+                value.issued_at,
+            )
+            .field(
+                EmergencyAccessExpiresAtField::at("EmergencyAccessExpiresAtField"),
+                value.expires_at,
+            ),
         )?;
     }
     Ok(())
@@ -137,9 +194,18 @@ fn bind_reviews(
                 MandatoryReview::reference(),
                 entity_key(review(value.id.get())),
             )
-            .field(MandatoryReviewIdentityField::reference(), value.id)
-            .field(MandatoryReviewKindField::reference(), value.kind)
-            .field(MandatoryReviewStatusField::reference(), value.status),
+            .field(
+                MandatoryReviewIdentityField::at("MandatoryReviewIdentityField"),
+                value.id,
+            )
+            .field(
+                MandatoryReviewKindField::at("MandatoryReviewKindField"),
+                value.kind,
+            )
+            .field(
+                MandatoryReviewStatusField::at("MandatoryReviewStatusField"),
+                value.status,
+            ),
         )?;
     }
     Ok(())

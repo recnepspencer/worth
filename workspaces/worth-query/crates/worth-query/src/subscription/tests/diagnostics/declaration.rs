@@ -10,7 +10,8 @@ fn delivery_intent_denial_has_specific_diagnostic_stage() {
         LiveQueryFamily::OrderedCollection,
         Some(LiveViewShapeFamily::Table),
         QuerySubscriptionConstructionSource::Direct,
-    );
+    )
+    .expect("fixture digest must fit");
     let selection = select_query_subscription_family(live, roomy_budget()).unwrap();
 
     let error = declare_query_subscription(
@@ -24,7 +25,7 @@ fn delivery_intent_denial_has_specific_diagnostic_stage() {
         &QuerySubscriptionDeclarationDenialKind::DeliveryIntentUnsupported
     );
     assert_eq!(
-        error.diagnostic().stage(),
+        error.diagnostic().expect("fixture digest must fit").stage(),
         &QuerySubscriptionDiagnosticStage::DeliveryIntent
     );
     assert_eq!(error.counters().delivery_intent_denial_count(), 1);
@@ -32,7 +33,12 @@ fn delivery_intent_denial_has_specific_diagnostic_stage() {
     assert_eq!(error.counters().declaration_count(), 0);
     assert_eq!(error.counters().bridge_lowering_count(), 0);
     assert_eq!(
-        error.diagnostic().counter_projection().label().as_str(),
+        error
+            .diagnostic()
+            .expect("fixture digest must fit")
+            .counter_projection()
+            .label()
+            .as_str(),
         error.counters().counter_projection().label()
     );
 }
@@ -46,7 +52,10 @@ fn bridge_family_slice_and_basis_denials_have_distinct_diagnostic_stages() {
     )
     .unwrap_err();
     assert_eq!(
-        family_error.diagnostic().stage(),
+        family_error
+            .diagnostic()
+            .expect("fixture digest must fit")
+            .stage(),
         &QuerySubscriptionDiagnosticStage::BridgeFamilyLowering
     );
     assert_eq!(
@@ -58,6 +67,7 @@ fn bridge_family_slice_and_basis_denials_have_distinct_diagnostic_stages() {
     assert_eq!(
         family_error
             .diagnostic()
+            .expect("fixture digest must fit")
             .counter_projection()
             .label()
             .as_str(),
@@ -70,7 +80,10 @@ fn bridge_family_slice_and_basis_denials_have_distinct_diagnostic_stages() {
     )
     .unwrap_err();
     assert_eq!(
-        slice_error.diagnostic().stage(),
+        slice_error
+            .diagnostic()
+            .expect("fixture digest must fit")
+            .stage(),
         &QuerySubscriptionDiagnosticStage::BridgeSliceLowering
     );
     assert_eq!(
@@ -82,6 +95,7 @@ fn bridge_family_slice_and_basis_denials_have_distinct_diagnostic_stages() {
     assert_eq!(
         slice_error
             .diagnostic()
+            .expect("fixture digest must fit")
             .counter_projection()
             .label()
             .as_str(),
@@ -93,7 +107,8 @@ fn bridge_family_slice_and_basis_denials_have_distinct_diagnostic_stages() {
         None,
         QuerySubscriptionConstructionSource::Direct,
         QuerySubscriptionBasisPosture::RuntimeHistoricalSnapshot,
-    );
+    )
+    .expect("fixture digest must fit");
     let selection = select_query_subscription_family(live, roomy_budget()).unwrap();
     let declaration = declare_query_subscription(selection, roomy_slice_budget()).unwrap();
     let basis_error = lower_query_subscription_to_bridge(
@@ -102,7 +117,10 @@ fn bridge_family_slice_and_basis_denials_have_distinct_diagnostic_stages() {
     )
     .unwrap_err();
     assert_eq!(
-        basis_error.diagnostic().stage(),
+        basis_error
+            .diagnostic()
+            .expect("fixture digest must fit")
+            .stage(),
         &QuerySubscriptionDiagnosticStage::BasisBinding
     );
     assert_eq!(
@@ -114,6 +132,7 @@ fn bridge_family_slice_and_basis_denials_have_distinct_diagnostic_stages() {
     assert_eq!(
         basis_error
             .diagnostic()
+            .expect("fixture digest must fit")
             .counter_projection()
             .label()
             .as_str(),

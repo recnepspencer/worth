@@ -1,4 +1,5 @@
 use crate::evidence_identity::WorthQueryEvidenceIdentity;
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 
 use super::super::evidence_identities::diagnostic_evidence_identity;
 
@@ -80,14 +81,14 @@ impl QuerySubscriptionDiagnosticEvidence {
         reason: impl Into<String>,
         source_identity: &WorthQueryEvidenceIdentity,
         counter_identity: &WorthQueryEvidenceIdentity,
-    ) -> Self {
-        Self::new(
+    ) -> Result<Self, IdentityDerivationDenial> {
+        Ok(Self::new(
             stage,
             QuerySubscriptionDiagnosticOutcome::Admitted,
             reason,
             source_identity,
             counter_identity,
-        )
+        )?)
     }
 
     pub(crate) fn denied(
@@ -95,14 +96,14 @@ impl QuerySubscriptionDiagnosticEvidence {
         reason: impl Into<String>,
         source_identity: &WorthQueryEvidenceIdentity,
         counter_identity: &WorthQueryEvidenceIdentity,
-    ) -> Self {
-        Self::new(
+    ) -> Result<Self, IdentityDerivationDenial> {
+        Ok(Self::new(
             stage,
             QuerySubscriptionDiagnosticOutcome::Denied,
             reason,
             source_identity,
             counter_identity,
-        )
+        )?)
     }
 
     fn new(
@@ -111,7 +112,7 @@ impl QuerySubscriptionDiagnosticEvidence {
         reason: impl Into<String>,
         source_identity: &WorthQueryEvidenceIdentity,
         counter_identity: &WorthQueryEvidenceIdentity,
-    ) -> Self {
+    ) -> Result<Self, IdentityDerivationDenial> {
         let reason = reason.into();
         let evidence_identity = diagnostic_evidence_identity(
             stage.as_str(),
@@ -119,15 +120,15 @@ impl QuerySubscriptionDiagnosticEvidence {
             &reason,
             source_identity,
             counter_identity,
-        );
-        Self {
+        )?;
+        Ok(Self {
             stage,
             outcome,
             reason,
             source_identity: source_identity.clone(),
             counter_identity: counter_identity.clone(),
             evidence_identity,
-        }
+        })
     }
 
     pub fn stage(&self) -> &QuerySubscriptionDiagnosticStage {

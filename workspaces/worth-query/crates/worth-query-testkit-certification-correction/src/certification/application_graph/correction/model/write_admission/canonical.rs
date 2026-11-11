@@ -67,9 +67,11 @@ worth_query_decl::facade::worth_query_value_binding!(pub CanonicalBinding for Ca
     identity: "domain-write.canonical.v1", scalar: String, canonical: BOUNDS, domain_value,
 });
 
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub struct DelegatedCounter(pub u64);
 pub struct DelegatedBinding;
 impl ApplicationScalarValueBinding for DelegatedBinding {
-    type Value = u64;
+    type Value = DelegatedCounter;
     type Unit = NoApplicationUnit;
     type Decode = ApplicationValueDecodeAvailable;
     type Identity = ApplicationValueIsNotIdentity;
@@ -83,11 +85,11 @@ impl ApplicationScalarValueBinding for DelegatedBinding {
             CounterSeed,
         >(BOUNDS))
     }
-    fn validate(_: &u64) -> Result<(), ApplicationValueValidationDenial> {
+    fn validate(_: &DelegatedCounter) -> Result<(), ApplicationValueValidationDenial> {
         Ok(())
     }
-    fn encode(value: &u64) -> Result<AspectValue, ApplicationValueEncodeDenial> {
-        encode_delegated_canonical_value::<CounterSeed>(value, BOUNDS)
+    fn encode(value: &DelegatedCounter) -> Result<AspectValue, ApplicationValueEncodeDenial> {
+        encode_delegated_canonical_value::<CounterSeed>(&value.0, BOUNDS)
             .map(|value| AspectValue::String(InternedString::Raw(value)))
             .map_err(|cause| ApplicationValueEncodeDenial::Canonical {
                 binding_identity: Self::IDENTITY,
@@ -96,19 +98,23 @@ impl ApplicationScalarValueBinding for DelegatedBinding {
     }
 }
 impl ApplicationReadableScalarValueBinding for DelegatedBinding {
-    fn decode(value: &AspectValue) -> Result<u64, ApplicationValueDecodeDenial> {
+    fn decode(value: &AspectValue) -> Result<DelegatedCounter, ApplicationValueDecodeDenial> {
         Self::decode_admitted(value, &mut |_, _| Ok(()))
     }
     fn decode_admitted(
         value: &AspectValue,
         admission: &mut ValueDecodeAdmission<'_>,
-    ) -> Result<u64, ApplicationValueDecodeDenial> {
-        let AspectValue::String(InternedString::Raw(raw)) = value else {
+    ) -> Result<DelegatedCounter, ApplicationValueDecodeDenial> {
+        let Some(raw) = (match value {
+            AspectValue::String(raw) => raw.raw_text(),
+            _ => None,
+        }) else {
             return Err(ApplicationValueDecodeDenial::CodecRejected {
                 binding_identity: Self::IDENTITY,
             });
         };
         decode_delegated_canonical_value_with_admission::<CounterSeed>(raw, BOUNDS, admission)
+            .map(DelegatedCounter)
             .map_err(|cause| ApplicationValueDecodeDenial::Canonical {
                 binding_identity: Self::IDENTITY,
                 cause,

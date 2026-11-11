@@ -6,8 +6,6 @@ use worth_testkit_server::shared_support_test_bootstrap_policy as test_bootstrap
 #[allow(unused_imports)]
 use worth_testkit_server::shared_support_product_operation_phase_thirteen_fixture as fixture;
 #[allow(unused_imports)]
-use {};
-
 use {
     worth_testkit_server::shared_support_product_operation_phase_thirteen_fixture::build_server_with_operation_authority,
     worth_testkit_server::shared_support_product_operation_phase_thirteen_fixture::direct_session,

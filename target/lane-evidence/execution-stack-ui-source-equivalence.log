@@ -1,0 +1,8 @@
+COMMAND: ["git", "diff", "--exit-code", "fbbdf5edff", "--", "workspaces/worth-ui"]
+HEAD: 592aaaae2f5e852a6bb2c7e7d8626e2f30921e85
+CLEAN: false
+START: 2026-11-08T15:53:44.236899+00:00
+ENV: removed stale external linker override; RUST_MIN_STACK unset in parent
+
+END: 2026-11-08T15:53:45.051530+00:00
+EXIT: 0

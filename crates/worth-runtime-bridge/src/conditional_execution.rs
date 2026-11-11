@@ -145,4 +145,7 @@ pub use successor_reconstitution::BridgePreparedConditionalReconstitution;
 mod signal_denial;
 mod signal_execution_denial;
 pub use signal_denial::BridgeSignalDenial;
+#[cfg(test)]
+#[path = "conditional_execution_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;
 mod signal_service_denial;

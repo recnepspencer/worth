@@ -6,8 +6,10 @@ use super::ExecutionArray;
 /// Move-only author for an exact logical number of independently moved values.
 /// Charges `Layout::array::<T>(element_count)`; nested heaps remain their owners'.
 /// No growth, mutable slice, arbitrary Vec adoption, or copied Clone payload.
-/// Each push polls live status before and after moving a value. A stop after
-/// that move can leave an initialized prefix; it cannot seal a stopped array.
+/// Cancellation is observed per write. Deadline consultation uses bounded
+/// append chunks: at most 32 scalar writes, with a 64 KiB granule or one
+/// indivisible value. Allocation, explicit check_live, bounds errors and seal
+/// poll immediately. A stopped prefix cannot seal.
 /// Push consumes its input on refusal as well as success.
 ///
 /// ```compile_fail

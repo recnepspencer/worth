@@ -22,7 +22,7 @@ fn shared_original_facts_survive_restored_prerequisite_custody() {
         let graph = (*world.application.runtime_for_test()).primary_graph_for_test().unwrap();
         let handle = graph.integration_handle_for_test();
         let owner = (*handle.source_owner_for_test()).invalidation_owner_for_test();
-        let status = AccountStatus::reference();
+        let status = AccountStatus::at("AccountStatus");
         let status = graph.layout_for_test().field_locator_for_test(status.entity(), status.aspect(), status.field())
             .unwrap().clone();
         let (snapshot_handle, basis, identity, _facts, first, second) = handle.with_runtime_for_test(&execution, |runtime| {

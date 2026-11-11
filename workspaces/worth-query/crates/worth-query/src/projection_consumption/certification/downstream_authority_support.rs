@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::projection_consumption::identity::{
     compose_certification_row_digest, compose_digest_sequence,
 };
@@ -81,28 +82,29 @@ impl ConsumedProjectionAuthoritySupportMatrix {
     }
 }
 
-pub fn consumed_projection_authority_support_matrix() -> ConsumedProjectionAuthoritySupportMatrix {
+pub fn consumed_projection_authority_support_matrix(
+) -> Result<ConsumedProjectionAuthoritySupportMatrix, IdentityDerivationDenial> {
     let rows = ProjectionConsumptionCertifiedSourceSurface::all()
         .iter()
         .copied()
         .map(support_row)
-        .collect::<Vec<_>>();
+        .collect::<Result<Vec<_>, _>>()?;
     let matrix_digest = compose_digest_sequence(
         "consumed_projection_authority_support_matrix_v1",
         "row",
         rows.iter().map(|row| row.row_digest.clone()),
-    );
-    ConsumedProjectionAuthoritySupportMatrix {
+    )?;
+    Ok(ConsumedProjectionAuthoritySupportMatrix {
         rows,
         matrix_digest,
-    }
+    })
 }
 
 fn support_row(
     surface: ProjectionConsumptionCertifiedSourceSurface,
-) -> ConsumedProjectionAuthoritySupportRow {
-    let source = representative_source(surface);
-    let report = discover_projection_consumption_support(&source);
+) -> Result<ConsumedProjectionAuthoritySupportRow, IdentityDerivationDenial> {
+    let source = representative_source(surface)?;
+    let report = discover_projection_consumption_support(&source)?;
     let admitted_fact_kinds = report
         .rows()
         .iter()
@@ -129,14 +131,14 @@ fn support_row(
             ("status", status.as_str()),
             ("admitted_facts", admitted_shape.as_str()),
         ],
-    );
-    ConsumedProjectionAuthoritySupportRow {
+    )?;
+    Ok(ConsumedProjectionAuthoritySupportRow {
         surface,
         source_family: source.family(),
         status,
         admitted_fact_kinds,
         row_digest,
-    }
+    })
 }
 
 fn aggregate_status(

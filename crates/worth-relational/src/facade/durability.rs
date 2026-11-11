@@ -4,13 +4,14 @@ pub use crate::durability::authority::{
     CapturedNativeInterimOrigin, NativeInterimBootstrapContinuation,
 };
 pub use crate::durability::authority::{
-    FreshRelationalSourceAdmission, ObservedRelationalMemoryCommit,
+    FreshRelationalSourceAdmission, ObservedRelationalMemoryCommit, PreparedRelationalHomeRecovery,
     ReadmittedRelationalAssociatedEffect, ReadmittedRelationalCreatedEntity,
-    ReadmittedRelationalHomeProgramCatalogs, RefusedRelationalHomeProgramCatalogReadmission,
-    RefusedRelationalRecordedComponent, RelationalAssociatedEffectRefusal,
-    RelationalAssociatedEffectSettlement, RelationalAssociatedEffectSubject,
-    RelationalFreshSourceAdmissionStop, RelationalHomeProgramCatalogReadmissionDenial,
-    RelationalHomeProgramTransitionSource, RelationalHomeProgramTransitionSourceRefusal,
+    ReadmittedRelationalHomeProgramCatalogs, RefusedPreparedRelationalHomeRecovery,
+    RefusedRelationalHomeProgramCatalogReadmission, RefusedRelationalRecordedComponent,
+    RelationalAssociatedEffectRefusal, RelationalAssociatedEffectSettlement,
+    RelationalAssociatedEffectSubject, RelationalFreshSourceAdmissionStop,
+    RelationalHomeProgramCatalogReadmissionDenial, RelationalHomeProgramTransitionSource,
+    RelationalHomeProgramTransitionSourceRefusal, RelationalHomeRecoveryPreparationDenial,
     RelationalRecordedComponentAdmissionCause,
 };
 pub use crate::durability::branch_transition_artifact::{
@@ -82,4 +83,10 @@ pub use crate::history::data::RecordAllocationClass;
 pub use crate::durability::medium::{
     RelationalDurableOwnedReadRefusal, RelationalDurableReadBounds, RelationalDurableReadPayload,
     RelationalDurableReadProtection,
+};
+
+pub use crate::durability::{
+    RelationalWorldCatalogDenial, RelationalWorldEffectCoordinates,
+    RelationalWorldOriginalDescription, RelationalWorldSourceCatalog,
+    RelationalWorldSourceDescription,
 };

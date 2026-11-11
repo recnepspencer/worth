@@ -8,14 +8,16 @@ use worth_query_host::facade::primary_graph::{
     WorthQueryApplicationIdempotencyResolutionDenialKind,
     WorthQueryOutputSettlementProvenanceDenial,
 };
-pub(super) fn denial(kind: BankApplicationOutputSettlementDenialKind) -> BankHttpDenial {
+pub(super) fn output_settlement(kind: BankApplicationOutputSettlementDenialKind) -> BankHttpDenial {
     use BankApplicationOutputSettlementDenialKind as Settlement;
     match kind {
         Settlement::WorldRecovery(cause) => world_denial::recovery(cause),
         Settlement::RecoveryPublication(cause) => world_denial::publication(cause),
         Settlement::PublicationReceipt(cause) => original_receipt(cause),
         Settlement::CurrentControlBusy => unavailable(),
-        Settlement::RetainedVerificationFactUnavailable(cause) => verification(cause),
+        Settlement::PredecessorRead(cause) => predecessor_read::denial(*cause),
+        Settlement::CurrentPublication(cause) => publication_read::denial(*cause),
+        Settlement::RetainedVerificationFactUnavailable(cause) => verification(*cause),
         Settlement::SettlementProvenance(cause) => match cause {
             WorthQueryOutputSettlementProvenanceDenial::OriginalSettlementMissing
             | WorthQueryOutputSettlementProvenanceDenial::ReceiptSettlementMissing

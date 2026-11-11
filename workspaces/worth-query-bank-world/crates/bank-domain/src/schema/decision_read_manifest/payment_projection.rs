@@ -14,9 +14,6 @@ pub(super) fn install_payment_projection_reads<Operation, Input>(
     operation: ApplicationOperationRef<BankSchema, Operation, Input>,
 ) -> ApplicationSchemaDeclarationBuilder<BankSchema>
 where
-    PaymentIdentityField: OperationReads<Operation>,
-    PaymentAmount: OperationReads<Operation>,
-    PaymentStatusField: OperationReads<Operation>,
     PaymentSource: OperationReads<Operation>,
     PaymentDestination: OperationReads<Operation>,
     PaymentBusiness: OperationReads<Operation>,
@@ -25,9 +22,9 @@ where
     ApprovalPrincipal: OperationReads<Operation>,
 {
     schema
-        .operation_read_field(operation, PaymentIdentityField::reference())
-        .operation_read_field(operation, PaymentAmount::reference())
-        .operation_read_field(operation, PaymentStatusField::reference())
+        .operation_read_field(operation, PaymentIdentityField::at("PaymentIdentityField"))
+        .operation_read_field(operation, PaymentAmount::at("PaymentAmount"))
+        .operation_read_field(operation, PaymentStatusField::at("PaymentStatusField"))
         .operation_read_relation(operation, PaymentSource::reference())
         .operation_read_relation(operation, PaymentDestination::reference())
         .operation_read_relation(operation, PaymentBusiness::reference())

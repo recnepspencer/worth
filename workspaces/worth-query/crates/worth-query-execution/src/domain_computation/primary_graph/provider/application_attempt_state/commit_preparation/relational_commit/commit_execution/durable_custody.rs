@@ -54,6 +54,10 @@ pub(in crate::domain_computation::primary_graph::provider) enum QueryDurableWorl
 pub(in crate::domain_computation) struct QueryPreparingApplicationCommit {
     pub(super) predicate: Option<crate::domain_computation::primary_graph::application_query::derived_view::PredicatePreparationOwner>,
     pub(super) attempt: WorthQueryPrimaryGraphApplicationAttempt,
+    pub(super) members: Vec<crate::domain_computation::primary_graph::provider::CoupledApplicationMember>,
+    pub(super) group_emissions: Option<crate::domain_computation::primary_graph::application_attempt::WorthQueryAdmittedApplicationEmissionBatch>,
+    pub(super) group_evidence: Option<coupled::CoupledEvidenceSlots>,
+    pub(super) prepared_group_publications: Option<worth_relational::facade::mvcc::RelationalPreparedOutputPublications>,
     pub(super) native: QueryNativeCustody,
     pub(super) work: WorthQueryPrimaryMutationWorkCounters,
     pub(super) retained_preimage: Option<crate::domain_computation::application_aftermath::WorthQueryRetainedPreImage>,
@@ -90,6 +94,8 @@ pub(in crate::domain_computation::primary_graph::provider) enum QueryDurablePrep
         reason = "The typed diagnostic or custody payload stays owned through return and Drop; this owner does not inspect it"
     )]
     Request(worth_execution::WorkCeilingDenial),
+    OriginalMeaning(crate::facade::program_support::QueryProgramSupportDenial),
+    CorrectionMaterial(crate::facade::correction_material::QueryCorrectionMaterialDenial),
     #[allow(
         dead_code,
         reason = "The typed diagnostic or custody payload stays owned through return and Drop; this owner does not inspect it"
@@ -109,6 +115,12 @@ pub(in crate::domain_computation::primary_graph::provider) enum QueryDurablePrep
 
 #[derive(Debug)]
 pub(super) enum QueryCandidatePreparationDenial {
+    ConsumedOutput(consumed_output::ConsumedOutputPreparationDenial),
+    CoupledSupport(coupled::CoupledSupportPreparationDenial),
+    Dispatch(
+        crate::domain_computation::primary_graph::live_delivery::WorthQueryLiveAdmissionDenial,
+    ),
+    Correspondence(correspondence::OutputCorrespondencePreparationDenial),
     ManagedSource(managed_source::ManagedSourcePreparationDenial),
     Native(worth_relational::facade::mvcc::TransactionCommitError),
     OutputWitness(worth_relational::facade::mvcc::CompanionPreflightStop),
@@ -124,8 +136,18 @@ impl QueryPreparingApplicationCommit {
 }
 impl std::fmt::Debug for RetainedQueryDurablePreparation {
     fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let original_meaning = match &self.query_denial {
+            Some(QueryDurablePreparationDenial::OriginalMeaning(cause)) => Some(cause),
+            _ => None,
+        };
+        let correction_material = match &self.query_denial {
+            Some(QueryDurablePreparationDenial::CorrectionMaterial(cause)) => Some(cause),
+            _ => None,
+        };
         formatter
             .debug_struct("RetainedQueryDurablePreparation")
+            .field("correction_material", &correction_material)
+            .field("original_meaning", &original_meaning)
             .field("stage", &self.stage())
             .field("query_denial", &self.query_denial)
             .finish_non_exhaustive()
@@ -145,7 +167,7 @@ impl RetainedQueryDurablePreparation {
                 QueryDurableOwnerCall::Publication => Stage::Publishing,
                 QueryDurableOwnerCall::PublicationAdvance => Stage::PublicationPending,
             },
-            QueryDurableWorldCustody::Opened(_) => Stage::BindingNativeProposal,
+            QueryDurableWorldCustody::Opened(_) => self.stage,
             QueryDurableWorldCustody::NativePreparation(_) => match &self.query.native {
                 QueryNativeCustody::Candidate(_) => Stage::PreparingQueryCandidate,
                 _ => Stage::PreparingNative,

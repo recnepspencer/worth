@@ -24,18 +24,22 @@ fn effect_triggered_intent_receipt_identity_keeps_nested_receipts_typed() {
         )
         .expect("live should declare");
     let effect = runtime
-        .declare_effect::<WorthQueryUnrefinedLiveShape>(WorthQueryEffectDeclaration::write_intent(
-            "effects.identity|receipt",
-            WorthQueryEffectTrigger::live_view(&live, test_aspect_touches(["title.value"])),
-            "strategy.intent.reconcile",
-        ))
+        .declare_effect::<WorthQueryUnrefinedLiveShape>(
+            WorthQueryEffectDeclaration::write_intent(
+                "effects.identity|receipt",
+                WorthQueryEffectTrigger::live_view(&live, test_aspect_touches(["title.value"])),
+                "strategy.intent.reconcile",
+            )
+            .expect("fixture digest must fit"),
+        )
         .expect("write-intent effect should declare");
 
     runtime
         .write(
             request_execution,
             test_update_string_aspect_command(
-                crate::memory_workspace::admit_authored_entity_label("task|identity"),
+                crate::memory_workspace::admit_authored_entity_label("task|identity")
+                    .expect("fixture digest must fit"),
                 "title.value",
                 "title:identity",
             ),
@@ -124,7 +128,8 @@ fn effect_triggered_intent_receipt_identity_changes_with_nested_authoritative_re
         .write(
             request_execution,
             test_update_string_aspect_command(
-                crate::memory_workspace::admit_authored_entity_label("task|identity"),
+                crate::memory_workspace::admit_authored_entity_label("task|identity")
+                    .expect("fixture digest must fit"),
                 "title.value",
                 "title:left",
             ),
@@ -151,7 +156,8 @@ fn effect_triggered_intent_receipt_identity_changes_with_nested_authoritative_re
         .write(
             request_execution,
             test_update_string_aspect_command(
-                crate::memory_workspace::admit_authored_entity_label("identity|task"),
+                crate::memory_workspace::admit_authored_entity_label("identity|task")
+                    .expect("fixture digest must fit"),
                 "title.value",
                 "title:right",
             ),

@@ -30,6 +30,7 @@ use crate::domain_computation::primary_graph::provider::WorthQueryPrimaryGraphCo
 /// sealed output source match this reservation. Drop removes only its vacancy.
 #[must_use = "a prepared output slot must be filled or released"]
 pub struct PreparedOutputLineageSlot {
+    pub(super) coupled_completion: Option<super::CoupledOutputCompletion>,
     pub(in crate::domain_computation::primary_graph) required_publication:
         Option<worth_relational::facade::mvcc::RelationalRequiredOutputPublication>,
     owner: Arc<Mutex<WorthQueryApplicationOutputLineage>>,
@@ -155,6 +156,12 @@ impl PreparedOutputLineageSlot {
         self.native_output_witness = Some(witness);
     }
 
+    pub(in crate::domain_computation::primary_graph) fn retain_coupled_completion(
+        &mut self,
+        completion: super::CoupledOutputCompletion,
+    ) {
+        assert!(self.coupled_completion.replace(completion).is_none());
+    }
     pub(in crate::domain_computation::primary_graph) fn identity(
         &self,
     ) -> &Arc<RecordedSettlementIdentity> {

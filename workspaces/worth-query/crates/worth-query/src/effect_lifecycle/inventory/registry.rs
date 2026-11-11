@@ -21,7 +21,7 @@ fn compose_inventory_identity(
             identity_family,
         )
         .field_evidence_identity_sequence(WorthQueryEvidenceTag::new("rows"), rows)
-        .seal()
+        .seal().expect("closed effect inventories contain four family rows or nine surface rows with fixed labels and sealed row identities")
 }
 
 pub fn effect_lifecycle_family_inventory() -> EffectLifecycleFamilyInventory {

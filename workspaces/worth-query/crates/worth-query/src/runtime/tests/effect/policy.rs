@@ -15,18 +15,24 @@ fn preview_effect_policy_bindings_distinguish_delivery_and_write_intent() {
         )
         .expect("live should declare");
     let delivery_effect = runtime
-        .declare_effect::<WorthQueryUnrefinedLiveShape>(WorthQueryEffectDeclaration::deliver(
-            "ui.preview-policy",
-            WorthQueryEffectTrigger::live_view(&live, test_aspect_touches(["title"])),
-            "ui.preview",
-        ))
+        .declare_effect::<WorthQueryUnrefinedLiveShape>(
+            WorthQueryEffectDeclaration::deliver(
+                "ui.preview-policy",
+                WorthQueryEffectTrigger::live_view(&live, test_aspect_touches(["title"])),
+                "ui.preview",
+            )
+            .expect("fixture digest must fit"),
+        )
         .expect("delivery effect should declare");
     let intent_effect = runtime
-        .declare_effect::<WorthQueryUnrefinedLiveShape>(WorthQueryEffectDeclaration::write_intent(
-            "intent.preview-policy",
-            WorthQueryEffectTrigger::live_view(&live, test_aspect_touches(["title"])),
-            "preview-intent",
-        ))
+        .declare_effect::<WorthQueryUnrefinedLiveShape>(
+            WorthQueryEffectDeclaration::write_intent(
+                "intent.preview-policy",
+                WorthQueryEffectTrigger::live_view(&live, test_aspect_touches(["title"])),
+                "preview-intent",
+            )
+            .expect("fixture digest must fit"),
+        )
         .expect("write-intent effect should declare");
 
     let muted = {

@@ -55,8 +55,8 @@ fn realized_footprint_atomic_pin_rejects_a_native_write_after_target_verificatio
                     .publish_native_field_write_for_test(
                         runtime.current_world(),
                         record,
-                        ItemName::reference(),
-                        "shifted".to_owned(),
+                        ItemName::at("ItemName"),
+                        "shifted".to_owned().into(),
                         &scope,
                     )
                     .unwrap();

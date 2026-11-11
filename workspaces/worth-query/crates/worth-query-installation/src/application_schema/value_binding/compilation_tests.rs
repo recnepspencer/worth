@@ -19,58 +19,6 @@ worth_query_declaration::worth_query_value_binding! {
     }
 }
 
-macro_rules! schema {
-    ($Schema:ident, $Entity:ident, $Aspect:ident, $Field:ident, $Value:ty, $Binding:ty, $id:expr) => {
-        worth_query_declaration::worth_query_application_schema! {
-            schema $Schema {
-                owner: $Schema, version: (1, 0),
-                members: |schema| {
-                    schema.entity($Entity::reference())
-                        .aspect($Entity::reference(), $Aspect::reference())
-                        .field($Entity::reference(), $Field::reference())
-                }
-            }
-        }
-        worth_query_declaration::worth_query_entity!($Entity for $Schema);
-        worth_query_declaration::worth_query_aspect!(
-            $Aspect for $Schema, $Entity;
-            identity = AspectIdentity($id),
-            revision = AspectContractRevision(1),
-        );
-        worth_query_declaration::worth_query_field!(
-            $Field for $Schema, $Entity, $Aspect: $Value => $Binding,
-            read_only, no_equality
-        );
-    };
-}
-schema!(
-    NestedSchema,
-    Entity,
-    Aspect,
-    Field,
-    Vec<String>,
-    NestedBinding,
-    0x9174_0010
-);
-schema!(
-    OpaqueSchema,
-    OpaqueEntity,
-    OpaqueAspect,
-    OpaqueField,
-    String,
-    OpaqueBinding,
-    0x9174_0011
-);
-schema!(
-    LegacySchema,
-    LegacyEntity,
-    LegacyAspect,
-    LegacyField,
-    u64,
-    U64ApplicationValueBinding,
-    0x9174_0012
-);
-
 struct OpaqueBinding;
 impl ApplicationScalarValueBinding for OpaqueBinding {
     type Value = String;
@@ -148,10 +96,14 @@ fn canonical_admission_dispatch_is_the_exact_installed_binding_and_shared_catalo
         .unwrap();
     let catalogue = schema.value_bindings();
     let retained = catalogue.clone();
-    let binding = catalogue.field("Entity", "Aspect", "Field").unwrap();
+    let binding = catalogue
+        .field("Entity", Field::at("Field").aspect(), "Field")
+        .unwrap();
     assert!(std::ptr::eq(
         binding,
-        retained.field("Entity", "Aspect", "Field").unwrap()
+        retained
+            .field("Entity", Field::at("Field").aspect(), "Field")
+            .unwrap()
     ));
     catalog_sharing::check(catalogue, &retained);
     assert!(binding.matches_binding::<NestedBinding>());
@@ -228,7 +180,7 @@ fn installed_value_meaning_is_consumed_from_exact_native_and_executable_catalogu
     let meaning = &meanings[0];
     let native = schema
         .native_contracts()
-        .aspect("Entity", "Aspect")
+        .aspect("Entity", Field::at("Field").aspect())
         .unwrap();
     assert_eq!(meaning.identity(), native.contract().identity());
     assert_eq!(meaning.revision(), native.contract().revision());
@@ -251,7 +203,7 @@ fn installed_value_meaning_is_consumed_from_exact_native_and_executable_catalogu
         canonical.as_ref(),
         schema
             .value_bindings()
-            .field("Entity", "Aspect", "Field")
+            .field("Entity", Field::at("Field").aspect(), "Field")
             .unwrap()
             .canonical_contract()
     );
@@ -387,3 +339,13 @@ fn imported_native_with_codec<Schema: ApplicationSchema>(
 mod domain_posture;
 #[path = "compilation_tests/recursive.rs"]
 mod recursive;
+
+#[path = "compilation_tests/nested_schema.rs"]
+mod nested_schema;
+use nested_schema::*;
+#[path = "compilation_tests/opaque_schema.rs"]
+mod opaque_schema;
+use opaque_schema::*;
+#[path = "compilation_tests/legacy_schema.rs"]
+mod legacy_schema;
+use legacy_schema::*;

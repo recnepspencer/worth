@@ -4,6 +4,10 @@ pub(crate) use subsystems::{
     OriginalBranchSchemaInputsDenial, OriginalEmptySchemaInstallation,
     OriginalEmptySchemaObservation, RetainedBranchTransition,
 };
+pub use subsystems::{
+    PreparedRelationalIndexDefinitions, RelationalIndexDefinitionPreparation,
+    RelationalIndexDefinitionPreparationDenial,
+};
 mod runtime_state;
 mod subsystems;
 
@@ -37,24 +41,25 @@ pub(crate) use subsystems::{
     CanonicalCheckpointAdmissionError, CanonicalPositionAdmission, CanonicalPublicationRecordError,
     CapturedIndexDefinitionCatalog, ColdSymbolDirectoryDenial, CommitStrategiesSubsystem,
     DurabilitySubsystem, FrozenCheckpointIndexes, HistorySubsystem, IndexCatalogCoverage,
-    IndexDefinitionReadBinding, IndexingState, IndexingSubsystem, LineageIdentityAllocator,
-    LineageState, LineageSubsystem, MirrorResidencyDemandBinding, OriginalCheckpointIndexes,
-    PartitionEdition, PatchPositionReservationAdmission, PendingRecordAllocations,
-    PendingSymbolMeanings, PerformedCheckpointSelection, PreparedCanonicalPublicationRoute,
-    PreparedCommitSequence, PreparedGenerationBatch, PreparedRecoveredVersionedArtifactPublication,
-    PreparedSymbolPublication, PreparedVersionedArtifactAccelerators,
-    PreparedVersionedArtifactPublication, PublicationSubsystem, PublishedSnapshotCapacityOwner,
-    PublishedSnapshotCloseout, PublishedSnapshotReleaseObservation,
-    PublishedSnapshotReservationDenial, PublishedSnapshotSlotReservation, ReclaimedRecordSlot,
-    RecordIdentitySubsystem, RelationalCanonicalPublicationRoutes,
-    RelationalCheckpointManifestPublication, RelationalCheckpointManifestSelection,
-    RelationalDiagnosticArtifactStore, RelationalDiagnosticOperationCapture,
-    RelationalForkMaterializationCost, RelationalForkOwnerBinding, RelationalPreparationHistory,
-    ResidentLineageEventPage, ResidentLineageNode, ResidentMirrorTarget, ResidentPartitionEdition,
-    ResidentPartitionEntry, RetainedCanonicalPosition, RuntimeInstrumentation, RuntimeServices,
-    RuntimeSubsystem, RuntimeSymbolTable, SchemaContractRuntimeSubsystem, SnapshotHandleBinding,
-    StorageSubsystem, SymbolReservationDenial, ValidatedLineageEventBatch, VisibilityResidency,
-    VisibilitySubsystem,
+    IndexDefinitionCatalog, IndexDefinitionReadBinding, IndexSelectionState, IndexingState,
+    IndexingSubsystem, LineageIdentityAllocator, LineageState, LineageSubsystem,
+    MirrorResidencyDemandBinding, OriginalCheckpointIndexes, PartitionEdition,
+    PatchPositionReservationAdmission, PendingRecordAllocations, PendingSymbolMeanings,
+    PerformedCheckpointSelection, PreparedCanonicalPublicationRoute, PreparedCommitSequence,
+    PreparedGenerationBatch, PreparedIndexBasisSelection,
+    PreparedRecoveredVersionedArtifactPublication, PreparedSymbolPublication,
+    PreparedVersionedArtifactAccelerators, PreparedVersionedArtifactPublication,
+    PublicationSubsystem, PublishedSnapshotCapacityOwner, PublishedSnapshotCloseout,
+    PublishedSnapshotReleaseObservation, PublishedSnapshotReservationDenial,
+    PublishedSnapshotSlotReservation, ReclaimedRecordSlot, RecordIdentitySubsystem,
+    RelationalCanonicalPublicationRoutes, RelationalCheckpointManifestPublication,
+    RelationalCheckpointManifestSelection, RelationalDiagnosticArtifactStore,
+    RelationalDiagnosticOperationCapture, RelationalForkMaterializationCost,
+    RelationalForkOwnerBinding, RelationalPreparationHistory, ResidentLineageEventPage,
+    ResidentLineageNode, ResidentMirrorTarget, ResidentPartitionEdition, ResidentPartitionEntry,
+    RetainedCanonicalPosition, RuntimeInstrumentation, RuntimeServices, RuntimeSubsystem,
+    RuntimeSymbolTable, SchemaContractRuntimeSubsystem, SnapshotHandleBinding, StorageSubsystem,
+    SymbolReservationDenial, ValidatedLineageEventBatch, VisibilityResidency, VisibilitySubsystem,
 };
 pub use subsystems::{
     RelationalBranchSharingCostCounters, RelationalCanonicalPositionAdmissionDenial,
@@ -67,3 +72,6 @@ pub use subsystems::{
 
 pub use subsystems::RelationalSymbolTableForTest;
 pub(crate) use subsystems::TryPartitionMutationDenied;
+#[cfg(test)]
+#[path = "mod_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;

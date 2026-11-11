@@ -1,3 +1,5 @@
+#[path = "history_preparation_binding/candidate_root.rs"]
+mod candidate_root;
 #[path = "history_preparation_binding/merge_inspection.rs"]
 mod merge_inspection;
 
@@ -75,18 +77,27 @@ impl RelationalPreparationHistory {
         VersionId(self.version_ids.load(Ordering::Relaxed).saturating_sub(1))
     }
 
-    pub(crate) fn canonical_envelope_for_version(
+    pub(crate) fn demand_canonical_envelope(
         &self,
-        version: VersionId,
-    ) -> Option<Arc<CanonicalCommitEnvelope>> {
-        self.canonical_routes.by_version(version)
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        id: CommitId,
+    ) -> Result<
+        Option<Arc<CanonicalCommitEnvelope>>,
+        crate::execution::RelationalExecutionDenialCause,
+    > {
+        crate::execution::check_request(execution)?;
+        self.canonical_routes
+            .demand_envelope(execution, id)
+            .map_err(Into::into)
     }
 
-    pub(crate) fn canonical_envelope(
+    pub(crate) fn commit_for_version_in_context(
         &self,
-        commit: CommitId,
-    ) -> Option<Arc<CanonicalCommitEnvelope>> {
-        self.canonical_routes.by_commit(commit)
+        version: VersionId,
+        context: &mut worth_execution::MapKernelContext<'_, '_>,
+    ) -> Result<Option<CommitId>, crate::execution::RelationalExecutionDenialCause> {
+        self.canonical_routes
+            .commit_for_version_in_context(version, context)
     }
 
     pub(crate) fn canonical_catalog_len(&self) -> usize {

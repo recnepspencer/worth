@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::evidence_identity::{
     worth_query_evidence_identity, WorthQueryEvidenceIdentity, WorthQueryEvidenceScope,
     WorthQueryEvidenceTag,
@@ -18,33 +19,29 @@ pub(super) fn symbolic_target_reference_evidence(
     bridge_reference: Option<&worth_runtime_bridge::facade::BridgeSymbolicTargetReferenceBundle>,
     authored_reference: Option<&WorthQuerySymbolicTargetReference>,
     resolved_entity_identity: Option<&WorthQueryEntityIdentity>,
-) -> Option<WorthQuerySymbolicTargetReferenceEvidence> {
+) -> Result<Option<WorthQuerySymbolicTargetReferenceEvidence>, IdentityDerivationDenial> {
     if mutation_family == WorthQueryMutationFamily::Insert {
-        return None;
+        return Ok(None);
     }
-    bridge_reference
-        .map(|bundle| {
-            let target_collection = authored_reference.and_then(|reference| {
-                reference
-                    .target_collection()
-                    .or_else(|| bundle.target_collection())
-            });
-            WorthQuerySymbolicTargetReferenceEvidence::from_bridge_with_query_context(
-                bundle,
-                resolved_entity_identity,
-                target_collection,
-            )
+    if let Some(bundle) = bridge_reference {
+        let target_collection = authored_reference.and_then(|reference| {
+            reference
+                .target_collection()
+                .or_else(|| bundle.target_collection())
+        });
+        return WorthQuerySymbolicTargetReferenceEvidence::from_bridge_with_query_context(
+            bundle,
+            resolved_entity_identity,
+            target_collection,
+        )
+        .map(Some);
+    }
+    authored_reference
+        .zip(resolved_entity_identity)
+        .map(|(reference, entity)| {
+            WorthQuerySymbolicTargetReferenceEvidence::from_reference(reference, entity)
         })
-        .or_else(|| {
-            authored_reference.zip(resolved_entity_identity).map(
-                |(reference, resolved_entity_identity)| {
-                    WorthQuerySymbolicTargetReferenceEvidence::from_reference(
-                        reference,
-                        resolved_entity_identity,
-                    )
-                },
-            )
-        })
+        .transpose()
 }
 
 pub(super) fn naming_mutation_evidence(
@@ -52,8 +49,8 @@ pub(super) fn naming_mutation_evidence(
     authored_intent: Option<&WorthQueryNamingMutationIntent>,
     resolved_target_entity_identity: Option<&WorthQueryEntityIdentity>,
     target_collection: Option<&WorthQueryMutationTargetCollectionIdentity>,
-) -> Option<WorthQueryNamingMutationEvidence> {
-    bridge_naming
+) -> Result<Option<WorthQueryNamingMutationEvidence>, IdentityDerivationDenial> {
+    Ok(bridge_naming
         .map(|bundle| {
             WorthQueryNamingMutationEvidence::from_bridge_with_query_context(
                 bundle,
@@ -61,6 +58,7 @@ pub(super) fn naming_mutation_evidence(
                 target_collection,
             )
         })
+        .transpose()?
         .or_else(|| {
             authored_intent.map(|intent| {
                 WorthQueryNamingMutationEvidence::from_intent(
@@ -69,7 +67,7 @@ pub(super) fn naming_mutation_evidence(
                     target_collection,
                 )
             })
-        })
+        }))
 }
 
 pub(super) fn continuity_mutation_evidence(
@@ -78,10 +76,10 @@ pub(super) fn continuity_mutation_evidence(
     existing_truth_binding: Option<&crate::runtime::WorthQueryExistingTruthTargetBinding>,
     resolved_target_entity_identity: Option<&WorthQueryEntityIdentity>,
     target_collection: Option<&WorthQueryMutationTargetCollectionIdentity>,
-) -> Option<WorthQueryContinuityMutationEvidence> {
+) -> Result<Option<WorthQueryContinuityMutationEvidence>, IdentityDerivationDenial> {
     let basis_binding_identity =
         existing_truth_binding.map(|binding| binding.binding_evidence_identity());
-    bridge_continuity
+    Ok(bridge_continuity
         .map(|bundle| {
             WorthQueryContinuityMutationEvidence::from_bridge_with_query_context(
                 bundle,
@@ -100,6 +98,7 @@ pub(super) fn continuity_mutation_evidence(
                 )
             })
         })
+        .transpose()?)
 }
 
 pub(super) fn assertion_evidence(
@@ -110,7 +109,9 @@ pub(super) fn assertion_evidence(
     declared_aspect_value_digest: Option<&WorthQueryEvidenceIdentity>,
     snapshot_identity: &WorthQuerySnapshotIdentity,
 ) -> Option<WorthQueryExistingTruthAssertionEvidence> {
-    let _binding = existing_truth_binding?;
+    let Some(_binding) = existing_truth_binding else {
+        return None;
+    };
     if let Some(verification) = existing_truth_assertion {
         return Some(WorthQueryExistingTruthAssertionEvidence::backend_verified(
             verification,
@@ -131,20 +132,22 @@ fn retained_assertion_verification_digest(
     snapshot_identity: &WorthQuerySnapshotIdentity,
     declared_aspect_value_digest: Option<&WorthQueryEvidenceIdentity>,
 ) -> WorthQueryEvidenceIdentity {
-    worth_query_evidence_identity(WorthQueryEvidenceScope::RetainedExistingTruthAssertionEvidence)
-        .field_evidence_identity(
-            WorthQueryEvidenceTag::new("snapshot_identity"),
-            &snapshot_identity.evidence_identity(),
-        )
-        .optional_evidence_identity(
-            WorthQueryEvidenceTag::new("declared_aspect_value_digest"),
-            declared_aspect_value_digest,
-        )
-        .field_shape(
-            WorthQueryEvidenceTag::new("mode"),
-            WorthQueryExistingTruthAssertionMode::RetainedAuthoritativeAssertion.as_str(),
-        )
-        .seal()
+    worth_query_evidence_identity(
+        WorthQueryEvidenceScope::RetainedExistingTruthAssertionEvidence,
+    )
+    .field_evidence_identity(
+        WorthQueryEvidenceTag::new("snapshot_identity"),
+        &snapshot_identity.evidence_identity(),
+    )
+    .optional_evidence_identity(
+        WorthQueryEvidenceTag::new("declared_aspect_value_digest"),
+        declared_aspect_value_digest,
+    )
+    .field_shape(
+        WorthQueryEvidenceTag::new("mode"),
+        WorthQueryExistingTruthAssertionMode::RetainedAuthoritativeAssertion.as_str(),
+    )
+    .seal().expect("fixed digest grammar: literal tags, primitive values, closed enum labels, or sealed digest tokens")
 }
 
 pub(super) fn target_evidence_from_receipt(

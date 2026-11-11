@@ -1,4 +1,7 @@
 //! Real directory startup/read/owning close, extended by the ordinary commit seam.
+mod correction_material;
+mod program_support;
+mod workflow_configuration;
 use std::{
     sync::{
         atomic::{AtomicUsize, Ordering},
@@ -226,6 +229,7 @@ fn directory_post_native_unwind_retains_original_key_without_handler_replay() {
     // Only genuine reopened custody can admit a recovered disposition.
 }
 
+mod dispatch_custody;
 pub(crate) mod reopening;
 
 mod recovered_custody;
@@ -236,4 +240,7 @@ mod handler_retirement;
 mod fresh_source;
 
 mod fresh_close;
+mod program_transition;
 mod transition_required;
+
+mod signing_owner_retirement;

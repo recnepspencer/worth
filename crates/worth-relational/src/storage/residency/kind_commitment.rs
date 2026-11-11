@@ -2,8 +2,8 @@
 //! Member hashing alone cannot replace the leaf's admitted projection digest.
 use crate::storage::data::RelationalStorageUnavailableCause as Cause;
 use crate::storage::partition::RegionRelationProjection;
+use crate::storage::substrate::maintenance::ReconstructionLane;
 use serde::{Deserialize, Serialize};
-use sha2::{Digest, Sha256};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub(crate) struct RelationalRegionKindCommitment {
@@ -11,42 +11,20 @@ pub(crate) struct RelationalRegionKindCommitment {
     pub(crate) history: worth_foundational::CanonicalDigestId,
 }
 
+#[cfg(test)]
 pub(super) fn digest(
+    lane: &ReconstructionLane<'_>,
     projection: &[RegionRelationProjection],
 ) -> Result<worth_foundational::CanonicalDigestId, Cause> {
-    digest_controlled(projection, &mut |_, _| Ok(()))
-}
-
-struct KindHashWriter<'a>(&'a mut Sha256);
-impl std::io::Write for KindHashWriter<'_> {
-    fn write(&mut self, bytes: &[u8]) -> std::io::Result<usize> {
-        self.0.update(bytes);
-        Ok(bytes.len())
-    }
-    fn flush(&mut self) -> std::io::Result<()> {
-        Ok(())
-    }
+    digest_controlled(lane, projection, &mut |_, _| Ok(()))
 }
 
 pub(super) fn digest_full(
+    lane: &ReconstructionLane<'_>,
     projection: &super::kind_projection::full::FullKindProjection,
     request: &worth_execution::ExecutionRequest<'_, '_>,
 ) -> Result<worth_foundational::CanonicalDigestId, super::RegionContentFailure> {
-    let encoding = FullProjectionEncoding {
-        projection,
-        request: *request,
-        stopped: std::cell::Cell::new(None),
-    };
-    let mut hash = Sha256::new();
-    hash.update(b"worth.relational.region-kind-authority.v2\0");
-    let result = rmp_serde::encode::write(&mut KindHashWriter(&mut hash), &encoding);
-    if let Some(cause) = encoding.stopped.take() {
-        return Err(super::RegionContentFailure::Execution(cause));
-    }
-    result.map_err(|_| super::RegionContentFailure::Adjacency)?;
-    Ok(worth_foundational::CanonicalDigestId::new(
-        hash.finalize().into(),
-    ))
+    projection.commitment(lane, request)
 }
 
 type Stop = std::cell::Cell<Option<crate::execution::RelationalExecutionDenialCause>>;
@@ -164,77 +142,69 @@ impl Serialize for SlotsEncoding<'_, '_, '_> {
 }
 
 pub(super) fn digest_controlled(
+    lane: &ReconstructionLane<'_>,
     projection: &[RegionRelationProjection],
     checkpoint: &mut super::kind_projection::ProjectionCheckpoint<'_>,
 ) -> Result<worth_foundational::CanonicalDigestId, Cause> {
-    let mut hash = Sha256::new();
-    hash.update(b"worth.relational.region-kind-authority.v2\0");
-    // Stream the same MessagePack representation; no unbounded serialized Vec.
-    let mut writer = ProjectionHashWriter {
-        hash: &mut hash,
-        checkpoint,
-        stopped: None,
-    };
-    let encoded = projection.serialize(&mut rmp_serde::Serializer::new(&mut writer));
-    if let Some(cause) = writer.stopped {
-        return Err(cause);
-    }
-    encoded.map_err(|_| Cause::Damaged)?;
-    Ok(worth_foundational::CanonicalDigestId::new(
-        hash.finalize().into(),
-    ))
-}
-
-struct ProjectionHashWriter<'borrow, 'control> {
-    hash: &'borrow mut Sha256,
-    checkpoint: &'borrow mut super::kind_projection::ProjectionCheckpoint<'control>,
-    stopped: Option<Cause>,
-}
-impl std::io::Write for ProjectionHashWriter<'_, '_> {
-    fn write(&mut self, bytes: &[u8]) -> std::io::Result<usize> {
-        for chunk in bytes.chunks(4096) {
-            if self.stopped.is_some() {
-                return Err(std::io::Error::other(
-                    "projection admission already stopped",
-                ));
-            }
-            if let Err(cause) = (self.checkpoint)(chunk.len() as u64, 0) {
-                self.stopped = Some(cause);
-                return Err(std::io::Error::other("projection admission stopped"));
-            }
-            self.hash.update(chunk);
-        }
-        Ok(bytes.len())
-    }
-    fn flush(&mut self) -> std::io::Result<()> {
-        Ok(())
-    }
+    checkpoint(1, 0)?;
+    super::kind_index::KindIndex::rebuild(lane, projection, checkpoint)
+        .map(|index| worth_foundational::CanonicalDigestId::new(index.digest()))
 }
 
 pub(super) fn verify(
+    lane: &ReconstructionLane<'_>,
     projection: &[RegionRelationProjection],
     expected: worth_foundational::CanonicalDigestId,
-) -> Result<(), Cause> {
-    if digest(projection)? != expected {
-        return Err(Cause::IntegrityMismatch);
+    partition: crate::identity::data::PartitionId,
+    request: &worth_execution::ExecutionRequest<'_, '_>,
+) -> Result<(), super::RelationalResidencyDemandFailure> {
+    use super::region_load::materialization_funding as funding;
+    let mut memory = funding::Funding::default();
+    let mut stopped = None;
+    let found = digest_controlled(lane, projection, &mut |units, bytes| match funding::work(
+        request, units,
+    )
+    .and_then(|()| memory.grow(bytes, request))
+    {
+        Ok(()) => Ok(()),
+        Err(cause) => {
+            stopped = Some(cause);
+            Err(Cause::SourceUnavailable)
+        }
+    });
+    if let Some(cause) = stopped {
+        return Err(cause);
+    }
+    let unavailable = |cause| {
+        super::RelationalResidencyDemandFailure::StorageUnavailable(
+            crate::storage::data::RelationalStorageUnavailable {
+                subject: crate::storage::data::RelationalStorageSubject::Region(partition),
+                cause,
+            },
+        )
+    };
+    if found.map_err(unavailable)? != expected {
+        return Err(unavailable(Cause::IntegrityMismatch));
     }
     Ok(())
 }
 
+#[cfg(test)]
 impl RelationalRegionKindCommitment {
     pub(crate) fn capture(
+        lane: &ReconstructionLane<'_>,
         partition: &crate::storage::overlay::PartitionState,
     ) -> Result<Self, Cause> {
         use crate::storage::partition::AdjacencyKindBasis;
         Ok(Self {
-            head: digest(&super::kind_projection::capture(
-                partition,
-                AdjacencyKindBasis::Current,
-            )?)?,
-            history: digest(&super::kind_projection::capture(
-                partition,
-                AdjacencyKindBasis::Historical,
-            )?)?,
+            head: digest(
+                lane,
+                &super::kind_projection::capture(lane, partition, AdjacencyKindBasis::Current)?,
+            )?,
+            history: digest(
+                lane,
+                &super::kind_projection::capture(lane, partition, AdjacencyKindBasis::Historical)?,
+            )?,
         })
     }
 }

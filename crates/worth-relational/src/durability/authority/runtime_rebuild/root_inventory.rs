@@ -7,6 +7,7 @@ use std::collections::BTreeMap;
 use std::sync::{Arc, Weak};
 
 mod checkpoint_images;
+mod world_handoff;
 
 #[derive(Debug)]
 enum RecoveredRootHold {
@@ -46,6 +47,7 @@ struct RecoveredRootImage {
 /// a recorded subject is admitted for exposure.
 #[derive(Debug, Default)]
 pub(crate) struct RecoveredRootInventory {
+    world_handoff: std::sync::Mutex<world_handoff::WorldSelectionHandoff>,
     roots: BTreeMap<CommitId, RecoveredRootImage>,
     directory: Option<Weak<crate::durability::data::RelationalCheckpointDirectory>>,
     empty: Vec<RecoveredRootImage>,

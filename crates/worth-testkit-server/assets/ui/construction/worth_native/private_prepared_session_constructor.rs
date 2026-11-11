@@ -1,9 +1,5 @@
-use worth_server::{WorthServerAdmission, WorthServerWorthNativePreparedSession};
+use worth_server::WorthServerWorthNativePreparedSession;
 
 fn main() {
-    let _prepared = WorthServerWorthNativePreparedSession::new(fake_admission());
-}
-
-fn fake_admission() -> WorthServerAdmission {
-    todo!()
+    let _ = WorthServerWorthNativePreparedSession::new;
 }

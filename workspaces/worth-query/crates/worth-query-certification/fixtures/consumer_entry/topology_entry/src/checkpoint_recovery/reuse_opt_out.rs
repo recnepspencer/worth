@@ -17,15 +17,41 @@ mod program;
 mod required_refresh;
 use program::{FinalConnection, NoReuseProgram};
 
-worth_query_application! {
-    NoReuseSchema {
-        owner: "worth.query.certification.no-input-reuse",
-        version: (1, 0),
-        contributions: [TopologyContribution],
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+struct NoReuseSchema;
+impl worth_query_decl::facade::application_schema::fragment::Fragment for NoReuseSchema {
+    const NAME: &'static str = "NoReuseSchema";
+    type Bindings = worth_query_decl::facade::application_schema::fragment::NoBindings;
+    type Members = (TopologyContribution,);
+}
+impl worth_query_decl::facade::application_schema::ApplicationSchema for NoReuseSchema {
+    const OWNER: &'static str = "worth.query.certification.no-input-reuse";
+    const NAME: &'static str = "NoReuseSchema";
+    const MAJOR: u32 = 1;
+    const MINOR: u32 = 0;
+    fn declaration() -> Result<
+        worth_query_decl::facade::application_schema::ApplicationSchemaDeclaration<Self>,
+        worth_query_decl::facade::application_schema::ApplicationSchemaDeclarationDenial,
+    > {
+        worth_query_decl::facade::application_schema::fragment::declare(Self)
     }
+    fn visit_correction<
+        V: worth_query_decl::facade::application_aftermath::ApplicationCorrectionVisitor<Self>,
+    >(
+        source: std::any::TypeId,
+        visitor: V,
+    ) -> V::Output {
+        worth_query_decl::facade::application_schema::fragment::visit_correction(
+            Self, source, visitor,
+        )
+    }
+}
+impl worth_query_decl::facade::application_schema::ApplicationSchemaComposition for NoReuseSchema {
+    type Contributions = (TopologyContribution,);
 }
 
 impl TopologySchemaBinding for NoReuseSchema {
+    type PrincipalFragment = crate::PrincipalRecords;
     const ROOT_INPUT_REUSE: Option<WorthQueryProducerInputReuseContract> = None;
     const FINAL_INPUT_REUSE: Option<WorthQueryProducerInputReuseContract> = None;
 }
@@ -46,7 +72,7 @@ fn install_no_reuse_with_build(
     producer_contacts: Option<crate::producer::ProviderContacts>,
 ) -> application_installation::WorthQueryProgramApplicationRuntime<NoReuseSchema, NoReuseProgram> {
     let program = ApplicationProgramAuthoring::<NoReuseSchema, NoReuseProgram>::begin()
-        .with_schema(&NoReuseSchema::declaration().expect("the completed schema is valid"))
+        .with_schema(&<NoReuseSchema as worth_query_decl::facade::application_schema::ApplicationSchema>::declaration().expect("the completed schema is valid"))
         .validated_program()
         .unwrap();
     let configuration = (TopologyConfiguration {
@@ -64,7 +90,7 @@ fn install_no_reuse_with_build(
     if let Some(checkpoint) = checkpoint {
         return application_installation::WorthQueryInterimCheckpointRestore::program(
             program,
-            NoReuseSchema::declaration().unwrap(),
+            <NoReuseSchema as worth_query_decl::facade::application_schema::ApplicationSchema>::declaration().unwrap(),
             configuration,
             build_identity,
             limits,
@@ -74,7 +100,7 @@ fn install_no_reuse_with_build(
     }
     application_installation::in_memory_program(
         program,
-        NoReuseSchema::declaration().unwrap(),
+        <NoReuseSchema as worth_query_decl::facade::application_schema::ApplicationSchema>::declaration().unwrap(),
         configuration,
         build_identity,
         limits,

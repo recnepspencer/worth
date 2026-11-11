@@ -44,13 +44,13 @@ macro_rules! binding {
             input $input, query $query, parameters ParametersBinding => |input: &$read|
                 ApplicationQueryParameterSet::new().bind(enabled::<$query>(), input.enabled).unwrap(), result ResultBinding,
             principal ActorBinding, mapping ExternalMapping, principal_entity Principal, principal_identity u64, identity_binding U64ApplicationValueBinding,
-            scope Number, NumberFacts, Key, String, ReadOnly, NoApplicationUnit,
-            field Key::reference(), value $read::into_key, limits results 1);
+            scope Key,
+            field Key::at("Key"), value $read::into_key, limits results 1);
         impl WorthQueryApplicationProjection<NumericSchema, $query> for Row {
             fn project(row: &WorthQueryApplicationProjectionRow<'_, NumericSchema, $query>)
                 -> Result<Self, WorthQueryApplicationProjectionDenial> {
                 Ok(Self { operand: row.optional_field(operand())?, references: row.many(references())?
-                    .iter().map(|child| Ok((child.field(ordering())?, child.field(calculated())?))).collect::<Result<_, WorthQueryApplicationProjectionDenial>>()? })
+                    .iter().map(|child| Ok((child.field(ordering())?.0, child.field(calculated())?))).collect::<Result<_, WorthQueryApplicationProjectionDenial>>()? })
             }
         }
     };
@@ -95,7 +95,7 @@ binding!(
 fn definition<Q>(
     reference: ApplicationQueryReference<NumericSchema, Q, (), Row, Number>,
     policy: Policy,
-) -> ApplicationQueryDefinition<NumericSchema, Q, (), Row, Number>
+) -> ApplicationQueryDefinitionBuilder<NumericSchema, Q, (), Row, Number>
 where
     Q: ApplicationQueryMarkerIdentity<NumericSchema> + 'static,
     Q::ResultBinding: ApplicationStructuredValueBinding<Value = Row>,
@@ -125,15 +125,17 @@ where
     let disclosure =
         ApplicationQueryDisclosureContract::governed_by("matrix", capability::Inspect::reference())
             .use_field_by(
-                ReadEnabled::reference(),
+                ReadEnabled::at("ReadEnabled"),
                 capability::text("calculation"),
                 influence(policy == Policy::Internal),
             )
+            .unwrap()
             .use_field_by(
-                Primary::reference(),
+                Primary::at("Primary"),
                 capability::text("calculation"),
                 influence(false),
             )
+            .unwrap()
             .disclose_optional_field_by(
                 operand::<Q>(),
                 capability::text("calculation"),
@@ -164,10 +166,8 @@ where
         .lanes(ApplicationQueryLaneEligibility::one_shot())
         .public()
         .parameter(enabled())
-        .where_equal(ReadEnabled::reference(), enabled())
+        .where_equal(ReadEnabled::at("ReadEnabled"), enabled())
         .order_by(ordering(), ApplicationQueryOrderingDirection::Ascending)
-        .build()
-        .unwrap()
 }
 pub(super) fn declare(
     schema: ApplicationSchemaDeclarationBuilder<NumericSchema>,

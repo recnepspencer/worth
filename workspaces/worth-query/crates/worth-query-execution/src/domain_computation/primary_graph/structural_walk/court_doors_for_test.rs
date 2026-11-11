@@ -10,7 +10,7 @@ impl StructuralWalkObservation {
 
 impl StructuralWalkObservation {
     #[doc(hidden)]
-    pub fn source_for_test(&self) -> &SnapshotHandle {
+    pub fn source_for_test(&self) -> &super::super::projection_read_origin::ProjectionReadOrigin {
         Self::source(self)
     }
 }

@@ -21,9 +21,9 @@ pub fn grow_unrelated_accounts(
             .expect("scale field is installed")
             .clone()
     };
-    let identity_ref = AccountIdentity::reference();
-    let status_ref = AccountStatus::reference();
-    let label_ref = AccountLabel::reference();
+    let identity_ref = AccountIdentity::at("AccountIdentity");
+    let status_ref = AccountStatus::at("AccountStatus");
+    let label_ref = AccountLabel::at("AccountLabel");
     let identity = locator(
         identity_ref.entity(),
         identity_ref.aspect(),

@@ -1,7 +1,7 @@
 use super::admission::admitted_algorithm_clone;
 use super::algorithm::CanonicalDigestAlgorithmMetadata;
 use super::evidence::{CanonicalDigestDerivationInput, CanonicalDigestInputId};
-use super::material::{digest_input_id, sha256_digest};
+use super::material::digest_input_id;
 use super::resource_admission::{
     CanonicalDigestAdmissionStop, CanonicalDigestPreparationStop, CanonicalResourceAdmission,
 };
@@ -123,17 +123,8 @@ fn derive_canonical_digest_admitted(
     let (input, _proofs, _basis) = ready.into_parts().into_parts();
     debug_assert!(input.algorithm().id().is_sha256());
     let algorithm = admitted_algorithm_clone(input.algorithm(), admission.as_deref_mut())?;
-    let input_id = digest_input_id(input.evidence(), admission.as_deref_mut())?;
-    if let Some(admission) = admission {
-        let work = input
-            .work()
-            .sha256_input_bytes()
-            .checked_add(input.work().sha256_compression_block_count())
-            .and_then(|work| work.checked_add(32 + 1))
-            .ok_or(CanonicalDigestPreparationStop::AccountingOverflow)?;
-        admission(work, 0).map_err(|()| CanonicalDigestPreparationStop::ResourceRefused)?;
-    }
-    let value = CanonicalDigestValue::new(sha256_digest(input.material()));
+    let input_id = digest_input_id(input.evidence(), admission)?;
+    let value = CanonicalDigestValue::new(input.digest());
     let metadata = CanonicalDigestMetadata::new(
         algorithm,
         input_id,

@@ -9,6 +9,7 @@ mod checkpoint_transition;
 mod conditional;
 mod construction;
 pub(crate) mod demand;
+pub(in crate::domain_computation::primary_graph) use demand::HistoryAdmittedChildSource;
 pub(in crate::domain_computation::primary_graph) use demand::OriginalProgramRootCompletion;
 mod derived_artifact;
 mod output_roots;
@@ -16,6 +17,7 @@ mod output_source;
 pub use output_source::{
     WorthQueryRecoveredProgramOutputSource, WorthQueryUnpublishedProgramOutputSource,
 };
+mod correction_retention;
 mod home_retirement;
 mod program_owner;
 mod program_runtime;
@@ -59,5 +61,9 @@ pub use supported_program::WorthQuerySupportedProgramHandle;
 pub(crate) use workflow_runtime::workflow_approval_authentication_intent;
 pub use workflow_runtime::{
     WorthQueryWorkflowApplicationRuntime, WorthQueryWorkflowRuntimeBindingDenial,
-    WorthQueryWorkflowRuntimeBindingRefusal, WorthQueryWorkflowVocabulary,
+    WorthQueryWorkflowRuntimeBindingRefusal, WorthQueryWorkflowRuntimeConfiguration,
+    WorthQueryWorkflowVocabulary,
 };
+#[cfg(test)]
+#[path = "program_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;

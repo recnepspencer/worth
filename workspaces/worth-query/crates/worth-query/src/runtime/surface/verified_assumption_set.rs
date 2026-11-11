@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::evidence_identity::{
     worth_query_evidence_identity, WorthQueryEvidenceIdentity, WorthQueryEvidenceScope,
     WorthQueryEvidenceTag,
@@ -98,7 +99,7 @@ impl WorthQueryVerifiedAssumptionSet {
         assumed_value_fragments: Vec<WorthQueryEvidenceIdentity>,
         cleared_assertion_count: usize,
         snapshot_identity: WorthQuerySnapshotIdentity,
-    ) -> Self {
+    ) -> Result<Self, IdentityDerivationDenial> {
         let assumption_snapshot_evidence_identity = snapshot_identity.evidence_identity();
         let verification_read_set_breadth = WorthQueryVerificationReadSetBreadth::new(
             1,
@@ -117,7 +118,7 @@ impl WorthQueryVerifiedAssumptionSet {
                     WorthQueryEvidenceTag::new("snapshot"),
                     &assumption_snapshot_evidence_identity,
                 )
-                .seal();
+                .seal()?;
         let verified_precondition_digest =
             worth_query_evidence_identity(WorthQueryEvidenceScope::MutationEvidenceAggregateDigest)
                 .field_shape(
@@ -132,7 +133,7 @@ impl WorthQueryVerifiedAssumptionSet {
                     WorthQueryEvidenceTag::new("assumed_value"),
                     assumed_value_fragments.iter(),
                 )
-                .seal();
+                .seal()?;
         let verified_assumption_digest =
             worth_query_evidence_identity(WorthQueryEvidenceScope::MutationEvidenceAggregateDigest)
                 .field_shape(
@@ -170,8 +171,8 @@ impl WorthQueryVerifiedAssumptionSet {
                     WorthQueryEvidenceTag::new("cleared_assertion_count"),
                     verification_read_set_breadth.cleared_assertion_count(),
                 )
-                .seal();
-        Self {
+                .seal()?;
+        Ok(Self {
             binding_digest,
             asserted_aspects,
             assumption_snapshot_identity: snapshot_identity,
@@ -180,7 +181,7 @@ impl WorthQueryVerifiedAssumptionSet {
             verified_precondition_digest,
             verification_read_set_breadth,
             verified_assumption_digest,
-        }
+        })
     }
 
     pub fn binding_digest(&self) -> &str {

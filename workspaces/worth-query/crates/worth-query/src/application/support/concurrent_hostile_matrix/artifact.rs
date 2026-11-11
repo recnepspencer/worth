@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::evidence_identity::{
     WorthQueryEvidenceIdentity, WorthQueryEvidenceScope, WorthQueryEvidenceTag,
 };
@@ -40,7 +41,7 @@ impl WorthQueryConcurrentHostileMatrixArtifact {
         artifact_replay_equal: bool,
         repeated_run_equal: bool,
         sabotage_sensitive: bool,
-    ) -> Self {
+    ) -> Result<Self, IdentityDerivationDenial> {
         let posture = classify_concurrent_hostile_matrix_posture(
             topology.satisfies_phase_sixteen_minimums(),
             artifact_replay_equal,
@@ -59,8 +60,8 @@ impl WorthQueryConcurrentHostileMatrixArtifact {
             &replay_digest,
             &counters,
             posture,
-        );
-        Self {
+        )?;
+        Ok(Self {
             topology,
             receipt_digests,
             reader_result_digests,
@@ -74,7 +75,7 @@ impl WorthQueryConcurrentHostileMatrixArtifact {
             sabotage_sensitive,
             posture,
             digest,
-        }
+        })
     }
 
     pub fn posture(&self) -> WorthQueryConcurrentHostileMatrixPosture {
@@ -119,8 +120,8 @@ impl WorthQueryConcurrentHostileMatrixArtifact {
         replay_digest: &str,
         counters: &WorthQueryConcurrentHostileMatrixCounterSnapshot,
         posture: WorthQueryConcurrentHostileMatrixPosture,
-    ) -> WorthQueryEvidenceIdentity {
-        WorthQueryEvidenceIdentity::compose(
+    ) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
+        Ok(WorthQueryEvidenceIdentity::compose(
             WorthQueryEvidenceScope::RuntimeHostileCertificationArtifact,
         )
         .field_usize(
@@ -168,6 +169,6 @@ impl WorthQueryConcurrentHostileMatrixArtifact {
             WorthQueryEvidenceTag::new("phase_sixteen_posture"),
             posture.as_str(),
         )
-        .seal()
+        .seal()?)
     }
 }

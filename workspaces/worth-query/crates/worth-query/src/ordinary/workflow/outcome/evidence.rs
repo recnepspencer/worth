@@ -52,7 +52,7 @@ impl WorthQueryPromotionEligibility {
             WorthQueryEvidenceTag::new("snapshot"),
             &snapshot_identity.evidence_identity(),
         )
-        .seal();
+        .seal().expect("fixed digest grammar: literal tags and values, primitive values, or sealed identity tokens");
         Self {
             session_label,
             snapshot_identity,
@@ -91,7 +91,7 @@ impl WorthQueryAdmittedWorkflowEffect {
                 WorthQueryEvidenceTag::new("authority"),
                 authority.admission_identity(),
             )
-            .seal(),
+            .seal().expect("fixed digest grammar: literal tags and values, primitive values, or sealed identity tokens"),
         }
     }
 

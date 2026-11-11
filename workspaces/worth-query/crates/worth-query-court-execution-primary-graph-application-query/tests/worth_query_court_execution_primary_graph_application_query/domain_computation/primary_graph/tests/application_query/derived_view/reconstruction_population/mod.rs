@@ -25,7 +25,7 @@ pub fn add_third_root(
         .unwrap();
     macro_rules! declared_field {
         ($marker:ty, $value:expr) => {{
-            let field = <$marker>::reference();
+            let field = <$marker>::at(stringify!($marker));
             (
                 (*graph.layout_for_test())
                     .field_locator_for_test(field.entity(), field.aspect(), field.field())
@@ -75,7 +75,7 @@ pub fn add_primary_reads(
     let root = selected
         .resolve_entity(
             phase_custody,
-            AccountStatus::reference(),
+            AccountStatus::at("AccountStatus"),
             "open".to_owned(),
             &scope,
             WorthQueryPrincipalResolutionMode::Ordinary,
@@ -114,7 +114,7 @@ pub fn add_primary_reads(
             selected
                 .resolve_entity(
                     phase_custody,
-                    AccountStatus::reference(),
+                    AccountStatus::at("AccountStatus"),
                     status.to_owned(),
                     &scope,
                     WorthQueryPrincipalResolutionMode::Ordinary,

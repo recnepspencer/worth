@@ -33,6 +33,7 @@ impl UnrecoveredRelationalSection {
             checkpoint_selection,
             prepared.transition.clone(),
             prepared.transition_required.clone(),
+            prepared.world_selection.clone(),
         )
         .map(|attached| Self {
             attached,
@@ -42,6 +43,7 @@ impl UnrecoveredRelationalSection {
     pub fn readmit_prepared_home(
         mut self,
         request: &ExecutionRequest<'_, '_>,
+        expected: Option<&RelationalInitialSchemaInstallationReceipt>,
         transition: Option<
             &worth_proof::AdmittedHomeProgramTransitionCatalog<
                 worth_relational::facade::runtime::RelationalHomeProgramCatalogReadmissionSource<
@@ -53,7 +55,7 @@ impl UnrecoveredRelationalSection {
         (UnsharedReadmittedRelationalSection, Option<[u64; 2]>),
         (Self, RelationalSectionReadmissionDenial),
     > {
-        let Some(prepared) = &self.prepared_source else {
+        let Some(prepared) = &mut self.prepared_source else {
             return Err((
                 self,
                 RelationalSectionReadmissionDenial::PreparedHomeSourceRequired,
@@ -61,8 +63,9 @@ impl UnrecoveredRelationalSection {
         };
         match super::super::readmission::prepared_source::recover(
             &mut self.attached.runtime,
-            &prepared.original,
+            prepared,
             request,
+            expected,
             transition,
         ) {
             Ok(admitted) => Ok((

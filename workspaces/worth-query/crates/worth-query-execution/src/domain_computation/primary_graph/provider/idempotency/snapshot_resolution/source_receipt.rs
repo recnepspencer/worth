@@ -84,7 +84,7 @@ pub(super) fn read_original(
     let binding = super::original_binding::read(&row, context.layout)?;
     let outbox = context
         .provider
-        .original_dispatch_outbox(execution, &publication)
+        .original_dispatch_outbox(execution, &publication, binding.outcome)
         .map_err(|cause| {
             if let super::super::super::committed_dispatch_outbox::WorthQueryCommittedDispatchOutboxReadDenial::ReadExecution(cause) = cause {
                 Denial::ExecutionDenied(cause)
@@ -92,7 +92,7 @@ pub(super) fn read_original(
         })?;
     if outbox
         .as_ref()
-        .is_some_and(|(_, row)| row.outcome_identity() != binding.outcome.get())
+        .is_some_and(|(_, row)| row.outcome_identity != binding.outcome.get())
     {
         return Err(Denial::Unavailable);
     }
@@ -108,7 +108,7 @@ pub(super) fn read_original(
     }
     let causality = context
         .provider
-        .original_aftermath_causality(execution, context.runtime, &publication, owner)
+        .original_aftermath_causality(execution, context.runtime, &publication, owner, binding.outcome)
         .map_err(|cause| {
             if let super::super::super::aftermath_causality::WorthQueryAftermathCausalityReadDenial::ExecutionDenied(cause) = cause {
                 Denial::ExecutionDenied(cause)
@@ -139,6 +139,14 @@ pub(super) fn read_original(
     let (before_component, after_component) = publication
         .recorded_components(execution, &port)
         .map_err(super::source_denial::component)?;
+    let outbox = outbox.map(|(record_ref, fields)| {
+        super::original_receipt::WorthQueryRecoveredDispatchOutbox::from_source_row(
+            record_ref,
+            fields,
+            &binding.intent,
+            &context.provider.installed_operations,
+        )
+    });
     let rows = OriginalReceiptRows {
         binding,
         before_component,

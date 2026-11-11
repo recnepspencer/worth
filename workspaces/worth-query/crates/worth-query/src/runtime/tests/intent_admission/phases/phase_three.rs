@@ -13,7 +13,7 @@ fn authoritative_admitted_decision_materializes_family_specific_plan_and_handoff
     )
     .expect("authoritative request should build");
 
-    match admit_runtime_intent_request(request.clone()) {
+    match admit_runtime_intent_request(request.clone()).expect("fixture digest must fit") {
         WorthQueryIntentAdmissionDecision::Admitted(
             crate::intent_admission::WorthQueryAdmittedIntentPlan::Authoritative(plan),
         ) => {
@@ -43,7 +43,7 @@ fn effect_admitted_decision_materializes_family_specific_plan_and_handoff() {
         )
         .expect("effect request should build");
 
-    match admit_runtime_intent_request(request.clone()) {
+    match admit_runtime_intent_request(request.clone()).expect("fixture digest must fit") {
         WorthQueryIntentAdmissionDecision::Admitted(
             crate::intent_admission::WorthQueryAdmittedIntentPlan::EffectTriggered(plan),
         ) => {
@@ -73,7 +73,7 @@ fn read_admitted_decision_materializes_read_plan_and_handoff() {
         )
         .expect("read request should build");
 
-    match admit_runtime_intent_request(request.clone()) {
+    match admit_runtime_intent_request(request.clone()).expect("fixture digest must fit") {
         WorthQueryIntentAdmissionDecision::Admitted(
             crate::intent_admission::WorthQueryAdmittedIntentPlan::ReadExecution(plan),
         ) => {
@@ -104,6 +104,7 @@ fn violation_decision_materializes_explicit_stop_artifact() {
     .expect("request should build");
 
     let stop = admit_runtime_intent_request(request.clone())
+        .expect("fixture digest must fit")
         .into_non_admitted_stop()
         .expect("violation decision should stop");
     assert!(matches!(
@@ -124,7 +125,7 @@ fn basis_observation_admitted_decision_materializes_scoped_plan_without_handoff(
         )
         .expect("basis request should build");
 
-    match admit_runtime_intent_request(request.clone()) {
+    match admit_runtime_intent_request(request.clone()).expect("fixture digest must fit") {
         WorthQueryIntentAdmissionDecision::Admitted(
             crate::intent_admission::WorthQueryAdmittedIntentPlan::BasisObservation(plan),
         ) => {
@@ -168,7 +169,7 @@ fn projection_consumption_admitted_decision_materializes_contract_plan_without_h
         )
         .expect("projection request should build");
 
-    match admit_runtime_intent_request(request.clone()) {
+    match admit_runtime_intent_request(request.clone()).expect("fixture digest must fit") {
         WorthQueryIntentAdmissionDecision::Admitted(
             crate::intent_admission::WorthQueryAdmittedIntentPlan::ProjectionConsumption(plan),
         ) => {

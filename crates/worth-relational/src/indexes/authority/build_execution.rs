@@ -66,6 +66,7 @@ pub(super) fn record_index_preparation_strategy_counters(
 }
 
 pub(super) fn execute_index_packets(
+    lane: &crate::storage::substrate::maintenance::ReconstructionLane<'_>,
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     projection: &IndexProjectionSource<'_>,
     packets: Vec<IndexPreparationPacket>,
@@ -89,16 +90,19 @@ pub(super) fn execute_index_packets(
             value: packet,
         })
         .collect();
-    execute_index_inputs(execution, projection, inputs, lease, work_budget)
+    execute_index_inputs(lane, execution, projection, inputs, lease, work_budget)
 }
 
 pub(super) fn execute_index_inputs(
+    lane: &crate::storage::substrate::maintenance::ReconstructionLane<'_>,
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     projection: &IndexProjectionSource<'_>,
     inputs: Vec<ReadOnlyPacket<IndexPreparationPacket>>,
     lease: Option<&ExecutionResourceLease<'_>>,
     work_budget: Option<&RequestWorkBudget>,
 ) -> Result<Vec<(IndexReductionKey, IndexPreparationResult)>, DerivedIndexExecutionDenial> {
+    let reconstruction = projection.reconstructing(lane);
+    let projection = &reconstruction;
     crate::execution::admit_read_only_packet_order(&inputs)
         .map_err(PacketExecutionStop::Admission)
         .map_err(index_execution_denial)?;
@@ -107,7 +111,9 @@ pub(super) fn execute_index_inputs(
             inputs,
             lease,
             work_budget,
-            |packet, context| index_packet_result_checked(execution, projection, packet, context),
+            |packet, context| {
+                index_packet_result_checked(lane, execution, projection, packet, context)
+            },
             |stream: &IndexResultStream| {
                 stream.owned_allocation_capacity_bytes(|_, result| {
                     result
@@ -120,7 +126,7 @@ pub(super) fn execute_index_inputs(
         .map_err(index_execution_denial)?
     } else {
         crate::execution::execute_unleased_read_only_packets(&inputs, |packet| {
-            index_packet_result(execution, projection, packet)
+            index_packet_result(lane, execution, projection, packet)
         })
         .map_err(|stop| index_execution_denial(stop.into()))?
     };
@@ -145,6 +151,7 @@ pub(super) fn execute_index_inputs(
 }
 
 fn index_packet_result_checked(
+    lane: &crate::storage::substrate::maintenance::ReconstructionLane<'_>,
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     projection: &IndexProjectionSource<'_>,
     packet: &IndexPreparationPacket,
@@ -154,6 +161,7 @@ fn index_packet_result_checked(
         DerivedIndexKind::EntityField { field_locator } => {
             DerivedIndexEntries::EntityField(checked_finish(
                 build_entity_aspect_field_index_checked(
+                    lane,
                     execution,
                     projection,
                     field_locator,
@@ -165,6 +173,7 @@ fn index_packet_result_checked(
         DerivedIndexKind::RelationField { field_locator } => {
             DerivedIndexEntries::RelationField(checked_finish(
                 build_relation_aspect_field_index_checked(
+                    lane,
                     execution,
                     projection,
                     field_locator,
@@ -187,17 +196,14 @@ fn index_packet_result_checked(
             );
             DerivedIndexEntries::RelatedEntityOrdering(checked_finish(
                 build_related_entity_ordering_index_checked(
-                    execution, projection, &contract, context,
+                    lane, execution, projection, &contract, context,
                 )?,
                 context,
             )?)
         }
-        DerivedIndexKind::RelationJoin(definition) => {
-            DerivedIndexEntries::RelationJoin(checked_finish(
-                build_relation_join_index_checked(execution, projection, *definition, context)?,
-                context,
-            )?)
-        }
+        DerivedIndexKind::RelationJoin(definition) => DerivedIndexEntries::RelationJoin(
+            build_relation_join_index_checked(lane, execution, projection, *definition, context)?,
+        ),
     };
     context.checkpoint(1)?;
     Ok(OrderedReductionStream::singleton(
@@ -210,16 +216,17 @@ fn index_packet_result_checked(
 }
 
 fn index_packet_result(
+    lane: &crate::storage::substrate::maintenance::ReconstructionLane<'_>,
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     projection: &IndexProjectionSource<'_>,
     packet: &IndexPreparationPacket,
 ) -> Result<IndexResultStream, crate::execution::RelationalExecutionDenialCause> {
     let entries = match &packet.definition.kind {
         DerivedIndexKind::EntityField { field_locator } => DerivedIndexEntries::EntityField(
-            build_entity_aspect_field_index(execution, projection, field_locator)?.into(),
+            build_entity_aspect_field_index(lane, execution, projection, field_locator)?.into(),
         ),
         DerivedIndexKind::RelationField { field_locator } => DerivedIndexEntries::RelationField(
-            build_relation_aspect_field_index(execution, projection, field_locator)?.into(),
+            build_relation_aspect_field_index(lane, execution, projection, field_locator)?.into(),
         ),
         DerivedIndexKind::RelatedEntityOrdering {
             relation_kind,
@@ -228,6 +235,7 @@ fn index_packet_result(
             ordering,
         } => DerivedIndexEntries::RelatedEntityOrdering(
             build_related_entity_ordering_index(
+                lane,
                 execution,
                 projection,
                 &RelatedEntityOrderingProjection::new(
@@ -240,7 +248,7 @@ fn index_packet_result(
             .into(),
         ),
         DerivedIndexKind::RelationJoin(definition) => DerivedIndexEntries::RelationJoin(
-            build_relation_join_index(execution, projection, *definition)?.into(),
+            build_relation_join_index(lane, execution, projection, *definition)?,
         ),
     };
     Ok(OrderedReductionStream::singleton(

@@ -129,6 +129,9 @@ pub(crate) fn worth_query_declaration_envelope_terminal_from_receipt_terminal<
     error: crate::application::WorthQueryDeclarationReceiptTerminalError<D, I>,
 ) -> WorthQueryDeclarationEnvelopeTerminalError<D, I> {
     match error {
+        crate::application::WorthQueryDeclarationReceiptTerminalError::EvidenceIdentityDerivationDenied(cause) => {
+            WorthQueryDeclarationEnvelopeTerminalError::EvidenceIdentityDerivationDenied(cause)
+        }
         crate::application::WorthQueryDeclarationReceiptTerminalError::Deferred(receipt) => {
             match worth_query_checked_declaration_envelope(
                 WorthQueryDeclarationEnvelopeInput::deferred(receipt),

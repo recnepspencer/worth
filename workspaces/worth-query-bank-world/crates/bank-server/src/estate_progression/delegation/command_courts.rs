@@ -94,8 +94,8 @@ fn complete<'runtime, D>(
                         })
                     } else { Err(denial) }
                 }
-                Denial::Execution(cause) => Err(BankEstateProgressionDenial::ApplicationEntry(
-                    worth_query_host::facade::application_entry::WorthQueryApplicationRequestMutationDenial::ExecutionRequest(cause))),
+                Denial::Execution(cause) => Err(BankEstateProgressionDenial::ApplicationEntry(Box::new(
+                    worth_query_host::facade::application_entry::WorthQueryApplicationRequestMutationDenial::ExecutionRequest(cause)))),
                 _ => panic!("semantic court unexpectedly refused command affinity or cleanup"),
                 };
             }
@@ -111,10 +111,9 @@ fn map_delegation_denial(
 ) -> BankEstateProgressionDenial {
     use WorthQueryApplicationCapabilityDelegationDenial as Query;
     match denial {
-        Query::ExecutionRequest(cause) => BankEstateProgressionDenial::ApplicationEntry(
-            worth_query_host::facade::application_entry::WorthQueryApplicationRequestMutationDenial::ExecutionRequest(cause),
-        ),
-        Query::Program(denial) => BankEstateProgressionDenial::ProgramAction(denial),
+        Query::ExecutionRequest(cause) => BankEstateProgressionDenial::ApplicationEntry(Box::new(
+            worth_query_host::facade::application_entry::WorthQueryApplicationRequestMutationDenial::ExecutionRequest(cause))),
+        Query::Program(denial) => BankEstateProgressionDenial::ProgramAction(Box::new(denial)),
         Query::ProgramMismatch => BankEstateProgressionDenial::ProgramMismatch,
         Query::PrincipalBindingInstallation(denial) => {
             BankEstateProgressionDenial::PrincipalBindingInstallation(denial)
@@ -145,10 +144,9 @@ fn map_revocation_denial(
 ) -> BankEstateProgressionDenial {
     use WorthQueryApplicationCapabilityRevocationDenial as Query;
     match denial {
-        Query::ExecutionRequest(cause) => BankEstateProgressionDenial::ApplicationEntry(
-            worth_query_host::facade::application_entry::WorthQueryApplicationRequestMutationDenial::ExecutionRequest(cause),
-        ),
-        Query::Program(denial) => BankEstateProgressionDenial::ProgramAction(denial),
+        Query::ExecutionRequest(cause) => BankEstateProgressionDenial::ApplicationEntry(Box::new(
+            worth_query_host::facade::application_entry::WorthQueryApplicationRequestMutationDenial::ExecutionRequest(cause))),
+        Query::Program(denial) => BankEstateProgressionDenial::ProgramAction(Box::new(denial)),
         Query::ProgramMismatch => BankEstateProgressionDenial::ProgramMismatch,
         Query::PrincipalBindingInstallation(denial) => {
             BankEstateProgressionDenial::PrincipalBindingInstallation(denial)

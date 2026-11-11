@@ -37,6 +37,7 @@ where
                 self.admission.operation(),
             ));
         }
+        self.refuse_ended_workflow_instance(execution, &instance)?;
         let business_action = matches!(
             request_kind,
             WorkflowTransitionRequestKind::LocalAction { .. }

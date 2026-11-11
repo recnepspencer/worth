@@ -184,7 +184,7 @@ pub(in crate::domain_computation::primary_graph::application_attempt) fn observe
     Ok(observed)
 }
 
-pub(super) fn observe_assessment_evidence(
+pub(in crate::domain_computation::primary_graph) fn observe_assessment_evidence(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &worth_relational::facade::runtime::RelationalRuntime,
     snapshot: &worth_relational::facade::snapshots::SnapshotHandle,

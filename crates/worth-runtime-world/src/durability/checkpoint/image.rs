@@ -85,6 +85,9 @@ impl WorldImageHead {
             generation: DurableProductReferenceGeneration::from_recorded(next),
         })
     }
+    pub(in crate::durability) fn program_record(&self) -> &DecodedWorldRecord {
+        &self.record
+    }
     pub(crate) fn fields(
         &self,
     ) -> (

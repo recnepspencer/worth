@@ -300,21 +300,28 @@ fn project_delegation(
     estate: &WorthQueryInvariantEntityIdentity<BankSchema, EstateCase>,
     child: EstateCapabilityDelegationRequest,
 ) -> Result<(), BankCapabilityDelegationProjectionDenial> {
-    let branch = reader.resolve_entity(BranchIdentityField::reference(), child.scope.branch)?;
+    let branch = reader.resolve_entity(
+        BranchIdentityField::at("BranchIdentityField"),
+        child.scope.branch,
+    )?;
     let institution = reader.resolve_entity(
-        InstitutionIdentityField::reference(),
+        InstitutionIdentityField::at("InstitutionIdentityField"),
         child.scope.institution,
     )?;
     reader.require_decision_relation(EstateBranch::reference(), estate, &branch)?;
     reader.require_decision_relation(BranchInstitution::reference(), &branch, &institution)?;
     if let Some(account) = child.scope.account {
-        let account = reader.resolve_entity(AccountIdentity::reference(), account)?;
+        let account = reader.resolve_entity(AccountIdentity::at("AccountIdentity"), account)?;
         reader.require_decision_relation(EstateAccount::reference(), estate, &account)?;
     }
     // The child id names no grant. Its absence is a fact of the decision, so
     // a delegation prepared beside one that committed the same id goes stale.
     let named = reader
-        .decision_select_entities(CapabilityGrantIdentityField::reference(), child.id, 1)
+        .decision_select_entities(
+            CapabilityGrantIdentityField::at("CapabilityGrantIdentityField"),
+            child.id,
+            1,
+        )
         .map_err(child_selection_denial)?;
     if !named.is_empty() {
         return Err(BankCapabilityDelegationProjectionDenial::ChildGrantExists);

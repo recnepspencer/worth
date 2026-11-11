@@ -92,6 +92,7 @@ pub fn classify_denial(denial: &Denial) -> Outcome {
                     }
                     | Session::ProjectionContract { .. }
                     | Session::HistoricalVisibility { .. }
+                    | Session::OutputCorrespondenceMismatch { .. }
                     | Session::ContentInconsistency
                     | Session::Content(_)
                     | Session::StorageUnavailable(_)
@@ -226,6 +227,7 @@ pub fn classify_kind(kind: Kind) -> Outcome {
         | Kind::ProgramNotActiveOnOccurrence { .. }
         | Kind::ProgramSupportRetired
         | Kind::ProgramActivationUnresolved
+        | Kind::StaleIncarnation
         | Kind::CorrectionContextMismatch
         | Kind::CorrectionIdentityMismatch => {
             Outcome::TerminalFailure(Terminal::ApplicationCommit(kind))

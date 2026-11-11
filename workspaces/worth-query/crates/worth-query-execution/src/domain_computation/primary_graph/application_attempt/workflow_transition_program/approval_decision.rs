@@ -65,6 +65,7 @@ where
         validate_request_binding::<Schema, Capability, Operation, _, _, _>(
             &self, installed, &instance, required, proposal,
         )?;
+        self.refuse_ended_workflow_instance(execution, &instance)?;
         let layout = self.lease.layout.workflow().clone();
         let published = super::super::PublishedWorkflowDefinitionRef::retained(
             instance.branch(),

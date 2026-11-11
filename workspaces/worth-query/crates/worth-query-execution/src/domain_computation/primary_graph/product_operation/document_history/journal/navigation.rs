@@ -115,6 +115,7 @@ impl<S> HistoryJournal<'_, S> {
                 node.ordinal,
                 RetainedHistorySource {
                     source: None,
+                    discovery_recipes: None,
                     bookmarked: false,
                     _allocation: allocation,
                     released_child: None,
@@ -157,6 +158,7 @@ impl<S> HistoryJournal<'_, S> {
         &mut self,
         node: WorthQueryHistoryNodeId,
         source: Arc<WorthQueryApplicationReadObservation>,
+        discovery_recipes: Option<Arc<super::super::discovery_recipes::HistoryDiscoveryRecipes>>,
     ) -> Option<Arc<WorthQueryApplicationReadObservation>> {
         let entry = self
             .retained
@@ -164,6 +166,7 @@ impl<S> HistoryJournal<'_, S> {
             .expect("prepaid target source");
         if entry.source.is_none() {
             entry.source = Some(source);
+            entry.discovery_recipes = discovery_recipes;
             self.retained_completed += 1;
             None
         } else {

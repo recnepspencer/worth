@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::evidence_identity::{
     worth_query_evidence_identity, WorthQueryEvidenceIdentity, WorthQueryEvidenceScope,
     WorthQueryEvidenceTag,
@@ -33,13 +34,13 @@ impl WorthQueryGraphCompositionEvidence {
         affected_live_view_count: usize,
         affected_derived_view_count: usize,
         considered_computed_view_count: usize,
-    ) -> Option<Self> {
+    ) -> Result<Option<Self>, IdentityDerivationDenial> {
         if breadth.component_count() == 0 {
-            return None;
+            return Ok(None);
         }
         let assumption_summary =
-            WorthQueryGraphCompositionAssumptionSummary::derive(write_receipts);
-        let lineage_summary = WorthQueryGraphCompositionLineageSummary::derive(write_receipts);
+            WorthQueryGraphCompositionAssumptionSummary::derive(write_receipts)?;
+        let lineage_summary = WorthQueryGraphCompositionLineageSummary::derive(write_receipts)?;
         let symbolic_resolution_count = resolution_map.len();
         let graph_symbolic_resolution_entries = resolution_map
             .entries()
@@ -75,7 +76,7 @@ impl WorthQueryGraphCompositionEvidence {
                 }
                 entry_identity.seal()
             })
-            .collect::<Vec<_>>();
+            .collect::<Result<Vec<_>, _>>()?;
         let graph_symbolic_resolution_digest =
             worth_query_evidence_identity(WorthQueryEvidenceScope::MutationEvidenceAggregateDigest)
                 .field_shape(
@@ -86,7 +87,7 @@ impl WorthQueryGraphCompositionEvidence {
                     WorthQueryEvidenceTag::new("entry"),
                     graph_symbolic_resolution_entries.iter(),
                 )
-                .seal();
+                .seal()?;
         let counter_snapshot = diagnostic_counter_snapshot_with_tail(
             &[
                 ("components", breadth.component_count()),
@@ -161,8 +162,8 @@ impl WorthQueryGraphCompositionEvidence {
                     WorthQueryEvidenceTag::new("considered_computed_view_count"),
                     considered_computed_view_count,
                 )
-                .seal();
-        Some(Self {
+                .seal()?;
+        Ok(Some(Self {
             graph_composition_digest,
             graph_symbolic_resolution_digest,
             graph_assumption_digest: assumption_summary
@@ -179,7 +180,7 @@ impl WorthQueryGraphCompositionEvidence {
             considered_computed_view_count,
             assumption_summary,
             lineage_summary,
-        })
+        }))
     }
 
     pub fn graph_composition_digest(&self) -> &str {

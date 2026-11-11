@@ -11,7 +11,8 @@ fn support_report_denies_mismatched_declaration_subject_sources() {
         Some(LiveViewShapeFamily::KanbanGrouped),
     );
     let detail_admission = admission_for(&detail_declaration);
-    let mismatched_subject = QuerySubscriptionSupportSubject::declaration(&grouped_declaration);
+    let mismatched_subject = QuerySubscriptionSupportSubject::declaration(&grouped_declaration)
+        .expect("fixture digest must fit");
 
     let error = report_query_subscription_support(
         mismatched_subject,
@@ -25,7 +26,11 @@ fn support_report_denies_mismatched_declaration_subject_sources() {
         &QuerySubscriptionSupportReportDenialKind::DeclarationSourceMismatch
     );
     assert!(error.message().contains("same declaration artifact"));
-    assert!(!error.failure_projection().label().is_empty());
+    assert!(!error
+        .failure_projection()
+        .expect("fixture digest must fit")
+        .label()
+        .is_empty());
 }
 
 #[test]
@@ -44,7 +49,8 @@ fn support_report_denies_mismatched_admission_subject_sources() {
     )
     .unwrap();
     let activation = prepare_subscription_activation(alternate_admission);
-    let subject = QuerySubscriptionSupportSubject::activation(&table_declaration, &activation);
+    let subject = QuerySubscriptionSupportSubject::activation(&table_declaration, &activation)
+        .expect("fixture digest must fit");
 
     let error = report_query_subscription_support(
         subject,
@@ -57,7 +63,11 @@ fn support_report_denies_mismatched_admission_subject_sources() {
         &QuerySubscriptionSupportReportDenialKind::AdmissionSourceMismatch
     );
     assert!(error.message().contains("same admission artifact"));
-    assert!(!error.failure_projection().label().is_empty());
+    assert!(!error
+        .failure_projection()
+        .expect("fixture digest must fit")
+        .label()
+        .is_empty());
 }
 
 #[test]
@@ -75,13 +85,18 @@ fn support_evidence_rejects_mismatched_declaration_and_admission_sources_early()
     assert!(error
         .message()
         .contains("same canonical query subscription family"));
-    assert!(!error.failure_projection().label().is_empty());
+    assert!(!error
+        .failure_projection()
+        .expect("fixture digest must fit")
+        .label()
+        .is_empty());
 }
 
 #[test]
 fn declaration_support_can_be_reported_without_admission_evidence() {
     let declaration = declaration_for(LiveQueryFamily::Detail, None);
-    let subject = QuerySubscriptionSupportSubject::declaration(&declaration);
+    let subject = QuerySubscriptionSupportSubject::declaration(&declaration)
+        .expect("fixture digest must fit");
 
     let (report, lookup_receipt) = report_query_subscription_support(
         subject,
@@ -116,7 +131,8 @@ fn activation_support_denies_when_only_declaration_evidence_is_available() {
     let declaration = declaration_for(LiveQueryFamily::Detail, None);
     let admission = admission_for(&declaration);
     let activation = prepare_subscription_activation(admission);
-    let subject = QuerySubscriptionSupportSubject::activation(&declaration, &activation);
+    let subject = QuerySubscriptionSupportSubject::activation(&declaration, &activation)
+        .expect("fixture digest must fit");
 
     let error = report_query_subscription_support(
         subject,
@@ -129,5 +145,9 @@ fn activation_support_denies_when_only_declaration_evidence_is_available() {
         &QuerySubscriptionSupportReportDenialKind::AdmissionEvidenceRequired
     );
     assert!(error.message().contains("requires admission evidence"));
-    assert!(!error.failure_projection().label().is_empty());
+    assert!(!error
+        .failure_projection()
+        .expect("fixture digest must fit")
+        .label()
+        .is_empty());
 }

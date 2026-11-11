@@ -1,20 +1,10 @@
 //! Native population membership and publication fields.
 use super::*;
-worth_query_entity!(pub(super) Quantity for Schema: TopologySchemaBinding);
-worth_query_aspect!(pub(super) QuantityFacts for Schema: TopologySchemaBinding, Quantity;
-    identity = AspectIdentity(0x9174_2731), revision = AspectContractRevision(1),);
-worth_query_field!(pub(super) QuantityKey for Schema: TopologySchemaBinding, Quantity, QuantityFacts:
-    String => StringApplicationValueBinding, read_only, equality);
-worth_query_field!(pub(super) QuantitySnapshot for Schema: TopologySchemaBinding, Quantity, QuantityFacts:
-    Snapshot => SnapshotBinding, read_write, equality);
-worth_query_aspect!(pub(super) PopulationFacts for Schema: TopologySchemaBinding, Body;
-    identity = AspectIdentity(0x9174_2732), revision = AspectContractRevision(1),);
-worth_query_field!(pub(super) MemberNumber for Schema: TopologySchemaBinding, Body, PopulationFacts:
-    u64 => U64ApplicationValueBinding, read_only, equality);
-worth_query_field!(pub(super) DemandKey for Schema: TopologySchemaBinding, Body, PopulationFacts:
- String => StringApplicationValueBinding, read_only, equality);
+use worth_query_decl::facade::application_schema::fragment::{self, *};
+mod records;
+pub use records::*;
 #[derive(Clone, Copy, Debug, Eq, PartialEq, serde::Serialize, serde::Deserialize)]
-pub(super) enum Kind {
+pub enum Kind {
     Geometry,
     Quantity,
 }
@@ -41,37 +31,19 @@ impl CanonicalBits for Kind {
         self.code().visit_canonical_bits(visitor)
     }
 }
-worth_query_value_binding!(pub(super) KindBinding for Kind {identity:"availability-member-family",scalar:UInt64,encode:Kind::code,decode:Kind::decode,});
-worth_query_field!(pub(super) MemberKind for Schema: TopologySchemaBinding, Body, PopulationFacts: Kind => KindBinding, read_only, equality);
-pub(super) struct PopulationMember;
+worth_query_value_binding!(pub KindBinding for Kind {identity:"availability-member-family",scalar:UInt64,encode:Kind::code,decode:Kind::decode,});
+
+pub struct PopulationMember;
+impl Relation for PopulationMember {
+    const NAME: &'static str = "AvailabilityPopulationMember";
+    type To = Body;
+}
 impl PopulationMember {
     pub(super) fn reference() -> ApplicationRelationRef<Schema, Self, Body, Body> {
-        ApplicationRelationRef::from_schema_identifiers(
-            "AvailabilityPopulationMember",
-            "Body",
-            "Body",
-            ApplicationRelationIntegrity::same_context_unbounded_retain_dangling(),
-        )
+        relation(crate::TopologyRecords, Body, Self)
     }
 }
-pub(super) fn declare(
-    schema: ApplicationSchemaDeclarationBuilder<Schema>,
-) -> ApplicationSchemaDeclarationBuilder<Schema> {
-    schema
-        .entity(Quantity::reference())
-        .aspect(Quantity::reference(), QuantityFacts::reference())
-        .field(Quantity::reference(), QuantityKey::reference())
-        .field(Quantity::reference(), QuantitySnapshot::reference())
-        .aspect(Body::reference(), PopulationFacts::reference())
-        .field(Body::reference(), MemberNumber::reference())
-        .field(Body::reference(), DemandKey::reference())
-        .field(Body::reference(), MemberKind::reference())
-        .relation(
-            PopulationMember::reference(),
-            Body::reference(),
-            Body::reference(),
-        )
-}
+
 pub(super) fn descriptor<Entity>(
     identity: &WorthQueryInvariantEntityIdentity<Schema, Entity>,
 ) -> (u32, (u64, u32)) {

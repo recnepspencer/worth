@@ -223,3 +223,5 @@ fn performed_capability_loss_reopens_one_claim_and_consumption_closes_it() {
     drop((root, next));
     court.finish();
 }
+
+mod released_source;

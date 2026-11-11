@@ -276,6 +276,7 @@ fn locus_token(locus: &CanonicalBasisLocus) -> String {
 fn interned_token(value: &InternedString) -> String {
     match value {
         InternedString::Raw(raw) => raw.clone(),
+        InternedString::Stored(raw) => raw.as_str().to_owned(),
         InternedString::Symbol(symbol) => format!("symbol.{}", symbol.0),
     }
 }

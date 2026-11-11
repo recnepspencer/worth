@@ -278,3 +278,6 @@ pub(in crate::domain_computation::primary_graph) fn certified_wave_seed_for_test
 }
 
 mod court_doors_for_test;
+#[cfg(test)]
+#[path = "request_execution_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;

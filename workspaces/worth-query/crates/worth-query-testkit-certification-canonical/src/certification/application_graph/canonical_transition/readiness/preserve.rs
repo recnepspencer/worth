@@ -42,13 +42,9 @@ impl application_contribution::WorthQueryApplicationConditionalBinding<Canonical
         application_contribution::WorthQueryApplicationConditionalPackageContract,
         worth_query_host::facade::application_contribution::WorthQueryOutputReadinessContractDenial,
     > {
-        Ok({
-            application_contribution::WorthQueryApplicationConditionalPackageContract::new(
-                operation_definition().into_portable(),
-                Self::conditional_binding().portable().clone(),
-                PreserveReadyNode::reference().node_identity(),
-            )
-        })
+        let contract = readiness_contract(_declaration)?;
+        let binding = Self::conditional_binding();
+        Ok(contract.into_package_contract(binding.portable().clone()))
     }
     fn install(
         _: (),
@@ -71,28 +67,46 @@ impl application_contribution::WorthQueryApplicationConditionalBinding<Canonical
             .expect("preserve conditional binding is installed")
             .bind_node(PreserveReadyNode::reference())
             .expect("preserve readiness node is installed");
-        installation.bind_output_readiness::<Producer, _, _, _, _, _, _>(node, 0)
+        let contract =
+            readiness_contract(installation.installed_schema().installed_declaration()).unwrap();
+        let ordinal = contract
+            .delivery_ordinal(
+                installation.installed_schema(),
+                node.declaration(),
+                DerivedValueField::at("DerivedValueField"),
+            )
+            .unwrap();
+        installation.bind_output_readiness::<Producer, _, _, _, _, _, _>(node, ordinal)
     }
+}
+pub fn readiness_contract(
+    declaration: &worth_query_host::facade::declaration::application_schema::ErasedApplicationSchemaDeclaration,
+) -> Result<Contract, application_contribution::WorthQueryOutputReadinessContractDenial> {
+    application_contribution::WorthQueryOutputReadinessContractBuilder::for_field(
+        declaration,
+        DerivedValueField::at("DerivedValueField"),
+        domain::WorthQueryDomainOperationIdentity::new("canonical-derived-preserve-readiness", 1),
+        "canonical-derived-preserve-ready",
+        canonical_query(),
+        domain::WorthQueryOperationProjectionRole::new("published-output").unwrap(),
+        domain::WorthQueryExecutionStrategyName::new("canonical-derived-preserve-readiness")
+            .unwrap(),
+        "canonical-derived-preserve-readiness-v1",
+    )?
+    .field_dependency(
+        declaration,
+        DerivedValueField::at("DerivedValueField"),
+        application_contribution::WorthQueryReadinessFieldUse::DeliveryAndEligibility,
+    )?
+    .build_typed()
 }
 pub fn operation_definition() -> domain::WorthQueryDomainOperationDefinition<
     DerivedReadinessDomain,
     DerivedReadinessOperation,
     DerivedReadinessFamily,
 > {
-    let dependency = output_dependency();
-    application_contribution::WorthQueryOutputReadinessContractBuilder::new(
-        domain::WorthQueryDomainOperationIdentity::new("canonical-derived-preserve-readiness", 1),
-        "canonical-derived-preserve-ready",
-        output_projection(),
-        canonical_query(),
-        domain::WorthQueryOperationProjectionRole::new("published-output").unwrap(),
-        domain::WorthQueryExecutionStrategyName::new("canonical-derived-preserve-readiness")
-            .unwrap(),
-        "canonical-derived-preserve-readiness-v1",
-    )
-    .semantic_reads([output_projection()])
-    .dependencies([dependency.clone()])
-    .readiness_dependencies([dependency])
-    .build()
-    .expect("preserve readiness declaration is canonical")
+    readiness_contract(<CanonicalSchema as worth_query_decl::facade::application_schema::ApplicationSchema>::declaration().unwrap().erased())
+        .unwrap()
+        .definition()
+        .clone()
 }

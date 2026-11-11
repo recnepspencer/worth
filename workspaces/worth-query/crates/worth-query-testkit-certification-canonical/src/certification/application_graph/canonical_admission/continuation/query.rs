@@ -27,29 +27,17 @@ pub fn child_identity() -> ApplicationQueryResultFieldRef<
     PageQuery,
     ChildIdentitySlot,
     AdmissionSchema,
-    Document,
-    DocumentFacts,
     DocumentIdentityField,
-    String,
-    ReadOnly,
-    EqualityPredicate,
-    NoApplicationUnit,
 > {
-    ApplicationQueryResultFieldRef::new("identity", DocumentIdentityField::reference())
+    ApplicationQueryResultFieldRef::new(
+        "identity",
+        DocumentIdentityField::at("DocumentIdentityField"),
+    )
 }
-pub fn child_value() -> ApplicationQueryResultFieldRef<
-    PageQuery,
-    ChildValueSlot,
-    AdmissionSchema,
-    Document,
-    DocumentFacts,
-    DocumentValueField,
-    SwallowingValue,
-    ReadWrite,
-    EqualityPredicate,
-    NoApplicationUnit,
-> {
-    ApplicationQueryResultFieldRef::new("value", DocumentValueField::reference())
+pub fn child_value(
+) -> ApplicationQueryResultFieldRef<PageQuery, ChildValueSlot, AdmissionSchema, DocumentValueField>
+{
+    ApplicationQueryResultFieldRef::new("value", DocumentValueField::at("DocumentValueField"))
 }
 pub fn children() -> ApplicationQueryResultRelationRef<
     PageQuery,
@@ -64,8 +52,13 @@ pub fn children() -> ApplicationQueryResultRelationRef<
     ApplicationQueryResultRelationRef::forward_many("children", ChildLink::reference())
 }
 
-pub fn definition(
-) -> ApplicationQueryDefinition<AdmissionSchema, PageQuery, query::Parameters, PageRow, Document> {
+pub fn definition() -> ApplicationQueryDefinitionBuilder<
+    AdmissionSchema,
+    PageQuery,
+    query::Parameters,
+    PageRow,
+    Document,
+> {
     let child = ApplicationQueryResultShapeBuilder::<
         AdmissionSchema,
         PageQuery,
@@ -98,8 +91,6 @@ pub fn definition(
             ApplicationQueryOrderingDirection::Ascending,
         )
         .continue_by(children())
-        .build()
-        .unwrap()
 }
 impl WorthQueryApplicationProjection<AdmissionSchema, PageQuery> for PageRow {
     fn project(
@@ -137,15 +128,7 @@ pub struct ReadPage {
 }
 worth_query_structured_value_binding!(pub PageInputBinding for ReadPage { identity: "canonical-admission.continuation.input.v1" });
 pub struct PageBinding;
-pub type ReadScope = ApplicationQueryFieldScope<
-    AdmissionSchema,
-    Document,
-    DocumentFacts,
-    DocumentIdentityField,
-    String,
-    ReadOnly,
-    NoApplicationUnit,
->;
+pub type ReadScope = ApplicationQueryFieldScope<DocumentIdentityField>;
 impl ApplicationQueryBinding<AdmissionSchema> for PageBinding {
     type Input = ReadPage;
     type InputBinding = PageInputBinding;
@@ -160,17 +143,8 @@ impl ApplicationQueryBinding<AdmissionSchema> for PageBinding {
     type PrincipalIdentityBinding = U64ApplicationValueBinding;
     const IDENTITY: &'static str = "canonical-admission.continuation.binding.v1";
     const LIMITS: ApplicationQueryBindingLimits = ApplicationQueryBindingLimits::results(1);
-    fn scope_field() -> ApplicationFieldRef<
-        AdmissionSchema,
-        Document,
-        DocumentFacts,
-        DocumentIdentityField,
-        String,
-        ReadOnly,
-        EqualityPredicate,
-        NoApplicationUnit,
-    > {
-        DocumentIdentityField::reference()
+    fn scope_field() -> DocumentIdentityField {
+        DocumentIdentityField::at("DocumentIdentityField")
     }
     fn principal_binding() -> ApplicationPrincipalBindingRef<
         AdmissionSchema,
@@ -189,7 +163,10 @@ impl ApplicationQueryIntent<AdmissionSchema> for ReadPage {
         ApplicationQueryParameterSet::new()
     }
     fn into_scope(self) -> ReadScope {
-        ReadScope::new(DocumentIdentityField::reference(), self.identity)
+        ReadScope::new(
+            DocumentIdentityField::at("DocumentIdentityField"),
+            self.identity,
+        )
     }
 }
 

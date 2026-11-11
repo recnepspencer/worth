@@ -1,23 +1,16 @@
-use worth_query_decl::facade::{
-    application_query::{
-        ApplicationQueryResultFieldRef, ApplicationQueryResultRelationRef,
-        ApplicationQueryResultShapeBuilder, ManyResults, ReverseResultTraversal,
-    },
-    application_schema::{
-        DeclaredApplicationUnit, EqualityPredicate, NoApplicationUnit, NoEqualityPredicate,
-        ReadOnly, ReadWrite,
-    },
+use worth_query_decl::facade::application_query::{
+    ApplicationQueryResultFieldRef, ApplicationQueryResultRelationRef,
+    ApplicationQueryResultShapeBuilder, ManyResults, ReverseResultTraversal,
 };
 use worth_query_host::facade::primary_graph::{
     WorthQueryApplicationProjectionDenial, WorthQueryApplicationProjectionRow,
 };
 
-use crate::model::{AccountId, AccountJournalRevision, AccountName, SignedMoney, USD};
+use crate::model::SignedMoney;
 use crate::reads::AccountSummary;
 use crate::schema::{
-    Account, AccountDisplayName, AccountIdentity, AccountKind, AccountProfile, AccountState,
-    AccountStatus, AccountingRevision, BankSchema, Identity, Kind, Posting, PostingAccount,
-    PostingAmount, PostingValue, Status, UsdCurrency,
+    Account, AccountDisplayName, AccountIdentity, AccountingRevision, BankSchema, Kind, Posting,
+    PostingAccount, PostingAmount, Status,
 };
 
 struct AccountIdentitySlot;
@@ -35,83 +28,23 @@ worth_query_decl::facade::worth_query_portable_type!(AccountPostingsSlot => "Acc
 struct PostingAmountSlot;
 worth_query_decl::facade::worth_query_portable_type!(PostingAmountSlot => "PostingAmountSlot");
 
-type AccountIdentitySelector<Query> = ApplicationQueryResultFieldRef<
-    Query,
-    AccountIdentitySlot,
-    BankSchema,
-    Account,
-    Identity,
-    AccountIdentity,
-    AccountId,
-    ReadOnly,
-    EqualityPredicate,
-    NoApplicationUnit,
->;
+type AccountIdentitySelector<Query> =
+    ApplicationQueryResultFieldRef<Query, AccountIdentitySlot, BankSchema, AccountIdentity>;
 
-type AccountDisplayNameSelector<Query> = ApplicationQueryResultFieldRef<
-    Query,
-    AccountDisplayNameSlot,
-    BankSchema,
-    Account,
-    AccountProfile,
-    AccountDisplayName,
-    AccountName,
-    ReadWrite,
-    EqualityPredicate,
-    NoApplicationUnit,
->;
+type AccountDisplayNameSelector<Query> =
+    ApplicationQueryResultFieldRef<Query, AccountDisplayNameSlot, BankSchema, AccountDisplayName>;
 
-type AccountKindSelector<Query> = ApplicationQueryResultFieldRef<
-    Query,
-    AccountKindSlot,
-    BankSchema,
-    Account,
-    AccountProfile,
-    Kind,
-    AccountKind,
-    ReadWrite,
-    EqualityPredicate,
-    NoApplicationUnit,
->;
+type AccountKindSelector<Query> =
+    ApplicationQueryResultFieldRef<Query, AccountKindSlot, BankSchema, Kind>;
 
-type AccountStatusSelector<Query> = ApplicationQueryResultFieldRef<
-    Query,
-    AccountStatusSlot,
-    BankSchema,
-    Account,
-    AccountState,
-    Status,
-    AccountStatus,
-    ReadWrite,
-    EqualityPredicate,
-    NoApplicationUnit,
->;
+type AccountStatusSelector<Query> =
+    ApplicationQueryResultFieldRef<Query, AccountStatusSlot, BankSchema, Status>;
 
-type AccountRevisionSelector<Query> = ApplicationQueryResultFieldRef<
-    Query,
-    AccountRevisionSlot,
-    BankSchema,
-    Account,
-    AccountState,
-    AccountingRevision,
-    AccountJournalRevision,
-    ReadWrite,
-    EqualityPredicate,
-    NoApplicationUnit,
->;
+type AccountRevisionSelector<Query> =
+    ApplicationQueryResultFieldRef<Query, AccountRevisionSlot, BankSchema, AccountingRevision>;
 
-type PostingAmountSelector<Query> = ApplicationQueryResultFieldRef<
-    Query,
-    PostingAmountSlot,
-    BankSchema,
-    Posting,
-    PostingValue,
-    PostingAmount,
-    SignedMoney<USD>,
-    ReadWrite,
-    NoEqualityPredicate,
-    DeclaredApplicationUnit<UsdCurrency, USD>,
->;
+type PostingAmountSelector<Query> =
+    ApplicationQueryResultFieldRef<Query, PostingAmountSlot, BankSchema, PostingAmount>;
 
 pub(super) fn account_summary_shape<Query, Result, ShapeBinding>(
 ) -> ApplicationQueryResultShapeBuilder<BankSchema, Query, Account, Result, ShapeBinding>
@@ -173,27 +106,33 @@ where
 }
 
 fn account_identity<Query>() -> AccountIdentitySelector<Query> {
-    ApplicationQueryResultFieldRef::new("account", AccountIdentity::reference())
+    ApplicationQueryResultFieldRef::new("account", AccountIdentity::at("AccountIdentity"))
 }
 
 fn account_display_name<Query>() -> AccountDisplayNameSelector<Query> {
-    ApplicationQueryResultFieldRef::new("display_name", AccountDisplayName::reference())
+    ApplicationQueryResultFieldRef::new(
+        "display_name",
+        AccountDisplayName::at("AccountDisplayName"),
+    )
 }
 
 fn account_kind<Query>() -> AccountKindSelector<Query> {
-    ApplicationQueryResultFieldRef::new("kind", Kind::reference())
+    ApplicationQueryResultFieldRef::new("kind", Kind::at("Kind"))
 }
 
 fn account_status<Query>() -> AccountStatusSelector<Query> {
-    ApplicationQueryResultFieldRef::new("status", Status::reference())
+    ApplicationQueryResultFieldRef::new("status", Status::at("Status"))
 }
 
 fn account_revision<Query>() -> AccountRevisionSelector<Query> {
-    ApplicationQueryResultFieldRef::new("accounting_revision", AccountingRevision::reference())
+    ApplicationQueryResultFieldRef::new(
+        "accounting_revision",
+        AccountingRevision::at("AccountingRevision"),
+    )
 }
 
 fn posting_amount<Query>() -> PostingAmountSelector<Query> {
-    ApplicationQueryResultFieldRef::new("amount", PostingAmount::reference())
+    ApplicationQueryResultFieldRef::new("amount", PostingAmount::at("PostingAmount"))
 }
 
 fn account_postings<Query>() -> ApplicationQueryResultRelationRef<

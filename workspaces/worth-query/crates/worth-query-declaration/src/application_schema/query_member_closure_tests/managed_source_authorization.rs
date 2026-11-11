@@ -37,11 +37,10 @@ fn members_with_source(
             result: source.result_type.clone(),
             scope: source.scope_type.clone(),
             scope_entity: "Account".into(),
-            scope_aspect: "AccountFacts".into(),
+            scope_aspect: AccountId::at("AccountId").aspect().into(),
             scope_field: "AccountId".into(),
             scope_value: Id::declared("worth.rust.u64"),
             scope_resolution: ApplicationQueryScopeResolutionMode::PrincipalIdentity,
-            scope_writable: false,
             principal_binding: "Principal".into(),
         },
     );
@@ -63,15 +62,7 @@ fn members_with_source(
     parent.name = "indexed_account".into();
     parent.query_type = Id::declared("worth.tests.source-authorization.parent.v1");
     let account = ApplicationEntityRef::<TestSchema, Account>::from_schema_identifier("Account");
-    let field = ApplicationFieldRef::<
-        TestSchema,
-        Account,
-        AccountFacts,
-        AccountId,
-        u64,
-        ReadOnly,
-        EqualityPredicate,
-    >::from_schema_identifiers("Account", "AccountFacts", "AccountId");
+    let field = AccountId::at("AccountId");
     parent.result_shape = ApplicationQueryResultShapeBuilder::<
         TestSchema,
         ParentQuery,
@@ -83,16 +74,11 @@ fn members_with_source(
         ParentQuery,
         AccountIdSlot,
         TestSchema,
-        Account,
-        AccountFacts,
         AccountId,
-        u64,
-        ReadOnly,
-        EqualityPredicate,
-        NoApplicationUnit,
     >::new("id", field))
     .build()
-    .into_erased();
+    .into_parts()
+    .0;
     parent.authorization = ApplicationQueryAuthorizationRequirement::Public;
     parent.basis_support = basis;
     parent.parameters = vec![ApplicationQueryParameterDefinition::from_untrusted_fields(

@@ -1,9 +1,6 @@
 //! Fresh document READ and actual source-side preparation precede any protected attempt lookup.
 use super::*;
-use worth_query_declaration::facade::{
-    application_history::ApplicationHistoryModel,
-    application_operation::{ApplicationMutationScopeBinding, NoApplicationMutationSource},
-};
+use worth_query_declaration::facade::application_operation::NoApplicationMutationSource;
 use worth_query_execution::{
     facade::product::WorthQueryProductBranchCreateError,
     publication_boundary::document_history::{
@@ -22,8 +19,6 @@ where
     Mode<S, I, A>: WorthQueryHistoryOperationMode<S, I, P, A>,
     I::Binding: crate::application_entry::WorthQuerySourceOperationBinding<S>
         + ApplicationMutationBinding<S, SourceExpectation = NoApplicationMutationSource>,
-    <I::Binding as ApplicationMutationBinding<S>>::ScopeBinding:
-        ApplicationMutationScopeBinding<S, Scope = ApplicationHistoryModel<S, H>>,
     Scope<S, H>: ApplicationQueryScopeResolution<S, Principal<S, H>>,
     Rows<S, H>: WorthQueryApplicationProjection<S, Query<S, H>>,
 {

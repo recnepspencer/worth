@@ -24,7 +24,15 @@ pub(in super::super) fn quote(
                 map::<EntityId, RelatedEntityOrderingEntry>(value, request, scalar, ordering)?
             }
             "RelationJoin" => {
-                map::<RelationJoinKey, RelationJoinEntry>(value, request, scalar, scalar)?
+                // The join index is its row map plus the leg state that maintains it.
+                let mut bytes = map::<RelationJoinKey, RelationJoinEntry>(
+                    value.field("entries", request)?,
+                    request,
+                    scalar,
+                    scalar,
+                )?;
+                add(&mut bytes, legs(value.field("legs", request)?, request)?)?;
+                bytes
             }
             _ => return Err(malformed()),
         };
@@ -64,6 +72,57 @@ fn map<K: Ord + Clone, R: Clone>(
         .checked_add(2)
         .and_then(|n| n.checked_add(path))
         .ok_or_else(malformed)?;
+    add(
+        &mut bytes,
+        u64::try_from(nodes.checked_mul(node).ok_or_else(malformed)?).map_err(|_| malformed())?,
+    )?;
+    Ok(bytes)
+}
+/// Every persistent container of both legs is priced as decode builds it:
+/// im Serde's intermediate Vec plus its node chunks, per outer map, inner map,
+/// relation set and inverse map. The owner's retained-size model is not a bound.
+fn legs(value: BorrowedPayload<'_>, request: &ExecutionRequest<'_, '_>) -> Result<u64, Refusal> {
+    if value.is_none() {
+        return Ok(0);
+    }
+    let mut bytes = shared::<JoinLegsState>()?;
+    for side in ["left", "right"] {
+        let leg = value.field(side, request)?;
+        let outer = leg
+            .field("shared", request)?
+            .pairs(request, |_, externals| {
+                let inner = externals.pairs(request, |_, rows| {
+                    let relations = rows.elements(request, |_| Ok(()))?;
+                    add(&mut bytes, container::<RelationId, ()>(relations)?)
+                })?;
+                add(
+                    &mut bytes,
+                    container::<EntityId, im::OrdSet<RelationId>>(inner)?,
+                )
+            })?;
+        add(
+            &mut bytes,
+            container::<EntityId, im::OrdMap<EntityId, im::OrdSet<RelationId>>>(outer)?,
+        )?;
+        let inverse = leg
+            .field("relations", request)?
+            .pairs(request, |_, _| Ok(()))?;
+        add(
+            &mut bytes,
+            container::<RelationId, (EntityId, EntityId)>(inverse)?,
+        )?;
+    }
+    Ok(bytes)
+}
+/// One decoded im container: Serde's intermediate Vec of its entries plus
+/// 64-slot node chunks (31-entry minimum occupancy, root and split slack).
+fn container<K, V>(count: usize) -> Result<u64, Refusal> {
+    let node = std::mem::size_of::<(K, V)>()
+        .checked_mul(64)
+        .and_then(|n| n.checked_add(std::mem::size_of::<usize>() * 71))
+        .ok_or_else(malformed)?;
+    let nodes = count.div_ceil(31).checked_add(2).ok_or_else(malformed)?;
+    let mut bytes = vector::<(K, V)>(count)?;
     add(
         &mut bytes,
         u64::try_from(nodes.checked_mul(node).ok_or_else(malformed)?).map_err(|_| malformed())?,

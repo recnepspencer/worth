@@ -15,15 +15,12 @@ pub fn root_identity() -> ApplicationQueryResultFieldRef<
     LiveQuery,
     RootIdentitySlot,
     CanonicalSchema,
-    Derived,
-    DerivedFacts,
     DerivedIdentityField,
-    String,
-    ReadOnly,
-    EqualityPredicate,
-    NoApplicationUnit,
 > {
-    ApplicationQueryResultFieldRef::new("root_identity", DerivedIdentityField::reference())
+    ApplicationQueryResultFieldRef::new(
+        "root_identity",
+        DerivedIdentityField::at("DerivedIdentityField"),
+    )
 }
 worth_query_portable_type!(ChildIdentitySlot => "canonical-related.live.child-identity-slot.v1");
 worth_query_portable_type!(ChildValueSlot => "canonical-related.live.child-value-slot.v1");
@@ -38,29 +35,16 @@ pub fn child_identity() -> ApplicationQueryResultFieldRef<
     LiveQuery,
     ChildIdentitySlot,
     CanonicalSchema,
-    Derived,
-    DerivedFacts,
     DerivedIdentityField,
-    String,
-    ReadOnly,
-    EqualityPredicate,
-    NoApplicationUnit,
 > {
-    ApplicationQueryResultFieldRef::new("identity", DerivedIdentityField::reference())
+    ApplicationQueryResultFieldRef::new(
+        "identity",
+        DerivedIdentityField::at("DerivedIdentityField"),
+    )
 }
-pub fn child_value() -> ApplicationQueryResultFieldRef<
-    LiveQuery,
-    ChildValueSlot,
-    CanonicalSchema,
-    Derived,
-    DerivedFacts,
-    DerivedValueField,
-    DerivedValue,
-    ReadWrite,
-    EqualityPredicate,
-    NoApplicationUnit,
-> {
-    ApplicationQueryResultFieldRef::new("value", DerivedValueField::reference())
+pub fn child_value(
+) -> ApplicationQueryResultFieldRef<LiveQuery, ChildValueSlot, CanonicalSchema, DerivedValueField> {
+    ApplicationQueryResultFieldRef::new("value", DerivedValueField::at("DerivedValueField"))
 }
 pub fn children() -> ApplicationQueryResultRelationRef<
     LiveQuery,
@@ -75,7 +59,7 @@ pub fn children() -> ApplicationQueryResultRelationRef<
     ApplicationQueryResultRelationRef::forward_many("children", DerivedChildren::reference())
 }
 
-pub fn definition() -> ApplicationQueryDefinition<
+pub fn definition() -> ApplicationQueryDefinitionBuilder<
     CanonicalSchema,
     LiveQuery,
     query::Parameters,
@@ -114,12 +98,7 @@ pub fn definition() -> ApplicationQueryDefinition<
             child_identity(),
             ApplicationQueryOrderingDirection::Ascending,
         )
-        .live_root_by::<super::cause::LiveCause, _, _, _, _, _, _, _, _>(
-            root_identity(),
-            root_identity(),
-        )
-        .build()
-        .unwrap()
+        .live_root_by::<super::cause::LiveCause>(root_identity(), root_identity())
 }
 impl WorthQueryApplicationProjection<CanonicalSchema, LiveQuery> for super::page_query::PageRow {
     fn project(
@@ -153,15 +132,7 @@ pub struct ReadLive {
 }
 worth_query_structured_value_binding!(pub LiveInputBinding for ReadLive { identity: "canonical-related.live.input.v1" });
 pub struct LiveBinding;
-pub type ReadScope = ApplicationQueryFieldScope<
-    CanonicalSchema,
-    Derived,
-    DerivedFacts,
-    DerivedIdentityField,
-    String,
-    ReadOnly,
-    NoApplicationUnit,
->;
+pub type ReadScope = ApplicationQueryFieldScope<DerivedIdentityField>;
 impl ApplicationQueryBinding<CanonicalSchema> for LiveBinding {
     type Input = ReadLive;
     type InputBinding = LiveInputBinding;
@@ -176,17 +147,8 @@ impl ApplicationQueryBinding<CanonicalSchema> for LiveBinding {
     type PrincipalIdentityBinding = U64ApplicationValueBinding;
     const IDENTITY: &'static str = "canonical-related.live.binding.v1";
     const LIMITS: ApplicationQueryBindingLimits = ApplicationQueryBindingLimits::results(1);
-    fn scope_field() -> ApplicationFieldRef<
-        CanonicalSchema,
-        Derived,
-        DerivedFacts,
-        DerivedIdentityField,
-        String,
-        ReadOnly,
-        EqualityPredicate,
-        NoApplicationUnit,
-    > {
-        DerivedIdentityField::reference()
+    fn scope_field() -> DerivedIdentityField {
+        DerivedIdentityField::at("DerivedIdentityField")
     }
     fn principal_binding() -> ApplicationPrincipalBindingRef<
         CanonicalSchema,
@@ -205,7 +167,10 @@ impl ApplicationQueryIntent<CanonicalSchema> for ReadLive {
         ApplicationQueryParameterSet::new()
     }
     fn into_scope(self) -> ReadScope {
-        ReadScope::new(DerivedIdentityField::reference(), self.identity)
+        ReadScope::new(
+            DerivedIdentityField::at("DerivedIdentityField"),
+            self.identity,
+        )
     }
 }
 

@@ -12,6 +12,7 @@ pub(crate) struct RelationalHeadRetentionObligation {
     owner_identity: usize,
     identity: RelationalBranchIdentity,
     root: Arc<RelationalBranchRoot>,
+    publication_bases: Option<Arc<dyn super::PublicationBasisAccess>>,
     binding: super::RelationalBranchRetentionBinding,
     terminal: bool,
 }
@@ -32,10 +33,17 @@ impl RelationalHeadRetentionObligation {
             owner: Arc::downgrade(owner),
             owner_identity: Arc::as_ptr(owner) as usize,
             identity,
+            publication_bases: Some(super::PublicationBasisImage::at_for_owner(&root, &binding)),
             root,
             binding,
             terminal: false,
         }
+    }
+
+    pub(super) fn publication_bases(&self) -> Option<Arc<dyn super::PublicationBasisAccess>> {
+        self.is_live()
+            .then(|| self.publication_bases.clone())
+            .flatten()
     }
 
     pub(crate) fn binding(&self) -> super::RelationalBranchRetentionBinding {
@@ -76,6 +84,10 @@ impl RelationalHeadRetentionObligation {
         owner: &Arc<RelationalBranchRetentionOwnerInner>,
         next_root: &Arc<RelationalBranchRoot>,
     ) {
+        self.publication_bases = Some(super::PublicationBasisImage::at_for_owner(
+            next_root,
+            &self.binding,
+        ));
         self.root = Arc::clone(next_root);
         self.binding.record_head_transfer();
         owner
@@ -91,6 +103,7 @@ impl RelationalHeadRetentionObligation {
             return;
         }
         self.terminal = true;
+        self.publication_bases = None;
         let Some(owner) = self.owner.upgrade() else {
             return;
         };

@@ -21,6 +21,20 @@ pub enum HistoryRecordingSource<'a> {
         completed: WorthQueryCompletedRequiredOutputs,
     },
 }
+impl HistoryRecordingSource<'_> {
+    pub(in crate::application_entry) fn parts(
+        &self,
+    ) -> (
+        worth_query_execution::publication_boundary::document_history::WorthQueryHistorySourceEvidence<'_>,
+        Option<&WorthQueryCompletedRequiredOutputs>,
+    ){
+        match self {
+            Self::Source(source) => (worth_query_execution::publication_boundary::document_history::WorthQueryHistorySourceEvidence::Live(source), None),
+            Self::RecordedSource(source) => (worth_query_execution::publication_boundary::document_history::WorthQueryHistorySourceEvidence::Recorded(source), None),
+            Self::RequiredOutputs { source, completed } => (worth_query_execution::publication_boundary::document_history::WorthQueryHistorySourceEvidence::Live(source), Some(completed)),
+        }
+    }
+}
 pub enum HistoryOperationAdvance<O, C, T> {
     Progress(O),
     Completed(C),
@@ -89,6 +103,12 @@ where
         completed: &'a C,
         phase: &WorthQueryAdvancementPhase<'_>,
         request: &WorthQueryApplicationRequest<'_, '_, '_, S>,
+    ) -> Result<Option<HistoryRecordingSource<'a>>, WorthQueryHistoryEditDenial>;
+    fn recording_source_at<'a>(
+        completed: &'a C,
+        phase: &WorthQueryAdvancementPhase<'_>,
+        request: &WorthQueryApplicationRequest<'_, '_, '_, S>,
+        observation: &crate::application_entry::WorthQueryApplicationReadObservation,
     ) -> Result<Option<HistoryRecordingSource<'a>>, WorthQueryHistoryEditDenial>;
     fn close_operation(
         operation: O,

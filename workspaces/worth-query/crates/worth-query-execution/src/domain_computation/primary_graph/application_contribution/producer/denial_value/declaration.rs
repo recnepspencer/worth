@@ -3,7 +3,6 @@
 use super::{WorthQueryProducerDenialEncodingRefusal, WorthQueryProducerDenialValue};
 use crate::domain_computation::primary_graph::application_invariant::refusal::canonical_wire_maximum;
 use std::marker::PhantomData;
-use worth_foundational::facade::{AspectValue, InternedString};
 use worth_query_declaration::facade::application_schema::{
     ApplicationReadableScalarValueBinding, ApplicationScalarValueBinding,
 };
@@ -103,7 +102,7 @@ fn encode_declared<Binding: ApplicationReadableScalarValueBinding>(
         Ok(encoded) => encoded,
         Err(denial) => return refused(Refusal::Codec(denial)),
     };
-    let AspectValue::String(InternedString::Raw(text)) = encoded else {
+    let Some(text) = (encoded).raw_text() else {
         return refused(Refusal::NoncanonicalCarrier);
     };
     if text.len() > maximum {
@@ -114,6 +113,6 @@ fn encode_declared<Binding: ApplicationReadableScalarValueBinding>(
     }
     WorthQueryProducerDenialValue::DeclaredValue {
         value_identity: Binding::IDENTITY_NAME,
-        bytes: text.into_bytes(),
+        bytes: text.as_bytes().to_vec(),
     }
 }

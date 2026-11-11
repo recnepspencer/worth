@@ -19,7 +19,7 @@ type FullFinish<'a> =
 
 fn install_full() -> installation::ConsumerWorld<FixedProgram> {
     let program = ApplicationProgramAuthoring::<ConsumerSchema, FixedProgram>::begin()
-        .with_schema(&ConsumerSchema::declaration().unwrap())
+        .with_schema(&<ConsumerSchema as worth_query_decl::facade::application_schema::ApplicationSchema>::declaration().unwrap())
         .validated_program()
         .unwrap();
     installation::install_selected_program(

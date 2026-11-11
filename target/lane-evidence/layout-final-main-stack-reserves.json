@@ -1,0 +1,6 @@
+{
+  "invariant_reads": 1048576,
+  "required_feature": 1048576,
+  "shared_execution": 1048576,
+  "worth-query-consumer-root": 1048576
+}

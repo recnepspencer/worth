@@ -16,7 +16,7 @@ impl<Schema: TopologySchemaBinding> OperationHandler<Schema, FinalPlanarMutation
         worth_query_host::facade::primary_graph::WorthQueryInvariantMutationTarget<Schema, Body>,
         worth_query_consumer_values::PlanarMutationDenial,
     > {
-        match reader.resolve_entity(BodyKey::reference(), input.scope_key.clone()) {
+        match reader.resolve_entity(BodyKey::at("BodyKey"), input.scope_key.clone()) {
             Ok(source) => match reader.mutation_target(&source) {
                 Ok(target) => HandlerResult::Completed(target),
                 Err(error) => HandlerResult::ExecutionDenied(error),
@@ -81,18 +81,18 @@ impl<Schema: TopologySchemaBinding> OperationHandler<Schema, FinalPlanarMutation
                 }
             };
             for result in [
-                writer.initialize_field(&entity, BodyKey::reference(), key.clone()),
+                writer.initialize_field(&entity, BodyKey::at("BodyKey"), key.clone()),
                 writer.initialize_field(
                     &entity,
-                    PositionX::reference(),
+                    PositionX::at("PositionX"),
                     worth_query_consumer_values::PositiveLength::new(x).unwrap(),
                 ),
                 writer.initialize_field(
                     &entity,
-                    PositionY::reference(),
+                    PositionY::at("PositionY"),
                     worth_query_consumer_values::PositiveLength::new(y).unwrap(),
                 ),
-                writer.initialize_field(&entity, Length::reference(), input.value),
+                writer.initialize_field(&entity, Length::at("Length"), input.value),
             ] {
                 if let Err(error) = result {
                     return HandlerResult::ExecutionDenied(HandlerExecutionDenial::new(error));

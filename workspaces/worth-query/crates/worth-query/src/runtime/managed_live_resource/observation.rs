@@ -1,4 +1,5 @@
 use crate::evidence_identity::WorthQueryEvidenceIdentity;
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::ordinary_outcome::WorthQueryOrdinaryRuntimePosture;
 
 use super::super::ordinary_runtime_posture::project_live_subscription_ordinary_runtime_posture;
@@ -150,8 +151,10 @@ impl WorthQueryManagedLiveLifecycleObservation {
         self.last_delivery_sequence
     }
 
-    pub(super) fn from_state(state: &WorthQueryRuntimeLiveSubscriptionState) -> Self {
-        Self {
+    pub(super) fn from_state(
+        state: &WorthQueryRuntimeLiveSubscriptionState,
+    ) -> Result<Self, IdentityDerivationDenial> {
+        Ok(Self {
             resource_name: state.installation.view_name().to_string(),
             posture: WorthQueryManagedLiveLifecyclePosture::Active,
             authority_lane: state.installation.authority_lane(),
@@ -163,13 +166,13 @@ impl WorthQueryManagedLiveLifecycleObservation {
             ),
             installation_identity: state.installation.installation_identity().clone(),
             basis_binding_identity: state.installation.basis_binding_identity().clone(),
-            runtime_posture: project_live_subscription_ordinary_runtime_posture(state),
+            runtime_posture: project_live_subscription_ordinary_runtime_posture(state)?,
             pending_delivery_batch_count: state.delivery_batches.len(),
             last_delivery_sequence: state
                 .last_delivery
                 .as_ref()
                 .map(|delivery| delivery.sequence()),
-        }
+        })
     }
 }
 
@@ -192,6 +195,8 @@ impl WorthQueryRuntime {
                 view.name().to_string(),
             ));
         }
-        Ok(WorthQueryManagedLiveLifecycleObservation::from_state(state))
+        Ok(WorthQueryManagedLiveLifecycleObservation::from_state(
+            state,
+        )?)
     }
 }

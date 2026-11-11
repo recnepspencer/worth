@@ -28,7 +28,7 @@ impl RelationalBranchRoot {
                 .checked_add(region.relation_slots)
                 .ok_or(RelationalBranchRootCaptureDenial::SlotCountOverflow)?;
             let partition = region.partition_id;
-            let region = super::super::RelationalRootRegion::from_checkpoint_for_request(
+            let region = super::region_binding::readmit_checkpoint_region(
                 root_id,
                 issuer.issue_region_id()?,
                 region,
@@ -60,6 +60,7 @@ impl RelationalBranchRoot {
         };
         let version = commit.index().commit.version_id;
         let mut root = Self {
+            publication_bases: Default::default(),
             content: Default::default(),
             id: root_id,
             managed_source_image: Default::default(),
@@ -71,6 +72,7 @@ impl RelationalBranchRoot {
             schema_authority: schema,
             execution_contracts: Default::default(),
             committed: Some(RelationalCommittedBranchRoot {
+                commit_change: None,
                 descriptor,
                 evidence: super::super::RelationalRootCommitEvidence::Checkpoint(commit),
                 axes,
@@ -78,15 +80,12 @@ impl RelationalBranchRoot {
             }),
             _memory: memory,
         };
-        root.content = crate::content::ContentDirectory::reconstruct(
-            request,
-            root.schema_authority.registry(),
-            content_records,
-            root.schema_authority.retained_aspect_contracts(),
+        root.content = super::region_binding::readmit_checkpoint_content(
             &root,
+            content_records,
             version,
-        )
-        .map_err(RelationalBranchRootCaptureDenial::Content)?;
+            request,
+        )?;
         Ok(Arc::new(root))
     }
 }

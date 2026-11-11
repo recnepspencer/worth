@@ -40,7 +40,6 @@ pub(super) fn validate<S: ApplicationSchema>(
         );
         if !matching_mode
             || mutation.scope().field() != query.scope().field()
-            || mutation.scope().writable() != query.scope().writable()
             || mutation.principal().name() != query.principal().name()
         {
             return Err(denial(

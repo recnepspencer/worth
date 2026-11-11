@@ -1,3 +1,5 @@
+mod repeated_kinds;
+use repeated_kinds::RepeatedKinds;
 pub(crate) use worth_query_testkit_certification_application_graph::facade::certification::relation_laws::compatibility::*;
 
 #[test]
@@ -38,13 +40,6 @@ fn an_installed_checkpoint_cannot_silently_acquire_a_new_relation_law() {
 
 #[test]
 fn reordered_duplicate_minimum_kinds_preserve_schema_and_program_meaning() {
-    #[derive(Clone, Debug)]
-    struct RepeatedKinds;
-    impl LawPolicy for RepeatedKinds {
-        const INTEGRITY: ApplicationRelationIntegrity =
-            ApplicationRelationIntegrity::same_context_unbounded_retain_dangling()
-                .reaches_at_least(2, &["Node", "Node"]);
-    }
     let plain = program::<MinimumTwo>();
     let repeated = program::<RepeatedKinds>();
     assert_eq!(plain.revision(), repeated.revision());

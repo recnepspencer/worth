@@ -92,62 +92,71 @@ fn project(
     ApplicationCapabilityDelegationRequestProjection::new(
         target(scope),
         ApplicationCapabilityEntitySelector::new(
-            CapabilityGrantIdentityField::reference(),
+            CapabilityGrantIdentityField::at("CapabilityGrantIdentityField"),
             crate::schema::encoded_bank_value::<crate::schema::CapabilityGrantIdBinding>(parent),
-        ),
+        )
+        .unwrap(),
         ApplicationCapabilityEntitySelector::new(
-            PrincipalIdentityField::reference(),
+            PrincipalIdentityField::at("PrincipalIdentityField"),
             crate::schema::encoded_bank_value::<crate::schema::BankPrincipalIdBinding>(
                 child.grantee,
             ),
-        ),
+        )
+        .unwrap(),
         format!("bank-capability-grant:{}", child.id.get()),
         ApplicationCapabilityValueBinding::new(
-            CapabilityGrantIdentityField::reference(),
+            CapabilityGrantIdentityField::at("CapabilityGrantIdentityField"),
             crate::schema::encoded_bank_value::<crate::schema::CapabilityGrantIdBinding>(child.id),
-        ),
+        )
+        .unwrap(),
         ApplicationCapabilityValueBinding::new(
-            CapabilityWorkflowStageField::reference(),
+            CapabilityWorkflowStageField::at("CapabilityWorkflowStageField"),
             crate::schema::encoded_bank_value::<crate::schema::EstateWorkflowStageBinding>(
                 scope.workflow_stage,
             ),
-        ),
+        )
+        .unwrap(),
         ApplicationCapabilityValueBinding::new(
-            CapabilityValidFromField::reference(),
+            CapabilityValidFromField::at("CapabilityValidFromField"),
             crate::schema::encoded_bank_value::<crate::schema::EstateMomentBinding>(
                 scope.validity.not_before(),
             ),
-        ),
+        )
+        .unwrap(),
         ApplicationCapabilityValueBinding::new(
-            CapabilityValidThroughField::reference(),
+            CapabilityValidThroughField::at("CapabilityValidThroughField"),
             crate::schema::encoded_bank_value::<crate::schema::EstateMomentBinding>(
                 scope.validity.not_after(),
             ),
-        ),
+        )
+        .unwrap(),
         ApplicationCapabilityValueBinding::new(
-            CapabilityDelegationLimitField::reference(),
+            CapabilityDelegationLimitField::at("CapabilityDelegationLimitField"),
             crate::schema::encoded_bank_value::<crate::schema::DelegationLimitBinding>(
                 scope.delegation,
             ),
-        ),
+        )
+        .unwrap(),
         [
             ApplicationCapabilityRelatedEntitySelector::new(
                 CapabilityInstitution::reference(),
                 ApplicationCapabilityEntitySelector::new(
-                    InstitutionIdentityField::reference(),
+                    InstitutionIdentityField::at("InstitutionIdentityField"),
                     crate::schema::encoded_bank_value::<crate::schema::InstitutionIdBinding>(
                         scope.institution,
                     ),
-                ),
+                )
+                .unwrap(),
             ),
             ApplicationCapabilityRelatedEntitySelector::new(
                 CapabilityBranch::reference(),
                 ApplicationCapabilityEntitySelector::new(
-                    BranchIdentityField::reference(),
+                    BranchIdentityField::at("BranchIdentityField"),
                     crate::schema::encoded_bank_value::<crate::schema::BranchIdBinding>(
                         scope.branch,
                     ),
-                ),
+                )
+                .unwrap(),
             ),
         ],
     )
@@ -158,9 +167,10 @@ fn target(
 ) -> ApplicationCapabilityRequestProjection<BankSchema, EstateCase, EstateActionContext> {
     let mut target = ApplicationCapabilityRequestProjection::new(
         ApplicationCapabilityEntitySelector::new(
-            EstateCaseIdentityField::reference(),
+            EstateCaseIdentityField::at("EstateCaseIdentityField"),
             crate::schema::encoded_bank_value::<crate::schema::EstateCaseIdBinding>(scope.estate),
-        ),
+        )
+        .unwrap(),
         crate::schema::encoded_bank_value::<crate::schema::EstateCapabilityOperationBinding>(
             scope.operation,
         ),
@@ -173,9 +183,10 @@ fn target(
         target = target.related_entity(ApplicationCapabilityRelatedEntitySelector::new(
             CapabilityAccount::reference(),
             ApplicationCapabilityEntitySelector::new(
-                AccountIdentity::reference(),
+                AccountIdentity::at("AccountIdentity"),
                 crate::schema::encoded_bank_value::<crate::schema::AccountIdBinding>(account),
-            ),
+            )
+            .unwrap(),
         ));
     }
     if let Some(field) = scope.field {

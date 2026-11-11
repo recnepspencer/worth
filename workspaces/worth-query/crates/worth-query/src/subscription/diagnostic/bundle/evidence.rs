@@ -1,4 +1,5 @@
 use crate::evidence_identity::WorthQueryEvidenceIdentity;
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 
 use super::super::super::evidence_identities::{
     diagnostic_assembly_receipt_identity, diagnostic_bundle_width_identity,
@@ -157,22 +158,22 @@ impl DiagnosticAssemblyReceipt {
         semantic_label_carry_forward_count: usize,
         stage_rederivation_count: usize,
         bundle_width: QuerySubscriptionDiagnosticBundleWidth,
-    ) -> Self {
+    ) -> Result<Self, IdentityDerivationDenial> {
         let assembly_receipt_identity = diagnostic_assembly_receipt_identity(
             bundle_assembly_posture.as_str(),
             stage_evidence_composition_count,
             semantic_label_carry_forward_count,
             stage_rederivation_count,
             bundle_width.bundle_width_identity(),
-        );
-        Self {
+        )?;
+        Ok(Self {
             bundle_assembly_posture,
             stage_evidence_composition_count,
             semantic_label_carry_forward_count,
             stage_rederivation_count,
             bundle_width,
             assembly_receipt_identity,
-        }
+        })
     }
 
     pub fn bundle_assembly_posture(&self) -> &BundleAssemblyPosture {
@@ -225,7 +226,7 @@ impl QuerySubscriptionDiagnosticSemanticLabels {
         live_graph_access_posture_label: String,
         support_posture_label: String,
         denial_or_coverage_class_label: String,
-    ) -> Self {
+    ) -> Result<Self, IdentityDerivationDenial> {
         let labels_identity = diagnostic_semantic_labels_identity(
             &query_family_label,
             &declaration_family_label,
@@ -236,8 +237,8 @@ impl QuerySubscriptionDiagnosticSemanticLabels {
             &live_graph_access_posture_label,
             &support_posture_label,
             &denial_or_coverage_class_label,
-        );
-        Self {
+        )?;
+        Ok(Self {
             query_family_label,
             declaration_family_label,
             bridge_family_label,
@@ -248,7 +249,7 @@ impl QuerySubscriptionDiagnosticSemanticLabels {
             support_posture_label,
             denial_or_coverage_class_label,
             labels_identity,
-        }
+        })
     }
 
     pub fn query_family_label(&self) -> &str {

@@ -23,19 +23,9 @@ worth_query_portable_type!(TenantSlot => "worth.query.body-court.link-tenant-slo
 worth_query_application_query!(pub TenantQuery for Schema: BodySchemaBinding,
     identity "TenantQuery", parameters DocumentQueryParametersBinding, result TenantRowBinding,
     scope Document => "Document", name "body_link_tenant");
-pub fn field<Schema: BodySchemaBinding>() -> ApplicationQueryResultFieldRef<
-    TenantQuery,
-    TenantSlot,
-    Schema,
-    Tenant,
-    TenantFacts,
-    TenantIdentity,
-    u64,
-    ReadOnly,
-    EqualityPredicate,
-    NoApplicationUnit,
-> {
-    ApplicationQueryResultFieldRef::new("tenant", TenantIdentity::reference())
+pub fn field<Schema: BodySchemaBinding>(
+) -> ApplicationQueryResultFieldRef<TenantQuery, TenantSlot, Schema, TenantIdentity> {
+    ApplicationQueryResultFieldRef::new("tenant", TenantIdentity::at("TenantIdentity"))
 }
 pub fn declare<const MODE: u64>(
     schema: ApplicationSchemaDeclarationBuilder<DocumentRetentionSchema<MODE>>,
@@ -61,9 +51,7 @@ pub fn declare<const MODE: u64>(
         .root_path(
             ApplicationQueryRootPath::from(Document::reference())
                 .forward(DocumentTenant::reference()),
-        )
-        .build()
-        .unwrap();
+        );
     schema
         .application_query(query)
         .application_query_binding::<TenantBinding<MODE>>()
@@ -78,15 +66,7 @@ impl<const MODE: u64> WorthQueryApplicationProjection<DocumentRetentionSchema<MO
     }
 }
 pub struct TenantBinding<const MODE: u64>;
-pub type Scope<const MODE: u64> = ApplicationQueryFieldScope<
-    DocumentRetentionSchema<MODE>,
-    Document,
-    DocumentFacts,
-    DocumentIdentityField,
-    String,
-    ReadOnly,
-    NoApplicationUnit,
->;
+pub type Scope<const MODE: u64> = ApplicationQueryFieldScope<DocumentIdentityField>;
 impl<const MODE: u64> ApplicationQueryBinding<DocumentRetentionSchema<MODE>>
     for TenantBinding<MODE>
 {
@@ -103,17 +83,8 @@ impl<const MODE: u64> ApplicationQueryBinding<DocumentRetentionSchema<MODE>>
     type PrincipalIdentityBinding = U64ApplicationValueBinding;
     const IDENTITY: &'static str = "worth.query.body-court.link-query.v1";
     const LIMITS: ApplicationQueryBindingLimits = ApplicationQueryBindingLimits::results(1);
-    fn scope_field() -> ApplicationFieldRef<
-        DocumentRetentionSchema<MODE>,
-        Document,
-        DocumentFacts,
-        DocumentIdentityField,
-        String,
-        ReadOnly,
-        EqualityPredicate,
-        NoApplicationUnit,
-    > {
-        DocumentIdentityField::reference()
+    fn scope_field() -> DocumentIdentityField {
+        DocumentIdentityField::at("DocumentIdentityField")
     }
     fn principal_binding() -> ApplicationPrincipalBindingRef<
         DocumentRetentionSchema<MODE>,
@@ -132,6 +103,6 @@ impl<const MODE: u64> ApplicationQueryIntent<DocumentRetentionSchema<MODE>> for 
         ApplicationQueryParameterSet::new()
     }
     fn into_scope(self) -> Scope<MODE> {
-        Scope::new(DocumentIdentityField::reference(), self.0)
+        Scope::new(DocumentIdentityField::at("DocumentIdentityField"), self.0)
     }
 }

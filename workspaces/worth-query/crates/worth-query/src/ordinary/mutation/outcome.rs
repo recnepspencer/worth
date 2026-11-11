@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::evidence_identity::{
     WorthQueryEvidenceIdentity, WorthQueryEvidenceScope, WorthQueryEvidenceTag,
 };
@@ -102,7 +103,7 @@ impl WorthQueryMutationAftermath {
         receipt: &WorthQueryWriteReceipt,
         receipt_identity: WorthQueryEvidenceIdentity,
         inspection_identity: Option<WorthQueryEvidenceIdentity>,
-    ) -> Self {
+    ) -> Result<Self, IdentityDerivationDenial> {
         let aftermath_identity =
             WorthQueryEvidenceIdentity::compose(WorthQueryEvidenceScope::WorkflowMutationLowering)
                 .field_shape(WorthQueryEvidenceTag::new("role"), "mutation-aftermath")
@@ -111,13 +112,13 @@ impl WorthQueryMutationAftermath {
                     receipt.authority_lane().as_str(),
                 )
                 .field_evidence_identity(WorthQueryEvidenceTag::new("receipt"), &receipt_identity)
-                .seal();
-        Self {
+                .seal()?;
+        Ok(Self {
             authority_lane: receipt.authority_lane(),
             receipt_identity,
             inspection_identity,
             aftermath_identity,
-        }
+        })
     }
 }
 

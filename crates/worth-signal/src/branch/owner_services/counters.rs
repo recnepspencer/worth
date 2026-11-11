@@ -256,3 +256,6 @@ mod tests {
         assert_eq!(snapshot.close_batches(), 15);
     }
 }
+#[cfg(test)]
+#[path = "counters_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;

@@ -4,10 +4,7 @@ use crate::domain_computation::primary_graph::{
     HandlerExecutionDenial, HandlerInterruption, WorthQueryInvariantEntityIdentity,
 };
 use worth_foundational::facade::AspectValue as ApplicationValue;
-use worth_query_installation::facade::{
-    ApplicationFieldRef, ApplicationFieldUnit, ApplicationReadableScalarValueBinding,
-    ApplicationSchema, DeclaredApplicationFieldValue, OperationReads, WritePosture,
-};
+use worth_query_installation::facade::{ApplicationReadableScalarValueBinding, ApplicationSchema};
 
 impl<Schema, Operation>
     WorthQueryApplicationOperationInvariantProjectionReader<'_, '_, Schema, Operation>
@@ -20,14 +17,11 @@ where
         Aspect,
         Field,
         Value,
-        Write,
-        Equality,
-        Unit,
         Denied,
     >(
         &mut self,
         identity: &WorthQueryInvariantEntityIdentity<Schema, Entity>,
-        field: ApplicationFieldRef<Schema, Entity, Aspect, Field, Value, Write, Equality, Unit>,
+        field: Field,
         admit: impl for<'raw, 'checkpoint> FnOnce(
             &'raw ApplicationValue,
             &'checkpoint dyn Fn() -> Result<(), HandlerInterruption>,
@@ -35,10 +29,12 @@ where
         checkpoint: &dyn Fn() -> Result<(), HandlerInterruption>,
     ) -> Result<Result<Option<Value>, Denied>, HandlerExecutionDenial>
     where
-        Field: OperationReads<Operation> + DeclaredApplicationFieldValue<Value = Value>,
+        Field: worth_query_declaration::facade::application_schema::fragment::RecordSelection<
+            Entity = Entity,
+            Aspect = Aspect,
+            Value = Value,
+        >,
         Field::Binding: ApplicationReadableScalarValueBinding,
-        Write: WritePosture,
-        Unit: ApplicationFieldUnit,
     {
         self.require_decision_field(identity, field)
             .map_err(HandlerExecutionDenial::new)?;

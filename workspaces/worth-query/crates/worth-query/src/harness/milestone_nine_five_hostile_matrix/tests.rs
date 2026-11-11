@@ -9,7 +9,8 @@ use super::bundle::MilestoneNineFiveHostileMatrixAdapter;
 #[test]
 fn rows_enforce_required_assertion_classes() {
     let matrix =
-        MilestoneNineFiveHostileMatrixAdapter::debt_close_hostile_certification_matrix_test();
+        MilestoneNineFiveHostileMatrixAdapter::debt_close_hostile_certification_matrix_test()
+            .expect("fixture digest must fit");
     let mut covered = Vec::new();
 
     for row in &matrix.rows {
@@ -54,7 +55,8 @@ fn rows_enforce_required_assertion_classes() {
 #[test]
 fn parity_rows_keep_canonical_identity_but_not_composition_authority() {
     let matrix =
-        MilestoneNineFiveHostileMatrixAdapter::debt_close_hostile_certification_matrix_test();
+        MilestoneNineFiveHostileMatrixAdapter::debt_close_hostile_certification_matrix_test()
+            .expect("fixture digest must fit");
 
     for row_name in [
         "named-scope-table-retained-derived-parity",
@@ -92,7 +94,8 @@ fn parity_rows_keep_canonical_identity_but_not_composition_authority() {
 #[test]
 fn projection_and_reuse_rows_shift_only_the_intended_surface() {
     let matrix =
-        MilestoneNineFiveHostileMatrixAdapter::debt_close_hostile_certification_matrix_test();
+        MilestoneNineFiveHostileMatrixAdapter::debt_close_hostile_certification_matrix_test()
+            .expect("fixture digest must fit");
     let projection = matrix
         .rows
         .iter()
@@ -145,7 +148,8 @@ fn projection_and_reuse_rows_shift_only_the_intended_surface() {
 #[test]
 fn rejection_rows_preserve_typed_temporal_async_targets() {
     let matrix =
-        MilestoneNineFiveHostileMatrixAdapter::debt_close_hostile_certification_matrix_test();
+        MilestoneNineFiveHostileMatrixAdapter::debt_close_hostile_certification_matrix_test()
+            .expect("fixture digest must fit");
     let grouped = matrix
         .rejection_rows
         .iter()

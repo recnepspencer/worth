@@ -21,6 +21,7 @@ fn continuation_test_identity(label: &str) -> WorthQueryEvidenceIdentity {
         )
         .field_shape(WorthQueryEvidenceTag::new("label"), label)
         .seal()
+        .expect("fixture digest must fit")
 }
 
 mod active;

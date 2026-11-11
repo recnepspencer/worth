@@ -33,6 +33,33 @@ impl RetainedRelationalSchemaRegistry {
         }
     }
 
+    pub(crate) fn copy_for_request(
+        registry: &RelationalSchemaRegistry,
+        request: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> Result<Self, crate::branch::RelationalBranchRootCaptureDenial> {
+        use super::compilation_quote::{add, arc};
+        let control = crate::schema::SchemaCompilationControl::Request(*request);
+        let mut bytes = super::registry_quote::retained(registry, control)?;
+        add(&mut bytes, arc::<RelationalSchemaRegistry>()?)?;
+        add(&mut bytes, arc::<SchemaCompilationFunding>()?)?;
+        let memory = request.reserve_retained_memory(bytes).map_err(|cause| {
+            crate::branch::RelationalBranchRootCaptureDenial::Request(cause.into())
+        })?;
+        control
+            .checkpoint()
+            .map_err(crate::branch::RelationalBranchRootCaptureDenial::Request)?;
+        let mut copied = registry.clone();
+        let content = registry
+            .content_formats
+            .snapshot_for_compilation(control)
+            .map_err(crate::branch::RelationalBranchRootCaptureDenial::Request)?;
+        copied.content_formats.bind_carried_snapshot(&content);
+        Ok(Self {
+            registry: Arc::new(copied),
+            _funding: Some(Arc::new(SchemaCompilationFunding { _memory: memory })),
+        })
+    }
+
     #[cfg(test)]
     pub(crate) fn same_allocation(&self, other: &Self) -> bool {
         Arc::ptr_eq(&self.registry, &other.registry)

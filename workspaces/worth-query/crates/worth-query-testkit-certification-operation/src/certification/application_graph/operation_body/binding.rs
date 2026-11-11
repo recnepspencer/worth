@@ -30,15 +30,7 @@ impl<const DESTINATION: u64> ApplicationMutationBinding<DocumentRetentionSchema<
     type Denial = WorthQueryOperationBodyDenial;
     type DenialBinding = BodyDenialBinding;
     type Output = super::output::ScopeOutputs<DESTINATION>;
-    type ScopeBinding = ApplicationMutationFieldScope<
-        DocumentRetentionSchema<DESTINATION>,
-        Document,
-        DocumentFacts,
-        DocumentIdentityField,
-        String,
-        ReadOnly,
-        NoApplicationUnit,
-    >;
+    type ScopeBinding = ApplicationMutationFieldScope<DocumentIdentityField>;
     type PrincipalBinding = DocumentPrincipalBinding;
     type Mapping = ExternalMapping;
     type Principal = Principal;
@@ -50,17 +42,8 @@ impl<const DESTINATION: u64> ApplicationMutationBinding<DocumentRetentionSchema<
     const IDEMPOTENCY_IDENTITY: &'static str = "worth.query.body-court.command.v1";
     const REQUIRES_APPLICATION_PROGRAM: bool = true;
 
-    fn scope_field() -> ApplicationFieldRef<
-        DocumentRetentionSchema<DESTINATION>,
-        Document,
-        DocumentFacts,
-        DocumentIdentityField,
-        String,
-        ReadOnly,
-        EqualityPredicate,
-        NoApplicationUnit,
-    > {
-        DocumentIdentityField::reference()
+    fn scope_field() -> DocumentIdentityField {
+        DocumentIdentityField::at("DocumentIdentityField")
     }
     fn principal_binding() -> ApplicationPrincipalBindingRef<
         DocumentRetentionSchema<DESTINATION>,
@@ -89,7 +72,7 @@ impl<const DESTINATION: u64> ApplicationMutationIntent<DocumentRetentionSchema<D
         DocumentRetentionSchema<DESTINATION>,
     >>::ScopeBinding {
         ApplicationMutationFieldScope::new(
-            DocumentIdentityField::reference(),
+            DocumentIdentityField::at("DocumentIdentityField"),
             self.0.identity.clone(),
         )
     }
@@ -113,15 +96,7 @@ impl<const DESTINATION: u64> ApplicationMutationBinding<DocumentRetentionSchema<
     type Denial = WorthQueryOperationBodyDenial;
     type DenialBinding = BodyDenialBinding;
     type Output = NoApplicationMutationOutputs;
-    type ScopeBinding = ApplicationMutationFieldScope<
-        DocumentRetentionSchema<DESTINATION>,
-        Document,
-        DocumentFacts,
-        DocumentIdentityField,
-        String,
-        ReadOnly,
-        NoApplicationUnit,
-    >;
+    type ScopeBinding = ApplicationMutationFieldScope<DocumentIdentityField>;
     type PrincipalBinding = DocumentPrincipalBinding;
     type Mapping = ExternalMapping;
     type Principal = Principal;
@@ -133,17 +108,8 @@ impl<const DESTINATION: u64> ApplicationMutationBinding<DocumentRetentionSchema<
     const IDEMPOTENCY_IDENTITY: &'static str = "worth.query.body-court.source-command.v1";
     const REQUIRES_APPLICATION_PROGRAM: bool = true;
 
-    fn scope_field() -> ApplicationFieldRef<
-        DocumentRetentionSchema<DESTINATION>,
-        Document,
-        DocumentFacts,
-        DocumentIdentityField,
-        String,
-        ReadOnly,
-        EqualityPredicate,
-        NoApplicationUnit,
-    > {
-        DocumentIdentityField::reference()
+    fn scope_field() -> DocumentIdentityField {
+        DocumentIdentityField::at("DocumentIdentityField")
     }
     fn principal_binding() -> ApplicationPrincipalBindingRef<
         DocumentRetentionSchema<DESTINATION>,
@@ -172,7 +138,7 @@ impl<const DESTINATION: u64> ApplicationMutationIntent<DocumentRetentionSchema<D
         DocumentRetentionSchema<DESTINATION>,
     >>::ScopeBinding {
         ApplicationMutationFieldScope::new(
-            DocumentIdentityField::reference(),
+            DocumentIdentityField::at("DocumentIdentityField"),
             self.0.identity.clone(),
         )
     }

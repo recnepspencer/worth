@@ -162,10 +162,12 @@ fn materialize_unread(
             phase,
             &admission,
             |reader, estate| {
-                let branch =
-                    reader.resolve_entity(BranchIdentityField::reference(), child.scope.branch)?;
+                let branch = reader.resolve_entity(
+                    BranchIdentityField::at("BranchIdentityField"),
+                    child.scope.branch,
+                )?;
                 let institution = reader.resolve_entity(
-                    InstitutionIdentityField::reference(),
+                    InstitutionIdentityField::at("InstitutionIdentityField"),
                     child.scope.institution,
                 )?;
                 reader.require_decision_relation(EstateBranch::reference(), estate, &branch)?;

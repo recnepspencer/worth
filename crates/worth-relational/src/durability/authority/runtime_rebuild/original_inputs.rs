@@ -211,7 +211,7 @@ pub(super) fn restore_catalog(
             .with_reconstructed_original_inputs(inputs, request)
             .map_err(RelationalRecoveryStop::Request)?;
         catalog
-            .append_preencoded_recovery(artifact)
+            .append_preencoded_recovery(Arc::new(artifact))
             .map_err(|cause| corrupt(format!("original catalog installation: {cause:?}")))?;
     }
     runtime.history.install_commit_catalog(catalog);
@@ -243,6 +243,7 @@ pub(super) fn require_replay_prestate(
 }
 
 pub(super) fn bind_replayed_schema(
+    lane: &crate::storage::substrate::maintenance::ReconstructionLane<'_>,
     runtime: &mut RelationalRuntime,
     graph: &OriginalSchemaGraph,
     positioned: &crate::history::data::PositionedCanonicalCommit,
@@ -270,14 +271,14 @@ pub(super) fn bind_replayed_schema(
     let positions = root.output_publication_positions.clone();
     // Source synchronization already chose this exact canonical owner. Schema
     // binding must not replace it with an equivalent, separately owned body.
-    let canonical = root
-        .canonical_envelope()
-        .cloned()
-        .ok_or_else(|| corrupt("replayed source root canonical owner missing"))?;
+    let original = root
+        .canonical_payload()
+        .ok_or_else(|| corrupt("replayed source root Original carrier missing"))?;
     let replacement = crate::branch::RelationalBranchRoot::readmit_unchanged_for_request(
+        lane,
         &issuer,
         &root,
-        canonical,
+        original,
         descriptor.clone(),
         schema,
         positions,
@@ -287,6 +288,7 @@ pub(super) fn bind_replayed_schema(
     runtime
         .history
         .readmit_replayed_root_descriptor(
+            lane,
             request,
             envelope.commit.commit_id,
             descriptor,

@@ -62,7 +62,9 @@ pub(crate) fn compile_value_binding_catalog(
         })
         .collect();
     Ok(WorthQueryInstalledApplicationValueBindingCatalog::new(
-        formats, bindings,
+        formats,
+        bindings,
+        provenance.fragment_catalog().clone(),
     ))
 }
 

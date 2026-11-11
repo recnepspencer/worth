@@ -38,7 +38,7 @@ fn deferred_start_retry_opens_before_the_same_condition_reader() {
                     &workspace,
                 )
                 .unwrap()
-                .start_workflow(&mut workspace)
+                .start_workflow(&mut workspace).expect("fixture digest must fit")
             else {
                 panic!("the declared condition produces a retained deferred start");
             };
@@ -47,7 +47,7 @@ fn deferred_start_retry_opens_before_the_same_condition_reader() {
         |deferred, workspace| {
             let counters = deferred.counters();
             assert_ne!(counters, Default::default());
-            match deferred.retry(workspace) {
+            match deferred.retry(workspace).expect("fixture digest must fit") {
                 TransitionOutcome::Deferred(_) => None,
                 TransitionOutcome::Denied(denial) => {
                     assert_eq!(denial.counters(), counters);

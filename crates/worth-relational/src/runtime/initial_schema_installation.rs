@@ -6,6 +6,7 @@ use std::sync::Arc;
 
 mod application_publication;
 mod fresh_admission;
+mod home_target;
 mod inventory_digest;
 mod publication;
 mod receipt;
@@ -57,6 +58,7 @@ impl RelationalRuntime {
         let mut installed = configuration.initial_installation();
         let rebuilt = rebuilt_schema_contract_runtime(
             &installed.config.schema.registry,
+            &installed.config.schema.invariant_catalog.registrations,
             snapshot.custom_invariants,
             snapshot.custom_invariant_generation,
             snapshot.sealed,
@@ -246,13 +248,20 @@ impl RelationalInitialSchemaInstallation<'_> {
             FrozenCustomInvariantRegistry::compile(&merged, registrations, sources, control)
                 .map_err(denial::inventory_compilation_denial)?;
         let source_groups = registry.source_inventory();
-        let rebuilt = rebuilt_schema_contract_runtime(&merged, registry, generation, true, control)
-            .map_err(|cause| {
-                RelationalInitialSchemaInstallationDenial::new(
-                    RelationalInitialSchemaInstallationDenialKind::Request(cause),
-                    format!("{cause:?}"),
-                )
-            })?;
+        let rebuilt = rebuilt_schema_contract_runtime(
+            &merged,
+            &installed.config.schema.invariant_catalog.registrations,
+            registry,
+            generation,
+            true,
+            control,
+        )
+        .map_err(|cause| {
+            RelationalInitialSchemaInstallationDenial::new(
+                RelationalInitialSchemaInstallationDenialKind::Request(cause),
+                format!("{cause:?}"),
+            )
+        })?;
         // All fallible schema and invariant validation completes before the
         // first owner mutation. This keeps the initial installation atomic.
         self.runtime
@@ -302,6 +311,7 @@ impl RelationalInitialSchemaInstallation<'_> {
 /// invariant registries the installed one already carries.
 fn rebuilt_schema_contract_runtime(
     merged: &RelationalSchemaRegistry,
+    declared: &[crate::validation::data::InvariantRegistration],
     custom_invariants: FrozenCustomInvariantRegistry,
     custom_invariant_generation: u64,
     sealed: bool,
@@ -310,6 +320,7 @@ fn rebuilt_schema_contract_runtime(
     let plans = crate::branch::RetainedRelationalAspectPlans::compile(merged, control)?;
     SchemaContractRuntimeSubsystem::for_schema_compilation(
         merged,
+        declared,
         plans,
         custom_invariants,
         custom_invariant_generation,

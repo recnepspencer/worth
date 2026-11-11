@@ -8,6 +8,10 @@ use worth_query_execution::facade::{
 };
 use worth_store_application::*;
 
+mod query_custody;
+mod unclean;
+pub use query_custody::{UnadmittedHomeQueryCustodyRefused, UnadmittedHomeQueryService};
+
 pub enum WorthQueryApplicationHomeOpenRefused<Schema: ApplicationSchemaComposition, Program> {
     Preparation(WorthQueryApplicationPreparationDenial),
     Binding {
@@ -21,6 +25,11 @@ pub enum WorthQueryApplicationHomeOpenRefused<Schema: ApplicationSchemaCompositi
     RelationalAttachment {
         query: PreparedHomeApplication<Schema, Program>,
         home: RelationalAttachmentRefused,
+    },
+    NativePreparation {
+        query: PreparedHomeApplication<Schema, Program>,
+        home: UnrecoveredApplicationHome,
+        cause: ApplicationHomeNativeSchemaPreparationDenial,
     },
     NativeInstallation {
         query: QueryHomeNativeInstallationRefused<Schema, Program>,
@@ -122,12 +131,12 @@ pub enum WorthQueryApplicationHomeOpenRefused<Schema: ApplicationSchemaCompositi
         home: DirectoryHome,
     },
     CustodyReadmission {
-        query: ReadmittedHomeQueryService<Schema, Program>,
+        query: UnadmittedHomeQueryService<Schema, Program>,
         home: DirectoryHome,
         cause: HomeCustodyReadmissionDenial,
     },
     OwnerAdmission {
-        query: ReadmittedHomeQueryService<Schema, Program>,
+        query: UnadmittedHomeQueryService<Schema, Program>,
         home: ApplicationHomeOwnerAdmissionRefused,
     },
 }
@@ -135,6 +144,8 @@ pub enum WorthQueryApplicationHomeOpenRefused<Schema: ApplicationSchemaCompositi
 #[derive(Debug)]
 pub enum HomeCustodyReadmissionDenial {
     Query(QueryHomeCustodyReadmissionDenial),
+    /// The Home refused Query's decoded dispatch prefix as its actual journal head.
+    DispatchJournal(ApplicationHomeDispatchJournalDenial),
 }
 
 impl<Schema: ApplicationSchemaComposition, Program> std::fmt::Debug
@@ -155,6 +166,7 @@ impl<Schema: ApplicationSchemaComposition, Program>
             Self::Binding { cause, .. } => format!("{cause:?}"),
             Self::Physical { cause, .. } => format!("{cause:?}"),
             Self::RelationalAttachment { home, .. } => format!("{home:?}"),
+            Self::NativePreparation { cause, .. } => format!("{cause:?}"),
             Self::NativeInstallation { query, .. } => query.reason().to_string(),
             Self::NativeReadmission { home, .. } => format!("{:?}", home.reason()),
             Self::QueryPublicationReadmissionRequired { home, .. } => {

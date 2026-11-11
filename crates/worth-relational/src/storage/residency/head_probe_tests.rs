@@ -38,6 +38,21 @@ impl RelationalDurableColdSource for HistoryUnavailable {
         self.0.read_member_owned(request, original, member, limit)
     }
 
+    fn validate_member_custody_retirement(
+        &self,
+        original: &(dyn std::any::Any + Send + Sync),
+    ) -> Result<(), crate::durability::medium::RelationalDurableMemberRetirementRefusal> {
+        self.0.validate_member_custody_retirement(original)
+    }
+
+    fn advance_member_custody_retirement(
+        &self,
+        request: &worth_execution::ExecutionRequest<'_, '_>,
+        original: &mut (dyn std::any::Any + Send + Sync),
+    ) -> crate::durability::medium::RelationalDurableMemberRetirementObservation {
+        self.0.advance_member_custody_retirement(request, original)
+    }
+
     fn retain_members(
         &self,
         members: &[RelationalDurableMemberLocator],
@@ -63,10 +78,14 @@ impl RelationalDurableColdSource for HistoryUnavailable {
 fn edition(fixture: &RegionFixture) -> crate::runtime::PartitionEdition {
     let mut cold = fixture.cold.clone();
     cold.source = Some(Arc::new(HistoryUnavailable(fixture.source.clone())));
-    crate::runtime::PartitionEdition::new(BTreeMap::from([(
-        fixture.entity.partition_id,
-        RelationalRegionRetention::new(RelationalRegionResidency::cold(cold).unwrap(), None),
-    )]))
+    crate::runtime::PartitionEdition::new(
+        BTreeMap::from([(
+            fixture.entity.partition_id,
+            RelationalRegionRetention::new(RelationalRegionResidency::cold(cold).unwrap(), None),
+        )])
+        .into_iter()
+        .collect(),
+    )
 }
 
 #[test]

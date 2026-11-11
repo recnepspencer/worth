@@ -29,6 +29,7 @@ use super::{
 
 mod advancement_publication;
 mod binding_denial;
+pub(in crate::domain_computation::primary_graph) mod branch_activation_history;
 mod checkpoint;
 pub(in crate::domain_computation::primary_graph) mod checkpoint_transition;
 mod home_activation;
@@ -40,6 +41,7 @@ mod preparation;
 pub(in crate::domain_computation::primary_graph) use preparation::map_checkpoint_recovery_stop;
 pub(super) mod prepared_native;
 mod program_activation_recovery;
+pub(in crate::domain_computation::primary_graph) use program_activation_recovery::read_activation;
 mod program_activation_seeding;
 mod publication;
 mod publication_target;
@@ -179,6 +181,14 @@ where
                         WorthQueryPrimaryGraphInstallationDenialKind::BindingSchemaMismatch,
                         format!("principal identity encoding was rejected: {denial:?}"),
                     )
+                    .with_field_encoding_denial(
+                        worth_query_declaration::facade::application_schema::ApplicationFieldBindingLocus::new(
+                            installed_binding.principal_entity(),
+                            installed_binding.principal_identity_aspect(),
+                            installed_binding.principal_identity_field(),
+                        ),
+                        denial,
+                    )
                 })?,
             identity,
             status,
@@ -257,3 +267,8 @@ pub(super) fn request_denial(
 pub(super) mod request_read_denial;
 
 mod court_doors_for_test;
+
+mod publication_storage;
+pub(in crate::domain_computation::primary_graph) use publication_storage::{
+    BootstrapPublicationReservation, BootstrapPublicationStorage,
+};

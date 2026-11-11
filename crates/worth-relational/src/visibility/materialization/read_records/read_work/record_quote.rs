@@ -1,8 +1,7 @@
-//! Borrowed metadata bounds the established owner-accounted clone payload.
-//! Schema strings clone their length; aspect state uses the authoritative
-//! `owned_allocation_capacity_bytes` measure. Collectors settle that same measure
-//! immediately after cloning. It excludes allocator and BTree node structural
-//! backing, so this is not a bound on the clone's complete physical allocation.
+//! Prepare the destination record's newly allocated clone payload.
+//! Schema strings copy their text; immutable aspect state copies only shared
+//! references already included in the record's inline storage. The keyed/read
+//! checkpoint pays that fixed reference work. Settlement uses the same measure.
 use super::super::reader::KindScanVisibility;
 use super::super::visibility::{visible_metadata, visible_relation_metadata};
 use crate::execution::RelationalExecutionDenialCause as Cause;
@@ -23,7 +22,7 @@ pub(crate) fn entity(
                 record
                     .extra()
                     .authoritative_aspect_state()
-                    .map_or(0, |state| state.owned_allocation_capacity_bytes()),
+                    .map_or(0, |state| state.clone_allocation_capacity_bytes()),
             ))
         }),
         KindScanVisibility::AtVersion(version) => partition
@@ -35,7 +34,7 @@ pub(crate) fn entity(
                     metadata.kind_id,
                     metadata
                         .authoritative_aspect_state()
-                        .map_or(0, |state| state.owned_allocation_capacity_bytes()),
+                        .map_or(0, |state| state.clone_allocation_capacity_bytes()),
                 )
             }),
     };
@@ -65,7 +64,7 @@ pub(crate) fn relation(
                 record
                     .extra()
                     .authoritative_aspect_state()
-                    .map_or(0, |state| state.owned_allocation_capacity_bytes()),
+                    .map_or(0, |state| state.clone_allocation_capacity_bytes()),
             ))
         }),
         KindScanVisibility::AtVersion(version) => {
@@ -74,7 +73,7 @@ pub(crate) fn relation(
                     metadata.kind_id,
                     metadata
                         .authoritative_aspect_state()
-                        .map_or(0, |state| state.owned_allocation_capacity_bytes()),
+                        .map_or(0, |state| state.clone_allocation_capacity_bytes()),
                 )
             })
         }
@@ -112,7 +111,7 @@ pub(crate) fn relation_head(
         record
             .extra()
             .authoritative_aspect_state()
-            .map_or(0, |state| state.owned_allocation_capacity_bytes()),
+            .map_or(0, |state| state.clone_allocation_capacity_bytes()),
     )
 }
 
@@ -136,7 +135,7 @@ pub(crate) fn entity_head(
         record
             .extra()
             .authoritative_aspect_state()
-            .map_or(0, |state| state.owned_allocation_capacity_bytes()),
+            .map_or(0, |state| state.clone_allocation_capacity_bytes()),
     )
 }
 

@@ -8,6 +8,7 @@ use crate::domain_installation::{
     WorthQueryOperationProjectionRole, WorthQueryOperationPromotionContract,
     WorthQueryOperationPublicationContract, WorthQueryPublishedWorkflow,
 };
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use worth_proof::TransitionOutcome;
 use worth_schema_graph::facade::{
     lower_graph_promotion_identity_basis, CarryingArtifactIdentity, DurableReferenceKind,
@@ -123,12 +124,12 @@ impl<D, O, F, L: BasisOperationLane> WorthQueryPublishedWorkflow<D, O, F, L> {
     pub fn admit_promotion_on_reference(
         &self,
         intent: WorthQueryDurableReferenceIntent,
-    ) -> WorthQueryPromotionOnReferenceOutcome {
+    ) -> Result<WorthQueryPromotionOnReferenceOutcome, IdentityDerivationDenial> {
         let trace = self.trace();
         if !trace.bound().installation_is_current() {
-            return TransitionOutcome::Stale(
+            return Ok(TransitionOutcome::Stale(
                 WorthQueryPromotionOnReferenceDenial::StaleInstallationGeneration,
-            );
+            ));
         }
         let mut counters = WorthQueryPromotionOnReferenceCounters {
             promotion_contract_checks: 1,
@@ -139,58 +140,72 @@ impl<D, O, F, L: BasisOperationLane> WorthQueryPublishedWorkflow<D, O, F, L> {
         if trace.bound().definition().semantics().promotion
             != WorthQueryOperationPromotionContract::OnDurableReference
         {
-            return denied(WorthQueryPromotionOnReferenceDenial::PromotionNotDeclared);
+            return Ok(denied(
+                WorthQueryPromotionOnReferenceDenial::PromotionNotDeclared,
+            ));
         }
         let WorthQueryOperationPublicationContract::DerivedProjection { projection_role } =
             &trace.bound().definition().semantics().publication
         else {
-            return denied(WorthQueryPromotionOnReferenceDenial::CarryingPublicationMismatch);
+            return Ok(denied(
+                WorthQueryPromotionOnReferenceDenial::CarryingPublicationMismatch,
+            ));
         };
         if projection_role != intent.carrying_projection_role() {
-            return denied(WorthQueryPromotionOnReferenceDenial::CarryingPublicationMismatch);
+            return Ok(denied(
+                WorthQueryPromotionOnReferenceDenial::CarryingPublicationMismatch,
+            ));
         }
         let Some(report) = trace.lineage_report() else {
-            return denied(WorthQueryPromotionOnReferenceDenial::LineageMissing);
+            return Ok(denied(WorthQueryPromotionOnReferenceDenial::LineageMissing));
         };
         let Some(evidence) = report.evidence().get(intent.lineage_evidence_index()) else {
-            return denied(WorthQueryPromotionOnReferenceDenial::LineageEvidenceMissing);
+            return Ok(denied(
+                WorthQueryPromotionOnReferenceDenial::LineageEvidenceMissing,
+            ));
         };
         if evidence.stage_identity() != self.publication_stage_identity() {
-            return denied(
+            return Ok(denied(
                 WorthQueryPromotionOnReferenceDenial::LineageStageDoesNotCarryPublication,
-            );
+            ));
         }
         if !evidence.outcome().is_authoritative_continuity() {
-            return denied(WorthQueryPromotionOnReferenceDenial::LineageIsNotAuthoritative);
+            return Ok(denied(
+                WorthQueryPromotionOnReferenceDenial::LineageIsNotAuthoritative,
+            ));
         }
         let Some(subject) = evidence
             .outcome()
             .authoritative_subject_evidence_identity(intent.lineage_subject_ordinal())
         else {
-            return denied(WorthQueryPromotionOnReferenceDenial::LineageSubjectMissing);
+            return Ok(denied(
+                WorthQueryPromotionOnReferenceDenial::LineageSubjectMissing,
+            ));
         };
         let Some(subject_entity) = evidence
             .outcome()
             .authoritative_subject_entity_identity(intent.lineage_subject_ordinal())
         else {
-            return denied(
+            return Ok(denied(
                 WorthQueryPromotionOnReferenceDenial::LineageSubjectEntityBindingUnavailable,
-            );
+            ));
         };
         if !self.publication_carries_entity(subject_entity) {
-            return denied(
+            return Ok(denied(
                 WorthQueryPromotionOnReferenceDenial::LineageSubjectNotCarriedByPublication,
-            );
+            ));
         }
         let Ok(subelement_key) = SubelementKey::new(subject.as_str()) else {
-            return denied(WorthQueryPromotionOnReferenceDenial::LineageSubjectMissing);
+            return Ok(denied(
+                WorthQueryPromotionOnReferenceDenial::LineageSubjectMissing,
+            ));
         };
         let graph_request = PromotionRequest::new(intent.reference_kind(), subelement_key);
         counters.referenced_subelements += 1;
         let Ok(carrying_artifact) = CarryingArtifactIdentity::new(self.receipt_identity()) else {
-            return denied(
+            return Ok(denied(
                 WorthQueryPromotionOnReferenceDenial::InvalidCarryingPublicationIdentity,
-            );
+            ));
         };
         let promoted_graph_identity = admit_graph_promotion_identity(
             lower_graph_promotion_identity_basis(graph_request.clone(), carrying_artifact),
@@ -209,21 +224,23 @@ impl<D, O, F, L: BasisOperationLane> WorthQueryPublishedWorkflow<D, O, F, L> {
                     graph_request.subelement_key().as_str().to_owned(),
                 ),
             ],
-        );
+        )?;
         let proof = mint_operation_phase_proof(
             identity.clone(),
             Some(self.trace().phase_proof().payload().identity()),
             operation_phase_basis(self.trace().phase_proof()).clone(),
         );
-        TransitionOutcome::Success(WorthQueryPromotionOnReferenceCapability {
-            identity,
-            publication_identity: self.receipt_identity().to_owned(),
-            lineage_report_identity: report.identity().to_owned(),
-            intent,
-            promoted_graph_identity,
-            counters,
-            proof,
-        })
+        Ok(TransitionOutcome::Success(
+            WorthQueryPromotionOnReferenceCapability {
+                identity,
+                publication_identity: self.receipt_identity().to_owned(),
+                lineage_report_identity: report.identity().to_owned(),
+                intent,
+                promoted_graph_identity,
+                counters,
+                proof,
+            },
+        ))
     }
 }
 

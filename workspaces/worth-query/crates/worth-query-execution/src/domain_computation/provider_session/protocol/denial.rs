@@ -77,6 +77,11 @@ pub enum WorthQueryProviderSessionDenialKind {
     SessionProtocolUnsupported,
     AllocationDenied,
     ProviderRejected,
+    /// Canonical output membership disagreed before the World transition.
+    OutputCorrespondenceMismatch {
+        cause:
+            crate::domain_computation::primary_graph::WorthQueryApplicationOutputProjectionDenial,
+    },
     ProviderPanicked,
     TokenNotMintedForPlan,
     EmptyPhysicalSessionIdentity,
@@ -88,6 +93,14 @@ pub enum WorthQueryProviderSessionDenialKind {
 /// this description does not itself grant retry or cleanup authority.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct WorthQueryProviderSessionFailure {
+    correction_material: Option<crate::facade::correction_material::QueryCorrectionMaterialDenial>,
+    relation_preimage: Option<
+        std::sync::Arc<
+            crate::domain_computation::application_aftermath::WorthQueryRelationPreImageFailure,
+        >,
+    >,
+    candidate_support:
+        Option<std::sync::Arc<crate::domain_computation::WorthQueryInvariantExecutionFailure>>,
     preimage:
         Option<crate::domain_computation::application_aftermath::WorthQueryPreImageRetentionDenial>,
     managed_index:
@@ -115,6 +128,46 @@ pub struct WorthQueryProviderSessionFailure {
 }
 
 impl WorthQueryProviderSessionFailure {
+    pub(in crate::domain_computation) fn with_correction_material_denial(
+        mut self,
+        cause: crate::facade::correction_material::QueryCorrectionMaterialDenial,
+    ) -> Self {
+        self.correction_material = Some(cause);
+        self
+    }
+    pub fn correction_material_denial(
+        &self,
+    ) -> Option<&crate::facade::correction_material::QueryCorrectionMaterialDenial> {
+        self.correction_material.as_ref()
+    }
+    pub fn relation_preimage_failure(
+        &self,
+    ) -> Option<&crate::domain_computation::application_aftermath::WorthQueryRelationPreImageFailure>
+    {
+        self.relation_preimage.as_deref()
+    }
+    pub(in crate::domain_computation) fn with_relation_preimage_failure(
+        mut self,
+        cause: crate::domain_computation::application_aftermath::WorthQueryRelationPreImageFailure,
+    ) -> Self {
+        self.relation_preimage = Some(std::sync::Arc::new(cause));
+        self
+    }
+    /// Exact typed complete-candidate support refusal, including the affected writer source.
+    pub fn candidate_support_failure(
+        &self,
+    ) -> Option<&crate::domain_computation::WorthQueryInvariantExecutionFailure> {
+        self.candidate_support.as_deref()
+    }
+    pub(in crate::domain_computation) fn with_candidate_support_failure(
+        mut self,
+        cause: crate::domain_computation::WorthQueryInvariantExecutionFailure,
+    ) -> Self {
+        self.detail = cause.detail().to_owned();
+        self.candidate_support = Some(std::sync::Arc::new(cause));
+        self
+    }
+
     pub(in crate::domain_computation) fn with_preimage_retention_denial(
         mut self,
         cause: crate::domain_computation::application_aftermath::WorthQueryPreImageRetentionDenial,
@@ -135,6 +188,9 @@ impl WorthQueryProviderSessionFailure {
         counters: WorthQueryProviderSessionProtocolCounters,
     ) -> Self {
         Self {
+            correction_material: None,
+            relation_preimage: None,
+            candidate_support: None,
             preimage: None,
             managed_index: None,
             kind,

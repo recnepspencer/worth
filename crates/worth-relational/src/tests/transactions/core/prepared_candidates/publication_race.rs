@@ -143,7 +143,7 @@ fn publication_port_performs_one_exact_candidate_and_reports_the_loser_stale() {
         .next_basis()
         .inner
         .root
-        .is_complete(&runtime.services.symbols.interner_snapshot()));
+        .is_complete(execution, &runtime.services.symbols.interner_snapshot()));
     let observation = performed.next_basis().observation();
     let created_entity = match &performed
         .canonical_commit()

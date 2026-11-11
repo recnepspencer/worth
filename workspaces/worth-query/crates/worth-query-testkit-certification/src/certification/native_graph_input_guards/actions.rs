@@ -86,15 +86,15 @@ worth_query_structured_value_binding!(pub DenialBinding for WorthQueryOperationB
 worth_query_operation!(pub Save for Schema, input SaveInput);
 worth_query_operation!(pub Change for Schema, input ChangeInput);
 worth_query_operation!(pub Introduce for Schema, input IntroduceInput);
-worth_query_operation_reads!(Save => [Row, RowIdentity, Parent, ParentRows, Company]);
-worth_query_operation_writes!(Save => [RowValue, AuditIdentity, AuditValue]);
+worth_query_operation_reads!(Save => [Row, Parent, ParentRows]);
+
 worth_query_operation_creates!(Save => [Audit]);
-worth_query_operation_reads!(Change => [Parent, ParentIdentity]);
-worth_query_operation_writes!(Change => [Company]);
-worth_query_operation_reads!(Introduce => [Row, RowIdentity]);
+worth_query_operation_reads!(Change => [Parent]);
+
+worth_query_operation_reads!(Introduce => [Row]);
 worth_query_operation_creates!(Introduce => [Parent]);
 worth_query_operation_links!(Introduce => [ParentRows]);
-worth_query_operation_writes!(Introduce => [ParentIdentity, Company, ParentRevision]);
+
 pub fn row(input: &SaveRow) -> String {
     input.row.clone()
 }
@@ -110,7 +110,7 @@ idempotency u64, identity "worth.query.path-input.save-request.v1",
 decision WorthQueryOperationBodyDecision<Schema, Row>, denial DenialBinding,
 handler identity "worth.query.path-input.save-body.v1", program required, outputs NoApplicationMutationOutputs,
 principal PrincipalBinding, mapping Mapping, principal_entity Principal, principal_identity u64, identity_binding U64ApplicationValueBinding,
-scope Row, RowFacts, RowIdentity, String, ReadOnly, NoApplicationUnit, field RowIdentity::reference(), value row,
+scope RowIdentity, field RowIdentity::at("RowIdentity"), value row,
 );
 worth_query_mutation_binding!(pub ChangeBinding for ChangeParent, schema Schema,
 identity "worth.query.path-input.change-binding.v1", input ChangeInput, operation Change, result ResultBinding,
@@ -118,7 +118,7 @@ idempotency u64, identity "worth.query.path-input.change-request.v1",
 decision WorthQueryOperationBodyDecision<Schema, Parent>, denial DenialBinding,
 handler identity "worth.query.path-input.change-body.v1", program required, outputs NoApplicationMutationOutputs,
 principal PrincipalBinding, mapping Mapping, principal_entity Principal, principal_identity u64, identity_binding U64ApplicationValueBinding,
-scope Parent, ParentFacts, ParentIdentity, String, ReadOnly, NoApplicationUnit, field ParentIdentity::reference(), value parent,
+scope ParentIdentity, field ParentIdentity::at("ParentIdentity"), value parent,
 );
 worth_query_mutation_binding!(pub IntroduceBinding for IntroduceParent, schema Schema,
 identity "worth.query.path-input.introduce-binding.v1", input IntroduceInput, operation Introduce, result ResultBinding,
@@ -126,7 +126,7 @@ idempotency u64, identity "worth.query.path-input.introduce-request.v1",
 decision WorthQueryOperationBodyDecision<Schema, Row>, denial DenialBinding,
 handler identity "worth.query.path-input.introduce-body.v1", program required, outputs NoApplicationMutationOutputs,
 principal PrincipalBinding, mapping Mapping, principal_entity Principal, principal_identity u64, identity_binding U64ApplicationValueBinding,
-scope Row, RowFacts, RowIdentity, String, ReadOnly, NoApplicationUnit, field RowIdentity::reference(), value introduce_row,
+scope RowIdentity, field RowIdentity::at("RowIdentity"), value introduce_row,
 );
 
 pub fn save_body() -> ApplicationOperationBody<Schema, Save, SaveRow> {
@@ -134,23 +134,23 @@ pub fn save_body() -> ApplicationOperationBody<Schema, Save, SaveRow> {
         .body()
         .expect_input_from_path(
             ApplicationQueryRootPath::from(Row::reference()).reverse(ParentRows::reference()),
-            Company::reference(),
+            Company::at("Company"),
             "company",
         )
         .unwrap()
         .expect_input_from_path(
             ApplicationQueryRootPath::from(Row::reference()),
-            RowIdentity::reference(),
+            RowIdentity::at("RowIdentity"),
             "row",
         )
         .unwrap()
-        .assign_input(RowValue::reference(), "value")
+        .assign_input(RowValue::at("RowValue"), "value")
         .unwrap()
         .create_in_scope(Audit::reference(), "audit")
         .unwrap()
-        .initialize_input(AuditIdentity::reference(), "row")
+        .initialize_input(AuditIdentity::at("AuditIdentity"), "row")
         .unwrap()
-        .initialize_input(AuditValue::reference(), "value")
+        .initialize_input(AuditValue::at("AuditValue"), "value")
         .unwrap()
         .finish()
         .unwrap()

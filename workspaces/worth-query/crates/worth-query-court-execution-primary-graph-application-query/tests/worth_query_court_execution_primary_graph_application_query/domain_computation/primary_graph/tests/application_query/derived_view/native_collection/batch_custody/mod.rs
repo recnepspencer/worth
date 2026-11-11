@@ -30,7 +30,7 @@ fn shared_pair_claims_survive_projection_and_late_refusal_is_atomic() {
             let open = selected
                 .resolve_entity(
                     &host_custody.phase_for_application_for_test(&world.application),
-                    AccountStatus::reference(),
+                    AccountStatus::at("AccountStatus"),
                     "open".to_string(),
                     &request,
                     WorthQueryPrincipalResolutionMode::Ordinary,
@@ -166,7 +166,7 @@ fn shared_pair_claims_survive_projection_and_late_refusal_is_atomic() {
             let key = keys[0].clone();
 
             let graph = (*world.application.runtime_for_test()).primary_graph_for_test().unwrap();
-            let field = AccountLabel::reference();
+            let field = AccountLabel::at("AccountLabel");
             let locator = (*graph
                 .layout_for_test())
                 .field_locator_for_test(field.entity(), field.aspect(), field.field())
@@ -223,7 +223,7 @@ fn shared_pair_claims_survive_projection_and_late_refusal_is_atomic() {
             let open = fresh
                 .resolve_entity(
                     &host_custody.phase_for_application_for_test(&world.application),
-                    AccountStatus::reference(),
+                    AccountStatus::at("AccountStatus"),
                     "open".to_string(),
                     &request,
                     WorthQueryPrincipalResolutionMode::Ordinary,
@@ -249,7 +249,7 @@ fn shared_pair_claims_survive_projection_and_late_refusal_is_atomic() {
                 let body_scope = fresh
                     .resolve_entity(
                         &host_custody.phase_for_application_for_test(&world.application),
-                        AccountStatus::reference(),
+                        AccountStatus::at("AccountStatus"),
                         row.status().to_string(),
                         &request,
                         WorthQueryPrincipalResolutionMode::Ordinary,
@@ -355,7 +355,7 @@ fn shared_pair_claims_survive_projection_and_late_refusal_is_atomic() {
                                 let scope = selected
                                     .resolve_entity(
                                         &host_custody.phase_for_application_for_test(&world.application),
-                                        AccountStatus::reference(),
+                                        AccountStatus::at("AccountStatus"),
                                         row.status().to_owned(),
                                         &request,
                                         WorthQueryPrincipalResolutionMode::Ordinary,

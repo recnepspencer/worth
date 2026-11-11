@@ -200,10 +200,9 @@ impl WorthQueryInstalledApplicationValueBinding {
             return Err(rejected());
         }
         let decode = self.recipe.admitted_decode().ok_or_else(rejected)?;
-        decode(value, admission)?
-            .downcast::<Value>()
-            .map(|value| *value)
-            .map_err(|_| rejected())
+        let mut output: Option<Value> = None;
+        decode(value, admission, Some(&mut output))?;
+        output.ok_or_else(rejected)
     }
 
     /// Prove readability through the exact installed admitted decoder. Its
@@ -218,9 +217,9 @@ impl WorthQueryInstalledApplicationValueBinding {
                 binding_identity: self.recipe.binding_identity().clone(),
             }
         })?;
-        // The erased dispatch admits its decoded allocation before constructing it.
-        // Its reservation remains with the caller through completion.
-        decode(value, admission).map(drop)
+        // The owner admits its decoded allocations before construction.
+        // Validation needs no output slot or erasure allocation.
+        decode(value, admission, None)
     }
 
     /// Readmits a retained native literal through this exact installed decoder

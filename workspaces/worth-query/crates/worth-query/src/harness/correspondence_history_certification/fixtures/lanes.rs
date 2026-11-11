@@ -5,6 +5,7 @@ use crate::correspondence::{
 use crate::correspondence_history::{
     compose_correspondence_historical_envelope, CorrespondenceHistoricalEnvelope,
 };
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::facade::foundation::{
     admit_historical_evaluation_path, build_correspondence_historical_parity_bundle,
     resolve_historical_materialization_path, HistoricalCapabilityDescriptor,
@@ -31,35 +32,47 @@ pub(crate) struct CertificationLanes {
     pub(crate) drift: CorrespondenceHistoryCertificationLane,
 }
 
-pub(crate) fn lineage_authoritative_lane() -> CorrespondenceHistoryCertificationLane {
-    lane_from_supported_envelope(lineage_authoritative_envelope())
+pub(crate) fn lineage_authoritative_lane(
+) -> Result<CorrespondenceHistoryCertificationLane, IdentityDerivationDenial> {
+    Ok(lane_from_supported_envelope(
+        lineage_authoritative_envelope()?,
+    ))
 }
 
-pub(crate) fn structural_unique_replay_lane() -> CorrespondenceHistoryCertificationLane {
-    lane_from_supported_envelope(structural_unique_replay_envelope())
+pub(crate) fn structural_unique_replay_lane(
+) -> Result<CorrespondenceHistoryCertificationLane, IdentityDerivationDenial> {
+    Ok(lane_from_supported_envelope(
+        structural_unique_replay_envelope()?,
+    ))
 }
 
-pub(crate) fn disagreement_lane() -> CorrespondenceHistoryCertificationLane {
-    lane_from_supported_envelope(disagreement_envelope())
+pub(crate) fn disagreement_lane(
+) -> Result<CorrespondenceHistoryCertificationLane, IdentityDerivationDenial> {
+    Ok(lane_from_supported_envelope(disagreement_envelope()?))
 }
 
-pub(crate) fn ambiguity_lane() -> CorrespondenceHistoryCertificationLane {
-    lane_from_supported_envelope(ambiguity_envelope())
+pub(crate) fn ambiguity_lane(
+) -> Result<CorrespondenceHistoryCertificationLane, IdentityDerivationDenial> {
+    Ok(lane_from_supported_envelope(ambiguity_envelope()?))
 }
 
-pub(crate) fn retained_lane() -> CorrespondenceHistoryCertificationLane {
-    lane_from_supported_envelope(retained_path_envelope())
+pub(crate) fn retained_lane(
+) -> Result<CorrespondenceHistoryCertificationLane, IdentityDerivationDenial> {
+    Ok(lane_from_supported_envelope(retained_path_envelope()?))
 }
 
-pub(crate) fn replay_lane() -> CorrespondenceHistoryCertificationLane {
-    lane_from_supported_envelope(replay_path_envelope())
+pub(crate) fn replay_lane(
+) -> Result<CorrespondenceHistoryCertificationLane, IdentityDerivationDenial> {
+    Ok(lane_from_supported_envelope(replay_path_envelope()?))
 }
 
-pub(crate) fn reconstruction_lane() -> CorrespondenceHistoryCertificationLane {
-    lane_from_supported_envelope(reconstruction_path_envelope())
+pub(crate) fn reconstruction_lane(
+) -> Result<CorrespondenceHistoryCertificationLane, IdentityDerivationDenial> {
+    Ok(lane_from_supported_envelope(reconstruction_path_envelope()?))
 }
 
-pub(crate) fn prediction_drift_lane() -> CorrespondenceHistoryCertificationLane {
+pub(crate) fn prediction_drift_lane(
+) -> Result<CorrespondenceHistoryCertificationLane, IdentityDerivationDenial> {
     let execution = crate::execution::execute_preflight_bundle(&detail_preflight_bundle())
         .expect("execution should succeed");
     let correspondence =
@@ -75,7 +88,7 @@ pub(crate) fn prediction_drift_lane() -> CorrespondenceHistoryCertificationLane 
         1,
         8,
         HistoricalPathReuseDescriptor::with_replay_tail_reuse(),
-    );
+    )?;
     let capability = HistoricalCapabilityDescriptor::new_for_test(
         "basis:drift",
         Some(crate::historical::AdmittedHistoricalPathClass::AdmittedDeltaReplayPath),
@@ -84,7 +97,7 @@ pub(crate) fn prediction_drift_lane() -> CorrespondenceHistoryCertificationLane 
         false,
         true,
         HistoricalPathReuseDescriptor::with_replay_tail_reuse(),
-    );
+    )?;
     let admission =
         admit_historical_evaluation_path(request, capability).expect("admission should succeed");
     let historical = resolve_historical_materialization_path(
@@ -92,15 +105,13 @@ pub(crate) fn prediction_drift_lane() -> CorrespondenceHistoryCertificationLane 
         HistoricalMaterializationDescriptor::new_for_test(
             "basis:drift",
             ResolvedHistoricalPathClass::ResolvedDeltaReplayPath,
-        )
+        )?
         .with_realized_work(3, 0),
     )
     .expect("historical drift path should resolve");
 
-    lane_from_supported_envelope(compose_correspondence_historical_envelope(
-        execution,
-        correspondence,
-        historical,
+    Ok(lane_from_supported_envelope(
+        compose_correspondence_historical_envelope(execution, correspondence, historical),
     ))
 }
 

@@ -9,6 +9,7 @@ use worth_query_topology_entry::{
     TopologySchemaBinding,
 };
 
+#[cfg(test)]
 pub(super) fn seed_cycles<Schema: TopologySchemaBinding>(
     phase: &WorthQueryBootstrapAdvancementPhase<'_>,
     graph: &mut WorthQueryPrimaryGraphBootstrap<Schema>,
@@ -68,10 +69,10 @@ fn seed_cycle<Schema: TopologySchemaBinding>(
         graph
             .bind_entity(
                 WorthQueryApplicationEntitySeed::new(Body::reference::<Schema>(), entity_key(&key))
-                    .field(BodyKey::reference::<Schema>(), key)
-                    .field(Length::reference::<Schema>(), length(1))
-                    .field(PositionX::reference::<Schema>(), length(x + offset))
-                    .field(PositionY::reference::<Schema>(), length(y + offset)),
+                    .field(BodyKey::at("BodyKey"), key)
+                    .field(Length::at("Length"), length(1))
+                    .field(PositionX::at("PositionX"), length(x + offset))
+                    .field(PositionY::at("PositionY"), length(y + offset)),
             )
             .expect("the complete source vertex is valid");
     }

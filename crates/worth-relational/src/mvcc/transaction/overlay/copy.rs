@@ -29,6 +29,7 @@ impl DetachedRelationalTransactionOverlay {
             .map_err(crate::mvcc::plan_copy_admission::request_denial)?;
         let copied_input_memory = reserve_copy(request, self.input_copy_bytes())?;
         Ok(Self {
+            effective_records: self.effective_records.clone(),
             batches: self.batches.clone(),
             index: self.index.clone(),
             normalized_client_keys: self.normalized_client_keys.copy(),
@@ -39,6 +40,7 @@ impl DetachedRelationalTransactionOverlay {
 
     pub(crate) fn copy_for_ordinary_preview(&self) -> Self {
         Self {
+            effective_records: self.effective_records.clone(),
             batches: self.batches.clone(),
             index: self.index.clone(),
             normalized_client_keys: self.normalized_client_keys.copy(),

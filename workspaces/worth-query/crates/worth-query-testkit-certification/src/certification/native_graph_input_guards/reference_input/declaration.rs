@@ -6,19 +6,11 @@ pub use super::super::{
 pub use worth_query_decl::facade::{
     application_operation::NoApplicationMutationOutputs, application_schema::*,
     worth_query_mutation_binding, worth_query_operation, worth_query_operation_links,
-    worth_query_operation_reads, worth_query_operation_unlinks, worth_query_relation,
+    worth_query_operation_reads, worth_query_operation_unlinks,
     worth_query_structured_value_binding,
 };
 pub use worth_query_host::facade::primary_graph::WorthQueryOperationBodyDecision;
-pub const fn nullable() -> ApplicationRelationIntegrity {
-    let base = ApplicationRelationIntegrity::same_context_unbounded_retain_dangling();
-    ApplicationRelationIntegrity::new(
-        base.endpoints,
-        ApplicationRelationCardinality::new(None, Some(1), None, None, None, None),
-        base.deletion,
-    )
-}
-worth_query_relation!(pub SelectedParent in Schema,Row=>Parent;integrity=nullable());
+
 #[derive(Clone)]
 pub struct Assign {
     pub row: String,
@@ -54,7 +46,7 @@ impl serde::Serialize for Assign {
 }
 worth_query_structured_value_binding!(pub Input for Assign {identity:"worth.query.reference.input.v1",capture_input:true});
 worth_query_operation!(pub ReplaceReference for Schema,input Input);
-worth_query_operation_reads!(ReplaceReference=>[Row,RowIdentity,Parent,ParentIdentity,SelectedParent]);
+worth_query_operation_reads!(ReplaceReference => [Row, Parent, SelectedParent]);
 worth_query_operation_links!(ReplaceReference=>[SelectedParent]);
 worth_query_operation_unlinks!(ReplaceReference=>[SelectedParent]);
 pub fn row(input: &Assign) -> String {
@@ -65,14 +57,14 @@ identity "worth.query.reference.binding.v1",input Input,operation ReplaceReferen
 idempotency u64,identity "worth.query.reference.request.v1",decision WorthQueryOperationBodyDecision<Schema,Row>,denial DenialBinding,
 handler identity "worth.query.reference.body.v1",program required,outputs NoApplicationMutationOutputs,
 principal PrincipalBinding,mapping Mapping,principal_entity Principal,principal_identity u64,identity_binding U64ApplicationValueBinding,
-scope Row,RowFacts,RowIdentity,String,ReadOnly,NoApplicationUnit,field RowIdentity::reference(),value row,
+scope RowIdentity, field RowIdentity::at("RowIdentity"),value row,
 );
 pub fn body() -> ApplicationOperationBody<Schema, ReplaceReference, Assign> {
     ReplaceReference::reference()
         .body()
         .replace_relation_from_input(
             SelectedParent::reference(),
-            ParentIdentity::reference(),
+            ParentIdentity::at("ParentIdentity"),
             "selected",
             "selected",
         )
@@ -84,11 +76,6 @@ pub fn declare(
     builder: ApplicationSchemaDeclarationBuilder<Schema>,
 ) -> ApplicationSchemaDeclarationBuilder<Schema> {
     super::signature_query::declare(super::signing::declare(builder))
-        .relation(
-            SelectedParent::reference(),
-            Row::reference(),
-            Parent::reference(),
-        )
         .operation(
             ReplaceReference::reference()
                 .definition()
@@ -98,9 +85,14 @@ pub fn declare(
                 .with_body(body())
                 .unwrap(),
         )
-        .operation_read_field(ReplaceReference::reference(), RowIdentity::reference())
+        .operation_read_field(
+            ReplaceReference::reference(),
+            RowIdentity::at("RowIdentity"),
+        )
         .operation_projection_work_budget(ReplaceReference::reference(), 256)
         .application_mutation_binding::<Binding>()
         .application_query(super::query::definition())
         .application_query_binding::<super::query::ReadBinding>()
 }
+
+pub use crate::facade::certification::native_graph_input_guards::schema::storage_model::SelectedParent;

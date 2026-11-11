@@ -8,11 +8,14 @@ pub use crate::lifecycle::{
 };
 
 pub use crate::durability::{
-    PreparedWorldCheckpoint, RuntimeWorldDurableMedium, WorldCheckpointJournalRecord,
-    WorldCheckpointOriginRetirement, WorldCheckpointOriginRetirementDenial, WorldCheckpointPort,
-    WorldCheckpointReadSource, WorldCheckpointReadView, WorldCheckpointSelection,
-    WorldCheckpointSubject, WorldDurableArtifact, WorldDurableFrameDenial, WorldDurableHomeBinding,
-    WorldDurableMediumDenial, WorldPublicationCompletion, WorldPublicationObservation,
+    PreparedWorldCheckpoint, PreparedWorldHomeData, PreparedWorldHomeSource,
+    RuntimeWorldDurableMedium, WorldCheckpointJournalRecord, WorldCheckpointOriginRetirement,
+    WorldCheckpointOriginRetirementDenial, WorldCheckpointPort, WorldCheckpointReadSource,
+    WorldCheckpointReadView, WorldCheckpointSelection, WorldCheckpointSubject,
+    WorldDurableArtifact, WorldDurableFrameDenial, WorldDurableHomeBinding,
+    WorldDurableMediumDenial, WorldHomeProgramLineage, WorldOriginalObservation,
+    WorldOriginalObservationDenial, WorldOriginalStateObservation, WorldProgramActivationHistory,
+    WorldProgramActivationHistoryEntry, WorldPublicationCompletion, WorldPublicationObservation,
     WorldPublicationTaskPosture, WorldReadmissionDenial, WORLD_ARTIFACT_PROTOCOL,
     WORLD_ARTIFACT_VERSION, WORLD_CHECKPOINT_PROTOCOL, WORLD_CHECKPOINT_VERSION,
 };
@@ -44,10 +47,11 @@ pub use crate::basis::AdmittedCompositeRuntimeWorldBasis;
 
 pub use crate::branch::{
     ComponentBranchTarget, CurrentProductHead, CustodyComponent, NoEffectRuntimeWorldBootstrap,
-    OwnerCreatedComponentCustodyRecord, OwnerRetirementWork, PerformedRuntimeWorldBootstrap,
-    PreparedProductExactHistoryPage, ProductBranchAncestorSelection,
-    ProductBranchAncestorSelectionDenial, ProductBranchCreationIntent, ProductBranchCreationPlans,
-    ProductBranchCurrentnessFailure, ProductBranchHistoryTraversal, ProductBranchName,
+    ObservedProductBranches, OwnerCreatedComponentCustodyRecord, OwnerRetirementWork,
+    PerformedRuntimeWorldBootstrap, PreparedProductExactHistoryPage,
+    ProductBranchAncestorSelection, ProductBranchAncestorSelectionDenial,
+    ProductBranchCreationIntent, ProductBranchCreationPlans, ProductBranchCurrentnessFailure,
+    ProductBranchHistoryTraversal, ProductBranchInventoryDenial, ProductBranchName,
     ProductBranchNameDenial, ProductBranchObservation, ProductBranchObservationMismatch,
     ProductBranchObservationMismatchAxis, ProductBranchReferenceDescription,
     ProductBranchReferenceReadmissionDenial, ProductBranchReferenceSnapshot,
@@ -100,11 +104,11 @@ pub use crate::publication::{
 };
 
 pub use crate::lifecycle::{
-    MissingRuntimeWorldInput, PreparedWorldRelationalCutover, RuntimeWorldBranchCreationOutcome,
-    RuntimeWorldBranchPort, RuntimeWorldBuildDenial, RuntimeWorldClock, RuntimeWorldClockSource,
-    RuntimeWorldCloseDenial, RuntimeWorldCloseReport, RuntimeWorldExecutionPlacement,
-    RuntimeWorldHomeBuilder, RuntimeWorldInspectionPort, RuntimeWorldInstant,
-    RuntimeWorldLifecyclePort, RuntimeWorldObservationPort,
+    MissingRuntimeWorldInput, PreparedWorldHomeProgramBinding, PreparedWorldRelationalCutover,
+    RuntimeWorldBranchCreationOutcome, RuntimeWorldBranchPort, RuntimeWorldBuildDenial,
+    RuntimeWorldClock, RuntimeWorldClockSource, RuntimeWorldCloseDenial, RuntimeWorldCloseReport,
+    RuntimeWorldExecutionPlacement, RuntimeWorldHomeBuilder, RuntimeWorldInspectionPort,
+    RuntimeWorldInstant, RuntimeWorldLifecyclePort, RuntimeWorldObservationPort,
     RuntimeWorldOwnedAsyncManagedRevalidationDenial, RuntimeWorldOwnedAsyncRequestAdmissionDenial,
     RuntimeWorldOwnedAsyncRevalidationDenial, RuntimeWorldOwner, RuntimeWorldOwnerBuilder,
     RuntimeWorldOwnerLifecycleObservation, RuntimeWorldOwnerUnavailable,
@@ -112,7 +116,7 @@ pub use crate::lifecycle::{
     RuntimeWorldRecoveryPort, RuntimeWorldResultSnapshotCleanup,
     RuntimeWorldResultSnapshotCleanupDenial, RuntimeWorldResultSnapshotCleanupProgress,
     RuntimeWorldResultSnapshotCleanupReport, RuntimeWorldRetainedRecordReport,
-    RuntimeWorldServiceDenial,
+    RuntimeWorldServiceDenial, WorldHomeProgramBindingDenial,
 };
 
 pub use crate::publication::{

@@ -1,3 +1,4 @@
+mod ended_admission;
 pub(in crate::domain_computation::primary_graph) mod history_projection;
 mod read_dependencies;
 pub(in crate::domain_computation::primary_graph) mod read_fields;
@@ -10,7 +11,7 @@ pub(in crate::domain_computation::primary_graph) mod audit;
 pub(crate) mod governed_record;
 mod governed_start_path;
 mod transition_roles;
-pub(in crate::domain_computation::primary_graph::application_attempt) use actors::observe as observe_instance_roles;
+pub(in crate::domain_computation::primary_graph) use actors::observe as observe_instance_roles;
 pub(in crate::domain_computation::primary_graph::application_attempt) use transition_roles::observe as observe_transition_roles;
 mod owner_custody;
 pub(in crate::domain_computation::primary_graph) mod read_only;
@@ -85,8 +86,7 @@ pub(in crate::domain_computation::primary_graph::application_attempt) struct Obs
         Option<history::operation_outputs::ObservedOperationOutputs>,
 }
 
-pub(in crate::domain_computation::primary_graph::application_attempt) struct ObservedWorkflowAssessmentEvidence
-{
+pub(in crate::domain_computation::primary_graph) struct ObservedWorkflowAssessmentEvidence {
     pub(in crate::domain_computation::primary_graph::application_attempt) entity: EntityId,
     pub(in crate::domain_computation::primary_graph::application_attempt) identity: String,
     /// The bytes it retains against the lineage's evidence ceiling.
@@ -105,7 +105,7 @@ pub(in crate::domain_computation::primary_graph::application_attempt) struct Obs
     pub(in crate::domain_computation::primary_graph::application_attempt) output_content_identity:
         String,
     /// Required program revision of this current assessment evidence record.
-    pub(in crate::domain_computation::primary_graph::application_attempt) program_revision: String,
+    pub(in crate::domain_computation::primary_graph) program_revision: String,
 }
 
 pub(in crate::domain_computation::primary_graph::application_attempt) fn observe_workflow_instance(

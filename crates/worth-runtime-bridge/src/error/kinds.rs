@@ -185,3 +185,6 @@ pub enum BridgeLineageSourceErrorKind {
 }
 
 pub type BridgeLineageSourceError = BridgeTypedError<BridgeLineageSourceErrorKind>;
+#[cfg(test)]
+#[path = "kinds_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;

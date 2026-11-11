@@ -7,6 +7,25 @@ pub(crate) struct SharedMapIter<'a, K: Ord + Copy, V: super::StoredValue> {
 }
 
 impl<'a, K: Ord + Copy, V: super::StoredValue> SharedMapIter<'a, K, V> {
+    pub(super) fn from_key(root: Option<&'a MapNode<K, V>>, first: &K) -> Self {
+        let mut iterator = Self {
+            pending: [None; MAXIMUM_ADDRESSABLE_AVL_HEIGHT],
+            pending_len: 0,
+            remaining: root.map_or(0, |node| node.len),
+        };
+        let mut next = root;
+        while let Some(node) = next {
+            if node.key < *first {
+                iterator.remaining -= 1 + node.left.as_ref().map_or(0, |left| left.len);
+                next = node.right.as_deref();
+            } else {
+                iterator.pending[iterator.pending_len] = Some(node);
+                iterator.pending_len += 1;
+                next = node.left.as_deref();
+            }
+        }
+        iterator
+    }
     pub(super) fn new(root: Option<&'a MapNode<K, V>>) -> Self {
         let mut iterator = Self {
             pending: [None; MAXIMUM_ADDRESSABLE_AVL_HEIGHT],

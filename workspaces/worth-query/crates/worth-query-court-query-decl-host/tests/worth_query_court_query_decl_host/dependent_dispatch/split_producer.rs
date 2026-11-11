@@ -9,8 +9,8 @@ macro_rules! split_phase {
             #[derive(Clone, serde::Serialize)] pub struct Input(pub Row);
             worth_query_structured_value_binding!(pub InputBinding for Input { identity: $identity });
             worth_query_operation!(pub $operation for Schema, input InputBinding; access {
-                read_entities: [Node, Realization, ProducerCell]; read_fields: [Key, ParentName, Value, Width, RealizationKey, RealizedValue, CellKey, CellValue];
-                read_relations: [GeneratedBy, Realizes]; writes: [Key, ParentName, Value, Width, RealizationKey, RealizedValue, CellValue];
+                read_entities: [Node, Realization, ProducerCell]; read_fields: [Key::at("Key"), ParentName::at("ParentName"), Value::at("Value"), Width::at("Width"), RealizationKey::at("RealizationKey"), RealizedValue::at("RealizedValue"), CellKey::at("CellKey"), CellValue::at("CellValue")];
+                read_relations: [GeneratedBy, Realizes]; writes: [Key::at("Key"), ParentName::at("ParentName"), Value::at("Value"), Width::at("Width"), RealizationKey::at("RealizationKey"), RealizedValue::at("RealizedValue"), CellValue::at("CellValue")];
                 creates: [Node, Realization]; links: [GeneratedBy, Realizes];
             });
             pub type Operation = $operation;
@@ -46,13 +46,13 @@ macro_rules! split_phase {
                 type SourceExpectation = ApplicationQueryMutationSource<Query>;
                 const IDENTITY: &'static str = $identity; const HANDLER_IDENTITY: &'static str = $identity; const IDEMPOTENCY_IDENTITY: &'static str = $identity;
                 fn workflow_execution_requirements() -> ApplicationWorkflowExecutionRequirements { ApplicationWorkflowExecutionRequirements::not_applicable() }
-                fn scope_field() -> ApplicationFieldRef<Schema, Node, Facts, Key, String, ReadOnly, EqualityPredicate, NoApplicationUnit> { Key::reference() }
+                fn scope_field() -> Key { Key::at("Key") }
                 fn principal_binding() -> ApplicationPrincipalBindingRef<Schema, PrincipalBinding, Mapping, Principal, u64, U64ApplicationValueBinding> { PrincipalBinding::reference() }
             }
             impl ApplicationMutationIntent<Schema> for Input {
                 type Binding = Binding;
                 fn input(&self) -> &Self { self }
-                fn scope_binding(&self) -> Scope { Scope::new(Key::reference(), self.0.key.clone()) }
+                fn scope_binding(&self) -> Scope { Scope::new(Key::at("Key"), self.0.key.clone()) }
             }
             pub struct Producer;
             pub struct Provider;
@@ -78,38 +78,38 @@ macro_rules! split_phase {
             impl OperationHandler<Schema, Binding> for Handler {
                 fn decide(&self, input: &Input, reader: &mut DecisionReader<'_, '_, '_, Schema, Binding>) -> HandlerResult<SplitDecision, Denial> {
                     let result = (|| {
-                        let source = reader.resolve_entity(Key::reference(), input.0.key.clone())?;
+                        let source = reader.resolve_entity(Key::at("Key"), input.0.key.clone())?;
                         let prior = if $preserve { Some(reader.prior_output_preserved_or_created::<preserve::Binding, preserve::Output, initial::Binding, initial::Output>()?) }
                             else { // Initial requires authoritative live absence. Historical
                             // correspondence deliberately refuses a retired generation;
                             // it cannot answer whether a current realization exists.
-                            reader.resolve_optional_entity(RealizationKey::reference(), input.0.key.clone())? };
+                            reader.resolve_optional_entity(RealizationKey::at("RealizationKey"), input.0.key.clone())? };
                         self.0.lock().unwrap().push(Selection { key: input.0.key.clone(), tier: TIER, preserve: $preserve, prior: prior.is_some() });
                         if !$preserve && prior.is_some() { return Ok(Err(Denial::InitialHasPriorOutput)); }
                         if $preserve && prior.is_none() { return Ok(Err(Denial::PreserveMissingOutput)); }
                         let realization = if let Some(prior) = prior {
                             let links = reader.relations_from(Realizes::reference(), &prior).map_err(HandlerExecutionDenial::new)?;
                             if links.len() != 1 || links[0].to().entity_id() != source.entity_id() { return Ok(Err(Denial::WrongPriorOutput)); }
-                            let _old_value = reader.field(&prior, RealizedValue::reference())?;
+                            let _old_value = reader.field(&prior, RealizedValue::at("RealizedValue"))?;
                             Some(reader.mutation_target(&prior)?)
                         } else { None };
                         let parents = reader.relations_from(GeneratedBy::reference(), &source).map_err(HandlerExecutionDenial::new)?;
                         if input.0.generated_by.is_empty() {
                             if !parents.is_empty() { return Ok(Err(Denial::WrongParent)); }
                         } else {
-                            let parent = reader.resolve_entity(Key::reference(), input.0.generated_by.clone())?;
+                            let parent = reader.resolve_entity(Key::at("Key"), input.0.generated_by.clone())?;
                             if parents.len() != 1 || parents[0].to().entity_id() != parent.entity_id() { return Ok(Err(Denial::WrongParent)); }
                         }
                         let cell = if self.1 && TIER == 1 {
-                            let cell = reader.resolve_entity(CellKey::reference(), input.0.key.clone())?;
-                            reader.field(&cell, CellValue::reference())?;
+                            let cell = reader.resolve_entity(CellKey::at("CellKey"), input.0.key.clone())?;
+                            reader.field(&cell, CellValue::at("CellValue"))?;
                             Some(reader.mutation_target(&cell)?)
                         } else { None };
                         let mut children = Vec::new();
                         if TIER < 2 {
                         for index in 0..input.0.width {
-                            let child = reader.resolve_optional_entity(Key::reference(), format!("{}.{}", input.0.key, index))?;
-                            if let Some(child) = &child { reader.field(child, Value::reference())?; }
+                            let child = reader.resolve_optional_entity(Key::at("Key"), format!("{}.{}", input.0.key, index))?;
+                            if let Some(child) = &child { reader.field(child, Value::at("Value"))?; }
                             children.push(child.as_ref().map(|child| reader.mutation_target(child)).transpose()?);
                         }
                         }
@@ -121,11 +121,11 @@ macro_rules! split_phase {
                     let result = (|| {
                         let source = writer.projected_entity(&decision.source)?;
                         let output = match &decision.realization {
-                            Some(prior) => { let output = writer.projected_entity(prior)?; writer.write_field(&output, RealizedValue::reference(), input.0.value + 10)?; output },
+                            Some(prior) => { let output = writer.projected_entity(prior)?; writer.write_field(&output, RealizedValue::at("RealizedValue"), input.0.value + 10)?; output },
                             None => {
                                 let output = writer.create_entity_in_context(&source, Realization::reference(), WorthQueryApplicationEntityKey::new(format!("output:{}", input.0.key)).unwrap())?;
-                                writer.initialize_field(&output, RealizationKey::reference(), input.0.key.clone())?;
-                                writer.initialize_field(&output, RealizedValue::reference(), input.0.value + 10)?;
+                                writer.initialize_field(&output, RealizationKey::at("RealizationKey"), input.0.key.clone())?;
+                                writer.initialize_field(&output, RealizedValue::at("RealizedValue"), input.0.value + 10)?;
                                 writer.link(Realizes::reference(), format!("realizes:{}", input.0.key), &output, &source)?;
                                 output
                             }
@@ -133,20 +133,20 @@ macro_rules! split_phase {
                         writer.$writer::<Output>(&output)?;
                         if let Some(cell) = &decision.cell {
                             let cell = writer.projected_entity(cell)?;
-                            writer.write_field(&cell, CellValue::reference(), input.0.value)?;
+                            writer.write_field(&cell, CellValue::at("CellValue"), input.0.value)?;
                             writer.preserve_output::<Cell>(&cell)?;
                         }
                         for (index, prior) in decision.children.iter().enumerate() {
                             let key = format!("{}.{}", input.0.key, index);
                             if let Some(prior) = prior { let child = writer.projected_entity(prior)?;
-                                writer.write_field(&child, Value::reference(), input.0.value + 1)?;
+                                writer.write_field(&child, Value::at("Value"), input.0.value + 1)?;
                                 writer.preserve_member::<Children>(&key, &child)?; }
                             else {
                                 let child = writer.create_entity_in_context(&source, Node::reference(), WorthQueryApplicationEntityKey::new(&key).unwrap())?;
-                                writer.initialize_field(&child, Key::reference(), key.clone())?;
-                                writer.initialize_field(&child, ParentName::reference(), input.0.key.clone())?;
-                                writer.initialize_field(&child, Value::reference(), input.0.value + 1)?;
-                                writer.initialize_field(&child, Width::reference(), 1)?;
+                                writer.initialize_field(&child, Key::at("Key"), key.clone())?;
+                                writer.initialize_field(&child, ParentName::at("ParentName"), input.0.key.clone())?;
+                                writer.initialize_field(&child, Value::at("Value"), input.0.value + 1)?;
+                                writer.initialize_field(&child, Width::at("Width"), 1)?;
                                 writer.link(GeneratedBy::reference(), format!("parent:{key}"), &child, &source)?;
                                 writer.create_member::<Children>(&key, &child)?;
                             }

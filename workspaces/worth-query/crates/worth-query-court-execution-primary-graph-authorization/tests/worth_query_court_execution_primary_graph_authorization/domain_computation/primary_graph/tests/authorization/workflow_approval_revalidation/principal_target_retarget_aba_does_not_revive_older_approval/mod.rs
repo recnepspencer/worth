@@ -43,7 +43,7 @@ fn principal_target_retarget_aba_does_not_revive_older_approval() {
             world
         .selected_product(&(phase).test_host_request_for_test(), )
         .resolve_entity(&phase,
-            worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::PrincipalIdentityField::reference(),
+            worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::PrincipalIdentityField::at("PrincipalIdentityField"),
             2_u64,
             &request,
             worth_query_execution::facade::domain_computation::WorthQueryPrincipalResolutionMode::Ordinary,

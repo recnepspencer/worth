@@ -17,7 +17,7 @@ impl WorthQueryInstalledDomainSubstrateProvenance {
         package_version_major: u32,
         package_version_minor: u32,
         package_identity: impl Into<String>,
-    ) -> Self {
+    ) -> Result<Self, crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial> {
         let domain_owner = domain_owner.into();
         let package_version = format!("{package_version_major}.{package_version_minor}");
         let package_identity = package_identity.into();
@@ -36,13 +36,13 @@ impl WorthQueryInstalledDomainSubstrateProvenance {
             WorthQueryEvidenceTag::new("package_identity"),
             package_identity.as_str(),
         )
-        .seal();
-        Self {
+        .seal()?;
+        Ok(Self {
             domain_owner,
             package_version,
             package_identity,
             identity,
-        }
+        })
     }
 
     pub(crate) fn domain_owner(&self) -> &str {

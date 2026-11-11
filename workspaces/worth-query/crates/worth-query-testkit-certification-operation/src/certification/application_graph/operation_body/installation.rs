@@ -61,7 +61,7 @@ pub fn install_with_projection_on_clock<const DESTINATION: u64>(
                         genesis::declaration::Tenant::reference(),
                         WorthQueryApplicationEntityKey::new("static-tenant").unwrap(),
                     )
-                    .field(genesis::declaration::TenantIdentity::reference(), 1),
+                    .field(genesis::declaration::TenantIdentity::at("TenantIdentity"), 1),
                 )?;
                 return Ok(());
             }
@@ -70,20 +70,20 @@ pub fn install_with_projection_on_clock<const DESTINATION: u64>(
                 WorthQueryApplicationEntityKey::new("body-document").unwrap(),
             )
             .field(
-                DocumentIdentityField::reference(),
+                DocumentIdentityField::at("DocumentIdentityField"),
                 DOCUMENT_IDENTITY.to_owned(),
             )
-            .field(DocumentRetentionField::reference(), 7)
-            .field(DocumentAuditSourceField::reference(), 7);
+            .field(DocumentRetentionField::at("DocumentRetentionField"), 7)
+            .field(DocumentAuditSourceField::at("DocumentAuditSourceField"), 7);
             let document = if matches!(DESTINATION, 113 | 116) {
                 document.field(
-                    DocumentDraftNoteField::reference(),
-                    DOCUMENT_IDENTITY.to_owned(),
+                    DocumentDraftNoteField::at("DocumentDraftNoteField"),
+                    DOCUMENT_IDENTITY.to_owned().into(),
                 )
             } else if matches!(DESTINATION, 25 | 26 | 29) {
-                document.field(DocumentDraftNoteField::reference(), "active".to_owned())
+                document.field(DocumentDraftNoteField::at("DocumentDraftNoteField"), "active".to_owned().into())
             } else if DESTINATION == 28 {
-                document.field(DocumentDraftNoteField::reference(), String::new())
+                document.field(DocumentDraftNoteField::at("DocumentDraftNoteField"), String::new().into())
             } else {
                 document
             };

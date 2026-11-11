@@ -4,9 +4,7 @@ use std::collections::BTreeSet;
 use std::marker::PhantomData;
 
 use crate::application_schema::{
-    ApplicationEntityRef, ApplicationFieldBindingLocus, ApplicationFieldRef, ApplicationFieldUnit,
-    ApplicationOperationRef, ApplicationScalarValueBinding, DeclaredApplicationFieldValue,
-    OperationReads, OperationWrites, OptionalApplicationFieldValue, WritableCapability,
+    ApplicationEntityRef, ApplicationOperationRef, ApplicationScalarValueBinding, OperationReads,
 };
 
 use super::{
@@ -57,21 +55,16 @@ impl<Schema, Operation, Input> ApplicationOperationBodyBuilder<Schema, Operation
         Ok(())
     }
 
-    pub fn expect<Entity, Aspect, Field, Value, Write, Equality, Unit>(
+    pub fn expect<Field: crate::application_schema::fragment::RecordSelection>(
         mut self,
-        field: ApplicationFieldRef<Schema, Entity, Aspect, Field, Value, Write, Equality, Unit>,
-        value: Value,
-    ) -> Result<Self, ApplicationOperationBodyAuthoringDenial>
-    where
-        Field: OperationReads<Operation> + DeclaredApplicationFieldValue<Value = Value>,
-        Unit: ApplicationFieldUnit,
-    {
-        Field::Binding::validate(&value)
-            .map_err(crate::application_schema::ApplicationValueEncodeDenial::from)?;
+        field: Field,
+        value: Field::Value,
+    ) -> Result<Self, ApplicationOperationBodyAuthoringDenial> {
+        let checked = super::record_authoring::resolve(field)?;
         self.steps.push(ApplicationOperationBodyScopeField::Expect {
-            field: ApplicationFieldBindingLocus::new(field.entity(), field.aspect(), field.field()),
+            field: checked.locus().clone(),
             binding: Field::Binding::IDENTITY,
-            value: Field::Binding::encode(&value)?,
+            value: checked.encode(&value)?,
         });
         Ok(self)
     }
@@ -79,25 +72,18 @@ impl<Schema, Operation, Input> ApplicationOperationBodyBuilder<Schema, Operation
     /// Requires a present scope field equal to one original canonical input member.
     /// Both required and optional fields are supported; absence never satisfies equality.
     /// The installed scalar binding validates the captured member before comparison.
-    pub fn expect_input<Entity, Aspect, Field, Value, Write, Equality, Unit>(
+    pub fn expect_input<Field: crate::application_schema::fragment::RecordSelection>(
         mut self,
-        field: ApplicationFieldRef<Schema, Entity, Aspect, Field, Value, Write, Equality, Unit>,
+        field: Field,
         member: &str,
-    ) -> Result<Self, ApplicationOperationBodyAuthoringDenial>
-    where
-        Field: OperationReads<Operation> + DeclaredApplicationFieldValue<Value = Value>,
-        Unit: ApplicationFieldUnit,
-    {
+    ) -> Result<Self, ApplicationOperationBodyAuthoringDenial> {
+        let checked = super::record_authoring::resolve(field)?;
         if member.is_empty() || member.trim() != member {
             return Err(ApplicationOperationBodyAuthoringDenial::InvalidInputMember);
         }
         self.steps
             .push(ApplicationOperationBodyScopeField::ExpectInput {
-                field: ApplicationFieldBindingLocus::new(
-                    field.entity(),
-                    field.aspect(),
-                    field.field(),
-                ),
+                field: checked.locus().clone(),
                 binding: Field::Binding::IDENTITY,
                 scalar_family: Field::Binding::SCALAR_FAMILY,
                 member: member.to_owned(),
@@ -105,22 +91,19 @@ impl<Schema, Operation, Input> ApplicationOperationBodyBuilder<Schema, Operation
         Ok(self)
     }
 
-    pub fn assign<Entity, Aspect, Field, Value, Write, Equality, Unit>(
+    pub fn assign<Field: crate::application_schema::fragment::RecordSelection>(
         mut self,
-        field: ApplicationFieldRef<Schema, Entity, Aspect, Field, Value, Write, Equality, Unit>,
-        value: Value,
-    ) -> Result<Self, ApplicationOperationBodyAuthoringDenial>
-    where
-        Field: OperationWrites<Operation> + DeclaredApplicationFieldValue<Value = Value>,
-        Write: WritableCapability,
-        Unit: ApplicationFieldUnit,
-    {
-        Field::Binding::validate(&value)
-            .map_err(crate::application_schema::ApplicationValueEncodeDenial::from)?;
+        field: Field,
+        value: Field::Value,
+    ) -> Result<Self, ApplicationOperationBodyAuthoringDenial> {
+        let checked = super::record_authoring::resolve(field)?;
+        if !checked.writable() {
+            return Err(ApplicationOperationBodyAuthoringDenial::IncompatibleSourceBinding);
+        }
         self.steps.push(ApplicationOperationBodyScopeField::Assign {
-            field: ApplicationFieldBindingLocus::new(field.entity(), field.aspect(), field.field()),
+            field: checked.locus().clone(),
             binding: Field::Binding::IDENTITY,
-            value: Field::Binding::encode(&value)?,
+            value: checked.encode(&value)?,
         });
         Ok(self)
     }
@@ -248,26 +231,21 @@ impl<Schema, Operation, Input> ApplicationOperationBodyBuilder<Schema, Operation
 
     /// Assigns a scalar from the original canonical input's serialized member.
     /// Selection and destination validation are native; no getter is installed.
-    pub fn assign_input<Entity, Aspect, Field, Value, Write, Equality, Unit>(
+    pub fn assign_input<Field: crate::application_schema::fragment::RecordSelection>(
         mut self,
-        field: ApplicationFieldRef<Schema, Entity, Aspect, Field, Value, Write, Equality, Unit>,
+        field: Field,
         member: &str,
-    ) -> Result<Self, ApplicationOperationBodyAuthoringDenial>
-    where
-        Field: OperationWrites<Operation> + DeclaredApplicationFieldValue<Value = Value>,
-        Write: WritableCapability,
-        Unit: ApplicationFieldUnit,
-    {
+    ) -> Result<Self, ApplicationOperationBodyAuthoringDenial> {
+        let checked = super::record_authoring::resolve(field)?;
+        if !checked.writable() {
+            return Err(ApplicationOperationBodyAuthoringDenial::IncompatibleSourceBinding);
+        }
         if member.is_empty() || member.trim() != member {
             return Err(ApplicationOperationBodyAuthoringDenial::InvalidInputMember);
         }
         self.steps
             .push(ApplicationOperationBodyScopeField::AssignInput {
-                field: ApplicationFieldBindingLocus::new(
-                    field.entity(),
-                    field.aspect(),
-                    field.field(),
-                ),
+                field: checked.locus().clone(),
                 binding: Field::Binding::IDENTITY,
                 scalar_family: Field::Binding::SCALAR_FAMILY,
                 member: member.to_owned(),
@@ -277,26 +255,24 @@ impl<Schema, Operation, Input> ApplicationOperationBodyBuilder<Schema, Operation
 
     /// Sets one optional scalar from a flat member of the canonical input.
     /// The member must be present, including when its value is empty or zero.
-    pub fn set_optional_input<Entity, Aspect, Field, Value, Write, Equality, Unit>(
+    pub fn set_optional_input<Field: crate::application_schema::fragment::RecordSelection>(
         mut self,
-        field: ApplicationFieldRef<Schema, Entity, Aspect, Field, Value, Write, Equality, Unit>,
+        field: Field,
         member: &str,
-    ) -> Result<Self, ApplicationOperationBodyAuthoringDenial>
-    where
-        Field: OperationWrites<Operation> + OptionalApplicationFieldValue<Value = Value>,
-        Write: WritableCapability,
-        Unit: ApplicationFieldUnit,
-    {
+    ) -> Result<Self, ApplicationOperationBodyAuthoringDenial> {
+        let checked = super::record_authoring::resolve(field)?;
+        if !checked.writable() {
+            return Err(ApplicationOperationBodyAuthoringDenial::IncompatibleSourceBinding);
+        }
+        if checked.presence() != crate::application_schema::ApplicationFieldPresence::Optional {
+            return Err(ApplicationOperationBodyAuthoringDenial::IncompatibleSourceBinding);
+        }
         if member.is_empty() || member.trim() != member {
             return Err(ApplicationOperationBodyAuthoringDenial::InvalidInputMember);
         }
         self.steps
             .push(ApplicationOperationBodyScopeField::SetOptionalInput {
-                field: ApplicationFieldBindingLocus::new(
-                    field.entity(),
-                    field.aspect(),
-                    field.field(),
-                ),
+                field: checked.locus().clone(),
                 binding: Field::Binding::IDENTITY,
                 scalar_family: Field::Binding::SCALAR_FAMILY,
                 member: member.to_owned(),
@@ -306,26 +282,24 @@ impl<Schema, Operation, Input> ApplicationOperationBodyBuilder<Schema, Operation
 
     /// Replaces an optional scalar from a present Option-valued input member.
     /// Some sets (including empty text); None clears. A missing member denies.
-    pub fn assign_optional_input<Entity, Aspect, Field, Value, Write, Equality, Unit>(
+    pub fn assign_optional_input<Field: crate::application_schema::fragment::RecordSelection>(
         mut self,
-        field: ApplicationFieldRef<Schema, Entity, Aspect, Field, Value, Write, Equality, Unit>,
+        field: Field,
         member: &str,
-    ) -> Result<Self, ApplicationOperationBodyAuthoringDenial>
-    where
-        Field: OperationWrites<Operation> + OptionalApplicationFieldValue<Value = Value>,
-        Write: WritableCapability,
-        Unit: ApplicationFieldUnit,
-    {
+    ) -> Result<Self, ApplicationOperationBodyAuthoringDenial> {
+        let checked = super::record_authoring::resolve(field)?;
+        if !checked.writable() {
+            return Err(ApplicationOperationBodyAuthoringDenial::IncompatibleSourceBinding);
+        }
+        if checked.presence() != crate::application_schema::ApplicationFieldPresence::Optional {
+            return Err(ApplicationOperationBodyAuthoringDenial::IncompatibleSourceBinding);
+        }
         if member.is_empty() || member.trim() != member {
             return Err(ApplicationOperationBodyAuthoringDenial::InvalidInputMember);
         }
         self.steps
             .push(ApplicationOperationBodyScopeField::AssignOptionalInput {
-                field: ApplicationFieldBindingLocus::new(
-                    field.entity(),
-                    field.aspect(),
-                    field.field(),
-                ),
+                field: checked.locus().clone(),
                 binding: Field::Binding::IDENTITY,
                 scalar_family: Field::Binding::SCALAR_FAMILY,
                 member: member.to_owned(),
@@ -334,48 +308,42 @@ impl<Schema, Operation, Input> ApplicationOperationBodyBuilder<Schema, Operation
     }
 
     /// Clears one optional scalar; absence is not an empty value.
-    pub fn clear_optional<Entity, Aspect, Field, Value, Write, Equality, Unit>(
+    pub fn clear_optional<Field: crate::application_schema::fragment::RecordSelection>(
         mut self,
-        field: ApplicationFieldRef<Schema, Entity, Aspect, Field, Value, Write, Equality, Unit>,
-    ) -> Self
-    where
-        Field: OperationWrites<Operation> + OptionalApplicationFieldValue<Value = Value>,
-        Write: WritableCapability,
-        Unit: ApplicationFieldUnit,
-    {
+        field: Field,
+    ) -> Result<Self, ApplicationOperationBodyAuthoringDenial> {
+        let checked = super::record_authoring::resolve(field)?;
+        if !checked.writable() {
+            return Err(ApplicationOperationBodyAuthoringDenial::IncompatibleSourceBinding);
+        }
+        if checked.presence() != crate::application_schema::ApplicationFieldPresence::Optional {
+            return Err(ApplicationOperationBodyAuthoringDenial::IncompatibleSourceBinding);
+        }
         self.steps
             .push(ApplicationOperationBodyScopeField::ClearOptional {
-                field: ApplicationFieldBindingLocus::new(
-                    field.entity(),
-                    field.aspect(),
-                    field.field(),
-                ),
+                field: checked.locus().clone(),
                 binding: Field::Binding::IDENTITY,
                 scalar_family: Field::Binding::SCALAR_FAMILY,
             });
-        self
+        Ok(self)
     }
 
     /// Requires a present optional scalar when this operation is admitted.
     /// An absent draft may still be saved by another operation.
-    pub fn require_present<Entity, Aspect, Field, Value, Write, Equality, Unit>(
+    pub fn require_present<Field: crate::application_schema::fragment::RecordSelection>(
         mut self,
-        field: ApplicationFieldRef<Schema, Entity, Aspect, Field, Value, Write, Equality, Unit>,
-    ) -> Self
-    where
-        Field: OperationReads<Operation> + OptionalApplicationFieldValue<Value = Value>,
-        Unit: ApplicationFieldUnit,
-    {
+        field: Field,
+    ) -> Result<Self, ApplicationOperationBodyAuthoringDenial> {
+        let checked = super::record_authoring::resolve(field)?;
+        if checked.presence() != crate::application_schema::ApplicationFieldPresence::Optional {
+            return Err(ApplicationOperationBodyAuthoringDenial::IncompatibleSourceBinding);
+        }
         self.steps
             .push(ApplicationOperationBodyScopeField::RequirePresent {
-                field: ApplicationFieldBindingLocus::new(
-                    field.entity(),
-                    field.aspect(),
-                    field.field(),
-                ),
+                field: checked.locus().clone(),
                 binding: Field::Binding::IDENTITY,
                 scalar_family: Field::Binding::SCALAR_FAMILY,
             });
-        self
+        Ok(self)
     }
 }

@@ -2,7 +2,7 @@ use super::*;
 use worth_query_consumer_values::{PlanarAdjustmentResult, PlanarMutationDenial, PlanarOperation};
 
 use worth_query_decl::facade::application_schema::{
-    OperationCreates, OperationLinks, OperationReads, OperationUnlinks, OperationWrites,
+    OperationCreates, OperationLinks, OperationReads, OperationUnlinks,
 };
 use worth_query_host::facade::primary_graph::{
     CandidateWriter, DecisionReader, HandlerExecutionDenial, HandlerResult, OperationHandler,
@@ -30,11 +30,10 @@ pub(crate) fn survey_standing_length<Schema, Binding>(
 where
     Schema: TopologySchemaBinding,
     Binding: worth_query_decl::facade::application_operation::ApplicationMutationBinding<Schema>,
-    Length: OperationReads<Binding::Operation>,
 {
-    let standing = reader.select_entities(Length::reference(), length, SURVEY_WIDTH)?;
+    let standing = reader.select_entities(Length::at("Length"), length, SURVEY_WIDTH)?;
     reader
-        .select_entities(Length::reference(), length, standing.len())
+        .select_entities(Length::at("Length"), length, standing.len())
         .map(drop)
 }
 
@@ -76,10 +75,7 @@ impl<Schema: TopologySchemaBinding, Binding: PlanarHandlerBinding<Schema>>
     OperationHandler<Schema, Binding> for PlanarHandler
 where
     Body: OperationReads<Binding::Operation> + OperationCreates<Binding::Operation>,
-    BodyKey: OperationReads<Binding::Operation> + OperationWrites<Binding::Operation>,
-    PositionX: OperationReads<Binding::Operation> + OperationWrites<Binding::Operation>,
-    PositionY: OperationReads<Binding::Operation> + OperationWrites<Binding::Operation>,
-    Length: OperationReads<Binding::Operation> + OperationWrites<Binding::Operation>,
+
     PlanarSuccessor: OperationReads<Binding::Operation>
         + OperationLinks<Binding::Operation>
         + OperationUnlinks<Binding::Operation>,
@@ -96,7 +92,7 @@ where
         HANDLER_CONTACTS.with(|contacts| contacts.set(contacts.get() + 1));
         #[cfg(test)]
         DECISION_ENTRIES.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
-        if let Err(error) = reader.resolve_entity(BodyKey::reference(), input.scope_key.clone()) {
+        if let Err(error) = reader.resolve_entity(BodyKey::at("BodyKey"), input.scope_key.clone()) {
             return HandlerResult::ExecutionDenied(error);
         }
         match &input.operation {
@@ -108,12 +104,12 @@ where
             PlanarOperation::Adjust(adjustments) => {
                 for adjustment in adjustments {
                     let entity = match reader
-                        .resolve_entity(BodyKey::reference(), adjustment.body_key.clone())
+                        .resolve_entity(BodyKey::at("BodyKey"), adjustment.body_key.clone())
                     {
                         Ok(entity) => entity,
                         Err(error) => return HandlerResult::ExecutionDenied(error),
                     };
-                    match reader.field(&entity, PositionY::reference()) {
+                    match reader.field(&entity, PositionY::at("PositionY")) {
                         Ok(Some(_)) => {}
                         Ok(None) => {
                             return HandlerResult::DomainDenied(
@@ -138,11 +134,11 @@ where
                     return HandlerResult::ExecutionDenied(error);
                 }
                 let entity =
-                    match reader.resolve_entity(BodyKey::reference(), output.body_key.clone()) {
+                    match reader.resolve_entity(BodyKey::at("BodyKey"), output.body_key.clone()) {
                         Ok(entity) => entity,
                         Err(error) => return HandlerResult::ExecutionDenied(error),
                     };
-                match reader.field(&entity, Length::reference()) {
+                match reader.field(&entity, Length::at("Length")) {
                     Ok(Some(_)) => {}
                     Ok(None) => {
                         return HandlerResult::DomainDenied(PlanarMutationDenial::MissingCoordinate)
@@ -155,18 +151,19 @@ where
                 previous_target_key,
                 replacement_target_key,
             } => {
-                let source = match reader.resolve_entity(BodyKey::reference(), source_key.clone()) {
+                let source = match reader.resolve_entity(BodyKey::at("BodyKey"), source_key.clone())
+                {
                     Ok(entity) => entity,
                     Err(error) => return HandlerResult::ExecutionDenied(error),
                 };
                 let previous = match reader
-                    .resolve_entity(BodyKey::reference(), previous_target_key.clone())
+                    .resolve_entity(BodyKey::at("BodyKey"), previous_target_key.clone())
                 {
                     Ok(entity) => entity,
                     Err(error) => return HandlerResult::ExecutionDenied(error),
                 };
                 if let Err(error) =
-                    reader.resolve_entity(BodyKey::reference(), replacement_target_key.clone())
+                    reader.resolve_entity(BodyKey::at("BodyKey"), replacement_target_key.clone())
                 {
                     return HandlerResult::ExecutionDenied(error);
                 }
@@ -197,7 +194,7 @@ where
             | PlanarOperation::VerifyFinalCurrentOutputs(expectations) => {
                 for expectation in expectations {
                     let producer = match reader
-                        .resolve_entity(BodyKey::reference(), expectation.producer_key.clone())
+                        .resolve_entity(BodyKey::at("BodyKey"), expectation.producer_key.clone())
                     {
                         Ok(entity) => entity,
                         Err(error) => return HandlerResult::ExecutionDenied(error),
@@ -227,7 +224,7 @@ where
                         }
                         Err(error) => return HandlerResult::ExecutionDenied(error),
                     };
-                    match reader.field(&output, BodyKey::reference()) {
+                    match reader.field(&output, BodyKey::at("BodyKey")) {
                         Ok(Some(key)) if key == expectation.output_key => {}
                         Ok(_) => {
                             return HandlerResult::DomainDenied(
@@ -265,16 +262,13 @@ fn author<Schema: TopologySchemaBinding, Binding: PlanarHandlerBinding<Schema>>(
 ) -> Result<usize, HandlerExecutionDenial>
 where
     Body: OperationReads<Binding::Operation> + OperationCreates<Binding::Operation>,
-    BodyKey: OperationReads<Binding::Operation> + OperationWrites<Binding::Operation>,
-    PositionX: OperationReads<Binding::Operation> + OperationWrites<Binding::Operation>,
-    PositionY: OperationReads<Binding::Operation> + OperationWrites<Binding::Operation>,
-    Length: OperationReads<Binding::Operation> + OperationWrites<Binding::Operation>,
+
     PlanarSuccessor: OperationReads<Binding::Operation>
         + OperationLinks<Binding::Operation>
         + OperationUnlinks<Binding::Operation>,
 {
     let anchor = writer
-        .resolve_entity(BodyKey::reference(), input.scope_key.clone())
+        .resolve_entity(BodyKey::at("BodyKey"), input.scope_key.clone())
         .map_err(HandlerExecutionDenial::new)?;
     writer
         .preserve_output::<PlanarAnchorOutput<Schema>>(&anchor)
@@ -309,20 +303,24 @@ where
         PlanarOperation::Adjust(adjustments) => {
             for adjustment in adjustments {
                 let entity = writer
-                    .resolve_entity(BodyKey::reference(), adjustment.body_key.clone())
+                    .resolve_entity(BodyKey::at("BodyKey"), adjustment.body_key.clone())
                     .map_err(HandlerExecutionDenial::new)?;
                 writer
-                    .write_field(&entity, PositionY::reference(), adjustment.replacement_y)
+                    .write_field(
+                        &entity,
+                        PositionY::at("PositionY"),
+                        adjustment.replacement_y,
+                    )
                     .map_err(HandlerExecutionDenial::new)?;
             }
             Ok(adjustments.len())
         }
         PlanarOperation::PublishDerivedOutput(output) => {
             let entity = writer
-                .resolve_entity(BodyKey::reference(), output.body_key.clone())
+                .resolve_entity(BodyKey::at("BodyKey"), output.body_key.clone())
                 .map_err(HandlerExecutionDenial::new)?;
             writer
-                .write_field(&entity, Length::reference(), output.value)
+                .write_field(&entity, Length::at("Length"), output.value)
                 .map_err(HandlerExecutionDenial::new)?;
             Ok(1)
         }
@@ -332,13 +330,13 @@ where
             replacement_target_key,
         } => {
             let source = writer
-                .resolve_entity(BodyKey::reference(), source_key.clone())
+                .resolve_entity(BodyKey::at("BodyKey"), source_key.clone())
                 .map_err(HandlerExecutionDenial::new)?;
             let previous = writer
-                .resolve_entity(BodyKey::reference(), previous_target_key.clone())
+                .resolve_entity(BodyKey::at("BodyKey"), previous_target_key.clone())
                 .map_err(HandlerExecutionDenial::new)?;
             let replacement = writer
-                .resolve_entity(BodyKey::reference(), replacement_target_key.clone())
+                .resolve_entity(BodyKey::at("BodyKey"), replacement_target_key.clone())
                 .map_err(HandlerExecutionDenial::new)?;
             writer
                 .unlink(PlanarSuccessor::reference(), &source, &previous)

@@ -46,6 +46,7 @@ impl DeclaredApplicationMemberMarker {
 /// owning [`super::ApplicationSchema::declaration`] implementation.
 #[derive(Clone, Debug, Default, Eq, PartialEq)]
 pub struct ApplicationSchemaMemberProvenance {
+    pub(super) fragments: super::fragment::provenance::FragmentProvenance,
     entities: Vec<(String, TypeId)>,
     field_bindings: Vec<ApplicationFieldBindingRecipe>,
     content_bindings: Vec<super::ApplicationContentBindingRecipe>,
@@ -151,6 +152,8 @@ impl ApplicationSchemaMemberProvenance {
     }
 
     pub(super) fn register_query_binding(&mut self, descriptor: ApplicationQueryBindingDescriptor) {
+        self.fragments
+            .expect_field(descriptor.scope().field().clone());
         self.query_bindings.push(descriptor);
     }
 
@@ -233,6 +236,8 @@ impl ApplicationSchemaMemberProvenance {
         &mut self,
         descriptor: ApplicationMutationBindingDescriptor,
     ) {
+        self.fragments
+            .expect_field(descriptor.scope().field().clone());
         self.mutation_bindings.push(descriptor);
     }
 

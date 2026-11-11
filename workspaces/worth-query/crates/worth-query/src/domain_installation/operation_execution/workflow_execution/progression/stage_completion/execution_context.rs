@@ -8,23 +8,26 @@ use super::{
     WorthQueryWorkflowStageExecutionScope, WorthQueryWorkflowStageReceipt,
 };
 use crate::basis_lifecycle::BasisOperationLane;
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 
 impl<D: 'static, O: 'static, F: 'static, L: BasisOperationLane> WorthQueryWorkflowRun<D, O, F, L> {
     pub(super) fn stage_effect_workflow_binding(
         &self,
         stage: &worth_query_installation::facade::WorthQueryPortableWorkflowStage,
         snapshot: crate::memory_workspace::WorthQuerySnapshotIdentity,
-    ) -> crate::workflow::WorkflowContextBinding {
+    ) -> Result<crate::workflow::WorkflowContextBinding, IdentityDerivationDenial> {
         let effect_binding_scope = format!(
             "{}:{}:{}",
             self.bound.binding_identity(),
             self.identity,
             stage.identity()
         );
-        crate::workflow::synthetic_runtime_workflow_binding_scoped_for_snapshot_identity(
-            self.bound.definition().canonical_identity(),
-            &effect_binding_scope,
-            snapshot,
+        Ok(
+            crate::workflow::synthetic_runtime_workflow_binding_scoped_for_snapshot_identity(
+                self.bound.definition().canonical_identity(),
+                &effect_binding_scope,
+                snapshot,
+            )?,
         )
     }
 

@@ -1,0 +1,89 @@
+Command: ["cargo", "nextest", "run", "--cargo-metadata", "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\target\\lane-evidence\\topology-funding\\build\\cargo-metadata.json", "--binaries-metadata", "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\target\\lane-evidence\\topology-funding\\build\\binaries.json", "--profile", "ci", "--config-file", "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\target\\lane-evidence\\topology-funding\\nextest.toml", "--ignore-default-filter", "--no-fail-fast", "--no-tests=fail", "--message-format", "libtest-json", "--success-output", "immediate", "-E", "test(=checkpoint_recovery::computation_partition::oracle::absence::serial::checkpoint_absence_rebuilds_every_owner_call_like_fresh) + test(=checkpoint_recovery::required_chain::exact_invalidation::discontinuity::serial::a_restored_chain_settles_through_its_last_consumer_alone) + test(=checkpoint_recovery::required_chain::exact_invalidation::discontinuity::serial::a_restored_consumer_never_settles_over_a_stale_upstream) + test(=checkpoint_recovery::required_chain::exact_invalidation::discontinuity::serial::a_restored_world_verifies_each_root_and_decides_each_consumer_once) + test(=checkpoint_recovery::required_chain::exact_invalidation::locality::lifecycle::serial::authored_ring_checkpoint_reopens_then_accepts_a_new_source_edit)"]
+Working directory: C:\programming\worth worktees\worktrees\m3-host-home\workspaces\worth-query\crates\worth-query-certification\fixtures\consumer_entry
+HEAD: bb3e73655b80af464f5dfdbbd73a93b8e616d9d8
+Git status --short empty: False
+Start: 2026-11-08T18:12:14.589140+00:00
+
+{"type": "cargo-invocation", "command": ["cargo", "nextest", "run", "--cargo-metadata", "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\target\\lane-evidence\\topology-funding\\build\\cargo-metadata.json", "--binaries-metadata", "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\target\\lane-evidence\\topology-funding\\build\\binaries.json", "--profile", "ci", "--config-file", "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\target\\lane-evidence\\topology-funding\\nextest.toml", "--ignore-default-filter", "--no-fail-fast", "--no-tests=fail", "--message-format", "libtest-json", "--success-output", "immediate", "-E", "test(=checkpoint_recovery::computation_partition::oracle::absence::serial::checkpoint_absence_rebuilds_every_owner_call_like_fresh) + test(=checkpoint_recovery::required_chain::exact_invalidation::discontinuity::serial::a_restored_chain_settles_through_its_last_consumer_alone) + test(=checkpoint_recovery::required_chain::exact_invalidation::discontinuity::serial::a_restored_consumer_never_settles_over_a_stale_upstream) + test(=checkpoint_recovery::required_chain::exact_invalidation::discontinuity::serial::a_restored_world_verifies_each_root_and_decides_each_consumer_once) + test(=checkpoint_recovery::required_chain::exact_invalidation::locality::lifecycle::serial::authored_ring_checkpoint_reopens_then_accepts_a_new_source_edit)"], "cwd": "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\workspaces\\worth-query\\crates\\worth-query-certification\\fixtures\\consumer_entry", "capture": "ordered", "mode": "build", "target_dir": "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\workspaces\\worth-query\\crates\\worth-query-certification\\fixtures\\consumer_entry\\target", "cargo_profile": "test"}
+info: experimental features enabled: wrapper-scripts
+────────────
+ Nextest run ID 24b71857-09bf-4fa3-b26d-122c9784e0dc with nextest profile: ci
+    Starting 5 tests across 1 binary (315 tests skipped)
+        FAIL [   8.297s] (1/5) worth-query-topology-entry checkpoint_recovery::computation_partition::oracle::absence::serial::checkpoint_absence_rebuilds_every_owner_call_like_fresh
+  output ───
+
+    running 1 test
+
+    thread 'checkpoint_recovery::computation_partition::oracle::absence::serial::checkpoint_absence_rebuilds_every_owner_call_like_fresh' (54740) panicked at topology_entry\src\checkpoint_recovery\computation_partition\oracle\demand.rs:92:5:
+    the edit EntryEdit { scope_key: "anchor-isolated", set: "even", entry: 7, fact: 2, value: 4612811918334230528, other: 0, work: 0, sets: [], command: 0, count: 1 } commits: Err(PrincipalResolution(WorthQueryPrincipalResolutionDenial { kind: Stopped(Ok(ExecutionResource { denial: WorkExhausted, partition_identity: None, policy_ancestor: None })), binding: "ConsumerPrincipalBinding", native_query_read_stop: None }))
+    note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+    test checkpoint_recovery::computation_partition::oracle::absence::serial::checkpoint_absence_rebuilds_every_owner_call_like_fresh ... FAILED
+
+    failures:
+
+    failures:
+        checkpoint_recovery::computation_partition::oracle::absence::serial::checkpoint_absence_rebuilds_every_owner_call_like_fresh
+
+    test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 319 filtered out; finished in 5.64s
+
+
+        PASS [   8.362s] (2/5) worth-query-topology-entry checkpoint_recovery::required_chain::exact_invalidation::discontinuity::serial::a_restored_world_verifies_each_root_and_decides_each_consumer_once
+  output ───
+
+    running 1 test
+    test checkpoint_recovery::required_chain::exact_invalidation::discontinuity::serial::a_restored_world_verifies_each_root_and_decides_each_consumer_once ... ok
+
+    test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 319 filtered out; finished in 6.30s
+
+
+        PASS [   9.148s] (3/5) worth-query-topology-entry checkpoint_recovery::required_chain::exact_invalidation::locality::lifecycle::serial::authored_ring_checkpoint_reopens_then_accepts_a_new_source_edit
+  output ───
+
+    running 1 test
+    checkpoint readmission ring 0: [Cost { producer_contacts: 0, source_queries: 0 }, Cost { producer_contacts: 1, source_queries: 1 }, Cost { producer_contacts: 1, source_queries: 1 }, Cost { producer_contacts: 0, source_queries: 0 }]
+    checkpoint readmission ring 1: [Cost { producer_contacts: 0, source_queries: 0 }, Cost { producer_contacts: 1, source_queries: 1 }, Cost { producer_contacts: 1, source_queries: 1 }, Cost { producer_contacts: 0, source_queries: 0 }]
+    test checkpoint_recovery::required_chain::exact_invalidation::locality::lifecycle::serial::authored_ring_checkpoint_reopens_then_accepts_a_new_source_edit ... ok
+
+    test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 319 filtered out; finished in 5.78s
+
+
+        PASS [   9.393s] (4/5) worth-query-topology-entry checkpoint_recovery::required_chain::exact_invalidation::discontinuity::serial::a_restored_consumer_never_settles_over_a_stale_upstream
+  output ───
+
+    running 1 test
+    test checkpoint_recovery::required_chain::exact_invalidation::discontinuity::serial::a_restored_consumer_never_settles_over_a_stale_upstream ... ok
+
+    test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 319 filtered out; finished in 5.39s
+
+
+        PASS [   9.585s] (5/5) worth-query-topology-entry checkpoint_recovery::required_chain::exact_invalidation::discontinuity::serial::a_restored_chain_settles_through_its_last_consumer_alone
+  output ───
+
+    running 1 test
+    test checkpoint_recovery::required_chain::exact_invalidation::discontinuity::serial::a_restored_chain_settles_through_its_last_consumer_alone ... ok
+
+    test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 319 filtered out; finished in 5.48s
+
+
+{"type":"suite","event":"started","test_count":5}
+{"type":"test","event":"started","name":"worth-query-topology-entry::worth_query_topology_entry$checkpoint_recovery::required_chain::exact_invalidation::discontinuity::serial::a_restored_world_verifies_each_root_and_decides_each_consumer_once"}
+{"type":"test","event":"started","name":"worth-query-topology-entry::worth_query_topology_entry$checkpoint_recovery::computation_partition::oracle::absence::serial::checkpoint_absence_rebuilds_every_owner_call_like_fresh"}
+{"type":"test","event":"started","name":"worth-query-topology-entry::worth_query_topology_entry$checkpoint_recovery::required_chain::exact_invalidation::locality::lifecycle::serial::authored_ring_checkpoint_reopens_then_accepts_a_new_source_edit"}
+{"type":"test","event":"started","name":"worth-query-topology-entry::worth_query_topology_entry$checkpoint_recovery::required_chain::exact_invalidation::discontinuity::serial::a_restored_chain_settles_through_its_last_consumer_alone"}
+{"type":"test","event":"started","name":"worth-query-topology-entry::worth_query_topology_entry$checkpoint_recovery::required_chain::exact_invalidation::discontinuity::serial::a_restored_consumer_never_settles_over_a_stale_upstream"}
+{"type":"test","event":"failed","name":"worth-query-topology-entry::worth_query_topology_entry$checkpoint_recovery::computation_partition::oracle::absence::serial::checkpoint_absence_rebuilds_every_owner_call_like_fresh","exec_time":8.2966168,"stdout":"\nthread 'checkpoint_recovery::computation_partition::oracle::absence::serial::checkpoint_absence_rebuilds_every_owner_call_like_fresh' (54740) panicked at topology_entry\\src\\checkpoint_recovery\\computation_partition\\oracle\\demand.rs:92:5:\nthe edit EntryEdit { scope_key: \"anchor-isolated\", set: \"even\", entry: 7, fact: 2, value: 4612811918334230528, other: 0, work: 0, sets: [], command: 0, count: 1 } commits: Err(PrincipalResolution(WorthQueryPrincipalResolutionDenial { kind: Stopped(Ok(ExecutionResource { denial: WorkExhausted, partition_identity: None, policy_ancestor: None })), binding: \"ConsumerPrincipalBinding\", native_query_read_stop: None }))\nnote: run with `RUST_BACKTRACE=1` environment variable to display a backtrace\n"}
+{"type":"test","event":"ok","name":"worth-query-topology-entry::worth_query_topology_entry$checkpoint_recovery::required_chain::exact_invalidation::discontinuity::serial::a_restored_world_verifies_each_root_and_decides_each_consumer_once","exec_time":8.3620231}
+{"type":"test","event":"ok","name":"worth-query-topology-entry::worth_query_topology_entry$checkpoint_recovery::required_chain::exact_invalidation::locality::lifecycle::serial::authored_ring_checkpoint_reopens_then_accepts_a_new_source_edit","exec_time":9.1484233}
+{"type":"test","event":"ok","name":"worth-query-topology-entry::worth_query_topology_entry$checkpoint_recovery::required_chain::exact_invalidation::discontinuity::serial::a_restored_consumer_never_settles_over_a_stale_upstream","exec_time":9.3926761}
+{"type":"test","event":"ok","name":"worth-query-topology-entry::worth_query_topology_entry$checkpoint_recovery::required_chain::exact_invalidation::discontinuity::serial::a_restored_chain_settles_through_its_last_consumer_alone","exec_time":9.5854408}
+{"type":"suite","event":"failed","passed":4,"failed":1,"ignored":0,"measured":0,"filtered_out":315,"exec_time":44.7851801}
+────────────
+     Summary [   9.593s] 5 tests run: 4 passed, 1 failed, 315 skipped
+        FAIL [   8.297s] (1/5) worth-query-topology-entry checkpoint_recovery::computation_partition::oracle::absence::serial::checkpoint_absence_rebuilds_every_owner_call_like_fresh
+error: test run failed
+
+
+{"type": "cargo-result", "exit_code": 100}
+
+End: 2026-11-08T18:12:24.449643+00:00
+Exit code: 100

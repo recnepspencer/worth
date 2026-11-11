@@ -14,6 +14,16 @@ use worth_query_execution::publication_boundary::document_history::{
     WorthQueryCompletedHistoryOutputs, WorthQueryHistoryOutputNavigationAdvance as Step,
 };
 
+pub(super) enum TreeCompletion {
+    Single(WorthQueryCompletedHistoryOutputs),
+    Forest(Arc<worth_query_execution::publication_boundary::document_history::WorthQueryRetainedHistoryOutputTree>),
+}
+#[derive(Clone, Copy)]
+pub(super) enum TreeCompletionMode {
+    Single,
+    Forest,
+}
+
 impl<S, P, R> WorthQueryHistoryWithOutputs<S, P, R>
 where
     S: ApplicationSchema + 'static,
@@ -37,6 +47,34 @@ where
         key: [u8; 32],
         step: Step<'_, '_>,
     ) -> Result<Option<WorthQueryCompletedHistoryOutputs>, WorthQueryHistoryOutputDenial> {
+        self.progress_tree(phase, request, key, step, TreeCompletionMode::Single)?
+            .map(|completion| match completion {
+                TreeCompletion::Single(outputs) => Ok(outputs),
+                TreeCompletion::Forest(_) => Err(WorthQueryHistoryOutputDenial::ForeignSource),
+            })
+            .transpose()
+    }
+
+    pub(super) fn progress_forest(
+        &self, phase: &WorthQueryAdvancementPhase<'_>,
+        request: &WorthQueryApplicationRequest<'_, '_, '_, S>, key: [u8; 32], step: Step<'_, '_>,
+    ) -> Result<Option<Arc<worth_query_execution::publication_boundary::document_history::WorthQueryRetainedHistoryOutputTree>>, WorthQueryHistoryOutputDenial>{
+        self.progress_tree(phase, request, key, step, TreeCompletionMode::Forest)?
+            .map(|completion| match completion {
+                TreeCompletion::Forest(tree) => Ok(tree),
+                TreeCompletion::Single(_) => Err(WorthQueryHistoryOutputDenial::ForeignSource),
+            })
+            .transpose()
+    }
+
+    pub(super) fn progress_tree(
+        &self,
+        phase: &WorthQueryAdvancementPhase<'_>,
+        request: &WorthQueryApplicationRequest<'_, '_, '_, S>,
+        key: [u8; 32],
+        step: Step<'_, '_>,
+        completion: TreeCompletionMode,
+    ) -> Result<Option<TreeCompletion>, WorthQueryHistoryOutputDenial> {
         use WorthQueryHistoryOutputDenial as Denial;
         if matches!(step, Step::Selected(_)) {
             if let Some(slot) = self.existing_slot(&key)? {
@@ -48,6 +86,13 @@ where
                     self.remove_slot(&key, &slot)?;
                 }
             }
+            return Ok(None);
+        }
+        if matches!(step, Step::Pending)
+            && self.profile.uses_owned_model_graph()
+            && self.existing_slot(&key)?.is_none()
+        {
+            // Pending navigation has no original source/tree work to retain.
             return Ok(None);
         }
         // Native has already admitted H READ, metadata, NAV and complete source C.
@@ -84,35 +129,80 @@ where
             state.original = Some((branch, Arc::clone(&original)));
         }
         let frame = ProgramOutputHistoryFrame { authority, branch };
+        if state.tree.is_none()
+            && !selecting
+            && matches!(completion, TreeCompletionMode::Forest)
+            && self.profile.uses_owned_model_graph()
+            && std::any::TypeId::of::<R::Dependents>()
+                != std::any::TypeId::of::<
+                    worth_query_declaration::facade::application_program::ApplicationOutputLeaf,
+                >()
+        {
+            self.try_start_verified(phase, request, authority, &mut state)?;
+        }
+        if state
+            .tree
+            .as_ref()
+            .and_then(HistoryOutputTraversal::verified)
+            .is_some()
+        {
+            return self.progress_verified(phase, request, frame, selecting, &mut state);
+        }
         if state.tree.is_none() {
             if selecting {
                 return Err(Denial::ForeignSource);
             }
             let root_demand = self.demand.clone();
             let tree_demand = self.demand.clone();
-            let (admitted, source) = request.query(self.demand.source_intent()).with_admitted_query(phase,
+            let (admitted, source) = if self.profile.uses_owned_model_graph() {
+                let read = request
+                    .application
+                    .execute_owned_history_root_output_query::<Source<S, R>>(
+                        phase,
+                        authority,
+                        request.principal,
+                    )
+                    .map_err(Denial::Source)?;
+                self.application
+                    .admit_history_program_root_output::<R>(
+                        phase,
+                        &program_publication_access(),
+                        read,
+                        self.controls
+                            .resolve(self.application.runtime().output_demand_resource_profile()),
+                    )
+                    .map_err(Denial::Root)?
+            } else {
+                request.query(self.demand.source_intent()).with_admitted_query(phase,
                 |runtime, binding, external, plan| {
                     let read = runtime.execute_history_root_output_query(phase, authority, binding, external, plan)
                         .map_err(crate::application_entry::WorthQueryApplicationRequestQueryDenial::HistoryOutput)?;
                     Ok(self.application.admit_history_program_root_output::<R>(
                         phase, &program_publication_access(), read,
                         self.controls.resolve(self.application.runtime().output_demand_resource_profile())))
-                }).map_err(Denial::Query)?.map_err(Denial::Root)?;
+                }).map_err(Denial::Query)?.map_err(Denial::Root)?
+            };
             let root = WorthQueryApplicationProgramDemandHandle::new_history(
                 admitted,
                 root_demand,
                 Arc::clone(&original),
             );
             state.source = Some(source);
-            state.tree = Some(WorthQueryApplicationProgramOutputHandle::new_initial(
-                crate::application_entry::WorthQueryApplicationReadObservation::new(original),
-                root,
-                tree_demand,
-                self.controls,
+            state.tree = Some(HistoryOutputTraversal::Original(
+                WorthQueryApplicationProgramOutputHandle::new_initial(
+                    crate::application_entry::WorthQueryApplicationReadObservation::new(original),
+                    root,
+                    tree_demand,
+                    self.controls,
+                ),
             ));
         }
         let has_settlement = state.settlement.is_some();
-        let tree = state.tree.as_mut().expect("the original tree is retained");
+        let tree = state
+            .tree
+            .as_mut()
+            .and_then(HistoryOutputTraversal::original_mut)
+            .expect("the original tree is retained");
         if selecting || has_settlement {
             tree.authorize_history_in_advancement(phase, &self.application, request, frame)
                 .map_err(Denial::Preparation)?;
@@ -145,10 +235,56 @@ where
         state
             .tree
             .as_mut()
+            .and_then(HistoryOutputTraversal::original_mut)
             .expect("retained tree")
             .drain_read_request(phase, &self.application, branch)
             .map_err(Denial::Close)?;
+        if matches!(completion, TreeCompletionMode::Forest) {
+            if state.forest_tree.is_none() {
+                let SlotState {
+                    source,
+                    settlement,
+                    forest_tree,
+                    ..
+                } = &mut *state;
+                let (root, dependents, dependencies) = settlement
+                    .as_mut()
+                    .ok_or(Denial::ForeignSource)?
+                    .original_tree_parts();
+                let retained = self
+                    .application
+                    .retain_original_history_output_tree::<R>(
+                        phase,
+                        &program_publication_access(),
+                        source.as_ref().ok_or(Denial::ForeignSource)?,
+                        root,
+                        dependents,
+                        dependencies,
+                    )
+                    .map_err(Denial::GraphQualification)?;
+                *forest_tree = Some(retained);
+            }
+            return Ok(state
+                .forest_tree
+                .as_ref()
+                .map(|tree| TreeCompletion::Forest(Arc::clone(tree))));
+        }
         let settlement = state.settlement.as_ref().ok_or(Denial::ForeignSource)?;
+        if self.profile.uses_owned_model_graph() {
+            return self
+                .application
+                .qualify_original_graph_history_outputs::<R>(
+                    phase,
+                    &program_publication_access(),
+                    authority,
+                    state.source.as_ref().ok_or(Denial::ForeignSource)?,
+                    settlement.root_settlement().retained_settlement(),
+                    settlement.retained_settlements().skip(1),
+                    settlement.dependencies.as_ref(),
+                )
+                .map(|outputs| Some(TreeCompletion::Single(outputs)))
+                .map_err(Denial::GraphQualification);
+        }
         self.application
             .qualify_original_history_outputs::<R>(
                 phase,
@@ -159,7 +295,7 @@ where
                 settlement.retained_settlements().skip(1),
                 settlement.dependencies.as_ref(),
             )
-            .map(Some)
+            .map(|outputs| Some(TreeCompletion::Single(outputs)))
             .map_err(Denial::Qualification)
     }
 }

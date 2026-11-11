@@ -1,0 +1,14 @@
+[
+  {
+    "lane": "query",
+    "exit": 0,
+    "names": [
+      "domain_computation::primary_graph::provider::idempotency::snapshot_resolution::original_receipt::outbox::tests::original_definition_rebinds_across_independent_real_installations",
+      "domain_computation::primary_graph::provider::idempotency::snapshot_resolution::original_receipt::outbox::tests::equal_outbound_fields_cannot_rebind_changed_inbound_source_or_limits",
+      "domain_computation::primary_graph::provider::idempotency::snapshot_resolution::original_receipt::outbox::tests::missing_or_unverifiable_binding_never_claims_no_inbound",
+      "domain_computation::primary_graph::provider::idempotency::snapshot_resolution::original_receipt::outbox::tests::only_a_matching_installed_absence_is_no_inbound"
+    ],
+    "default_stack": false,
+    "RUST_MIN_STACK_present": true
+  }
+]

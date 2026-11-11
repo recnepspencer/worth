@@ -217,11 +217,13 @@ impl RelationalCheckpointManifestDraft {
 
     pub(crate) fn readmit_history_members(
         &self,
+        lane: &crate::storage::substrate::maintenance::ReconstructionLane<'_>,
     ) -> Result<
         std::sync::Arc<RelationalHistoryMemberDirectory>,
         crate::storage::data::RelationalStorageUnavailableCause,
     > {
         RelationalHistoryMemberDirectory::readmit(
+            lane,
             &self.history_dependencies,
             self.roots
                 .iter()
@@ -239,6 +241,8 @@ pub(crate) struct RelationalCheckpointRegion {
     pub(crate) kind_authority: crate::storage::residency::RelationalRegionKindCommitment,
     pub(crate) partition_id: PartitionId,
     pub(crate) content_digest: [u8; 32],
+    pub(crate) directory: std::sync::Arc<crate::storage::residency::PortableRecordDirectory>,
+    pub(crate) live_counts: crate::storage::residency::LiveRecordCounts,
     pub(crate) entity_slots: usize,
     pub(crate) relation_slots: usize,
     pub(crate) unavailable_records: usize,

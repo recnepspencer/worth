@@ -50,3 +50,59 @@ fn byte_copy_refuses_original_cancellation_without_sealing_a_partial_payload() {
         ))
     ));
 }
+
+#[test]
+fn staged_byte_seal_refuses_incomplete_fill_and_refunds_the_original_payload() {
+    let budget = SerialMemoryBudget::new(Some(1 << 20));
+    let host = SerialRequest::from_memory(budget.clone(), CancellationSource::new().token(), None);
+    let request = ExecutionRequest::serial(&host);
+    let (buffer, _) = request
+        .run_native_with_checkpoint(|context| {
+            worth_execution::ExecutionByteBuffer::allocate_in_stage(2, request, context)
+        })
+        .unwrap();
+    let mut buffer = buffer.unwrap();
+    assert_eq!(budget.charged_memory_bytes(), 2);
+    buffer.extend_from_slice(&[1]).unwrap();
+    let refused = buffer.seal().unwrap_err();
+    assert_eq!(
+        refused.classify(),
+        worth_execution::ExecutionAllocationDenialClass::Physical(
+            worth_execution::ExecutionPhysicalAllocationDenialKind::IncompleteSeal
+        )
+    );
+    assert_eq!(budget.charged_memory_bytes(), 0);
+}
+
+#[test]
+fn staged_worker_only_bytes_keep_cancellation_without_a_memory_ticket() {
+    let cancellation = CancellationSource::new();
+    let lease = worth_execution::ExecutionResourceLease::serial(worth_execution::LeaseRequest {
+        policy: worth_foundational::ExecutionRequestPolicy::for_workers(
+            worth_foundational::ExecutionPosture::Serial,
+            worth_foundational::DeterminismContract::CanonicalBitwise,
+            std::num::NonZeroUsize::MIN,
+        ),
+        deadline: None,
+        cancellation: cancellation.token(),
+    })
+    .unwrap();
+    let request = ExecutionRequest::leased(&lease);
+    let (buffer, _) = request
+        .run_native_with_checkpoint(|context| {
+            assert!(!context.has_accounting());
+            worth_execution::ExecutionByteBuffer::allocate_in_stage(2, request, context)
+        })
+        .unwrap();
+    let mut buffer = buffer.unwrap();
+    assert_eq!(lease.charged_memory_bytes(), 0);
+    buffer.extend_from_slice(&[1, 2]).unwrap();
+    cancellation.cancel();
+    assert_eq!(
+        buffer.seal().unwrap_err().classify(),
+        worth_execution::ExecutionAllocationDenialClass::Request(
+            worth_execution::WorkCeilingDenial::Stopped(worth_execution::MapKernelStop::Cancelled)
+        )
+    );
+    assert_eq!(lease.charged_memory_bytes(), 0);
+}

@@ -205,7 +205,7 @@ impl WorthQueryInstalledDomainExecutionDrift {
             counters: WorthQueryInstalledDomainExecutionDriftCounters::denied_before_work(),
             retained_authority: retained_authority.clone(),
             current_authority: current_authority.cloned(),
-            drift_identity: drift_identity.seal(),
+            drift_identity: drift_identity.seal().expect("fixed authority drift grammar: three closed enum labels and at most two sealed witness identities"),
         }
     }
 

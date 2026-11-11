@@ -2,7 +2,8 @@ pub(crate) use worth_query_bank_testkit_domain::facade::domain_contracts::estate
 
 #[test]
 fn required_estate_topology_and_policy_contributions_are_present() {
-    let declaration = BankSchema::declaration().unwrap();
+    let declaration =
+        worth_query_decl::facade::application_schema::fragment::declare(BankSchema).unwrap();
     let members = declaration.erased().members();
     assert_required_subset_present(
         members.iter().filter_map(entity_name).collect(),
@@ -59,7 +60,8 @@ fn required_estate_topology_and_policy_contributions_are_present() {
 
 #[test]
 fn estate_capabilities_and_installed_programs_are_declared() {
-    let declaration = BankSchema::declaration().unwrap();
+    let declaration =
+        worth_query_decl::facade::application_schema::fragment::declare(BankSchema).unwrap();
     let members = declaration.erased().members();
     assert_required_subset_present(
         members.iter().filter_map(operation_name).collect(),
@@ -105,7 +107,8 @@ fn estate_capabilities_and_installed_programs_are_declared() {
 
 #[test]
 fn delegation_activation_keeps_bank_reads_without_an_application_effect_program() {
-    let declaration = BankSchema::declaration().unwrap();
+    let declaration =
+        worth_query_decl::facade::application_schema::fragment::declare(BankSchema).unwrap();
     let members = declaration.erased().members();
     assert!(members.iter().all(|member| !matches!(
         member,

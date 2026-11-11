@@ -1,0 +1,20 @@
+Command: ["C:\\programming\\worth worktees\\worktrees\\m3-host-home\\workspaces\\worth-query-bank-world\\target\\debug\\deps\\worth_query_bank_court_external_rail_server-c13c2d9ded46b1fb.exe", "--exact", "oracle::server_owned_effects::server::parallel_history::assessment_history::assessment_history_settles_at_each_request_width", "oracle::server_owned_effects::server::parallel_history::transfer_history::seeded_transfers_match_at_host_policy_and_each_request_width", "--nocapture"]
+Working directory: C:\programming\worth worktees\worktrees\m3-host-home\workspaces\worth-query-bank-world
+HEAD: 592aaaae2f5e852a6bb2c7e7d8626e2f30921e85
+Git status --short empty: False
+Start: 2026-11-08T15:19:56.604674+00:00
+
+{"type": "cargo-invocation", "command": ["C:\\programming\\worth worktees\\worktrees\\m3-host-home\\workspaces\\worth-query-bank-world\\target\\debug\\deps\\worth_query_bank_court_external_rail_server-c13c2d9ded46b1fb.exe", "--exact", "oracle::server_owned_effects::server::parallel_history::assessment_history::assessment_history_settles_at_each_request_width", "oracle::server_owned_effects::server::parallel_history::transfer_history::seeded_transfers_match_at_host_policy_and_each_request_width", "--nocapture"], "cwd": "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\workspaces\\worth-query-bank-world", "capture": "separate", "mode": "build", "target_dir": "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\workspaces\\worth-query-bank-world\\target", "cargo_profile": null}
+
+running 2 tests
+test oracle::server_owned_effects::server::parallel_history::transfer_history::seeded_transfers_match_at_host_policy_and_each_request_width ... ok
+test oracle::server_owned_effects::server::parallel_history::assessment_history::assessment_history_settles_at_each_request_width ... ok
+
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 188 filtered out; finished in 7.17s
+
+
+
+{"type": "cargo-result", "exit_code": 0}
+
+End: 2026-11-08T15:20:03.803191+00:00
+Exit code: 0

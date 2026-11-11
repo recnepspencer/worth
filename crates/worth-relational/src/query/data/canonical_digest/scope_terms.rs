@@ -30,8 +30,24 @@ pub(super) fn encode_query_plan_context_id(bytes: &mut Vec<u8>, context_id: &Que
             encode_u64(bytes, commit_id.0);
         }
         QueryPlanEvidenceBasis::GenesisRuntimeBootstrap => bytes.push(1),
-        QueryPlanEvidenceBasis::CheckpointAdmissionImage { commit_id } => {
+        QueryPlanEvidenceBasis::PreparedMutationCandidate {
+            proposal_ordinal,
+            candidate_id,
+        } => {
+            bytes.push(3);
+            encode_u64(bytes, proposal_ordinal);
+            encode_u64(bytes, candidate_id);
+        }
+        QueryPlanEvidenceBasis::AppliedMutationCandidate {
+            proposal_ordinal,
+            revision,
+        } => {
             bytes.push(2);
+            bytes.extend_from_slice(&proposal_ordinal.to_le_bytes());
+            bytes.extend_from_slice(&revision.to_le_bytes());
+        }
+        QueryPlanEvidenceBasis::CheckpointAdmissionImage { commit_id } => {
+            bytes.push(4);
             encode_u64(bytes, commit_id.0);
         }
     }

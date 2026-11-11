@@ -21,8 +21,10 @@ impl OperationHandler<DocumentRetentionSchema, ArchiveBinding> for ArchiveHandle
     > {
         DECISIONS.fetch_add(1, Ordering::Relaxed);
         let target = (|| {
-            let document = reader
-                .resolve_entity(DocumentIdentityField::reference(), input.identity.clone())?;
+            let document = reader.resolve_entity(
+                DocumentIdentityField::at("DocumentIdentityField"),
+                input.identity.clone(),
+            )?;
             reader.mutation_target(&document)
         })();
         match target {

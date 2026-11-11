@@ -195,7 +195,11 @@ fn generic_empty_program(
             )
             .unwrap();
         reads
-            .resolve_entity(phase, CapabilityGrantIdentityField::reference(), grant)
+            .resolve_entity(
+                phase,
+                CapabilityGrantIdentityField::at("CapabilityGrantIdentityField"),
+                grant,
+            )
             .unwrap();
         reads.complete_projected_dependencies(
             phase,

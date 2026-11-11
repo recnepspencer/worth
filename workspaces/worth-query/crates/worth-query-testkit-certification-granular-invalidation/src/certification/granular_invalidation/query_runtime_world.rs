@@ -1,3 +1,4 @@
+use worth_query_testkit_host::facade::host::temporal_conditional_operation::schema::IntentFacts as StoredIntentFacts;
 #[path = "query_runtime_world/backend.rs"]
 pub mod backend;
 #[path = "query_runtime_world/bridge.rs"]
@@ -204,7 +205,10 @@ pub fn settle_primary_projection(
             read::project_facts().entity_identities().display_field(
                 read::ProjectionFactFieldPath::from_canonical_field_path(
                     worth_foundational::facade::CanonicalFieldPath::new(vec![
-                        worth_foundational::facade::FieldKey::new("IntentFacts").unwrap(),
+                        worth_foundational::facade::FieldKey::new(
+                            StoredIntentFacts::reference().name(),
+                        )
+                        .unwrap(),
                         worth_foundational::facade::FieldKey::new("IntentGateField").unwrap(),
                     ])
                     .unwrap(),

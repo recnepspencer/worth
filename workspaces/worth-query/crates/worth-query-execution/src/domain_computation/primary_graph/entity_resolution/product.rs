@@ -1,49 +1,41 @@
 use crate::domain_computation::primary_graph::WorthQueryEntityResolutionRefusalKind as ResolutionRefusal;
+mod record;
 mod retained_scope;
 use super::admit_request;
 use super::entity_denial;
-use super::ApplicationFieldRef;
-use super::ApplicationFieldUnit;
+
 use super::ApplicationScalarValueBinding;
 use super::ApplicationSchema;
-use super::EqualityPredicate;
+
 use super::WorthQueryApplicationEntityIdentity;
 use super::WorthQueryEntityResolutionDenial;
 use super::WorthQueryEntityResolutionDenialKind;
 use super::WorthQueryPrincipalResolutionMode;
 use super::WorthQueryRequestScope;
-use super::WritePosture;
+
 use crate::domain_computation::primary_graph::application_query::WorthQueryObservedScopeSelector;
 
 use crate::domain_computation::primary_graph::WorthQuerySelectedProductOperation;
-use worth_query_installation::facade::DeclaredApplicationFieldValue;
 
 mod admitted_mutation;
 pub(crate) mod issued_scope;
 pub(in crate::domain_computation) use issued_scope::WorthQueryIssuedSelectedScope;
 
 impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
-    pub fn resolve_entity<Aspect, Entity, Field, Value, Write, Unit>(
+    pub fn resolve_entity<Aspect, Entity, Field, Value>(
         &self,
         phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
-        field: ApplicationFieldRef<
-            Schema,
-            Entity,
-            Aspect,
-            Field,
-            Value,
-            Write,
-            EqualityPredicate,
-            Unit,
-        >,
+        field: Field,
         value: Value,
         request: &WorthQueryRequestScope,
         mode: WorthQueryPrincipalResolutionMode,
     ) -> Result<WorthQueryApplicationEntityIdentity<Schema, Entity>, WorthQueryEntityResolutionDenial>
     where
-        Field: DeclaredApplicationFieldValue<Value = Value>,
-        Write: WritePosture,
-        Unit: ApplicationFieldUnit,
+        Field: worth_query_declaration::facade::application_schema::fragment::RecordSelection<
+            Entity = Entity,
+            Aspect = Aspect,
+            Value = Value,
+        >,
     {
         let execution = phase
             .execution_request_for(&self.application().runtime.product_runtime)
@@ -56,42 +48,37 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
         self.resolve_entity_with_request(&execution, field, value, request, mode)
     }
 
-    pub(in crate::domain_computation) fn resolve_entity_with_request<
-        Aspect,
-        Entity,
-        Field,
-        Value,
-        Write,
-        Unit,
-    >(
+    pub(in crate::domain_computation) fn resolve_entity_with_request<Aspect, Entity, Field, Value>(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
-        field: ApplicationFieldRef<
-            Schema,
-            Entity,
-            Aspect,
-            Field,
-            Value,
-            Write,
-            EqualityPredicate,
-            Unit,
-        >,
+        field: Field,
         value: Value,
         request: &WorthQueryRequestScope,
         mode: WorthQueryPrincipalResolutionMode,
     ) -> Result<WorthQueryApplicationEntityIdentity<Schema, Entity>, WorthQueryEntityResolutionDenial>
     where
-        Field: DeclaredApplicationFieldValue<Value = Value>,
-        Write: WritePosture,
-        Unit: ApplicationFieldUnit,
+        Field: worth_query_declaration::facade::application_schema::fragment::RecordSelection<
+            Entity = Entity,
+            Aspect = Aspect,
+            Value = Value,
+        >,
     {
         admit_request(request, field.field())?;
+        let column = self.record_selection(field)?;
+        Field::Binding::validate(&value).map_err(|_| {
+            entity_denial(
+                WorthQueryEntityResolutionDenialKind::Refused(
+                    ResolutionRefusal::ValueEncodingRejected,
+                ),
+                column.path(),
+            )
+        })?;
         let encoded = Field::Binding::encode(&value).map_err(|_| {
             entity_denial(
                 WorthQueryEntityResolutionDenialKind::Refused(
                     ResolutionRefusal::ValueEncodingRejected,
                 ),
-                field.field(),
+                column.path(),
             )
         })?;
         self.resolve_encoded_entity(
@@ -132,7 +119,7 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
         let (result, _) = handle.with_runtime(execution, |relational| {
 
                 handle
-                    .ensure_primary_indexes_for_basis(
+                    .carry_primary_index_basis_for_basis(
                         execution,
                         relational,
                         self.product().relational_basis(),

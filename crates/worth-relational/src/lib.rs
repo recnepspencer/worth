@@ -74,3 +74,8 @@ mod tests;
 mod test_execution_policy;
 #[cfg(test)]
 use worth_harness::facade::process_deadline;
+#[cfg(test)]
+#[path = "lib_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;
+#[cfg(test)]
+mod inline_type_sizes;

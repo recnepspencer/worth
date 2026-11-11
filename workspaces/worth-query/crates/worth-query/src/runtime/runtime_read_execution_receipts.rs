@@ -1,4 +1,5 @@
 use super::*;
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::intent_admission::WorthQueryReadExecutionBinding;
 
 pub(crate) fn attach_graph_read_access_receipt<Product>(
@@ -23,7 +24,8 @@ pub(crate) fn attach_read_intent_execution_evidence<Product>(
     executed_read: &mut super::read_composition_runtime::WorthQueryExecutedReadProduct<Product>,
     binding: &WorthQueryReadExecutionBinding,
     snapshot_identity: &crate::WorthQueryEvidenceIdentity,
-) where
+) -> Result<(), IdentityDerivationDenial>
+where
     Product: WorthQueryReadExecutionProduct,
 {
     let decision_trace_envelope =
@@ -50,8 +52,10 @@ pub(crate) fn attach_read_intent_execution_evidence<Product>(
             binding.binding_digest(),
             executed_read.product().receipt().result_digest(),
             snapshot_identity,
-        );
+        )?;
     executed_read
         .product_mut()
         .attach_intent_admission_evidence(decision_trace_envelope, execution_provenance);
+
+    Ok(())
 }

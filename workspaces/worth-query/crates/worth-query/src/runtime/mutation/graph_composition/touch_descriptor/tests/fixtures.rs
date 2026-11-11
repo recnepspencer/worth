@@ -207,7 +207,8 @@ fn one_step_program_with_relation_kind_id(
     if let Some(relation_kind_id) = relation_kind_id {
         step = step.with_relation_kind_id(relation_kind_id);
     }
-    let program = WorthQueryGraphCompositionProgram::new(vec![step], &breadth);
+    let program = WorthQueryGraphCompositionProgram::new(vec![step], &breadth)
+        .expect("fixture digest must fit");
     (vec![command], breadth, program)
 }
 
@@ -220,6 +221,7 @@ fn reference(symbol: &str, collection: &str) -> WorthQuerySymbolicTargetReferenc
 
 fn target_collection(collection: &str) -> WorthQueryMutationTargetCollectionIdentity {
     WorthQueryMutationTargetCollectionIdentity::new("graph-composition-test", collection)
+        .expect("fixture digest must fit")
 }
 
 fn symbolic_entity_declaration_count(kind: WorthQueryGraphCompositionProgramStepKind) -> usize {

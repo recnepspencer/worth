@@ -39,7 +39,7 @@ impl EffectEnvelopeSourceRefs {
                     WorthQueryEvidenceTag::new("counters"),
                     &counter_snapshot_identity,
                 )
-                .seal();
+                .seal().expect("fixed digest grammar: literal tags and values, primitive values, or sealed identity tokens");
         Self {
             receipt_identity,
             lowered_identity,

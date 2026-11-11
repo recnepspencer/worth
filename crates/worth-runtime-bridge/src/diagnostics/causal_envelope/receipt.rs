@@ -33,7 +33,7 @@ impl BridgeCausalEnvelopeReceipt {
         identity: &BridgeCausalEnvelopeIdentity,
         envelope_identity: &BridgeIdentityEvidence,
         counters: &BridgeCausalEnvelopeCounters,
-    ) -> Self {
+    ) -> Result<Self, crate::diagnostics::causal_envelope::BridgeCausalDigestRefusal> {
         let receipt_identity = compose_bridge_causal_envelope_evidence_identity(
             BridgeCausalEnvelopeDigestArtifact::Receipt,
             &[
@@ -41,13 +41,13 @@ impl BridgeCausalEnvelopeReceipt {
                 evidence_part(envelope_identity),
                 evidence_part(counters.counter_evidence_identity()),
             ],
-        );
-        Self {
+        )?;
+        Ok(Self {
             envelope_identity: identity.envelope_evidence_identity().clone(),
             envelope_digest_identity: envelope_identity.clone(),
             counter_identity: counters.counter_evidence_identity().clone(),
             receipt_identity,
-        }
+        })
     }
 
     pub fn envelope_identity_for_reporting(&self) -> &str {

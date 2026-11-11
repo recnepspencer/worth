@@ -17,10 +17,10 @@ pub fn encode_capability_action(value: &CapabilityAction) -> InternedString {
 }
 
 pub fn decode_capability_action(value: InternedString) -> Option<CapabilityAction> {
-    let InternedString::Raw(value) = value else {
+    let Some(value) = value.raw_text() else {
         return None;
     };
-    match value.as_str() {
+    match value {
         "touch" => Some(CapabilityAction::Touch),
         "inspect" => Some(CapabilityAction::Inspect),
         "disburse" => Some(CapabilityAction::Disburse),
@@ -49,10 +49,10 @@ pub fn encode_capability_purpose(value: &CapabilityPurpose) -> InternedString {
 }
 
 pub fn decode_capability_purpose(value: InternedString) -> Option<CapabilityPurpose> {
-    let InternedString::Raw(value) = value else {
+    let Some(value) = value.raw_text() else {
         return None;
     };
-    match value.as_str() {
+    match value {
         "account-maintenance" => Some(CapabilityPurpose::AccountMaintenance),
         "audit" => Some(CapabilityPurpose::Audit),
         _ => None,
@@ -76,10 +76,10 @@ pub fn encode_capability_status(value: &CapabilityStatus) -> InternedString {
 }
 
 pub fn decode_capability_status(value: InternedString) -> Option<CapabilityStatus> {
-    let InternedString::Raw(value) = value else {
+    let Some(value) = value.raw_text() else {
         return None;
     };
-    match value.as_str() {
+    match value {
         "active" => Some(CapabilityStatus::Active),
         "revoked" => Some(CapabilityStatus::Revoked),
         _ => None,
@@ -103,10 +103,10 @@ pub fn encode_capability_disclosure(value: &CapabilityDisclosure) -> InternedStr
 }
 
 pub fn decode_capability_disclosure(value: InternedString) -> Option<CapabilityDisclosure> {
-    let InternedString::Raw(value) = value else {
+    let Some(value) = value.raw_text() else {
         return None;
     };
-    match value.as_str() {
+    match value {
         "account-activity" => Some(CapabilityDisclosure::AccountActivity),
         "private-label" => Some(CapabilityDisclosure::PrivateLabel),
         _ => None,

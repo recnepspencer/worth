@@ -46,7 +46,7 @@ impl VisibilitySnapshotStateKey {
                 branch_id,
                 version_id,
                 root_id: root.id(),
-                schema_commitment: root.schema_authority().registry().authority_digest_bytes(),
+                schema_commitment: root.schema_authority().authority_digest(),
             },
         ))
     }
@@ -94,6 +94,18 @@ pub(crate) struct VisibilitySnapshotBasis {
 }
 
 impl VisibilitySnapshotBasis {
+    pub(crate) fn from_applied_root(
+        branch_id: BranchId,
+        version_id: VersionId,
+        root: Arc<RelationalBranchRoot>,
+    ) -> Self {
+        Self {
+            key: VisibilitySnapshotStateKey::exact(branch_id, version_id, &root),
+            root,
+            _retained_observation: None,
+        }
+    }
+
     pub(crate) fn from_observation(observation: &crate::mvcc::RelationalBranchObservation) -> Self {
         let version_id = observation.version_id();
         let root = Arc::clone(observation.selected_root());
@@ -105,21 +117,6 @@ impl VisibilitySnapshotBasis {
             ),
             root,
             _retained_observation: Some(observation.clone()),
-        }
-    }
-
-    /// A prepared candidate owns both roots until its single-use publication
-    /// decision. This projection never enters the snapshot/reader catalogue.
-    pub(crate) fn from_prepared_root(branch_id: BranchId, root: Arc<RelationalBranchRoot>) -> Self {
-        let version_id = root
-            .canonical_envelope()
-            .expect(/* Proof: The private prepared publication root is constructed with its descriptor and canonical envelope before exposing the prepared phase. */ "prepared commit root has its canonical envelope")
-            .commit
-            .version_id;
-        Self {
-            key: VisibilitySnapshotStateKey::exact(branch_id, version_id, root.as_ref()),
-            root,
-            _retained_observation: None,
         }
     }
 
@@ -227,13 +224,6 @@ impl SnapshotStateBasis {
         match self {
             Self::Exact(basis) => Some(basis.root()),
             Self::Historical(basis) => basis.root(),
-        }
-    }
-
-    pub(crate) fn root_id(&self) -> Option<u64> {
-        match self {
-            Self::Exact(basis) => Some(basis.root_id()),
-            Self::Historical(basis) => basis.source_root_id(),
         }
     }
 

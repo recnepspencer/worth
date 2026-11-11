@@ -85,11 +85,12 @@ impl InvariantMetrics<'_> {
         };
         self.record_preparation_shape(counters.packet_count, scope_units, planned.strategy);
         debug_assert!(
-            /* Proof: The owned planned evaluation is built with one context; each private packet constructor copies that context before exposing the immutable collection. */
-            planned
-                .packets
-                .iter()
-                .all(|packet| packet.planning_context == planned.context)
+            /* Proof: Each private packet constructor specializes only the selected family and its before/applied observation; every other field of the shared proposal proof must remain exact. */
+            planned.packets.iter().all(|packet| planned
+                .context
+                .for_registration(packet.registration.execution_point())
+                .as_ref()
+                == Some(packet.planning_context.as_ref()))
         );
     }
 

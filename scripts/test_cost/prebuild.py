@@ -18,7 +18,7 @@ def prepare(repository, workspace, output, runner=None, include_proof=True, comp
     if workspace == 'store':
         from store_prebuild import require_native
         native = require_native(repository, native_build)
-    if workspace in ('root', 'store'):
+    if workspace in ('root', 'query', 'store'):
         from compiler_prebuild import CompilerScope, prepare as compiler
         compiler_environment = compiler(repository, workspace, output / 'compiler', runner,
                                         compiler_scope or CompilerScope.ALL)

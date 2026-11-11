@@ -30,6 +30,7 @@ pub(super) fn publish(
     required_prerequisites: &mut Option<
         crate::domain_computation::primary_graph::PreparedPrerequisiteClaims,
     >,
+    members: &mut [crate::domain_computation::primary_graph::provider::CoupledApplicationMember],
     history: Option<crate::domain_computation::primary_graph::product_operation::document_history::HistoryProducerCutover<'_>>,
 ) -> Result<
     WorthQueryApplicationProductPublicationOutcome,
@@ -70,6 +71,8 @@ pub(super) fn publish(
             prepared.planned_successor(),
             required_prerequisites,
         )?;
+        super::coupled::prepare_lineage(provider, members, prepared.planned_successor())
+            .map_err(lineage_pending)?;
         let recovery_handle = prepared.unpublished_recovery_handle();
         let terminal = crate::domain_computation::execution_runtime::product_world::WorthQueryReservedProductPublicationReceipt::new(
             product.root_identity(),
@@ -163,6 +166,7 @@ PublicationDenial::Stopped(stop)=>publication_request_stop(stop), PublicationDen
             .prepare_owned_conditional_definition_successor(&predecessor, parts.request)
             .map_err(|_| denied("Bridge rejected combined conditional preparation"))?;
         let lineage_slot = prepare_lineage_slot(provider, attempt, prepared.planned_successor(), required_prerequisites)?;
+        super::coupled::prepare_lineage(provider, members, prepared.planned_successor()).map_err(lineage_pending)?;
         let recovery_handle = prepared.unpublished_recovery_handle();
         let terminal = crate::domain_computation::execution_runtime::product_world::WorthQueryReservedProductPublicationReceipt::new(
             product.root_identity(),

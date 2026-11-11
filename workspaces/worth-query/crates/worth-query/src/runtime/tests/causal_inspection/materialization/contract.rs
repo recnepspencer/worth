@@ -22,6 +22,7 @@ fn admitted_replay_flow_requesting_signal_cursor(
             CausalEvidenceFamily::SignalReplayCursor,
         ],
     ))
+    .expect("fixture digest must fit")
 }
 
 fn bridge_route_only_envelope_for_admitted_replay(

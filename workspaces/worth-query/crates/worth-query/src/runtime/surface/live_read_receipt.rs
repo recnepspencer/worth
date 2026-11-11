@@ -1,3 +1,5 @@
+#[cfg(test)]
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::identity::CanonicalResultShapeDigest;
 use crate::intent_admission::WorthQueryIntentDecisionTraceEnvelope;
 use crate::memory_workspace::WorthQuerySnapshotIdentity;
@@ -161,14 +163,14 @@ impl WorthQueryLiveReadReceipt {
         result_digest: impl Into<String>,
         snapshot_identity: WorthQuerySnapshotIdentity,
         row_count: usize,
-    ) -> Self {
+    ) -> Result<Self, IdentityDerivationDenial> {
         let query_digest = query_digest.into();
         let snapshot_evidence_identity = snapshot_identity.evidence_identity();
         let canonical_result_shape_identity =
             crate::identity::canonical_result_shape_evidence_identity(
                 &canonical_result_shape_digest,
-            );
-        Self {
+            )?;
+        Ok(Self {
             view_name: view_name.into(),
             installation_digest: installation_digest.into(),
             installation_identity,
@@ -185,6 +187,6 @@ impl WorthQueryLiveReadReceipt {
             live_graph_read_access: None,
             decision_trace_envelope: None,
             execution_provenance: None,
-        }
+        })
     }
 }

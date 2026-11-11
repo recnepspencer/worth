@@ -98,11 +98,13 @@ impl<'lane, 'selected> PreparedStableLineageAddress<'lane, 'selected> {
             .map_err(|_| denial(Kind::ForeignSource))?;
         let performed_origin = origin_cell(candidate);
         let recorded = RecordedOutput {
+            coupled_completion: None,
             producing_implementation: origin.producing_implementation,
             required_publication: origin.required_publication.clone(),
             native_prior_checkpoint: None,
             computation_source: selected_row.computation_source,
             performed_origin: Some(performed_origin),
+            historical_selection: None,
             consumed_outputs: self
                 .verified
                 .verified_consumed

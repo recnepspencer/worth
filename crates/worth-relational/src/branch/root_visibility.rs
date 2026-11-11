@@ -1,4 +1,4 @@
-use crate::history::data::CanonicalCommitEnvelopeBody;
+use crate::history::data::CanonicalCommitEnvelope;
 
 use super::RelationalBranchRootCaptureDenial;
 use super::RelationalRootCorrectnessIndex;
@@ -19,7 +19,7 @@ impl RelationalBranchVisibilityCommitment {
         Self(digest)
     }
     pub(super) fn for_root(
-        envelope: &CanonicalCommitEnvelopeBody,
+        envelope: &CanonicalCommitEnvelope,
         storage_root: [u8; 32],
         schema_root: [u8; 32],
         correctness_index: RelationalRootCorrectnessIndex,
@@ -29,7 +29,7 @@ impl RelationalBranchVisibilityCommitment {
     }
 
     pub(in crate::branch) fn for_root_for_request(
-        envelope: &CanonicalCommitEnvelopeBody,
+        envelope: &CanonicalCommitEnvelope,
         storage_root: [u8; 32],
         schema_root: [u8; 32],
         correctness_index: RelationalRootCorrectnessIndex,
@@ -48,6 +48,52 @@ impl RelationalBranchVisibilityCommitment {
             .map_err(|cause| RelationalBranchRootCaptureDenial::Request(cause.into()))?;
         result
     }
+    pub(in crate::branch) fn for_payload_for_request(
+        payload: &[u8],
+        storage_root: [u8; 32],
+        schema_root: [u8; 32],
+        correctness_index: RelationalRootCorrectnessIndex,
+        request: &ExecutionRequest<'_, '_>,
+    ) -> Result<Self, RelationalBranchRootCaptureDenial> {
+        let mut answer = None;
+        let scope = request.run_native_with_checkpoint(|context| {
+            let mut writer = VisibilityWriter {
+                hash: Sha256::new(),
+                context: Some(context),
+                stop: None,
+                payload: false,
+            };
+            let correctness = match correctness_index {
+                RelationalRootCorrectnessIndex::AuthoritativeFallback => [0],
+            };
+            let written = [
+                b"worth.relational.branch-visibility.v1\0".as_slice(),
+                storage_root.as_slice(),
+                schema_root.as_slice(),
+                correctness.as_slice(),
+            ]
+            .into_iter()
+            .try_for_each(|bytes| writer.write_all(bytes))
+            .and_then(|()| {
+                writer.payload = true;
+                writer.write_all(payload)
+            });
+            answer = Some(match (written, writer.stop.take()) {
+                (_, Some(cause)) => Err(RelationalBranchRootCaptureDenial::Request(cause.into())),
+                (Err(_), None) => unreachable!("visibility writer only refuses for its request"),
+                (Ok(()), None) => Ok(Self(writer.hash.finalize().into())),
+            });
+        });
+        match (scope, answer) {
+            (Ok(_), Some(answer)) => answer,
+            (
+                Err(worth_execution::WorkCeilingDenial::Stopped(MapKernelStop::NestedStopped)),
+                Some(Err(cause)),
+            ) => Err(cause),
+            (Err(cause), _) => Err(RelationalBranchRootCaptureDenial::Request(cause.into())),
+            (Ok(_), None) => unreachable!("completed request visibility emission"),
+        }
+    }
 
     pub(crate) const fn digest(self) -> [u8; 32] {
         self.0
@@ -55,7 +101,7 @@ impl RelationalBranchVisibilityCommitment {
 }
 
 fn compute(
-    envelope: &CanonicalCommitEnvelopeBody,
+    envelope: &CanonicalCommitEnvelope,
     storage_root: [u8; 32],
     schema_root: [u8; 32],
     correctness_index: RelationalRootCorrectnessIndex,
@@ -65,6 +111,7 @@ fn compute(
         hash: Sha256::new(),
         context,
         stop: None,
+        payload: false,
     };
     let correctness = match correctness_index {
         RelationalRootCorrectnessIndex::AuthoritativeFallback => [0],
@@ -84,6 +131,7 @@ fn compute(
             ));
         }
     }
+    output.payload = true;
     let encoded = envelope.write_authoritative_payload(&mut output);
     if let Some(stop) = output.stop {
         return Err(RelationalBranchRootCaptureDenial::Request(stop.into()));
@@ -98,6 +146,7 @@ struct VisibilityWriter<'context, 'scope, 'authority> {
     hash: Sha256,
     context: Option<&'context mut MapKernelContext<'scope, 'authority>>,
     stop: Option<MapKernelStop>,
+    payload: bool,
 }
 impl Write for VisibilityWriter<'_, '_, '_> {
     fn write(&mut self, bytes: &[u8]) -> std::io::Result<usize> {
@@ -114,9 +163,21 @@ impl Write for VisibilityWriter<'_, '_, '_> {
                     return Err(std::io::ErrorKind::Other.into());
                 }
                 self.hash.update(chunk);
+                if self.payload {
+                    crate::execution::phase_observation::hash_bytes(
+                        crate::execution::phase_observation::HashPurpose::BranchVisibility,
+                        chunk.len(),
+                    );
+                }
             }
         } else {
             self.hash.update(bytes);
+            if self.payload {
+                crate::execution::phase_observation::hash_bytes(
+                    crate::execution::phase_observation::HashPurpose::BranchVisibility,
+                    bytes.len(),
+                );
+            }
         }
         Ok(bytes.len())
     }

@@ -103,3 +103,6 @@ impl<D: 'static, O: 'static, F: 'static, L: BasisOperationLane>
         })
     }
 }
+#[cfg(test)]
+#[path = "consumer_policy_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;

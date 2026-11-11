@@ -7,14 +7,14 @@ use crate::durability::medium::{
 
 #[derive(Debug)]
 pub(super) struct SymbolPageState {
-    pub(super) data: BTreeMap<
+    pub(super) data: crate::storage::substrate::SharedMap<
         RelationalDurableMemberLocator,
         Result<SymbolPageShape, RelationalStorageUnavailable>,
     >,
     pub(super) physical: crate::durability::medium::NativeSourceMemberState,
 }
 impl std::ops::Deref for SymbolPageState {
-    type Target = BTreeMap<
+    type Target = crate::storage::substrate::SharedMap<
         RelationalDurableMemberLocator,
         Result<SymbolPageShape, RelationalStorageUnavailable>,
     >;

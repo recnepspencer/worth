@@ -12,11 +12,14 @@ use worth_query_host::facade::primary_graph::{
 };
 
 #[derive(Clone)]
-struct ControlledTime(Arc<std::sync::atomic::AtomicU64>);
+struct ControlledTime(
+    Arc<std::sync::atomic::AtomicU64>,
+    worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock,
+);
 
 impl ControlledTime {
     fn at(seconds: u64) -> Self {
-        Self(Arc::new(std::sync::atomic::AtomicU64::new(seconds)))
+        Self(Arc::new(std::sync::atomic::AtomicU64::new(seconds)), worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system())
     }
 
     fn advance_to(&self, seconds: u64) {
@@ -29,9 +32,8 @@ impl WorthQueryRuntimeTimeSource for ControlledTime {
         &self,
     ) -> worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock
     {
-        worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system()
+        self.1.clone()
     }
-
     fn current_time(&self) -> Result<SystemTime, WorthQueryRuntimeTimeSourceDenial> {
         Ok(UNIX_EPOCH + Duration::from_secs(self.0.load(Ordering::SeqCst)))
     }

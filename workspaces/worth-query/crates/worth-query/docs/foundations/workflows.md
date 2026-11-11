@@ -1087,6 +1087,16 @@ requires its separate concrete `DefinitionMetadata` read slot; the former
 execution-only entrance is removed. Actor capability enforcement is independent of read disclosure.
 Public workflow views never serve as permission.
 
+An independently admitted audit exposes the ending actor as
+`WorkflowEndingActorProvenance`: either `Principal`, with the original admitted
+principal's partition, slot and generation, or `HomeWorldOwner`, with a durable
+Home and World owner slot. These are recorded identities, never cancellation
+grants. Start, proposal, approval and execution actors remain principal roles.
+An ended instance retains its ending provenance through checkpoint readmission;
+reading it still requires fresh audit authority. A live instance has no ending
+actor. Workflow instance schemas require the current ending-actor contract;
+there is no principal backfill for an older record.
+
 Current workflow layouts and portable definitions admit only their current
 actor and policy contracts. Unsupported predecessors are refused intact before
 old native authority is interpreted; callers cannot supply actor backfill or

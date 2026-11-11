@@ -13,7 +13,7 @@ impl ApplicationMutationOutputContract<MutationSchema> for CreatedOutputs {
 impl WorthQueryApplicationOutputRole for Created {
     type Schema = MutationSchema;
     type Contract = CreatedOutputs;
-    type Entity = FixtureEntity<MutationSchema>;
+    type Entity = FixtureEntity;
     type Action = WorthQueryCreateOutput;
     type Cardinality = WorthQueryExactlyOneOutput;
     const NAME: &'static str = "created-account";
@@ -27,7 +27,7 @@ mutation_binding!(
     MutationDecision,
     MutationDenialBinding,
     "fixture.created-handler.v1",
-    FixturePrincipalIdentityField<MutationSchema>,
+    FixturePrincipalIdentityField::at("PrincipalIdentityField"),
     test_principal_binding::<MutationSchema>(),
     CreatedOutputs
 );
@@ -37,18 +37,14 @@ fn source_output_manifest_resolves_actual_role_and_complete_field_meaning() {
     let source = CreatedBinding::descriptor();
     let inventory = BTreeMap::from([(source.identity().to_owned(), &source)]);
     let queries = [disclosure::HistoryBinding::descriptor()];
-    let field = ApplicationFieldRef::<
-        MutationSchema,
-        FixtureEntity<MutationSchema>,
-        FixtureIdentityAspect<MutationSchema>,
-        FixturePrincipalIdentityField<MutationSchema>,
+    let field = worth_query_declaration::facade::application_schema::fragment::FieldSelection::<
+        InstallationFields,
+        FixtureEntity,
+        FixtureIdentityAspect,
         u64,
-        ReadOnly,
-        EqualityPredicate,
-        NoApplicationUnit,
-    >::from_schema_types();
+    >::at("PrincipalIdentityField");
     let witness = ApplicationCorrectionOutput::<CreatedBinding, Created>::field(field);
-    let declared = witness.declaration().parts().clone();
+    let declared = witness.declaration().unwrap().parts().clone();
     for axis in [
         "valid",
         "codec",
@@ -82,10 +78,10 @@ fn source_output_manifest_resolves_actual_role_and_complete_field_meaning() {
         if axis == "duplicate" {
             association
                 .source_output_fields
-                .push(witness.declaration().clone());
+                .push(witness.declaration().unwrap().clone());
         }
         let mut actual = members(&source, association);
-        actual.push(witness.declaration().projected_value_member());
+        actual.push(witness.declaration().unwrap().projected_value_member());
         let result = resolve_correction_binding(&actual, &source, &inventory, &queries);
         if axis == "valid" {
             assert!(result.unwrap().is_some());

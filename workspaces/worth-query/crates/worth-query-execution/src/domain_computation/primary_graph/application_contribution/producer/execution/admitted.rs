@@ -62,6 +62,7 @@ where
             runtime,
             &shared,
             Some(&control),
+            commit_authority.history_control(),
             external_principal,
             request_scope,
             &input,
@@ -75,6 +76,7 @@ where
             external_principal,
             request_scope,
             prepared.principal.principal(),
+            prepared.scope.as_ref(),
             prepared.operation,
             required_output,
             provider,
@@ -88,47 +90,15 @@ where
             producer_contacts,
         );
     }
-    // The producer installed this exact binding once. Ordinary authorization
-    // below still checks its current runtime/schema/operation authority; fresh
-    // principal and graph-work sessions are issued for this request. Rebuilding
-    // a second installed object here split cold and selected descriptor custody.
-    let binding = &installed.mutation;
-    let principal = selected
-        .resolve_authenticated_principal_with_request(
+    let (shared, principal, admission, scope) =
+        super::ordinary_authorization::prepare::<Schema, Binding>(
             execution,
-            binding.principal_binding(),
+            selected,
+            installed,
             external_principal,
             request_scope,
-            WorthQueryPrincipalResolutionMode::Ordinary,
-        )
-        .map_err(|error| principal_rejected(Binding::IDENTITY, error))?;
-    let (scope_field, scope_value) = <_ as ApplicationMutationInputScope<
-        Schema,
-        Operation<Schema, Binding>,
-    >>::scope_for_binding(&input)
-    .into_field_parts(principal.principal_identity());
-    let scope = selected
-        .resolve_entity_with_request(
-            execution,
-            scope_field,
-            scope_value,
-            request_scope,
-            WorthQueryPrincipalResolutionMode::Ordinary,
-        )
-        .map_err(|error| scope_rejected(Binding::IDENTITY, error))?;
-    let admission = selected
-        .authorize_operation_with_request(
-            execution,
-            &principal,
-            &scope,
-            binding.operation(),
-            TypedMutationPreconditions::default(),
-            request_scope,
-        )
-        .map_err(|error| request_authority_denied(Binding::IDENTITY, error))?;
-    let shared = selected
-        .prepare_shared_query_basis()
-        .map_err(|(_, stop)| source_readmission::ready_resource_denial(Binding::IDENTITY, stop))?;
+            &input,
+        )?;
     post_authorization::execute_authorized::<Schema, Binding>(
         phase,
         runtime,
@@ -137,6 +107,7 @@ where
         external_principal,
         request_scope,
         &principal,
+        Binding::PREDECESSOR_READS.as_ref().map(|_| &scope),
         admission,
         required_output,
         provider,

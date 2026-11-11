@@ -186,6 +186,7 @@ pub(in crate::domain_computation::primary_graph) use required_work::SelectedRequ
 pub(in crate::domain_computation::primary_graph) use required_work::SelectedRequiredWork;
 pub(in crate::domain_computation::primary_graph) use required_work::SelectedRequiredWorkKind;
 pub(crate) mod restoration;
+pub use restoration::RestoredOutputOrigin;
 pub(in crate::domain_computation::primary_graph) use restoration::WorthQueryRestoredAcceptedOutput;
 pub(crate) mod consumer_custody;
 pub(crate) mod settlement_index;
@@ -384,3 +385,6 @@ impl WorthQueryAcceptedOutputAuthority {
 }
 
 pub use consumer_custody::{ConsumerCustody, ConsumerHandoff};
+#[cfg(test)]
+#[path = "registry_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;

@@ -5,6 +5,7 @@ mod domain_tokens;
 mod input_id;
 mod scalar_view;
 mod sequence;
+#[cfg(test)]
 mod sha256_hash;
 mod sink;
 mod token_writer;
@@ -23,7 +24,12 @@ pub use value::{
 };
 
 pub(super) use input_id::digest_input_id;
+#[cfg(test)]
 pub(super) use sha256_hash::sha256_digest;
+
+// Versioned independently of the semantic source rule version. Buffered
+// material consumers cross this grammar boundary without a hash slot.
+pub(super) const CANONICAL_MATERIAL_VERSION: &str = "2";
 
 use algorithm::append_algorithm_material;
 use sequence::{append_bundle_material, append_sequence_material};
@@ -32,8 +38,33 @@ use token_writer::append_token;
 use super::algorithm::CanonicalDigestAlgorithmMetadata;
 use super::evidence::CanonicalDigestInputEvidence;
 use super::resource_admission::CanonicalResourceAdmission;
-use writer::{CanonicalEncodedMaterial, CanonicalMaterialResult, CanonicalMaterialWriter};
+#[cfg(test)]
+use writer::CanonicalEncodedMaterial;
+use writer::{CanonicalMaterialResult, CanonicalMaterialWriter};
 
+pub(super) fn stream_canonical_digest(
+    algorithm: &CanonicalDigestAlgorithmMetadata,
+    evidence: &CanonicalDigestInputEvidence,
+    maximum_encoded_bytes: Option<usize>,
+    admission: Option<&mut CanonicalResourceAdmission<'_>>,
+) -> CanonicalMaterialResult<writer::CanonicalHashedMaterial> {
+    let mut material = match admission {
+        Some(admission) => CanonicalMaterialWriter::admitted(
+            maximum_encoded_bytes.unwrap_or(usize::MAX),
+            admission,
+        ),
+        None => match maximum_encoded_bytes {
+            Some(maximum) => CanonicalMaterialWriter::bounded(maximum),
+            None => CanonicalMaterialWriter::owned(),
+        },
+    }
+    .into_streaming();
+    append_algorithm_material(&mut material, algorithm)?;
+    append_input_evidence_material(&mut material, evidence)?;
+    material.finish_digest()
+}
+
+#[cfg(test)]
 pub(super) fn canonical_digest_material(
     algorithm: &CanonicalDigestAlgorithmMetadata,
     evidence: &CanonicalDigestInputEvidence,

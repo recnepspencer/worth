@@ -26,13 +26,14 @@ impl RelationalBranchRootSchemaAuthority {
             &expected,
             descriptor,
             compilation::RetainedContracts::Extend(Some(previous)),
-            Some(funding),
+            Some(funding.clone()),
             control,
         )
         .map_err(super::super::RelationalBranchRootCaptureDenial::Request)?;
         // Descriptor and deduplication scratch drop before their original grant.
         drop(expected);
         drop(temporary);
+        drop(funding);
         Ok(schema)
     }
 }

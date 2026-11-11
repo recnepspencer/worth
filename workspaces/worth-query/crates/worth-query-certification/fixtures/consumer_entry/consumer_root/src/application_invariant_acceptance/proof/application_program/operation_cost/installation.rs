@@ -25,12 +25,13 @@ pub(super) fn install(fanout: usize, unrelated: usize) -> Runtime {
         (),
     );
     let program = ApplicationProgramAuthoring::<Schema, Program>::begin()
-        .with_schema(&Schema::declaration().expect("the completed schema is valid"))
+        .with_schema(&<Schema as worth_query_decl::facade::application_schema::ApplicationSchema>::declaration().expect("the completed schema is valid"))
         .validated_program()
         .unwrap();
     in_memory_program(
         program,
-        Schema::declaration().unwrap(),
+        <Schema as worth_query_decl::facade::application_schema::ApplicationSchema>::declaration()
+            .unwrap(),
         configuration,
         ApplicationBuildIdentity::parse("11111111-1111-1111-1111-111111111111").unwrap(),
         resources::application_limits(),

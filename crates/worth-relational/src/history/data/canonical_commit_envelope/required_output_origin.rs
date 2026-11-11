@@ -1,17 +1,30 @@
 //! Complete producer publication membership, independent of member data patches.
-use super::CanonicalCommitEnvelopeBody;
+use super::{CanonicalCommitEnvelope, CanonicalCommitEnvelopeBody};
 use crate::branch::{AdmittedRelationalBranchBasis, RelationalBranchBasisDescriptor};
 use crate::history::data::CommitId;
 use crate::identity::data::{EntityId, KindId, VersionId};
 use crate::transactions::data::TransactionCommitError;
 use serde::{Deserialize, Serialize};
 mod authored_cascade;
+mod coupled_authored;
+mod coupled_authored_header;
+pub(crate) use coupled_authored::{
+    CanonicalCoupledAuthoredPublication, CanonicalCoupledAuthoredSources,
+};
 mod authored_restoration;
+mod historical_selection;
+mod history_request;
+pub(crate) use historical_selection::CanonicalHistoricalOutputSelection;
 mod installation;
 pub(crate) use authored_cascade::CanonicalAuthoredRetirement;
 pub(crate) use authored_restoration::CanonicalAuthoredRestoration;
 pub(crate) use installation::CanonicalProducerRetirement;
 mod group_selection;
+mod header_corruption;
+mod header_work;
+mod origin_history;
+pub(crate) use group_selection::{OwnedValidatedOutputOrigins, ValidatedOutputOrigins};
+pub(crate) use origin_history::OutputOriginHistory;
 mod members;
 mod payload_coverage;
 mod producer_retirement_header;
@@ -45,12 +58,19 @@ pub(crate) enum CanonicalOutputPublication {
     AuthoredRetirement {
         predecessor: CommitId,
     },
+    /// Select the producer's committed version; provenance is this new commit.
+    HistoricalSelection {
+        selected: CommitId,
+        generation: VersionId,
+        predecessor: Option<CommitId>,
+    },
 }
 
 impl CanonicalOutputPublication {
     pub(crate) fn predecessor(&self) -> Option<CommitId> {
         match self {
             Self::Birth | Self::BirthAfterCodecRetirement { .. } => None,
+            Self::HistoricalSelection { predecessor, .. } => *predecessor,
             Self::Preserve { predecessor }
             | Self::AuthoredRetirement { predecessor }
             | Self::ProducerRetirement { predecessor }
@@ -131,5 +151,12 @@ impl CanonicalRequiredOutputOrigin {
     ) {
         self._funding = memory;
     }
+    /// Native complete publication identity remains meaningful after current-fact decoding.
+    pub(crate) fn same_publication(&self, other: &Self) -> bool {
+        self.commit == other.commit && self.meaning == other.meaning
+    }
 }
+#[cfg(test)]
+#[path = "required_output_origin_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;
 mod source_scope_ownership;

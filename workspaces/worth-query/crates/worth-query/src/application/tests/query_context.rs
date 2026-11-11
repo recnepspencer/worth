@@ -85,7 +85,7 @@ fn query_context_capability_binds_branch_and_diff_contexts_without_mode_flags() 
 fn support_report_includes_query_context_capability() {
     let facade = WorthQueryApplicationFacade::runtime_backed_default();
     let support = facade.support_matrix();
-    let report = facade.support_report();
+    let report = facade.support_report().expect("fixture digest must fit");
 
     assert_eq!(
         support

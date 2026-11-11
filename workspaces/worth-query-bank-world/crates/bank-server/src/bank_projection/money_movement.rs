@@ -14,25 +14,15 @@ pub(crate) fn project_institution_money_movement<Operation>(
     required_balance_accounts: impl IntoIterator<Item = AccountId>,
 ) -> Result<BankDecisionSnapshot, BankProjectionDenial>
 where
-    AccountIdentity: OperationReads<Operation>,
-    AccountingRevision: OperationReads<Operation>,
     InstitutionAccount: OperationReads<Operation>,
     InstitutionCashAccount: OperationReads<Operation>,
-    InstitutionIdentityField: OperationReads<Operation>,
-    Kind: OperationReads<Operation>,
+
     PersonalOwner: OperationReads<Operation>,
     BusinessAccount: OperationReads<Operation>,
-    PrincipalIdentityField: OperationReads<Operation>,
-    BusinessIdentityField: OperationReads<Operation>,
-    Status: OperationReads<Operation>,
-    AccountDisplayName: OperationReads<Operation>,
+
     PostingAccount: OperationReads<Operation>,
     JournalPosting: OperationReads<Operation>,
-    JournalIdentityField: OperationReads<Operation>,
-    JournalPurpose: OperationReads<Operation>,
-    PostingIdentityField: OperationReads<Operation>,
-    Purpose: OperationReads<Operation>,
-    PostingAmount: OperationReads<Operation>,
+
     JournalReversal: OperationReads<Operation>,
 {
     let mut state = BoundedProjectionState::new(reader)?;
@@ -42,14 +32,14 @@ where
     let cash = state.project_institution_cash_account(reader, institution)?;
     let cash_revision = state.project_account(reader, &cash)?;
     let cash_id = reader
-        .decision_field(&cash, AccountIdentity::reference())?
+        .decision_field(&cash, AccountIdentity::at("AccountIdentity"))?
         .ok_or(BankProjectionDenial::MissingField("AccountIdentity"))?;
     let account_balance = validated_account_balance(
         account_id,
         account_revision,
         reader.summarize_exclusive_incoming(
             PostingAccount::reference(),
-            PostingAmount::reference(),
+            PostingAmount::at("PostingAmount"),
             &account,
         )?,
     )?;
@@ -58,7 +48,7 @@ where
         cash_revision,
         reader.summarize_exclusive_incoming(
             PostingAccount::reference(),
-            PostingAmount::reference(),
+            PostingAmount::at("PostingAmount"),
             &cash,
         )?,
     )?;

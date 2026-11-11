@@ -5,8 +5,8 @@ pub use worth_query_host::facade::declaration::{
         NoApplicationMutationSource,
     },
     application_schema::{
-        ApplicationFieldRef, ApplicationPrincipalBindingRef, ApplicationSchemaDeclarationBuilder,
-        EqualityPredicate, NoApplicationUnit, ReadOnly, U64ApplicationValueBinding,
+        ApplicationPrincipalBindingRef, ApplicationSchemaDeclarationBuilder, EqualityPredicate,
+        NoApplicationUnit, ReadOnly, U64ApplicationValueBinding,
     },
 };
 pub use worth_query_host::facade::primary_graph::WorthQueryInvariantMutationTarget;
@@ -43,15 +43,7 @@ worth_query_structured_value_binding!(pub WorkflowDefinitionAuthoringDenialBindi
 
 pub struct WorkflowDefinitionAuthoringBinding;
 
-pub type WorkflowDefinitionAuthoringScope = ApplicationMutationFieldScope<
-    DocumentRetentionSchema,
-    Document,
-    DocumentFacts,
-    DocumentIdentityField,
-    String,
-    ReadOnly,
-    NoApplicationUnit,
->;
+pub type WorkflowDefinitionAuthoringScope = ApplicationMutationFieldScope<DocumentIdentityField>;
 
 impl ApplicationMutationBinding<DocumentRetentionSchema> for WorkflowDefinitionAuthoringBinding {
     fn workflow_execution_requirements(
@@ -87,17 +79,8 @@ impl ApplicationMutationBinding<DocumentRetentionSchema> for WorkflowDefinitionA
     const REQUIRES_APPLICATION_PROGRAM: bool = true;
     const WORKFLOW_CONTROL: bool = true;
 
-    fn scope_field() -> ApplicationFieldRef<
-        DocumentRetentionSchema,
-        Document,
-        DocumentFacts,
-        DocumentIdentityField,
-        String,
-        ReadOnly,
-        EqualityPredicate,
-        NoApplicationUnit,
-    > {
-        DocumentIdentityField::reference()
+    fn scope_field() -> DocumentIdentityField {
+        DocumentIdentityField::at("DocumentIdentityField")
     }
 
     fn principal_binding() -> ApplicationPrincipalBindingRef<
@@ -127,7 +110,7 @@ impl ApplicationMutationIntent<DocumentRetentionSchema> for WorkflowDefinitionAu
 
     fn scope_binding(&self) -> WorkflowDefinitionAuthoringScope {
         WorkflowDefinitionAuthoringScope::new(
-            DocumentIdentityField::reference(),
+            DocumentIdentityField::at("DocumentIdentityField"),
             self.input.identity.clone(),
         )
     }
@@ -194,17 +177,8 @@ impl ApplicationMutationBinding<DocumentRetentionSchema> for WorkflowInstanceSta
     const REQUIRES_APPLICATION_PROGRAM: bool = true;
     const WORKFLOW_CONTROL: bool = true;
 
-    fn scope_field() -> ApplicationFieldRef<
-        DocumentRetentionSchema,
-        Document,
-        DocumentFacts,
-        DocumentIdentityField,
-        String,
-        ReadOnly,
-        EqualityPredicate,
-        NoApplicationUnit,
-    > {
-        DocumentIdentityField::reference()
+    fn scope_field() -> DocumentIdentityField {
+        DocumentIdentityField::at("DocumentIdentityField")
     }
 
     fn principal_binding() -> ApplicationPrincipalBindingRef<
@@ -234,7 +208,7 @@ impl ApplicationMutationIntent<DocumentRetentionSchema> for WorkflowInstanceStar
 
     fn scope_binding(&self) -> WorkflowDefinitionAuthoringScope {
         WorkflowDefinitionAuthoringScope::new(
-            DocumentIdentityField::reference(),
+            DocumentIdentityField::at("DocumentIdentityField"),
             self.input.document_identity.clone(),
         )
     }

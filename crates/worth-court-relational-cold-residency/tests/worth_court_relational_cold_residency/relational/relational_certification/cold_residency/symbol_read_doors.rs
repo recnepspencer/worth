@@ -24,6 +24,20 @@ fn full_read_doors_preserve_history_symbol_refusals_and_current_head() {
             let fixture = recipe.reopen(execution);
             door.prepare(&fixture.runtime);
             let frontier = fixture.runtime.history().latest_patch_stream_position();
+            if door.is_metadata_only_read() {
+                // Lazy pins and inspections open no member; the private
+                // dictionary-absence half is the C2 row of the original court.
+                let reads = fixture.source.reads.load(Ordering::Relaxed);
+                *fixture.source.failed_member.lock().unwrap() = Some(fixture.historical_page);
+                door.run(execution, &fixture.runtime, fixture.entity)
+                    .unwrap();
+                assert_eq!(fixture.source.reads.load(Ordering::Relaxed), reads);
+                assert_eq!(
+                    fixture.runtime.history().latest_patch_stream_position(),
+                    frontier
+                );
+                continue;
+            }
             let history_reads_before = fixture
                 .source
                 .member_reads

@@ -1,9 +1,11 @@
 use crate::evidence_identity::WorthQueryEvidenceIdentity;
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 
 use super::active_counters::ActiveSubscriptionCounters;
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum ActiveSubscriptionLifecycleDenialKind {
+    EvidenceIdentityDerivationDenied(IdentityDerivationDenial),
     WorkBudgetExceeded,
     HeapAllocationForbidden,
     DurableCheckpointOverclaim,
@@ -17,6 +19,7 @@ pub enum ActiveSubscriptionLifecycleDenialKind {
 impl ActiveSubscriptionLifecycleDenialKind {
     pub fn as_str(&self) -> &'static str {
         match self {
+            Self::EvidenceIdentityDerivationDenied(_) => "evidence_identity_derivation_denied",
             Self::WorkBudgetExceeded => "work_budget_exceeded",
             Self::HeapAllocationForbidden => "heap_allocation_forbidden",
             Self::DurableCheckpointOverclaim => "durable_checkpoint_overclaim",
@@ -38,6 +41,19 @@ pub struct ActiveSubscriptionLifecycleError {
 }
 
 impl ActiveSubscriptionLifecycleError {
+    pub(in crate::subscription) fn identity_refused(
+        cause: IdentityDerivationDenial,
+        source_identity: WorthQueryEvidenceIdentity,
+        counters: ActiveSubscriptionCounters,
+    ) -> Self {
+        Self::new(
+            ActiveSubscriptionLifecycleDenialKind::EvidenceIdentityDerivationDenied(cause),
+            "canonical digest bounds refused subscription evidence construction",
+            source_identity,
+            counters,
+        )
+    }
+
     pub(super) fn new(
         denial_kind: ActiveSubscriptionLifecycleDenialKind,
         message: impl Into<String>,

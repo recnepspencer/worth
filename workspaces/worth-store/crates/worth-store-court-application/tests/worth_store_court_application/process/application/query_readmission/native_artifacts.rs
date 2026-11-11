@@ -1,12 +1,16 @@
 //! Existing Query admission over genuine physical Home and Native artifacts.
 use super::bootstrap_publication::{build, meaning, prepared, DirectoryHome};
-use fixture::{schema::HomeIdentitySchema, HomeProgram};
+use fixture::{
+    schema::{Account, AccountIdentity, HomeIdentitySchema, HomeRecords},
+    HomeProgram,
+};
 use std::sync::{
     atomic::{AtomicUsize, Ordering},
     Arc,
 };
 use worth_execution::ExecutionRequest;
 use worth_query_execution::facade::application_home_integration::*;
+use worth_query_host::facade::declaration::application_schema::fragment::FieldSelection;
 use worth_query_host::facade::{
     application_contribution::{
         with_bootstrap_advancement_from_request, WorthQueryBootstrapAdvancementPhase,
@@ -19,20 +23,22 @@ use worth_query_testkit_host::facade::host::{
 };
 use worth_store_application::*;
 mod administration;
+mod corrections;
+mod epoch;
 mod home_close;
 mod idempotency;
+mod native_preparation;
+mod owner_family_refusals;
+mod successor_compilation;
+use native_preparation::{transition_unshared, unshared};
+mod observation_policy;
 mod operations;
+use observation_policy::{no_operation_admission, ObservationMaintenanceMustRemainUnentered};
 mod original_image;
+mod original_membership;
 mod selected;
 mod stops;
 use operations::{balance, fresh_closed, set};
-#[derive(Debug)]
-struct ObservationMaintenanceMustRemainUnentered;
-impl WorthQueryHomeMaintenance for ObservationMaintenanceMustRemainUnentered {
-    fn after_advancement(&self, _: &ExecutionRequest<'_, '_>) {
-        panic!("the observational attachment must never advance or schedule maintenance");
-    }
-}
 
 type Existing = PreparedExistingHomeQueryRuntime<HomeIdentitySchema, HomeProgram>;
 type NativePreparation = PreparedHomeNativeMeaning<HomeIdentitySchema, HomeProgram>;
@@ -49,11 +55,6 @@ fn close_world(home: DirectoryHome, execution: &ExecutionRequest<'_, '_>) {
             panic!("actual World close retained custody: {reason:?}")
         }
     }
-}
-
-/// This observational attachment has no permission to admit an operation.
-fn no_operation_admission(_: worth_foundational::facade::DurableStateFamily, _: u8) -> Option<u8> {
-    panic!("the Bridge/source observation proof must never invoke Directory operation admission")
 }
 
 fn with_native<R>(
@@ -80,41 +81,6 @@ fn finalize_native(
     query.finish_existing_home_native_readmission(phase, native, authority, outcome)
 }
 
-fn unshared(
-    path: &std::path::Path,
-    phase: &WorthQueryBootstrapAdvancementPhase<'_>,
-) -> (
-    PreparedHomeNativeMeaning<HomeIdentitySchema, HomeProgram>,
-    UnsharedReadmittedApplicationHome,
-) {
-    let query = meaning();
-    let execution = phase.execution_request();
-    let request = ApplicationHomeRequest::new(
-        path.to_path_buf(),
-        query.home_relational_definition(),
-        query.admitted_home_binding().unwrap(),
-        build(),
-    );
-    let home = admit_home(recover_home(request, &execution).unwrap(), &execution).unwrap();
-    let mut home =
-        attach_relational(home, &execution).unwrap_or_else(|_| panic!("actual Native attaches"));
-    let preparation = home.prepare_native_schema_for_home(&execution).unwrap();
-    let query = match preparation {
-        ApplicationHomeNativeSchemaPreparation::Existing { native } => {
-            query.prepare_home_native_receiver_schema(phase, native)
-        }
-        ApplicationHomeNativeSchemaPreparation::Fresh { .. } => {
-            panic!("existing Directory fixture selected fresh initialization")
-        }
-    }
-    .unwrap_or_else(|refused| panic!("actual existing schema: {:?}", refused.reason()));
-    let home = home
-        .readmit(query.home_initial_schema_receipt(), &execution)
-        .unwrap_or_else(|refused| panic!("actual Native recovery: {refused:?}"))
-        .consume(|home| home);
-    (query, home)
-}
-
 fn existing(
     path: &std::path::Path,
     phase: &WorthQueryBootstrapAdvancementPhase<'_>,
@@ -123,7 +89,19 @@ fn existing(
     DirectoryHome,
     worth_runtime_bridge::facade::RuntimeBridgeRelationalSource,
 ) {
-    let (query, mut home) = unshared(path, phase);
+    let (query, home) = unshared(path, phase);
+    existing_from_preparation(query, home, phase)
+}
+
+fn existing_from_preparation(
+    query: NativePreparation,
+    mut home: UnsharedReadmittedApplicationHome,
+    phase: &WorthQueryBootstrapAdvancementPhase<'_>,
+) -> (
+    Existing,
+    DirectoryHome,
+    worth_runtime_bridge::facade::RuntimeBridgeRelationalSource,
+) {
     let execution = phase.execution_request();
     let query = finalize_native(query, &mut home, phase).unwrap_or_else(|refused| {
         panic!(
@@ -173,49 +151,6 @@ fn reopen_refusal(
 }
 
 #[test]
-fn latest_native_owner_rows_refuse_their_actual_family_kind_and_record_before_service() {
-    for (name, family) in [
-        ("worth-query-workflow-lineage", "workflow"),
-        ("worth-query-dispatch-outbox", "outbox"),
-        ("worth-query-inbound-completion", "inbound"),
-        ("worth-query-aftermath-causality", "aftermath"),
-    ] {
-        let path = tempfile::tempdir().unwrap();
-        let lease = checkpoint_capture::lease(128 * 1024 * 1024);
-        let execution = ExecutionRequest::leased(&lease);
-        fresh_closed(path.path(), execution);
-        let (kind, record) = with_bootstrap_advancement_from_request(execution, |phase| {
-            let (query, mut home) = unshared(path.path(), &phase);
-            let (native, _, _) = home.recovered_query_finalization_parts().unwrap();
-            let result = administration::create_required_row(native, &execution, name);
-            drop(query);
-            assert!(matches!(
-                home.close(&execution).unwrap(),
-                ApplicationHomeCloseOutcome::Closed { .. }
-            ));
-            result
-        })
-        .unwrap();
-        let refused = reopen_refusal(path.path(), execution);
-        match &refused {
-            WorthQueryApplicationHomeOpenRefused::ExistingNativeFinalization { query, .. } => {
-                assert_eq!(
-                    query.reason().subject(),
-                    format!(
-                        "Home unsupported Native {family} entity kind {} record {record:?}",
-                        kind.0
-                    )
-                )
-            }
-            other => panic!("latest Native owner gate must refuse first: {other:?}"),
-        }
-        refused
-            .close(&execution)
-            .unwrap_or_else(|refused| panic!("owned family close: {refused:?}"));
-    }
-}
-
-#[test]
 fn unassociated_native_nine_cannot_replace_selected_world_eight_or_preflight_bridge_head() {
     use worth_foundational::facade::AspectValue;
     use worth_runtime_bridge::facade::{TruthBranchHeadSource, TruthBranchIdentity};
@@ -253,13 +188,18 @@ fn unassociated_native_nine_cannot_replace_selected_world_eight_or_preflight_bri
             native,
             &execution,
             account.entity_id,
-            "AccountIdentity",
+            FieldSelection::<HomeRecords, Account, AccountIdentity, u64>::at("Balance").aspect(),
             "Balance",
             AspectValue::UInt64(9),
         );
         let rows = administration::rows(native, &execution, "Account");
         assert_eq!(
-            administration::field(&rows[0], "AccountIdentity", "Balance"),
+            administration::field(
+                &rows[0],
+                FieldSelection::<HomeRecords, Account, AccountIdentity, u64>::at("Balance")
+                    .aspect(),
+                "Balance"
+            ),
             &AspectValue::UInt64(9)
         );
         drop(query);

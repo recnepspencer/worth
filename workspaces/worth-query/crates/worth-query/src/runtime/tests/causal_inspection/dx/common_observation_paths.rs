@@ -159,6 +159,7 @@ fn common_path_preserves_core_digests_from_explicit_pipeline() {
                 CausalEvidenceFamily::BridgeRoute,
             ],
         )
+        .expect("fixture digest must fit")
     else {
         panic!("explicit references should resolve");
     };
@@ -170,7 +171,7 @@ fn common_path_preserves_core_digests_from_explicit_pipeline() {
             CausalEvidenceFamily::BridgeRoute,
         ],
     );
-    let explicit_flow = admit_causal_inspection(explicit_request);
+    let explicit_flow = admit_causal_inspection(explicit_request).expect("fixture digest must fit");
     let CausalInspectionProofFlow::Admitted(explicit_admitted) = explicit_flow else {
         panic!("explicit flow should admit");
     };

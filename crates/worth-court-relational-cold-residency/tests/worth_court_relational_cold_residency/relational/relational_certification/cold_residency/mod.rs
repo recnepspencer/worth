@@ -67,6 +67,7 @@ mod inspection_read_limits;
 mod pin_read_refusal;
 
 mod index_checkpoint_reads;
+mod index_selection_reads;
 mod index_source;
 
 mod full_read_failure_matrix;

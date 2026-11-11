@@ -43,8 +43,12 @@ impl ExecutionByteBuffer {
         let reservation = request
             .reserve_retained_memory_in_stage(context, quote)
             .map_err(RequestDenial::Request)?;
+        let status = request
+            .allocation_policy()
+            .status(Some(quote))
+            .map_err(RequestDenial::Allocation)?;
         Ok(Self {
-            building: BuildingFixedBacking::allocate_reserved(total, reservation)
+            building: BuildingFixedBacking::allocate_reserved(total, reservation, status)
                 .map_err(RequestDenial::Allocation)?,
         })
     }

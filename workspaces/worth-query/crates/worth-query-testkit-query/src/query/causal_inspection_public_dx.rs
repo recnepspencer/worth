@@ -12,7 +12,7 @@ pub fn common_path_compiles(
     bridge: &RuntimeBridge,
 ) -> Result<
     QueryCausalInspectionArtifact,
-    worth_query::facade::runtime::CausalInspectionMaterializationError,
+    worth_query::facade::runtime::CausalInspectionConstructionStop,
 > {
     let plan = CausalInspection::for_observation(receipt, inspection_basis)
         .why_changed()

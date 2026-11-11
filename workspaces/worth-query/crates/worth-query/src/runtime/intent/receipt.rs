@@ -1,5 +1,6 @@
 use super::*;
 use crate::evidence_identity::WorthQueryEvidenceIdentity;
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::intent_admission::{
     WorthQueryAdmittedIntentExecutionHandoff, WorthQueryAuthoritativeIntentExecutionBinding,
     WorthQueryEffectTriggeredIntentExecutionBinding, WorthQueryIntentDecisionTraceEnvelope,
@@ -49,22 +50,22 @@ impl WorthQueryIntentReceipt {
         declaration: &WorthQueryIntentDeclaration,
         execution: WorthQueryIntentExecution,
         write_receipt: &WorthQueryWriteReceipt,
-    ) -> Self {
+    ) -> Result<Self, IdentityDerivationDenial> {
         let execution_provenance = WorthQueryIntentExecutionProvenance::for_authoritative_binding(
             binding,
             execution.outcome_digest(),
             write_receipt.snapshot_evidence_identity(),
-        );
+        )?;
         let handoff = WorthQueryAdmittedIntentExecutionHandoff::from(binding.handoff().clone());
         let decision_trace_envelope =
             WorthQueryIntentDecisionTraceEnvelope::for_admitted_execution(&handoff, &execution);
-        Self::new(
+        Ok(Self::new(
             declaration,
             execution,
             write_receipt,
             execution_provenance,
             decision_trace_envelope,
-        )
+        )?)
     }
 
     pub(in crate::runtime) fn from_effect_binding(
@@ -72,22 +73,22 @@ impl WorthQueryIntentReceipt {
         declaration: &WorthQueryIntentDeclaration,
         execution: WorthQueryIntentExecution,
         write_receipt: &WorthQueryWriteReceipt,
-    ) -> Self {
+    ) -> Result<Self, IdentityDerivationDenial> {
         let execution_provenance = WorthQueryIntentExecutionProvenance::for_effect_binding(
             binding,
             execution.outcome_digest(),
             write_receipt.snapshot_evidence_identity(),
-        );
+        )?;
         let handoff = WorthQueryAdmittedIntentExecutionHandoff::from(binding.handoff().clone());
         let decision_trace_envelope =
             WorthQueryIntentDecisionTraceEnvelope::for_admitted_execution(&handoff, &execution);
-        Self::new(
+        Ok(Self::new(
             declaration,
             execution,
             write_receipt,
             execution_provenance,
             decision_trace_envelope,
-        )
+        )?)
     }
 
     fn new(
@@ -96,7 +97,7 @@ impl WorthQueryIntentReceipt {
         write_receipt: &WorthQueryWriteReceipt,
         execution_provenance: WorthQueryIntentExecutionProvenance,
         decision_trace_envelope: WorthQueryIntentDecisionTraceEnvelope,
-    ) -> Self {
+    ) -> Result<Self, IdentityDerivationDenial> {
         let affected_live_view_targets = write_receipt.affected_live_view_targets().to_vec();
         let affected_derived_view_targets = write_receipt.affected_derived_view_targets().to_vec();
         let commit_identity = write_receipt.commit_identity().clone();
@@ -118,8 +119,8 @@ impl WorthQueryIntentReceipt {
             write_receipt,
             &execution_provenance,
             &decision_trace_envelope,
-        );
-        Self {
+        )?;
+        Ok(Self {
             intent_name: declaration.name().to_string(),
             execution_kind: execution.execution_kind,
             strategy_identity: execution.strategy_identity,
@@ -147,7 +148,7 @@ impl WorthQueryIntentReceipt {
             execution_provenance,
             decision_trace_envelope,
             receipt_identity,
-        }
+        })
     }
 
     pub fn intent_name(&self) -> &str {

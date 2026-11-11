@@ -13,6 +13,7 @@ where
     handle: Option<WorthQueryApplicationProgramDemandHandle<Schema, Program, Demand>>,
     _retained_handle: Option<WorthQueryApplicationProgramDemandHandle<Schema, Program, Demand>>,
     continuation_complete: bool,
+    verified_parent: Option<worth_query_execution::publication_boundary::document_history::WorthQueryVerifiedHistoryParent<Schema, Program, Demand>>,
     settled: Option<(
         WorthQueryApplicationOutputDemandSettlement<SourceQuery<Schema, Demand>>,
         ProgramOutputParentAuthority<Schema, Program, Demand>,
@@ -30,6 +31,7 @@ where
     Binding<Schema, Connection>: WorthQueryApplicationDependentOutputConnection<Schema>,
     Children: ApplicationOutputEdgesShape<Schema>,
 {
+    recording_recipes: Option<(std::sync::Arc<worth_query_execution::publication_boundary::document_history::WorthQueryHistoryRecordingOutputOrigin>, usize)>,
     parent_demand: ParentDemand,
     parent_authority: ProgramOutputParentAuthority<Schema, Program, ParentDemand>,
     nodes: Option<Vec<EdgeNode<Schema, Program, ChildDemand<Schema, Connection>>>>,
@@ -64,89 +66,7 @@ where
 
 impl<Connection, Children> sealed::Factory for ApplicationOutputEdge<Connection, Children> {}
 
-impl< Schema, Program, ParentDemand, Connection, Children>
-    ProgramOutputContinuationFactory<Schema, Program, ParentDemand>
-    for ApplicationOutputEdge<Connection, Children>
-where
-    Schema: ApplicationSchema + 'static,
-    Program: ApplicationProgramDefinition<Schema>,
-    ParentDemand: WorthQueryApplicationOutputDemand<Schema> + Clone,
-    Connection: ApplicationConnectionShape<Schema>,
-    Binding<Schema, Connection>: WorthQueryApplicationDependentOutputConnection<
-        Schema,
-        RootDemand = ParentDemand,
-    >,
-    ChildDemand<Schema, Connection>: Clone,
-    DiscoveryValue<Schema, Connection>: WorthQueryApplicationProjection<
-            Schema,
-            <DiscoveryBinding<Schema, Connection> as ApplicationQueryBinding<Schema>>::Query,
-        > + Clone,
-    <DiscoveryBinding<Schema, Connection> as ApplicationQueryBinding<Schema>>::ScopeBinding:
-        ApplicationQueryScopeResolution<
-            Schema,
-            <DiscoveryBinding<Schema, Connection> as ApplicationQueryBinding<Schema>>::PrincipalIdentity,
-        >,
-    SourceValue<Schema, ChildDemand<Schema, Connection>>: WorthQueryApplicationProjection<
-            Schema,
-            SourceQuery<Schema, ChildDemand<Schema, Connection>>,
-        > + Clone,
-    <Source<Schema, ChildDemand<Schema, Connection>> as ApplicationQueryBinding<Schema>>::Input:
-        ApplicationQueryIntent<
-            Schema,
-            Binding = Source<Schema, ChildDemand<Schema, Connection>>,
-        >,
-    <Source<Schema, ChildDemand<Schema, Connection>> as ApplicationQueryBinding<Schema>>::ScopeBinding:
-        ApplicationQueryScopeResolution<
-            Schema,
-            <Source<Schema, ChildDemand<Schema, Connection>> as ApplicationQueryBinding<Schema>>::PrincipalIdentity,
-        >,
-    Children: ApplicationOutputEdgesShape<Schema>
-        + ProgramOutputContinuationFactory<Schema,
-            Program,
-            ChildDemand<Schema, Connection>,
-        >,
-{
-    fn validate_history_group_outputs(
-        application: &WorthQueryProgramApplicationRuntime<Schema, Program>,
-    ) -> Result<(), worth_query_execution::publication_boundary::document_history::WorthQueryDocumentHistoryDenial> {
-        application.validate_history_group_output::<ChildDemand<Schema, Connection>>(
-            &worth_query_execution::publication_boundary::program_publication_access(),
-        )?;
-        Children::validate_history_group_outputs(application)
-    }
-
-    fn start(
-        _: &WorthQueryProgramApplicationRuntime<Schema, Program>,
-        parent_demand: &ParentDemand,
-        parent_settlement: &WorthQueryApplicationOutputDemandSettlement<SourceQuery<Schema, ParentDemand>>,
-        parent_authority: &ProgramOutputParentAuthority<Schema, Program, ParentDemand>,
-        minimum_observation: &crate::application_entry::WorthQueryApplicationReadObservation,
-        _: &WorthQueryApplicationRequest<'_, '_, '_, Schema>,
-        controls: WorthQueryOutputDemandControls,
-    ) -> Result<Box<dyn ProgramOutputContinuation<Schema, Program>>, WorthQueryRequiredOutputPreparationDenial> {
-        let basis = if parent_settlement.observation().selected_commit().ordinal()
-            >= minimum_observation.selected_commit().ordinal() {
-            parent_settlement.observation()
-        } else { minimum_observation };
-        // Setup is effect-free. Discovery/admission belongs to the retained state,
-        // so a later sibling refusal cannot drop an earlier admitted child.
-        Ok(Box::new(EdgeContinuation::<Schema, Program, ParentDemand, Connection, Children> {
-            parent_demand: parent_demand.clone(),
-            parent_authority: parent_authority.clone(),
-            nodes: None,
-            discovery_source: None,
-            dependencies: None,
-            next_admission: 0,
-            next_advance: 0,
-            outputs: Vec::new(),
-            work: ProgramOutputTraversalWork::default(),
-            controls,
-            basis: basis.retained_clone(),
-            minimum_observation: minimum_observation.retained_clone(),
-            marker: std::marker::PhantomData,
-        }))
-    }
-}
+mod factory;
 
 impl< Schema, Program, ParentDemand, Connection, Children>
     ProgramOutputContinuation<Schema, Program>
@@ -190,6 +110,7 @@ where
             ChildDemand<Schema, Connection>,
         >,
 {
+    fn record_history_discovery(&mut self, origin: std::sync::Arc<worth_query_execution::publication_boundary::document_history::WorthQueryHistoryRecordingOutputOrigin>, index: usize) {self.recording_recipes = Some((origin, index));}
     fn authorize_history(
         &self,
         phase: &worth_query_execution::facade::application_contribution::WorthQueryAdvancementPhase<'_>,
@@ -197,18 +118,28 @@ where
         request: &WorthQueryApplicationRequest<'_, '_, '_, Schema>,
         history: ProgramOutputHistoryFrame<'_, '_, '_>,
     ) -> Result<(), WorthQueryRequiredOutputPreparationDenial> {
-        let ParentAuthorityKind::History(parent) = self.parent_authority.kind() else {
-            return Err(history_mismatch());
-        };
         if let Some(discovery) = &self.discovery_source {
             let EdgeDiscoveryCustody::History(discovery) = discovery else { return Err(history_mismatch()); };
-            application.authorize_history_discovery::<ParentDemand, Connection>(phase,
-                &worth_query_execution::publication_boundary::program_publication_access(),
-                parent, history.authority, discovery, request.principal, request.scope,
-            ).map_err(history_read_denial)?;
+            let access = worth_query_execution::publication_boundary::program_publication_access();
+            match self.parent_authority.kind() {
+                ParentAuthorityKind::History(parent) => application.authorize_history_discovery::<ParentDemand, Connection>(
+                    phase, &access, parent, history.authority, discovery, request.principal, request.scope,
+                ),
+                ParentAuthorityKind::Verified(parent) => application.authorize_verified_history_discovery::<ParentDemand, Connection>(
+                    phase, &access, parent, history.authority, discovery, request.principal, request.scope,
+                ),
+                _ => return Err(history_mismatch()),
+            }.map_err(history_read_denial)?;
         }
         if let Some(nodes) = &self.nodes {
             for node in nodes {
+                if let Some(expected) = &node.verified_parent {
+                    let fresh = admission::verify_child::<Schema, Program, ParentDemand, Connection>(
+                        phase, application, request, &self.parent_authority, &self.basis,
+                        &self.minimum_observation, &node.demand, Some(history),
+                    )?;
+                    expected.require_matching_output_custody(fresh.as_ref()).map_err(history_query_denial)?;
+                }
                 for handle in node.handle.iter().chain(node._retained_handle.iter()) {
                     handle.authorize_in_history(phase, application, request, history)
                         .map_err(WorthQueryRequiredOutputPreparationDenial::Demand)?;
@@ -238,7 +169,7 @@ where
         if !std::ptr::eq(application.runtime(), request.application) {
             return Err(WorthQueryRequiredOutputPreparationDenial::ForeignProgram);
         }
-        if !matches!((self.parent_authority.kind(), history), (ParentAuthorityKind::Ordinary(_), None) | (ParentAuthorityKind::History(_), Some(_))) {
+        if !matches!((self.parent_authority.kind(), history), (ParentAuthorityKind::Ordinary(_), None) | (ParentAuthorityKind::History(_), Some(_)) | (ParentAuthorityKind::Verified(_), Some(_))) {
             return Err(history_mismatch());
         }
         if self.discovery_source.is_none() && self.dependencies.is_none() {
@@ -251,7 +182,7 @@ where
                 .map_err(WorthQueryRequiredOutputPreparationDenial::Connection)?;
             self.work = ProgramOutputTraversalWork::discovered(result.rows().len(), demands.len());
             self.nodes = Some(demands.into_iter().map(|demand| EdgeNode {
-                demand, handle: None, _retained_handle: None, continuation_complete: false,
+                demand, handle: None, _retained_handle: None, continuation_complete: false, verified_parent: None,
                 settled: None, continuation: None, dependencies: None,
             }).collect());
         }
@@ -262,6 +193,13 @@ where
         }
         let nodes = self.nodes.as_mut().expect("discovery retains its exact child list");
         while let Some(node) = nodes.get_mut(self.next_admission) {
+            if let Some(verified) = admission::verify_child::<Schema, Program, ParentDemand, Connection>(
+                phase, application, request, &self.parent_authority, &self.basis, &self.minimum_observation, &node.demand, history,
+            )? {
+                node.verified_parent = Some(verified);
+                self.next_admission += 1;
+                continue;
+            }
             let handle = admission::admit_child::<Schema, Program, ParentDemand, Connection>(
                 phase, application, request, &self.parent_authority, &self.basis,
                 &self.minimum_observation, &node.demand, self.controls, history,
@@ -294,9 +232,17 @@ where
                     }
                 }
             }
+            if node.continuation.is_none() && !node.continuation_complete
+                && let Some(parent) = &node.verified_parent {
+                node.continuation = Some(Children::start_verified(application, &node.demand, parent, request, self.controls)?);
+            }
             if let Some((settlement, authority)) = node.settled.as_ref() {
                 node.continuation = Some(Children::start(application, &node.demand,
                     settlement, authority, &self.basis, request, self.controls)?);
+            }
+            if let Some((origin, index)) = &self.recording_recipes
+                && let Some(continuation) = &mut node.continuation {
+                continuation.record_history_discovery(std::sync::Arc::clone(origin), *index);
             }
             if let Some((settlement, _)) = node.settled.take() {
                 self.outputs.push(ProgramOutputRecord::new::<Schema, Connection>(node.demand.clone(), settlement));
@@ -329,7 +275,21 @@ where
         for node in nodes { node.dependencies = None; }
         Ok(ProgramOutputContinuationProgress::Settled {
             dependencies: Some(dependencies),
-            outputs: std::mem::take(&mut self.outputs), work: self.work,
+            outputs: std::mem::take(&mut self.outputs),
+            work: self.work,
         })
     }
+}
+
+fn history_query_denial(
+    cause: worth_query_execution::publication_boundary::document_history::WorthQueryHistoryOutputReadDenial,
+) -> WorthQueryRequiredOutputPreparationDenial {
+    use crate::application_entry::WorthQueryApplicationRequestQueryDenial as Query;
+    use worth_query_execution::publication_boundary::document_history::WorthQueryHistoryOutputReadDenial as Read;
+    WorthQueryRequiredOutputPreparationDenial::SourceQuery(match cause {
+        Read::Admission(cause) => Query::Admission(cause),
+        Read::Principal(cause) => Query::PrincipalResolution(cause),
+        Read::Scope(cause) => Query::ScopeResolution(cause),
+        cause => Query::HistoryOutput(cause),
+    })
 }

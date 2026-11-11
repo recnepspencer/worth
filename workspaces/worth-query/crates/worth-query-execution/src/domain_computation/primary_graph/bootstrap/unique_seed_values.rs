@@ -56,6 +56,7 @@ where
                 WorthQueryPrimaryGraphInstallationDenialKind::BindingSchemaMismatch,
                 format!("principal mapping encoding was rejected: {denial:?}"),
             )
+            .with_value_encoding_denial(denial)
         };
         let identity = WorthQueryExternalPrincipalIdentityBinding::encode(&row.identity)
             .map_err(encoding_rejected)?;

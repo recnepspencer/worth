@@ -2,8 +2,7 @@ use worth_foundational::facade::{
     CanonicalizationRuleVersion, FoundationalPerformanceCounterName, RetentionDeliveryProfile,
 };
 use worth_query_declaration::facade::application_schema::{
-    ApplicationEntityMarkerIdentity, ApplicationEntityRef, ApplicationSchema,
-    ApplicationSchemaDeclaration, ApplicationSchemaDeclarationBuilder,
+    ApplicationSchema, ApplicationSchemaDeclaration, ApplicationSchemaDeclarationBuilder,
     ApplicationSchemaDeclarationDenial,
 };
 
@@ -32,8 +31,10 @@ struct CandidateArtifact;
 struct PackageSchema;
 struct PackageEntity;
 
-impl ApplicationEntityMarkerIdentity<PackageSchema> for PackageEntity {
-    const IDENTIFIER: &'static str = "PackageEntity";
+impl worth_query_declaration::facade::application_schema::fragment::Entity for PackageEntity {
+    const NAME: &'static str = "PackageEntity";
+    type Aspects = ();
+    type Relations = ();
 }
 
 impl ApplicationSchema for PackageSchema {
@@ -44,13 +45,7 @@ impl ApplicationSchema for PackageSchema {
 
     fn declaration(
     ) -> Result<ApplicationSchemaDeclaration<Self>, ApplicationSchemaDeclarationDenial> {
-        ApplicationSchemaDeclarationBuilder::<Self>::for_schema()
-            .entity(
-                ApplicationEntityRef::<Self, PackageEntity>::from_schema_identifier(
-                    "PackageEntity",
-                ),
-            )
-            .build()
+        ApplicationSchemaDeclarationBuilder::<Self>::from_fragment(FixtureRecords)?.build()
     }
 }
 
@@ -92,7 +87,10 @@ fn typed_package_validation_carries_application_schema_into_portable_meaning() {
 
     let schemas = package.portable_package.application_schemas();
     assert_eq!(schemas.len(), 1);
-    assert_eq!(schemas[0].name(), PackageSchema::NAME);
+    assert_eq!(
+        schemas[0].name(),
+        <PackageSchema as ApplicationSchema>::NAME
+    );
     assert_eq!(
         schemas[0].identity(),
         PackageSchema::declaration().unwrap().identity()
@@ -168,4 +166,11 @@ fn candidate_contract() -> WorthQueryPortableArtifactContract {
 
 fn counter(name: &str) -> FoundationalPerformanceCounterName {
     FoundationalPerformanceCounterName::new(name).unwrap()
+}
+
+struct FixtureRecords;
+impl worth_query_declaration::facade::application_schema::fragment::Fragment for FixtureRecords {
+    const NAME: &'static str = "fixture_records";
+    type Bindings = worth_query_declaration::facade::application_schema::fragment::NoBindings;
+    type Members = (PackageEntity,);
 }

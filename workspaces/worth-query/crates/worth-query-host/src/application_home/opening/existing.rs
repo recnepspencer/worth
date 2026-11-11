@@ -28,7 +28,7 @@ where
 }
 
 #[inline(never)]
-fn finalize_native<Schema, Program>(
+pub(in crate::application_home) fn finalize_native<Schema, Program>(
     phase: &WorthQueryBootstrapAdvancementPhase<'_>,
     mut home: UnsharedReadmittedApplicationHome,
     query: PreparedHomeNativeMeaning<Schema, Program>,
@@ -120,7 +120,7 @@ where
 }
 
 #[inline(never)]
-fn attach_world<Schema, Program>(
+pub(in crate::application_home) fn attach_world<Schema, Program>(
     phase: &WorthQueryBootstrapAdvancementPhase<'_>,
     home: DirectoryHome,
     query: PreparedExistingHomeQueryRuntime<Schema, Program>,

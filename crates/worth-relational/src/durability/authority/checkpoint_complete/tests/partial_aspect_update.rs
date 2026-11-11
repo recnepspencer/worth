@@ -100,6 +100,7 @@ fn complete_preserves_partial_update_without_demanding_untouched_aspect_referenc
     };
     let text = match value {
         InternedString::Raw(text) => text.as_str(),
+        InternedString::Stored(text) => text.as_str(),
         InternedString::Symbol(symbol) => decoded
             .symbol_table
             .entries

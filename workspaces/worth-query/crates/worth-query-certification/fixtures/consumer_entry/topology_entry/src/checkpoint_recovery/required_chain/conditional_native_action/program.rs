@@ -1,12 +1,40 @@
 //! One real topology installation with scoped required producer membership.
 use super::*;
-worth_query_decl::facade::worth_query_application! {
-    pub(super) JointSchema {
-        owner: "worth.query.certification.conditional-native-action",
-        version: (1, 0), contributions: [TopologyContribution],
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub(super) struct JointSchema;
+impl worth_query_decl::facade::application_schema::fragment::Fragment for JointSchema {
+    const NAME: &'static str = "JointSchema";
+    type Bindings = worth_query_decl::facade::application_schema::fragment::NoBindings;
+    type Members = (TopologyContribution,);
+}
+impl worth_query_decl::facade::application_schema::ApplicationSchema for JointSchema {
+    const OWNER: &'static str = "worth.query.certification.conditional-native-action";
+    const NAME: &'static str = "JointSchema";
+    const MAJOR: u32 = 1;
+    const MINOR: u32 = 0;
+    fn declaration() -> Result<
+        worth_query_decl::facade::application_schema::ApplicationSchemaDeclaration<Self>,
+        worth_query_decl::facade::application_schema::ApplicationSchemaDeclarationDenial,
+    > {
+        worth_query_decl::facade::application_schema::fragment::declare(Self)
+    }
+    fn visit_correction<
+        V: worth_query_decl::facade::application_aftermath::ApplicationCorrectionVisitor<Self>,
+    >(
+        source: std::any::TypeId,
+        visitor: V,
+    ) -> V::Output {
+        worth_query_decl::facade::application_schema::fragment::visit_correction(
+            Self, source, visitor,
+        )
     }
 }
+impl worth_query_decl::facade::application_schema::ApplicationSchemaComposition for JointSchema {
+    type Contributions = (TopologyContribution,);
+}
+
 impl TopologySchemaBinding for JointSchema {
+    type PrincipalFragment = crate::PrincipalRecords;
     const PLANAR_REQUIRES_APPLICATION_PROGRAM: bool = true;
 }
 

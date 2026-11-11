@@ -16,7 +16,7 @@ use authoritative_publication::{
 };
 mod summary;
 mod traces;
-use summary::summarize_commit_aspects;
+pub(in crate::authority::commit::pipeline) use summary::summarize_commit_aspects;
 
 pub(in crate::authority::commit::pipeline) use traces::PreparedAspectEmissionTrace;
 use traces::{capture_publication_traces, PublicationTraceCapture};
@@ -41,6 +41,7 @@ pub(in crate::authority::commit::pipeline) struct PublicationFinalizeArtifacts {
 }
 
 pub(super) struct PublicationPreparationInput<'a> {
+    pub(super) defer_lineage: bool,
     pub(super) working_state: &'a mut crate::runtime::WorkingState,
     pub(super) selected_branch_state: &'a crate::branch::SelectedRelationalBranchState,
     pub(super) patch: CanonicalAuthoritativePatch,
@@ -67,6 +68,7 @@ pub(super) fn prepare_publication_artifacts(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
 ) -> Result<CommitPhaseBacking<PublicationPreparation>, TransactionCommitError> {
     let PublicationPreparationInput {
+        defer_lineage,
         working_state,
         selected_branch_state,
         patch,
@@ -152,6 +154,7 @@ pub(super) fn prepare_publication_artifacts(
         runtime,
         PublicationAuthorityInput {
             index_definition_delta,
+            defer_lineage,
             working_state,
             patch: &patch,
             commit_reference,

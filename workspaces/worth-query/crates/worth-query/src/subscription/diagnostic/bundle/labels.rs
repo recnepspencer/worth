@@ -5,6 +5,7 @@ use super::super::super::support::QuerySubscriptionSupportReport;
 use super::super::context::QuerySubscriptionDiagnosticSelectionContext;
 use super::super::stage::QuerySubscriptionDiagnosticStage;
 use super::evidence::QuerySubscriptionDiagnosticSemanticLabels;
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 
 pub(super) fn semantic_labels_for_support(
     query_family_label: &str,
@@ -12,8 +13,8 @@ pub(super) fn semantic_labels_for_support(
     lowering: &BridgeSubscriptionLoweringPlan,
     support_posture: &QuerySubscriptionSupportPosture,
     denial_or_coverage_class_label: &str,
-) -> QuerySubscriptionDiagnosticSemanticLabels {
-    QuerySubscriptionDiagnosticSemanticLabels::new(
+) -> Result<QuerySubscriptionDiagnosticSemanticLabels, IdentityDerivationDenial> {
+    Ok(QuerySubscriptionDiagnosticSemanticLabels::new(
         query_family_label.to_string(),
         declaration.family().as_str().to_string(),
         lowering.bridge_family().as_str().to_string(),
@@ -31,7 +32,7 @@ pub(super) fn semantic_labels_for_support(
         declaration.live_graph_access_posture().as_str().to_string(),
         support_posture.as_str().to_string(),
         denial_or_coverage_class_label.to_string(),
-    )
+    )?)
 }
 
 pub(super) fn semantic_labels_for_denied_bundle(
@@ -40,8 +41,8 @@ pub(super) fn semantic_labels_for_denied_bundle(
     lowering: Option<&BridgeSubscriptionLoweringPlan>,
     support: Option<&QuerySubscriptionSupportReport>,
     denial_class_label: &str,
-) -> QuerySubscriptionDiagnosticSemanticLabels {
-    QuerySubscriptionDiagnosticSemanticLabels::new(
+) -> Result<QuerySubscriptionDiagnosticSemanticLabels, IdentityDerivationDenial> {
+    Ok(QuerySubscriptionDiagnosticSemanticLabels::new(
         selection.query_family_label().to_string(),
         declaration
             .map(|value| value.family().as_str().to_string())
@@ -77,7 +78,7 @@ pub(super) fn semantic_labels_for_denied_bundle(
             .map(|value| value.support_posture().as_str().to_string())
             .unwrap_or_else(|| "not_reported".to_string()),
         denial_class_label.to_string(),
-    )
+    )?)
 }
 
 pub(super) fn omitted_stages_after_failure(

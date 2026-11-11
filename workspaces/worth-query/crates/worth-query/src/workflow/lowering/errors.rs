@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::workflow::{
     QueryWorkflowDeclaration, WorkflowDeclarationFamily, WorkflowLoweringCounters,
 };
@@ -7,6 +8,7 @@ use super::terms::WorkflowStalenessClass;
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum WorkflowLoweringFailureClass {
+    EvidenceIdentityDerivationDenied(IdentityDerivationDenial),
     InvalidWorkflowDeclarationFamily,
     UnsupportedMergeFamily,
     UnsupportedRelationalStrategyTarget,
@@ -21,6 +23,7 @@ pub enum WorkflowLoweringFailureClass {
 impl WorkflowLoweringFailureClass {
     pub fn as_str(&self) -> &'static str {
         match self {
+            Self::EvidenceIdentityDerivationDenied(_) => "evidence_identity_derivation_denied",
             Self::InvalidWorkflowDeclarationFamily => "invalid_workflow_declaration_family",
             Self::UnsupportedMergeFamily => "unsupported_merge_family",
             Self::UnsupportedRelationalStrategyTarget => "unsupported_relational_strategy_target",
@@ -43,6 +46,19 @@ pub struct WorkflowLoweringError {
 }
 
 impl WorkflowLoweringError {
+    pub(super) fn identity_derivation_denied(
+        cause: IdentityDerivationDenial,
+        staleness_class: WorkflowStalenessClass,
+        counters: WorkflowLoweringCounters,
+    ) -> Self {
+        Self::new(
+            WorkflowLoweringFailureClass::EvidenceIdentityDerivationDenied(cause),
+            "workflow lowering evidence identity refused",
+            staleness_class,
+            counters,
+        )
+    }
+
     pub(super) fn new(
         failure_class: WorkflowLoweringFailureClass,
         message: &'static str,

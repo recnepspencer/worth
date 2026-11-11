@@ -257,3 +257,6 @@ impl<'scope> WorthQueryAdvancementPhase<'scope> {
 }
 
 mod court_doors_for_test;
+#[cfg(test)]
+#[path = "phase_custody_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;

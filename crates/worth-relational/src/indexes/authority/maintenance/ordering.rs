@@ -1,3 +1,4 @@
+use super::root_view::IndexRootView;
 use super::{
     change_routing::ChangeRouting, entry_edits::edit, persistent_allocation::UngroupedAllocation,
     reads, record_metadata, work::MaintenanceWork,
@@ -8,10 +9,9 @@ use crate::indexes::data::{
     RelatedEntityOrderingEntry, RelatedEntityOrderingField,
 };
 use crate::indexes::projected_field_values::{
-    compare_related_entries, entity_index_projection_scope, IndexProjectionSource,
+    compare_related_entries, entity_index_projection_scope,
 };
-use crate::runtime::VisibilityProjectionView;
-use crate::visibility::materialization::read_records::entity_query_locus_value;
+use crate::visibility::materialization::read_records::authoritative_state_query_locus_value;
 
 struct OrderingContract<'a> {
     relation_kind: KindId,
@@ -30,8 +30,8 @@ pub(super) fn refresh(
         &[RelatedEntityOrderingField],
     ),
     changes: &ChangeRouting,
-    before: Option<&VisibilityProjectionView>,
-    after: &VisibilityProjectionView,
+    before: Option<&IndexRootView>,
+    after: &IndexRootView,
     work: &mut MaintenanceWork,
 ) -> Result<(), Denial> {
     let mut allocation = UngroupedAllocation::new();
@@ -66,7 +66,7 @@ pub(super) fn refresh(
             )? {
                 work.charge(1)?;
                 work.ordered::<RelationId, ()>(affected.len(), 1, 0)?;
-                affected.insert(relation.relation_id);
+                affected.insert(relation.id);
             }
         }
     }
@@ -91,43 +91,52 @@ pub(super) fn refresh(
 
 fn child_values(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-    view: Option<&VisibilityProjectionView>,
+    view: Option<&IndexRootView>,
     child: EntityId,
     contract: &OrderingContract<'_>,
     work: &mut MaintenanceWork,
 ) -> Result<Option<Vec<worth_foundational::facade::AspectValue>>, Denial> {
-    let Some(record) = reads::entity(execution, view, child, work)? else {
+    let Some(view) = view else {
         return Ok(None);
     };
-    if record.kind.kind_id != contract.child_kind {
+    if record_metadata::entity_kind(execution, Some(view), child, work)?
+        != Some(contract.child_kind)
+    {
         return Ok(None);
     }
-    let source = IndexProjectionSource::selected(
-        view.unwrap(/* Proof: Maintenance admission requires an exact selected root before constructing this private pass; exact read bounds and metadata are available for that root. */ ),
-    );
-    let Some(plan) = source.entity_aspect_plan(contract.child_kind) else {
+    let Some(head) = view.head(execution, child.partition_id, work)? else {
         return Ok(None);
     };
-    work.charge(contract.ordering.len())?;
+    let Some(record) = head.entity_arena().get_slot(child.slot_index()) else {
+        return Ok(None);
+    };
+    let plans = view.root().schema_authority().aspect_plans();
+    work.lookup(plans.entity_plans.len(), 1)?;
+    let Some(plan) = plans.entity_plans.get(&contract.child_kind) else {
+        return Ok(None);
+    };
     work.array::<worth_foundational::facade::AspectValue>(contract.ordering.len())?;
+    let mut values = Vec::with_capacity(contract.ordering.len());
     for field in contract.ordering {
-        if let Some(value) = entity_query_locus_value(&record, field.locator()) {
-            work.prepare(0, value.owned_allocation_capacity_bytes() as u64)?;
+        super::field_keys::prepare_scope(plan, field.locator(), work)?;
+        if entity_index_projection_scope(plan, field.locator()).is_none() {
+            return Ok(None);
         }
+        let Some(value) = authoritative_state_query_locus_value(
+            record.extra().authoritative_aspect_state(),
+            field.locator(),
+        ) else {
+            return Ok(None);
+        };
+        work.prepare(1, value.owned_allocation_capacity_bytes() as u64)?;
+        values.push(value.clone());
     }
-    Ok(contract
-        .ordering
-        .iter()
-        .map(|field| {
-            entity_index_projection_scope(plan, field.locator())?;
-            entity_query_locus_value(&record, field.locator()).cloned()
-        })
-        .collect())
+    Ok(Some(values))
 }
 
 fn row(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-    view: Option<&VisibilityProjectionView>,
+    view: Option<&IndexRootView>,
     id: RelationId,
     contract: &OrderingContract<'_>,
     work: &mut MaintenanceWork,
@@ -149,5 +158,31 @@ fn row(
                 RelatedEntityOrderingEntry::new(values, child, relation.id),
             )
         }),
+    )
+}
+
+pub(super) fn project_row(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    view: &IndexRootView,
+    id: RelationId,
+    contract: (
+        KindId,
+        RelatedEntityEndpoint,
+        KindId,
+        &[RelatedEntityOrderingField],
+    ),
+    work: &mut MaintenanceWork,
+) -> Result<Option<(EntityId, RelatedEntityOrderingEntry)>, Denial> {
+    row(
+        execution,
+        Some(view),
+        id,
+        &OrderingContract {
+            relation_kind: contract.0,
+            parent_endpoint: contract.1,
+            child_kind: contract.2,
+            ordering: contract.3,
+        },
+        work,
     )
 }

@@ -158,3 +158,15 @@ pub(in crate::domain_computation::primary_graph) fn query_read_execution_kind(
 #[cfg(test)]
 #[path = "relational_execution_denial/tests.rs"]
 mod tests;
+
+pub(in crate::domain_computation::primary_graph) fn request_commit_stop(
+    cause: worth_execution::WorkCeilingDenial,
+) -> crate::domain_computation::WorthQueryProviderSessionCommitStop {
+    use crate::domain_computation::{
+        WorthQueryProviderSessionCommitControlStopped, WorthQueryProviderSessionCommitStop as Stop,
+    };
+    match crate::domain_computation::primary_graph::application_contribution::publication_execution_kind(cause) {
+        Ok(kind) => Stop::PreEffectDenied(crate::domain_computation::WorthQueryProviderSessionFailure::checked_read_stopped(Ok(kind), crate::domain_computation::WorthQueryProviderSessionProtocolStage::Commit, "coupled publication request stopped before effect")),
+        Err(kind) => Stop::ControlStopped(WorthQueryProviderSessionCommitControlStopped::new(kind, "coupled publication request stopped before effect")),
+    }
+}

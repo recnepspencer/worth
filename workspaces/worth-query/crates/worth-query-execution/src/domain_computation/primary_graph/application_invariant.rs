@@ -6,11 +6,9 @@
 use std::panic::{RefUnwindSafe, UnwindSafe};
 use worth_query_declaration::facade::application_schema::ApplicationSchema;
 
-pub use worth_relational::facade::runtime::{
-    CustomInvariantExecutionError as WorthQueryApplicationInvariantExecutionError,
-    CustomInvariantInterruption,
-    CustomInvariantPreparationError as WorthQueryApplicationInvariantPreparationError,
-};
+pub use worth_relational::facade::runtime::CustomInvariantInterruption;
+mod hook_error;
+pub use hook_error::WorthQueryApplicationInvariantError;
 
 pub(crate) mod refusal;
 pub use refusal::{WorthQueryEmptyInvariantRefusal, WorthQueryInvariantRefusalDecodeDenial};
@@ -71,7 +69,7 @@ where
     fn prepare_scope(
         &self,
         planner: &mut WorthQueryApplicationInvariantScopePlanner<'_, '_, Schema>,
-    ) -> Result<Self::Scope, WorthQueryApplicationInvariantPreparationError>;
+    ) -> Result<Self::Scope, WorthQueryApplicationInvariantError<Self::Refusal>>;
 
     /// Declare `true` only when both checked hooks below are implemented.
     /// They must use the supplied caller budget for their bounded work and memory.
@@ -90,7 +88,7 @@ where
         &self,
         _planner: &mut WorthQueryApplicationInvariantScopePlanner<'_, '_, Schema>,
         _budget: &dyn worth_relational::facade::runtime::CustomInvariantLeaseBudget,
-    ) -> Option<Result<Self::Scope, WorthQueryApplicationInvariantPreparationError>> {
+    ) -> Option<Result<Self::Scope, WorthQueryApplicationInvariantError<Self::Refusal>>> {
         None
     }
 
@@ -107,7 +105,7 @@ where
     ) -> Option<
         Result<
             WorthQueryApplicationInvariantVerdict<Self::Refusal>,
-            WorthQueryApplicationInvariantExecutionError,
+            WorthQueryApplicationInvariantError<Self::Refusal>,
         >,
     > {
         None
@@ -119,6 +117,6 @@ where
         scope: &Self::Scope,
     ) -> Result<
         WorthQueryApplicationInvariantVerdict<Self::Refusal>,
-        WorthQueryApplicationInvariantExecutionError,
+        WorthQueryApplicationInvariantError<Self::Refusal>,
     >;
 }

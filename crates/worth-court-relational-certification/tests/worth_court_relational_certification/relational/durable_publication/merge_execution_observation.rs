@@ -87,6 +87,7 @@ fn display_text(value: &AspectValue) -> String {
             value.denominator.as_str()
         ),
         AspectValue::String(InternedString::Raw(value)) => value.clone(),
+        AspectValue::String(InternedString::Stored(value)) => value.as_str().to_owned(),
         AspectValue::String(InternedString::Symbol(symbol)) => format!("symbol:{}", symbol.0),
         AspectValue::Uuid(value) => value.iter().map(|byte| format!("{byte:02x}")).collect(),
         AspectValue::Date(value) => value.days_from_unix_epoch.to_string(),

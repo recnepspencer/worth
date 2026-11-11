@@ -63,7 +63,7 @@ fn mutation_execution_mints_receipt_first_envelope_and_diagnostics() {
         EffectReceiptTargetEvidence::MutationCommit { .. }
     ));
 
-    let envelope = receipt.effect_envelope();
+    let envelope = receipt.effect_envelope().expect("fixture digest must fit");
     assert_eq!(
         envelope.primary_result(),
         EffectEnvelopePrimaryResult::MutationCommitted
@@ -94,7 +94,7 @@ fn mutation_execution_mints_receipt_first_envelope_and_diagnostics() {
         receipt.integrity_markers().counter_snapshot_for_reporting()
     );
 
-    let transitions = receipt.transition_rules();
+    let transitions = receipt.transition_rules().expect("fixture digest must fit");
     assert_eq!(transitions.receipt_family(), receipt.receipt_family());
     assert!(transitions.rules().iter().any(|rule| {
         rule.kind() == EffectReceiptTransitionKind::InspectReceipt
@@ -105,7 +105,9 @@ fn mutation_execution_mints_receipt_first_envelope_and_diagnostics() {
             && rule.posture() == EffectReceiptTransitionPosture::Deferred
     }));
 
-    let diagnostics = receipt.materialize_diagnostics(EffectDiagnosticsRequest::forensic());
+    let diagnostics = receipt
+        .materialize_diagnostics(EffectDiagnosticsRequest::forensic())
+        .expect("fixture digest must fit");
     assert_eq!(
         diagnostics.receipt_for_reporting(),
         receipt.receipt_for_reporting()
@@ -215,13 +217,29 @@ fn writeback_execution_mints_write_receipt_family() {
         other => panic!("expected writeback target evidence, got {other:?}"),
     }
     assert_eq!(
-        receipt.effect_envelope().primary_result(),
+        receipt
+            .effect_envelope()
+            .expect("fixture digest must fit")
+            .primary_result(),
         EffectEnvelopePrimaryResult::WritebackCommitted
     );
-    assert!(receipt.effect_envelope().deferred_neighbors().len() >= 2);
+    assert!(
+        receipt
+            .effect_envelope()
+            .expect("fixture digest must fit")
+            .deferred_neighbors()
+            .len()
+            >= 2
+    );
     assert_eq!(
-        receipt.effect_envelope().transition_rules_for_reporting(),
-        receipt.transition_rules().rules_for_reporting()
+        receipt
+            .effect_envelope()
+            .expect("fixture digest must fit")
+            .transition_rules_for_reporting(),
+        receipt
+            .transition_rules()
+            .expect("fixture digest must fit")
+            .rules_for_reporting()
     );
     let executed = scope_admitted_effect_plan(admitted_tenant_writeback_effect())
         .lower()
@@ -307,7 +325,10 @@ fn batch_execution_mints_batch_write_receipt_family() {
         other => panic!("expected batch target evidence, got {other:?}"),
     }
     assert_eq!(
-        receipt.effect_envelope().primary_result(),
+        receipt
+            .effect_envelope()
+            .expect("fixture digest must fit")
+            .primary_result(),
         EffectEnvelopePrimaryResult::BatchMutationCommitted
     );
     assert_ne!(

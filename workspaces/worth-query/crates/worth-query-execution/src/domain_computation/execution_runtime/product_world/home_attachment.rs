@@ -4,6 +4,7 @@ use worth_runtime_world::facade::*;
 
 impl WorthQueryProductRuntime {
     pub(in crate::domain_computation) fn attach_home_world_ports(
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         relational: WorthQueryProductRelationalInstallation,
         bridge: &mut worth_runtime_bridge::facade::BridgeSealedRuntimeAssembly,
         resources: WorthQueryProductWorldResources,
@@ -33,6 +34,9 @@ impl WorthQueryProductRuntime {
                 "Home root does not select its exact installed Native/Bridge basis",
             ));
         }
+        let installed = observation
+            .observe_installed_product_branches(execution)
+            .map_err(|cause| home_denial(format!("Home installed branches denied: {cause:?}")))?;
         let ports = world_ports::WorthQueryProductWorldPorts::attached(
             root.owner_identity(),
             publication,
@@ -60,10 +64,12 @@ impl WorthQueryProductRuntime {
             budgets.live_product_branches(),
         )
         .map_err(|cause| home_denial(format!("Home activation capacity denied: {cause:?}")))?;
-        let activation = activations
-            .reserve()
-            .map_err(|cause| home_denial(format!("Home root activation denied: {cause:?}")))?;
-        activation.commit(&root);
+        for observed in installed.branches() {
+            let activation = activations.reserve().map_err(|cause| {
+                home_denial(format!("Home branch activation denied: {cause:?}"))
+            })?;
+            activation.commit(observed);
+        }
         let signal = bridge.signal_owner_services();
         let mut product = Self::from_parts(
             ports,

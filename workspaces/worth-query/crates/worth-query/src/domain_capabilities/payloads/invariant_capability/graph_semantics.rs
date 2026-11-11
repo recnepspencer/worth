@@ -1,4 +1,5 @@
 use crate::domain_capabilities::identity::domain_capability_scope_encoder;
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::evidence_identity::{WorthQueryEvidenceIdentity, WorthQueryEvidenceTag};
 use crate::runtime::WorthQueryGraphCompositionCapabilityClass;
 
@@ -50,10 +51,10 @@ impl WorthQueryGraphInvariantDenialRuntimeSemantics {
         program_digest: impl Into<String>,
         breadth_digest: impl Into<String>,
         counter_snapshot: impl Into<String>,
-    ) -> Self {
+    ) -> Result<Self, IdentityDerivationDenial> {
         let program_digest = program_digest.into();
         let breadth_digest = breadth_digest.into();
-        Self {
+        Ok(Self {
             invariant_family: invariant_family.into(),
             declared_collections: declared_collections.into_iter().map(Into::into).collect(),
             declared_symbols: declared_symbols.into_iter().map(Into::into).collect(),
@@ -62,10 +63,10 @@ impl WorthQueryGraphInvariantDenialRuntimeSemantics {
                 .map(Into::into)
                 .collect(),
             lifecycle_families: lifecycle_families.into_iter().map(Into::into).collect(),
-            program_identity: graph_invariant_semantics_identity("program", &program_digest),
-            breadth_identity: graph_invariant_semantics_identity("breadth", &breadth_digest),
+            program_identity: graph_invariant_semantics_identity("program", &program_digest)?,
+            breadth_identity: graph_invariant_semantics_identity("breadth", &breadth_digest)?,
             counter_snapshot: counter_snapshot.into(),
-        }
+        })
     }
 
     pub fn invariant_family(&self) -> &str {
@@ -112,63 +113,69 @@ impl WorthQueryGraphInvariantDenialRuntimeSemantics {
 fn graph_invariant_semantics_identity(
     role: &'static str,
     digest_label: &str,
-) -> WorthQueryEvidenceIdentity {
-    domain_capability_scope_encoder("worth_query_graph_invariant_semantics_digest_v1")
-        .field_shape(WorthQueryEvidenceTag::new("role"), role)
-        .field_shape(WorthQueryEvidenceTag::new("digest_label"), digest_label)
-        .seal()
+) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
+    Ok(
+        domain_capability_scope_encoder("worth_query_graph_invariant_semantics_digest_v1")
+            .field_shape(WorthQueryEvidenceTag::new("role"), role)
+            .field_shape(WorthQueryEvidenceTag::new("digest_label"), digest_label)
+            .seal()?,
+    )
 }
 
 pub(super) fn compose_graph_capability_identity(
     graph_capability: &WorthQueryGraphCapabilityRuntimeSemantics,
-) -> WorthQueryEvidenceIdentity {
-    domain_capability_scope_encoder("worth_query_graph_capability_runtime_semantics_v1")
-        .field_shape(
-            WorthQueryEvidenceTag::new("capability_family"),
-            graph_capability.capability_family(),
-        )
-        .field_shape(
-            WorthQueryEvidenceTag::new("capability_class"),
-            graph_capability.capability_class().as_str(),
-        )
-        .seal()
+) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
+    Ok(
+        domain_capability_scope_encoder("worth_query_graph_capability_runtime_semantics_v1")
+            .field_shape(
+                WorthQueryEvidenceTag::new("capability_family"),
+                graph_capability.capability_family(),
+            )
+            .field_shape(
+                WorthQueryEvidenceTag::new("capability_class"),
+                graph_capability.capability_class().as_str(),
+            )
+            .seal()?,
+    )
 }
 
 pub(super) fn compose_graph_invariant_denial_identity(
     graph_invariant_denial: &WorthQueryGraphInvariantDenialRuntimeSemantics,
-) -> WorthQueryEvidenceIdentity {
-    domain_capability_scope_encoder("worth_query_graph_invariant_denial_runtime_semantics_v1")
-        .field_shape(
-            WorthQueryEvidenceTag::new("invariant_family"),
-            graph_invariant_denial.invariant_family(),
-        )
-        .field_value_sequence(
-            WorthQueryEvidenceTag::new("declared_collections"),
-            graph_invariant_denial.declared_collections(),
-        )
-        .field_value_sequence(
-            WorthQueryEvidenceTag::new("declared_symbols"),
-            graph_invariant_denial.declared_symbols(),
-        )
-        .field_value_sequence(
-            WorthQueryEvidenceTag::new("target_combination_families"),
-            graph_invariant_denial.target_combination_families(),
-        )
-        .field_value_sequence(
-            WorthQueryEvidenceTag::new("lifecycle_families"),
-            graph_invariant_denial.lifecycle_families(),
-        )
-        .field_evidence_identity(
-            WorthQueryEvidenceTag::new("program"),
-            graph_invariant_denial.program_identity(),
-        )
-        .field_evidence_identity(
-            WorthQueryEvidenceTag::new("breadth"),
-            graph_invariant_denial.breadth_identity(),
-        )
-        .field_shape(
-            WorthQueryEvidenceTag::new("counter_snapshot"),
-            graph_invariant_denial.counter_snapshot(),
-        )
-        .seal()
+) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
+    Ok(
+        domain_capability_scope_encoder("worth_query_graph_invariant_denial_runtime_semantics_v1")
+            .field_shape(
+                WorthQueryEvidenceTag::new("invariant_family"),
+                graph_invariant_denial.invariant_family(),
+            )
+            .field_value_sequence(
+                WorthQueryEvidenceTag::new("declared_collections"),
+                graph_invariant_denial.declared_collections(),
+            )
+            .field_value_sequence(
+                WorthQueryEvidenceTag::new("declared_symbols"),
+                graph_invariant_denial.declared_symbols(),
+            )
+            .field_value_sequence(
+                WorthQueryEvidenceTag::new("target_combination_families"),
+                graph_invariant_denial.target_combination_families(),
+            )
+            .field_value_sequence(
+                WorthQueryEvidenceTag::new("lifecycle_families"),
+                graph_invariant_denial.lifecycle_families(),
+            )
+            .field_evidence_identity(
+                WorthQueryEvidenceTag::new("program"),
+                graph_invariant_denial.program_identity(),
+            )
+            .field_evidence_identity(
+                WorthQueryEvidenceTag::new("breadth"),
+                graph_invariant_denial.breadth_identity(),
+            )
+            .field_shape(
+                WorthQueryEvidenceTag::new("counter_snapshot"),
+                graph_invariant_denial.counter_snapshot(),
+            )
+            .seal()?,
+    )
 }

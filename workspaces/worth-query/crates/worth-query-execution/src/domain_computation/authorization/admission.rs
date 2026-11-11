@@ -7,7 +7,9 @@ use crate::domain_computation::primary_graph::WorthQueryAuthenticatedPrincipal;
 use worth_query_installation::facade::ApplicationSchemaBindingIdentity;
 use worth_query_installation::facade::WorthQueryInstalledAbilityRequirement;
 
+mod borrowed_read;
 mod operation_observation;
+pub(in crate::domain_computation) use borrowed_read::BorrowedReadOperationAdmission;
 mod requirement_observation;
 mod resource_observation;
 mod validation;

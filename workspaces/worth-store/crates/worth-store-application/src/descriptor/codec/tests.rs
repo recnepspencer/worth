@@ -20,6 +20,7 @@ fn binding(schema: u8, revision: u8) -> ApplicationHomeBinding {
 fn changed_program_or_schema_requires_a_transition_preserving_the_recorded_binding() {
     let recorded = binding(2, 3);
     let descriptor = HomeDescriptor {
+        _binding_memory: None,
         identity: worth_foundational::facade::HomeIdentity::from_observed_bytes([1; 16]).unwrap(),
         incarnation: worth_foundational::facade::HomeIncarnation::initial(),
         binding: recorded.clone(),

@@ -19,6 +19,7 @@ type Rows<S, B> =
 #[derive(Debug)]
 pub enum WorthQueryHistoryOutputReadDenial {
     Authority(WorthQueryHistoryNavigationDenial),
+    RecipeCapture(crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenial),
     Admission(WorthQueryApplicationQueryAdmissionDenial),
     Read(crate::domain_computation::primary_graph::WorthQueryManagedIndexDenial),
     Control(WorthQueryHistoryOutputControlDenial),
@@ -48,6 +49,7 @@ pub enum WorthQueryHistoryOutputControlDenial {
 pub struct WorthQueryHistoryRootOutputRead<'authority, 'phase, 'scope, Q, R> {
     authority: &'authority WorthQueryHistoryOutputAuthority<'phase, 'scope>,
     result: WorthQueryApplicationOneShotResult<Q, R>,
+    truth: Option<crate::basis::WorthQueryProductObservationLease>,
 }
 
 impl<'authority, 'phase, 'scope, Q, R>
@@ -68,8 +70,9 @@ impl<'authority, 'phase, 'scope, Q, R>
     ) -> (
         &'authority WorthQueryHistoryOutputAuthority<'phase, 'scope>,
         WorthQueryApplicationOneShotResult<Q, R>,
+        Option<crate::basis::WorthQueryProductObservationLease>,
     ) {
-        (self.authority, self.result)
+        (self.authority, self.result, self.truth)
     }
 }
 
@@ -121,6 +124,60 @@ impl<S: ApplicationSchema>
         let result = self.execute_history_output_query_on_selected(
             phase, authority, binding, external, control, retained,
         )?;
-        Ok(WorthQueryHistoryRootOutputRead { authority, result })
+        Ok(WorthQueryHistoryRootOutputRead {
+            authority,
+            result,
+            truth: None,
+        })
+    }
+}
+
+impl<S: ApplicationSchema>
+    crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime<S>
+{
+    /// A graph navigation admits its original source without first requiring
+    /// that the historical source still exist at the live current head.
+    pub fn execute_owned_history_root_output_query<'authority, 'phase, 'scope, B>(
+        &self,
+        phase: &WorthQueryAdvancementPhase<'_>,
+        authority: &'authority WorthQueryHistoryOutputAuthority<'phase, 'scope>,
+        external: &WorthQueryAuthenticatedExternalPrincipal<S>,
+    ) -> Result<
+        WorthQueryHistoryRootOutputRead<'authority, 'phase, 'scope, B::Query, Rows<S, B>>,
+        WorthQueryHistoryOutputReadDenial,
+    >
+    where
+        B: ApplicationQueryBinding<S>,
+        Rows<S, B>: WorthQueryApplicationProjection<S, B::Query>,
+    {
+        let installed = self.installed_schema().installed_query_binding::<B>()
+            .map_err(|cause| WorthQueryHistoryOutputReadDenial::Admission(WorthQueryApplicationQueryAdmissionDenial::new(
+                crate::domain_computation::primary_graph::WorthQueryApplicationQueryAdmissionDenialKind::InstalledQuery(cause.kind()), "history graph source",
+            )))?;
+        let (result, truth) = authority
+            .profile()
+            .source_intent()
+            .execute_graph_source(self, phase, authority, &installed, external)?;
+        Ok(WorthQueryHistoryRootOutputRead {
+            authority,
+            result,
+            truth: Some(truth),
+        })
+    }
+}
+
+impl From<crate::domain_computation::primary_graph::application_query::SourceQueryObservationStop>
+    for WorthQueryHistoryOutputReadDenial
+{
+    fn from(
+        cause: crate::domain_computation::primary_graph::application_query::SourceQueryObservationStop,
+    ) -> Self {
+        use crate::domain_computation::primary_graph::application_query::SourceQueryObservationStop as Stop;
+        match cause {
+            Stop::Admission(cause) | Stop::Preparation { cause, .. } => Self::Admission(cause),
+            Stop::Principal(cause) => Self::Principal(cause),
+            Stop::Scope(cause) => Self::Scope(cause),
+            cause => Self::Demand(crate::domain_computation::primary_graph::invariant_projection::WorthQueryOutputAvailabilityDenial::source_query_stop(cause).demand_stop()),
+        }
     }
 }

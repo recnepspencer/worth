@@ -83,11 +83,7 @@ struct Contribution<E>(PhantomData<fn() -> E>);
 impl<E: Example> ApplicationSchemaContribution<S> for Contribution<E> {
     const IDENTITY: ApplicationSchemaContributionIdentity =
         <TopologyContribution as ApplicationSchemaContribution<S>>::IDENTITY;
-    fn register_members(
-        builder: ApplicationSchemaDeclarationBuilder<S>,
-    ) -> ApplicationSchemaDeclarationBuilder<S> {
-        <TopologyContribution as ApplicationSchemaContribution<S>>::register_members(builder)
-    }
+    type Members = <TopologyContribution as ApplicationSchemaContribution<S>>::Members;
 }
 impl<E: Example> WorthQueryApplicationContribution<S> for Contribution<E> {
     type Configuration = TopologyConfiguration;

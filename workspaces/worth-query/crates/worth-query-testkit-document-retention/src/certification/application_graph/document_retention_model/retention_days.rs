@@ -6,14 +6,14 @@ pub use worth_query_host::facade::declaration::{
     self,
     application_query::{
         ApplicationQueryBasisSupport, ApplicationQueryBinding, ApplicationQueryBindingLimits,
-        ApplicationQueryCardinality, ApplicationQueryDefinition, ApplicationQueryDefinitionBuilder,
+        ApplicationQueryCardinality, ApplicationQueryDefinitionBuilder,
         ApplicationQueryDisclosureContract, ApplicationQueryFieldScope, ApplicationQueryIntent,
         ApplicationQueryLaneEligibility, ApplicationQueryParameterSet,
         ApplicationQueryResultFieldRef, ApplicationQueryResultShapeBuilder,
     },
     application_schema::{
-        ApplicationFieldRef, ApplicationPrincipalBindingRef, ApplicationSchemaDeclarationBuilder,
-        EqualityPredicate, NoApplicationUnit, ReadOnly, U64ApplicationValueBinding,
+        ApplicationPrincipalBindingRef, ApplicationSchemaDeclarationBuilder, EqualityPredicate,
+        NoApplicationUnit, ReadOnly, U64ApplicationValueBinding,
     },
 };
 pub use worth_query_host::facade::{
@@ -42,7 +42,7 @@ worth_query_application_query!(
     name "document_retention_days_query"
 );
 
-pub fn document_retention_days_query_definition() -> ApplicationQueryDefinition<
+pub fn document_retention_days_query_definition() -> ApplicationQueryDefinitionBuilder<
     DocumentRetentionSchema,
     DocumentRetentionDaysQuery,
     super::schema::DocumentQueryParameters,
@@ -67,23 +67,18 @@ pub fn document_retention_days_query_definition() -> ApplicationQueryDefinition<
         .basis_support(ApplicationQueryBasisSupport::current_and_pinned())
         .lanes(ApplicationQueryLaneEligibility::one_shot())
         .public()
-        .build()
-        .expect("the document days query is canonical")
 }
 
 pub fn days_result() -> ApplicationQueryResultFieldRef<
     DocumentRetentionDaysQuery,
     DocumentRetentionDaysSlot,
     DocumentRetentionSchema,
-    Document,
-    DocumentFacts,
     DocumentRetentionField,
-    u64,
-    declaration::application_schema::ReadWrite,
-    EqualityPredicate,
-    NoApplicationUnit,
 > {
-    ApplicationQueryResultFieldRef::new("retention", DocumentRetentionField::reference())
+    ApplicationQueryResultFieldRef::new(
+        "retention",
+        DocumentRetentionField::at("DocumentRetentionField"),
+    )
 }
 
 impl
@@ -105,15 +100,7 @@ impl
 
 pub struct DocumentRetentionDaysQueryBinding;
 
-pub type DocumentRetentionDaysScope = ApplicationQueryFieldScope<
-    DocumentRetentionSchema,
-    Document,
-    DocumentFacts,
-    DocumentIdentityField,
-    String,
-    ReadOnly,
-    NoApplicationUnit,
->;
+pub type DocumentRetentionDaysScope = ApplicationQueryFieldScope<DocumentIdentityField>;
 
 impl ApplicationQueryBinding<DocumentRetentionSchema> for DocumentRetentionDaysQueryBinding {
     type Input = DocumentRetentionDaysRead;
@@ -132,17 +119,8 @@ impl ApplicationQueryBinding<DocumentRetentionSchema> for DocumentRetentionDaysQ
         "worth.query.certification.document-retention.days-read-binding.v1";
     const LIMITS: ApplicationQueryBindingLimits = ApplicationQueryBindingLimits::results(1);
 
-    fn scope_field() -> ApplicationFieldRef<
-        DocumentRetentionSchema,
-        Document,
-        DocumentFacts,
-        DocumentIdentityField,
-        String,
-        ReadOnly,
-        EqualityPredicate,
-        NoApplicationUnit,
-    > {
-        DocumentIdentityField::reference()
+    fn scope_field() -> DocumentIdentityField {
+        DocumentIdentityField::at("DocumentIdentityField")
     }
 
     fn principal_binding() -> ApplicationPrincipalBindingRef<
@@ -175,7 +153,10 @@ impl ApplicationQueryIntent<DocumentRetentionSchema> for DocumentRetentionDaysRe
     }
 
     fn into_scope(self) -> DocumentRetentionDaysScope {
-        DocumentRetentionDaysScope::new(DocumentIdentityField::reference(), self.identity)
+        DocumentRetentionDaysScope::new(
+            DocumentIdentityField::at("DocumentIdentityField"),
+            self.identity,
+        )
     }
 }
 

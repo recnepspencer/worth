@@ -1,0 +1,1038 @@
+{
+  "checkpoints": {
+    "calls": 36263,
+    "units": 8000096,
+    "last_units": 111
+  },
+  "full_entries": 1,
+  "collections": [
+    {
+      "full": 1,
+      "partition_address": 96606920792,
+      "calls": 1894,
+      "units": 155300,
+      "inserts": 1961,
+      "unique_symbols": 45
+    }
+  ],
+  "funding_work": [
+    {
+      "caller": {
+        "rva": 218287332,
+        "file": "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\crates\\worth-relational\\src\\storage\\residency\\region_load\\materialization_funding\\aspect_state.rs",
+        "line": 334,
+        "symbol": "worth_relational::storage::residency::region_load::materialization_funding::aspect_state::contracts"
+      },
+      "parent": {
+        "rva": 190296997,
+        "file": "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\crates\\worth-relational\\src\\storage\\residency\\region_load.rs",
+        "line": 154,
+        "symbol": "worth_relational::storage::residency::region_load::load_full"
+      },
+      "units_each": 1,
+      "calls": 30,
+      "units": 30
+    },
+    {
+      "caller": {
+        "rva": 218287412,
+        "file": "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\crates\\worth-relational\\src\\storage\\residency\\region_load\\materialization_funding\\aspect_state.rs",
+        "line": 343,
+        "symbol": "worth_relational::storage::residency::region_load::materialization_funding::aspect_state::contracts"
+      },
+      "parent": {
+        "rva": 190296997,
+        "file": "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\crates\\worth-relational\\src\\storage\\residency\\region_load.rs",
+        "line": 154,
+        "symbol": "worth_relational::storage::residency::region_load::load_full"
+      },
+      "units_each": 67442,
+      "calls": 1,
+      "units": 67442
+    },
+    {
+      "caller": {
+        "rva": 270028404,
+        "file": "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\crates\\worth-relational\\src\\storage\\residency\\resident_history.rs",
+        "line": 204,
+        "symbol": "worth_relational::storage::residency::resident_history::projection_funding"
+      },
+      "parent": {
+        "rva": 190297266,
+        "file": "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\crates\\worth-relational\\src\\storage\\residency\\region_load.rs",
+        "line": 155,
+        "symbol": "worth_relational::storage::residency::region_load::load_full"
+      },
+      "units_each": 1,
+      "calls": 358,
+      "units": 358
+    },
+    {
+      "caller": {
+        "rva": 270027729,
+        "file": "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\crates\\worth-relational\\src\\storage\\residency\\resident_history.rs",
+        "line": 212,
+        "symbol": "worth_relational::storage::residency::resident_history::projection_funding"
+      },
+      "parent": {
+        "rva": 190297266,
+        "file": "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\crates\\worth-relational\\src\\storage\\residency\\region_load.rs",
+        "line": 155,
+        "symbol": "worth_relational::storage::residency::region_load::load_full"
+      },
+      "units_each": 682480,
+      "calls": 1,
+      "units": 682480
+    },
+    {
+      "caller": {
+        "rva": 208010586,
+        "file": "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\crates\\worth-relational\\src\\storage\\residency\\region_load\\materialization_funding\\current_image.rs",
+        "line": 42,
+        "symbol": "worth_relational::storage::residency::region_load::materialization_funding::current_image::current"
+      },
+      "parent": {
+        "rva": 190297597,
+        "file": "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\crates\\worth-relational\\src\\storage\\residency\\region_load.rs",
+        "line": 156,
+        "symbol": "worth_relational::storage::residency::region_load::load_full"
+      },
+      "units_each": 1,
+      "calls": 708,
+      "units": 708
+    },
+    {
+      "caller": {
+        "rva": 207989041,
+        "file": "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\crates\\worth-relational\\src\\storage\\residency\\region_load\\materialization_funding\\current_image.rs",
+        "line": 133,
+        "symbol": "worth_relational::storage::residency::region_load::materialization_funding::current_image::state_wire"
+      },
+      "parent": {
+        "rva": 208019626,
+        "file": "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\crates\\worth-relational\\src\\storage\\residency\\region_load\\materialization_funding\\current_image.rs",
+        "line": 43,
+        "symbol": "worth_relational::storage::residency::region_load::materialization_funding::current_image::current"
+      },
+      "units_each": 1,
+      "calls": 362,
+      "units": 362
+    },
+    {
+      "caller": {
+        "rva": 207990340,
+        "file": "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\crates\\worth-relational\\src\\storage\\residency\\region_load\\materialization_funding\\current_image.rs",
+        "line": 148,
+        "symbol": "worth_relational::storage::residency::region_load::materialization_funding::current_image::state_wire"
+      },
+      "parent": {
+        "rva": 208019626,
+        "file": "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\crates\\worth-relational\\src\\storage\\residency\\region_load\\materialization_funding\\current_image.rs",
+        "line": 43,
+        "symbol": "worth_relational::storage::residency::region_load::materialization_funding::current_image::current"
+      },
+      "units_each": 1,
+      "calls": 1780,
+      "units": 1780
+    },
+    {
+      "caller": {
+        "rva": 208010786,
+        "file": "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\crates\\worth-relational\\src\\storage\\residency\\region_load\\materialization_funding\\current_image.rs",
+        "line": 46,
+        "symbol": "worth_relational::storage::residency::region_load::materialization_funding::current_image::current"
+      },
+      "parent": {
+        "rva": 190297597,
+        "file": "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\crates\\worth-relational\\src\\storage\\residency\\region_load.rs",
+        "line": 156,
+        "symbol": "worth_relational::storage::residency::region_load::load_full"
+      },
+      "units_each": 1,
+      "calls": 175,
+      "units": 175
+    },
+    {
+      "caller": {
+        "rva": 208010986,
+        "file": "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\crates\\worth-relational\\src\\storage\\residency\\region_load\\materialization_funding\\current_image.rs",
+        "line": 50,
+        "symbol": "worth_relational::storage::residency::region_load::materialization_funding::current_image::current"
+      },
+      "parent": {
+        "rva": 190297597,
+        "file": "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\crates\\worth-relational\\src\\storage\\residency\\region_load.rs",
+        "line": 156,
+        "symbol": "worth_relational::storage::residency::region_load::load_full"
+      },
+      "units_each": 1,
+      "calls": 179,
+      "units": 179
+    },
+    {
+      "caller": {
+        "rva": 208017230,
+        "file": "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\crates\\worth-relational\\src\\storage\\residency\\region_load\\materialization_funding\\current_image.rs",
+        "line": 71,
+        "symbol": "worth_relational::storage::residency::region_load::materialization_funding::current_image::current"
+      },
+      "parent": {
+        "rva": 190297597,
+        "file": "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\crates\\worth-relational\\src\\storage\\residency\\region_load.rs",
+        "line": 156,
+        "symbol": "worth_relational::storage::residency::region_load::load_full"
+      },
+      "units_each": 1,
+      "calls": 354,
+      "units": 354
+    },
+    {
+      "caller": {
+        "rva": 208015867,
+        "file": "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\crates\\worth-relational\\src\\storage\\residency\\region_load\\materialization_funding\\current_image.rs",
+        "line": 91,
+        "symbol": "worth_relational::storage::residency::region_load::materialization_funding::current_image::current"
+      },
+      "parent": {
+        "rva": 190297597,
+        "file": "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\crates\\worth-relational\\src\\storage\\residency\\region_load.rs",
+        "line": 156,
+        "symbol": "worth_relational::storage::residency::region_load::load_full"
+      },
+      "units_each": 1,
+      "calls": 354,
+      "units": 354
+    },
+    {
+      "caller": {
+        "rva": 207991707,
+        "file": "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\crates\\worth-relational\\src\\storage\\residency\\region_load\\materialization_funding\\current_image.rs",
+        "line": 170,
+        "symbol": "worth_relational::storage::residency::region_load::materialization_funding::current_image::diagnostics"
+      },
+      "parent": {
+        "rva": 208012078,
+        "file": "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\crates\\worth-relational\\src\\storage\\residency\\region_load\\materialization_funding\\current_image.rs",
+        "line": 101,
+        "symbol": "worth_relational::storage::residency::region_load::materialization_funding::current_image::current"
+      },
+      "units_each": 1,
+      "calls": 354,
+      "units": 354
+    },
+    {
+      "caller": {
+        "rva": 208022383,
+        "file": "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\crates\\worth-relational\\src\\storage\\residency\\region_load\\materialization_funding\\current_image.rs",
+        "line": 186,
+        "symbol": "worth_relational::storage::residency::region_load::materialization_funding::current_image::adjacency"
+      },
+      "parent": {
+        "rva": 208014474,
+        "file": "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\crates\\worth-relational\\src\\storage\\residency\\region_load\\materialization_funding\\current_image.rs",
+        "line": 118,
+        "symbol": "worth_relational::storage::residency::region_load::materialization_funding::current_image::current"
+      },
+      "units_each": 1,
+      "calls": 350,
+      "units": 350
+    },
+    {
+      "caller": {
+        "rva": 208021282,
+        "file": "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\crates\\worth-relational\\src\\storage\\residency\\region_load\\materialization_funding\\current_image.rs",
+        "line": 208,
+        "symbol": "worth_relational::storage::residency::region_load::materialization_funding::current_image::adjacency"
+      },
+      "parent": {
+        "rva": 208014474,
+        "file": "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\crates\\worth-relational\\src\\storage\\residency\\region_load\\materialization_funding\\current_image.rs",
+        "line": 118,
+        "symbol": "worth_relational::storage::residency::region_load::materialization_funding::current_image::current"
+      },
+      "units_each": 1,
+      "calls": 6,
+      "units": 6
+    },
+    {
+      "caller": {
+        "rva": 208014935,
+        "file": "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\crates\\worth-relational\\src\\storage\\residency\\region_load\\materialization_funding\\current_image.rs",
+        "line": 119,
+        "symbol": "worth_relational::storage::residency::region_load::materialization_funding::current_image::current"
+      },
+      "parent": {
+        "rva": 190297597,
+        "file": "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\crates\\worth-relational\\src\\storage\\residency\\region_load.rs",
+        "line": 156,
+        "symbol": "worth_relational::storage::residency::region_load::load_full"
+      },
+      "units_each": 3473364,
+      "calls": 1,
+      "units": 3473364
+    },
+    {
+      "caller": {
+        "rva": 213654433,
+        "file": "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\crates\\worth-relational\\src\\storage\\residency\\history_fold.rs",
+        "line": 137,
+        "symbol": "worth_relational::storage::residency::history_fold::HistoryFolder::read"
+      },
+      "parent": {
+        "rva": 190298529,
+        "file": "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\crates\\worth-relational\\src\\storage\\residency\\region_load.rs",
+        "line": 166,
+        "symbol": "worth_relational::storage::residency::region_load::load_full"
+      },
+      "units_each": 2,
+      "calls": 1,
+      "units": 2
+    },
+    {
+      "caller": {
+        "rva": 213656327,
+        "file": "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\crates\\worth-relational\\src\\storage\\residency\\history_fold.rs",
+        "line": 174,
+        "symbol": "worth_relational::storage::residency::history_fold::HistoryFolder::read"
+      },
+      "parent": {
+        "rva": 190298529,
+        "file": "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\crates\\worth-relational\\src\\storage\\residency\\region_load.rs",
+        "line": 166,
+        "symbol": "worth_relational::storage::residency::region_load::load_full"
+      },
+      "units_each": 6280,
+      "calls": 1,
+      "units": 6280
+    },
+    {
+      "caller": {
+        "rva": 207986970,
+        "file": "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\crates\\worth-relational\\src\\storage\\residency\\region_load\\materialization_funding\\region_image.rs",
+        "line": 348,
+        "symbol": "worth_relational::storage::residency::region_load::materialization_funding::region_image::history"
+      },
+      "parent": {
+        "rva": 213657339,
+        "file": "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\crates\\worth-relational\\src\\storage\\residency\\history_fold.rs",
+        "line": 186,
+        "symbol": "worth_relational::storage::residency::history_fold::HistoryFolder::read"
+      },
+      "units_each": 6226,
+      "calls": 1,
+      "units": 6226
+    },
+    {
+      "caller": {
+        "rva": 213658397,
+        "file": "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\crates\\worth-relational\\src\\storage\\residency\\history_fold.rs",
+        "line": 192,
+        "symbol": "worth_relational::storage::residency::history_fold::HistoryFolder::read"
+      },
+      "parent": {
+        "rva": 190298529,
+        "file": "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\crates\\worth-relational\\src\\storage\\residency\\region_load.rs",
+        "line": 166,
+        "symbol": "worth_relational::storage::residency::region_load::load_full"
+      },
+      "units_each": 6226,
+      "calls": 1,
+      "units": 6226
+    },
+    {
+      "caller": {
+        "rva": 213652759,
+        "file": "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\crates\\worth-relational\\src\\storage\\residency\\history_fold.rs",
+        "line": 248,
+        "symbol": "worth_relational::storage::residency::history_fold::HistoryFolder::verify_directory"
+      },
+      "parent": {
+        "rva": 213660629,
+        "file": "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\crates\\worth-relational\\src\\storage\\residency\\history_fold.rs",
+        "line": 221,
+        "symbol": "worth_relational::storage::residency::history_fold::HistoryFolder::read"
+      },
+      "units_each": 2,
+      "calls": 1,
+      "units": 2
+    },
+    {
+      "caller": {
+        "rva": 213652987,
+        "file": "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\crates\\worth-relational\\src\\storage\\residency\\history_fold.rs",
+        "line": 256,
+        "symbol": "worth_relational::storage::residency::history_fold::HistoryFolder::verify_directory"
+      },
+      "parent": {
+        "rva": 213660629,
+        "file": "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\crates\\worth-relational\\src\\storage\\residency\\history_fold.rs",
+        "line": 221,
+        "symbol": "worth_relational::storage::residency::history_fold::HistoryFolder::read"
+      },
+      "units_each": 704,
+      "calls": 1,
+      "units": 704
+    },
+    {
+      "caller": {
+        "rva": 210068303,
+        "file": "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\crates\\worth-relational\\src\\storage\\residency\\history_fold.rs",
+        "line": 298,
+        "symbol": "worth_relational::storage::residency::history_fold::HistoryFolder::fold_row<worth_relational::storage::substrate::record_arena::kinds::EntityRecordKind>"
+      },
+      "parent": {
+        "rva": 210079698,
+        "file": "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\crates\\worth-relational\\src\\storage\\residency\\history_fold.rs",
+        "line": 285,
+        "symbol": "worth_relational::storage::residency::history_fold::HistoryFolder::fold_rows<worth_relational::storage::substrate::record_arena::kinds::EntityRecordKind>"
+      },
+      "units_each": 1,
+      "calls": 175,
+      "units": 175
+    },
+    {
+      "caller": {
+        "rva": 213654433,
+        "file": "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\crates\\worth-relational\\src\\storage\\residency\\history_fold.rs",
+        "line": 137,
+        "symbol": "worth_relational::storage::residency::history_fold::HistoryFolder::read"
+      },
+      "parent": {
+        "rva": 210068560,
+        "file": "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\crates\\worth-relational\\src\\storage\\residency\\history_fold.rs",
+        "line": 299,
+        "symbol": "worth_relational::storage::residency::history_fold::HistoryFolder::fold_row<worth_relational::storage::substrate::record_arena::kinds::EntityRecordKind>"
+      },
+      "units_each": 2,
+      "calls": 175,
+      "units": 350
+    },
+    {
+      "caller": {
+        "rva": 213652759,
+        "file": "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\crates\\worth-relational\\src\\storage\\residency\\history_fold.rs",
+        "line": 248,
+        "symbol": "worth_relational::storage::residency::history_fold::HistoryFolder::verify_directory"
+      },
+      "parent": {
+        "rva": 213655201,
+        "file": "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\crates\\worth-relational\\src\\storage\\residency\\history_fold.rs",
+        "line": 153,
+        "symbol": "worth_relational::storage::residency::history_fold::HistoryFolder::read"
+      },
+      "units_each": 2,
+      "calls": 354,
+      "units": 708
+    },
+    {
+      "caller": {
+        "rva": 213328485,
+        "file": "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\crates\\worth-relational\\src\\storage\\residency\\region_load\\materialization_funding.rs",
+        "line": 233,
+        "symbol": "worth_relational::storage::residency::region_load::materialization_funding::Funding::grow"
+      },
+      "parent": {
+        "rva": 210070031,
+        "file": "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\crates\\worth-relational\\src\\storage\\residency\\history_fold.rs",
+        "line": 308,
+        "symbol": "worth_relational::storage::residency::history_fold::HistoryFolder::fold_row<worth_relational::storage::substrate::record_arena::kinds::EntityRecordKind>"
+      },
+      "units_each": 1,
+      "calls": 175,
+      "units": 175
+    },
+    {
+      "caller": {
+        "rva": 210073807,
+        "file": "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\crates\\worth-relational\\src\\storage\\residency\\history_fold.rs",
+        "line": 298,
+        "symbol": "worth_relational::storage::residency::history_fold::HistoryFolder::fold_row<worth_relational::storage::substrate::record_arena::kinds::RelationRecordKind>"
+      },
+      "parent": {
+        "rva": 210080690,
+        "file": "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\crates\\worth-relational\\src\\storage\\residency\\history_fold.rs",
+        "line": 285,
+        "symbol": "worth_relational::storage::residency::history_fold::HistoryFolder::fold_rows<worth_relational::storage::substrate::record_arena::kinds::RelationRecordKind>"
+      },
+      "units_each": 1,
+      "calls": 179,
+      "units": 179
+    },
+    {
+      "caller": {
+        "rva": 213654433,
+        "file": "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\crates\\worth-relational\\src\\storage\\residency\\history_fold.rs",
+        "line": 137,
+        "symbol": "worth_relational::storage::residency::history_fold::HistoryFolder::read"
+      },
+      "parent": {
+        "rva": 210074064,
+        "file": "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\crates\\worth-relational\\src\\storage\\residency\\history_fold.rs",
+        "line": 299,
+        "symbol": "worth_relational::storage::residency::history_fold::HistoryFolder::fold_row<worth_relational::storage::substrate::record_arena::kinds::RelationRecordKind>"
+      },
+      "units_each": 2,
+      "calls": 179,
+      "units": 358
+    },
+    {
+      "caller": {
+        "rva": 213328485,
+        "file": "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\crates\\worth-relational\\src\\storage\\residency\\region_load\\materialization_funding.rs",
+        "line": 233,
+        "symbol": "worth_relational::storage::residency::region_load::materialization_funding::Funding::grow"
+      },
+      "parent": {
+        "rva": 210075535,
+        "file": "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\crates\\worth-relational\\src\\storage\\residency\\history_fold.rs",
+        "line": 308,
+        "symbol": "worth_relational::storage::residency::history_fold::HistoryFolder::fold_row<worth_relational::storage::substrate::record_arena::kinds::RelationRecordKind>"
+      },
+      "units_each": 1,
+      "calls": 179,
+      "units": 179
+    },
+    {
+      "caller": {
+        "rva": 213328485,
+        "file": "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\crates\\worth-relational\\src\\storage\\residency\\region_load\\materialization_funding.rs",
+        "line": 233,
+        "symbol": "worth_relational::storage::residency::region_load::materialization_funding::Funding::grow"
+      },
+      "parent": {
+        "rva": 210123050,
+        "file": "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\crates\\worth-relational\\src\\storage\\residency\\history_fold.rs",
+        "line": 65,
+        "symbol": "worth_relational::storage::residency::history_fold::FundedRow::append_current<worth_relational::durability::data::checkpoint_images::VersionedEntityMetadataImage>"
+      },
+      "units_each": 1,
+      "calls": 175,
+      "units": 175
+    },
+    {
+      "caller": {
+        "rva": 210123213,
+        "file": "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\crates\\worth-relational\\src\\storage\\residency\\history_fold.rs",
+        "line": 69,
+        "symbol": "worth_relational::storage::residency::history_fold::FundedRow::append_current<worth_relational::durability::data::checkpoint_images::VersionedEntityMetadataImage>"
+      },
+      "parent": {
+        "rva": 203551572,
+        "file": "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\crates\\worth-relational\\src\\storage\\residency\\region_load.rs",
+        "line": 201,
+        "symbol": "worth_relational::storage::residency::region_load::load_full::closure$1"
+      },
+      "units_each": 1,
+      "calls": 175,
+      "units": 175
+    },
+    {
+      "caller": {
+        "rva": 213328485,
+        "file": "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\crates\\worth-relational\\src\\storage\\residency\\region_load\\materialization_funding.rs",
+        "line": 233,
+        "symbol": "worth_relational::storage::residency::region_load::materialization_funding::Funding::grow"
+      },
+      "parent": {
+        "rva": 210124170,
+        "file": "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\crates\\worth-relational\\src\\storage\\residency\\history_fold.rs",
+        "line": 65,
+        "symbol": "worth_relational::storage::residency::history_fold::FundedRow::append_current<worth_relational::durability::data::checkpoint_images::VersionedRelationMetadataImage>"
+      },
+      "units_each": 1,
+      "calls": 179,
+      "units": 179
+    },
+    {
+      "caller": {
+        "rva": 210124333,
+        "file": "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\crates\\worth-relational\\src\\storage\\residency\\history_fold.rs",
+        "line": 69,
+        "symbol": "worth_relational::storage::residency::history_fold::FundedRow::append_current<worth_relational::durability::data::checkpoint_images::VersionedRelationMetadataImage>"
+      },
+      "parent": {
+        "rva": 203551833,
+        "file": "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\crates\\worth-relational\\src\\storage\\residency\\region_load.rs",
+        "line": 210,
+        "symbol": "worth_relational::storage::residency::region_load::load_full::closure$1"
+      },
+      "units_each": 1,
+      "calls": 179,
+      "units": 179
+    },
+    {
+      "caller": {
+        "rva": 211407669,
+        "file": "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\crates\\worth-relational\\src\\storage\\residency\\kind_projection\\reconstruction\\request.rs",
+        "line": 65,
+        "symbol": "worth_relational::storage::residency::kind_projection::reconstruction::request::drive::closure$0"
+      },
+      "parent": {
+        "rva": 232997180,
+        "file": "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\crates\\worth-relational\\src\\storage\\residency\\kind_projection\\reconstruction\\claim_copy.rs",
+        "line": 8,
+        "symbol": "worth_relational::storage::residency::kind_projection::reconstruction::claim_copy::clone_claim"
+      },
+      "units_each": 1,
+      "calls": 179,
+      "units": 179
+    },
+    {
+      "caller": {
+        "rva": 211407669,
+        "file": "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\crates\\worth-relational\\src\\storage\\residency\\kind_projection\\reconstruction\\request.rs",
+        "line": 65,
+        "symbol": "worth_relational::storage::residency::kind_projection::reconstruction::request::drive::closure$0"
+      },
+      "parent": {
+        "rva": 232997845,
+        "file": "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\crates\\worth-relational\\src\\storage\\residency\\kind_projection\\reconstruction\\claim_copy.rs",
+        "line": 20,
+        "symbol": "worth_relational::storage::residency::kind_projection::reconstruction::claim_copy::clone_claim"
+      },
+      "units_each": 1,
+      "calls": 358,
+      "units": 358
+    },
+    {
+      "caller": {
+        "rva": 211407669,
+        "file": "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\crates\\worth-relational\\src\\storage\\residency\\kind_projection\\reconstruction\\request.rs",
+        "line": 65,
+        "symbol": "worth_relational::storage::residency::kind_projection::reconstruction::request::drive::closure$0"
+      },
+      "parent": {
+        "rva": 235920638,
+        "file": "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\crates\\worth-relational\\src\\storage\\residency\\kind_projection\\reconstruction.rs",
+        "line": 50,
+        "symbol": "worth_relational::storage::residency::kind_projection::reconstruction::rebuild_using"
+      },
+      "units_each": 1,
+      "calls": 179,
+      "units": 179
+    },
+    {
+      "caller": {
+        "rva": 211407669,
+        "file": "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\crates\\worth-relational\\src\\storage\\residency\\kind_projection\\reconstruction\\request.rs",
+        "line": 65,
+        "symbol": "worth_relational::storage::residency::kind_projection::reconstruction::request::drive::closure$0"
+      },
+      "parent": {
+        "rva": 235920844,
+        "file": "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\crates\\worth-relational\\src\\storage\\residency\\kind_projection\\reconstruction.rs",
+        "line": 56,
+        "symbol": "worth_relational::storage::residency::kind_projection::reconstruction::rebuild_using"
+      },
+      "units_each": 1,
+      "calls": 179,
+      "units": 179
+    },
+    {
+      "caller": {
+        "rva": 211407669,
+        "file": "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\crates\\worth-relational\\src\\storage\\residency\\kind_projection\\reconstruction\\request.rs",
+        "line": 65,
+        "symbol": "worth_relational::storage::residency::kind_projection::reconstruction::request::drive::closure$0"
+      },
+      "parent": {
+        "rva": 194002273,
+        "file": "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\crates\\worth-relational\\src\\storage\\residency\\kind_projection\\reconstruction\\owned_history.rs",
+        "line": 52,
+        "symbol": "worth_relational::storage::residency::kind_projection::reconstruction::owned_history::project_owned_history"
+      },
+      "units_each": 1,
+      "calls": 179,
+      "units": 179
+    },
+    {
+      "caller": {
+        "rva": 211407669,
+        "file": "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\crates\\worth-relational\\src\\storage\\residency\\kind_projection\\reconstruction\\request.rs",
+        "line": 65,
+        "symbol": "worth_relational::storage::residency::kind_projection::reconstruction::request::drive::closure$0"
+      },
+      "parent": {
+        "rva": 194003019,
+        "file": "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\crates\\worth-relational\\src\\storage\\residency\\kind_projection\\reconstruction\\owned_history.rs",
+        "line": 12,
+        "symbol": "worth_relational::storage::residency::kind_projection::reconstruction::owned_history::add_owned"
+      },
+      "units_each": 1,
+      "calls": 358,
+      "units": 358
+    },
+    {
+      "caller": {
+        "rva": 211407669,
+        "file": "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\crates\\worth-relational\\src\\storage\\residency\\kind_projection\\reconstruction\\request.rs",
+        "line": 65,
+        "symbol": "worth_relational::storage::residency::kind_projection::reconstruction::request::drive::closure$0"
+      },
+      "parent": {
+        "rva": 232998506,
+        "file": "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\crates\\worth-relational\\src\\storage\\residency\\kind_projection\\reconstruction\\claim_copy.rs",
+        "line": 36,
+        "symbol": "worth_relational::storage::residency::kind_projection::reconstruction::claim_copy::claims_match"
+      },
+      "units_each": 1,
+      "calls": 179,
+      "units": 179
+    },
+    {
+      "caller": {
+        "rva": 211407669,
+        "file": "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\crates\\worth-relational\\src\\storage\\residency\\kind_projection\\reconstruction\\request.rs",
+        "line": 65,
+        "symbol": "worth_relational::storage::residency::kind_projection::reconstruction::request::drive::closure$0"
+      },
+      "parent": {
+        "rva": 232999268,
+        "file": "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\crates\\worth-relational\\src\\storage\\residency\\kind_projection\\reconstruction\\claim_copy.rs",
+        "line": 48,
+        "symbol": "worth_relational::storage::residency::kind_projection::reconstruction::claim_copy::claims_match"
+      },
+      "units_each": 1,
+      "calls": 358,
+      "units": 358
+    },
+    {
+      "caller": {
+        "rva": 211407669,
+        "file": "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\crates\\worth-relational\\src\\storage\\residency\\kind_projection\\reconstruction\\request.rs",
+        "line": 65,
+        "symbol": "worth_relational::storage::residency::kind_projection::reconstruction::request::drive::closure$0"
+      },
+      "parent": {
+        "rva": 239807649,
+        "file": "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\crates\\worth-relational\\src\\storage\\residency\\kind_projection\\reconstruction\\installation.rs",
+        "line": 33,
+        "symbol": "worth_relational::storage::residency::kind_projection::reconstruction::installation::install_request"
+      },
+      "units_each": 1,
+      "calls": 350,
+      "units": 350
+    },
+    {
+      "caller": {
+        "rva": 211407669,
+        "file": "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\crates\\worth-relational\\src\\storage\\residency\\kind_projection\\reconstruction\\request.rs",
+        "line": 65,
+        "symbol": "worth_relational::storage::residency::kind_projection::reconstruction::request::drive::closure$0"
+      },
+      "parent": {
+        "rva": 239807834,
+        "file": "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\crates\\worth-relational\\src\\storage\\residency\\kind_projection\\reconstruction\\installation.rs",
+        "line": 45,
+        "symbol": "worth_relational::storage::residency::kind_projection::reconstruction::installation::install_request"
+      },
+      "units_each": 1,
+      "calls": 358,
+      "units": 358
+    },
+    {
+      "caller": {
+        "rva": 211407669,
+        "file": "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\crates\\worth-relational\\src\\storage\\residency\\kind_projection\\reconstruction\\request.rs",
+        "line": 65,
+        "symbol": "worth_relational::storage::residency::kind_projection::reconstruction::request::drive::closure$0"
+      },
+      "parent": {
+        "rva": 239809715,
+        "file": "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\crates\\worth-relational\\src\\storage\\residency\\kind_projection\\reconstruction\\installation.rs",
+        "line": 52,
+        "symbol": "worth_relational::storage::residency::kind_projection::reconstruction::installation::install_request"
+      },
+      "units_each": 1,
+      "calls": 358,
+      "units": 358
+    },
+    {
+      "caller": {
+        "rva": 229760151,
+        "file": "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\crates\\worth-relational\\src\\storage\\residency\\required_symbols.rs",
+        "line": 79,
+        "symbol": "worth_relational::storage::residency::required_symbols::collect_for_request::closure$0"
+      },
+      "parent": {
+        "rva": 208451613,
+        "file": "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\crates\\worth-relational\\src\\storage\\residency\\required_symbols.rs",
+        "line": 24,
+        "symbol": "worth_relational::storage::residency::required_symbols::collect_head_using"
+      },
+      "units_each": 1,
+      "calls": 1,
+      "units": 1
+    },
+    {
+      "caller": {
+        "rva": 229760151,
+        "file": "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\crates\\worth-relational\\src\\storage\\residency\\required_symbols.rs",
+        "line": 79,
+        "symbol": "worth_relational::storage::residency::required_symbols::collect_for_request::closure$0"
+      },
+      "parent": {
+        "rva": 208451993,
+        "file": "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\crates\\worth-relational\\src\\storage\\residency\\required_symbols.rs",
+        "line": 26,
+        "symbol": "worth_relational::storage::residency::required_symbols::collect_head_using"
+      },
+      "units_each": 1,
+      "calls": 1,
+      "units": 1
+    },
+    {
+      "caller": {
+        "rva": 229760151,
+        "file": "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\crates\\worth-relational\\src\\storage\\residency\\required_symbols.rs",
+        "line": 79,
+        "symbol": "worth_relational::storage::residency::required_symbols::collect_for_request::closure$0"
+      },
+      "parent": {
+        "rva": 208451613,
+        "file": "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\crates\\worth-relational\\src\\storage\\residency\\required_symbols.rs",
+        "line": 24,
+        "symbol": "worth_relational::storage::residency::required_symbols::collect_head_using"
+      },
+      "units_each": 23,
+      "calls": 1,
+      "units": 23
+    },
+    {
+      "caller": {
+        "rva": 229760151,
+        "file": "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\crates\\worth-relational\\src\\storage\\residency\\required_symbols.rs",
+        "line": 79,
+        "symbol": "worth_relational::storage::residency::required_symbols::collect_for_request::closure$0"
+      },
+      "parent": {
+        "rva": 208451993,
+        "file": "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\crates\\worth-relational\\src\\storage\\residency\\required_symbols.rs",
+        "line": 26,
+        "symbol": "worth_relational::storage::residency::required_symbols::collect_head_using"
+      },
+      "units_each": 23,
+      "calls": 2,
+      "units": 46
+    },
+    {
+      "caller": {
+        "rva": 229760151,
+        "file": "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\crates\\worth-relational\\src\\storage\\residency\\required_symbols.rs",
+        "line": 79,
+        "symbol": "worth_relational::storage::residency::required_symbols::collect_for_request::closure$0"
+      },
+      "parent": {
+        "rva": 208451613,
+        "file": "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\crates\\worth-relational\\src\\storage\\residency\\required_symbols.rs",
+        "line": 24,
+        "symbol": "worth_relational::storage::residency::required_symbols::collect_head_using"
+      },
+      "units_each": 45,
+      "calls": 9,
+      "units": 405
+    },
+    {
+      "caller": {
+        "rva": 229760151,
+        "file": "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\crates\\worth-relational\\src\\storage\\residency\\required_symbols.rs",
+        "line": 79,
+        "symbol": "worth_relational::storage::residency::required_symbols::collect_for_request::closure$0"
+      },
+      "parent": {
+        "rva": 208451993,
+        "file": "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\crates\\worth-relational\\src\\storage\\residency\\required_symbols.rs",
+        "line": 26,
+        "symbol": "worth_relational::storage::residency::required_symbols::collect_head_using"
+      },
+      "units_each": 45,
+      "calls": 14,
+      "units": 630
+    },
+    {
+      "caller": {
+        "rva": 229760151,
+        "file": "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\crates\\worth-relational\\src\\storage\\residency\\required_symbols.rs",
+        "line": 79,
+        "symbol": "worth_relational::storage::residency::required_symbols::collect_for_request::closure$0"
+      },
+      "parent": {
+        "rva": 208451613,
+        "file": "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\crates\\worth-relational\\src\\storage\\residency\\required_symbols.rs",
+        "line": 24,
+        "symbol": "worth_relational::storage::residency::required_symbols::collect_head_using"
+      },
+      "units_each": 67,
+      "calls": 343,
+      "units": 22981
+    },
+    {
+      "caller": {
+        "rva": 229760151,
+        "file": "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\crates\\worth-relational\\src\\storage\\residency\\required_symbols.rs",
+        "line": 79,
+        "symbol": "worth_relational::storage::residency::required_symbols::collect_for_request::closure$0"
+      },
+      "parent": {
+        "rva": 208451993,
+        "file": "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\crates\\worth-relational\\src\\storage\\residency\\required_symbols.rs",
+        "line": 26,
+        "symbol": "worth_relational::storage::residency::required_symbols::collect_head_using"
+      },
+      "units_each": 67,
+      "calls": 164,
+      "units": 10988
+    },
+    {
+      "caller": {
+        "rva": 229760151,
+        "file": "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\crates\\worth-relational\\src\\storage\\residency\\required_symbols.rs",
+        "line": 79,
+        "symbol": "worth_relational::storage::residency::required_symbols::collect_for_request::closure$0"
+      },
+      "parent": {
+        "rva": 208451334,
+        "file": "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\crates\\worth-relational\\src\\storage\\residency\\required_symbols.rs",
+        "line": 31,
+        "symbol": "worth_relational::storage::residency::required_symbols::collect_head_using"
+      },
+      "units_each": 67,
+      "calls": 175,
+      "units": 11725
+    },
+    {
+      "caller": {
+        "rva": 229760151,
+        "file": "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\crates\\worth-relational\\src\\storage\\residency\\required_symbols.rs",
+        "line": 79,
+        "symbol": "worth_relational::storage::residency::required_symbols::collect_for_request::closure$0"
+      },
+      "parent": {
+        "rva": 208450645,
+        "file": "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\crates\\worth-relational\\src\\storage\\residency\\required_symbols.rs",
+        "line": 42,
+        "symbol": "worth_relational::storage::residency::required_symbols::collect_head_using"
+      },
+      "units_each": 67,
+      "calls": 8,
+      "units": 536
+    },
+    {
+      "caller": {
+        "rva": 229760151,
+        "file": "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\crates\\worth-relational\\src\\storage\\residency\\required_symbols.rs",
+        "line": 79,
+        "symbol": "worth_relational::storage::residency::required_symbols::collect_for_request::closure$0"
+      },
+      "parent": {
+        "rva": 208451053,
+        "file": "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\crates\\worth-relational\\src\\storage\\residency\\required_symbols.rs",
+        "line": 47,
+        "symbol": "worth_relational::storage::residency::required_symbols::collect_head_using"
+      },
+      "units_each": 67,
+      "calls": 26,
+      "units": 1742
+    },
+    {
+      "caller": {
+        "rva": 229760151,
+        "file": "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\crates\\worth-relational\\src\\storage\\residency\\required_symbols.rs",
+        "line": 79,
+        "symbol": "worth_relational::storage::residency::required_symbols::collect_for_request::closure$0"
+      },
+      "parent": {
+        "rva": 208451053,
+        "file": "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\crates\\worth-relational\\src\\storage\\residency\\required_symbols.rs",
+        "line": 47,
+        "symbol": "worth_relational::storage::residency::required_symbols::collect_head_using"
+      },
+      "units_each": 89,
+      "calls": 811,
+      "units": 72179
+    },
+    {
+      "caller": {
+        "rva": 229760151,
+        "file": "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\crates\\worth-relational\\src\\storage\\residency\\required_symbols.rs",
+        "line": 79,
+        "symbol": "worth_relational::storage::residency::required_symbols::collect_for_request::closure$0"
+      },
+      "parent": {
+        "rva": 208450645,
+        "file": "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\crates\\worth-relational\\src\\storage\\residency\\required_symbols.rs",
+        "line": 42,
+        "symbol": "worth_relational::storage::residency::required_symbols::collect_head_using"
+      },
+      "units_each": 89,
+      "calls": 163,
+      "units": 14507
+    },
+    {
+      "caller": {
+        "rva": 229760151,
+        "file": "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\crates\\worth-relational\\src\\storage\\residency\\required_symbols.rs",
+        "line": 79,
+        "symbol": "worth_relational::storage::residency::required_symbols::collect_for_request::closure$0"
+      },
+      "parent": {
+        "rva": 208451053,
+        "file": "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\crates\\worth-relational\\src\\storage\\residency\\required_symbols.rs",
+        "line": 47,
+        "symbol": "worth_relational::storage::residency::required_symbols::collect_head_using"
+      },
+      "units_each": 111,
+      "calls": 53,
+      "units": 5883
+    },
+    {
+      "caller": {
+        "rva": 229760151,
+        "file": "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\crates\\worth-relational\\src\\storage\\residency\\required_symbols.rs",
+        "line": 79,
+        "symbol": "worth_relational::storage::residency::required_symbols::collect_for_request::closure$0"
+      },
+      "parent": {
+        "rva": 208450645,
+        "file": "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\crates\\worth-relational\\src\\storage\\residency\\required_symbols.rs",
+        "line": 42,
+        "symbol": "worth_relational::storage::residency::required_symbols::collect_head_using"
+      },
+      "units_each": 111,
+      "calls": 123,
+      "units": 13653
+    }
+  ],
+  "symbol_insertions": [
+    {
+      "caller": {
+        "rva": 208452198,
+        "file": "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\crates\\worth-relational\\src\\storage\\residency\\required_symbols.rs",
+        "line": 27,
+        "symbol": "worth_relational::storage::residency::required_symbols::collect_head_using"
+      },
+      "calls": 181
+    },
+    {
+      "caller": {
+        "rva": 208451261,
+        "file": "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\crates\\worth-relational\\src\\storage\\residency\\required_symbols.rs",
+        "line": 48,
+        "symbol": "worth_relational::storage::residency::required_symbols::collect_head_using"
+      },
+      "calls": 890
+    },
+    {
+      "caller": {
+        "rva": 208451279,
+        "file": "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\crates\\worth-relational\\src\\storage\\residency\\required_symbols.rs",
+        "line": 49,
+        "symbol": "worth_relational::storage::residency::required_symbols::collect_head_using"
+      },
+      "calls": 890
+    }
+  ],
+  "captured_exhaustion": true,
+  "child_exit": 101,
+  "seconds": 61.538076899945736
+}

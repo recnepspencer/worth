@@ -13,6 +13,8 @@ use crate::storage::overlay::{
 use std::sync::Arc;
 use worth_execution::{ExecutionResourceLease, MapKernelContext};
 mod creation;
+mod current_frame;
+pub(crate) use current_frame::CurrentPublicationFrame;
 mod endpoints;
 mod incidence;
 pub(super) use creation::validate_owned;
@@ -22,11 +24,16 @@ pub(super) fn validate(
     root: &RelationalBranchRoot,
     candidate: Option<&WorkingState>,
     origin: &CanonicalRequiredOutputOrigin,
-    current: Option<&CanonicalCommitEnvelopeBody>,
-    lookup_commit: &mut impl FnMut(CommitId) -> Option<Arc<CanonicalCommitEnvelope>>,
-    lookup: &mut impl FnMut(VersionId) -> Option<Arc<CanonicalCommitEnvelope>>,
+    current: Option<CurrentPublicationFrame<'_>>,
+    lookup_commit: &mut impl FnMut(CommitId) -> Result<Option<Arc<CanonicalCommitEnvelope>>, Stop>,
+    lookup: &mut impl FnMut(
+        VersionId,
+        &mut MapKernelContext<'_, '_>,
+    ) -> Result<Option<Arc<CanonicalCommitEnvelope>>, Stop>,
     maximum_hops: usize,
     lease: Option<&ExecutionResourceLease<'_>>,
+    validated_history: &mut crate::history::data::canonical_commit_envelope::OutputOriginHistory,
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     context: &mut MapKernelContext<'_, '_>,
 ) -> Result<(), Stop> {
     let overlay;
@@ -93,6 +100,7 @@ pub(super) fn validate(
                         lookup_commit,
                         lookup,
                         maximum_hops,
+                        execution,
                         context,
                     )
                 })
@@ -125,7 +133,16 @@ pub(super) fn validate(
         )?;
     }
     incidence::validate(
-        incidence, state, root, origin, current, lookup, lease, context,
+        incidence,
+        state,
+        root,
+        origin,
+        current,
+        lookup,
+        lease,
+        validated_history,
+        execution,
+        context,
     )
 }
 
@@ -133,9 +150,12 @@ pub(super) fn charge(context: &mut MapKernelContext<'_, '_>, work: usize) -> Res
     let work = u64::try_from(work).map_err(|_| {
         Stop::Request(crate::execution::RelationalExecutionDenialCause::WorkCounterOverflow)
     })?;
-    context
-        .checkpoint(work)
-        .map_err(|cause| Stop::Request(cause.into()))
+    if context.has_accounting() {
+        context.checkpoint(work)
+    } else {
+        context.poll()
+    }
+    .map_err(|cause| Stop::Request(cause.into()))
 }
 
 pub(super) fn writes(

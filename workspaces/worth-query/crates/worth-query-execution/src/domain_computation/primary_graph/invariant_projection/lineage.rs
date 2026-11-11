@@ -39,16 +39,15 @@ impl<Schema: ApplicationSchema> WorthQueryApplicationInvariantProjectionReader<'
     ) -> Result<WorthQueryAggregateLineage<Schema, Aggregate>, Denial> {
         let execution = *self.execution;
         let result = execution.run_native_with_checkpoint(|_| {
-            let pin = self
-                .runtime
-                .read_truth()
-                .pin_read_capability(self.snapshot, &[], self.execution)
-                .map_err(|denial| match denial {
-                    RelationalPinnedReadAdmissionDenial::Request(stop) => {
-                        self.walk_stop(stop, subject)
-                    }
-                    _ => Denial::new(Kind::EndpointUnavailable, subject),
-                })?;
+            let pin =
+                self.native
+                    .pin(self.snapshot, self.execution)
+                    .map_err(|denial| match denial {
+                        RelationalPinnedReadAdmissionDenial::Request(stop) => {
+                            self.walk_stop(stop, subject)
+                        }
+                        _ => Denial::new(Kind::EndpointUnavailable, subject),
+                    })?;
             let read = pin.read_aggregate_lineage(self.execution, scope);
             if let Err(PinnedAggregateReadDenial {
                 kind: PinnedAggregateReadDenialKind::Read(cause),

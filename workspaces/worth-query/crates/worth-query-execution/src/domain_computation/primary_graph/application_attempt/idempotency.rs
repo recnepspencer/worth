@@ -142,8 +142,11 @@ impl WorthQueryApplicationIdempotencyBinding {
         self.producer_dependency_identity
     }
 
+    pub(in crate::domain_computation::primary_graph) fn recorded_key_text(key: [u8; 32]) -> String {
+        encode_identity(key)
+    }
     pub(in crate::domain_computation::primary_graph) fn key_text(self) -> String {
-        encode_identity(self.key_identity)
+        Self::recorded_key_text(self.key_identity)
     }
 
     pub const fn bind_source(mut self, source_identity: Option<&[u8; 32]>) -> Self {
@@ -367,3 +370,6 @@ impl WorthQueryApplicationIdempotencyBinding {
 }
 
 mod court_doors_for_test;
+#[cfg(test)]
+#[path = "idempotency_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;

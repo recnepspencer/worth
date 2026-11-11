@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use worth_proof::TransitionOutcome;
 
 use super::eligibility::{
@@ -29,7 +30,10 @@ use crate::runtime::{
 
 pub(super) fn ready<P, T>(
     requested: WorthQueryRequestedDomainCapabilityContribution<P, T>,
-) -> WorthQueryMaterializationReadyDomainCapabilityContribution<P, T>
+) -> Result<
+    WorthQueryMaterializationReadyDomainCapabilityContribution<P, T>,
+    IdentityDerivationDenial,
+>
 where
     P: WorthQueryDomainCapabilityPayload,
     T: WorthQueryDomainCapabilityTargetBinding,
@@ -37,21 +41,26 @@ where
     let eligible = success(evaluate_requested_domain_capability_contribution(requested));
     let admitted = success(admit_eligible_domain_capability_contribution(eligible));
     let target = admitted.payload().target().clone();
-    success(prepare_admitted_domain_capability_contribution_for_materialization(admitted, target))
+    Ok(success(
+        prepare_admitted_domain_capability_contribution_for_materialization(admitted, target)?,
+    ))
 }
 
 pub(super) fn ready_payload<P, T>(
     target: T,
     payload: P,
-) -> WorthQueryMaterializationReadyDomainCapabilityContribution<P, T>
+) -> Result<
+    WorthQueryMaterializationReadyDomainCapabilityContribution<P, T>,
+    IdentityDerivationDenial,
+>
 where
     P: WorthQueryDomainCapabilityPayload,
     T: WorthQueryDomainCapabilityTargetBinding,
     (P, T): super::proof_integration::AllowedContributionBinding<P, T>,
 {
-    ready(
-        super::proof_integration::create_requested_domain_capability_contribution(target, payload),
-    )
+    Ok(ready(
+        super::proof_integration::create_requested_domain_capability_contribution(target, payload)?,
+    )?)
 }
 
 pub(super) fn success<T>(outcome: WorthQueryDomainCapabilityTransitionOutcome<T>) -> T {
@@ -89,15 +98,17 @@ pub(super) fn intent_declaration(label: &str) -> WorthQueryIntentDeclaration {
     )
 }
 
-pub(super) fn admitted_plan(label: &str) -> WorthQueryAdmittedIntentPlan {
+pub(super) fn admitted_plan(
+    label: &str,
+) -> Result<WorthQueryAdmittedIntentPlan, IdentityDerivationDenial> {
     let request = crate::intent_admission::WorthQueryRawIntentAdmissionRequest::authoritative_runtime_entrypoint(
         intent_declaration(label),
     )
     .expect("domain-capability fixture intent request should build");
-    match admit_runtime_intent_request(request) {
+    Ok(match admit_runtime_intent_request(request)? {
         WorthQueryIntentAdmissionDecision::Admitted(plan) => plan,
         other => panic!("expected admitted domain-capability fixture plan, got {other:?}"),
-    }
+    })
 }
 
 pub(super) fn admitted_plan_target_parts(
@@ -105,7 +116,7 @@ pub(super) fn admitted_plan_target_parts(
     request_digest: &str,
     eligibility_digest: &str,
     decision_digest: &str,
-) -> WorthQueryAdmittedPlanBoundContributionTarget {
+) -> Result<WorthQueryAdmittedPlanBoundContributionTarget, IdentityDerivationDenial> {
     let fixture_label = seal(
         domain_capability_scope_encoder("worth_query_domain_capability_admitted_plan_fixture_v1")
             .field_shape(WorthQueryEvidenceTag::new("plan_label"), plan_label)
@@ -115,21 +126,31 @@ pub(super) fn admitted_plan_target_parts(
                 eligibility_digest,
             )
             .field_shape(WorthQueryEvidenceTag::new("decision"), decision_digest),
-    );
-    WorthQueryAdmittedPlanBoundContributionTarget::for_admitted_intent_plan(&admitted_plan(
-        &fixture_label,
-    ))
+    )?;
+    Ok(
+        WorthQueryAdmittedPlanBoundContributionTarget::for_admitted_intent_plan(&admitted_plan(
+            &fixture_label,
+        )?),
+    )
 }
 
 pub(super) fn declaration_target(label: &str) -> WorthQueryDeclarationBoundContributionTarget {
     WorthQueryDeclarationBoundContributionTarget::for_intent_declaration(&intent_declaration(label))
 }
 
-pub(super) fn admitted_plan_target(label: &str) -> WorthQueryAdmittedPlanBoundContributionTarget {
-    WorthQueryAdmittedPlanBoundContributionTarget::for_admitted_intent_plan(&admitted_plan(label))
+pub(super) fn admitted_plan_target(
+    label: &str,
+) -> Result<WorthQueryAdmittedPlanBoundContributionTarget, IdentityDerivationDenial> {
+    Ok(
+        WorthQueryAdmittedPlanBoundContributionTarget::for_admitted_intent_plan(&admitted_plan(
+            label,
+        )?),
+    )
 }
 
-pub(super) fn lower_runtime_envelope(label: &str) -> WorthQueryLowerRuntimeBoundaryEnvelope {
+pub(super) fn lower_runtime_envelope(
+    label: &str,
+) -> Result<WorthQueryLowerRuntimeBoundaryEnvelope, IdentityDerivationDenial> {
     let subject_identity =
         crate::lower_runtime_routing::WorthQueryLowerRuntimeSubjectIdentity::compose(
             "domain-capability-fixture-subject",
@@ -138,14 +159,14 @@ pub(super) fn lower_runtime_envelope(label: &str) -> WorthQueryLowerRuntimeBound
             crate::evidence_identity::WorthQueryEvidenceTag::new("fixture"),
             label,
         )
-        .seal();
+        .seal()?;
     let request = WorthQueryLowerRuntimeCapabilityRequest::new(
         WorthQueryLowerRuntimeSeamKey::SignalInvalidationRouting,
         WorthQueryLowerRuntimeRouteKind::RoutePlanning,
         WorthQueryLowerRuntimeAuthorityOwner::Query,
         "signal-invalidation-routing",
         subject_identity,
-    );
+    )?;
     let detail_identity = crate::evidence_identity::WorthQueryEvidenceIdentity::compose(
         crate::evidence_identity::WorthQueryEvidenceScope::LowerRuntimeBoundaryEvidence,
     )
@@ -153,17 +174,17 @@ pub(super) fn lower_runtime_envelope(label: &str) -> WorthQueryLowerRuntimeBound
         crate::evidence_identity::WorthQueryEvidenceTag::new("fixture_detail"),
         label,
     )
-    .seal();
+    .seal()?;
     let eligibility = WorthQueryLowerRuntimeCapabilityEligibility::admitted_with_evidence_identity(
         request,
         &detail_identity,
-    );
+    )?;
     let route = WorthQueryLowerRuntimeRoutePlan::new(
         eligibility,
         crate::lower_runtime_routing::WorthQueryLowerRuntimeRouteSubjectIdentity::from_evidence_identity(
             "domain-capability-fixture-route",
             &detail_identity,
-        ),
+        )?,
     );
     let retained_evidence =
         crate::lower_runtime_routing::worth_query_lower_runtime_retained_evidence_identity(
@@ -175,23 +196,25 @@ pub(super) fn lower_runtime_envelope(label: &str) -> WorthQueryLowerRuntimeBound
                 crate::evidence_identity::WorthQueryEvidenceTag::new("fixture_retained"),
                 label,
             )
-            .seal(),
-        );
+            .seal()?,
+        )?;
     let boundary =
         WorthQueryLowerRuntimeBoundaryExecutionReceipt::from_route_plan(&route, &retained_evidence);
 
-    WorthQueryLowerRuntimeBoundaryEnvelope::from_route_plan(
+    Ok(WorthQueryLowerRuntimeBoundaryEnvelope::from_route_plan(
         WorthQueryLowerRuntimeSeamKey::SignalInvalidationRouting,
         &route,
         &boundary,
         &retained_evidence,
-    )
+    ))
 }
 
 pub(super) fn lower_runtime_target(
     label: &str,
-) -> WorthQueryLowerRuntimeBoundaryBoundContributionTarget {
-    WorthQueryLowerRuntimeBoundaryBoundContributionTarget::for_lower_runtime_boundary_envelope(
-        &lower_runtime_envelope(label),
+) -> Result<WorthQueryLowerRuntimeBoundaryBoundContributionTarget, IdentityDerivationDenial> {
+    Ok(
+        WorthQueryLowerRuntimeBoundaryBoundContributionTarget::for_lower_runtime_boundary_envelope(
+            &lower_runtime_envelope(label)?,
+        ),
     )
 }

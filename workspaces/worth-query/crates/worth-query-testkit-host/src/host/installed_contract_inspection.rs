@@ -1,6 +1,7 @@
 pub use worth_foundational::facade::{
     BoundaryProtocolIdentity, BoundaryProtocolVersion, CanonicalFieldPath, FieldKey,
 };
+use worth_query_decl::facade::application_schema::{fragment::RecordSelection, ApplicationSchema};
 pub use worth_query_decl::facade::{
     application_aftermath::{
         DeclaredAftermathPostcondition, DeclaredApplicationAftermathContract, DeclaredCompensation,
@@ -8,13 +9,11 @@ pub use worth_query_decl::facade::{
     },
     application_schema::{
         ApplicationExternalEffectBinding, ApplicationExternalEffectProtocol,
-        AspectContractRevision, AspectIdentity, WorthQueryExternalEffectCorrelationFamily,
+        WorthQueryExternalEffectCorrelationFamily,
     },
-    worth_query_application_schema, worth_query_aspect, worth_query_effect, worth_query_entity,
-    worth_query_field, worth_query_operation, worth_query_operation_creates,
+    worth_query_effect, worth_query_operation, worth_query_operation_creates,
     worth_query_operation_deletes, worth_query_operation_emits, worth_query_operation_links,
     worth_query_operation_reads, worth_query_operation_unlinks, worth_query_operation_writes,
-    worth_query_relation,
 };
 pub use worth_query_declaration::facade::application_schema::U64ApplicationValueBinding;
 pub use worth_query_host::facade::domain::{
@@ -34,69 +33,9 @@ pub mod portable_export;
 #[path = "installed_contract_inspection/portable_spine.rs"]
 pub mod portable_spine;
 
-worth_query_application_schema! {
-    pub schema ContractInspectionSchema {
-        owner: contract_inspection,
-        version: (1, 0),
-        members: |schema| {
-            schema
-                .entity(Account::reference())
-                .aspect(Account::reference(), AccountState::reference())
-                .aspect(Account::reference(), AccountAudit::reference())
-                .field(Account::reference(), AccountStatus::reference())
-                .field(Account::reference(), AccountBalance::reference())
-                .field(Account::reference(), AccountLimit::reference())
-                .field(Account::reference(), AuditSequence::reference())
-                .relation(ObservedAccount::reference(), Account::reference(), Account::reference())
-                .relation(ChangedAccount::reference(), Account::reference(), Account::reference())
-                .effect(AccountNoticeEffect::reference())
-                .operation(
-                    UpdateAccount::reference()
-                        .definition()
-                        .no_external_effect()
-                        .no_aftermath()
-                        .finish(),
-                )
-
-                .operation_projection_work_budget(UpdateAccount::reference(), 32)
-                .operation_read_entity(UpdateAccount::reference(), Account::reference())
-                .operation_read_field(UpdateAccount::reference(), AccountStatus::reference())
-                .operation_read_field(UpdateAccount::reference(), AccountLimit::reference())
-                .operation_read_relation(UpdateAccount::reference(), ObservedAccount::reference())
-                .operation_create(UpdateAccount::reference(), Account::reference())
-                .operation_delete(UpdateAccount::reference(), Account::reference())
-                .operation_write(UpdateAccount::reference(), AccountBalance::reference())
-                .operation_link(UpdateAccount::reference(), ChangedAccount::reference())
-                .operation_unlink(UpdateAccount::reference(), ChangedAccount::reference())
-                .operation(
-                    EmitAccountNotice::reference()
-                        .definition()
-                        .external_effect(
-                            AccountNoticeEffect::reference(),
-                            correlation_family(),
-                        )
-                        .aftermath(external_owner_aftermath())
-                        .finish(),
-                )
-
-                .operation_projection_work_budget(EmitAccountNotice::reference(), 1)
-                .operation_emit(
-                    EmitAccountNotice::reference(),
-                    AccountNoticeEffect::reference(),
-                )
-        }
-    }
-}
-
-worth_query_entity!(pub Account for ContractInspectionSchema);
-worth_query_aspect!(pub AccountState for ContractInspectionSchema, Account; identity = AspectIdentity(0x9161_1051), revision = AspectContractRevision(2),);
-worth_query_aspect!(pub AccountAudit for ContractInspectionSchema, Account; identity = AspectIdentity(0x9161_1052), revision = AspectContractRevision(1),);
-worth_query_field!(pub AccountStatus for ContractInspectionSchema, Account, AccountState: u64 => U64ApplicationValueBinding, read_only, equality);
-worth_query_field!(pub AccountBalance for ContractInspectionSchema, Account, AccountState: u64 => U64ApplicationValueBinding, read_write, equality);
-worth_query_field!(pub AccountLimit for ContractInspectionSchema, Account, AccountState: u64 => U64ApplicationValueBinding, read_only, equality);
-worth_query_field!(pub AuditSequence for ContractInspectionSchema, Account, AccountAudit: u64 => U64ApplicationValueBinding, read_only, equality);
-worth_query_relation!(pub ObservedAccount in ContractInspectionSchema, Account => Account; integrity = same_context_unbounded_retain_dangling);
-worth_query_relation!(pub ChangedAccount in ContractInspectionSchema, Account => Account; integrity = same_context_unbounded_retain_dangling);
+#[path = "installed_contract_inspection/schema.rs"]
+mod schema;
+pub use schema::*;
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct UpdateAccountInput;
@@ -109,10 +48,9 @@ worth_query_declaration::worth_query_portable_type!(EmitAccountNoticeInput => "w
 worth_query_declaration::worth_query_structured_value_binding!(pub EmitAccountNoticeInputBinding for EmitAccountNoticeInput { identity: "worth.query.test.host.emit_account_notice_input.v1" });
 
 worth_query_operation!(pub UpdateAccount for ContractInspectionSchema, input UpdateAccountInputBinding);
-worth_query_operation_reads!(UpdateAccount => [Account, AccountStatus, AccountLimit, ObservedAccount]);
+worth_query_operation_reads!(UpdateAccount => [Account, ObservedAccount]);
 worth_query_operation_creates!(UpdateAccount => [Account]);
 worth_query_operation_deletes!(UpdateAccount => [Account]);
-worth_query_operation_writes!(UpdateAccount => [AccountBalance]);
 worth_query_operation_links!(UpdateAccount => [ChangedAccount]);
 worth_query_operation_unlinks!(UpdateAccount => [ChangedAccount]);
 
@@ -146,17 +84,13 @@ pub fn correlation_family() -> WorthQueryExternalEffectCorrelationFamily {
 pub fn external_owner_aftermath() -> DeclaredApplicationAftermathContract<ContractInspectionSchema>
 {
     DeclaredApplicationAftermathContract::runtime_with_external_owner(
-        DeclaredCorrectionMechanism::Compensation(
-            DeclaredCompensation::new(
-                RECONCILIATION_SLOT,
-                DeclaredAftermathPostcondition::BusinessPostcondition {
-                    identity: "contract-inspected".into(),
-                },
-            )
-            .expect("the compensation declaration is valid"),
-        ),
-        DeclaredReconciliationProcedure::new(RECONCILIATION_SLOT)
-            .expect("the reconciliation procedure is valid"),
+        DeclaredCorrectionMechanism::Compensation(DeclaredCompensation::new(
+            RECONCILIATION_SLOT,
+            DeclaredAftermathPostcondition::BusinessPostcondition {
+                identity: "contract-inspected".into(),
+            },
+        )),
+        DeclaredReconciliationProcedure::new(RECONCILIATION_SLOT),
     )
 }
 
@@ -166,16 +100,11 @@ pub fn assert_native_catalog(
     let catalog = schema.native_contracts();
     assert_eq!(catalog.len(), 2);
     let state_contract = catalog
-        .aspect("Account", "AccountState")
+        .aspect("Account", status_field().aspect())
         .expect("the declared state aspect must be retained");
-    assert_eq!(
-        state_contract.contract().identity(),
-        AspectIdentity(0x9161_1051)
-    );
-    assert_eq!(
-        state_contract.contract().revision(),
-        AspectContractRevision(2)
-    );
+    let (identity, revision) = declared_aspect_contract(status_field().aspect());
+    assert_eq!(state_contract.contract().identity(), identity);
+    assert_eq!(state_contract.contract().revision(), revision);
     assert_eq!(state_contract.fields().len(), 3);
 }
 
@@ -184,7 +113,7 @@ pub fn assert_mutation_read_contract(
 ) {
     let state_contract = schema
         .native_contracts()
-        .aspect("Account", "AccountState")
+        .aspect("Account", status_field().aspect())
         .expect("the declared state aspect must be retained");
     let mutation = schema
         .installed_operation(UpdateAccount::reference())
@@ -227,7 +156,7 @@ pub fn assert_mutation_touch_contract(
 ) {
     let state_contract = schema
         .native_contracts()
-        .aspect("Account", "AccountState")
+        .aspect("Account", status_field().aspect())
         .expect("the declared state aspect must be retained");
     let mutation = schema
         .installed_operation(UpdateAccount::reference())
@@ -300,4 +229,27 @@ pub fn assert_emit_only_aftermath_contract(
         aftermath.external_effect().correlation_family(),
         emit_only.contracts().external_effect().correlation_family()
     );
+}
+
+pub fn declared_aspect_contract(
+    aspect_name: &str,
+) -> (
+    worth_query_decl::facade::application_schema::AspectIdentity,
+    worth_query_decl::facade::application_schema::AspectContractRevision,
+) {
+    ContractInspectionSchema::declaration()
+        .unwrap()
+        .erased()
+        .members()
+        .iter()
+        .find_map(|member| match member {
+            worth_query_decl::facade::application_schema::ApplicationSchemaMember::Aspect {
+                aspect,
+                identity,
+                revision,
+                ..
+            } if aspect == aspect_name => Some((*identity, *revision)),
+            _ => None,
+        })
+        .expect("the field's actual record aspect is declared")
 }

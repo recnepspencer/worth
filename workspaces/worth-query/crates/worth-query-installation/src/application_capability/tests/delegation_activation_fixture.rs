@@ -30,7 +30,7 @@ pub(crate) fn activated_contract() -> ErasedApplicationCapabilityContract {
         )
         .with_activation(ApplicationCapabilityDelegationActivationDefinition::new(
             ApplicationOperationRef::<Schema, ActivationOperation, ()>::from_declaration(),
-            field_binding::<Action>(),
+            field_binding(Action::at("Action")),
         )),
     )
     .composition(composition(None))

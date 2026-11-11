@@ -23,3 +23,8 @@ mod domain_computation;
 mod publication_digest;
 
 pub mod facade;
+#[cfg(test)]
+#[path = "lib_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;
+#[cfg(test)]
+mod inline_type_sizes;

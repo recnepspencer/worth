@@ -26,7 +26,7 @@ impl CourtroomWorld {
                         selected
                             .resolve_entity(
                                 &phase,
-                                IntentIdentityField::reference(),
+                                IntentIdentityField::at("IntentIdentityField"),
                                 format!("intent-{ordinal}"),
                                 &request,
                                 primary_graph::WorthQueryPrincipalResolutionMode::Ordinary,
@@ -87,12 +87,12 @@ impl CourtroomWorld {
                     for ordinal in 1..=touched_records {
                         let target = reader
                             .resolve_entity(
-                                IntentIdentityField::reference(),
+                                IntentIdentityField::at("IntentIdentityField"),
                                 format!("intent-{ordinal}"),
                             )
                             .unwrap();
                         reader
-                            .decision_field(&target, IntentInputField::reference())
+                            .decision_field(&target, IntentInputField::at("IntentInputField"))
                             .unwrap();
                     }
                 },
@@ -128,7 +128,7 @@ impl CourtroomWorld {
             effects
                 .write_field(
                     &target,
-                    IntentInputField::reference(),
+                    IntentInputField::at("IntentInputField"),
                     format!("scaled-input-{}", ordinal + 1),
                 )
                 .unwrap();

@@ -182,3 +182,6 @@ impl BridgeAsyncRequestTruthViewBasis {
         self.digest.as_ref()
     }
 }
+#[cfg(test)]
+#[path = "truth_basis_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;

@@ -52,7 +52,8 @@ fn sandboxed_preview_run_operation_stages_compiled_writes_until_promote() {
             draft_label.identity_digest().as_str(),
         )
         .field_usize(WorthQueryEvidenceTag::new("sequence"), 1)
-        .seal();
+        .seal()
+        .expect("fixture digest must fit");
         assert_eq!(
             run.write_receipts()[0]
                 .commit_identity()
@@ -164,7 +165,7 @@ fn preview_run_operation_discard_keeps_authoritative_state_unchanged() {
                 )],
             )
             .expect("preview operation should stage");
-        let outcome = preview.discard();
+        let outcome = preview.discard().expect("fixture digest must fit");
         assert!(outcome.discarded());
     }
 

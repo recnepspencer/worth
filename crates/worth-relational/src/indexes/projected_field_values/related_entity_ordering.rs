@@ -36,6 +36,7 @@ impl<'definition> RelatedEntityOrderingProjection<'definition> {
 }
 
 pub(in crate::indexes) fn build_related_entity_ordering_index_checked(
+    _lane: &crate::storage::substrate::maintenance::ReconstructionLane<'_>,
     request_execution: &worth_execution::ExecutionRequest<'_, '_>,
     projection: &IndexProjectionSource<'_>,
     contract: &RelatedEntityOrderingProjection<'_>,
@@ -152,6 +153,7 @@ pub(in crate::indexes) fn build_related_entity_ordering_index_checked(
 }
 
 pub(in crate::indexes) fn build_related_entity_ordering_index(
+    _lane: &crate::storage::substrate::maintenance::ReconstructionLane<'_>,
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     projection: &IndexProjectionSource<'_>,
     contract: &RelatedEntityOrderingProjection<'_>,

@@ -22,7 +22,13 @@ worth_query_host::facade::worth_query_conditional_node!(
 pub(super) struct Readiness;
 
 impl Readiness {
-    fn conditional_binding() -> domain::WorthQueryApplicationConditionalOperationBinding<
+    fn conditional_binding(
+        definition: &domain::WorthQueryDomainOperationDefinition<
+            RegionOutputDomain,
+            RegionOutputReadinessOperation,
+            RegionOutputReadinessFamily,
+        >,
+    ) -> domain::WorthQueryApplicationConditionalOperationBinding<
         Schema,
         dependent_publication::PublishDependent,
         dependent_publication::Input,
@@ -32,7 +38,7 @@ impl Readiness {
     > {
         domain::WorthQueryApplicationConditionalOperationBinding::declare(
             dependent_publication::PublishDependent::reference(),
-            operation_definition().reference(),
+            definition.reference(),
         )
     }
 }
@@ -45,18 +51,14 @@ impl application_contribution::WorthQueryApplicationConditionalBinding<Schema> f
     const REQUIRED_PRODUCERS: &'static [&'static str] = &["courtroom-counted-dependent-producer"];
 
     fn package_contract(
-        _declaration: &worth_query_host::facade::declaration::application_schema::ErasedApplicationSchemaDeclaration,
+        declaration: &worth_query_host::facade::declaration::application_schema::ErasedApplicationSchemaDeclaration,
     ) -> Result<
         application_contribution::WorthQueryApplicationConditionalPackageContract,
         worth_query_host::facade::application_contribution::WorthQueryOutputReadinessContractDenial,
     > {
-        Ok({
-            application_contribution::WorthQueryApplicationConditionalPackageContract::new(
-                operation_definition().into_portable(),
-                Self::conditional_binding().portable().clone(),
-                RegionOutputReadyNode::reference().node_identity(),
-            )
-        })
+        let contract = operation_contract(declaration)?;
+        let binding = Self::conditional_binding(contract.definition());
+        Ok(contract.into_package_contract(binding.portable().clone()))
     }
 
     fn install(
@@ -64,13 +66,16 @@ impl application_contribution::WorthQueryApplicationConditionalBinding<Schema> f
         _: &application_contribution::WorthQueryApplicationConditionalProducerAccess<'_, Schema>,
         installation: &mut WorthQueryConditionalApplicationRuntimeInstallation<Schema>,
     ) -> Result<(), WorthQueryConditionalRuntimeInstallationDenial> {
+        let contract = operation_contract(installation.installed_schema().installed_declaration())?;
+        let binding = Self::conditional_binding(contract.definition());
+
         let operation = installation
             .installed_schema()
             .installed_operation(dependent_publication::PublishDependent::reference())
             .unwrap();
         let node = installation
             .installed_packages()
-            .bind_conditional_application_operation(operation, &Self::conditional_binding())
+            .bind_conditional_application_operation(operation, &binding)
             .unwrap()
             .bind_node(RegionOutputReadyNode::reference())
             .unwrap();
@@ -78,24 +83,30 @@ impl application_contribution::WorthQueryApplicationConditionalBinding<Schema> f
     }
 }
 
-fn operation_definition() -> domain::WorthQueryDomainOperationDefinition<
-    RegionOutputDomain,
-    RegionOutputReadinessOperation,
-    RegionOutputReadinessFamily,
+fn operation_contract(
+    declaration: &worth_query_decl::facade::application_schema::ErasedApplicationSchemaDeclaration,
+) -> Result<
+    application_contribution::WorthQueryOutputReadinessContract<
+        RegionOutputDomain,
+        RegionOutputReadinessOperation,
+        RegionOutputReadinessFamily,
+    >,
+    application_contribution::WorthQueryOutputReadinessContractDenial,
 > {
-    let dependency = crate::readiness::output_change_dependency();
-    application_contribution::WorthQueryOutputReadinessContractBuilder::new(
+    application_contribution::WorthQueryOutputReadinessContractBuilder::for_field(
+        declaration,
+        crate::readiness::delivery_field(),
         domain::WorthQueryDomainOperationIdentity::new("region-output-readiness", 1),
         "region-output-ready",
-        crate::readiness::output_change_projection(),
         crate::readiness::canonical_query(),
         domain::WorthQueryOperationProjectionRole::new("anchor").unwrap(),
         domain::WorthQueryExecutionStrategyName::new("region-output-readiness").unwrap(),
         "region-output-readiness-v1",
-    )
-    .semantic_reads([crate::readiness::output_change_projection()])
-    .dependencies([dependency.clone()])
-    .readiness_dependencies([dependency])
-    .build()
-    .expect("the region output's readiness declaration is canonical")
+    )?
+    .field_dependency(
+        declaration,
+        crate::readiness::delivery_field(),
+        application_contribution::WorthQueryReadinessFieldUse::DeliveryAndEligibility,
+    )?
+    .build_typed()
 }

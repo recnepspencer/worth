@@ -31,9 +31,8 @@ use crate::storage::residency::{Full, RelationalResidencyLease};
 /// releases the lock immediately, so no read path can deadlock against a
 /// settling executor and no lock is ever held across derived work.
 ///
-/// Writers take the lock exclusively and copy exactly what is observed: the map
-/// spine once per guard if a reader edition is outstanding, and an individual
-/// partition only when a reader still holds the previous edition of it.
+/// Writers take the lock exclusively, retain persistent map roots in O(1), and
+/// copy changed map paths plus any observed partition they actually mutate.
 #[derive(Debug, Default)]
 pub(crate) struct StorageSubsystem {
     partitions: RuntimeOwnedState<CurrentMirror>,

@@ -287,6 +287,19 @@ impl ReplaySurfaceDigestBuilderExt for ReplayDigestBuilder {
                             .relation_id(entry.right_relation_id());
                     }
                 }
+                self = self.bool(rows.legs().is_some());
+                if let Some(legs) = rows.legs() {
+                    for leg in [&legs.left, &legs.right] {
+                        self = self.usize(leg.relation_count());
+                        for (relation, (shared, external)) in leg.iter() {
+                            self = self
+                                .relation_id(relation)
+                                .entity_id(shared)
+                                .entity_id(external);
+                        }
+                    }
+                }
+
                 self
             }
         }

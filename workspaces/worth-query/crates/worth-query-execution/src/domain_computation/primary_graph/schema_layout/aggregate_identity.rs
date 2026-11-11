@@ -6,7 +6,6 @@ use worth_foundational::facade::AggregateDefinitionIdentity;
 use worth_query_declaration::facade::application_schema::ApplicationGraphMemberSelector as Member;
 use worth_query_installation::facade::{
     ApplicationSchemaMember, ErasedApplicationSchemaDeclaration,
-    WorthQueryInstalledApplicationSchemaContractCatalog,
 };
 use worth_relational::facade::identity::KindId;
 use worth_relational::facade::schema::{
@@ -30,11 +29,12 @@ mod tests;
 pub(super) fn lower(
     mut registry: RelationalSchemaRegistry,
     schema: &ErasedApplicationSchemaDeclaration,
-    contracts: &WorthQueryInstalledApplicationSchemaContractCatalog,
+    maximum_application_identity: Option<worth_foundational::facade::AspectIdentity>,
     schema_id: &SchemaId,
     version: SchemaVersionId,
     entity_kinds: &BTreeMap<String, KindId>,
     relation_kinds: &BTreeMap<String, KindId>,
+    roles: &mut super::physical_identity::PhysicalIdentityAllocation<'_>,
 ) -> Result<
     (
         RelationalSchemaRegistry,
@@ -62,29 +62,39 @@ pub(super) fn lower(
             .map(KindId)
             .ok_or_else(kind_space_exhausted)
     };
-    let [aggregate_aspect, lineage_aspect] =
-        super::platform_identity_allocator::allocate_aggregate_aspect_identities(contracts)?;
-    let storage = AggregateIdentityStorage {
-        aggregate_kind: next_kind(1)?,
-        lineage_kind: next_kind(2)?,
-        aggregate_aspect,
-        lineage_aspect,
-        projected: if definitions
-            .iter()
-            .any(|definition| matches!(definition.member, Member::Projected(_)))
-        {
-            let [coordinate_aspect, membership_aspect] =
-                super::platform_identity_allocator::allocate_projected_aggregate_aspect_identities(
-                    contracts,
+    let projected = definitions
+        .iter()
+        .any(|definition| matches!(definition.member, Member::Projected(_)));
+    let storage = roles.aggregate_storage(
+        || {
+            let [aggregate_aspect, lineage_aspect] =
+                super::platform_identity_allocator::allocate_aggregate_aspect_identities(
+                    maximum_application_identity,
                 )?;
-            Some(AggregateProjectedMemberStorage {
-                coordinate_aspect,
-                membership_aspect,
+            Ok(AggregateIdentityStorage {
+                aggregate_kind: next_kind(1)?,
+                lineage_kind: next_kind(2)?,
+                aggregate_aspect,
+                lineage_aspect,
+                projected: if definitions
+                    .iter()
+                    .any(|definition| matches!(definition.member, Member::Projected(_)))
+                {
+                    let [coordinate_aspect, membership_aspect] =
+                super::platform_identity_allocator::allocate_projected_aggregate_aspect_identities(
+                    maximum_application_identity,
+                )?;
+                    Some(AggregateProjectedMemberStorage {
+                        coordinate_aspect,
+                        membership_aspect,
+                    })
+                } else {
+                    None
+                },
             })
-        } else {
-            None
         },
-    };
+        projected,
+    )?;
     registry = register_aggregate_identity_storage(registry, schema_id, version, storage)
         .map_err(relational_schema_denial)?;
     for (index, definition) in definitions.into_iter().enumerate() {
@@ -108,7 +118,7 @@ pub(super) fn lower(
             .ok()
             .and_then(|index| index.checked_add(3))
             .ok_or_else(kind_space_exhausted)?;
-        let membership_kind = next_kind(offset)?;
+        let membership_kind = roles.membership(definition.identity, || next_kind(offset))?;
         if let Some((name, layout)) = component_layout::retain(
             &definition,
             member_kind,
@@ -134,4 +144,37 @@ pub(super) fn lower(
         .map_err(relational_schema_denial)?;
     }
     Ok((registry, components))
+}
+
+/// Membership names contain physical IDs; semantic definitions select roles.
+pub(super) fn readmit_physical_roles(
+    registry: &RelationalSchemaRegistry,
+    snapshot: &worth_relational::facade::schema::SchemaAuthoritySnapshot,
+) -> Result<
+    (
+        Option<AggregateIdentityStorage>,
+        BTreeMap<AggregateDefinitionIdentity, KindId>,
+    ),
+    WorthQueryPrimaryGraphInstallationDenial,
+> {
+    let mut storage = None;
+    let mut memberships = BTreeMap::new();
+    for kind in &snapshot.relation_kinds {
+        let entry = registry
+            .relation_registration(kind.kind_id)
+            .map_err(relational_schema_denial)?;
+        if let Some(contract) = &entry.relation_integrity.aggregate_identity {
+            if storage.is_some_and(|old| old != contract.storage)
+                || memberships
+                    .insert(contract.definition, contract.membership_kind)
+                    .is_some()
+            {
+                return Err(super::invalid_member(
+                    "inconsistent original aggregate identity roles",
+                ));
+            }
+            storage = Some(contract.storage);
+        }
+    }
+    Ok((storage, memberships))
 }

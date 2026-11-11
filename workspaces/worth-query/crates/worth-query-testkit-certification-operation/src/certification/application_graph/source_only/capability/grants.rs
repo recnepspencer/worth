@@ -5,20 +5,7 @@ pub use worth_query_host::facade::{
 };
 #[path = "grants/recorded_operation.rs"]
 pub mod recorded_operation;
-worth_query_entity!(pub Grant for CapabilitySchema);
-worth_query_aspect!(pub GrantFacts for CapabilitySchema, Grant; identity=AspectIdentity(0x91765001), revision=AspectContractRevision(1));
-worth_query_field!(pub GrantAction for CapabilitySchema, Grant, GrantFacts: u64 => U64ApplicationValueBinding, read_only, equality);
-worth_query_field!(pub GrantPurpose for CapabilitySchema, Grant, GrantFacts: u64 => U64ApplicationValueBinding, read_only, equality);
-worth_query_field!(pub GrantStatus for CapabilitySchema, Grant, GrantFacts: u64 => U64ApplicationValueBinding, read_write, equality);
-worth_query_field!(pub GrantNotBefore for CapabilitySchema, Grant, GrantFacts: u64 => U64ApplicationValueBinding, read_only, equality);
-worth_query_field!(pub GrantNotAfter for CapabilitySchema, Grant, GrantFacts: u64 => U64ApplicationValueBinding, read_only, equality);
-worth_query_field!(pub GrantDepth for CapabilitySchema, Grant, GrantFacts: u64 => U64ApplicationValueBinding, read_only, equality);
-worth_query_field!(pub GrantIdentity for CapabilitySchema, Grant, GrantFacts: String => StringApplicationValueBinding, read_only, equality);
-worth_query_field!(pub GrantScopeKey for CapabilitySchema, Grant, GrantFacts: String => StringApplicationValueBinding, read_only, equality);
-worth_query_relation!(pub GrantResource in CapabilitySchema, Grant => Document; integrity=same_context_unbounded_retain_dangling);
-worth_query_relation!(pub GrantGrantee in CapabilitySchema, Principal => Grant; integrity=same_context_unbounded_retain_dangling);
-worth_query_relation!(pub GrantGrantor in CapabilitySchema, Principal => Grant; integrity=same_context_unbounded_retain_dangling);
-worth_query_relation!(pub GrantParent in CapabilitySchema, Grant => Grant; integrity=same_context_unbounded_retain_dangling);
+
 pub struct RetentionCapability;
 impl declaration::portable_identity::WorthQueryPortableType for RetentionCapability {
     const PORTABLE_TYPE_NAME: &'static str = "capability-retention.RetentionCapability";
@@ -104,16 +91,17 @@ pub struct RevokeInput {
 }
 worth_query_structured_value_binding!(pub RevokeInputBinding for RevokeInput { identity:"capability-retention.revoke-input.v1" });
 worth_query_operation!(pub RevokeGrant for CapabilitySchema, input RevokeInputBinding);
-worth_query_operation_reads!(RevokeGrant => [DocumentIdentityField, GrantIdentity, GrantStatus, GrantResource]);
+worth_query_operation_reads!(RevokeGrant => [GrantResource]);
 pub fn projection(
     action: u64,
     identity: &str,
 ) -> ApplicationCapabilityRequestProjection<CapabilitySchema, Document, GrantContext> {
     ApplicationCapabilityRequestProjection::new(
         ApplicationCapabilityEntitySelector::new(
-            DocumentIdentityField::reference(),
+            DocumentIdentityField::at("DocumentIdentityField"),
             ApplicationEncodedScalarValue::try_new(identity.to_owned()).unwrap(),
-        ),
+        )
+        .unwrap(),
         ApplicationEncodedScalarValue::<U64ApplicationValueBinding>::try_new(action).unwrap(),
         ApplicationEncodedScalarValue::<U64ApplicationValueBinding>::try_new(action).unwrap(),
         ApplicationCapabilityRequestContext::new(GrantContext::reference()),
@@ -182,46 +170,16 @@ impl ApplicationCapabilityRevocationRequest<CapabilitySchema, RevocationCapabili
     > {
         Ok(ApplicationCapabilityRevocationRequestProjection::new(
             ApplicationCapabilityEntitySelector::new(
-                GrantIdentity::reference(),
+                GrantIdentity::at("GrantIdentity"),
                 ApplicationEncodedScalarValue::try_new(self.grant.clone()).unwrap(),
-            ),
+            )
+            .unwrap(),
         ))
     }
 }
 pub fn declare(
     schema: ApplicationSchemaDeclarationBuilder<CapabilitySchema>,
 ) -> ApplicationSchemaDeclarationBuilder<CapabilitySchema> {
-    let schema = schema
-        .entity(Grant::reference())
-        .aspect(Grant::reference(), GrantFacts::reference());
-    let schema = schema.field(Grant::reference(), GrantIdentity::reference());
-    let schema = schema.field(Grant::reference(), GrantAction::reference());
-    let schema = schema.field(Grant::reference(), GrantPurpose::reference());
-    let schema = schema.field(Grant::reference(), GrantStatus::reference());
-    let schema = schema.field(Grant::reference(), GrantScopeKey::reference());
-    let schema = schema.field(Grant::reference(), GrantNotBefore::reference());
-    let schema = schema.field(Grant::reference(), GrantNotAfter::reference());
-    let schema = schema.field(Grant::reference(), GrantDepth::reference());
-    let schema = schema.relation(
-        GrantResource::reference(),
-        Grant::reference(),
-        Document::reference(),
-    );
-    let schema = schema.relation(
-        GrantGrantee::reference(),
-        Principal::reference(),
-        Grant::reference(),
-    );
-    let schema = schema.relation(
-        GrantGrantor::reference(),
-        Principal::reference(),
-        Grant::reference(),
-    );
-    let schema = schema.relation(
-        GrantParent::reference(),
-        Grant::reference(),
-        Grant::reference(),
-    );
     schema
         .capability_context(GrantContext::reference())
         .capability_provenance(GrantProvenance::reference())
@@ -308,27 +266,43 @@ where
         .allow(Document::reference());
     ApplicationCapabilityContractBuilder::new(capability, operation, Grant::reference())
         .target(ApplicationCapabilityTargetDefinition::new(
-            ApplicationCapabilityValueBinding::new(GrantAction::reference(), encoded(action)),
+            ApplicationCapabilityValueBinding::new(GrantAction::at("GrantAction"), encoded(action))
+                .unwrap(),
             ApplicationCapabilityRelationBinding::from_reference(GrantResource::reference()),
             ApplicationCapabilityRelationDimension::not_applicable(),
             field,
-            ApplicationCapabilityValueBinding::new(GrantPurpose::reference(), encoded(purpose)),
+            ApplicationCapabilityValueBinding::new(
+                GrantPurpose::at("GrantPurpose"),
+                encoded(purpose),
+            )
+            .unwrap(),
         ))
         .constraints(ApplicationCapabilityConstraintDefinition::new(
             ApplicationCapabilityMagnitudeDimension::not_applicable(),
             ApplicationCapabilityCardinalityDimension::One,
             ApplicationCapabilityCurrentnessDefinition::new(
-                ApplicationCapabilityValueBinding::new(GrantStatus::reference(), scalar()),
+                ApplicationCapabilityValueBinding::new(GrantStatus::at("GrantStatus"), scalar())
+                    .unwrap(),
                 ApplicationCapabilityWorkflowDefinition::new(
-                    ApplicationCapabilityFieldBinding::from_reference(GrantScopeKey::reference()),
-                    ApplicationCapabilityFieldBinding::from_reference(
-                        DocumentIdentityField::reference(),
-                    ),
+                    ApplicationCapabilityFieldBinding::from_reference(GrantScopeKey::at(
+                        "GrantScopeKey",
+                    ))
+                    .unwrap(),
+                    ApplicationCapabilityFieldBinding::from_reference(DocumentIdentityField::at(
+                        "DocumentIdentityField",
+                    ))
+                    .unwrap(),
                 ),
                 ApplicationCapabilityValidityDefinition::new(
                     ApplicationCapabilityValidityTimeline::UnixEpochSeconds,
-                    ApplicationCapabilityFieldBinding::from_reference(GrantNotBefore::reference()),
-                    ApplicationCapabilityFieldBinding::from_reference(GrantNotAfter::reference()),
+                    ApplicationCapabilityFieldBinding::from_reference(GrantNotBefore::at(
+                        "GrantNotBefore",
+                    ))
+                    .unwrap(),
+                    ApplicationCapabilityFieldBinding::from_reference(GrantNotAfter::at(
+                        "GrantNotAfter",
+                    ))
+                    .unwrap(),
                 ),
             ),
             GrantContext::reference(),
@@ -338,13 +312,18 @@ where
                 ApplicationCapabilityRelationBinding::from_reference(GrantParent::reference()),
                 ApplicationCapabilityRelationBinding::from_reference(GrantGrantor::reference()),
                 ApplicationCapabilityRelationBinding::from_reference(GrantGrantee::reference()),
-                ApplicationCapabilityFieldBinding::from_reference(GrantDepth::reference()),
+                ApplicationCapabilityFieldBinding::from_reference(GrantDepth::at("GrantDepth"))
+                    .unwrap(),
                 GrantProvenance::reference(),
             )
             .with_revocation(ApplicationCapabilityRevocationDefinition::new(
                 RevokeGrant::reference(),
-                ApplicationCapabilityFieldBinding::from_reference(GrantIdentity::reference()),
-                ApplicationCapabilityValueBinding::new(GrantStatus::reference(), encoded(0)),
+                ApplicationCapabilityFieldBinding::from_reference(GrantIdentity::at(
+                    "GrantIdentity",
+                ))
+                .unwrap(),
+                ApplicationCapabilityValueBinding::new(GrantStatus::at("GrantStatus"), encoded(0))
+                    .unwrap(),
             )),
         )
         .composition(ApplicationCapabilityComposition::new(
@@ -368,3 +347,5 @@ where
         .elevation(ApplicationCapabilityElevationRule::not_applicable())
         .build()
 }
+
+pub use crate::facade::certification::application_graph::source_only::capability::schema::storage_model::{Grant, GrantFacts, GrantAction, GrantPurpose, GrantStatus, GrantNotBefore, GrantNotAfter, GrantDepth, GrantIdentity, GrantScopeKey, GrantResource, GrantGrantee, GrantGrantor, GrantParent};

@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::projection_consumption::source::{
     ProjectionSourceCapabilityProfile, ProjectionSourceExecutionPosture,
 };
@@ -7,34 +8,34 @@ use crate::projection_consumption::{
 };
 use worth_foundational::facade::{AspectKey, FieldKey};
 
-pub(crate) fn intent_admission_admitted_projection_declaration() -> ProjectionConsumptionDeclaration
-{
-    declaration(
+pub(crate) fn intent_admission_admitted_projection_declaration(
+) -> Result<ProjectionConsumptionDeclaration, IdentityDerivationDenial> {
+    Ok(declaration(
         ProjectionSourceFamily::QueryReadReceipt,
         ProjectionSourceCapabilityProfile::QueryReadReceipt {
             execution_posture: ProjectionSourceExecutionPosture::Current,
         },
         "query-read:certification-admitted",
-    )
+    )?)
 }
 
-pub(crate) fn intent_admission_warning_projection_declaration() -> ProjectionConsumptionDeclaration
-{
-    declaration(
+pub(crate) fn intent_admission_warning_projection_declaration(
+) -> Result<ProjectionConsumptionDeclaration, IdentityDerivationDenial> {
+    Ok(declaration(
         ProjectionSourceFamily::QueryContextExecution,
         ProjectionSourceCapabilityProfile::QueryContextExecution {
             execution_posture: ProjectionSourceExecutionPosture::Current,
         },
         "query-context:certification-warning",
-    )
+    )?)
 }
 
 fn declaration(
     family: ProjectionSourceFamily,
     profile: ProjectionSourceCapabilityProfile,
     source_identity: &str,
-) -> ProjectionConsumptionDeclaration {
-    declare_projection_consumption(
+) -> Result<ProjectionConsumptionDeclaration, IdentityDerivationDenial> {
+    Ok(declare_projection_consumption(
         ProjectionConsumptionSource::intent_admission_certification(
             family,
             profile,
@@ -44,7 +45,7 @@ fn declaration(
             Some("shape-digest".to_string()),
             source_identity,
             Vec::new(),
-        ),
+        )?,
         projection_binding(source_identity),
         ProjectMaterializedFacts::declare().display_field_path(
             crate::projection_consumption::projection_fact_field_path_from_segments([
@@ -53,7 +54,7 @@ fn declaration(
             ]),
         ),
     )
-    .expect("intent-admission projection declaration should build")
+    .expect("intent-admission projection declaration should build"))
 }
 
 fn projection_binding(source_identity: &str) -> ProjectionConsumptionBindingContext {

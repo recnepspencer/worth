@@ -9,8 +9,14 @@ impl WorldCheckpointImage {
         source: &dyn WorldCheckpointReadSource,
         binding: &WorldDurableHomeBinding,
         request: &ExecutionRequest<'_, '_>,
+        selected_native: Option<
+            &mut Option<
+                std::sync::Arc<worth_relational::facade::durability::RelationalWorldSourceCatalog>,
+            >,
+        >,
     ) -> Result<(Self, WorldCheckpointCoverage), Denial> {
         let mut view = source.read(request).map_err(Denial::Medium)?;
+        let has_selected = view.selected.is_some();
         let mut image = match view.selected.take() {
             Some((bytes, region)) => {
                 let bytes = bytes.get(region).ok_or(Denial::Medium(
@@ -21,6 +27,17 @@ impl WorldCheckpointImage {
             None => Self::empty(binding),
         };
         let selected_coverage = image.coverage.clone();
+        if let Some(output) = selected_native {
+            *output = if has_selected {
+                Some(
+                    crate::durability::prepared_home_source::native_catalog::prepare(
+                        &image, request, None,
+                    )?,
+                )
+            } else {
+                None
+            };
+        }
         for journal in [
             WorldDurableJournal::Branches,
             WorldDurableJournal::Custody,

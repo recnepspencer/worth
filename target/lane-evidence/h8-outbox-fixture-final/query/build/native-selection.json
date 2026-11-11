@@ -1,0 +1,16 @@
+{
+  "scope": "selected-packages",
+  "selection": {
+    "packages": [
+      "worth-query-execution"
+    ],
+    "targets": {
+      "lib": true
+    }
+  },
+  "cargo_arguments": [
+    "--package",
+    "worth-query-execution",
+    "--lib"
+  ]
+}

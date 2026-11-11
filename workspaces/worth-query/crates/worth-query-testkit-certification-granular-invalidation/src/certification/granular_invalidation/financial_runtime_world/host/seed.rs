@@ -37,24 +37,42 @@ pub fn seed_graph(
                 primary_graph::WorthQueryApplicationEntityKey::new("market-row-1").unwrap(),
             )
             .field(
-                MarketIdentityField::reference(),
+                MarketIdentityField::at("MarketIdentityField"),
                 record_identity.to_string(),
             )
-            .field(MarketRevisionField::reference(), 1_u64)
-            .field(MarketDueField::reference(), 10_u64)
-            .field(MarketLifecycleField::reference(), "active".to_string())
-            .field(MarketInputField::reference(), risk_value.to_string())
-            .field(MarketGateField::reference(), "ready".to_string())
-            .field(CurvePartitionField::reference(), "usd-rates".to_string())
-            .field(CurveDetailField::reference(), "5y".to_string())
-            .field(CurveZeroRateField::reference(), curve_rate)
-            .field(VolatilitySurfaceField::reference(), 240_u64)
-            .field(QuoteMidField::reference(), quote_mid)
-            .field(RiskValueField::reference(), risk_value)
-            .field(PortfolioValueField::reference(), risk_value)
-            .field(PortfolioDeskField::reference(), "rates".to_string())
-            .field(PortfolioRankField::reference(), 1_u64)
-            .field(AuditLabelField::reference(), "market-audit".to_string()),
+            .field(MarketRevisionField::at("MarketRevisionField"), 1_u64)
+            .field(MarketDueField::at("MarketDueField"), 10_u64)
+            .field(
+                MarketLifecycleField::at("MarketLifecycleField"),
+                "active".to_string(),
+            )
+            .field(
+                MarketInputField::at("MarketInputField"),
+                risk_value.to_string(),
+            )
+            .field(MarketGateField::at("MarketGateField"), "ready".to_string())
+            .field(
+                CurvePartitionField::at("CurvePartitionField"),
+                "usd-rates".to_string(),
+            )
+            .field(CurveDetailField::at("CurveDetailField"), "5y".to_string())
+            .field(CurveZeroRateField::at("CurveZeroRateField"), curve_rate)
+            .field(
+                VolatilitySurfaceField::at("VolatilitySurfaceField"),
+                240_u64,
+            )
+            .field(QuoteMidField::at("QuoteMidField"), quote_mid)
+            .field(RiskValueField::at("RiskValueField"), risk_value)
+            .field(PortfolioValueField::at("PortfolioValueField"), risk_value)
+            .field(
+                PortfolioDeskField::at("PortfolioDeskField"),
+                "rates".to_string(),
+            )
+            .field(PortfolioRankField::at("PortfolioRankField"), 1_u64)
+            .field(
+                AuditLabelField::at("AuditLabelField"),
+                "market-audit".to_string(),
+            ),
         )
         .unwrap();
     graph
@@ -64,24 +82,45 @@ pub fn seed_graph(
                 primary_graph::WorthQueryApplicationEntityKey::new("market-row-10y").unwrap(),
             )
             .field(
-                MarketIdentityField::reference(),
+                MarketIdentityField::at("MarketIdentityField"),
                 "curve-usd-rates-10y".to_string(),
             )
-            .field(MarketRevisionField::reference(), 1_u64)
-            .field(MarketDueField::reference(), 10_u64)
-            .field(MarketLifecycleField::reference(), "active".to_string())
-            .field(MarketInputField::reference(), risk_value.to_string())
-            .field(MarketGateField::reference(), "ready".to_string())
-            .field(CurvePartitionField::reference(), "usd-rates".to_string())
-            .field(CurveDetailField::reference(), "10y".to_string())
-            .field(CurveZeroRateField::reference(), curve_rate + 25)
-            .field(VolatilitySurfaceField::reference(), 260_u64)
-            .field(QuoteMidField::reference(), quote_mid)
-            .field(RiskValueField::reference(), risk_value)
-            .field(PortfolioValueField::reference(), risk_value)
-            .field(PortfolioDeskField::reference(), "rates".to_string())
-            .field(PortfolioRankField::reference(), 18_u64)
-            .field(AuditLabelField::reference(), "market-audit-10y".to_string()),
+            .field(MarketRevisionField::at("MarketRevisionField"), 1_u64)
+            .field(MarketDueField::at("MarketDueField"), 10_u64)
+            .field(
+                MarketLifecycleField::at("MarketLifecycleField"),
+                "active".to_string(),
+            )
+            .field(
+                MarketInputField::at("MarketInputField"),
+                risk_value.to_string(),
+            )
+            .field(MarketGateField::at("MarketGateField"), "ready".to_string())
+            .field(
+                CurvePartitionField::at("CurvePartitionField"),
+                "usd-rates".to_string(),
+            )
+            .field(CurveDetailField::at("CurveDetailField"), "10y".to_string())
+            .field(
+                CurveZeroRateField::at("CurveZeroRateField"),
+                curve_rate + 25,
+            )
+            .field(
+                VolatilitySurfaceField::at("VolatilitySurfaceField"),
+                260_u64,
+            )
+            .field(QuoteMidField::at("QuoteMidField"), quote_mid)
+            .field(RiskValueField::at("RiskValueField"), risk_value)
+            .field(PortfolioValueField::at("PortfolioValueField"), risk_value)
+            .field(
+                PortfolioDeskField::at("PortfolioDeskField"),
+                "rates".to_string(),
+            )
+            .field(PortfolioRankField::at("PortfolioRankField"), 18_u64)
+            .field(
+                AuditLabelField::at("AuditLabelField"),
+                "market-audit-10y".to_string(),
+            ),
         )
         .unwrap();
 }

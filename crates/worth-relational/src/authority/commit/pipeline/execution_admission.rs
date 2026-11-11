@@ -35,9 +35,7 @@ pub(super) struct AdmittedCommitState {
     authority_input: super::authority_context::CommitAuthorityInput,
     merge_execution_accounting: Option<super::authority_context::MergeExecutionAccounting>,
     merge_execution_diagnostics_plan: Option<crate::merge::data::MergeExecutionDiagnosticsPlan>,
-    prevalidated_commit_boundary: Option<crate::validation::engine::InvariantExecutionResult>,
-    prevalidated_mutation_sensitive: Option<crate::validation::engine::InvariantExecutionResult>,
-    prevalidated_snapshot_publication: Option<crate::validation::engine::InvariantExecutionResult>,
+    prevalidated_invariants: Option<crate::validation::engine::InvariantExecutionResult>,
     strategy_commit_artifacts: Option<crate::commit_strategies::data::StrategyCommitArtifactBundle>,
     diagnostics: Vec<crate::diagnostics::data::RelationalDiagnosticArtifact>,
     complexity_before: crate::performance::data::RuntimeComplexityCounters,
@@ -130,28 +128,14 @@ impl AdmittedCommitState {
         &mut self,
         draft: super::merge_draft::AcceptedMergeDraft,
     ) -> super::authority_context::PreparedAuthorityScope {
-        self.prevalidated_commit_boundary = Some(draft.boundary);
-        self.prevalidated_mutation_sensitive = Some(draft.mutation_sensitive);
-        self.prevalidated_snapshot_publication = Some(draft.publication);
+        self.prevalidated_invariants = Some(draft.invariants);
         draft.scope
     }
 
-    pub(super) fn take_prevalidated_boundary(
+    pub(super) fn take_prevalidated_invariants(
         &mut self,
     ) -> Option<crate::validation::engine::InvariantExecutionResult> {
-        self.prevalidated_commit_boundary.take()
-    }
-
-    pub(super) fn take_prevalidated_mutation_sensitive(
-        &mut self,
-    ) -> Option<crate::validation::engine::InvariantExecutionResult> {
-        self.prevalidated_mutation_sensitive.take()
-    }
-
-    pub(super) fn take_prevalidated_snapshot_publication(
-        &mut self,
-    ) -> Option<crate::validation::engine::InvariantExecutionResult> {
-        self.prevalidated_snapshot_publication.take()
+        self.prevalidated_invariants.take()
     }
 
     pub(super) fn commit_phase_state(&mut self) -> (&mut CommitLog, &mut CommitPhaseTiming) {
@@ -273,9 +257,7 @@ pub(super) fn admit_commit_execution(
             authority_input: context.authority_input,
             merge_execution_accounting: context.merge_execution_accounting,
             merge_execution_diagnostics_plan: context.merge_execution_diagnostics_plan,
-            prevalidated_commit_boundary: context.prevalidated_commit_boundary,
-            prevalidated_mutation_sensitive: context.prevalidated_mutation_sensitive,
-            prevalidated_snapshot_publication: context.prevalidated_snapshot_publication,
+            prevalidated_invariants: context.prevalidated_invariants,
             strategy_commit_artifacts: context.strategy_commit_artifacts,
             diagnostics: Vec::new(),
             complexity_before,

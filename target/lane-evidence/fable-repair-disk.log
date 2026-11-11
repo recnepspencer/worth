@@ -1,0 +1,2 @@
+﻿2026-11-10T12:39:36.9302099Z deleted workspaces\worth-query\target\debug\incremental (regenerable): C free 112 GB -> 229.4 GB
+2026-11-10T16:07:48.3337376Z ended stuck test pid 3432 (authority_evidence_exposes_request_resources_by_value_through_the_commit_door) after 46 CPU min, nextest SLOW >2760s, lane query-tier2-b

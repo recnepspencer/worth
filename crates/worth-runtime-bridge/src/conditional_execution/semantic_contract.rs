@@ -192,3 +192,6 @@ impl BridgeConditionalContract {
                 .all(|ordinal| *ordinal < self.dependency_count)
     }
 }
+#[cfg(test)]
+#[path = "semantic_contract_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;

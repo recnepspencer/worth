@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use worth_runtime_bridge::facade::{
     BridgePreviewLifecycleStateKind, BridgePreviewSessionDeclarationIdentity,
     BridgePreviewSessionIdentity, PreviewExecutionRecordIdentity,
@@ -25,7 +26,7 @@ pub(crate) fn materialize_contributed_preview_workflow_foundation_artifact(
     declaration_digest_identity: WorthQueryEvidenceIdentity,
     evaluation_class: PreviewEvaluationClass,
     shape_check_width: usize,
-) -> PreviewWorkflowFoundationArtifact {
+) -> Result<PreviewWorkflowFoundationArtifact, IdentityDerivationDenial> {
     let lifecycle_state_kind = BridgePreviewLifecycleStateKind::Active;
     let execution_record_identity_basis =
         WorthQueryEvidenceIdentity::compose(WorthQueryEvidenceScope::WorkflowContextBinding)
@@ -58,7 +59,7 @@ pub(crate) fn materialize_contributed_preview_workflow_foundation_artifact(
                 WorthQueryEvidenceTag::new("evaluation"),
                 evaluation_class.as_str(),
             )
-            .seal();
+            .seal()?;
     let execution_record_identity = PreviewExecutionRecordIdentity::from_bridge_evidence(
         &execution_record_identity_basis.bridge_evidence_identity(),
     );
@@ -101,9 +102,9 @@ pub(crate) fn materialize_contributed_preview_workflow_foundation_artifact(
                 WorthQueryEvidenceTag::new("shape_check_width"),
                 shape_check_width.to_string(),
             )
-            .seal();
+            .seal()?;
 
-    PreviewWorkflowFoundationArtifact {
+    Ok(PreviewWorkflowFoundationArtifact {
         artifact_identity,
         binding_identity,
         canonical_query_digest,
@@ -116,7 +117,7 @@ pub(crate) fn materialize_contributed_preview_workflow_foundation_artifact(
         evaluation_class,
         execution_record_identity,
         shape_check_width,
-    }
+    })
 }
 
 pub(crate) fn admit_contributed_preview_workflow_foundation(

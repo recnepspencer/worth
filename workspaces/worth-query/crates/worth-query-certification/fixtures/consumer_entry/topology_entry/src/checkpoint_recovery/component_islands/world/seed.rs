@@ -11,10 +11,10 @@ pub(super) fn rings(
             graph
                 .bind_entity(
                     WorthQueryApplicationEntitySeed::new(Body::reference(), entity_key(&key))
-                        .field(BodyKey::reference(), key)
-                        .field(Length::reference(), length(y + 1))
-                        .field(PositionX::reference(), length(x + ring as u64 * 20))
-                        .field(PositionY::reference(), length(y)),
+                        .field(BodyKey::at("BodyKey"), key)
+                        .field(Length::at("Length"), length(y + 1))
+                        .field(PositionX::at("PositionX"), length(x + ring as u64 * 20))
+                        .field(PositionY::at("PositionY"), length(y)),
                 )
                 .unwrap();
         }

@@ -12,12 +12,24 @@ pub(super) fn install(
     let operation = NotifyDeathEstateOperation::reference();
     schema
         .operation_projection_work_budget(operation, 48)
-        .operation_read_field(operation, DeathNoticeIdentityField::reference())
-        .operation_read_field(operation, DeathNoticeStatusField::reference())
-        .operation_read_field(operation, PrincipalIdentityField::reference())
+        .operation_read_field(
+            operation,
+            DeathNoticeIdentityField::at("DeathNoticeIdentityField"),
+        )
+        .operation_read_field(
+            operation,
+            DeathNoticeStatusField::at("DeathNoticeStatusField"),
+        )
+        .operation_read_field(
+            operation,
+            PrincipalIdentityField::at("PrincipalIdentityField"),
+        )
         .operation_read_relation(operation, EstateDeathNotice::reference())
         .operation_read_relation(operation, DeathNoticeSubject::reference())
         .operation_read_relation(operation, EstateDeceased::reference())
-        .operation_write(operation, DeathNoticeStatusField::reference())
+        .operation_write(
+            operation,
+            DeathNoticeStatusField::at("DeathNoticeStatusField"),
+        )
         .operation_emit(operation, EstateDeathNotificationEffect::reference())
 }

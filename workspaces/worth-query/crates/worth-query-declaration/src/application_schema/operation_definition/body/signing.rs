@@ -6,9 +6,8 @@ use super::{
 use crate::{
     application_operation::ApplicationMutationBinding,
     application_schema::{
-        ApplicationFieldBindingLocus as Locus, ApplicationFieldPresence, ApplicationFieldRef,
-        ApplicationScalarValueBinding, ApplicationSchema, ApplicationSigningProvenanceValueBinding,
-        DeclaredApplicationFieldValue, NoApplicationUnit, OperationWrites, ReadOnly,
+        ApplicationFieldBindingLocus as Locus, ApplicationFieldPresence, ApplicationSchema,
+        ApplicationSigningProvenanceValueBinding,
     },
     authentication::WorthQueryAuthenticationPurpose,
 };
@@ -69,77 +68,50 @@ impl<Schema: ApplicationSchema, Operation, Input, Entity>
 {
     /// Freezes the created fields as the signed subject. Actor and provenance
     /// are native-owned initializers, not values supplied in the caller input.
-    pub fn signed_by<
-        Binding,
-        ActorAspect,
-        ActorField,
-        ActorValue,
-        ActorEquality,
-        ProvenanceAspect,
-        ProvenanceField,
-        ProvenanceEquality,
-    >(
+    pub fn signed_by<Binding>(
         self,
-        actor: ApplicationFieldRef<
-            Schema,
-            Entity,
-            ActorAspect,
-            ActorField,
-            ActorValue,
-            ReadOnly,
-            ActorEquality,
-            NoApplicationUnit,
+        actor: impl crate::application_schema::fragment::RecordSelection<
+            Entity = Entity,
+            Value = Binding::PrincipalIdentity,
+            Binding = Binding::PrincipalIdentityBinding,
         >,
-        provenance: ApplicationFieldRef<
-            Schema,
-            Entity,
-            ProvenanceAspect,
-            ProvenanceField,
-            <ProvenanceField as DeclaredApplicationFieldValue>::Value,
-            ReadOnly,
-            ProvenanceEquality,
-            NoApplicationUnit,
+        provenance: impl crate::application_schema::fragment::RecordSelection<
+            Entity = Entity,
+            Binding: ApplicationSigningProvenanceValueBinding,
         >,
         purpose: &str,
     ) -> Result<Self, Denial>
     where
-        Binding: ApplicationMutationBinding<
-            Schema,
-            Operation = Operation,
-            Input = Input,
-            PrincipalIdentity = ActorValue,
-            PrincipalIdentityBinding = ActorField::Binding,
-        >,
-        ActorField: OperationWrites<Operation> + DeclaredApplicationFieldValue<Value = ActorValue>,
-        ProvenanceField: OperationWrites<Operation> + DeclaredApplicationFieldValue,
-        ProvenanceField::Binding: ApplicationSigningProvenanceValueBinding,
+        Binding: ApplicationMutationBinding<Schema, Operation = Operation, Input = Input>,
     {
+        let actor_field = super::record_authoring::resolve(actor)?;
+        let provenance_field = super::record_authoring::resolve(provenance)?;
         if self.signing.is_some() {
             return Err(Denial::DuplicateAttachment);
         }
         super::classified_capture::validate_roles(
             &self.fields,
             crate::application_schema::ApplicationSigningProvenanceEncoding::for_binding(
-                &ProvenanceField::Binding::IDENTITY,
+                provenance_field.recipe().binding_identity(),
             ),
         )?;
-        if !Binding::REQUIRES_APPLICATION_PROGRAM
-            || ActorField::PRESENCE != ApplicationFieldPresence::Required
-            || ProvenanceField::PRESENCE != ApplicationFieldPresence::Required
+        if actor_field.writable()
+            || provenance_field.writable()
+            || !Binding::REQUIRES_APPLICATION_PROGRAM
+            || actor_field.presence() != ApplicationFieldPresence::Required
+            || provenance_field.presence() != ApplicationFieldPresence::Required
         {
             return Err(Denial::IncompatibleSourceBinding);
         }
         let purpose = WorthQueryAuthenticationPurpose::new(purpose)
             .map_err(|_| Denial::InvalidSigningPurpose)?
             .into_string();
-        let actor_locus = Locus::new(actor.entity(), actor.aspect(), actor.field());
-        let provenance_locus =
-            Locus::new(provenance.entity(), provenance.aspect(), provenance.field());
-        let mut creation =
-            self.initialize_from_principal_identity::<Binding, _, _, _, _, _>(actor)?;
+        let actor_locus = actor_field.locus().clone();
+        let provenance_locus = provenance_field.locus().clone();
+        let mut creation = self.initialize_from_principal_identity::<Binding>(actor)?;
         creation.fields.push(Step::SigningProvenance {
             field: provenance_locus.clone(),
-            binding: ProvenanceField::Binding::IDENTITY,
+            binding: provenance_field.recipe().binding_identity().clone(),
         });
         creation.signing = Some(ApplicationOperationBodySigningSpec::from_untrusted(
             purpose,

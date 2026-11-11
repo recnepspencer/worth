@@ -1,4 +1,5 @@
 use super::super::scope::{consumption_scope_encoder, seal};
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::WorthQueryEvidenceTag;
 
 use super::super::super::contracts::BoundProjectionFactFamily;
@@ -9,7 +10,7 @@ use super::super::super::DeclaredNativeFactContract;
 pub(crate) fn compose_fact_request_entry_digest(
     request: &ProjectionFactRequest,
     native_contract: Option<&DeclaredNativeFactContract>,
-) -> String {
+) -> Result<String, IdentityDerivationDenial> {
     let mut encoder = consumption_scope_encoder("projection_fact_request_entry_v1")
         .field_shape(WorthQueryEvidenceTag::new("kind"), request.kind().as_str());
     if let Some(field) = request.field_path() {
@@ -24,22 +25,22 @@ pub(crate) fn compose_fact_request_entry_digest(
             native_contract.canonical_contract_material(),
         );
     }
-    seal(encoder)
+    Ok(seal(encoder)?)
 }
 
 pub(crate) fn compose_projection_source_reference_entry_digest(
     identity: &ProjectionSourceReferenceIdentity,
-) -> String {
-    seal(
+) -> Result<String, IdentityDerivationDenial> {
+    Ok(seal(
         consumption_scope_encoder("projection_source_reference_entry_v1")
             .field_shape(WorthQueryEvidenceTag::new("label"), identity.label())
             .field_shape(WorthQueryEvidenceTag::new("identity"), identity.identity()),
-    )
+    )?)
 }
 
 pub(crate) fn compose_bound_fact_family_entry_digest(
     fact_family: &BoundProjectionFactFamily,
-) -> String {
+) -> Result<String, IdentityDerivationDenial> {
     let mut encoder = consumption_scope_encoder("projection_bound_fact_family_entry_v1")
         .field_shape(
             WorthQueryEvidenceTag::new("kind"),
@@ -61,5 +62,5 @@ pub(crate) fn compose_bound_fact_family_entry_digest(
             native_contract.canonical_contract_material(),
         );
     }
-    seal(encoder)
+    Ok(seal(encoder)?)
 }

@@ -16,7 +16,10 @@ pub(crate) mod state_view;
 #[cfg(test)]
 mod tests;
 
-pub(crate) use engine::{check_live as check_invariant_request, InvariantEngine};
+pub(crate) use engine::{
+    check_live as check_invariant_request, InvariantEngine, PendingProposedPass,
+    StartedProposedPass,
+};
 pub use observation::InvariantObservationKind;
 pub(crate) use observation::{InvariantObservation, InvariantSourceAffinity};
 #[cfg(test)]

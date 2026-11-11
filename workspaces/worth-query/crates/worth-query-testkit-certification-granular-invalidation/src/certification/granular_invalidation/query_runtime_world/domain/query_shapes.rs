@@ -1,4 +1,5 @@
 pub use std::sync::OnceLock;
+use worth_query_testkit_host::facade::host::temporal_conditional_operation::schema::IntentFacts as StoredIntentFacts;
 
 pub use worth_query::facade::read;
 pub use worth_query_host::facade::declaration::{
@@ -46,7 +47,11 @@ pub fn ordered_read_declaration() -> &'static read::WorthQueryReadDeclaration {
                         .project(field("IntentIdentityField"))
                         .project(field("IntentGateField"))
                         .order_by(
-                            OrderingSelector::ascending("IntentFacts", "IntentGateField").unwrap(),
+                            OrderingSelector::ascending(
+                                StoredIntentFacts::reference().name(),
+                                "IntentGateField",
+                            )
+                            .unwrap(),
                         )
                 },
                 |shape| shape.field(result_field("IntentIdentityField", "identity")),
@@ -80,7 +85,10 @@ pub fn ordered_portfolio_query() -> CanonicalQueryBundle {
     let query = CollectionQueryBuilder::new(root())
         .project(field("IntentIdentityField"))
         .project(field("IntentGateField"))
-        .order_by(OrderingSelector::ascending("IntentFacts", "IntentGateField").unwrap())
+        .order_by(
+            OrderingSelector::ascending(StoredIntentFacts::reference().name(), "IntentGateField")
+                .unwrap(),
+        )
         .build()
         .unwrap()
         .into_raw();
@@ -101,12 +109,12 @@ pub fn schema_view() -> read::QuerySchemaView {
         "temporal-primary",
         [
             read::SchemaFieldView::new(
-                read::AspectName::new("IntentFacts").unwrap(),
+                read::AspectName::new(StoredIntentFacts::reference().name()).unwrap(),
                 read::FieldName::new("IntentIdentityField").unwrap(),
                 read::ScalarAspectType::String,
             ),
             read::SchemaFieldView::new(
-                read::AspectName::new("IntentFacts").unwrap(),
+                read::AspectName::new(StoredIntentFacts::reference().name()).unwrap(),
                 read::FieldName::new("IntentGateField").unwrap(),
                 read::ScalarAspectType::String,
             ),
@@ -120,9 +128,9 @@ pub fn root() -> RootEntityKey {
 }
 
 pub fn field(name: &str) -> AspectFieldSelector {
-    AspectFieldSelector::new("IntentFacts", name).unwrap()
+    AspectFieldSelector::new(StoredIntentFacts::reference().name(), name).unwrap()
 }
 
 pub fn result_field(name: &str, alias: &str) -> AuthoredResultShapeField {
-    AuthoredResultShapeField::new("IntentFacts", name, alias).unwrap()
+    AuthoredResultShapeField::new(StoredIntentFacts::reference().name(), name, alias).unwrap()
 }

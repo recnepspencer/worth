@@ -67,7 +67,7 @@ pub(super) fn filter(
                 .and_then(|n| u64::try_from(n).ok())
                 .ok_or_else(|| stop(Cause::WorkCounterOverflow))?;
             storage.work(units).map_err(stop)?;
-            if *name == predicate.parameter() {
+            if name.as_ref() == predicate.parameter() {
                 expected = Some(value);
                 break;
             }

@@ -75,8 +75,32 @@ impl<'a> WorthQueryAuthorizedCompareContext<'a> {
     where
         Input: Clone + Send + Sync + 'static,
     {
-        let admission = authority.admission();
-        let product = authority.product.publication_binding();
+        Self::from_admission(
+            authority.provider(),
+            authority.original_completion,
+            authority.admission(),
+            authority.idempotency(),
+            authority.product.publication_binding(),
+            dispatch_outbox,
+            authority.aftermath_causality().cloned(),
+            provider_session,
+        )
+    }
+    pub(super) fn from_admission<Schema, Operation, Input, Scope>(
+        provider: &'a crate::domain_computation::primary_graph::provider::WorthQueryPrimaryGraphProvider,
+        original_completion: &'a crate::domain_computation::primary_graph::provider::OriginalCompletionReceiver,
+        admission: &'a crate::domain_computation::primary_graph::WorthQueryAdmittedApplicationOperation<Schema, Operation, Input, Scope>,
+        idempotency: WorthQueryApplicationIdempotencyBinding,
+        product: crate::domain_computation::execution_runtime::product_world::WorthQueryProductPublicationBinding,
+        dispatch_outbox: Option<WorthQueryDispatchOutboxRecord>,
+        aftermath_causality: Option<
+            crate::domain_computation::application_aftermath::WorthQueryPendingAftermathCausality,
+        >,
+        provider_session: crate::domain_computation::provider_session::WorthQueryProviderSessionTerminalBinding,
+    ) -> Self
+    where
+        Input: Clone + Send + Sync + 'static,
+    {
         assert_eq!(
             provider_session.application_product_identity(),
             Some(
@@ -87,18 +111,18 @@ impl<'a> WorthQueryAuthorizedCompareContext<'a> {
             "commit authority retains the product admitted to this provider session",
         );
         Self {
-            provider: authority.provider(),
-            original_completion: authority.original_completion,
-            idempotency: authority.idempotency(),
+            provider,
+            original_completion,
+            idempotency,
             product,
             preconditions: admission.mutation_preconditions(),
             canonical_work: admission.canonical_work(),
             dispatch_outbox,
-            aftermath_causality: authority.aftermath_causality().cloned(),
+            aftermath_causality,
             authority_binding:
                 crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationCommitAuthorityBinding::from_admission(
                     admission,
-                    authority.idempotency(),
+                    idempotency,
                 ),
             provider_session,
         }

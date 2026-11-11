@@ -142,7 +142,7 @@ impl
         >,
     ) -> Result<Self::Projection, primary_graph::WorthQueryTemporalInvocationFailure> {
         reader
-            .decision_field(scope, RiskValueField::reference())
+            .decision_field(scope, RiskValueField::at("RiskValueField"))
             .map_err(|denial| {
                 primary_graph::WorthQueryTemporalInvocationFailure::new(
                     primary_graph::WorthQueryTemporalInvocationFailureKind::ProjectionRejected,
@@ -173,7 +173,7 @@ impl
             .map_err(invocation_failure)?;
         let value = input.0.parse::<u64>().unwrap_or_default();
         effects
-            .write_field(&target, RiskValueField::reference(), value)
+            .write_field(&target, RiskValueField::at("RiskValueField"), value)
             .map_err(invocation_failure)?;
         Ok(())
     }

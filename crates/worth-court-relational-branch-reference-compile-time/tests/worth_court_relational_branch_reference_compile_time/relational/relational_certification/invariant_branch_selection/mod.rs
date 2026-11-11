@@ -158,6 +158,10 @@ fn supply_chain_child_custom_invariant_uses_child_selected_version() {
         .expect("child commit records the registered custom invariant");
     assert_eq!(
         custom_execution.0.metadata().execution_point(),
+        worth_relational::facade::runtime::InvariantExecutionPoint::ProposedState
+    );
+    assert_eq!(
+        custom_execution.1.execution_point,
         worth_relational::facade::runtime::InvariantExecutionPoint::CommitBoundary
     );
     assert_eq!(

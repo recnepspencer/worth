@@ -18,12 +18,15 @@ pub fn bind_account(
         Account::reference(),
         WorthQueryApplicationEntityKey::new(spec.key).unwrap(),
     )
-    .field(AccountIdentity::reference(), spec.key.to_owned())
-    .field(AccountStatus::reference(), spec.status.to_string())
-    .field(AccountMembershipTag::reference(), "open".to_string())
-    .field(AccountLabel::reference(), spec.label.to_string());
+    .field(AccountIdentity::at("AccountIdentity"), spec.key.to_owned())
+    .field(AccountStatus::at("AccountStatus"), spec.status.to_string())
+    .field(
+        AccountMembershipTag::at("AccountMembershipTag"),
+        "open".to_string(),
+    )
+    .field(AccountLabel::at("AccountLabel"), spec.label.to_string());
     if let Some(note) = spec.note {
-        seed = seed.field(AccountNote::reference(), note.to_string());
+        seed = seed.field(AccountNote::at("AccountNote"), note.to_string());
     }
     bootstrap.bind_entity(seed).unwrap();
 }

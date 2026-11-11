@@ -4,9 +4,7 @@ use std::sync::{
     atomic::{AtomicUsize, Ordering},
     Arc,
 };
-use worth_foundational::facade::{
-    HomeProgramTransitionPlanDigest, HomeProgramTransitionTargetMeaning,
-};
+use worth_foundational::facade::HomeProgramTransitionPlanDigest;
 use worth_relational::facade::mvcc::{RelationalCallerAssociation, RelationalTransactionIntent};
 use worth_runtime_world::facade::{RuntimeWorldCancellationSource, WorldOpenAttemptOutcome};
 use worth_store_application::{
@@ -96,7 +94,7 @@ pub(super) fn steps(execute: bool, check_successor_refusal: bool, refuse_compila
             first.clone(),
             HomeProgramTransitionPlanDigest::from_recorded([7; 32]),
             2,
-            HomeProgramTransitionTargetMeaning::from_recorded(0, contracts.catalog_digest()),
+            contracts.target_meaning(&execution, 0).unwrap(),
             &crate::batches::transition_body_roster(&execution, 2),
             &execution,
         )
@@ -204,6 +202,11 @@ pub(super) fn steps(execute: bool, check_successor_refusal: bool, refuse_compila
                     admitted.original(),
                     &original_association,
                     admitted.admission(),
+                    worth_relational::facade::indexes::DerivedIndexMaintenanceBudget {
+                        maximum_work_units: None,
+                        maximum_cold_record_slots: None,
+                        maximum_derived_rows: None,
+                    },
                 )
                 .unwrap()
         } else {
@@ -214,7 +217,9 @@ pub(super) fn steps(execute: bool, check_successor_refusal: bool, refuse_compila
                     admitted.plan(),
                     worth_foundational::facade::HomeProgramTransitionStepAssociation::from_recorded(admitted.plan().identity(), step),
                     admitted.original(), &original_association, admitted.admission(),
-                )
+
+worth_relational::facade::indexes::DerivedIndexMaintenanceBudget { maximum_work_units: None, maximum_cold_record_slots: None, maximum_derived_rows: None },
+)
                 .unwrap()
         };
         transaction
@@ -252,6 +257,11 @@ pub(super) fn steps(execute: bool, check_successor_refusal: bool, refuse_compila
                 admitted.original(),
                 &original_association,
                 admitted.admission(),
+                worth_relational::facade::indexes::DerivedIndexMaintenanceBudget {
+                    maximum_work_units: None,
+                    maximum_cold_record_slots: None,
+                    maximum_derived_rows: None,
+                },
             );
             assert!(matches!(refused, Err(
                 worth_relational::facade::runtime::RelationalHomeProgramContractDenial::SourceBasisMismatch

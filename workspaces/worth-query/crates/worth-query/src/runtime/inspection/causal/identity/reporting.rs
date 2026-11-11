@@ -1,11 +1,13 @@
 #[cfg(test)]
 use super::*;
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 
 #[cfg(test)]
 pub(crate) fn causal_test_compose_bridge_causal_denial_for_reporting(
     denial: &BridgeCausalEnvelopeDenial,
 ) -> String {
-    let composed = compose_bridge_causal_denial_identity(denial);
+    let composed = compose_bridge_causal_denial_identity(denial)
+        .expect("positive fixture identity fits canonical digest bounds");
     composed.reporting_projection().to_string()
 }
 
@@ -13,7 +15,8 @@ pub(crate) fn causal_test_compose_bridge_causal_denial_for_reporting(
 pub(crate) fn causal_test_compose_bridge_causal_explanation_envelope_identity_for_reporting(
     envelope: &BridgeCausalExplanationEnvelope,
 ) -> String {
-    let composed = compose_bridge_causal_explanation_envelope_identity(envelope);
+    let composed = compose_bridge_causal_explanation_envelope_identity(envelope)
+        .expect("positive fixture identity fits canonical digest bounds");
     composed.reporting_projection().to_string()
 }
 
@@ -21,7 +24,8 @@ pub(crate) fn causal_test_compose_bridge_causal_explanation_envelope_identity_fo
 pub(crate) fn causal_test_compose_bridge_causal_envelope_identity_for_reporting(
     envelope: &BridgeCausalExplanationEnvelope,
 ) -> String {
-    let composed = compose_bridge_causal_envelope_identity(envelope.identity());
+    let composed = compose_bridge_causal_envelope_identity(envelope.identity())
+        .expect("positive fixture identity fits canonical digest bounds");
     composed.reporting_projection().to_string()
 }
 
@@ -29,7 +33,8 @@ pub(crate) fn causal_test_compose_bridge_causal_envelope_identity_for_reporting(
 pub(crate) fn causal_test_compose_bridge_causal_envelope_receipt_identity_for_reporting(
     receipt: &BridgeCausalEnvelopeReceipt,
 ) -> String {
-    let composed = compose_bridge_causal_envelope_receipt_identity(receipt);
+    let composed = compose_bridge_causal_envelope_receipt_identity(receipt)
+        .expect("positive fixture identity fits canonical digest bounds");
     composed.reporting_projection().to_string()
 }
 
@@ -38,7 +43,7 @@ pub(crate) fn causal_test_bridge_binding_reference_for_reporting(
     owner: &str,
     family: &str,
     bridge_reference: worth_runtime_bridge::facade::BridgeIdentityEvidence,
-) -> String {
+) -> Result<String, IdentityDerivationDenial> {
     let composed = WorthQueryEvidenceIdentity::compose(
         WorthQueryEvidenceScope::CausalEvidenceReferenceReceipt,
     )
@@ -52,6 +57,6 @@ pub(crate) fn causal_test_bridge_binding_reference_for_reporting(
         WorthQueryEvidenceTag::new("reference"),
         &bridge_reference,
     )
-    .seal();
-    composed.reporting_projection().to_string()
+    .seal()?;
+    Ok(composed.reporting_projection().to_string())
 }

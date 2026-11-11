@@ -1,0 +1,9 @@
+{
+  "exit": 0,
+  "names": [
+    "process::application::world_durable_release::unclean::unclean_native_tail_refuses_before_world_service_and_names_the_original_effect",
+    "process::application::world_durable_release::unclean::quiescent_kill_reopens_the_acknowledged_native_and_world_heads",
+    "process::application::world_durable_release::unclean::graceful_close_reopens_the_checkpointed_native_and_world_heads"
+  ],
+  "note": "Owned committed Store/nextest configuration; no default-stack claim. Only the three exact nonignored process courts execute."
+}

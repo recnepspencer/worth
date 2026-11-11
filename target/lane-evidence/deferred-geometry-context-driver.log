@@ -1,0 +1,12 @@
+COMMAND: ["C:\\Users\\shepworth\\AppData\\Local\\Programs\\Python\\Python314\\python.exe", "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\target\\lane-evidence\\pa_merge_owned_cargo.py", "deferred-geometry-context", "tools/agent-context/Cargo.toml", "run", "--target-dir", "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\target\\constitution-tools", "--", "check"]
+HEAD: 307539feba2f331a8b7406f3a69868bc3ee3b45d
+CLEAN: false
+START: 2026-11-08T22:04:14.773615+00:00
+ENV: removed stale external linker override; RUST_MIN_STACK unset in parent
+prebuild: cargo build --message-format=json --target-dir "C:\programming\worth worktees\worktrees\m3-host-home\target\constitution-tools" --manifest-path "C:\programming\worth worktees\worktrees\m3-host-home\tools\agent-context\Cargo.toml" --unit-graph -Z unstable-options
+prebuild: cargo run --message-format=json --target-dir "C:\programming\worth worktees\worktrees\m3-host-home\target\constitution-tools" --manifest-path "C:\programming\worth worktees\worktrees\m3-host-home\tools\agent-context\Cargo.toml" -- check
+    Finished `dev` profile [optimized + debuginfo] target(s) in 0.05s
+     Running `target\constitution-tools\debug\agent-context.exe check`
+
+END: 2026-11-08T22:04:17.620984+00:00
+EXIT: 0

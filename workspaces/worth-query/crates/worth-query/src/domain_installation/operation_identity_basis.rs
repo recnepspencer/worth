@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use worth_foundational::facade::{
     canonical_basis_sequence_material, prepare_canonical_basis_sequence, CanonicalBasisDomain,
     CanonicalBasisEntry, CanonicalBasisEntryKind, CanonicalBasisLocus, CanonicalBasisValue,
@@ -14,21 +15,23 @@ use crate::identity_evolution::InstalledIdentityEvolutionOutcome;
 pub(crate) fn canonical_operation_identity(
     role: &'static str,
     entries: Vec<(&str, String)>,
-) -> String {
-    crate::evidence_identity::WorthQueryEvidenceIdentity::compose(
-        crate::evidence_identity::WorthQueryEvidenceScope::InstalledDomainExecution,
+) -> Result<String, IdentityDerivationDenial> {
+    Ok(
+        crate::evidence_identity::WorthQueryEvidenceIdentity::compose(
+            crate::evidence_identity::WorthQueryEvidenceScope::InstalledDomainExecution,
+        )
+        .field_shape(
+            crate::evidence_identity::WorthQueryEvidenceTag::new("operation_evidence_role"),
+            role,
+        )
+        .field_value(
+            crate::evidence_identity::WorthQueryEvidenceTag::new("canonical_operation_basis"),
+            canonical_operation_material(entries),
+        )
+        .seal()?
+        .terminal_projection_for_reporting()
+        .to_owned(),
     )
-    .field_shape(
-        crate::evidence_identity::WorthQueryEvidenceTag::new("operation_evidence_role"),
-        role,
-    )
-    .field_value(
-        crate::evidence_identity::WorthQueryEvidenceTag::new("canonical_operation_basis"),
-        canonical_operation_material(entries),
-    )
-    .seal()
-    .terminal_projection_for_reporting()
-    .to_owned()
 }
 
 pub(crate) fn canonical_operation_material(entries: Vec<(&str, String)>) -> String {

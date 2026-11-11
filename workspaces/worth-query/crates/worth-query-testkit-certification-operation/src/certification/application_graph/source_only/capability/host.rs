@@ -143,10 +143,10 @@ pub fn install_program<
                     WorthQueryApplicationEntityKey::new("document-row-1").unwrap(),
                 )
                 .field(
-                    DocumentIdentityField::reference(),
+                    DocumentIdentityField::at("DocumentIdentityField"),
                     DOCUMENT_IDENTITY.to_owned(),
                 )
-                .field(DocumentRetentionField::reference(), 7_u64),
+                .field(DocumentRetentionField::at("DocumentRetentionField"), 7_u64),
             )?;
             seed_grant(graph, "source-child", 1, 1)?;
             seed_grant(graph, "resource-action", 1, 3)?;
@@ -175,16 +175,19 @@ pub fn seed_grant(
             Grant::reference(),
             WorthQueryApplicationEntityKey::new(name).unwrap(),
         )
-        .field(GrantIdentity::reference(), name.to_owned())
-        .field(GrantAction::reference(), action)
-        .field(GrantPurpose::reference(), action)
-        .field(GrantStatus::reference(), 1_u64)
-        .field(GrantScopeKey::reference(), DOCUMENT_IDENTITY.to_owned())
-        .field(GrantNotBefore::reference(), 0_u64)
-        .field(GrantNotAfter::reference(), u64::MAX)
-        .field(GrantDepth::reference(), 0_u64)
+        .field(GrantIdentity::at("GrantIdentity"), name.to_owned())
+        .field(GrantAction::at("GrantAction"), action)
+        .field(GrantPurpose::at("GrantPurpose"), action)
+        .field(GrantStatus::at("GrantStatus"), 1_u64)
         .field(
-            super::resources::ResourceDisclosureField::reference(),
+            GrantScopeKey::at("GrantScopeKey"),
+            DOCUMENT_IDENTITY.to_owned(),
+        )
+        .field(GrantNotBefore::at("GrantNotBefore"), 0_u64)
+        .field(GrantNotAfter::at("GrantNotAfter"), u64::MAX)
+        .field(GrantDepth::at("GrantDepth"), 0_u64)
+        .field(
+            super::resources::ResourceDisclosureField::at("ResourceDisclosureField"),
             1_u64,
         ),
     )?;

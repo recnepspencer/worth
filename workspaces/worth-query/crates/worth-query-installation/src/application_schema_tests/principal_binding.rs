@@ -3,49 +3,41 @@ use super::*;
 pub(super) fn test_principal_binding<Schema>() -> ApplicationPrincipalBindingRef<
     Schema,
     PrincipalBinding,
-    FixtureEntity<Schema>,
-    FixtureEntity<Schema>,
+    FixtureEntity,
+    FixtureEntity,
     u64,
     worth_query_declaration::facade::application_schema::U64ApplicationValueBinding,
 >
 where
     Schema: ApplicationSchema,
 {
-    let identity = ApplicationFieldRef::<
-        Schema,
-        FixtureEntity<Schema>,
-        FixtureIdentityAspect<Schema>,
-        FixtureExternalIdentityField<Schema>,
+    let identity = worth_query_declaration::facade::application_schema::fragment::FieldSelection::<
+        InstallationFields,
+        FixtureEntity,
+        FixtureIdentityAspect,
         WorthQueryExternalPrincipalIdentity,
-        ReadOnly,
-        EqualityPredicate,
-    >::from_schema_types();
-    let status = ApplicationFieldRef::<
-        Schema,
-        FixtureEntity<Schema>,
-        FixtureIdentityAspect<Schema>,
-        FixtureMappingStatusField<Schema>,
+    >::at("ExternalIdentityField");
+    let status = worth_query_declaration::facade::application_schema::fragment::FieldSelection::<
+        InstallationFields,
+        FixtureEntity,
+        FixtureIdentityAspect,
         WorthQueryPrincipalMappingStatus,
-        ReadWrite,
-        NoEqualityPredicate,
-    >::from_schema_types();
+    >::at("MappingStatusField");
     let target = ApplicationRelationRef::<
         Schema,
         MappingTarget,
-        FixtureEntity<Schema>,
-        FixtureEntity<Schema>,
+        FixtureEntity,
+        FixtureEntity,
     >::from_schema_identifiers("MappingTarget", "TestEntity", "TestEntity",
                 worth_query_declaration::facade::application_schema::ApplicationRelationIntegrity::same_context_unbounded_retain_dangling(),
             );
-    let principal_identity = ApplicationFieldRef::<
-        Schema,
-        FixtureEntity<Schema>,
-        FixtureIdentityAspect<Schema>,
-        FixturePrincipalIdentityField<Schema>,
-        u64,
-        ReadOnly,
-        EqualityPredicate,
-    >::from_schema_types();
+    let principal_identity =
+        worth_query_declaration::facade::application_schema::fragment::FieldSelection::<
+            InstallationFields,
+            FixtureEntity,
+            FixtureIdentityAspect,
+            u64,
+        >::at("PrincipalIdentityField");
     ApplicationPrincipalBindingRef::from_requirements(
         "PrincipalBinding",
         ApplicationPrincipalBindingRequirements {

@@ -47,6 +47,7 @@ where
             prepared.governed_input_work,
         ));
     WorthQueryAdmittedApplicationCapabilityAccess {
+        authentication: prepared.principal.retain_authentication(),
         runtime_authority: prepared.graph_work.runtime_authority(),
         home_owner: prepared
             .runtime

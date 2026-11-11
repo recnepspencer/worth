@@ -60,7 +60,7 @@ impl EffectExecutionOracleVerification {
                     WorthQueryEvidenceTag::new("component_count"),
                     component_count,
                 )
-                .seal();
+                .seal().expect("fixed digest grammar: literal tags, primitive values, closed enum labels, or sealed digest tokens");
         Self {
             verification_kind,
             execution_subject_identity: execution_subject_identity.clone(),
@@ -94,7 +94,7 @@ impl EffectExecutionOracleVerification {
                     oracle.bridge_oracle_identity(),
                 )
                 .field_usize(WorthQueryEvidenceTag::new("component_count"), 1)
-                .seal();
+                .seal().expect("fixed digest grammar: literal tags, primitive values, closed enum labels, or sealed digest tokens");
         Self {
             verification_kind: EffectExecutionOracleVerificationKind::Writeback,
             execution_subject_identity: execution_subject_identity.clone(),

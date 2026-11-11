@@ -4,7 +4,6 @@ use worth_query_decl::facade::{
         WorthQueryApplicationDeclaredOutputRole, WorthQueryApplicationOutputRole,
         WorthQueryExactlyOneOutput, WorthQueryPreserveOutput,
     },
-    application_schema::{NoApplicationUnit, ReadOnly},
     worth_query_mutation_binding, worth_query_structured_value_binding,
 };
 
@@ -14,7 +13,7 @@ use crate::proposals::{BankIdempotencyKey, BankInvariantApprovedProposal, BankPr
 use super::{ApprovePayment, ApprovePaymentInputBinding, RejectPayment, RejectPaymentInputBinding};
 use crate::schema::{
     ApprovePaymentOperation, BankPrincipalBinding, BankPrincipalIdBinding, BankSchema,
-    ExternalPrincipalMapping, PaymentIdentity, PaymentIdentityField, PaymentIntent, Principal,
+    ExternalPrincipalMapping, PaymentIdentityField, PaymentIntent, Principal,
     RejectPaymentOperation,
 };
 
@@ -82,13 +81,8 @@ worth_query_mutation_binding!(
         principal_entity Principal,
         principal_identity BankPrincipalId,
         identity_binding BankPrincipalIdBinding,
-    scope PaymentIntent,
-        PaymentIdentity,
-        PaymentIdentityField,
-        PaymentId,
-        ReadOnly,
-        NoApplicationUnit,
-    field PaymentIdentityField::reference(),
+    scope PaymentIdentityField,
+    field PaymentIdentityField::at("PaymentIdentityField"),
     value payment_scope_from_approval,
 );
 
@@ -110,12 +104,7 @@ worth_query_mutation_binding!(
         principal_entity Principal,
         principal_identity BankPrincipalId,
         identity_binding BankPrincipalIdBinding,
-    scope PaymentIntent,
-        PaymentIdentity,
-        PaymentIdentityField,
-        PaymentId,
-        ReadOnly,
-        NoApplicationUnit,
-    field PaymentIdentityField::reference(),
+    scope PaymentIdentityField,
+    field PaymentIdentityField::at("PaymentIdentityField"),
     value payment_scope_from_rejection,
 );

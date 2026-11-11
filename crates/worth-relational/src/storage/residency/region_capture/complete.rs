@@ -1,4 +1,4 @@
-//! Counted Full DATA emits REG6 members after ordinary funded materialization.
+//! Counted Full DATA emits current-format members after ordinary funded materialization.
 mod adjacency;
 pub(in crate::storage::residency) mod arena;
 mod aspects;
@@ -27,6 +27,7 @@ pub(in crate::storage::residency) struct Captured {
         (RelationalDurableMemberLocator, ExecutionImmutableBytes),
     pub(in crate::storage::residency) history:
         (RelationalDurableMemberLocator, ExecutionImmutableBytes),
+    pub(in crate::storage::residency) directory: Arc<super::super::PortableRecordDirectory>,
     pub(in crate::storage::residency) kind_authority: super::super::RelationalRegionKindCommitment,
     pub(in crate::storage::residency) history_members: Arc<RelationalHistoryMemberDirectory>,
 }
@@ -37,7 +38,8 @@ fn preparation(cause: RegionContentFailure) -> Stop {
     match cause {
         RegionContentFailure::Execution(cause) => Stop::Request(cause),
         RegionContentFailure::Content(
-            crate::storage::overlay::PartitionContentDigestError::Request(cause),
+            crate::storage::overlay::PartitionContentDigestError::Request(cause)
+            | crate::storage::overlay::PartitionContentDigestError::Execution(cause),
         ) => Stop::Request(cause),
         RegionContentFailure::Storage(failure) => failure.into(),
         _ => invalid("original Full region projection refused"),
@@ -45,6 +47,7 @@ fn preparation(cause: RegionContentFailure) -> Stop {
 }
 
 pub(in crate::storage::residency) fn capture(
+    lane: &crate::storage::substrate::maintenance::ReconstructionLane<'_>,
     partition: &PartitionState,
     commitment: &PartitionContentCommitment,
     schema: &RelationalBranchRootSchemaAuthority,
@@ -75,13 +78,15 @@ pub(in crate::storage::residency) fn capture(
     let contracts = aspects::Contracts::capture(schema, request)?;
     arena::validate(&partition.entity_arena, schema, &contracts, request)?;
     arena::validate(&partition.relation_arena, schema, &contracts, request)?;
-    let head = FullKindProjection::capture(partition, AdjacencyKindBasis::Current, request)
+    let head = FullKindProjection::capture(lane, partition, AdjacencyKindBasis::Current, request)
         .map_err(preparation)?;
-    let history = FullKindProjection::capture(partition, AdjacencyKindBasis::Historical, request)
-        .map_err(preparation)?;
+    let history =
+        FullKindProjection::capture(lane, partition, AdjacencyKindBasis::Historical, request)
+            .map_err(preparation)?;
     let kind_authority = super::super::RelationalRegionKindCommitment {
-        head: super::super::kind_commitment::digest_full(&head, request).map_err(preparation)?,
-        history: super::super::kind_commitment::digest_full(&history, request)
+        head: super::super::kind_commitment::digest_full(lane, &head, request)
+            .map_err(preparation)?,
+        history: super::super::kind_commitment::digest_full(lane, &history, request)
             .map_err(preparation)?,
     };
     let head_projection = FullProjectionEncoding::new(&head, *request);
@@ -132,7 +137,18 @@ pub(in crate::storage::residency) fn capture(
         return Err(Stop::Request(cause));
     }
     let head = encoded?;
+    let directory = lane
+        .recover(request, |lane, work| {
+            super::super::RegionRecordDirectory::capture(lane, partition, &mut |units, bytes| {
+                Ok(work.prepare(units, bytes)?)
+            })
+        })
+        .map_err(|error| error.into_failure(partition.partition_id))?;
+    let directory = directory
+        .portable(lane, request)
+        .map_err(|error| error.into_failure(partition.partition_id))?;
     Ok(Captured {
+        directory,
         head,
         history,
         kind_authority,

@@ -15,7 +15,8 @@ impl WorthQueryAdmittedOperation {
             worth_query_declaration::facade::authentication::WorthQueryExternalPrincipalIdentity,
         >,
     > {
-        self.authorization
+        self.data
+            .authorization
             .as_ref()
             .map(WorthQueryRetainedAuthorizationDecisionFacts::signing_principal)
     }
@@ -27,7 +28,8 @@ impl WorthQueryAdmittedOperation {
             worth_query_declaration::facade::authentication::WorthQueryExternalPrincipalIdentity,
         >,
     > {
-        self.authorization
+        self.data
+            .authorization
             .as_ref()
             .and_then(WorthQueryRetainedAuthorizationDecisionFacts::capability_authorization)
             .map(|authorization| authorization.principal().external_identity())
@@ -37,7 +39,8 @@ impl WorthQueryAdmittedOperation {
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<Option<FundedActorText>, WorkflowApprovalRequestEncodingDenial> {
-        self.authorization
+        self.data
+            .authorization
             .as_ref()
             .and_then(WorthQueryRetainedAuthorizationDecisionFacts::capability_authorization)
             .map(|authorization| {
@@ -52,7 +55,8 @@ impl WorthQueryAdmittedOperation {
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<Option<FundedActorText>, WorkflowApprovalRequestEncodingDenial> {
-        self.authorization
+        self.data
+            .authorization
             .as_ref()
             .and_then(WorthQueryRetainedAuthorizationDecisionFacts::capability_authorization)
             .map(|authorization| {
@@ -69,7 +73,8 @@ impl WorthQueryAdmittedOperation {
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<Option<FundedActorText>, WorkflowApprovalRequestEncodingDenial> {
-        self.authorization
+        self.data
+            .authorization
             .as_ref()
             .and_then(WorthQueryRetainedAuthorizationDecisionFacts::capability_authorization)
             .map(|authorization| {
@@ -86,7 +91,8 @@ impl WorthQueryAdmittedOperation {
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<Option<FundedActorText>, WorkflowApprovalRequestEncodingDenial> {
-        self.authorization
+        self.data
+            .authorization
             .as_ref()
             .and_then(WorthQueryRetainedAuthorizationDecisionFacts::capability_authorization)
             .map(|authorization| {
@@ -102,7 +108,8 @@ impl WorthQueryAdmittedOperation {
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<Option<FundedActorText>, WorkflowApprovalRequestEncodingDenial> {
-        self.authorization
+        self.data
+            .authorization
             .as_ref()
             .and_then(WorthQueryRetainedAuthorizationDecisionFacts::capability_authorization)
             .map(|authorization| {

@@ -212,3 +212,6 @@ impl WorthQueryRuntime {
         )
     }
 }
+#[cfg(test)]
+#[path = "owned_async_source_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;

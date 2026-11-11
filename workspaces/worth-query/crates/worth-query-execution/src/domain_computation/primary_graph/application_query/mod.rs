@@ -35,6 +35,7 @@ pub(crate) mod derived_view;
 mod disclosure;
 mod execution_shape;
 mod execution_validation;
+pub(in crate::domain_computation::primary_graph) mod request_recipe;
 
 mod graph_read_plan_binding;
 mod history;
@@ -188,6 +189,12 @@ pub use projection::retained_projection::{
     WorthQueryMaterializedQueryRow, WorthQueryProjectionMaterializationRefusal,
 };
 
+pub(in crate::domain_computation::primary_graph) use observed_source::{
+    AppliedQuerySource, AppliedSourcePublication,
+};
 pub(in crate::domain_computation::primary_graph) use projection::ProjectionContentComparisonFault;
 
 pub(in crate::domain_computation::primary_graph::application_query) use read_execution::dispatch_witness::DispatchWitness;
+#[cfg(test)]
+#[path = "mod_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;

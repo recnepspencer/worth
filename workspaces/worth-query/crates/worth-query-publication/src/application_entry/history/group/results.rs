@@ -6,12 +6,12 @@ pub enum WorthQueryHistoryGroupCompletionKind {
 }
 pub struct WorthQueryHistoryGroupCompletions<T> {
     items: Vec<T>,
-    _memory: Option<worth_execution::ExecutionMemoryReservation>,
+    _memory: Vec<worth_execution::ExecutionMemoryReservation>,
 }
 impl<T> WorthQueryHistoryGroupCompletions<T> {
     pub(super) fn new(
         items: Vec<T>,
-        memory: Option<worth_execution::ExecutionMemoryReservation>,
+        memory: Vec<worth_execution::ExecutionMemoryReservation>,
     ) -> Self {
         Self {
             items,
@@ -33,7 +33,7 @@ impl<T> WorthQueryHistoryGroupCompletions<T> {
 }
 pub struct WorthQueryHistoryGroupCompletionIter<T> {
     items: std::vec::IntoIter<T>,
-    _memory: Option<worth_execution::ExecutionMemoryReservation>,
+    _memory: Vec<worth_execution::ExecutionMemoryReservation>,
 }
 impl<T> IntoIterator for WorthQueryHistoryGroupCompletions<T> {
     type Item = T;
@@ -55,3 +55,6 @@ impl<T> Iterator for WorthQueryHistoryGroupCompletionIter<T> {
     }
 }
 impl<T> ExactSizeIterator for WorthQueryHistoryGroupCompletionIter<T> {}
+#[cfg(test)]
+#[path = "results_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;

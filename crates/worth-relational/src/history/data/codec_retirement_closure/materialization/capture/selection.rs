@@ -1,25 +1,41 @@
 //! Actual relation birth identifies the group; its native route locates current custody.
 use super::*;
+use crate::history::data::canonical_commit_envelope::{
+    OutputOriginHistory, OwnedValidatedOutputOrigins,
+};
 use crate::history::data::RequiredOutputRoutePosition as Position;
 use crate::identity::data::RelationId;
 use worth_execution::{ExecutionResourceLease, MapKernelContext};
 
 pub(super) fn at_source(
-    runtime: &RelationalRuntime,
+    runtime: &crate::history::data::codec_retirement_closure::history_request::RuntimeHistoryRequest<'_, '_, '_>,
     basis: &AdmittedRelationalBranchBasis,
     record: &RelationalMaterializationRecord,
+    validated_history: &mut OutputOriginHistory,
     context: &mut MapKernelContext<'_, '_>,
     lease: Option<&ExecutionResourceLease<'_>>,
-) -> Result<Option<Arc<CanonicalCommitEnvelope>>, TransactionCommitError> {
+) -> Result<Option<OwnedValidatedOutputOrigins>, TransactionCommitError> {
     let relation_id = match record {
         RelationalMaterializationRecord::Entity { entity_id, .. } => {
             return optional(super::super::super::membership::latest(
-                runtime, basis, *entity_id, context, lease,
+                runtime,
+                basis,
+                *entity_id,
+                validated_history,
+                context,
+                lease,
             ))
         }
         RelationalMaterializationRecord::Relation { relation_id, .. } => *relation_id,
     };
-    let Some(birth) = optional(relation_birth(runtime, basis, relation_id, context))? else {
+    let Some(birth) = optional(relation_birth(
+        runtime,
+        basis,
+        relation_id,
+        validated_history,
+        context,
+    ))?
+    else {
         return Ok(None);
     };
     let origin = birth
@@ -36,6 +52,7 @@ pub(super) fn at_source(
                 &origin.meaning,
                 context,
                 lease,
+                basis.inner.root.schema_authority(),
             ))?
             .flatten()
         }
@@ -47,9 +64,13 @@ pub(super) fn at_source(
     // Indexed publication is a locator, never ownership authority. A retired
     // route cannot fall back to an older endpoint or an older publication.
     optional((|| {
-        let current = runtime
-            .history
-            .canonical_envelope(commit)
+        let current = validated_history
+            .by_commit(
+                commit,
+                &mut |commit| runtime.commit(commit),
+                &runtime.execution(),
+                context,
+            )?
             .ok_or("current incident producer publication absent")?;
         let current_origin = current.validate_output_membership_header()?;
         charge(
@@ -78,11 +99,12 @@ pub(super) fn at_source(
 }
 
 fn relation_birth(
-    runtime: &RelationalRuntime,
+    runtime: &crate::history::data::codec_retirement_closure::history_request::RuntimeHistoryRequest<'_, '_, '_>,
     basis: &AdmittedRelationalBranchBasis,
     relation_id: RelationId,
+    validated_history: &mut OutputOriginHistory,
     context: &mut MapKernelContext<'_, '_>,
-) -> Result<Arc<CanonicalCommitEnvelope>, Stop> {
+) -> Result<OwnedValidatedOutputOrigins, Stop> {
     charge(context, 3)?;
     let partition = basis
         .inner
@@ -93,9 +115,13 @@ fn relation_birth(
         .relation_arena
         .created_at_for_slot(relation_id.slot_index())
         .ok_or("incident producer relation birth position absent")?;
-    let birth = runtime
-        .history
-        .canonical_envelope_for_version(created)
+    let birth = validated_history
+        .by_version(
+            created,
+            &mut |version, context| runtime.version(version, context),
+            &runtime.execution(),
+            context,
+        )?
         .ok_or("incident producer exact canonical birth absent")?;
     let origin = birth.validate_output_membership_header()?;
     // Actual Created allocation/endpoints establish producer ownership. Current
@@ -104,7 +130,9 @@ fn relation_birth(
         &*basis.inner.root,
         relation_id,
         origin,
-        &mut |version| runtime.history.canonical_envelope_for_version(version),
+        &mut |version, context| runtime.version(version, context),
+        validated_history,
+        &runtime.execution(),
         context,
     )?;
     Ok(birth)

@@ -1,15 +1,13 @@
+use super::fragment;
 use std::marker::PhantomData;
 
 use worth_foundational::facade::AspectValue;
 
 use super::authoring_context::{ApplicationFieldAdmission, ApplicationOperationProgramAdmission};
 use super::capabilities::{
-    ApplicationFieldUnit, CreatableBy, OperationCreates, OperationDeletes, OperationLinks,
-    OperationUnlinks, OperationWrites, WritableCapability,
+    CreatableBy, OperationCreates, OperationDeletes, OperationLinks, OperationUnlinks,
 };
-use super::field_reference::ApplicationFieldRef;
 use super::references::{ApplicationEntityRef, ApplicationOperationRef, ApplicationRelationRef};
-use super::values::DeclaredApplicationFieldValue;
 use super::{
     ApplicationEncodedScalarValue, ApplicationOperationMarkerIdentity,
     ApplicationSchemaAuthoringContext, ApplicationSchemaAuthoringDenial,
@@ -263,16 +261,23 @@ impl<Schema, Operation, Input> TypedMutationIntentBuilder<Schema, Operation, Inp
         self
     }
 
-    pub fn set<Entity, Aspect, Field, Value, Write, Equality, Unit>(
+    pub fn set<Entity, Aspect, Field, Value>(
         mut self,
-        field: ApplicationFieldRef<Schema, Entity, Aspect, Field, Value, Write, Equality, Unit>,
+        field: Field,
         value: ApplicationEncodedScalarValue<Field::Binding>,
     ) -> Self
     where
-        Field: OperationWrites<Operation> + DeclaredApplicationFieldValue<Value = Value>,
-        Write: WritableCapability,
-        Unit: ApplicationFieldUnit,
+        Field: fragment::RecordSelection<Entity = Entity, Aspect = Aspect, Value = Value>,
     {
+        if self.denial.is_none() {
+            self.denial = field.checked().err().map(|_| {
+                ApplicationSchemaAuthoringDenial::new(
+                    super::ApplicationSchemaAuthoringDenialKind::UnknownField,
+                    field.field(),
+                )
+            });
+        }
+
         if self.denial.is_none() {
             self.denial = self.context.as_ref().and_then(|context| {
                 context
@@ -286,6 +291,7 @@ impl<Schema, Operation, Input> TypedMutationIntentBuilder<Schema, Operation, Inp
                         requires_write: true,
                         requires_equality: false,
                     })
+                    .and_then(|()| context.admit_record_selection(field))
                     .and_then(|()| {
                         context.admit_operation_program(
                             self.operation,

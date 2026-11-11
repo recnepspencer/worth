@@ -10,6 +10,37 @@ impl ApplicationCorrectionBinding<BankSchema> for RestoreRecordedEstateFreeze {
     type Source = FreezeEstateAccountMutationBinding;
     type InverseIntent = RestoreFrozenEstateAccount;
     type Disclosure = EstateCaseOverviewQueryBinding;
+
+    fn recover_source_input(
+        bytes: &[u8],
+        expected: worth_query_decl::facade::application_schema::CanonicalDigestId,
+        bounds: worth_query_decl::facade::application_schema::ValueDecodeBounds,
+    ) -> Result<
+        worth_query_decl::facade::application_operation::ApplicationEncodedInput<
+            <Self::Source as worth_query_decl::facade::application_operation::ApplicationMutationBinding<BankSchema>>::InputBinding,
+        >,
+        worth_query_decl::facade::application_operation::ApplicationRetainedInputDenial,
+    >{
+        crate::schema::correction_input::freeze(bytes, expected, bounds)
+    }
+
+    fn recover_inverse_input(
+        bytes: &[u8],
+        expected: worth_query_decl::facade::application_schema::CanonicalDigestId,
+        bounds: worth_query_decl::facade::application_schema::ValueDecodeBounds,
+    ) -> Result<
+        worth_query_decl::facade::application_operation::ApplicationEncodedInput<
+            <worth_query_decl::facade::application_aftermath::ApplicationInverseBinding<
+                BankSchema,
+                Self,
+            > as worth_query_decl::facade::application_operation::ApplicationMutationBinding<
+                BankSchema,
+            >>::InputBinding,
+        >,
+        worth_query_decl::facade::application_operation::ApplicationRetainedInputDenial,
+    > {
+        crate::schema::correction_input::frozen(bytes, expected, bounds)
+    }
     fn source_definition() -> ApplicationOperationDefinitionBuilder<
         BankSchema,
         FreezeEstateAccountOperation,
@@ -43,13 +74,10 @@ impl ApplicationCorrectionBinding<BankSchema> for RestoreRecordedEstateFreeze {
         })
         .max()
         .unwrap();
-        DeclaredCorrectionMechanism::recorded_inverse_binding::<Self>(
-            DeclaredPreImageDemand::new(
-                [DeclaredPreImageLocus::from_field(Status::reference())],
-                width,
-            )
-            .expect("account status codec has a finite declared representation"),
-        )
+        DeclaredCorrectionMechanism::recorded_inverse_binding::<Self>(DeclaredPreImageDemand::new(
+            [DeclaredPreImageLocus::from_field(Status::at("Status"))],
+            width,
+        ))
     }
     fn derive_correction(
         original: &EstateAction,
@@ -64,7 +92,7 @@ impl ApplicationCorrectionBinding<BankSchema> for RestoreRecordedEstateFreeze {
         };
         let prior_status = AccountStatusBinding::decode(
             preimage
-                .field(&DeclaredPreImageLocus::from_field(Status::reference()))
+                .field(&DeclaredPreImageLocus::from_field(Status::at("Status")))
                 .ok_or(MissingPreImage)?,
         )
         .map_err(|_| InvalidPreImage)?;

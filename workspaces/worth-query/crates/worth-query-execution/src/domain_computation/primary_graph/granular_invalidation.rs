@@ -12,3 +12,6 @@ pub use observation::{
 };
 
 pub(super) use delivery::collect_granular_invalidations;
+#[cfg(test)]
+#[path = "granular_invalidation_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;

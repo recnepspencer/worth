@@ -115,8 +115,8 @@ impl RelationalCommitEnvelopeResidency {
                     return Err(Ack::Storage(Cause::IntegrityMismatch));
                 }
             }
-            EnvelopeBacking::Memory { envelope, .. } => {
-                if envelope.commit != entry.commit {
+            EnvelopeBacking::Memory { canonical, .. } => {
+                if canonical.envelope().commit != entry.commit {
                     return Err(Ack::Storage(Cause::IntegrityMismatch));
                 }
             }

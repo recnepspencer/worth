@@ -17,7 +17,8 @@ pub fn assert_test_backend_receipt_equivalence(
     in_memory: &WorthQueryWriteReceipt,
     bridge: &WorthQueryWriteReceipt,
 ) {
-    let report = compare_test_backend_write_receipts(in_memory, bridge);
+    let report =
+        compare_test_backend_write_receipts(in_memory, bridge).expect("fixture digest must fit");
     assert!(report.matched(), "{:?}", report.rows());
     assert_eq!(report.rows().len(), 8);
     assert!(!report

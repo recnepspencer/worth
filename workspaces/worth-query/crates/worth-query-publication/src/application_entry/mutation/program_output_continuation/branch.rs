@@ -42,6 +42,45 @@ where
         Right::validate_history_group_outputs(application)
     }
 
+    fn capture_history_root_recipes<
+        H: worth_query_declaration::facade::application_history::ApplicationHistoryBinding<Schema>,
+    >(
+        document: &worth_query_execution::publication_boundary::document_history::WorthQueryDocumentHistory<'_, Schema, H>,
+        phase: &worth_query_execution::facade::application_contribution::WorthQueryAdvancementPhase<
+            '_,
+        >,
+        application: &WorthQueryProgramApplicationRuntime<Schema, Program>,
+        profile: &worth_query_execution::publication_boundary::document_history::WorthQueryHistoryOutputProfile,
+        parent_demand: &ParentDemand,
+    ) -> Result<(), crate::application_entry::WorthQueryHistoryOutputDenial> {
+        Left::capture_history_root_recipes(document, phase, application, profile, parent_demand)?;
+        Right::capture_history_root_recipes(document, phase, application, profile, parent_demand)
+    }
+
+    fn start_verified(
+        application: &WorthQueryProgramApplicationRuntime<Schema, Program>,
+        parent_demand: &ParentDemand,
+        parent: &worth_query_execution::publication_boundary::document_history::WorthQueryVerifiedHistoryParent<Schema, Program, ParentDemand>,
+        request: &WorthQueryApplicationRequest<'_, '_, '_, Schema>,
+        controls: WorthQueryOutputDemandControls,
+    ) -> Result<
+        Box<dyn ProgramOutputContinuation<Schema, Program>>,
+        WorthQueryRequiredOutputPreparationDenial,
+    > {
+        Ok(Box::new(BranchContinuation {
+            left: Left::start_verified(application, parent_demand, parent, request, controls)?,
+            right: Right::start_verified(application, parent_demand, parent, request, controls)?,
+            complete: [false, false],
+            next_advance: 0,
+            outputs: Vec::new(),
+            dependencies: [None, None],
+            basis: crate::application_entry::WorthQueryApplicationReadObservation::new(
+                std::sync::Arc::clone(parent.observation()),
+            ),
+            work: ProgramOutputTraversalWork::default(),
+        }))
+    }
+
     fn start(
         application: &WorthQueryProgramApplicationRuntime<Schema, Program>,
         parent_demand: &ParentDemand,
@@ -91,6 +130,15 @@ where
     Schema: ApplicationSchema,
     Program: ApplicationProgramDefinition<Schema>,
 {
+    fn record_history_discovery(
+        &mut self,
+        origin: std::sync::Arc<worth_query_execution::publication_boundary::document_history::WorthQueryHistoryRecordingOutputOrigin>,
+        index: usize,
+    ) {
+        self.left
+            .record_history_discovery(std::sync::Arc::clone(&origin), index);
+        self.right.record_history_discovery(origin, index);
+    }
     fn authorize_history(
         &self,
         phase: &worth_query_execution::facade::application_contribution::WorthQueryAdvancementPhase<

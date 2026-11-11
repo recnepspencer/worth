@@ -16,7 +16,7 @@ use crate::validation::{
 pub(crate) struct CompletedInvariantReduction {
     reduced: super::super::ReducedInvariants,
     // These cover payloads moved out of the envelopes until engine handoff.
-    _stage_memory: [[Option<ExecutionMemoryReservation>; 2]; 2],
+    _stage_memory: [[Option<ExecutionMemoryReservation>; 2]; 4],
     pub(super) projection_memory: Option<ExecutionMemoryReservation>,
     new_owned_bytes: u64,
 }
@@ -173,7 +173,7 @@ impl ReducedInvariantPrefix {
             Some(proof),
             request.proposal_identity().cloned(),
         );
-        let mut stage_memory = [[None, None], [None, None]];
+        let mut stage_memory = [[None, None], [None, None], [None, None], [None, None]];
         for (index, stage) in self.stages.into_iter().flatten().enumerate() {
             stage_memory[index] = [stage.input_memory, stage.auxiliary_memory];
         }

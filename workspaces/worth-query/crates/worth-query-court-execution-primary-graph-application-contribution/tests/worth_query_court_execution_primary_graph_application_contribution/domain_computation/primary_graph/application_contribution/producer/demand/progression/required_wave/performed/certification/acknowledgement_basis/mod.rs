@@ -54,7 +54,7 @@ fn a_current_proof_from_another_basis_acknowledges_nothing() {
             use worth_relational::facade::transactions::UpdateEntityFieldsIntent;
             use worth_relational::facade::transactions::AspectFieldPatch;
             let root = resolved_account(&phase.test_host_request_for_test(), world, "unrelated", &live_scope());
-            let field = AccountLabel::reference();
+            let field = AccountLabel::at("AccountLabel");
             let graph = (*world.application.runtime_for_test()).primary_graph_for_test().unwrap();
             let locator = graph.layout_for_test().field_locator_for_test(field.entity(), field.aspect(), field.field()).unwrap().clone();
             publish_relational_mutation(&execution, world,

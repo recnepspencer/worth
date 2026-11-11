@@ -23,10 +23,10 @@ fn ring(graph: &mut WorthQueryPrimaryGraphBootstrap<Schema>, anchor: &str) {
         graph
             .bind_entity(
                 WorthQueryApplicationEntitySeed::new(Body::reference::<Schema>(), entity(&key))
-                    .field(BodyKey::reference::<Schema>(), key)
-                    .field(Length::reference::<Schema>(), length(1))
-                    .field(PositionX::reference::<Schema>(), length(x))
-                    .field(PositionY::reference::<Schema>(), length(y)),
+                    .field(BodyKey::at("BodyKey"), key)
+                    .field(Length::at("Length"), length(1))
+                    .field(PositionX::at("PositionX"), length(x))
+                    .field(PositionY::at("PositionY"), length(y)),
             )
             .unwrap();
     }

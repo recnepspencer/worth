@@ -13,6 +13,13 @@ pub struct WorthQueryInvariantApprovedProposedState<'run> {
     progression: WorthQueryInvariantProgressionAuthority,
 }
 
+/// The same staged preparation used by ordinary commits, retained while a group
+/// prepares its other writers. It has no independent publication authority.
+pub(in crate::domain_computation) struct WorthQueryPreparedProposedCommit<'run> {
+    prepared: crate::domain_computation::provider_session::WorthQuerySessionPrepareOutcome<'run>,
+    overlay: super::overlay_lease::WorthQueryProvisionalOverlayLease<'run>,
+}
+
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryProviderCommitAdmissionDenial {
     ForeignInvariantProgression,
@@ -137,7 +144,7 @@ impl<'run> WorthQueryInvariantApprovedProposedState<'run> {
     }
 
     pub(crate) fn compare_and_commit_with(
-        mut self,
+        self,
         commit: impl FnOnce(
             crate::domain_computation::provider_session::WorthQuerySessionPrepareOutcome<'run>,
         ) -> WorthQuerySessionCommitOutcome,
@@ -149,24 +156,41 @@ impl<'run> WorthQueryInvariantApprovedProposedState<'run> {
             crate::domain_computation::WorthQueryDecisionReadSetFailure,
         >,
     ) -> WorthQueryProviderCompareAndCommitOutcome {
+        match self.compare_and_prepare(compare) {
+            Ok(prepared) => prepared.commit_with(commit),
+            Err(outcome) => outcome,
+        }
+    }
+
+    pub(in crate::domain_computation) fn compare_and_prepare(
+        mut self,
+        compare: impl FnOnce(
+            &crate::domain_computation::provider_session::WorthQuerySessionReadAuthority<'_>,
+            crate::domain_computation::WorthQueryFreshDecisionReadSet,
+        ) -> Result<
+            WorthQueryDecisionReadSetFreshnessOutcome,
+            crate::domain_computation::WorthQueryDecisionReadSetFailure,
+        >,
+    ) -> Result<WorthQueryPreparedProposedCommit<'run>, WorthQueryProviderCompareAndCommitOutcome>
+    {
         let fresh = self.proposed.attempt.read_set;
         let compared = compare(&self.proposed.attempt.staged.read_authority(), fresh);
         match compared {
             Ok(WorthQueryDecisionReadSetFreshnessOutcome::Stale(stale)) => {
                 let _ = self.proposed.attempt.overlay.discard();
                 let _ = self.proposed.attempt.staged.abort();
-                WorthQueryProviderCompareAndCommitOutcome::Stale(stale)
+                Err(WorthQueryProviderCompareAndCommitOutcome::Stale(stale))
             }
             Err(failure) => {
                 let _ = self.proposed.attempt.overlay.discard();
                 let _ = self.proposed.attempt.staged.abort();
-                WorthQueryProviderCompareAndCommitOutcome::Denied(
+                Err(WorthQueryProviderCompareAndCommitOutcome::Denied(
                     WorthQueryProviderCompareAndCommitDenial::DecisionReadSet(failure),
-                )
+                ))
             }
             Ok(WorthQueryDecisionReadSetFreshnessOutcome::Fresh(fresh)) => {
                 self.proposed.attempt.read_set = fresh;
-                self.commit_fresh(commit)
+                self.prepare_fresh()
             }
         }
     }
@@ -176,79 +200,91 @@ impl<'run> WorthQueryInvariantApprovedProposedState<'run> {
         let _ = self.proposed.attempt.staged.abort();
     }
 
-    fn commit_fresh(
+    fn prepare_fresh(
         mut self,
-        commit: impl FnOnce(
-            crate::domain_computation::provider_session::WorthQuerySessionPrepareOutcome<'run>,
-        ) -> WorthQuerySessionCommitOutcome,
-    ) -> WorthQueryProviderCompareAndCommitOutcome {
+    ) -> Result<WorthQueryPreparedProposedCommit<'run>, WorthQueryProviderCompareAndCommitOutcome>
+    {
         let prepared = match self.proposed.attempt.staged.prepare_for_commit() {
             Ok(prepared) => prepared,
             Err(failure) => {
                 let _ = self.proposed.attempt.overlay.discard();
-                return WorthQueryProviderCompareAndCommitOutcome::Denied(
+                return Err(WorthQueryProviderCompareAndCommitOutcome::Denied(
                     WorthQueryProviderCompareAndCommitDenial::ProviderSession(failure),
-                );
+                ));
             }
         };
+        Ok(WorthQueryPreparedProposedCommit {
+            prepared,
+            overlay: self.proposed.attempt.overlay,
+        })
+    }
+}
+
+impl<'run> WorthQueryPreparedProposedCommit<'run> {
+    pub(in crate::domain_computation) fn terminal_binding(
+        &self,
+    ) -> crate::domain_computation::provider_session::WorthQueryProviderSessionTerminalBinding {
+        self.prepared.terminal_binding()
+    }
+
+    pub(in crate::domain_computation) fn discard(mut self) {
+        let _ = self.overlay.discard();
+        // Dropping the actual prepared protocol aborts its live provider lease.
+        drop(self.prepared);
+    }
+    pub(in crate::domain_computation) fn commit_with(
+        self,
+        commit: impl FnOnce(
+            crate::domain_computation::provider_session::WorthQuerySessionPrepareOutcome<'run>,
+        ) -> WorthQuerySessionCommitOutcome,
+    ) -> WorthQueryProviderCompareAndCommitOutcome {
+        let Self {
+            prepared,
+            mut overlay,
+        } = self;
         match commit(prepared) {
             WorthQuerySessionCommitOutcome::ProductStale(stale) => {
-                let _ = self.proposed.attempt.overlay.discard();
+                let _ = overlay.discard();
                 WorthQueryProviderCompareAndCommitOutcome::ProductStale(stale)
             }
             WorthQuerySessionCommitOutcome::ProductUnpublished(unpublished) => {
-                self.proposed
-                    .attempt
-                    .overlay
-                    .release_to_provider_resolution();
+                overlay.release_to_provider_resolution();
                 WorthQueryProviderCompareAndCommitOutcome::ProductUnpublished(unpublished)
             }
             WorthQuerySessionCommitOutcome::ProductPreparationPending(owner) => {
-                self.proposed
-                    .attempt
-                    .overlay
-                    .release_to_provider_resolution();
+                overlay.release_to_provider_resolution();
                 WorthQueryProviderCompareAndCommitOutcome::ProductPreparationPending(owner)
             }
             WorthQuerySessionCommitOutcome::ProductPreparationRefused(owner) => {
-                self.proposed
-                    .attempt
-                    .overlay
-                    .release_to_provider_resolution();
+                overlay.release_to_provider_resolution();
                 WorthQueryProviderCompareAndCommitOutcome::ProductPreparationRefused(owner)
             }
             WorthQuerySessionCommitOutcome::NoEffect(no_effect) => {
-                let _ = self.proposed.attempt.overlay.discard();
+                let _ = overlay.discard();
                 WorthQueryProviderCompareAndCommitOutcome::NoEffect(no_effect)
             }
             WorthQuerySessionCommitOutcome::Committed(disposition) => {
-                self.proposed
-                    .attempt
-                    .overlay
-                    .release_to_provider_resolution();
+                overlay.release_to_provider_resolution();
                 WorthQueryProviderCompareAndCommitOutcome::Committed(
                     WorthQueryCommittedProviderSession::from_disposition(disposition),
                 )
             }
             WorthQuerySessionCommitOutcome::CommitDenied(failure) => {
-                let _ = self.proposed.attempt.overlay.discard();
+                let _ = overlay.discard();
                 WorthQueryProviderCompareAndCommitOutcome::Denied(
                     WorthQueryProviderCompareAndCommitDenial::ProviderSession(failure),
                 )
             }
             WorthQuerySessionCommitOutcome::CommitRecoveryRequired(failure) => {
-                self.proposed
-                    .attempt
-                    .overlay
-                    .release_to_provider_resolution();
+                overlay.release_to_provider_resolution();
                 WorthQueryProviderCompareAndCommitOutcome::Indeterminate(failure)
             }
             WorthQuerySessionCommitOutcome::CommitDeferred(deferred) => {
-                let _ = self.proposed.attempt.overlay.discard();
+                let _ = overlay.discard();
                 WorthQueryProviderCompareAndCommitOutcome::Deferred(deferred)
             }
             WorthQuerySessionCommitOutcome::CommitControlStopped(stopped) => {
-                let _ = self.proposed.attempt.overlay.discard();
+                let _ = overlay.discard();
                 WorthQueryProviderCompareAndCommitOutcome::ControlStopped(stopped)
             }
         }

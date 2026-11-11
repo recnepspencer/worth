@@ -53,6 +53,10 @@ impl WorthQueryArtifactProviderValueView<'_> {
                 .saturating_add(value.numerator.0.capacity())
                 .saturating_add(value.denominator.0.capacity()),
             Self::String(value) => std::mem::size_of_val(value).saturating_add(match value {
+                InternedString::Stored(value) => {
+                    let value = value.as_string();
+                    value.capacity()
+                }
                 InternedString::Raw(value) => value.capacity(),
                 InternedString::Symbol(_) => 0,
             }),

@@ -42,6 +42,7 @@ impl Default for RelationalCommitCatalog {
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum RelationalCommitCatalogAppendDenial {
     DuplicateCommit,
+    ChangedDuringPreparation,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -85,107 +86,55 @@ impl RelationalCommitCatalog {
         self.entries.insert(commit_id, artifact);
     }
 
-    pub(crate) fn synchronize_recovered_envelope(
-        &mut self,
-        positioned: &crate::history::data::PositionedCanonicalCommit,
-    ) -> Result<(), RelationalCommitArtifactDenial> {
-        let envelope = positioned.canonical_arc().clone();
-        let commit_id = envelope.commit.commit_id;
-        if let Some(resident) = self
-            .entries
-            .get(&commit_id)
-            .and_then(|entry| entry.resident_envelope())
-        {
-            // Recovery may have freshly issued private completeness from the
-            // actual selected/working pair. Keep that immutable owner only if
-            // its complete authoritative payload matches this source subject;
-            // omitted diagnostics/cache lanes must not erase its provenance.
-            if crate::durability::canonical_commit_artifact::RelationalCanonicalCommitArtifact::matches_positioned_payload(
-                positioned, &resident,
-            ).map_err(|_| RelationalCommitArtifactDenial::CanonicalPayloadEncoding)? {
-                return Ok(());
-            }
+    pub(crate) fn source_replacement_matches(
+        &self,
+        id: CommitId,
+        expected: Option<&Arc<RelationalCommitArtifact>>,
+    ) -> bool {
+        match (self.entries.get(&id), expected) {
+            (None, None) => true,
+            (Some(actual), Some(expected)) => Arc::ptr_eq(actual, expected),
+            _ => false,
         }
-        let artifact = match self.entries.get(&commit_id) {
-            Some(existing) => match existing.envelope_residency().source_placement() {
-                Some((entry, source)) => {
-                    let directory = existing.envelope_residency().selected_directory();
-                    let artifact = RelationalCommitArtifact::from_index(
-                        entry,
-                        source,
-                        Some(positioned.clone()),
-                    )?;
-                    if let Some(directory) = directory {
-                        let cell = artifact.envelope_residency();
-                        let actual = cell
-                            .journal_index()
-                            .ok_or(RelationalCommitArtifactDenial::CanonicalPayloadEncoding)?;
-                        let _displaced =
-                            cell.install_selected(actual, directory).map_err(|_| {
-                                RelationalCommitArtifactDenial::CanonicalPayloadEncoding
-                            })?;
-                    }
-                    artifact
-                }
-                None => RelationalCommitArtifact::from_envelope_with_descriptor(
-                    envelope,
-                    existing.roots().clone(),
-                )?,
-            },
-            None => RelationalCommitArtifact::from_envelope(envelope)?,
-        };
-        // This is the admitted source replacing provisional replay DATA, not
-        // a same-cell publication replacement. Home recovery binds original
-        // inputs from its source graph after journal routes are finalized.
-        // Never transfer replay-produced input custody across envelope cells.
+    }
+
+    /// Source preparation and allocation already completed outside the ledger.
+    pub(crate) fn install_source_recovery(
+        &mut self,
+        expected: Option<&Arc<RelationalCommitArtifact>>,
+        artifact: Arc<RelationalCommitArtifact>,
+    ) -> Result<(), RelationalCommitCatalogAppendDenial> {
+        let id = artifact.commit_id();
+        if !self.source_replacement_matches(id, expected) {
+            return Err(RelationalCommitCatalogAppendDenial::ChangedDuringPreparation);
+        }
+        if expected.is_some_and(|expected| Arc::ptr_eq(expected, &artifact)) {
+            return Ok(());
+        }
         self.materializations.fetch_add(1, Ordering::Relaxed);
-        self.entries.insert(commit_id, Arc::new(artifact));
+        self.entries.insert(id, artifact);
         Ok(())
     }
 
     fn append(
         &mut self,
-        artifact: RelationalCommitArtifact,
+        artifact: Arc<RelationalCommitArtifact>,
     ) -> Result<RelationalCommitCatalogEntry, RelationalCommitCatalogAppendDenial> {
         let commit_id = artifact.commit_id();
         if self.entries.contains_key(&commit_id) {
             return Err(RelationalCommitCatalogAppendDenial::DuplicateCommit);
         }
         let identity = artifact.identity().clone();
-        self.entries.insert(commit_id, Arc::new(artifact));
+        self.entries.insert(commit_id, artifact);
         Ok(RelationalCommitCatalogEntry { identity })
-    }
-
-    pub(crate) fn append_envelope(
-        &mut self,
-        envelope: Arc<crate::history::data::CanonicalCommitEnvelope>,
-    ) -> Result<RelationalCommitCatalogEntry, RelationalCommitCatalogEnvelopeAppendDenial> {
-        let artifact = RelationalCommitArtifact::from_envelope(envelope)
-            .map_err(RelationalCommitCatalogEnvelopeAppendDenial::Artifact)?;
-        self.materializations.fetch_add(1, Ordering::Relaxed);
-        self.append(artifact)
-            .map_err(|_| RelationalCommitCatalogEnvelopeAppendDenial::DuplicateCommit)
     }
 
     pub(crate) fn append_preencoded_recovery(
         &mut self,
-        artifact: RelationalCommitArtifact,
+        artifact: Arc<RelationalCommitArtifact>,
     ) -> Result<RelationalCommitCatalogEntry, RelationalCommitCatalogAppendDenial> {
         self.materializations.fetch_add(1, Ordering::Relaxed);
         self.append(artifact)
-    }
-
-    pub(crate) fn append_indexed_recovery(
-        &mut self,
-        entry: super::RetainedCanonicalIndex,
-        source: Arc<dyn crate::durability::medium::RelationalDurableColdSource>,
-        admitted: Option<crate::history::data::PositionedCanonicalCommit>,
-    ) -> Result<(), RelationalCommitCatalogEnvelopeAppendDenial> {
-        let artifact = RelationalCommitArtifact::from_index(entry, source, admitted)
-            .map_err(RelationalCommitCatalogEnvelopeAppendDenial::Artifact)?;
-        self.append(artifact)
-            .map(|_| ())
-            .map_err(|_| RelationalCommitCatalogEnvelopeAppendDenial::DuplicateCommit)
     }
 
     /// Relink named recovered envelopes without using residency as an index filter.
@@ -203,31 +152,6 @@ impl RelationalCommitCatalog {
             materializations: Arc::new(AtomicU64::new(0)),
             lookups: Arc::new(AtomicU64::new(0)),
         }
-    }
-
-    /// Checkpoint recovery has already readmitted each live root from its
-    /// durable image. Seal each canonical envelope once, with its exact root
-    /// or retained fork descriptor, instead of building a provisional catalog.
-    pub(crate) fn append_checkpoint_recovery(
-        &mut self,
-        envelope: Arc<crate::history::data::CanonicalCommitEnvelope>,
-        root: Option<&Arc<crate::branch::RelationalBranchRoot>>,
-        descriptor: Option<&crate::branch::RelationalBranchRootDescriptor>,
-    ) -> Result<RelationalCommitCatalogEntry, RelationalCommitCatalogEnvelopeAppendDenial> {
-        let artifact = match (root, descriptor) {
-            (Some(root), _) => {
-                RelationalCommitArtifact::from_envelope_with_root(envelope, Arc::clone(root))
-            }
-            (None, Some(descriptor)) => RelationalCommitArtifact::from_envelope_with_descriptor(
-                envelope,
-                descriptor.clone(),
-            ),
-            (None, None) => RelationalCommitArtifact::from_envelope(envelope),
-        }
-        .map_err(RelationalCommitCatalogEnvelopeAppendDenial::Artifact)?;
-        self.materializations.fetch_add(1, Ordering::Relaxed);
-        self.append(artifact)
-            .map_err(|_| RelationalCommitCatalogEnvelopeAppendDenial::DuplicateCommit)
     }
 
     /// Validate an envelope without materializing or mutating the catalog.

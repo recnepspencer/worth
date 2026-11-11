@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::{WorthQueryEvidenceIdentity, WorthQueryEvidenceScope, WorthQueryEvidenceTag};
 
 use super::super::counters::EffectLifecycleCounters;
@@ -8,7 +9,7 @@ pub struct EffectExecutionControlStopped {
     kind: super::super::EffectExecutionControlStopKind,
     message: String,
     lowered_effect_execution_plan_identity: WorthQueryEvidenceIdentity,
-    outcome_identity: WorthQueryEvidenceIdentity,
+    outcome_identity: Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial>,
     counters: EffectLifecycleCounters,
 }
 
@@ -54,8 +55,10 @@ impl EffectExecutionControlStopped {
         &self.lowered_effect_execution_plan_identity
     }
 
-    pub fn outcome_identity(&self) -> &WorthQueryEvidenceIdentity {
-        &self.outcome_identity
+    pub fn outcome_identity(
+        &self,
+    ) -> Result<&WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
+        self.outcome_identity.as_ref().map_err(|cause| *cause)
     }
 
     pub const fn counters(&self) -> &EffectLifecycleCounters {

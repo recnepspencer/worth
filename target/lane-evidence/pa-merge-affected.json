@@ -1,0 +1,75 @@
+{
+  "base": "7b35408444",
+  "head": "HEAD",
+  "changed_files": 1410,
+  "reached_workspaces": {
+    "Cargo.toml": [
+      "crates/worth-court-relational-certification/tests/worth_court_relational_certification/cost/relational/source_initial_inputs.rs",
+      "crates/worth-court-relational-certification/tests/worth_court_relational_certification/cost/relational/source_initial_inputs/checkpoint_admission.rs",
+      "crates/worth-court-relational-certification/tests/worth_court_relational_certification/cost/relational/source_initial_inputs/checkpoint_admission/cold_materialization.rs",
+      "crates/worth-court-relational-certification/tests/worth_court_relational_certification/cost/relational/source_initial_inputs/checkpoint_admission/cold_materialization/byte_payloads.rs",
+      "crates/worth-court-relational-certification/tests/worth_court_relational_certification/cost/relational/source_initial_inputs/checkpoint_admission/cold_materialization/peer_history.rs",
+      "..."
+    ],
+    "workspaces/worth-query/Cargo.toml": [
+      "crates/worth-foundational/src/values/aspect_value.rs",
+      "crates/worth-foundational/src/values/aspect_value/tests.rs",
+      "crates/worth-relational/src/authority/mutation/mod.rs",
+      "crates/worth-relational/src/branch/checkpoint_visibility.rs",
+      "crates/worth-relational/src/branch/mod.rs",
+      "..."
+    ],
+    "workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/Cargo.toml": [
+      "crates/worth-foundational/src/values/aspect_value.rs",
+      "crates/worth-foundational/src/values/aspect_value/tests.rs",
+      "crates/worth-relational/src/authority/mutation/mod.rs",
+      "crates/worth-relational/src/branch/checkpoint_visibility.rs",
+      "crates/worth-relational/src/branch/mod.rs",
+      "..."
+    ],
+    "workspaces/worth-query-bank-world/Cargo.toml": [
+      "crates/worth-foundational/src/values/aspect_value.rs",
+      "crates/worth-foundational/src/values/aspect_value/tests.rs",
+      "crates/worth-relational/src/authority/mutation/mod.rs",
+      "crates/worth-relational/src/branch/checkpoint_visibility.rs",
+      "crates/worth-relational/src/branch/mod.rs",
+      "..."
+    ],
+    "workspaces/worth-store/Cargo.toml": [
+      "crates/worth-foundational/src/values/aspect_value.rs",
+      "crates/worth-foundational/src/values/aspect_value/tests.rs",
+      "crates/worth-relational/src/authority/mutation/mod.rs",
+      "crates/worth-relational/src/branch/checkpoint_visibility.rs",
+      "crates/worth-relational/src/branch/mod.rs",
+      "..."
+    ],
+    "tools/boundary-check/Cargo.toml": [
+      "tools/boundary-check/config/certification-construction-callers.txt",
+      "tools/boundary-check/config/interim-checkpoint-callers.txt",
+      "tools/boundary-check/src/seal_rules.rs",
+      "tools/boundary-check/src/seal_rules/factory_ownership.rs",
+      "tools/boundary-check/src/seal_rules/interim_tests.rs"
+    ]
+  },
+  "lanes": [
+    "global: prebuild with ./scripts/prepare-constitution-hook.ps1, then WORTH_CONSTITUTION_PREBUILT=1 ./scripts/check-constitution.ps1",
+    "global: bash scripts/ci/check_workspace_rust_line_caps.sh diff <base>",
+    "bank: clippy-bank from query_gate lint-bank (not clippy-ui-binding)",
+    "bank: python scripts/ci/query_gate.py bank-landing",
+    "fixture: python scripts/ci/query_gate.py fixture",
+    "fixture: python scripts/ci/query_gate.py lint-fixture",
+    "fixture: topology-entry doctests and consumer-root run (ci.yml steps)",
+    "global: cargo fmt --check for each touched workspace: root, tools/boundary-check, workspaces/worth-query, workspaces/worth-query-bank-world, workspaces/worth-store",
+    "query: python scripts/ci/query_gate.py lint-query",
+    "query: python scripts/ci/query_gate.py query-landing",
+    "root: bash scripts/ci/check_owner_service_clippy.sh",
+    "root: cargo check -p worth-signal-wasm --all-targets (+ wasm32 target check)",
+    "root: cargo clippy --workspace --all-targets -- -D warnings",
+    "root: python scripts/ci/root_gate.py",
+    "scripts: every lane whose script or workflow step changed (list them by file)",
+    "store: cargo clippy --workspace --all-targets (+ strict clippy for certification-test-authority crates)",
+    "store: python scripts/test_cost/run_lane.py --workspace store --cargo-profile ci-test",
+    "store: scripts/ci Store scripts (phase34 dependency-direction, formal-toolchain, integrity)",
+    "tools: cargo test --manifest-path tools/boundary-check/Cargo.toml --target-dir target/constitution-tools"
+  ]
+}

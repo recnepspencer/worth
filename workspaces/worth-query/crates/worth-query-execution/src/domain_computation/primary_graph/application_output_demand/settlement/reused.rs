@@ -12,22 +12,25 @@ impl WorthQueryOutputDemandSettlement {
     where
         Schema: worth_query_installation::facade::ApplicationSchema,
     {
-        let authority = runtime
-            .runtime
-            .product_runtime
-            .recovered_root_authority
-            .as_ref()
-            .filter(|authority| authority.product_branch() == &restored.observation)
-            .ok_or_else(|| {
-                WorthQueryOutputDemandDenial::new(
-                    WorthQueryOutputDemandDenialKind::RetainedBasisUnavailable,
-                    "restored output is not bound to this World's recovered root authority",
-                )
-            })?;
+        use super::super::RestoredOutputOrigin;
+        if matches!(restored.origin, RestoredOutputOrigin::Checkpoint(_)) {
+            runtime
+                .runtime
+                .product_runtime
+                .recovered_root_authority
+                .as_ref()
+                .filter(|authority| authority.product_branch() == &restored.observation)
+                .ok_or_else(|| {
+                    WorthQueryOutputDemandDenial::new(
+                        WorthQueryOutputDemandDenialKind::RetainedBasisUnavailable,
+                        "restored output is not bound to this World's recovered root authority",
+                    )
+                })?;
+        }
         let product = runtime
             .runtime
             .product_runtime
-            .lease_from_observation(authority.product_branch().clone())
+            .lease_from_observation(restored.observation.clone())
             .map_err(|error| {
                 WorthQueryOutputDemandDenial::product_selection(
                     error,
@@ -38,7 +41,14 @@ impl WorthQueryOutputDemandSettlement {
             posture: restored.settlement_posture(),
             runtime_authority: runtime.runtime.authority_identity().as_u64(),
             schema_binding: runtime.installed_schema.binding_identity(),
-            producer_identity: SettlementProducerIdentity::from_checkpoint(&restored.checkpoint),
+            producer_identity: match &restored.origin {
+                RestoredOutputOrigin::Checkpoint(checkpoint) => {
+                    SettlementProducerIdentity::from_checkpoint(checkpoint)
+                }
+                RestoredOutputOrigin::HistoricalSelection(origin) => {
+                    SettlementProducerIdentity::HistoricalSelection(origin.publication().clone())
+                }
+            },
             output_family_identity: output_family_identity.to_owned(),
             receipt: None,
             stable: None,

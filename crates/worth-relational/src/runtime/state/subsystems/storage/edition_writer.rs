@@ -93,11 +93,7 @@ impl<'subsystem> PartitionEditionWriter<'subsystem> {
     }
 
     fn map_mut(&mut self) -> &mut PartitionMap {
-        let (map, copied) = self.mirror.edition.map_mut();
-        if copied {
-            self.copies.record_spine_copy();
-        }
-        map
+        self.mirror.edition.map_mut()
     }
 
     fn begin_target_edit(&mut self, target: &ResidentMirrorTarget) -> bool {
@@ -115,7 +111,7 @@ impl<'subsystem> PartitionEditionWriter<'subsystem> {
         );
         // The cached edition is an owner projection, not another observer.
         // An external edition retains its old map and payload independently.
-        drop(self.map_mut().remove(&id));
+        self.map_mut().remove(&id);
         let Some((edit, copied)) = target.begin_full_edit() else {
             return false;
         };
@@ -148,7 +144,7 @@ impl<'subsystem> PartitionEditionWriter<'subsystem> {
             /* Proof: PartitionEditionWriter retains the exclusive RwLockWriteGuard<CurrentMirror>. Resident targets are selected from that same mirror; every edit is retained in this writer until finish_edits restores it, before the write guard can be released. */
             matches!(self.mirror.regions.get(&id), Some(MirrorRegion::Resident(current)) if current.same_target(target))
         );
-        drop(self.map_mut().remove(&id));
+        self.map_mut().remove(&id);
         let (edit, copied) = target.begin_current_edit(readmission);
         if copied {
             self.copies.record_partition_copy(
@@ -171,12 +167,12 @@ impl<'subsystem> PartitionEditionWriter<'subsystem> {
         readmission: ResidentHistoryReadmission,
         transform: impl FnOnce(PartitionState) -> PartitionState,
     ) {
-        self.begin_current_target_edit(target, readmission);
+        self.begin_current_target_edit(target, readmission.clone());
         let TargetEdit { target, edit } = self
             .edits
             .remove(&target.partition_id())
             .expect(/* Proof: Accepted target creation registers this partition edit in its owning edition writer; the private target retains that writer identity and extraction consumes the registered edit once. */ "this writer owns the accepted resident target edit");
-        let edit = edit.transform(transform);
+        let edit = edit.transform(readmission, transform);
         self.edits
             .insert(target.partition_id(), TargetEdit { target, edit });
     }
@@ -209,7 +205,7 @@ impl<'subsystem> PartitionEditionWriter<'subsystem> {
     ) -> Option<&mut PartitionState> {
         if !self.edits.contains_key(&id) {
             let target = self.mirror.admit_current_target(id).ok().flatten()?;
-            drop(self.map_mut().remove(&id));
+            self.map_mut().remove(&id);
             let (edit, copied) = target.begin_metadata_edit();
             if copied {
                 self.copies.record_partition_copy(

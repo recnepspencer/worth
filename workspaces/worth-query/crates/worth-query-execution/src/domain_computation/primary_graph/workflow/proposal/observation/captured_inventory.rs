@@ -2,7 +2,7 @@
 use super::*;
 use crate::domain_computation::primary_graph::workflow::{
     captured_input::{inventory_identity, WorkflowCapturedTarget},
-    definition::{CompiledWorkflowDefinition, CompiledWorkflowNodeKind},
+    definition::CompiledWorkflowDefinition,
 };
 
 pub(in crate::domain_computation::primary_graph) fn observe(
@@ -85,18 +85,7 @@ pub(in crate::domain_computation::primary_graph) fn observe(
             resource,
             facts,
         )?;
-        let CompiledWorkflowNodeKind::Operation {
-            binding: Some(binding),
-            input_type,
-            requires_workflow_authority: true,
-            ..
-        } = node.kind()
-        else {
-            return Err(denial(
-                "captured inventory target is not a bound guarded operation",
-            ));
-        };
-        if binding != &contract.binding || input_type != &contract.input_type {
+        if !contract.matches_recorded_node(node) {
             return Err(denial(
                 "captured inventory target differs from installed meaning",
             ));

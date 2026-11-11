@@ -4,7 +4,7 @@ use crate::correspondence::{
     BridgeSemanticLocality,
 };
 use std::{collections::HashMap, mem::size_of, sync::Arc};
-use worth_foundational::facade::{AspectShape, CanonicalFieldPath, FieldDeclaration};
+use worth_foundational::facade::CanonicalFieldPath;
 
 #[expect(
     clippy::disallowed_methods,
@@ -53,13 +53,9 @@ pub(super) fn expected(set: &BridgeDeliveredCorrespondenceChangeSet) -> u64 {
     if let BridgeSemanticLocality::SourcePartition(partition) = &dependency.locality {
         bytes += partition.as_str().len() as u64;
     }
-    bytes += dependency.contract.key().as_str().len() as u64;
-    if let AspectShape::Struct(shape) = dependency.contract.shape() {
-        bytes += size_of::<FieldDeclaration>() as u64 * shape.fields().len() as u64;
-        for field in shape.fields() {
-            bytes += field.key().as_str().len() as u64;
-        }
-    }
+    // Foundational owns the immutable definition's cached retained payload;
+    // this oracle composes that owner quote with Bridge's actual backing layout.
+    bytes += dependency.contract.owned_allocation_capacity_bytes() as u64;
     bytes +=
         size_of::<CanonicalFieldPath>() as u64 * dependency.projection_mask.paths().len() as u64;
     for item in dependency.projection_mask.paths() {

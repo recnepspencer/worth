@@ -3,11 +3,13 @@ use crate::transactions::data::{
     MergedCommitPlan, MutationIntent, TransactionCommitError, TransactionId, WorkerIntentBatch,
 };
 use worth_execution::{ExecutionMemoryReservation, ExecutionRequest};
+mod coupled_suffix;
 
 #[derive(Debug)]
 pub(crate) struct OwnedNormalizedPlan {
     plan: MergedCommitPlan,
     _memory: Option<ExecutionMemoryReservation>,
+    _shared_memory: Option<ExecutionMemoryReservation>,
 }
 
 impl OwnedNormalizedPlan {
@@ -18,6 +20,7 @@ impl OwnedNormalizedPlan {
                 merged_intents: Vec::new(),
             },
             _memory: None,
+            _shared_memory: None,
         }
     }
 
@@ -38,7 +41,25 @@ impl OwnedNormalizedPlan {
         Ok(Self {
             plan: plan.clone(),
             _memory: memory,
+            _shared_memory: None,
         })
+    }
+
+    pub(crate) fn shared_copy_for_request(
+        plan: &MergedCommitPlan,
+        request: &ExecutionRequest<'_, '_>,
+    ) -> Result<std::sync::Arc<Self>, TransactionCommitError> {
+        let bytes = std::alloc::Layout::new::<[usize; 2]>()
+            .extend(std::alloc::Layout::new::<Self>())
+            .ok()
+            .and_then(|(layout, _)| u64::try_from(layout.pad_to_align().size()).ok())
+            .ok_or_else(copy_overflow)?;
+        let backing = request
+            .reserve_retained_memory(bytes)
+            .map_err(request_denial)?;
+        let mut owned = Self::copy_for_request(plan, request)?;
+        owned._shared_memory = backing;
+        Ok(std::sync::Arc::new(owned))
     }
 
     pub(super) fn copy_batches(
@@ -70,6 +91,7 @@ impl OwnedNormalizedPlan {
                 merged_intents: intents,
             },
             _memory: memory,
+            _shared_memory: None,
         })
     }
 
@@ -79,6 +101,7 @@ impl OwnedNormalizedPlan {
         Self {
             plan: self.plan.clone(),
             _memory: None,
+            _shared_memory: None,
         }
     }
 }

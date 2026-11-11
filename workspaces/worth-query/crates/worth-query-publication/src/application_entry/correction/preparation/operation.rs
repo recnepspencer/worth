@@ -133,7 +133,10 @@ where
                 action.source.intent(),
             )
             .map_err(Denial::SourceOperation)?;
-            Public::Prepared(WorthQueryPreparedOperationCorrection { action, operation })
+            Public::Prepared(WorthQueryPreparedOperationCorrection {
+                action: Box::new(action),
+                operation,
+            })
         }
         NativePreparation::Replay {
             outcome,

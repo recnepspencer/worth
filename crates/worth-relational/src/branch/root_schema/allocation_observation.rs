@@ -3,25 +3,28 @@ use super::*;
 
 impl RelationalBranchRootSchemaAuthority {
     pub(crate) fn authoritative_allocation_bytes(&self) -> u64 {
-        let registry_bytes = registry_allocation_bytes(&self.registry);
-        let plan_bytes = plan_catalog_allocation_bytes(&self.aspect_plans);
-        let retained_contract_bytes = self.retained_aspect_contracts.iter().fold(
-            self.retained_aspect_contracts
-                .capacity()
-                .saturating_mul(std::mem::size_of::<AspectContract>()),
-            |bytes, contract| bytes.saturating_add(contract.owned_allocation_capacity_bytes()),
-        );
-        usize_to_u64(
-            std::mem::size_of::<Self>()
-                .saturating_add(registry_bytes)
-                .saturating_add(plan_bytes)
-                .saturating_add(retained_contract_bytes),
-        )
-        .saturating_add(
-            (self.relation_integrity_revisions.len() as u64).saturating_mul(std::mem::size_of::<
-                crate::schema::data::RelationIntegrityPlanRevision,
-            >() as u64),
-        )
+        *self.allocation_bytes.get_or_init(|| {
+            let registry_bytes = registry_allocation_bytes(&self.registry);
+            let plan_bytes = plan_catalog_allocation_bytes(&self.aspect_plans);
+            let retained_contract_bytes =
+                self.retained_aspect_contracts.allocation_bytes() as usize;
+            usize_to_u64(
+                std::mem::size_of::<Self>()
+                    .saturating_add(registry_bytes)
+                    .saturating_add(plan_bytes)
+                    .saturating_add(retained_contract_bytes),
+            )
+            .saturating_add(
+                (self.relation_integrity_revisions.len() as u64)
+                    .saturating_mul(std::mem::size_of::<
+                        crate::schema::data::RelationIntegrityPlanRevision,
+                    >() as u64),
+            )
+            .saturating_add(self.continuity_authority.owned_allocation_capacity_bytes())
+            .saturating_add(
+                SchemaAuthoritySnapshot::projection_allocation_bytes().unwrap_or(u64::MAX),
+            )
+        })
     }
 }
 

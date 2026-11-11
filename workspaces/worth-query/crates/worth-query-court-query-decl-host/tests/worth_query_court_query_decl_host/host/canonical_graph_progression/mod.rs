@@ -1,3 +1,4 @@
+use worth_query_decl::facade::application_schema::ApplicationSchema;
 pub(crate) use worth_query_testkit_host::facade::host::canonical_graph_progression::*;
 
 #[test]

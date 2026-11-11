@@ -29,13 +29,7 @@ fn completion(
     roles: Vec<RequiredOutputRoleTarget>,
     dependency: u8,
 ) -> RequiredOutputPublication {
-    let meaning = previous
-        .envelope
-        .required_output_origin
-        .as_ref()
-        .unwrap()
-        .meaning
-        .clone();
+    let meaning = previous.origin.as_ref().meaning.clone();
     let admission = owner
         .admit_required_output_succession(
             owner.admit_required_output("retirement-preserver", [dependency; 32]),

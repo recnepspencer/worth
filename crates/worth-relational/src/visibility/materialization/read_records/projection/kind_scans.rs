@@ -23,21 +23,21 @@ impl VisibilityProjectionView {
         Result<BoundedEntityKindTruthRead, EntityKindTruthReadLimitExceeded>,
         crate::execution::RelationalExecutionDenialCause,
     > {
-        self.demand_selected_scan(execution)?;
+        if !self.is_exact_basis() {
+            self.demand_selected_scan(execution)?;
+        }
         crate::visibility::materialization::read_records::read_work::scan_with_memory(
             execution,
             |context, memory| match &self.basis {
-                SnapshotStateBasis::Exact(basis) => {
-                    self.reader().bounded_entities_of_kind_in_state(
-                        basis.root().as_ref(),
-                        basis.root().schema_authority().registry(),
-                        kind_id,
-                        KindScanVisibility::Live,
-                        maximum_work_units,
-                        &mut |units| context.checkpoint(units),
-                        memory,
-                    )
-                }
+                SnapshotStateBasis::Exact(basis) => self.reader().entities_from_directory(
+                    execution,
+                    &super::exact_basis_reads::ExactProjectionReader::new(self, basis.root()),
+                    kind_id,
+                    None,
+                    Some(maximum_work_units),
+                    &mut |units| context.checkpoint(units),
+                    memory,
+                ),
                 SnapshotStateBasis::Historical(basis) => {
                     let historical = HistoricalProjectionReader::new(self, basis);
                     self.reader().bounded_entities_of_kind_in_state(
@@ -69,21 +69,21 @@ impl VisibilityProjectionView {
         Result<BoundedRelationKindTruthRead, RelationKindTruthReadDenial>,
         crate::execution::RelationalExecutionDenialCause,
     > {
-        self.demand_selected_scan(execution)?;
+        if !self.is_exact_basis() {
+            self.demand_selected_scan(execution)?;
+        }
         crate::visibility::materialization::read_records::read_work::scan_with_memory(
             execution,
             |context, memory| match &self.basis {
-                SnapshotStateBasis::Exact(basis) => {
-                    self.reader().bounded_relations_of_kind_in_state(
-                        basis.root().as_ref(),
-                        basis.root().schema_authority().registry(),
-                        kind_id,
-                        KindScanVisibility::Live,
-                        maximum_work_units,
-                        &mut |units| context.checkpoint(units),
-                        memory,
-                    )
-                }
+                SnapshotStateBasis::Exact(basis) => self.reader().relations_from_directory(
+                    execution,
+                    &super::exact_basis_reads::ExactProjectionReader::new(self, basis.root()),
+                    kind_id,
+                    None,
+                    Some(maximum_work_units),
+                    &mut |units| context.checkpoint(units),
+                    memory,
+                ),
                 SnapshotStateBasis::Historical(basis) => {
                     let historical = HistoricalProjectionReader::new(self, basis);
                     self.reader().bounded_relations_of_kind_in_state(

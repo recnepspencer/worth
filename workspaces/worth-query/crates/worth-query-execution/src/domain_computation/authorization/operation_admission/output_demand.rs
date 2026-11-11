@@ -9,8 +9,10 @@ impl WorthQueryAdmittedOperation {
         &mut self,
         use_mask: crate::domain_computation::primary_graph::DecisionContextUse,
     ) {
-        if let Some(context) = &mut self.required_output_demand {
+        if let Some(context) = &mut self.data.required_output_demand {
             context.record_decision_context_use(use_mask);
+        } else if let Some(handler) = self.data.graph_work.coupled_handler_mut() {
+            handler.record_decision_context_use(use_mask);
         }
     }
 
@@ -21,16 +23,16 @@ impl WorthQueryAdmittedOperation {
         context: RequiredOutputDemandContext,
     ) {
         assert!(
-            self.required_output_demand.is_none(),
+            self.data.required_output_demand.is_none(),
             "one operation carries one output demand"
         );
-        self.required_output_demand = Some(context);
+        self.data.required_output_demand = Some(context);
     }
 
     pub(in crate::domain_computation) fn take_required_output_demand(
         &mut self,
     ) -> Option<RequiredOutputDemandContext> {
-        self.required_output_demand.take()
+        self.data.required_output_demand.take()
     }
 
     /// Seal's facts, and the partitioned computation run they sealed. A run
@@ -40,8 +42,10 @@ impl WorthQueryAdmittedOperation {
         boundary: CompletedHandlerFactBoundary,
         computation: SealedComputationRetention,
     ) {
-        if let Some(context) = &mut self.required_output_demand {
+        if let Some(context) = &mut self.data.required_output_demand {
             context.record_completed_handler_facts(boundary, computation);
+        } else if let Some(handler) = self.data.graph_work.coupled_handler_mut() {
+            handler.record_completed_handler_facts(boundary, computation);
         } else {
             crate::domain_computation::primary_graph::observe_discarded(&computation);
             crate::domain_computation::primary_graph::SealedComputationRun::keep_in_test(
@@ -57,10 +61,16 @@ impl WorthQueryAdmittedOperation {
     /// partitioned computation its handler runs.
     pub(in crate::domain_computation) fn computation_prior(&self) -> Option<ComputationPrior> {
         let prior = self
+            .data
             .required_output_demand
             .as_ref()
-            .and_then(RequiredOutputDemandContext::computation_prior);
-
+            .and_then(RequiredOutputDemandContext::computation_prior)
+            .or_else(|| {
+                self.data
+                    .graph_work
+                    .coupled_handler()
+                    .and_then(|handler| handler.computation_prior())
+            });
         prior.or_else(ComputationPrior::handed_in_test)
     }
 }

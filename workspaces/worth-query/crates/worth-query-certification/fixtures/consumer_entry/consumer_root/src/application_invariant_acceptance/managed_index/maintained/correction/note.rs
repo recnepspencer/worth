@@ -7,7 +7,7 @@ use super::super::{
 use super::*;
 use worth_query_decl::facade::{application_operation::*, *};
 
-#[derive(Clone, Debug, serde::Serialize)]
+#[derive(Clone, Debug, serde::Serialize, serde::Deserialize)]
 pub enum Parent {
     Prefix,
     AuthorizedSource,
@@ -15,7 +15,7 @@ pub enum Parent {
     Boxes { probe: Coordinates },
     Contact { probe: Coordinates },
 }
-#[derive(Clone, Debug, serde::Serialize)]
+#[derive(Clone, Debug, serde::Serialize, serde::Deserialize)]
 pub struct Input {
     pub parent: Parent,
     pub directory: String,
@@ -33,8 +33,8 @@ worth_query_structured_value_binding!(pub InputBinding for Input { identity: "ma
 worth_query_structured_value_binding!(pub ResultBinding for Changed { identity: "maintained-catalog.recorded-note.result.v1" });
 worth_query_structured_value_binding!(pub DenialBinding for Denial { identity: "maintained-catalog.recorded-note.denial.v1" });
 worth_query_operation!(pub WriteNote for Catalog, input InputBinding);
-worth_query_operation_reads!(WriteNote => [Directory, DirectoryIdentity, DirectoryNote, ItemIdentity, ItemName, ItemEnabled, EdgeIdentity, VertexRegion, Starts, Ends]);
-worth_query_operation_writes!(WriteNote => [DirectoryNote]);
+worth_query_operation_reads!(WriteNote => [Directory,Starts,Ends]);
+
 fn scope(input: &Input) -> String {
     input.directory.clone()
 }
@@ -48,8 +48,8 @@ worth_query_mutation_binding!(
     outputs NoApplicationMutationOutputs,
     principal CatalogPrincipal, mapping ExternalMapping, principal_entity Principal,
     principal_identity u64, identity_binding U64ApplicationValueBinding,
-    scope Directory, DirectoryFacts, DirectoryIdentity, String, ReadOnly, NoApplicationUnit,
-    field DirectoryIdentity::reference(), value scope,
+    scope DirectoryIdentity,
+    field DirectoryIdentity::at("DirectoryIdentity"), value scope,
 );
 impl ApplicationDeclaredOperation<Catalog> for WriteNote {
     fn declare_access(
@@ -59,21 +59,21 @@ impl ApplicationDeclaredOperation<Catalog> for WriteNote {
         schema
             .operation_projection_work_budget(op, 64)
             .operation_read_entity(op, Directory::reference())
-            .operation_read_field(op, DirectoryIdentity::reference())
-            .operation_read_field(op, DirectoryNote::reference())
-            .operation_read_field(op, ItemIdentity::reference())
-            .operation_read_field(op, ItemName::reference())
-            .operation_read_field(op, ItemEnabled::reference())
+            .operation_read_field(op, DirectoryIdentity::at("DirectoryIdentity"))
+            .operation_read_field(op, DirectoryNote::at("DirectoryNote"))
+            .operation_read_field(op, ItemIdentity::at("ItemIdentity"))
+            .operation_read_field(op, ItemName::at("ItemName"))
+            .operation_read_field(op, ItemEnabled::at("ItemEnabled"))
             .operation_managed_index_read::<query::PrefixBinding, _, _>(op)
             .operation_managed_index_read::<super::super::source_authorization::NativeBinding, _, _>(op)
             .operation_managed_index_read::<refinement::ExactBinding, _, _>(op)
             .operation_managed_index_read::<geometry::query::BoxBinding, _, _>(op)
             .operation_managed_index_read::<geometry::refinement::Binding, _, _>(op)
-            .operation_read_field(op, EdgeIdentity::reference())
-            .operation_read_field(op, VertexRegion::reference())
+            .operation_read_field(op, EdgeIdentity::at("EdgeIdentity"))
+            .operation_read_field(op, VertexRegion::at("VertexRegion"))
             .operation_read_relation(op, Starts::reference())
             .operation_read_relation(op, Ends::reference())
-            .operation_write(op, DirectoryNote::reference())
+            .operation_write(op, DirectoryNote::at("DirectoryNote"))
     }
 }
 pub struct Handler;
@@ -123,14 +123,16 @@ impl OperationHandler<Catalog, Binding> for Handler {
             if empty != input.expect_empty {
                 return Ok(None);
             }
-            let directory =
-                reader.resolve_entity(DirectoryIdentity::reference(), input.directory.clone())?;
+            let directory = reader.resolve_entity(
+                DirectoryIdentity::at("DirectoryIdentity"),
+                input.directory.clone(),
+            )?;
             reader
                 .reader()
                 .require_decision_entity(&directory, Directory::reference())
                 .map_err(HandlerExecutionDenial::new)?;
             if reader
-                .field(&directory, DirectoryNote::reference())?
+                .field(&directory, DirectoryNote::at("DirectoryNote"))?
                 .is_none()
             {
                 return Ok(None);
@@ -156,7 +158,7 @@ impl OperationHandler<Catalog, Binding> for Handler {
                 writer
                     .write_field(
                         &entity,
-                        DirectoryNote::reference(),
+                        DirectoryNote::at("DirectoryNote"),
                         input.replacement.clone(),
                     )
                     .map_err(HandlerExecutionDenial::new)

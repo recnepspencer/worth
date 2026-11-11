@@ -27,6 +27,7 @@ pub(super) fn apply(
             context.schema,
             cascade_delete_policy,
             &mut outcome,
+            context.deferred_publication_edges,
         )?;
         Ok::<(), crate::transactions::data::TransactionCommitError>(())
     })?;

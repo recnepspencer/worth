@@ -14,7 +14,7 @@ macro_rules! select_retirements {
             .relations_to(GeneratedBy::reference(), &$source)
             .map_err(HandlerExecutionDenial::new)?
         {
-            let key = $reader.field(edge.from(), Key::reference())?.unwrap();
+            let key = $reader.field(edge.from(), Key::at("Key"))?.unwrap();
             let index = key.rsplit('.').next().unwrap().parse::<u64>().unwrap();
             if index >= $width {
                 pending.push((edge.from().clone(), $source.clone()));
@@ -22,7 +22,7 @@ macro_rules! select_retirements {
         }
         while let Some((node, parent)) = pending.pop() {
             $reader.entity(&node, Node::reference())?;
-            let key = $reader.field(&node, Key::reference())?.unwrap();
+            let key = $reader.field(&node, Key::at("Key"))?.unwrap();
             for edge in $reader
                 .relations_to(GeneratedBy::reference(), &node)
                 .map_err(HandlerExecutionDenial::new)?
@@ -34,6 +34,11 @@ macro_rules! select_retirements {
                 .map_err(HandlerExecutionDenial::new)?;
             let output = if let Some(edge) = outputs.first() {
                 $reader.entity(edge.from(), Realization::reference())?;
+                if super::PRIVATE_AGGREGATES {
+                    $reader
+                        .relations_from(output_next(), edge.from())
+                        .map_err(HandlerExecutionDenial::new)?;
+                }
                 Some($reader.mutation_target(edge.from())?)
             } else {
                 None
@@ -61,6 +66,9 @@ macro_rules! write_retirements {
                     && !($fault == Fault::MissingLeaf && entry.key == "root.1.0")
             }) {
                 let output = $writer.projected_entity(&output)?;
+                if super::PRIVATE_AGGREGATES {
+                    $writer.unlink(output_next(), &output, &output)?;
+                }
                 $writer.unlink(Realizes::reference(), &output, &node)?;
                 $writer.delete_entity(Realization::reference(), &output)?;
                 $writer.retire_member::<RetiredRealizations>(&entry.key, &output)?;

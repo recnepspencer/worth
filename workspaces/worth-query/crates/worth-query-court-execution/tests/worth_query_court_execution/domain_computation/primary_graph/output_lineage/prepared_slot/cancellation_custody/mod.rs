@@ -77,6 +77,7 @@ fn a_canceled_prepared_publication_cannot_take_its_priors_custody() {
         None,
         false,
         PreparedComputationCustody::Unassigned,
+        None,
     );
     prepared.retain_computation_for_test(
         SealedComputationRetention::Produced(sealed),

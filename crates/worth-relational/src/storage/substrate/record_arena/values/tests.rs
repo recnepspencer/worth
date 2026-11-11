@@ -1,5 +1,8 @@
 //! Original-policy payload ownership; these fixtures issue no runtime authority.
 use super::*;
+mod historical_selection_funding;
+mod optional_output_funding;
+mod shared_state_bound;
 mod wire;
 use crate::identity::data::{KindId, PartitionId, VersionId};
 use crate::storage::substrate::{
@@ -38,16 +41,10 @@ fn extra(request: &ExecutionRequest<'_, '_>, value: &str) -> EntityExtra {
     EntityExtra::apply_payload(request, None, &patch(value).1).unwrap()
 }
 fn expected(extra: &EntityExtra) -> u64 {
-    let fixed = std::alloc::Layout::new::<[usize; 2]>()
-        .extend(std::alloc::Layout::new::<EntityExtra>())
-        .unwrap()
-        .0
-        .pad_to_align()
-        .size();
-    fixed as u64
-        + extra
-            .authoritative_aspect_state()
-            .map_or(0, |state| state.owned_allocation_capacity_bytes() as u64)
+    StorageAllocation::<EntityExtra>::layout_bytes()
+        + extra.authoritative_aspect_state().map_or(0, |state| {
+            u64::try_from(state.aspects().retained_storage_bytes().unwrap()).unwrap()
+        })
 }
 fn arena(extra: EntityExtra) -> RecordArena<EntityRecordKind> {
     let mut arena = RecordArena::with_capacity(1);

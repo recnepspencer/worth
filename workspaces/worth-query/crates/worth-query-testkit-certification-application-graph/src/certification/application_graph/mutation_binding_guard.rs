@@ -59,7 +59,7 @@ macro_rules! worlds_certification_application_graph_mutation_binding_guard_rs_ad
                 let document = selected
                     .resolve_entity(
                         &phase,
-                        DocumentIdentityField::reference(),
+                        DocumentIdentityField::at("DocumentIdentityField"),
                         DOCUMENT_IDENTITY.to_owned(),
                         &scope,
                         WorthQueryPrincipalResolutionMode::Ordinary,

@@ -61,6 +61,19 @@ fn restored_catalog_allocates_fresh_identities_and_preserves_old_observations() 
         .expect("index fixture has identity capacity");
     assert!(third.index_id > second.index_id);
     assert!(fourth.index_id > third.index_id);
+    let (_, head) = recovered
+        .observe_branch(&recovered.main_branch_identity())
+        .unwrap();
+    let built = recovered.index_authority().build_for_basis(
+        execution,
+        DerivedIndexBuildRequest {
+            source_commit_id: head.observation().commit_id().unwrap(),
+            branch_id: BranchId("main".into()),
+            index_ids: vec![third.index_id, fourth.index_id],
+        },
+        &head,
+    );
+    assert!(built.failed_indexes.is_empty());
     let committed = super::checkpoint_index_generations::update_entity_on_branch(
         execution,
         &recovered,

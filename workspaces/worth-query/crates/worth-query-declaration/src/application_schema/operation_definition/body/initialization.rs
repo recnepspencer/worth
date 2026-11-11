@@ -1,53 +1,48 @@
-//! One scalar initializer authoring funnel for root and child creation sites.
+//! Scalar initializer authoring for root and child creation sites.
 use super::{
     ApplicationOperationBodyAuthoringDenial as Denial,
     ApplicationOperationBodyCreatedField as Field,
 };
-use crate::application_schema::{
-    ApplicationFieldBindingLocus as Locus, ApplicationFieldRef, ApplicationFieldUnit,
-    ApplicationScalarValueBinding, DeclaredApplicationFieldValue, OperationWrites,
-};
-pub(super) fn literal<S, O, E, A, F, V, W, Q, U>(
-    field: ApplicationFieldRef<S, E, A, F, V, W, Q, U>,
-    value: V,
-) -> Result<Field, Denial>
-where
-    F: OperationWrites<O> + DeclaredApplicationFieldValue<Value = V>,
-    U: ApplicationFieldUnit,
-{
-    F::Binding::validate(&value)
-        .map_err(crate::application_schema::ApplicationValueEncodeDenial::from)?;
+use crate::application_schema::fragment::RecordSelection;
+
+pub(super) fn literal<Selection: RecordSelection>(
+    field: Selection,
+    value: Selection::Value,
+) -> Result<Field, Denial> {
+    let checked = super::record_authoring::resolve(field)?;
     Ok(Field::Literal {
-        field: Locus::new(field.entity(), field.aspect(), field.field()),
-        binding: F::Binding::IDENTITY,
-        value: F::Binding::encode(&value)?,
+        field: checked.locus().clone(),
+        binding: checked.recipe().binding_identity().clone(),
+        value: checked.encode(&value)?,
     })
 }
-pub(super) fn input<S, O, E, A, F, V, W, Q, U>(
-    field: ApplicationFieldRef<S, E, A, F, V, W, Q, U>,
+pub(super) fn input<Selection: RecordSelection>(
+    field: Selection,
     member: &str,
     optional: bool,
-) -> Result<Field, Denial>
-where
-    F: OperationWrites<O> + DeclaredApplicationFieldValue<Value = V>,
-    U: ApplicationFieldUnit,
-{
+) -> Result<Field, Denial> {
     if member.is_empty() || member.trim() != member {
         return Err(Denial::InvalidInputMember);
     }
-    let locus = Locus::new(field.entity(), field.aspect(), field.field());
+    let checked = super::record_authoring::resolve(field)?;
+    if optional
+        && checked.presence() != crate::application_schema::ApplicationFieldPresence::Optional
+    {
+        return Err(Denial::IncompatibleSourceBinding);
+    }
+    let recipe = checked.recipe();
     Ok(if optional {
         Field::OptionalInput {
-            field: locus,
-            binding: F::Binding::IDENTITY,
-            scalar_family: F::Binding::SCALAR_FAMILY,
+            field: checked.locus().clone(),
+            binding: recipe.binding_identity().clone(),
+            scalar_family: recipe.scalar_family(),
             member: member.to_owned(),
         }
     } else {
         Field::Input {
-            field: locus,
-            binding: F::Binding::IDENTITY,
-            scalar_family: F::Binding::SCALAR_FAMILY,
+            field: checked.locus().clone(),
+            binding: recipe.binding_identity().clone(),
+            scalar_family: recipe.scalar_family(),
             member: member.to_owned(),
         }
     })

@@ -205,7 +205,13 @@ fn batch_naming_evidence_preserves_attach_and_rebind_outcomes() {
         .inspect(request_execution, &receipt)
         .expect("batch should inspect");
 
-    assert_eq!(receipt.batch_mutation_evidence().naming_mutation_count(), 2);
+    assert_eq!(
+        receipt
+            .batch_mutation_evidence()
+            .expect("fixture digest must fit")
+            .naming_mutation_count(),
+        2
+    );
 
     match inspection {
         WorthQueryInspection::BatchWriteReceipt(inspection) => {

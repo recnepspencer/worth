@@ -18,6 +18,7 @@ worth-foundational = { path = "../../../../crates/worth-foundational" }
 worth-proof = { path = "../../../../crates/worth-proof" }
 worth-relational = { path = "../../../../crates/worth-relational" }
 worth-query-installation = { path = "../../../worth-query/crates/worth-query-installation" }
+worth-query-execution = { path = "../../../worth-query/crates/worth-query-execution" }
 worth-store.workspace = true
 worth-store-relational.workspace = true
 worth-store-physical-format.workspace = true

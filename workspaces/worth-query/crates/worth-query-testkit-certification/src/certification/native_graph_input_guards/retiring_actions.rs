@@ -44,10 +44,9 @@ impl ApplicationStructuredValueBinding for RetireInput {
 }
 worth_query_operation!(pub Keep for Schema, input KeepInput);
 worth_query_operation!(pub Retire for Schema, input RetireInput);
-worth_query_operation_reads!(Keep=>[Row,RowIdentity,Snapshot,CurrentSnapshot]);
-worth_query_operation_reads!(Retire=>[Row,RowIdentity,Snapshot,CurrentSnapshot]);
-worth_query_operation_writes!(Keep=>[RowValue,SnapshotIdentity,SnapshotValue]);
-worth_query_operation_writes!(Retire=>[RowValue,SnapshotIdentity,SnapshotValue]);
+worth_query_operation_reads!(Keep => [Row, Snapshot, CurrentSnapshot]);
+worth_query_operation_reads!(Retire => [Row, Snapshot, CurrentSnapshot]);
+
 worth_query_operation_creates!(Keep=>[Snapshot]);
 worth_query_operation_creates!(Retire=>[Snapshot]);
 worth_query_operation_deletes!(Retire=>[Snapshot]);
@@ -66,27 +65,27 @@ identity "worth.query.retiring.keep-binding.v1", input KeepInput,operation Keep,
 idempotency u64,identity "worth.query.retiring.keep-request.v1",decision WorthQueryOperationBodyDecision<Schema,Row>,denial DenialBinding,
 handler identity "worth.query.retiring.keep-body.v1",program required,outputs NoApplicationMutationOutputs,
 principal PrincipalBinding,mapping Mapping,principal_entity Principal,principal_identity u64,identity_binding U64ApplicationValueBinding,
-scope Row,RowFacts,RowIdentity,String,ReadOnly,NoApplicationUnit,field RowIdentity::reference(),value keep_row,
+scope RowIdentity, field RowIdentity::at("RowIdentity"),value keep_row,
 );
 worth_query_mutation_binding!(pub RetireBinding for RetireSnapshot,schema Schema,
 identity "worth.query.retiring.retire-binding.v1", input RetireInput,operation Retire,result ResultBinding,
 idempotency u64,identity "worth.query.retiring.retire-request.v1",decision WorthQueryOperationBodyDecision<Schema,Row>,denial DenialBinding,
 handler identity "worth.query.retiring.retire-body.v1",program required,outputs NoApplicationMutationOutputs,
 principal PrincipalBinding,mapping Mapping,principal_entity Principal,principal_identity u64,identity_binding U64ApplicationValueBinding,
-scope Row,RowFacts,RowIdentity,String,ReadOnly,NoApplicationUnit,field RowIdentity::reference(),value retire_row,
+scope RowIdentity, field RowIdentity::at("RowIdentity"),value retire_row,
 );
 pub fn keep_body() -> ApplicationOperationBody<Schema, Keep, KeepSnapshot> {
     Keep::reference()
         .body()
         .in_scope(Row::reference())
         .unwrap()
-        .assign_input(RowValue::reference(), "value")
+        .assign_input(RowValue::at("RowValue"), "value")
         .unwrap()
         .create_in_scope(Snapshot::reference(), "snapshot")
         .unwrap()
-        .initialize_input(SnapshotIdentity::reference(), "identity")
+        .initialize_input(SnapshotIdentity::at("SnapshotIdentity"), "identity")
         .unwrap()
-        .initialize_input(SnapshotValue::reference(), "value")
+        .initialize_input(SnapshotValue::at("SnapshotValue"), "value")
         .unwrap()
         .replace_from_scope(CurrentSnapshot::reference(), "current")
         .unwrap()
@@ -98,13 +97,13 @@ pub fn retire_body() -> ApplicationOperationBody<Schema, Retire, RetireSnapshot>
         .body()
         .in_scope(Row::reference())
         .unwrap()
-        .assign_input(RowValue::reference(), "value")
+        .assign_input(RowValue::at("RowValue"), "value")
         .unwrap()
         .create_in_scope(Snapshot::reference(), "snapshot")
         .unwrap()
-        .initialize_input(SnapshotIdentity::reference(), "identity")
+        .initialize_input(SnapshotIdentity::at("SnapshotIdentity"), "identity")
         .unwrap()
-        .initialize_input(SnapshotValue::reference(), "value")
+        .initialize_input(SnapshotValue::at("SnapshotValue"), "value")
         .unwrap()
         .replace_and_retire_from_scope(CurrentSnapshot::reference(), "current")
         .unwrap()
@@ -133,8 +132,8 @@ pub fn declare(
                 .with_body(retire_body())
                 .unwrap(),
         )
-        .operation_read_field(Keep::reference(), RowIdentity::reference())
-        .operation_read_field(Retire::reference(), RowIdentity::reference())
+        .operation_read_field(Keep::reference(), RowIdentity::at("RowIdentity"))
+        .operation_read_field(Retire::reference(), RowIdentity::at("RowIdentity"))
         .operation_projection_work_budget(Keep::reference(), 128)
         .operation_projection_work_budget(Retire::reference(), 128)
         .application_mutation_binding::<KeepBinding>()

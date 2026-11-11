@@ -1,0 +1,13 @@
+COMMAND: ["python", "target/lane-evidence/principal_charge_run3.py"]
+HEAD: bb3e73655b80af464f5dfdbbd73a93b8e616d9d8
+CLEAN: false
+START: 2026-11-08T18:19:35.190156+00:00
+ENV: removed stale external linker override; RUST_MIN_STACK unset in parent
+prebuild: C:\Users\shepworth\AppData\Local\Programs\Python\Python314\python.exe "C:\programming\worth worktees\worktrees\m3-host-home\target\lane-evidence\principal_charge_debug3.py" "C:\programming\worth worktees\worktrees\m3-host-home\target\lane-evidence\topology-funding\build\binaries.json" worth_query_topology_entry checkpoint_recovery::computation_partition::oracle::absence::serial::checkpoint_absence_rebuilds_every_owner_call_like_fresh
+
+thread 'checkpoint_recovery::computation_partition::oracle::absence::serial::checkpoint_absence_rebuilds_every_owner_call_like_fresh' (69464) panicked at topology_entry\src\checkpoint_recovery\computation_partition\oracle\demand.rs:92:5:
+the edit EntryEdit { scope_key: "anchor-isolated", set: "even", entry: 7, fact: 2, value: 4612811918334230528, other: 0, work: 0, sets: [], command: 0, count: 1 } commits: Err(PrincipalResolution(WorthQueryPrincipalResolutionDenial { kind: Stopped(Ok(ExecutionResource { denial: WorkExhausted, partition_identity: None, policy_ancestor: None })), binding: "ConsumerPrincipalBinding", native_query_read_stop: None }))
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+END: 2026-11-08T18:20:01.468543+00:00
+EXIT: 101

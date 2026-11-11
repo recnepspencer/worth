@@ -1,6 +1,7 @@
 //! Each recovery refusal tells the caller the one action that can succeed.
 
 use super::*;
+use bank_server::BankDurableDispatchRecordDenial as Record;
 use BankCommittedDispatchOutboxReadDenial as Read;
 use BankExternalDispatchAttemptDenial as Attempt;
 use BankHttpDenialKind as Denial;
@@ -69,7 +70,32 @@ const OWNER_READS: [(Read, Denial, Next); 13] = [
     ),
 ];
 
-const ATTEMPTS: [(Attempt, Denial, Next); 9] = [
+const ATTEMPTS: [(Attempt, Denial, Next); 14] = [
+    (
+        Attempt::DurableAttemptRecordDenied(Record::AttemptAwaitingObservation),
+        Denial::Unavailable,
+        Next::Retry,
+    ),
+    (
+        Attempt::DurableAttemptRecordDenied(Record::RequestStopped),
+        Denial::Unavailable,
+        Next::Retry,
+    ),
+    (
+        Attempt::DurableAttemptRecordDenied(Record::PublicationNoEffect),
+        Denial::Unavailable,
+        Next::Retry,
+    ),
+    (
+        Attempt::DurableAttemptRecordDenied(Record::PublicationUnresolved),
+        Denial::Unavailable,
+        Next::ContactOperator,
+    ),
+    (
+        Attempt::DurableAttemptRecordDenied(Record::JournalRefused),
+        Denial::Unavailable,
+        Next::ContactOperator,
+    ),
     (
         Attempt::OriginalPublicationPending,
         Denial::Unavailable,

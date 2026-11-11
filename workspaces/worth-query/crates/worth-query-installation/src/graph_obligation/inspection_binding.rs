@@ -1,6 +1,6 @@
 //! Inspection observes original evidence under an independent metadata obligation.
 use super::{
-    identity::OBLIGATION_IDENTITY_BUDGET, WorthQueryGraphObligationInstallationDenial as Denial,
+    WorthQueryGraphObligationInstallationDenial as Denial,
     WorthQueryInstalledGraphCapabilityRequirement,
     WorthQueryInstalledGraphObligationContract as Contract,
     WorthQueryInstalledGraphObligationResourcePosture as Resources,
@@ -18,6 +18,7 @@ use worth_query_declaration::facade::{
 const PURPOSE: &str = "original-query-observation-metadata-v1";
 
 pub(crate) fn bind_inspection_obligations(
+    budget: worth_foundational::facade::CanonicalDigestWorkBudget,
     binding: &ApplicationSchemaBindingIdentity,
     name: &str,
     definition: &ErasedApplicationQueryInspectionDefinition,
@@ -27,7 +28,7 @@ pub(crate) fn bind_inspection_obligations(
     let mut basis = InstallationCanonicalIdentityBasis::new(
         "worth-query.application-inspection-meaning",
         "worth-query-application-inspection-meaning-v1",
-        OBLIGATION_IDENTITY_BUDGET,
+        budget,
     );
     basis.text("purpose", PURPOSE)?;
     basis.embedded_basis("inspection", definition.canonical_basis().basis())?;
@@ -53,6 +54,7 @@ pub(crate) fn bind_inspection_obligations(
         .and_then(|n| n.checked_add(usize::from(!capabilities.is_empty()) * 2))
         .ok_or(Denial::InvalidContract)?;
     WorthQueryInstalledGraphObligationSet::for_inspection(
+        budget,
         binding,
         name.to_owned(),
         PURPOSE.to_owned(),

@@ -114,7 +114,13 @@ impl RecoveredRelationalRuntimeAuthority {
         {
             return Err(Denial::AssignmentCount);
         }
-        if target.catalog_digest() != original.plan().target_meaning().catalog() {
+        if target.catalog_digest() != original.plan().target_meaning().catalog()
+            || target.schema_digest() != original.plan().target_meaning().schema()
+            || target
+                .target_meaning(request, original.plan().target_meaning().step())
+                .map_err(Denial::TargetMeaning)?
+                != original.plan().target_meaning()
+        {
             return Err(Denial::TargetCatalogMismatch);
         }
         let position = match original.predecessor().target() {
@@ -155,13 +161,8 @@ impl RecoveredRelationalRuntimeAuthority {
         };
         let binding = runtime.configuration_binding();
         let epoch = binding.operation();
-        for meaning in [&planning.contracts.meaning, &target.meaning] {
-            if !Arc::ptr_eq(&meaning.configuration, &epoch.config)
-                || !Arc::ptr_eq(
-                    &meaning.configuration_contracts,
-                    &epoch.schema_contract_runtime,
-                )
-            {
+        for prepared in [&planning.contracts, target] {
+            if !prepared.receiver_epoch.same_epoch(&epoch) {
                 return Err(Denial::ConfigurationChanged);
             }
         }

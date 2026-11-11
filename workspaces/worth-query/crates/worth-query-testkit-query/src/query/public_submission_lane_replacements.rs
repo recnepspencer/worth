@@ -67,6 +67,10 @@ pub fn field_path(path: &str) -> CanonicalFieldPath {
 
 pub fn scalar_text(value: Option<&AspectValue>) -> Option<&str> {
     match value? {
+        AspectValue::String(InternedString::Stored(value)) => {
+            let value = value.as_string();
+            Some(value.as_str())
+        }
         AspectValue::String(InternedString::Raw(value)) => Some(value.as_str()),
         AspectValue::String(InternedString::Symbol(_)) => None,
         _ => None,

@@ -1,3 +1,4 @@
+#![cfg_attr(test, recursion_limit = "256")]
 #![cfg_attr(
     not(test),
     deny(clippy::iter_over_hash_type, clippy::disallowed_methods)

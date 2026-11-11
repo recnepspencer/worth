@@ -20,8 +20,8 @@ impl CommittedOutboxRead<'_> {
         };
         let entity_id = *entity_id;
         let (created_at, values, owner_work) = self.read_record(execution, entity_id)?;
-        let record = restore_record(values)?;
-        if !record.same_persisted_fields(self.binding.record()) {
+        let record = decode_fields(values)?;
+        if !self.binding.record().matches_persisted_fields(&record) {
             return Err(Denial::RecordMismatch);
         }
         let committed = self

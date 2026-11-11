@@ -4,7 +4,7 @@ use super::*;
 use crate::equality_type_id::EqualityTypeId as TypeId;
 
 pub(in crate::domain_computation::primary_graph) struct PendingProducerRegistry<Schema> {
-    declared: BTreeMap<String, DeclaredProducerBinding>,
+    pub(super) declared: BTreeMap<String, DeclaredProducerBinding>,
     /// The operations whose partitioned computation a producer's runs retain.
     retaining: std::collections::HashSet<TypeId>,
     providers: BTreeMap<
@@ -107,6 +107,9 @@ where
                 DenialKind::DuplicateProducerBinding,
                 Binding::IDENTITY,
             ));
+        }
+        if let Some(contract) = Binding::PREDECESSOR_READS {
+            contract.validate(installed, Binding::OWNERSHIP)?;
         }
         declared.owned_scope_entity =
             super::scope_ownership::validate::<Schema, Binding>(&mutation, &source_query)?;

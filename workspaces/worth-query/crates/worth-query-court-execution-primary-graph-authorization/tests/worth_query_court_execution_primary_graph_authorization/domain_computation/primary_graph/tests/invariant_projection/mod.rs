@@ -37,7 +37,7 @@ fn installed_invariant_projection_reads_one_pinned_typed_graph_snapshot() {
         .iter()
         .map(|account| {
             snapshot
-                .field(execution, account, AccountStatus::reference())
+                .field(execution, account, AccountStatus::at("AccountStatus"))
                 .expect("request remains live")
                 .expect("installed account status must project")
         })
@@ -88,7 +88,11 @@ fn independently_installed_graphs_mint_distinct_projection_identities() {
 
     assert_ne!(first_account, second_account);
     assert_eq!(
-        second_snapshot.field(execution, &first_account, AccountStatus::reference()),
+        second_snapshot.field(
+            execution,
+            &first_account,
+            AccountStatus::at("AccountStatus")
+        ),
         Ok(None),
         "a foreign projection identity must not be reinterpreted in this graph"
     );
@@ -109,10 +113,13 @@ fn invariant_entity_identity_exposes_the_resolved_instance() {
                     &phase,
                     |reader| {
                         let open = reader
-                            .resolve_entity(AccountStatus::reference(), "open".to_string())
+                            .resolve_entity(AccountStatus::at("AccountStatus"), "open".to_string())
                             .unwrap();
                         let unrelated = reader
-                            .resolve_entity(AccountStatus::reference(), "unrelated".to_string())
+                            .resolve_entity(
+                                AccountStatus::at("AccountStatus"),
+                                "unrelated".to_string(),
+                            )
                             .unwrap();
                         (open.entity_id(), unrelated.entity_id())
                     },
@@ -140,13 +147,16 @@ fn locked_projection_uses_indexes_and_directional_adjacency_without_graph_scans(
                     &phase,
                     |reader| {
                         let principal = reader
-                            .resolve_entity(PrincipalIdentityField::reference(), 1_u64)
+                            .resolve_entity(
+                                PrincipalIdentityField::at("PrincipalIdentityField"),
+                                1_u64,
+                            )
                             .unwrap();
                         let owned = reader
                             .relations_from(AccountOwner::reference(), &principal)
                             .unwrap();
                         let open = reader
-                            .resolve_entity(AccountStatus::reference(), "open".to_string())
+                            .resolve_entity(AccountStatus::at("AccountStatus"), "open".to_string())
                             .unwrap();
                         let owners = reader
                             .relations_to(AccountOwner::reference(), &open)
@@ -155,7 +165,7 @@ fn locked_projection_uses_indexes_and_directional_adjacency_without_graph_scans(
                             .iter()
                             .map(|relation| {
                                 reader
-                                    .field(relation.to(), AccountStatus::reference())
+                                    .field(relation.to(), AccountStatus::at("AccountStatus"))
                                     .unwrap()
                             })
                             .collect::<Vec<String>>();
@@ -198,7 +208,7 @@ fn optional_locked_resolution_distinguishes_absence_from_ambiguity_and_counts_wo
                     |reader| {
                         reader
                             .resolve_optional_entity(
-                                AccountStatus::reference(),
+                                AccountStatus::at("AccountStatus"),
                                 "missing".to_string(),
                             )
                             .unwrap()
@@ -311,7 +321,7 @@ fn admitted_projection_supplies_its_exact_root_without_an_equality_lookup() {
                 .expect("the selected product branch remains admitted")
                 .resolve_entity(
                     &phase,
-                    AccountStatus::reference(),
+                    AccountStatus::at("AccountStatus"),
                     "open".to_string(),
                     &request,
                     WorthQueryPrincipalResolutionMode::Ordinary,
@@ -349,7 +359,7 @@ fn admitted_projection_supplies_its_exact_root_without_an_equality_lookup() {
                 .project_admitted_operation(
                     &phase,
                     &admission,
-                    |reader, root| reader.field(root, AccountStatus::reference()),
+                    |reader, root| reader.field(root, AccountStatus::at("AccountStatus")),
                     worth_execution::ExecutionAllocationPolicy::SystemAllocation,
                 )
                 .unwrap()

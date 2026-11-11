@@ -39,9 +39,15 @@ pub fn body<const DESTINATION: u64>(
     if DESTINATION == 116 {
         return SetRetention::reference::<DocumentRetentionSchema<DESTINATION>>()
             .body()
-            .expect_input(DocumentDraftNoteField::reference(), "identity")
+            .expect_input(
+                DocumentDraftNoteField::at("DocumentDraftNoteField"),
+                "identity",
+            )
             .unwrap()
-            .assign_input(DocumentRetentionField::reference(), "retention_days")
+            .assign_input(
+                DocumentRetentionField::at("DocumentRetentionField"),
+                "retention_days",
+            )
             .unwrap()
             .finish()
             .unwrap();
@@ -50,12 +56,18 @@ pub fn body<const DESTINATION: u64>(
         let operation = SetRetention::reference::<DocumentRetentionSchema<DESTINATION>>();
         let body = operation.body();
         let body = if matches!(DESTINATION, 113 | 114) {
-            body.expect_input(DocumentDraftNoteField::reference(), "identity")
+            body.expect_input(
+                DocumentDraftNoteField::at("DocumentDraftNoteField"),
+                "identity",
+            )
         } else if DESTINATION == 115 {
-            body.expect_input(DocumentAuditSourceField::reference(), "retention_days")
+            body.expect_input(
+                DocumentAuditSourceField::at("DocumentAuditSourceField"),
+                "retention_days",
+            )
         } else {
             body.expect_input(
-                DocumentRetentionField::reference(),
+                DocumentRetentionField::at("DocumentRetentionField"),
                 match DESTINATION {
                     111 => "identity",
                     112 => "missing",
@@ -65,7 +77,7 @@ pub fn body<const DESTINATION: u64>(
         }
         .unwrap();
         return body
-            .assign(DocumentRetentionField::reference(), 99)
+            .assign(DocumentRetentionField::at("DocumentRetentionField"), 99)
             .unwrap()
             .finish()
             .unwrap();

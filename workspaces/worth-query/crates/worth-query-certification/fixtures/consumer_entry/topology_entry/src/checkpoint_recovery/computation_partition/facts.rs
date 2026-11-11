@@ -95,8 +95,8 @@ pub(super) fn seed_set(graph: &mut Graph, set: &str, weight: f64) {
                 EntrySet::reference::<CheckpointSchema>(),
                 key(&format!("entries-{set}")),
             )
-            .field(EntrySetKey::reference(), set.to_owned())
-            .field(EntrySetWeight::reference(), weight.to_bits()),
+            .field(EntrySetKey::at("EntrySetKey"), set.to_owned())
+            .field(EntrySetWeight::at("EntrySetWeight"), weight.to_bits()),
         )
         .unwrap();
 }
@@ -109,11 +109,11 @@ pub(super) fn seed_entry(graph: &mut Graph, entry_key: &str, entry: &RegionEntry
                 SetEntry::reference::<CheckpointSchema>(),
                 key(entry_key),
             )
-            .field(EntryNumber::reference(), entry.id)
-            .field(EntryRegion::reference(), u64::from(entry.region))
-            .field(EntryValueBits::reference(), entry.value.to_bits())
-            .field(EntryWork::reference(), entry.work as u64)
-            .field(EntryFault::reference(), RegionFault::code(entry.fault)),
+            .field(EntryNumber::at("EntryNumber"), entry.id)
+            .field(EntryRegion::at("EntryRegion"), u64::from(entry.region))
+            .field(EntryValueBits::at("EntryValueBits"), entry.value.to_bits())
+            .field(EntryWork::at("EntryWork"), entry.work as u64)
+            .field(EntryFault::at("EntryFault"), RegionFault::code(entry.fault)),
         )
         .unwrap();
 }
@@ -189,7 +189,7 @@ impl ChargedBytes for Entry {
 macro_rules! fact {
     ($reader:expr, $entity:expr, $field:ident) => {
         $reader
-            .field($entity, $field::reference())?
+            .field($entity, $field::at(stringify!($field)))?
             .expect("a seeded entry holds every fact")
     };
 }
@@ -202,12 +202,11 @@ pub(super) fn entries<Operation>(
 ) -> Read<WorthQueryComputationPartitionPlan<Entry>>
 where
     EntrySetMember: OperationReads<Operation>,
-    EntryNumber: OperationReads<Operation>,
 {
     let mut entries = Vec::new();
     for member in reader.relations_from(EntrySetMember::reference(), set)? {
         let entity = member.into_to();
-        if let Some(number) = reader.field(&entity, EntryNumber::reference())? {
+        if let Some(number) = reader.field(&entity, EntryNumber::at("EntryNumber"))? {
             entries.push(Entry { number, entity });
         }
     }
@@ -218,9 +217,11 @@ where
 }
 
 /// The float the set lends some of its regions.
-pub(super) fn weight<Operation>(reader: &mut Reader<'_, '_, '_, Operation>, set: &Set) -> Read<f64>
+pub(super) fn weight<Operation>(
+    reader: &mut Reader<'_, '_, '_, Operation>,
+    set: &Set,
+) -> Read<f64>
 where
-    EntrySetWeight: OperationReads<Operation>,
 {
     Ok(f64::from_bits(fact!(reader, set, EntrySetWeight)))
 }
@@ -230,7 +231,6 @@ pub(super) fn region<Operation>(
     entry: &Entry,
 ) -> Read<u32>
 where
-    EntryRegion: OperationReads<Operation>,
 {
     let region = fact!(reader, &entry.entity, EntryRegion);
     Ok(u32::try_from(region).expect("a seeded region is 32 bits"))
@@ -241,7 +241,6 @@ pub(super) fn fault<Operation>(
     entry: &Entry,
 ) -> Read<Option<RegionFault>>
 where
-    EntryFault: OperationReads<Operation>,
 {
     Ok(RegionFault::of_code(fact!(
         reader,
@@ -270,9 +269,6 @@ pub(super) fn gathered<'gather, Operation>(
     entries: impl Iterator<Item = (PartitionItemId, &'gather Entry)>,
 ) -> Read<Vec<EntryData>>
 where
-    EntryValueBits: OperationReads<Operation>,
-    EntryWork: OperationReads<Operation>,
-    EntryFault: OperationReads<Operation>,
 {
     entries
         .map(|(_, entry)| -> Read<EntryData> {

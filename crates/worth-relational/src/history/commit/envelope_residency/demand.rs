@@ -48,9 +48,9 @@ impl RelationalCommitEnvelopeResidency {
             |position| position.position(),
         );
         let result = match &state.backing {
-            EnvelopeBacking::Memory { envelope, .. } => {
+            EnvelopeBacking::Memory { canonical, .. } => {
                 return Ok(ResidentEnvelopeRead {
-                    envelope: envelope.clone(),
+                    envelope: Arc::clone(canonical.envelope()),
                     positioned: state
                         .position
                         .as_ref()

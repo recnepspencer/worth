@@ -48,6 +48,8 @@ where
         }
     }
 
+    /// Forces `run` to re-execute the requested targets even when they are
+    /// current. Reads ignore it: a read never recomputes a current value.
     pub fn on_demand(mut self) -> Self {
         self.request_mode = EvaluationRequestMode::ForceOnDemand;
         self
@@ -103,7 +105,13 @@ where
         )
     }
 
-    pub fn read<F, O>(self, runtime_ctx: &Ctx, evaluator: &F) -> Result<AspectVersion, SignalError>
+    /// Reads one target. Like `read_many`, it settles only what is not
+    /// current and ignores the request mode.
+    pub fn read<F, O>(
+        mut self,
+        runtime_ctx: &Ctx,
+        evaluator: &F,
+    ) -> Result<AspectVersion, SignalError>
     where
         F: for<'ctx> Fn(&mut EvaluationContext<'ctx, Ctx>) -> Result<O, SignalError> + Sync,
         O: IntoEvaluationOutput,
@@ -113,32 +121,14 @@ where
                 "guided read requires exactly one target; use read_many for multiple targets",
             ));
         };
-        if !matches!(
-            self.runtime.graph.get_state(*node)?,
-            crate::data::node::NodeState::Clean
-        ) {
-            self.runtime.execute_evaluation(
-                ExecutionIntent::Targets {
-                    targets: &self.targets,
-                    request_mode: self.request_mode,
-                },
-                runtime_ctx,
-                evaluator,
-                worth_execution::ExecutionRequest::serial(
-                    &crate::data::host_execution::declared_serial_request(
-                        self.runtime
-                            .graph
-                            .installed_runtime_policy()
-                            .requested_policy(),
-                    ),
-                ),
-            )?;
-        }
-        self.runtime.graph.node_aspect_version(*node)
+        let node = *node;
+        self.settle(runtime_ctx, evaluator)?;
+        self.runtime.graph.node_aspect_version(node)
     }
 
+    /// Reads every target after settling what is not current.
     pub fn read_many<F, O>(
-        self,
+        mut self,
         runtime_ctx: &Ctx,
         evaluator: &F,
     ) -> Result<Vec<AspectVersion>, SignalError>
@@ -146,31 +136,38 @@ where
         F: for<'ctx> Fn(&mut EvaluationContext<'ctx, Ctx>) -> Result<O, SignalError> + Sync,
         O: IntoEvaluationOutput,
     {
-        let pending = crate::logic::planner::plan_builder::targets_requiring_settlement(
-            &mut self.runtime.graph,
-            &self.targets,
-        )?;
-        if !pending.is_empty() {
-            self.runtime.execute_evaluation(
-                ExecutionIntent::Targets {
-                    targets: &pending,
-                    request_mode: self.request_mode,
-                },
-                runtime_ctx,
-                evaluator,
-                worth_execution::ExecutionRequest::serial(
-                    &crate::data::host_execution::declared_serial_request(
-                        self.runtime
-                            .graph
-                            .installed_runtime_policy()
-                            .requested_policy(),
-                    ),
-                ),
-            )?;
-        }
+        self.settle(runtime_ctx, evaluator)?;
         self.targets
-            .into_iter()
-            .map(|node| self.runtime.graph.node_aspect_version(node))
+            .iter()
+            .map(|node| self.runtime.graph.node_aspect_version(*node))
             .collect()
+    }
+
+    /// A clean node is only locally clean: it is current when nothing above
+    /// it is unsettled, which the planner decides from the whole upstream
+    /// path. Reads therefore always plan in `Default` mode, which keeps
+    /// current targets out of the plan; forcing applies only to `run`.
+    fn settle<F, O>(&mut self, runtime_ctx: &Ctx, evaluator: &F) -> Result<(), SignalError>
+    where
+        F: for<'ctx> Fn(&mut EvaluationContext<'ctx, Ctx>) -> Result<O, SignalError> + Sync,
+        O: IntoEvaluationOutput,
+    {
+        self.runtime.execute_evaluation(
+            ExecutionIntent::Targets {
+                targets: &self.targets,
+                request_mode: EvaluationRequestMode::Default,
+            },
+            runtime_ctx,
+            evaluator,
+            worth_execution::ExecutionRequest::serial(
+                &crate::data::host_execution::declared_serial_request(
+                    self.runtime
+                        .graph
+                        .installed_runtime_policy()
+                        .requested_policy(),
+                ),
+            ),
+        )?;
+        Ok(())
     }
 }

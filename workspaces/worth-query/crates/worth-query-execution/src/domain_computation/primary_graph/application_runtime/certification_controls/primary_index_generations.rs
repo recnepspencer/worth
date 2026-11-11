@@ -31,17 +31,11 @@ impl<Schema: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRunti
     /// Evicts only the named field's rebuildable equality generations, not authoritative facts.
     #[doc(hidden)]
     pub fn release_equality_index_generations_for_test<
-        E,
-        A,
-        F,
-        V,
-        W,
-        Q,
-        U: worth_query_installation::facade::ApplicationFieldUnit,
+        F: worth_query_declaration::facade::application_schema::fragment::RecordSelection,
     >(
         &self,
         phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
-        field: worth_query_installation::facade::ApplicationFieldRef<Schema, E, A, F, V, W, Q, U>,
+        field: F,
     ) -> Result<usize, crate::domain_computation::primary_graph::WorthQueryAdvancementDenial> {
         let execution = phase.execution_request_for(self.product_runtime())?;
         let graph = self
@@ -64,18 +58,12 @@ impl<Schema: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRunti
     /// Observes resident generation presence without loading or reconstructing the index.
     #[doc(hidden)]
     pub fn has_equality_index_generation_for_test<
-        E,
-        A,
-        F,
-        V,
-        W,
-        Q,
-        U: worth_query_installation::facade::ApplicationFieldUnit,
+        F: worth_query_declaration::facade::application_schema::fragment::RecordSelection,
     >(
         &self,
         phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
         branch: crate::basis::WorthQueryProductBranch,
-        field: worth_query_installation::facade::ApplicationFieldRef<Schema, E, A, F, V, W, Q, U>,
+        field: F,
     ) -> Result<bool, crate::domain_computation::primary_graph::WorthQueryAdvancementDenial> {
         let execution = phase.execution_request_for(self.product_runtime())?;
         let selected = self

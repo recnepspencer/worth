@@ -32,6 +32,5 @@ pub(super) fn definition() -> ApplicationInvariantDefinition<Catalog, ReservedNa
     .managed_index_source(prefix::PrefixIndex::reference())
 }
 
-#[path = "../maintained/rule/evaluation.rs"]
 mod evaluation;
 pub(super) use evaluation::{resolve, Calls};

@@ -28,7 +28,7 @@ pub(crate) fn prove_named_delta_cow(
         .unwrap();
     let selected_before = world
         .runtime
-        .observe_branch_sharing(std::slice::from_ref(&selected))
+        .observe_branch_sharing(execution, std::slice::from_ref(&selected))
         .unwrap();
     let before_regions = selected_before
         .region_locators()
@@ -88,7 +88,10 @@ pub(crate) fn prove_named_delta_cow(
         batch,
     );
 
-    let cost = world.runtime.observe_mvcc_cost(&selected_scope).unwrap();
+    let cost = world
+        .runtime
+        .observe_mvcc_cost(execution, &selected_scope)
+        .unwrap();
     let publication = cost.sharing_cost_delta();
     let after_regions = cost
         .sharing()
@@ -136,7 +139,7 @@ pub(crate) fn prove_named_delta_cow(
         assert_eq!(
             world
                 .runtime
-                .observe_mvcc_cost(unrelated)
+                .observe_mvcc_cost(execution, unrelated)
                 .unwrap()
                 .sharing_cost_delta(),
             worth_relational::facade::inspection::RelationalBranchSharingCostCounters::default()

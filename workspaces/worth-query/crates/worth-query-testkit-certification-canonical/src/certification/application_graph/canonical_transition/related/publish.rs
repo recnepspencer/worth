@@ -13,15 +13,7 @@ pub use worth_query_host::facade::{
 worth_query_operation!(pub PublishValue for CanonicalSchema, input ChangedBinding);
 worth_query_operation_emits!(PublishValue => [ValueChanged]);
 pub struct PublishBinding;
-pub type Scope = ApplicationMutationFieldScope<
-    CanonicalSchema,
-    Derived,
-    DerivedFacts,
-    DerivedIdentityField,
-    String,
-    ReadOnly,
-    NoApplicationUnit,
->;
+pub type Scope = ApplicationMutationFieldScope<DerivedIdentityField>;
 impl ApplicationMutationAdmissionBinding<CanonicalSchema> for PublishBinding {
     type Admission = ApplicationConventionalAdmission;
 }
@@ -49,17 +41,8 @@ impl ApplicationMutationBinding<CanonicalSchema> for PublishBinding {
     fn workflow_execution_requirements() -> ApplicationWorkflowExecutionRequirements {
         ApplicationWorkflowExecutionRequirements::not_applicable()
     }
-    fn scope_field() -> ApplicationFieldRef<
-        CanonicalSchema,
-        Derived,
-        DerivedFacts,
-        DerivedIdentityField,
-        String,
-        ReadOnly,
-        EqualityPredicate,
-        NoApplicationUnit,
-    > {
-        DerivedIdentityField::reference()
+    fn scope_field() -> DerivedIdentityField {
+        DerivedIdentityField::at("DerivedIdentityField")
     }
     fn principal_binding() -> ApplicationPrincipalBindingRef<
         CanonicalSchema,
@@ -84,7 +67,7 @@ impl ApplicationMutationIntent<CanonicalSchema> for Publish {
     }
     fn scope_binding(&self) -> Scope {
         Scope::new(
-            DerivedIdentityField::reference(),
+            DerivedIdentityField::at("DerivedIdentityField"),
             self.changed.identity.clone(),
         )
     }

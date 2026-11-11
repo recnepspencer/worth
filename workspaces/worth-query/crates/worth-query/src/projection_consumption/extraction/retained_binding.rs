@@ -7,6 +7,7 @@ use super::super::contracts::MaterializedProjectionContract;
 use super::super::facts::ProjectionFactKind;
 use super::super::identity::compose_retained_binding_row_identity;
 use super::super::source::ProjectionSourceFamily;
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::projection_consumption::ProjectionFactExtractionError;
 use crate::runtime::{WorthQueryDerivedArtifactBinding, WorthQueryDerivedMaterializationTarget};
 use crate::runtime::{WorthQueryRetainedFieldPath, WorthQueryRetainedValueView};
@@ -53,7 +54,7 @@ pub(super) fn extract_retained_binding_facts(
         for index in 0..materialization.retained_row_count() {
             row_count += 1;
             let row_identity =
-                retained_binding_row_identity(binding.binding_for_reporting(), view_name, index);
+                retained_binding_row_identity(binding.binding_for_reporting(), view_name, index)?;
             for fact_family in contract.fact_families() {
                 match fact_family.kind() {
                     ProjectionFactKind::ViewLocalIdentity => {
@@ -158,7 +159,7 @@ pub(super) fn extract_retained_binding_facts(
             effect_continuity_facts: Vec::new(),
             relation_endpoints: Vec::new(),
         },
-    ))
+    )?)
 }
 
 fn retained_field_path(
@@ -179,8 +180,16 @@ fn retained_field_path(
     )
 }
 
-fn retained_binding_row_identity(binding_digest: &str, view_name: &str, index: usize) -> String {
-    compose_retained_binding_row_identity(binding_digest, view_name, index)
+fn retained_binding_row_identity(
+    binding_digest: &str,
+    view_name: &str,
+    index: usize,
+) -> Result<String, IdentityDerivationDenial> {
+    Ok(compose_retained_binding_row_identity(
+        binding_digest,
+        view_name,
+        index,
+    )?)
 }
 
 fn binding_target_source_references<'a>(

@@ -12,6 +12,7 @@ use worth_proof::{HomeAdmitted, RelationalReadmitted, StoreRecovered};
 #[derive(Debug)]
 pub enum ApplicationHomeOpenRefusal {
     Execution(WorkCeilingDenial),
+    UncleanRecoveryUnsupported(worth_foundational::facade::UncleanRecoveryUnsupported),
     Physical(physical_admission::ApplicationHomePhysicalRefusal),
     Descriptor(crate::descriptor::ApplicationHomeDescriptorDenial),
     Checkpoint(crate::checkpoint::ApplicationHomeCheckpointDenial),
@@ -99,7 +100,7 @@ pub fn admit_home(
         let selected = selected_source
             .selected(&recovered.serving, execution)
             .map_err(ApplicationHomeOpenRefusal::Checkpoint)?;
-        let native_source = native_source::prepare(
+        let native_preparation = native_source::prepare(
             &recovered.serving,
             prepared_descriptor.home_identity(),
             recovered.origin,
@@ -108,6 +109,50 @@ pub fn admit_home(
             execution,
             #[cfg(feature = "certification-test-authority")]
             &mut controls.relational,
+        )?;
+        let world_data = if recovered.origin
+            == worth_store::physical_runtime::RecoveryStorePresence::ExistingArtifacts
+        {
+            let descriptor = prepared_descriptor.descriptor();
+            let mut binding =
+                worth_runtime_world::facade::WorldDurableHomeBinding::from_admitted_adapter(
+                    crate::world_section::UnclaimedWorldSlot::owner_identity_for_home(
+                        descriptor.identity,
+                    ),
+                    descriptor.incarnation,
+                    *descriptor.binding.selected().revision().bytes(),
+                );
+            if let Some(lineage) = prepared_descriptor
+                .world_program_lineage(execution)
+                .map_err(ApplicationHomeOpenRefusal::Transition)?
+            {
+                binding = binding
+                    .with_recorded_program_lineage(lineage)
+                    .map_err(ApplicationHomeOpenRefusal::World)?;
+            }
+            let source = crate::world_section::checkpoint::prepare_source(
+                &selected_source,
+                &recovered.serving,
+                std::sync::Weak::new(),
+                execution,
+            )
+            .map_err(|cause| {
+                ApplicationHomeOpenRefusal::World(
+                    worth_runtime_world::facade::WorldReadmissionDenial::Medium(cause),
+                )
+            })?;
+            Some(
+                worth_runtime_world::facade::PreparedWorldHomeData::from_home_source(
+                    binding, source, execution,
+                )
+                .map_err(ApplicationHomeOpenRefusal::World)?,
+            )
+        } else {
+            None
+        };
+        let native_source = native_preparation.finish(
+            world_data.as_ref().and_then(|data| data.native_selection()),
+            execution,
         )?;
         let crate::descriptor::PublishedHomeDescriptor {
             descriptor,
@@ -127,32 +172,63 @@ pub fn admit_home(
         let world_slot = crate::world_section::UnclaimedWorldSlot::from_admitted_home(
             Arc::clone(&recovered.serving),
             &descriptor,
+            world_data.as_ref().map(|data| data.home_binding().clone()),
             transition.authority(),
             transition.reserved_attempt_frontier(),
             &checkpoint,
             execution,
         )
         .map_err(ApplicationHomeOpenRefusal::Execution)?;
+        let query_obligations =
+            Arc::new(crate::query_obligations::ApplicationQueryObligations::new(
+                &recovered.serving,
+                descriptor.identity,
+                descriptor.incarnation,
+            ));
+        let query_corrections =
+            Arc::new(crate::query_corrections::ApplicationQueryCorrections::new(
+                &recovered.serving,
+                descriptor.identity,
+                descriptor.incarnation,
+            ));
+        let query_dispatch = Arc::new(crate::query_dispatch::ApplicationHomeDispatchJournal::new(
+            &recovered.serving,
+            descriptor.identity,
+            descriptor.incarnation,
+        ));
+        let mut context = HomeContext {
+            query_corrections,
+            query_obligations,
+            query_dispatch,
+            world_preparation: None,
+            opening_observation,
+            transition,
+            selected_home_source: Some(selected_source),
+            initialization: crate::relational_preparation::HomeInitializationOrigin::Available(
+                recovered.origin,
+            ),
+            world_publications: world_slot.publications(),
+            world_close_report: None,
+            world_origin_retirement: None,
+            world_owner_retirement: None,
+            world_close_checkpoint: std::sync::Mutex::new(world_close_checkpoint),
+            world_slot: Some(world_slot),
+            checkpoint,
+            location,
+            descriptor,
+            serving: recovered.serving,
+        };
+        if let Some(data) = world_data {
+            context.world_preparation = Some(
+                crate::world_section::native_selection::HomeWorldPreparation::bind(
+                    &context, data, execution,
+                )
+                .map_err(ApplicationHomeOpenRefusal::World)?,
+            );
+        }
         Ok(HomeAdmitted::from_owner(AdmittedApplicationHome {
             native_source,
-            context: HomeContext {
-                opening_observation,
-                transition,
-                selected_home_source: Some(selected_source),
-                initialization: crate::relational_preparation::HomeInitializationOrigin::Available(
-                    recovered.origin,
-                ),
-                world_publications: world_slot.publications(),
-                world_close_report: None,
-                world_origin_retirement: None,
-                world_owner_retirement: None,
-                world_close_checkpoint: std::sync::Mutex::new(world_close_checkpoint),
-                world_slot: Some(world_slot),
-                checkpoint,
-                location,
-                descriptor,
-                serving: recovered.serving,
-            },
+            context,
             definition: relational,
         }))
     })

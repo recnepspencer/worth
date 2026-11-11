@@ -1,12 +1,12 @@
 //! Original-request edits publish only after their final control handoff.
 use super::{
-    edit, funding::Funding, node::Entry, ExecutionOrderedMap, ExecutionOrderedMapDenial as Denial,
+    edit, funding::FundingSource, ExecutionOrderedMap, ExecutionOrderedMapDenial as Denial,
 };
 use crate::{ChargedBytes, ExecutionRequest, MapKernelStop, WorkCeilingDenial};
 
-pub(super) fn funded<'request, 'authority, R>(
-    request: ExecutionRequest<'request, 'authority>,
-    operation: impl FnOnce(Funding<'request, 'authority>) -> Result<R, Denial>,
+pub(super) fn funded<R>(
+    request: ExecutionRequest<'_, '_>,
+    operation: impl FnOnce(&dyn FundingSource) -> Result<R, Denial>,
 ) -> Result<R, Denial> {
     let mut held = None;
     let outcome = request.run_native_with_checkpoint(|context| {
@@ -14,12 +14,7 @@ pub(super) fn funded<'request, 'authority, R>(
             context
                 .poll()
                 .map_err(|cause| Denial::Request(WorkCeilingDenial::Stopped(cause)))
-                .and_then(|()| {
-                    operation(Funding::Request {
-                        request,
-                        accounted: context.has_accounting(),
-                    })
-                }),
+                .and_then(|()| operation(&StageFunding { request, context })),
         );
     });
     match (outcome, held) {
@@ -64,10 +59,9 @@ impl<K: Ord + Clone + ChargedBytes, V: Clone + ChargedBytes> ExecutionOrderedMap
         request: ExecutionRequest<'_, '_>,
     ) -> Result<(), Denial> {
         let root = funded(request, |funding| {
-            let entry = Entry::cloned(key, value, funding)?;
-            edit::insert(&self.root, entry, funding)
+            edit::insert_measured(&self.root, key, value, funding)
         })?;
-        self.root = Some(root);
+        self.root = root;
         Ok(())
     }
 }
@@ -81,10 +75,27 @@ impl<K: Ord + Clone, V: Clone> ExecutionOrderedMap<K, V> {
         request: ExecutionRequest<'_, '_>,
     ) -> Result<(), Denial> {
         let root = funded(request, |funding| {
-            let entry = Entry::cloned_native(key, value, funding)?;
-            edit::insert(&self.root, entry, funding)
+            edit::insert_native(&self.root, key, value, funding)
         })?;
-        self.root = Some(root);
+        self.root = root;
         Ok(())
+    }
+}
+
+struct StageFunding<'stage, 'request, 'authority, 'meter, 'parent> {
+    request: ExecutionRequest<'request, 'authority>,
+    context: &'stage crate::MapKernelContext<'meter, 'parent>,
+}
+impl FundingSource for StageFunding<'_, '_, '_, '_, '_> {
+    fn uses_accounting(&self) -> bool {
+        self.context.has_accounting()
+    }
+    fn reserve_memory(
+        &self,
+        bytes: u64,
+    ) -> Result<Option<crate::ExecutionMemoryReservation>, Denial> {
+        self.request
+            .reserve_retained_memory_in_stage(self.context, bytes)
+            .map_err(Denial::Request)
     }
 }

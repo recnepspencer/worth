@@ -26,7 +26,8 @@ fn runtime_live_read_receipt_retains_async_and_mixed_cause_posture_precedence() 
             &WorthQueryRuntimeAsyncResultProjection::completion_state(
                 BridgeAsyncCompletionState::Admitted(BridgeAsyncCompletionClass::Fulfilled),
                 "async:live-receipt-current",
-            ),
+            )
+            .expect("fixture digest must fit"),
             &basis_digest,
             &generation_digest,
         )

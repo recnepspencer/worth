@@ -10,15 +10,13 @@ use crate::application_query::{
 
 use super::canonical_identity::{canonical_identity, ApplicationSchemaCanonicalHeader};
 use super::{
-    ApplicationAbilityRef, ApplicationEntityRef, ApplicationFieldRef, ApplicationRelationRef,
-    ApplicationSchemaIdentity, ApplicationSchemaMember, EqualityPredicate, NoApplicationUnit,
-    ReadOnly,
+    ApplicationAbilityRef, ApplicationEntityRef, ApplicationRelationRef, ApplicationSchemaIdentity,
+    ApplicationSchemaMember,
 };
 
 struct Schema;
 struct Entity;
 struct Aspect;
-struct Field;
 struct Parameters;
 struct QueryResult;
 struct FirstSlot;
@@ -47,15 +45,6 @@ worth_query_portable_type!(QueryResult => "worth.query.test.identity-query-resul
 worth_query_portable_type!(FirstSlot => "worth.query.test.identity-first-slot.v1");
 worth_query_portable_type!(SecondSlot => "worth.query.test.identity-second-slot.v1");
 worth_query_portable_type!(RelationSlot => "worth.query.test.identity-relation-slot.v1");
-
-impl crate::application_schema::DeclaredApplicationFieldValue for Field {
-    type Value = u64;
-    type Binding = crate::application_schema::U64ApplicationValueBinding;
-    const PRESENCE: crate::application_schema::ApplicationFieldPresence =
-        crate::application_schema::ApplicationFieldPresence::Required;
-}
-
-impl crate::application_schema::RequiredApplicationFieldValue for Field {}
 
 #[test]
 fn result_slot_type_changes_definition_and_schema_identity() {
@@ -89,8 +78,7 @@ fn duplicate_result_slot_denies_definition_authority() {
         .lanes(ApplicationQueryLaneEligibility::one_shot())
         .public()
         .build()
-        .err()
-        .expect("one slot cannot identify two result positions");
+        .expect_err("one slot cannot identify two result positions");
 
     assert_eq!(
         denial,
@@ -158,8 +146,7 @@ mod relation_predicate_identity;
 #[test]
 fn ordering_selector_must_name_a_projected_result_slot() {
     let denial = ordering_definition(selector::<SecondSlot>("value"))
-        .err()
-        .expect("an absent result slot cannot become ordering authority");
+        .expect_err("an absent result slot cannot become ordering authority");
 
     assert_eq!(
         denial,
@@ -170,8 +157,7 @@ fn ordering_selector_must_name_a_projected_result_slot() {
 #[test]
 fn ordering_selector_contract_must_match_its_projected_slot() {
     let denial = ordering_definition(selector::<FirstSlot>("invented"))
-        .err()
-        .expect("a forged selector contract cannot become ordering authority");
+        .expect_err("a forged selector contract cannot become ordering authority");
 
     assert_eq!(
         denial,
@@ -205,31 +191,8 @@ fn query_reference() -> ApplicationQueryReference<Schema, Query, Parameters, Que
 
 fn selector<Slot: crate::portable_identity::WorthQueryPortableType>(
     output: &'static str,
-) -> ApplicationQueryResultFieldRef<
-    Query,
-    Slot,
-    Schema,
-    Entity,
-    Aspect,
-    Field,
-    u64,
-    ReadOnly,
-    EqualityPredicate,
-    NoApplicationUnit,
-> {
-    ApplicationQueryResultFieldRef::new(
-        output,
-        ApplicationFieldRef::<
-            Schema,
-            Entity,
-            Aspect,
-            Field,
-            u64,
-            ReadOnly,
-            EqualityPredicate,
-            NoApplicationUnit,
-        >::from_schema_identifiers("Entity", "Aspect", "Field"),
-    )
+) -> ApplicationQueryResultFieldRef<Query, Slot, Schema, Field> {
+    ApplicationQueryResultFieldRef::new(output, Field::at("Field"))
 }
 
 fn relation_definition<Direction>(
@@ -276,18 +239,7 @@ where
 }
 
 fn ordering_definition<Slot: crate::portable_identity::WorthQueryPortableType>(
-    ordering: ApplicationQueryResultFieldRef<
-        Query,
-        Slot,
-        Schema,
-        Entity,
-        Aspect,
-        Field,
-        u64,
-        ReadOnly,
-        EqualityPredicate,
-        NoApplicationUnit,
-    >,
+    ordering: ApplicationQueryResultFieldRef<Query, Slot, Schema, Field>,
 ) -> Result<
     ApplicationQueryDefinition<Schema, Query, Parameters, QueryResult, Entity>,
     ApplicationQueryDefinitionDenial,
@@ -328,3 +280,45 @@ fn schema_identity(definition: ErasedApplicationQueryDefinition) -> ApplicationS
         &[],
     )
 }
+
+use super::fragment;
+struct QueryModel;
+impl fragment::Fragment for QueryModel {
+    const NAME: &'static str = "query_model";
+    type Bindings = QueryBindings;
+    type Members = (Entity,);
+}
+struct QueryBindings;
+impl fragment::BindingSet for QueryBindings {
+    type Work<'a> = super::ValueDecodeAdmission<'a>;
+    fn with_admission<T>(
+        work: &mut Self::Work<'_>,
+        run: impl FnOnce(&mut super::ValueDecodeAdmission<'_>) -> T,
+    ) -> T {
+        run(work)
+    }
+}
+impl fragment::Scalar<u64> for QueryBindings {
+    type Binding = super::U64ApplicationValueBinding;
+    const WRITABLE: bool = false;
+}
+impl fragment::Entity for Entity {
+    const NAME: &'static str = "Entity";
+    type Aspects = (Aspect,);
+    type Relations = ();
+}
+impl fragment::Aspect for Aspect {
+    const NAME: &'static str = "Aspect";
+    type Row = QueryRow0;
+}
+struct QueryRow0(u64);
+impl fragment::Record<QueryRow0> for QueryBindings {
+    fn record() -> impl fragment::Shape<QueryRow0, Self> {
+        fragment::field("Field", |row: &QueryRow0| row.0)
+            .equality_queryable(true)
+            .build(|value, _: &mut super::ValueDecodeAdmission<'_>| {
+                Ok::<_, std::convert::Infallible>(QueryRow0(value))
+            })
+    }
+}
+type Field = fragment::FieldSelection<QueryModel, Entity, Aspect, u64>;

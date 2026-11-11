@@ -1,6 +1,6 @@
 //! Immutable successor execution meaning, prepared on the actual Native owner.
 use crate::branch::{AdmittedRelationalBranchBasis, RelationalBranchRootSchemaAuthority};
-use crate::runtime::{RelationalRuntime, RelationalRuntimeConfig, SchemaContractRuntimeSubsystem};
+use crate::runtime::{RelationalRuntime, SchemaContractRuntimeSubsystem};
 use crate::schema::data::RelationalSchemaRegistry;
 use crate::validation::candidate_source::ManagedIndexSourceProgram;
 use crate::validation::{data::CustomInvariantRegistration, FrozenCustomInvariantRegistry};
@@ -10,7 +10,9 @@ use worth_foundational::facade::HomeProgramTransitionCatalogDigest;
 
 mod body_digest;
 mod body_validation;
+mod planning_request;
 pub use body_digest::{home_program_transition_body_digest, RelationalHomeProgramBodyDenial};
+pub use planning_request::RelationalHomeProgramPlanningSource;
 mod catalog_digest;
 mod predecessor_catalog;
 mod retention;
@@ -19,7 +21,11 @@ mod catalog_receipt;
 pub use catalog_receipt::RelationalHomeProgramCatalogReceipt;
 mod catalog_source;
 pub use catalog_source::RelationalHomeProgramCatalogReadmissionSource;
+pub(in crate::runtime) mod configuration;
 mod coverage;
+mod installation_readmission;
+mod promotion;
+pub use promotion::RelationalHomeProgramPromotionRefused;
 mod schema_compilation_denial;
 mod step_admission;
 mod target_step;
@@ -35,19 +41,27 @@ pub enum RelationalHomeProgramContractDenial {
     Source(crate::derived_relation::DerivedRelationDenial),
     DuplicateInvariant(crate::validation::DuplicateCustomInvariantRegistration),
     SchemaCapture,
+    SchemaImage(crate::durability::data::RelationalRecoveryStop),
     Execution(crate::execution::RelationalExecutionDenialCause),
     SchemaAuthorityExhausted,
     GenerationExhausted,
     CapacityOverflow,
     CatalogEncoding,
     UnboundHome,
+    TransitionPhase(crate::durability::medium::RelationalHomeProgramWriteDenial),
     Admission(worth_proof::HomeProgramTransitionAdmissionDenial),
     Plan(worth_foundational::facade::HomeProgramTransitionDescriptionDenial),
     TargetCatalogMismatch,
+    IndexDefinitions(crate::runtime::RelationalIndexDefinitionPreparationDenial),
     TargetStepMismatch,
     CallerEnvelope(worth_foundational::facade::HomeProgramTransitionCallerDenial),
     SourceContractChanged,
     SourceBasisMismatch,
+    UnsupportedConfigurationChange,
+    TargetAlreadyShared,
+    ReceiverConfigurationRequired,
+    PromotionContended,
+    OwnerUnavailable,
     Transaction(crate::mvcc::RelationalBranchTransactionAdmissionDenial),
     SchemaTransition(crate::runtime::RelationalSchemaTransitionAdmissionDenial),
 }
@@ -56,10 +70,56 @@ pub enum RelationalHomeProgramContractDenial {
 #[derive(Debug)]
 pub struct PreparedRelationalHomeProgramContracts {
     pub(crate) meaning: Arc<RelationalRootExecutionContracts>,
+    pub(crate) receiver_epoch: crate::runtime::RelationalRuntimeConfigurationSnapshot,
+    pub(crate) index_definitions: Option<Arc<crate::runtime::PreparedRelationalIndexDefinitions>>,
+    pub(crate) configuration: Option<Arc<crate::runtime::RelationalRuntimeConfig>>,
 }
 impl PreparedRelationalHomeProgramContracts {
+    /// Attach privately prepared definitions from this actual Native owner.
+    pub fn with_index_definitions(
+        mut self,
+        definitions: crate::runtime::PreparedRelationalIndexDefinitions,
+    ) -> Result<Self, RelationalHomeProgramContractDenial> {
+        if definitions.runtime != self.meaning.runtime {
+            return Err(RelationalHomeProgramContractDenial::ForeignRuntime);
+        }
+        self.index_definitions = Some(Arc::new(definitions));
+        Ok(self)
+    }
+
     pub fn catalog_digest(&self) -> HomeProgramTransitionCatalogDigest {
         self.meaning.digest
+    }
+    pub fn schema_digest(&self) -> worth_foundational::facade::HomeProgramTransitionSchemaDigest {
+        worth_foundational::facade::HomeProgramTransitionSchemaDigest::from_recorded(
+            self.meaning.schema.authority_digest(),
+        )
+    }
+
+    /// Describe the actual prepared schema and its full recorded carrier.
+    /// Neither this value nor its digests grants an executable Home step.
+    pub fn target_meaning(
+        &self,
+        request: &ExecutionRequest<'_, '_>,
+        step: u32,
+    ) -> Result<
+        worth_foundational::facade::HomeProgramTransitionTargetMeaning,
+        RelationalHomeProgramContractDenial,
+    > {
+        use worth_foundational::facade::{
+            HomeProgramTransitionSchemaCarrierDigest, HomeProgramTransitionTargetMeaning,
+        };
+        let image = self
+            .meaning
+            .schema
+            .recorded_image(request)
+            .map_err(RelationalHomeProgramContractDenial::SchemaImage)?;
+        Ok(HomeProgramTransitionTargetMeaning::from_recorded(
+            step,
+            self.catalog_digest(),
+            self.schema_digest(),
+            HomeProgramTransitionSchemaCarrierDigest::from_recorded(image.carrier_digest()),
+        ))
     }
 }
 
@@ -69,8 +129,6 @@ impl PreparedRelationalHomeProgramContracts {
 pub(crate) struct RelationalRootExecutionContracts {
     identity: Arc<catalog_receipt::RelationalHomeProgramCatalogIdentity>,
     pub(crate) runtime: u64,
-    pub(crate) configuration: Arc<RelationalRuntimeConfig>,
-    pub(crate) configuration_contracts: Arc<SchemaContractRuntimeSubsystem>,
     pub(crate) schema: Arc<RelationalBranchRootSchemaAuthority>,
     pub(crate) contracts: Arc<SchemaContractRuntimeSubsystem>,
     pub(crate) digest: HomeProgramTransitionCatalogDigest,
@@ -78,20 +136,6 @@ pub(crate) struct RelationalRootExecutionContracts {
 }
 
 impl RelationalRuntime {
-    /// Release the before-service writer fence only with the Home owner's
-    /// actual final binding acknowledgement, checked against its attachment.
-    pub fn complete_home_program_transition(
-        &self,
-        completed: worth_proof::HomeProgramTransitionBindingCommitted,
-    ) -> Result<(), crate::durability::medium::RelationalHomeProgramWriteDenial> {
-        self.durability
-            .medium()
-            .ok_or(
-                crate::durability::medium::RelationalHomeProgramWriteDenial::TransitionNotRequested,
-            )?
-            .complete_home_program_transition(completed)
-    }
-
     /// Compile the complete successor without installing it or invoking a
     /// provider. Only a committed Home step can later admit it for execution.
     pub fn prepare_home_program_contracts(
@@ -151,6 +195,7 @@ impl RelationalRuntime {
         })?;
         let contracts = SchemaContractRuntimeSubsystem::for_schema_compilation(
             schema.registry(),
+            &snapshot.config.schema.invariant_catalog.registrations,
             schema.aspect_plans_arc(),
             custom,
             generation,
@@ -158,6 +203,10 @@ impl RelationalRuntime {
             crate::schema::SchemaCompilationControl::Request(*request),
         )
         .map_err(Denial::Execution)?;
-        self.retain_home_program_contracts(request, schema, Arc::new(contracts), digest)
+        self.retain_home_program_contracts(request, schema, Arc::new(contracts), digest, snapshot)
     }
 }
+
+#[cfg(test)]
+#[path = "home_program_transition_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;

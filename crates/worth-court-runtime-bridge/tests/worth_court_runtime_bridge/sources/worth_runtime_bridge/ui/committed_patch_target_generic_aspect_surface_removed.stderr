@@ -1,8 +1,8 @@
-error[E0599]: no function or associated item named `aspect_surface` found for struct `BridgeCommittedPatchTarget` in the current scope
-  --> tests/worth_court_runtime_bridge/sources/worth_runtime_bridge/ui/committed_patch_target_generic_aspect_surface_removed.rs:10:47
+error[E0599]: no associated function or constant named `aspect_surface` found for struct `BridgeCommittedPatchTarget` in the current scope
+  --> tests/ui/committed_patch_target_generic_aspect_surface_removed.rs:10:47
    |
 10 |     let _target = BridgeCommittedPatchTarget::aspect_surface(
-   |                                               ^^^^^^^^^^^^^^ function or associated item not found in `BridgeCommittedPatchTarget`
+   |                                               ^^^^^^^^^^^^^^ associated function or constant not found in `BridgeCommittedPatchTarget`
    |
 note: if you're trying to build a new `BridgeCommittedPatchTarget` consider using one of the following associated functions:
       BridgeCommittedPatchTarget::authoritative_aspect
@@ -10,7 +10,7 @@ note: if you're trying to build a new `BridgeCommittedPatchTarget` consider usin
       BridgeCommittedPatchTarget::entity_field
       BridgeCommittedPatchTarget::entity_relation_endpoint
       and $N others
-  --> $WORKSPACE/crates/worth-runtime-bridge/src/input/envelope/target.rs
+  --> src/input/envelope/target.rs
    |
    |       pub fn authoritative_aspect(aspect_locator: AspectLocator) -> Self {
    |       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

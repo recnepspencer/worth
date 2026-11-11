@@ -4,14 +4,34 @@ use crate::transactions::data::{
 };
 use worth_execution::{ExecutionMemoryReservation, ExecutionRequest};
 
-pub(super) struct CommitPhaseBacking<T> {
+pub(crate) struct CommitPhaseBacking<T> {
     values: Vec<T>,
     _funding: Option<ExecutionMemoryReservation>,
 }
 impl<T> CommitPhaseBacking<T> {
-    pub(super) fn new(
+    pub(crate) fn new(
         request: &ExecutionRequest<'_, '_>,
         value: T,
+    ) -> Result<Self, TransactionCommitError> {
+        Ok(CommitPhaseReservation::prepare(request)?.fill(value))
+    }
+    pub(crate) fn value(&self) -> &T {
+        &self.values[0]
+    }
+    pub(crate) fn value_mut(&mut self) -> &mut T {
+        &mut self.values[0]
+    }
+    pub(crate) fn into_inner(mut self) -> T {
+        self.values.pop().expect("one actual candidate stage")
+    }
+}
+pub(crate) struct CommitPhaseReservation<T> {
+    values: Vec<T>,
+    funding: Option<ExecutionMemoryReservation>,
+}
+impl<T> CommitPhaseReservation<T> {
+    pub(crate) fn prepare(
+        request: &ExecutionRequest<'_, '_>,
     ) -> Result<Self, TransactionCommitError> {
         let bytes = u64::try_from(std::mem::size_of::<T>()).map_err(|_| allocation_failure())?;
         let funding = request
@@ -24,20 +44,14 @@ impl<T> CommitPhaseBacking<T> {
         if values.capacity() != 1 {
             return Err(allocation_failure());
         }
-        values.push(value);
-        Ok(Self {
-            values,
-            _funding: funding,
-        })
+        Ok(CommitPhaseReservation { values, funding })
     }
-    pub(super) fn value(&self) -> &T {
-        &self.values[0]
-    }
-    pub(super) fn value_mut(&mut self) -> &mut T {
-        &mut self.values[0]
-    }
-    pub(super) fn into_inner(mut self) -> T {
-        self.values.pop().expect("one actual candidate stage")
+    pub(crate) fn fill(mut self, value: T) -> CommitPhaseBacking<T> {
+        self.values.push(value);
+        CommitPhaseBacking {
+            values: self.values,
+            _funding: self.funding,
+        }
     }
 }
 fn allocation_failure() -> TransactionCommitError {

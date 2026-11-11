@@ -89,6 +89,19 @@ impl<'runtime, S: ApplicationSchema> WorthQueryDocumentHistoryNavigation<'runtim
                 }
             }
             progress.retry_prior_cleanup(phase)?;
+            if progress.ownership.is_some()
+                && progress.output_profile.is_none()
+                && matches!(
+                    progress.phase,
+                    NavigationPhase::AwaitingOutputs { .. }
+                        | NavigationPhase::Selecting { _outputs: None, .. }
+                )
+                && !progress.accept_verified_restoration(phase)?
+            {
+                return Err(Denial::RequiresSemanticCorrection(
+                    WorthQueryHistoryNavigationEligibilityDenial::RequiredOutputs,
+                ));
+            }
             if matches!(progress.phase, NavigationPhase::Selecting { .. }) {
                 if let Some(pause) = &progress.selection_pause {
                     pause.pause();
@@ -191,9 +204,11 @@ impl<'runtime, S: ApplicationSchema> NavigationProgress<'runtime, S> {
                 .expect("original prepaid head destination"),
             previous,
         );
-        let unused_source = selected
-            .journal
-            .fill_navigation_source(self.requested, retained_source);
+        let unused_source = selected.journal.fill_navigation_source(
+            self.requested,
+            retained_source,
+            source.discovery_recipes.clone(),
+        );
         let excluded = selected
             .journal
             .complete_navigation(self.requested, view_after);
@@ -205,6 +220,7 @@ impl<'runtime, S: ApplicationSchema> NavigationProgress<'runtime, S> {
         drop(unused_source);
         drop(self.output_source.take());
         drop(self.output_source_memory.take());
+        drop(self.output_basis_memory.take());
         drop(previous_source);
         drop(source);
         drop(_publication);

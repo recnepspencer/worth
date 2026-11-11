@@ -191,7 +191,7 @@ impl Drop for WorthQueryRequiredOutputSourcePreparation {
 
 impl Drop for WorthQueryOutputDemandInterest {
     fn drop(&mut self) {
-        self.owner.release(self);
+        worth_execution::run_with_execution_stack(|| self.owner.release(self));
     }
 }
 

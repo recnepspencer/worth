@@ -18,10 +18,7 @@ use worth_query_host::facade::{
             WorthQueryApplicationDeclaredOutputRole, WorthQueryApplicationOutputRole,
             WorthQueryExactlyOneOutput, WorthQueryPreserveOutput,
         },
-        application_schema::{
-            ApplicationFieldRef, ApplicationPrincipalBindingRef,
-            ApplicationSchemaDeclarationBuilder, EqualityPredicate, NoApplicationUnit, ReadOnly,
-        },
+        application_schema::{ApplicationPrincipalBindingRef, ApplicationSchemaDeclarationBuilder},
     },
 };
 
@@ -32,8 +29,7 @@ use crate::{
     reads::PaymentSummary,
     schema::{
         BankPrincipalBinding, BankPrincipalIdBinding, BankSchema, ExternalPrincipalMapping,
-        PaymentIdentity, PaymentIdentityField, PaymentIntent, PaymentStatus, PaymentStatusField,
-        Principal,
+        PaymentIdentityField, PaymentIntent, PaymentStatus, PaymentStatusField, Principal,
     },
 };
 
@@ -67,7 +63,7 @@ worth_query_structured_value_binding!(pub ApprovedPaymentAssessmentInputBinding 
 worth_query_structured_value_binding!(pub ApprovedPaymentAssessmentPublishedBinding for ApprovedPaymentAssessmentPublished { identity: "worth.bank.approved-payment-assessment.published.v1" });
 worth_query_structured_value_binding!(pub ApprovedPaymentAssessmentDenialBinding for ApprovedPaymentAssessmentDenial { identity: "worth.bank.approved-payment-assessment.denial.v1" });
 worth_query_operation!(pub PublishApprovedPaymentAssessment for BankSchema, input ApprovedPaymentAssessmentInputBinding);
-worth_query_operation_reads!(PublishApprovedPaymentAssessment => [PaymentIntent, PaymentIdentityField, PaymentStatusField]);
+worth_query_operation_reads!(PublishApprovedPaymentAssessment => [PaymentIntent]);
 
 pub struct ApprovedPaymentAssessmentOutputs;
 
@@ -91,15 +87,7 @@ impl ApplicationMutationOutputContract<BankSchema> for ApprovedPaymentAssessment
 }
 
 pub struct ApprovedPaymentAssessmentBinding;
-type AssessmentScope = ApplicationMutationFieldScope<
-    BankSchema,
-    PaymentIntent,
-    PaymentIdentity,
-    PaymentIdentityField,
-    PaymentId,
-    ReadOnly,
-    NoApplicationUnit,
->;
+type AssessmentScope = ApplicationMutationFieldScope<PaymentIdentityField>;
 
 impl ApplicationMutationBinding<BankSchema> for ApprovedPaymentAssessmentBinding {
     fn workflow_execution_requirements(
@@ -133,17 +121,8 @@ impl ApplicationMutationBinding<BankSchema> for ApprovedPaymentAssessmentBinding
     const HANDLER_IDENTITY: &'static str = "worth.bank.approved-payment-assessment.handler.v1";
     const IDEMPOTENCY_IDENTITY: &'static str = "worth.bank.approved-payment-assessment.command.v1";
 
-    fn scope_field() -> ApplicationFieldRef<
-        BankSchema,
-        PaymentIntent,
-        PaymentIdentity,
-        PaymentIdentityField,
-        PaymentId,
-        ReadOnly,
-        EqualityPredicate,
-        NoApplicationUnit,
-    > {
-        PaymentIdentityField::reference()
+    fn scope_field() -> PaymentIdentityField {
+        PaymentIdentityField::at("PaymentIdentityField")
     }
 
     fn principal_binding() -> ApplicationPrincipalBindingRef<
@@ -166,7 +145,10 @@ impl ApplicationMutationIntent<BankSchema> for ApprovedPaymentAssessmentInput {
     }
 
     fn scope_binding(&self) -> AssessmentScope {
-        AssessmentScope::new(PaymentIdentityField::reference(), self.payment)
+        AssessmentScope::new(
+            PaymentIdentityField::at("PaymentIdentityField"),
+            self.payment,
+        )
     }
 }
 
@@ -269,11 +251,11 @@ pub(crate) fn install_approved_payment_assessment(
         .operation_projection_work_budget(PublishApprovedPaymentAssessment::reference(), 1_024)
         .operation_read_field(
             PublishApprovedPaymentAssessment::reference(),
-            PaymentIdentityField::reference(),
+            PaymentIdentityField::at("PaymentIdentityField"),
         )
         .operation_read_field(
             PublishApprovedPaymentAssessment::reference(),
-            PaymentStatusField::reference(),
+            PaymentStatusField::at("PaymentStatusField"),
         )
         .application_mutation_binding::<ApprovedPaymentAssessmentBinding>()
 }

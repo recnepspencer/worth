@@ -3,23 +3,133 @@ use serde::{Deserialize, Serialize};
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
 pub struct Symbol(pub u32);
 
-#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
+#[derive(Clone, Deserialize)]
+#[serde(from = "StoredStringWire")]
 pub enum InternedString {
     Raw(String),
     Symbol(Symbol),
+    Stored(crate::value_shape::StoredValueText),
+}
+
+// The process-local seal is transparent to the established textual value.
+// Existing diagnostic projections must retain Raw's spelling after a decode.
+impl std::fmt::Debug for InternedString {
+    fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::Raw(text) => formatter.debug_tuple("Raw").field(text).finish(),
+            Self::Stored(text) => formatter.debug_tuple("Raw").field(&text.as_str()).finish(),
+            Self::Symbol(symbol) => formatter.debug_tuple("Symbol").field(symbol).finish(),
+        }
+    }
+}
+
+// A cache is never a wire variant: preserve both the original name and
+// numeric discriminator for serializers that encode variant indices.
+impl Serialize for InternedString {
+    fn serialize<S: serde::Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
+        match self {
+            Self::Raw(text) => {
+                serializer.serialize_newtype_variant("InternedString", 0, "Raw", text)
+            }
+            Self::Stored(text) => {
+                serializer.serialize_newtype_variant("InternedString", 0, "Raw", text.as_str())
+            }
+            Self::Symbol(symbol) => {
+                serializer.serialize_newtype_variant("InternedString", 1, "Symbol", symbol)
+            }
+        }
+    }
+}
+
+// A restored text artifact starts without any codec proof. Serialization keeps
+// the existing Raw/Symbol wire vocabulary; seals are never durable authority.
+#[derive(Deserialize)]
+#[serde(rename = "InternedString")]
+enum StoredStringWire {
+    Raw(String),
+    Symbol(Symbol),
+}
+impl From<StoredStringWire> for InternedString {
+    fn from(value: StoredStringWire) -> Self {
+        match value {
+            StoredStringWire::Raw(text) => {
+                Self::Stored(crate::value_shape::StoredValueText::new(text))
+            }
+            StoredStringWire::Symbol(symbol) => Self::Symbol(symbol),
+        }
+    }
+}
+
+impl PartialEq for InternedString {
+    fn eq(&self, other: &Self) -> bool {
+        self.cmp(other).is_eq()
+    }
+}
+impl Eq for InternedString {}
+impl PartialOrd for InternedString {
+    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+        Some(self.cmp(other))
+    }
+}
+impl Ord for InternedString {
+    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
+        match (self, other) {
+            (Self::Symbol(a), Self::Symbol(b)) => a.cmp(b),
+            (Self::Symbol(_), _) => std::cmp::Ordering::Greater,
+            (_, Self::Symbol(_)) => std::cmp::Ordering::Less,
+            _ => self.raw_text().cmp(&other.raw_text()),
+        }
+    }
+}
+impl std::hash::Hash for InternedString {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        // Preserve the original derived Raw/Symbol hash vocabulary. Cached
+        // stored text occupies Raw's semantic arm and introduces no new key.
+        match self {
+            Self::Raw(text) => {
+                0_isize.hash(state);
+                text.hash(state);
+            }
+            Self::Stored(text) => {
+                0_isize.hash(state);
+                text.as_str().hash(state);
+            }
+            Self::Symbol(symbol) => {
+                1_isize.hash(state);
+                symbol.hash(state);
+            }
+        }
+    }
 }
 
 impl InternedString {
+    pub fn into_raw_text(self) -> Option<String> {
+        match self {
+            Self::Raw(text) => Some(text),
+            Self::Stored(text) => Some(text.as_str().to_owned()),
+            Self::Symbol(_) => None,
+        }
+    }
+
+    pub fn raw_text(&self) -> Option<&str> {
+        match self {
+            Self::Raw(text) => Some(text),
+            Self::Stored(text) => Some(text.as_str()),
+            Self::Symbol(_) => None,
+        }
+    }
+
     pub fn owned_allocation_capacity_bytes(&self) -> usize {
         match self {
             Self::Raw(value) => value.capacity(),
+            Self::Stored(value) => value.owned_allocation_capacity_bytes(),
             Self::Symbol(_) => 0,
         }
     }
 
     pub fn as_symbol(&self) -> Option<Symbol> {
         match self {
-            Self::Raw(_) => None,
+            Self::Raw(_) | Self::Stored(_) => None,
             Self::Symbol(symbol) => Some(*symbol),
         }
     }
@@ -87,4 +197,40 @@ mod tests {
         assert!(decode_canonical_text_hex("f").is_none());
         assert!(decode_canonical_text_hex("ff").is_none());
     }
+    #[test]
+    fn stored_text_preserves_the_original_string_key_hash_and_equality() {
+        use super::{InternedString, Symbol};
+        use std::hash::{DefaultHasher, Hash, Hasher};
+        #[derive(Debug, Hash)]
+        enum LegacyString {
+            Raw(String),
+            Symbol(Symbol),
+        }
+        fn hash(value: &impl Hash) -> u64 {
+            let mut hasher = DefaultHasher::new();
+            value.hash(&mut hasher);
+            hasher.finish()
+        }
+        for text in ["", "alpha", "β"] {
+            let raw = InternedString::Raw(text.to_owned());
+            let stored =
+                InternedString::Stored(crate::value_shape::StoredValueText::new(text.to_owned()));
+            assert_eq!(raw, stored);
+            assert_eq!(
+                format!("{raw:?}"),
+                format!("{:?}", LegacyString::Raw(text.to_owned()))
+            );
+            assert_eq!(format!("{stored:?}"), format!("{raw:?}"));
+            assert_eq!(hash(&raw), hash(&LegacyString::Raw(text.to_owned())));
+            assert_eq!(hash(&stored), hash(&raw));
+        }
+        let symbol = Symbol(7);
+        assert_eq!(
+            hash(&InternedString::Symbol(symbol)),
+            hash(&LegacyString::Symbol(symbol))
+        );
+    }
 }
+
+#[cfg(test)]
+mod wire_compatibility;

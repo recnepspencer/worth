@@ -11,8 +11,10 @@ use worth_testkit_relational::durable_medium::immutable_members::ColdRead;
 fn residency_failure_matrix_merge_planning_preserves_versioned_footprints() {
     let host = worth_testkit_relational::shared_relational_certification_test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host);
-    let plain = MergeRecipe::new(execution, false);
-    let symbols = MergeRecipe::new(execution, true);
+    // No derived index: a recovered indexed runtime refuses Native merge commit
+    // until explicit index recovery, which merge_index_reads owns.
+    let plain = MergeRecipe::new(execution, false, false);
+    let symbols = MergeRecipe::new(execution, true, false);
     for subject in Subject::ALL {
         for (cause, sticky) in FAILURES {
             let fixture = if matches!(subject, Subject::Symbols) {
@@ -121,7 +123,12 @@ fn residency_failure_matrix_merge_planning_preserves_versioned_footprints() {
                     .read_snapshot(&outcome.commit.snapshot, execution)
                     .unwrap()
                     .unwrap();
-                assert_merge_records(actual.entities(), &fixture.expected);
+                assert_merge_records(
+                    actual.entities(),
+                    &fixture.expected,
+                    fixture.expected_merge_version,
+                    outcome.commit.version_id,
+                );
             }
         }
     }

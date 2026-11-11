@@ -3,14 +3,14 @@ use super::*;
 
 impl ExpectedFactKeys {
     #[doc(hidden)]
-    pub fn aggregate_for_test(
+    pub fn aggregate_for_test<'a>(
         &self,
         key: &crate::domain_computation::primary_graph::aggregate_observation::AggregateKey,
         admission: crate::domain_computation::authorization::WorthQueryOperationAdmissionIdentity,
         contracts: &Arc<
             worth_query_installation::facade::WorthQueryCompiledApplicationOperationContracts,
         >,
-        snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
+        snapshot: impl Into<crate::domain_computation::primary_graph::projection_read_origin::ProjectionReadOriginRef<'a>>,
     ) -> Option<
         &Arc<crate::domain_computation::primary_graph::aggregate_observation::AggregateObservation>,
     > {
@@ -27,14 +27,14 @@ impl ExpectedFactKeys {
 
 impl ExpectedFactKeys {
     #[doc(hidden)]
-    pub fn structural_walk_for_test(
+    pub fn structural_walk_for_test<'a>(
         &self,
         key: &crate::domain_computation::primary_graph::structural_walk::StructuralWalkKey,
         admission: crate::domain_computation::authorization::WorthQueryOperationAdmissionIdentity,
         contracts: &Arc<
             worth_query_installation::facade::WorthQueryCompiledApplicationOperationContracts,
         >,
-        snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
+        snapshot: impl Into<crate::domain_computation::primary_graph::projection_read_origin::ProjectionReadOriginRef<'a>>,
     ) -> Option<
         &Arc<crate::domain_computation::primary_graph::structural_walk::StructuralWalkObservation>,
     > {

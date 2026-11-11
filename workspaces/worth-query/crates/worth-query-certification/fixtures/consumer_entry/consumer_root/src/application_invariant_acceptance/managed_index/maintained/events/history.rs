@@ -45,7 +45,7 @@ worth_query_structured_value_binding!(pub InputBinding for Edit { identity:"even
 worth_query_structured_value_binding!(pub ResultBinding for Changed { identity:"event-catalog.history.result.v1" });
 worth_query_structured_value_binding!(pub DenialBinding for Denial { identity:"event-catalog.history.denial.v1" });
 worth_query_operation!(pub EditHistory for Catalog,input InputBinding);
-worth_query_operation_reads!(EditHistory=>[Directory,DirectoryIdentity,Item,ItemIdentity,Previous,Retires,Contains]);
+worth_query_operation_reads!(EditHistory=> [Directory,Item,Previous,Retires,Contains]);
 worth_query_operation_links!(EditHistory=>[Previous,Retires,Contains]);
 worth_query_operation_unlinks!(EditHistory=>[Previous,Retires,Contains]);
 fn scope(_: &Edit) -> String {
@@ -56,7 +56,7 @@ worth_query_mutation_binding!(pub Binding for Edit,schema Catalog,identity "even
     decision Decision,denial DenialBinding,handler identity "event-catalog.history.handler.v1",program required,
     workflow_requirements ApplicationWorkflowExecutionRequirements::not_applicable(),outputs NoApplicationMutationOutputs,
     principal CatalogPrincipal,mapping ExternalMapping,principal_entity Principal,principal_identity u64,identity_binding U64ApplicationValueBinding,
-    scope Directory,DirectoryFacts,DirectoryIdentity,String,ReadOnly,NoApplicationUnit,field DirectoryIdentity::reference(),value scope,);
+    scope DirectoryIdentity, field DirectoryIdentity::at("DirectoryIdentity"),value scope,);
 pub(super) fn declare(
     schema: ApplicationSchemaDeclarationBuilder<Catalog>,
 ) -> ApplicationSchemaDeclarationBuilder<Catalog> {
@@ -66,8 +66,8 @@ pub(super) fn declare(
         .operation_projection_work_budget(op, 128)
         .operation_read_entity(op, Directory::reference())
         .operation_read_entity(op, Item::reference())
-        .operation_read_field(op, DirectoryIdentity::reference())
-        .operation_read_field(op, ItemIdentity::reference())
+        .operation_read_field(op, DirectoryIdentity::at("DirectoryIdentity"))
+        .operation_read_field(op, ItemIdentity::at("ItemIdentity"))
         .operation_read_relation(op, Previous::reference())
         .operation_read_relation(op, Retires::reference())
         .operation_read_relation(op, Contains::reference())

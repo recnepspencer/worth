@@ -3,19 +3,12 @@ use crate::domain_computation::primary_graph::tests::fixture::application_querie
 use crate::domain_computation::primary_graph::tests::fixture::diagnostic_comparison::*;
 use crate::domain_computation::primary_graph::tests::fixture::AccountAllActivity;
 use crate::domain_computation::primary_graph::tests::fixture::AccountNote;
-use crate::domain_computation::primary_graph::tests::fixture::AccountPolicy;
-use crate::domain_computation::primary_graph::tests::fixture::ActivityFacts;
 use crate::domain_computation::primary_graph::tests::fixture::ActivityIdentity;
 use worth_query_declaration::facade::application_query::ApplicationQueryOptionalResultFieldRef;
 use worth_query_declaration::facade::application_query::ApplicationQueryResultFieldRef;
 use worth_query_declaration::facade::application_query::ApplicationQueryResultRelationRef;
 use worth_query_declaration::facade::application_query::ForwardResultTraversal;
 use worth_query_declaration::facade::application_query::ManyResults;
-use worth_query_declaration::facade::application_schema::EqualityPredicate;
-use worth_query_declaration::facade::application_schema::NoApplicationUnit;
-use worth_query_declaration::facade::application_schema::NoEqualityPredicate;
-use worth_query_declaration::facade::application_schema::ReadOnly;
-use worth_query_declaration::facade::application_schema::ReadWrite;
 use worth_query_execution::facade::domain_computation::WorthQueryApplicationProjection;
 use worth_query_execution::facade::domain_computation::WorthQueryApplicationProjectionDenial;
 use worth_query_execution::facade::domain_computation::WorthQueryApplicationProjectionRow;
@@ -43,30 +36,14 @@ pub fn label<Q>() -> ApplicationQueryResultFieldRef<
     Q,
     crate::domain_computation::primary_graph::tests::fixture::application_queries::LabelResultSlot,
     IdentityExecutionSchema,
-    Account,
-    AccountPolicy,
     crate::domain_computation::primary_graph::tests::fixture::AccountLabel,
-    String,
-    ReadWrite,
-    EqualityPredicate,
-    NoApplicationUnit,
 > {
     label_result_field()
 }
 
-pub fn note<Q>() -> ApplicationQueryOptionalResultFieldRef<
-    Q,
-    NoteSlot,
-    IdentityExecutionSchema,
-    Account,
-    AccountPolicy,
-    AccountNote,
-    String,
-    ReadWrite,
-    EqualityPredicate,
-    NoApplicationUnit,
-> {
-    ApplicationQueryOptionalResultFieldRef::new("note", AccountNote::reference())
+pub fn note<Q>(
+) -> ApplicationQueryOptionalResultFieldRef<Q, NoteSlot, IdentityExecutionSchema, AccountNote> {
+    ApplicationQueryOptionalResultFieldRef::new("note", AccountNote::at("AccountNote"))
 }
 
 pub fn activities<Q>() -> ApplicationQueryResultRelationRef<
@@ -82,34 +59,14 @@ pub fn activities<Q>() -> ApplicationQueryResultRelationRef<
     ApplicationQueryResultRelationRef::forward_many("activities", AccountAllActivity::reference())
 }
 
-pub fn activity_identity<Q>() -> ApplicationQueryResultFieldRef<
-    Q,
-    IdentitySlot,
-    IdentityExecutionSchema,
-    Activity,
-    ActivityFacts,
-    ActivityIdentity,
-    String,
-    ReadOnly,
-    EqualityPredicate,
-    NoApplicationUnit,
-> {
-    ApplicationQueryResultFieldRef::new("identity", ActivityIdentity::reference())
+pub fn activity_identity<Q>(
+) -> ApplicationQueryResultFieldRef<Q, IdentitySlot, IdentityExecutionSchema, ActivityIdentity> {
+    ApplicationQueryResultFieldRef::new("identity", ActivityIdentity::at("ActivityIdentity"))
 }
 
-pub fn sequence<Q>() -> ApplicationQueryResultFieldRef<
-    Q,
-    SequenceSlot,
-    IdentityExecutionSchema,
-    Activity,
-    ActivityFacts,
-    ActivitySequence,
-    u64,
-    ReadOnly,
-    NoEqualityPredicate,
-    NoApplicationUnit,
-> {
-    ApplicationQueryResultFieldRef::new("sequence", ActivitySequence::reference())
+pub fn sequence<Q>(
+) -> ApplicationQueryResultFieldRef<Q, SequenceSlot, IdentityExecutionSchema, ActivitySequence> {
+    ApplicationQueryResultFieldRef::new("sequence", ActivitySequence::at("ActivitySequence"))
 }
 
 impl<Q: ApplicationQueryMarkerIdentity<IdentityExecutionSchema>>

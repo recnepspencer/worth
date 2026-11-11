@@ -211,6 +211,7 @@ pub fn release(
     worth_query_execution::facade::primary_graph::ApplicationCommitCompletionStorage,
 ){
     let (
+        _coupled_outputs,
         _admission_rest,
         lease,
         _provider_attempt_rest,

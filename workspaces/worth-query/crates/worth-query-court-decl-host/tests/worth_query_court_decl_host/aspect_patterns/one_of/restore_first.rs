@@ -8,24 +8,22 @@ pub struct Restore {
 }
 worth_query_structured_value_binding!(pub Input for Restore { identity: "native-record-patterns.restore-first-input.v1" });
 worth_query_operation!(pub RestoreFirst for Schema, input Input);
-worth_query_operation_reads!(RestoreFirst => [Key, Class, FirstValue, SecondValue, SecondRequired, ThirdValue]);
-worth_query_operation_writes!(RestoreFirst => [Class, FirstValue]);
-worth_query_operation_removes_aspects!(RestoreFirst => [Second]);
+
+worth_query_operation_removes_aspects!(RestoreFirst => [Second, Third]);
 impl ApplicationDeclaredOperation<Schema> for RestoreFirst {
     fn declare_access(
         schema: ApplicationSchemaDeclarationBuilder<Schema>,
     ) -> ApplicationSchemaDeclarationBuilder<Schema> {
         schema
             .operation_projection_work_budget(Self::reference(), 32)
-            .operation_read_field(Self::reference(), Key::reference())
-            .operation_read_field(Self::reference(), Class::reference())
-            .operation_read_field(Self::reference(), FirstValue::reference())
-            .operation_read_field(Self::reference(), SecondValue::reference())
-            .operation_read_field(Self::reference(), SecondRequired::reference())
-            .operation_read_field(Self::reference(), ThirdValue::reference())
-            .operation_write(Self::reference(), Class::reference())
-            .operation_write(Self::reference(), FirstValue::reference())
+            .operation_read_field(Self::reference(), Key::at("Key"))
+            .operation_read_field(Self::reference(), FirstValue::at("FirstValue"))
+            .operation_read_field(Self::reference(), SecondValue::at("SecondValue"))
+            .operation_read_field(Self::reference(), SecondRequired::at("SecondRequired"))
+            .operation_read_field(Self::reference(), ThirdValue::at("ThirdValue"))
+            .operation_write(Self::reference(), FirstValue::at("FirstValue"))
             .operation_remove_aspect(Self::reference(), Second::reference())
+            .operation_remove_aspect(Self::reference(), Third::reference())
     }
 }
 fn key(input: &Restore) -> String {
@@ -35,13 +33,13 @@ worth_query_mutation_binding!(pub Binding for Restore, schema Schema,
     identity "native-record-patterns.restore-first.v1", input Input,
     operation RestoreFirst, result authoring::ResultBinding,
     idempotency String, identity "native-record-patterns.restore-first-key.v1",
-    decision WorthQueryInvariantMutationTarget<Schema, Record>, denial authoring::DenialBinding,
+    decision ObservedTarget<Record>, denial authoring::DenialBinding,
     handler identity "native-record-patterns.restore-first-handler.v1",
     program required, outputs NoApplicationMutationOutputs,
     principal Actor, mapping Mapping, principal_entity Principal,
     principal_identity u64, identity_binding U64ApplicationValueBinding,
-    scope Record, Identity, Key, String, ReadOnly, NoApplicationUnit,
-    field Key::reference(), value key,
+    scope Key,
+    field Key::at("Key"), value key,
 );
 pub fn declare(
     schema: ApplicationSchemaDeclarationBuilder<Schema>,
@@ -62,7 +60,7 @@ impl OperationHandler<Schema, Binding> for Handler {
         &self,
         input: &Restore,
         reader: &mut DecisionReader<'_, '_, '_, Schema, Binding>,
-    ) -> HandlerResult<WorthQueryInvariantMutationTarget<Schema, Record>, authoring::Denial> {
+    ) -> HandlerResult<ObservedTarget<Record>, authoring::Denial> {
         // This input promises one complete First image. Missing a required
         // sibling must never inherit that sibling from a different live image.
         if !matches!(
@@ -78,13 +76,25 @@ impl OperationHandler<Schema, Binding> for Handler {
             return HandlerResult::DomainDenied(authoring::Denial::InvalidRestore);
         }
         let decision = (|| {
-            let root = reader.resolve_entity(Key::reference(), input.key.clone())?;
-            let class = reader.field(&root, Class::reference())?;
-            reader.field(&root, FirstValue::reference())?;
-            reader.field(&root, SecondValue::reference())?;
-            reader.field(&root, SecondRequired::reference())?;
-            reader.field(&root, ThirdValue::reference())?;
-            Ok((class, reader.mutation_target(&root)?))
+            let mut view = reader
+                .fragment(PatternModel)
+                .map_err(HandlerExecutionDenial::new)?;
+            let item = view
+                .resolve(
+                    Key::at("Key")
+                        .resolve()
+                        .map_err(HandlerExecutionDenial::new)?,
+                    input.key.clone(),
+                )
+                .map_err(HandlerExecutionDenial::new)?;
+            let mut work = |_, _| Ok(());
+            let meaning = view
+                .read(&item, Meaning, &mut work)
+                .map_err(HandlerExecutionDenial::new)?;
+            Ok((
+                Some(meaning.class()),
+                view.target(&item).map_err(HandlerExecutionDenial::new)?,
+            ))
         })();
         match decision {
             Ok((Some(2), target)) => HandlerResult::Completed(target),
@@ -95,17 +105,17 @@ impl OperationHandler<Schema, Binding> for Handler {
     fn build_candidate(
         &self,
         input: &Restore,
-        target: WorthQueryInvariantMutationTarget<Schema, Record>,
+        target: ObservedTarget<Record>,
         writer: &mut CandidateWriter<'_, Schema, Binding>,
     ) -> HandlerResult<authoring::Edited, authoring::Denial> {
         let Some(first) = input.row.first else {
             return HandlerResult::DomainDenied(authoring::Denial::InvalidRestore);
         };
         let effect = (|| {
-            let root = writer.projected_entity(&target)?;
-            writer.remove_aspect(&root, Second::reference())?;
-            writer.write_field(&root, FirstValue::reference(), first)?;
-            writer.write_field(&root, Class::reference(), 1)
+            let mut view = writer.fragment(PatternModel)?;
+            let root = view.target(&target)?;
+            let mut work = |_, _| Ok(());
+            view.write(&root, First, &FirstRow { first_value: first }, &mut work)
         })();
         match effect {
             Ok(()) => HandlerResult::Completed(authoring::Edited),

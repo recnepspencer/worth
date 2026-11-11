@@ -83,11 +83,13 @@ fn read_exact(
         .read_truth()
         .pin_read_capability(&snapshot, &[], execution)
         .unwrap();
+    let symbols = pinned.symbols();
     let actual = match text {
         InternedString::Raw(text) => Some(text.as_str()),
-        InternedString::Symbol(symbol) => pinned
-            .symbols()
-            .resolve(worth_relational::facade::symbols::Symbol(symbol.0)),
+        InternedString::Stored(text) => Some(text.as_str()),
+        InternedString::Symbol(symbol) => {
+            symbols.resolve(worth_relational::facade::symbols::Symbol(symbol.0))
+        }
     };
     assert_eq!(actual, Some(JSON));
     runtime.snapshots().release_snapshot(&snapshot).unwrap();
@@ -169,11 +171,11 @@ fn native_field_text_checkpoint_then_tail_recovers_exact_json_after_original_own
     create_entity(execution, &restored, "after-restored-managed-text");
     assert_eq!(pinned.symbols().resolve(key), Some("native-managed-text"));
     drop(restored);
+    let symbols = pinned.symbols();
     assert_eq!(
-        pinned
-            .symbols()
+        symbols
             .symbol(JSON)
-            .and_then(|symbol| pinned.symbols().resolve(symbol)),
+            .and_then(|symbol| symbols.resolve(symbol)),
         Some(JSON)
     );
 }

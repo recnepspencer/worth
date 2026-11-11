@@ -17,47 +17,61 @@ use super::SnapshotRegistryCostCounters;
 /// hold it across the published registry's acquisition.
 #[derive(Debug)]
 pub(super) struct ActiveSnapshotHandleRegistry {
-    handles: Mutex<HashMap<SnapshotId, SnapshotHandleBinding>>,
+    entries: Mutex<ActiveEntries>,
     key_lookups: AtomicU64,
     mutations: AtomicU64,
 }
 
+#[derive(Debug)]
+struct ActiveEntries {
+    handles: HashMap<SnapshotId, SnapshotHandleBinding>,
+    versions: super::version_counts::VersionCounts<VersionId>,
+}
+
 impl ActiveSnapshotHandleRegistry {
     pub(super) fn try_empty(&self) -> Result<bool, ()> {
-        match self.handles.try_lock() {
-            Ok(value) => Ok(value.is_empty()),
-            Err(std::sync::TryLockError::Poisoned(error)) => Ok(error.into_inner().is_empty()),
+        match self.entries.try_lock() {
+            Ok(value) => Ok(value.handles.is_empty()),
+            Err(std::sync::TryLockError::Poisoned(error)) => {
+                Ok(error.into_inner().handles.is_empty())
+            }
             Err(std::sync::TryLockError::WouldBlock) => Err(()),
         }
     }
     pub(super) fn new() -> Self {
         Self {
-            handles: Mutex::new(HashMap::new()),
+            entries: Mutex::new(ActiveEntries {
+                handles: HashMap::new(),
+                versions: super::version_counts::VersionCounts::new(),
+            }),
             key_lookups: AtomicU64::new(0),
             mutations: AtomicU64::new(0),
         }
     }
 
     pub(super) fn count(&self) -> usize {
-        self.lock().len()
+        self.lock().handles.len()
     }
 
     pub(super) fn insert(&self, snapshot_id: SnapshotId, binding: SnapshotHandleBinding) {
-        let mut handles = self.lock();
+        let mut entries = self.lock();
         assert!(
             /* Proof: The private snapshot id allocator is checked and shared by active and published handles; it never resets or wraps in this runtime. This insertion owns the issued id and holds the active registry Mutex. */
-            !handles.contains_key(&snapshot_id),
+            !entries.handles.contains_key(&snapshot_id),
             "snapshot identity allocator collided with a live active handle"
         );
         self.key_lookups.fetch_add(1, Ordering::Relaxed);
         self.mutations.fetch_add(1, Ordering::Relaxed);
-        handles.insert(snapshot_id, binding);
+        entries.versions.insert(binding.version_id);
+        entries.handles.insert(snapshot_id, binding);
     }
 
     pub(super) fn remove(&self, snapshot_id: SnapshotId) -> Option<SnapshotHandleBinding> {
         self.key_lookups.fetch_add(1, Ordering::Relaxed);
-        let removed = self.lock().remove(&snapshot_id);
-        if removed.is_some() {
+        let mut entries = self.lock();
+        let removed = entries.handles.remove(&snapshot_id);
+        if let Some(binding) = &removed {
+            entries.versions.remove(&binding.version_id);
             self.mutations.fetch_add(1, Ordering::Relaxed);
         }
         removed
@@ -66,12 +80,13 @@ impl ActiveSnapshotHandleRegistry {
     /// The binding for one live active handle, copied out of the registry lock.
     pub(super) fn binding(&self, snapshot_id: SnapshotId) -> Option<SnapshotHandleBinding> {
         self.key_lookups.fetch_add(1, Ordering::Relaxed);
-        self.lock().get(&snapshot_id).cloned()
+        self.lock().handles.get(&snapshot_id).cloned()
     }
 
     pub(super) fn selected_branch_bytes(&self, snapshot_id: SnapshotId) -> Option<usize> {
         self.key_lookups.fetch_add(1, Ordering::Relaxed);
         self.lock()
+            .handles
             .get(&snapshot_id)
             .map(|binding| binding.basis.branch_id().0.len())
     }
@@ -82,34 +97,30 @@ impl ActiveSnapshotHandleRegistry {
     ) -> Option<std::sync::Arc<crate::branch::RelationalBranchRoot>> {
         self.key_lookups.fetch_add(1, Ordering::Relaxed);
         self.lock()
+            .handles
             .get(&snapshot_id)
             .map(|binding| std::sync::Arc::clone(binding.basis.root()))
     }
 
     pub(super) fn retains_handle(&self, snapshot_id: SnapshotId) -> bool {
-        self.lock().contains_key(&snapshot_id)
+        self.lock().handles.contains_key(&snapshot_id)
     }
 
-    /// Every version an active handle currently retains, collected so no caller
-    /// scans the registry while holding its lock.
-    pub(super) fn versions(&self) -> Vec<VersionId> {
-        self.lock()
-            .values()
-            .map(|binding| binding.version_id)
-            .collect()
+    pub(super) fn oldest_version(&self) -> Option<VersionId> {
+        self.lock().versions.oldest().copied()
     }
 
     #[cfg(test)]
     pub(super) fn cost_counters(&self) -> SnapshotRegistryCostCounters {
         SnapshotRegistryCostCounters {
-            entries: self.lock().len() as u64,
+            entries: self.lock().handles.len() as u64,
             key_lookups: self.key_lookups.load(Ordering::Relaxed),
             mutations: self.mutations.load(Ordering::Relaxed),
         }
     }
 
-    fn lock(&self) -> MutexGuard<'_, HashMap<SnapshotId, SnapshotHandleBinding>> {
-        self.handles
+    fn lock(&self) -> MutexGuard<'_, ActiveEntries> {
+        self.entries
             .lock()
             .unwrap_or_else(|poisoned| poisoned.into_inner())
     }

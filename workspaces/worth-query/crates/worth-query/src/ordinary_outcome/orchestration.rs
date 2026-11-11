@@ -17,6 +17,14 @@ pub(crate) fn ordinary_outcome_from_orchestration_terminal<
     terminal: WorthQueryDeclarationEntryOrchestrationTerminalError<D, I>,
 ) -> WorthQueryOrdinaryOutcome<crate::application::WorthQueryDeclarationEnvelope<D, I>> {
     match terminal {
+        WorthQueryDeclarationEntryOrchestrationTerminalError::EvidenceIdentityDerivationDenied(
+            cause,
+        ) => WorthQueryOrdinaryOutcome::Refused(WorthQueryOrdinaryPosture::new(
+            format!("evidence identity refused: {cause:?}"),
+            WorthQueryOrdinaryPostureKind::Refused,
+            WorthQueryOrdinaryNextStep::NarrowInput,
+            WorthQueryOrdinaryCheckedTopology::identity_refused(cause),
+        )),
         WorthQueryDeclarationEntryOrchestrationTerminalError::Deferred(value) => {
             WorthQueryOrdinaryOutcome::Deferred(WorthQueryOrdinaryPosture::new(
                 value.reason(),

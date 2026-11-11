@@ -9,6 +9,9 @@ mod native_work;
 mod preparation_reservation_control;
 pub(in crate::domain_computation) use durable_custody::QueryPreparingApplicationCommit;
 pub(in crate::domain_computation::primary_graph::provider) use durable_custody::RetainedQueryDurablePreparation;
+mod committed_session;
+mod correspondence;
+mod coupled;
 
 mod consumed_output;
 mod managed_source;
@@ -40,6 +43,12 @@ use crate::domain_computation::WorthQueryProviderSessionProtocolStage;
 
 pub(in crate::domain_computation::primary_graph::provider) struct WorthQueryCommittedApplicationSession {
     attempt: WorthQueryPrimaryGraphApplicationAttempt,
+    members: Vec<crate::domain_computation::primary_graph::provider::CoupledApplicationMember>,
+    group_emissions: Option<crate::domain_computation::primary_graph::application_attempt::WorthQueryAdmittedApplicationEmissionBatch>,
+    group_evidence: Option<coupled::CoupledEvidenceSlots>,
+    own_publication: Option<worth_relational::facade::mvcc::RelationalRequiredOutputPublication>,
+    own_records: Option<worth_execution::ExecutionArray<worth_relational::facade::transactions::RecordRef>>,
+    prepared_group_publications: Option<worth_relational::facade::mvcc::RelationalPreparedOutputPublications>,
     work: WorthQueryPrimaryMutationWorkCounters,
     predicate: Option<crate::domain_computation::primary_graph::application_query::derived_view::PredicatePreparationOwner>,
     index_maintenance_work: worth_relational::facade::indexes::DerivedIndexMaintenanceWork,
@@ -81,7 +90,10 @@ pub(super) fn commit(
 > {
     // The actual weak owner validates the expected owner before selecting the
     // ordinary algorithm. Unavailability never selects memory publication.
-    let query = native_work::prepare_before_native(&execution, provider, prepared)?;
+    let owned_history = history
+        .as_ref()
+        .is_some_and(|cutover| cutover.uses_owned_model_graph());
+    let query = native_work::prepare_before_native(&execution, provider, prepared, owned_history)?;
     if provider.take_fault(crate::domain_computation::primary_graph::provider::fault_port::WorthQueryPrimaryGraphFault::DuplicateQueryPreparationSlot) {
         return preparation_reservation_control::refuse_duplicate_before_world_for_test(execution, provider, query, allocation_policy);
     }
@@ -153,90 +165,6 @@ fn world_no_effect(
         | NoEffectCause::PreEffectFailure => Stop::NoEffect(no_effect),
     }
 }
-impl WorthQueryCommittedApplicationSession {
-    pub(super) fn retain_recovered_producer_facts(
-        &self,
-        evidence: &super::WorthQueryPrimaryGraphCommitEvidence,
-        memory: Option<worth_execution::ExecutionMemoryReservation>,
-    ) -> std::sync::Arc<crate::domain_computation::primary_graph::application_output_demand::RecoveredProducerOutputFacts>{
-        use crate::domain_computation::primary_graph::application_output_demand::RecoveredProducerOutputFacts;
-        std::sync::Arc::new(RecoveredProducerOutputFacts {
-            publication: crate::domain_computation::primary_graph::WorthQueryCommittedProductPublication::from_receipt(self.product_publication.clone()),
-            changes: evidence.committed_changes().clone(),
-            outcome: self.attempt.outcome_identity(),
-            correspondence: evidence.retain_output_correspondence(),
-            authority: evidence.retain_original_authority(),
-            inputs: evidence.performed_input_facts().cloned(),
-            fields: evidence.performed_output_fields().cloned(),
-            unrebased_own_effect: evidence.rebased_source_facts().err().map(|failure| failure.own_effect),
-            settlement: self.prepared_lineage_slot.as_ref().map(|slot| slot.identity().clone()),
-            _memory: memory,
-        })
-    }
-    pub(super) fn take_predicate_preparation(&mut self) -> Option<crate::domain_computation::primary_graph::application_query::derived_view::PredicatePreparationOwner>{
-        self.predicate.take()
-    }
-    pub(in crate::domain_computation::primary_graph::provider) fn take_recovered_output_source(
-        &self,
-    ) -> crate::domain_computation::primary_graph::application_installation::WorthQueryRecoveredProgramOutputSource{
-        crate::domain_computation::primary_graph::application_installation::WorthQueryRecoveredProgramOutputSource::take_original(&self.product_publication)
-    }
-    pub(super) fn take_prepared_touched_records(&mut self) -> PreparedTouchedRecords {
-        self.prepared_touched_records
-            .take()
-            .expect("pre-effect native touched-record receipt storage follows publication")
-    }
-    pub(super) fn take_source_fact_rebase(&mut self) -> super::PreparedSourceFactRebase {
-        self.source_fact_rebase
-            .take()
-            .expect("pre-effect source-fact rebase capacity follows the committed candidate")
-    }
-    pub(super) const fn attempt(&self) -> &WorthQueryPrimaryGraphApplicationAttempt {
-        &self.attempt
-    }
-
-    pub(super) const fn work(&self) -> WorthQueryPrimaryMutationWorkCounters {
-        self.work
-    }
-
-    pub(super) const fn index_maintenance_work(
-        &self,
-    ) -> worth_relational::facade::indexes::DerivedIndexMaintenanceWork {
-        self.index_maintenance_work
-    }
-
-    pub(super) const fn retained_preimage(
-        &self,
-    ) -> Option<&crate::domain_computation::application_aftermath::WorthQueryRetainedPreImage> {
-        self.retained_preimage.as_ref()
-    }
-
-    pub(super) const fn preimage_retention_work(&self) -> WorthQueryPreImageRetentionWork {
-        self.preimage_retention_work
-    }
-
-    pub(super) fn committed(&self) -> &worth_relational::facade::transactions::CommitResult {
-        self.committed.as_ref()
-    }
-
-    pub(super) fn publish_and_encode(
-        self,
-        execution: &worth_execution::ExecutionRequest<'_, '_>,
-        provider: &WorthQueryPrimaryGraphProvider,
-        runtime: &worth_relational::facade::runtime::RelationalRuntime,
-        evidence: super::WorthQueryPrimaryGraphCommitEvidence,
-        predicate: &mut Option<crate::domain_computation::primary_graph::application_query::derived_view::PredicatePreparationOwner>,
-        retired: &mut crate::domain_computation::primary_graph::application_query::derived_view::PredicatePreparationRetirement,
-    ) -> Result<
-        crate::domain_computation::WorthQueryProviderTerminalDescription,
-        WorthQueryProviderSessionFailure,
-    > {
-        let published = publication::publish(
-            execution, provider, runtime, self, evidence, predicate, retired,
-        )?;
-        publication::encode(provider, published)
-    }
-}
 
 #[cfg(test)]
 mod index_preparation_tests;
@@ -282,3 +210,6 @@ fn complete_query_candidate(
 > {
     preparation.complete_query_native_preparation(candidate, request)
 }
+#[cfg(test)]
+#[path = "commit_execution_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;

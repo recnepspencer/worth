@@ -11,56 +11,13 @@ pub(super) struct Contribution;
 impl ApplicationSchemaContribution<Schema> for Contribution {
     const IDENTITY: ApplicationSchemaContributionIdentity =
         ApplicationSchemaContributionIdentity::new("courtroom-equal-output-schema");
-    fn register_members(
-        builder: ApplicationSchemaDeclarationBuilder<Schema>,
-    ) -> ApplicationSchemaDeclarationBuilder<Schema> {
-        let builder = indexed_decision::declare_edit(facts::declare(builder));
-        let builder = <crate::PlanarSourceFeatureDefinition<Schema> as worth_query_decl::facade::application_program::ApplicationFeatureDefinition<Schema>>::declare_members(builder);
-        dependent_publication::declare(publication::declare(builder))
-            .entity(Body::reference())
-            .unit(Metre::reference())
-            .aspect(Body::reference(), Geometry::reference())
-            .field(Body::reference(), Length::reference())
-            .aspect(Body::reference(), PlanarPosition::reference())
-            .field(Body::reference(), BodyKey::reference())
-            .field(Body::reference(), PositionX::reference())
-            .field(Body::reference(), PositionY::reference())
-            .relation(
-                PlanarSuccessor::reference(),
-                Body::reference(),
-                Body::reference(),
-            )
-            .entity(ExternalPrincipalMapping::reference())
-            .entity(Principal::reference())
-            .aspect(
-                ExternalPrincipalMapping::reference(),
-                ExternalIdentity::reference(),
-            )
-            .aspect(Principal::reference(), PrincipalFacts::reference())
-            .field(
-                ExternalPrincipalMapping::reference(),
-                ExternalIdentityField::reference(),
-            )
-            .field(
-                ExternalPrincipalMapping::reference(),
-                MappingStatusField::reference(),
-            )
-            .field(Principal::reference(), PrincipalIdentity::reference())
-            .relation(
-                MappingTarget::reference(),
-                ExternalPrincipalMapping::reference(),
-                Principal::reference(),
-            )
-            .principal_binding(ConsumerPrincipalBinding::reference())
-            .application_query(crate::planar_query_definition::<Schema>())
-            .application_query_binding::<PlanarReadBinding<Schema>>()
-            .application_query(counted_source::counted_query_definition::<Schema>())
-            .application_query_binding::<counted_source::CountedReadBinding<Schema>>()
-            .application_query(crate::planar_output_query_definition::<Schema>())
-            .application_query_binding::<PlanarOutputReadBinding<Schema>>()
-            .application_query(source::successor_query_definition::<Schema>())
-            .application_query_binding::<source::SuccessorReadBinding<Schema>>()
-    }
+    type Members = (
+        crate::checkpoint_recovery::output_availability::members::AvailabilityRecords,
+        crate::CheckpointRecords,
+        crate::PrincipalRecords,
+        crate::document_history::HistoryGrantRecords,
+        ContributionContracts,
+    );
 }
 impl WorthQueryApplicationContribution<Schema> for Contribution {
     type Configuration = (usize, bool);
@@ -138,7 +95,9 @@ fn install_configured(
     indexed_selection: bool,
 ) -> application_installation::WorthQueryProgramApplicationRuntime<Schema, Program> {
     assert!(witnesses <= 2);
-    let declaration = Schema::declaration().unwrap();
+    let declaration =
+        <Schema as worth_query_decl::facade::application_schema::ApplicationSchema>::declaration()
+            .unwrap();
     let program = ApplicationProgramAuthoring::<Schema, Program>::begin()
         .with_schema(&declaration)
         .validated_program()
@@ -151,4 +110,29 @@ fn install_configured(
         graph.bind_principal(&binding, primary_graph::WorthQueryApplicationPrincipalKey::new("model-owner").unwrap(), 1_u64, external, worth_query_host::facade::declaration::authentication::WorthQueryPrincipalMappingStatus::Enabled)?;
         seed::seed_cycle(graph); Ok(())
     }).unwrap()
+}
+
+pub struct ContributionContracts;
+impl worth_query_decl::facade::application_schema::fragment::Registration<Schema>
+    for ContributionContracts
+{
+    fn register(
+        builder: ApplicationSchemaDeclarationBuilder<Schema>,
+    ) -> Result<ApplicationSchemaDeclarationBuilder<Schema>, ApplicationSchemaDeclarationDenial>
+    {
+        Ok({
+            let builder = indexed_decision::declare_edit(builder);
+            let builder = <crate::PlanarSourceFeatureDefinition<Schema> as worth_query_decl::facade::application_program::ApplicationFeatureDefinition<Schema>>::declare_members(builder);
+            dependent_publication::declare(publication::declare(builder))
+                .principal_binding(ConsumerPrincipalBinding::reference())
+                .application_query(crate::planar_query_definition::<Schema>())
+                .application_query_binding::<PlanarReadBinding<Schema>>()
+                .application_query(counted_source::counted_query_definition::<Schema>())
+                .application_query_binding::<counted_source::CountedReadBinding<Schema>>()
+                .application_query(crate::planar_output_query_definition::<Schema>())
+                .application_query_binding::<PlanarOutputReadBinding<Schema>>()
+                .application_query(source::successor_query_definition::<Schema>())
+                .application_query_binding::<source::SuccessorReadBinding<Schema>>()
+        })
+    }
 }

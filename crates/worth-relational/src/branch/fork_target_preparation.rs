@@ -19,6 +19,7 @@ pub(super) struct PreparedForkTarget {
     pub(super) shared_commit_id: Option<CommitId>,
     pub(super) source_head_version: Option<crate::identity::data::VersionId>,
     pub(super) reservation: RelationalForkTargetReservation,
+    pub(super) indexes: Option<crate::indexes::PreparedForkIndexSelection>,
     pub(super) managed_source: Option<crate::mvcc::PreparedManagedIndexSourceFork>,
 }
 
@@ -87,6 +88,7 @@ impl RelationalForkPort {
             source_head_version,
             reservation,
             managed_source,
+            indexes: None,
         })
     }
 }

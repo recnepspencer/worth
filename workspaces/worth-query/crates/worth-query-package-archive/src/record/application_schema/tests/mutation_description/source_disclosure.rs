@@ -31,7 +31,6 @@ fn member() -> ApplicationSchemaMember {
                     scope_field: "Key".to_owned(),
                     scope_value: identity("body-key.v1"),
                     scope_resolution: ApplicationQueryScopeResolutionMode::InputField,
-                    scope_writable: false,
                     principal_binding: "InspectorPrincipal".to_owned(),
                 },
             ),

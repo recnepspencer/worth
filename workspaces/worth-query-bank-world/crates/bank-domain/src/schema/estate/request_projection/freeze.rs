@@ -33,9 +33,10 @@ impl ApplicationCapabilityRequest<BankSchema, FreezeEstateAccountCapability> for
             ApplicationCapabilityRelatedEntitySelector::new(
                 CapabilityAccount::reference(),
                 ApplicationCapabilityEntitySelector::new(
-                    AccountIdentity::reference(),
+                    AccountIdentity::at("AccountIdentity"),
                     crate::schema::encoded_bank_value::<crate::schema::AccountIdBinding>(account),
-                ),
+                )
+                .unwrap(),
             ),
         ))
     }

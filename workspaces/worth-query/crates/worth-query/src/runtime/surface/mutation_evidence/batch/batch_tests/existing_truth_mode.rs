@@ -1,43 +1,48 @@
 use super::{relational_entity, retained_assertion_identity};
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::runtime::{
     WorthQueryAspectTouch, WorthQueryExistingTruthAssertionEvidence, WorthQueryMutationFamily,
 };
 use worth_foundational::facade::{AspectKey, CanonicalFieldPath, FieldKey};
 
 #[test]
-fn summary_digest_changes_with_mutation_family() {
-    let backend_verified = backend_verified_assertion();
+fn summary_digest_changes_with_mutation_family() -> Result<(), IdentityDerivationDenial> {
+    let backend_verified = backend_verified_assertion()?;
 
     let update = super::super::summarize_existing_truth_modes(
         &[WorthQueryMutationFamily::Update],
         &[Some(backend_verified.clone())],
-    );
+    )?;
     let delete = super::super::summarize_existing_truth_modes(
         &[WorthQueryMutationFamily::Delete],
         &[Some(backend_verified)],
-    );
+    )?;
 
     assert_ne!(update.4, delete.4);
+
+    Ok(())
 }
 
 #[test]
-fn summary_digest_changes_with_assertion_mode() {
+fn summary_digest_changes_with_assertion_mode() -> Result<(), IdentityDerivationDenial> {
     let retained = WorthQueryExistingTruthAssertionEvidence::retained_assertion(
         1,
-        retained_assertion_identity("retained-assertion"),
+        retained_assertion_identity("retained-assertion")?,
     );
-    let backend_verified = backend_verified_assertion();
+    let backend_verified = backend_verified_assertion()?;
 
     let retained_summary = super::super::summarize_existing_truth_modes(
         &[WorthQueryMutationFamily::Assertion],
         &[Some(retained)],
-    );
+    )?;
     let verified_summary = super::super::summarize_existing_truth_modes(
         &[WorthQueryMutationFamily::Assertion],
         &[Some(backend_verified)],
-    );
+    )?;
 
     assert_ne!(retained_summary.4, verified_summary.4);
+
+    Ok(())
 }
 
 #[test]
@@ -45,17 +50,19 @@ fn summary_digest_changes_with_assertion_mode() {
 fn summary_panics_on_invalid_family_mode_pair() {
     let retained = WorthQueryExistingTruthAssertionEvidence::retained_assertion(
         1,
-        retained_assertion_identity("retained-assertion"),
+        retained_assertion_identity("retained-assertion").expect("fixture digest must fit"),
     );
 
     let _ = super::super::summarize_existing_truth_modes(
         &[WorthQueryMutationFamily::Update],
         &[Some(retained)],
-    );
+    )
+    .expect("fixture digest must fit");
 }
 
-fn backend_verified_assertion() -> WorthQueryExistingTruthAssertionEvidence {
-    WorthQueryExistingTruthAssertionEvidence::backend_verified(
+fn backend_verified_assertion(
+) -> Result<WorthQueryExistingTruthAssertionEvidence, IdentityDerivationDenial> {
+    Ok(WorthQueryExistingTruthAssertionEvidence::backend_verified(
         &crate::runtime::WorthQueryVerifiedExistingTruthAssertion::new(
             &crate::runtime::WorthQueryExistingTruthTargetBinding::direct_entity(
                 crate::runtime::WorthQueryMutationAuthorityIdentity::existing_truth_binding_authority(
@@ -75,10 +82,10 @@ fn backend_verified_assertion() -> WorthQueryExistingTruthAssertionEvidence {
                 ),
             )
             .expect("aspect should build")],
-            crate::memory_workspace::admit_external_snapshot_label("snapshot:test"),
+            crate::memory_workspace::admit_external_snapshot_label("snapshot:test")?,
         )
         .expect("verified assertion should build"),
-    )
+    ))
 }
 
 fn title_value_touch() -> WorthQueryAspectTouch {

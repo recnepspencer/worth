@@ -142,3 +142,6 @@ impl WorthQueryOperationScopeBinding {
 }
 
 mod court_doors_for_test;
+#[cfg(test)]
+#[path = "operation_scope_binding_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;

@@ -1,6 +1,6 @@
 pub use worth_query_declaration::facade::application_schema::{
-    ApplicationEntityMarkerIdentity, ApplicationEntityRef, ApplicationSchema,
-    ApplicationSchemaDeclaration, ApplicationSchemaDeclarationBuilder,
+    ApplicationEntityRef, ApplicationSchema, ApplicationSchemaDeclaration,
+    ApplicationSchemaDeclarationBuilder,
 };
 pub use worth_query_declaration::facade::{
     application_history::ApplicationHistoryModelDomain,
@@ -29,8 +29,10 @@ pub const VERSION_EIGHTEEN_MINIMAL_SCHEMA_HEX: &str = "0012000800000001000000380
 pub struct Schema;
 pub struct Entity;
 
-impl ApplicationEntityMarkerIdentity<Schema> for Entity {
-    const IDENTIFIER: &'static str = "Item";
+impl worth_query_declaration::facade::application_schema::fragment::Entity for Entity {
+    const NAME: &'static str = "Item";
+    type Aspects = ();
+    type Relations = ();
 }
 
 impl ApplicationSchema for Schema {
@@ -43,9 +45,7 @@ impl ApplicationSchema for Schema {
         ApplicationSchemaDeclaration<Self>,
         worth_query_declaration::facade::application_schema::ApplicationSchemaDeclarationDenial,
     > {
-        ApplicationSchemaDeclarationBuilder::for_schema()
-            .entity(ApplicationEntityRef::<Self, Entity>::from_schema_identifier("Item"))
-            .build()
+        ApplicationSchemaDeclarationBuilder::from_fragment(FixtureRecords)?.build()
     }
 }
 
@@ -89,3 +89,10 @@ pub fn decode_hex(encoded: &str) -> Vec<u8> {
 
 pub use worth_query_declaration::facade::application_schema::validate_portable_application_schema_freshly;
 pub use worth_query_installation::facade::WorthQueryPortablePackageReconstructionCandidate;
+
+struct FixtureRecords;
+impl worth_query_declaration::facade::application_schema::fragment::Fragment for FixtureRecords {
+    const NAME: &'static str = "fixture_records";
+    type Bindings = worth_query_declaration::facade::application_schema::fragment::NoBindings;
+    type Members = (Entity,);
+}

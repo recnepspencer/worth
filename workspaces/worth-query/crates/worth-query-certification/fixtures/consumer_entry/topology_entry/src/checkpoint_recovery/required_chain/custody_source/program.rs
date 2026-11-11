@@ -6,12 +6,44 @@ use worth_query_host::facade::primary_graph::{
     WorthQueryApplicationRequiredOutputConnection, WorthQueryApplicationRequiredOutputSource,
     WorthQueryRequiredOutputConnectionDenial,
 };
-worth_query_decl::facade::worth_query_application! {
- pub(in crate::checkpoint_recovery::required_chain) ValueSourceSchema {
-  owner: "worth.query.certification.consumed-value-source", version: (1,0), contributions: [TopologyContribution],
- }
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub(in crate::checkpoint_recovery::required_chain) struct ValueSourceSchema;
+impl worth_query_decl::facade::application_schema::fragment::Fragment for ValueSourceSchema {
+    const NAME: &'static str = "ValueSourceSchema";
+    type Bindings = worth_query_decl::facade::application_schema::fragment::NoBindings;
+    type Members = (TopologyContribution,);
 }
-impl TopologySchemaBinding for ValueSourceSchema {}
+impl worth_query_decl::facade::application_schema::ApplicationSchema for ValueSourceSchema {
+    const OWNER: &'static str = "worth.query.certification.consumed-value-source";
+    const NAME: &'static str = "ValueSourceSchema";
+    const MAJOR: u32 = 1;
+    const MINOR: u32 = 0;
+    fn declaration() -> Result<
+        worth_query_decl::facade::application_schema::ApplicationSchemaDeclaration<Self>,
+        worth_query_decl::facade::application_schema::ApplicationSchemaDeclarationDenial,
+    > {
+        worth_query_decl::facade::application_schema::fragment::declare(Self)
+    }
+    fn visit_correction<
+        V: worth_query_decl::facade::application_aftermath::ApplicationCorrectionVisitor<Self>,
+    >(
+        source: std::any::TypeId,
+        visitor: V,
+    ) -> V::Output {
+        worth_query_decl::facade::application_schema::fragment::visit_correction(
+            Self, source, visitor,
+        )
+    }
+}
+impl worth_query_decl::facade::application_schema::ApplicationSchemaComposition
+    for ValueSourceSchema
+{
+    type Contributions = (TopologyContribution,);
+}
+
+impl TopologySchemaBinding for ValueSourceSchema {
+    type PrincipalFragment = crate::PrincipalRecords;
+}
 pub(in crate::checkpoint_recovery::required_chain) struct ValueFeature;
 pub(in crate::checkpoint_recovery::required_chain) struct ValueInput;
 pub(in crate::checkpoint_recovery::required_chain) struct ValueOutput;

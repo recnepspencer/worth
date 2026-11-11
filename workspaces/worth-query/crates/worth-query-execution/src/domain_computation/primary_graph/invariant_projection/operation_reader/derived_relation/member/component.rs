@@ -121,7 +121,7 @@ impl<S: ApplicationSchema, O: ApplicationOperationMarkerIdentity<S>>
                 .map_err(|cause| self.reader.walk_stop(cause, set.name()))?;
             let native =
                 Arc::new(self.read_derived_key(relation, member.key.clone(), Shape::Component)?);
-            let pin=self.reader.runtime.read_truth().pin_read_capability(self.reader.snapshot,&[],self.reader.execution).map_err(|cause|match cause {
+            let pin=self.reader.native.pin(self.reader.snapshot, self.reader.execution).map_err(|cause|match cause {
                 worth_relational::facade::runtime::RelationalPinnedReadAdmissionDenial::Request(stop)=>self.reader.walk_stop(stop,set.name()),
                 _=>Denial::new(Kind::EndpointUnavailable,set.name()),
             })?;
@@ -138,7 +138,7 @@ impl<S: ApplicationSchema, O: ApplicationOperationMarkerIdentity<S>>
                     crate::domain_computation::primary_graph::aggregate_observation::member_work::checkpoint_names(expected,&mut poll)?;
                     if actual!=expected {return Err(Denial::new(Kind::InvalidComponent,set.name()));}
                 }
-                let projection=pin.project_snapshot(pin.snapshot()).ok_or_else(denied)?;
+                let projection=pin.project_read();
                 let mut facts=SourceFactsBuilder::default();
                 facts.protect(&execution,&allocation).map_err(|error|match error {
                     SourceFactReadDenial::Execution(cause)=>self.reader.walk_stop(cause,set.name()),
@@ -163,7 +163,7 @@ impl<S: ApplicationSchema, O: ApplicationOperationMarkerIdentity<S>>
                 source_facts.push(facts);
                 allocation.claim(&execution,u64::try_from(scope.relation().len()).map_err(|_|self.reader.walk_stop(Cause::ChargedBytesOverflow,set.name()))?).map_err(|cause|self.reader.walk_stop(cause,set.name()))?;
                 crate::domain_computation::primary_graph::component_selection::storage::body(&execution,&allocation).map_err(|cause|self.reader.walk_stop(cause,set.name()))?;
-                let selection=Arc::new(ComponentSelection::from_derived(scope.clone(),layout.clone(),root,member.key.clone(),self.reader.snapshot.clone(),aggregates,source_facts,allocation.clone(),||AggregateObservation::checkpoint(context)).map_err(|cause|self.reader.walk_stop(cause,set.name()))?.ok_or_else(denied)?);
+                let selection=Arc::new(ComponentSelection::from_derived(scope.clone(),layout.clone(),root,member.key.clone(),self.reader.native.origin(self.reader.snapshot).retained(),aggregates,source_facts,allocation.clone(),||AggregateObservation::checkpoint(context)).map_err(|cause|self.reader.walk_stop(cause,set.name()))?.ok_or_else(denied)?);
                 self.decision_facts.record_component(&selection,admission,Arc::clone(&contracts),self.reader.authority_identity,context).map_err(|error|match error {
                     crate::domain_computation::primary_graph::invariant_projection::operation_reader::decision_reads::structural_walks::WalkRecordDenial::Execution(cause)=>self.reader.walk_stop(cause,set.name()),
                     _=>Denial::new(Kind::ForeignIdentity,set.name()),

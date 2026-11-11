@@ -1,0 +1,31 @@
+[
+  {
+    "command": [
+      "git",
+      "-C",
+      "C:\\programming\\worth worktees\\worktrees\\m3-p3-lifecycle",
+      "diff",
+      "--quiet",
+      "e787b51b3e",
+      "--",
+      "workspaces/worth-query/Cargo.lock"
+    ],
+    "exit": 1,
+    "stdout": "",
+    "stderr": ""
+  },
+  {
+    "command": [
+      "git",
+      "-C",
+      "C:\\programming\\worth worktees\\worktrees\\m3-p3-lifecycle",
+      "status",
+      "--porcelain",
+      "--",
+      "workspaces/worth-query/Cargo.lock"
+    ],
+    "exit": 0,
+    "stdout": "",
+    "stderr": ""
+  }
+]

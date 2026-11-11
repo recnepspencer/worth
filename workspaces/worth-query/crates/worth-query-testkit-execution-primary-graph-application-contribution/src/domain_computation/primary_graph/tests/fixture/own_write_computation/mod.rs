@@ -8,8 +8,8 @@ use worth_query_declaration::facade::application_operation::WorthQueryCreateOutp
 use worth_query_declaration::facade::application_operation::WorthQueryExactlyOneOutput;
 use worth_query_declaration::worth_query_operation_creates;
 worth_query_operation!(pub OwnWriteComputation for IdentityExecutionSchema, input TouchAccountInputBinding);
-worth_query_operation_reads!(OwnWriteComputation => [AccountStatus, AccountLabel]);
-worth_query_operation_writes!(OwnWriteComputation => [AccountStatus, AccountLabel, AccountIdentity, AccountMembershipTag]);
+worth_query_operation_reads!(OwnWriteComputation => [AccountStatus]);
+worth_query_operation_writes!(OwnWriteComputation => [AccountStatus, AccountMembershipTag]);
 worth_query_operation_creates!(OwnWriteComputation => [Account]);
 worth_query_operation_requires!(OwnWriteComputation => [ViewAccount]);
 
@@ -29,12 +29,12 @@ pub fn declare(
         )
         .operation_projection_work_budget(operation, 32)
         .operation_requires_ability(operation, ViewAccount::reference())
-        .operation_read_field(operation, AccountStatus::reference())
-        .operation_read_field(operation, AccountLabel::reference())
-        .operation_write(operation, AccountStatus::reference())
-        .operation_write(operation, AccountLabel::reference())
-        .operation_write(operation, AccountIdentity::reference())
-        .operation_write(operation, AccountMembershipTag::reference())
+        .operation_read_field(operation, AccountStatus::at("AccountStatus"))
+        .operation_read_field(operation, AccountLabel::at("AccountLabel"))
+        .operation_write(operation, AccountStatus::at("AccountStatus"))
+        .operation_write(operation, AccountLabel::at("AccountLabel"))
+        .operation_write(operation, AccountIdentity::at("AccountIdentity"))
+        .operation_write(operation, AccountMembershipTag::at("AccountMembershipTag"))
         .operation_create(operation, Account::reference())
 }
 

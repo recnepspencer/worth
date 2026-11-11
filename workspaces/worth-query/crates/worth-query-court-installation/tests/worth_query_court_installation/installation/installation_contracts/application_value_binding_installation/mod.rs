@@ -5,9 +5,17 @@ fn installed_schema_retains_exact_typed_scalar_codec_and_contract() {
     let installed = installed_index()
         .bind_application_schema(BindingSchema::declaration().unwrap())
         .unwrap();
+    let field: RecordField<_, _, u64> =
+        record_field(BindingSchema, Component, Measurement, "value")
+            .resolve()
+            .unwrap();
     let binding = installed
         .value_bindings()
-        .field("Component", "Measurement", "Count")
+        .field(
+            field.locus().entity(),
+            field.locus().aspect(),
+            field.locus().field(),
+        )
         .unwrap();
 
     assert_eq!(installed.value_bindings().len(), 1);

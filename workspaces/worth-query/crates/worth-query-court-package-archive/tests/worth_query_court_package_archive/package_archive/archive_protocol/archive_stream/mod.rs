@@ -139,3 +139,35 @@ fn aggregate_versions_truncation_trailing_and_semantic_tamper_fail_closed() {
 }
 
 pub(crate) mod predecessor;
+
+#[test]
+fn legacy_canonical_policy_archive_is_refused_at_fresh_admission() {
+    // This complete vector was accepted by the prior policy, not synthesized by
+    // corrupting a current archive. Untrusted decoding preserves its old claim.
+    let bytes = decode_hex(LEGACY_CANONICAL_POLICY_MINIMAL_ARCHIVE_HEX.trim());
+    let decoded = decode_package_archive(&bytes, WorthQueryPackageArchiveLimits::DEFAULT).unwrap();
+    let (manifest, frames) = decoded.into_parts();
+    let claimed = manifest.package_identity().clone();
+    let mut reconstruction = WorthQueryPortablePackageReconstruction::begin(
+        manifest,
+        WorthQueryPortablePackageReconstructionLimits::DEFAULT,
+    )
+    .unwrap();
+    for frame in frames {
+        let (index, record) = frame.into_parts();
+        reconstruction = reconstruction.push_record(index, record).unwrap();
+    }
+    let candidate = reconstruction.close().unwrap().materialize().unwrap();
+    let denial = candidate
+        .validate_freshly(
+            WorthQueryExpectedPortablePackageIdentity::from_untrusted_identity(claimed.clone()),
+        )
+        .unwrap_err();
+    assert!(matches!(
+        denial,
+        WorthQueryPortablePackageReconstructionDenial::ManifestPackageIdentityMismatch {
+            claimed: observed,
+            recomputed,
+        } if observed == claimed && recomputed == *fixture::minimal_package().identity()
+    ));
+}

@@ -1,104 +1,95 @@
 # Closed callers recorded at the one-build inventory; owners are allowed by the rule.
 # Actual physical ProvenAbsent custody routes through these named original-source owners.
-native-fresh-home-source workspaces/worth-store/crates/worth-store-relational/src/section/readmission/fresh_source.rs
-native-fresh-source-affinity crates/worth-runtime-world/src/lifecycle/builder/home_readmission/fresh_source.rs
-native-fresh-initial-installation workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_installation/home_preparation/native.rs
-world-fresh-home workspaces/worth-store/crates/worth-store-application/src/world_section/readmission.rs
-world-fresh-home workspaces/worth-store/crates/worth-store-application/src/tests/world_section/readmission.rs
-native-fresh-home-readmission workspaces/worth-store/crates/worth-store-application/src/relational_preparation/unrecovered.rs
-native-home-source-finalization workspaces/worth-store/crates/worth-store-application/src/relational_preparation/unshared.rs
+# Only actual Host close may consume its uniquely prepared original Query after World seal.
+# D1/D17: only the concrete Native-readmitted Home may consume its private World slot.
+# Exact private consumer-affinity unit, compiled only as readmission's cfg(test) child.
+# D1: same Native owner Arc enters only the Home's private Bridge attachment.
+# Actual no-pending Home carrier: closed Host completion and exact genuine courts.
+# Recovery-affine inventory: one production consumer and one authentic admission court.
+# D1/D17: only Host opening composes the consuming fresh-Home Query stages.
+# The source attachment derives Native custody from the actual registered source.
+# The actual Home retains raw Native custody through schema and Query preparation.
+# D4/D17: one Query commit owner retains pre-submit and Native preparation custody.
+# cfg(test) original-binding custody court: two real bound queries versus the unbound query.
+# 9.18: native root disclosure court; fixture queries remain inside Execution certification.
+# Ruled test caller: proves live leases reject a foreign phase for ordinary and governed certification queries.
+# cfg(test) owner fixture resolves installed query metadata before ordinary admitted dependent-plan execution.
+# Phase, selected product, authenticated principal, batch, read plan and publication remain native;
+# installed-query lookup creates no execution/admission/publication authority.
+# Closed pinned-read reconstruction proofs; each constructs its installed fixture query.
+# Slice5b ruling: installed metadata lookup; real principal/scope admission and execution follow.
+# Slice5b ruling: installed closure metadata; ordinary/admitted requirements and support matching.
+# Ruled metadata-only lookup for real declared-orbit principal/scope admission and Native reads.
+# Ruled cfg(test) bound-versus-unbound original projection capture through real admission.
+# Coupled opening consumes one original selected Home payload and its EOF custody.
+# Exact owner-private selected-source refusal proof uses the existing genuine recipe.
+# Complete Home original-input persistence: exact source, initialization and replay owners.
+# Genuine producer fixture for external source-input courts.
+# Existing Complete capture door, exact relocated public court/fixture callers.
+# P-C exact genuine D16 owner construction courts, coordinator grant2026-11-06.
+# Shared Home compiler preparation consumes the same original receiver source.
+# Actual same-directory Home preparation observes the original schema union after a granted target publication.
+# Original Home Target index preparation consumes and completes the same World open.
+# D16: exact production consumers of the same predecessor/Target and registered Source.
+application-home-bridge-stop workspaces/worth-store/crates/worth-store-application/src/world_section/close/admission.rs
+application-home-checkpoint-maintenance workspaces/worth-query/crates/worth-query-host/src/application_home/maintenance.rs
 application-home-fresh-finalization workspaces/worth-query/crates/worth-query-host/src/application_home/opening/fresh.rs
 application-home-fresh-finalization workspaces/worth-store/crates/worth-store-court-application/tests/worth_store_court_application/process/application/query_readmission/bootstrap_publication.rs
+application-home-owner-admission workspaces/worth-query/crates/worth-query-host/src/application_home/opening/service.rs
+# Coordinator boundary ruling 2026-11-09 (H8 dispatch doors): standing court-caller ruling.
+application-home-owner-admission workspaces/worth-store/crates/worth-store-court-application/tests/worth_store_court_application/process/application/no_pending_owners/dispatch_journal.rs
+application-home-owner-admission workspaces/worth-store/crates/worth-store-court-application/tests/worth_store_court_application/process/application/no_pending_owners/journal_absence.rs
+application-home-owner-admission workspaces/worth-store/crates/worth-store-court-application/tests/worth_store_court_application/process/application/no_pending_owners/transition_indexes/promotion.rs
+application-home-owner-admission workspaces/worth-store/crates/worth-store-court-application/tests/worth_store_court_application/process/application/no_pending_owners/unresolved.rs
 application-home-recovered-finalization workspaces/worth-query/crates/worth-query-host/src/application_home/opening/existing.rs
 application-home-recovered-finalization workspaces/worth-store/crates/worth-store-court-application/tests/worth_store_court_application/process/application/query_readmission/native_artifacts.rs
-native-world-fresh-source workspaces/worth-store/crates/worth-store-application/src/world_section/readmission.rs
-native-world-fresh-source workspaces/worth-store/crates/worth-store-application/src/world_section/readmission/transition.rs
-native-world-fresh-source workspaces/worth-store/crates/worth-store-application/src/tests/world_section/readmission.rs
-# Only actual Host close may consume its uniquely prepared original Query after World seal.
-query-home-retirement workspaces/worth-query/crates/worth-query-host/src/application_home/close/retirement.rs
-application-home-bridge-stop workspaces/worth-store/crates/worth-store-application/src/world_section/close/admission.rs
-# D1/D17: only the concrete Native-readmitted Home may consume its private World slot.
-world-home workspaces/worth-store/crates/worth-store-application/src/world_section/readmission.rs
-# Exact private consumer-affinity unit, compiled only as readmission's cfg(test) child.
-world-home workspaces/worth-store/crates/worth-store-application/src/tests/world_section/readmission.rs
-# D1: same Native owner Arc enters only the Home's private Bridge attachment.
-native-home-composition workspaces/worth-store/crates/worth-store-application/src/world_section/attachment.rs
-native-world-readmission workspaces/worth-store/crates/worth-store-application/src/world_section/readmission.rs
-native-world-readmission workspaces/worth-store/crates/worth-store-application/src/tests/world_section/readmission.rs
-native-world-readmission workspaces/worth-store/crates/worth-store-application/src/world_section/readmission/transition.rs
-# Actual no-pending Home carrier: closed Host completion and exact genuine courts.
-application-home-owner-admission workspaces/worth-query/crates/worth-query-host/src/application_home/opening/service.rs
-application-home-owner-admission workspaces/worth-store/crates/worth-store-court-application/tests/worth_store_court_application/process/application/no_pending_owners/journal_absence.rs
-application-home-owner-admission workspaces/worth-store/crates/worth-store-court-application/tests/worth_store_court_application/process/application/no_pending_owners/unresolved.rs
-# Recovery-affine inventory: one production consumer and one authentic admission court.
-native-recovered-inventory crates/worth-runtime-world/src/lifecycle/builder/home_readmission/associated_effects.rs
-native-recovered-inventory crates/worth-court-relational-certification/tests/worth_court_relational_certification/relational/durable_publication/recovered_associated_effects.rs
-native-home-complete-checkpoint workspaces/worth-store/crates/worth-store-relational/src/section/checkpoint.rs
-# D1/D17: only Host opening composes the consuming fresh-Home Query stages.
-query-home-preparation workspaces/worth-query/crates/worth-query-host/src/application_home/opening/preparation.rs
-query-home-preparation workspaces/worth-query/crates/worth-query-host/src/application_home/opening/fresh.rs
-query-home-preparation workspaces/worth-query/crates/worth-query-host/src/application_home/opening/existing.rs
-query-home-preparation workspaces/worth-store/crates/worth-store-court-application/tests/worth_store_court_application/process/application/query_readmission/native_artifacts.rs
-query-home-preparation workspaces/worth-store/crates/worth-store-court-application/tests/worth_store_court_application/process/application/query_readmission/bootstrap_publication.rs
-# The source attachment derives Native custody from the actual registered source.
-query-registered-native workspaces/worth-query/crates/worth-query-execution/src/domain_computation/execution_runtime/product_world/source_owner/attachment.rs
-# The actual Home retains raw Native custody through schema and Query preparation.
-native-home-query-preparation workspaces/worth-query/crates/worth-query-host/src/application_home/opening/preparation.rs
-native-home-query-preparation workspaces/worth-query/crates/worth-query-host/src/application_home/opening/initialization.rs
-native-home-query-preparation workspaces/worth-query/crates/worth-query-host/src/application_home/opening/fresh.rs
-native-home-query-preparation workspaces/worth-query/crates/worth-query-host/src/application_home/opening/existing.rs
-native-home-query-preparation workspaces/worth-store/crates/worth-store-court-application/tests/worth_store_court_application/process/application/query_readmission/native_artifacts.rs
-native-home-query-preparation workspaces/worth-store/crates/worth-store-court-application/tests/worth_store_court_application/process/application/query_readmission/bootstrap_publication.rs
-native-home-attachment workspaces/worth-store/crates/worth-store-application/src/relational_preparation/attachment.rs
-native-home-schema-installation workspaces/worth-store/crates/worth-store-application/src/relational_preparation/unrecovered.rs
-native-home-query-finalization workspaces/worth-store/crates/worth-store-application/src/relational_preparation/unshared.rs
-# D4/D17: one Query commit owner retains pre-submit and Native preparation custody.
-query-world-commit-preparation workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/provider/application_attempt_state/commit_preparation/relational_commit/commit_execution.rs
-# cfg(test) original-binding custody court: two real bound queries versus the unbound query.
-installation workspaces/worth-query/crates/worth-query-court-execution/tests/worth_query_court_execution/domain_computation/primary_graph/causal_inspection/application_observation/declared_query/tests/mod.rs
-# 9.18: native root disclosure court; fixture queries remain inside Execution certification.
-installation workspaces/worth-query/crates/worth-query-court-execution-primary-graph-application-query/tests/worth_query_court_execution_primary_graph_application_query/domain_computation/primary_graph/tests/application_query/correction_disclosure/mod.rs
+application-home-recovered-finalization workspaces/worth-store/crates/worth-store-court-application/tests/worth_store_court_application/process/application/query_readmission/native_artifacts/epoch.rs
+application-home-recovered-finalization workspaces/worth-store/crates/worth-store-court-application/tests/worth_store_court_application/process/application/query_readmission/native_artifacts/epoch/target_inventory.rs
+application-home-recovered-finalization workspaces/worth-store/crates/worth-store-court-application/tests/worth_store_court_application/process/application/query_readmission/native_artifacts/successor_compilation.rs
 bridge workspaces/worth-query/crates/worth-query/src/domain_installation/dependency_impact/compiled/invalidation_manifest/structural_manifest_tests.rs
 installation workspaces/worth-query/crates/worth-query-admission/src/application_query/tests.rs
-installation workspaces/worth-query/crates/worth-query-testkit-certification/src/certification/program_example_authority/product_workflow_support/conditional_contribution.rs
-installation workspaces/worth-query/crates/worth-query-testkit-certification-granular-invalidation/src/certification/granular_invalidation/financial_runtime_world/host/installation.rs
-installation workspaces/worth-query/crates/worth-query-testkit-certification/src/certification/runtime_world_branching/cost/live.rs
-installation workspaces/worth-query/crates/worth-query-testkit-certification/src/certification/runtime_world_branching/query_probe.rs
+installation workspaces/worth-query/crates/worth-query-admission/src/application_query/tests/complete_closure.rs
+installation workspaces/worth-query/crates/worth-query-court-execution-primary-graph-application-contribution/tests/worth_query_court_execution_primary_graph_application_contribution/domain_computation/primary_graph/conditional_operation/authorization_sources/tests/mod.rs
 installation workspaces/worth-query/crates/worth-query-court-execution-primary-graph-application-query/tests/worth_query_court_execution_primary_graph_application_query/domain_computation/primary_graph/application_query/admission_preparation/tests/mod.rs
 installation workspaces/worth-query/crates/worth-query-court-execution-primary-graph-application-query/tests/worth_query_court_execution_primary_graph_application_query/domain_computation/primary_graph/application_query/continuation/tests/governed_authority/mod.rs
 installation workspaces/worth-query/crates/worth-query-court-execution-primary-graph-application-query/tests/worth_query_court_execution_primary_graph_application_query/domain_computation/primary_graph/application_query/continuation/tests/support/mod.rs
 installation workspaces/worth-query/crates/worth-query-court-execution-primary-graph-application-query/tests/worth_query_court_execution_primary_graph_application_query/domain_computation/primary_graph/application_query/derived_view/registration/collection/pair/reconstruct_parallel/read_ceiling_tests/map_ceiling/mod.rs
+installation workspaces/worth-query/crates/worth-query-court-execution-primary-graph-application-query/tests/worth_query_court_execution_primary_graph_application_query/domain_computation/primary_graph/application_query/derived_view/registration/collection/pair/reconstruct_parallel/read_ceiling_tests/native_concurrency/mod.rs
 installation workspaces/worth-query/crates/worth-query-court-execution-primary-graph-application-query/tests/worth_query_court_execution_primary_graph_application_query/domain_computation/primary_graph/application_query/derived_view/registration/collection/pair/reconstruct_parallel/read_ceiling_tests/parallel_ceiling/mod.rs
-installation workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_query/derived_view/registration/collection/pair/reconstruct_parallel/read_ceiling_tests/query_ceiling.rs
+installation workspaces/worth-query/crates/worth-query-court-execution-primary-graph-application-query/tests/worth_query_court_execution_primary_graph_application_query/domain_computation/primary_graph/application_query/derived_view/registration/collection/pair/reconstruct_parallel/read_ceiling_tests/pin_custody_tests/mod.rs
+installation workspaces/worth-query/crates/worth-query-court-execution-primary-graph-application-query/tests/worth_query_court_execution_primary_graph_application_query/domain_computation/primary_graph/application_query/derived_view/registration/collection/pair/reconstruct_parallel/read_ceiling_tests/pinning_reasons/mod.rs
+installation workspaces/worth-query/crates/worth-query-court-execution-primary-graph-application-query/tests/worth_query_court_execution_primary_graph_application_query/domain_computation/primary_graph/application_query/derived_view/registration/collection/pair/reconstruct_parallel/read_ceiling_tests/reconstruction_parity/mod.rs
 installation workspaces/worth-query/crates/worth-query-court-execution-primary-graph-application-query/tests/worth_query_court_execution_primary_graph_application_query/domain_computation/primary_graph/application_query/governance_affinity_tests/mod.rs
 installation workspaces/worth-query/crates/worth-query-court-execution-primary-graph-application-query/tests/worth_query_court_execution_primary_graph_application_query/domain_computation/primary_graph/application_query/governance_affinity_tests/session_minted_governance/mod.rs
+installation workspaces/worth-query/crates/worth-query-court-execution-primary-graph-application-query/tests/worth_query_court_execution_primary_graph_application_query/domain_computation/primary_graph/application_query/live/lease/delivery_tests/committed_live_cause_projects_with_bounded_result_buffer_evidenc/mod.rs
 installation workspaces/worth-query/crates/worth-query-court-execution-primary-graph-application-query/tests/worth_query_court_execution_primary_graph_application_query/domain_computation/primary_graph/application_query/live/lease/delivery_tests/mod.rs
-# Ruled test caller: proves live leases reject a foreign phase for ordinary and governed certification queries.
 installation workspaces/worth-query/crates/worth-query-court-execution-primary-graph-application-query/tests/worth_query_court_execution_primary_graph_application_query/domain_computation/primary_graph/application_query/live/lease/foreign_phase_tests/mod.rs
 installation workspaces/worth-query/crates/worth-query-court-execution-primary-graph-application-query/tests/worth_query_court_execution_primary_graph_application_query/domain_computation/primary_graph/application_query/live/lease/lifecycle/lifecycle_tests/tests/mod.rs
 installation workspaces/worth-query/crates/worth-query-court-execution-primary-graph-application-query/tests/worth_query_court_execution_primary_graph_application_query/domain_computation/primary_graph/application_query/live/lease/reservation_race_tests/mod.rs
 installation workspaces/worth-query/crates/worth-query-court-execution-primary-graph-application-query/tests/worth_query_court_execution_primary_graph_application_query/domain_computation/primary_graph/application_query/live/lease/sibling_delivery_tests/mod.rs
+installation workspaces/worth-query/crates/worth-query-court-execution-primary-graph-application-query/tests/worth_query_court_execution_primary_graph_application_query/domain_computation/primary_graph/application_query/projection/retained_projection/tests/reads/mod.rs
 installation workspaces/worth-query/crates/worth-query-court-execution-primary-graph-application-query/tests/worth_query_court_execution_primary_graph_application_query/domain_computation/primary_graph/application_query/read_execution/interruption/tests/mod.rs
-installation workspaces/worth-query/crates/worth-query-court-execution-primary-graph-application-contribution/tests/worth_query_court_execution_primary_graph_application_contribution/domain_computation/primary_graph/conditional_operation/authorization_sources/tests/mod.rs
 installation workspaces/worth-query/crates/worth-query-court-execution-primary-graph-application-query/tests/worth_query_court_execution_primary_graph_application_query/domain_computation/primary_graph/tests/application_attempt/mutation_work_scale/locality/mod.rs
-installation workspaces/worth-query/crates/worth-query-court-execution-primary-graph/tests/worth_query_court_execution_primary_graph/domain_computation/primary_graph/tests/application_attempt/optional_field_mutation/mod.rs
-installation workspaces/worth-query/crates/worth-query-testkit-execution-primary-graph-application-attempt-2/src/domain_computation/primary_graph/tests/application_query/mod.rs
-# cfg(test) owner fixture resolves installed query metadata before ordinary admitted dependent-plan execution.
-# Phase, selected product, authenticated principal, batch, read plan and publication remain native;
-# installed-query lookup creates no execution/admission/publication authority.
+installation workspaces/worth-query/crates/worth-query-court-execution-primary-graph-application-query/tests/worth_query_court_execution_primary_graph_application_query/domain_computation/primary_graph/tests/application_query/correction_disclosure/mod.rs
+installation workspaces/worth-query/crates/worth-query-court-execution-primary-graph-application-query/tests/worth_query_court_execution_primary_graph_application_query/domain_computation/primary_graph/tests/application_query/derived_view/branch_reconstruction_parity/mod.rs
 installation workspaces/worth-query/crates/worth-query-court-execution-primary-graph-application-query/tests/worth_query_court_execution_primary_graph_application_query/domain_computation/primary_graph/tests/application_query/derived_view/dependent_reconstruction/mod.rs
 installation workspaces/worth-query/crates/worth-query-court-execution-primary-graph-application-query/tests/worth_query_court_execution_primary_graph_application_query/domain_computation/primary_graph/tests/application_query/derived_view/leased_reconstruction/observation/mod.rs
 installation workspaces/worth-query/crates/worth-query-court-execution-primary-graph-application-query/tests/worth_query_court_execution_primary_graph_application_query/domain_computation/primary_graph/tests/application_query/derived_view/member_token_reconciliation/mod.rs
 installation workspaces/worth-query/crates/worth-query-court-execution-primary-graph-application-query/tests/worth_query_court_execution_primary_graph_application_query/domain_computation/primary_graph/tests/application_query/derived_view/membership_reconciliation/mod.rs
-installation workspaces/worth-query/crates/worth-query-court-execution-primary-graph-application-query/tests/worth_query_court_execution_primary_graph_application_query/domain_computation/primary_graph/tests/application_query/derived_view/native_collection/mod.rs
 installation workspaces/worth-query/crates/worth-query-court-execution-primary-graph-application-query/tests/worth_query_court_execution_primary_graph_application_query/domain_computation/primary_graph/tests/application_query/derived_view/native_collection/batch_custody/mod.rs
+installation workspaces/worth-query/crates/worth-query-court-execution-primary-graph-application-query/tests/worth_query_court_execution_primary_graph_application_query/domain_computation/primary_graph/tests/application_query/derived_view/native_collection/cold_and_incremental/mod.rs
 installation workspaces/worth-query/crates/worth-query-court-execution-primary-graph-application-query/tests/worth_query_court_execution_primary_graph_application_query/domain_computation/primary_graph/tests/application_query/derived_view/native_collection/dependent_scope/mod.rs
-installation workspaces/worth-query/crates/worth-query-court-execution-primary-graph-application-query/tests/worth_query_court_execution_primary_graph_application_query/domain_computation/primary_graph/tests/application_query/derived_view/optional_owner/mod.rs
+installation workspaces/worth-query/crates/worth-query-court-execution-primary-graph-application-query/tests/worth_query_court_execution_primary_graph_application_query/domain_computation/primary_graph/tests/application_query/derived_view/native_collection/mod.rs
 installation workspaces/worth-query/crates/worth-query-court-execution-primary-graph-application-query/tests/worth_query_court_execution_primary_graph_application_query/domain_computation/primary_graph/tests/application_query/derived_view/optional_owner/membership/mod.rs
+installation workspaces/worth-query/crates/worth-query-court-execution-primary-graph-application-query/tests/worth_query_court_execution_primary_graph_application_query/domain_computation/primary_graph/tests/application_query/derived_view/optional_owner/mod.rs
+installation workspaces/worth-query/crates/worth-query-court-execution-primary-graph-application-query/tests/worth_query_court_execution_primary_graph_application_query/domain_computation/primary_graph/tests/application_query/derived_view/optional_owner/optional_owner_removal_and_insertion_refresh_at_the_real_current/mod.rs
 installation workspaces/worth-query/crates/worth-query-court-execution-primary-graph-application-query/tests/worth_query_court_execution_primary_graph_application_query/domain_computation/primary_graph/tests/application_query/derived_view/owner_sized/mod.rs
+installation workspaces/worth-query/crates/worth-query-court-execution-primary-graph-application-query/tests/worth_query_court_execution_primary_graph_application_query/domain_computation/primary_graph/tests/application_query/derived_view/reconstruction_parity/mod.rs
+installation workspaces/worth-query/crates/worth-query-court-execution-primary-graph-application-query/tests/worth_query_court_execution_primary_graph_application_query/domain_computation/primary_graph/tests/application_query/derived_view/reconstruction_stops/mod.rs
 installation workspaces/worth-query/crates/worth-query-court-execution-primary-graph-application-query/tests/worth_query_court_execution_primary_graph_application_query/domain_computation/primary_graph/tests/application_query/derived_view/request_refusals/mod.rs
 installation workspaces/worth-query/crates/worth-query-court-execution-primary-graph-application-query/tests/worth_query_court_execution_primary_graph_application_query/domain_computation/primary_graph/tests/application_query/derived_view/scoped_query/mod.rs
 installation workspaces/worth-query/crates/worth-query-court-execution-primary-graph-application-query/tests/worth_query_court_execution_primary_graph_application_query/domain_computation/primary_graph/tests/application_query/disclosure_noninterference/contract_admission/mod.rs
+installation workspaces/worth-query/crates/worth-query-court-execution-primary-graph-application-query/tests/worth_query_court_execution_primary_graph_application_query/domain_computation/primary_graph/tests/application_query/disclosure_noninterference/contract_admission/predicate_access/mod.rs
 installation workspaces/worth-query/crates/worth-query-court-execution-primary-graph-application-query/tests/worth_query_court_execution_primary_graph_application_query/domain_computation/primary_graph/tests/application_query/disclosure_noninterference/lane_observation/mod.rs
 installation workspaces/worth-query/crates/worth-query-court-execution-primary-graph-application-query/tests/worth_query_court_execution_primary_graph_application_query/domain_computation/primary_graph/tests/application_query/disclosure_noninterference/one_shot/mod.rs
 installation workspaces/worth-query/crates/worth-query-court-execution-primary-graph-application-query/tests/worth_query_court_execution_primary_graph_application_query/domain_computation/primary_graph/tests/application_query/disclosure_noninterference/root_guard/mod.rs
@@ -106,11 +97,26 @@ installation workspaces/worth-query/crates/worth-query-court-execution-primary-g
 installation workspaces/worth-query/crates/worth-query-court-execution-primary-graph-application-query/tests/worth_query_court_execution_primary_graph_application_query/domain_computation/primary_graph/tests/application_query/optional_result_presence/mod.rs
 installation workspaces/worth-query/crates/worth-query-court-execution-primary-graph-application-query/tests/worth_query_court_execution_primary_graph_application_query/domain_computation/primary_graph/tests/application_query/result_projection/relation_predicate/mod.rs
 installation workspaces/worth-query/crates/worth-query-court-execution-primary-graph-application-query/tests/worth_query_court_execution_primary_graph_application_query/domain_computation/primary_graph/tests/application_query/root_guard_basis/mod.rs
+installation workspaces/worth-query/crates/worth-query-court-execution-primary-graph-application-query/tests/worth_query_court_execution_primary_graph_application_query/domain_computation/primary_graph/tests/application_query/root_guard_basis/root_path_guard_reads_its_pinned_truth_version/mod.rs
+installation workspaces/worth-query/crates/worth-query-court-execution-primary-graph-application-query/tests/worth_query_court_execution_primary_graph_application_query/domain_computation/primary_graph/tests/application_query/root_selection/declared_root_paths_retain_per_row_native_witnesses/mod.rs
 installation workspaces/worth-query/crates/worth-query-court-execution-primary-graph-application-query/tests/worth_query_court_execution_primary_graph_application_query/domain_computation/primary_graph/tests/application_query/root_selection/mod.rs
 installation workspaces/worth-query/crates/worth-query-court-execution-primary-graph-application-query/tests/worth_query_court_execution_primary_graph_application_query/domain_computation/primary_graph/tests/application_query/root_selection/result_set/mod.rs
 installation workspaces/worth-query/crates/worth-query-court-execution-primary-graph-authorization/tests/worth_query_court_execution_primary_graph_authorization/domain_computation/primary_graph/tests/authorization/capability_delegation_session/mod.rs
 installation workspaces/worth-query/crates/worth-query-court-execution-primary-graph-authorization/tests/worth_query_court_execution_primary_graph_authorization/domain_computation/primary_graph/tests/authorization/capability_elevation/delivery_cutoff/context/mod.rs
+installation workspaces/worth-query/crates/worth-query-court-execution-primary-graph/tests/worth_query_court_execution_primary_graph/domain_computation/primary_graph/tests/application_attempt/optional_field_mutation/mod.rs
+installation workspaces/worth-query/crates/worth-query-court-execution/tests/worth_query_court_execution/domain_computation/primary_graph/causal_inspection/application_observation/declared_query/tests/mod.rs
+installation workspaces/worth-query/crates/worth-query-court-query-decl-host/tests/worth_query_court_query_decl_host/certification/runtime_world_branching/selected_product_reads/mod.rs
 installation workspaces/worth-query/crates/worth-query-court-query-decl-host/tests/worth_query_court_query_decl_host/host/canonical_graph_progression/mod.rs
+installation workspaces/worth-query/crates/worth-query-court-query-decl-host/tests/worth_query_court_query_decl_host/host/temporal_conditional_operation/retained_query_batch/pre_kernel_cancellation_keeps_its_real_execution_cause/mod.rs
+installation workspaces/worth-query/crates/worth-query-court-query-decl-host/tests/worth_query_court_query_decl_host/host/temporal_conditional_operation/selected_product_reads/mod.rs
+installation workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_query/derived_view/registration/collection/pair/reconstruct_parallel/read_ceiling_tests/query_ceiling.rs
+installation workspaces/worth-query/crates/worth-query-testkit-certification-granular-invalidation/src/certification/granular_invalidation/financial_runtime_world/host/installation.rs
+installation workspaces/worth-query/crates/worth-query-testkit-certification/src/certification/program_example_authority/product_workflow_support/conditional_contribution.rs
+installation workspaces/worth-query/crates/worth-query-testkit-certification/src/certification/runtime_world_branching/cost/live.rs
+installation workspaces/worth-query/crates/worth-query-testkit-certification/src/certification/runtime_world_branching/query_probe.rs
+installation workspaces/worth-query/crates/worth-query-testkit-execution-primary-graph-application-attempt-2/src/domain_computation/primary_graph/tests/application_attempt/invariant_orbits/declared_queries/read/mod.rs
+installation workspaces/worth-query/crates/worth-query-testkit-execution-primary-graph-application-attempt-2/src/domain_computation/primary_graph/tests/application_attempt/invariant_walks/declared_queries/read/mod.rs
+installation workspaces/worth-query/crates/worth-query-testkit-execution-primary-graph-application-attempt-2/src/domain_computation/primary_graph/tests/application_query/mod.rs
 installation workspaces/worth-query/crates/worth-query-testkit-host/src/host/temporal_conditional_operation/contribution_installation/checkpoint.rs
 installation workspaces/worth-query/crates/worth-query-testkit-host/src/host/temporal_conditional_operation/contribution_installation/publication_limit.rs
 installation workspaces/worth-query/crates/worth-query-testkit-host/src/host/temporal_conditional_operation/public_live_route.rs
@@ -118,79 +124,43 @@ installation workspaces/worth-query/crates/worth-query-testkit-host/src/host/tem
 installation workspaces/worth-query/crates/worth-query-testkit-host/src/host/temporal_conditional_operation/public_product_journey/conditional_execution.rs
 installation workspaces/worth-query/crates/worth-query-testkit-host/src/host/temporal_conditional_operation/public_product_journey/conditional_execution/product_readback.rs
 installation workspaces/worth-query/crates/worth-query-testkit-host/src/host/temporal_conditional_operation/retained_query_batch/direct_limits.rs
-installation workspaces/worth-query/crates/worth-query-court-query-decl-host/tests/worth_query_court_query_decl_host/certification/runtime_world_branching/selected_product_reads/mod.rs
-installation workspaces/worth-query/crates/worth-query-court-query-decl-host/tests/worth_query_court_query_decl_host/host/temporal_conditional_operation/selected_product_reads/mod.rs
 installation workspaces/worth-query/crates/worth-query/src/runtime/tests/graph_read_access/graph_read_access_architectural_closeout/application_query_equivalence/support.rs
-installation workspaces/worth-query/crates/worth-query-court-execution-primary-graph-application-query/tests/worth_query_court_execution_primary_graph_application_query/domain_computation/primary_graph/application_query/live/lease/delivery_tests/committed_live_cause_projects_with_bounded_result_buffer_evidenc/mod.rs
-installation workspaces/worth-query/crates/worth-query-court-execution-primary-graph-application-query/tests/worth_query_court_execution_primary_graph_application_query/domain_computation/primary_graph/tests/application_query/derived_view/native_collection/cold_and_incremental/mod.rs
-installation workspaces/worth-query/crates/worth-query-court-execution-primary-graph-application-query/tests/worth_query_court_execution_primary_graph_application_query/domain_computation/primary_graph/tests/application_query/derived_view/optional_owner/optional_owner_removal_and_insertion_refresh_at_the_real_current/mod.rs
-installation workspaces/worth-query/crates/worth-query-court-execution-primary-graph-application-query/tests/worth_query_court_execution_primary_graph_application_query/domain_computation/primary_graph/tests/application_query/disclosure_noninterference/contract_admission/predicate_access/mod.rs
-installation workspaces/worth-query/crates/worth-query-court-execution-primary-graph-application-query/tests/worth_query_court_execution_primary_graph_application_query/domain_computation/primary_graph/tests/application_query/root_guard_basis/root_path_guard_reads_its_pinned_truth_version/mod.rs
-installation workspaces/worth-query/crates/worth-query-court-execution-primary-graph-application-query/tests/worth_query_court_execution_primary_graph_application_query/domain_computation/primary_graph/tests/application_query/root_selection/declared_root_paths_retain_per_row_native_witnesses/mod.rs
-installation workspaces/worth-query/crates/worth-query-court-query-decl-host/tests/worth_query_court_query_decl_host/host/temporal_conditional_operation/retained_query_batch/pre_kernel_cancellation_keeps_its_real_execution_cause/mod.rs
-# Closed pinned-read reconstruction proofs; each constructs its installed fixture query.
-installation workspaces/worth-query/crates/worth-query-court-execution-primary-graph-application-query/tests/worth_query_court_execution_primary_graph_application_query/domain_computation/primary_graph/application_query/derived_view/registration/collection/pair/reconstruct_parallel/read_ceiling_tests/native_concurrency/mod.rs
-installation workspaces/worth-query/crates/worth-query-court-execution-primary-graph-application-query/tests/worth_query_court_execution_primary_graph_application_query/domain_computation/primary_graph/application_query/derived_view/registration/collection/pair/reconstruct_parallel/read_ceiling_tests/pinning_reasons/mod.rs
-installation workspaces/worth-query/crates/worth-query-court-execution-primary-graph-application-query/tests/worth_query_court_execution_primary_graph_application_query/domain_computation/primary_graph/application_query/derived_view/registration/collection/pair/reconstruct_parallel/read_ceiling_tests/pin_custody_tests/mod.rs
-installation workspaces/worth-query/crates/worth-query-court-execution-primary-graph-application-query/tests/worth_query_court_execution_primary_graph_application_query/domain_computation/primary_graph/application_query/derived_view/registration/collection/pair/reconstruct_parallel/read_ceiling_tests/reconstruction_parity/mod.rs
-installation workspaces/worth-query/crates/worth-query-court-execution-primary-graph-application-query/tests/worth_query_court_execution_primary_graph_application_query/domain_computation/primary_graph/tests/application_query/derived_view/branch_reconstruction_parity/mod.rs
-installation workspaces/worth-query/crates/worth-query-court-execution-primary-graph-application-query/tests/worth_query_court_execution_primary_graph_application_query/domain_computation/primary_graph/tests/application_query/derived_view/reconstruction_parity/mod.rs
-installation workspaces/worth-query/crates/worth-query-court-execution-primary-graph-application-query/tests/worth_query_court_execution_primary_graph_application_query/domain_computation/primary_graph/tests/application_query/derived_view/reconstruction_stops/mod.rs
-
-# Slice5b ruling: installed metadata lookup; real principal/scope admission and execution follow.
-installation workspaces/worth-query/crates/worth-query-testkit-execution-primary-graph-application-attempt-2/src/domain_computation/primary_graph/tests/application_attempt/invariant_walks/declared_queries/read/mod.rs
-# Slice5b ruling: installed closure metadata; ordinary/admitted requirements and support matching.
-installation workspaces/worth-query/crates/worth-query-admission/src/application_query/tests/complete_closure.rs
-# Ruled metadata-only lookup for real declared-orbit principal/scope admission and Native reads.
-installation workspaces/worth-query/crates/worth-query-testkit-execution-primary-graph-application-attempt-2/src/domain_computation/primary_graph/tests/application_attempt/invariant_orbits/declared_queries/read/mod.rs
-
-# Ruled cfg(test) bound-versus-unbound original projection capture through real admission.
 native-checkpoint-read-protection workspaces/worth-store/crates/worth-store-relational/src/cold_source/read_protection.rs
-world-home-checkpoint-selection workspaces/worth-store/crates/worth-store-application/src/world_section/checkpoint/selection.rs
-world-home-checkpoint-source workspaces/worth-store/crates/worth-store-application/src/world_section/checkpoint/read.rs
-# Coupled opening consumes one original selected Home payload and its EOF custody.
-native-selected-home-readmission workspaces/worth-store/crates/worth-store-application/src/relational_preparation/unrecovered.rs
-# Exact owner-private selected-source refusal proof uses the existing genuine recipe.
-world-home workspaces/worth-store/crates/worth-store-application/src/tests/world_section/readmission/selected_source.rs
-native-world-readmission workspaces/worth-store/crates/worth-store-application/src/tests/world_section/readmission/selected_source.rs
-# Complete Home original-input persistence: exact source, initialization and replay owners.
-native-fresh-initialization workspaces/worth-store/crates/worth-store-relational/src/section/unshared.rs
-native-durable-initial-installation workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/bootstrap/initial_installation.rs
-native-home-original-source workspaces/worth-store/crates/worth-store-relational/src/section/source_preparation.rs
-native-home-original-source-copy workspaces/worth-store/crates/worth-store-relational/src/section/readmission/prepared_source.rs
-native-source-origin-preparation workspaces/worth-store/crates/worth-store-application/src/open/native_source.rs
-
-# Genuine producer fixture for external source-input courts.
-native-fresh-initialization crates/worth-testkit-relational/src/initial_input_source.rs
-native-durable-initial-installation crates/worth-testkit-relational/src/initial_input_source.rs
-native-home-original-source crates/worth-testkit-relational/src/initial_input_source.rs
-native-fresh-initialization crates/worth-testkit-relational/src/initial_input_source/schema_history.rs
-native-durable-initial-installation crates/worth-testkit-relational/src/initial_input_source/schema_history.rs
-native-fresh-initialization crates/worth-court-relational-certification/tests/worth_court_relational_certification/relational/durable_publication/source_initial_inputs/initial_tail.rs
-native-durable-initial-installation crates/worth-court-relational-certification/tests/worth_court_relational_certification/relational/durable_publication/source_initial_inputs/initial_tail.rs
-native-fresh-home-source crates/worth-court-relational-certification/tests/worth_court_relational_certification/relational/durable_publication/source_initial_inputs/initial_tail.rs
-native-fresh-initialization crates/worth-court-relational-certification/tests/worth_court_relational_certification/relational/durable_publication/source_initial_inputs/publication_fates.rs
-native-durable-initial-installation crates/worth-court-relational-certification/tests/worth_court_relational_certification/relational/durable_publication/source_initial_inputs/publication_fates.rs
-
-# Existing Complete capture door, exact relocated public court/fixture callers.
-native-home-complete-checkpoint crates/worth-testkit-relational/src/initial_input_source.rs
-native-home-complete-checkpoint crates/worth-court-relational-certification/tests/worth_court_relational_certification/relational/durable_publication/source_initial_inputs/initial_tail.rs
-native-fresh-home-source crates/worth-court-relational-certification/tests/worth_court_relational_certification/relational/durable_publication/source_initial_inputs/publication_fates.rs
-native-home-complete-checkpoint crates/worth-court-relational-certification/tests/worth_court_relational_certification/relational/durable_publication/source_initial_inputs/index_decode_stops.rs
-native-home-original-source crates/worth-court-relational-certification/tests/worth_court_relational_certification/relational/durable_publication/source_initial_inputs/index_decode_stops.rs
-native-fresh-initialization crates/worth-court-relational-certification/tests/worth_court_relational_certification/relational/durable_publication/source_initial_inputs/checkpoint_admission/operational.rs
+native-durable-initial-installation crates/worth-court-relational-certification/tests/worth_court_relational_certification/relational/durable_publication/source_initial_inputs/checkpoint_admission/contract_work.rs
 native-durable-initial-installation crates/worth-court-relational-certification/tests/worth_court_relational_certification/relational/durable_publication/source_initial_inputs/checkpoint_admission/operational.rs
-native-home-complete-checkpoint crates/worth-court-relational-certification/tests/worth_court_relational_certification/relational/durable_publication/source_initial_inputs/selected_subject.rs
-native-home-original-source-copy crates/worth-court-relational-certification/tests/worth_court_relational_certification/relational/durable_publication/source_initial_inputs/checkpoint_admission/region_memory.rs
-native-fresh-initialization crates/worth-court-relational-certification/tests/worth_court_relational_certification/relational/durable_publication/source_initial_inputs/checkpoint_admission/required_outputs.rs
 native-durable-initial-installation crates/worth-court-relational-certification/tests/worth_court_relational_certification/relational/durable_publication/source_initial_inputs/checkpoint_admission/required_outputs.rs
-native-home-complete-checkpoint workspaces/worth-store/crates/worth-store-court-application/tests/worth_store_court_application/process/application/native_components/checkpoint.rs
-
-application-home-checkpoint-maintenance workspaces/worth-query/crates/worth-query-host/src/application_home/maintenance.rs
+native-durable-initial-installation crates/worth-court-relational-certification/tests/worth_court_relational_certification/relational/durable_publication/source_initial_inputs/initial_tail.rs
+native-durable-initial-installation crates/worth-court-relational-certification/tests/worth_court_relational_certification/relational/durable_publication/source_initial_inputs/publication_fates.rs
+native-durable-initial-installation crates/worth-testkit-relational/src/initial_input_source.rs
+native-durable-initial-installation crates/worth-testkit-relational/src/initial_input_source/schema_history.rs
+native-durable-initial-installation workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/bootstrap/initial_installation.rs
+native-durable-initial-installation workspaces/worth-store/crates/worth-store-court-application/tests/worth_store_court_application/process/application/no_pending_owners/transition_compilation/fresh_installation.rs
+native-fresh-home-readmission workspaces/worth-store/crates/worth-store-application/src/relational_preparation/unrecovered.rs
+native-fresh-home-readmission workspaces/worth-store/crates/worth-store-application/src/relational_preparation/unrecovered/schema_preparation.rs
+native-fresh-home-source crates/worth-court-relational-certification/tests/worth_court_relational_certification/relational/durable_publication/source_initial_inputs/initial_tail.rs
+native-fresh-home-source crates/worth-court-relational-certification/tests/worth_court_relational_certification/relational/durable_publication/source_initial_inputs/publication_fates.rs
+native-fresh-home-source crates/worth-court-runtime-world/tests/worth_court_runtime_world/runtime_world/court/retention/artifact_source.rs
+native-fresh-home-source workspaces/worth-store/crates/worth-store-relational/src/section/readmission/fresh_source.rs
+native-fresh-initial-installation workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_installation/home_preparation/native.rs
+native-fresh-initialization crates/worth-court-relational-certification/tests/worth_court_relational_certification/relational/durable_publication/source_initial_inputs/checkpoint_admission/contract_work.rs
+native-fresh-initialization crates/worth-court-relational-certification/tests/worth_court_relational_certification/relational/durable_publication/source_initial_inputs/checkpoint_admission/operational.rs
+native-fresh-initialization crates/worth-court-relational-certification/tests/worth_court_relational_certification/relational/durable_publication/source_initial_inputs/checkpoint_admission/required_outputs.rs
+native-fresh-initialization crates/worth-court-relational-certification/tests/worth_court_relational_certification/relational/durable_publication/source_initial_inputs/initial_tail.rs
+native-fresh-initialization crates/worth-court-relational-certification/tests/worth_court_relational_certification/relational/durable_publication/source_initial_inputs/publication_fates.rs
+native-fresh-initialization crates/worth-testkit-relational/src/initial_input_source.rs
+native-fresh-initialization crates/worth-testkit-relational/src/initial_input_source/schema_history.rs
+native-fresh-initialization workspaces/worth-store/crates/worth-store-relational/src/section/unshared.rs
+native-fresh-source-affinity crates/worth-runtime-world/src/lifecycle/builder/home_readmission/fresh_source.rs
+native-home-attachment workspaces/worth-store/crates/worth-store-application/src/relational_preparation/attachment.rs
 native-home-complete-checkpoint crates/worth-court-relational-certification/tests/worth_court_relational_certification/relational/durable_publication/source_initial_inputs/checkpoint_admission/capture_cost.rs
 native-home-complete-checkpoint crates/worth-court-relational-certification/tests/worth_court_relational_certification/relational/durable_publication/merge_descriptive_touches.rs
-native-fresh-initialization crates/worth-court-relational-certification/tests/worth_court_relational_certification/relational/durable_publication/source_initial_inputs/checkpoint_admission/contract_work.rs
-native-durable-initial-installation crates/worth-court-relational-certification/tests/worth_court_relational_certification/relational/durable_publication/source_initial_inputs/checkpoint_admission/contract_work.rs
+native-home-complete-checkpoint crates/worth-court-relational-certification/tests/worth_court_relational_certification/relational/durable_publication/source_initial_inputs/index_decode_stops.rs
+native-home-complete-checkpoint crates/worth-court-relational-certification/tests/worth_court_relational_certification/relational/durable_publication/source_initial_inputs/initial_tail.rs
+native-home-complete-checkpoint crates/worth-court-relational-certification/tests/worth_court_relational_certification/relational/durable_publication/source_initial_inputs/selected_subject.rs
+native-home-complete-checkpoint crates/worth-testkit-relational/src/initial_input_source.rs
+native-home-complete-checkpoint workspaces/worth-store/crates/worth-store-court-application/tests/worth_store_court_application/process/application/native_components/checkpoint.rs
+native-home-complete-checkpoint workspaces/worth-store/crates/worth-store-relational/src/section/checkpoint.rs
+native-home-composition workspaces/worth-store/crates/worth-store-application/src/world_section/attachment.rs
 native-home-original-source crates/worth-court-relational-certification/tests/worth_court_relational_certification/relational/durable_publication/source_initial_inputs/checkpoint_admission/cold_materialization/selected_image.rs
 installation workspaces/worth-query/crates/worth-query-court-execution-primary-graph-application-query/tests/worth_query_court_execution_primary_graph_application_query/domain_computation/primary_graph/application_query/projection/retained_projection/tests/reads/mod.rs
 native-home-complete-checkpoint crates/worth-court-relational-certification/tests/worth_court_relational_certification/relational/durable_publication/checkpoint_birth_refusal.rs
@@ -201,3 +171,79 @@ native-fresh-initialization crates/worth-court-relational-certification/tests/wo
 native-durable-initial-installation crates/worth-court-relational-certification/tests/worth_court_relational_certification/relational/durable_publication/source_initial_inputs/fresh_schema.rs
 native-fresh-initial-installation crates/worth-court-relational-certification/tests/worth_court_relational_certification/relational/durable_publication/source_initial_inputs/fresh_schema.rs
 native-fresh-source-affinity crates/worth-court-relational-certification/tests/worth_court_relational_certification/relational/durable_publication/source_initial_inputs/fresh_schema.rs
+native-home-original-source crates/worth-court-relational-certification/tests/worth_court_relational_certification/relational/durable_publication/source_initial_inputs/index_decode_stops.rs
+native-home-original-source crates/worth-testkit-relational/src/initial_input_source.rs
+native-home-original-source workspaces/worth-store/crates/worth-store-relational/src/section/source_preparation.rs
+native-home-original-source-copy crates/worth-court-relational-certification/tests/worth_court_relational_certification/relational/durable_publication/source_initial_inputs/checkpoint_admission/region_memory.rs
+native-home-original-source-copy workspaces/worth-store/crates/worth-store-relational/src/section/readmission/prepared_source.rs
+native-home-original-source-copy workspaces/worth-store/crates/worth-store-relational/src/section/unshared/source_schema.rs
+native-home-query-finalization workspaces/worth-store/crates/worth-store-application/src/relational_preparation/unshared.rs
+native-home-query-preparation workspaces/worth-query/crates/worth-query-host/src/application_home/opening/existing.rs
+native-home-query-preparation workspaces/worth-query/crates/worth-query-host/src/application_home/opening/fresh.rs
+native-home-query-preparation workspaces/worth-query/crates/worth-query-host/src/application_home/opening/initialization.rs
+native-home-query-preparation workspaces/worth-query/crates/worth-query-host/src/application_home/opening/preparation.rs
+native-home-query-preparation workspaces/worth-query/crates/worth-query-host/src/application_home/transition/planning.rs
+native-home-query-preparation workspaces/worth-query/crates/worth-query-host/src/application_home/transition/source_attachment.rs
+native-home-query-preparation workspaces/worth-store/crates/worth-store-court-application/tests/worth_store_court_application/process/application/no_pending_owners/transition_compilation/fresh_installation.rs
+native-home-query-preparation workspaces/worth-store/crates/worth-store-court-application/tests/worth_store_court_application/process/application/no_pending_owners/transition_identity_space.rs
+native-home-query-preparation workspaces/worth-store/crates/worth-store-court-application/tests/worth_store_court_application/process/application/query_readmission/bootstrap_publication.rs
+native-home-query-preparation workspaces/worth-store/crates/worth-store-court-application/tests/worth_store_court_application/process/application/query_readmission/native_artifacts.rs
+native-home-query-preparation workspaces/worth-store/crates/worth-store-court-application/tests/worth_store_court_application/process/application/query_readmission/native_artifacts/native_preparation.rs
+native-home-schema-installation workspaces/worth-store/crates/worth-store-application/src/relational_preparation/unrecovered.rs
+native-home-schema-installation workspaces/worth-store/crates/worth-store-application/src/relational_preparation/unrecovered/schema_preparation.rs
+native-home-source-finalization workspaces/worth-store/crates/worth-store-application/src/relational_preparation/unshared.rs
+native-recovered-inventory crates/worth-court-relational-certification/tests/worth_court_relational_certification/relational/durable_publication/recovered_associated_effects.rs
+native-recovered-inventory crates/worth-runtime-world/src/lifecycle/builder/home_readmission/associated_effects.rs
+native-selected-home-readmission workspaces/worth-store/crates/worth-store-application/src/relational_preparation/unrecovered.rs
+native-source-origin-preparation workspaces/worth-store/crates/worth-store-application/src/open/native_source.rs
+native-world-fresh-source workspaces/worth-store/crates/worth-store-application/src/tests/world_section/readmission.rs
+native-world-fresh-source workspaces/worth-store/crates/worth-store-application/src/world_section/readmission.rs
+native-world-fresh-source workspaces/worth-store/crates/worth-store-application/src/world_section/readmission/transition.rs
+native-world-readmission workspaces/worth-store/crates/worth-store-application/src/tests/world_section/readmission.rs
+native-world-readmission workspaces/worth-store/crates/worth-store-application/src/tests/world_section/readmission/selected_source.rs
+native-world-readmission workspaces/worth-store/crates/worth-store-application/src/world_section/readmission.rs
+native-world-readmission workspaces/worth-store/crates/worth-store-application/src/world_section/readmission/transition.rs
+native-world-readmission workspaces/worth-store/crates/worth-store-court-application/tests/worth_store_court_application/process/application/no_pending_owners/transition_catalog_readmission.rs
+query-home-preparation workspaces/worth-query/crates/worth-query-host/src/application_home/opening/existing.rs
+query-home-preparation workspaces/worth-query/crates/worth-query-host/src/application_home/opening/fresh.rs
+query-home-preparation workspaces/worth-query/crates/worth-query-host/src/application_home/opening/preparation.rs
+query-home-preparation workspaces/worth-query/crates/worth-query-host/src/application_home/transition/opening.rs
+query-home-preparation workspaces/worth-query/crates/worth-query-host/src/application_home/transition/preparation.rs
+query-home-preparation workspaces/worth-query/crates/worth-query-host/src/application_home/transition/source_attachment.rs
+query-home-preparation workspaces/worth-store/crates/worth-store-court-application/tests/worth_store_court_application/process/application/query_readmission/bootstrap_publication.rs
+query-home-preparation workspaces/worth-store/crates/worth-store-court-application/tests/worth_store_court_application/process/application/query_readmission/native_artifacts.rs
+query-home-preparation workspaces/worth-store/crates/worth-store-court-application/tests/worth_store_court_application/process/application/query_readmission/native_artifacts/native_preparation.rs
+query-home-preparation workspaces/worth-store/crates/worth-store-court-application/tests/worth_store_court_application/process/application/query_readmission/native_artifacts/successor_compilation.rs
+query-home-retirement workspaces/worth-query/crates/worth-query-host/src/application_home/close/retirement.rs
+query-registered-native workspaces/worth-query/crates/worth-query-execution/src/domain_computation/execution_runtime/product_world/source_owner/attachment.rs
+query-world-commit-preparation workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/provider/application_attempt_state/commit_preparation/relational_commit/commit_execution.rs
+query-world-commit-preparation workspaces/worth-query/crates/worth-query-host/src/application_home/transition/publication.rs
+query-world-commit-preparation workspaces/worth-store/crates/worth-store-court-application/tests/worth_store_court_application/process/application/no_pending_owners/transition_indexes/promotion.rs
+query-world-commit-preparation workspaces/worth-store/crates/worth-store-court-application/tests/worth_store_court_application/process/application/no_pending_owners/transition_indexes/publication.rs
+query-world-commit-preparation workspaces/worth-store/crates/worth-store-court-application/tests/worth_store_court_application/process/application/no_pending_owners/transition_native_effect/native_original.rs
+world-fresh-home crates/worth-court-runtime-world/tests/worth_court_runtime_world/runtime_world/court/retention/artifact_source.rs
+world-fresh-home workspaces/worth-store/crates/worth-store-application/src/tests/world_section/readmission.rs
+world-fresh-home workspaces/worth-store/crates/worth-store-application/src/world_section/readmission.rs
+world-home crates/worth-court-runtime-world/tests/worth_court_runtime_world/runtime_world/court/retention/artifact_source.rs
+world-home workspaces/worth-store/crates/worth-store-application/src/tests/world_section/readmission.rs
+world-home workspaces/worth-store/crates/worth-store-application/src/tests/world_section/readmission/selected_source.rs
+world-home workspaces/worth-store/crates/worth-store-application/src/world_section/readmission.rs
+world-home-checkpoint-selection workspaces/worth-store/crates/worth-store-application/src/world_section/checkpoint/selection.rs
+world-home-checkpoint-source crates/worth-court-runtime-world/tests/worth_court_runtime_world/runtime_world/court/retention/artifact_source/journal.rs
+world-home-checkpoint-source workspaces/worth-store/crates/worth-store-application/src/world_section/checkpoint/read.rs
+
+# H6: actual Query owner admission and retained refused-opening custody.
+query-obligation-prefix workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/program_occurrence/support_lifecycle/journal_readmission.rs
+query-obligation-publication workspaces/worth-store/crates/worth-store-application/src/query_obligations/mod.rs
+query-home-obligations workspaces/worth-query/crates/worth-query-host/src/application_home/opening/custody.rs
+query-home-obligations workspaces/worth-query/crates/worth-query-host/src/application_home/opening/service.rs
+query-home-obligations workspaces/worth-store/crates/worth-store-court-application/tests/worth_store_court_application/process/application/no_pending_owners/query_publication.rs
+query-home-obligations workspaces/worth-store/crates/worth-store-court-application/tests/worth_store_court_application/process/application/query_original_membership.rs
+# H8: the Home dispatch journal. Store alone issues publication fates, Query alone admits a
+# decoded prefix, Host is the Home seam. Every line below cites the coordinator boundary
+# ruling 2026-11-09 (H8 dispatch doors); no court mints a fate or a prefix.
+query-dispatch-prefix workspaces/worth-query/crates/worth-query-execution/src/domain_computation/application_aftermath/dispatch_journal/custody.rs
+query-dispatch-publication workspaces/worth-store/crates/worth-store-application/src/query_dispatch/operation.rs
+query-home-dispatch workspaces/worth-query/crates/worth-query-host/src/application_home/opening/custody.rs
+query-home-dispatch workspaces/worth-query/crates/worth-query-host/src/application_home/opening/service.rs
+query-home-dispatch workspaces/worth-store/crates/worth-store-court-application/tests/worth_store_court_application/process/application/no_pending_owners/dispatch_journal.rs

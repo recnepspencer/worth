@@ -50,6 +50,19 @@ fn native_merge_touches_only_changed_revision_and_both_index_membership_keys() {
             branch_scoped: true,
         })
         .expect("index fixture has identity capacity");
+    let (_, basis) = runtime
+        .observe_branch(&runtime.main_branch_identity())
+        .unwrap();
+    let built = runtime.index_authority().build_for_basis(
+        execution,
+        DerivedIndexBuildRequest {
+            source_commit_id: basis.observation().commit_id().unwrap(),
+            branch_id: BranchId("main".into()),
+            index_ids: vec![index.index_id],
+        },
+        &basis,
+    );
+    assert!(built.failed_indexes.is_empty());
     fork(execution, &runtime, "feature");
     let mut source = transaction(&runtime, &BranchId("feature".to_string()));
     source

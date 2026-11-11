@@ -5,7 +5,7 @@ use super::{
 };
 use worth_query_decl::facade::{
     application_query::{
-        ApplicationQueryBasisSupport, ApplicationQueryCardinality, ApplicationQueryDefinition,
+        ApplicationQueryBasisSupport, ApplicationQueryCardinality,
         ApplicationQueryDefinitionBuilder, ApplicationQueryDisclosureContract,
         ApplicationQueryInspectionDefinition, ApplicationQueryLaneEligibility,
         ApplicationQueryParameterSet, ApplicationQueryResultFieldRef,
@@ -40,24 +40,18 @@ worth_query_application_query!(
     name "host_inspection_account_query"
 );
 
-pub(super) fn number_result<Q>() -> ApplicationQueryResultFieldRef<
-    Q,
-    NumberSlot,
-    HostIdentitySchema,
-    Account,
-    AccountIdentity,
-    AccountNumber,
-    String,
-    ReadOnly,
-    EqualityPredicate,
-    NoApplicationUnit,
-> {
-    ApplicationQueryResultFieldRef::new("number", AccountNumber::reference())
+pub(super) fn number_result<Q>(
+) -> ApplicationQueryResultFieldRef<Q, NumberSlot, HostIdentitySchema, AccountNumber> {
+    ApplicationQueryResultFieldRef::new("number", AccountNumber::at("AccountNumber"))
 }
 
-pub(super) fn definition(
-) -> ApplicationQueryDefinition<HostIdentitySchema, AccountQuery, AccountParameters, String, Account>
-{
+pub(super) fn definition() -> ApplicationQueryDefinitionBuilder<
+    HostIdentitySchema,
+    AccountQuery,
+    AccountParameters,
+    String,
+    Account,
+> {
     let shape = ApplicationQueryResultShapeBuilder::<
         HostIdentitySchema,
         AccountQuery,
@@ -76,8 +70,6 @@ pub(super) fn definition(
         .basis_support(ApplicationQueryBasisSupport::current_and_pinned())
         .lanes(ApplicationQueryLaneEligibility::one_shot())
         .public()
-        .build()
-        .unwrap()
 }
 
 impl WorthQueryApplicationProjection<HostIdentitySchema, AccountQuery> for String {
@@ -107,8 +99,8 @@ worth_query_query_binding!(
     result AccountResultBinding,
     principal IdentityBinding, mapping ExternalMapping, principal_entity Principal,
         principal_identity u64, identity_binding worth_query_decl::facade::application_schema::U64ApplicationValueBinding,
-    scope Account, AccountIdentity, AccountNumber, String, ReadOnly, NoApplicationUnit,
-    field AccountNumber::reference(),
+    scope AccountNumber,
+    field AccountNumber::at("AccountNumber"),
     value AccountRead::into_number,
     limits results 1
 );

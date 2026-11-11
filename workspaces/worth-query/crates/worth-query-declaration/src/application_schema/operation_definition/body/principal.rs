@@ -6,8 +6,7 @@ use super::{
 use crate::{
     application_operation::ApplicationMutationBinding,
     application_schema::{
-        ApplicationFieldBindingLocus, ApplicationFieldRef, ApplicationScalarValueBinding,
-        ApplicationSchema, DeclaredApplicationFieldValue, NoApplicationUnit, OperationWrites,
+        ApplicationFieldBindingLocus, ApplicationScalarValueBinding, ApplicationSchema,
     },
 };
 
@@ -16,71 +15,37 @@ impl<Schema: ApplicationSchema, Operation, Input, Entity>
 {
     /// Copies the exact principal identity field from the admitted observation.
     /// Its codec/value must be the mutation binding's actual identity codec/value.
-    /// A binding with another identity value cannot target a `u64` actor field:
-    ///
+    /// The selected field and the binding must have the same identity value and codec.
     /// ```compile_fail
     /// use worth_query_declaration::facade::{application_operation::ApplicationMutationBinding,
-    ///     application_schema::*};
-    /// fn wrong_identity<S: ApplicationSchema, O, I, E, A, F, B>(
-    ///     creation: ApplicationOperationBodyCreationBuilder<S, O, I, E>,
-    ///     actor: ApplicationFieldRef<S, E, A, F, u64, ReadOnly, EqualityPredicate, NoApplicationUnit>,
+    ///     application_schema::{*, fragment::RecordSelection}};
+    /// fn wrong_identity<S: ApplicationSchema, O, I, E, F, B>(
+    ///     creation: ApplicationOperationBodyCreationBuilder<S, O, I, E>, actor: F,
     /// ) where B: ApplicationMutationBinding<S, Operation=O, Input=I, PrincipalIdentity=String>,
-    ///     F: OperationWrites<O> + DeclaredApplicationFieldValue<Value=u64>,
-    /// {
-    ///     let _ = creation.initialize_from_principal_identity::<B, _, _, _, _, _>(actor);
-    /// }
+    ///     F: RecordSelection<Entity=E, Value=u64>,
+    /// { let _ = creation.initialize_from_principal_identity::<B>(actor); }
     /// ```
-    /// Nor can a binding for another operation supply the actor source:
-    ///
-    /// ```compile_fail
-    /// use worth_query_declaration::facade::{application_operation::ApplicationMutationBinding,
-    ///     application_schema::*};
-    /// fn wrong_operation<S: ApplicationSchema, O, Other, I, E, A, F, B>(
-    ///     creation: ApplicationOperationBodyCreationBuilder<S, O, I, E>,
-    ///     actor: ApplicationFieldRef<S, E, A, F, u64, ReadOnly, EqualityPredicate, NoApplicationUnit>,
-    /// ) where B: ApplicationMutationBinding<S, Operation=Other, Input=I,
-    ///         PrincipalIdentity=u64, PrincipalIdentityBinding=F::Binding>,
-    ///     F: OperationWrites<O> + DeclaredApplicationFieldValue<Value=u64>,
-    /// {
-    ///     let _ = creation.initialize_from_principal_identity::<B, _, _, _, _, _>(actor);
-    /// }
-    /// ```
-    pub fn initialize_from_principal_identity<Binding, Aspect, Field, Value, Write, Equality>(
+    pub fn initialize_from_principal_identity<Binding>(
         mut self,
-        field: ApplicationFieldRef<
-            Schema,
-            Entity,
-            Aspect,
-            Field,
-            Value,
-            Write,
-            Equality,
-            NoApplicationUnit,
+        field: impl crate::application_schema::fragment::RecordSelection<
+            Entity = Entity,
+            Value = Binding::PrincipalIdentity,
+            Binding = Binding::PrincipalIdentityBinding,
         >,
     ) -> Result<Self, Denial>
     where
-        Binding: ApplicationMutationBinding<
-            Schema,
-            Operation = Operation,
-            Input = Input,
-            PrincipalIdentity = Value,
-            PrincipalIdentityBinding = Field::Binding,
-        >,
-        Field: OperationWrites<Operation> + DeclaredApplicationFieldValue<Value = Value>,
+        Binding: ApplicationMutationBinding<Schema, Operation = Operation, Input = Input>,
     {
+        let field = super::record_authoring::resolve(field)?;
         let principal = Binding::principal_binding();
-        if Field::Binding::UNIT.is_some() {
+        if Binding::PrincipalIdentityBinding::UNIT.is_some() {
             return Err(Denial::IncompatibleSourceBinding);
         }
         self.fields
             .push(ApplicationOperationBodyCreatedField::PrincipalIdentity {
-                field: ApplicationFieldBindingLocus::new(
-                    field.entity(),
-                    field.aspect(),
-                    field.field(),
-                ),
-                binding: Field::Binding::IDENTITY,
-                scalar_family: Field::Binding::SCALAR_FAMILY,
+                field: field.locus().clone(),
+                binding: Binding::PrincipalIdentityBinding::IDENTITY,
+                scalar_family: Binding::PrincipalIdentityBinding::SCALAR_FAMILY,
                 mutation_binding: Binding::IDENTITY.to_owned(),
                 principal_binding: principal.name().to_owned(),
                 source: ApplicationFieldBindingLocus::new(

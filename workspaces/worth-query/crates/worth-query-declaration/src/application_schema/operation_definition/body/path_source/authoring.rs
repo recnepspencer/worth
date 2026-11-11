@@ -3,58 +3,44 @@ use super::ApplicationOperationBodyPathFieldSource as Source;
 use crate::{
     application_query::ApplicationQueryRootPath,
     application_schema::{
-        ApplicationFieldBindingLocus, ApplicationFieldRef, ApplicationFieldUnit,
-        ApplicationOperationBodyAuthoringDenial as Denial,
+        fragment::RecordSelection, ApplicationOperationBodyAuthoringDenial as Denial,
         ApplicationOperationBodyCaptureRole as Role, ApplicationOperationBodyCreatedField as Field,
-        ApplicationOperationBodyCreationBuilder, ApplicationScalarValueBinding,
-        DeclaredApplicationFieldValue, OperationReads, OperationWrites,
+        ApplicationOperationBodyCreationBuilder, OperationReads,
     },
 };
 impl<S, O, I, E> ApplicationOperationBodyCreationBuilder<S, O, I, E> {
-    /// Capture at an exact native path, including the identity path for scope
-    /// facts. Optional targets preserve absence; required targets require a value.
-    pub fn capture_from_path<Root, Selected, SA, SF, SW, SQ, TA, TF, TW, TQ, V, U>(
+    /// Capture at an exact native path, preserving optional absence.
+    pub fn capture_from_path<Root, Selected, SourceField, Target>(
         mut self,
         path: ApplicationQueryRootPath<S, Root, Selected>,
-        source: ApplicationFieldRef<S, Selected, SA, SF, V, SW, SQ, U>,
-        target: ApplicationFieldRef<S, E, TA, TF, V, TW, TQ, U>,
+        source: SourceField,
+        target: Target,
         role: Role,
     ) -> Result<Self, Denial>
     where
         Root: OperationReads<O>,
         Selected: OperationReads<O>,
-        SF: OperationReads<O> + DeclaredApplicationFieldValue<Value = V>,
-        TF: OperationWrites<O> + DeclaredApplicationFieldValue<Value = V>,
-        U: ApplicationFieldUnit,
+        SourceField: RecordSelection<Entity = Selected>,
+        Target:
+            RecordSelection<Entity = E, Value = SourceField::Value, Binding = SourceField::Binding>,
     {
-        if SF::Binding::IDENTITY != TF::Binding::IDENTITY
-            || SF::Binding::SCALAR_FAMILY != TF::Binding::SCALAR_FAMILY
-        {
-            return Err(Denial::IncompatibleSourceBinding);
-        }
+        let source_field = super::super::record_authoring::resolve(source)?;
+        let target = super::super::record_authoring::resolve(target)?;
         let source = Source {
             path: path.into_meaning(),
-            field: ApplicationFieldBindingLocus::new(
-                source.entity(),
-                source.aspect(),
-                source.field(),
-            ),
-            presence: SF::PRESENCE,
+            field: source_field.locus().clone(),
+            presence: source_field.presence(),
         };
         if !source.has_supported_shape() {
             return Err(Denial::IncompatibleSourceBinding);
         }
         self.fields.push(Field::CapturedPathField {
-            field: ApplicationFieldBindingLocus::new(
-                target.entity(),
-                target.aspect(),
-                target.field(),
-            ),
-            binding: TF::Binding::IDENTITY,
-            scalar_family: TF::Binding::SCALAR_FAMILY,
+            field: target.locus().clone(),
+            binding: target.recipe().binding_identity().clone(),
+            scalar_family: target.recipe().scalar_family(),
             source,
             role,
-            target_presence: TF::PRESENCE,
+            target_presence: target.presence(),
         });
         Ok(self)
     }

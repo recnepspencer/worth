@@ -44,7 +44,7 @@ pub fn ordinary_field_allocation(
                         // completion or retained read-set capture. This is not a peak-byte proof.
                         let region = stats_alloc::Region::new(&stats_alloc::INSTRUMENTED_SYSTEM);
                         let actual = reader
-                            .decision_field(scope, AccountLabel::reference())
+                            .decision_field(scope, AccountLabel::at("AccountLabel"))
                             .unwrap()
                             .unwrap();
                         allocated = region.change().bytes_allocated;

@@ -8,6 +8,9 @@ use worth_foundational::facade::{
 };
 use worth_query_installation::facade::WorthQueryCanonicalWorkEvidence;
 
+mod temporal_definition;
+pub(super) use temporal_definition::prepare_temporal_node_definition;
+
 const IDENTITY_BUDGET: CanonicalDigestWorkBudget =
     match CanonicalDigestWorkBudget::new(16, 64 * 1024) {
         Some(budget) => budget,
@@ -17,6 +20,7 @@ const IDENTITY_BUDGET: CanonicalDigestWorkBudget =
 #[derive(Clone)]
 pub(super) struct WorthQueryTemporalBindingIdentity {
     digest: CanonicalDigestId,
+    definition: CanonicalDigestId,
     support_identity: Arc<str>,
     canonical_work: WorthQueryCanonicalWorkEvidence,
 }
@@ -24,12 +28,14 @@ pub(super) struct WorthQueryTemporalBindingIdentity {
 #[derive(Clone)]
 pub(super) struct WorthQueryTemporalRuntimeBindingIdentity {
     digest: CanonicalDigestId,
+    definition: CanonicalDigestId,
     bridge_identity: Arc<str>,
     canonical_work: WorthQueryCanonicalWorkEvidence,
 }
 
 pub(super) struct TemporalBindingIdentityParts<'a> {
     pub node_authority: &'a str,
+    pub node_definition: (CanonicalDigestId, WorthQueryCanonicalWorkEvidence),
     pub clock: &'a str,
     pub source: &'a str,
     pub timeline: &'a str,
@@ -63,6 +69,9 @@ impl WorthQueryTemporalBindingIdentity {
 }
 
 impl WorthQueryTemporalRuntimeBindingIdentity {
+    pub(super) fn definition(&self) -> CanonicalDigestId {
+        self.definition
+    }
     pub(super) fn digest(&self) -> CanonicalDigestId {
         self.digest
     }
@@ -84,6 +93,30 @@ pub(super) fn prepare_temporal_binding_identity(
         "worth-query-temporal-conditional-binding-v1",
     );
     material.text("node-authority", parts.node_authority);
+    append_temporal_meaning(&mut material, &parts);
+    let (digest, work) = material.derive()?;
+    let mut stable = CanonicalIdentityMaterial::new(
+        "worth-query.temporal-operation-definition",
+        "worth-query-temporal-operation-definition-v1",
+    );
+    stable.digest("node-definition", parts.node_definition.0);
+    append_temporal_meaning(&mut stable, &parts);
+    let (definition, stable_work) = stable.derive()?;
+    Ok(WorthQueryTemporalBindingIdentity {
+        support_identity: Arc::from(format!("conditional:{}", digest.render_hex())),
+        digest,
+        canonical_work: work
+            .combine(stable_work)
+            .combine(parts.node_definition.1)
+            .with_digest_text_materializations(1),
+        definition,
+    })
+}
+
+fn append_temporal_meaning(
+    material: &mut CanonicalIdentityMaterial,
+    parts: &TemporalBindingIdentityParts<'_>,
+) {
     material.text("clock", parts.clock);
     material.text("source", parts.source);
     material.text("timeline", parts.timeline);
@@ -91,12 +124,6 @@ pub(super) fn prepare_temporal_binding_identity(
     material.text("projector", parts.projector);
     material.text("principal-source", parts.principal_source);
     material.text("invoker", parts.invoker);
-    let (digest, work) = material.derive()?;
-    Ok(WorthQueryTemporalBindingIdentity {
-        support_identity: Arc::from(format!("conditional:{}", digest.render_hex())),
-        digest,
-        canonical_work: work.with_digest_text_materializations(1),
-    })
 }
 
 pub(super) fn prepare_temporal_runtime_binding_identity(
@@ -114,6 +141,7 @@ pub(super) fn prepare_temporal_runtime_binding_identity(
     material.text("branch", parts.branch);
     let (digest, work) = material.derive()?;
     Ok(WorthQueryTemporalRuntimeBindingIdentity {
+        definition: parts.binding.definition,
         bridge_identity: Arc::from(format!("conditional-runtime:{}", digest.render_hex())),
         digest,
         canonical_work: work.with_digest_text_materializations(1),

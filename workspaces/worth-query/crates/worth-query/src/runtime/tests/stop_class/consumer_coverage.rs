@@ -99,17 +99,21 @@ fn consumer_router_handles_manually_constructed_stop_classes_without_string_matc
             ),
         ),
         (
-            WorthQueryRuntimeError::GraphCompositionDenied(WorthQueryGraphCompositionDenial::new(
-                WorthQueryGraphCompositionDenialKind::DuplicateSymbolDeclaration,
-                Some("task_symbol".to_string()),
-                Some(
-                    crate::runtime::WorthQueryMutationTargetCollectionIdentity::new(
-                        "graph-composition-test",
-                        "Task",
+            WorthQueryRuntimeError::GraphCompositionDenied(
+                WorthQueryGraphCompositionDenial::new(
+                    WorthQueryGraphCompositionDenialKind::DuplicateSymbolDeclaration,
+                    Some("task_symbol".to_string()),
+                    Some(
+                        crate::runtime::WorthQueryMutationTargetCollectionIdentity::new(
+                            "graph-composition-test",
+                            "Task",
+                        )
+                        .expect("fixture digest must fit"),
                     ),
-                ),
-                "duplicate symbol",
-            )),
+                    "duplicate symbol",
+                )
+                .expect("fixture digest must fit"),
+            ),
             ConsumerStopRoute::GraphCompositionDenied(
                 WorthQueryGraphCompositionDenialKind::DuplicateSymbolDeclaration,
             ),
@@ -175,7 +179,8 @@ fn consumer_router_handles_manually_constructed_stop_classes_without_string_matc
             WorthQueryRuntimeError::SharedReadStaleBasis {
                 snapshot_identity: crate::memory_workspace::admit_external_snapshot_label(
                     "shared-read-stale",
-                ),
+                )
+                .expect("fixture digest must fit"),
             },
             ConsumerStopRoute::SharedReadStaleBasis,
         ),

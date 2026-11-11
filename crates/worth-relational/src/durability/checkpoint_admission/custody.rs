@@ -78,6 +78,35 @@ impl CheckpointAdmissionOwner {
             },
         ))
     }
+    pub(crate) fn read_existing_commit(
+        directory: &Arc<RelationalCheckpointDirectory>,
+        entry: &RelationalCommitIndexEntry,
+        request: &ExecutionRequest<'_, '_>,
+    ) -> Result<Option<CheckpointAdmittedCommit>, Refusal> {
+        let owner = directory
+            .admission_owner
+            .get()
+            .and_then(Weak::upgrade)
+            .ok_or(Refusal::OwnerUnavailable)?;
+        if !owner
+            .directory
+            .upgrade()
+            .is_some_and(|actual| Arc::ptr_eq(&actual, directory))
+        {
+            return Err(Refusal::OwnerUnavailable);
+        }
+        let count = owner.rows.get().ok_or(Refusal::OwnerUnavailable)?.len();
+        let levels = u64::from(usize::BITS - count.leading_zeros()) + 1;
+        let bytes = crate::history::RetainedCanonicalIndex::allocation_bytes(&entry.commit)
+            .ok_or(Refusal::CapacityOverflow)?;
+        let units = levels
+            .checked_mul(22)
+            .and_then(|n| n.checked_add(bytes))
+            .ok_or(Refusal::CapacityOverflow)?;
+        crate::durability::artifact_payload_emission::request::account_work(request, units)
+            .map_err(super::native_stop)?;
+        owner.commit(entry, directory.manifest.covered_position)
+    }
     pub(super) fn owns(&self, origin: &Weak<AdmissionCustody>) -> bool {
         origin
             .upgrade()
@@ -117,19 +146,17 @@ impl CheckpointAdmissionBinding {
         entry: &RelationalCommitIndexEntry,
     ) -> Result<Option<CheckpointAdmittedCommit>, Refusal> {
         let directory = self.directory.snapshot().ok_or(Refusal::OwnerUnavailable)?;
-        let row = self
-            .owner
-            .0
-            .rows
+        if !directory
+            .admission_owner
             .get()
-            .ok_or(Refusal::OwnerUnavailable)?
-            .get(&entry.commit.commit_id);
-        match row {
-            Some(row) if row.index() == entry => Ok(Some(row.clone())),
-            Some(_) => Err(Refusal::InvalidProjectedMeaning),
-            None if entry.position > directory.manifest.covered_position => Ok(None),
-            None => Err(Refusal::InvalidProjectedMeaning),
+            .and_then(Weak::upgrade)
+            .is_some_and(|actual| Arc::ptr_eq(&actual, &self.owner.0))
+        {
+            return Err(Refusal::OwnerUnavailable);
         }
+        self.owner
+            .0
+            .commit(entry, directory.manifest.covered_position)
     }
     pub(crate) fn matches_source(
         &self,
@@ -161,5 +188,25 @@ impl CheckpointAdmissionBinding {
         handoff: &mut Option<NativeDirectoryRetirementHandoff>,
     ) -> Result<bool, Ack> {
         self.directory.return_handoff(handoff)
+    }
+}
+
+impl AdmissionCustody {
+    fn commit(
+        &self,
+        entry: &RelationalCommitIndexEntry,
+        covered: crate::publication::patch::data::PatchStreamPosition,
+    ) -> Result<Option<CheckpointAdmittedCommit>, Refusal> {
+        let row = self
+            .rows
+            .get()
+            .ok_or(Refusal::OwnerUnavailable)?
+            .get(&entry.commit.commit_id);
+        match row {
+            Some(row) if row.index() == entry => Ok(Some(row.clone())),
+            Some(_) => Err(Refusal::InvalidProjectedMeaning),
+            None if entry.position > covered => Ok(None),
+            None => Err(Refusal::InvalidProjectedMeaning),
+        }
     }
 }

@@ -28,6 +28,24 @@ impl DurableArtifactRetention for HomeProgramTransitionIntent {
     const RETENTION_CLASS: RetentionClass = RetentionClass::Authoritative;
 }
 impl HomeProgramTransitionIntent {
+    pub(crate) fn program_steps(
+        &self,
+    ) -> impl ExactSizeIterator<Item = HomeProgramTransitionProgramStep> + '_ {
+        self.assignments()
+            .iter()
+            .enumerate()
+            .map(|(index, original)| {
+                HomeProgramTransitionProgramStep::from_recorded(
+                    original.clone(),
+                    self.predecessor().selected().revision(),
+                    if index <= self.plan().target_meaning().step() as usize {
+                        self.predecessor().selected().revision()
+                    } else {
+                        self.successor().selected().revision()
+                    },
+                )
+            })
+    }
     pub fn plan(&self) -> &HomeProgramTransitionPlanDescription {
         &self.plan
     }
@@ -81,6 +99,7 @@ pub enum ApplicationHomeTransitionIntentDenial {
     StepAlreadyClaimed,
     TransitionResumeRequired,
     ForeignWorld,
+    WorldLineage(worth_runtime_world::facade::WorldReadmissionDenial),
     JournalUnresolved,
     JournalSourceChanged,
 }

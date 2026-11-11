@@ -2,7 +2,8 @@ pub(crate) use worth_query_bank_testkit_domain::facade::domain_contracts::create
 
 #[test]
 fn personal_account_creation_binding_declares_its_complete_fixed_shape() {
-    let declaration = BankSchema::declaration().expect("bank schema should declare");
+    let declaration = worth_query_decl::facade::application_schema::fragment::declare(BankSchema)
+        .expect("bank schema should declare");
     let descriptor = declaration
         .member_provenance()
         .mutation_bindings()

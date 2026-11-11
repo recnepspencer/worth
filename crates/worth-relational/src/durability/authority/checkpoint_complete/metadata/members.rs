@@ -23,6 +23,7 @@ pub(in crate::durability::authority::checkpoint_complete) fn capture_metadata_me
     dictionary: &OriginalSymbolDictionary<'_>,
     lineage: &OriginalCheckpointLineage<'_>,
     indexes: &OriginalCheckpointIndexes,
+    retained: &dyn Fn(&crate::indexes::data::IndexBasisCheckpoint) -> bool,
     prior: Option<&RelationalCheckpointManifest>,
     request: &ExecutionRequest<'_, '_>,
 ) -> Result<CheckpointMetadataMembers, Denial> {
@@ -31,7 +32,7 @@ pub(in crate::durability::authority::checkpoint_complete) fn capture_metadata_me
     let (nodes, events) = lineage_pages::capture(lineage, prior, request, &mut members)?;
     let derived_indexes = add(
         &mut members,
-        encode_indexes(indexes, request).map_err(stop)?,
+        encode_indexes(indexes, retained, request).map_err(stop)?,
         request,
     )?;
     Ok(CheckpointMetadataMembers {

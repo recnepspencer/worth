@@ -33,7 +33,7 @@ worth_query_application_query!(pub ScopeQuery for Schema,identity "SignedPathSco
 macro_rules! worlds_certification_native_graph_input_guards_path_signing_query_rs_field {
     ($slot:ident,$name:ident,$query:ty,$entity:ty,$aspect:ty,$field:ty,$value:ty,$identity:literal)=>{
         pub struct $slot;worth_query_portable_type!($slot=>$identity);
-        fn $name()->ApplicationQueryResultFieldRef<$query,$slot,Schema,$entity,$aspect,$field,$value,ReadOnly,EqualityPredicate,NoApplicationUnit>{ApplicationQueryResultFieldRef::new(stringify!($name),<$field>::reference())}
+        fn $name()->ApplicationQueryResultFieldRef<$query, $slot, Schema, $field>{ApplicationQueryResultFieldRef::new(stringify!($name),<$field>::at(stringify!($field)))}
     };
 }
 pub use crate::worlds_certification_native_graph_input_guards_path_signing_query_rs_field as field;
@@ -89,19 +89,9 @@ field!(
 );
 pub struct CompanySlot;
 worth_query_portable_type!(CompanySlot=>"worth.query.signed-path.company-slot.v1");
-pub fn company() -> ApplicationQueryOptionalResultFieldRef<
-    GraphQuery,
-    CompanySlot,
-    Schema,
-    GraphEvidence,
-    GraphFacts,
-    SignedCompany,
-    String,
-    ReadOnly,
-    EqualityPredicate,
-    NoApplicationUnit,
-> {
-    ApplicationQueryOptionalResultFieldRef::new("company", SignedCompany::reference())
+pub fn company(
+) -> ApplicationQueryOptionalResultFieldRef<GraphQuery, CompanySlot, Schema, SignedCompany> {
+    ApplicationQueryOptionalResultFieldRef::new("company", SignedCompany::at("SignedCompany"))
 }
 impl WorthQueryApplicationProjection<Schema, GraphQuery> for GraphValue {
     fn project(
@@ -129,8 +119,8 @@ pub fn graph_identity(input: ReadGraph) -> String {
 pub fn scope_identity(input: ReadScope) -> String {
     input.0
 }
-worth_query_query_binding!(pub GraphRead for ReadGraph,schema Schema,identity "worth.query.signed-path.graph-read-binding.v1",input GraphInput,query GraphQuery,parameters Parameters=>|_|ApplicationQueryParameterSet::new(),result GraphResult,principal PrincipalBinding,mapping Mapping,principal_entity Principal,principal_identity u64,identity_binding U64ApplicationValueBinding,scope Row,RowFacts,RowIdentity,String,ReadOnly,NoApplicationUnit,field RowIdentity::reference(),value graph_identity,limits results 32);
-worth_query_query_binding!(pub ScopeRead for ReadScope,schema Schema,identity "worth.query.signed-path.scope-read-binding.v1",input ScopeInput,query ScopeQuery,parameters Parameters=>|_|ApplicationQueryParameterSet::new(),result ScopeResult,principal PrincipalBinding,mapping Mapping,principal_entity Principal,principal_identity u64,identity_binding U64ApplicationValueBinding,scope Row,RowFacts,RowIdentity,String,ReadOnly,NoApplicationUnit,field RowIdentity::reference(),value scope_identity,limits results 32);
+worth_query_query_binding!(pub GraphRead for ReadGraph,schema Schema,identity "worth.query.signed-path.graph-read-binding.v1",input GraphInput,query GraphQuery,parameters Parameters=>|_|ApplicationQueryParameterSet::new(),result GraphResult,principal PrincipalBinding,mapping Mapping,principal_entity Principal,principal_identity u64,identity_binding U64ApplicationValueBinding,scope RowIdentity, field RowIdentity::at("RowIdentity"),value graph_identity,limits results 32);
+worth_query_query_binding!(pub ScopeRead for ReadScope,schema Schema,identity "worth.query.signed-path.scope-read-binding.v1",input ScopeInput,query ScopeQuery,parameters Parameters=>|_|ApplicationQueryParameterSet::new(),result ScopeResult,principal PrincipalBinding,mapping Mapping,principal_entity Principal,principal_identity u64,identity_binding U64ApplicationValueBinding,scope RowIdentity, field RowIdentity::at("RowIdentity"),value scope_identity,limits results 32);
 pub fn declare(
     schema: ApplicationSchemaDeclarationBuilder<Schema>,
 ) -> ApplicationSchemaDeclarationBuilder<Schema> {
@@ -159,9 +149,7 @@ pub fn declare(
         .public()
         .root_path(
             ApplicationQueryRootPath::from(Row::reference()).forward(GraphHistory::reference()),
-        )
-        .build()
-        .unwrap();
+        );
     let scope = ApplicationQueryDefinitionBuilder::declare(ScopeQuery::reference())
         .root(ScopeEvidence::reference())
         .scope(Row::reference())
@@ -183,9 +171,7 @@ pub fn declare(
         .public()
         .root_path(
             ApplicationQueryRootPath::from(Row::reference()).forward(ScopeHistory::reference()),
-        )
-        .build()
-        .unwrap();
+        );
     schema
         .application_query(graph)
         .application_query(scope)

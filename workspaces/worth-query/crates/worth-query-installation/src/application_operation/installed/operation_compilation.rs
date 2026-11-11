@@ -83,6 +83,7 @@ pub(in crate::application_operation) struct WorthQuerySealedOperationContractCom
     graph_mutation_count: usize,
     signing_lifecycle: super::super::contracts::SigningLifecycleClosure,
     invariant_invocations: Vec<WorthQueryInstalledApplicationInvariantDescriptor>,
+    model_ownership: bool,
 }
 
 impl<'a> WorthQueryApplicationOperationCompilation<'a> {
@@ -308,6 +309,8 @@ impl<'a> WorthQueryApplicationOperationCompilation<'a> {
             graph_mutation_count,
             signing_lifecycle,
             invariant_invocations,
+            model_ownership: self.members.iter().any(|member| matches!(member,
+                ApplicationSchemaMember::ApplicationHistory { definition } if !definition.parts().ownership.is_empty())),
         };
         WorthQueryCompiledApplicationOperationContracts::compile(sealed).map_err(|()| {
             operation_denial(

@@ -80,6 +80,8 @@ impl HomeProgramTransitionPlanDescription {
         digest.update(self.steps.to_le_bytes());
         digest.update(self.target.step().to_le_bytes());
         digest.update(self.target.catalog().bytes());
+        digest.update(self.target.schema().bytes());
+        digest.update(self.target.carrier().bytes());
         digest.update(
             self.target
                 .whole_candidate_validation_version()

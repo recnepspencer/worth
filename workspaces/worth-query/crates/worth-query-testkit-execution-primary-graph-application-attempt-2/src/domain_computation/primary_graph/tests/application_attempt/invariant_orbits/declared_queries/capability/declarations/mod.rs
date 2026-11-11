@@ -44,58 +44,45 @@ impl<S: OrbitModel> QueryProvenance<S> {
         ApplicationCapabilityProvenanceRef::from_declaration()
     }
 }
-worth_query_entity!(pub Grant for S: OrbitModel);
-worth_query_aspect!(pub GrantFacts for S: OrbitModel, Grant; identity = AspectIdentity(0x9181_4110), revision = AspectContractRevision(1));
-worth_query_field!(pub GrantAction for S: OrbitModel, Grant, GrantFacts: bool => BoolApplicationValueBinding, read_only, no_equality);
-worth_query_field!(pub GrantPurpose for S: OrbitModel, Grant, GrantFacts: bool => BoolApplicationValueBinding, read_only, no_equality);
-worth_query_field!(pub GrantActive for S: OrbitModel, Grant, GrantFacts: bool => BoolApplicationValueBinding, read_only, no_equality);
-worth_query_field!(pub GrantWorkflow for S: OrbitModel, Grant, GrantFacts: bool => BoolApplicationValueBinding, read_only, no_equality);
-worth_query_field!(pub GrantDisclosure for S: OrbitModel, Grant, GrantFacts: u64 => U64ApplicationValueBinding, read_only, no_equality);
-worth_query_field!(pub GrantFrom for S: OrbitModel, Grant, GrantFacts: u64 => U64ApplicationValueBinding, read_only, no_equality);
-worth_query_field!(pub GrantUntil for S: OrbitModel, Grant, GrantFacts: u64 => U64ApplicationValueBinding, read_only, no_equality);
-worth_query_field!(pub GrantLimit for S: OrbitModel, Grant, GrantFacts: u64 => U64ApplicationValueBinding, read_only, no_equality);
+
 pub struct Holder;
+impl fragment::Relation for Holder {
+    const NAME: &'static str = "Holder";
+    type To = Grant;
+}
 impl Holder {
     pub fn reference<S: OrbitModel>() -> ApplicationRelationRef<S, Self, Principal, Grant> {
-        ApplicationRelationRef::from_schema_identifiers(
-            "Holder",
-            "Principal",
-            "Grant",
-            ApplicationRelationIntegrity::same_context_unbounded_retain_dangling(),
-        )
+        fragment::relation(OrbitRecords::<true>, Principal, Self)
     }
 }
 pub struct Issuer;
+impl fragment::Relation for Issuer {
+    const NAME: &'static str = "Issuer";
+    type To = Grant;
+}
 impl Issuer {
     pub fn reference<S: OrbitModel>() -> ApplicationRelationRef<S, Self, Principal, Grant> {
-        ApplicationRelationRef::from_schema_identifiers(
-            "Issuer",
-            "Principal",
-            "Grant",
-            ApplicationRelationIntegrity::same_context_unbounded_retain_dangling(),
-        )
+        fragment::relation(OrbitRecords::<true>, Principal, Self)
     }
 }
 pub struct Resource;
+impl fragment::Relation for Resource {
+    const NAME: &'static str = "Resource";
+    type To = Node;
+}
 impl Resource {
     pub fn reference<S: OrbitModel>() -> ApplicationRelationRef<S, Self, Grant, Node> {
-        ApplicationRelationRef::from_schema_identifiers(
-            "Resource",
-            "Grant",
-            "Node",
-            ApplicationRelationIntegrity::same_context_unbounded_retain_dangling(),
-        )
+        fragment::relation(GrantRecords, Grant, Self)
     }
 }
 pub struct ParentGrant;
+impl fragment::Relation for ParentGrant {
+    const NAME: &'static str = "ParentGrant";
+    type To = Grant;
+}
 impl ParentGrant {
     pub fn reference<S: OrbitModel>() -> ApplicationRelationRef<S, Self, Grant, Grant> {
-        ApplicationRelationRef::from_schema_identifiers(
-            "ParentGrant",
-            "Grant",
-            "Grant",
-            ApplicationRelationIntegrity::same_context_unbounded_retain_dangling(),
-        )
+        fragment::relation(GrantRecords, Grant, Self)
     }
 }
 #[derive(Clone, Debug, serde::Serialize)]
@@ -105,7 +92,7 @@ pub struct InspectInput {
 worth_query_portable_type!(InspectInput => "worth.query.orbit.capability-input.v1");
 worth_query_structured_value_binding!(pub InspectBinding for InspectInput {identity:"worth.query.orbit.capability-input.v1"});
 worth_query_operation!(pub Inspect for S: OrbitModel, input InspectBinding);
-worth_query_operation_reads!(Inspect => [Node, NodeKey]);
+worth_query_operation_reads!(Inspect => [Node]);
 impl<S: OrbitModel> ApplicationCapabilityRequest<S, ReadOrbit<S>> for InspectInput {
     type Scope = Node;
     type Context = QueryContext<S>;
@@ -117,10 +104,11 @@ impl<S: OrbitModel> ApplicationCapabilityRequest<S, ReadOrbit<S>> for InspectInp
     > {
         Ok(ApplicationCapabilityRequestProjection::new(
             ApplicationCapabilityEntitySelector::new(
-                NodeKey::reference(),
+                NodeKey::at("NodeKey"),
                 ApplicationEncodedScalarValue::<U64ApplicationValueBinding>::try_new(self.root)
                     .unwrap(),
-            ),
+            )
+            .unwrap(),
             ApplicationEncodedScalarValue::<BoolApplicationValueBinding>::try_new(false).unwrap(),
             ApplicationEncodedScalarValue::<BoolApplicationValueBinding>::try_new(false).unwrap(),
             ApplicationCapabilityRequestContext::new(QueryContext::reference()),
@@ -128,3 +116,8 @@ impl<S: OrbitModel> ApplicationCapabilityRequest<S, ReadOrbit<S>> for InspectInp
         .field(ApplicationEncodedScalarValue::<U64ApplicationValueBinding>::try_new(0).unwrap()))
     }
 }
+
+pub use super::super::super::schema::records::{
+    Grant, GrantAction, GrantActive, GrantDisclosure, GrantFrom, GrantLimit, GrantPurpose,
+    GrantUntil, GrantWorkflow,
+};

@@ -10,8 +10,10 @@ struct Negative;
 struct Positive;
 struct Coupling;
 struct Cohorts;
-impl ApplicationEntityMarkerIdentity<Fixture> for Carrier {
-    const IDENTIFIER: &'static str = "E";
+impl worth_query_declaration::facade::application_schema::fragment::Entity for Carrier {
+    const NAME: &'static str = "E";
+    type Aspects = ();
+    type Relations = ();
 }
 impl ApplicationSchema for Fixture {
     const OWNER: &'static str = "archive.tests";
@@ -37,8 +39,7 @@ impl ApplicationSchema for Fixture {
         );
         let reference =
             ApplicationComponentSetRef::<Self, Cohorts, Uses>::projected("Cohorts", domain);
-        ApplicationSchemaDeclarationBuilder::<Self>::for_schema()
-            .entity(carrier)
+        ApplicationSchemaDeclarationBuilder::<Self>::from_fragment(FixtureRecords)?
             .projected_member_domain(
                 ApplicationProjectedMemberDomainDefinition::new(domain)
                     .case(negative)
@@ -166,10 +167,17 @@ fn logical_schema(mut members: Vec<Member>) -> WorthQueryPortableApplicationSche
     members.sort();
     WorthQueryPortableApplicationSchemaRecord::from_untrusted_parts(Parts {
         owner: Fixture::OWNER.into(),
-        name: Fixture::NAME.into(),
+        name: <Fixture as ApplicationSchema>::NAME.into(),
         major: 1,
         minor: 0,
         members,
         contributions: vec![],
     })
+}
+
+struct FixtureRecords;
+impl worth_query_declaration::facade::application_schema::fragment::Fragment for FixtureRecords {
+    const NAME: &'static str = "fixture_records";
+    type Bindings = worth_query_declaration::facade::application_schema::fragment::NoBindings;
+    type Members = (Carrier,);
 }

@@ -28,8 +28,8 @@ worth_query_structured_value_binding!(pub InputBinding for RetentionEdit {identi
 worth_query_structured_value_binding!(pub ResultBinding for Changed {identity:"proposal-application.retention.result.v1"});
 worth_query_structured_value_binding!(pub DenialBinding for Denial {identity:"proposal-application.retention.denial.v1"});
 worth_query_operation!(pub SetRetention for Schema,input InputBinding);
-worth_query_operation_reads!(SetRetention=>[ModelName,ModelTarget,TargetName,Retention]);
-worth_query_operation_writes!(SetRetention=>[Retention]);
+worth_query_operation_reads!(SetRetention => [ModelTarget]);
+
 fn model(input: &RetentionEdit) -> String {
     input.model.label.clone()
 }
@@ -42,8 +42,8 @@ worth_query_mutation_binding!(pub Binding for RetentionEdit,schema Schema,
     workflow_requirements ApplicationWorkflowExecutionRequirements::not_applicable(),outputs NoApplicationMutationOutputs,
     principal PrincipalBinding,mapping ExternalMapping,principal_entity Principal,
     principal_identity u64,identity_binding U64ApplicationValueBinding,
-    scope Model,ModelFacts,ModelName,String,ReadOnly,NoApplicationUnit,
-    field ModelName::reference(),value model,
+    scope ModelName,
+    field ModelName::at("ModelName"),value model,
 );
 impl ApplicationCapabilityMutationBinding<Schema> for Binding {
     type Capability = mutation_access::EditRetention;
@@ -55,11 +55,11 @@ pub fn declare(
     schema
         .operation(op.definition().no_external_effect().no_aftermath().finish())
         .operation_projection_work_budget(op, 16)
-        .operation_read_field(op, ModelName::reference())
+        .operation_read_field(op, ModelName::at("ModelName"))
         .operation_read_relation(op, ModelTarget::reference())
-        .operation_read_field(op, TargetName::reference())
-        .operation_read_field(op, Retention::reference())
-        .operation_write(op, Retention::reference())
+        .operation_read_field(op, TargetName::at("TargetName"))
+        .operation_read_field(op, Retention::at("Retention"))
+        .operation_write(op, Retention::at("Retention"))
         .application_mutation_binding::<Binding>()
         .invariant(rule::definition())
 }

@@ -1,4 +1,5 @@
 //! Original preparing custody across the durable-open / Native-preparation seam.
+mod original_program;
 use super::{ActiveAttemptCustody, ResolvedExpectedProductHead};
 use crate::durability::{
     WorldDurableArtifact, WorldDurableMediumBinding, WorldDurableMediumDenial,

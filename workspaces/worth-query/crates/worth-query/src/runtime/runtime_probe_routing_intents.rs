@@ -1,4 +1,5 @@
 use super::*;
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::intent_admission::dx::{
     non_admitted_runtime_violation, WorthQueryRuntimeIntentAdmissionReviewData,
 };
@@ -22,12 +23,12 @@ impl WorthQueryRuntime {
         &self,
         request: WorthQueryExistingTruthProbeRequest,
     ) -> Result<WorthQueryRuntimeIntentAdmissionReviewData, WorthQueryRuntimeError> {
-        let seed = self.build_existing_truth_probe_intent_seed(request);
+        let seed = self.build_existing_truth_probe_intent_seed(request)?;
         let request = crate::intent_admission::WorthQueryRawIntentAdmissionRequest::existing_truth_probe_entrypoint(seed)
             .expect("existing truth probe intent seed should always author successfully");
         Ok(WorthQueryRuntimeIntentAdmissionReviewData::from_request(
             request,
-        ))
+        )?)
     }
 
     pub(crate) fn resolve_reviewed_admitted_existing_truth_probe_handoff(
@@ -78,8 +79,10 @@ impl WorthQueryRuntime {
     pub(crate) fn prepare_existing_truth_probe_execution_binding(
         &self,
         handoff: WorthQueryExistingTruthProbeExecutionHandoff,
-    ) -> WorthQueryExistingTruthProbeExecutionBinding {
-        WorthQueryExistingTruthProbeExecutionBinding::from_handoff(handoff)
+    ) -> Result<WorthQueryExistingTruthProbeExecutionBinding, IdentityDerivationDenial> {
+        Ok(WorthQueryExistingTruthProbeExecutionBinding::from_handoff(
+            handoff,
+        )?)
     }
 
     pub(crate) fn execute_existing_truth_probe_execution_binding(
@@ -129,7 +132,7 @@ impl WorthQueryRuntime {
                 binding.binding_digest(),
                 result.receipt().probe_digest(),
                 &snapshot_evidence_identity,
-            );
+            )?;
         result.attach_intent_admission_evidence(decision_trace_envelope, execution_provenance);
         Ok(result)
     }
@@ -137,7 +140,7 @@ impl WorthQueryRuntime {
     pub(crate) fn build_existing_truth_probe_intent_seed(
         &self,
         request: WorthQueryExistingTruthProbeRequest,
-    ) -> WorthQueryExistingTruthProbeIntentSeed {
+    ) -> Result<WorthQueryExistingTruthProbeIntentSeed, IdentityDerivationDenial> {
         let preflight = match self.backend.admit_existing_truth_binding(request.binding()) {
             Err(denial) => WorthQueryExistingTruthProbeRoutingPreflight::BindingDenied(denial),
             Ok(()) => match self.probe_existing_support_denial(request.binding()) {
@@ -145,7 +148,9 @@ impl WorthQueryRuntime {
                 None => WorthQueryExistingTruthProbeRoutingPreflight::Admitted,
             },
         };
-        WorthQueryExistingTruthProbeIntentSeed::new(request, preflight)
+        Ok(WorthQueryExistingTruthProbeIntentSeed::new(
+            request, preflight,
+        ))
     }
 
     fn probe_existing_support_denial(
@@ -153,14 +158,17 @@ impl WorthQueryRuntime {
         binding: &WorthQueryExistingTruthTargetBinding,
     ) -> Option<WorthQueryExistingTruthProbeDenial> {
         let support_profile = self.backend.support_profile();
-        let row = support_profile
+        let Some(row) = support_profile
             .bridge_backed_verification_support_rows()
             .iter()
             .find(|row| {
                 row.operation_family() == "probe_existing"
                     && row.target_binding_family()
                         == binding.family().bridge_backed_support_family()
-            })?;
+            })
+        else {
+            return None;
+        };
         let supported = match support_profile.posture() {
             WorthQueryRuntimeBackendPosture::Scaffold => row.scaffold_profile_supported(),
             WorthQueryRuntimeBackendPosture::Primary => {

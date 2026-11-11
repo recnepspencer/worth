@@ -21,11 +21,19 @@ impl SelectedRebase {
         snapshot: &SnapshotHandle,
         retired: &BTreeSet<EntityId>,
         producer: bool,
+        predecessor: Option<&worth_relational::facade::mvcc::RelationalRequiredOutputPublication>,
 
         control: StorageControl<'_, '_>,
     ) -> RebasedSourceFacts {
         Self::rebase(
-            self, execution, runtime, snapshot, retired, producer, control,
+            self,
+            execution,
+            runtime,
+            snapshot,
+            retired,
+            producer,
+            predecessor,
+            control,
         )
     }
 }

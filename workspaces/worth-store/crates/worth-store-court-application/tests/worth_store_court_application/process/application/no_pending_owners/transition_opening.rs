@@ -8,6 +8,10 @@ pub(super) fn target_meaning() -> worth_foundational::facade::HomeProgramTransit
     worth_foundational::facade::HomeProgramTransitionTargetMeaning::from_recorded(
         0,
         worth_foundational::facade::HomeProgramTransitionCatalogDigest::from_recorded([9; 32]),
+        worth_foundational::facade::HomeProgramTransitionSchemaDigest::from_recorded([11; 32]),
+        worth_foundational::facade::HomeProgramTransitionSchemaCarrierDigest::from_recorded(
+            [12; 32],
+        ),
     )
 }
 

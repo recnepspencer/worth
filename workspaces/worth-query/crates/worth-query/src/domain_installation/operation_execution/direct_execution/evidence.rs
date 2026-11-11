@@ -1,4 +1,5 @@
 use crate::domain_installation::WorthQueryOperationResultState;
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 
 use super::WorthQueryBoundGraphExecutionReceipt;
 
@@ -80,6 +81,7 @@ impl WorthQueryDerivedPublicationReceipt {
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum WorthQueryBoundExecutionDenialKind {
+    EvidenceIdentityDerivationDenied(IdentityDerivationDenial),
     ExecutionRequest(
         worth_query_execution::facade::application_contribution::WorthQueryAdvancementDenial,
     ),

@@ -21,7 +21,7 @@ impl super::WorthQueryAdmittedOperation {
         crate::domain_computation::authorization::refuse_stale_home_authority(
             current,
             self.home_owner,
-            &self.operation,
+            &self.data.operation,
         )
     }
 }

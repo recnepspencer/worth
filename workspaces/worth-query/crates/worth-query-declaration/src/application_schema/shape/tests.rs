@@ -4,9 +4,8 @@ use crate::application_schema::{
 };
 use std::collections::BTreeMap;
 use worth_foundational::facade::{
-    encode_canonical_value, AspectContractRevision, AspectIdentity, CanonicalBasisLocus,
-    CanonicalBasisValue as V, CanonicalIntegerWidth, CanonicalValue, InternedString,
-    ScalarAspectType, ValueDecodeBounds, WorthValue,
+    encode_canonical_value, AspectContractRevision, AspectIdentity, CanonicalBasisValue as V,
+    CanonicalIntegerWidth, CanonicalValue, ScalarAspectType, ValueDecodeBounds, WorthValue,
 };
 
 const BOUNDS: ValueDecodeBounds = ValueDecodeBounds::new(1024, 64, 16, 8);
@@ -83,10 +82,12 @@ fn value_meaning_golden_is_the_complete_shared_field_emitter() {
         .entries()
         .iter()
         .map(|entry| {
-            let CanonicalBasisLocus::Named(InternedString::Raw(name)) = entry.locus() else {
-                panic!("golden loci are named text")
+            let worth_foundational::facade::CanonicalBasisLocus::Named(locus) = entry.locus()
+            else {
+                panic!("golden loci are named")
             };
-            (name.clone(), entry.value().clone())
+            let name = locus.raw_text().expect("golden loci are text");
+            (name.to_owned(), entry.value().clone())
         })
         .collect::<BTreeMap<_, _>>();
     let text = |value: &str| V::ExactText(value.to_owned().into());

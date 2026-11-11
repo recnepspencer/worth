@@ -68,15 +68,16 @@ pub(crate) struct ValidatedProposalState {
     pub(crate) prepared: PreparedWorkingStateScope,
     pub(crate) proposed_mutation:
         crate::authority::commit::phases::applied_mutation::AppliedMutationDraft,
-    pub(crate) commit_boundary: InvariantExecutionResult,
-    pub(crate) mutation_sensitive: InvariantExecutionResult,
-    pub(crate) snapshot_publication: InvariantExecutionResult,
+    pub(crate) invariants: InvariantExecutionResult,
     pub(crate) evidence: RelationalMutationInvariantEvidence,
     pub(crate) proposal_identity: super::proposal_identity::RelationalMutationProposalIdentity,
     pub(crate) validated_against_commit: Option<CommitId>,
     pub(crate) validated_against_version: VersionId,
     pub(crate) validated_against_branch_version: RelationalBranchVersion,
     pub(crate) custom_invariant_generation: u64,
+    pub(crate) receiver_epoch: crate::runtime::RelationalRuntimeConfigurationSnapshot,
+    pub(crate) execution_contracts:
+        Option<std::sync::Arc<crate::runtime::RelationalRootExecutionContracts>>,
     pub(crate) batch_count: usize,
     pub(crate) strategy_commit_artifacts:
         Option<crate::commit_strategies::data::StrategyCommitArtifactBundle>,
@@ -108,12 +109,18 @@ impl std::fmt::Debug for ValidatedRelationalProposal {
 }
 
 impl ValidatedRelationalProposal {
+    /// Layout of this owner's single boxed state allocation on the current target.
+    /// Nested backing and allocator bookkeeping are outside this layout.
+    pub const fn state_backing_layout() -> std::alloc::Layout {
+        std::alloc::Layout::new::<ValidatedProposalState>()
+    }
+
     pub(crate) fn retain(
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         state: ValidatedProposalState,
     ) -> Result<Self, crate::transactions::data::TransactionCommitError> {
-        let memory = execution
-            .reserve_retained_memory(std::mem::size_of::<ValidatedProposalState>() as u64)?;
+        let memory =
+            execution.reserve_retained_memory(Self::state_backing_layout().size() as u64)?;
         Ok(Self {
             state: Box::new(state),
             memory,

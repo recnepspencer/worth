@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 mod batch_construction;
 
 pub use batch_construction::WorthQueryBatchMutationEvidence;
@@ -18,13 +19,16 @@ use crate::runtime::WorthQueryMutationEvidenceDigest;
 fn summarize_existing_truth_modes(
     mutation_families: &[crate::runtime::WorthQueryMutationFamily],
     existing_truth_assertions: &[Option<WorthQueryExistingTruthAssertionEvidence>],
-) -> (
-    usize,
-    usize,
-    usize,
-    usize,
-    Option<WorthQueryMutationEvidenceDigest>,
-) {
+) -> Result<
+    (
+        usize,
+        usize,
+        usize,
+        usize,
+        Option<WorthQueryMutationEvidenceDigest>,
+    ),
+    IdentityDerivationDenial,
+> {
     let mut retained_authoritative_assertion_count = 0;
     let mut backend_verified_assertion_count = 0;
     let mut backend_verified_update_count = 0;
@@ -83,29 +87,31 @@ fn summarize_existing_truth_modes(
                 .seal(),
             )
         })
-        .collect::<Vec<_>>();
-    let digest = (!mode_parts.is_empty()).then(|| {
-        let identity = crate::evidence_identity::worth_query_evidence_identity(
-            crate::evidence_identity::WorthQueryEvidenceScope::MutationEvidenceAggregateDigest,
-        )
-        .field_shape(
-            crate::evidence_identity::WorthQueryEvidenceTag::new("role"),
-            "batch-existing-truth-mode",
-        )
-        .field_evidence_identity_sequence(
-            crate::evidence_identity::WorthQueryEvidenceTag::new("entry"),
-            mode_parts.iter(),
-        )
-        .seal();
-        WorthQueryMutationEvidenceDigest::aggregate("batch-existing-truth-mode", identity)
-    });
-    (
+        .collect::<Result<Vec<_>, _>>()?;
+    let digest = (!mode_parts.is_empty())
+        .then(|| {
+            let identity = crate::evidence_identity::worth_query_evidence_identity(
+                crate::evidence_identity::WorthQueryEvidenceScope::MutationEvidenceAggregateDigest,
+            )
+            .field_shape(
+                crate::evidence_identity::WorthQueryEvidenceTag::new("role"),
+                "batch-existing-truth-mode",
+            )
+            .field_evidence_identity_sequence(
+                crate::evidence_identity::WorthQueryEvidenceTag::new("entry"),
+                mode_parts.iter(),
+            )
+            .seal()?;
+            WorthQueryMutationEvidenceDigest::aggregate("batch-existing-truth-mode", identity)
+        })
+        .transpose()?;
+    Ok((
         retained_authoritative_assertion_count,
         backend_verified_assertion_count,
         backend_verified_update_count,
         backend_verified_delete_count,
         digest,
-    )
+    ))
 }
 
 #[cfg(test)]

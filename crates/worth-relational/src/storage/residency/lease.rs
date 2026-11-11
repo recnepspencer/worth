@@ -40,6 +40,9 @@ impl<Level> RelationalResidencyLease<Level> {
     pub(super) fn resident_region(&self) -> &ResidentRegion {
         &self.region
     }
+    pub(crate) fn has_complete_history(&self) -> bool {
+        self.region.history_presence.is_complete()
+    }
     /// A shared cell authenticates bytes once; each demanding runtime admits
     /// their dictionary closure into its own independently writable authority.
     fn admit_symbols_at(
@@ -47,11 +50,46 @@ impl<Level> RelationalResidencyLease<Level> {
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         symbols: &crate::runtime::RuntimeSymbolTable,
         identity: super::RelationalRegionSymbolAdmissionIdentity,
-        collect: fn(
-            &crate::storage::overlay::PartitionState,
-        ) -> std::collections::BTreeSet<crate::symbols::data::Symbol>,
+        scope: SymbolScope,
     ) -> Result<(), RelationalResidencyDemandFailure> {
-        symbols.demand_region_symbols(execution, identity, || collect(&self.region.partition))
+        let inheritance = self.cell().symbol_inheritance.get();
+        let certificate = inheritance.and_then(|basis| basis.certificate.as_ref());
+        if let Some(certificate) = certificate
+            && (!matches!(scope, SymbolScope::Full) || certificate.full_at_birth)
+            && symbols.admit_region_from_publication(
+                execution,
+                identity.clone(),
+                &certificate.publication,
+            )?
+        {
+            return Ok(());
+        }
+        // A mirror's projected delta is relative to the canonical root, not
+        // its independently retained history. Only the accepted scope covers it.
+        let predecessor = certificate
+            .is_none()
+            .then(|| {
+                inheritance.and_then(|basis| match scope {
+                    SymbolScope::Owned => Some(basis.owned_predecessor()),
+                    SymbolScope::Head => basis.predecessor(false),
+                    SymbolScope::Full => basis.predecessor(true),
+                })
+            })
+            .flatten();
+        symbols.demand_region_symbols_incremental(
+            execution,
+            identity,
+            predecessor.map(|(id, delta)| (id, &delta.ids, delta.visits)),
+            || {
+                let required = self.region.symbol_requirements.get().and_then(|captured| match scope { SymbolScope::Owned => captured.owned(), SymbolScope::Head => captured.get(false), SymbolScope::Full => captured.get(true) }).ok_or_else(|| {
+                    super::RelationalResidencyDemandFailure::StorageUnavailable(crate::storage::data::RelationalStorageUnavailable {
+                        subject: crate::storage::data::RelationalStorageSubject::Region(self.region.partition.partition_id),
+                        cause: crate::storage::data::RelationalStorageUnavailableCause::MissingSymbolMaintenancePredecessor,
+                    })
+                })?;
+                Ok((required.ids.clone(), required.ids.len() as u64))
+            },
+        )
     }
 
     pub(crate) fn head_symbol_admission_identity(
@@ -80,7 +118,25 @@ impl<Level> RelationalResidencyLease<Level> {
     }
 }
 
+#[derive(Clone, Copy)]
+enum SymbolScope {
+    Head,
+    Owned,
+    Full,
+}
 impl RelationalResidencyLease<Head> {
+    pub(crate) fn admit_owned_symbols(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        symbols: &crate::runtime::RuntimeSymbolTable,
+    ) -> Result<(), RelationalResidencyDemandFailure> {
+        self.admit_symbols_at(
+            execution,
+            symbols,
+            super::RelationalRegionSymbolAdmissionIdentity::owned(self.cell()),
+            SymbolScope::Owned,
+        )
+    }
     pub(crate) fn symbol_admission_identity(
         &self,
     ) -> super::RelationalRegionSymbolAdmissionIdentity {
@@ -95,7 +151,7 @@ impl RelationalResidencyLease<Head> {
             execution,
             symbols,
             self.symbol_admission_identity(),
-            super::required_symbols::collect_head,
+            SymbolScope::Head,
         )
     }
 }
@@ -122,7 +178,7 @@ impl RelationalResidencyLease<Full> {
             execution,
             symbols,
             self.symbol_admission_identity(),
-            super::required_symbols::collect,
+            SymbolScope::Full,
         )
     }
 

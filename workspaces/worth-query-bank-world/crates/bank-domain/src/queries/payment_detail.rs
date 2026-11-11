@@ -1,7 +1,6 @@
 use worth_query_decl::facade::application_query::{
-    ApplicationQueryBasisSupport, ApplicationQueryCardinality, ApplicationQueryDefinition,
-    ApplicationQueryDefinitionBuilder, ApplicationQueryDisclosureContract,
-    ApplicationQueryLaneEligibility,
+    ApplicationQueryBasisSupport, ApplicationQueryCardinality, ApplicationQueryDefinitionBuilder,
+    ApplicationQueryDisclosureContract, ApplicationQueryLaneEligibility,
 };
 use worth_query_decl::facade::worth_query_application_query;
 use worth_query_host::facade::primary_graph::{
@@ -58,16 +57,14 @@ worth_query_decl::facade::worth_query_query_binding!(
     result PaymentDetailQueryResultBinding,
     principal crate::schema::BankPrincipalBinding, mapping crate::schema::ExternalPrincipalMapping, principal_entity crate::schema::Principal,
         principal_identity crate::model::BankPrincipalId, identity_binding crate::schema::BankPrincipalIdBinding,
-    scope PaymentIntent, crate::schema::PaymentIdentity, crate::schema::PaymentIdentityField,
-        PaymentId, worth_query_decl::facade::application_schema::ReadOnly,
-        worth_query_decl::facade::application_schema::NoApplicationUnit,
-    field crate::schema::PaymentIdentityField::reference(),
+    scope crate::schema::PaymentIdentityField,
+    field crate::schema::PaymentIdentityField::at("PaymentIdentityField"),
     value PaymentDetailRequest::payment,
     limits results 1_024
 
 );
 
-pub fn payment_detail_definition() -> ApplicationQueryDefinition<
+pub fn payment_detail_definition() -> ApplicationQueryDefinitionBuilder<
     BankSchema,
     PaymentDetailQuery,
     PaymentDetailQueryParameters,
@@ -90,8 +87,6 @@ pub fn payment_detail_definition() -> ApplicationQueryDefinition<
         .basis_support(ApplicationQueryBasisSupport::current_and_pinned())
         .lanes(ApplicationQueryLaneEligibility::one_shot())
         .requires_ability(ViewPayment::reference())
-        .build()
-        .expect("bank payment detail query is statically canonical")
 }
 
 impl WorthQueryApplicationProjection<BankSchema, PaymentDetailQuery> for PaymentSummary {

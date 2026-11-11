@@ -13,15 +13,7 @@ pub use worth_query_host::facade::{
 worth_query_operation!(pub PublishValue for AdmissionSchema, input ChangedBinding);
 worth_query_operation_emits!(PublishValue => [ValueChanged]);
 pub struct PublishBinding;
-pub type Scope = ApplicationMutationFieldScope<
-    AdmissionSchema,
-    Document,
-    DocumentFacts,
-    DocumentIdentityField,
-    String,
-    ReadOnly,
-    NoApplicationUnit,
->;
+pub type Scope = ApplicationMutationFieldScope<DocumentIdentityField>;
 impl ApplicationMutationAdmissionBinding<AdmissionSchema> for PublishBinding {
     type Admission = ApplicationConventionalAdmission;
 }
@@ -49,17 +41,8 @@ impl ApplicationMutationBinding<AdmissionSchema> for PublishBinding {
     fn workflow_execution_requirements() -> ApplicationWorkflowExecutionRequirements {
         ApplicationWorkflowExecutionRequirements::not_applicable()
     }
-    fn scope_field() -> ApplicationFieldRef<
-        AdmissionSchema,
-        Document,
-        DocumentFacts,
-        DocumentIdentityField,
-        String,
-        ReadOnly,
-        EqualityPredicate,
-        NoApplicationUnit,
-    > {
-        DocumentIdentityField::reference()
+    fn scope_field() -> DocumentIdentityField {
+        DocumentIdentityField::at("DocumentIdentityField")
     }
     fn principal_binding() -> ApplicationPrincipalBindingRef<
         AdmissionSchema,
@@ -84,7 +67,7 @@ impl ApplicationMutationIntent<AdmissionSchema> for Publish {
     }
     fn scope_binding(&self) -> Scope {
         Scope::new(
-            DocumentIdentityField::reference(),
+            DocumentIdentityField::at("DocumentIdentityField"),
             self.changed.identity.clone(),
         )
     }

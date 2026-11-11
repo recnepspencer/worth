@@ -17,15 +17,7 @@ pub use worth_query_testkit_document_retention::facade::document_retention_model
 pub use worth_query_testkit_document_retention::facade::document_retention_model::schema::SetRetentionInput;
 
 pub type UnownedMigrationScope =
-    worth_query_host::facade::declaration::application_operation::ApplicationMutationFieldScope<
-        worth_query_testkit_document_retention::facade::document_retention_model::schema::DocumentRetentionSchema,
-        worth_query_testkit_document_retention::facade::document_retention_model::schema::Document,
-        worth_query_testkit_document_retention::facade::document_retention_model::schema::DocumentFacts,
-        worth_query_testkit_document_retention::facade::document_retention_model::schema::DocumentIdentityField,
-        String,
-        worth_query_host::facade::declaration::application_schema::ReadOnly,
-        worth_query_host::facade::declaration::application_schema::NoApplicationUnit,
-    >;
+    worth_query_host::facade::declaration::application_operation::ApplicationMutationFieldScope<worth_query_testkit_document_retention::facade::document_retention_model::schema::DocumentIdentityField>;
 
 pub struct UnownedMigrationBinding;
 
@@ -72,17 +64,8 @@ impl
         "worth.query.certification.unowned-migration-command.v1";
 
     fn scope_field(
-    ) -> worth_query_host::facade::declaration::application_schema::ApplicationFieldRef<
-        worth_query_testkit_document_retention::facade::document_retention_model::schema::DocumentRetentionSchema,
-        worth_query_testkit_document_retention::facade::document_retention_model::schema::Document,
-        worth_query_testkit_document_retention::facade::document_retention_model::schema::DocumentFacts,
-        worth_query_testkit_document_retention::facade::document_retention_model::schema::DocumentIdentityField,
-        String,
-        worth_query_host::facade::declaration::application_schema::ReadOnly,
-        worth_query_host::facade::declaration::application_schema::EqualityPredicate,
-        worth_query_host::facade::declaration::application_schema::NoApplicationUnit,
-    > {
-        worth_query_testkit_document_retention::facade::document_retention_model::schema::DocumentIdentityField::reference()
+    ) -> worth_query_testkit_document_retention::facade::document_retention_model::schema::DocumentIdentityField {
+        worth_query_testkit_document_retention::facade::document_retention_model::schema::DocumentIdentityField::at("DocumentIdentityField")
     }
 
     fn principal_binding() -> worth_query_host::facade::declaration::application_schema::ApplicationPrincipalBindingRef<
@@ -115,7 +98,7 @@ impl
 
     fn scope_binding(&self) -> UnownedMigrationScope {
         UnownedMigrationScope::new(
-            worth_query_testkit_document_retention::facade::document_retention_model::schema::DocumentIdentityField::reference(),
+            worth_query_testkit_document_retention::facade::document_retention_model::schema::DocumentIdentityField::at("DocumentIdentityField"),
             self.input.identity.clone(),
         )
     }

@@ -48,8 +48,13 @@ pub use history::{
 };
 pub(crate) use indexing::{
     CapturedIndexDefinitionCatalog, FrozenCheckpointIndexes, IndexCatalogCoverage,
-    IndexDefinitionReadBinding, IndexingState, IndexingSubsystem, OriginalCheckpointIndexes,
-    PreparedGenerationBatch,
+    IndexDefinitionCatalog, IndexDefinitionReadBinding, IndexSelectionState, IndexingState,
+    IndexingSubsystem, OriginalCheckpointIndexes, PreparedGenerationBatch,
+    PreparedIndexBasisSelection,
+};
+pub use indexing::{
+    PreparedRelationalIndexDefinitions, RelationalIndexDefinitionPreparation,
+    RelationalIndexDefinitionPreparationDenial,
 };
 pub(crate) use lineage::{
     LineageState, LineageSubsystem, ResidentLineageEventPage, ResidentLineageNode,

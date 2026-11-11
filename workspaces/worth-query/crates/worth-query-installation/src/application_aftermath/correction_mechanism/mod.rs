@@ -1,4 +1,6 @@
 //! Installed correction-mechanism axis.
+mod preimage_relation;
+pub use preimage_relation::InstalledPreImageRelationLocus;
 
 mod compensation;
 mod recorded_inverse;

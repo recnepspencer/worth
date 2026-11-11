@@ -114,12 +114,12 @@ mod serial {
         reconstruction
             .field(
                 &extra,
-                SupportKey::reference(),
+                SupportKey::at("SupportKey"),
                 members::key(&output_key(SCOPE)),
             )
             .unwrap();
         reconstruction
-            .field(&extra, SupportValue::reference(), value)
+            .field(&extra, SupportValue::at("SupportValue"), value)
             .unwrap();
         reconstruction
             .relation_from_retained(TotalSupport::reference(), &total, &extra)

@@ -17,7 +17,9 @@ pub(super) fn install(world: &World) -> Application {
     let program = ApplicationProgramAuthoring::<Schema, Program>::begin()
         .validated_program()
         .unwrap();
-    let declaration = Schema::declaration().unwrap();
+    let declaration =
+        <Schema as worth_query_decl::facade::application_schema::ApplicationSchema>::declaration()
+            .unwrap();
     let limits = super::super::support::limits(32, super::super::support::invalidation());
     application_installation::in_memory_program(
         program,
@@ -43,9 +45,9 @@ pub(super) fn install(world: &World) -> Application {
                         WorthQueryApplicationEntityKey::new(format!("member-{}", member.key))
                             .unwrap(),
                     )
-                    .field(NodeKey::reference(), member.key)
-                    .field(Value::reference(), 0)
-                    .field(Applied::reference(), 0),
+                    .field(NodeKey::at("NodeKey"), member.key)
+                    .field(Value::at("Value"), 0)
+                    .field(Applied::at("Applied"), 0),
                 )?;
             }
             Ok(())

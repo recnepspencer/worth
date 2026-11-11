@@ -1,4 +1,6 @@
 //! Two installed applications and a restored root share one process service.
+// The mounted test inherits its crate root's limit; this example is test=false.
+#![cfg_attr(not(test), recursion_limit = "256")]
 use std::sync::{
     atomic::{AtomicBool, AtomicUsize, Ordering},
     Arc,
@@ -26,13 +28,12 @@ type Application =
     installation::WorthQueryProgramApplicationRuntime<ExampleSchema, ExampleProgram<false>>;
 
 #[cfg(not(test))]
+#[expect(
+    clippy::disallowed_methods,
+    reason = "The example entry supplies a bootstrap stack before constructing the shared execution authority"
+)]
 fn main() {
-    std::thread::Builder::new()
-        .stack_size(64 * 1024 * 1024)
-        .spawn(run)
-        .unwrap()
-        .join()
-        .unwrap();
+    run();
 }
 
 pub(crate) fn run() {
@@ -69,12 +70,12 @@ pub(crate) fn run() {
     drop(first);
 
     let program = ApplicationProgramAuthoring::<ExampleSchema, ExampleProgram<false>>::begin()
-        .with_schema(&ExampleSchema::declaration().expect("the completed schema is valid"))
+        .with_schema(&<ExampleSchema as worth_query_decl::facade::application_schema::ApplicationSchema>::declaration().expect("the completed schema is valid"))
         .validated_program()
         .unwrap();
     let mut reopened = installation::WorthQueryInterimCheckpointRestore::program(
         program,
-        ExampleSchema::declaration().unwrap(),
+        <ExampleSchema as worth_query_decl::facade::application_schema::ApplicationSchema>::declaration().unwrap(),
         (setup::configuration(),),
         build,
         limits(),

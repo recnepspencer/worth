@@ -15,10 +15,6 @@ pub(super) struct ReadIntent;
 pub(super) struct Parameters;
 pub(super) struct QueryResult;
 struct IdentitySlot;
-impl worth_query_declaration::facade::application_schema::RequiredApplicationFieldValue
-    for PrincipalIdentity
-{
-}
 worth_query_structured_value_binding!(pub(super) InputBinding for ReadIntent {identity: "worth.test.resource.access-input"});
 worth_query_structured_value_binding!(pub(super) ParametersBinding for Parameters {identity: "worth.test.resource.parameters"});
 worth_query_structured_value_binding!(pub(super) ResultBinding for QueryResult {identity: "worth.test.resource.query-result"});
@@ -43,12 +39,11 @@ worth_query_query_binding!(pub(super) Access for ReadIntent, schema Schema,
     query AccessQuery, parameters ParametersBinding => |_| ApplicationQueryParameterSet::new(),
     result ResultBinding, principal PrincipalBinding, mapping Grant, principal_entity Principal,
     principal_identity u64, identity_binding U64ApplicationValueBinding,
-    scope Principal, PrincipalFacts, PrincipalIdentity, u64, ReadOnly,
-    worth_query_declaration::facade::application_schema::NoApplicationUnit,
+    scope PrincipalIdentity,
     principal_field principal_identity_field(), limits results 1);
 
 pub(super) fn query(
-) -> ApplicationQueryDefinition<Schema, AccessQuery, Parameters, QueryResult, Principal> {
+) -> ApplicationQueryDefinitionBuilder<Schema, AccessQuery, Parameters, QueryResult, Principal> {
     let principal = ApplicationEntityRef::<Schema, Principal>::from_schema_identifier("Principal");
     let shape = ApplicationQueryResultShapeBuilder::<
         Schema,
@@ -62,12 +57,6 @@ pub(super) fn query(
         IdentitySlot,
         _,
         _,
-        _,
-        _,
-        _,
-        _,
-        _,
-        _,
     >::new("identity", principal_identity_field()))
     .build();
     ApplicationQueryDefinitionBuilder::declare(AccessQuery::reference())
@@ -79,8 +68,6 @@ pub(super) fn query(
         .basis_support(ApplicationQueryBasisSupport::current_and_pinned())
         .lanes(ApplicationQueryLaneEligibility::one_shot())
         .public()
-        .build()
-        .unwrap()
 }
 
 pub(super) struct Resource;

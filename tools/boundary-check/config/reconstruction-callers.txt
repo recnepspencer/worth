@@ -1,0 +1,49 @@
+# Exact constructor callers only; there is no crate-wide owner exemption.
+# Cold restore and lazy readmission of untrusted region/history bytes.
+crates/worth-relational/src/storage/residency/region_load.rs
+crates/worth-relational/src/storage/residency/resident_history.rs
+crates/worth-relational/src/storage/residency/history_fold.rs
+# Checkpoint export verification and checkpoint image import.
+crates/worth-relational/src/storage/residency/checkpoint_capture.rs
+crates/worth-relational/src/durability/authority/checkpoint_image.rs
+crates/worth-relational/src/durability/log/native_checkpoint_codec/expanded_checkpoint.rs
+crates/worth-relational/src/durability/authority/runtime_rebuild/checkpoint_restore.rs
+# Closed corruption recorders rebuild an untrusted image, never admitted state.
+crates/worth-relational/src/durability/data/native_checkpoint/roster_corruption.rs
+crates/worth-relational/src/runtime/state/runtime_state/court_doors_for_test.rs
+# Initial publication mints only in the no-prior-root or no-prior-region branch.
+crates/worth-relational/src/branch/root_capture.rs
+crates/worth-relational/src/branch/root_capture_preparation.rs
+# Readmit a fully authenticated checkpoint root.
+crates/worth-relational/src/branch/root_readmission/region_binding.rs
+# Generic certification oracle; never a production fallback.
+crates/worth-relational/src/durability/log/native_checkpoint_codec/checkpoint_encoding.rs
+crates/worth-relational/src/durability/authority/runtime_rebuild/checkpoint_restore_tests.rs
+crates/worth-testkit-relational/src/maintenance.rs
+# Verified schema transition, explicit recovery, and transported index checks.
+crates/worth-relational/src/indexes/authority/maintenance/schema_transition.rs
+crates/worth-relational/src/indexes/authority/maintenance/recovery.rs
+crates/worth-relational/src/indexes/authority/recovery_build.rs
+crates/worth-relational/src/indexes/authority/checkpoint_admission.rs
+
+# Admit the canonical typed membership carried by untrusted checkpoint leaves.
+crates/worth-relational/src/durability/checkpoints/region_directory.rs
+
+# Explicit exact-selected authored-history reconstruction; no callback or lane result.
+crates/worth-relational/src/history/access/relevant_writes/maintenance.rs
+
+# Full admitted-plan recovery and canonical tail readmission; capabilities stay local.
+crates/worth-relational/src/durability/authority/runtime_rebuild.rs
+crates/worth-relational/src/durability/authority/runtime_rebuild/envelope_replay.rs
+
+# Explicit index-image export and lazy readmission of untrusted checkpoint bytes.
+crates/worth-relational/src/durability/authority/checkpoint_capture.rs
+crates/worth-relational/src/durability/authority/checkpoint_memory_demand.rs
+crates/worth-relational/src/runtime/state/subsystems/indexing/cold_checkpoint.rs
+
+# Native checkpoint decode and complete export-directory verification.
+crates/worth-relational/src/durability/log/native_checkpoint_codec/checkpoint_decoding.rs
+crates/worth-relational/src/durability/authority/checkpoint_native_capture.rs
+
+# A changed content schema authority alone admits full directory reconstruction.
+crates/worth-relational/src/content/schema_transition.rs

@@ -18,7 +18,7 @@ impl WorthQueryAdmittedOperation {
         ),
     > {
         if !matches!(
-            self.authorization_basis,
+            self.data.authorization_basis,
             ErasedAuthorizationBasis::Capability
         ) {
             return Err((
@@ -26,7 +26,7 @@ impl WorthQueryAdmittedOperation {
                     WorthQueryOperationAuthorizationDenialKind::Refused(
                         AuthorizationRefusal::InconsistentDecision,
                     ),
-                    &self.operation,
+                    &self.data.operation,
                 ),
                 binding,
             ));
@@ -39,13 +39,13 @@ impl WorthQueryAdmittedOperation {
                 return Err((
                     crate::domain_computation::authorization::denial::relational_read_denial(
                         stop.into(),
-                        &self.operation,
+                        &self.data.operation,
                     ),
                     binding,
                 ))
             }
         };
-        self.authorization_basis = ErasedAuthorizationBasis::ElevationClose {
+        self.data.authorization_basis = ErasedAuthorizationBasis::ElevationClose {
             binding: Box::new(binding),
             _binding_memory: memory,
         };
@@ -55,7 +55,7 @@ impl WorthQueryAdmittedOperation {
     pub(in crate::domain_computation) fn elevation_close_binding(
         &self,
     ) -> Option<&WorthQueryElevationCloseBinding> {
-        match &self.authorization_basis {
+        match &self.data.authorization_basis {
             ErasedAuthorizationBasis::ElevationClose { binding, .. } => Some(binding),
             _ => None,
         }
@@ -65,7 +65,7 @@ impl WorthQueryAdmittedOperation {
         &mut self,
     ) -> Option<WorthQueryElevationCloseBinding> {
         match std::mem::replace(
-            &mut self.authorization_basis,
+            &mut self.data.authorization_basis,
             ErasedAuthorizationBasis::Capability,
         ) {
             ErasedAuthorizationBasis::ElevationClose {
@@ -77,7 +77,7 @@ impl WorthQueryAdmittedOperation {
                 Some(binding)
             }
             other => {
-                self.authorization_basis = other;
+                self.data.authorization_basis = other;
                 None
             }
         }

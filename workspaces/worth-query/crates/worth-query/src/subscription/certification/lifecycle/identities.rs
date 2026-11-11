@@ -1,4 +1,5 @@
 use crate::evidence_identity::WorthQueryEvidenceIdentity;
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::identity_authority::admit_query_subscription_authority_identity;
 
 use super::super::super::acknowledgement::SubscriptionAcknowledgementFrontier;
@@ -22,10 +23,10 @@ fn lifecycle_counter_identities(
     closeout_counters: &WorthQueryEvidenceIdentity,
     continuation_report_identity: Option<&WorthQueryEvidenceIdentity>,
     preview_counter_identities: &[WorthQueryEvidenceIdentity],
-) -> Vec<WorthQueryEvidenceIdentity> {
+) -> Result<Vec<WorthQueryEvidenceIdentity>, IdentityDerivationDenial> {
     let mut identities = vec![
-        lifecycle_labeled_counter_identity("admission", admission_counters),
-        lifecycle_labeled_counter_identity("active", active_counters),
+        lifecycle_labeled_counter_identity("admission", admission_counters)?,
+        lifecycle_labeled_counter_identity("active", active_counters)?,
         lifecycle_labeled_counter_identity(
             "frontier",
             &WorthQueryEvidenceIdentity::compose(
@@ -43,19 +44,19 @@ fn lifecycle_counter_identities(
                 crate::evidence_identity::WorthQueryEvidenceTag::new("sequence"),
                 frontier.acknowledged_sequence().get() as usize,
             )
-            .seal(),
-        ),
-        lifecycle_labeled_counter_identity("batch", batch_counters),
-        lifecycle_labeled_counter_identity("closeout", closeout_counters),
+            .seal()?,
+        )?,
+        lifecycle_labeled_counter_identity("batch", batch_counters)?,
+        lifecycle_labeled_counter_identity("closeout", closeout_counters)?,
     ];
     if let Some(report_identity) = continuation_report_identity {
         identities.push(lifecycle_labeled_counter_identity(
             "continuation",
             report_identity,
-        ));
+        )?);
     }
     identities.extend(preview_counter_identities.iter().cloned());
-    identities
+    Ok(identities)
 }
 
 pub(super) fn assemble_lifecycle_bundle(
@@ -92,7 +93,7 @@ pub(super) fn assemble_lifecycle_bundle(
         active_lane_handle,
     );
     let active_lane_lookup_class_identity =
-        lifecycle_active_lane_lookup_class_identity(active_admission.lookup_class().as_str());
+        lifecycle_active_lane_lookup_class_identity(active_admission.lookup_class().as_str())?;
     let subscription_budget_identity = lifecycle_subscription_budget_identity(
         active_admission.budget().registry_lookup_width(),
         active_admission.budget().fanout_width(),
@@ -101,7 +102,7 @@ pub(super) fn assemble_lifecycle_bundle(
         active_admission.budget().allocation_posture().as_str(),
         active_admission.budget().durable_checkpoint_requested(),
         active_admission.budget().store_backed_restart_requested(),
-    );
+    )?;
     let absent_performance = lifecycle_absent_performance_receipt_identity();
     let preview_performance_identity = preview_evidence.performance_receipt_identity.clone();
     let performance_receipt_identities = [
@@ -123,16 +124,16 @@ pub(super) fn assemble_lifecycle_bundle(
         &preview_performance_identity,
     ];
     let subscription_performance_receipt_identity =
-        lifecycle_performance_sequence_identity(performance_receipt_identities);
+        lifecycle_performance_sequence_identity(performance_receipt_identities)?;
     let continuation_identity = continuation
         .map(|report| report.evidence_identity().clone())
         .unwrap_or_else(lifecycle_absent_continuation_identity);
     let allocation_posture_identity = lifecycle_allocation_posture_identity(
         work_packet.allocation_posture().as_str(),
         work_packet.allocation_scope_width(),
-    );
+    )?;
     let active_delivery_density_posture_identity =
-        lifecycle_active_delivery_density_posture_identity(work_packet.density_posture().as_str());
+        lifecycle_active_delivery_density_posture_identity(work_packet.density_posture().as_str())?;
     let counter_identities = lifecycle_counter_identities(
         &admission.counters().evidence_identity(),
         &active_admission.counters().evidence_identity(),
@@ -141,10 +142,10 @@ pub(super) fn assemble_lifecycle_bundle(
         &lifecycle_closeout.counters().evidence_identity(),
         continuation.map(|report| report.evidence_identity()),
         &preview_evidence.counter_identities,
-    );
+    )?;
     let counter_sequence_identity = {
         let refs: Vec<&WorthQueryEvidenceIdentity> = counter_identities.iter().collect();
-        lifecycle_counter_sequence_identity(refs)
+        lifecycle_counter_sequence_identity(refs)?
     };
     let mut support_identities: Vec<&WorthQueryEvidenceIdentity> = vec![
         admission.support_profile().profile_identity(),
@@ -152,7 +153,7 @@ pub(super) fn assemble_lifecycle_bundle(
         lifecycle_closeout.evidence_identity(),
     ];
     support_identities.extend(preview_evidence.support_identities.iter());
-    let support_matrix_identity = lifecycle_support_matrix_identity(support_identities);
+    let support_matrix_identity = lifecycle_support_matrix_identity(support_identities)?;
     let delivery_window_identity = delivery_batch.delivery_window_identity();
     let certification_bundle_identity = lifecycle_certification_bundle_identity(
         base.certification_bundle_identity(),

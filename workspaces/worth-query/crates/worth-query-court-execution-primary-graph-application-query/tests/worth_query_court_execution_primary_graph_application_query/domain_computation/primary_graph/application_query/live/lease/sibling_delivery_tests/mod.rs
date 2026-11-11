@@ -83,7 +83,7 @@ fn sibling_commit_wakes_only_its_exact_product_partition() {
                 .selected_product(&(phase).test_host_request_for_test())
                 .resolve_entity(
                     &phase,
-                    AccountIdentity::reference(),
+                    AccountIdentity::at("AccountIdentity"),
                     "account-1".to_owned(),
                     &request,
                     WorthQueryPrincipalResolutionMode::Ordinary,
@@ -131,7 +131,7 @@ fn sibling_commit_wakes_only_its_exact_product_partition() {
                 .unwrap()
                 .resolve_entity(
                     &phase,
-                    AccountIdentity::reference(),
+                    AccountIdentity::at("AccountIdentity"),
                     "account-1".to_owned(),
                     &request,
                     WorthQueryPrincipalResolutionMode::Ordinary,

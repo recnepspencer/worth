@@ -1,6 +1,74 @@
-//! A retry reads the same preflighted original bytes, never a latest source cut.
-use super::*;
+//! Prepared compiler Source custody follows its real receiver installation.
+use crate::section::source_preparation::receiver::HomeReceiverPreparation as State;
+use worth_relational::facade::{
+    durability::RefusedPreparedRelationalHomeRecovery as Refused,
+    runtime::RelationalInitialSchemaInstallationReceipt,
+};
+
 pub(in crate::section) fn recover(
+    runtime: &mut worth_relational::facade::runtime::RelationalRuntime,
+    source: &mut crate::section::PreparedRelationalHomeSource,
+    request: &ExecutionRequest<'_, '_>,
+    expected: Option<&RelationalInitialSchemaInstallationReceipt>,
+    transition: Option<
+        &worth_proof::AdmittedHomeProgramTransitionCatalog<
+            worth_relational::facade::runtime::RelationalHomeProgramCatalogReadmissionSource<'_>,
+        >,
+    >,
+) -> Result<ReadmittedRuntime, RelationalSectionReadmissionDenial> {
+    use RelationalSectionReadmissionDenial as Denial;
+    let preparation = std::mem::replace(&mut source.receiver, State::Consumed);
+    match preparation {
+        State::NotRequested => {
+            source.receiver = State::NotRequested;
+            recover_ordinary(runtime, &source.original, request, transition)
+        }
+        State::Consumed => Err(Denial::PreparedHomeSourceRequired),
+        State::Prepared(prepared) => {
+            let Some(expected) = expected else {
+                source.receiver = State::Prepared(prepared);
+                return Err(Denial::InitialSchemaRuntimeMismatch);
+            };
+            let coverage = source
+                .original
+                .checkpoint()
+                .map(|selected| [selected.covered().0, selected.covered_transitions().0]);
+            let mut pending = Some(prepared);
+            let mut result = None;
+            let scope = request.in_scope(|_| {
+                result = Some(runtime.durability_recovery().recover_prepared_home_source(
+                    request,
+                    pending.take().expect("single prepared recovery"),
+                    expected,
+                    transition,
+                ));
+            });
+            if let Some(prepared) = pending {
+                source.receiver = State::Prepared(prepared);
+            }
+            match (scope, result) {
+                (_, Some(Ok((outcome, authority)))) => Ok(ReadmittedRuntime {
+                    outcome,
+                    authority,
+                    selected_coverage: coverage,
+                }),
+                (_, Some(Err(Refused::Preparation { prepared, cause }))) => {
+                    source.receiver = State::Prepared(prepared);
+                    Err(Denial::HomePreparation(cause))
+                }
+                (_, Some(Err(Refused::Recovery(cause)))) => Err(Denial::Native(cause)),
+                (_, Some(Err(Refused::Transition(cause)))) => {
+                    Err(Denial::HomeProgramTransition(cause))
+                }
+                (Err(cause), None) => Err(Denial::Execution(cause)),
+                (Ok(()), None) => unreachable!("completed prepared Home recovery"),
+            }
+        }
+    }
+}
+
+use super::*;
+fn recover_ordinary(
     runtime: &mut worth_relational::facade::runtime::RelationalRuntime,
     original: &RelationalDurableRecoverySource,
     request: &ExecutionRequest<'_, '_>,

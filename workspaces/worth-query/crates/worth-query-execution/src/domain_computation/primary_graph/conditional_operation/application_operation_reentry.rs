@@ -18,9 +18,7 @@ pub(super) use reentry_counts::WorthQueryTemporalReentryCounts;
 mod tests;
 
 use worth_query_installation::facade::{
-    ApplicationFieldUnit, ApplicationSchema, OperationReads, OperationWrites,
-    WorthQueryInstalledApplicationOperation, WorthQueryTemporalIntentCandidate, WritableCapability,
-    WritePosture,
+    ApplicationSchema, WorthQueryInstalledApplicationOperation, WorthQueryTemporalIntentCandidate,
 };
 
 use super::operation_invocation::{
@@ -109,32 +107,18 @@ pub(super) fn reenter_temporal_operation<
     Principal,
     PrincipalIdentity,
     PrincipalIdentityBinding,
-    ScopeAspect,
     ScopeField,
     ScopeValue,
-    ScopeWrite,
-    ScopeUnit,
     PrincipalSource,
     QueryAuthorization,
     Invoker,
     IntentEntity,
-    IdentityAspect,
     IdentityField,
     IdentityValue,
-    IdentityWrite,
-    IdentityUnit,
-    RevisionAspect,
     RevisionField,
     RevisionValue,
-    RevisionWrite,
-    RevisionEquality,
-    RevisionUnit,
-    LifecycleAspect,
     LifecycleField,
     LifecycleValue,
-    LifecycleWrite,
-    LifecycleEquality,
-    LifecycleUnit,
     Authorization,
     Clock,
 >(
@@ -152,11 +136,8 @@ pub(super) fn reenter_temporal_operation<
         PrincipalIdentity,
         PrincipalIdentityBinding,
         Scope,
-        ScopeAspect,
         ScopeField,
         ScopeValue,
-        ScopeWrite,
-        ScopeUnit,
         PrincipalSource,
         QueryAuthorization,
     >,
@@ -167,23 +148,12 @@ pub(super) fn reenter_temporal_operation<
         Scope,
         Invoker,
         IntentEntity,
-        IdentityAspect,
         IdentityField,
         IdentityValue,
-        IdentityWrite,
-        IdentityUnit,
-        RevisionAspect,
         RevisionField,
         RevisionValue,
-        RevisionWrite,
-        RevisionEquality,
-        RevisionUnit,
-        LifecycleAspect,
         LifecycleField,
         LifecycleValue,
-        LifecycleWrite,
-        LifecycleEquality,
-        LifecycleUnit,
         Authorization,
     >,
     candidate: &WorthQueryTemporalIntentCandidate<Clock, Input>,
@@ -198,46 +168,54 @@ where
         worth_query_installation::facade::ApplicationIdentityScalarValueBinding<
             Value = PrincipalIdentity,
         >,
-    ScopeField: worth_query_installation::facade::DeclaredApplicationFieldValue<Value = ScopeValue>,
+    ScopeField: worth_query_declaration::facade::application_schema::fragment::RecordSelection<
+        Entity = Scope,
+        Value = ScopeValue,
+    >,
     ScopeField::Binding:
         worth_query_installation::facade::ApplicationScalarValueBinding<Value = ScopeValue>,
     ScopeValue: Clone,
-    ScopeWrite: WritePosture,
-    ScopeUnit: ApplicationFieldUnit,
     PrincipalSource: WorthQueryTemporalPrincipalSource<Schema>,
     Invoker: WorthQueryTemporalOperationInvoker<Schema, Operation, Input, Scope>,
-    IdentityField: OperationReads<Operation>,
-    IdentityField:
-        worth_query_installation::facade::DeclaredApplicationFieldValue<Value = IdentityValue>,
+    IdentityField: worth_query_declaration::facade::application_schema::fragment::RecordSelection<
+        Entity = IntentEntity,
+        Value = IdentityValue,
+    >,
     IdentityField::Binding: worth_query_installation::facade::ApplicationReadableScalarValueBinding<
         Value = IdentityValue,
     >,
     IdentityValue: Clone,
-    IdentityWrite: WritePosture,
-    IdentityUnit: ApplicationFieldUnit,
-    RevisionField: OperationReads<Operation> + OperationWrites<Operation>,
-    RevisionField:
-        worth_query_installation::facade::DeclaredApplicationFieldValue<Value = RevisionValue>,
+    RevisionField: worth_query_declaration::facade::application_schema::fragment::RecordSelection<
+        Entity = IntentEntity,
+        Value = RevisionValue,
+    >,
     RevisionField::Binding: worth_query_installation::facade::ApplicationReadableScalarValueBinding<
             Value = RevisionValue,
         > + worth_query_installation::facade::WorthQueryTemporalIntentRevisionValue,
     RevisionValue: Clone,
-    RevisionWrite: WritableCapability,
-    RevisionUnit: ApplicationFieldUnit,
-    LifecycleField: OperationReads<Operation> + OperationWrites<Operation>,
-    LifecycleField:
-        worth_query_installation::facade::DeclaredApplicationFieldValue<Value = LifecycleValue>,
+    LifecycleField: worth_query_declaration::facade::application_schema::fragment::RecordSelection<
+        Entity = IntentEntity,
+        Value = LifecycleValue,
+    >,
     LifecycleField::Binding:
         worth_query_installation::facade::ApplicationReadableScalarValueBinding<
             Value = LifecycleValue,
         >,
     LifecycleValue: Clone,
-    LifecycleWrite: WritableCapability,
-    LifecycleUnit: ApplicationFieldUnit,
     Authorization: super::WorthQueryTemporalOperationAuthorization<Schema, Operation, Input, Scope>,
 {
+    let selected = product.observation();
+    let scope = match selected.owner_identity().durable() {
+        Some(owner) => temporal_idempotency::TemporalIdempotencyScope::Home {
+            owner,
+            branch: selected.branch_identity().name().as_str(),
+            incarnation: selected.lifecycle_incarnation().ordinal(),
+        },
+        None => temporal_idempotency::TemporalIdempotencyScope::ProcessLocal,
+    };
     let idempotency =
-        match temporal_idempotency::prepare_temporal_idempotency(runtime_binding, candidate) {
+        match temporal_idempotency::prepare_temporal_idempotency(runtime_binding, candidate, scope)
+        {
             Ok(idempotency) => idempotency,
             Err(denial) => {
                 return WorthQueryTemporalReentryAttempt {

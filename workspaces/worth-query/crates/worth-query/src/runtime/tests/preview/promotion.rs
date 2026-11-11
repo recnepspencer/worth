@@ -45,7 +45,8 @@ fn preview_discard_closeout_separates_temporary_writes_from_authoritative_residu
             )
             .expect("second preview write should stage");
         preview.discard()
-    };
+    }
+    .expect("fixture digest must fit");
     let closeout = outcome.closeout_evidence();
 
     assert!(outcome.discarded());

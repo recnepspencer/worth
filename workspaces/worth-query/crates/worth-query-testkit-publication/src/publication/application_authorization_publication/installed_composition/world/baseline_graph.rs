@@ -18,9 +18,18 @@ pub fn bind_resource(graph: &mut WorthQueryPrimaryGraphBootstrap<PublicationAuth
                 Resource::reference(),
                 WorthQueryApplicationEntityKey::new("resource-1").unwrap(),
             )
-            .field(ResourceIdentityField::reference(), "resource-1".to_owned())
-            .field(ResourceWorkflowField::reference(), "open".to_owned())
-            .field(ResourceLabelField::reference(), "protected".to_owned()),
+            .field(
+                ResourceIdentityField::at("ResourceIdentityField"),
+                "resource-1".to_owned(),
+            )
+            .field(
+                ResourceWorkflowField::at("ResourceWorkflowField"),
+                "open".to_owned(),
+            )
+            .field(
+                ResourceLabelField::at("ResourceLabelField"),
+                "protected".to_owned(),
+            ),
         )
         .unwrap();
 }
@@ -32,17 +41,32 @@ pub fn bind_grant(graph: &mut WorthQueryPrimaryGraphBootstrap<PublicationAuthori
                 CapabilityGrant::reference(),
                 WorthQueryApplicationEntityKey::new("grant-1").unwrap(),
             )
-            .field(GrantIdentityField::reference(), "grant-1".to_owned())
-            .field(GrantActionField::reference(), "inspect".to_owned())
             .field(
-                GrantPurposeField::reference(),
+                GrantIdentityField::at("GrantIdentityField"),
+                "grant-1".to_owned().into(),
+            )
+            .field(
+                GrantActionField::at("GrantActionField"),
+                "inspect".to_owned(),
+            )
+            .field(
+                GrantPurposeField::at("GrantPurposeField"),
                 "publication-proof".to_owned(),
             )
-            .field(GrantStatusField::reference(), "active".to_owned())
-            .field(GrantWorkflowField::reference(), "open".to_owned())
-            .field(GrantNotBeforeField::reference(), 0_u64)
-            .field(GrantNotAfterField::reference(), u64::MAX)
-            .field(GrantDelegationLimitField::reference(), 0_u64),
+            .field(
+                GrantStatusField::at("GrantStatusField"),
+                "active".to_owned(),
+            )
+            .field(
+                GrantWorkflowField::at("GrantWorkflowField"),
+                "open".to_owned(),
+            )
+            .field(GrantNotBeforeField::at("GrantNotBeforeField"), 0_u64)
+            .field(GrantNotAfterField::at("GrantNotAfterField"), u64::MAX)
+            .field(
+                GrantDelegationLimitField::at("GrantDelegationLimitField"),
+                0_u64,
+            ),
         )
         .unwrap();
     bind_grant_principal_relations(graph);
@@ -84,7 +108,10 @@ pub fn bind_action_records(
         graph
             .bind_entity(
                 WorthQueryApplicationEntitySeed::new(ActionRecord::reference(), entity_key(record))
-                    .field(ActionRecordIdentityField::reference(), record.to_owned()),
+                    .field(
+                        ActionRecordIdentityField::at("ActionRecordIdentityField"),
+                        record.to_owned(),
+                    ),
             )
             .unwrap();
         graph

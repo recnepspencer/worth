@@ -14,3 +14,15 @@ impl<'a> ValueDecodeSession<'a> {
         &self.checkpoint
     }
 }
+
+impl<'a> ValueDecodeSession<'a> {
+    #[doc(hidden)]
+    pub fn with_record_admission_for_test<Output>(
+        &self,
+        decode: impl FnOnce(
+            &mut worth_query_declaration::facade::application_schema::ValueDecodeAdmission<'_>,
+        ) -> Output,
+    ) -> Result<Output, Stop> {
+        Self::with_record_admission(self, decode)
+    }
+}

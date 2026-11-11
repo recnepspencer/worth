@@ -8,6 +8,9 @@
 //! Only the composition root constructs an authority. Domain runtimes receive
 //! leases and use checked patterns; they do not control the physical backend.
 
+mod execution_stack;
+pub use execution_stack::run_with_execution_stack;
+
 mod monotonic_clock;
 mod monotonic_deadline;
 pub use monotonic_clock::{
@@ -54,7 +57,8 @@ pub use backend::{
 pub use partition::{
     Bisection, BisectionDenial, BisectionQuality, ComponentDenial, ComponentEdit,
     ComponentPartitioner, KeyedDenial, KeyedEditDenial, KeyedItem, KeyedPartitioner,
-    PartitionItemId, PartitionUpdateDenial, PartitionWork, WeightedEdge, WeightedItem,
+    PartitionItemId, PartitionMembers, PartitionUpdateDenial, PartitionWork, WeightedEdge,
+    WeightedItem,
 };
 pub use pattern::{
     BackInput, DecomposeCertificationFailure, DecomposeComplete, DecomposeFailure,

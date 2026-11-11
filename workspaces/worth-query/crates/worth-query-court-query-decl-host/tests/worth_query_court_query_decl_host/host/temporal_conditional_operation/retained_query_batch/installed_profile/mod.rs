@@ -44,7 +44,7 @@ fn installed_profile_extends_once_without_resetting_spent_prefix_or_source_custo
         .expect("installed host call opens");
     let limits = application.resolve_application_query_limits(binding.limits());
     let execute = |identity: &str, batch: &worth_query_host::facade::primary_graph::WorthQueryApplicationQueryBatchAdmission| {
-        let scope = world.application.with_host_advancement(|phase| security.resolve_entity(&phase, super::super::schema::IntentIdentityField::reference(), identity.to_owned(), &request, WorthQueryPrincipalResolutionMode::Ordinary).unwrap()).expect("installed host call opens");
+        let scope = world.application.with_host_advancement(|phase| security.resolve_entity(&phase, super::super::schema::IntentIdentityField::at("IntentIdentityField"), identity.to_owned(), &request, WorthQueryPrincipalResolutionMode::Ordinary).unwrap()).expect("installed host call opens");
         let access = WorthQueryApplicationQueryAccessContext::new(&principal, &scope);
         let plan = world.application.with_host_advancement(|phase| security.admit_retained_application_query_from_selection(&phase, &mut retained.borrow_mut(), binding.query(), &access, ApplicationQueryParameterSet::new(), WorthQueryProductQueryControls::new(limits.maximum_results(), &request), batch)).expect("installed host call opens")?;
         application.with_host_advancement(|phase| application.execute_application_query_one_shot_in_batch(&phase, plan, batch).map_err(|error| match error {

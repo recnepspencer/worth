@@ -43,7 +43,7 @@ fn zero_memory_cancellation_and_expired_deadline_refuse_before_any_read() {
             selected
                 .resolve_entity(
                     &phase,
-                    AccountStatus::reference(),
+                    AccountStatus::at("AccountStatus"),
                     "open".to_owned(),
                     &scope,
                     WorthQueryPrincipalResolutionMode::Ordinary,

@@ -744,6 +744,16 @@ dependencies = [
  "cfg-if",
  "cpufeatures",
  "digest",
+ "sha2-asm",
+]
+
+[[package]]
+name = "sha2-asm"
+version = "0.6.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b845214d6175804686b2bd482bcffe96651bb2d1200742b712003504a2dac1ab"
+dependencies = [
+ "cc",
 ]
 
 [[package]]
@@ -1274,6 +1284,7 @@ version = "0.1.0"
 dependencies = [
  "allocator-api2",
  "rayon",
+ "stacker",
  "worth-foundational",
  "worth-proof",
 ]
@@ -1282,6 +1293,7 @@ dependencies = [
 name = "worth-foundational"
 version = "0.1.0"
 dependencies = [
+ "im",
  "serde",
  "serde_json",
  "serde_stacker",
@@ -1292,8 +1304,38 @@ dependencies = [
 ]
 
 [[package]]
+name = "worth-harness"
+version = "0.1.0"
+dependencies = [
+ "serde",
+ "serde_json",
+]
+
+[[package]]
 name = "worth-proof"
 version = "0.1.0"
+
+[[package]]
+name = "worth-query"
+version = "0.1.0"
+dependencies = [
+ "arc-swap",
+ "serde",
+ "serde_json",
+ "sha2",
+ "worth-execution",
+ "worth-foundational",
+ "worth-proof",
+ "worth-query-admission",
+ "worth-query-declaration",
+ "worth-query-execution",
+ "worth-query-installation",
+ "worth-query-publication",
+ "worth-relational",
+ "worth-runtime-bridge",
+ "worth-schema-graph",
+ "worth-signal",
+]
 
 [[package]]
 name = "worth-query-admission"
@@ -1372,6 +1414,7 @@ dependencies = [
 name = "worth-query-host"
 version = "0.1.0"
 dependencies = [
+ "sha2",
  "worth-execution",
  "worth-foundational",
  "worth-proof",
@@ -1380,6 +1423,9 @@ dependencies = [
  "worth-query-execution",
  "worth-query-installation",
  "worth-query-publication",
+ "worth-relational",
+ "worth-runtime-bridge",
+ "worth-runtime-world",
  "worth-store-application",
 ]
 
@@ -1434,6 +1480,22 @@ dependencies = [
 ]
 
 [[package]]
+name = "worth-query-testkit-host"
+version = "0.1.0"
+dependencies = [
+ "worth-execution",
+ "worth-foundational",
+ "worth-harness",
+ "worth-query",
+ "worth-query-admission",
+ "worth-query-decl",
+ "worth-query-declaration",
+ "worth-query-execution",
+ "worth-query-host",
+ "worth-relational",
+]
+
+[[package]]
 name = "worth-query-topology-entry"
 version = "0.0.0"
 dependencies = [
@@ -1447,6 +1509,7 @@ dependencies = [
  "worth-query-consumer-values",
  "worth-query-decl",
  "worth-query-host",
+ "worth-query-testkit-host",
  "worth-relational",
 ]
 
@@ -1498,6 +1561,10 @@ dependencies = [
  "worth-runtime-bridge",
  "worth-signal",
 ]
+
+[[package]]
+name = "worth-schema-graph"
+version = "0.1.0"
 
 [[package]]
 name = "worth-signal"
@@ -1553,6 +1620,7 @@ dependencies = [
  "worth-execution",
  "worth-foundational",
  "worth-proof",
+ "worth-query-execution",
  "worth-query-installation",
  "worth-relational",
  "worth-runtime-bridge",

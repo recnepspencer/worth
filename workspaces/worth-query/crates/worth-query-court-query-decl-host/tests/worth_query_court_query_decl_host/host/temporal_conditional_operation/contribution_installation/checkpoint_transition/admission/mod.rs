@@ -68,12 +68,64 @@ fn checkpoint_transition_admission_refusal_retains_acknowledged_effects_for_expl
     )
     .unwrap()
     .expect_err("the complete capture cannot borrow its original parent when its selected child has zero memory");
-    assert_zero_memory(
+    let native_preparation_quote = assert_zero_memory(
         pending.capture_denial().expect("zero capture stopped"),
         Some(0),
     );
     assert_eq!(capture_only.charged_memory_bytes(), 0);
     drop(capture_only);
+    // The selected request funds the entire Native/World/Query capture. Its
+    // exact first Native allocation quote came from the real zero-child refusal,
+    // before final framing. A smaller finite child must preserve that precise
+    // Native stop and return every transient reservation to the same payer.
+    let finite_limit = native_preparation_quote
+        .checked_sub(1)
+        .filter(|bytes| *bytes > 0)
+        .expect("the Native preparation quote includes real owner storage");
+    let finite = original
+        .child(checkpoint_capture::LeaseRequest {
+            policy: checkpoint_capture::ExecutionRequestPolicy::new(
+                original.policy().posture(),
+                original.policy().determinism(),
+                checkpoint_capture::ExecutionBudget::new(
+                    checkpoint_capture::NonZeroUsize::MIN,
+                    Some(finite_limit),
+                    None,
+                ),
+            ),
+            cancellation: checkpoint_capture::CancellationToken::new(),
+            deadline: None,
+        })
+        .unwrap();
+    let pending = checkpoint_capture::with_bootstrap_advancement_from_request(
+        ExecutionRequest::leased(&original),
+        |phase| {
+            pending.repair_to_checkpoint(
+                &phase,
+                application_installation::WorthQueryCheckpointCapturePolicy::Execution(&finite),
+            )
+        },
+    )
+    .unwrap()
+    .expect_err("the same Native preparation cannot fit below its own first quote");
+    let Some(CaptureDenial::Execution(cause)) = pending.capture_denial() else {
+        panic!("exact Native preparation cause must survive: {pending:?}");
+    };
+    assert!(
+        matches!(cause.kind(),
+        primary_graph::WorthQueryPrimaryGraphInstallationDenialKind::ExecutionDenied {
+            kind: primary_graph::WorthQueryProviderSessionDenialKind::ExecutionResource {
+                denial: worth_query_host::facade::application_contribution::WorthQueryManagedComputationResourceDenial::MemoryLimit { requested, admitted, level: worth_query_host::facade::application_contribution::WorthQueryMemoryLimitLevel::Policy },
+                partition_identity: None, policy_ancestor: Some(0),
+            }
+        } if requested > admitted && admitted > 0),
+        "the same owner retains the precise memory stop: {cause:?}"
+    );
+    assert_eq!(finite.charged_memory_bytes(), 0);
+    let released = finite.reserve_memory(finite_limit).unwrap();
+    drop(released);
+    drop(finite);
+    assert_eq!(calls, 1, "refused capture retries cannot rerun authoring");
     // Reuse the existing 64MiB original ceiling for the whole capture. The
     // retired frame-only child quote cannot fund an authenticated origin.
     let checkpoint = checkpoint_capture::with_bootstrap_advancement_from_request(
@@ -96,7 +148,7 @@ fn checkpoint_transition_admission_refusal_retains_acknowledged_effects_for_expl
     assert_eq!(calls, 1, "repair cannot rerun authoring");
 }
 
-fn assert_zero_memory(denial: &CaptureDenial, expected_ancestor: Option<u32>) {
+fn assert_zero_memory(denial: &CaptureDenial, expected_ancestor: Option<u32>) -> u64 {
     let CaptureDenial::Execution(cause) = denial else {
         panic!("the complete capture retains its original admission cause: {denial:?}");
     };
@@ -110,4 +162,5 @@ fn assert_zero_memory(denial: &CaptureDenial, expected_ancestor: Option<u32>) {
     } = cause.kind() else { panic!("typed zero-memory refusal: {cause:?}"); };
     assert_eq!(policy_ancestor, expected_ancestor);
     assert!(requested > 0);
+    requested
 }

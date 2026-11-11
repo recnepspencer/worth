@@ -67,7 +67,8 @@ fn update_existing_preserves_continuity_evidence_on_receipt_and_inspection() {
     let expected_basis_binding_digest = WorthQueryMutationEvidenceDigest::source_identity(
         "continuity-basis-binding",
         binding.binding_evidence_identity(),
-    );
+    )
+    .expect("fixture digest must fit");
     let receipt = workspace
         .update_existing(request_execution, binding, |task| {
             task.continuity_rebind_existing_target(
@@ -244,24 +245,34 @@ fn mixed_batch_preserves_continuity_and_naming_session_evidence() {
     assert_eq!(
         receipt
             .batch_mutation_evidence()
+            .expect("fixture digest must fit")
             .continuity_mutation_count(),
         1
     );
-    assert_eq!(receipt.batch_mutation_evidence().naming_mutation_count(), 1);
     assert_eq!(
         receipt
             .batch_mutation_evidence()
+            .expect("fixture digest must fit")
+            .naming_mutation_count(),
+        1
+    );
+    assert_eq!(
+        receipt
+            .batch_mutation_evidence()
+            .expect("fixture digest must fit")
             .existing_truth_binding_count(),
         1
     );
     assert_eq!(
         receipt
             .batch_mutation_evidence()
+            .expect("fixture digest must fit")
             .symbolic_target_reference_count(),
         1
     );
     assert!(receipt
         .batch_mutation_evidence()
+        .expect("fixture digest must fit")
         .aggregate_continuity_mutation_digest()
         .is_some());
 

@@ -219,3 +219,6 @@ fn component_plan(
 ) -> Result<WorthQueryProductBranchComponentPosture, WorthQueryProductBranchCreateError> {
     posture.ok_or(WorthQueryProductBranchCreateError::ComponentsIncomplete)
 }
+#[cfg(test)]
+#[path = "creation_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;

@@ -1,5 +1,6 @@
 use crate::domain_computation::authorization::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
 mod admission;
+pub(in crate::domain_computation) use admission::BorrowedReadOperationAdmission;
 pub(in crate::domain_computation) mod admitted_request;
 pub(crate) mod application_commit_authorization;
 pub(crate) mod application_disclosure;
@@ -90,13 +91,16 @@ pub(in crate::domain_computation) use elevation_progression::WorthQueryMandatory
 pub(in crate::domain_computation) use installed_policy::WorthQueryInstalledAuthorizationRegistry;
 pub(in crate::domain_computation) use operation_progression::admit_capability_access;
 pub(in crate::domain_computation) use operation_progression::admit_encoded_capability_access;
-pub(in crate::domain_computation) use operation_progression::authorize_current_control_mutation_on_selected;
 pub(in crate::domain_computation) use operation_progression::authorize_public_mutation_on_selected;
 pub(in crate::domain_computation) use operation_progression::progress_conventional_operation;
 pub(in crate::domain_computation) use operation_progression::SelectedConventionalAdmissionStop;
 pub use operation_progression::WorthQueryAdmittedApplicationCapabilityAccess;
 pub use operation_progression::WorthQueryAdmittedApplicationOperation;
 pub(in crate::domain_computation) use operation_progression::WorthQueryOperationAdmissionIdentity;
+pub(in crate::domain_computation) use operation_progression::{
+    authorize_current_control_mutation_on_selected,
+    authorize_historical_control_mutation_on_selected,
+};
 pub use operation_scope_binding::WorthQueryOperationScopeBinding;
 pub use operation_scope_binding::WorthQueryOperationScopeEntityBinding;
 pub(in crate::domain_computation) use retained_capability_support::WorthQueryCapabilitySupportCommitBasis;
@@ -120,3 +124,6 @@ pub(in crate::domain_computation) use operation_progression::{
 };
 
 pub use capability_decision_fact::WorthQueryRetainedCapabilityAuthorization;
+#[cfg(test)]
+#[path = "mod_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;

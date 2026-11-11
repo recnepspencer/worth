@@ -20,7 +20,7 @@ pub struct WorthQueryCanonicalCorrectionFact {
     pub prior: Option<WorthQueryCorrectionSourceCoordinates>,
 }
 
-pub(super) fn read(
+pub(in crate::domain_computation::primary_graph) fn read(
     runtime: &worth_relational::facade::runtime::RelationalRuntime,
     snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
     layout: &WorthQueryAftermathCausalityLayout,
@@ -54,6 +54,18 @@ pub(super) fn read(
         })
         .map_err(aftermath_read_stop)?
         .ok_or(WorthQueryAftermathCausalityReadDenial::Unavailable)?;
+    for locator in canonical_locators(layout) {
+        let revision = view
+            .entity_field_revision(
+                execution,
+                entity,
+                &crate::domain_computation::primary_graph::observations::authoritative(locator),
+            )
+            .map_err(aftermath_read_stop)?;
+        if revision.is_none_or(|revision| revision.version() != row.0) {
+            return Err(WorthQueryAftermathCausalityReadDenial::InconsistentCanonicalRelationships);
+        }
+    }
     decode(runtime, entity, row, owner)
 }
 
@@ -165,6 +177,10 @@ fn string(
     index: usize,
 ) -> Result<String, WorthQueryAftermathCausalityReadDenial> {
     match values.get(index).and_then(Option::as_ref) {
+        Some(AspectValue::String(InternedString::Stored(value))) => {
+            let value = value.as_string();
+            Ok(value.clone())
+        }
         Some(AspectValue::String(InternedString::Raw(value))) => Ok(value.clone()),
         _ => Err(WorthQueryAftermathCausalityReadDenial::Unavailable),
     }

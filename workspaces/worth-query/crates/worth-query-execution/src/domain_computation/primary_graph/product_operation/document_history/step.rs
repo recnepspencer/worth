@@ -88,3 +88,6 @@ mod tests {
         assert_eq!(counter.load(Ordering::Relaxed), u64::MAX);
     }
 }
+#[cfg(test)]
+#[path = "step_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;

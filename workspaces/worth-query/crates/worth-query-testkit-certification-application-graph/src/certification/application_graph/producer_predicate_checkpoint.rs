@@ -28,9 +28,9 @@ pub use program::{validated_program, AssessmentRoot};
 
 pub fn assert_captured_document_predicate(bytes: &[u8], accepted_bytes: usize, subject: EntityId) {
     // Inspect only Query's accepted-output section. The native payload remains opaque.
-    // This independent current v13 wire expectation fails if capture or readmission drops
+    // This independent current v14 wire expectation fails if capture or readmission drops
     // the predicate while retaining the document's ordinary field observations.
-    assert_eq!(&bytes[40..42], &13_u16.to_be_bytes());
+    assert_eq!(&bytes[40..42], &14_u16.to_be_bytes());
     assert_eq!(DOCUMENT_IDENTITY, "document-1");
     let value = br#"{"String":{"Raw":"document-1"}}"#;
     let mut expected = Vec::new();

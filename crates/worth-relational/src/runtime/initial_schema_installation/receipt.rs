@@ -32,6 +32,11 @@ impl RelationalInitialSchemaInstallationReceipt {
     pub const fn runtime_instance_id(&self) -> u64 {
         self.runtime_instance_id
     }
+    /// Current installed schema meaning. This is not a durable birth claim.
+    pub const fn schema_authority_digest(&self) -> [u8; 32] {
+        self.retained_schema_authority_digest
+    }
+
     pub const fn custom_invariant_generation(&self) -> u64 {
         self.custom_invariant_generation
     }

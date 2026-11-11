@@ -1,11 +1,30 @@
 use crate::transactions::data::TransactionCommitError;
+mod historical_selection;
+pub(crate) use historical_selection::require_graph_coverage;
+pub use historical_selection::RelationalHistoricalOutputSelection;
 mod authored_cascade;
 mod authored_restoration;
 mod authored_retirement;
+mod native_transition_succession;
+mod restored_producer_prior;
 pub use authored_cascade::RelationalAuthoredRetirement;
 pub use authored_restoration::RelationalAuthoredRestoration;
+pub use restored_producer_prior::RelationalRestoredProducerPrior;
 mod completion;
+mod coupled_assembly;
+mod coupled_owners;
 mod custody;
+mod ownership_reach;
+pub(crate) use coupled_assembly::BoundAuthoredCoupling;
+pub use coupled_assembly::{
+    RelationalAuthoredCoupledCandidate, RelationalAuthoredCoupledProducerAssembly,
+    RelationalAuthoredCoupledTransaction, RelationalCoupledAssemblyFailure,
+    RelationalCoupledAuthoredPublication,
+};
+pub use coupled_owners::{RelationalAuthoredCoupledOwners, RelationalDeclaredCoupledOwner};
+mod predecessor_basis;
+mod predecessor_observation;
+pub use predecessor_basis::{RelationalPredecessorBasisDenial, RelationalPredecessorBasisOrigin};
 mod producing_implementation;
 mod route_absence;
 mod scope_ownership;
@@ -13,7 +32,11 @@ pub use completion::{
     RequiredOutputPublication, RequiredOutputPublicationMeaning, RequiredOutputRolePosture,
     RequiredOutputRoleTarget,
 };
-pub use custody::RelationalRequiredOutputPublication;
+pub(crate) use custody::prepare as prepare_publications;
+pub use custody::{
+    RelationalPerformedOutputPublications, RelationalPreparedOutputPublications,
+    RelationalRequiredOutputPublication,
+};
 pub use producing_implementation::RequiredOutputProducingImplementation;
 pub use route_absence::RelationalRequiredOutputRouteAbsence;
 
@@ -54,6 +77,20 @@ impl crate::mvcc::ValidatedRelationalProposal {
     /// Bind a running installed producer before immutable publication preparation.
     /// Target references remain untrusted selectors until native allocation and
     /// canonical operation/payload coverage have been checked.
+    /// The real scoped assembly has already bound each admitted writer's
+    /// publication. An outer authored origin must not bind it a second time.
+    pub fn has_coupled_authored_publication(&self) -> bool {
+        self.state
+            .required_output_publication
+            .as_ref()
+            .is_some_and(|admission| {
+                matches!(
+                    admission.publication,
+                    RequiredOutputPublication::CoupledAuthored { .. }
+                )
+            })
+    }
+
     pub fn bind_required_output_publication(
         mut self,
         installed: &RelationalInstalledApplicationPublicationAuthority,
@@ -73,6 +110,12 @@ impl crate::mvcc::ValidatedRelationalProposal {
             return Err(origin_denial(
                 "required-output publication has a foreign or repeated installed owner",
             ));
+        }
+        if !installed.source_scope_ownership.is_empty()
+            && let Some(source) = publication.ownership_subject(installed)
+        {
+            installed
+                .require_current_ownership_storage(self.state.validation_input.basis(), source)?;
         }
         self.state.required_output_publication = Some(RequiredOutputPublicationAdmission {
             installed: installed.clone(),
@@ -156,3 +199,6 @@ pub(crate) fn native_meaning_fixture(family: &str) -> RequiredOutputPublicationM
         source_epoch: worth_foundational::CanonicalDigestId::new([0; 32]),
     }
 }
+#[cfg(test)]
+#[path = "application_publication_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;

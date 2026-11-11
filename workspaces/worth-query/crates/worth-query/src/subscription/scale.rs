@@ -1,4 +1,5 @@
 use crate::evidence_identity::WorthQueryEvidenceIdentity;
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::identity_authority::{QueryProjectionIdentity, QuerySubscriptionIdentityKind};
 
 use super::activation::SubscriptionActivationInput;
@@ -46,7 +47,7 @@ impl QuerySubscriptionScaleCounterSnapshot {
         fixture_size: QuerySubscriptionScaleFixtureSize,
         fixture_row_count: u64,
         activation: &SubscriptionActivationInput,
-    ) -> Self {
+    ) -> Result<Self, IdentityDerivationDenial> {
         let activation_identity = activation.evidence_identity().clone();
         let admission_identity = activation.admission_identity().clone();
         let counters = activation.counters().clone();
@@ -57,8 +58,8 @@ impl QuerySubscriptionScaleCounterSnapshot {
             &activation_identity,
             &admission_identity,
             &counter_identity,
-        );
-        Self {
+        )?;
+        Ok(Self {
             fixture_size,
             fixture_row_count,
             activation_identity,
@@ -66,7 +67,7 @@ impl QuerySubscriptionScaleCounterSnapshot {
             counter_identity,
             counters,
             snapshot_identity,
-        }
+        })
     }
 
     pub fn fixture_size(&self) -> &QuerySubscriptionScaleFixtureSize {
@@ -126,7 +127,7 @@ impl QuerySubscriptionScaleCounterSnapshot {
         mut self,
         activation: &SubscriptionActivationInput,
         bridge_slice_count: u64,
-    ) -> Self {
+    ) -> Result<Self, IdentityDerivationDenial> {
         self.counters.bridge_slice_count = bridge_slice_count;
         self.counter_identity = self.counters.evidence_identity();
         let snapshot_identity = scale_counter_snapshot_identity(
@@ -135,9 +136,9 @@ impl QuerySubscriptionScaleCounterSnapshot {
             activation.evidence_identity(),
             activation.admission_identity(),
             &self.counter_identity,
-        );
+        )?;
         self.snapshot_identity = snapshot_identity;
-        self
+        Ok(self)
     }
 }
 

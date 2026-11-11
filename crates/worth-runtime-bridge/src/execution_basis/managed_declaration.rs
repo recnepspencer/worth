@@ -7,29 +7,34 @@ use worth_signal::facade::{
 use crate::source::{
     BridgeAsyncSourceDeclarationDraft, BridgeAsyncSourceDeclarationIdentity,
     BridgeAsyncSourceDeclarationRejection, BridgeAsyncSourceLegacyDeclarationIdentity,
-    LoweredBridgeAsyncSourceDeclaration, ValidatedBridgeAsyncSourceDeclaration,
+    LoweredBridgeAsyncSourceDeclaration, OriginalLoweringStorage,
+    ValidatedBridgeAsyncSourceDeclaration,
 };
 
 pub(super) fn managed_execution_declaration(
     instance_identity: &str,
     deadline_nanos: Option<u64>,
+    storage: OriginalLoweringStorage,
 ) -> Result<LoweredBridgeAsyncSourceDeclaration, BridgeAsyncSourceDeclarationRejection> {
     execution_declaration(
         instance_identity,
         deadline_nanos,
         "bridge-managed-domain-execution-v1",
         "bridge-managed-domain-execution-legacy-v1",
+        storage,
     )
 }
 
 pub(super) fn atomic_execution_declaration(
     instance_identity: &str,
+    storage: OriginalLoweringStorage,
 ) -> Result<LoweredBridgeAsyncSourceDeclaration, BridgeAsyncSourceDeclarationRejection> {
     execution_declaration(
         instance_identity,
         None,
         "bridge-atomic-domain-execution-v1",
         "bridge-atomic-domain-execution-legacy-v1",
+        storage,
     )
 }
 
@@ -38,6 +43,7 @@ fn execution_declaration(
     deadline_nanos: Option<u64>,
     declaration_identity: &str,
     legacy_identity: &str,
+    storage: OriginalLoweringStorage,
 ) -> Result<LoweredBridgeAsyncSourceDeclaration, BridgeAsyncSourceDeclarationRejection> {
     let node = ResourceNodeDeclaration::new(
         ResourceNodeId::from_node(NodeId::new(0, 0)),
@@ -60,7 +66,7 @@ fn execution_declaration(
         node,
     );
     let validated = ValidatedBridgeAsyncSourceDeclaration::validate(draft)?;
-    let lowered = LoweredBridgeAsyncSourceDeclaration::lower(&validated)?;
+    let lowered = LoweredBridgeAsyncSourceDeclaration::lower_original(&validated, storage)?;
     lowered.instantiate_request_response(instance_identity)
 }
 

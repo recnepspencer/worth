@@ -2,8 +2,9 @@ use serde::{Deserialize, Serialize};
 
 use super::{DerivedIndexGeneration, DerivedIndexId};
 
-/// Explicit limits for patch-local work and optional cold reconstruction.
-/// An explicit Some(0) cold limit prohibits reconstruction, including a missing generation.
+/// Limits for change maintenance or an explicitly entered reconstruction.
+/// A cold allowance grants no reconstruction authority: ordinary maintenance
+/// refuses missing predecessor state even when this allowance is positive or absent.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub struct DerivedIndexMaintenanceBudget {
     pub maximum_work_units: Option<usize>,
@@ -76,4 +77,35 @@ pub enum SelectedIndexGenerationAdmissionStop<Stop> {
 pub enum DerivedIndexMaintenanceAdmissionStop<Stop> {
     Native(DerivedIndexMaintenanceDenial),
     Admission(Stop),
+}
+
+impl From<crate::storage::substrate::maintenance::MaintenanceRefusal>
+    for DerivedIndexMaintenanceDenial
+{
+    fn from(cause: crate::storage::substrate::maintenance::MaintenanceRefusal) -> Self {
+        use crate::storage::substrate::maintenance::MaintenanceRefusal as Refusal;
+        Self {
+            kind: match cause {
+                Refusal::Execution(cause) => DerivedIndexMaintenanceDenialKind::Execution(cause),
+                Refusal::MissingPredecessor | Refusal::UnavailableChange => {
+                    DerivedIndexMaintenanceDenialKind::ColdReconstructionRequired
+                }
+            },
+            work: Default::default(),
+        }
+    }
+}
+
+impl From<crate::storage::substrate::maintenance::MaintenanceRefusal>
+    for DerivedIndexMaintenanceDenialKind
+{
+    fn from(cause: crate::storage::substrate::maintenance::MaintenanceRefusal) -> Self {
+        use crate::storage::substrate::maintenance::MaintenanceRefusal as Refusal;
+        match cause {
+            Refusal::Execution(cause) => Self::Execution(cause),
+            Refusal::MissingPredecessor | Refusal::UnavailableChange => {
+                Self::ColdReconstructionRequired
+            }
+        }
+    }
 }

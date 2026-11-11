@@ -50,13 +50,14 @@ pub(super) fn compile_access_contracts<Schema: ApplicationSchema>(
             .cloned()
             .collect();
         let obligations = bind_resource_obligations(
+            schema.identity_budget,
             &schema.binding_identity(),
             &parts.name,
             purpose,
             requirements.get(&purpose.action()),
             &capabilities,
         )
-        .map_err(|_| Denial::new(Kind::AccessContractInvalid, &parts.name))?;
+        .map_err(|cause| Denial::graph_obligation(&parts.name, cause))?;
         contracts.insert(
             purpose,
             Arc::new(Contract {

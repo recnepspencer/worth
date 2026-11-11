@@ -1,181 +1,79 @@
-use crate::application_query::ApplicationQueryResultFieldPresence;
-use std::marker::PhantomData;
-
-use worth_foundational::facade::ScalarAspectType;
-
+//! Query result selectors borrow record-derived names; schema build checks the requested column.
 use super::result_slot_key::ApplicationQueryResultFieldSlotContract;
-use super::ApplicationQueryMarkerIdentity;
-use super::ApplicationQueryResultSlotKey;
+use super::{
+    ApplicationQueryMarkerIdentity, ApplicationQueryResultFieldPresence,
+    ApplicationQueryResultSlotKey,
+};
 use crate::application_schema::{
-    ApplicationFieldRef, ApplicationFieldUnit, ApplicationScalarValueBinding,
-    OptionalApplicationFieldValue, RequiredApplicationFieldValue,
+    fragment::RecordSelection, ApplicationFieldBindingRecipe, ApplicationScalarValueBinding,
 };
 use crate::portable_identity::WorthQueryPortableType;
+use std::marker::PhantomData;
+use worth_foundational::facade::ScalarAspectType;
 
-/// Selector for a schema-required result field.
-///
-/// An optional schema field cannot be smuggled into the required result API:
-///
-/// ```compile_fail
-/// use worth_query_declaration::facade::{
-///     application_query::ApplicationQueryResultFieldRef,
-///     application_schema::{
-///         EqualityPredicate, NoApplicationUnit, ReadWrite, StringApplicationValueBinding,
-///     },
-/// };
-/// struct Schema;
-/// struct Query;
-/// struct Slot;
-/// worth_query_declaration::worth_query_entity!(pub Record for Schema);
-/// worth_query_declaration::worth_query_aspect!(pub Facts for Schema, Record; identity = AspectIdentity(0x9161102b), revision = AspectContractRevision(1),);
-/// worth_query_declaration::worth_query_field!(
-///     pub OptionalText for Schema, Record, Facts:
-///     optional String => StringApplicationValueBinding, read_write, equality
-/// );
-/// let _ = ApplicationQueryResultFieldRef::<
-///     Query, Slot, Schema, Record, Facts, OptionalText, String,
-///     ReadWrite, EqualityPredicate, NoApplicationUnit,
-/// >::new("text", OptionalText::reference());
-/// ```
-pub struct ApplicationQueryResultFieldRef<
-    Query,
-    Slot,
-    Schema,
-    Entity,
-    Aspect,
-    Field,
-    Value,
-    Write,
-    Equality,
-    Unit,
-> {
+/// An authored Required projection; installation retains its checked slot contract.
+pub struct ApplicationQueryResultFieldRef<Query, Slot, Schema, Field: RecordSelection> {
     output_name: &'static str,
-    entity: &'static str,
-    aspect: &'static str,
-    field: &'static str,
-    _query_position: PhantomData<fn() -> (Query, Slot, Schema, Entity, Aspect)>,
-    _field_contract: PhantomData<fn() -> (Field, Value, Write, Equality, Unit)>,
+    source: Field,
+    marker: PhantomData<fn() -> (Query, Slot, Schema)>,
 }
-
-/// Selector for a schema-optional result field.
-///
-/// A required schema field cannot be reinterpreted as lawfully absent:
-///
-/// ```compile_fail
-/// use worth_query_declaration::facade::{
-///     application_query::ApplicationQueryOptionalResultFieldRef,
-///     application_schema::{
-///         EqualityPredicate, NoApplicationUnit, ReadWrite, StringApplicationValueBinding,
-///     },
-/// };
-/// struct Schema;
-/// struct Query;
-/// struct Slot;
-/// worth_query_declaration::worth_query_entity!(pub Record for Schema);
-/// worth_query_declaration::worth_query_aspect!(pub Facts for Schema, Record; identity = AspectIdentity(0x9161102c), revision = AspectContractRevision(1),);
-/// worth_query_declaration::worth_query_field!(
-///     pub RequiredText for Schema, Record, Facts:
-///     String => StringApplicationValueBinding, read_write, equality
-/// );
-/// let _ = ApplicationQueryOptionalResultFieldRef::<
-///     Query, Slot, Schema, Record, Facts, RequiredText, String,
-///     ReadWrite, EqualityPredicate, NoApplicationUnit,
-/// >::new("text", RequiredText::reference());
-/// ```
-pub struct ApplicationQueryOptionalResultFieldRef<
-    Query,
-    Slot,
-    Schema,
-    Entity,
-    Aspect,
-    Field,
-    Value,
-    Write,
-    Equality,
-    Unit,
-> {
-    output_name: &'static str,
-    entity: &'static str,
-    aspect: &'static str,
-    field: &'static str,
-    _query_position: PhantomData<fn() -> (Query, Slot, Schema, Entity, Aspect)>,
-    _field_contract: PhantomData<fn() -> (Field, Value, Write, Equality, Unit)>,
-}
-
-impl<Query, Slot, Schema, Entity, Aspect, Field, Value, Write, Equality, Unit>
-    ApplicationQueryResultFieldRef<
-        Query,
-        Slot,
-        Schema,
-        Entity,
-        Aspect,
-        Field,
-        Value,
-        Write,
-        Equality,
-        Unit,
-    >
-where
-    Field: RequiredApplicationFieldValue<Value = Value>,
-    Unit: ApplicationFieldUnit,
+impl<Query, Slot, Schema, Field: RecordSelection> Copy
+    for ApplicationQueryResultFieldRef<Query, Slot, Schema, Field>
 {
-    pub fn new(
-        output_name: &'static str,
-        field: ApplicationFieldRef<Schema, Entity, Aspect, Field, Value, Write, Equality, Unit>,
-    ) -> Self {
+}
+impl<Query, Slot, Schema, Field: RecordSelection> Clone
+    for ApplicationQueryResultFieldRef<Query, Slot, Schema, Field>
+{
+    fn clone(&self) -> Self {
+        *self
+    }
+}
+impl<Query, Slot, Schema, Field: RecordSelection>
+    ApplicationQueryResultFieldRef<Query, Slot, Schema, Field>
+{
+    pub fn new(output_name: &'static str, field: Field) -> Self {
         Self {
             output_name,
-            entity: field.entity(),
-            aspect: field.aspect(),
-            field: field.field(),
-            _query_position: PhantomData,
-            _field_contract: PhantomData,
+            source: field,
+            marker: PhantomData,
         }
     }
-
     pub const fn output_name(&self) -> &'static str {
         self.output_name
     }
-
-    pub const fn entity(&self) -> &'static str {
-        self.entity
+    pub fn entity(&self) -> &'static str {
+        self.source.entity()
     }
-
-    pub const fn aspect(&self) -> &'static str {
-        self.aspect
+    pub fn aspect(&self) -> &'static str {
+        self.source.aspect()
     }
-
-    pub const fn field(&self) -> &'static str {
-        self.field
+    pub fn field(&self) -> &'static str {
+        self.source.field()
     }
-
     pub const fn scalar_family(&self) -> ScalarAspectType {
         Field::Binding::SCALAR_FAMILY
     }
-
     pub const fn presence(&self) -> ApplicationQueryResultFieldPresence {
         ApplicationQueryResultFieldPresence::Required
     }
-
     pub fn value_type(&self) -> &'static str {
         Field::Binding::IDENTITY_NAME
     }
-
+    pub(crate) fn binding_recipe(&self) -> ApplicationFieldBindingRecipe {
+        self.source.expected_recipe()
+    }
     pub fn query_type(&self) -> &'static str
     where
         Query: ApplicationQueryMarkerIdentity<Schema>,
     {
         Query::QUERY_TYPE_NAME
     }
-
     pub fn slot_type(&self) -> &'static str
     where
         Slot: WorthQueryPortableType,
     {
         Slot::PORTABLE_TYPE_NAME
     }
-
-    /// Compare the complete required-field contract without constructing an owned key.
     pub fn matches_slot_key(&self, key: &ApplicationQueryResultSlotKey) -> bool
     where
         Query: ApplicationQueryMarkerIdentity<Schema>,
@@ -184,18 +82,9 @@ where
         key.matches_field(
             Query::QUERY_TYPE_IDENTITY,
             Slot::PORTABLE_TYPE_IDENTITY,
-            ApplicationQueryResultFieldSlotContract {
-                entity: self.entity,
-                aspect: self.aspect,
-                field: self.field,
-                output_name: self.output_name,
-                scalar_family: Field::Binding::SCALAR_FAMILY,
-                value_type: Field::Binding::IDENTITY,
-                presence: ApplicationQueryResultFieldPresence::Required,
-            },
+            self.contract(),
         )
     }
-
     pub fn slot_key(&self) -> ApplicationQueryResultSlotKey
     where
         Query: ApplicationQueryMarkerIdentity<Schema>,
@@ -204,92 +93,96 @@ where
         ApplicationQueryResultSlotKey::field(
             Query::QUERY_TYPE_IDENTITY,
             Slot::PORTABLE_TYPE_IDENTITY,
-            ApplicationQueryResultFieldSlotContract {
-                entity: self.entity,
-                aspect: self.aspect,
-                field: self.field,
-                output_name: self.output_name,
-                scalar_family: Field::Binding::SCALAR_FAMILY,
-                value_type: Field::Binding::IDENTITY,
-                presence: ApplicationQueryResultFieldPresence::Required,
-            },
+            self.contract(),
         )
+    }
+    fn contract(&self) -> ApplicationQueryResultFieldSlotContract<'_> {
+        ApplicationQueryResultFieldSlotContract {
+            entity: self.entity(),
+            aspect: self.aspect(),
+            field: self.field(),
+            output_name: self.output_name,
+            scalar_family: Field::Binding::SCALAR_FAMILY,
+            value_type: Field::Binding::IDENTITY,
+            presence: self.presence(),
+        }
     }
 }
 
-impl<Query, Slot, Schema, Entity, Aspect, Field, Value, Write, Equality, Unit>
-    ApplicationQueryOptionalResultFieldRef<
-        Query,
-        Slot,
-        Schema,
-        Entity,
-        Aspect,
-        Field,
-        Value,
-        Write,
-        Equality,
-        Unit,
-    >
-where
-    Field: OptionalApplicationFieldValue<Value = Value>,
-    Unit: ApplicationFieldUnit,
+/// An authored Optional projection; installation retains its checked slot contract.
+pub struct ApplicationQueryOptionalResultFieldRef<Query, Slot, Schema, Field: RecordSelection> {
+    output_name: &'static str,
+    source: Field,
+    marker: PhantomData<fn() -> (Query, Slot, Schema)>,
+}
+impl<Query, Slot, Schema, Field: RecordSelection> Copy
+    for ApplicationQueryOptionalResultFieldRef<Query, Slot, Schema, Field>
 {
-    pub fn new(
-        output_name: &'static str,
-        field: ApplicationFieldRef<Schema, Entity, Aspect, Field, Value, Write, Equality, Unit>,
-    ) -> Self {
+}
+impl<Query, Slot, Schema, Field: RecordSelection> Clone
+    for ApplicationQueryOptionalResultFieldRef<Query, Slot, Schema, Field>
+{
+    fn clone(&self) -> Self {
+        *self
+    }
+}
+impl<Query, Slot, Schema, Field: RecordSelection>
+    ApplicationQueryOptionalResultFieldRef<Query, Slot, Schema, Field>
+{
+    pub fn new(output_name: &'static str, field: Field) -> Self {
         Self {
             output_name,
-            entity: field.entity(),
-            aspect: field.aspect(),
-            field: field.field(),
-            _query_position: PhantomData,
-            _field_contract: PhantomData,
+            source: field,
+            marker: PhantomData,
         }
     }
-
     pub const fn output_name(&self) -> &'static str {
         self.output_name
     }
-
-    pub const fn entity(&self) -> &'static str {
-        self.entity
+    pub fn entity(&self) -> &'static str {
+        self.source.entity()
     }
-
-    pub const fn aspect(&self) -> &'static str {
-        self.aspect
+    pub fn aspect(&self) -> &'static str {
+        self.source.aspect()
     }
-
-    pub const fn field(&self) -> &'static str {
-        self.field
+    pub fn field(&self) -> &'static str {
+        self.source.field()
     }
-
     pub const fn scalar_family(&self) -> ScalarAspectType {
         Field::Binding::SCALAR_FAMILY
     }
-
     pub const fn presence(&self) -> ApplicationQueryResultFieldPresence {
         ApplicationQueryResultFieldPresence::Optional
     }
-
     pub fn value_type(&self) -> &'static str {
         Field::Binding::IDENTITY_NAME
     }
-
+    pub(crate) fn binding_recipe(&self) -> ApplicationFieldBindingRecipe {
+        self.source.expected_recipe()
+    }
     pub fn query_type(&self) -> &'static str
     where
         Query: ApplicationQueryMarkerIdentity<Schema>,
     {
         Query::QUERY_TYPE_NAME
     }
-
     pub fn slot_type(&self) -> &'static str
     where
         Slot: WorthQueryPortableType,
     {
         Slot::PORTABLE_TYPE_NAME
     }
-
+    pub fn matches_slot_key(&self, key: &ApplicationQueryResultSlotKey) -> bool
+    where
+        Query: ApplicationQueryMarkerIdentity<Schema>,
+        Slot: WorthQueryPortableType,
+    {
+        key.matches_field(
+            Query::QUERY_TYPE_IDENTITY,
+            Slot::PORTABLE_TYPE_IDENTITY,
+            self.contract(),
+        )
+    }
     pub fn slot_key(&self) -> ApplicationQueryResultSlotKey
     where
         Query: ApplicationQueryMarkerIdentity<Schema>,
@@ -298,17 +191,18 @@ where
         ApplicationQueryResultSlotKey::field(
             Query::QUERY_TYPE_IDENTITY,
             Slot::PORTABLE_TYPE_IDENTITY,
-            ApplicationQueryResultFieldSlotContract {
-                entity: self.entity,
-                aspect: self.aspect,
-                field: self.field,
-                output_name: self.output_name,
-                scalar_family: Field::Binding::SCALAR_FAMILY,
-                value_type: Field::Binding::IDENTITY,
-                presence: ApplicationQueryResultFieldPresence::Optional,
-            },
+            self.contract(),
         )
     }
+    fn contract(&self) -> ApplicationQueryResultFieldSlotContract<'_> {
+        ApplicationQueryResultFieldSlotContract {
+            entity: self.entity(),
+            aspect: self.aspect(),
+            field: self.field(),
+            output_name: self.output_name,
+            scalar_family: Field::Binding::SCALAR_FAMILY,
+            value_type: Field::Binding::IDENTITY,
+            presence: self.presence(),
+        }
+    }
 }
-
-mod copy;

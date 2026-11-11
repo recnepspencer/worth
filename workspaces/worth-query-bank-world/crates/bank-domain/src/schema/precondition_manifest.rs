@@ -8,7 +8,7 @@ pub(super) fn install_payment_preconditions(
     schema
         .operation_expected_version(
             SendMoneyOperation::reference(),
-            AccountingRevision::reference(),
+            AccountingRevision::at("AccountingRevision"),
         )
-        .operation_expected_fact(SendMoneyOperation::reference(), Status::reference())
+        .operation_expected_fact(SendMoneyOperation::reference(), Status::at("Status"))
 }

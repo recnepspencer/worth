@@ -74,7 +74,7 @@ fn eligibility(
         visible,
     );
     let declaration = declare_projection_consumption(source, binding, requested).unwrap();
-    evaluate_projection_consumption_eligibility(&declaration)
+    evaluate_projection_consumption_eligibility(&declaration).expect("fixture digest must fit")
 }
 
 fn native_struct_contract() -> (AspectContract, AspectKey, FieldKey, FieldKey) {

@@ -1,19 +1,22 @@
 //! Reconstruct one live incident edge over its exact publication predecessors.
 use super::{charge, memory_overflow, reserve, CodecRetirementClosureStop as Stop};
 use crate::branch::RelationalBranchRoot;
+use crate::history::data::canonical_commit_envelope::{
+    OutputOriginHistory, OwnedValidatedOutputOrigins,
+};
 use crate::history::data::CanonicalCommitEnvelope;
 use crate::identity::data::RelationId;
 use crate::publication::patch::data::RecordStructuralChange as Change;
-use crate::runtime::RelationalRuntime;
 use crate::transactions::data::RecordRef;
 use std::sync::Arc;
 use worth_execution::{ExecutionResourceLease, MapKernelContext};
 
 pub(super) fn validate(
-    runtime: &RelationalRuntime,
+    runtime: &crate::history::data::codec_retirement_closure::history_request::RuntimeHistoryRequest<'_, '_, '_>,
     root: &RelationalBranchRoot,
-    selected: &Arc<CanonicalCommitEnvelope>,
+    selected: &OwnedValidatedOutputOrigins,
     id: RelationId,
+    validated_history: &mut OutputOriginHistory,
     context: &mut MapKernelContext<'_, '_>,
     lease: Option<&ExecutionResourceLease<'_>>,
 ) -> Result<(), Stop> {
@@ -51,9 +54,10 @@ pub(super) fn validate(
             selected.commit.commit_id,
             entry.after_write,
             write,
-            &mut |commit| runtime.history.canonical_envelope(commit),
-            &mut |version| runtime.history.canonical_envelope_for_version(version),
-            runtime.history.catalog_len(),
+            &mut |commit| runtime.commit(commit),
+            &mut |version, context| runtime.version(version, context),
+            runtime.runtime.history.catalog_len(),
+            &runtime.execution(),
             context,
         )?
     {
@@ -65,7 +69,16 @@ pub(super) fn validate(
         .schema_authority()
         .relation_aspect_plan(entry.kind)
         .ok_or("relation physical contract plan absent")?;
-    let state = reconstruct(runtime, selected, id, plan, context, lease)?;
+    let state = reconstruct(
+        runtime,
+        selected,
+        id,
+        plan,
+        validated_history,
+        context,
+        lease,
+        root.schema_authority(),
+    )?;
     let payload = row.extra().authoritative_aspect_state();
     charge(
         context,
@@ -78,14 +91,16 @@ pub(super) fn validate(
 }
 
 pub(super) fn reconstruct(
-    runtime: &RelationalRuntime,
-    selected: &Arc<CanonicalCommitEnvelope>,
+    runtime: &crate::history::data::codec_retirement_closure::history_request::RuntimeHistoryRequest<'_, '_, '_>,
+    selected: &OwnedValidatedOutputOrigins,
     id: RelationId,
     plan: &crate::schema::data::LoweredAspectContractPlan,
+    validated_history: &mut OutputOriginHistory,
     context: &mut MapKernelContext<'_, '_>,
     lease: Option<&ExecutionResourceLease<'_>>,
+    schema: &crate::branch::RelationalBranchRootSchemaAuthority,
 ) -> Result<Option<super::payload_reconstruction::ReconstructedPayload>, Stop> {
-    let bound = runtime.history.catalog_len();
+    let bound = runtime.runtime.history.catalog_len();
     let _memory = reserve(
         lease,
         bound
@@ -93,7 +108,7 @@ pub(super) fn reconstruct(
             .ok_or_else(memory_overflow)?,
     )?;
     let mut chain = Vec::with_capacity(bound);
-    let mut current = Arc::clone(selected);
+    let mut current = selected.clone();
     loop {
         if chain.len() >= bound {
             return Err("relation succession incomplete or cyclic".into());
@@ -105,7 +120,21 @@ pub(super) fn reconstruct(
             .iter()
             .find(|relation| relation.id == id)
             .ok_or("relation predecessor membership absent")?;
-        chain.push(Arc::clone(&current));
+        chain.push(current.clone());
+        if matches!(
+            origin.publication,
+            crate::history::data::CanonicalOutputPublication::HistoricalSelection { .. }
+        ) {
+            current = super::historical_selection::antecedent(
+                runtime.runtime,
+                &runtime.execution(),
+                &current,
+                origin,
+                validated_history,
+                context,
+            )?;
+            continue;
+        }
         let Some(before) = relation.before_write else {
             if let crate::history::data::CanonicalOutputPublication::AuthoredRestoration {
                 retirement,
@@ -119,8 +148,10 @@ pub(super) fn reconstruct(
                     retirement,
                     predecessor,
                     plan,
+                    validated_history,
                     context,
                     lease,
+                    schema,
                 )?;
             }
             if relation.birth != current.commit.commit_id {
@@ -131,9 +162,13 @@ pub(super) fn reconstruct(
         let Some(predecessor) = origin.publication.predecessor() else {
             return Err("relation has predecessor under initial publication".into());
         };
-        let previous = runtime
-            .history
-            .canonical_envelope(predecessor)
+        let previous = validated_history
+            .by_commit(
+                predecessor,
+                &mut |commit| runtime.commit(commit),
+                &runtime.execution(),
+                context,
+            )?
             .ok_or("relation predecessor absent")?;
         let old = previous.output_origin_for_relation(id, context)?;
         charge(context, old.relations.len())?;
@@ -147,9 +182,10 @@ pub(super) fn reconstruct(
             previous.commit.commit_id,
             old.after_write,
             before,
-            &mut |commit| runtime.history.canonical_envelope(commit),
-            &mut |version| runtime.history.canonical_envelope_for_version(version),
-            runtime.history.catalog_len(),
+            &mut |commit| runtime.commit(commit),
+            &mut |version, context| runtime.version(version, context),
+            runtime.runtime.history.catalog_len(),
+            &runtime.execution(),
             context,
         )? || relation.birth != old.birth
             || relation.kind != old.kind
@@ -161,6 +197,12 @@ pub(super) fn reconstruct(
     let mut state: Option<super::payload_reconstruction::ReconstructedPayload> = None;
     for envelope in chain.iter().rev() {
         let origin = envelope.output_origin_for_relation(id, context)?;
+        if matches!(
+            origin.publication,
+            crate::history::data::CanonicalOutputPublication::HistoricalSelection { .. }
+        ) {
+            continue;
+        }
         charge(
             context,
             origin.relations.len() + envelope.patch.authoritative_record_patches.len(),

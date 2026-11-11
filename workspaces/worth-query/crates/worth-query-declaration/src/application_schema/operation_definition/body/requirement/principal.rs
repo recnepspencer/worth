@@ -4,6 +4,7 @@ use super::{
     ApplicationOperationBodyRequirementOperands as Operands,
     ApplicationOperationBodyRequirementSource as Source,
 };
+use crate::application_schema::fragment::RecordSelection;
 use crate::{
     application_operation::ApplicationMutationBinding,
     application_schema::{

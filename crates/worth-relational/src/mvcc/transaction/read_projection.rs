@@ -1,3 +1,4 @@
+mod work_observation;
 use crate::authority::mutation::intents::{field_authoring_candidate, record_aspect_patch};
 use crate::capabilities::AspectPlanSource;
 use crate::storage::data::{EntityReadRecord, RelationReadRecord};
@@ -35,13 +36,14 @@ impl From<RelationReadRecord> for RelationalTransactionRelationValue {
     }
 }
 
-pub(super) fn project_entity(
+pub(super) fn project_entity<'a>(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     schema: &impl AspectPlanSource,
     mut effective: Option<EntityReadRecord>,
-    staged: &[EntityMutationIntent],
+    staged: impl IntoIterator<Item = &'a EntityMutationIntent>,
 ) -> Result<Option<EntityReadRecord>, super::RelationalTransactionReadDenial> {
     for intent in staged {
+        work_observation::record();
         match intent {
             EntityMutationIntent::UpdateFields(intent) => {
                 let Some(record) = effective.as_mut() else {
@@ -94,13 +96,14 @@ pub(super) fn project_entity(
     Ok(effective)
 }
 
-pub(super) fn project_relation(
+pub(super) fn project_relation<'a>(
     schema: &impl AspectPlanSource,
-    base: Option<RelationReadRecord>,
-    staged: &[RelationMutationIntent],
+    base: Option<RelationalTransactionRelationValue>,
+    staged: impl IntoIterator<Item = &'a RelationMutationIntent>,
 ) -> Result<Option<RelationalTransactionRelationValue>, CommitConflict> {
-    let mut effective = base.map(RelationalTransactionRelationValue::from);
+    let mut effective = base;
     for intent in staged {
+        work_observation::record();
         match intent {
             RelationMutationIntent::UpdateEndpoints(intent) => {
                 let Some(record) = effective.as_mut() else {

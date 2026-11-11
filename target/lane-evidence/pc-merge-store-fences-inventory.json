@@ -1,0 +1,434 @@
+[
+  {
+    "stem": "wal_selection_cannot_deep_clone",
+    "errors": [
+      "error[E0277]: the trait bound `PhysicalWalSegmentCandidate: Clone` is not satisfied",
+      "error[E0277]: the trait bound `SelectedPhysicalWalTail: Clone` is not satisfied",
+      "error[E0277]: the trait bound `PhysicalSourceSelection: Clone` is not satisfied"
+    ],
+    "private_fields": false
+  },
+  {
+    "stem": "wal_read_diagnostic_cannot_escape_backing",
+    "errors": [
+      "error[E0599]: no method named `into_error` found for struct `FundedRecoveryWalReadFailure` in the current scope"
+    ],
+    "private_fields": false
+  },
+  {
+    "stem": "wal_observation_cannot_clone",
+    "errors": [
+      "error[E0277]: the trait bound `ObservedWalArtifact: Clone` is not satisfied"
+    ],
+    "private_fields": false
+  },
+  {
+    "stem": "unregistered_freshness_cannot_admit_coordination",
+    "errors": [
+      "error[E0599]: no method named `admit_coordination` found for struct `PhysicalRecoveryFreshnessAuthority` in the current scope"
+    ],
+    "private_fields": false
+  },
+  {
+    "stem": "staged_recovery_cannot_be_forged",
+    "errors": [
+      "error: cannot construct `StagedPhysicalRecovery` with struct literal syntax due to private fields"
+    ],
+    "private_fields": true
+  },
+  {
+    "stem": "source_read_allocation_prevents_coordination_disposal",
+    "errors": [
+      "error[E0505]: cannot move out of `coordination` because it is borrowed"
+    ],
+    "private_fields": false
+  },
+  {
+    "stem": "session_cannot_terminate_twice",
+    "errors": [
+      "error[E0382]: use of moved value: `admitted`"
+    ],
+    "private_fields": false
+  },
+  {
+    "stem": "selected_recovery_cannot_be_forged",
+    "errors": [
+      "error[E0308]: mismatched types",
+      "error[E0308]: mismatched types",
+      "error[E0308]: mismatched types",
+      "error: cannot construct `SelectedPhysicalRecovery` with struct literal syntax due to private fields",
+      "error[E0308]: mismatched types"
+    ],
+    "private_fields": true
+  },
+  {
+    "stem": "request_rejects_live_store",
+    "errors": [
+      "error[E0308]: mismatched types"
+    ],
+    "private_fields": false
+  },
+  {
+    "stem": "request_rejects_c7_handoff",
+    "errors": [
+      "error[E0308]: mismatched types"
+    ],
+    "private_fields": false
+  },
+  {
+    "stem": "reopened_recovery_cannot_be_forged",
+    "errors": [
+      "error: cannot construct `ReopenedPhysicalRecovery` with struct literal syntax due to private fields"
+    ],
+    "private_fields": true
+  },
+  {
+    "stem": "registered_session_cannot_admit_two_coordinators",
+    "errors": [
+      "error[E0382]: use of moved value: `session`"
+    ],
+    "private_fields": false
+  },
+  {
+    "stem": "recovery_wal_segment_cannot_be_forged",
+    "errors": [
+      "error[E0599]: no associated function or constant named `from_complete_frames` found for struct `IntegrityAdmittedRecoveryWalSegment` in the current scope"
+    ],
+    "private_fields": false
+  },
+  {
+    "stem": "recovery_limit_failure_is_not_a_struct_literal",
+    "errors": [
+      "error[E0451]: fields `dimension`, `observed` and `admitted` of struct `PhysicalRecoveryLimitFailure` are private"
+    ],
+    "private_fields": false
+  },
+  {
+    "stem": "recovery_limit_cannot_be_minted_by_a_caller",
+    "errors": [
+      "error[E0308]: mismatched types"
+    ],
+    "private_fields": false
+  },
+  {
+    "stem": "recovery_limits_cannot_be_minted_outside_their_owner",
+    "errors": [
+      "error[E0308]: mismatched types",
+      "error[E0308]: mismatched types",
+      "error[E0308]: mismatched types",
+      "error[E0308]: mismatched types",
+      "error[E0308]: mismatched types"
+    ],
+    "private_fields": false
+  },
+  {
+    "stem": "recovery_limits_are_not_struct_literals",
+    "errors": [
+      "error[E0451]: fields `dimension` and `counts` of struct `ExhaustedLimit` are private"
+    ],
+    "private_fields": false
+  },
+  {
+    "stem": "recovery_effect_cannot_be_recorded_before_execution",
+    "errors": [
+      "error[E0624]: associated function `record_write` is private"
+    ],
+    "private_fields": false
+  },
+  {
+    "stem": "recovery_effect_actions_cannot_be_substituted",
+    "errors": [
+      "error[E0308]: mismatched types"
+    ],
+    "private_fields": false
+  },
+  {
+    "stem": "recovery_construction_requires_cleanup_close",
+    "errors": [
+      "error[E0308]: mismatched types"
+    ],
+    "private_fields": false
+  },
+  {
+    "stem": "recovery_construction_port_cannot_be_forged",
+    "errors": [
+      "error: cannot construct `PhysicalRecoveryConstructionPort` with struct literal syntax due to private fields"
+    ],
+    "private_fields": true
+  },
+  {
+    "stem": "recovery_construction_authority_cannot_be_forged",
+    "errors": [
+      "error: cannot construct `PhysicalRecoveryConstructionAuthority` with struct literal syntax due to private fields"
+    ],
+    "private_fields": true
+  },
+  {
+    "stem": "recovery_cannot_ask_an_owners_allowance",
+    "errors": [
+      "error[E0432]: unresolved import `worth_store::physical_runtime::FilesystemObservationAllowance`",
+      "error[E0432]: unresolved import `worth_store_physical_integrity::ReleaseCustodyHeadWalkAllowance`",
+      "error[E0432]: unresolved imports `worth_store_recovery_physics::HeadReplayAllowance`, `worth_store_recovery_physics::PhysicsAllowance`, `worth_store_recovery_physics::RootHistoryAllowance`"
+    ],
+    "private_fields": false
+  },
+  {
+    "stem": "recovery_attempt_is_not_performed_evidence",
+    "errors": [
+      "error[E0308]: mismatched types"
+    ],
+    "private_fields": false
+  },
+  {
+    "stem": "recovered_handoff_cannot_be_forged",
+    "errors": [
+      "error: cannot construct `RecoveredPhysicalRuntimeHandoff` with struct literal syntax due to private fields"
+    ],
+    "private_fields": true
+  },
+  {
+    "stem": "raw_checkpoint_cannot_be_cloned_or_adopted",
+    "errors": [
+      "error[E0599]: no method named `clone` found for struct `VerifiedCheckpointStream` in the current scope",
+      "error[E0308]: mismatched types"
+    ],
+    "private_fields": false
+  },
+  {
+    "stem": "platform_authority_cannot_clone",
+    "errors": [
+      "error[E0599]: no method named `clone` found for struct `PhysicalRecoveryPlatformAuthority` in the current scope"
+    ],
+    "private_fields": false
+  },
+  {
+    "stem": "planned_recovery_cannot_be_forged",
+    "errors": [
+      "error[E0308]: mismatched types",
+      "error[E0308]: mismatched types",
+      "error[E0308]: mismatched types",
+      "error[E0308]: mismatched types",
+      "error[E0308]: mismatched types",
+      "error: cannot construct `PlannedPhysicalRecovery` with struct literal syntax due to private fields",
+      "error[E0308]: mismatched types"
+    ],
+    "private_fields": true
+  },
+  {
+    "stem": "performed_recovery_effect_cannot_be_forged",
+    "errors": [
+      "error[E0451]: fields `evidence` and `_action` of struct `PerformedRecoveryPhysicalEffect` are private",
+      "error: type `physical_runtime::recovery_coordination::effect::RecoveryPhysicalEffectAuthority` is private"
+    ],
+    "private_fields": false
+  },
+  {
+    "stem": "ordinary_backend_qualification_is_not_a_recovery_dependency",
+    "errors": [
+      "error[E0432]: unresolved import `worth_store_physical_backend`"
+    ],
+    "private_fields": false
+  },
+  {
+    "stem": "namespace_durable_recovery_cannot_be_forged",
+    "errors": [
+      "error: cannot construct `NamespaceDurablePhysicalRecovery` with struct literal syntax due to private fields"
+    ],
+    "private_fields": true
+  },
+  {
+    "stem": "manifest_entry_view_is_not_a_charge",
+    "errors": [
+      "error[E0308]: mismatched types",
+      "error[E0599]: no method named `charge` found for struct `ViewEntryCap` in the current scope"
+    ],
+    "private_fields": false
+  },
+  {
+    "stem": "manifest_entry_charge_has_no_zero_units",
+    "errors": [
+      "error[E0308]: mismatched types"
+    ],
+    "private_fields": false
+  },
+  {
+    "stem": "manifest_entry_charge_cannot_be_reused",
+    "errors": [
+      "error[E0382]: use of moved value: `charge`"
+    ],
+    "private_fields": false
+  },
+  {
+    "stem": "manifest_entry_charge_cannot_be_forged",
+    "errors": [
+      "error[E0624]: associated function `witness` is private"
+    ],
+    "private_fields": false
+  },
+  {
+    "stem": "manifest_entry_budget_is_built_only_by_the_walk_entry",
+    "errors": [
+      "error[E0624]: associated function `declared` is private"
+    ],
+    "private_fields": false
+  },
+  {
+    "stem": "funded_observation_cannot_duplicate_or_extract_present_bytes",
+    "errors": [
+      "error[E0599]: no method named `clone` found for struct `FundedRecoveryObservation` in the current scope",
+      "error[E0308]: mismatched types",
+      "error[E0507]: cannot move out of a shared reference"
+    ],
+    "private_fields": false
+  },
+  {
+    "stem": "fresh_reopen_action_cannot_be_substituted",
+    "errors": [
+      "error[E0308]: mismatched types"
+    ],
+    "private_fields": false
+  },
+  {
+    "stem": "freshness_sample_rejects_caller_generation",
+    "errors": [
+      "error[E0308]: mismatched types"
+    ],
+    "private_fields": false
+  },
+  {
+    "stem": "freshness_sample_and_member_cannot_clone",
+    "errors": [
+      "error[E0277]: the trait bound `StoreRecoveryBindingFreshnessSample: Clone` is not satisfied",
+      "error[E0277]: the trait bound `StoreRecoveryWalMember: Clone` is not satisfied"
+    ],
+    "private_fields": false
+  },
+  {
+    "stem": "freshness_port_rejects_raw_session",
+    "errors": [
+      "error[E0061]: this function takes 1 argument but 2 arguments were supplied"
+    ],
+    "private_fields": false
+  },
+  {
+    "stem": "freshness_port_cannot_be_constructed",
+    "errors": [
+      "error[E0451]: field `_private` of struct `PhysicalRecoveryFreshnessPort` is private"
+    ],
+    "private_fields": false
+  },
+  {
+    "stem": "discovered_recovery_cannot_clone",
+    "errors": [
+      "error[E0382]: use of moved value: `discovered`"
+    ],
+    "private_fields": false
+  },
+  {
+    "stem": "discovered_cannot_skip_planning",
+    "errors": [
+      "error[E0599]: no method named `plan` found for struct `DiscoveredPhysicalRecovery` in the current scope"
+    ],
+    "private_fields": false
+  },
+  {
+    "stem": "cleanup_removal_is_not_a_media_method",
+    "errors": [
+      "error[E0432]: unresolved import `worth_store::physical_runtime::execute_recovery_cleanup_removal`",
+      "error[E0599]: no method named `remove_revalidated_recovery_artifact_scheduled` found for reference `&AdmittedRecoveryFilesystemMedia` in the current scope"
+    ],
+    "private_fields": false
+  },
+  {
+    "stem": "cleanup_performed_evidence_cannot_be_forged",
+    "errors": [
+      "error[E0451]: field `performed` of struct `PerformedRecoveryCleanupRemoval` is private"
+    ],
+    "private_fields": false
+  },
+  {
+    "stem": "cleanup_fresh_reopen_cannot_be_reused",
+    "errors": [
+      "error[E0382]: use of moved value: `reopened`"
+    ],
+    "private_fields": false
+  },
+  {
+    "stem": "cleanup_freshness_rejects_caller_source_and_policy",
+    "errors": [
+      "error: cannot construct `StoreRecoveryCleanupPlan` with struct literal syntax due to private fields"
+    ],
+    "private_fields": true
+  },
+  {
+    "stem": "cleanup_eligibility_cannot_be_reused",
+    "errors": [
+      "error[E0599]: no method named `clone` found for struct `RecoveryCleanupEligibility` in the current scope"
+    ],
+    "private_fields": false
+  },
+  {
+    "stem": "cleanup_eligibility_cannot_be_forged",
+    "errors": [
+      "error[E0451]: field `covered` of struct `RecoveryCleanupEligibility` is private"
+    ],
+    "private_fields": false
+  },
+  {
+    "stem": "cleanup_close_cannot_be_reused",
+    "errors": [
+      "error[E0382]: use of moved value: `closed`"
+    ],
+    "private_fields": false
+  },
+  {
+    "stem": "cleanup_close_cannot_be_forged",
+    "errors": [
+      "error[E0451]: fields `reopen`, `descriptive_plan_identity`, `authority_plan_identity` and `live_media_handle_delta` of struct `ClosedPhysicalRecoveryCleanup` are private"
+    ],
+    "private_fields": false
+  },
+  {
+    "stem": "cleanup_cancellation_cannot_be_reused",
+    "errors": [
+      "error[E0382]: use of moved value: `cancellation`"
+    ],
+    "private_fields": false
+  },
+  {
+    "stem": "cleanup_cancellation_cannot_be_forged",
+    "errors": [
+      "error[E0451]: fields `plan` and `settled_actions` of struct `PhysicalRecoveryCleanupCancellation` are private"
+    ],
+    "private_fields": false
+  },
+  {
+    "stem": "checkpoint_binding_decode_requires_native_window",
+    "errors": [
+      "error[E0061]: this method takes 3 arguments but 2 arguments were supplied"
+    ],
+    "private_fields": false
+  },
+  {
+    "stem": "checkpoint_binding_basis_has_no_unfunded_constructor",
+    "errors": [
+      "error[E0599]: no associated function or constant named `begin` found for struct `StoreRecoveryCheckpointBindingRebuilder` in the current scope",
+      "error[E0624]: associated function `prepare` is private"
+    ],
+    "private_fields": false
+  },
+  {
+    "stem": "bare_witness_cannot_enter",
+    "errors": [
+      "error[E0308]: mismatched types"
+    ],
+    "private_fields": false
+  },
+  {
+    "stem": "admitted_cannot_skip_discovery",
+    "errors": [
+      "error[E0599]: no method named `select` found for struct `AdmittedPhysicalRecovery` in the current scope"
+    ],
+    "private_fields": false
+  }
+]

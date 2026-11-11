@@ -26,7 +26,8 @@ fn runtime_family_certification_closes_with_admitted_and_hostile_family_coverage
         QuerySubscriptionLifecycleCoverageClass::ActiveLifecycle,
     )
     .unwrap();
-    let matrix = build_query_subscription_family_coverage_matrix(vec![admitted_row, hostile_row]);
+    let matrix = build_query_subscription_family_coverage_matrix(vec![admitted_row, hostile_row])
+        .expect("fixture digest must fit");
     let handle = build_certified_family_coverage_handle(
         &matrix,
         artifacts.declaration.family(),
@@ -104,7 +105,8 @@ fn runtime_family_certification_denies_without_hostile_family_coverage() {
         QuerySubscriptionLifecycleCoverageClass::LifecycleCloseout,
     )
     .unwrap();
-    let matrix = build_query_subscription_family_coverage_matrix(vec![admitted_row]);
+    let matrix = build_query_subscription_family_coverage_matrix(vec![admitted_row])
+        .expect("fixture digest must fit");
     let handle = build_certified_family_coverage_handle(
         &matrix,
         artifacts.declaration.family(),
@@ -141,7 +143,8 @@ fn runtime_family_coverage_handle_rejects_denied_matrix_scan_posture() {
         QuerySubscriptionLifecycleCoverageClass::LifecycleCloseout,
     )
     .unwrap();
-    let matrix = build_query_subscription_family_coverage_matrix(vec![admitted_row]);
+    let matrix = build_query_subscription_family_coverage_matrix(vec![admitted_row])
+        .expect("fixture digest must fit");
 
     let error = build_certified_family_coverage_handle(
         &matrix,

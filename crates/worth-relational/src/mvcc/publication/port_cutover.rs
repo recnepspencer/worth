@@ -238,6 +238,12 @@ impl PreparedBranchPublicationPreflight {
                 return durable_stop_outcome(stop);
             }
         };
+        // Actual movement succeeded. Install only prepaid Native metadata;
+        // keep owning payload cleanup parked until outside the caller's guard.
+        self.settlement_reservation
+            .as_mut()
+            .expect("the same cutover owns its reserved completion")
+            .install_prepared_indexes();
         drop(companion_cutover);
         drop(read_state);
         let _critical_section = _critical_section.into_target_guard();

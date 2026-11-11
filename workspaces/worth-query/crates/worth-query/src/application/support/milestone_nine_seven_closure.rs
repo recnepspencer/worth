@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::evidence_identity::{
     worth_query_evidence_identity, WorthQueryEvidenceIdentity, WorthQueryEvidenceScope,
     WorthQueryEvidenceTag,
@@ -106,7 +107,7 @@ impl WorthQueryMilestoneNineSevenDerivedClosure {
     pub fn derive_from_phase_closures(
         phase_closures: impl IntoIterator<Item = WorthQueryMilestoneNineSevenPhaseClosure>,
         defended_exclusions: impl IntoIterator<Item = impl Into<String>>,
-    ) -> Self {
+    ) -> Result<Self, IdentityDerivationDenial> {
         let mut phase_closures = phase_closures.into_iter().collect::<Vec<_>>();
         phase_closures.sort_by_key(WorthQueryMilestoneNineSevenPhaseClosure::phase);
         let defended_exclusions = defended_exclusions
@@ -138,17 +139,17 @@ impl WorthQueryMilestoneNineSevenDerivedClosure {
                     WorthQueryEvidenceTag::new("defended_exclusion"),
                     defended_exclusions.iter().map(String::as_str),
                 )
-                .seal();
-        Self {
+                .seal()?;
+        Ok(Self {
             status,
             phase_closures,
             defended_exclusions,
             closure_identity,
-        }
+        })
     }
 
-    pub fn support_profile_publication_contract() -> Self {
-        Self::derive_from_phase_closures(
+    pub fn support_profile_publication_contract() -> Result<Self, IdentityDerivationDenial> {
+        Ok(Self::derive_from_phase_closures(
             REQUIRED_PHASES.into_iter().map(|phase| {
                 WorthQueryMilestoneNineSevenPhaseClosure::new(
                     phase,
@@ -157,7 +158,7 @@ impl WorthQueryMilestoneNineSevenDerivedClosure {
                 )
             }),
             ["store-backed execution parity belongs to Milestone 10"],
-        )
+        )?)
     }
 
     pub fn status(&self) -> WorthQueryMilestoneClosureStatus {

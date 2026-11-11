@@ -29,6 +29,19 @@ pub(crate) struct MutationPreparationTelemetry {
     pub(crate) staged_parallel_strategy_count: usize,
 }
 
+impl MutationPreparationTelemetry {
+    pub(crate) fn accumulate(&mut self, part: Self) {
+        self.packet_count += part.packet_count;
+        self.packet_item_count += part.packet_item_count;
+        self.packet_peak_width_total += part.packet_peak_width_total;
+        self.scope_unit_count += part.scope_unit_count;
+        self.parallel_legal_count += part.parallel_legal_count;
+        self.parallel_profitable_count += part.parallel_profitable_count;
+        self.serial_strategy_count += part.serial_strategy_count;
+        self.staged_parallel_strategy_count += part.staged_parallel_strategy_count;
+    }
+}
+
 #[derive(Debug, Clone, Default)]
 pub(crate) struct BranchLocalDeleteAllowance {
     pub(crate) entity_ids: BTreeSet<EntityId>,
@@ -45,6 +58,7 @@ pub(crate) struct MutationWorkspace<'a> {
     aspect_plans: &'a AspectContractPlanCatalog,
     version_id: VersionId,
     branch_local_delete_allowance: BranchLocalDeleteAllowance,
+    deferred_publication_edges: Option<&'a std::collections::BTreeSet<RelationId>>,
     preparation_telemetry: MutationPreparationTelemetry,
     created_entities: ExecutionOrderedMap<CreatedEntityKey<'a>, EntityId>,
     created_relations: ExecutionOrderedMap<CreatedRelationKey<'a>, RelationId>,
@@ -74,6 +88,7 @@ impl<'a> MutationWorkspace<'a> {
             aspect_plans,
             version_id,
             branch_local_delete_allowance,
+            deferred_publication_edges: None,
             preparation_telemetry: MutationPreparationTelemetry::default(),
             created_entities: ExecutionOrderedMap::default(),
             created_relations: ExecutionOrderedMap::default(),
@@ -83,6 +98,12 @@ impl<'a> MutationWorkspace<'a> {
 
     pub(crate) fn execution(&self) -> worth_execution::ExecutionRequest<'a, 'a> {
         self.execution
+    }
+    pub(crate) fn defer_publication_edges(
+        &mut self,
+        edges: &'a std::collections::BTreeSet<RelationId>,
+    ) {
+        self.deferred_publication_edges = Some(edges);
     }
 
     pub(crate) fn commit_work_budget(&self) -> Option<&crate::execution::RequestWorkBudget> {
@@ -99,6 +120,7 @@ impl<'a> MutationWorkspace<'a> {
             state: self.state,
             schema: self.schema,
             record_allocations,
+            deferred_publication_edges: self.deferred_publication_edges,
         })
     }
 

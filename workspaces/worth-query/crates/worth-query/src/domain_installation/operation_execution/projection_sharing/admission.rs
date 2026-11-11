@@ -348,3 +348,6 @@ pub(super) fn stopped<D, O, F, L: BasisOperationLane>(
         counters,
     })
 }
+#[cfg(test)]
+#[path = "admission_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;

@@ -1,20 +1,20 @@
 use std::marker::PhantomData;
-use std::sync::Arc;
 
-use worth_query_installation::facade::{ApplicationRelationRef, ApplicationSchema};
-use worth_relational::facade::runtime::{ProjectionAspectScope, VisibilityProjectionView};
-use worth_relational::facade::storage::RecordLifecycleState;
+use worth_query_installation::facade::ApplicationRelationRef;
+use worth_query_installation::facade::ApplicationSchema;
+use worth_relational::facade::runtime::VisibilityProjectionView;
 
-use super::{
-    WorthQueryApplicationInvariantProjectionReader, WorthQueryInvariantEntityIdentity,
-    WorthQueryInvariantProjectionTraversalDenial, WorthQueryInvariantProjectionTraversalDenialKind,
-    WorthQueryInvariantRelation,
-};
+use super::WorthQueryApplicationInvariantProjectionReader;
+use super::WorthQueryInvariantEntityIdentity;
+use super::WorthQueryInvariantProjectionTraversalDenial;
+use super::WorthQueryInvariantProjectionTraversalDenialKind;
+use super::WorthQueryInvariantRelation;
 
 impl<Schema> WorthQueryApplicationInvariantProjectionReader<'_, Schema>
 where
     Schema: ApplicationSchema,
 {
+    #[inline(always)]
     pub fn relations_from<Relation, From, To>(
         &mut self,
 
@@ -24,33 +24,26 @@ where
         Vec<WorthQueryInvariantRelation<Schema, Relation, From, To>>,
         WorthQueryInvariantProjectionTraversalDenial,
     > {
-        let execution = self.execution;
-        let layout = self.relation_layout(&relation)?;
-        if !self.identity_is_local(from, relation.from()) || from.kind != layout.from {
-            return Err(foreign(relation.name()));
-        }
-        let read = self.read_adjacency(
+        let mut relations = Vec::new();
+        self.native_read().relations(
             relation.name(),
-            from.entity_id,
-            layout.kind,
+            relation.from(),
+            relation.to(),
+            from.native_identity(),
             worth_query_declaration::facade::application_schema::RelationDirection::Forward,
-        )?;
-        read.into_records()
-            .into_iter()
-            .map(|record| {
-                self.realized_scope
-                    .record_relation(record.source, record.target);
-                let to = self.endpoint::<To>(execution, record.target, layout.to, relation.to())?;
-                Ok(WorthQueryInvariantRelation {
-                    relation_id: record.relation_id,
-                    from: self.retain_identity(from),
-                    to,
+            &mut |relation_id, from, to| {
+                relations.push(WorthQueryInvariantRelation {
+                    relation_id,
+                    from: from.into_typed(),
+                    to: to.into_typed(),
                     _relation: PhantomData,
-                })
-            })
-            .collect()
+                });
+            },
+        )?;
+        Ok(relations)
     }
 
+    #[inline(always)]
     pub fn relations_to<Relation, From, To>(
         &mut self,
 
@@ -60,61 +53,30 @@ where
         Vec<WorthQueryInvariantRelation<Schema, Relation, From, To>>,
         WorthQueryInvariantProjectionTraversalDenial,
     > {
-        let execution = self.execution;
-        let layout = self.relation_layout(&relation)?;
-        if !self.identity_is_local(to, relation.to()) || to.kind != layout.to {
-            return Err(foreign(relation.name()));
-        }
-        let read = self.read_adjacency(
+        let mut relations = Vec::new();
+        self.native_read().relations(
             relation.name(),
-            to.entity_id,
-            layout.kind,
+            relation.from(),
+            relation.to(),
+            to.native_identity(),
             worth_query_declaration::facade::application_schema::RelationDirection::Reverse,
-        )?;
-        read.into_records()
-            .into_iter()
-            .map(|record| {
-                self.realized_scope
-                    .record_relation(record.source, record.target);
-                let from =
-                    self.endpoint::<From>(execution, record.source, layout.from, relation.from())?;
-                Ok(WorthQueryInvariantRelation {
-                    relation_id: record.relation_id,
-                    from,
-                    to: self.retain_identity(to),
+            &mut |relation_id, from, to| {
+                relations.push(WorthQueryInvariantRelation {
+                    relation_id,
+                    from: from.into_typed(),
+                    to: to.into_typed(),
                     _relation: PhantomData,
-                })
-            })
-            .collect()
-    }
-
-    fn relation_layout<Relation, From, To>(
-        &self,
-        relation: &ApplicationRelationRef<Schema, Relation, From, To>,
-    ) -> Result<
-        super::super::schema_layout::WorthQueryPrimaryRelationLayout,
-        WorthQueryInvariantProjectionTraversalDenial,
-    > {
-        self.layout
-            .relation(relation.name())
-            .cloned()
-            .ok_or_else(|| {
-                WorthQueryInvariantProjectionTraversalDenial::new(
-                    WorthQueryInvariantProjectionTraversalDenialKind::RelationNotInstalled,
-                    relation.name(),
-                )
-            })
+                });
+            },
+        )?;
+        Ok(relations)
     }
 
     pub(in crate::domain_computation::primary_graph::invariant_projection) fn admit_adjacency_list(
         &mut self,
         relation: &str,
     ) -> Result<(), WorthQueryInvariantProjectionTraversalDenial> {
-        if !self.work_budget.can_afford(1) {
-            return Err(work_budget_exceeded(relation));
-        }
-        assert!(self.work_budget.consume(1), "projection work was admitted");
-        Ok(())
+        self.native_read().admit_adjacency_list(relation)
     }
 
     pub(in crate::domain_computation::primary_graph::invariant_projection) fn adjacency_limit_denial(
@@ -122,12 +84,7 @@ where
         limit: worth_relational::facade::runtime::AdjacencyTruthReadLimitExceeded,
         relation: &str,
     ) -> WorthQueryInvariantProjectionTraversalDenial {
-        if self.work_budget.consume(limit.consumed_work_units()) {
-            self.work
-                .record_adjacencies(1, limit.relation_records_examined());
-        }
-        self.work_budget.mark_exceeded();
-        work_budget_exceeded(relation)
+        self.native_read().adjacency_limit_denial(limit, relation)
     }
 
     pub(in crate::domain_computation::primary_graph::invariant_projection) fn endpoint<Entity>(
@@ -140,41 +97,10 @@ where
         WorthQueryInvariantEntityIdentity<Schema, Entity>,
         WorthQueryInvariantProjectionTraversalDenial,
     > {
-        let view = self.branch_view(entity)?;
-        let work = &mut self.work;
-        let available = view
-            .entity_record_with_projection_scope_admitted(
-                execution,
-                entity_id,
-                ProjectionAspectScope::empty(),
-                |_| Ok::<_, std::convert::Infallible>(()),
-                |record| {
-                    work.record_endpoint();
-                    (record.kind_id() == expected_kind
-                        && record.lifecycle() == RecordLifecycleState::Live)
-                        .then_some(())
-                },
-            )
-            .map(|result| result.unwrap_or_else(|never| match never {}))
-            .map_err(|cause| {
-                WorthQueryInvariantProjectionTraversalDenial::new(
-                    WorthQueryInvariantProjectionTraversalDenialKind::ReadExecution(
-                        crate::facade::primary_graph::relational_execution_kind(cause, None),
-                    ),
-                    entity,
-                )
-            })?
-            .is_some();
-        if !available {
-            return Err(endpoint_unavailable(entity));
-        }
-        Ok(WorthQueryInvariantEntityIdentity {
-            entity_id,
-            kind: expected_kind,
-            entity: Arc::from(entity),
-            authority_identity: self.authority_identity,
-            _marker: PhantomData,
-        })
+        Ok(self
+            .native_read()
+            .endpoint(execution, entity_id, expected_kind, entity)?
+            .into_typed())
     }
 
     /// Reads the snapshot on its own branch root. A version alone would admit
@@ -183,41 +109,27 @@ where
         &self,
         subject: &str,
     ) -> Result<VisibilityProjectionView, WorthQueryInvariantProjectionTraversalDenial> {
-        self.runtime
-            .read_truth()
-            .project_snapshot(self.snapshot)
+        self.native
+            .projection(self.snapshot)
             .ok_or_else(|| endpoint_unavailable(subject))
-    }
-
-    fn retain_identity<Entity>(
-        &self,
-        identity: &WorthQueryInvariantEntityIdentity<Schema, Entity>,
-    ) -> WorthQueryInvariantEntityIdentity<Schema, Entity> {
-        WorthQueryInvariantEntityIdentity {
-            entity_id: identity.entity_id,
-            kind: identity.kind,
-            entity: Arc::clone(&identity.entity),
-            authority_identity: identity.authority_identity,
-            _marker: PhantomData,
-        }
     }
 }
 
-fn foreign(relation: &str) -> WorthQueryInvariantProjectionTraversalDenial {
+pub(super) fn foreign(relation: &str) -> WorthQueryInvariantProjectionTraversalDenial {
     WorthQueryInvariantProjectionTraversalDenial::new(
         WorthQueryInvariantProjectionTraversalDenialKind::ForeignIdentity,
         relation,
     )
 }
 
-fn endpoint_unavailable(subject: &str) -> WorthQueryInvariantProjectionTraversalDenial {
+pub(super) fn endpoint_unavailable(subject: &str) -> WorthQueryInvariantProjectionTraversalDenial {
     WorthQueryInvariantProjectionTraversalDenial::new(
         WorthQueryInvariantProjectionTraversalDenialKind::EndpointUnavailable,
         subject,
     )
 }
 
-fn work_budget_exceeded(relation: &str) -> WorthQueryInvariantProjectionTraversalDenial {
+pub(super) fn work_budget_exceeded(relation: &str) -> WorthQueryInvariantProjectionTraversalDenial {
     WorthQueryInvariantProjectionTraversalDenial::new(
         WorthQueryInvariantProjectionTraversalDenialKind::WorkBudgetExceeded,
         relation,

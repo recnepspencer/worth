@@ -101,7 +101,7 @@ fn y(app: &App, branch: WorthQueryProductBranch, body: &str) -> u64 {
 fn checkout_adopts_both_rebuilt_children_from_the_same_original_candidate_tree() {
     let _observation = worth_query_host::facade::primary_graph::WorthQueryExecutionObservation::install_on_this_thread();
     let program = ApplicationProgramAuthoring::<ConsumerSchema, Program>::begin()
-        .with_schema(&ConsumerSchema::declaration().unwrap())
+        .with_schema(&<ConsumerSchema as worth_query_decl::facade::application_schema::ApplicationSchema>::declaration().unwrap())
         .validated_program()
         .unwrap();
     let world = installation::install_selected_program_with_limits(

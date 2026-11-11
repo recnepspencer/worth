@@ -18,6 +18,7 @@ fn compose_certification_sequence_digest(
     )
     .field_value_sequence(crate::WorthQueryEvidenceTag::new(tag), values)
     .seal()
+    .expect("fixture digest must fit")
     .as_str()
     .to_string()
 }
@@ -126,6 +127,7 @@ fn digest_support_denial_output(errors: &[WorthQueryRuntimeError]) -> String {
                 )
                 .field_value(crate::WorthQueryEvidenceTag::new("reason"), reason)
                 .seal()
+                .expect("fixture digest must fit")
                 .as_str()
                 .to_string(),
             ),
@@ -161,14 +163,18 @@ fn digest_intent_denial_output(errors: &[WorthQueryRuntimeError]) -> String {
     let intent_digests = errors
         .iter()
         .filter_map(|error| match error.stop_class() {
-            WorthQueryStopClass::IntentCommitDenied { evidence, .. } => {
-                Some(format!("commit:{}", evidence.denial_digest().as_str()))
-            }
+            WorthQueryStopClass::IntentCommitDenied { evidence, .. } => Some(format!(
+                "commit:{}",
+                evidence
+                    .denial_digest()
+                    .expect("fixture digest must fit")
+                    .as_str()
+            )),
             WorthQueryStopClass::IntentExecutionRoutingFailed {
                 evidence, source, ..
             } => Some(format!(
                 "routing:{}:{}",
-                evidence.failure_digest(),
+                evidence.failure_digest().expect("fixture digest must fit"),
                 stop_class_variant_key(source.stop_class())
             )),
             _ => None,
@@ -257,6 +263,7 @@ fn digest_public_family_admission(error: &WorthQueryRuntimeError) -> String {
         )
         .field_value(crate::WorthQueryEvidenceTag::new("reason"), reason)
         .seal()
+        .expect("fixture digest must fit")
         .as_str()
         .to_string(),
         other => panic!("expected public family admission denial, got {other:?}"),
@@ -298,6 +305,7 @@ fn digest_message_drift_probe(
         second_probe,
     )
     .seal()
+    .expect("fixture digest must fit")
     .as_str()
     .to_string()
 }

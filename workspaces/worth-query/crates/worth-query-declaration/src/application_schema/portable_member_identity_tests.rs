@@ -17,11 +17,25 @@ struct SecondEffect;
 struct QueryEntity;
 struct QueryParameters;
 
-impl ApplicationEntityMarkerIdentity<Schema> for QueryEntity {
-    const IDENTIFIER: &'static str = "QueryEntity";
+impl fragment::Entity for QueryEntity {
+    type Aspects = ();
+    type Relations = ();
+    const NAME: &'static str = "QueryEntity";
 }
 
-crate::worth_query_entity!(PortableEntity for Schema);
+struct PortableEntity;
+impl fragment::Entity for PortableEntity {
+    const NAME: &'static str = "PortableEntity";
+    type Aspects = ();
+    type Relations = ();
+}
+struct PortableRecords;
+impl fragment::Fragment for PortableRecords {
+    const NAME: &'static str = "portable";
+    type Bindings = fragment::NoBindings;
+    type Members = (PortableEntity,);
+}
+
 crate::worth_query_capability_context!(
     FirstContext in Schema,
     identity "worth.query.test.colliding-context.v1"
@@ -223,10 +237,10 @@ fn blank_portable_type_identity_is_rejected_before_canonical_meaning() {
 #[test]
 fn two_query_markers_cannot_claim_one_portable_query_identity() {
     let entity = ApplicationEntityRef::<Schema, QueryEntity>::from_schema_identifier("QueryEntity");
-    let denial = ApplicationSchemaDeclarationBuilder::<Schema>::for_schema()
-        .entity(entity)
-        .application_query(query_definition(FirstQuery::reference(), entity).unwrap())
-        .application_query(query_definition(SecondQuery::reference(), entity).unwrap())
+    let denial = ApplicationSchemaDeclarationBuilder::<Schema>::from_fragment(QueryRecords)
+        .unwrap()
+        .application_query(query_definition(FirstQuery::reference(), entity))
+        .application_query(query_definition(SecondQuery::reference(), entity))
         .build()
         .unwrap_err();
     assert_eq!(denial, ApplicationSchemaDeclarationDenial::DuplicateMember);
@@ -235,7 +249,7 @@ fn two_query_markers_cannot_claim_one_portable_query_identity() {
 #[test]
 fn blank_query_identity_is_rejected_before_schema_canonicalization() {
     let entity = ApplicationEntityRef::<Schema, QueryEntity>::from_schema_identifier("QueryEntity");
-    let denial = match query_definition(BlankQuery::reference(), entity) {
+    let denial = match query_definition(BlankQuery::reference(), entity).build() {
         Ok(_) => panic!("blank query identity must be rejected"),
         Err(denial) => denial,
     };
@@ -257,8 +271,8 @@ fn capability_marker_identity_collisions_are_rejected() {
         ApplicationSchemaDeclarationDenial::DuplicateMember
     );
 
-    let slot_denial = ApplicationSchemaDeclarationBuilder::<Schema>::for_schema()
-        .entity(PortableEntity::reference())
+    let slot_denial = ApplicationSchemaDeclarationBuilder::<Schema>::from_fragment(PortableRecords)
+        .unwrap()
         .capability_context(FirstContext::reference())
         .capability_context_entity_slot(FirstSlot::reference())
         .capability_context_entity_slot(SecondSlot::reference())
@@ -291,8 +305,8 @@ fn blank_capability_marker_identity_is_rejected() {
         ApplicationSchemaDeclarationDenial::InvalidIdentifier
     );
 
-    let slot_denial = ApplicationSchemaDeclarationBuilder::<Schema>::for_schema()
-        .entity(PortableEntity::reference())
+    let slot_denial = ApplicationSchemaDeclarationBuilder::<Schema>::from_fragment(PortableRecords)
+        .unwrap()
         .capability_context(FirstContext::reference())
         .capability_context_entity_slot(BlankSlot::reference())
         .build()
@@ -312,80 +326,11 @@ fn blank_capability_marker_identity_is_rejected() {
     );
 }
 
-#[test]
-fn capability_marker_identity_survives_a_rust_module_move() {
-    mod original_location {
-        crate::worth_query_capability!(
-            pub(super) Capability in super::Schema,
-            identity "worth.query.test.module-move-capability.v1"
-        );
-    }
-    mod moved_location {
-        crate::worth_query_capability!(
-            pub(super) Capability in super::Schema,
-            identity "worth.query.test.module-move-capability.v1"
-        );
-    }
+mod module_moves;
 
-    assert_eq!(
-        original_location::Capability::reference().marker_identity(),
-        moved_location::Capability::reference().marker_identity()
-    );
-    assert_ne!(
-        std::any::type_name::<original_location::Capability>(),
-        std::any::type_name::<moved_location::Capability>()
-    );
-}
-
-#[test]
-fn capability_dimension_schema_identity_survives_rust_module_moves() {
-    mod original_location {
-        crate::worth_query_entity!(pub(super) Entity for super::Schema);
-        crate::worth_query_capability_context!(
-            pub(super) Context in super::Schema,
-            identity "worth.query.test.moved-context.v1"
-        );
-        crate::worth_query_capability_context_entity_slot!(
-            pub(super) Slot in super::Schema,
-            Context => Entity,
-            identity "worth.query.test.moved-slot.v1"
-        );
-        crate::worth_query_capability_provenance!(
-            pub(super) Provenance in super::Schema,
-            identity "worth.query.test.moved-provenance.v1"
-        );
-    }
-    mod moved_location {
-        crate::worth_query_entity!(pub(super) Entity for super::Schema);
-        crate::worth_query_capability_context!(
-            pub(super) Context in super::Schema,
-            identity "worth.query.test.moved-context.v1"
-        );
-        crate::worth_query_capability_context_entity_slot!(
-            pub(super) Slot in super::Schema,
-            Context => Entity,
-            identity "worth.query.test.moved-slot.v1"
-        );
-        crate::worth_query_capability_provenance!(
-            pub(super) Provenance in super::Schema,
-            identity "worth.query.test.moved-provenance.v1"
-        );
-    }
-
-    let original = ApplicationSchemaDeclarationBuilder::<Schema>::for_schema()
-        .entity(original_location::Entity::reference())
-        .capability_context(original_location::Context::reference())
-        .capability_context_entity_slot(original_location::Slot::reference())
-        .capability_provenance(original_location::Provenance::reference())
-        .build()
-        .unwrap();
-    let moved = ApplicationSchemaDeclarationBuilder::<Schema>::for_schema()
-        .entity(moved_location::Entity::reference())
-        .capability_context(moved_location::Context::reference())
-        .capability_context_entity_slot(moved_location::Slot::reference())
-        .capability_provenance(moved_location::Provenance::reference())
-        .build()
-        .unwrap();
-
-    assert_eq!(original.identity(), moved.identity());
+struct QueryRecords;
+impl fragment::Fragment for QueryRecords {
+    const NAME: &'static str = "query_records";
+    type Bindings = fragment::NoBindings;
+    type Members = (QueryEntity,);
 }

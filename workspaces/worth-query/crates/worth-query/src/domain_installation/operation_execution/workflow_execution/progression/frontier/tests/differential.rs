@@ -44,6 +44,7 @@ fn start(workspace: &mut runtime::WorthQueryWorkspace) -> Run {
         .unwrap()
         .start_workflow(workspace)
         .unwrap()
+        .unwrap()
         .advance(
             "start",
             domain::WorthQueryWorkflowValue::NotRequired,

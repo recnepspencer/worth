@@ -2,37 +2,9 @@
 use super::{funding, Failure};
 use crate::storage::data::RelationalStorageUnavailableCause as Cause;
 use crate::storage::overlay::PartitionState;
-use crate::storage::partition::{
-    AdjacencyKindBasis, RegionRelationProjection, SparseAdjacencyTable,
-};
+use crate::storage::partition::{AdjacencyKindBasis, SparseAdjacencyTable};
 use crate::storage::residency::region_image::RegionAdjacencyKinds;
 use worth_execution::ExecutionRequest;
-
-pub(super) fn verify_kind(
-    projection: &[RegionRelationProjection],
-    expected: worth_foundational::CanonicalDigestId,
-    request: &ExecutionRequest<'_, '_>,
-) -> Result<(), Failure> {
-    let mut stopped = None;
-    let found = crate::storage::residency::kind_commitment::digest_controlled(
-        projection,
-        &mut |units, _| match funding::work(request, units) {
-            Ok(()) => Ok(()),
-            Err(cause) => {
-                stopped = Some(cause);
-                Err(Cause::SourceUnavailable)
-            }
-        },
-    );
-    if let Some(cause) = stopped {
-        return Err(cause);
-    }
-    let found = found.map_err(unavailable)?;
-    if found != expected {
-        return Err(unavailable(Cause::IntegrityMismatch));
-    }
-    Ok(())
-}
 
 pub(super) fn verify_buckets(
     partition: &PartitionState,

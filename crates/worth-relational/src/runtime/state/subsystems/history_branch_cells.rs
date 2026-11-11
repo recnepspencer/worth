@@ -40,18 +40,22 @@ impl HistorySubsystem {
             .any(|cell| !matches!(cell.observation().target(), FoundationalBranchTarget::Empty))
     }
 
-    pub(crate) fn rebuild_branch_head_version_index(&self) {
+    pub(crate) fn rebuild_branch_head_version_index(
+        &self,
+        lane: &crate::storage::substrate::maintenance::ReconstructionLane<'_>,
+    ) {
         let roots = self
             .branch_cells
             .values()
             .into_iter()
             .filter_map(|cell| cell.root())
             .collect::<Vec<_>>();
-        self.branch_head_versions.rebuild(roots);
+        self.branch_head_versions.rebuild(lane, roots);
     }
 
     pub(crate) fn admit_recovered_branch_cell(
         &self,
+        lane: &crate::storage::substrate::maintenance::ReconstructionLane<'_>,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         checkpoint: RelationalBranchCellCheckpoint,
         expected_branch_id: &BranchId,
@@ -91,6 +95,7 @@ impl HistorySubsystem {
         {
             let commit_id = CommitId(target.selected_commit_id());
             self.readmit_replayed_root_descriptor(
+                lane,
                 execution,
                 commit_id,
                 target.roots().clone(),
@@ -109,6 +114,7 @@ impl HistorySubsystem {
                 let commit_id = CommitId(target.selected_commit_id());
                 Some(
                     self.readmit_replayed_root_descriptor(
+                        lane,
                         execution,
                         commit_id,
                         target.roots().clone(),

@@ -11,6 +11,11 @@ pub(super) fn append_declared_aftermath(
     append_authority(basis, prefix, contract.authority());
     append_mechanism(basis, prefix, contract.mechanism());
     if let Some(binding) = contract.correction_binding() {
+        super::coupled_outputs::append(
+            basis,
+            &format!("{prefix}.correction"),
+            binding.coupled_outputs(),
+        );
         basis.optional_text(
             format!("{prefix}.correction.reapplication-source"),
             binding
@@ -28,30 +33,11 @@ pub(super) fn append_declared_aftermath(
             binding.authored_identity().is_some(),
         );
         if let Some(identity) = binding.authored_identity() {
-            let parts = identity.parts();
-            let locus = format!("{prefix}.correction.authored-identity");
-            basis.text(format!("{locus}.family"), parts.family.as_str());
-            basis.text(format!("{locus}.source-role"), &parts.source_role);
-            basis.text(format!("{locus}.inverse-role"), &parts.inverse_role);
-            basis.text(
-                format!("{locus}.source-posture"),
-                match parts.source_posture {
-                    crate::application_operation::ApplicationMutationOutputPosture::Create => {
-                        "create"
-                    }
-                    crate::application_operation::ApplicationMutationOutputPosture::Retire => {
-                        "retire"
-                    }
-                    crate::application_operation::ApplicationMutationOutputPosture::Preserve => {
-                        "preserve"
-                    }
-                },
+            append_authored_identity(
+                basis,
+                &format!("{prefix}.correction.authored-identity"),
+                identity,
             );
-            basis.optional_text(
-                format!("{locus}.binding-unit"),
-                parts.binding_unit.as_deref(),
-            );
-            super::field::append_schema_field(basis, &format!("{locus}.key"), &parts.logical_key);
         }
         basis.u64(
             format!("{prefix}.correction.source-output-fields.count"),
@@ -163,6 +149,17 @@ fn append_mechanism(
                 basis.text(format!("{prefix}.preimage-{index}.aspect"), locus.aspect());
                 basis.text(format!("{prefix}.preimage-{index}.field"), locus.field());
             }
+            for (index, locus) in inverse.preimage_demand().relations().iter().enumerate() {
+                basis.text(
+                    format!("{prefix}.preimage-relation-{index}.kind"),
+                    locus.relation(),
+                );
+                basis.text(
+                    format!("{prefix}.preimage-relation-{index}.from"),
+                    locus.from(),
+                );
+                basis.text(format!("{prefix}.preimage-relation-{index}.to"), locus.to());
+            }
         }
         Some(PortableCorrectionMechanism::Compensation(compensation)) => {
             basis.text(format!("{prefix}.mechanism"), "compensation");
@@ -172,5 +169,40 @@ fn append_mechanism(
             );
         }
         None => basis.text(format!("{prefix}.mechanism"), "none"),
+    }
+}
+
+fn append_authored_identity(
+    basis: &mut ApplicationSchemaCanonicalBasis,
+    locus: &str,
+    identity: &crate::application_aftermath::DeclaredAuthoredCorrection,
+) {
+    let parts = identity.parts();
+    basis.text(format!("{locus}.family"), parts.family.as_str());
+    basis.text(format!("{locus}.source-role"), &parts.source_role);
+    basis.text(format!("{locus}.inverse-role"), &parts.inverse_role);
+    basis.text(
+        format!("{locus}.source-posture"),
+        match parts.source_posture {
+            crate::application_operation::ApplicationMutationOutputPosture::Create => "create",
+            crate::application_operation::ApplicationMutationOutputPosture::Retire => "retire",
+            crate::application_operation::ApplicationMutationOutputPosture::Preserve => "preserve",
+        },
+    );
+    basis.optional_text(
+        format!("{locus}.binding-unit"),
+        parts.binding_unit.as_deref(),
+    );
+    super::field::append_schema_field(basis, &format!("{locus}.key"), &parts.logical_key);
+    if !identity.co_anchors().is_empty() {
+        basis.u64(
+            format!("{locus}.co-anchors.count"),
+            identity.co_anchors().len() as u64,
+        );
+        for (index, anchor) in identity.co_anchors().iter().enumerate() {
+            let key = format!("{locus}.co-anchors.{index}");
+            basis.bool(format!("{key}.optional"), anchor.is_optional());
+            append_authored_identity(basis, &key, anchor);
+        }
     }
 }

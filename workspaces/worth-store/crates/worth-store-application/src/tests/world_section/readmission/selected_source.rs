@@ -163,7 +163,7 @@ fn controlled_home_refusal_retains_original_selection_across_anchor_advance() {
     });
     let mut home = crate::attach_relational(admitted, &request).unwrap();
     let identity = home.home_identity();
-    let crate::ApplicationHomeNativeSchemaPreparation::Existing { native } =
+    let crate::ApplicationHomeNativeSchemaPreparation::Existing { native, .. } =
         home.prepare_native_schema_for_home(&request).unwrap()
     else {
         panic!("existing source cannot initialize");
@@ -189,7 +189,7 @@ fn controlled_home_refusal_retains_original_selection_across_anchor_advance() {
     advance_anchor(&serving, &members, bytes);
     let mut home = refused.into_home();
     assert_eq!(home.home_identity(), identity);
-    let crate::ApplicationHomeNativeSchemaPreparation::Existing { native } =
+    let crate::ApplicationHomeNativeSchemaPreparation::Existing { native, .. } =
         home.prepare_native_schema_for_home(&request).unwrap()
     else {
         panic!("existing source cannot initialize");

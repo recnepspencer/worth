@@ -8,7 +8,6 @@ use crate::domain_computation::primary_graph::aggregate_observation::{
 use std::{collections::BTreeMap, sync::Arc};
 use worth_execution::MapKernelContext;
 use worth_query_installation::facade::WorthQueryCompiledApplicationOperationContracts as Contracts;
-use worth_relational::facade::snapshots::SnapshotHandle;
 
 struct Issued {
     body: Arc<AggregateObservation>,
@@ -26,12 +25,12 @@ impl IssuedAggregateValues {
         key: &AggregateKey,
         admission: Admission,
         contracts: &Arc<Contracts>,
-        source: &SnapshotHandle,
+        source: crate::domain_computation::primary_graph::projection_read_origin::ProjectionReadOriginRef<'_>,
     ) -> Option<&Arc<AggregateObservation>> {
         let issued = self.values.get(key)?;
         (issued.admission == admission
             && Arc::ptr_eq(&issued.contracts, contracts)
-            && issued.body.source() == source)
+            && issued.body.source() == &source)
             .then_some(&issued.body)
     }
 }

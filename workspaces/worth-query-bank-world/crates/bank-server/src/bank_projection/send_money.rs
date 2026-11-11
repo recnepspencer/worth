@@ -9,7 +9,10 @@ pub(crate) fn project_send_money_decision(
     source: &AccountEntity,
     input: &SendMoney,
 ) -> Result<BankDecisionSnapshot, BankProjectionDenial> {
-    let recipient = reader.resolve_entity(PrincipalIdentityField::reference(), input.recipient)?;
+    let recipient = reader.resolve_entity(
+        PrincipalIdentityField::at("PrincipalIdentityField"),
+        input.recipient,
+    )?;
     let destinations = reader.relations_from(PersonalOwner::reference(), &recipient)?;
     let [destination_relation] = destinations.as_slice() else {
         return Err(if destinations.is_empty() {
@@ -20,7 +23,7 @@ pub(crate) fn project_send_money_decision(
     };
     let destination = destination_relation.to().clone();
     let destination_id = missing_field(
-        reader.decision_field(&destination, AccountIdentity::reference())?,
+        reader.decision_field(&destination, AccountIdentity::at("AccountIdentity"))?,
         "AccountIdentity",
     )?;
 
@@ -32,7 +35,7 @@ pub(crate) fn project_send_money_decision(
         source_revision,
         reader.summarize_exclusive_incoming(
             PostingAccount::reference(),
-            PostingAmount::reference(),
+            PostingAmount::at("PostingAmount"),
             source,
         )?,
     )?;
@@ -41,18 +44,21 @@ pub(crate) fn project_send_money_decision(
         destination_revision,
         reader.summarize_exclusive_incoming(
             PostingAccount::reference(),
-            PostingAmount::reference(),
+            PostingAmount::at("PostingAmount"),
             &destination,
         )?,
     )?;
-    reader.require_decision_field(source, AccountIdentity::reference())?;
-    reader.require_decision_field(&destination, AccountIdentity::reference())?;
-    reader.require_decision_field(&recipient, PrincipalIdentityField::reference())?;
+    reader.require_decision_field(source, AccountIdentity::at("AccountIdentity"))?;
+    reader.require_decision_field(&destination, AccountIdentity::at("AccountIdentity"))?;
+    reader.require_decision_field(
+        &recipient,
+        PrincipalIdentityField::at("PrincipalIdentityField"),
+    )?;
     reader.require_decision_relation(PersonalOwner::reference(), &recipient, &destination)?;
-    reader.require_decision_field(source, AccountingRevision::reference())?;
-    reader.require_decision_field(&destination, AccountingRevision::reference())?;
-    reader.require_decision_field(source, Status::reference())?;
-    reader.require_decision_field(&destination, Status::reference())?;
+    reader.require_decision_field(source, AccountingRevision::at("AccountingRevision"))?;
+    reader.require_decision_field(&destination, AccountingRevision::at("AccountingRevision"))?;
+    reader.require_decision_field(source, Status::at("Status"))?;
+    reader.require_decision_field(&destination, Status::at("Status"))?;
     state
         .finish()
         .build_decision_projection_with_balances(

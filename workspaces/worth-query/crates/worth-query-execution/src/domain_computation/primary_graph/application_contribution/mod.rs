@@ -15,6 +15,7 @@ pub use feature::{
 pub(in crate::domain_computation) mod execution_denial;
 pub(crate) mod partitioned_computation;
 pub(crate) mod producer;
+pub(in crate::domain_computation::primary_graph) use producer::DeclaredProducerAssembly;
 pub(in crate::domain_computation::primary_graph) use producer::OwnerPlan;
 pub use producer::PendingProducerPublication;
 pub(in crate::domain_computation::primary_graph) use producer::{CurrentBasis, CurrentProof};
@@ -88,15 +89,16 @@ pub use producer::{
     WorthQueryOutputDemandAdvance, WorthQueryOutputDemandDenial, WorthQueryOutputDemandDenialKind,
     WorthQueryOutputDemandRecoveryPosture, WorthQueryOutputReadCleanup,
     WorthQueryOutputReadCloseDenial, WorthQueryOutputSettlementProvenanceDenial,
-    WorthQueryProducerApplicability, WorthQueryProducerDenialDeclaration,
-    WorthQueryProducerDenialDecodeDenial, WorthQueryProducerDenialEncodingRefusal,
-    WorthQueryProducerDenialProjection, WorthQueryProducerDenialValue,
-    WorthQueryProducerEvaluationIneligibility, WorthQueryProducerInputReuseContract,
-    WorthQueryProducerInvariantRequirement, WorthQueryProducerLifecyclePosture,
-    WorthQueryProducerOutputEquivalence, WorthQueryProducerOutputFamily,
-    WorthQueryProjectedProducerDenial, WorthQuerySelectedApplicationProducer,
-    WorthQueryUndeclaredProducerDenial, WorthQueryWorkflowAssessmentOutputFamily,
-    WorthQueryWorkflowAssessmentPosture,
+    WorthQueryPredecessorReadContract, WorthQueryPredecessorReadDenial,
+    WorthQueryPredecessorReadOperation, WorthQueryProducerApplicability,
+    WorthQueryProducerDenialDeclaration, WorthQueryProducerDenialDecodeDenial,
+    WorthQueryProducerDenialEncodingRefusal, WorthQueryProducerDenialProjection,
+    WorthQueryProducerDenialValue, WorthQueryProducerEvaluationIneligibility,
+    WorthQueryProducerInputReuseContract, WorthQueryProducerInvariantRequirement,
+    WorthQueryProducerLifecyclePosture, WorthQueryProducerOutputEquivalence,
+    WorthQueryProducerOutputFamily, WorthQueryProjectedProducerDenial,
+    WorthQuerySelectedApplicationProducer, WorthQueryUndeclaredProducerDenial,
+    WorthQueryWorkflowAssessmentOutputFamily, WorthQueryWorkflowAssessmentPosture,
 };
 pub use request_execution::query_test_execution_authority_for_test;
 pub use request_execution::{
@@ -138,3 +140,6 @@ pub use producer::ProducerOutputEvaluation;
 pub(in crate::domain_computation::primary_graph) use producer::{
     ComparedProducerOutput, ProducerOutputEvaluationState,
 };
+#[cfg(test)]
+#[path = "mod_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;

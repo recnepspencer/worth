@@ -40,9 +40,12 @@ fn explicit_routing_rejects_envelopes_from_the_wrong_handle() {
         .envelope_routes_from_progressed(progressed)
         .unwrap_or_else(|_| panic!("envelope should succeed"));
 
-    match alternate.route_relational_truth_checked(
-        WorthQueryDeclarationRelationalRoutingInput::enveloped(envelope),
-    ) {
+    match alternate
+        .route_relational_truth_checked(WorthQueryDeclarationRelationalRoutingInput::enveloped(
+            envelope,
+        ))
+        .expect("fixture digest must fit")
+    {
         WorthQueryDeclarationRelationalRoutingChecked::Denied(denial) => {
             assert_eq!(
                 denial.cause(),

@@ -120,7 +120,7 @@ impl<T: Clone, E, Engine: super::NodeEngine<T, E>> Structure for Native<'_, T, E
     ) -> Result<Self::Link, Self::Error> {
         let node = source.as_ref().expect("nonempty value source");
         self.engine
-            .build(node.identity, node.value.clone(), left, right)
+            .build_proven(node.identity, node.value.clone(), left, right)
             .map(Some)
     }
     fn unknown(&self, id: PartitionIdentity) -> Self::Error {

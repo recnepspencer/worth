@@ -40,16 +40,7 @@ impl ApplicationMutationBinding<MutationSchema> for SameIdentityBinding {
     const HANDLER_IDENTITY: &'static str = RenameBinding::HANDLER_IDENTITY;
     const IDEMPOTENCY_IDENTITY: &'static str = RenameBinding::IDEMPOTENCY_IDENTITY;
 
-    fn scope_field() -> crate::application_schema::ApplicationFieldRef<
-        MutationSchema,
-        Account,
-        AccountIdentity,
-        AccountIdField,
-        u64,
-        crate::application_schema::ReadOnly,
-        crate::application_schema::EqualityPredicate,
-        crate::application_schema::NoApplicationUnit,
-    > {
+    fn scope_field() -> AccountIdField {
         RenameBinding::scope_field()
     }
 

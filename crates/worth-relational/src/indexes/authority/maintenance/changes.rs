@@ -1,7 +1,7 @@
+use super::root_view::IndexRootView;
 use super::work::MaintenanceWork;
 use crate::identity::data::{EntityId, RelationId};
 use crate::indexes::data::DerivedIndexMaintenanceDenialKind as Denial;
-use crate::runtime::VisibilityProjectionView;
 use crate::storage::data::RecordLifecycleState;
 use crate::transactions::data::RecordRef;
 use std::collections::BTreeSet;
@@ -13,37 +13,28 @@ pub(super) struct ChangedRecords {
 
 impl ChangedRecords {
     pub(super) fn patch(
-        root: &crate::branch::RelationalBranchRoot,
+        change: &crate::storage::substrate::maintenance::CommitChange,
         work: &mut MaintenanceWork,
-        execution: &worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<Self, Denial> {
-        let semantic = match root.commit_evidence().ok_or(Denial::CommitMismatch)? {
-            crate::branch::RelationalRootCommitEvidence::Original(envelope) => {
-                envelope.semantic_result_arc()
-            }
-            crate::branch::RelationalRootCommitEvidence::Checkpoint(commit) => {
-                commit
-                    .effect_data(execution)
-                    .map_err(|cause| super::basis::image_stop(cause, Denial::CommitMismatch))?
-                    .semantic
-            }
-        };
-        let records = semantic.changed_records();
-        work.charge(records.len())?;
-        work.note_patch_records(records.len());
         let mut changed = Self {
             entities: BTreeSet::new(),
             relations: BTreeSet::new(),
         };
-        for record in records {
-            match record {
-                RecordRef::Entity(id) => {
-                    work.ordered::<EntityId, ()>(changed.entities.len(), 1, 0)?;
-                    changed.entities.insert(*id);
-                }
-                RecordRef::Relation(id) => {
-                    work.ordered::<RelationId, ()>(changed.relations.len(), 1, 0)?;
-                    changed.relations.insert(*id);
+        for (_, partition) in change.partitions() {
+            work.note_patch_records(partition.records().len());
+            for record in partition.records() {
+                work.charge(1)?;
+                for state in record.before.iter().chain(&record.after) {
+                    match state.record {
+                        RecordRef::Entity(id) => {
+                            work.ordered::<EntityId, ()>(changed.entities.len(), 1, 0)?;
+                            changed.entities.insert(id);
+                        }
+                        RecordRef::Relation(id) => {
+                            work.ordered::<RelationId, ()>(changed.relations.len(), 1, 0)?;
+                            changed.relations.insert(id);
+                        }
+                    }
                 }
             }
         }
@@ -51,11 +42,12 @@ impl ChangedRecords {
     }
 
     pub(super) fn cold(
+        _lane: &crate::storage::substrate::maintenance::ReconstructionLane<'_>,
+        view: &IndexRootView,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
-        view: &VisibilityProjectionView,
         work: &mut MaintenanceWork,
     ) -> Result<Self, Denial> {
-        let root = view.selected_root().ok_or(Denial::CommitMismatch)?;
+        let root = view.root();
         let slots = root
             .entity_slot_count()
             .saturating_add(root.relation_slot_count())
@@ -78,9 +70,7 @@ impl ChangedRecords {
                 return work.prepare(1, 0);
             };
             work.prepare(33, 0)?;
-            view.demand_regions_head(execution, [partition_id])
-                .map_err(Denial::Execution)?;
-            let Some(partition) = root.accepted_head_region_view(partition_id) else {
+            let Some(partition) = view.head(execution, partition_id, work)? else {
                 return Ok(());
             };
             for slot in partition.entity_arena().live_slots() {

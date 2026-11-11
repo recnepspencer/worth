@@ -29,3 +29,5 @@ mod workflow_actions;
 pub use workflow_actions::*;
 
 pub(crate) mod current_accounts;
+
+pub use posting_integrity::{PostingIntegrityRefusal, PostingIntegrityRefusalBinding};

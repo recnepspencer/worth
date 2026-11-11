@@ -96,7 +96,7 @@ pub fn retain_commit_basis(
     (*provider.receipt_basis_retention_for_test())
         .lock()
         .unwrap_or_else(|poisoned| poisoned.into_inner())
-        .retain_for_test(committed.commit.commit_id, retention, false);
+        .retain_group_for_test(committed.commit.commit_id, retention, 0);
 }
 
 pub fn record_for(identity: u64) -> WorthQueryDispatchOutboxRecord {

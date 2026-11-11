@@ -2,18 +2,63 @@
 use crate::application_schema::{
     ApplicationOperationBodyAuthoringDenial as BodyDenial,
     ApplicationOperationDecisionReadTarget as Read, ApplicationOperationProgramTarget as Target,
-    ApplicationRelationCardinality, ApplicationRelationIntegrity,
-    ApplicationSchemaDeclarationBuilder, ApplicationSchemaDeclarationDenial as Denial,
-    ApplicationSchemaMember as Member,
+    ApplicationRelationCardinality, ApplicationSchemaDeclarationBuilder,
+    ApplicationSchemaDeclarationDenial as Denial, ApplicationSchemaMember as Member,
 };
 struct Schema;
-crate::worth_query_entity!(Node for Schema);
-crate::worth_query_relation!(Current in Schema, Node => Node; integrity = {
-    let base = ApplicationRelationIntegrity::same_context_unbounded_retain_dangling();
-    ApplicationRelationIntegrity::new(base.endpoints,
-        ApplicationRelationCardinality::new(None, Some(1), None, None, None, None), base.deletion)
-});
-crate::worth_query_relation!(Unbounded in Schema, Node => Node; integrity = same_context_unbounded_retain_dangling);
+use crate::application_schema::{
+    fragment::{self, *},
+    *,
+};
+struct Node;
+impl Entity for Node {
+    const NAME: &'static str = "Node";
+    type Aspects = ();
+    type Relations = (Current, Unbounded);
+}
+impl Node {
+    fn reference() -> ApplicationEntityRef<Schema, Self> {
+        entity(Schema, Self)
+    }
+}
+impl Fragment for Schema {
+    const NAME: &'static str = "creation";
+    type Bindings = NoBindings;
+    type Members = (Node,);
+}
+impl ApplicationSchema for Schema {
+    const OWNER: &'static str = "tests";
+    const NAME: &'static str = "creation";
+    fn declaration(
+    ) -> Result<ApplicationSchemaDeclaration<Self>, ApplicationSchemaDeclarationDenial> {
+        fragment::declare(Self)
+    }
+}
+
+struct Current;
+impl Relation for Current {
+    const NAME: &'static str = "Current";
+    type To = Node;
+    const CARDINALITY: ApplicationRelationCardinality =
+        ApplicationRelationCardinality::new(None, Some(1), None, None, None, None);
+}
+impl Current {
+    fn reference() -> ApplicationRelationRef<Schema, Self, Node, Node> {
+        relation(Schema, Node, Self)
+    }
+}
+
+struct Unbounded;
+impl Relation for Unbounded {
+    const NAME: &'static str = "Unbounded";
+    type To = Node;
+}
+impl Unbounded {
+    fn reference() -> ApplicationRelationRef<Schema, Self, Node, Node> {
+        relation(Schema, Node, Self)
+    }
+}
+
 crate::worth_query_structured_value_binding!(Input for () { identity: "worth.tests.replacement-input.v1" });
 crate::worth_query_operation!(Replace for Schema, input Input);
 crate::worth_query_operation_reads!(Replace => [Node, Current, Unbounded]);
@@ -32,9 +77,8 @@ fn declaration() -> crate::application_schema::ApplicationSchemaDeclaration<Sche
         .unwrap()
         .finish()
         .unwrap();
-    ApplicationSchemaDeclarationBuilder::<Schema>::from_test_members(vec![])
-        .entity(Node::reference())
-        .relation(Current::reference(), Node::reference(), Node::reference())
+    ApplicationSchemaDeclarationBuilder::<Schema>::from_fragment(Schema)
+        .unwrap()
         .operation(
             Replace::reference()
                 .definition()

@@ -7,8 +7,6 @@ use crate::application_schema::{
 };
 
 struct RevocationOperation;
-struct Identity;
-declare_u64_field!(Identity);
 
 impl ApplicationOperationMarkerIdentity<Schema> for RevocationOperation {
     type InputBinding = UnitOperationInputBinding;
@@ -100,12 +98,12 @@ fn one_operation_cannot_be_both_delegation_activation_and_revocation() {
         delegation_definition()
             .with_activation(ApplicationCapabilityDelegationActivationDefinition::new(
                 ApplicationOperationRef::<Schema, RevocationOperation, ()>::from_declaration(),
-                binding::<Identity>("Identity"),
+                binding("Identity"),
             ))
             .with_revocation(ApplicationCapabilityRevocationDefinition::new(
                 ApplicationOperationRef::<Schema, RevocationOperation, ()>::from_declaration(),
-                binding::<Identity>("Identity"),
-                ApplicationCapabilityValueBinding::new(field::<Status>("Status"), encoded(2_u64)),
+                binding("Identity"),
+                ApplicationCapabilityValueBinding::new(field("Status"), encoded(2_u64)).unwrap(),
             )),
     )
     .composition(composition(true))
@@ -146,8 +144,8 @@ fn revocable_contract(revoked: u64) -> ErasedContract {
     .delegation(delegation_definition().with_revocation(
         ApplicationCapabilityRevocationDefinition::new(
             ApplicationOperationRef::<Schema, RevocationOperation, ()>::from_declaration(),
-            binding::<Identity>("Identity"),
-            ApplicationCapabilityValueBinding::new(field::<Status>("Status"), encoded(revoked)),
+            binding("Identity"),
+            ApplicationCapabilityValueBinding::new(field("Status"), encoded(revoked)).unwrap(),
         ),
     ))
     .composition(composition(true))
@@ -160,7 +158,7 @@ fn revocable_contract(revoked: u64) -> ErasedContract {
 fn field_read(field: &str) -> ApplicationOperationDecisionReadTarget {
     ApplicationOperationDecisionReadTarget::Field {
         entity: "Grant".to_owned(),
-        aspect: "Facts".to_owned(),
+        aspect: crate::application_schema::capability_member_closure_tests::field_binding_fixture::field("Action").aspect().to_owned(),
         field: field.to_owned(),
     }
 }
@@ -168,7 +166,7 @@ fn field_read(field: &str) -> ApplicationOperationDecisionReadTarget {
 fn write(field: &str) -> ApplicationOperationProgramTarget {
     ApplicationOperationProgramTarget::Write {
         entity: "Grant".to_owned(),
-        aspect: "Facts".to_owned(),
+        aspect: crate::application_schema::capability_member_closure_tests::field_binding_fixture::field("Action").aspect().to_owned(),
         field: field.to_owned(),
     }
 }

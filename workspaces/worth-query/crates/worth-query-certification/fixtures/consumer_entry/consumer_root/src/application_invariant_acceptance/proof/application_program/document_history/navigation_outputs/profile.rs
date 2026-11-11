@@ -45,7 +45,7 @@ fn a_declared_required_root_cannot_be_skipped_or_replaced_by_an_unrelated_instal
     let (document, cause) = app.with_host_advancement(|phase| with_request(app, |request|
         document.with_outputs::<HistoryProgram, crate::ConsumerSecondaryProgramRoot>(&phase, request, app,
             PlanarOutputDemand::new("anchor-a"), Default::default())
-            .err().expect("the unrelated secondary root shares a READ but has no history edit ownership"))).unwrap();
+            .map_or_else(|refused| refused, |_| panic!("the unrelated secondary root shares a READ but has no history edit ownership")))).unwrap();
     assert!(matches!(
         cause,
         WorthQueryHistoryOutputDenial::Navigation(

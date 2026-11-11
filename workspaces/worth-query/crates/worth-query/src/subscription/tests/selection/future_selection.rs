@@ -18,8 +18,9 @@ fn equivalent_future_live_meaning_selects_same_family_regardless_of_construction
                 LiveQueryFamily::OrderedCollection,
                 Some(LiveViewShapeFamily::Table),
                 source,
-                QuerySubscriptionFutureSelection::temporal(),
-            ),
+                QuerySubscriptionFutureSelection::temporal().expect("fixture digest must fit"),
+            )
+            .expect("fixture digest must fit"),
             roomy_budget(),
         )
         .unwrap()
@@ -65,8 +66,10 @@ fn equivalent_future_live_meaning_selects_same_family_regardless_of_construction
                 LiveQueryFamily::Detail,
                 None,
                 source,
-                QuerySubscriptionFutureSelection::async_resource(true),
-            ),
+                QuerySubscriptionFutureSelection::async_resource(true)
+                    .expect("fixture digest must fit"),
+            )
+            .expect("fixture digest must fit"),
             roomy_budget(),
         )
         .unwrap()
@@ -106,7 +109,8 @@ fn future_live_meaning_changes_selection_and_support_story_without_forking_famil
             LiveQueryFamily::OrderedCollection,
             Some(LiveViewShapeFamily::Table),
             QuerySubscriptionConstructionSource::Direct,
-        ),
+        )
+        .expect("fixture digest must fit"),
         roomy_budget(),
     )
     .unwrap();
@@ -115,8 +119,9 @@ fn future_live_meaning_changes_selection_and_support_story_without_forking_famil
             LiveQueryFamily::OrderedCollection,
             Some(LiveViewShapeFamily::Table),
             QuerySubscriptionConstructionSource::Direct,
-            QuerySubscriptionFutureSelection::temporal(),
-        ),
+            QuerySubscriptionFutureSelection::temporal().expect("fixture digest must fit"),
+        )
+        .expect("fixture digest must fit"),
         roomy_budget(),
     )
     .unwrap();
@@ -125,8 +130,10 @@ fn future_live_meaning_changes_selection_and_support_story_without_forking_famil
             LiveQueryFamily::OrderedCollection,
             Some(LiveViewShapeFamily::Table),
             QuerySubscriptionConstructionSource::Direct,
-            QuerySubscriptionFutureSelection::async_resource(true),
-        ),
+            QuerySubscriptionFutureSelection::async_resource(true)
+                .expect("fixture digest must fit"),
+        )
+        .expect("fixture digest must fit"),
         roomy_budget(),
     )
     .unwrap();
@@ -173,14 +180,16 @@ fn future_live_meaning_changes_selection_and_support_story_without_forking_famil
     let temporal_declaration =
         declare_query_subscription(temporal.clone(), roomy_slice_budget()).unwrap();
     let temporal_support = report_query_subscription_support(
-        QuerySubscriptionSupportSubject::declaration(&temporal_declaration),
+        QuerySubscriptionSupportSubject::declaration(&temporal_declaration)
+            .expect("fixture digest must fit"),
         QuerySubscriptionSupportEvidence::declaration(&temporal_declaration),
     )
     .unwrap()
     .0;
     let async_declaration = declare_query_subscription(async_live, roomy_slice_budget()).unwrap();
     let async_support = report_query_subscription_support(
-        QuerySubscriptionSupportSubject::declaration(&async_declaration),
+        QuerySubscriptionSupportSubject::declaration(&async_declaration)
+            .expect("fixture digest must fit"),
         QuerySubscriptionSupportEvidence::declaration(&async_declaration),
     )
     .unwrap()
@@ -215,8 +224,9 @@ fn future_live_shape_and_basis_mismatches_deny_during_family_selection() {
             LiveQueryFamily::Detail,
             Some(LiveViewShapeFamily::InspectorDetailFocused),
             QuerySubscriptionConstructionSource::Direct,
-            QuerySubscriptionFutureSelection::temporal(),
-        ),
+            QuerySubscriptionFutureSelection::temporal().expect("fixture digest must fit"),
+        )
+        .expect("fixture digest must fit"),
         roomy_budget(),
     )
     .unwrap_err();
@@ -225,7 +235,10 @@ fn future_live_shape_and_basis_mismatches_deny_during_family_selection() {
         &QuerySubscriptionFamilySelectionFailureClass::UnsupportedTemporalLiveShape
     );
     assert_eq!(
-        temporal_inspector.diagnostic().stage(),
+        temporal_inspector
+            .diagnostic()
+            .expect("fixture digest must fit")
+            .stage(),
         &QuerySubscriptionDiagnosticStage::ViewMismatch
     );
 
@@ -234,8 +247,10 @@ fn future_live_shape_and_basis_mismatches_deny_during_family_selection() {
             LiveQueryFamily::OrderedCollection,
             Some(LiveViewShapeFamily::KanbanGrouped),
             QuerySubscriptionConstructionSource::Direct,
-            QuerySubscriptionFutureSelection::async_resource(true),
-        ),
+            QuerySubscriptionFutureSelection::async_resource(true)
+                .expect("fixture digest must fit"),
+        )
+        .expect("fixture digest must fit"),
         roomy_budget(),
     )
     .unwrap_err();
@@ -244,7 +259,10 @@ fn future_live_shape_and_basis_mismatches_deny_during_family_selection() {
         &QuerySubscriptionFamilySelectionFailureClass::UnsupportedAsyncLiveShape
     );
     assert_eq!(
-        async_grouped.diagnostic().stage(),
+        async_grouped
+            .diagnostic()
+            .expect("fixture digest must fit")
+            .stage(),
         &QuerySubscriptionDiagnosticStage::ViewMismatch
     );
 
@@ -254,12 +272,13 @@ fn future_live_shape_and_basis_mismatches_deny_during_family_selection() {
             Some(LiveViewShapeFamily::Table),
             QuerySubscriptionConstructionSource::Direct,
             QuerySubscriptionBasisPosture::RuntimeHistoricalSnapshot,
-            QuerySubscriptionFutureSelection::temporal(),
+            QuerySubscriptionFutureSelection::temporal().expect("fixture digest must fit"),
             Some("policy".to_string()),
             Some("tenant".to_string()),
             Some("relationship-proof".to_string()),
             QuerySubscriptionRelationshipProofPosture::Admitted,
-        ),
+        )
+        .expect("fixture digest must fit"),
         roomy_budget(),
     )
     .unwrap_err();
@@ -268,7 +287,10 @@ fn future_live_shape_and_basis_mismatches_deny_during_family_selection() {
         &QuerySubscriptionFamilySelectionFailureClass::FutureLiveBasisUnsupported
     );
     assert_eq!(
-        temporal_historical.diagnostic().stage(),
+        temporal_historical
+            .diagnostic()
+            .expect("fixture digest must fit")
+            .stage(),
         &QuerySubscriptionDiagnosticStage::FamilySelection
     );
 }
@@ -280,8 +302,10 @@ fn future_live_meaning_still_honors_explicit_budget_denials() {
             LiveQueryFamily::OrderedCollection,
             Some(LiveViewShapeFamily::Table),
             QuerySubscriptionConstructionSource::Direct,
-            QuerySubscriptionFutureSelection::temporal_async(true),
-        ),
+            QuerySubscriptionFutureSelection::temporal_async(true)
+                .expect("fixture digest must fit"),
+        )
+        .expect("fixture digest must fit"),
         QuerySubscriptionWorkBudget::scratch_buffer_only(8, 8, 8, 32, 0),
     )
     .unwrap_err();
@@ -291,7 +315,7 @@ fn future_live_meaning_still_honors_explicit_budget_denials() {
         &QuerySubscriptionFamilySelectionFailureClass::WorkBudgetExceeded
     );
     assert_eq!(
-        error.diagnostic().stage(),
+        error.diagnostic().expect("fixture digest must fit").stage(),
         &QuerySubscriptionDiagnosticStage::FamilySelection
     );
     assert_eq!(error.counters().family_selection_count(), 0);

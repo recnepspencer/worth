@@ -1,4 +1,5 @@
 use crate::evidence_identity::WorthQueryEvidenceIdentity;
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct WorthQueryImpactSemanticProjection {
@@ -33,18 +34,20 @@ impl WorthQueryImpactSemanticProjection {
 }
 
 impl crate::domain_installation::WorthQueryImpactDecision {
-    pub fn semantic_projection(&self) -> WorthQueryImpactSemanticProjection {
+    pub fn semantic_projection(
+        &self,
+    ) -> Result<WorthQueryImpactSemanticProjection, IdentityDerivationDenial> {
         let roles = self.affected_roles().to_vec();
         let identity = super::encoding::impact_identity(
             self.class(),
             &roles,
             self.affected_dependency_count(),
-        );
-        WorthQueryImpactSemanticProjection {
+        )?;
+        Ok(WorthQueryImpactSemanticProjection {
             identity,
             class: self.class(),
             affected_roles: roles,
             affected_dependency_count: self.affected_dependency_count(),
-        }
+        })
     }
 }

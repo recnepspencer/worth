@@ -47,21 +47,7 @@ fn filtered_relation_definition(
         QueryResult,
         QueryResultBinding,
     >::new(entity)
-    .relation_where_equal(
-        relation,
-        nested,
-        ApplicationFieldRef::<
-            Schema,
-            Entity,
-            Aspect,
-            Field,
-            u64,
-            ReadOnly,
-            EqualityPredicate,
-            NoApplicationUnit,
-        >::from_schema_identifiers("Entity", "Aspect", "Field"),
-        parameter,
-    )
+    .relation_where_equal(relation, nested, Field::at("Field"), parameter)
     .build();
     ApplicationQueryDefinitionBuilder::declare(query_reference())
         .root(entity)

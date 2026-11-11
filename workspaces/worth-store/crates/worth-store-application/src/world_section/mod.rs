@@ -1,8 +1,9 @@
 //! The Home's private World adapter. Only World decodes owner payloads.
 mod attachment;
-mod checkpoint;
+pub(crate) mod checkpoint;
 mod close;
 mod definition;
+pub(crate) mod native_selection;
 pub(crate) use close::{HomeBridgeCloseCustody, RetiredHomeBridgeComposition};
 pub use close::{WorldHomeClosePosture, WorldHomeCloseRefused, WorldSealedApplicationHome};
 pub use definition::{ApplicationHomeWorldDefinition, ApplicationWorldDefinition};
@@ -12,6 +13,9 @@ mod publication_fate;
 mod publication_task;
 pub use ports::ApplicationWorldPorts;
 pub(crate) use publication_task::WorldPublications;
+mod query_corrections;
+mod query_dispatch;
+mod query_obligations;
 mod query_root;
 mod readmission;
 pub(crate) use attachment::ApplicationHomeBridgeComposition;
@@ -20,7 +24,12 @@ pub use query_root::ApplicationHomeQueryRootDenial;
 pub use readmission::{readmit_query_world, ApplicationHomeQueryCompositionDenial};
 pub use readmission::{readmit_world, WorldHomeReadmissionRefused, WorldReadmittedApplicationHome};
 pub use readmission::{ApplicationHomeOwnerAdmissionRefused, NoPendingApplicationHomeTransition};
+mod transition_planning_request;
+pub use readmission::{
+    ApplicationHomeTransitionBindingStageDenial, ApplicationHomeTransitionFinishDenial,
+};
 use std::sync::Arc;
+pub use transition_planning_request::ApplicationHomeTransitionPlanningRequestDenial;
 use worth_runtime_world::facade::WorldDurableHomeBinding;
 use worth_store::physical_runtime::{AdmittedRecordPlacementPolicy, ServingPhysicalRuntime};
 pub(crate) struct ApplicationWorldMedium {

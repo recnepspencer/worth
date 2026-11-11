@@ -19,10 +19,9 @@ impl ApplicationSchema for ProjectedSchema {
         worth_query_declaration::facade::application_schema::ApplicationSchemaDeclarationDenial,
     > {
         let carrier =
-            ApplicationEntityRef::<Self, FixtureEntity<Self>>::from_schema_identifier("TestEntity");
-        let domain = ApplicationProjectedMemberDomainRef::<Self, Uses, FixtureEntity<Self>>::new(
-            "Uses", carrier,
-        );
+            ApplicationEntityRef::<Self, FixtureEntity>::from_schema_identifier("TestEntity");
+        let domain =
+            ApplicationProjectedMemberDomainRef::<Self, Uses, FixtureEntity>::new("Uses", carrier);
         let side = ApplicationProjectedMemberCaseRef::<Self, Uses, Side>::new(domain, "Side");
         test_schema_members::<Self>(None)
             .projected_member_domain(

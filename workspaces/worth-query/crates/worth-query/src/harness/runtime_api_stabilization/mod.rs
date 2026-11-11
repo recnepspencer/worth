@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 mod builders;
 #[cfg(test)]
 mod tests;
@@ -109,8 +110,13 @@ impl RuntimeApiStabilizationAdapter {
 
     pub(crate) fn composed_runtime_hostile_transcript_evidence(
         request_execution: &worth_execution::ExecutionRequest<'_, '_>,
-    ) -> crate::runtime::WorthQueryRuntimePublicApiTranscriptEvidence {
-        transcripts::composed_runtime_hostile_transcript(request_execution)
+    ) -> Result<
+        crate::runtime::WorthQueryRuntimePublicApiTranscriptEvidence,
+        IdentityDerivationDenial,
+    > {
+        Ok(transcripts::composed_runtime_hostile_transcript(
+            request_execution,
+        )?)
     }
 }
 

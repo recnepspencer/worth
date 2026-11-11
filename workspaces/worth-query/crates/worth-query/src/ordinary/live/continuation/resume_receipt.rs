@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::evidence_identity::{
     WorthQueryEvidenceIdentity, WorthQueryEvidenceScope, WorthQueryEvidenceTag,
 };
@@ -17,7 +18,7 @@ impl WorthQueryManagedLiveResumeReceipt {
         checkpoint: &WorthQueryManagedLiveCheckpointReceipt,
         resumed_delivery_sequence: Option<u64>,
         pending_delivery_batch_count: usize,
-    ) -> Self {
+    ) -> Result<Self, IdentityDerivationDenial> {
         let resume_identity = WorthQueryEvidenceIdentity::compose(
             WorthQueryEvidenceScope::LowerRuntimeBoundaryEvidence,
         )
@@ -39,13 +40,13 @@ impl WorthQueryManagedLiveResumeReceipt {
             WorthQueryEvidenceTag::new("pending_delivery_batch_count"),
             pending_delivery_batch_count,
         )
-        .seal();
-        Self {
+        .seal()?;
+        Ok(Self {
             continuation_identity: checkpoint.continuation_identity().clone(),
             resumed_delivery_sequence,
             pending_delivery_batch_count,
             resume_identity,
-        }
+        })
     }
 
     pub fn continuation_identity(&self) -> &WorthQueryEvidenceIdentity {

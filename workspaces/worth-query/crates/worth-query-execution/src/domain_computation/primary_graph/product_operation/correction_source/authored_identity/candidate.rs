@@ -25,11 +25,28 @@ impl PreparedAuthoredIdentity {
         'a,
     >(
         &self,
-        roles: impl Iterator<Item = (&'a str, Posture, &'a str, &'a EntityReference)>,
+        roles: impl Iterator<Item = (&'a str, Posture, &'a str, &'a EntityReference)> + Clone,
         batch: &WorkerIntentBatch,
         request: &WorthQueryRequestScope,
     ) -> Result<(), AuthoredCorrectionCandidateDenial> {
         poll(request)?;
+        for declaration in self.declaration.co_anchors() {
+            let present = self.co_anchors.iter().any(|anchor| {
+                anchor.declaration.parts().source_role == declaration.parts().source_role
+            });
+            if !present
+                && roles
+                    .clone()
+                    .any(|(name, _, _, _)| name == declaration.parts().inverse_role)
+            {
+                return Err(Identity(
+                    "authored inverse supplied a co-anchor absent from its source",
+                ));
+            }
+        }
+        for anchor in &self.co_anchors {
+            anchor.validate_candidate(roles.clone(), batch, request)?;
+        }
         let parts = self.declaration.parts();
         let worth_query_declaration::facade::application_schema::ApplicationSchemaMember::Field {
             entity,

@@ -66,3 +66,6 @@ impl BridgeExecutionBasisCounters {
         self.truth_materialization_count
     }
 }
+#[cfg(test)]
+#[path = "counters_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;

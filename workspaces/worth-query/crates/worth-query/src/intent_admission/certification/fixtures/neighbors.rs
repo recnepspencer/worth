@@ -1,4 +1,5 @@
 use super::authoritative_declaration;
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::facade::runtime::{
     WorthQueryIntentAdmissionCoveredEntrypoint, WorthQueryIntentAdmissionDecision,
     WorthQueryIntentViolationDecision,
@@ -22,24 +23,24 @@ pub(in crate::intent_admission::certification) struct CertifiedUnsupportedIntent
 }
 
 pub(in crate::intent_admission::certification) fn certified_deferred_intent_fixture(
-) -> CertifiedDeferredIntentFixture {
+) -> Result<CertifiedDeferredIntentFixture, IdentityDerivationDenial> {
     let declaration = authoritative_declaration("certification-deferred-intent");
     let request = WorthQueryRawIntentAdmissionRequest::deferred_neighbor(
         WorthQueryIntentAdmissionCoveredEntrypoint::ExecuteInspectionNeighborDeferred,
         declaration,
     )
     .expect("deferred certification request should build");
-    let decision = admit_runtime_intent_request(request.clone());
-    let trace = review_trace(&request, &decision, "deferred");
-    CertifiedDeferredIntentFixture {
+    let decision = admit_runtime_intent_request(request.clone())?;
+    let trace = review_trace(&request, &decision, "deferred")?;
+    Ok(CertifiedDeferredIntentFixture {
         request,
         decision,
         trace,
-    }
+    })
 }
 
 pub(in crate::intent_admission::certification) fn certified_unsupported_intent_fixture(
-) -> CertifiedUnsupportedIntentFixture {
+) -> Result<CertifiedUnsupportedIntentFixture, IdentityDerivationDenial> {
     let declaration = authoritative_declaration("certification-unsupported-intent");
     let request = WorthQueryRawIntentAdmissionRequest::deferred_neighbor(
         WorthQueryIntentAdmissionCoveredEntrypoint::ExecuteInspectionNeighborDeferred,
@@ -48,28 +49,31 @@ pub(in crate::intent_admission::certification) fn certified_unsupported_intent_f
     .expect("unsupported certification request should build");
     let eligibility = crate::intent_admission::WorthQueryIntentAdmissionEligibility::from_request(
         request.clone(),
-    );
+    )?;
     let violation = WorthQueryIntentViolationDecision::from_eligibility_denial(
         &eligibility,
         "support-unsupported",
         "neighbor-unsupported-until-coverage",
     );
     let decision = WorthQueryIntentAdmissionDecision::Violation(violation);
-    let trace = review_trace(&request, &decision, "unsupported");
-    CertifiedUnsupportedIntentFixture {
+    let trace = review_trace(&request, &decision, "unsupported")?;
+    Ok(CertifiedUnsupportedIntentFixture {
         request,
         decision,
         trace,
-    }
+    })
 }
 
 fn review_trace(
     request: &WorthQueryRawIntentAdmissionRequest,
     decision: &WorthQueryIntentAdmissionDecision,
     lane: &str,
-) -> WorthQueryIntentDecisionTraceEnvelope {
-    WorthQueryRuntimeIntentAdmissionReviewData::from_decision(request.clone(), decision.clone())
-        .decision_trace_envelope()
-        .unwrap_or_else(|| panic!("{lane} certification review should preserve a trace"))
-        .clone()
+) -> Result<WorthQueryIntentDecisionTraceEnvelope, IdentityDerivationDenial> {
+    Ok(WorthQueryRuntimeIntentAdmissionReviewData::from_decision(
+        request.clone(),
+        decision.clone(),
+    )?
+    .decision_trace_envelope()
+    .unwrap_or_else(|| panic!("{lane} certification review should preserve a trace"))
+    .clone())
 }

@@ -69,7 +69,7 @@ impl WorthServerWorthNativeDirectFacade {
                                 authority.receipt().materialized_fact_posture(),
                             ),
                         );
-                        TransitionOutcome::Success(WorthServerDirectProjection::from_authority(
+                        WorthServerDirectProjection::from_authority(
                             super::WorthServerDirectProjectionParts {
                             plan_proof: plan_proof.clone(),
                             support_posture,
@@ -80,7 +80,7 @@ impl WorthServerWorthNativeDirectFacade {
                             warning_kinds: Vec::new(),
                             response_envelope,
                             },
-                        ))
+                        ).map_or_else(|cause| TransitionOutcome::Denied(crate::WorthServerQueryHandoffDenial::new(crate::WorthServerQueryHandoffDenialCode::EvidenceIdentityDerivationDenied(cause), self.admission.request_context().diagnostics_profile(), "projection envelope identity exceeded canonical digest bounds")), TransitionOutcome::Success)
                     }
                     worth_query::facade::foundation::ProjectionAuthorityOutcome::AdmittedWithWarnings(
                         authority,
@@ -95,7 +95,7 @@ impl WorthServerWorthNativeDirectFacade {
                                 authority.receipt().materialized_fact_posture(),
                             ),
                         );
-                        TransitionOutcome::Success(WorthServerDirectProjection::from_authority(
+                        WorthServerDirectProjection::from_authority(
                             super::WorthServerDirectProjectionParts {
                             plan_proof,
                             support_posture,
@@ -106,7 +106,7 @@ impl WorthServerWorthNativeDirectFacade {
                             warning_kinds: warnings.warning_kinds().to_vec(),
                             response_envelope,
                             },
-                        ))
+                        ).map_or_else(|cause| TransitionOutcome::Denied(crate::WorthServerQueryHandoffDenial::new(crate::WorthServerQueryHandoffDenialCode::EvidenceIdentityDerivationDenied(cause), self.admission.request_context().diagnostics_profile(), "projection envelope identity exceeded canonical digest bounds")), TransitionOutcome::Success)
                     }
                     worth_query::facade::foundation::ProjectionAuthorityOutcome::ConsumptionDenied(denied) => {
                         TransitionOutcome::Denied(crate::WorthServerQueryHandoffDenial::new(

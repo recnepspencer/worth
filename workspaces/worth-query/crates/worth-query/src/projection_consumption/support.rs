@@ -5,6 +5,7 @@ use super::source::{
     ProjectionConsumptionSource, ProjectionSourceCapabilityProfile,
     ProjectionSourceExecutionPosture, ProjectionSourceFamily,
 };
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum ProjectionConsumptionSupportPosture {
@@ -87,13 +88,13 @@ impl ProjectionConsumptionSupportReport {
 
 pub fn discover_projection_consumption_support(
     source: &ProjectionConsumptionSource,
-) -> ProjectionConsumptionSupportReport {
+) -> Result<ProjectionConsumptionSupportReport, IdentityDerivationDenial> {
     let rows = ProjectionFactKind::all()
         .iter()
         .copied()
         .map(|fact_kind| {
             let posture = support_for_kind(source, fact_kind);
-            ProjectionConsumptionSupportRow {
+            Ok(ProjectionConsumptionSupportRow {
                 source_family: source.family(),
                 fact_kind,
                 support_digest: compose_support_row_digest(
@@ -101,12 +102,12 @@ pub fn discover_projection_consumption_support(
                     fact_kind,
                     &posture,
                     posture.detail_key(),
-                ),
+                )?,
                 posture,
-            }
+            })
         })
-        .collect();
-    ProjectionConsumptionSupportReport { rows }
+        .collect::<Result<Vec<_>, IdentityDerivationDenial>>()?;
+    Ok(ProjectionConsumptionSupportReport { rows })
 }
 
 pub(crate) fn support_for_kind(

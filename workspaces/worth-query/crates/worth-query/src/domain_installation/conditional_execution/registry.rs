@@ -202,3 +202,6 @@ fn indexes_retain_exact_nodes(
             })
         })
 }
+#[cfg(test)]
+#[path = "registry_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;

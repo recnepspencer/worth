@@ -4,9 +4,7 @@ use std::sync::{
     atomic::{AtomicUsize, Ordering},
     Arc,
 };
-use worth_foundational::facade::{
-    HomeProgramTransitionPlanDigest, HomeProgramTransitionTargetMeaning,
-};
+use worth_foundational::facade::HomeProgramTransitionPlanDigest;
 use worth_relational::facade::{
     mvcc::{RelationalCallerAssociation, RelationalTransactionIntent},
     runtime::{CustomInvariantRegistration, RelationalHomeProgramContractDenial},
@@ -48,7 +46,7 @@ fn a_committed_transition_grant_refuses_another_world_attempt_before_target_exec
             source.clone(),
             HomeProgramTransitionPlanDigest::from_recorded([7; 32]),
             1,
-            HomeProgramTransitionTargetMeaning::from_recorded(0, contracts.catalog_digest()),
+            contracts.target_meaning(&execution, 0).unwrap(),
             &crate::batches::transition_body_roster(&execution, 1),
             &execution,
         )
@@ -111,6 +109,11 @@ fn a_committed_transition_grant_refuses_another_world_attempt_before_target_exec
         grant.original(),
         &RelationalCallerAssociation::from_bytes(other.caller_association_bytes()).unwrap(),
         grant.admission(),
+        worth_relational::facade::indexes::DerivedIndexMaintenanceBudget {
+            maximum_work_units: None,
+            maximum_cold_record_slots: None,
+            maximum_derived_rows: None,
+        },
     );
     assert!(matches!(
         refused,

@@ -12,6 +12,7 @@ pub use crate::close::{
     ApplicationHomeRecoveryCustody, RetiredApplicationHomeAllocation,
 };
 pub use crate::deadline::ApplicationHomeDeadlineDenial;
+pub use crate::descriptor::transition_binding::ApplicationHomeTransitionBindingRefused;
 pub use crate::descriptor::ApplicationHomeDescriptorDenial;
 pub use crate::discard::{
     discard_home, ApplicationHomeDiscard, ApplicationHomeDiscardDenial, ApplicationHomeDiscardStage,
@@ -27,10 +28,12 @@ pub use crate::open::physical_admission::{
     ApplicationHomePhysicalStage,
 };
 pub use crate::open::readmission::transition::{
-    AdmittedApplicationHomeProgramStep, ApplicationHomeOwnerAdmissionDenial,
-    ApplicationHomeTransitionAdmissionObservation, ApplicationHomeTransitionIntentDenial,
-    ApplicationHomeTransitionIntentOutcome, ApplicationHomeTransitionPlanningDenial,
-    ApplicationHomeTransitionStartRefused, HomeProgramTransitionIntent,
+    select_home_program_opening, AdmittedApplicationHomeProgramStep,
+    ApplicationHomeOwnerAdmissionDenial, ApplicationHomeProgramOpening,
+    ApplicationHomeTransitionAdmissionObservation, ApplicationHomeTransitionCompletionDenial,
+    ApplicationHomeTransitionIntentDenial, ApplicationHomeTransitionIntentOutcome,
+    ApplicationHomeTransitionPlanningDenial, ApplicationHomeTransitionStartRefused,
+    ApplicationHomeTransitionStepRejected, HomeProgramTransitionIntent,
     ReservedApplicationHomeTransitionPlan,
 };
 pub use crate::open::{admit_home, readmit_relational, recover_home, ApplicationHomeOpenRefusal};
@@ -39,18 +42,25 @@ pub use crate::opening_control::{
     ApplicationHomeOpeningEdge, ApplicationHomeOpeningObservation, ApplicationHomeOpeningStage,
     ApplicationHomePhysicalControlDenial, ApplicationHomePhysicalControlForTest,
 };
+pub use crate::query_dispatch::{
+    ApplicationHomeDispatchJournalDenial, ApplicationHomeDispatchJournalOperation,
+    ApplicationHomeDispatchPublication,
+};
 pub use crate::relational_preparation::{
     attach_relational, ApplicationHomeInitializationDenial, ApplicationHomeInitializationRefused,
-    ApplicationHomeNativeSchemaPreparation, RelationalAttachmentFailedHome,
-    RelationalAttachmentRefused, RelationalHomeOpenRefused, RelationalHomeReadmissionRefused,
-    UnrecoveredApplicationHome, UnrecoveredApplicationHomeCloseRefused,
-    UnsharedApplicationHomeCloseRefused, UnsharedReadmittedApplicationHome,
+    ApplicationHomeNativeSchemaPreparation, ApplicationHomeNativeSchemaPreparationDenial,
+    RelationalAttachmentFailedHome, RelationalAttachmentRefused, RelationalHomeOpenRefused,
+    RelationalHomeReadmissionRefused, UnrecoveredApplicationHome,
+    UnrecoveredApplicationHomeCloseRefused, UnsharedApplicationHomeCloseRefused,
+    UnsharedReadmittedApplicationHome,
 };
 pub use crate::world_section::{
     readmit_query_world, readmit_world, ApplicationHomeOwnerAdmissionRefused,
     ApplicationHomeQueryCompositionDenial, ApplicationHomeQueryRootDenial,
-    ApplicationHomeWorldDefinition, ApplicationWorldDefinition, ApplicationWorldPorts,
-    NoPendingApplicationHomeTransition, WorldHomeClosePosture, WorldHomeCloseRefused,
-    WorldHomeReadmissionRefused, WorldReadmittedApplicationHome, WorldSealedApplicationHome,
+    ApplicationHomeTransitionBindingStageDenial, ApplicationHomeTransitionFinishDenial,
+    ApplicationHomeTransitionPlanningRequestDenial, ApplicationHomeWorldDefinition,
+    ApplicationWorldDefinition, ApplicationWorldPorts, NoPendingApplicationHomeTransition,
+    WorldHomeClosePosture, WorldHomeCloseRefused, WorldHomeReadmissionRefused,
+    WorldReadmittedApplicationHome, WorldSealedApplicationHome,
 };
-pub use worth_foundational::facade::{HomeIdentity, HomeIncarnation};
+pub use worth_foundational::facade::{HomeIdentity, HomeIncarnation, UncleanRecoveryUnsupported};

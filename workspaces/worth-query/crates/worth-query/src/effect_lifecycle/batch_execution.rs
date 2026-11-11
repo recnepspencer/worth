@@ -1,4 +1,5 @@
 use crate::basis_lifecycle::BasisFamily;
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::{WorthQueryEvidenceIdentity, WorthQueryEvidenceScope, WorthQueryEvidenceTag};
 
 use super::batch::LoweredEffectBatchExecutionPlan;
@@ -127,7 +128,7 @@ impl EffectBatchExecutionDeferred {
 pub struct EffectBatchDurabilityUnresolved {
     message: String,
     batch_identity: WorthQueryEvidenceIdentity,
-    outcome_identity: WorthQueryEvidenceIdentity,
+    outcome_identity: Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial>,
     counters: EffectLifecycleCounters,
     unresolved: worth_relational::facade::durability::RelationalDurabilityUnresolved,
 }
@@ -140,16 +141,22 @@ impl EffectBatchDurabilityUnresolved {
     ) -> Self {
         let message = message.into();
         let batch_identity = lowered.batch_identity().clone();
-        let outcome_identity = super::durability_unresolved_subject::field_unresolved_subject(
-            WorthQueryEvidenceIdentity::compose(WorthQueryEvidenceScope::WorkflowMutationLowering)
-                .field_shape(
-                    WorthQueryEvidenceTag::new("identity_family"),
-                    "effect_batch_durability_unresolved_v1",
+        let outcome_identity = (|| {
+            Ok(
+                super::durability_unresolved_subject::field_unresolved_subject(
+                    WorthQueryEvidenceIdentity::compose(
+                        WorthQueryEvidenceScope::WorkflowMutationLowering,
+                    )
+                    .field_shape(
+                        WorthQueryEvidenceTag::new("identity_family"),
+                        "effect_batch_durability_unresolved_v1",
+                    )
+                    .field_evidence_identity(WorthQueryEvidenceTag::new("batch"), &batch_identity),
+                    &unresolved,
                 )
-                .field_evidence_identity(WorthQueryEvidenceTag::new("batch"), &batch_identity),
-            &unresolved,
-        )
-        .seal();
+                .seal()?,
+            )
+        })();
         Self {
             message,
             batch_identity,
@@ -172,8 +179,10 @@ impl EffectBatchDurabilityUnresolved {
         &self.batch_identity
     }
 
-    pub fn outcome_identity(&self) -> &WorthQueryEvidenceIdentity {
-        &self.outcome_identity
+    pub fn outcome_identity(
+        &self,
+    ) -> Result<&WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
+        Ok(self.outcome_identity.as_ref().map_err(|cause| *cause)?)
     }
 
     pub fn counters(&self) -> &EffectLifecycleCounters {
@@ -240,7 +249,7 @@ pub struct ExecutedEffectBatchPlan {
     authority_owner: EffectAuthorityOwner,
     aggregate_artifact: ExecutedEffectAuthorityArtifact,
     components: Vec<ExecutedEffectPlan>,
-    batch_identity: WorthQueryEvidenceIdentity,
+    batch_identity: Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial>,
     counters: EffectLifecycleCounters,
 }
 
@@ -254,7 +263,10 @@ impl ExecutedEffectBatchPlan {
         components: Vec<ExecutedEffectPlan>,
     ) -> Self {
         let batch_identity =
-            WorthQueryEvidenceIdentity::compose(WorthQueryEvidenceScope::WorkflowMutationLowering)
+            (|| -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
+                Ok(WorthQueryEvidenceIdentity::compose(
+                    WorthQueryEvidenceScope::WorkflowMutationLowering,
+                )
                 .field_shape(
                     WorthQueryEvidenceTag::new("identity_family"),
                     "executed_effect_batch_plan_v2",
@@ -282,7 +294,8 @@ impl ExecutedEffectBatchPlan {
                         .iter()
                         .map(ExecutedEffectPlan::effect_execution_identity),
                 )
-                .seal();
+                .seal()?)
+            })();
         let counters = EffectLifecycleCounters::executed_batch(
             components.len(),
             components
@@ -340,12 +353,12 @@ impl ExecutedEffectBatchPlan {
         &self.components
     }
 
-    pub fn batch_identity(&self) -> &WorthQueryEvidenceIdentity {
-        &self.batch_identity
+    pub fn batch_identity(&self) -> Result<&WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
+        self.batch_identity.as_ref().map_err(|cause| *cause)
     }
 
-    pub fn batch_for_reporting(&self) -> &str {
-        self.batch_identity.as_str()
+    pub fn batch_for_reporting(&self) -> Result<&str, IdentityDerivationDenial> {
+        Ok(self.batch_identity()?.as_str())
     }
 
     pub fn counters(&self) -> &EffectLifecycleCounters {

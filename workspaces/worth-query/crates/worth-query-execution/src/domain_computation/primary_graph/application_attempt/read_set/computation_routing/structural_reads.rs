@@ -10,6 +10,12 @@ fn node<T>(len: usize) -> Option<u64> {
     )
 }
 impl ComputationFactAttribution {
+    pub(in crate::domain_computation::primary_graph) fn historical_handler_keys(
+        &self,
+    ) -> impl Iterator<Item = &WorthQueryApplicationFactKey> {
+        self.handler.iter().flat_map(|keys| keys.iter())
+    }
+
     pub(in crate::domain_computation::primary_graph) fn retain_walk_memory(
         &mut self,
         memory: Option<worth_execution::ExecutionMemoryReservation>,

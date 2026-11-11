@@ -38,6 +38,14 @@ fn cold_visibility_doors_preserve_storage_failure_and_never_advance_publication(
             .unwrap();
         door.prepare(&runtime);
         let before = runtime.history().latest_patch_stream_position();
+        // These producers create only entities. An exact relation-kind
+        // lookup proves emptiness from the carried directory.
+        if door.is_metadata_only_read() || door.is_current_relation_scan() {
+            door.run(execution, &runtime, entity).unwrap();
+            assert_eq!(counter.reads.load(Ordering::Relaxed), 0);
+            assert_eq!(runtime.history().latest_patch_stream_position(), before);
+            continue;
+        }
         let failure = door.run(execution, &runtime, entity).unwrap_err();
         assert!(
             matches!(failure, RelationalExecutionDenialCause::StorageUnavailable(
@@ -116,6 +124,11 @@ fn cold_and_warm_visibility_preserve_an_observation_across_a_later_commit() {
     assert_eq!(warm, expected);
     assert_eq!(counter.reads.load(Ordering::Relaxed), reads);
     update_entity(request, &runtime, entity, "member-after");
+    assert_eq!(
+        counter.reads.load(Ordering::Relaxed),
+        reads,
+        "an already materialized Full image needs no history/member reread to publish its next edit"
+    );
     let retained = runtime
         .read_truth()
         .read_observation(request, &observation)

@@ -22,12 +22,7 @@ where
         Producer: ApplicationEntityMarkerIdentity<Schema> + OperationReads<Operation>,
     {
         self.charge_current_output_work(1, Producer::IDENTIFIER)?;
-        let state = match self
-            .reader
-            .runtime
-            .read_truth()
-            .project_snapshot(self.reader.snapshot)
-        {
+        let state = match self.reader.native.projection(self.reader.snapshot) {
             Some(view) => view
                 .entity_record_with_projection_scope(
                     execution,

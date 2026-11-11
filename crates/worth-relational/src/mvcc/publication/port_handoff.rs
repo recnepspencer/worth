@@ -71,6 +71,20 @@ impl RelationalPublicationPort {
             PreparedMemoryRelationalCutover<'cutover, 'policy, 'request>,
         ) -> R,
     ) -> Result<ScopedRelationalPublication<R>, RelationalPublicationOutcome> {
+        worth_execution::run_with_execution_stack(move || {
+            self.with_prepared_memory_cutover_on_execution_stack(execution, candidate, handoff)
+        })
+    }
+
+    #[inline(never)]
+    fn with_prepared_memory_cutover_on_execution_stack<'policy, 'request, R>(
+        &self,
+        execution: &ExecutionRequest<'policy, 'request>,
+        candidate: PreparedRelationalCommitCandidate,
+        handoff: impl for<'cutover> FnOnce(
+            PreparedMemoryRelationalCutover<'cutover, 'policy, 'request>,
+        ) -> R,
+    ) -> Result<ScopedRelationalPublication<R>, RelationalPublicationOutcome> {
         let mut handoff = Some(handoff);
         let mut result = None;
         let publication = self.with_prepared_publication(
@@ -148,6 +162,13 @@ impl RelationalPublicationPort {
                 RelationalPublicationDenial::ScopedCutoverDurabilityUnsupported,
             ));
         }
+        if self.medium.is_some()
+            && let Some(model) = candidate.owned_graph_selection_model()
+        {
+            return Err(RelationalPublicationOutcome::denied(
+                RelationalPublicationDenial::OwnedGraphSelectionDurabilityUnsupported { model },
+            ));
+        }
         if self.medium.is_some() && candidate.requires_retained_selection_profile() {
             return Err(RelationalPublicationOutcome::denied(
                 RelationalPublicationDenial::RetainedEntitySelectionDurabilityUnsupported,
@@ -189,6 +210,11 @@ impl RelationalPublicationPort {
                 },
             ));
         }
+        if !candidate.belongs_to_receiver_epoch(&epoch) {
+            return Err(RelationalPublicationOutcome::denied(
+                RelationalPublicationDenial::StaleConfigurationEpoch,
+            ));
+        }
         if candidate.lifetime_expired() {
             return Err(RelationalPublicationOutcome::deferred(
                 RelationalPublicationDeferred::CandidateLifetimeExpired {
@@ -215,6 +241,24 @@ impl RelationalPublicationPort {
                 ))
             }
         }
+        let definitions = candidate.home_index_definitions();
+        if let Some(definitions) = &definitions
+            && definitions.introduces_definitions()
+            && !candidate
+                .covers_home_definitions(definitions, execution)
+                .map_err(RelationalPublicationOutcome::RequestStopped)?
+        {
+            return Err(RelationalPublicationOutcome::denied(
+                RelationalPublicationDenial::HomeProgramIndexDefinitionsRequired,
+            ));
+        }
+        let definition_publication = definitions
+            .map(|definitions| {
+                self.index_definitions
+                    .prepare_definition_publication(definitions)
+            })
+            .transpose()
+            .map_err(RelationalPublicationOutcome::denied)?;
         let parts = candidate
             .into_publication_parts()
             .map_err(RelationalPublicationOutcome::deferred)?;
@@ -244,6 +288,11 @@ impl RelationalPublicationPort {
             execution,
             outcome: &mut outcome,
         });
+        if matches!(&outcome, Some(RelationalPublicationOutcome::Performed(_)))
+            && let Some(definitions) = definition_publication
+        {
+            definitions.publish();
+        }
         // Any owning companion payload, including retired T, dies here after
         // the caller's guard ends. The actual outcome remains in this slot.
         drop(prepared);

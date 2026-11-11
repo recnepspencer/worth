@@ -37,3 +37,16 @@ impl<Schema: ApplicationSchema, Operation>
         }
     }
 }
+
+impl<Schema, Operation> super::AppliedOperationProjection<Schema, Operation> {
+    /// These are independently verified before-image inputs, never a Current
+    /// assertion for the candidate rows used by the decision.
+    pub(in crate::domain_computation::primary_graph) fn prepared_current_inputs(
+        &self,
+    ) -> PreparedCurrentInputs<'_> {
+        PreparedCurrentInputs {
+            product: &self.product,
+            consumed: &self.consumed_outputs,
+        }
+    }
+}

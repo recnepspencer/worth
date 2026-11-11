@@ -32,24 +32,38 @@ impl PreparedTouchedRecords {
     ) -> Result<Self, TouchedRecordsPreparationDenial> {
         candidate
             .with_prepared_changed_records(|exact| {
-                let mut records = ExecutionArrayBuilder::allocate(exact.len(), allocation_policy)
-                    .map_err(TouchedRecordsPreparationDenial::Allocation)?;
-                for record in exact {
-                    records
-                        .push(WorthQueryTouchedRecordIdentity::from_commit_record(
-                            record.clone(),
-                        ))
-                        .map_err(TouchedRecordsPreparationDenial::Allocation)?;
-                }
-                Ok(Self {
-                    records: Arc::new(
-                        records
-                            .seal()
-                            .map_err(TouchedRecordsPreparationDenial::Allocation)?,
-                    ),
-                })
+                Self::from_records_retained(exact, allocation_policy)
             })
             .unwrap_or_else(|| Err(TouchedRecordsPreparationDenial::ChangedRecordsUnavailable))
+    }
+
+    pub(in crate::domain_computation::primary_graph::provider) fn from_records(
+        exact: &[RecordRef],
+        allocation_policy: ExecutionAllocationPolicy<'_, '_>,
+    ) -> Result<Self, WorthQueryProviderSessionCommitStop> {
+        Self::from_records_retained(exact, allocation_policy)
+            .map_err(TouchedRecordsPreparationDenial::into_memory_stop)
+    }
+    fn from_records_retained(
+        exact: &[RecordRef],
+        allocation_policy: ExecutionAllocationPolicy<'_, '_>,
+    ) -> Result<Self, TouchedRecordsPreparationDenial> {
+        let mut records = ExecutionArrayBuilder::allocate(exact.len(), allocation_policy)
+            .map_err(TouchedRecordsPreparationDenial::Allocation)?;
+        for record in exact {
+            records
+                .push(WorthQueryTouchedRecordIdentity::from_commit_record(
+                    record.clone(),
+                ))
+                .map_err(TouchedRecordsPreparationDenial::Allocation)?;
+        }
+        Ok(Self {
+            records: Arc::new(
+                records
+                    .seal()
+                    .map_err(TouchedRecordsPreparationDenial::Allocation)?,
+            ),
+        })
     }
 
     /// Publication already occurred. This only checks the native performed

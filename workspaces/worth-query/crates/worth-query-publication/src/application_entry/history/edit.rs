@@ -33,6 +33,7 @@ mod handoff;
 mod metadata;
 mod paging;
 mod progression;
+mod recording;
 mod sealing;
 pub use finish::{WorthQueryHistoryEditFinish, WorthQueryHistoryEditOutcome};
 #[doc(hidden)]
@@ -55,6 +56,7 @@ pub enum WorthQueryHistoryEditDenial {
     Source(WorthQuerySourceOnlyDenial),
     Fixed(crate::application_entry::WorthQueryOperationAdvanceDenial),
     Delivery(crate::application_entry::WorthQueryOperationDeliveryDenial),
+    Outputs(WorthQueryHistoryOutputDenial),
     OutputQualification(worth_query_execution::publication_boundary::discovery_currentness::WorthQueryRequiredSetCurrentnessDenial),
     Close(WorthQueryOperationCloseDenial),
     Candidate(WorthQueryDocumentHistoryCandidateDenial),
@@ -343,3 +345,6 @@ where
             .finish_non_exhaustive()
     }
 }
+#[cfg(test)]
+#[path = "edit_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;

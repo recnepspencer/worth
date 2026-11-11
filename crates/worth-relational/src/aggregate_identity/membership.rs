@@ -7,9 +7,7 @@ use crate::identity::data::{EntityId, RelationId};
 use crate::schema::data::{AggregateIdentityContractDeclaration, RelationalSchemaRegistry};
 use crate::validation::engine::state_view::InvariantStateView;
 use std::collections::{BTreeMap, BTreeSet};
-use worth_foundational::facade::{
-    AspectKey, AspectValue, ContractValidatedAspectValueView, FieldKey, InternedString,
-};
+use worth_foundational::facade::{AspectKey, ContractValidatedAspectValueView, FieldKey};
 
 /// One carrier may own different cohorts for its cases. Every complete logical
 /// key occurs on exactly one edge; a single (carrier,target) edge holds all its
@@ -65,8 +63,9 @@ pub(super) fn read(
         if fields.len() != 1 {
             return work.invalid(PlanDenial::IncompleteStoredMembership);
         }
-        let Some(AspectValue::String(InternedString::Raw(cases))) =
-            fields.get(&FieldKey::new("cases").expect("fixed case field"))
+        let Some(cases) = (fields.get(&FieldKey::new("cases").expect("fixed case field")))
+            .as_ref()
+            .and_then(|value| value.raw_text())
         else {
             return work.invalid(PlanDenial::IncompleteStoredMembership);
         };

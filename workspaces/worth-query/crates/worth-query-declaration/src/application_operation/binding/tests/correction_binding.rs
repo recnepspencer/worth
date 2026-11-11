@@ -10,12 +10,11 @@ mod disclosure;
 mod source_reuse;
 
 struct Inverse;
-crate::worth_query_operation_reads!(RenameOperation => [AccountIdField]);
 impl ApplicationDeclaredOperation<MutationSchema> for RenameOperation {
     fn declare_access(
         schema: ApplicationSchemaDeclarationBuilder<MutationSchema>,
     ) -> ApplicationSchemaDeclarationBuilder<MutationSchema> {
-        schema.operation_read_field(Self::reference(), AccountIdField::reference())
+        schema.operation_read_field(Self::reference(), AccountIdField::at("AccountIdField"))
     }
 }
 impl ApplicationCorrectionBinding<MutationSchema> for Inverse {
@@ -23,6 +22,40 @@ impl ApplicationCorrectionBinding<MutationSchema> for Inverse {
     type Source = RenameBinding;
     type InverseIntent = RenameInput;
     type Disclosure = disclosure::HistoryBinding;
+
+    fn recover_source_input(
+        bytes: &[u8],
+        expected: crate::facade::application_schema::CanonicalDigestId,
+        bounds: crate::application_schema::ValueDecodeBounds,
+    ) -> Result<
+        crate::application_operation::ApplicationEncodedInput<
+            <Self::Source as crate::application_operation::ApplicationMutationBinding<
+                MutationSchema,
+            >>::InputBinding,
+        >,
+        crate::application_operation::ApplicationRetainedInputDenial,
+    > {
+        crate::application_operation::ApplicationEncodedInput::decode_retained(
+            bytes, expected, bounds,
+        )
+    }
+
+    fn recover_inverse_input(
+        bytes: &[u8],
+        expected: crate::facade::application_schema::CanonicalDigestId,
+        bounds: crate::application_schema::ValueDecodeBounds,
+    ) -> Result<
+        crate::application_operation::ApplicationEncodedInput<
+            <crate::application_aftermath::ApplicationInverseBinding<MutationSchema, Self> as crate::application_operation::ApplicationMutationBinding<
+                MutationSchema,
+            >>::InputBinding,
+        >,
+        crate::application_operation::ApplicationRetainedInputDenial,
+    >{
+        crate::application_operation::ApplicationEncodedInput::decode_retained(
+            bytes, expected, bounds,
+        )
+    }
 
     fn disclosure_parameters(
         _: &RenameInput,
@@ -46,15 +79,12 @@ impl ApplicationCorrectionBinding<MutationSchema> for Inverse {
     }
 
     fn mechanism() -> DeclaredCorrectionMechanism<MutationSchema> {
-        DeclaredCorrectionMechanism::recorded_inverse_binding::<Self>(
-            DeclaredPreImageDemand::new(
-                [DeclaredPreImageLocus::from_field(
-                    AccountIdField::reference(),
-                )],
-                64,
-            )
-            .unwrap(),
-        )
+        DeclaredCorrectionMechanism::recorded_inverse_binding::<Self>(DeclaredPreImageDemand::new(
+            [DeclaredPreImageLocus::from_field(AccountIdField::at(
+                "AccountIdField",
+            ))],
+            64,
+        ))
     }
 
     fn derive_correction(
@@ -95,33 +125,56 @@ impl ApplicationCorrectionBinding<MutationSchema> for Inverse {
     }
 }
 
-crate::worth_query_application_contribution! {
-    contribution CorrectionContribution in MutationSchema {
-        identity: "test.correction-contribution.v1",
-        corrections: [Inverse],
-        members: |schema| {
-            schema
-                .entity(ExternalMapping::reference()).entity(Account::reference())
-                .aspect(ExternalMapping::reference(), ExternalIdentity::reference())
-                .aspect(Account::reference(), AccountIdentity::reference())
-                .field(ExternalMapping::reference(), ExternalIdentityField::reference())
-                .field(ExternalMapping::reference(), MappingStatusField::reference())
-                .field(Account::reference(), AccountIdField::reference())
-                .relation(MappingTarget::reference(), ExternalMapping::reference(), Account::reference())
-                .principal_binding(PrincipalBinding::reference())
-        }
+use crate::application_schema::fragment::{Fragment, FragmentMembers, NoBindings, Registration};
+struct CorrectionFragment;
+impl Fragment for CorrectionFragment {
+    const NAME: &'static str = "correction_fixture";
+    type Bindings = NoBindings;
+    type Members = (CorrectionContribution,);
+}
+struct CorrectionContribution;
+impl ApplicationSchemaContribution<MutationSchema> for CorrectionContribution {
+    const IDENTITY: ApplicationSchemaContributionIdentity =
+        ApplicationSchemaContributionIdentity::new("test.correction-contribution.v1");
+    type Members = (
+        super::storage_model::MutationModel,
+        PrincipalRegistration,
+        Inverse,
+    );
+}
+struct PrincipalRegistration;
+impl Registration<MutationSchema> for PrincipalRegistration {
+    fn register(
+        builder: ApplicationSchemaDeclarationBuilder<MutationSchema>,
+    ) -> Result<
+        ApplicationSchemaDeclarationBuilder<MutationSchema>,
+        ApplicationSchemaDeclarationDenial,
+    > {
+        Ok(builder.principal_binding(PrincipalBinding::reference()))
     }
+}
+type CorrectionMembers =
+    <CorrectionContribution as ApplicationSchemaContribution<MutationSchema>>::Members;
+fn dispatch_correction<W>(
+    source: TypeId,
+    visitor: BindingVisitor,
+) -> Result<Option<TypeId>, BindingVisitor>
+where
+    CorrectionMembers: FragmentMembers<MutationSchema, NoBindings, W>,
+{
+    <CorrectionMembers as FragmentMembers<MutationSchema, NoBindings, W>>::visit_correction(
+        source, visitor,
+    )
 }
 
 #[test]
 fn contribution_correction_clause_registers_exact_binding_capture_and_dispatch() {
-    let _reference = CorrectionContribution::reference();
+    let _reference = ApplicationSchemaContributionRef::<MutationSchema, CorrectionContribution>::from_contribution();
     let declaration =
-        CorrectionContribution::register_members(ApplicationSchemaDeclarationBuilder::<
-            MutationSchema,
-        >::for_schema())
-        .build()
-        .unwrap();
+        ApplicationSchemaDeclarationBuilder::<MutationSchema>::from_fragment(CorrectionFragment)
+            .unwrap()
+            .build()
+            .unwrap();
     let [binding] = declaration.member_provenance().mutation_bindings() else {
         panic!("a self-inverse association registers its native binding once")
     };
@@ -137,7 +190,10 @@ fn contribution_correction_clause_registers_exact_binding_capture_and_dispatch()
         .unwrap();
     assert_eq!(
         contract.correction_binding(),
-        Some(&DeclaredCorrectionBinding::of::<MutationSchema, Inverse>())
+        Some(
+            &DeclaredCorrectionBinding::of::<MutationSchema, Inverse>()
+                .expect("lawful correction fields")
+        )
     );
     assert_eq!(
         contract
@@ -165,11 +221,10 @@ fn contribution_correction_clause_registers_exact_binding_capture_and_dispatch()
             } if operation == "RenameOperation" && field == "AccountIdField"
         )));
     assert_eq!(
-        CorrectionContribution::visit_correction(TypeId::of::<RenameBinding>(), BindingVisitor)
-            .unwrap(),
+        dispatch_correction(TypeId::of::<RenameBinding>(), BindingVisitor).unwrap(),
         Some(TypeId::of::<RenameBinding>())
     );
-    assert!(CorrectionContribution::visit_correction(TypeId::of::<()>(), BindingVisitor).is_err());
+    assert!(dispatch_correction(TypeId::of::<()>(), BindingVisitor).is_err());
 }
 
 #[derive(Debug)]

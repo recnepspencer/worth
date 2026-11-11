@@ -10,7 +10,9 @@ use super::{
 pub struct WorthServerScheduledOperationOutcome {
     slot: WorthServerOperationExecutionSlot,
     shared_read_basis_identity: Option<String>,
-    execution_digest: Option<String>,
+    execution_digest: Option<
+        Result<String, worth_query::facade::runtime::WorthQueryEvidenceIdentityDerivationDenial>,
+    >,
     mutation_result: Option<WorthServerScheduledMutationResult>,
     response_envelope: Option<WorthServerResponseEnvelope>,
     failure_posture: Option<WorthServerSchedulerFailurePosture>,
@@ -29,7 +31,7 @@ impl WorthServerScheduledOperationOutcome {
         Self {
             slot,
             shared_read_basis_identity: Some(shared_read_basis_identity),
-            execution_digest: Some(execution_digest),
+            execution_digest: Some(Ok(execution_digest)),
             mutation_result: None,
             response_envelope: Some(response_envelope),
             failure_posture: None,
@@ -96,7 +98,7 @@ impl WorthServerScheduledOperationOutcome {
         Self {
             slot,
             shared_read_basis_identity: None,
-            execution_digest: Some(mutation_result.result_digest().to_string()),
+            execution_digest: Some(mutation_result.result_digest().map(str::to_string)),
             mutation_result: Some(mutation_result),
             response_envelope: Some(response_envelope),
             failure_posture: None,
@@ -167,8 +169,16 @@ impl WorthServerScheduledOperationOutcome {
         self.response_envelope.as_ref()
     }
 
-    pub fn execution_digest(&self) -> Option<&str> {
-        self.execution_digest.as_deref()
+    pub fn execution_digest(
+        &self,
+    ) -> Result<
+        Option<&str>,
+        worth_query::facade::runtime::WorthQueryEvidenceIdentityDerivationDenial,
+    > {
+        self.execution_digest
+            .as_ref()
+            .map(|digest| digest.as_deref().map_err(|cause| *cause))
+            .transpose()
     }
 
     pub fn mutation_result(&self) -> Option<&WorthServerScheduledMutationResult> {

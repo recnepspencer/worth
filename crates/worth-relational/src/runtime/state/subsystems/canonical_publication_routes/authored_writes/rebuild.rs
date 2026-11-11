@@ -15,6 +15,7 @@ impl super::super::RelationalCanonicalPublicationRoutes {
     /// no generation becomes visible until the complete selected prefix exists.
     pub(crate) fn rebuild_authored_generation(
         &self,
+        _lane: &crate::storage::substrate::maintenance::ReconstructionLane<'_>,
         execution: ExecutionRequest<'_, '_>,
         selected: CommitId,
     ) -> Result<usize, Denial> {

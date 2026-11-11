@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use worth_proof::TransitionOutcome;
 
 use crate::domain_capabilities::denials::{
@@ -23,11 +24,11 @@ use crate::intent_admission::{
 
 pub fn materialize_canonical_admission_artifact<T>(
     contribution: WorthQueryMaterializationReadyAdmissionContribution<T>,
-) -> WorthQueryCanonicalAdmissionArtifact<T>
+) -> Result<WorthQueryCanonicalAdmissionArtifact<T>, IdentityDerivationDenial>
 where
     T: WorthQueryDomainCapabilityTargetBinding,
 {
-    super::artifacts::materialize_domain_capability_canonical_runtime_artifact(contribution)
+    Ok(super::artifacts::materialize_domain_capability_canonical_runtime_artifact(contribution)?)
 }
 
 pub(crate) fn materialize_runtime_admission_decision<T>(
@@ -128,6 +129,7 @@ pub fn materialize_runtime_admission_support_traceability_row(
                 domain_contribution
                     .target()
                     .binding_identity()
+                    .expect("positive fixture identity fits canonical digest bounds")
                     .as_str()
                     .to_string(),
             ),

@@ -11,18 +11,23 @@ use crate::visibility::snapshot_states::{
 };
 use std::{collections::BTreeMap, sync::Arc};
 
+mod candidate;
 #[cfg(test)]
 mod commit_tests;
 mod frontier_reads;
 #[cfg(test)]
 mod historical_relations_tests;
 mod pinning;
+pub use candidate::{
+    RelationalAppliedCandidateReadIdentity, RelationalAppliedCandidateReadQualification,
+};
 mod record_reads;
 #[cfg(test)]
 mod tests;
 
-/// An exact root, its schema/frontiers/revisions, frozen symbols, and selected
-/// index handles. Cloning establishes another immutable observer; it copies
+/// An exact root, its schema/frontiers/revisions, isolated dictionary namespace,
+/// and selected index handles. Reads demand only reached regions and symbol
+/// pages. Cloning establishes another immutable observer; it copies
 /// neither rows nor an index. No runtime, request, or registry guard is retained.
 /// Snapshot-backed pins carry their handle. Observation-backed pins carry `()`;
 /// only snapshot-backed pins expose snapshot/plan doors, by type.
@@ -58,18 +63,18 @@ mod tests;
 /// ```
 #[derive(Clone, Debug)]
 pub struct RelationalPinnedRead<Snapshot = SnapshotHandle> {
+    pub(super) applied_changes: Option<Arc<candidate::AppliedReadChanges>>,
     pub(super) current_version: crate::identity::data::VersionId,
     pub(super) instrumentation: crate::runtime::RuntimeInstrumentation,
     pub(super) snapshot: Snapshot,
     pub(super) basis: ResidentVisibilitySnapshotBasis,
     pub(super) context: QueryPlanContextId,
-    pub(super) symbols: StringInterner,
     pub(super) indexes: BTreeMap<DerivedIndexId, PinnedIndex>,
 }
 
 #[derive(Clone, Debug)]
 pub(crate) struct PinnedIndex {
-    pub definition: Arc<DerivedIndexDefinition>,
+    pub definition: crate::indexes::RetainedDerivedIndexDefinition,
     pub generation: Option<Arc<DerivedIndexGeneration>>,
 }
 
@@ -93,13 +98,62 @@ impl RelationalPinnedRead {
 }
 
 impl<Snapshot> RelationalPinnedRead<Snapshot> {
+    /// Restrict an exact read to physical projection custody. The returned pin
+    /// retains its actual root and evidence basis, and exposes no operational
+    /// snapshot handle or snapshot query-plan execution door.
+    pub fn into_projection_read(self) -> RelationalPinnedRead<()> {
+        let Self {
+            applied_changes,
+            current_version,
+            instrumentation,
+            snapshot: _,
+            basis,
+            context,
+            indexes,
+        } = self;
+        RelationalPinnedRead {
+            applied_changes,
+            current_version,
+            instrumentation,
+            snapshot: (),
+            basis,
+            context,
+            indexes,
+        }
+    }
+    /// Descriptive context of the retained root. This does not issue a snapshot
+    /// handle; applied roots retain their explicit applied evidence basis.
+    pub fn read_context(&self) -> &QueryPlanContextId {
+        &self.context
+    }
+
     /// Immutable schema carried by the selected root, never current configuration.
     pub fn schema(&self) -> &RelationalSchemaRegistry {
         self.basis.root().schema_authority().registry()
     }
-    /// Frozen persistent symbol maps; a later intern or replacement cannot change them.
-    pub fn symbols(&self) -> &StringInterner {
-        &self.symbols
+    /// Persistent snapshot of this pin's resident dictionary meanings. Record
+    /// reads admit their region's symbol closure; later outside interns or
+    /// dictionary replacement cannot alter this pin's namespace. Retain the
+    /// returned value when borrowing text across statements.
+    pub fn symbols(&self) -> StringInterner {
+        self.basis.symbols().interner_snapshot()
+    }
+
+    /// Resolve one symbol against this pin's exact dictionary, admitting only
+    /// its cold page under the original read request. The callback borrows
+    /// native text custody without cloning the text or a whole dictionary.
+    pub fn with_symbol_text<T>(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        symbol: crate::symbols::data::Symbol,
+        inspect: impl FnOnce(Option<&crate::symbols::data::StoredSymbolText>) -> T,
+    ) -> Result<T, crate::execution::RelationalExecutionDenialCause> {
+        crate::execution::check_request(execution)?;
+        self.basis
+            .symbols()
+            .demand_symbol_ids(execution, [symbol])?;
+        let symbols = self.symbols();
+        Ok(inspect(symbols.retained_text(symbol)))
     }
     /// The semantic definition captured with this selected index.
     pub fn index_definition(&self, index: DerivedIndexId) -> Option<&DerivedIndexDefinition> {
@@ -118,6 +172,13 @@ impl<Snapshot> RelationalPinnedRead<Snapshot> {
 }
 
 impl<Snapshot> RelationalPinnedRead<Snapshot> {
+    pub(crate) fn candidate_aggregate(
+        &self,
+    ) -> Option<&crate::aggregate_identity::AggregateCandidateRead> {
+        self.applied_changes
+            .as_ref()
+            .and_then(|changes| changes.aggregate.as_ref())
+    }
     pub(crate) fn runtime_instance_id(&self) -> u64 {
         self.context.runtime_instance_id
     }
@@ -144,22 +205,44 @@ impl<Snapshot> RelationalPinnedRead<Snapshot> {
     }
 }
 impl<Snapshot> super::super::projection::ProjectionRecordSource for RelationalPinnedRead<Snapshot> {
-    // Construction already admitted and retained the complete immutable source.
-    // Reading an accepted pin checks request life, without reacquiring cold truth.
+    // A pin retains the exact root and its dictionary. Each operation admits
+    // only the regions it reaches before borrowing their materialized rows.
     fn demand_all_full(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<(), crate::execution::RelationalExecutionDenialCause> {
-        crate::execution::check_request(execution)
+        self.basis
+            .demand_regions_full(execution, self.basis.root().partition_ids_iter())
+            .map_err(Into::into)
+    }
+    fn demand_regions_head(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        partitions: impl IntoIterator<Item = crate::identity::data::PartitionId>,
+    ) -> Result<(), crate::execution::RelationalExecutionDenialCause> {
+        self.basis
+            .demand_regions_head(execution, partitions)
+            .map_err(Into::into)
+    }
+    fn admitted_head_region(
+        &self,
+        id: crate::identity::data::PartitionId,
+    ) -> Option<crate::storage::residency::RelationalRegionHeadView<'_>> {
+        self.basis.head_region(id)
     }
     fn demand_regions_full(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
-        _partitions: impl IntoIterator<Item = crate::identity::data::PartitionId>,
+        partitions: impl IntoIterator<Item = crate::identity::data::PartitionId>,
     ) -> Result<(), crate::execution::RelationalExecutionDenialCause> {
-        crate::execution::check_request(execution)
+        self.basis
+            .demand_regions_full(execution, partitions)
+            .map_err(Into::into)
     }
 
+    fn selected_storage(&self) -> Option<&dyn crate::storage::overlay::PartitionAccess> {
+        Some(&self.basis)
+    }
     fn selected_root(&self) -> Option<&Arc<crate::branch::RelationalBranchRoot>> {
         Some(self.basis.root())
     }
@@ -168,5 +251,12 @@ impl<Snapshot> super::super::projection::ProjectionRecordSource for RelationalPi
     }
     fn version_id(&self) -> crate::identity::data::VersionId {
         self.basis.version_id()
+    }
+}
+
+impl<Snapshot> RelationalPinnedRead<Snapshot> {
+    /// Project the exact retained physical root without a snapshot claim.
+    pub fn project_read(&self) -> super::super::projection::VisibilityProjectionView {
+        super::super::projection::VisibilityProjectionView::from_pinned(self)
     }
 }

@@ -47,7 +47,7 @@ pub(in super::super::super) fn read_parameters(
             let entity = selected
                 .resolve_entity(
                     &phase,
-                    Key::reference(),
+                    Key::at("Key"),
                     "numeric".to_owned(),
                     scope,
                     WorthQueryPrincipalResolutionMode::Ordinary,

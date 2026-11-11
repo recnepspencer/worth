@@ -13,7 +13,6 @@ mod fork_observation_currency;
 mod generation_routing;
 mod generation_selection_locality;
 mod historical_relation_field_lookup;
-mod main_branch_unique_recovery;
 mod maintenance;
 mod maintenance_admission;
 mod maintenance_kind_routing;
@@ -73,3 +72,5 @@ mod bulk_commit_allocation;
 mod cold_memory_boundary;
 
 mod read_charge_pins;
+
+use candidate_index_publication::reconstruct_installed_at_head;

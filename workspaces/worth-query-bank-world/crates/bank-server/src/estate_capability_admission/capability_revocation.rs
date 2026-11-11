@@ -206,7 +206,7 @@ fn revocation_cannot_substitute_a_target_from_another_estate() {
         panic!("foreign-target denial must come from exact revocation materialization: {denial:?}")
     };
     assert_eq!(
-        denial,
+        *denial,
         crate::BankCommitPreparationDenial::Application {
             kind: crate::BankApplicationAttemptDenialKind::CapabilityRevocationProgramMismatch,
             allocation: None,

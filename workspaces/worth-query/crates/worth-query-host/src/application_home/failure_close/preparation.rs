@@ -26,11 +26,11 @@ pub(super) enum WorldQueryPreparation<Schema: ApplicationSchemaComposition, Prog
     },
     Attachment(QueryHomeWorldAttachmentRefused<Schema, Program>),
     Custody {
-        _query: ReadmittedHomeQueryService<Schema, Program>,
+        _query: super::super::UnadmittedHomeQueryService<Schema, Program>,
         _cause: HomeCustodyReadmissionDenial,
     },
     OwnerAdmission {
-        _query: ReadmittedHomeQueryService<Schema, Program>,
+        _query: super::super::UnadmittedHomeQueryService<Schema, Program>,
         _cause: ApplicationHomeOwnerAdmissionDenial,
     },
 }

@@ -6,6 +6,43 @@ impl ApplicationCorrectionBinding<Schema> for Restore {
     type Source = authoring::Binding;
     type InverseIntent = restore_first::Restore;
     type Disclosure = query::Binding;
+
+    fn recover_source_input(
+        bytes: &[u8],
+        expected: worth_query_decl::facade::application_schema::CanonicalDigestId,
+        bounds: worth_query_decl::facade::application_schema::ValueDecodeBounds,
+    ) -> Result<
+        worth_query_decl::facade::application_operation::ApplicationEncodedInput<
+            <Self::Source as worth_query_decl::facade::application_operation::ApplicationMutationBinding<Schema>>::InputBinding,
+        >,
+        worth_query_decl::facade::application_operation::ApplicationRetainedInputDenial,
+    >{
+        worth_query_decl::facade::application_operation::ApplicationEncodedInput::decode_retained_with_seed(
+            bytes, expected, bounds,
+            worth_query_decl::facade::application_schema::CanonicalValueSeed::<<Self::Source as worth_query_decl::facade::application_operation::ApplicationMutationBinding<Schema>>::Input>::new(bounds),
+        )
+    }
+
+    fn recover_inverse_input(
+        bytes: &[u8],
+        expected: worth_query_decl::facade::application_schema::CanonicalDigestId,
+        bounds: worth_query_decl::facade::application_schema::ValueDecodeBounds,
+    ) -> Result<
+        worth_query_decl::facade::application_operation::ApplicationEncodedInput<
+            <worth_query_decl::facade::application_aftermath::ApplicationInverseBinding<
+                Schema,
+                Self,
+            > as worth_query_decl::facade::application_operation::ApplicationMutationBinding<
+                Schema,
+            >>::InputBinding,
+        >,
+        worth_query_decl::facade::application_operation::ApplicationRetainedInputDenial,
+    > {
+        worth_query_decl::facade::application_operation::ApplicationEncodedInput::decode_retained_with_seed(
+            bytes, expected, bounds,
+            worth_query_decl::facade::application_schema::CanonicalValueSeed::<<worth_query_decl::facade::application_aftermath::ApplicationInverseBinding<Schema, Self> as worth_query_decl::facade::application_operation::ApplicationMutationBinding<Schema>>::Input>::new(bounds),
+        )
+    }
     fn source_definition() -> ApplicationOperationDefinitionBuilder<
         Schema,
         authoring::Transition,
@@ -24,17 +61,13 @@ impl ApplicationCorrectionBinding<Schema> for Restore {
         Ok(ApplicationQueryParameterSet::new())
     }
     fn mechanism() -> DeclaredCorrectionMechanism<Schema> {
-        DeclaredCorrectionMechanism::recorded_inverse_binding::<Self>(
-            DeclaredPreImageDemand::new(
-                [
-                    DeclaredPreImageLocus::from_field(Class::reference()),
-                    DeclaredPreImageLocus::from_field(FirstValue::reference()),
-                ],
-                // Two UInt64 atoms: each has eight payload bytes and one scalar tag.
-                18,
-            )
-            .unwrap(),
-        )
+        DeclaredCorrectionMechanism::recorded_inverse_binding::<Self>(DeclaredPreImageDemand::new(
+            [DeclaredPreImageLocus::from_field(FirstValue::at(
+                "FirstValue",
+            ))],
+            // One UInt64 atom: eight payload bytes and one scalar tag.
+            9,
+        ))
     }
     fn derive_correction(
         original: &authoring::Edit,
@@ -54,11 +87,12 @@ impl ApplicationCorrectionBinding<Schema> for Restore {
                 .map_err(|_| InvalidPreImage)
         };
         let row = query::Row {
-            class: decode(DeclaredPreImageLocus::from_field(Class::reference()))?
-                .ok_or(MissingPreImage)?,
+            class: 1,
             first: Some(
-                decode(DeclaredPreImageLocus::from_field(FirstValue::reference()))?
-                    .ok_or(MissingPreImage)?,
+                decode(DeclaredPreImageLocus::from_field(FirstValue::at(
+                    "FirstValue",
+                )))?
+                .ok_or(MissingPreImage)?,
             ),
             second: None,
             required: None,

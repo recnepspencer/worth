@@ -25,8 +25,10 @@ impl InstalledIdentityEvolutionOutcome {
         if let Some(target) = &self.lifecycle_target {
             return (ordinal == 0).then(|| target.evidence_identity());
         }
-        self.continuity
-            .as_ref()?
+        let Some(continuity) = self.continuity.as_ref() else {
+            return None;
+        };
+        continuity
             .successor_authoritative_identities()
             .get(ordinal)
             .map(crate::runtime::WorthQueryMutationAuthorityIdentity::evidence_identity)

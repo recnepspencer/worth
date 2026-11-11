@@ -19,6 +19,10 @@ pub(super) fn consume_artifact_title(
             .display_fields()
             .first()
             .and_then(|fact| match fact.native_value().scalar()? {
+                AspectValue::String(InternedString::Stored(value)) => {
+                    let value = value.as_string();
+                    Some(value.as_str())
+                }
                 AspectValue::String(InternedString::Raw(value)) => Some(value.as_str()),
                 AspectValue::String(InternedString::Symbol(_)) => None,
                 _ => None,
@@ -87,6 +91,7 @@ pub(super) fn raw_matrix_digest(
         counters.published_artifact_registry_lease_count(),
     )
     .seal()
+    .expect("fixture digest must fit")
     .terminal_projection_for_reporting()
     .to_string()
 }

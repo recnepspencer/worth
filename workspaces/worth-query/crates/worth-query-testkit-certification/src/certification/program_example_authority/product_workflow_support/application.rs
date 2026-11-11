@@ -135,13 +135,25 @@ pub fn seed_graph(
                 primary_graph::WorthQueryApplicationEntityKey::new("intent-row-1")
                     .expect("the row key is valid"),
             )
-            .field(IntentIdentityField::reference(), "intent-1".to_owned())
-            .field(IntentRevisionField::reference(), 1_u64)
-            .field(IntentDueField::reference(), 5_u64)
-            .field(IntentLifecycleField::reference(), "active".to_owned())
-            .field(IntentInputField::reference(), "payload".to_owned())
-            .field(IntentGateField::reference(), gate.to_owned())
-            .field(IntentEffectField::reference(), "pending".to_owned()),
+            .field(
+                IntentIdentityField::at("IntentIdentityField"),
+                "intent-1".to_owned(),
+            )
+            .field(IntentRevisionField::at("IntentRevisionField"), 1_u64)
+            .field(IntentDueField::at("IntentDueField"), 5_u64)
+            .field(
+                IntentLifecycleField::at("IntentLifecycleField"),
+                "active".to_owned(),
+            )
+            .field(
+                IntentInputField::at("IntentInputField"),
+                "payload".to_owned(),
+            )
+            .field(IntentGateField::at("IntentGateField"), gate.to_owned())
+            .field(
+                IntentEffectField::at("IntentEffectField"),
+                "pending".to_owned(),
+            ),
         )
         .expect("the intent must seed");
 }

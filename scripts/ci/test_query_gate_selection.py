@@ -52,7 +52,7 @@ class LocalSelectionTests(unittest.TestCase):
         self.assertEqual(select_suites(None, True, root, full, '.', '.'), root)
         with self.assertRaisesRegex(ValueError, 'not both'):
             select_suites('query-process', True, None, full, '.', '.')
-        for workspace in ('query', 'bank'):
+        for workspace in ('root', 'query', 'bank'):
             selected = select_suites(workspace+'-landing', False, None, full, '.', '.')
             self.assertEqual(selected, [*landing_suites(workspace), workspace+'-doc'])
             self.assertFalse(any(name.endswith('-scale') for name in selected))
@@ -121,7 +121,7 @@ class GateCliSelectionTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as temporary:
             code, gate, result = self.exercise(Path(temporary).resolve(), ['--full'], failure='fmt', complete=True)
             self.assertEqual(code, 1)
-            self.assertEqual(gate.calls, ['fmt'])
+            self.assertEqual(gate.calls, ['tooling', 'fmt'])
             self.assertEqual(result['status'], 'red')
             self.assertEqual(set(result['workspace_coverage'].values()), {'partial'})
 

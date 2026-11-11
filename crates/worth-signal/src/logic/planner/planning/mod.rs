@@ -9,8 +9,6 @@ mod stage_formation;
 mod topology;
 mod unsettled_paths;
 
-pub(crate) use unsettled_paths::targets_requiring_settlement;
-
 use crate::data::comparator::{
     ComparatorPolicyResolver, DefaultComparatorPolicyResolver, DefaultComparatorResolver,
     VersionComparatorPolicy,

@@ -26,6 +26,7 @@ enum Direction {
 }
 
 pub(in crate::visibility::materialization::read_records::reader) fn execute_leased_traversal_fragment(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     reader: &RelationalPinnedRead,
     state: &(dyn PartitionAccess + Sync),
     registry: &RelationalSchemaRegistry,
@@ -80,6 +81,11 @@ pub(in crate::visibility::materialization::read_records::reader) fn execute_leas
 
     while let Some((entity_id, depth, root_seed, via_relation)) = frontier.pop() {
         budget.checkpoint(1)?;
+        state
+            .demand_full_partition(execution, entity_id.partition_id)
+            .map_err(|cause| {
+                MapKernelFailure::Domain(QueryReadPacketDenial::ReadRequest(cause.into()))
+            })?;
         budget.check_temporary_record(projection.candidate_entity_bytes_for_id(entity_id))?;
         let Some(entity_record) = reader
             .authoritative_entity_record_for_id_at_version_with_registry(
@@ -117,6 +123,11 @@ pub(in crate::visibility::materialization::read_records::reader) fn execute_leas
         );
         for relation_id in candidates.iter().copied() {
             budget.checkpoint(1)?;
+            state
+                .demand_full_partition(execution, relation_id.partition_id)
+                .map_err(|cause| {
+                    MapKernelFailure::Domain(QueryReadPacketDenial::ReadRequest(cause.into()))
+                })?;
             budget
                 .check_temporary_record(projection.candidate_relation_bytes_for_id(relation_id))?;
             let Some(relation_record) = reader

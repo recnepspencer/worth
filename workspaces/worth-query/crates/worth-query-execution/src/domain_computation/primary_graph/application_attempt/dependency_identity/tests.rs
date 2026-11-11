@@ -1,3 +1,4 @@
+use super::output_postcondition::normalized_output_facts;
 use worth_foundational::facade::{
     AspectContractRevision, AspectFieldLocator, AspectIdentity, AspectKey, AspectValue,
     CanonicalFieldPath, FieldKey, LocatorAuthority, PortableAspectContractBasis,
@@ -21,7 +22,7 @@ fn dependency_identity(
     ),
     (),
 > {
-    super::dependency_identity(declared_key, facts)
+    super::content_tree::dependency_identity(declared_key, facts)
 }
 
 #[test]
@@ -343,7 +344,9 @@ fn indexed_definition_meaning_is_not_replaced_by_the_observed_locator() {
         else {
             unreachable!()
         };
-        let definition = std::sync::Arc::make_mut(definition);
+        let retained = definition;
+        let mut replacement = retained.as_ref().clone();
+        let definition = &mut replacement;
         match change {
             0 => definition.name.push_str("-changed"),
             1 => definition.branch_scoped = false,
@@ -359,6 +362,9 @@ fn indexed_definition_meaning_is_not_replaced_by_the_observed_locator() {
             }
             _ => unreachable!(),
         }
+        *retained = worth_relational::facade::indexes::RetainedDerivedIndexDefinition::from_owned(
+            replacement,
+        );
         assert_ne!(identity(changed), expected);
     }
 }
@@ -366,13 +372,15 @@ fn indexed_definition_meaning_is_not_replaced_by_the_observed_locator() {
 fn index_definition(
     index_id: DerivedIndexId,
     field_locator: AspectFieldLocator,
-) -> std::sync::Arc<DerivedIndexDefinition> {
-    std::sync::Arc::new(DerivedIndexDefinition {
-        index_id,
-        name: "checked-selection".to_owned(),
-        kind: DerivedIndexKind::EntityField { field_locator },
-        branch_scoped: true,
-    })
+) -> worth_relational::facade::indexes::RetainedDerivedIndexDefinition {
+    worth_relational::facade::indexes::RetainedDerivedIndexDefinition::from_owned(
+        DerivedIndexDefinition {
+            index_id,
+            name: "checked-selection".to_owned(),
+            kind: DerivedIndexKind::EntityField { field_locator },
+            branch_scoped: true,
+        },
+    )
 }
 
 fn identity(fact: WorthQueryApplicationObservedFact) -> [u8; 32] {

@@ -1,4 +1,5 @@
 //! An active group's path must not reach a blocked member.
+use worth_query_execution::facade::application_invariants::WorthQueryApplicationInvariantError;
 use crate::domain_computation::primary_graph::tests::application_attempt::invariant_walks::observation::Entity;
 use crate::domain_computation::primary_graph::tests::application_attempt::invariant_walks::observation::Observation;
 use crate::domain_computation::primary_graph::tests::application_attempt::invariant_walks::schema::*;
@@ -6,16 +7,13 @@ use worth_relational::facade::runtime::CustomInvariantLeaseBudget;
 use worth_relational::facade::identity::EntityId;
 use worth_foundational::facade::RelationDirection;
 use worth_query_execution::facade::application_invariants::WorthQueryApplicationInvariantContext;
-use worth_relational::facade::runtime::CustomInvariantExecutionError as WorthQueryApplicationInvariantExecutionError;
 use worth_query_execution::facade::application_invariants::WorthQueryApplicationInvariantFieldBinding;
-use worth_relational::facade::runtime::CustomInvariantPreparationError as WorthQueryApplicationInvariantPreparationError;
 use worth_query_execution::facade::application_invariants::WorthQueryApplicationInvariantReadView;
 use worth_query_execution::facade::application_invariants::WorthQueryApplicationInvariantRelationBinding;
 use worth_query_execution::facade::application_invariants::WorthQueryApplicationInvariantRule;
 use worth_query_execution::facade::application_invariants::WorthQueryApplicationInvariantSchemaResolver;
 use worth_query_execution::facade::application_invariants::WorthQueryApplicationInvariantScopePlanner;
 use worth_query_execution::facade::application_invariants::WorthQueryApplicationInvariantVerdict;
-use worth_query_execution::facade::application_invariants::WorthQueryInvariantAccessDenial;
 use worth_query_declaration::facade::application_schema::*;
 
 #[derive(Clone, Debug, Eq, PartialEq, worth_foundational::facade::WorthValue)]
@@ -82,13 +80,13 @@ pub fn resolve(
     Ok(Rule {
         observation,
         key: resolver
-            .typed_field(NodeKey::reference())
+            .typed_field(NodeKey::at("NodeKey"))
             .ok_or("node key missing")?,
         active: resolver
-            .typed_field(Active::reference())
+            .typed_field(Active::at("Active"))
             .ok_or("activation missing")?,
         blocked: resolver
-            .typed_field(Blocked::reference())
+            .typed_field(Blocked::at("Blocked"))
             .ok_or("blocked state missing")?,
         membership: resolver
             .typed_relation(GroupRoot::reference())
@@ -111,7 +109,7 @@ impl WorthQueryApplicationInvariantRule<WalkSchema> for Rule {
     fn prepare_scope(
         &self,
         planner: &mut WorthQueryApplicationInvariantScopePlanner<'_, '_, WalkSchema>,
-    ) -> Result<Self::Scope, WorthQueryApplicationInvariantPreparationError> {
+    ) -> Result<Self::Scope, WorthQueryApplicationInvariantError<Refusal>> {
         self.prepare(planner, None)
     }
 
@@ -119,7 +117,7 @@ impl WorthQueryApplicationInvariantRule<WalkSchema> for Rule {
         &self,
         planner: &mut WorthQueryApplicationInvariantScopePlanner<'_, '_, WalkSchema>,
         budget: &dyn CustomInvariantLeaseBudget,
-    ) -> Option<Result<Self::Scope, WorthQueryApplicationInvariantPreparationError>> {
+    ) -> Option<Result<Self::Scope, WorthQueryApplicationInvariantError<Refusal>>> {
         Some(self.prepare(planner, Some(budget)))
     }
 
@@ -129,7 +127,7 @@ impl WorthQueryApplicationInvariantRule<WalkSchema> for Rule {
         scope: &Self::Scope,
     ) -> Result<
         WorthQueryApplicationInvariantVerdict<Refusal>,
-        WorthQueryApplicationInvariantExecutionError,
+        WorthQueryApplicationInvariantError<Refusal>,
     > {
         self.evaluate_under(context, scope, None)
     }
@@ -142,7 +140,7 @@ impl WorthQueryApplicationInvariantRule<WalkSchema> for Rule {
     ) -> Option<
         Result<
             WorthQueryApplicationInvariantVerdict<Refusal>,
-            WorthQueryApplicationInvariantExecutionError,
+            WorthQueryApplicationInvariantError<Refusal>,
         >,
     > {
         Some(self.evaluate_under(context, scope, Some(budget)))

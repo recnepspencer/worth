@@ -101,3 +101,6 @@ impl PendingCompletion {
         ))
     }
 }
+#[cfg(test)]
+#[path = "completion_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;

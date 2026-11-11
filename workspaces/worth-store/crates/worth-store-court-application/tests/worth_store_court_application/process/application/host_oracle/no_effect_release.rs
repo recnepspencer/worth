@@ -137,10 +137,7 @@ fn durable_open_before_native_child() {
     // physical cut precedes its acknowledgement and therefore Native publish.
     let gate = physical.pause_mutation_for_test(worth_store::physical_runtime::certification::CertificationPhysicalMutationCheckpoint::AfterRootReplacement).unwrap();
     std::thread::scope(|scope| {
-        let worker = scope.spawn(|| {
-            let _original = requests::set(home.runtime(), KEY, VALUE);
-            Ok(())
-        });
+        let worker = scope.spawn(requests::set_worker(home.runtime(), KEY, VALUE));
         assert!(crate::process_kill::await_mutation_seam(
             &gate,
             &worker,

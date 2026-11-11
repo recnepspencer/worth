@@ -1,3 +1,4 @@
+mod record_advance;
 pub use basis::{
     RelationalBranchBasisRetirement, RelationalBranchBasisRetirementDenial,
     RelationalBranchBasisRetirementProgress, RetiredRelationalBranchBasis,
@@ -32,20 +33,27 @@ pub use retained_fork_source::AdmittedRelationalRetainedForkSource;
 mod identity;
 mod lifecycle;
 mod materialization;
+mod model_ownership;
 mod owner_services;
 mod recorded_basis;
+pub use model_ownership::{
+    RelationalModelOwnership, RelationalModelOwnershipConflict, RelationalModelOwnershipDenial,
+    RelationalModelOwnershipDomain, RelationalOwnedModelEntityBoundary,
+    RelationalOwnedModelForeignRelation, RelationalOwnedModelGraphSelection,
+    RelationalOwnedModelOutputRoute, RelationalOwnedModelPublicationRead,
+    RelationalOwnedModelPublishedRoute, RelationalOwnedModelSelectionDenial,
+};
 mod reference;
+pub use record_advance::{
+    RelationalRecordAdvanceDenial, RelationalRecordAdvanceLimits,
+    RelationalRecordAdvanceObservation,
+};
 pub use recorded_basis::{
     ObservedRelationalMemoryComponent, RecordedRelationalCanonicalComponent,
     RecordedRelationalComponentReference, RecordedRelationalComponentTarget,
     RelationalRecordedComponentRefusal,
 };
 pub(crate) use reference::CheckpointComponentCellSource;
-mod record_advance;
-pub use record_advance::{
-    RelationalRecordAdvanceDenial, RelationalRecordAdvanceLimits,
-    RelationalRecordAdvanceObservation,
-};
 mod reference_publication_cell;
 mod reference_state;
 mod registry;
@@ -57,8 +65,9 @@ mod root_region;
 mod root_regions;
 pub(crate) use root::{
     retained_compilation_tree_bytes, RelationalBranchVisibilityCommitment,
-    RelationalRootAllocationVisitor, RelationalRootAuthoritativeAllocationObservation,
-    RelationalRootCommitEvidence, RelationalRootRegionObservation, RetainedRelationalAspectPlans,
+    RelationalOriginalRootCommitEvidence, RelationalRootAllocationVisitor,
+    RelationalRootAuthoritativeAllocationObservation, RelationalRootCommitEvidence,
+    RelationalRootRegionObservation, RetainedRelationalAspectPlans,
     RetainedRelationalSchemaRegistry,
 };
 pub(crate) use root_regions::RelationalPartitionVisit;
@@ -176,3 +185,8 @@ mod basis_registry_scale_tests;
 
 mod symbol_read;
 pub(crate) use symbol_read::SymbolAdmittedRootRead;
+#[cfg(test)]
+#[path = "mod_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;
+
+pub(crate) use model_ownership::validate_candidate_ownership;

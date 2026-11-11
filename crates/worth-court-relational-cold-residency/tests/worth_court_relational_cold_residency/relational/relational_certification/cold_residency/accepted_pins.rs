@@ -18,16 +18,42 @@ fn accepted_pin_projections_survive_later_proven_member_damage() {
             .pin_read_capability(&snapshot, &[], execution)
             .unwrap();
         let accepted = pin.project_snapshot(&snapshot).unwrap();
+        // Acceptance belongs to the read, not to creation of a lazy capability.
+        assert_eq!(
+            accepted
+                .read_exact_entity_state(execution, fixture.entity, |metadata, _| metadata
+                    .entity_id)
+                .unwrap(),
+            Some(fixture.entity)
+        );
+        assert_eq!(
+            accepted
+                .entity_record_with_projection_scope(
+                    execution,
+                    fixture.entity,
+                    ProjectionAspectScope::empty(),
+                    |_| Some(true)
+                )
+                .unwrap(),
+            Some(true)
+        );
+        let fresh = fixture
+            .runtime
+            .read_truth()
+            .project_snapshot(&snapshot)
+            .unwrap();
+        assert_eq!(
+            fresh
+                .read_exact_entity_state(execution, fixture.entity, |metadata, _| metadata
+                    .entity_id)
+                .unwrap(),
+            Some(fixture.entity)
+        );
         let metadata = fixture
             .runtime
             .read_truth()
             .pin_resident_entity_metadata(&snapshot, fixture.entity)
             .unwrap()
-            .unwrap();
-        let fresh = fixture
-            .runtime
-            .read_truth()
-            .project_snapshot(&snapshot)
             .unwrap();
         let target = fixture.source.member_reads.lock().unwrap()[0];
         assert!(

@@ -35,8 +35,8 @@ pub(super) fn observe_replacement<Schema: TopologySchemaBinding>(
     }
     for vertex in &vertices {
         for result in [
-            reader.field(vertex, PositionX::reference()),
-            reader.field(vertex, PositionY::reference()),
+            reader.field(vertex, PositionX::at("PositionX")),
+            reader.field(vertex, PositionY::at("PositionY")),
         ] {
             match result {
                 Ok(Some(_)) => {}
@@ -74,9 +74,9 @@ fn resolve_vertices<Schema: TopologySchemaBinding>(
     reader: &mut DecisionReader<'_, '_, '_, Schema, VertexReplacementBinding<Schema>>,
 ) -> Result<[WorthQueryInvariantEntityIdentity<Schema, Body>; 3], HandlerExecutionDenial> {
     Ok([
-        reader.resolve_entity(BodyKey::reference(), keys[0].clone())?,
-        reader.resolve_entity(BodyKey::reference(), keys[1].clone())?,
-        reader.resolve_entity(BodyKey::reference(), keys[2].clone())?,
+        reader.resolve_entity(BodyKey::at("BodyKey"), keys[0].clone())?,
+        reader.resolve_entity(BodyKey::at("BodyKey"), keys[1].clone())?,
+        reader.resolve_entity(BodyKey::at("BodyKey"), keys[2].clone())?,
     ])
 }
 

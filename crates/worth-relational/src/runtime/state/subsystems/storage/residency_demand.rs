@@ -36,6 +36,7 @@ impl MirrorResidencyDemandBinding {
         symbols: &crate::runtime::RuntimeSymbolTable,
         branch: &crate::history::data::BranchId,
         root: &crate::branch::RelationalBranchRoot,
+        publication: &crate::storage::residency::SymbolPublicationAdmission,
         clone_mode: crate::storage::overlay::PartitionCloneMode,
         committed: std::collections::BTreeMap<
             crate::identity::data::PartitionId,
@@ -63,7 +64,20 @@ impl MirrorResidencyDemandBinding {
             )?;
             let target = self.partitions.write().admit_current_target(id)?;
             match target {
-                Some(target) => prepared.prepare_existing(
+                Some(target) => {
+                    let retention = target.retention();
+                    let head = target.current_lease().ok_or(crate::storage::data::RelationalStorageUnavailable {
+                        subject: crate::storage::data::RelationalStorageSubject::Region(id),
+                        cause: crate::storage::data::RelationalStorageUnavailableCause::SourceUnavailable,
+                    })?;
+                    if head.has_complete_history() {
+                        retention
+                            .demand_full(execution, 1 << 30)?
+                            .admit_symbols(execution, symbols)?;
+                    } else {
+                        head.admit_owned_symbols(execution, symbols)?;
+                    }
+                    prepared.prepare_existing(
                     target,
                     clone_mode,
                     partition,
@@ -71,8 +85,12 @@ impl MirrorResidencyDemandBinding {
                     crate::storage::residency::ResidentHistoryReadmission::new(
                         root.retained_schema_authority(),
                         symbols,
-                    ),
-                ),
+                    ).with_symbol_publication(publication.for_region(root.commit_change().expect(/* Proof: SymbolPublicationAdmission::prepare requires this exact prepared root's CommitChange before mirror preparation. */ "publication root has change"), id).ok_or(crate::storage::data::RelationalStorageUnavailable {
+                        subject: crate::storage::data::RelationalStorageSubject::Region(id),
+                        cause: crate::storage::data::RelationalStorageUnavailableCause::MissingSymbolMaintenancePredecessor,
+                    })?),
+                );
+                }
                 None => {
                     let lease = root.resident_full_region_witness(id)?.ok_or(
                         crate::storage::data::RelationalStorageUnavailable {

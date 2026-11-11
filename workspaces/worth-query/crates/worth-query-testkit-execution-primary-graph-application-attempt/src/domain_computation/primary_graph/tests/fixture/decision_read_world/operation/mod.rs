@@ -10,7 +10,6 @@ use worth_query_execution::facade::domain_computation::HandlerResult;
 use worth_query_execution::facade::domain_computation::OperationHandler;
 
 worth_query_declaration::worth_query_operation!(pub DecisionReadOperation for DecisionReadSchema, input UnitBinding);
-worth_query_declaration::worth_query_operation_reads!(DecisionReadOperation => [PrincipalIdentity]);
 
 pub struct DecisionReadBinding;
 impl ApplicationMutationAdmissionBinding<DecisionReadSchema> for DecisionReadBinding {
@@ -27,15 +26,7 @@ impl ApplicationMutationBinding<DecisionReadSchema> for DecisionReadBinding {
     type Denial = ();
     type DenialBinding = UnitBinding;
     type Output = NoApplicationMutationOutputs;
-    type ScopeBinding = ApplicationMutationPrincipalScope<
-        DecisionReadSchema,
-        Principal,
-        PrincipalFacts,
-        PrincipalIdentity,
-        u64,
-        ReadOnly,
-        NoApplicationUnit,
-    >;
+    type ScopeBinding = ApplicationMutationPrincipalScope<PrincipalIdentity>;
     type PrincipalBinding = DecisionPrincipalBinding;
     type Mapping = Mapping;
     type Principal = Principal;
@@ -48,17 +39,8 @@ impl ApplicationMutationBinding<DecisionReadSchema> for DecisionReadBinding {
     fn workflow_execution_requirements() -> ApplicationWorkflowExecutionRequirements {
         ApplicationWorkflowExecutionRequirements::not_applicable()
     }
-    fn scope_field() -> ApplicationFieldRef<
-        DecisionReadSchema,
-        Principal,
-        PrincipalFacts,
-        PrincipalIdentity,
-        u64,
-        ReadOnly,
-        EqualityPredicate,
-        NoApplicationUnit,
-    > {
-        PrincipalIdentity::reference()
+    fn scope_field() -> PrincipalIdentity {
+        PrincipalIdentity::at("PrincipalIdentity")
     }
     fn principal_binding() -> ApplicationPrincipalBindingRef<
         DecisionReadSchema,
@@ -84,7 +66,7 @@ pub fn declare(
                 .no_aftermath()
                 .finish(),
         )
-        .operation_read_field(operation, PrincipalIdentity::reference())
+        .operation_read_field(operation, PrincipalIdentity::at("PrincipalIdentity"))
         .operation_managed_index_read::<ParentBinding, _, _>(operation)
         .application_mutation_binding::<DecisionReadBinding>()
 }

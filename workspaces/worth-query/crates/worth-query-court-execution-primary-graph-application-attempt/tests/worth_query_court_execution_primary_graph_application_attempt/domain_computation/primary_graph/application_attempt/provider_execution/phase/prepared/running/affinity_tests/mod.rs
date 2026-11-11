@@ -1,3 +1,4 @@
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::advancement::test_host_policy::TestHostRequest;
 pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::provider_execution::phase::prepared::running::start_managed_application_commit;
 pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::provider_execution::application_attempt_affinity::WorthQueryApplicationAttemptBasis;
 pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::provider_execution::phase::prepared::running::WorthQueryRunningApplicationCommit;
@@ -43,10 +44,11 @@ fn exact_affinity_accepts_its_real_session_and_rejects_runtime_snapshot_and_bran
             let running = start(
                 phase,
                 &world,
-                retained_program(phase, &world, "axis-owner"),
+                retained_program(&(phase).test_host_request_for_test(), &world, "axis-owner"),
                 idempotency(187, 188),
             );
             let (
+                _coupled_outputs,
                 admission,
                 lease,
                 _provider_attempt,
@@ -195,16 +197,17 @@ fn a_real_peer_plan_and_session_cannot_substitute_for_the_captured_attempt() {
             let first = start(
                 phase,
                 &world,
-                retained_program(phase, &world, "plan-owner"),
+                retained_program(&(phase).test_host_request_for_test(), &world, "plan-owner"),
                 idempotency(189, 190),
             );
             let second = start(
                 phase,
                 &world,
-                retained_program(phase, &world, "plan-peer"),
+                retained_program(&(phase).test_host_request_for_test(), &world, "plan-peer"),
                 idempotency(191, 192),
             );
             let (
+                _coupled_outputs,
                 _first_admission,
                 first_lease,
                 _first_provider_attempt,
@@ -219,6 +222,7 @@ fn a_real_peer_plan_and_session_cannot_substitute_for_the_captured_attempt() {
                 _first_completion_storage,
             ) = first.into_parts_for_test();
             let (
+                _coupled_outputs,
                 _second_admission,
                 second_lease,
                 _second_provider_attempt,

@@ -2,35 +2,26 @@
 use super::*;
 use worth_query_execution::facade::product::WorthQueryProductBranchCreateError;
 
-impl<'runtime, S, H, I, P, A> WorthQueryHistoryGroupExecution<'runtime, S, H, I, P, A>
+impl<'runtime, S, H, P, M> WorthQueryHistoryGroupExecution<'runtime, S, H, P, M>
 where
     S: ApplicationSchema + 'static,
     H: ApplicationHistoryBinding<S>,
-    I: ApplicationMutationIntent<S>,
     P: ApplicationProgramDefinition<S>,
-    A: ApplicationAction<S, I::Binding>,
-    Mode<S, I, A>: WorthQueryHistoryOperationMode<S, I, P, A>,
-    I::Binding: WorthQuerySourceOperationBinding<S>
-        + ApplicationMutationBinding<S, SourceExpectation = NoApplicationMutationSource>,
-    <I::Binding as ApplicationMutationBinding<S>>::ScopeBinding:
-        ApplicationMutationScopeBinding<S, Scope = ApplicationHistoryModel<S, H>>,
+    M: WorthQueryHistoryGroupMembers<S, H, P>,
     Scope<S, H>: ApplicationQueryScopeResolution<S, Principal<S, H>>,
     Rows<S, H>: WorthQueryApplicationProjection<S, Query<S, H>>,
 {
     pub(super) fn construct(&mut self) -> Result<(), WorthQueryHistoryGroupDenial> {
-        for member in &mut self.members {
-            if let Member::Description(description) = member {
-                match Mode::<S, I, A>::construct(
-                    description.take().expect("original description"),
-                    &self.program,
-                ) {
-                    Ok(operation) => *member = Member::Unbound(Some(operation)),
-                    Err((original, cause)) => {
-                        *description = Some(original);
-                        return Err(WorthQueryHistoryGroupDenial::Construction(cause));
-                    }
-                }
-            }
+        self.frozen = true;
+        if self.members.len() == 0 {
+            return Err(WorthQueryHistoryGroupDenial::History(
+                WorthQueryApplicationHistoryDenial::Document(
+                    WorthQueryDocumentHistoryDenial::EmptyGroup,
+                ),
+            ));
+        }
+        for index in 0..self.members.len() {
+            self.members.member_mut(index).construct(&self.program)?;
         }
         self.posture = WorthQueryHistoryGroupPosture::Admitting;
         Ok(())
@@ -70,45 +61,15 @@ where
                         // metadata receiver remains the first protected disclosure boundary.
                         Ok((|| {
                             let mut members = Vec::with_capacity(self.members.len());
-                            for member in &self.members {
-                                let Member::Unbound(Some(operation)) = member else {
-                                    unreachable!("all members constructed before admission")
-                                };
-                                let (prepared, selected) = Mode::<S, I, A>::prepare(
-                                    operation, &phase, &current,
-                                )
-                                .map_err(|cause| {
-                                    Denial::History(WorthQueryApplicationHistoryDenial::Mutation(
-                                        cause,
-                                    ))
-                                })?;
-                                members.push(
-                                    document
-                                        .owner
-                                        .admit_history_group_member::<I::Binding>(
-                                            &phase,
-                                            &program_publication_access(),
-                                            installed,
-                                            WorthQueryDocumentHistoryOperation::new(
-                                                &selected,
-                                                &prepared.admission,
-                                                prepared.idempotency,
-                                            ),
-                                        )
-                                        .map_err(|cause| {
-                                            Denial::History(
-                                                WorthQueryApplicationHistoryDenial::Document(cause),
-                                            )
-                                        })?,
-                                );
+                            for index in 0..self.members.len() {
+                                members.push(self.members.member(index).admit(
+                                    &phase,
+                                    &current,
+                                    &document.owner,
+                                    installed,
+                                )?);
                             }
-                            Mode::<S, I, A>::validate_group_outputs(&self.program).map_err(
-                                |cause| {
-                                    Denial::History(WorthQueryApplicationHistoryDenial::Document(
-                                        cause,
-                                    ))
-                                },
-                            )?;
+                            self.members.validate_outputs(&self.program)?;
                             let prepared = document
                                 .owner
                                 .reserve_history_group(

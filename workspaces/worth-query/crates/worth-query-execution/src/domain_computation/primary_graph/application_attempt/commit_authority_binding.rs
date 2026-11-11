@@ -21,7 +21,12 @@ use worth_query_declaration::facade::application_operation::ApplicationSharedInp
 /// Correction preparation accesses the original binding's encoded carrier.
 #[derive(Clone)]
 pub struct WorthQueryRetainedGovernedInput {
-    encoded: Option<Arc<dyn Any + Send + Sync>>,
+    material: Option<(
+        worth_query_declaration::facade::application_operation::ApplicationCanonicalInput,
+        &'static str,
+        [u8; 32],
+    )>,
+    captured: Option<Arc<dyn Any + Send + Sync>>,
     _value: Arc<dyn Any + Send + Sync>,
     type_id: TypeId,
     type_name: &'static str,
@@ -43,13 +48,20 @@ impl WorthQueryRetainedGovernedInput {
         correction: Option<
             &Arc<crate::domain_computation::application_aftermath::OriginalCorrectionDisclosure>,
         >,
-        encoded: Option<&Arc<dyn Any + Send + Sync>>,
+        captured: Option<&Arc<dyn Any + Send + Sync>>,
+        material: Option<(
+            &worth_query_declaration::facade::application_operation::ApplicationCanonicalInput,
+            &'static str,
+            [u8; 32],
+        )>,
     ) -> Self
     where
         Input: Send + Sync + 'static,
     {
         Self {
-            encoded: encoded.cloned(),
+            material: material
+                .map(|(snapshot, binding, identity)| (snapshot.clone(), binding, identity)),
+            captured: captured.cloned(),
             _value: Arc::new(input.clone()),
             type_id: TypeId::of::<Input>(),
             type_name: std::any::type_name::<Input>(),
@@ -69,16 +81,27 @@ impl WorthQueryRetainedGovernedInput {
             .flatten()
     }
 
-    pub(in crate::domain_computation::primary_graph) fn encoded_input<Binding>(
+    pub(in crate::domain_computation::primary_graph) fn material_input(
+        &self,
+    ) -> Option<(
+        &worth_query_declaration::facade::application_operation::ApplicationCanonicalInput,
+        &'static str,
+        [u8; 32],
+    )> {
+        self.material
+            .as_ref()
+            .map(|(snapshot, binding, identity)| (snapshot, *binding, *identity))
+    }
+    pub(in crate::domain_computation::primary_graph) fn retained_input<Binding>(
         &self,
     ) -> Option<
-        &worth_query_declaration::facade::application_operation::ApplicationEncodedInput<Binding>,
+        &worth_query_declaration::facade::application_operation::ApplicationRetainedInput<Binding>,
     >
     where
         Binding:
             worth_query_declaration::facade::application_schema::ApplicationStructuredValueBinding,
     {
-        self.encoded.as_ref()?.downcast_ref()
+        self.captured.as_ref()?.downcast_ref()
     }
 
     pub(crate) const fn governed_identity(&self) -> Option<[u8; 32]> {
@@ -103,7 +126,8 @@ impl WorthQueryRetainedGovernedInput {
     )]
     pub(crate) fn axis_probe(governed_identity: [u8; 32]) -> Self {
         Self {
-            encoded: None,
+            material: None,
+            captured: None,
             _value: Arc::new(()),
             type_id: TypeId::of::<()>(),
             type_name: std::any::type_name::<()>(),
@@ -174,7 +198,8 @@ impl WorthQueryApplicationCommitAuthorityBinding {
                 admission.governed_input_identity().copied(),
                 admission.original_scope(),
                 admission.original_correction_disclosure(),
-                admission.original_encoded_input(),
+                admission.original_retained_input(),
+                admission.original_material_input(),
             )),
             None => admission.shared_capability_input().map(|input| {
                 WorthQueryRetainedGovernedInput::from_admission(
@@ -182,7 +207,8 @@ impl WorthQueryApplicationCommitAuthorityBinding {
                     admission.governed_input_identity().copied(),
                     admission.original_scope(),
                     admission.original_correction_disclosure(),
-                    admission.original_encoded_input(),
+                    admission.original_retained_input(),
+                    admission.original_material_input(),
                 )
             }),
         };

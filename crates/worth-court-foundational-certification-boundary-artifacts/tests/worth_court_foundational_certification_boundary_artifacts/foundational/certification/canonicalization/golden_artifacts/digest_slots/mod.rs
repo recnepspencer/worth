@@ -1,3 +1,5 @@
+// V2 golden: independently SHA-256 hashed the explicit token fixture.
+// 0cd5a1f55058b76c5e93caf9fa8b6ff87543f74e02dc35af2d0353346f7fd686
 use {
     worth_foundational::admit_canonical_sequence_digest_derivation,
     worth_foundational::derive_canonical_digest,
@@ -51,8 +53,8 @@ fn admitted_sequence_preserves_golden_bytes_and_original_resource_refusal() {
     assert_eq!(
         digest.value().bytes(),
         &[
-            89, 41, 204, 117, 202, 52, 125, 39, 24, 4, 120, 254, 17, 43, 108, 97, 249, 128, 96, 1,
-            220, 139, 212, 48, 18, 203, 195, 190, 118, 82, 94, 135,
+            12, 213, 161, 245, 80, 88, 183, 108, 94, 147, 202, 249, 250, 139, 111, 248, 117, 67,
+            247, 78, 2, 220, 53, 175, 45, 3, 83, 52, 111, 127, 214, 134,
         ]
     );
     assert_eq!(
@@ -121,8 +123,8 @@ fn sha256_digest_slot_has_stable_derived_value() {
     assert_eq!(
         digest.value().bytes(),
         &[
-            89, 41, 204, 117, 202, 52, 125, 39, 24, 4, 120, 254, 17, 43, 108, 97, 249, 128, 96, 1,
-            220, 139, 212, 48, 18, 203, 195, 190, 118, 82, 94, 135,
+            12, 213, 161, 245, 80, 88, 183, 108, 94, 147, 202, 249, 250, 139, 111, 248, 117, 67,
+            247, 78, 2, 220, 53, 175, 45, 3, 83, 52, 111, 127, 214, 134,
         ]
     );
 }

@@ -5,6 +5,7 @@ use crate::correspondence::{
 use crate::correspondence_history::{
     compose_correspondence_historical_envelope, CorrespondenceHistoricalEnvelope,
 };
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::facade::foundation::{
     admit_historical_evaluation_path, resolve_historical_materialization_path,
     HistoricalCapabilityDescriptor, HistoricalEvaluationRequest,
@@ -15,7 +16,8 @@ use crate::facade::foundation::{
 use super::paths::{reconstruction_resolved, replay_resolved, retained_resolved};
 use super::preflight::{collection_preflight_bundle, detail_preflight_bundle};
 
-pub(crate) fn correspondence_denied_envelope() -> CorrespondenceHistoricalEnvelope {
+pub(crate) fn correspondence_denied_envelope(
+) -> Result<CorrespondenceHistoricalEnvelope, IdentityDerivationDenial> {
     let execution = crate::execution::execute_preflight_bundle(&detail_preflight_bundle())
         .expect("execution should succeed");
     let correspondence =
@@ -31,7 +33,7 @@ pub(crate) fn correspondence_denied_envelope() -> CorrespondenceHistoricalEnvelo
         1,
         1,
         HistoricalPathReuseDescriptor::retained_reuse(),
-    );
+    )?;
     let capability = HistoricalCapabilityDescriptor::new_for_test(
         "basis:a",
         Some(crate::historical::AdmittedHistoricalPathClass::AdmittedRetainedSnapshotPath),
@@ -40,7 +42,7 @@ pub(crate) fn correspondence_denied_envelope() -> CorrespondenceHistoricalEnvelo
         true,
         false,
         HistoricalPathReuseDescriptor::retained_reuse(),
-    );
+    )?;
     let admission =
         admit_historical_evaluation_path(request, capability).expect("admission should succeed");
     let resolved = resolve_historical_materialization_path(
@@ -48,14 +50,19 @@ pub(crate) fn correspondence_denied_envelope() -> CorrespondenceHistoricalEnvelo
         HistoricalMaterializationDescriptor::new_for_test(
             "basis:a",
             ResolvedHistoricalPathClass::ResolvedRetainedSnapshotPath,
-        ),
+        )?,
     )
     .expect("resolution should succeed");
 
-    compose_correspondence_historical_envelope(execution, correspondence, resolved)
+    Ok(compose_correspondence_historical_envelope(
+        execution,
+        correspondence,
+        resolved,
+    ))
 }
 
-pub(crate) fn lineage_authoritative_envelope() -> CorrespondenceHistoricalEnvelope {
+pub(crate) fn lineage_authoritative_envelope(
+) -> Result<CorrespondenceHistoricalEnvelope, IdentityDerivationDenial> {
     let execution = crate::execution::execute_preflight_bundle(&detail_preflight_bundle())
         .expect("execution should succeed");
     let correspondence =
@@ -66,14 +73,15 @@ pub(crate) fn lineage_authoritative_envelope() -> CorrespondenceHistoricalEnvelo
             1,
         ))
         .expect("correspondence should resolve");
-    compose_correspondence_historical_envelope(
+    Ok(compose_correspondence_historical_envelope(
         execution,
         correspondence,
-        retained_resolved("basis:a"),
-    )
+        retained_resolved("basis:a")?,
+    ))
 }
 
-pub(crate) fn structural_unique_replay_envelope() -> CorrespondenceHistoricalEnvelope {
+pub(crate) fn structural_unique_replay_envelope(
+) -> Result<CorrespondenceHistoricalEnvelope, IdentityDerivationDenial> {
     let execution = crate::execution::execute_preflight_bundle(&detail_preflight_bundle())
         .expect("execution should succeed");
     let correspondence =
@@ -84,14 +92,15 @@ pub(crate) fn structural_unique_replay_envelope() -> CorrespondenceHistoricalEnv
             StructuralCandidateOrderingContract::StableFingerprintOrder,
         ))
         .expect("correspondence should resolve");
-    compose_correspondence_historical_envelope(
+    Ok(compose_correspondence_historical_envelope(
         execution,
         correspondence,
-        replay_resolved("basis:replay"),
-    )
+        replay_resolved("basis:replay")?,
+    ))
 }
 
-pub(crate) fn disagreement_envelope() -> CorrespondenceHistoricalEnvelope {
+pub(crate) fn disagreement_envelope(
+) -> Result<CorrespondenceHistoricalEnvelope, IdentityDerivationDenial> {
     let execution = crate::execution::execute_preflight_bundle(&detail_preflight_bundle())
         .expect("execution should succeed");
     let correspondence = resolve_correspondence_evidence(CorrespondenceEvaluationRequest::mixed(
@@ -103,14 +112,15 @@ pub(crate) fn disagreement_envelope() -> CorrespondenceHistoricalEnvelope {
         StructuralCandidateOrderingContract::StableFingerprintThenLineageHintOrder,
     ))
     .expect("correspondence should resolve");
-    compose_correspondence_historical_envelope(
+    Ok(compose_correspondence_historical_envelope(
         execution,
         correspondence,
-        retained_resolved("basis:a"),
-    )
+        retained_resolved("basis:a")?,
+    ))
 }
 
-pub(crate) fn ambiguity_envelope() -> CorrespondenceHistoricalEnvelope {
+pub(crate) fn ambiguity_envelope(
+) -> Result<CorrespondenceHistoricalEnvelope, IdentityDerivationDenial> {
     let execution = crate::execution::execute_preflight_bundle(&collection_preflight_bundle())
         .expect("execution should succeed");
     let correspondence =
@@ -121,14 +131,15 @@ pub(crate) fn ambiguity_envelope() -> CorrespondenceHistoricalEnvelope {
             StructuralCandidateOrderingContract::StableFingerprintOrder,
         ))
         .expect("correspondence should resolve");
-    compose_correspondence_historical_envelope(
+    Ok(compose_correspondence_historical_envelope(
         execution,
         correspondence,
-        replay_resolved("basis:replay"),
-    )
+        replay_resolved("basis:replay")?,
+    ))
 }
 
-pub(crate) fn retained_path_envelope() -> CorrespondenceHistoricalEnvelope {
+pub(crate) fn retained_path_envelope(
+) -> Result<CorrespondenceHistoricalEnvelope, IdentityDerivationDenial> {
     let execution = crate::execution::execute_preflight_bundle(&detail_preflight_bundle())
         .expect("execution should succeed");
     let correspondence =
@@ -139,14 +150,15 @@ pub(crate) fn retained_path_envelope() -> CorrespondenceHistoricalEnvelope {
             1,
         ))
         .expect("correspondence should resolve");
-    compose_correspondence_historical_envelope(
+    Ok(compose_correspondence_historical_envelope(
         execution,
         correspondence,
-        retained_resolved("basis:a"),
-    )
+        retained_resolved("basis:a")?,
+    ))
 }
 
-pub(crate) fn replay_path_envelope() -> CorrespondenceHistoricalEnvelope {
+pub(crate) fn replay_path_envelope(
+) -> Result<CorrespondenceHistoricalEnvelope, IdentityDerivationDenial> {
     let execution = crate::execution::execute_preflight_bundle(&detail_preflight_bundle())
         .expect("execution should succeed");
     let correspondence =
@@ -157,14 +169,15 @@ pub(crate) fn replay_path_envelope() -> CorrespondenceHistoricalEnvelope {
             1,
         ))
         .expect("correspondence should resolve");
-    compose_correspondence_historical_envelope(
+    Ok(compose_correspondence_historical_envelope(
         execution,
         correspondence,
-        replay_resolved("basis:replay"),
-    )
+        replay_resolved("basis:replay")?,
+    ))
 }
 
-pub(crate) fn reconstruction_path_envelope() -> CorrespondenceHistoricalEnvelope {
+pub(crate) fn reconstruction_path_envelope(
+) -> Result<CorrespondenceHistoricalEnvelope, IdentityDerivationDenial> {
     let execution = crate::execution::execute_preflight_bundle(&detail_preflight_bundle())
         .expect("execution should succeed");
     let correspondence =
@@ -175,9 +188,9 @@ pub(crate) fn reconstruction_path_envelope() -> CorrespondenceHistoricalEnvelope
             1,
         ))
         .expect("correspondence should resolve");
-    compose_correspondence_historical_envelope(
+    Ok(compose_correspondence_historical_envelope(
         execution,
         correspondence,
-        reconstruction_resolved("basis:reconstruct"),
-    )
+        reconstruction_resolved("basis:reconstruct")?,
+    ))
 }

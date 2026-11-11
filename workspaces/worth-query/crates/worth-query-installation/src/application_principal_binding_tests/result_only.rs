@@ -15,9 +15,8 @@ worth_query_query_binding!(
     result PrincipalQueryResultBinding,
     principal IdentityBinding, mapping ExternalMapping, principal_entity Principal,
         principal_identity u64, identity_binding U64ApplicationValueBinding,
-    scope Principal, PrincipalIdentity, PrincipalIdentityField, u64,
-        ReadOnly, worth_query_declaration::facade::application_schema::NoApplicationUnit,
-    principal_field PrincipalIdentityField::reference(),
+    scope PrincipalIdentityField,
+    principal_field PrincipalIdentityField::at("PrincipalIdentityField"),
     limits results 8
 );
 

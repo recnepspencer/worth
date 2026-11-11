@@ -42,3 +42,6 @@ pub mod tier_policy_table;
 pub mod trace;
 
 pub(crate) mod host_execution;
+#[cfg(test)]
+#[path = "mod_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;

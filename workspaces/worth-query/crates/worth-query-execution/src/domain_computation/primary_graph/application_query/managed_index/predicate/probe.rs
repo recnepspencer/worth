@@ -96,7 +96,7 @@ impl RetainedPredicateProbe {
         let ordinal = parameters
             .bindings()
             .iter()
-            .position(|(key, _)| *key == name)
+            .position(|(key, _)| key.as_ref() == name)
             .ok_or(Stop::MembershipUnavailable)?;
         Ok(Arc::new(Self {
             parent: parent.clone(),

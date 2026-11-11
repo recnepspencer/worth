@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use std::collections::BTreeMap;
 
 use worth_foundational::facade::{
@@ -10,8 +11,9 @@ use super::{
 };
 
 #[test]
-fn replacement_updates_duplicate_native_storage_without_stale_precedence() {
-    let (entity, aspect, rank, desk, path) = duplicate_storage_entity();
+fn replacement_updates_duplicate_native_storage_without_stale_precedence(
+) -> Result<(), IdentityDerivationDenial> {
+    let (entity, aspect, rank, desk, path) = duplicate_storage_entity()?;
     let replaced = entity.replace_native_values([WorthQueryEntityNativeReplacement::new(
         aspect.clone(),
         Some(rank.clone()),
@@ -30,11 +32,14 @@ fn replacement_updates_duplicate_native_storage_without_stale_precedence() {
         replaced.scalar_value_at(&path),
         Some(&AspectValue::UInt64(2))
     );
+
+    Ok(())
 }
 
 #[test]
-fn absent_replacement_clears_every_copy_and_preserves_sibling_struct_fields() {
-    let (entity, aspect, rank, desk, path) = duplicate_storage_entity();
+fn absent_replacement_clears_every_copy_and_preserves_sibling_struct_fields(
+) -> Result<(), IdentityDerivationDenial> {
+    let (entity, aspect, rank, desk, path) = duplicate_storage_entity()?;
     let replaced = entity.replace_native_values([WorthQueryEntityNativeReplacement::new(
         aspect.clone(),
         Some(rank.clone()),
@@ -50,15 +55,20 @@ fn absent_replacement_clears_every_copy_and_preserves_sibling_struct_fields() {
         Some(&AspectValue::String("rates".into()))
     );
     assert_eq!(replaced.scalar_value_at(&path), None);
+
+    Ok(())
 }
 
-fn duplicate_storage_entity() -> (
-    WorthQueryEntity,
-    AspectKey,
-    FieldKey,
-    FieldKey,
-    CanonicalFieldPath,
-) {
+fn duplicate_storage_entity() -> Result<
+    (
+        WorthQueryEntity,
+        AspectKey,
+        FieldKey,
+        FieldKey,
+        CanonicalFieldPath,
+    ),
+    IdentityDerivationDenial,
+> {
     let aspect = AspectKey::new("PortfolioFacts").unwrap();
     let rank = FieldKey::new("PortfolioRankField").unwrap();
     let desk = FieldKey::new("PortfolioDeskField").unwrap();
@@ -70,10 +80,10 @@ fn duplicate_storage_entity() -> (
     ])
     .unwrap();
     let entity = WorthQueryEntity::from_aspect_projection(
-        admit_authored_entity_label("duplicate-storage-row"),
+        admit_authored_entity_label("duplicate-storage-row")?,
         BTreeMap::from([(aspect.clone(), AspectValue::UInt64(1))]),
         BTreeMap::from([(aspect.clone(), structured)]),
         BTreeMap::from([(path.clone(), AspectValue::UInt64(1))]),
     );
-    (entity, aspect, rank, desk, path)
+    Ok((entity, aspect, rank, desk, path))
 }

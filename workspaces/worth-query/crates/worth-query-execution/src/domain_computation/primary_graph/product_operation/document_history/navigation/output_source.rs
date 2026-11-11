@@ -20,8 +20,13 @@ use worth_query_declaration::facade::{
 use worth_query_installation::facade::ApplicationSchema;
 mod dependent;
 mod progression;
-pub(in crate::domain_computation::primary_graph) use dependent::HistoryDependentSource;
-pub use dependent::{WorthQueryHistoryDependentOutputRead, WorthQueryHistoryOutputDiscovery};
+pub(in crate::domain_computation::primary_graph) use dependent::{
+    HistoryDependentParent, HistoryDependentSource,
+};
+pub use dependent::{
+    WorthQueryHistoryDependentOutputRead, WorthQueryHistoryOutputDiscovery,
+    WorthQueryVerifiedHistoryParent,
+};
 pub use progression::{
     WorthQueryHistoryOutputAdvanceDenial, WorthQueryHistoryProgramOutputAdvance,
     WorthQuerySettledHistoryProgramOutput,
@@ -118,9 +123,12 @@ impl<S: ApplicationSchema + 'static, P: ApplicationProgramDefinition<S>>
         Connection<S, R>: WorthQueryApplicationRequiredOutputConnection<S>,
     {
         use WorthQueryHistoryRootOutputAdmissionDenial as Denial;
-        let (authority, result) = read.into_claim();
+        let (authority, result, truth) = read.into_claim();
         let profile = authority.profile();
         let original = authority.original();
+        let actual = truth
+            .as_ref()
+            .map_or(original.product_observation(), |truth| truth.observation());
         let source = result.into_admitted_disclosed().into_output_demand_source();
         let matches = profile.program_type
             == crate::equality_type_id::EqualityTypeId::of::<P>().into_external()
@@ -128,9 +136,15 @@ impl<S: ApplicationSchema + 'static, P: ApplicationProgramDefinition<S>>
             && profile.program == *self.installed_program().revision()
             && original
                 .belongs_to_selected_occurrence(self.runtime(), original.product_observation())
-            && source
-                .result_set_observation()
-                .is_some_and(|set| profile.model.matches_output_source(set.source(), original));
+            && actual.owner_identity() == original.product_observation().owner_identity()
+            && actual.branch_identity() == original.product_observation().branch_identity()
+            && actual.lifecycle_incarnation()
+                == original.product_observation().lifecycle_incarnation()
+            && source.result_set_observation().is_some_and(|set| {
+                profile
+                    .source_intent()
+                    .matches_output_source(set.source(), actual)
+            });
         if !matches {
             return Err(Denial::Demand(WorthQueryOutputDemandDenial::new(
                 WorthQueryOutputDemandDenialKind::ForeignDemand,

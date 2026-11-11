@@ -16,23 +16,7 @@ impl<const REUSE: bool, const WORK: usize, const RUNS: usize, const MODE: u8>
 {
     const IDENTITY: ApplicationSchemaContributionIdentity =
         <crate::checkpoint_recovery::contribution::CheckpointContribution as ApplicationSchemaContribution<CheckpointSchema>>::IDENTITY;
-    fn register_members(
-        builder: ApplicationSchemaDeclarationBuilder<CheckpointSchema>,
-    ) -> ApplicationSchemaDeclarationBuilder<CheckpointSchema> {
-        <crate::checkpoint_recovery::contribution::CheckpointContribution as ApplicationSchemaContribution<CheckpointSchema>>::register_members(
-            builder,
-        )
-    }
-    fn visit_correction<
-        Visitor: worth_query_decl::facade::application_aftermath::ApplicationCorrectionVisitor<
-            CheckpointSchema,
-        >,
-    >(
-        source_binding: std::any::TypeId,
-        visitor: Visitor,
-    ) -> Result<Visitor::Output, Visitor> {
-        <crate::checkpoint_recovery::contribution::CheckpointContribution as ApplicationSchemaContribution<CheckpointSchema>>::visit_correction(source_binding, visitor)
-    }
+    type Members = <crate::checkpoint_recovery::contribution::CheckpointContribution as ApplicationSchemaContribution<CheckpointSchema>>::Members;
 }
 impl<const REUSE: bool, const WORK: usize, const RUNS: usize, const MODE: u8>
     WorthQueryApplicationContribution<CheckpointSchema>

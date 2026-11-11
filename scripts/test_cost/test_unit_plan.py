@@ -9,6 +9,77 @@ from unit_plan import command_for, declare, verify
 
 
 class RequiredUnitPlanTests(unittest.TestCase):
+    def test_mixed_library_and_tests_attribute_single_binary_harnesses_exactly(self):
+        library = unit('owner', dependencies=[3])
+        binary = unit('observer', kind='bin', dependencies=[0])
+        binary['target']['test'] = True
+        source = graph(library, library, binary, unit('dependency'))
+        source['roots'] = [0, 1, 2]
+        before = json.dumps(source, sort_keys=True)
+        with tempfile.TemporaryDirectory() as temporary:
+            for subcommand in ('check', 'clippy'):
+                plan = declare(['cargo', subcommand, '--lib', '--tests'],
+                               temporary, {}, json.dumps(source))
+                observed = event(binary)
+                observed['profile']['test'] = True
+                self.assertTrue(attribute(observed, plan)['test_harness'])
+                observed['profile']['test'] = False
+                with self.assertRaises(CompilerUnitRefusal):
+                    attribute(observed, plan)
+        self.assertEqual(json.dumps(source, sort_keys=True), before)
+
+    def test_explicit_ordinary_binary_selection_does_not_authorize_a_single_test_stage(self):
+        binary = unit('observer', kind='bin')
+        binary['target']['test'] = True
+        with tempfile.TemporaryDirectory() as temporary:
+            for selector in (['--bins'], ['--bin', 'observer'], ['--bin=observer']):
+                plan = declare(['cargo', 'clippy', '--lib', '--tests', *selector],
+                               temporary, {}, json.dumps(graph(binary)))
+                self.assertFalse(attribute(event(binary), plan)['test_harness'])
+                observed = event(binary)
+                observed['profile']['test'] = True
+                with self.assertRaises(CompilerUnitRefusal):
+                    attribute(observed, plan)
+
+    def test_disabled_binary_harness_stays_an_ordinary_compiler_obligation(self):
+        binary = unit('observer', kind='bin')
+        binary['target']['test'] = False
+        with tempfile.TemporaryDirectory() as temporary:
+            plan = declare(['cargo', 'check', '--lib', '--tests'],
+                           temporary, {}, json.dumps(graph(binary)))
+            self.assertFalse(attribute(event(binary), plan)['test_harness'])
+            observed = event(binary)
+            observed['profile']['test'] = True
+            with self.assertRaises(CompilerUnitRefusal):
+                attribute(observed, plan)
+
+    def test_explicit_example_and_tests_preserve_ordinary_and_harness_obligations(self):
+        example = unit('observer', kind='example', dependencies=[3])
+        example['target']['test'] = True
+        other = unit('other', kind='example', dependencies=[3])
+        other['target']['test'] = True
+        source = graph(example, example, other, unit('dependency'))
+        source['roots'] = [0, 1, 2]
+        before = json.dumps(source, sort_keys=True)
+        with tempfile.TemporaryDirectory() as temporary:
+            for selector in (['--example', 'observer'], ['--example=observer']):
+                plan = declare(['cargo', 'check', '--tests', *selector],
+                               temporary, {}, json.dumps(source))
+                ordinary = attribute(event(example), plan)
+                checked = event(example)
+                checked['profile']['test'] = True
+                harness = attribute(checked, plan)
+                self.assertFalse(ordinary['test_harness'])
+                self.assertTrue(harness['test_harness'])
+                self.assertNotEqual(ordinary['identity'], harness['identity'])
+                self.assertEqual(ordinary['dependency_units'], harness['dependency_units'])
+                other_checked = event(other)
+                other_checked['profile']['test'] = True
+                self.assertTrue(attribute(other_checked, plan)['test_harness'])
+                with self.assertRaises(CompilerUnitRefusal):
+                    attribute(event(other), plan)
+        self.assertEqual(json.dumps(source, sort_keys=True), before)
+
     def test_checked_mixed_library_keeps_ordinary_and_harness_obligations_separate(self):
         library = unit('owner', dependencies=[2])
         library['target'].update(kind=['cdylib', 'rlib'], crate_types=['cdylib', 'rlib'])
@@ -104,6 +175,41 @@ class RequiredUnitPlanTests(unittest.TestCase):
             unknown = declare(['cargo', 'check'], temporary, {}, json.dumps(observed_graph))
             with self.assertRaises(CompilerUnitRefusal):
                 attribute(checked_test, unknown)
+
+    def test_primary_rustc_arguments_do_not_become_dependency_inputs(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            owner, dependency = unit('owner', dependencies=(1,)), unit('dependency')
+            observed = json.dumps(graph(owner, dependency))
+            base = declare(['cargo', 'rustc'], temporary, {}, observed)
+            changed = declare(['cargo', 'rustc', '--', '--emit=llvm-ir=observed.ll'],
+                              temporary, {}, observed)
+            self.assertNotEqual(attribute(event(owner), base)['compiler_inputs'],
+                                attribute(event(owner), changed)['compiler_inputs'])
+            self.assertEqual(attribute(event(dependency), base)['compiler_inputs'],
+                             attribute(event(dependency), changed)['compiler_inputs'])
+
+    def test_incremental_override_uses_the_resolved_profile_but_flags_still_drift(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            owner = unit('owner')
+            owner['profile']['incremental'] = False
+            observed = json.dumps(graph(owner))
+            base = declare(['cargo', 'build'], temporary, {}, observed)
+            equivalent = declare(['cargo', 'build', '--config', 'build.incremental=false'],
+                                 temporary, {}, observed)
+            flags = declare(['cargo', 'build', '--config', 'build.rustflags=["-A", "dead_code"]'],
+                            temporary, {}, observed)
+            self.assertEqual(attribute(event(owner), base), attribute(event(owner), equivalent))
+            self.assertNotEqual(attribute(event(owner), base)['compiler_inputs'],
+                                attribute(event(owner), flags)['compiler_inputs'])
+            owner['profile']['incremental'] = True
+            different = declare(['cargo', 'build'], temporary, {}, json.dumps(graph(owner)))
+            self.assertNotEqual(base['units'][0]['identity'], different['units'][0]['identity'])
+
+    def test_incremental_override_without_resolved_profile_evidence_refuses(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            with self.assertRaisesRegex(CompilerUnitRefusal, 'resolved incremental mode'):
+                declare(['cargo', 'build', '--config', 'build.incremental=false'],
+                        temporary, {}, json.dumps(graph(unit('owner'))))
 
     def test_nextest_build_declares_the_same_cargo_targets_profile_and_features(self):
         command = ['cargo', 'nextest', 'list', '--cargo-message-format=json', '--workspace',

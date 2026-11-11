@@ -74,9 +74,11 @@ pub(super) fn compose<Stop>(
     let count = u32::try_from(parts.len()).map_err(|_| Failure::AccountingOverflow)?;
     let strings = parts
         .iter()
-        .try_fold(SCHEME.len() + "sha256".len(), |bytes, part| {
-            bytes.checked_add(part.borrowed().1.len())
-        })
+        .try_fold(
+            SCHEME.len()
+                + worth_foundational::facade::CanonicalDigestAlgorithmId::SHA256_POLICY_ID.len(),
+            |bytes, part| bytes.checked_add(part.borrowed().1.len()),
+        )
         .ok_or(Failure::AccountingOverflow)?;
     let bytes = parts
         .len()
@@ -118,7 +120,11 @@ pub(super) fn compose<Stop>(
         .map_err(Failure::Digest)?;
     let length = SCHEME
         .len()
-        .checked_add(1 + "sha256".len() + 1 + 64)
+        .checked_add(
+            1 + worth_foundational::facade::CanonicalDigestAlgorithmId::SHA256_POLICY_ID.len()
+                + 1
+                + 64,
+        )
         .ok_or(Failure::AccountingOverflow)?;
     let arc = Layout::new::<[AtomicUsize; 2]>()
         .extend(Layout::array::<u8>(length).map_err(|_| Failure::AccountingOverflow)?)
@@ -130,7 +136,9 @@ pub(super) fn compose<Stop>(
     admit(length, output).map_err(Failure::Resource)?;
     let mut token = String::with_capacity(length);
     token.push_str(SCHEME);
-    token.push_str(":sha256:");
+    token.push(':');
+    token.push_str(digest.metadata().algorithm().id().as_str());
+    token.push(':');
     for byte in digest.value().bytes() {
         write!(&mut token, "{byte:02x}").expect("fixed hex writes to admitted String");
     }

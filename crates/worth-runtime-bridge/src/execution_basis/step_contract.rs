@@ -194,3 +194,6 @@ impl BridgeManagedExecutionStepLimits {
         self.retained_bytes_ceiling
     }
 }
+#[cfg(test)]
+#[path = "step_contract_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;

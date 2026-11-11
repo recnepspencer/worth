@@ -1,0 +1,30 @@
+{
+  "query": [
+    "domain_computation::primary_graph::application_attempt::idempotency::recorded_intent_tests::the_recorded_intent_names_its_encoding_and_no_runtime",
+    "domain_computation::primary_graph::application_attempt::idempotency::recorded_intent_tests::a_first_encoding_record_resolves_by_its_durable_parts",
+    "domain_computation::primary_graph::application_attempt::idempotency::recorded_intent_tests::a_first_encoding_record_with_another_durable_part_is_drift",
+    "domain_computation::primary_graph::application_attempt::idempotency::recorded_intent_tests::a_first_encoding_operation_without_a_mutation_binding_is_unverifiable",
+    "domain_computation::primary_graph::application_attempt::idempotency::recorded_intent_tests::a_first_encoding_record_without_operation_or_scope_matches_exactly",
+    "domain_computation::primary_graph::application_attempt::idempotency::recorded_intent_tests::a_record_in_neither_encoding_is_malformed_not_drift",
+    "domain_computation::primary_graph::application_attempt::idempotency::recorded_intent_tests::original_lookup_scope_uses_only_the_validated_correction_slot",
+    "domain_computation::primary_graph::application_attempt::idempotency::recorded_intent_tests::current_recorded_operation_definition_is_stable_descriptive_meaning",
+    "domain_computation::primary_graph::application_attempt::idempotency::recorded_intent_tests::installation_seals_and_absent_operations_do_not_readmit_a_definition",
+    "domain_computation::primary_graph::application_attempt::idempotency::recorded_intent_tests::recorded_operation_readmission_validates_the_complete_intent_grammar",
+    "domain_computation::primary_graph::application_attempt::idempotency::recorded_intent::shape::tests::durable_intent_shape_refuses_unknown_reordered_and_nullable_optional_slots",
+    "domain_computation::primary_graph::application_attempt::idempotency::recorded_intent::shape::tests::durable_and_legacy_scopes_and_complete_optional_suffix_are_exact",
+    "domain_computation::primary_graph::provider::committed_dispatch_outbox::restoration_tests::durable_field_restore_accepts_the_exact_committed_shape",
+    "domain_computation::primary_graph::provider::committed_dispatch_outbox::restoration_tests::durable_field_restore_rejects_every_omission_and_wrong_storage_type",
+    "domain_computation::primary_graph::provider::committed_dispatch_outbox::restoration_tests::durable_field_restore_rejects_malformed_protocol_and_encoded_bytes",
+    "domain_computation::primary_graph::provider::idempotency::snapshot_resolution::original_receipt::outbox::tests::original_definition_rebinds_across_independent_real_installations",
+    "domain_computation::primary_graph::provider::idempotency::snapshot_resolution::original_receipt::outbox::tests::equal_outbound_fields_cannot_rebind_changed_inbound_source_or_limits",
+    "domain_computation::primary_graph::provider::idempotency::snapshot_resolution::original_receipt::outbox::tests::missing_or_unverifiable_binding_never_claims_no_inbound",
+    "domain_computation::primary_graph::provider::idempotency::snapshot_resolution::original_receipt::outbox::tests::only_a_matching_installed_absence_is_no_inbound"
+  ],
+  "bank": [
+    "oracle::server_owned_effects::server::parallel_history::assessment_history::assessment_history_settles_at_each_request_width",
+    "oracle::server_owned_effects::server::parallel_history::transfer_history::seeded_transfers_match_at_host_policy_and_each_request_width",
+    "process::server_owned_effects::server::ordinary_mutations::estate_operations::c4_retry_outbox_rebind::ordinary_equivalent_retry_skips_materialization_and_the_external_rail",
+    "process::server_owned_effects::server::ordinary_mutations::estate_operations::external_effect_dispatch::committed_outbox::committed_outbox_is_fresh_owner_truth_with_exact_commit_affinity",
+    "process::server_owned_effects::server::ordinary_mutations::estate_operations::external_effect_dispatch::committed_outbox::another_runtime_without_the_exact_commit_cannot_observe_a_receipts_committed_outbox"
+  ]
+}

@@ -37,7 +37,7 @@ fn mutation_effect_normalizes_and_admits_from_raw_workflow_request() {
     )
     .expect("mutation effect should normalize");
 
-    let admitted = match evaluate_effect_eligibility(normalized) {
+    let admitted = match evaluate_effect_eligibility(normalized).expect("fixture digest must fit") {
         EffectEligibilityOutcome::Admitted(eligibility) => admit_effect_intent(eligibility),
         other => panic!("expected admitted effect, got {other:?}"),
     };
@@ -81,8 +81,9 @@ fn preview_writeback_authoring_is_real_and_returns_typed_rebind() {
     .expect("preview writeback should normalize");
 
     let discovery =
-        discover_effect_lifecycle_support(BasisFamily::Preview, EffectFamily::Writeback);
-    let rebind = match evaluate_effect_eligibility(normalized) {
+        discover_effect_lifecycle_support(BasisFamily::Preview, EffectFamily::Writeback)
+            .expect("fixture digest must fit");
+    let rebind = match evaluate_effect_eligibility(normalized).expect("fixture digest must fit") {
         EffectEligibilityOutcome::RebindRequired(rebind) => rebind,
         other => panic!("expected rebind-required effect, got {other:?}"),
     };
@@ -120,8 +121,9 @@ fn preview_mutation_authoring_is_real_and_returns_typed_rebind() {
     )
     .expect("preview mutation should normalize");
 
-    let discovery = discover_effect_lifecycle_support(BasisFamily::Preview, EffectFamily::Mutation);
-    let rebind = match evaluate_effect_eligibility(normalized) {
+    let discovery = discover_effect_lifecycle_support(BasisFamily::Preview, EffectFamily::Mutation)
+        .expect("fixture digest must fit");
+    let rebind = match evaluate_effect_eligibility(normalized).expect("fixture digest must fit") {
         EffectEligibilityOutcome::RebindRequired(rebind) => rebind,
         other => panic!("expected rebind-required effect, got {other:?}"),
     };
@@ -165,8 +167,9 @@ fn tenant_scoped_merge_denies_with_same_support_width_as_discovery() {
     .expect("merge effect should normalize");
 
     let discovery =
-        discover_effect_lifecycle_support(BasisFamily::TenantScoped, EffectFamily::Merge);
-    let denial = match evaluate_effect_eligibility(normalized) {
+        discover_effect_lifecycle_support(BasisFamily::TenantScoped, EffectFamily::Merge)
+            .expect("fixture digest must fit");
+    let denial = match evaluate_effect_eligibility(normalized).expect("fixture digest must fit") {
         EffectEligibilityOutcome::Denied(denial) => denial,
         other => panic!("expected denied effect, got {other:?}"),
     };

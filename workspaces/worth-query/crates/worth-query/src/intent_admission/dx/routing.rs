@@ -99,7 +99,7 @@ impl<'a> WorthQueryRuntimeExistingTruthProbeIntentAdmissionReview<'a> {
             })?;
         let execution_binding = self
             .runtime
-            .prepare_existing_truth_probe_execution_binding(handoff.clone());
+            .prepare_existing_truth_probe_execution_binding(handoff.clone())?;
         Ok(WorthQueryAdmittedRuntimeExistingTruthProbeIntent {
             runtime: self.runtime,
             review: self.review,

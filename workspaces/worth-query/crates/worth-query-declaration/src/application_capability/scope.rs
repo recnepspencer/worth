@@ -1,6 +1,6 @@
 use crate::application_schema::{
-    ApplicationEncodedScalarValue, ApplicationFieldRef, ApplicationFieldUnit,
-    ApplicationRelationRef, DeclaredApplicationFieldValue, WritePosture,
+    fragment::RecordSelection, ApplicationEncodedScalarValue, ApplicationRelationRef,
+    ApplicationSchemaDeclarationDenial,
 };
 use worth_foundational::facade::{AspectValue, ScalarAspectType};
 
@@ -30,21 +30,17 @@ pub struct ApplicationCapabilityFieldBinding {
 }
 
 impl ApplicationCapabilityFieldBinding {
-    pub fn from_reference<Schema, Entity, Aspect, Field, Value, Write, Equality, Unit>(
-        field: ApplicationFieldRef<Schema, Entity, Aspect, Field, Value, Write, Equality, Unit>,
-    ) -> Self
-    where
-        Field: DeclaredApplicationFieldValue<Value = Value>,
-        Write: WritePosture,
-        Unit: ApplicationFieldUnit,
-    {
-        Self {
+    pub fn from_reference<Field: RecordSelection>(
+        field: Field,
+    ) -> Result<Self, ApplicationSchemaDeclarationDenial> {
+        field.checked()?;
+        Ok(Self {
             entity: field.entity().to_string(),
             aspect: field.aspect().to_string(),
             field: field.field().to_string(),
             scalar_family: field.scalar_family(),
             value_type: field.value_type_name().to_string(),
-        }
+        })
     }
 
     pub fn entity(&self) -> &str {
@@ -75,19 +71,14 @@ pub struct ApplicationCapabilityValueBinding {
 }
 
 impl ApplicationCapabilityValueBinding {
-    pub fn new<Schema, Entity, Aspect, Field, Value, Write, Equality, Unit>(
-        field: ApplicationFieldRef<Schema, Entity, Aspect, Field, Value, Write, Equality, Unit>,
+    pub fn new<Field: RecordSelection>(
+        field: Field,
         value: ApplicationEncodedScalarValue<Field::Binding>,
-    ) -> Self
-    where
-        Field: DeclaredApplicationFieldValue<Value = Value>,
-        Write: WritePosture,
-        Unit: ApplicationFieldUnit,
-    {
-        Self {
-            field: ApplicationCapabilityFieldBinding::from_reference(field),
+    ) -> Result<Self, ApplicationSchemaDeclarationDenial> {
+        Ok(Self {
+            field: ApplicationCapabilityFieldBinding::from_reference(field)?,
             value: value.into_foundational_value(),
-        }
+        })
     }
 
     pub const fn field(&self) -> &ApplicationCapabilityFieldBinding {
@@ -149,15 +140,12 @@ impl ApplicationCapabilityFieldDimension {
         Self::NotApplicable
     }
 
-    pub fn bound<Schema, Entity, Aspect, Field, Value, Write, Equality, Unit>(
-        field: ApplicationFieldRef<Schema, Entity, Aspect, Field, Value, Write, Equality, Unit>,
-    ) -> Self
-    where
-        Field: DeclaredApplicationFieldValue<Value = Value>,
-        Write: WritePosture,
-        Unit: ApplicationFieldUnit,
-    {
-        Self::Bound(ApplicationCapabilityFieldBinding::from_reference(field))
+    pub fn bound<Field: RecordSelection>(
+        field: Field,
+    ) -> Result<Self, ApplicationSchemaDeclarationDenial> {
+        Ok(Self::Bound(
+            ApplicationCapabilityFieldBinding::from_reference(field)?,
+        ))
     }
 }
 

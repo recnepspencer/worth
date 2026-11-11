@@ -10,13 +10,9 @@ use super::retained_decision_facts::StorageControl;
 use super::retained_decision_facts::StoreDenial;
 pub(super) use canonical_encoding::authentication_observation_identity;
 use canonical_encoding::lineage_identity;
-#[cfg(test)]
-use content_tree::dependency_identity;
 pub(in crate::domain_computation::primary_graph) use content_tree::CompletedFactRoutes;
 pub(in crate::domain_computation::primary_graph) use content_tree::FactContent;
 use output_postcondition::complete_content_currentness_facts;
-#[cfg(test)]
-use output_postcondition::normalized_output_facts;
 pub(in crate::domain_computation::primary_graph) use output_postcondition::OutputCurrentnessFacts;
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -48,6 +44,55 @@ impl<Schema, Operation, Input, Scope>
     where
         OutputBinding: 'static,
     {
+        self.producer_identities::<OutputBinding>(
+            runtime,
+            execution,
+            declared_key,
+            implementation,
+            successor_of,
+            None,
+            policy,
+            retain_output_field_evidence,
+        )
+    }
+
+    pub(in crate::domain_computation::primary_graph) fn coupled_producer_identities<
+        OutputBinding: 'static,
+    >(
+        &mut self,
+        runtime: &crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        declared_key: [u8; 32],
+        implementation: worth_relational::facade::mvcc::RequiredOutputProducingImplementation,
+        predecessor: &worth_relational::facade::mvcc::RelationalRequiredOutputPublication,
+        policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
+        retain_output_field_evidence: bool,
+    ) -> Result<([u8; 32], [u8; 32]), WorthQueryProducerIdentityDenial> {
+        self.producer_identities::<OutputBinding>(
+            runtime,
+            execution,
+            declared_key,
+            implementation,
+            None,
+            Some(predecessor),
+            policy,
+            retain_output_field_evidence,
+        )
+    }
+
+    fn producer_identities<OutputBinding: 'static>(
+        &mut self,
+        runtime: &crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        declared_key: [u8; 32],
+        implementation: worth_relational::facade::mvcc::RequiredOutputProducingImplementation,
+        successor_of: Option<[u8; 32]>,
+        required_predecessor: Option<
+            &worth_relational::facade::mvcc::RelationalRequiredOutputPublication,
+        >,
+        policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
+        retain_output_field_evidence: bool,
+    ) -> Result<([u8; 32], [u8; 32]), WorthQueryProducerIdentityDenial> {
         let control =
             StorageControl::new(policy, Some(self.read_set.admission.publication_request()));
         control
@@ -127,10 +172,11 @@ impl<Schema, Operation, Input, Scope>
                 _ => WorthQueryProducerIdentityDenial::LineageLookupBudgetExceeded,
             })?;
         drop(lineage);
-        let force_successor = successor_of.is_some_and(|stale_key| {
-            head.as_ref()
-                .is_some_and(|head| head.idempotency_key_identity == stale_key)
-        });
+        let force_successor = required_predecessor.is_some()
+            || successor_of.is_some_and(|stale_key| {
+                head.as_ref()
+                    .is_some_and(|head| head.idempotency_key_identity == stale_key)
+            });
         let occurrence = self
             .read_set
             .lease
@@ -162,8 +208,14 @@ impl<Schema, Operation, Input, Scope>
         let prior_head = head
             .map(|head| head.idempotency_key_identity)
             .or(successor_of);
-        let (key, work) = lineage_identity(dependency, prior_head)
-            .map_err(|_| WorthQueryProducerIdentityDenial::LineageCanonicalizationRejected)?;
+        let (key, work) = match (prior_head, required_predecessor) {
+            (None, Some(predecessor)) => canonical_encoding::native_parent_lineage_identity(
+                dependency,
+                predecessor.authority().publication_coordinate(),
+            ),
+            _ => lineage_identity(dependency, prior_head),
+        }
+        .map_err(|_| WorthQueryProducerIdentityDenial::LineageCanonicalizationRejected)?;
         self.read_set
             .admission
             .retain_execution_canonical_work(work);

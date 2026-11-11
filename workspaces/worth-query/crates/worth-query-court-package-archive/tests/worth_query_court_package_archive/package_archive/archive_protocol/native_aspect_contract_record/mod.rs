@@ -63,7 +63,7 @@ fn noncanonical_retained_fields_and_unknown_binding_fail_closed() {
     );
 
     let mut unknown_binding = bytes;
-    let binding_offset = unknown_binding.len() - (2 + 4 + "Profile".len());
+    let binding_offset = unknown_binding.len() - (2 + 4 + Profile::reference().name().len());
     unknown_binding[binding_offset..binding_offset + 2].copy_from_slice(&9_u16.to_be_bytes());
     assert_decode_kind(
         &unknown_binding,
@@ -85,8 +85,8 @@ fn native_aspect_semantic_tamper_decodes_but_cannot_mint_package_identity() {
         .position(|view| view.family() == Family::NativeAspectContract)
         .unwrap();
     let schema_offset = frames[native_index]
-        .windows(NativeSchema::NAME.len())
-        .position(|window| window == NativeSchema::NAME.as_bytes())
+        .windows(<NativeSchema as ApplicationSchema>::NAME.len())
+        .position(|window| window == <NativeSchema as ApplicationSchema>::NAME.as_bytes())
         .unwrap();
     frames[native_index][schema_offset] = b'X';
 

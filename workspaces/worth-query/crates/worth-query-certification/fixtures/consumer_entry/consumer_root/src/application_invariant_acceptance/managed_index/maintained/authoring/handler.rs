@@ -8,10 +8,10 @@ impl OperationHandler<Catalog, Binding> for Handler {
         edit: &Edit,
         reader: &mut DecisionReader<'_, '_, '_, Catalog, Binding>,
     ) -> HandlerResult<Decision, Denial> {
-        if let Edit::Items { items, .. } = edit {
-            if items.is_empty() || items.len() > MAX_ITEMS_PER_BATCH {
-                return HandlerResult::DomainDenied(Denial::InvalidBatch);
-            }
+        if let Edit::Items { items, .. } = edit
+            && (items.is_empty() || items.len() > MAX_ITEMS_PER_BATCH)
+        {
+            return HandlerResult::DomainDenied(Denial::InvalidBatch);
         }
         let result = (|| {
             let scope = match edit {
@@ -22,8 +22,8 @@ impl OperationHandler<Catalog, Binding> for Handler {
                 | Edit::RetireItem { directory, .. } => directory,
                 Edit::SetEnabled { directory, .. } => directory,
             };
-            let directory =
-                reader.resolve_entity(DirectoryIdentity::reference(), scope.to_owned())?;
+            let directory = reader
+                .resolve_entity(DirectoryIdentity::at("DirectoryIdentity"), scope.to_owned())?;
             reader
                 .reader()
                 .require_decision_entity(&directory, Directory::reference())
@@ -33,13 +33,13 @@ impl OperationHandler<Catalog, Binding> for Handler {
             | Edit::RetireItem { item, .. }
             | Edit::SetEnabled { item, .. } = edit
             {
-                let item = reader.resolve_entity(ItemIdentity::reference(), item.clone())?;
+                let item = reader.resolve_entity(ItemIdentity::at("ItemIdentity"), item.clone())?;
                 reader
                     .reader()
                     .require_decision_entity(&item, Item::reference())
                     .map_err(HandlerExecutionDenial::new)?;
                 if matches!(edit, Edit::SetEnabled { .. }) {
-                    reader.field(&item, ItemEnabled::reference())?;
+                    reader.field(&item, ItemEnabled::at("ItemEnabled"))?;
                 }
                 Some(reader.mutation_target(&item)?)
             } else {
@@ -73,7 +73,7 @@ impl OperationHandler<Catalog, Binding> for Handler {
                         )
                         .map_err(HandlerExecutionDenial::new)?;
                     writer
-                        .write_field(&item, ItemEnabled::reference(), *enabled)
+                        .write_field(&item, ItemEnabled::at("ItemEnabled"), *enabled)
                         .map_err(HandlerExecutionDenial::new)?;
                 }
                 Edit::Directory { identity } => {
@@ -88,12 +88,16 @@ impl OperationHandler<Catalog, Binding> for Handler {
                     writer
                         .initialize_field(
                             &created,
-                            DirectoryIdentity::reference(),
+                            DirectoryIdentity::at("DirectoryIdentity"),
                             identity.clone(),
                         )
                         .map_err(HandlerExecutionDenial::new)?;
                     writer
-                        .initialize_field(&created, DirectoryNote::reference(), String::new())
+                        .initialize_field(
+                            &created,
+                            DirectoryNote::at("DirectoryNote"),
+                            String::new(),
+                        )
                         .map_err(HandlerExecutionDenial::new)?;
                 }
                 Edit::Item { directory: key, .. } | Edit::Items { directory: key, .. } => {
@@ -120,18 +124,26 @@ impl OperationHandler<Catalog, Binding> for Handler {
                             )
                             .map_err(HandlerExecutionDenial::new)?;
                         writer
-                            .initialize_field(&created, ItemIdentity::reference(), identity.clone())
-                            .map_err(HandlerExecutionDenial::new)?;
-                        writer
-                            .initialize_field(&created, ItemName::reference(), name.clone())
-                            .map_err(HandlerExecutionDenial::new)?;
-                        writer
-                            .initialize_field(&created, ItemEnabled::reference(), true)
+                            .initialize_field(
+                                &created,
+                                ItemIdentity::at("ItemIdentity"),
+                                identity.clone(),
+                            )
                             .map_err(HandlerExecutionDenial::new)?;
                         writer
                             .initialize_field(
                                 &created,
-                                bounds::ItemBounds::reference(),
+                                ItemName::at("ItemName"),
+                                name.clone().into(),
+                            )
+                            .map_err(HandlerExecutionDenial::new)?;
+                        writer
+                            .initialize_field(&created, ItemEnabled::at("ItemEnabled"), true)
+                            .map_err(HandlerExecutionDenial::new)?;
+                        writer
+                            .initialize_field(
+                                &created,
+                                bounds::ItemBounds::at("ItemBounds"),
                                 bounds::Coordinates::new(0, 0, 0, 0),
                             )
                             .map_err(HandlerExecutionDenial::new)?;

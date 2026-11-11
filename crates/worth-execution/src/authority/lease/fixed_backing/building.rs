@@ -13,6 +13,7 @@ pub(in super::super) struct BuildingFixedBacking<T> {
     element_count: usize,
     quote: u64,
     status: Option<ExecutionLeaseStatus>,
+    writes: super::WriteCadence,
 }
 
 impl<T> BuildingFixedBacking<T> {
@@ -35,16 +36,14 @@ impl<T> BuildingFixedBacking<T> {
         u64::try_from(layout.size()).map_err(|_| Denial::new(Kind::Layout, None))
     }
 
-    /// Only the array request owner may transfer its sealed admission here.
+    /// Request backing owners transfer admission and controls from the same stage.
     /// The reservation is never accepted through a public adoption surface.
     pub(in super::super) fn allocate_reserved(
         element_count: usize,
         reservation: Option<super::super::ExecutionMemoryReservation>,
+        status: Option<ExecutionLeaseStatus>,
     ) -> Result<Self, Denial> {
         let quote = Self::payload_quote(element_count)?;
-        let status = reservation
-            .as_ref()
-            .and_then(|held| held.allocation_status());
         Self::allocate_prepared(element_count, quote, reservation, status)
     }
 
@@ -72,6 +71,7 @@ impl<T> BuildingFixedBacking<T> {
             element_count,
             quote,
             status,
+            writes: super::WriteCadence::new::<T>(),
         };
         building.check_live()?;
         Ok(building)
@@ -81,13 +81,32 @@ impl<T> BuildingFixedBacking<T> {
             .as_ref()
             .map_or(Ok(()), |status| check_status(status, Some(self.quote)))
     }
+    fn check_cancellation(&self) -> Result<(), Denial> {
+        if self
+            .status
+            .as_ref()
+            .is_some_and(|status| status.is_cancelled())
+        {
+            self.check_live()?;
+        }
+        Ok(())
+    }
     pub(in super::super) fn push(&mut self, value: T) -> Result<(), Denial> {
-        self.check_live()?;
+        self.check_cancellation()?;
+        if self.writes.before() {
+            self.check_live()?;
+        }
         if self.len() == self.element_count {
+            self.check_live()?;
             return Err(self.denial(Kind::WriteBeyondReserved));
         }
         self.backing.push(value);
-        self.check_live()
+        if self.writes.completed() {
+            self.check_live()?;
+        } else {
+            self.check_cancellation()?;
+        }
+        Ok(())
     }
     pub(in super::super) fn elements(&self) -> &[T] {
         self.backing.elements()
@@ -99,6 +118,7 @@ impl<T> BuildingFixedBacking<T> {
     ) -> Result<(), Denial> {
         self.check_live()?;
         if index >= self.len() {
+            self.check_live()?;
             return Err(self.denial(Kind::UninitializedElement));
         }
         // The slot remains initialized even if the replaced value's Drop unwinds.

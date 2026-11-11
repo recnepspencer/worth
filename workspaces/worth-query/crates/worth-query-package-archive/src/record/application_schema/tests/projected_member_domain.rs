@@ -13,8 +13,10 @@ struct FaceUses;
 struct Negative;
 struct Positive;
 
-impl ApplicationEntityMarkerIdentity<Schema> for Face {
-    const IDENTIFIER: &'static str = "Face";
+impl worth_query_declaration::facade::application_schema::fragment::Entity for Face {
+    const NAME: &'static str = "Face";
+    type Aspects = ();
+    type Relations = ();
 }
 
 #[test]
@@ -123,8 +125,7 @@ fn typed_schema(
             .case(positive)
             .unwrap()
     };
-    ApplicationSchemaDeclarationBuilder::<Schema>::for_schema()
-        .entity(face)
+    ApplicationSchemaDeclarationBuilder::<Schema>::from_fragment(FixtureRecords)?
         .projected_member_domain(definition)
         .build()
 }
@@ -147,7 +148,7 @@ fn schema(mut members: Vec<ApplicationSchemaMember>) -> WorthQueryPortableApplic
     WorthQueryPortableApplicationSchemaRecord::from_untrusted_parts(
         WorthQueryPortableApplicationSchemaParts {
             owner: Schema::OWNER.into(),
-            name: Schema::NAME.into(),
+            name: <Schema as ApplicationSchema>::NAME.into(),
             major: 1,
             minor: 0,
             members,
@@ -298,4 +299,11 @@ fn unknown_projected_subgrammar_refuses_before_fields_and_existing_nested_budget
         Kind::NestingDepthBudgetExceeded
     );
     assert_eq!(decoder.work(), Default::default());
+}
+
+struct FixtureRecords;
+impl worth_query_declaration::facade::application_schema::fragment::Fragment for FixtureRecords {
+    const NAME: &'static str = "fixture_records";
+    type Bindings = worth_query_declaration::facade::application_schema::fragment::NoBindings;
+    type Members = (Face,);
 }

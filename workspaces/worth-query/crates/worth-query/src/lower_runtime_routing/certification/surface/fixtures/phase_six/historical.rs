@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use worth_foundational::facade::{
     AspectKey, AspectLocator, CanonicalFieldPath, FieldKey, LocatorAuthority, ScalarAspectType,
 };
@@ -36,7 +37,7 @@ use super::super::{RepresentativeArtifacts, WorthQueryLowerRuntimeRepresentative
 
 pub(crate) fn representative_historical_bridge_lowering_row(
     resource_request: worth_execution::ExecutionRequest<'_, '_>,
-) -> RepresentativeArtifacts {
+) -> Result<RepresentativeArtifacts, IdentityDerivationDenial> {
     let runtime = runtime(BridgeRuntimePolicy::default());
     let declaration = HistoricalEvaluationDeclaration::new(
         BridgeTruthViewSelector::historical_commit(analysis_branch_identity(), commit_a_identity()),
@@ -49,7 +50,7 @@ pub(crate) fn representative_historical_bridge_lowering_row(
             .declaration_identity()
             .bridge_admission_evidence()
             .terminal_projection_for_reporting(),
-    );
+    )?;
     let request = HistoricalEvaluationRequest::delta_replay(
         &basis,
         4,
@@ -100,7 +101,7 @@ pub(crate) fn representative_historical_bridge_lowering_row(
                 WorthQueryEvidenceTag::new("complexity_contract"),
                 resolved.complexity_contract().contract_name(),
             )
-            .seal();
+            .seal()?;
     let request = WorthQueryLowerRuntimeCapabilityRequest::new(
         WorthQueryLowerRuntimeSeamKey::HistoricalBridgeLowering,
         WorthQueryLowerRuntimeRouteKind::RoutePlanning,
@@ -117,24 +118,24 @@ pub(crate) fn representative_historical_bridge_lowering_row(
             crate::evidence_identity::WorthQueryEvidenceTag::new("resolved_path_class"),
             resolved.resolved_path_class().as_str(),
         )
-        .seal(),
-    );
+        .seal()?,
+    )?;
     let eligibility = WorthQueryLowerRuntimeCapabilityEligibility::admitted_with_evidence_identity(
         request.clone(),
         &historical_evidence,
-    );
+    )?;
     let route_plan = WorthQueryLowerRuntimeRoutePlan::new(
         eligibility.clone(),
         crate::lower_runtime_routing::WorthQueryLowerRuntimeRouteSubjectIdentity::from_evidence_identity(
             "historical-bridge-lowering-route",
             &historical_evidence,
-        ),
+        )?,
     );
     let retained_evidence_identity =
         crate::lower_runtime_routing::worth_query_lower_runtime_retained_evidence_identity(
             "phase-six-historical-route",
             &historical_evidence,
-        );
+        )?;
     let boundary_receipt = WorthQueryLowerRuntimeBoundaryExecutionReceipt::from_route_plan(
         &route_plan,
         &retained_evidence_identity,
@@ -145,7 +146,7 @@ pub(crate) fn representative_historical_bridge_lowering_row(
         &boundary_receipt,
         &retained_evidence_identity,
     );
-    RepresentativeArtifacts {
+    Ok(RepresentativeArtifacts {
         seam_key: WorthQueryLowerRuntimeSeamKey::HistoricalBridgeLowering,
         request,
         eligibility,
@@ -153,7 +154,7 @@ pub(crate) fn representative_historical_bridge_lowering_row(
         boundary_receipt,
         envelope,
         evidence_source: WorthQueryLowerRuntimeRepresentativeEvidenceSource::RuntimeBackedFixture,
-    }
+    })
 }
 
 #[derive(Clone)]

@@ -8,8 +8,8 @@ use super::{
 fn support_snapshot_export_is_deterministic_for_the_same_live_matrix() {
     let matrix = live_support_matrix();
 
-    let left = project_support_snapshot(&matrix);
-    let right = project_support_snapshot(&matrix);
+    let left = project_support_snapshot(&matrix).expect("fixture digest must fit");
+    let right = project_support_snapshot(&matrix).expect("fixture digest must fit");
 
     assert_eq!(left.snapshot_digest(), right.snapshot_digest());
     assert_eq!(
@@ -24,7 +24,7 @@ fn support_snapshot_export_is_deterministic_for_the_same_live_matrix() {
 #[test]
 fn support_snapshot_load_reexport_is_byte_stable() {
     let matrix = live_support_matrix();
-    let snapshot = project_support_snapshot(&matrix);
+    let snapshot = project_support_snapshot(&matrix).expect("fixture digest must fit");
 
     let original_terminal_json_document = snapshot
         .to_canonical_terminal_json_document()
@@ -48,7 +48,7 @@ fn support_snapshot_load_reexport_is_byte_stable() {
 #[test]
 fn support_snapshot_digest_includes_schema_identity() {
     let matrix = live_support_matrix();
-    let snapshot = project_support_snapshot(&matrix);
+    let snapshot = project_support_snapshot(&matrix).expect("fixture digest must fit");
     let mut terminal_json_document =
         HostileSupportSnapshotTerminalDocument::from_snapshot(&snapshot);
     terminal_json_document.replace_top_level_string("schema_identity", "fake-schema");

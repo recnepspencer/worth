@@ -1,0 +1,19 @@
+{
+  "scope": "selected-packages",
+  "selection": {
+    "packages": [
+      "worth-query-bank-court-external-rail-server"
+    ],
+    "targets": {
+      "test": [
+        "worth_query_bank_court_external_rail_server"
+      ]
+    }
+  },
+  "cargo_arguments": [
+    "--package",
+    "worth-query-bank-court-external-rail-server",
+    "--test",
+    "worth_query_bank_court_external_rail_server"
+  ]
+}

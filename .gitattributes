@@ -11,3 +11,4 @@ workspaces/worth-ui/profiles/worth-ui-global-text-v2/**/*.ttf -text
 workspaces/worth-ui/profiles/worth-ui-global-text-v2/**/*.ttc -text
 
 .grok/skills/GENERATED.md text eol=lf
+scripts/*.cmd text eol=crlf

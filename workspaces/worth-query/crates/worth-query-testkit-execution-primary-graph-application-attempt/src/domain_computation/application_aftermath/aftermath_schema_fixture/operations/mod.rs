@@ -12,7 +12,6 @@ use worth_query_declaration::facade::application_aftermath::DeclaredRecordedInve
 use worth_query_declaration::facade::application_schema::ApplicationAbilityRef;
 use worth_query_declaration::facade::application_schema::ApplicationOperationMarkerIdentity;
 use worth_query_declaration::facade::application_schema::ApplicationOperationRef;
-use worth_query_declaration::facade::application_schema::ApplicationSchemaDeclaration;
 use worth_query_declaration::facade::application_schema::ApplicationSchemaDeclarationBuilder;
 use worth_query_declaration::facade::application_schema::ApplicationStructuredValueBinding;
 use worth_query_declaration::facade::application_schema::WorthQueryExternalEffectCorrelationFamily;
@@ -81,8 +80,7 @@ pub fn compensation(
             DeclaredAftermathPostcondition::BusinessPostcondition {
                 identity: identity.into(),
             },
-        )
-        .unwrap(),
+        ),
     ))
 }
 
@@ -92,15 +90,12 @@ pub fn inverse(
     lowering: &str,
 ) -> DeclaredApplicationAftermathContract<AftermathFixtureSchema> {
     DeclaredApplicationAftermathContract::runtime_alone(
-        DeclaredCorrectionMechanism::RecordedInverse(
-            DeclaredRecordedInverse::new(
-                "unfreeze",
-                DeclaredLoweringCorrespondenceRef::new(lowering).unwrap(),
-                DeclaredAftermathPostcondition::ExactPriorTruth,
-                DeclaredPreImageDemand::new(loci, bound).unwrap(),
-            )
-            .unwrap(),
-        ),
+        DeclaredCorrectionMechanism::RecordedInverse(DeclaredRecordedInverse::new(
+            "unfreeze",
+            DeclaredLoweringCorrespondenceRef::new(lowering),
+            DeclaredAftermathPostcondition::ExactPriorTruth,
+            DeclaredPreImageDemand::new(loci, bound),
+        )),
     )
 }
 
@@ -148,15 +143,11 @@ pub fn bind_operations(
     schema: FixtureBuilder,
     ability: FixtureAbilityRef,
     reads: FixtureReads,
-) -> Result<
-    ApplicationSchemaDeclaration<AftermathFixtureSchema>,
-    worth_query_declaration::facade::application_schema::ApplicationSchemaDeclarationDenial,
-> {
+) -> FixtureBuilder {
     let schema = bind_compensating_ops(schema, ability);
     let schema = bind_uncorrectable_ops(schema, ability);
     let schema = bind_escaping_ops(schema, ability);
-    let schema = bind_inverse_ops(schema, ability, reads);
-    schema.build()
+    bind_inverse_ops(schema, ability, reads)
 }
 
 /// Contained operations whose correction is a compensating action.
@@ -188,15 +179,12 @@ pub fn bind_compensating_ops(schema: FixtureBuilder, ability: FixtureAbilityRef)
         Charge,
         "charge",
         DeclaredApplicationAftermathContract::runtime_alone(
-            DeclaredCorrectionMechanism::Compensation(
-                DeclaredCompensation::new(
-                    "undo-charge",
-                    DeclaredAftermathPostcondition::InvariantRestored {
-                        invariant: "balanced-ledger".into(),
-                    },
-                )
-                .unwrap(),
-            ),
+            DeclaredCorrectionMechanism::Compensation(DeclaredCompensation::new(
+                "undo-charge",
+                DeclaredAftermathPostcondition::InvariantRestored {
+                    invariant: "balanced-ledger".into(),
+                },
+            ),),
         )
     )
 }
@@ -347,16 +335,13 @@ pub fn bind_escaping_ops(schema: FixtureBuilder, ability: FixtureAbilityRef) -> 
         DeathNoticeEffect::reference(),
         DEATH_NOTICE_RAIL,
         DeclaredApplicationAftermathContract::runtime_with_external_owner(
-            DeclaredCorrectionMechanism::Compensation(
-                DeclaredCompensation::new(
-                    "confirm-death-notice-with-authority",
-                    DeclaredAftermathPostcondition::BusinessPostcondition {
-                        identity: "death-notice-confirmed".into(),
-                    },
-                )
-                .unwrap(),
-            ),
-            DeclaredReconciliationProcedure::new("confirm-death-notice-with-authority").unwrap(),
+            DeclaredCorrectionMechanism::Compensation(DeclaredCompensation::new(
+                "confirm-death-notice-with-authority",
+                DeclaredAftermathPostcondition::BusinessPostcondition {
+                    identity: "death-notice-confirmed".into(),
+                },
+            ),),
+            DeclaredReconciliationProcedure::new("confirm-death-notice-with-authority"),
         )
     );
     bind_escaping_principal_op!(

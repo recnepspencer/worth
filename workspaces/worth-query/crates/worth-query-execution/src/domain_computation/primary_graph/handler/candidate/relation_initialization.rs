@@ -1,11 +1,7 @@
 use super::*;
 use crate::domain_computation::primary_graph::WorthQueryApplicationCreatedRelation;
-use worth_query_declaration::facade::application_schema::{
-    ApplicationAspectMarkerIdentity, ApplicationEncodedScalarValue, ApplicationFieldMarkerIdentity,
-};
-use worth_query_installation::facade::{
-    ApplicationRelationFieldRef, OperationLinks, OperationWrites,
-};
+use worth_query_declaration::facade::application_schema::ApplicationEncodedScalarValue;
+use worth_query_installation::facade::OperationLinks;
 
 impl<Schema, Binding> CandidateWriter<'_, Schema, Binding>
 where
@@ -39,18 +35,19 @@ where
     /// Moves an explicitly prepared typed value into this new relation. The
     /// original handler request supplies control stops; user encoding took
     /// place when constructing `ApplicationEncodedScalarValue`.
-    pub fn initialize_relation_field<Relation, From, To, Aspect, Field, Write, Unit>(
+    pub fn initialize_relation_field<Relation, From, To, Field>(
         &mut self,
         target: &WorthQueryApplicationCreatedRelation<Schema, Relation, From, To>,
-        field: ApplicationRelationFieldRef<Schema, Relation, From, To, Aspect, Field, Write, Unit>,
+        field: Field,
         value: ApplicationEncodedScalarValue<Field::Binding>,
     ) -> Result<(), WorthQueryApplicationAttemptDenial>
     where
         Relation: OperationLinks<Binding::Operation>,
-        Aspect: ApplicationAspectMarkerIdentity<Schema, Relation>,
-        Field: ApplicationFieldMarkerIdentity<Schema, Relation, Aspect>
-            + OperationWrites<Binding::Operation>,
-        Unit: ApplicationFieldUnit,
+        Field: worth_query_declaration::facade::application_schema::fragment::RelationSelection<
+            Entity = Relation,
+            From = From,
+            To = To,
+        >,
     {
         self.candidate.initialize_relation_field(
             self.execution,

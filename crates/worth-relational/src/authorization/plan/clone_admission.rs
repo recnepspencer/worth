@@ -298,6 +298,9 @@ fn value_payload_bytes(value: &AspectValue) -> Option<usize> {
             .as_str()
             .len()
             .checked_add(value.denominator.as_str().len()),
+        AspectValue::String(InternedString::Stored(value)) => {
+            Some(value.clone_allocation_capacity_bytes())
+        }
         AspectValue::String(InternedString::Raw(value)) => Some(value.len()),
         _ => Some(0),
     }

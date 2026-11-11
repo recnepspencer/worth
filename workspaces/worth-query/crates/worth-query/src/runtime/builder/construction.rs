@@ -104,7 +104,7 @@ impl WorthQueryRuntimeBuilder {
                 installed_domain_artifacts,
                 authority_identity,
                 execution_runtime.retain_installed_packages(),
-            );
+            )?;
         let managed_execution_bridge = conditional_runtime_bridge
             .as_ref()
             .map(worth_runtime_bridge::facade::RuntimeBridge::fork_managed_request_lane);

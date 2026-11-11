@@ -20,6 +20,7 @@ impl ColdSymbolDirectoryDenial {
 }
 
 impl RuntimeSymbolTable {
+    #[cfg(test)]
     pub(crate) fn demand_region_symbols(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
@@ -32,7 +33,32 @@ impl RuntimeSymbolTable {
             .unwrap_or_else(|error| error.into_inner())
             .clone();
         if let Some(pages) = pages {
-            pages.demand_region(self, execution, region, ids)?;
+            pages.demand_region(self, execution, region, None, || Ok((ids(), 0)))?;
+        }
+        Ok(())
+    }
+
+    pub(crate) fn demand_region_symbols_incremental(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        region: crate::storage::residency::RelationalRegionSymbolAdmissionIdentity,
+        predecessor: Option<(
+            crate::storage::residency::RelationalRegionSymbolAdmissionIdentity,
+            &std::collections::BTreeSet<Symbol>,
+            u64,
+        )>,
+        ids: impl FnOnce() -> Result<
+            (std::collections::BTreeSet<Symbol>, u64),
+            crate::storage::residency::RelationalResidencyDemandFailure,
+        >,
+    ) -> Result<(), crate::storage::residency::RelationalResidencyDemandFailure> {
+        let pages = self
+            .cold
+            .read()
+            .unwrap_or_else(|error| error.into_inner())
+            .clone();
+        if let Some(pages) = pages {
+            pages.demand_region(self, execution, region, predecessor, ids)?;
         }
         Ok(())
     }
@@ -45,7 +71,7 @@ impl RuntimeSymbolTable {
             .read()
             .unwrap_or_else(|error| error.into_inner())
             .as_ref()
-            .is_none_or(|pages| pages.region_is_admitted(region))
+            .is_none_or(|_| self.read_state(|state| state.admissions.contains_key(&region)))
     }
 
     pub(crate) fn checkpoint_contents_resident(&self) -> bool {
@@ -87,6 +113,7 @@ impl RuntimeSymbolTable {
         .map_err(ColdSymbolDirectoryDenial::StorageUnavailable)?;
         self.with_write(|symbols| symbols.reserve_frontier(frontier))
             .map_err(ColdSymbolDirectoryDenial::Invalid)?;
+        self.update(|state| state.admissions.clear());
         *self
             .cold
             .write()

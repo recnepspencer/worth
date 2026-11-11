@@ -316,6 +316,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "glob"
+version = "0.3.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e4eba85ea1d0a966a983acd07deee566e67395d2d96b6fb39e62b5a833f1eb0b"
+
+[[package]]
 name = "hashbrown"
 version = "0.14.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -724,6 +730,16 @@ dependencies = [
  "cfg-if",
  "cpufeatures",
  "digest",
+ "sha2-asm",
+]
+
+[[package]]
+name = "sha2-asm"
+version = "0.6.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b845214d6175804686b2bd482bcffe96651bb2d1200742b712003504a2dac1ab"
+dependencies = [
+ "cc",
 ]
 
 [[package]]
@@ -1198,6 +1214,7 @@ version = "0.1.0"
 dependencies = [
  "allocator-api2",
  "rayon",
+ "stacker",
  "worth-foundational",
  "worth-proof",
 ]
@@ -1206,6 +1223,7 @@ dependencies = [
 name = "worth-foundational"
 version = "0.1.0"
 dependencies = [
+ "im",
  "serde",
  "serde_json",
  "serde_stacker",
@@ -1351,6 +1369,35 @@ dependencies = [
 ]
 
 [[package]]
+name = "worth-query-court-decl-host-authored-ownership"
+version = "0.1.0"
+dependencies = [
+ "rmp-serde",
+ "serde",
+ "serde_json",
+ "sha2",
+ "worth-execution",
+ "worth-foundational",
+ "worth-query-decl",
+ "worth-query-execution",
+ "worth-query-host",
+ "worth-query-testkit-document-retention",
+ "worth-relational",
+]
+
+[[package]]
+name = "worth-query-court-decl-host-native-fragments"
+version = "0.1.0"
+dependencies = [
+ "worth-execution",
+ "worth-foundational",
+ "worth-query-decl",
+ "worth-query-host",
+ "worth-query-testkit-decl",
+ "worth-relational",
+]
+
+[[package]]
 name = "worth-query-court-decl-host-package-archive-replay-application-graph"
 version = "0.1.0"
 dependencies = [
@@ -1386,10 +1433,25 @@ dependencies = [
 ]
 
 [[package]]
+name = "worth-query-court-decl-host-replay"
+version = "0.1.0"
+dependencies = [
+ "worth-execution",
+ "worth-foundational",
+ "worth-query-decl",
+ "worth-query-host",
+ "worth-query-replay",
+ "worth-query-testkit-document-retention",
+ "worth-relational",
+ "worth-testkit-relational",
+]
+
+[[package]]
 name = "worth-query-court-execution"
 version = "0.1.0"
 dependencies = [
  "im",
+ "serde_json",
  "sha2",
  "worth-execution",
  "worth-foundational",
@@ -1400,8 +1462,10 @@ dependencies = [
  "worth-query-testkit-execution-primary-graph-application-attempt",
  "worth-query-testkit-execution-primary-graph-application-attempt-2",
  "worth-query-testkit-execution-primary-graph-application-contribution",
+ "worth-query-testkit-instantiation",
  "worth-relational",
  "worth-runtime-world",
+ "worth-testkit-compiler",
 ]
 
 [[package]]
@@ -1648,6 +1712,7 @@ dependencies = [
  "worth-query-testkit-certification-correction",
  "worth-query-testkit-certification-granular-invalidation",
  "worth-query-testkit-document-retention",
+ "worth-query-testkit-execution-primary-graph-application-contribution",
  "worth-query-testkit-host",
  "worth-relational",
  "worth-runtime-bridge",
@@ -1717,6 +1782,8 @@ dependencies = [
  "worth-query-admission",
  "worth-query-declaration",
  "worth-query-installation",
+ "worth-query-testkit-decl",
+ "worth-query-testkit-installation",
  "worth-relational",
  "worth-runtime-bridge",
  "worth-runtime-world",
@@ -1728,6 +1795,7 @@ dependencies = [
 name = "worth-query-host"
 version = "0.1.0"
 dependencies = [
+ "sha2",
  "worth-execution",
  "worth-foundational",
  "worth-harness",
@@ -1740,6 +1808,7 @@ dependencies = [
  "worth-query-publication",
  "worth-relational",
  "worth-runtime-bridge",
+ "worth-runtime-world",
  "worth-store-application",
 ]
 
@@ -1755,6 +1824,7 @@ dependencies = [
  "worth-foundational",
  "worth-proof",
  "worth-query-declaration",
+ "worth-query-testkit-decl",
  "zeroize",
 ]
 
@@ -1895,6 +1965,7 @@ dependencies = [
 name = "worth-query-testkit-decl"
 version = "0.1.0"
 dependencies = [
+ "serde",
  "worth-query-decl",
 ]
 
@@ -1999,6 +2070,14 @@ dependencies = [
  "worth-relational",
  "worth-runtime-bridge",
  "worth-signal",
+]
+
+[[package]]
+name = "worth-query-testkit-instantiation"
+version = "0.1.0"
+dependencies = [
+ "worth-query-declaration",
+ "worth-query-execution",
 ]
 
 [[package]]
@@ -2149,6 +2228,7 @@ dependencies = [
  "worth-execution",
  "worth-foundational",
  "worth-proof",
+ "worth-query-execution",
  "worth-query-installation",
  "worth-relational",
  "worth-runtime-bridge",
@@ -2438,6 +2518,14 @@ dependencies = [
  "worth-store-modes",
  "worth-store-physical-format",
  "worth-store-security",
+]
+
+[[package]]
+name = "worth-testkit-compiler"
+version = "0.1.0"
+dependencies = [
+ "glob",
+ "serde_json",
 ]
 
 [[package]]

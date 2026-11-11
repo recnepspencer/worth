@@ -44,7 +44,8 @@ impl WorthQueryRuntimeSourceAdapter for PermissivePolicyRowSourceAdapter {
         _target: &WorthQueryLiveArtifactTarget,
     ) -> Vec<WorthQueryEntity> {
         vec![WorthQueryEntity::from_native_field_values(
-            crate::memory_workspace::admit_authored_entity_label("user"),
+            crate::memory_workspace::admit_authored_entity_label("user")
+                .expect("fixture digest must fit"),
             BTreeMap::from([
                 (native_field_path("identity", "id"), string_value("user")),
                 (

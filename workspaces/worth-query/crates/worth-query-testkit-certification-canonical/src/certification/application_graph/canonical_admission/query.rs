@@ -21,23 +21,13 @@ worth_query_structured_value_binding!(pub ResultBinding for Row { identity: "can
 worth_query_application_query!(pub ValueQuery for AdmissionSchema, identity "canonical-admission.read.v1",
     parameters ParametersBinding, result ResultBinding, scope Document => "Document", name "nested_value");
 
-pub fn value_field() -> ApplicationQueryResultFieldRef<
-    ValueQuery,
-    ValueSlot,
-    AdmissionSchema,
-    Document,
-    DocumentFacts,
-    DocumentValueField,
-    SwallowingValue,
-    ReadWrite,
-    EqualityPredicate,
-    NoApplicationUnit,
-> {
-    ApplicationQueryResultFieldRef::new("value", DocumentValueField::reference())
+pub fn value_field(
+) -> ApplicationQueryResultFieldRef<ValueQuery, ValueSlot, AdmissionSchema, DocumentValueField> {
+    ApplicationQueryResultFieldRef::new("value", DocumentValueField::at("DocumentValueField"))
 }
 
 pub fn definition(
-) -> ApplicationQueryDefinition<AdmissionSchema, ValueQuery, Parameters, Row, Document> {
+) -> ApplicationQueryDefinitionBuilder<AdmissionSchema, ValueQuery, Parameters, Row, Document> {
     let shape = ApplicationQueryResultShapeBuilder::<
         AdmissionSchema,
         ValueQuery,
@@ -57,8 +47,6 @@ pub fn definition(
         .basis_support(ApplicationQueryBasisSupport::current_and_pinned())
         .lanes(ApplicationQueryLaneEligibility::one_shot())
         .public()
-        .build()
-        .unwrap()
 }
 impl WorthQueryApplicationProjection<AdmissionSchema, ValueQuery> for Row {
     fn project(
@@ -77,15 +65,7 @@ pub struct ReadValue {
 }
 worth_query_structured_value_binding!(pub ReadInputBinding for ReadValue { identity: "canonical-admission.read-input.v1" });
 pub struct ReadBinding;
-pub type ReadScope = ApplicationQueryFieldScope<
-    AdmissionSchema,
-    Document,
-    DocumentFacts,
-    DocumentIdentityField,
-    String,
-    ReadOnly,
-    NoApplicationUnit,
->;
+pub type ReadScope = ApplicationQueryFieldScope<DocumentIdentityField>;
 impl ApplicationQueryBinding<AdmissionSchema> for ReadBinding {
     type Input = ReadValue;
     type InputBinding = ReadInputBinding;
@@ -100,17 +80,8 @@ impl ApplicationQueryBinding<AdmissionSchema> for ReadBinding {
     type PrincipalIdentityBinding = U64ApplicationValueBinding;
     const IDENTITY: &'static str = "canonical-admission.read-binding.v1";
     const LIMITS: ApplicationQueryBindingLimits = ApplicationQueryBindingLimits::results(1);
-    fn scope_field() -> ApplicationFieldRef<
-        AdmissionSchema,
-        Document,
-        DocumentFacts,
-        DocumentIdentityField,
-        String,
-        ReadOnly,
-        EqualityPredicate,
-        NoApplicationUnit,
-    > {
-        DocumentIdentityField::reference()
+    fn scope_field() -> DocumentIdentityField {
+        DocumentIdentityField::at("DocumentIdentityField")
     }
     fn principal_binding() -> ApplicationPrincipalBindingRef<
         AdmissionSchema,
@@ -129,21 +100,14 @@ impl ApplicationQueryIntent<AdmissionSchema> for ReadValue {
         ApplicationQueryParameterSet::new()
     }
     fn into_scope(self) -> ReadScope {
-        ReadScope::new(DocumentIdentityField::reference(), self.identity)
+        ReadScope::new(
+            DocumentIdentityField::at("DocumentIdentityField"),
+            self.identity,
+        )
     }
 }
 
-pub fn counter_field() -> ApplicationQueryResultFieldRef<
-    ValueQuery,
-    CounterSlot,
-    AdmissionSchema,
-    Document,
-    DocumentFacts,
-    CounterField,
-    u64,
-    ReadWrite,
-    EqualityPredicate,
-    NoApplicationUnit,
-> {
-    ApplicationQueryResultFieldRef::new("counter", CounterField::reference())
+pub fn counter_field(
+) -> ApplicationQueryResultFieldRef<ValueQuery, CounterSlot, AdmissionSchema, CounterField> {
+    ApplicationQueryResultFieldRef::new("counter", CounterField::at("CounterField"))
 }

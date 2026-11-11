@@ -202,7 +202,14 @@ where
         self.charge_current_output_work(1, Family::IDENTITY)?;
         let selected_native_root = self
             .reader
-            .runtime
+            .native
+            .committed_runtime()
+            .ok_or_else(|| {
+                WorthQueryCurrentOutputDenial::new(
+                    WorthQueryCurrentOutputDenialKind::OutputUnavailable,
+                    Family::IDENTITY,
+                )
+            })?
             .read_truth()
             .positioned_snapshot(self.reader.snapshot)
             .map_err(|_| {

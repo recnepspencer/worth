@@ -5,10 +5,8 @@ use worth_query_decl::facade::application_schema::{
 use super::authentication::PrincipalIdentityField;
 use super::entities::AccountAuthorization;
 use super::fields::{
-    AccountAuthorizationIdentity, AccountDisplayName, AccountIdentity, AccountingRevision,
-    AuthorizationRole, BusinessIdentityField, InstitutionIdentityField, JournalIdentityField,
-    JournalPurpose, Kind, PaymentIdentityField, PostingAmount, PostingIdentityField, Purpose,
-    Status,
+    AccountAuthorizationIdentity, AccountIdentity, AuthorizationRole, BusinessIdentityField,
+    InstitutionIdentityField, PaymentIdentityField,
 };
 use super::operations::*;
 use super::relations::{
@@ -49,11 +47,11 @@ fn install_account_creation_reads(
     schema
         .operation_read_field(
             CreatePersonalAccountOperation::reference(),
-            InstitutionIdentityField::reference(),
+            InstitutionIdentityField::at("InstitutionIdentityField"),
         )
         .operation_read_field(
             CreatePersonalAccountOperation::reference(),
-            PrincipalIdentityField::reference(),
+            PrincipalIdentityField::at("PrincipalIdentityField"),
         )
         .operation_read_relation(
             CreatePersonalAccountOperation::reference(),
@@ -61,11 +59,11 @@ fn install_account_creation_reads(
         )
         .operation_read_field(
             CreateBusinessAccountOperation::reference(),
-            InstitutionIdentityField::reference(),
+            InstitutionIdentityField::at("InstitutionIdentityField"),
         )
         .operation_read_field(
             CreateBusinessAccountOperation::reference(),
-            BusinessIdentityField::reference(),
+            BusinessIdentityField::at("BusinessIdentityField"),
         )
         .operation_read_relation(
             CreateBusinessAccountOperation::reference(),
@@ -88,25 +86,12 @@ fn install_institution_movement_reads<Operation, Input>(
     operation: ApplicationOperationRef<BankSchema, Operation, Input>,
 ) -> ApplicationSchemaDeclarationBuilder<BankSchema>
 where
-    InstitutionIdentityField: OperationReads<Operation>,
-    AccountIdentity: OperationReads<Operation>,
-    AccountingRevision: OperationReads<Operation>,
-    Status: OperationReads<Operation>,
     InstitutionAccount: OperationReads<Operation>,
     InstitutionCashAccount: OperationReads<Operation>,
-    Kind: OperationReads<Operation>,
     PersonalOwner: OperationReads<Operation>,
     BusinessAccount: OperationReads<Operation>,
-    PrincipalIdentityField: OperationReads<Operation>,
-    BusinessIdentityField: OperationReads<Operation>,
-    AccountDisplayName: OperationReads<Operation>,
     PostingAccount: OperationReads<Operation>,
     JournalPosting: OperationReads<Operation>,
-    JournalIdentityField: OperationReads<Operation>,
-    JournalPurpose: OperationReads<Operation>,
-    PostingIdentityField: OperationReads<Operation>,
-    Purpose: OperationReads<Operation>,
-    PostingAmount: OperationReads<Operation>,
     JournalReversal: OperationReads<Operation>,
 {
     install_accounting_projection_reads(schema, operation)
@@ -150,20 +135,20 @@ fn install_account_access_reads(
             )
             .operation_read_field(
                 GrantAccountAuthorizationOperation::reference(),
-                AccountAuthorizationIdentity::reference(),
+                AccountAuthorizationIdentity::at("AccountAuthorizationIdentity"),
             )
             .operation_read_field(
                 GrantAccountAuthorizationOperation::reference(),
-                AuthorizationRole::reference(),
+                AuthorizationRole::at("AuthorizationRole"),
             );
     schema
         .operation_read_field(
             RevokeAccountAuthorizationOperation::reference(),
-            AccountIdentity::reference(),
+            AccountIdentity::at("AccountIdentity"),
         )
         .operation_read_field(
             RevokeAccountAuthorizationOperation::reference(),
-            PrincipalIdentityField::reference(),
+            PrincipalIdentityField::at("PrincipalIdentityField"),
         )
         .operation_read_entity(
             RevokeAccountAuthorizationOperation::reference(),
@@ -179,11 +164,11 @@ fn install_account_access_reads(
         )
         .operation_read_field(
             RevokeAccountAuthorizationOperation::reference(),
-            AuthorizationRole::reference(),
+            AuthorizationRole::at("AuthorizationRole"),
         )
         .operation_read_field(
             RevokeAccountAuthorizationOperation::reference(),
-            AccountAuthorizationIdentity::reference(),
+            AccountAuthorizationIdentity::at("AccountAuthorizationIdentity"),
         )
 }
 
@@ -203,19 +188,19 @@ fn install_payment_operation_budgets(
     schema
         .operation_read_field(
             ApprovedBusinessPaymentAuthoringOperation::reference(),
-            PaymentIdentityField::reference(),
+            PaymentIdentityField::at("PaymentIdentityField"),
         )
         .operation_read_field(
             ApprovedBusinessPaymentApprovalOperation::reference(),
-            PaymentIdentityField::reference(),
+            PaymentIdentityField::at("PaymentIdentityField"),
         )
         .operation_read_field(
             ApprovedBusinessPaymentInstanceStartOperation::reference(),
-            PaymentIdentityField::reference(),
+            PaymentIdentityField::at("PaymentIdentityField"),
         )
         .operation_read_field(
             ApprovedBusinessPaymentAdvanceOperation::reference(),
-            PaymentIdentityField::reference(),
+            PaymentIdentityField::at("PaymentIdentityField"),
         )
         .operation_projection_work_budget(ApplyOpeningFundingOperation::reference(), 4_096)
         .operation_projection_work_budget(DepositOperation::reference(), 4_096)

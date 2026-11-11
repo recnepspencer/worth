@@ -1,5 +1,7 @@
 use crate::basis_lifecycle::ScopedSubscriptionDeclarationBasis;
 use crate::evidence_identity::WorthQueryEvidenceIdentity;
+#[cfg(test)]
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::identity_authority::{
     project_query_subscription_evidence, QueryProjectionIdentity, QuerySubscriptionIdentityKind,
 };
@@ -97,8 +99,8 @@ impl QuerySubscriptionAdmissionArtifact {
     pub(crate) fn recomputed_evidence_identity(
         &self,
         counters_identity: &WorthQueryEvidenceIdentity,
-    ) -> WorthQueryEvidenceIdentity {
-        admission_artifact_identity(
+    ) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
+        Ok(admission_artifact_identity(
             self.query_declaration_identity(),
             self.bridge_declaration_identity(),
             self.basis_binding_identity(),
@@ -111,7 +113,7 @@ impl QuerySubscriptionAdmissionArtifact {
             self.admission_budget().signal_strategy_width_limit(),
             self.admission_budget().activation_input_width_limit(),
             counters_identity,
-        )
+        ))
     }
 
     pub fn admission_budget(&self) -> &QuerySubscriptionAdmissionBudget {
@@ -181,7 +183,7 @@ pub fn admit_query_subscription(
         QuerySubscriptionAdmissionDiagnosticOutcome::Admitted,
         "runtime-backed query subscription declaration admitted for activation handoff",
         source_identity,
-    );
+    ).expect("admission diagnostics use closed stages, literal messages, sealed sources and fixed counters");
     let support_profile =
         QuerySubscriptionSupportProfile::admitted(lowering.bridge_declaration_identity());
     let admission_identity = admission_artifact_identity(
@@ -229,13 +231,13 @@ fn admission_error(
         QuerySubscriptionAdmissionDiagnosticOutcome::Denied,
         message,
         source_identity,
-    );
+    ).expect("admission diagnostics use closed stages, literal messages, sealed sources and fixed counters");
     let pipeline_diagnostic = QuerySubscriptionDiagnosticEvidence::denied(
         admission_pipeline_stage(stage),
         message,
         source_identity,
         &counters.evidence_identity(),
-    );
+    ).expect("admission diagnostics use closed stages, literal messages, sealed sources and fixed counters");
     let support_profile = QuerySubscriptionSupportProfile::denied(source_identity);
     QuerySubscriptionAdmissionError::new(
         denial_kind,

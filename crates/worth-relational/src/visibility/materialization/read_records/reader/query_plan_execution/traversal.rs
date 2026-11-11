@@ -16,7 +16,7 @@ impl RelationalPinnedRead {
         let metrics = PacketizedQueryMetrics::from_packets(&packets);
         record_query_packet_metrics(&self.performance_access(), &plan, &metrics);
         let basis = &self.basis;
-        let state_access: &(dyn PartitionAccess + Sync) = basis.root().as_ref();
+        let state_access: &(dyn PartitionAccess + Sync) = basis;
         let registry = basis.root().schema_authority().registry();
         let version_id = basis.version_id();
         let remaining_lease = lease
@@ -29,6 +29,7 @@ impl RelationalPinnedRead {
             remaining_lease.as_ref(),
             |packet, ordinal, ceiling, context| {
                 super::query_execution::execute_leased_traversal_fragment(
+                    execution,
                     self,
                     state_access,
                     registry,

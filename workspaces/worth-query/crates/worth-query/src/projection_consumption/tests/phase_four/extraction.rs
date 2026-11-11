@@ -48,7 +48,8 @@ fn relational_row_set_extracts_identity_and_field_facts() {
                 ]),
             ),
     )
-    .bind_contract();
+    .bind_contract()
+    .expect("fixture digest must fit");
 
     let consumed = contract.extract_from_relational_row_set(&row_set).unwrap();
 
@@ -125,7 +126,8 @@ fn relational_row_set_preserves_struct_facts_and_typed_refinement_denials() {
             ]),
         ),
     )
-    .bind_contract();
+    .bind_contract()
+    .expect("fixture digest must fit");
 
     let consumed = contract.extract_from_relational_row_set(&row_set).unwrap();
     let fact = &consumed.derived_fields()[0];
@@ -162,7 +164,8 @@ fn write_receipt_extracts_aftermath_and_source_reference_facts() {
             .effect_continuity_facts()
             .relation_endpoints(),
     )
-    .bind_contract();
+    .bind_contract()
+    .expect("fixture digest must fit");
 
     let consumed = contract.extract_from_write_receipt(&receipt).unwrap();
 
@@ -205,9 +208,11 @@ fn effect_continuity_fact_digest_changes_with_typed_authority_identity() {
                 vec!["task-2".to_string()],
                 Some(test_entity_identity("task-1")),
                 Some("tasks"),
-            ),
+            )
+            .expect("fixture digest must fit"),
         ),
-    );
+    )
+    .expect("fixture digest must fit");
     let contract = admitted(
         ProjectionConsumptionSource::from_write_receipt(&left),
         binding(&[]),
@@ -215,7 +220,8 @@ fn effect_continuity_fact_digest_changes_with_typed_authority_identity() {
             .effect_continuity_facts()
             .source_references(),
     )
-    .bind_contract();
+    .bind_contract()
+    .expect("fixture digest must fit");
 
     let left_consumed = contract.extract_from_write_receipt(&left).unwrap();
     let right_consumed = contract.extract_from_write_receipt(&right).unwrap();
@@ -247,7 +253,8 @@ fn extraction_rejects_missing_field_evidence_and_family_mismatch() {
             ]),
         ),
     )
-    .bind_contract();
+    .bind_contract()
+    .expect("fixture digest must fit");
     let field_error = display_contract
         .extract_from_relational_row_set(&row_set)
         .unwrap_err();
@@ -298,7 +305,8 @@ fn extraction_rejects_missing_field_evidence_and_family_mismatch() {
         binding(&["identity.id"]),
         ProjectMaterializedFacts::declare().entity_identities(),
     )
-    .bind_contract();
+    .bind_contract()
+    .expect("fixture digest must fit");
     let identity_error = identity_contract
         .extract_from_relational_row_set(&missing_identity_row_set)
         .unwrap_err();
@@ -330,33 +338,8 @@ fn relational_snapshot_read(
     )
 }
 
-#[test]
-fn write_receipt_extraction_rejects_source_identity_mismatch() {
-    let contract = admitted(
-        ProjectionConsumptionSource::from_write_receipt(&write_receipt()),
-        binding(&[]),
-        ProjectMaterializedFacts::declare().target_identity(),
-    )
-    .bind_contract();
-    let mismatched_receipt = WorthQueryWriteReceipt::test_only(
-        phase_four_commit_identity("commit:other"),
-        phase_four_snapshot_identity("snapshot:test"),
-        WorthQueryMutationTargetClass::Entity,
-        Some("tasks"),
-        Some(test_entity_identity("task-1")),
-        None,
-        None,
-        None,
-    );
-
-    let error = contract
-        .extract_from_write_receipt(&mismatched_receipt)
-        .unwrap_err();
-    assert!(matches!(
-        error,
-        ProjectionFactExtractionError::SourceIdentityMismatch { .. }
-    ));
-}
+#[path = "extraction/write_receipt_extraction_rejects_source_identity_mismatch.rs"]
+mod write_receipt_extraction_rejects_source_identity_mismatch;
 
 #[test]
 fn write_receipt_extraction_rejects_missing_admitted_evidence() {
@@ -368,7 +351,8 @@ fn write_receipt_extraction_rejects_missing_admitted_evidence() {
             .effect_continuity_facts()
             .relation_endpoints(),
     )
-    .bind_contract();
+    .bind_contract()
+    .expect("fixture digest must fit");
     let stripped_receipt = WorthQueryWriteReceipt::test_only(
         phase_four_commit_identity("commit:test"),
         phase_four_snapshot_identity("snapshot:test"),
@@ -378,7 +362,8 @@ fn write_receipt_extraction_rejects_missing_admitted_evidence() {
         None,
         None,
         None,
-    );
+    )
+    .expect("fixture digest must fit");
 
     let error = contract
         .extract_from_write_receipt(&stripped_receipt)

@@ -48,7 +48,7 @@ pub(super) fn retry(location: &Path, originals: &[ReleasedOriginalProjection], s
         cause,
     } = refusal
     else {
-        panic!("only actual D8 refusal proves this prefix");
+        panic!("only actual D8 refusal proves this prefix: {refusal:?}");
     };
     drop(held.lock().unwrap().take());
     let mut bytes = scale;

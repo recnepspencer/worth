@@ -131,12 +131,7 @@ fn inline_header_footprints_remove_only_actual_header_arcs() {
     };
     type Header = SharedMap<RelationId, ()>;
     fn header_arc<T>() -> u64 {
-        std::alloc::Layout::new::<[usize; 2]>()
-            .extend(std::alloc::Layout::new::<T>())
-            .unwrap()
-            .0
-            .pad_to_align()
-            .size() as u64
+        Arc::<T>::layout_bytes()
     }
     #[derive(Default)]
     struct Inventory(Vec<StorageAllocationObservation>);
@@ -192,4 +187,27 @@ fn inline_header_footprints_remove_only_actual_header_arcs() {
     assert_eq!(new.0.iter().map(|owner| owner.bytes).sum::<u64>(), new_slot);
     assert!(new_slot < old_slot + slot_header);
     eprintln!("kind header: old node {old_kind} + header Arc {kind_header}, inline node {new_kind}; adjacency header: old node {old_slot} + header Arc {slot_header}, inline node {new_slot}");
+}
+
+#[test]
+fn suffix_seek_matches_an_independent_ordered_filter() {
+    let values: SharedMap<u64, u64> = (0..128_u64)
+        .filter(|key| key % 3 != 0)
+        .map(|key| (key, key * 7))
+        .collect();
+    for first in 0..140 {
+        let expected = values
+            .iter()
+            .filter(|(key, _)| **key >= first)
+            .map(|(key, value)| (*key, *value))
+            .collect::<Vec<_>>();
+        let suffix = values.iter_from(&first);
+        assert_eq!(suffix.len(), expected.len());
+        assert_eq!(
+            suffix
+                .map(|(key, value)| (*key, *value))
+                .collect::<Vec<_>>(),
+            expected
+        );
+    }
 }

@@ -37,15 +37,18 @@ fn relink_rejects_schema_authority_mutation() {
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let (runtime, root, mut envelope) = committed_root_and_envelope(execution);
-    envelope
-        .body_mut_for_test()
-        .schema_authority
-        .primary_schema_id = Some(SchemaId("mutated-schema".to_owned()));
+    let mut parts = (*envelope.schema_authority).clone();
+    parts.primary_schema_id = Some(SchemaId("mutated-schema".to_owned()));
+    envelope.body_mut_for_test().schema_authority = parts.into();
 
     let denial = root
         .relink_canonical_envelope(
             execution,
-            Arc::new(envelope),
+            crate::branch::RelationalOriginalRootCommitEvidence::prepare(
+                execution,
+                Arc::new(envelope),
+            )
+            .unwrap(),
             &runtime.services.symbols.interner_snapshot(),
         )
         .expect_err("canonical schema authority mutation cannot be readmitted");
@@ -71,7 +74,11 @@ fn relink_rejects_visibility_tuple_mutation() {
     let denial = root
         .relink_canonical_envelope(
             execution,
-            Arc::new(envelope),
+            crate::branch::RelationalOriginalRootCommitEvidence::prepare(
+                execution,
+                Arc::new(envelope),
+            )
+            .unwrap(),
             &runtime.services.symbols.interner_snapshot(),
         )
         .expect_err("visibility tuple mutation cannot replace the committed envelope");
@@ -80,6 +87,36 @@ fn relink_rejects_visibility_tuple_mutation() {
         denial,
         RelationalBranchRootCaptureDenial::VisibilityCommitmentMismatch { .. }
     ));
+}
+
+#[test]
+fn completeness_recomputes_visibility_commitment() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let (runtime, root, mut altered_envelope) = committed_root_and_envelope(execution);
+    assert!(root.is_complete(execution, &runtime.services.symbols.interner_snapshot()));
+    altered_envelope
+        .body_mut_for_test()
+        .patch
+        .authoritative_record_patches[0]
+        .contains_opaque_aspect ^= true;
+    let mut corrupted = root.as_ref().clone();
+    let committed = corrupted
+        .committed
+        .as_mut()
+        .expect("performed root owns committed axes");
+    committed.axes.visibility = RelationalBranchVisibilityCommitment::for_root(
+        &altered_envelope,
+        committed.axes.storage_root,
+        committed.axes.schema_root,
+        committed.axes.correctness_index,
+    );
+
+    assert!(
+        !corrupted.is_complete(execution, &runtime.services.symbols.interner_snapshot()),
+        "completeness must reject a commitment to any different visible tuple"
+    );
 }
 
 #[test]
@@ -150,10 +187,9 @@ fn visibility_commitment_binds_every_visible_tuple_axis() {
     schema_version.body_mut_for_test().schema_version.0 += 1;
     mutants.push(("schema version", schema_version));
     let mut schema_authority = envelope.copy_original_for_test(execution);
-    schema_authority
-        .body_mut_for_test()
-        .schema_authority
-        .primary_schema_id = Some(SchemaId("visibility-mutant".to_owned()));
+    let mut parts = (*schema_authority.schema_authority).clone();
+    parts.primary_schema_id = Some(SchemaId("visibility-mutant".to_owned()));
+    schema_authority.body_mut_for_test().schema_authority = parts.into();
     mutants.push(("schema authority", schema_authority));
     let mut plan = envelope.copy_original_for_test(execution);
     plan.body_mut_for_test().merged_plan.transaction_id.0 += 1;
@@ -190,7 +226,11 @@ fn visibility_commitment_binds_every_visible_tuple_axis() {
         assert!(
             root.relink_canonical_envelope(
                 execution,
-                Arc::new(mutant),
+                crate::branch::RelationalOriginalRootCommitEvidence::prepare(
+                    execution,
+                    Arc::new(mutant)
+                )
+                .unwrap(),
                 &runtime.services.symbols.interner_snapshot(),
             )
             .is_err(),

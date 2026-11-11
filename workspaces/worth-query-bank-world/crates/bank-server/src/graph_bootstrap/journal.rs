@@ -20,15 +20,15 @@ pub(super) fn bind_journal(
             JournalEntry::reference(),
             entity_key(journal_key(entry.id())),
         )
-        .field(JournalIdentityField::reference(), entry.id())
-        .field(JournalPurpose::reference(), entry.purpose());
+        .field(JournalIdentityField::at("JournalIdentityField"), entry.id())
+        .field(JournalPurpose::at("JournalPurpose"), entry.purpose());
         let context = entry
             .postings()
             .first()
             .and_then(|posting| snapshot.account(posting.account()));
         let seed = match context {
             Some(account) => seed.field(
-                JournalInstitutionContext::reference(),
+                JournalInstitutionContext::at("JournalInstitutionContext"),
                 account.institution(),
             ),
             None => seed,
@@ -44,10 +44,16 @@ pub(super) fn bind_journal(
                     Posting::reference(),
                     entity_key(posting_key(posting.id())),
                 )
-                .field(PostingIdentityField::reference(), posting.id())
-                .field(PostingAmount::reference(), posting.amount())
-                .field(PostingAccountSequence::reference(), *sequence)
-                .field(Purpose::reference(), entry.purpose()),
+                .field(
+                    PostingIdentityField::at("PostingIdentityField"),
+                    posting.id(),
+                )
+                .field(PostingAmount::at("PostingAmount"), posting.amount())
+                .field(
+                    PostingAccountSequence::at("PostingAccountSequence"),
+                    *sequence,
+                )
+                .field(Purpose::at("Purpose"), entry.purpose()),
             )?;
             graph.bind_relation(WorthQueryApplicationRelationSeed::new(
                 JournalPosting::reference(),

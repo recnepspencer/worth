@@ -40,7 +40,7 @@ pub struct WorthQueryInstalledProgramSupport<Schema> {
     roster: Arc<WorthQueryProgramSupportRoster<Schema>>,
     renderings: Box<[AspectValue]>,
     activation: WorthQueryProgramActivationCell,
-    lifecycle: support_lifecycle::WorthQueryProgramSupportLifecycle,
+    lifecycle: Arc<support_lifecycle::WorthQueryProgramSupportLifecycle>,
     pub(in crate::domain_computation::primary_graph) adoption_admissions:
         std::collections::BTreeMap<
             ApplicationProgramRevision,
@@ -62,7 +62,9 @@ impl<Schema> WorthQueryInstalledProgramSupport<Schema> {
             .collect();
         Self {
             native_programs: Box::new([]),
-            lifecycle: support_lifecycle::WorthQueryProgramSupportLifecycle::installed(&roster),
+            lifecycle: Arc::new(
+                support_lifecycle::WorthQueryProgramSupportLifecycle::installed(&roster),
+            ),
             adoption_admissions: std::collections::BTreeMap::new(),
             roster,
             renderings,
@@ -229,7 +231,14 @@ impl<Schema> WorthQueryInstalledProgramSupport<Schema> {
         self.lifecycle.retain_custody(source, target)
     }
 
-    pub const fn lifecycle(&self) -> &support_lifecycle::WorthQueryProgramSupportLifecycle {
+    pub(in crate::domain_computation::primary_graph) fn bind_original_meaning_receiver(
+        &self,
+        receiver: &super::provider::WorthQueryPrimaryGraphProvider,
+    ) -> Result<(), support_lifecycle::journal::QueryProgramSupportDenial> {
+        receiver.bind_original_meaning_support(&self.lifecycle)
+    }
+
+    pub fn lifecycle(&self) -> &support_lifecycle::WorthQueryProgramSupportLifecycle {
         &self.lifecycle
     }
 

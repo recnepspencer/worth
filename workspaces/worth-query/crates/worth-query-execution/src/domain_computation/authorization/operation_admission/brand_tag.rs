@@ -48,14 +48,14 @@ impl BrandTag {
         let refused = |kind| {
             Err(WorthQueryOperationAuthorizationDenial::new(
                 WorthQueryOperationAuthorizationDenialKind::Refused(kind),
-                &core.operation,
+                &core.data.operation,
             ))
         };
-        if self.runtime_authority != core.runtime_authority {
+        if self.runtime_authority != core.data.runtime_authority {
             return refused(AuthorizationRefusal::ForeignRuntime);
         }
-        if self.operation_authority_identity_bytes != core.operation_authority_identity_bytes
-            || self.operation_definition_identity != core.operation_definition_identity
+        if self.operation_authority_identity_bytes != core.data.operation_authority_identity_bytes
+            || self.operation_definition_identity != core.data.operation_definition_identity
         {
             return refused(AuthorizationRefusal::StaleInstalledOperation);
         }
@@ -73,14 +73,14 @@ impl BrandTag {
             return Err(MutationHandlerExecutionDenial::HandlerNotInstalled);
         };
         if self.operation_type != EqualityTypeId::from(descriptor.operation_type())
-            || core.operation != descriptor.operation_name()
+            || core.data.operation != descriptor.operation_name()
         {
             return Err(MutationHandlerExecutionDenial::Projection(
                 WorthQueryOperationAuthorizationDenial::new(
                     WorthQueryOperationAuthorizationDenialKind::Refused(
                         AuthorizationRefusal::StaleInstalledOperation,
                     ),
-                    &core.operation,
+                    &core.data.operation,
                 )
                 .into(),
             ));

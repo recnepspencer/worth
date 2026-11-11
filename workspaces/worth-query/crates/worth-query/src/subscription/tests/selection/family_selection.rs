@@ -8,7 +8,8 @@ fn detail_live_family_selects_exact_subscription_with_budgeted_counters() {
         LiveQueryFamily::Detail,
         None,
         QuerySubscriptionConstructionSource::Direct,
-    );
+    )
+    .expect("fixture digest must fit");
 
     let selection = select_query_subscription_family(input, roomy_budget()).unwrap();
 
@@ -57,12 +58,14 @@ fn grouped_and_plain_collection_are_distinct_query_subscription_meanings() {
         LiveQueryFamily::OrderedCollection,
         Some(LiveViewShapeFamily::Table),
         QuerySubscriptionConstructionSource::FacadeLive,
-    );
+    )
+    .expect("fixture digest must fit");
     let grouped = LiveQueryAdmissionArtifact::for_test(
         LiveQueryFamily::OrderedCollection,
         Some(LiveViewShapeFamily::KanbanGrouped),
         QuerySubscriptionConstructionSource::FacadeLive,
-    );
+    )
+    .expect("fixture digest must fit");
 
     let collection_selection =
         select_query_subscription_family(collection, roomy_budget()).unwrap();
@@ -99,12 +102,14 @@ fn inspector_detail_is_distinct_from_plain_detail() {
         LiveQueryFamily::Detail,
         Some(LiveViewShapeFamily::Detail),
         QuerySubscriptionConstructionSource::FacadeLive,
-    );
+    )
+    .expect("fixture digest must fit");
     let inspector = LiveQueryAdmissionArtifact::for_test(
         LiveQueryFamily::Detail,
         Some(LiveViewShapeFamily::InspectorDetailFocused),
         QuerySubscriptionConstructionSource::FacadeLive,
-    );
+    )
+    .expect("fixture digest must fit");
 
     let detail_selection = select_query_subscription_family(detail, roomy_budget()).unwrap();
     let inspector_selection = select_query_subscription_family(inspector, roomy_budget()).unwrap();
@@ -135,7 +140,8 @@ fn bounded_materialization_family_keeps_its_own_subscription_vocabulary() {
         LiveQueryFamily::BoundedMaterialization,
         None,
         QuerySubscriptionConstructionSource::FacadeLive,
-    );
+    )
+    .expect("fixture digest must fit");
 
     let selection = select_query_subscription_family(input, roomy_budget()).unwrap();
 

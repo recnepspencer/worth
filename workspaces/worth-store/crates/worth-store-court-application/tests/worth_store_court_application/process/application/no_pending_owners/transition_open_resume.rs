@@ -7,7 +7,6 @@ use std::sync::{
 };
 use worth_foundational::facade::{
     HomeProgramTransitionPlanDigest, HomeProgramTransitionStepAssociation,
-    HomeProgramTransitionTargetMeaning,
 };
 use worth_relational::facade::{
     mvcc::RelationalCallerAssociation, runtime::RelationalHomeProgramContractDenial,
@@ -48,8 +47,7 @@ fn a_readmitted_transition_open_keeps_its_original_attempt_commit_and_custody() 
         let fixture = original::reopen(directory.path(), &execution);
         assert_ne!(fixture.home.incarnation(), incarnation);
         let contracts = original::contracts(&fixture, &execution, evaluated.clone());
-        let target =
-            HomeProgramTransitionTargetMeaning::from_recorded(0, contracts.catalog_digest());
+        let target = contracts.target_meaning(&execution, 0).unwrap();
         let page = fixture
             .home
             .world()
@@ -111,6 +109,11 @@ fn a_readmitted_transition_open_keeps_its_original_attempt_commit_and_custody() 
                 earlier.original(),
                 &association,
                 earlier.admission(),
+                worth_relational::facade::indexes::DerivedIndexMaintenanceBudget {
+                    maximum_work_units: None,
+                    maximum_cold_record_slots: None,
+                    maximum_derived_rows: None
+                },
             ),
             Err(RelationalHomeProgramContractDenial::Admission(
                 worth_proof::HomeProgramTransitionAdmissionDenial::StaleIncarnation
@@ -162,6 +165,11 @@ fn a_readmitted_transition_open_keeps_its_original_attempt_commit_and_custody() 
                 admitted.original(),
                 &association,
                 admitted.admission(),
+                worth_relational::facade::indexes::DerivedIndexMaintenanceBudget {
+                    maximum_work_units: None,
+                    maximum_cold_record_slots: None,
+                    maximum_derived_rows: None,
+                },
             )
             .unwrap();
         transaction

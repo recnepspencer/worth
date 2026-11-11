@@ -12,28 +12,46 @@ pub fn contract(
         Grant::reference(),
     )
     .target(ApplicationCapabilityTargetDefinition::new(
-        ApplicationCapabilityValueBinding::new(GrantAction::reference(), encoded("adopt-program")),
+        ApplicationCapabilityValueBinding::new(
+            GrantAction::at("GrantAction"),
+            encoded("adopt-program"),
+        )
+        .unwrap(),
         ApplicationCapabilityRelationBinding::from_reference(GrantResource::reference()),
         ApplicationCapabilityRelationDimension::not_applicable(),
         ApplicationCapabilityFieldDimension::not_applicable(),
         ApplicationCapabilityValueBinding::new(
-            GrantPurpose::reference(),
+            GrantPurpose::at("GrantPurpose"),
             encoded("numeric-administration"),
-        ),
+        )
+        .unwrap(),
     ))
     .constraints(ApplicationCapabilityConstraintDefinition::new(
         ApplicationCapabilityMagnitudeDimension::not_applicable(),
         ApplicationCapabilityCardinalityDimension::One,
         ApplicationCapabilityCurrentnessDefinition::new(
-            ApplicationCapabilityValueBinding::new(GrantStatus::reference(), encoded("active")),
+            ApplicationCapabilityValueBinding::new(
+                GrantStatus::at("GrantStatus"),
+                encoded("active"),
+            )
+            .unwrap(),
             ApplicationCapabilityWorkflowDefinition::new(
-                ApplicationCapabilityFieldBinding::from_reference(GrantScopeKey::reference()),
-                ApplicationCapabilityFieldBinding::from_reference(Key::reference()),
+                ApplicationCapabilityFieldBinding::from_reference(GrantScopeKey::at(
+                    "GrantScopeKey",
+                ))
+                .unwrap(),
+                ApplicationCapabilityFieldBinding::from_reference(Key::at("Key")).unwrap(),
             ),
             ApplicationCapabilityValidityDefinition::new(
                 ApplicationCapabilityValidityTimeline::UnixEpochSeconds,
-                ApplicationCapabilityFieldBinding::from_reference(GrantNotBefore::reference()),
-                ApplicationCapabilityFieldBinding::from_reference(GrantNotAfter::reference()),
+                ApplicationCapabilityFieldBinding::from_reference(GrantNotBefore::at(
+                    "GrantNotBefore",
+                ))
+                .unwrap(),
+                ApplicationCapabilityFieldBinding::from_reference(GrantNotAfter::at(
+                    "GrantNotAfter",
+                ))
+                .unwrap(),
             ),
         ),
         AdoptContext::reference(),
@@ -42,7 +60,7 @@ pub fn contract(
         ApplicationCapabilityRelationBinding::from_reference(GrantParent::reference()),
         ApplicationCapabilityRelationBinding::from_reference(GrantGrantor::reference()),
         ApplicationCapabilityRelationBinding::from_reference(GrantGrantee::reference()),
-        ApplicationCapabilityFieldBinding::from_reference(GrantDepth::reference()),
+        ApplicationCapabilityFieldBinding::from_reference(GrantDepth::at("GrantDepth")).unwrap(),
         AdoptProvenance::reference(),
     ))
     .composition(ApplicationCapabilityComposition::new(

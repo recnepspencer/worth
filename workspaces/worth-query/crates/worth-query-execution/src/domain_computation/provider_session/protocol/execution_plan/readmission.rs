@@ -68,11 +68,15 @@ impl<'run> WorthQueryAdmittedProviderExecutionPlan<'run> {
     ) -> Result<worth_execution::ExecutionRequest<'run, 'run>, WorthQueryProviderSessionFailure>
     {
         let (source_instance, owner_identity) = match &self.run {
-            WorthQueryProviderRunBorrow::Direct(run) => (
+            WorthQueryProviderRunCustody::Direct(run) => (
                 run.execution_source_instance_id(),
                 run.execution_owner_identity(),
             ),
-            WorthQueryProviderRunBorrow::Workflow(run) => (
+            WorthQueryProviderRunCustody::CoupledDirect(owned) => (
+                owned.run().execution_source_instance_id(),
+                owned.run().execution_owner_identity(),
+            ),
+            WorthQueryProviderRunCustody::Workflow(run) => (
                 run.execution_source_instance_id(),
                 run.execution_owner_identity(),
             ),

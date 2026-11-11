@@ -3,36 +3,48 @@ use std::sync::Arc;
 use crate::validation::data::CustomInvariantSemanticIdentity;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct CustomInvariantPreparationError {
-    detail: Arc<str>,
+pub enum CustomInvariantPreparationError {
+    Runtime(Arc<str>),
+    Cause(Box<super::CustomInvariantFailureCause>),
 }
-
 impl CustomInvariantPreparationError {
     pub fn new(detail: impl Into<Arc<str>>) -> Self {
-        Self {
-            detail: detail.into(),
+        Self::Runtime(detail.into())
+    }
+    pub fn detail(&self) -> &str {
+        match self {
+            Self::Runtime(detail) => detail,
+            Self::Cause(_) => "typed invariant failure",
         }
     }
-
-    pub fn detail(&self) -> &str {
-        &self.detail
+    fn into_parts(self) -> (Arc<str>, Option<Box<super::CustomInvariantFailureCause>>) {
+        match self {
+            Self::Cause(cause) => (Arc::from("typed invariant failure"), Some(cause)),
+            Self::Runtime(detail) => (detail, None),
+        }
     }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct CustomInvariantExecutionError {
-    detail: Arc<str>,
+pub enum CustomInvariantExecutionError {
+    Runtime(Arc<str>),
+    Cause(Box<super::CustomInvariantFailureCause>),
 }
-
 impl CustomInvariantExecutionError {
     pub fn new(detail: impl Into<Arc<str>>) -> Self {
-        Self {
-            detail: detail.into(),
+        Self::Runtime(detail.into())
+    }
+    pub fn detail(&self) -> &str {
+        match self {
+            Self::Runtime(detail) => detail,
+            Self::Cause(_) => "typed invariant failure",
         }
     }
-
-    pub fn detail(&self) -> &str {
-        &self.detail
+    fn into_parts(self) -> (Arc<str>, Option<Box<super::CustomInvariantFailureCause>>) {
+        match self {
+            Self::Cause(cause) => (Arc::from("typed invariant failure"), Some(cause)),
+            Self::Runtime(detail) => (detail, None),
+        }
     }
 }
 
@@ -99,6 +111,7 @@ pub(crate) struct CustomInvariantFailure {
     pub(crate) phase: CustomInvariantRuntimePhase,
     pub(crate) kind: CustomInvariantFailureKind,
     pub(crate) detail: Arc<str>,
+    pub(crate) cause: Option<Box<super::CustomInvariantFailureCause>>,
 }
 
 impl CustomInvariantFailure {
@@ -106,11 +119,13 @@ impl CustomInvariantFailure {
         identity: &CustomInvariantSemanticIdentity,
         error: CustomInvariantPreparationError,
     ) -> Self {
+        let (detail, cause) = error.into_parts();
         Self {
             identity: identity.clone(),
             phase: CustomInvariantRuntimePhase::Preparation,
             kind: CustomInvariantFailureKind::PreparationError,
-            detail: Arc::from(error.detail()),
+            detail,
+            cause,
         }
     }
 
@@ -118,11 +133,13 @@ impl CustomInvariantFailure {
         identity: &CustomInvariantSemanticIdentity,
         error: CustomInvariantExecutionError,
     ) -> Self {
+        let (detail, cause) = error.into_parts();
         Self {
             identity: identity.clone(),
             phase: CustomInvariantRuntimePhase::Execution,
             kind: CustomInvariantFailureKind::ExecutionError,
-            detail: Arc::from(error.detail()),
+            detail,
+            cause,
         }
     }
 
@@ -136,6 +153,7 @@ impl CustomInvariantFailure {
             phase,
             kind: CustomInvariantFailureKind::Panic,
             detail,
+            cause: None,
         }
     }
 }

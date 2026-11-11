@@ -46,7 +46,7 @@ fn workflow_effect_uses_real_mutation_authority_and_retains_its_receipt() {
         )
         .unwrap()
         .start_workflow(&mut workspace)
-        .unwrap()
+        .unwrap().unwrap()
         .advance(
             "mutate",
             domain::WorthQueryWorkflowValue::Text("commit".into()),
@@ -105,7 +105,7 @@ fn failure_after_effect_retains_the_query_executed_partial_outcome() {
         )
         .unwrap()
         .start_workflow(&mut workspace)
-        .unwrap();
+        .unwrap().unwrap();
     let denial = match run.advance(
         "mutate",
         domain::WorthQueryWorkflowValue::Text("fail-after-effect".into()),
@@ -202,7 +202,7 @@ fn workflow_stage_cannot_skip_its_declared_primary_read() {
         )
         .unwrap()
         .start_workflow(&mut workspace)
-        .unwrap()
+        .unwrap().unwrap()
         .advance(
             "start",
             domain::WorthQueryWorkflowValue::NotRequired,

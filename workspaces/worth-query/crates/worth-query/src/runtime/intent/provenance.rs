@@ -24,8 +24,8 @@ impl WorthQueryIntentExecutionProvenance {
         binding: &WorthQueryAuthoritativeIntentExecutionBinding,
         execution_outcome_digest: &str,
         snapshot_evidence_identity: &WorthQueryEvidenceIdentity,
-    ) -> Self {
-        Self::new(
+    ) -> Result<Self, crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial> {
+        Ok(Self::new(
             binding.family(),
             binding.entrypoint(),
             binding.execution_seam(),
@@ -34,15 +34,15 @@ impl WorthQueryIntentExecutionProvenance {
             binding.binding_digest(),
             execution_outcome_digest,
             snapshot_evidence_identity,
-        )
+        )?)
     }
 
     pub(in crate::runtime) fn for_effect_binding(
         binding: &WorthQueryEffectTriggeredIntentExecutionBinding,
         execution_outcome_digest: &str,
         snapshot_evidence_identity: &WorthQueryEvidenceIdentity,
-    ) -> Self {
-        Self::new(
+    ) -> Result<Self, crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial> {
+        Ok(Self::new(
             binding.family(),
             binding.entrypoint(),
             binding.execution_seam(),
@@ -51,7 +51,7 @@ impl WorthQueryIntentExecutionProvenance {
             binding.binding_digest(),
             execution_outcome_digest,
             snapshot_evidence_identity,
-        )
+        )?)
     }
 
     pub(in crate::runtime) fn for_shared_execution_parts(
@@ -63,8 +63,8 @@ impl WorthQueryIntentExecutionProvenance {
         execution_binding_digest: &str,
         execution_outcome_digest: &str,
         snapshot_evidence_identity: &WorthQueryEvidenceIdentity,
-    ) -> Self {
-        Self::new(
+    ) -> Result<Self, crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial> {
+        Ok(Self::new(
             family,
             entrypoint,
             execution_seam,
@@ -73,7 +73,7 @@ impl WorthQueryIntentExecutionProvenance {
             execution_binding_digest,
             execution_outcome_digest,
             snapshot_evidence_identity,
-        )
+        )?)
     }
 
     pub(in crate::runtime) fn for_shared_execution_typed_parts(
@@ -85,8 +85,8 @@ impl WorthQueryIntentExecutionProvenance {
         execution_binding_digest: &str,
         execution_outcome_digest: &str,
         snapshot_evidence_identity: &WorthQueryEvidenceIdentity,
-    ) -> Self {
-        Self::for_shared_execution_parts(
+    ) -> Result<Self, crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial> {
+        Ok(Self::for_shared_execution_parts(
             family,
             entrypoint,
             execution_seam,
@@ -95,7 +95,7 @@ impl WorthQueryIntentExecutionProvenance {
             execution_binding_digest,
             execution_outcome_digest,
             snapshot_evidence_identity,
-        )
+        )?)
     }
 
     fn new(
@@ -107,7 +107,7 @@ impl WorthQueryIntentExecutionProvenance {
         execution_binding_digest: &str,
         execution_outcome_digest: &str,
         snapshot_evidence_identity: &WorthQueryEvidenceIdentity,
-    ) -> Self {
+    ) -> Result<Self, crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial> {
         let execution_provenance_chain_digest =
             intent_execution_provenance_chain_identity(IntentExecutionProvenanceIdentityParts {
                 family: family.as_str(),
@@ -118,8 +118,8 @@ impl WorthQueryIntentExecutionProvenance {
                 execution_binding_digest,
                 execution_outcome_digest,
                 snapshot_evidence_identity,
-            });
-        Self {
+            })?;
+        Ok(Self {
             family,
             entrypoint,
             execution_seam,
@@ -127,7 +127,7 @@ impl WorthQueryIntentExecutionProvenance {
             execution_handoff_digest: execution_handoff_digest.to_string(),
             execution_binding_digest: execution_binding_digest.to_string(),
             execution_provenance_chain_digest,
-        }
+        })
     }
 
     pub fn family(&self) -> WorthQueryIntentAdmissionFamily {

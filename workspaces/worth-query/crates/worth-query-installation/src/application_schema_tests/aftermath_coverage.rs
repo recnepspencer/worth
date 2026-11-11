@@ -6,30 +6,13 @@ use worth_query_declaration::facade::application_aftermath::{
     DeclaredPreImageLocus, DeclaredRecordedInverse,
 };
 use worth_query_declaration::facade::application_schema::{
-    ApplicationFieldMarkerIdentity, ApplicationFieldPresence, ApplicationOperationRef,
-    ApplicationSchema, ApplicationSchemaDeclaration, DeclaredApplicationFieldValue,
-    U64ApplicationValueBinding,
+    ApplicationOperationRef, ApplicationSchema, ApplicationSchemaDeclaration,
 };
 
 use super::*;
 
 struct CoveredAftermathSchema;
 struct UncoveredAftermathSchema;
-struct UncoveredSecretField<Schema>(std::marker::PhantomData<fn() -> Schema>);
-
-impl<Schema>
-    ApplicationFieldMarkerIdentity<Schema, FixtureEntity<Schema>, FixtureIdentityAspect<Schema>>
-    for UncoveredSecretField<Schema>
-{
-    const IDENTIFIER: &'static str = "UncoveredSecretField";
-}
-
-impl<Schema> DeclaredApplicationFieldValue for UncoveredSecretField<Schema> {
-    type Value = u64;
-    type Binding = U64ApplicationValueBinding;
-    const PRESENCE: ApplicationFieldPresence = ApplicationFieldPresence::Required;
-}
-
 impl ApplicationSchema for CoveredAftermathSchema {
     const OWNER: &'static str = "typed-test";
     const NAME: &'static str = "CoveredAftermathSchema";
@@ -40,7 +23,7 @@ impl ApplicationSchema for CoveredAftermathSchema {
         ApplicationSchemaDeclaration<Self>,
         worth_query_declaration::facade::application_schema::ApplicationSchemaDeclarationDenial,
     > {
-        aftermath_schema_members::<Self, FixturePrincipalIdentityField<Self>>().build()
+        aftermath_schema_members::<Self>(false).build()
     }
 }
 
@@ -54,39 +37,27 @@ impl ApplicationSchema for UncoveredAftermathSchema {
         ApplicationSchemaDeclaration<Self>,
         worth_query_declaration::facade::application_schema::ApplicationSchemaDeclarationDenial,
     > {
-        aftermath_schema_members::<Self, UncoveredSecretField<Self>>().build()
+        aftermath_schema_members::<Self>(true).build()
     }
 }
 
-fn aftermath_schema_members<Schema, PreImageField>() -> ApplicationSchemaDeclarationBuilder<Schema>
-where
-    Schema: ApplicationSchema,
-    PreImageField: ApplicationFieldMarkerIdentity<
-        Schema,
-        FixtureEntity<Schema>,
-        FixtureIdentityAspect<Schema>,
-        Value = u64,
-    >,
-{
-    let preimage_locus = DeclaredPreImageLocus::from_field(ApplicationFieldRef::<
-        Schema,
-        FixtureEntity<Schema>,
-        FixtureIdentityAspect<Schema>,
-        PreImageField,
-        u64,
-        ReadOnly,
-        EqualityPredicate,
-    >::from_schema_types());
+fn aftermath_schema_members<Schema: ApplicationSchema>(
+    uncovered: bool,
+) -> ApplicationSchemaDeclarationBuilder<Schema> {
+    let preimage_locus = if uncovered {
+        DeclaredPreImageLocus::from_field(FixtureMappingStatusField::at("MappingStatusField"))
+    } else {
+        DeclaredPreImageLocus::from_field(FixturePrincipalIdentityField::at(
+            "PrincipalIdentityField",
+        ))
+    };
     test_schema_members::<Schema>(Some(DeclaredApplicationAftermathContract::runtime_alone(
-        DeclaredCorrectionMechanism::RecordedInverse(
-            DeclaredRecordedInverse::new(
-                "restore-prior",
-                DeclaredLoweringCorrespondenceRef::new("test-inverse").unwrap(),
-                DeclaredAftermathPostcondition::ExactPriorTruth,
-                DeclaredPreImageDemand::new([preimage_locus], 256).unwrap(),
-            )
-            .unwrap(),
-        ),
+        DeclaredCorrectionMechanism::RecordedInverse(DeclaredRecordedInverse::new(
+            "restore-prior",
+            DeclaredLoweringCorrespondenceRef::new("test-inverse"),
+            DeclaredAftermathPostcondition::ExactPriorTruth,
+            DeclaredPreImageDemand::new([preimage_locus], 256),
+        )),
     )))
 }
 

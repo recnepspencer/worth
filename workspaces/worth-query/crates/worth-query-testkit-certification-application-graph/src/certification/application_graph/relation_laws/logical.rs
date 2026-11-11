@@ -22,6 +22,13 @@ pub use operation::CheckBinding;
 #[derive(Clone, Debug)]
 pub struct Logical;
 impl LawPolicy for Logical {
+    type Model = LogicalRecords;
+    fn schema_declaration(
+    ) -> Result<ApplicationSchemaDeclaration<GraphSchema<Self>>, ApplicationSchemaDeclarationDenial>
+    {
+        fragment::declare(GraphSchema::<Self>(PhantomData))
+    }
+
     const INTEGRITY: ApplicationRelationIntegrity =
         ApplicationRelationIntegrity::same_context_unbounded_retain_dangling().orbit();
     const LOGICAL_RELATIONS: bool = true;
@@ -31,8 +38,8 @@ pub struct Negative;
 pub struct Positive;
 impl Uses {
     pub fn reference<L: LawPolicy>(
-    ) -> ApplicationProjectedMemberDomainRef<GraphSchema<L>, Self, Node> {
-        ApplicationProjectedMemberDomainRef::new("Uses", Node::reference())
+    ) -> ApplicationProjectedMemberDomainRef<GraphSchema<L>, Self, GraphNode<GraphSchema<L>>> {
+        ApplicationProjectedMemberDomainRef::new("Uses", node::<GraphSchema<L>>())
     }
 }
 impl Negative {
@@ -53,7 +60,7 @@ pub struct UseSuccessor;
 pub struct UseComponents;
 impl RootUses {
     pub fn reference<L: LawPolicy>(
-    ) -> ApplicationDerivedRelationRef<GraphSchema<L>, Self, Node, Uses> {
+    ) -> ApplicationDerivedRelationRef<GraphSchema<L>, Self, GraphNode<GraphSchema<L>>, Uses> {
         ApplicationDerivedRelationRef::from_member_identifiers(
             "RootUses",
             ApplicationGraphMemberSelector::Entity("Node"),
@@ -63,7 +70,7 @@ impl RootUses {
 }
 impl NextUses {
     pub fn reference<L: LawPolicy>(
-    ) -> ApplicationDerivedRelationRef<GraphSchema<L>, Self, Node, Uses> {
+    ) -> ApplicationDerivedRelationRef<GraphSchema<L>, Self, GraphNode<GraphSchema<L>>, Uses> {
         ApplicationDerivedRelationRef::from_member_identifiers(
             "NextUses",
             ApplicationGraphMemberSelector::Entity("Node"),
@@ -85,16 +92,18 @@ impl UseComponents {
 impl OperationReads<derived::CountTwoSteps> for NextUses {}
 impl OperationReads<operation::CheckUses> for RootUses {}
 impl OperationReads<operation::CheckUses> for UseSuccessor {}
-pub fn negative<L: LawPolicy>() -> ApplicationDerivedRelation<GraphSchema<L>, Node, Uses> {
+pub fn negative<L: LawPolicy>(
+) -> ApplicationDerivedRelation<GraphSchema<L>, GraphNode<GraphSchema<L>>, Uses> {
     ApplicationDerivedRelation::carrier_case(Uses::reference(), Negative::reference()).unwrap()
 }
-pub fn positive<L: LawPolicy>() -> ApplicationDerivedRelation<GraphSchema<L>, Node, Uses> {
+pub fn positive<L: LawPolicy>(
+) -> ApplicationDerivedRelation<GraphSchema<L>, GraphNode<GraphSchema<L>>, Uses> {
     ApplicationDerivedRelation::carrier_case(Uses::reference(), Positive::reference()).unwrap()
 }
 pub fn successor<L: LawPolicy>() -> ApplicationDerivedRelation<GraphSchema<L>, Uses, Uses> {
     negative::<L>()
         .reversed()
-        .then(Precedes::reference())
+        .then(precedes::<GraphSchema<L>>())
         .then(positive::<L>())
 }
 pub fn declare<L: LawPolicy>(
@@ -115,7 +124,8 @@ pub fn declare<L: LawPolicy>(
         )
         .derived_relation(
             NextUses::reference(),
-            ApplicationDerivedRelation::relation(Precedes::reference()).then(RootUses::reference()),
+            ApplicationDerivedRelation::relation(precedes::<GraphSchema<L>>())
+                .then(RootUses::reference()),
             ApplicationRelationGraphLaws::unbounded(),
         )
         // compiled-example: begin
@@ -136,7 +146,10 @@ pub fn declare<L: LawPolicy>(
                 .no_aftermath()
                 .finish(),
         )
-        .operation_read_field(derived::CountTwoSteps::reference(), NodeKey::reference())
+        .operation_read_field(
+            derived::CountTwoSteps::reference(),
+            node_key::<GraphSchema<L>>(),
+        )
         .operation_read_derived_relation(derived::CountTwoSteps::reference(), NextUses::reference())
         .application_mutation_binding::<derived::CountBinding<L>>()
         .rule_readable_collection::<GraphFeature, derived::CountCollection, _, _, _>(
@@ -149,7 +162,10 @@ pub fn declare<L: LawPolicy>(
                 .no_aftermath()
                 .finish(),
         )
-        .operation_read_field(operation::CheckUses::reference(), NodeKey::reference())
+        .operation_read_field(
+            operation::CheckUses::reference(),
+            node_key::<GraphSchema<L>>(),
+        )
         .operation_read_derived_relation(operation::CheckUses::reference(), RootUses::reference())
         .operation_read_derived_relation(
             operation::CheckUses::reference(),

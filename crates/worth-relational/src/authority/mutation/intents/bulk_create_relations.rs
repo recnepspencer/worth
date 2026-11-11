@@ -33,9 +33,9 @@ use super::field_authoring_candidate::{self, FieldAuthoringDomain};
 use super::{record_aspect_patch, relation_endpoint_candidate};
 
 mod leased;
-mod relation_row;
+mod row;
 use leased::stage_leased_relation_rows;
-use relation_row::apply_relation_row;
+use row::apply_relation_row;
 
 pub(super) fn apply<'a>(
     intent: &'a BulkRelationCreateIntent,

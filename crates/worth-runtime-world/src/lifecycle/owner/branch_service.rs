@@ -15,6 +15,7 @@ use super::RuntimeWorldOwnerRoot;
 mod creation;
 mod exact_history;
 mod history;
+mod home_program_binding;
 #[cfg(test)]
 mod install_control;
 mod observation;
@@ -212,6 +213,21 @@ where
     I: Copy + Ord + Send + Sync + 'static,
     T: Copy + Ord + Send + Sync + 'static,
 {
+    fn with_home_program_binding(
+        &self,
+        request: &worth_execution::ExecutionRequest<'_, '_>,
+        expected: &ProductBranchObservation,
+        required: &worth_proof::HomeProgramTransitionRequired,
+        successor: &worth_proof::AdmittedHomeProgramTransitionSuccessor<
+            &worth_foundational::facade::ApplicationHomeBinding,
+        >,
+        handoff: &mut dyn for<'owner> FnMut(
+            crate::lifecycle::PreparedWorldHomeProgramBinding<'owner>,
+        ),
+    ) -> Result<(), crate::lifecycle::WorldHomeProgramBindingDenial> {
+        self.bind_current_home_program(request, expected, required, successor, handoff)
+    }
+
     fn create_product_branch(
         &self,
         request: RuntimeWorldBranchCreationRequest<'_, '_, '_>,

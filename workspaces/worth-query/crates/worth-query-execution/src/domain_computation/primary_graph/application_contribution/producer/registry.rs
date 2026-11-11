@@ -9,6 +9,7 @@ use worth_query_installation::facade::ApplicationSchema;
 
 pub(crate) mod checkpoint;
 mod codec_transition;
+mod coupled_selection;
 mod declaration;
 
 use super::scheduling;
@@ -62,6 +63,7 @@ pub struct DeclaredProducerBinding
         Option<super::super::native_field_contract::NativeFieldBindingExpectation>,
     pub(in crate::domain_computation::primary_graph::application_contribution) installed_output_equivalence:
         Option<Arc<super::output_equivalence_contract::InstalledProducerOutputEquivalence>>,
+    pub(in crate::domain_computation::primary_graph::application_contribution) predecessor_reads: Option<Vec<super::predecessor_reads::PredecessorReadMeaning>>,
     pub(in crate::domain_computation::primary_graph::application_contribution) input_reuse:
         Option<super::WorthQueryProducerInputReuseContract>,
     pub(in crate::domain_computation::primary_graph::application_contribution) binding_type: TypeId,
@@ -77,6 +79,7 @@ pub struct DeclaredProducerBinding
 }
 
 mod history_group;
+mod implementation;
 pub(crate) mod operation_binding_uniqueness;
 pub(crate) mod output_family_inventory;
 mod pending;
@@ -143,26 +146,34 @@ where
     pub(super) fn select_entry<Family>(
         &self,
 
-        mut accepts: impl FnMut(&Arc<InstalledProducerProvider<Schema>>) -> bool,
+        accepts: impl FnMut(&Arc<InstalledProducerProvider<Schema>>) -> bool,
         missing: WorthQueryOutputDemandDenialKind,
     ) -> Result<&Arc<InstalledProducerProvider<Schema>>, WorthQueryOutputDemandDenial>
     where
         Family: WorthQueryProducerOutputFamily<Schema>,
     {
+        self.select_matching_entry(accepts, missing, Family::IDENTITY)
+    }
+    fn select_matching_entry(
+        &self,
+        mut accepts: impl FnMut(&Arc<InstalledProducerProvider<Schema>>) -> bool,
+        missing: WorthQueryOutputDemandDenialKind,
+        subject: &'static str,
+    ) -> Result<&Arc<InstalledProducerProvider<Schema>>, WorthQueryOutputDemandDenial> {
         let mut selected = None;
         for entry in self.entries.values() {
             if accepts(entry) {
                 if selected.is_some() {
                     return Err(WorthQueryOutputDemandDenial::new(
                         WorthQueryOutputDemandDenialKind::AmbiguousApplicableProducer,
-                        Family::IDENTITY,
+                        subject,
                     ));
                 }
                 selected = Some(entry);
             }
         }
         let selected =
-            selected.ok_or_else(|| WorthQueryOutputDemandDenial::new(missing, Family::IDENTITY))?;
+            selected.ok_or_else(|| WorthQueryOutputDemandDenial::new(missing, subject))?;
 
         Ok(selected)
     }
@@ -254,6 +265,7 @@ where
                 identity: selected.declaration.identity.clone(),
                 applicability: selected.declaration.applicability[0],
                 exact_retained_output: true,
+                retained_read_posture: super::demand::RetainedOutputReadPosture::Ordinary,
 
                 retained_idempotency_key: None,
                 retained_output_binding: None,

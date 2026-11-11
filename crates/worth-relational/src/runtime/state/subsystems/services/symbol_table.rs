@@ -2,6 +2,7 @@ mod mutation_input;
 mod selected_directory;
 mod source_retirement;
 pub(crate) use mutation_input::MutationSymbolMeanings;
+mod admission_transfer;
 mod cold_pages;
 mod state;
 pub(crate) use cold_pages::ColdSymbolDirectoryDenial;
@@ -208,6 +209,7 @@ impl RuntimeSymbolTable {
                 .into_iter()
                 .map(|(symbol, text)| (SymbolTextLookupKey::from_owned(text), symbol))
                 .collect();
+            state.admissions.clear();
             state.interner = interner;
         });
     }

@@ -11,12 +11,12 @@ fn inspection_rejects_foreign_and_rootless_identities() {
     assert_oracle_matches(execution, &world, &expected);
     let foreign_runtime = world.runtime.fork().expect("settled runtime forks");
     assert!(matches!(
-        foreign_runtime.observe_branch_sharing(&[world.runtime.main_branch_identity()]),
+        foreign_runtime.observe_branch_sharing(execution, &[world.runtime.main_branch_identity()]),
         Err(worth_relational::facade::inspection::RelationalBranchSharingInspectionDenial::ForeignRuntime)
     ));
     let empty_runtime = canonical_empty_supply_chain_runtime(worth_testkit_relational::relational_certification::ordinary_context::world::supply_chain::scale::SupplyChainScale::court());
     assert!(matches!(
-        empty_runtime.observe_branch_sharing(&[empty_runtime.main_branch_identity()]),
+        empty_runtime.observe_branch_sharing(execution, &[empty_runtime.main_branch_identity()]),
         Err(worth_relational::facade::inspection::RelationalBranchSharingInspectionDenial::RootUnavailable)
     ));
 }
@@ -33,7 +33,7 @@ fn inspection_rejects_duplicate_branch_scope() {
     assert!(matches!(
         world
             .runtime
-            .observe_branch_sharing(&[identity.clone(), identity]),
+            .observe_branch_sharing(execution, &[identity.clone(), identity]),
         Err(worth_relational::facade::inspection::RelationalBranchSharingInspectionDenial::DuplicateBranch)
     ));
 }
@@ -76,7 +76,7 @@ fn public_inspection_artifacts_are_read_only_complete_root_evidence() {
     let identity = world.runtime.main_branch_identity();
     let sharing = world
         .runtime
-        .observe_branch_sharing(std::slice::from_ref(&identity))
+        .observe_branch_sharing(execution, std::slice::from_ref(&identity))
         .expect("sharing observation is publicly readable");
     let ledger = world
         .runtime
@@ -88,7 +88,7 @@ fn public_inspection_artifacts_are_read_only_complete_root_evidence() {
     );
     let cost = world
         .runtime
-        .observe_mvcc_cost(&cost_scope)
+        .observe_mvcc_cost(execution, &cost_scope)
         .expect("cost observation is publicly readable");
 
     assert!(!ledger.authoritative_allocations().is_empty());

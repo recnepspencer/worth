@@ -325,10 +325,13 @@ fn checkpoint_restore_rejects_incomplete_field_revision_column() {
     assert_eq!(image.field_revisions.len(), image.generations.len());
     image.field_revisions.pop();
     assert_eq!(image.field_revisions.len() + 1, image.generations.len());
-    root.partition_image_digest =
-        crate::durability::data::branch_root_partition_image_digest(&root.partition_images)
-            .unwrap();
+    root.partition_image_digest = crate::durability::data::branch_root_partition_image_digest(
+        &crate::storage::substrate::maintenance::ReconstructionLane::oracle(),
+        &root.partition_images,
+    )
+    .unwrap();
     root.root_image_digest = crate::durability::data::branch_root_image_digest(
+        &crate::storage::substrate::maintenance::ReconstructionLane::oracle(),
         root.format_version,
         root.commit_id,
         root.partition_image_digest,

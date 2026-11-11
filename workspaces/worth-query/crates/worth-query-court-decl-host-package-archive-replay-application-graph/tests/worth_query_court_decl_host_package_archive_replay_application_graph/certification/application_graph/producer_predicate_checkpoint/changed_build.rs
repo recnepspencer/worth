@@ -123,5 +123,39 @@ fn changed_build_preserves_recorded_output_and_reproduces_stale_output_only_on_d
         .at(&read)
         .require_current_output_demand(&settled)
         .unwrap();
+    assert_eq!(
+        settled
+            .outputs_of::<RetentionAssessmentOutputs>()
+            .unwrap()
+            .entity::<AssessmentOutput>()
+            .unwrap()
+            .entity_id(),
+        original_output,
+        "build B regenerates the derived assessment on the original authored document"
+    );
+    assert_eq!(assessment_counts(6), (contacts.0 + 1, contacts.1 + 1));
+    let mut repeated = request
+        .demand(RetentionAssessmentDemand::new(DOCUMENT_IDENTITY))
+        .start_in_program::<_, AssessmentRoot>(&restored)
+        .unwrap();
+    let WorthQueryApplicationOutputDemandProgress::Settled(reused) =
+        repeated.settle(&request).unwrap()
+    else {
+        panic!("B's acknowledged output must be reusable by B");
+    };
+    assert_eq!(reused.producer_contacts_in_this_demand(), 0);
+    assert_eq!(
+        reused
+            .outputs_of::<RetentionAssessmentOutputs>()
+            .unwrap()
+            .entity::<AssessmentOutput>()
+            .unwrap()
+            .entity_id(),
+        original_output
+    );
+    request
+        .at(&read)
+        .require_current_output_demand(&reused)
+        .unwrap();
     assert_eq!(assessment_counts(6), (contacts.0 + 1, contacts.1 + 1));
 }

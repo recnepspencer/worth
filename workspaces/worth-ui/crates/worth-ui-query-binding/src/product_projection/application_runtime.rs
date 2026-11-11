@@ -1,7 +1,7 @@
 use worth_query_host::facade::application_installation::ApplicationBuildIdentity;
 use worth_query_host::facade::{
     application_installation::{
-        in_memory_program, WorthQueryApplicationLimits, WorthQueryProgramApplicationRuntime,
+        in_memory_program, WorthQueryInMemoryApplicationLimits, WorthQueryProgramApplicationRuntime,
     },
     declaration::authentication::{
         WorthQueryExternalPrincipalIdentity, WorthQueryPrincipalMappingStatus,
@@ -36,8 +36,9 @@ pub(super) fn install_status_application(
 ) -> Result<WorthUiStatusApplication, WorthUiStatusOwnerError> {
     let program = validated_status_program()
         .map_err(|error| WorthUiStatusOwnerError::Installation(format!("{error:?}")))?;
-    let declaration = WorthUiApplicationSchema::declaration()
-        .map_err(|error| WorthUiStatusOwnerError::Installation(format!("{error:?}")))?;
+    let declaration =
+        worth_query_decl::facade::application_schema::fragment::declare(WorthUiApplicationSchema)
+            .map_err(|error| WorthUiStatusOwnerError::Installation(format!("{error:?}")))?;
     in_memory_program(
         program,
         declaration,
@@ -73,11 +74,14 @@ pub(super) fn install_status_application(
             graph.bind_entity(
                 WorthQueryApplicationEntitySeed::new(WorthUiRecord::reference(), record)
                     .field(
-                        IdentityIdField::reference(),
+                        IdentityIdField::at("IdentityIdField"),
                         "platform.pulse.status".to_owned(),
                     )
-                    .field(QueryTextStatusField::reference(), "PENDING".to_owned())
-                    .field(QueryRevisionValueField::reference(), 0),
+                    .field(
+                        QueryTextStatusField::at("QueryTextStatusField"),
+                        "PENDING".to_owned(),
+                    )
+                    .field(QueryRevisionValueField::at("QueryRevisionValueField"), 0),
             )?;
             Ok(())
         },
@@ -90,7 +94,7 @@ pub(super) fn external_identity() -> WorthQueryExternalPrincipalIdentity {
         .expect("the local UI source identity is canonical")
 }
 
-fn resource_limits() -> WorthQueryApplicationLimits {
+fn resource_limits() -> WorthQueryInMemoryApplicationLimits {
     let world = WorthQueryProductWorldResources::install(
         RuntimeWorldBudgetInstallation {
             branches: RuntimeWorldBranchBudgetInstallation {
@@ -118,12 +122,12 @@ fn resource_limits() -> WorthQueryApplicationLimits {
                 owner_created_component_custody_records: 256,
             },
         },
-        WorthQueryProductWorldClock::start(),
+        WorthQueryProductWorldClock::start(worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system()),
         WorthQueryInvalidationResources::new(),
         crate::query_runtime_resources::UI_EXECUTION_POLICY,
     )
     .expect("the UI product resources are statically valid");
-    WorthQueryApplicationLimits::new(
+    WorthQueryInMemoryApplicationLimits::new(
         world,
         WorthQueryApplicationQueryResourceProfile::new(
             std::num::NonZeroUsize::new(16).expect("concurrent graph admission is nonzero"),

@@ -71,3 +71,6 @@ mod tests {
         CLEANUPS.with(|cleanups| assert!(cleanups.borrow().is_empty()));
     }
 }
+#[cfg(test)]
+#[path = "execution_observation_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;

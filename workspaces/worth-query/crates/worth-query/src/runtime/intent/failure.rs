@@ -1,4 +1,5 @@
 use super::*;
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::evidence_identity::{
     worth_query_evidence_identity, WorthQueryEvidenceIdentity, WorthQueryEvidenceScope,
     WorthQueryEvidenceTag,
@@ -26,7 +27,7 @@ pub struct WorthQueryIntentExecutionFailureEvidence {
     snapshot_identity: WorthQuerySnapshotIdentity,
     execution_provenance: WorthQueryIntentExecutionProvenance,
     decision_trace_envelope: WorthQueryIntentDecisionTraceEnvelope,
-    failure_digest: WorthQueryEvidenceIdentity,
+    failure_digest: Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial>,
 }
 
 impl WorthQueryIntentExecutionFailureEvidence {
@@ -204,11 +205,13 @@ impl WorthQueryIntentExecutionFailureEvidence {
         WorthQueryIntentConsumerInspection::from_failure(self)
     }
 
-    pub fn failure_digest(&self) -> &str {
-        self.failure_digest.as_str()
+    pub fn failure_digest(&self) -> Result<&str, IdentityDerivationDenial> {
+        Ok(self.failure_identity()?.as_str())
     }
 
-    pub fn failure_identity(&self) -> &WorthQueryEvidenceIdentity {
-        &self.failure_digest
+    pub fn failure_identity(
+        &self,
+    ) -> Result<&WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
+        self.failure_digest.as_ref().map_err(|cause| *cause)
     }
 }

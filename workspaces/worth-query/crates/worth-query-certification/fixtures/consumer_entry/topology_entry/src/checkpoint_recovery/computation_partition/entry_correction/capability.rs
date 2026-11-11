@@ -1,20 +1,115 @@
 //! An installed grant governs the input that recovery retains.
 use super::*;
 use worth_query_decl::facade::application_capability::*;
-use worth_query_decl::facade::{worth_query_aspect, worth_query_entity, worth_query_field};
-worth_query_entity!(pub(in super::super) CorrectionGrant for Schema: TopologySchemaBinding);
-worth_query_aspect!(pub(in super::super) CorrectionGrantFacts for Schema: TopologySchemaBinding, CorrectionGrant; identity = AspectIdentity(0x9174_10a1), revision = AspectContractRevision(1),);
-macro_rules! grant_fields { ($($name:ident),+) => {$(worth_query_field!(pub(in super::super) $name for Schema: TopologySchemaBinding, CorrectionGrant, CorrectionGrantFacts: u64 => U64ApplicationValueBinding, read_only, equality);)+}; }
-grant_fields!(
-    CorrectionAction,
-    CorrectionPurpose,
-    CorrectionStatus,
-    CorrectionNotBefore,
-    CorrectionNotAfter,
-    CorrectionDepth
-);
-worth_query_field!(pub(in super::super) CorrectionScopeKey for Schema: TopologySchemaBinding, CorrectionGrant, CorrectionGrantFacts: String => StringApplicationValueBinding, read_only, equality);
-pub(in super::super) struct CorrectionResource;
+use worth_query_decl::facade::application_schema::fragment::{self, *};
+pub struct CorrectionGrantRecords;
+impl Fragment for CorrectionGrantRecords {
+    const NAME: &'static str = "correction_grants";
+    type Bindings = CorrectionGrantBindings;
+    type Members = (CorrectionGrant,);
+}
+pub struct CorrectionGrantBindings;
+impl BindingSet for CorrectionGrantBindings {
+    type Work<'a> = ValueDecodeAdmission<'a>;
+    fn with_admission<T>(
+        work: &mut Self::Work<'_>,
+        run: impl FnOnce(&mut ValueDecodeAdmission<'_>) -> T,
+    ) -> T {
+        run(work)
+    }
+}
+impl Scalar<u64> for CorrectionGrantBindings {
+    type Binding = U64ApplicationValueBinding;
+
+    const WRITABLE: bool = false;
+}
+impl Scalar<String> for CorrectionGrantBindings {
+    type Binding = StringApplicationValueBinding;
+
+    const WRITABLE: bool = false;
+}
+pub struct CorrectionGrant;
+impl Entity for CorrectionGrant {
+    const NAME: &'static str = "CorrectionGrant";
+    type Aspects = (CorrectionGrantFacts,);
+    type Relations = (CorrectionResource, CorrectionParent);
+}
+impl CorrectionGrant {
+    pub fn reference<S: TopologySchemaBinding>() -> ApplicationEntityRef<S, Self> {
+        entity(CorrectionGrantRecords, Self)
+    }
+}
+pub struct CorrectionGrantFacts;
+impl Aspect for CorrectionGrantFacts {
+    const NAME: &'static str = "CorrectionGrantFacts";
+    type Row = GrantRow;
+}
+pub struct GrantRow {
+    action: u64,
+    purpose: u64,
+    status: u64,
+    not_before: u64,
+    not_after: u64,
+    depth: u64,
+    scope_key: String,
+}
+impl fragment::Record<GrantRow> for CorrectionGrantBindings {
+    fn record() -> impl Shape<GrantRow, Self> {
+        field("CorrectionAction", |row: &GrantRow| row.action)
+            .equality_queryable(true)
+            .and("CorrectionPurpose", |row: &GrantRow| row.purpose)
+            .equality_queryable(true)
+            .and("CorrectionStatus", |row: &GrantRow| row.status)
+            .equality_queryable(true)
+            .and("CorrectionNotBefore", |row: &GrantRow| row.not_before)
+            .equality_queryable(true)
+            .and("CorrectionNotAfter", |row: &GrantRow| row.not_after)
+            .equality_queryable(true)
+            .and("CorrectionDepth", |row: &GrantRow| row.depth)
+            .equality_queryable(true)
+            .and("CorrectionScopeKey", |row: &GrantRow| row.scope_key.clone())
+            .equality_queryable(true)
+            .build(
+                |action,
+                 purpose,
+                 status,
+                 not_before,
+                 not_after,
+                 depth,
+                 scope_key,
+                 _: &mut ValueDecodeAdmission<'_>| {
+                    Ok::<_, std::convert::Infallible>(GrantRow {
+                        action,
+                        purpose,
+                        status,
+                        not_before,
+                        not_after,
+                        depth,
+                        scope_key,
+                    })
+                },
+            )
+    }
+}
+pub type CorrectionAction =
+    FieldSelection<CorrectionGrantRecords, CorrectionGrant, CorrectionGrantFacts, u64>;
+pub type CorrectionPurpose =
+    FieldSelection<CorrectionGrantRecords, CorrectionGrant, CorrectionGrantFacts, u64>;
+pub type CorrectionStatus =
+    FieldSelection<CorrectionGrantRecords, CorrectionGrant, CorrectionGrantFacts, u64>;
+pub type CorrectionNotBefore =
+    FieldSelection<CorrectionGrantRecords, CorrectionGrant, CorrectionGrantFacts, u64>;
+pub type CorrectionNotAfter =
+    FieldSelection<CorrectionGrantRecords, CorrectionGrant, CorrectionGrantFacts, u64>;
+pub type CorrectionDepth =
+    FieldSelection<CorrectionGrantRecords, CorrectionGrant, CorrectionGrantFacts, u64>;
+pub type CorrectionScopeKey =
+    FieldSelection<CorrectionGrantRecords, CorrectionGrant, CorrectionGrantFacts, String>;
+pub struct CorrectionResource;
+impl Relation for CorrectionResource {
+    const NAME: &'static str = "CorrectionResource";
+    type To = Body;
+}
 impl CorrectionResource {
     pub(in super::super) fn reference<Schema: TopologySchemaBinding>(
     ) -> ApplicationRelationRef<Schema, Self, CorrectionGrant, Body> {
@@ -22,11 +117,15 @@ impl CorrectionResource {
             "CorrectionResource",
             "CorrectionGrant",
             "Body",
-            ApplicationRelationIntegrity::same_context_unbounded_retain_dangling(),
+            relation_integrity::<Self>(),
         )
     }
 }
-pub(in super::super) struct CorrectionGrantee;
+pub struct CorrectionGrantee;
+impl Relation for CorrectionGrantee {
+    const NAME: &'static str = "CorrectionGrantee";
+    type To = CorrectionGrant;
+}
 impl CorrectionGrantee {
     pub(in super::super) fn reference<Schema: TopologySchemaBinding>(
     ) -> ApplicationRelationRef<Schema, Self, Principal, CorrectionGrant> {
@@ -34,11 +133,15 @@ impl CorrectionGrantee {
             "CorrectionGrantee",
             "Principal",
             "CorrectionGrant",
-            ApplicationRelationIntegrity::same_context_unbounded_retain_dangling(),
+            relation_integrity::<Self>(),
         )
     }
 }
-pub(in super::super) struct CorrectionGrantor;
+pub struct CorrectionGrantor;
+impl Relation for CorrectionGrantor {
+    const NAME: &'static str = "CorrectionGrantor";
+    type To = CorrectionGrant;
+}
 impl CorrectionGrantor {
     pub(in super::super) fn reference<Schema: TopologySchemaBinding>(
     ) -> ApplicationRelationRef<Schema, Self, Principal, CorrectionGrant> {
@@ -46,11 +149,15 @@ impl CorrectionGrantor {
             "CorrectionGrantor",
             "Principal",
             "CorrectionGrant",
-            ApplicationRelationIntegrity::same_context_unbounded_retain_dangling(),
+            relation_integrity::<Self>(),
         )
     }
 }
-pub(in super::super) struct CorrectionParent;
+pub struct CorrectionParent;
+impl Relation for CorrectionParent {
+    const NAME: &'static str = "CorrectionParent";
+    type To = CorrectionGrant;
+}
 impl CorrectionParent {
     pub(in super::super) fn reference<Schema: TopologySchemaBinding>(
     ) -> ApplicationRelationRef<Schema, Self, CorrectionGrant, CorrectionGrant> {
@@ -58,11 +165,11 @@ impl CorrectionParent {
             "CorrectionParent",
             "CorrectionGrant",
             "CorrectionGrant",
-            ApplicationRelationIntegrity::same_context_unbounded_retain_dangling(),
+            relation_integrity::<Self>(),
         )
     }
 }
-pub(in super::super) struct CorrectEntryCapability<Schema>(PhantomData<fn() -> Schema>);
+pub struct CorrectEntryCapability<Schema>(PhantomData<fn() -> Schema>);
 impl<Schema> worth_query_decl::facade::portable_identity::WorthQueryPortableType
     for CorrectEntryCapability<Schema>
 {
@@ -79,7 +186,7 @@ impl<Schema: TopologySchemaBinding> CorrectEntryCapability<Schema> {
         ApplicationCapabilityRef::from_declaration()
     }
 }
-pub(in super::super) struct CorrectionContext<Schema>(PhantomData<fn() -> Schema>);
+pub struct CorrectionContext<Schema>(PhantomData<fn() -> Schema>);
 impl<Schema> worth_query_decl::facade::portable_identity::WorthQueryPortableType
     for CorrectionContext<Schema>
 {
@@ -96,7 +203,7 @@ impl<Schema: TopologySchemaBinding> CorrectionContext<Schema> {
         ApplicationCapabilityContextRef::from_declaration()
     }
 }
-pub(in super::super) struct CorrectionProvenance<Schema>(PhantomData<fn() -> Schema>);
+pub struct CorrectionProvenance<Schema>(PhantomData<fn() -> Schema>);
 impl<Schema> worth_query_decl::facade::portable_identity::WorthQueryPortableType
     for CorrectionProvenance<Schema>
 {
@@ -128,12 +235,13 @@ impl<Schema: TopologySchemaBinding>
             || ApplicationEncodedScalarValue::<U64ApplicationValueBinding>::try_new(1).unwrap();
         Ok(ApplicationCapabilityRequestProjection::new(
             ApplicationCapabilityEntitySelector::new(
-                BodyKey::reference(),
+                BodyKey::at("BodyKey"),
                 ApplicationEncodedScalarValue::<StringApplicationValueBinding>::try_new(
                     self.scope_key.clone(),
                 )
                 .unwrap(),
-            ),
+            )
+            .unwrap(),
             scalar(),
             scalar(),
             ApplicationCapabilityRequestContext::new(CorrectionContext::<Schema>::reference()),

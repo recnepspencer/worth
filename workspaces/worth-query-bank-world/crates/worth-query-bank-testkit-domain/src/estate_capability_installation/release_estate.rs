@@ -51,7 +51,10 @@ pub fn expected_release_reads() -> BTreeSet<InstalledReadTarget> {
 pub fn field(entity: &str, aspect: &str, field: &str) -> InstalledReadTarget {
     InstalledReadTarget::Field {
         entity: entity.to_owned(),
-        aspect: aspect.to_owned(),
+        aspect: crate::facade::domain_contracts::schema_inventory::support::native_aspect(
+            entity, aspect,
+        )
+        .to_owned(),
         path: path(field),
     }
 }

@@ -4,7 +4,7 @@ use std::sync::{
     atomic::{AtomicUsize, Ordering},
     Arc,
 };
-use worth_query_decl::facade::application_program::*;
+use worth_query_decl::facade::{application_program::*, application_schema::ApplicationSchema};
 use worth_query_host::facade::{
     application_installation::{
         ApplicationBuildIdentity, WorthQueryApplicationLimits, WorthQueryApplicationProgramRoster,

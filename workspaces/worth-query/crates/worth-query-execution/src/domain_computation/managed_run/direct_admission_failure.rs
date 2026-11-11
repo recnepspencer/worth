@@ -73,3 +73,6 @@ impl std::fmt::Debug for WorthQueryManagedDirectRunAdmissionFailure {
             .finish()
     }
 }
+#[cfg(test)]
+#[path = "direct_admission_failure_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;

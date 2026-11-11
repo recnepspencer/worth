@@ -7,9 +7,7 @@ use crate::indexes::data::{
 };
 use crate::runtime::RelationalPinnedRead;
 
-use super::super::projected_field_values::{
-    build_related_entity_ordering_index, compare_related_entries, RelatedEntityOrderingProjection,
-};
+use super::super::projected_field_values::compare_related_entries;
 
 impl RelationalPinnedRead {
     /// Traverse the ordered generation selected when this capability was pinned.
@@ -91,7 +89,7 @@ impl PreparedRelatedLookup<'_> {
 /// The lookup shape this request is bound to, holding its definition by shared
 /// ownership so the ordering fields outlive the subsystem read that found them.
 pub(super) struct RelatedLookupContract<'request> {
-    definition: std::sync::Arc<crate::indexes::data::DerivedIndexDefinition>,
+    definition: crate::indexes::RetainedDerivedIndexDefinition,
     relation_kind: crate::identity::data::KindId,
     parent_endpoint: RelatedEntityEndpoint,
     child_kind: crate::identity::data::KindId,
@@ -330,15 +328,14 @@ fn certify_storage_parity(
     contract: &RelatedLookupContract<'_>,
     indexed: &BoundedRelatedEntityOrderedLookupOutcome,
 ) -> Result<(), BoundedRelatedEntityOrderedLookupDenial> {
-    let storage = build_related_entity_ordering_index(
+    let storage = super::super::projected_field_values::ordered_children_for_parent(
         execution,
         projection,
-        &RelatedEntityOrderingProjection::new(
-            contract.relation_kind,
-            contract.parent_endpoint,
-            contract.child_kind,
-            contract.ordering(),
-        ),
+        contract.relation_kind,
+        contract.parent_endpoint,
+        contract.child_kind,
+        contract.ordering(),
+        contract.parent,
     )
     .map_err(|cause| {
         denial(
@@ -346,15 +343,7 @@ fn certify_storage_parity(
             contract.request,
         )
     })?;
-    let expected = select_page(
-        &storage
-            .get(&contract.parent)
-            .cloned()
-            .unwrap_or_default()
-            .into(),
-        contract.ordering(),
-        contract.request,
-    )?;
+    let expected = select_page(&storage.into(), contract.ordering(), contract.request)?;
     let expected = outcome_from_page(indexed.generation_id(), expected, indexed.parity_mode());
     if expected.child_entity_ids() == indexed.child_entity_ids()
         && expected.next_boundary() == indexed.next_boundary()

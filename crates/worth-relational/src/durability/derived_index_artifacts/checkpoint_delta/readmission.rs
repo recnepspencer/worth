@@ -3,8 +3,11 @@ use super::super::decode_budget::IndexDecodeBudget;
 use super::*;
 use crate::durability::data::RelationalRecoveryStop as Stop;
 impl DerivedIndexCheckpointArtifacts {
-    pub(crate) fn readmit(&self) -> Result<Vec<DerivedIndexGeneration>, DurabilityError> {
-        match self.readmit_controlled(&mut IndexDecodeBudget::default()) {
+    pub(crate) fn readmit(
+        &self,
+        lane: &crate::storage::substrate::maintenance::ReconstructionLane<'_>,
+    ) -> Result<Vec<DerivedIndexGeneration>, DurabilityError> {
+        match self.readmit_controlled(lane, &mut IndexDecodeBudget::default()) {
             Ok(generations) => Ok(generations),
             Err(Stop::Durability(cause)) => Err(cause),
             Err(Stop::Content(_))
@@ -17,6 +20,7 @@ impl DerivedIndexCheckpointArtifacts {
     }
     pub(in super::super) fn readmit_controlled(
         &self,
+        _lane: &crate::storage::substrate::maintenance::ReconstructionLane<'_>,
         budget: &mut IndexDecodeBudget<'_, '_>,
     ) -> Result<Vec<DerivedIndexGeneration>, Stop> {
         if self.format_version != Self::FORMAT_VERSION {

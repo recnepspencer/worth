@@ -106,7 +106,7 @@ fn edit<'a>(
 #[test]
 fn checkout_with_required_outputs_preserves_both_futures_and_the_document_mode() {
     let program = ApplicationProgramAuthoring::<ConsumerSchema, HistoryProgram>::begin()
-        .with_schema(&ConsumerSchema::declaration().unwrap())
+        .with_schema(&<ConsumerSchema as worth_query_decl::facade::application_schema::ApplicationSchema>::declaration().unwrap())
         .validated_program()
         .unwrap();
     // Root, two attached documents, three authored steps, the new future and

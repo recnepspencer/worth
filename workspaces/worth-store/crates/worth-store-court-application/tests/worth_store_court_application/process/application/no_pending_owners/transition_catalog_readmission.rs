@@ -6,7 +6,6 @@ use std::sync::{
 };
 use worth_foundational::facade::{
     HomeProgramTransitionPlanDigest, HomeProgramTransitionStepAssociation,
-    HomeProgramTransitionTargetMeaning,
 };
 use worth_relational::facade::{
     durability::RelationalHomeProgramCatalogReadmissionDenial as Denial,
@@ -122,7 +121,7 @@ fn a_completed_transition_occurrence_restores_target_contracts_and_continues_onl
                 &source,
                 HomeProgramTransitionPlanDigest::from_recorded([7; 32]),
                 2,
-                HomeProgramTransitionTargetMeaning::from_recorded(0, contracts.catalog_digest()),
+                contracts.target_meaning(&execution, 0).unwrap(),
                 &crate::batches::transition_body_roster(&execution, 2),
                 &execution,
             )
@@ -166,6 +165,11 @@ fn a_completed_transition_occurrence_restores_target_contracts_and_continues_onl
                 assigned.original(),
                 &association,
                 assigned.admission(),
+                worth_relational::facade::indexes::DerivedIndexMaintenanceBudget {
+                    maximum_work_units: None,
+                    maximum_cold_record_slots: None,
+                    maximum_derived_rows: None,
+                },
             )
             .unwrap();
         transaction

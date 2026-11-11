@@ -1,7 +1,9 @@
 //! The real output producer application used by the shared-request witnesses.
 use super::*;
 
-pub(super) fn application() -> installation::Application<false, PRODUCER_WORK, RUNS> {
+pub(super) fn application<const PRODUCER_WORK: usize>(
+    entry_work: usize,
+) -> installation::Application<false, PRODUCER_WORK, RUNS> {
     installation::install_configured::<false, PRODUCER_WORK, RUNS>(
         None,
         Default::default(),
@@ -15,7 +17,7 @@ pub(super) fn application() -> installation::Application<false, PRODUCER_WORK, R
                     id: 0,
                     region: 0,
                     value: 1.0,
-                    work: ENTRY_WORK,
+                    work: entry_work,
                     fault: None,
                 },
             );

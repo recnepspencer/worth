@@ -36,9 +36,10 @@ impl ApplicationCapabilityRequest<BankSchema, ViewEstateEmergencyProtectionCapab
         };
         Ok(ApplicationCapabilityRequestProjection::new(
             ApplicationCapabilityEntitySelector::new(
-                EstateCaseIdentityField::reference(),
+                EstateCaseIdentityField::at("EstateCaseIdentityField"),
                 crate::schema::encoded_bank_value::<crate::schema::EstateCaseIdBinding>(estate),
-            ),
+            )
+            .unwrap(),
             crate::schema::encoded_bank_value::<crate::schema::EstateCapabilityOperationBinding>(
                 self.operation(),
             ),
@@ -47,10 +48,15 @@ impl ApplicationCapabilityRequest<BankSchema, ViewEstateEmergencyProtectionCapab
             ),
             ApplicationCapabilityRequestContext::new(EstateActionContext::reference()),
         )
-        .elevation(ApplicationCapabilityEntitySelector::new(
-            EmergencyAccessIdentityField::reference(),
-            crate::schema::encoded_bank_value::<crate::schema::EmergencyAccessIdBinding>(access),
-        ))
+        .elevation(
+            ApplicationCapabilityEntitySelector::new(
+                EmergencyAccessIdentityField::at("EmergencyAccessIdentityField"),
+                crate::schema::encoded_bank_value::<crate::schema::EmergencyAccessIdBinding>(
+                    access,
+                ),
+            )
+            .unwrap(),
+        )
         .field(crate::schema::encoded_bank_value::<
             crate::schema::RestrictedBankFieldBinding,
         >(field)))

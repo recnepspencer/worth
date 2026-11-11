@@ -100,15 +100,15 @@ pub(super) fn write_fields(
     vertex: &PlanarVertex,
 ) {
     reconstruction
-        .field(entity, BodyKey::reference(), vertex.body_key.clone())
+        .field(entity, BodyKey::at("BodyKey"), vertex.body_key.clone())
         .expect("the typed body key encodes through Query");
     reconstruction
-        .field(entity, PositionX::reference(), vertex.x)
+        .field(entity, PositionX::at("PositionX"), vertex.x)
         .expect("the typed x coordinate encodes through Query");
     reconstruction
-        .field(entity, PositionY::reference(), vertex.y)
+        .field(entity, PositionY::at("PositionY"), vertex.y)
         .expect("the typed y coordinate encodes through Query");
     reconstruction
-        .field(entity, Length::reference(), length(4))
+        .field(entity, Length::at("Length"), length(4))
         .expect("the typed length encodes through Query");
 }

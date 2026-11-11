@@ -8,6 +8,19 @@ impl super::ProjectionRecordSource for VisibilityProjectionView {
     ) -> Result<(), crate::execution::RelationalExecutionDenialCause> {
         self.demand_all_full(execution)
     }
+    fn demand_regions_head(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        partitions: impl IntoIterator<Item = crate::identity::data::PartitionId>,
+    ) -> Result<(), crate::execution::RelationalExecutionDenialCause> {
+        self.demand_regions_head(execution, partitions)
+    }
+    fn admitted_head_region(
+        &self,
+        id: crate::identity::data::PartitionId,
+    ) -> Option<crate::storage::residency::RelationalRegionHeadView<'_>> {
+        self.admitted_head_region(id)
+    }
     fn demand_regions_full(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
@@ -18,6 +31,14 @@ impl super::ProjectionRecordSource for VisibilityProjectionView {
 
     fn selected_root(&self) -> Option<&std::sync::Arc<crate::branch::RelationalBranchRoot>> {
         self.selected_root()
+    }
+    fn selected_storage(&self) -> Option<&dyn crate::storage::overlay::PartitionAccess> {
+        if let Some(resident) = &self.resident {
+            Some(resident)
+        } else {
+            self.selected_root()
+                .map(|root| root.as_ref() as &dyn crate::storage::overlay::PartitionAccess)
+        }
     }
     fn is_exact_basis(&self) -> bool {
         self.is_exact_basis()

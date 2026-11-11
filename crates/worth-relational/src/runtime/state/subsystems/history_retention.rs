@@ -6,6 +6,7 @@ use crate::history::retention::{
     RelationalBranchRetentionBinding, RelationalRetentionAcquisitionDenial,
     RelationalRetentionCostCounters,
 };
+use crate::identity::data::VersionId;
 
 use super::HistorySubsystem;
 
@@ -68,24 +69,33 @@ impl HistorySubsystem {
         branch_scoped: bool,
     ) -> bool {
         let basis = &generation.applicability;
-        let head_is_live = if branch_scoped {
-            self.branch_cell(&basis.branch_id)
+        self.index_basis_is_held(
+            basis.version_id,
+            basis.schema_version,
+            branch_scoped.then_some(&basis.branch_id),
+        )
+    }
+
+    pub(crate) fn index_basis_is_held(
+        &self,
+        version: VersionId,
+        schema: crate::schema::data::SchemaVersionId,
+        branch: Option<&BranchId>,
+    ) -> bool {
+        let head_is_live = if let Some(branch) = branch {
+            self.branch_cell(branch)
                 .and_then(|cell| cell.root())
                 .is_some_and(|root| {
-                    root.commit_receipt().map(|receipt| receipt.version_id)
-                        == Some(basis.version_id)
-                        && root.schema_authority().schema_version() == basis.schema_version
+                    root.commit_receipt().map(|receipt| receipt.version_id) == Some(version)
+                        && root.schema_authority().schema_version() == schema
                 })
         } else {
-            self.branch_head_versions
-                .contains(basis.version_id, basis.schema_version)
+            self.branch_head_versions.contains(version, schema)
         };
         head_is_live
-            || self.retention_owner.index_basis_is_held(
-                basis.version_id,
-                basis.schema_version,
-                branch_scoped.then_some(&basis.branch_id),
-            )
+            || self
+                .retention_owner
+                .index_basis_is_held(version, schema, branch)
     }
 
     pub(crate) fn has_detached_retention_obligations(&self) -> bool {

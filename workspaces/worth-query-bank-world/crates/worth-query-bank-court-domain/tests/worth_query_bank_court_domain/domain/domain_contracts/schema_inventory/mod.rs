@@ -4,7 +4,8 @@ pub(crate) mod source_contract;
 
 #[test]
 fn bank_manifest_matches_the_frozen_schema_world() {
-    let declaration = BankSchema::declaration().unwrap();
+    let declaration =
+        worth_query_decl::facade::application_schema::fragment::declare(BankSchema).unwrap();
     let members = declaration.erased().members();
     assert_entity_and_relation_inventory(members);
     assert_operation_inventory(members);
@@ -25,13 +26,17 @@ fn bank_manifest_matches_the_frozen_schema_world() {
     assert_eq!(binding.status_field(), "ExternalMappingStatus");
     assert_eq!(binding.target_relation(), "ExternalPrincipal");
     assert_eq!(binding.principal_entity(), "Principal");
-    assert_eq!(binding.principal_identity_aspect(), "PrincipalIdentity");
+    assert_eq!(
+        binding.principal_identity_aspect(),
+        bank_domain::schema::PrincipalIdentity::reference().name()
+    );
     assert_eq!(binding.principal_identity_field(), "PrincipalIdentityField");
 }
 
 #[test]
 fn send_projection_capability_does_not_widen_mandatory_commit_dependencies() {
-    let declaration = BankSchema::declaration().unwrap();
+    let declaration =
+        worth_query_decl::facade::application_schema::fragment::declare(BankSchema).unwrap();
     let members = declaration.erased().members();
     assert_decision_reads(
         members,
@@ -48,7 +53,8 @@ fn send_projection_capability_does_not_widen_mandatory_commit_dependencies() {
 
 #[test]
 fn revoke_projection_capability_does_not_widen_mandatory_commit_dependencies() {
-    let declaration = BankSchema::declaration().unwrap();
+    let declaration =
+        worth_query_decl::facade::application_schema::fragment::declare(BankSchema).unwrap();
     let members = declaration.erased().members();
     assert_decision_reads(
         members,

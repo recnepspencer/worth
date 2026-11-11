@@ -117,17 +117,41 @@ impl OriginalSettledProducerObservation {
                 let restored = settled.restored_source.as_ref().ok_or_else(|| {
                     foreign("restored provenance has no retained checkpoint owner")
                 })?;
+                let super::super::super::RestoredOutputOrigin::Checkpoint(actual) =
+                    &restored.origin
+                else {
+                    return Err(foreign("checkpoint provenance has a historical owner"));
+                };
                 pay_checkpoint(context, checkpoint)?;
-                pay_checkpoint(context, &restored.checkpoint)?;
+                pay_checkpoint(context, actual)?;
                 if settled.publication_view().is_some() || settled.stable.is_some() {
                     return Err(foreign(
                         "restored provenance has a foreign settlement posture",
                     ));
                 }
-                if checkpoint != &restored.checkpoint {
+                if checkpoint != actual {
                     return Err(refused(
                         Reason::RestoredCheckpointMismatch,
                         "original restored checkpoint differs from its retained owner",
+                    ));
+                }
+            }
+            OriginalSettledProducerSource::HistoricalSelection { origin } => {
+                let restored = settled.restored_source.as_ref().ok_or_else(|| {
+                    foreign("historical provenance has no retained selection owner")
+                })?;
+                let super::super::super::RestoredOutputOrigin::HistoricalSelection(actual) =
+                    &restored.origin
+                else {
+                    return Err(foreign("historical provenance has a checkpoint owner"));
+                };
+                pay(context, 1)?;
+                if settled.publication_view().is_some()
+                    || settled.stable.is_some()
+                    || !origin.same_owner(actual)
+                {
+                    return Err(foreign(
+                        "historical selection differs from its retained settlement owner",
                     ));
                 }
             }

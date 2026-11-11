@@ -1,5 +1,6 @@
 //! Exact reusable commit evidence and demanded-work breadth proofs.
 
+use worth_query_execution::facade::primary_graph::WorthQueryApplicationIdempotencyBinding;
 use worth_query_declaration::facade::application_operation::ApplicationMutationOutputContract;
 use worth_query_declaration::facade::application_operation::ApplicationMutationOutputRoleDescriptor;
 use worth_query_declaration::facade::application_operation::WorthQueryApplicationDeclaredOutputRole;
@@ -115,7 +116,7 @@ pub fn assert_retained_status(
     );
     assert_eq!(
         retained
-            .field_for(AccountStatus::reference())
+            .field_for(AccountStatus::at("AccountStatus"))
             .unwrap()
             .value(),
         &worth_foundational::facade::AspectValue::String(
@@ -142,6 +143,73 @@ pub fn retained_status_program(
     ExactStatusRetentionInput,
     Account,
 > {
+    build_retained_status_program(
+        phase_custody,
+        world,
+        principal,
+        account,
+        request,
+        replacement,
+        StatusProgramRetention {
+            breadth,
+            binding: None,
+        },
+    )
+}
+
+/// Capture retry meaning from the exact original admission, before publication.
+pub fn retained_narrow_status_program_with_binding(
+    phase_custody: &worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::advancement::test_host_policy::TestHostRequest<'_>,
+    world: &AuthorizationWorld,
+    principal: &WorthQueryAuthenticatedPrincipal<IdentityExecutionSchema, Principal, u64>,
+    account: &WorthQueryApplicationEntityIdentity<IdentityExecutionSchema, Account>,
+    request: &worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope,
+    replacement: &str,
+    mut binding: WorthQueryApplicationIdempotencyBinding,
+) -> (
+    WorthQueryApplicationEffectProgram<
+        IdentityExecutionSchema,
+        ExactStatusRetentionOperation,
+        ExactStatusRetentionInput,
+        Account,
+    >,
+    WorthQueryApplicationIdempotencyBinding,
+) {
+    let program = build_retained_status_program(
+        phase_custody,
+        world,
+        principal,
+        account,
+        request,
+        replacement,
+        StatusProgramRetention {
+            breadth: RetentionMutationBreadth::Narrow,
+            binding: Some(&mut binding),
+        },
+    );
+    (program, binding)
+}
+
+struct StatusProgramRetention<'a> {
+    breadth: RetentionMutationBreadth,
+    binding: Option<&'a mut WorthQueryApplicationIdempotencyBinding>,
+}
+
+fn build_retained_status_program(
+    phase_custody: &worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::advancement::test_host_policy::TestHostRequest<'_>,
+    world: &AuthorizationWorld,
+    principal: &WorthQueryAuthenticatedPrincipal<IdentityExecutionSchema, Principal, u64>,
+    account: &WorthQueryApplicationEntityIdentity<IdentityExecutionSchema, Account>,
+    request: &worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope,
+    replacement: &str,
+    retention: StatusProgramRetention<'_>,
+) -> WorthQueryApplicationEffectProgram<
+    IdentityExecutionSchema,
+    ExactStatusRetentionOperation,
+    ExactStatusRetentionInput,
+    Account,
+> {
+    let StatusProgramRetention { breadth, binding } = retention;
     let operation = world
         .application
         .installed_schema()
@@ -158,6 +226,9 @@ pub fn retained_status_program(
             request,
         )
         .unwrap();
+    if let Some(binding) = binding {
+        *binding = (*binding).bind_admission_for_test(&admission);
+    }
     let other = matches!(breadth, RetentionMutationBreadth::CrossRecordLabel).then(|| {
         resolved_account(
             &(phase_custody).test_host_request_for_test(),
@@ -173,16 +244,19 @@ pub fn retained_status_program(
             &admission,
             |reader, projected| {
                 reader
-                    .require_decision_field(projected, AccountStatus::reference())
+                    .require_decision_field(projected, AccountStatus::at("AccountStatus"))
                     .unwrap();
                 match breadth {
                     RetentionMutationBreadth::Narrow => {}
                     RetentionMutationBreadth::CrossRecordLabel => {
                         let other = reader
-                            .resolve_entity(AccountStatus::reference(), "unrelated".to_owned())
+                            .resolve_entity(
+                                AccountStatus::at("AccountStatus"),
+                                "unrelated".to_owned(),
+                            )
                             .unwrap();
                         reader
-                            .require_decision_field(&other, AccountLabel::reference())
+                            .require_decision_field(&other, AccountLabel::at("AccountLabel"))
                             .unwrap();
                     }
                 }
@@ -214,14 +288,18 @@ pub fn retained_status_program(
         .bind_output_for_test(OutputRoleUse::fixed_for_test::<RetainedAccount>(), &account)
         .expect("retained account output belongs to this effect program");
     effects
-        .write_field(&account, AccountStatus::reference(), replacement.to_owned())
+        .write_field(
+            &account,
+            AccountStatus::at("AccountStatus"),
+            replacement.to_owned(),
+        )
         .unwrap();
     if let Some(other) = other {
         let other = effects.existing_entity(&other).unwrap();
         effects
             .write_field(
                 &other,
-                AccountLabel::reference(),
+                AccountLabel::at("AccountLabel"),
                 "retention-breadth".to_owned(),
             )
             .unwrap();

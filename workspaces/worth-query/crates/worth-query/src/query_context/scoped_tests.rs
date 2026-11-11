@@ -5,6 +5,7 @@ use super::{
     ScopedQueryBasisContext, ScopedQueryContextAdmissionError,
 };
 use crate::basis_lifecycle::{basis_lifecycle, BasisFamily};
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::facade::foundation::{
     admit_historical_evaluation_path, materialization_metadata_from_resolved,
     resolve_historical_materialization_path, HistoricalCapabilityDescriptor,
@@ -49,7 +50,8 @@ fn scoped_query_context_current_head_uses_observation_basis() {
 }
 
 #[test]
-fn scoped_query_context_historical_snapshot_uses_materialization_basis() {
+fn scoped_query_context_historical_snapshot_uses_materialization_basis(
+) -> Result<(), IdentityDerivationDenial> {
     let query_preflight = execution_preflights::direct_runtime_preflight();
     let snapshot_basis = "history:scoped-snapshot";
     let request = HistoricalEvaluationRequest::retained_snapshot_for_test(
@@ -57,16 +59,16 @@ fn scoped_query_context_historical_snapshot_uses_materialization_basis() {
         1,
         1,
         HistoricalPathReuseDescriptor::retained_reuse(),
-    );
+    )?;
     let capability = HistoricalCapabilityDescriptor::retained_snapshot_for_test(
         snapshot_basis,
         HistoricalPathReuseDescriptor::retained_reuse(),
-    );
+    )?;
     let admission = admit_historical_evaluation_path(request, capability)
         .expect("retained history should admit");
     let resolved = resolve_historical_materialization_path(
         admission.clone(),
-        HistoricalMaterializationDescriptor::retained_snapshot_for_test(snapshot_basis),
+        HistoricalMaterializationDescriptor::retained_snapshot_for_test(snapshot_basis)?,
     )
     .expect("retained history should resolve");
     let metadata = materialization_metadata_from_resolved(resolved);
@@ -96,6 +98,8 @@ fn scoped_query_context_historical_snapshot_uses_materialization_basis() {
         execution.family(),
         &QueryContextExecutionFamily::HistoricalMaterialized
     );
+
+    Ok(())
 }
 
 #[test]

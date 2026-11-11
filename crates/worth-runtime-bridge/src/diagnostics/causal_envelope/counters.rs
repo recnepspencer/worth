@@ -37,8 +37,9 @@ impl BridgeCausalEnvelopeCounters {
         }
     }
 
-    pub(crate) fn empty() -> Self {
-        Self::new(0, 0, 0, 0, 0, 0, 0)
+    pub(crate) fn empty(
+    ) -> Result<Self, crate::diagnostics::causal_envelope::BridgeCausalDigestRefusal> {
+        Ok(Self::new(0, 0, 0, 0, 0, 0, 0)?)
     }
 
     pub(crate) fn new(
@@ -49,7 +50,7 @@ impl BridgeCausalEnvelopeCounters {
         external_authority_reference_count: usize,
         materialized_detail_count: usize,
         missing_bridge_record_count: usize,
-    ) -> Self {
+    ) -> Result<Self, crate::diagnostics::causal_envelope::BridgeCausalDigestRefusal> {
         let evidence_reference_count_text = evidence_reference_count.to_string();
         let lower_runtime_family_count_text = lower_runtime_family_count.to_string();
         let bridge_retained_lookup_count_text = bridge_retained_lookup_count.to_string();
@@ -70,8 +71,8 @@ impl BridgeCausalEnvelopeCounters {
                 value_part(missing_bridge_record_count_text.as_str()),
                 value_part("0"),
             ],
-        );
-        Self {
+        )?;
+        Ok(Self {
             evidence_reference_count,
             lower_runtime_family_count,
             bridge_retained_lookup_count,
@@ -82,23 +83,26 @@ impl BridgeCausalEnvelopeCounters {
             bridge_record_unindexed_scan_count: 0,
             retained_native_observation_binding_count: 0,
             counter_identity,
-        }
+        })
     }
 
     pub fn evidence_reference_count(&self) -> usize {
         self.evidence_reference_count
     }
 
-    pub(super) fn with_native_bindings(mut self, count: usize) -> Self {
+    pub(super) fn with_native_bindings(
+        mut self,
+        count: usize,
+    ) -> Result<Self, crate::diagnostics::causal_envelope::BridgeCausalDigestRefusal> {
         self.counter_identity = compose_bridge_causal_envelope_evidence_identity(
             BridgeCausalEnvelopeDigestArtifact::NativeCounters,
             &[
                 super::evidence_part(&self.counter_identity),
                 value_part(&count.to_string()),
             ],
-        );
+        )?;
         self.retained_native_observation_binding_count = count;
-        self
+        Ok(self)
     }
 
     pub fn retained_native_observation_binding_count(&self) -> usize {

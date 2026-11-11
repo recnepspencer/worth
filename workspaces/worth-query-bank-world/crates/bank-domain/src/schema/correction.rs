@@ -21,13 +21,13 @@ pub struct ReverseSentMoney;
 
 fn journal_field() -> ApplicationCorrectionOutputField<BankSchema> {
     ApplicationCorrectionOutput::<SendMoneyMutationBinding, SendMoneyJournal>::field(
-        JournalIdentityField::reference(),
+        JournalIdentityField::at("JournalIdentityField"),
     )
 }
 
 fn institution_field() -> ApplicationCorrectionOutputField<BankSchema> {
     ApplicationCorrectionOutput::<SendMoneyMutationBinding, SendMoneyJournal>::field(
-        JournalInstitutionContext::reference(),
+        JournalInstitutionContext::at("JournalInstitutionContext"),
     )
 }
 
@@ -36,6 +36,37 @@ impl ApplicationCorrectionBinding<BankSchema> for ReverseSentMoney {
     type Source = SendMoneyMutationBinding;
     type InverseIntent = ReverseJournal;
     type Disclosure = AccountSummaryQueryBinding;
+
+    fn recover_source_input(
+        bytes: &[u8],
+        expected: worth_query_decl::facade::application_schema::CanonicalDigestId,
+        bounds: worth_query_decl::facade::application_schema::ValueDecodeBounds,
+    ) -> Result<
+        worth_query_decl::facade::application_operation::ApplicationEncodedInput<
+            <Self::Source as worth_query_decl::facade::application_operation::ApplicationMutationBinding<BankSchema>>::InputBinding,
+        >,
+        worth_query_decl::facade::application_operation::ApplicationRetainedInputDenial,
+    >{
+        crate::schema::correction_input::sent(bytes, expected, bounds)
+    }
+
+    fn recover_inverse_input(
+        bytes: &[u8],
+        expected: worth_query_decl::facade::application_schema::CanonicalDigestId,
+        bounds: worth_query_decl::facade::application_schema::ValueDecodeBounds,
+    ) -> Result<
+        worth_query_decl::facade::application_operation::ApplicationEncodedInput<
+            <worth_query_decl::facade::application_aftermath::ApplicationInverseBinding<
+                BankSchema,
+                Self,
+            > as worth_query_decl::facade::application_operation::ApplicationMutationBinding<
+                BankSchema,
+            >>::InputBinding,
+        >,
+        worth_query_decl::facade::application_operation::ApplicationRetainedInputDenial,
+    > {
+        crate::schema::correction_input::journal(bytes, expected, bounds)
+    }
 
     fn source_definition(
     ) -> ApplicationOperationDefinitionBuilder<BankSchema, SendMoneyOperation, SendMoney, true, false>
@@ -60,7 +91,6 @@ impl ApplicationCorrectionBinding<BankSchema> for ReverseSentMoney {
                 identity: "bank.original-journal-balanced-reversal.v1".to_owned(),
             },
         )
-        .expect("Bank compensation declares a named business postcondition")
     }
 
     fn source_output_fields() -> Vec<ApplicationCorrectionOutputField<BankSchema>> {

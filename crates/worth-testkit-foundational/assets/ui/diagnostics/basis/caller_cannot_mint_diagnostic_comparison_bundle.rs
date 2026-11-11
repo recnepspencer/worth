@@ -20,7 +20,7 @@ fn main() {
     };
 }
 
-fn impossible_outcome() -> ! {
+fn impossible_outcome<T>() -> T {
     loop {
         std::hint::spin_loop();
     }

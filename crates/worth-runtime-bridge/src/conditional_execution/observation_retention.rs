@@ -21,4 +21,7 @@ pub(super) fn retention_denial(
 }
 
 #[cfg(test)]
+#[path = "observation_retention_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;
+#[cfg(test)]
 mod tests;

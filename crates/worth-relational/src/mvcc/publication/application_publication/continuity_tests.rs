@@ -41,13 +41,7 @@ fn preserve(
             previous.authority(),
         )
         .unwrap();
-    let meaning = previous
-        .envelope
-        .required_output_origin
-        .as_ref()
-        .unwrap()
-        .meaning
-        .clone();
+    let meaning = previous.origin.as_ref().meaning.clone();
     RequiredOutputPublication::Preserve {
         admission,
         predecessor: previous,
@@ -187,7 +181,7 @@ fn complete_partial_and_executed_no_data_publications_keep_unpatched_members_and
         )
         .unwrap();
     assert_eq!(
-        cold.envelope.commit.commit_id, no_data_id,
+        cold.origin.commit.commit_id, no_data_id,
         "membership wins over two different latest member writes"
     );
     for (build, edition) in [([0x33; 16], [0x22; 32]), ([0x11; 16], [0x44; 32])] {

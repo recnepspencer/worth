@@ -23,7 +23,7 @@ an invariant callback or construct an admitted plan.
 
 ## Stable Entry Points
 
-- `worth_query_application_schema!`
+- `application_schema::fragment::{Fragment, Entity, Aspect, Record, Scalar}`
 - `worth_query_application_query!`
 - `ApplicationQueryDefinitionBuilder`
 - `ApplicationQueryResultShapeBuilder`
@@ -153,8 +153,7 @@ let definition = ApplicationQueryDefinitionBuilder::declare(AccountActivity::ref
 .public()
 .parameter(account_parameter)
 .where_equal(AccountId::reference(), account_parameter)
-.order_by(activity_sequence, ApplicationQueryOrderingDirection::Descending)
-.build()?;
+.order_by(activity_sequence, ApplicationQueryOrderingDirection::Descending);
 ```
 
 Filter a relation at the result-shape boundary when the application needs one

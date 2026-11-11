@@ -183,3 +183,6 @@ fn receipt_backing_bytes(receipt: &RelationalCommitReceipt) -> Option<u64> {
 }
 
 mod court_doors_for_test;
+#[cfg(test)]
+#[path = "causal_fact_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;

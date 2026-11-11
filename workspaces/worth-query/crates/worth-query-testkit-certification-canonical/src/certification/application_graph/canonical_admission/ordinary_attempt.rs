@@ -8,7 +8,6 @@ pub use worth_query_host::facade::{
 };
 
 worth_query_operation!(pub ObserveCanonical for AdmissionSchema, input InputBinding);
-worth_query_operation_reads!(ObserveCanonical => [DocumentValueField]);
 
 pub struct Observed {
     pub second_refused: bool,
@@ -45,7 +44,7 @@ pub fn observe_twice(host: &host::Host) -> Observed {
         let root = selected
             .resolve_entity(
                 &phase,
-                DocumentIdentityField::reference(),
+                DocumentIdentityField::at("DocumentIdentityField"),
                 "root".to_owned(),
                 &request,
                 WorthQueryPrincipalResolutionMode::Ordinary,
@@ -70,21 +69,28 @@ pub fn observe_twice(host: &host::Host) -> Observed {
             .begin_application_read_attempt(&execution, admission)
             .unwrap();
         let first = attempt
-            .observe_field(&execution, &root, DocumentValueField::reference())
+            .observe_field(
+                &execution,
+                &root,
+                DocumentValueField::at("DocumentValueField"),
+            )
             .unwrap();
         assert_eq!(
             first.0,
             super::value(),
             "ordinary observations decode the supported nondefault source"
         );
-        let second_refused =
-            match attempt.observe_field(&execution, &root, DocumentValueField::reference()) {
-                Ok(value) => {
-                    assert_eq!(value.0, super::value());
-                    false
-                }
-                Err(_) => true, // Deliberately ignore the read error and try to complete facts.
-            };
+        let second_refused = match attempt.observe_field(
+            &execution,
+            &root,
+            DocumentValueField::at("DocumentValueField"),
+        ) {
+            Ok(value) => {
+                assert_eq!(value.0, super::value());
+                false
+            }
+            Err(_) => true, // Deliberately ignore the read error and try to complete facts.
+        };
         let completed = attempt
             .complete(
                 worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,

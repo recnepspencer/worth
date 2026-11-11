@@ -49,17 +49,8 @@ impl ApplicationMutationBinding<BankSchema> for RestoreFrozenEstateAccountBindin
     fn workflow_execution_requirements() -> ApplicationWorkflowExecutionRequirements {
         ApplicationWorkflowExecutionRequirements::not_applicable()
     }
-    fn scope_field() -> ApplicationFieldRef<
-        BankSchema,
-        EstateCase,
-        EstateCaseRecord,
-        EstateCaseIdentityField,
-        EstateCaseId,
-        ReadOnly,
-        EqualityPredicate,
-        NoApplicationUnit,
-    > {
-        EstateCaseIdentityField::reference()
+    fn scope_field() -> EstateCaseIdentityField {
+        EstateCaseIdentityField::at("EstateCaseIdentityField")
     }
     fn principal_binding() -> ApplicationPrincipalBindingRef<
         BankSchema,
@@ -86,6 +77,9 @@ impl ApplicationMutationIntent<BankSchema> for RestoreFrozenEstateAccount {
     fn scope_binding(
         &self,
     ) -> <Self::Binding as ApplicationMutationBinding<BankSchema>>::ScopeBinding {
-        ApplicationMutationFieldScope::new(EstateCaseIdentityField::reference(), self.estate)
+        ApplicationMutationFieldScope::new(
+            EstateCaseIdentityField::at("EstateCaseIdentityField"),
+            self.estate,
+        )
     }
 }

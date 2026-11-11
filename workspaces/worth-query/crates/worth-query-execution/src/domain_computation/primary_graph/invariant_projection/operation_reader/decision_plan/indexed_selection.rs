@@ -5,12 +5,10 @@ use std::sync::Arc;
 use worth_relational::facade::transactions::RelationalExecutionDenialCause as NativeReadStop;
 
 use worth_query_installation::facade::{
-    ApplicationFieldRef, ApplicationFieldUnit, ApplicationOperationDecisionReadTarget,
-    ApplicationScalarValueBinding, ApplicationSchema, DeclaredApplicationFieldValue,
-    EqualityPredicate, OperationReads, WritePosture,
+    ApplicationOperationDecisionReadTarget, ApplicationScalarValueBinding, ApplicationSchema,
 };
 use worth_relational::facade::indexes::{
-    BoundedEntityFieldLookupDenialKind, BoundedEntityFieldLookupRequest, BoundedIndexParityMode,
+    BoundedEntityFieldLookupDenialKind, BoundedEntityFieldLookupRequest,
 };
 
 use super::WorthQueryApplicationOperationInvariantProjectionReader;
@@ -25,26 +23,19 @@ impl<Schema: ApplicationSchema, Operation>
 {
     /// Select the complete equality result, retaining presence and absence for
     /// commit comparison. Overflow denies rather than returning a truncated set.
-    pub fn decision_select_entities<Entity, Aspect, Field, Value, Write, Unit>(
+    pub fn decision_select_entities<Entity, Aspect, Field, Value>(
         &mut self,
 
-        field: ApplicationFieldRef<
-            Schema,
-            Entity,
-            Aspect,
-            Field,
-            Value,
-            Write,
-            EqualityPredicate,
-            Unit,
-        >,
+        field: Field,
         value: Value,
         candidate_limit: usize,
     ) -> Result<Vec<WorthQueryInvariantEntityIdentity<Schema, Entity>>, HandlerExecutionDenial>
     where
-        Field: OperationReads<Operation> + DeclaredApplicationFieldValue<Value = Value>,
-        Write: WritePosture,
-        Unit: ApplicationFieldUnit,
+        Field: worth_query_declaration::facade::application_schema::fragment::RecordSelection<
+            Entity = Entity,
+            Aspect = Aspect,
+            Value = Value,
+        >,
     {
         self.decision_select_with_value(
             SelectionField {
@@ -138,13 +129,8 @@ impl<Schema: ApplicationSchema, Operation>
         })?;
         let outcome = self
             .reader
-            .runtime
-            .index_access()
-            .execute_bounded_entity_field_lookup(
-                request,
-                BoundedIndexParityMode::Production,
-                execution,
-            )
+            .native
+            .select_entities(request, execution)
             .map_err(|denial| {
                 let examined = denial.examined_entry_count();
                 let admitted = self.reader.work_budget.consume(1 + examined);
@@ -219,45 +205,14 @@ impl<Schema: ApplicationSchema, Operation>
         )
     }
 
-    pub(super) fn retain_entity_selection<Entity, Aspect, Field, Value, Write, Unit>(
-        &mut self,
-        field: ApplicationFieldRef<
-            Schema,
-            Entity,
-            Aspect,
-            Field,
-            Value,
-            Write,
-            EqualityPredicate,
-            Unit,
-        >,
-        kind: worth_relational::facade::identity::KindId,
-        locator: worth_foundational::facade::AspectFieldLocator,
-        value: worth_foundational::facade::AspectValue,
-        candidate_limit: usize,
-        outcome: worth_relational::facade::indexes::BoundedEntityFieldLookupOutcome,
-    ) -> Result<Vec<WorthQueryInvariantEntityIdentity<Schema, Entity>>, HandlerExecutionDenial>
-    where
-        Unit: ApplicationFieldUnit,
-    {
-        self.retain_named_entity_selection(
-            field.entity(),
-            kind,
-            locator,
-            value,
-            candidate_limit,
-            outcome,
-        )
-    }
-
-    fn retain_named_entity_selection<Entity>(
+    pub(super) fn retain_named_entity_selection<Entity>(
         &mut self,
         entity: &str,
         kind: worth_relational::facade::identity::KindId,
         locator: worth_foundational::facade::AspectFieldLocator,
         value: worth_foundational::facade::AspectValue,
         candidate_limit: usize,
-        outcome: worth_relational::facade::indexes::BoundedEntityFieldLookupOutcome,
+        outcome: super::super::super::read_basis::ProjectionEntitySelection,
     ) -> Result<Vec<WorthQueryInvariantEntityIdentity<Schema, Entity>>, HandlerExecutionDenial>
     {
         let index_id = outcome.retain_definition().index_id;
@@ -269,6 +224,11 @@ impl<Schema: ApplicationSchema, Operation>
                 kind,
                 entity: Arc::from(entity),
                 authority_identity: self.reader.authority_identity,
+                phase: self
+                    .reader
+                    .native
+                    .candidate_identity()
+                    .map(|id| id.qualification()),
                 _marker: PhantomData,
             });
         }

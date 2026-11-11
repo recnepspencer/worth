@@ -6,14 +6,11 @@ use crate::application_query::{
     ErasedApplicationQueryDefinition,
 };
 
-use super::{
-    ApplicationEntityRef, ApplicationFieldRef, EqualityPredicate, NoApplicationUnit, ReadOnly,
-};
+use super::ApplicationEntityRef;
 
 struct Schema;
 struct Entity;
 struct Aspect;
-struct Field;
 struct Parameters;
 struct QueryResult;
 struct Parameter;
@@ -31,15 +28,6 @@ crate::worth_query_application_query!(
 );
 worth_query_portable_type!(QueryResult => "worth.query.test.control-query-result.v1");
 worth_query_portable_type!(ResultSlot => "worth.query.test.control-result-slot.v1");
-
-impl crate::application_schema::DeclaredApplicationFieldValue for Field {
-    type Value = u64;
-    type Binding = crate::application_schema::U64ApplicationValueBinding;
-    const PRESENCE: crate::application_schema::ApplicationFieldPresence =
-        crate::application_schema::ApplicationFieldPresence::Required;
-}
-
-impl crate::application_schema::RequiredApplicationFieldValue for Field {}
 
 #[derive(Clone)]
 struct QueryControlFixture {
@@ -122,30 +110,13 @@ fn every_scalar_query_control_is_identity_bearing() {
 }
 
 fn definition(fixture: &QueryControlFixture) -> ErasedApplicationQueryDefinition {
-    let root = ApplicationEntityRef::<Schema, Entity>::from_schema_identifier(fixture.root);
+    let root = ApplicationEntityRef::<Schema, Entity>::from_schema_identifier("Entity");
     let scope = ApplicationEntityRef::<Schema, Entity>::from_schema_identifier(fixture.scope);
-    let field = ApplicationFieldRef::<
-        Schema,
-        Entity,
-        Aspect,
-        Field,
-        u64,
-        ReadOnly,
-        EqualityPredicate,
-        NoApplicationUnit,
-    >::from_schema_identifiers(fixture.root, "Aspect", "Field");
-    let result = ApplicationQueryResultFieldRef::<
-        Query,
-        ResultSlot,
-        Schema,
-        Entity,
-        Aspect,
-        Field,
-        u64,
-        ReadOnly,
-        EqualityPredicate,
-        NoApplicationUnit,
-    >::new(fixture.output, field);
+    let field = Field::at("Field");
+    let result = ApplicationQueryResultFieldRef::<Query, ResultSlot, Schema, Field>::new(
+        fixture.output,
+        field,
+    );
     let parameter = ApplicationQueryParameterRef::<
         Query,
         Parameter,
@@ -176,8 +147,53 @@ fn definition(fixture: &QueryControlFixture) -> ErasedApplicationQueryDefinition
     } else {
         builder
     };
-    builder
+    let mut definition = builder
         .build()
         .expect("one-axis identity fixture should remain valid")
         .into_erased()
+        .into_parts();
+    definition.root_entity = fixture.root.into();
+    ErasedApplicationQueryDefinition::from_untrusted_parts(definition)
 }
+
+use super::fragment;
+struct QueryModel;
+impl fragment::Fragment for QueryModel {
+    const NAME: &'static str = "query_model";
+    type Bindings = QueryBindings;
+    type Members = (Entity,);
+}
+struct QueryBindings;
+impl fragment::BindingSet for QueryBindings {
+    type Work<'a> = super::ValueDecodeAdmission<'a>;
+    fn with_admission<T>(
+        work: &mut Self::Work<'_>,
+        run: impl FnOnce(&mut super::ValueDecodeAdmission<'_>) -> T,
+    ) -> T {
+        run(work)
+    }
+}
+impl fragment::Scalar<u64> for QueryBindings {
+    type Binding = super::U64ApplicationValueBinding;
+    const WRITABLE: bool = false;
+}
+impl fragment::Entity for Entity {
+    const NAME: &'static str = "Entity";
+    type Aspects = (Aspect,);
+    type Relations = ();
+}
+impl fragment::Aspect for Aspect {
+    const NAME: &'static str = "Aspect";
+    type Row = QueryRow0;
+}
+struct QueryRow0(u64);
+impl fragment::Record<QueryRow0> for QueryBindings {
+    fn record() -> impl fragment::Shape<QueryRow0, Self> {
+        fragment::field("Field", |row: &QueryRow0| row.0)
+            .equality_queryable(true)
+            .build(|value, _: &mut super::ValueDecodeAdmission<'_>| {
+                Ok::<_, std::convert::Infallible>(QueryRow0(value))
+            })
+    }
+}
+type Field = fragment::FieldSelection<QueryModel, Entity, Aspect, u64>;

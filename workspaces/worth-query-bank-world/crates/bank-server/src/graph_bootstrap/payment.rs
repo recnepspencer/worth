@@ -20,9 +20,15 @@ pub(super) fn bind_payments(
                 PaymentIntent::reference(),
                 entity_key(payment_key(payment.id())),
             )
-            .field(PaymentIdentityField::reference(), payment.id())
-            .field(PaymentAmount::reference(), payment.amount())
-            .field(PaymentStatusField::reference(), payment.status()),
+            .field(
+                PaymentIdentityField::at("PaymentIdentityField"),
+                payment.id(),
+            )
+            .field(PaymentAmount::at("PaymentAmount"), payment.amount())
+            .field(
+                PaymentStatusField::at("PaymentStatusField"),
+                payment.status(),
+            ),
         )?;
         if payment.deciding_principal().is_some() {
             graph.bind_entity(WorthQueryApplicationEntitySeed::new(
@@ -37,24 +43,41 @@ pub(super) fn bind_payments(
                     entity_key(payment_workflow_grant_key(payment.id(), grantee)),
                 )
                 .field(
-                    ApprovedBusinessPaymentGrantAction::reference(),
+                    ApprovedBusinessPaymentGrantAction::at("ApprovedBusinessPaymentGrantAction"),
                     "manage-approved-business-payment-workflow".to_owned(),
                 )
                 .field(
-                    ApprovedBusinessPaymentGrantPurpose::reference(),
+                    ApprovedBusinessPaymentGrantPurpose::at("ApprovedBusinessPaymentGrantPurpose"),
                     "business-payment-approval".to_owned(),
                 )
                 .field(
-                    ApprovedBusinessPaymentGrantStatus::reference(),
+                    ApprovedBusinessPaymentGrantStatus::at("ApprovedBusinessPaymentGrantStatus"),
                     "active".to_owned(),
                 )
                 .field(
-                    ApprovedBusinessPaymentGrantWorkflow::reference(),
+                    ApprovedBusinessPaymentGrantWorkflow::at(
+                        "ApprovedBusinessPaymentGrantWorkflow",
+                    ),
                     payment.id(),
                 )
-                .field(ApprovedBusinessPaymentGrantNotBefore::reference(), 0)
-                .field(ApprovedBusinessPaymentGrantNotAfter::reference(), u64::MAX)
-                .field(ApprovedBusinessPaymentGrantDelegationLimit::reference(), 0),
+                .field(
+                    ApprovedBusinessPaymentGrantNotBefore::at(
+                        "ApprovedBusinessPaymentGrantNotBefore",
+                    ),
+                    0,
+                )
+                .field(
+                    ApprovedBusinessPaymentGrantNotAfter::at(
+                        "ApprovedBusinessPaymentGrantNotAfter",
+                    ),
+                    u64::MAX,
+                )
+                .field(
+                    ApprovedBusinessPaymentGrantDelegationLimit::at(
+                        "ApprovedBusinessPaymentGrantDelegationLimit",
+                    ),
+                    0,
+                ),
             )?;
         }
     }

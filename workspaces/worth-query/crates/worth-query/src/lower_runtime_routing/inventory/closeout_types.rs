@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::evidence_identity::{
     WorthQueryEvidenceIdentity, WorthQueryEvidenceScope, WorthQueryEvidenceTag,
 };
@@ -89,40 +90,42 @@ impl WorthQueryLowerRuntimeCloseoutRow {
         self.certification_row
     }
 
-    pub fn row_digest(&self) -> String {
-        self.row_identity().as_str().to_string()
+    pub fn row_digest(&self) -> Result<String, IdentityDerivationDenial> {
+        Ok(self.row_identity()?.as_str().to_string())
     }
 
-    fn row_identity(&self) -> WorthQueryEvidenceIdentity {
-        WorthQueryEvidenceIdentity::compose(WorthQueryEvidenceScope::LowerRuntimeBoundaryEvidence)
-            .field_shape(
-                WorthQueryEvidenceTag::new("identity_family"),
-                "lower_runtime_closeout_row_v1",
-            )
-            .field_shape(WorthQueryEvidenceTag::new("seam"), self.seam_key.as_str())
-            .field_shape(
-                WorthQueryEvidenceTag::new("capability"),
-                self.capability_label,
-            )
-            .field_shape(WorthQueryEvidenceTag::new("posture"), self.posture.as_str())
-            .field_shape(WorthQueryEvidenceTag::new("owner"), self.owner.as_str())
-            .field_shape(
-                WorthQueryEvidenceTag::new("route_kind"),
-                self.route_kind.as_str(),
-            )
-            .field_value(
-                WorthQueryEvidenceTag::new("closeout_target"),
-                self.closeout_target,
-            )
-            .field_value(
-                WorthQueryEvidenceTag::new("required_closeout"),
-                self.required_closeout,
-            )
-            .field_value(
-                WorthQueryEvidenceTag::new("certification_row"),
-                self.certification_row,
-            )
-            .seal()
+    fn row_identity(&self) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
+        Ok(WorthQueryEvidenceIdentity::compose(
+            WorthQueryEvidenceScope::LowerRuntimeBoundaryEvidence,
+        )
+        .field_shape(
+            WorthQueryEvidenceTag::new("identity_family"),
+            "lower_runtime_closeout_row_v1",
+        )
+        .field_shape(WorthQueryEvidenceTag::new("seam"), self.seam_key.as_str())
+        .field_shape(
+            WorthQueryEvidenceTag::new("capability"),
+            self.capability_label,
+        )
+        .field_shape(WorthQueryEvidenceTag::new("posture"), self.posture.as_str())
+        .field_shape(WorthQueryEvidenceTag::new("owner"), self.owner.as_str())
+        .field_shape(
+            WorthQueryEvidenceTag::new("route_kind"),
+            self.route_kind.as_str(),
+        )
+        .field_value(
+            WorthQueryEvidenceTag::new("closeout_target"),
+            self.closeout_target,
+        )
+        .field_value(
+            WorthQueryEvidenceTag::new("required_closeout"),
+            self.required_closeout,
+        )
+        .field_value(
+            WorthQueryEvidenceTag::new("certification_row"),
+            self.certification_row,
+        )
+        .seal()?)
     }
 }
 
@@ -140,24 +143,26 @@ impl WorthQueryLowerRuntimeCloseoutRegistry {
         self.rows
     }
 
-    pub fn registry_digest(&self) -> String {
+    pub fn registry_digest(&self) -> Result<String, IdentityDerivationDenial> {
         let row_identities = self
             .rows
             .iter()
             .map(WorthQueryLowerRuntimeCloseoutRow::row_identity)
-            .collect::<Vec<_>>();
-        WorthQueryEvidenceIdentity::compose(WorthQueryEvidenceScope::LowerRuntimeBoundaryEvidence)
-            .field_shape(
-                WorthQueryEvidenceTag::new("identity_family"),
-                "lower_runtime_closeout_registry_v1",
-            )
-            .field_evidence_identity_sequence(WorthQueryEvidenceTag::new("rows"), &row_identities)
-            .seal()
-            .as_str()
-            .to_string()
+            .collect::<Result<Vec<_>, _>>()?;
+        Ok(WorthQueryEvidenceIdentity::compose(
+            WorthQueryEvidenceScope::LowerRuntimeBoundaryEvidence,
+        )
+        .field_shape(
+            WorthQueryEvidenceTag::new("identity_family"),
+            "lower_runtime_closeout_registry_v1",
+        )
+        .field_evidence_identity_sequence(WorthQueryEvidenceTag::new("rows"), &row_identities)
+        .seal()?
+        .as_str()
+        .to_string())
     }
 
-    pub fn required_closeout_digest(&self) -> String {
+    pub fn required_closeout_digest(&self) -> Result<String, IdentityDerivationDenial> {
         let closeout_identities = self
             .rows
             .iter()
@@ -171,18 +176,17 @@ impl WorthQueryLowerRuntimeCloseoutRegistry {
                 )
                 .seal()
             })
-            .collect::<Vec<_>>();
-        WorthQueryEvidenceIdentity::compose(WorthQueryEvidenceScope::LowerRuntimeBoundaryEvidence)
-            .field_shape(
-                WorthQueryEvidenceTag::new("identity_family"),
-                "lower_runtime_required_closeout_v1",
-            )
-            .field_evidence_identity_sequence(
-                WorthQueryEvidenceTag::new("rows"),
-                &closeout_identities,
-            )
-            .seal()
-            .as_str()
-            .to_string()
+            .collect::<Result<Vec<_>, _>>()?;
+        Ok(WorthQueryEvidenceIdentity::compose(
+            WorthQueryEvidenceScope::LowerRuntimeBoundaryEvidence,
+        )
+        .field_shape(
+            WorthQueryEvidenceTag::new("identity_family"),
+            "lower_runtime_required_closeout_v1",
+        )
+        .field_evidence_identity_sequence(WorthQueryEvidenceTag::new("rows"), &closeout_identities)
+        .seal()?
+        .as_str()
+        .to_string())
     }
 }

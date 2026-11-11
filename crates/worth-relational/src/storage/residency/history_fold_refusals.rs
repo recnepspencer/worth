@@ -73,6 +73,8 @@ fn shared_row_bases_cannot_expand_beyond_the_original_read_limit() {
     let (cold, produced) = super::mixed_history_tests::recapture(&fixture.cold, &complete);
     let bytes = &produced.members[&cold.history];
     let frame = RelationalRegionImage::decode(
+        &crate::storage::substrate::maintenance::ReconstructionLane::oracle(),
+        &mut |_, _| Ok(()),
         bytes,
         cold.history,
         cold.partition_id,
@@ -102,6 +104,8 @@ fn shared_row_bases_cannot_expand_beyond_the_original_read_limit() {
     // This is an untrusted amplification input to the folder, not a claimed
     // branch root or a fabricated Full residency witness.
     let encoded = RelationalRegionImage::encode(
+        &crate::storage::substrate::maintenance::ReconstructionLane::oracle(),
+        &mut |_, _| Ok(()),
         fixture.cold.partition_id,
         fixture.cold.schema_carrier_digest,
         RelationalRegionImageKind::History,
@@ -110,6 +114,7 @@ fn shared_row_bases_cannot_expand_beyond_the_original_read_limit() {
     .unwrap();
     let directory = Arc::new(
         RelationalHistoryMemberDirectory::readmit(
+            &crate::storage::substrate::maintenance::ReconstructionLane::oracle(),
             &[RelationalCheckpointHistoryDependency {
                 member: encoded.0,
                 bases: vec![cold.history],
@@ -129,13 +134,18 @@ fn shared_row_bases_cannot_expand_beyond_the_original_read_limit() {
     );
     let request = crate::test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&request);
-    let mut folder =
-        super::super::history_fold::HistoryFolder::new(execution, fixture.cold.partition_id, limit);
+    let mut folder = super::super::history_fold::HistoryFolder::new(
+        &crate::storage::substrate::maintenance::ReconstructionLane::oracle(),
+        execution,
+        fixture.cold.partition_id,
+        limit,
+    );
     let root = RegionHistoryBase {
         member: encoded.0,
         ..base
     };
     let failure = match folder.fold_rows::<EntityRecordKind>(
+        &crate::storage::substrate::maintenance::ReconstructionLane::oracle(),
         source.as_ref(),
         &directory,
         &root,

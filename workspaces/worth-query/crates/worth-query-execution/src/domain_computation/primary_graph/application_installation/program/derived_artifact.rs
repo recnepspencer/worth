@@ -31,7 +31,7 @@ where
     Schema: ApplicationSchema,
     Program: ApplicationProgramDefinition<Schema>,
 {
-    pub(super) fn validate_root_artifact_demand<Root>(
+    pub(in crate::domain_computation::primary_graph) fn validate_root_artifact_demand<Root>(
         &self,
     ) -> Result<Option<ApplicationDerivedArtifactDeclaration>, WorthQueryOutputDemandDenial>
     where

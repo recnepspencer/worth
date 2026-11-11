@@ -1,35 +1,27 @@
 //! Typed selection is a thin shell; Native frame certification is concrete.
 use super::*;
-use worth_foundational::facade::ContentRefId;
+
 use worth_query_declaration::facade::application_schema::ApplicationContentBinding;
 
 impl<S: ApplicationSchema, I: ApplicationManagedIndexBinding<S>>
     WorthQueryManagedIndexSourceRow<'_, S, I>
 {
     /// Lend the exact canonical payload of this installed Source field.
-    pub fn with_content<FieldSlot, Entity, Aspect, Field, Write, Equality, Unit, C, Output>(
+    pub fn with_content<FieldSlot, Entity, Aspect, Field, C, Output>(
         &self,
-        selector: ApplicationQueryResultFieldRef<
-            Query<S, I>,
-            FieldSlot,
-            S,
-            Entity,
-            Aspect,
-            Field,
-            ContentRefId,
-            Write,
-            Equality,
-            Unit,
-        >,
+        selector: ApplicationQueryResultFieldRef<Query<S, I>, FieldSlot, S, Field>,
         _format: C,
         body: impl FnOnce(&[u8]) -> Output,
     ) -> Result<Output, WorthQueryManagedIndexContentReadDenial>
     where
         C: ApplicationContentBinding,
-        Field: RequiredApplicationFieldValue<Value = ContentRefId>,
-        Field::Binding: ApplicationReadableScalarValueBinding,
-        Write: WritePosture,
-        Unit: ApplicationFieldUnit,
+        Field: worth_query_declaration::facade::application_schema::fragment::RecordSelection<
+            Entity = Entity,
+            Aspect = Aspect,
+        >,
+        Field::Binding:
+            worth_query_declaration::facade::application_schema::ApplicationContentReferenceBinding,
+
         FieldSlot: WorthQueryPortableType,
     {
         self.check()?;

@@ -1,3 +1,6 @@
+#[path = "root_schema/contract_directory.rs"]
+mod contract_directory;
+use contract_directory::RetainedContracts;
 #[path = "root_schema/registry_rebinding.rs"]
 mod registry_rebinding;
 use registry_rebinding::registry_for_snapshot;
@@ -5,6 +8,9 @@ use std::sync::Arc;
 #[cfg(test)]
 #[path = "root_schema_content_tests.rs"]
 mod content_tests;
+#[cfg(test)]
+#[path = "root_schema_version_tests.rs"]
+mod version_tests;
 
 use worth_foundational::facade::{
     AspectContract, AspectContractRevision, AspectIdentity, AspectKey, PortableAspectContractLookup,
@@ -24,16 +30,22 @@ mod compilation_quote;
 mod compiled_plans;
 #[path = "root_schema/compiled_retention.rs"]
 mod compiled_retention;
+#[path = "root_schema/continuity.rs"]
+mod continuity;
+#[path = "root_schema/home_executables.rs"]
+mod home_executables;
 #[path = "root_schema/home_target.rs"]
 mod home_target;
+#[path = "root_schema/quote_denial.rs"]
+mod quote_denial;
+#[path = "root_schema/readmission.rs"]
+mod readmission;
 #[path = "root_schema/recorded_image.rs"]
 mod recorded_image;
 #[path = "root_schema/registry_quote.rs"]
 mod registry_quote;
 #[path = "root_schema/snapshot_match.rs"]
 mod snapshot_match;
-#[path = "root_schema/snapshot_quote.rs"]
-mod snapshot_quote;
 #[path = "root_schema/standard_tree_quote.rs"]
 mod standard_tree_quote;
 pub(crate) use compiled_retention::{
@@ -48,10 +60,13 @@ mod allocation_observation;
 #[derive(Debug, Clone)]
 pub(crate) struct RelationalBranchRootSchemaAuthority {
     allocation_id: u64,
+    allocation_bytes: std::sync::OnceLock<u64>,
     authority_digest: [u8; 32],
+    continuity_authority: SchemaAuthoritySnapshot,
+    primary_schema_version_id: Option<crate::schema::data::SchemaVersionId>,
     registry: Arc<RelationalSchemaRegistry>,
     aspect_plans: Arc<AspectContractPlanCatalog>,
-    retained_aspect_contracts: Arc<Vec<AspectContract>>,
+    retained_aspect_contracts: Arc<RetainedContracts>,
     descriptor_semantics_version: crate::schema::data::DescriptorSemanticsVersion,
     // Canonically ordered revisions already established by the original
     // snapshot admission. Sharing this fixed DATA avoids recomputing integrity
@@ -62,6 +77,27 @@ pub(crate) struct RelationalBranchRootSchemaAuthority {
 }
 
 impl RelationalBranchRootSchemaAuthority {
+    pub(crate) fn registry_copy_bytes(
+        &self,
+        request: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> Result<u64, super::RelationalBranchRootCaptureDenial> {
+        registry_quote::retained(
+            self.registry(),
+            crate::schema::SchemaCompilationControl::Request(*request),
+        )
+        .map_err(Into::into)
+    }
+
+    /// The descriptor and its before-copy funding have one lexical lifetime.
+    pub(crate) fn registry_digest_for_request(
+        registry: &crate::schema::data::RelationalSchemaRegistry,
+        request: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> Result<[u8; 32], crate::execution::RelationalExecutionDenialCause> {
+        let control = crate::schema::SchemaCompilationControl::Request(*request);
+        let snapshot = registry.snapshot_for_compilation(control)?;
+        crate::schema::data::schema_authority_snapshot_digest_for_compilation(&snapshot, control)
+    }
+
     pub(crate) fn capture(
         allocation_id: u64,
         registry: &RelationalSchemaRegistry,
@@ -76,27 +112,6 @@ impl RelationalBranchRootSchemaAuthority {
                 expected,
                 descriptor_semantics_version,
                 compilation::RetainedContracts::Extend(previous),
-                None,
-                crate::schema::SchemaCompilationControl::Configuration,
-            )
-            .expect("configuration root compilation has no request refusal")
-        })
-    }
-
-    pub(crate) fn readmit_exact(
-        allocation_id: u64,
-        registry: RelationalSchemaRegistry,
-        retained_aspect_contracts: Vec<AspectContract>,
-        expected: &SchemaAuthoritySnapshot,
-        descriptor_semantics_version: crate::schema::data::DescriptorSemanticsVersion,
-    ) -> Option<Arc<Self>> {
-        (registry.authority_snapshot() == *expected).then(|| {
-            Self::compile_owned(
-                allocation_id,
-                registry,
-                expected,
-                descriptor_semantics_version,
-                compilation::RetainedContracts::Exact(retained_aspect_contracts),
                 None,
                 crate::schema::SchemaCompilationControl::Configuration,
             )
@@ -120,8 +135,9 @@ impl RelationalBranchRootSchemaAuthority {
     }
 
     pub(crate) fn matches(&self, expected: &SchemaAuthoritySnapshot) -> bool {
-        snapshot_match::matches(self, expected)
-            && plans_match_snapshot(&self.aspect_plans, expected)
+        self.continuity_authority.shares_projection_with(expected)
+            || (snapshot_match::matches(self, expected)
+                && plans_match_snapshot(&self.aspect_plans, expected))
     }
 
     pub(crate) fn registry(&self) -> &RelationalSchemaRegistry {
@@ -158,7 +174,7 @@ impl RelationalBranchRootSchemaAuthority {
     }
 
     pub(crate) fn retained_aspect_contracts(&self) -> &[AspectContract] {
-        &self.retained_aspect_contracts
+        self.retained_aspect_contracts.all()
     }
 
     pub(crate) const fn allocation_id(&self) -> u64 {
@@ -166,9 +182,7 @@ impl RelationalBranchRootSchemaAuthority {
     }
 
     pub(crate) fn schema_version(&self) -> crate::schema::data::SchemaVersionId {
-        self.registry
-            .authority_snapshot()
-            .primary_schema_version_id
+        self.primary_schema_version_id
             .unwrap_or(crate::schema::data::SchemaVersionId(0))
     }
 
@@ -203,11 +217,7 @@ impl RelationalBranchRootSchemaAuthority {
 
 impl PortableAspectContractLookup for RelationalBranchRootSchemaAuthority {
     fn contract_for(&self, key: &AspectKey) -> Option<AspectContract> {
-        self.retained_aspect_contracts
-            .iter()
-            .rev()
-            .find(|contract| contract.key() == key)
-            .cloned()
+        self.retained_aspect_contracts.get(key).cloned()
     }
 
     fn exact_contract_for(
@@ -217,12 +227,7 @@ impl PortableAspectContractLookup for RelationalBranchRootSchemaAuthority {
         revision: AspectContractRevision,
     ) -> Option<AspectContract> {
         self.retained_aspect_contracts
-            .iter()
-            .find(|contract| {
-                contract.key() == key
-                    && contract.identity() == identity
-                    && contract.revision() == revision
-            })
+            .exact(key, identity, revision)
             .cloned()
     }
 }

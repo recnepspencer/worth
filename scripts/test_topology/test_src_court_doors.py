@@ -42,7 +42,7 @@ class CourtDoorTests(unittest.TestCase):
     def test_callers_register_door_readers_and_move_only_this_family(self):
         import tempfile
         from pathlib import Path
-        from src_door_callers import CRATES, OWNER, updated
+        from src_door_callers import CRATES, OWNER, GENERATED_HEADER, updated
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
             lib = root / OWNER / 'src'
@@ -65,8 +65,29 @@ class CourtDoorTests(unittest.TestCase):
             self.assertIn(f'{CRATES}/worth-query-testkit-execution-k/ {guard}', updated(root, []))
             (court / 'guard.rs').unlink()
             self.assertEqual(updated(root, []), [
-                '# Moved worth-query-execution courts and testkits reach the library only through its sealed doors, and testkit or root-crate controls only as listed.',
+                GENERATED_HEADER,
                 f'{OWNER} {moved}'])
+
+    def test_exact_callers_retain_ambiguous_owners_and_normalize_duplicate_entries(self):
+        import tempfile
+        from pathlib import Path
+        from src_door_callers import CRATES, OWNER, GENERATED_HEADER, updated
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            for owner in [OWNER, 'crates/native/']:
+                source = root / owner / 'src'
+                source.mkdir(parents=True)
+                (source / 'lib.rs').write_text('pub fn inspect_for_test() {}\n')
+            caller = root / CRATES / 'worth-query-court-decl-host/tests/one.rs'
+            caller.parent.mkdir(parents=True)
+            caller.write_text('fn court() { inspect_for_test(); }\n')
+            result = updated(root, [], [caller])
+            self.assertEqual(set(result[1:]), {
+                f'{OWNER} {caller.relative_to(root)}',
+                f'crates/native/ {caller.relative_to(root)}',
+            })
+            self.assertEqual(result[0], GENERATED_HEADER)
+            self.assertEqual(updated(root, result + result, [caller]), result)
 
     def test_inventory_classifies_doors_and_lists_authority(self):
         import tempfile

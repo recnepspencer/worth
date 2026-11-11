@@ -215,5 +215,6 @@ fn bridge_test_evidence(role: &'static str, value: &str) -> BridgeIdentityEviden
         .field_shape(WorthQueryEvidenceTag::new("role"), role)
         .field_value(WorthQueryEvidenceTag::new("value"), value)
         .seal()
+        .expect("fixture digest must fit")
         .bridge_external_identity_evidence()
 }

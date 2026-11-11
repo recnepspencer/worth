@@ -160,8 +160,31 @@ fn content_equal_descriptors_cannot_substitute_another_binding_type_at_either_do
 
 #[test]
 fn content_duplicate_format_declarations_refuse_before_installation() {
-    let duplicate = schema::declare(ApplicationSchemaDeclarationBuilder::<Schema>::for_schema())
-        .content_format::<codec::GridFormat>()
+    use worth_query_decl::facade::application_schema::fragment::{self, *};
+    struct InvalidFormats;
+    impl Fragment for InvalidFormats {
+        const NAME: &'static str = "invalid_formats";
+        type Bindings = ContentModelBindings;
+        type Members = (Item,);
+    }
+    struct Item;
+    impl Entity for Item {
+        const NAME: &'static str = "item";
+        type Aspects = (Original, Impostor);
+        type Relations = ();
+    }
+    struct Original;
+    impl fragment::Aspect for Original {
+        const NAME: &'static str = "original";
+        type Row = BoundReference<codec::GridFormat>;
+    }
+    struct Impostor;
+    impl fragment::Aspect for Impostor {
+        const NAME: &'static str = "impostor";
+        type Row = BoundReference<codec::Impostor>;
+    }
+    let duplicate = ApplicationSchemaDeclarationBuilder::<Schema>::from_fragment(InvalidFormats)
+        .unwrap()
         .build()
         .unwrap_err();
     assert_eq!(

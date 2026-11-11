@@ -206,3 +206,6 @@ where
 
 #[cfg(test)]
 use crate::branch::SignalBranchForkOperationDenial;
+#[cfg(test)]
+#[path = "owner_metadata_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;

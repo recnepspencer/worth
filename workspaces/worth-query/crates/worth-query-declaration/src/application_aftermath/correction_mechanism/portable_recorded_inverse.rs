@@ -35,6 +35,7 @@ impl PortablePreImageLocus {
 #[derive(Clone, Debug, Eq, PartialEq, Ord, PartialOrd)]
 pub struct PortablePreImageDemand {
     pub(super) loci: Vec<PortablePreImageLocus>,
+    pub(super) relations: Vec<super::PortablePreImageRelationLocus>,
     pub(super) maximum_encoded_bytes: usize,
 }
 
@@ -45,8 +46,20 @@ impl PortablePreImageDemand {
     ) -> Self {
         Self {
             loci,
+            relations: Vec::new(),
             maximum_encoded_bytes,
         }
+    }
+
+    pub fn with_untrusted_relations(
+        mut self,
+        relations: Vec<super::PortablePreImageRelationLocus>,
+    ) -> Self {
+        self.relations = relations;
+        self
+    }
+    pub fn relations(&self) -> &[super::PortablePreImageRelationLocus] {
+        &self.relations
     }
 
     pub fn loci(&self) -> &[PortablePreImageLocus] {

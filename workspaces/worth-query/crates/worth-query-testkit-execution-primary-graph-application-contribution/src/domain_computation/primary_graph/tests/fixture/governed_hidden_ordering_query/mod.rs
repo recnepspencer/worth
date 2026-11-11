@@ -1,6 +1,5 @@
 use worth_query_declaration::facade::application_query::ApplicationQueryBasisSupport;
 use worth_query_declaration::facade::application_query::ApplicationQueryCardinality;
-use worth_query_declaration::facade::application_query::ApplicationQueryDefinition;
 use worth_query_declaration::facade::application_query::ApplicationQueryDefinitionBuilder;
 use worth_query_declaration::facade::application_query::ApplicationQueryDisclosureContract;
 use worth_query_declaration::facade::application_query::ApplicationQueryInfluenceContract;
@@ -20,7 +19,6 @@ use crate::domain_computation::primary_graph::tests::fixture::capability::declar
 use crate::domain_computation::primary_graph::tests::fixture::Account;
 use crate::domain_computation::primary_graph::tests::fixture::AccountAllActivity;
 use crate::domain_computation::primary_graph::tests::fixture::Activity;
-use crate::domain_computation::primary_graph::tests::fixture::ActivityFacts;
 use crate::domain_computation::primary_graph::tests::fixture::ActivityIdentity;
 use crate::domain_computation::primary_graph::tests::fixture::ActivitySequence;
 use crate::domain_computation::primary_graph::tests::fixture::CapabilityDisclosureBinding;
@@ -87,7 +85,7 @@ worth_query_application_query!(
     name "governed_hidden_ordering"
 );
 
-pub fn governed_hidden_ordering_definition() -> ApplicationQueryDefinition<
+pub fn governed_hidden_ordering_definition() -> ApplicationQueryDefinitionBuilder<
     IdentityExecutionSchema,
     GovernedHiddenOrderingQuery,
     AccountSummaryParameters,
@@ -117,10 +115,11 @@ pub fn governed_hidden_ordering_definition() -> ApplicationQueryDefinition<
         TouchAccountCapability::reference(),
     )
     .use_field_by(
-        ActivitySequence::reference(),
+        ActivitySequence::at("ActivitySequence"),
         encoded_disclosure(CapabilityDisclosure::AccountActivity),
         ApplicationQueryInfluenceContract::permit([ApplicationQueryObservableInfluence::Ordering]),
     )
+    .expect("record field contract")
     .disclose_relation_by(
         activities(),
         encoded_disclosure(CapabilityDisclosure::AccountActivity),
@@ -149,8 +148,6 @@ pub fn governed_hidden_ordering_definition() -> ApplicationQueryDefinition<
             activity_sequence(),
             ApplicationQueryOrderingDirection::Ascending,
         )
-        .build()
-        .unwrap()
 }
 
 impl WorthQueryApplicationProjection<IdentityExecutionSchema, GovernedHiddenOrderingQuery>
@@ -193,30 +190,18 @@ pub fn activity_identity() -> ApplicationQueryResultFieldRef<
     GovernedHiddenOrderingQuery,
     ActivityIdentitySlot,
     IdentityExecutionSchema,
-    Activity,
-    ActivityFacts,
     ActivityIdentity,
-    String,
-    worth_query_declaration::facade::application_schema::ReadOnly,
-    worth_query_declaration::facade::application_schema::EqualityPredicate,
-    worth_query_declaration::facade::application_schema::NoApplicationUnit,
 > {
-    ApplicationQueryResultFieldRef::new("identity", ActivityIdentity::reference())
+    ApplicationQueryResultFieldRef::new("identity", ActivityIdentity::at("ActivityIdentity"))
 }
 
 pub fn activity_sequence() -> ApplicationQueryResultFieldRef<
     GovernedHiddenOrderingQuery,
     ActivitySequenceSlot,
     IdentityExecutionSchema,
-    Activity,
-    ActivityFacts,
     ActivitySequence,
-    u64,
-    worth_query_declaration::facade::application_schema::ReadOnly,
-    worth_query_declaration::facade::application_schema::NoEqualityPredicate,
-    worth_query_declaration::facade::application_schema::NoApplicationUnit,
 > {
-    ApplicationQueryResultFieldRef::new("sequence", ActivitySequence::reference())
+    ApplicationQueryResultFieldRef::new("sequence", ActivitySequence::at("ActivitySequence"))
 }
 
 pub fn activities() -> ApplicationQueryResultRelationRef<

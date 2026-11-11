@@ -12,17 +12,12 @@ use super::{
 
 mod aspect_contract_table;
 mod contract_encoding;
+mod mask_encoding;
 mod scope_encoding;
 #[cfg(test)]
 mod scope_identity_tests;
 
 use contract_encoding::{encode_contract, encode_resources};
-
-pub(super) const OBLIGATION_IDENTITY_BUDGET: CanonicalDigestWorkBudget =
-    match CanonicalDigestWorkBudget::new(4_096, 1024 * 1024) {
-        Some(budget) => budget,
-        None => panic!("fixed graph-obligation identity budget is valid"),
-    };
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct WorthQueryInstalledGraphObligationSetIdentity(CanonicalDigestId);
@@ -42,6 +37,7 @@ impl WorthQueryInstalledGraphObligationSetIdentity {
 }
 
 pub(super) fn derive_set_identity(
+    budget: CanonicalDigestWorkBudget,
     binding: &ApplicationSchemaBindingIdentity,
     subject_kind: &str,
     subject_name: &str,
@@ -57,8 +53,8 @@ pub(super) fn derive_set_identity(
 > {
     let mut basis = InstallationCanonicalIdentityBasis::new(
         "worth-query.installed-graph-obligations",
-        "worth-query-installed-graph-obligations-v2",
-        OBLIGATION_IDENTITY_BUDGET,
+        "worth-query-installed-graph-obligations-v3",
+        budget,
     );
     basis.digest("package", *binding.package_identity())?;
     basis.digest("schema", *binding.schema_identity())?;

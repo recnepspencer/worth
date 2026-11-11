@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::evidence_identity::{
     worth_query_evidence_identity, WorthQueryEvidenceIdentity, WorthQueryEvidenceScope,
     WorthQueryEvidenceTag,
@@ -12,74 +13,76 @@ use super::feedback::{WorthQueryFeedbackPhaseNode, WorthQueryFeedbackTermination
 
 pub(super) fn feedback_phase_graph_identity(
     parts: FeedbackPhaseGraphIdentityParts<'_>,
-) -> WorthQueryEvidenceIdentity {
-    worth_query_evidence_identity(WorthQueryEvidenceScope::FeedbackPhaseGraph)
-        .field_shape(WorthQueryEvidenceTag::new("effect_name"), parts.effect_name)
-        .field_shape(
-            WorthQueryEvidenceTag::new("trigger_source_kind"),
-            parts.trigger_source_kind.as_str(),
-        )
-        .field_shape(
-            WorthQueryEvidenceTag::new("write_adjacent_trigger_class"),
-            parts.write_adjacent_trigger_class.as_str(),
-        )
-        .field_evidence_identity(
-            WorthQueryEvidenceTag::new("write_adjacent_trigger_origin_identity"),
-            parts.write_adjacent_trigger_origin_identity,
-        )
-        .field_evidence_identity(
-            WorthQueryEvidenceTag::new("trigger_commit_identity"),
-            parts.trigger_commit_identity,
-        )
-        .field_shape(
-            WorthQueryEvidenceTag::new("source_lane"),
-            parts.source_lane.as_str(),
-        )
-        .field_shape(
-            WorthQueryEvidenceTag::new("terminal_lane"),
-            parts.terminal_lane.as_str(),
-        )
-        .optional_shape(
-            WorthQueryEvidenceTag::new("effect_policy"),
-            parts.effect_policy.map(WorthQueryEffectPolicy::as_str),
-        )
-        .field_shape(
-            WorthQueryEvidenceTag::new("loop_prevention"),
-            parts.loop_prevention.as_str(),
-        )
-        .field_shape(
-            WorthQueryEvidenceTag::new("idempotence"),
-            parts.idempotence.as_str(),
-        )
-        .field_shape(
-            WorthQueryEvidenceTag::new("termination"),
-            parts.termination.as_str(),
-        )
-        .field_value_sequence(
-            WorthQueryEvidenceTag::new("phase_node"),
-            parts.phase_nodes.iter().map(|node| node.as_str()),
-        )
-        .field_usize(
-            WorthQueryEvidenceTag::new("resubscribed_live_view_count"),
-            parts.resubscribed_live_view_count,
-        )
-        .field_usize(
-            WorthQueryEvidenceTag::new("resubscribed_derived_view_count"),
-            parts.resubscribed_derived_view_count,
-        )
-        .field_usize(
-            WorthQueryEvidenceTag::new("pending_write_intent_count"),
-            parts.pending_write_intent_count,
-        )
-        .seal()
+) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
+    Ok(
+        worth_query_evidence_identity(WorthQueryEvidenceScope::FeedbackPhaseGraph)
+            .field_shape(WorthQueryEvidenceTag::new("effect_name"), parts.effect_name)
+            .field_shape(
+                WorthQueryEvidenceTag::new("trigger_source_kind"),
+                parts.trigger_source_kind.as_str(),
+            )
+            .field_shape(
+                WorthQueryEvidenceTag::new("write_adjacent_trigger_class"),
+                parts.write_adjacent_trigger_class.as_str(),
+            )
+            .field_evidence_identity(
+                WorthQueryEvidenceTag::new("write_adjacent_trigger_origin_identity"),
+                parts.write_adjacent_trigger_origin_identity,
+            )
+            .field_evidence_identity(
+                WorthQueryEvidenceTag::new("trigger_commit_identity"),
+                parts.trigger_commit_identity,
+            )
+            .field_shape(
+                WorthQueryEvidenceTag::new("source_lane"),
+                parts.source_lane.as_str(),
+            )
+            .field_shape(
+                WorthQueryEvidenceTag::new("terminal_lane"),
+                parts.terminal_lane.as_str(),
+            )
+            .optional_shape(
+                WorthQueryEvidenceTag::new("effect_policy"),
+                parts.effect_policy.map(WorthQueryEffectPolicy::as_str),
+            )
+            .field_shape(
+                WorthQueryEvidenceTag::new("loop_prevention"),
+                parts.loop_prevention.as_str(),
+            )
+            .field_shape(
+                WorthQueryEvidenceTag::new("idempotence"),
+                parts.idempotence.as_str(),
+            )
+            .field_shape(
+                WorthQueryEvidenceTag::new("termination"),
+                parts.termination.as_str(),
+            )
+            .field_value_sequence(
+                WorthQueryEvidenceTag::new("phase_node"),
+                parts.phase_nodes.iter().map(|node| node.as_str()),
+            )
+            .field_usize(
+                WorthQueryEvidenceTag::new("resubscribed_live_view_count"),
+                parts.resubscribed_live_view_count,
+            )
+            .field_usize(
+                WorthQueryEvidenceTag::new("resubscribed_derived_view_count"),
+                parts.resubscribed_derived_view_count,
+            )
+            .field_usize(
+                WorthQueryEvidenceTag::new("pending_write_intent_count"),
+                parts.pending_write_intent_count,
+            )
+            .seal()?,
+    )
 }
 
 pub(super) fn feedback_phase_graph_inspection_identity(
     graph_identity: &WorthQueryEvidenceIdentity,
 ) -> WorthQueryEvidenceIdentity {
     worth_query_evidence_identity(WorthQueryEvidenceScope::FeedbackPhaseGraphInspection)
-        .field_evidence_identity(WorthQueryEvidenceTag::new("graph_digest"), graph_identity)
-        .seal()
+            .field_evidence_identity(WorthQueryEvidenceTag::new("graph_digest"), graph_identity)
+            .seal().expect("fixed digest grammar: literal tags and values, primitive values, or sealed identity tokens")
 }
 
 pub(super) struct FeedbackPhaseGraphIdentityParts<'a> {

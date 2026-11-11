@@ -117,7 +117,8 @@ impl WorthQueryRuntimeSnapshotIdentityAdapter for TranscriptSnapshotIdentity {
                     WorthQueryEvidenceTag::new("transcript_snapshot_sequence"),
                     1,
                 )
-                .seal(),
+                .seal()
+                .expect("fixture digest must fit"),
         )
     }
 }
@@ -129,8 +130,12 @@ impl WorthQueryRuntimeSchemaAdapter for TranscriptSchemaAdapter {
         request: &DeclarativeLiveQueryRequest,
         _schema_view: &QuerySchemaView,
     ) -> Result<LiveViewDeclarationAdmissionBoundaryReceipt, WorthQueryWorkspaceError> {
-        let receipt = self.build_live_view_declaration_admission_receipt(name, request);
-        Ok(self.build_live_view_declaration_boundary_receipt(name, request, receipt))
+        let receipt = self
+            .build_live_view_declaration_admission_receipt(name, request)
+            .expect("fixture digest must fit");
+        Ok(self
+            .build_live_view_declaration_boundary_receipt(name, request, receipt)
+            .expect("fixture digest must fit"))
     }
 }
 
@@ -147,8 +152,12 @@ impl WorthQueryRuntimeSourceAdapter for TranscriptSourceAdapter {
         _schema_view: QuerySchemaView,
     ) -> Result<WorthQueryLiveViewHandle, WorthQueryWorkspaceError> {
         let live_target = WorthQueryLiveArtifactTarget::from_view_name(name.clone());
-        self.live_views
-            .insert(live_target, request.target_collection_identity());
+        self.live_views.insert(
+            live_target,
+            request
+                .target_collection_identity()
+                .expect("fixture digest must fit"),
+        );
         Ok(WorthQueryLiveViewHandle::new(name))
     }
 
@@ -291,7 +300,7 @@ fn transcript_intent_mutation_receipt(
             entity_identity,
             WorthQueryMutationKind::Updated,
             vec![touch],
-        )],
+        )?],
         bridge_authority,
     ))
 }
@@ -313,6 +322,7 @@ struct TranscriptSubscriptionActivation;
 impl WorthQueryRuntimeSubscriptionActivationAdapter for TranscriptSubscriptionActivation {
     fn support_evidence_identity(&self) -> WorthQueryEvidenceIdentity {
         runtime_subscription_support_evidence_identity("transcript-subscription-activation")
+            .expect("fixture digest must fit")
     }
 
     fn admit_activation(
@@ -320,8 +330,12 @@ impl WorthQueryRuntimeSubscriptionActivationAdapter for TranscriptSubscriptionAc
         view_name: &str,
         activation: &SubscriptionActivationInput,
     ) -> Result<SubscriptionActivationBoundaryReceipt, WorthQueryWorkspaceError> {
-        let receipt = self.build_subscription_activation_receipt(view_name, activation);
-        Ok(self.build_subscription_activation_boundary_receipt(view_name, activation, receipt))
+        let receipt = self
+            .build_subscription_activation_receipt(view_name, activation)
+            .expect("fixture digest must fit");
+        Ok(self
+            .build_subscription_activation_boundary_receipt(view_name, activation, receipt)
+            .expect("fixture digest must fit"))
     }
 }
 
@@ -338,8 +352,8 @@ impl WorthQueryRuntimePreviewBasisAdapter for TranscriptPreviewBasis {
             authority,
             label.clone(),
             effect_policy,
-            WorthQueryBasisAdmissionEvidenceRow::rows_from_values(["transcript-preview-basis"]),
-        ))
+            WorthQueryBasisAdmissionEvidenceRow::rows_from_values(["transcript-preview-basis"])?,
+        )?)
     }
 }
 

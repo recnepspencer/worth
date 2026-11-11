@@ -108,7 +108,13 @@ fn fixture() -> Fixture {
         .unwrap()
         .carrier_digest();
     let symbols = runtime.services.symbols.interner_snapshot();
-    let prepared = PreparedResidentRegion::initial(partition, &symbols).unwrap();
+    let prepared = PreparedResidentRegion::initial(
+        &crate::storage::substrate::maintenance::ReconstructionLane::oracle(),
+        &request,
+        partition,
+        &symbols,
+    )
+    .unwrap();
     drop(root);
     drop(runtime);
     Fixture {
@@ -138,7 +144,7 @@ fn bytes(member: &RelationalCheckpointMember) -> &worth_execution::ExecutionImmu
     }
 }
 #[test]
-fn complete_full_reg6_matches_prior_nontrivial_head_and_history_bytes() {
+fn complete_full_current_wire_matches_prior_nontrivial_head_and_history_bytes() {
     let fixture = fixture();
     let region = fixture
         .prepared
@@ -146,21 +152,27 @@ fn complete_full_reg6_matches_prior_nontrivial_head_and_history_bytes() {
         .capture_region()
         .unwrap()
         .unwrap();
+    let host = crate::test_execution_policy::serial_request();
+    let request = ExecutionRequest::serial(&host);
+    let lane = crate::storage::substrate::maintenance::ReconstructionLane::oracle();
     let old = crate::storage::residency::capture_region_members(
+        &lane,
+        &request,
         &region.partition,
         region.commitment.as_ref().unwrap(),
         &fixture.schema,
         fixture.schema_digest,
     )
     .unwrap();
-    let host = crate::test_execution_policy::serial_request();
-    let emitted = captured(&fixture, &ExecutionRequest::serial(&host));
+    let emitted = captured(&fixture, &request);
     assert_eq!(bytes(&emitted.members[0]).as_ref(), old.head.1);
     assert_eq!(bytes(&emitted.members[1]).as_ref(), old.history.1);
     assert_eq!(emitted.leaf.head, old.head.0);
     assert_eq!(emitted.leaf.history, old.history.0);
     assert_eq!(emitted.leaf.kind_authority, old.kind_authority);
     let frame = RelationalRegionImage::decode(
+        &lane,
+        &mut |_, _| Ok(()),
         bytes(&emitted.members[0]),
         emitted.leaf.head,
         emitted.leaf.partition_id,
@@ -176,6 +188,8 @@ fn complete_full_reg6_matches_prior_nontrivial_head_and_history_bytes() {
         .iter()
         .any(|(_, frontier)| frontier.last.is_some() && !frontier.siblings.is_empty()));
     let frame = RelationalRegionImage::decode(
+        &lane,
+        &mut |_, _| Ok(()),
         bytes(&emitted.members[1]),
         emitted.leaf.history,
         emitted.leaf.partition_id,
@@ -333,7 +347,7 @@ fn complete_region_emitted_byte_alias_retains_only_its_actual_grant() {
     drop(emitted);
     drop(fixture);
     assert_eq!(budget.charged_memory_bytes(), bill);
-    assert!(alias.starts_with(b"WORTH-REL-REG6\n"));
+    assert!(alias.starts_with(crate::storage::residency::region_image::MAGIC));
     drop(alias);
     assert_eq!(budget.charged_memory_bytes(), 0);
 }

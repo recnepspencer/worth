@@ -203,7 +203,7 @@ where
     Program::Outputs: application_installation::WorthQueryApplicationProgramRoots<CheckpointSchema>,
 {
     let configuration = (configuration,);
-    let declaration = CheckpointSchema::declaration().expect("the checkpoint schema is valid");
+    let declaration = <CheckpointSchema as worth_query_decl::facade::application_schema::ApplicationSchema>::declaration().expect("the checkpoint schema is valid");
     let program = ApplicationProgramAuthoring::<CheckpointSchema, Program>::begin()
         .with_schema(&declaration)
         .validated_program()

@@ -12,8 +12,6 @@ use worth_query_declaration::facade::application_operation::WorthQueryAtMostOneO
 use worth_query_declaration::facade::application_operation::WorthQueryExactlyOneOutput;
 use worth_query_declaration::facade::application_operation::WorthQueryPreserveOutput;
 use worth_query_declaration::facade::application_schema::ApplicationSchemaDeclarationBuilder;
-use worth_query_declaration::facade::application_schema::NoApplicationUnit;
-use worth_query_declaration::facade::application_schema::ReadWrite;
 use worth_query_declaration::facade::application_schema::U64ApplicationValueBinding;
 use worth_query_execution::facade::domain_computation::CandidateWriter;
 use worth_query_execution::facade::domain_computation::DecisionReader;
@@ -50,8 +48,6 @@ worth_query_declaration::worth_query_operation!(
     input OptionalOutputInputBinding
 );
 worth_query_declaration::worth_query_operation_requires!(OptionalOutputOperation => [ViewAccount]);
-worth_query_declaration::worth_query_operation_reads!(OptionalOutputOperation => [AccountStatus]);
-worth_query_declaration::worth_query_operation_writes!(OptionalOutputOperation => [AccountStatus]);
 
 /// The role every completed mutation binds exactly once.
 pub struct OptionalSubject;
@@ -104,8 +100,8 @@ worth_query_declaration::worth_query_mutation_binding!(
         principal_entity Principal,
         principal_identity u64,
         identity_binding U64ApplicationValueBinding,
-    scope Account, AccountPolicy, AccountStatus, String, ReadWrite, NoApplicationUnit,
-    field AccountStatus::reference(),
+    scope AccountStatus,
+    field AccountStatus::at("AccountStatus"),
     value optional_output_scope,
 );
 
@@ -127,8 +123,8 @@ pub fn declare(
         )
         .operation_projection_work_budget(operation, 8)
         .operation_requires_ability(operation, ViewAccount::reference())
-        .operation_write(operation, AccountStatus::reference())
-        .operation_read_field(operation, AccountStatus::reference())
+        .operation_write(operation, AccountStatus::at("AccountStatus"))
+        .operation_read_field(operation, AccountStatus::at("AccountStatus"))
         .application_mutation_binding::<OptionalOutputMutationBinding>()
 }
 
@@ -150,12 +146,14 @@ impl OperationHandler<IdentityExecutionSchema, OptionalOutputMutationBinding>
         >,
     ) -> HandlerResult<OptionalOutputInput, OptionalOutputInput> {
         // The decision observes the scoped account, so the candidate may target it.
-        if let Err(denial) = reader.resolve_entity(AccountStatus::reference(), input.status.clone())
+        if let Err(denial) =
+            reader.resolve_entity(AccountStatus::at("AccountStatus"), input.status.clone())
         {
             return HandlerResult::ExecutionDenied(denial);
         }
         if input.plan == OptionalOutputPlan::RequiredAfterIndexedAbsence {
-            let prepared = match reader.prepare_entity_selection(AccountStatus::reference()) {
+            let prepared = match reader.prepare_entity_selection(AccountStatus::at("AccountStatus"))
+            {
                 Ok(prepared) => prepared,
                 Err(denial) => return HandlerResult::ExecutionDenied(denial),
             };
@@ -187,9 +185,13 @@ impl OperationHandler<IdentityExecutionSchema, OptionalOutputMutationBinding>
             "reviewed"
         };
         let bound = writer
-            .resolve_entity(AccountStatus::reference(), decision.status.clone())
+            .resolve_entity(AccountStatus::at("AccountStatus"), decision.status.clone())
             .and_then(|account| {
-                writer.write_field(&account, AccountStatus::reference(), replacement.to_owned())?;
+                writer.write_field(
+                    &account,
+                    AccountStatus::at("AccountStatus"),
+                    replacement.to_owned(),
+                )?;
                 if required {
                     writer.preserve_output::<OptionalSubject>(&account)?;
                 }

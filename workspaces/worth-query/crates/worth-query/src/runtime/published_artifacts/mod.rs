@@ -27,3 +27,6 @@ pub(in crate::runtime) enum WorthQueryPublishedArtifactResolution {
     MissingGeneration,
     MissingView,
 }
+#[cfg(test)]
+#[path = "mod_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;

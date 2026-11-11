@@ -10,7 +10,6 @@ mod execution_admission;
 mod history_binding;
 mod history_preparation;
 mod history_resolution_phase;
-mod invariant_phase;
 mod merge_draft;
 mod mutation_execution;
 mod phase_backing;
@@ -37,3 +36,7 @@ pub(crate) use request_checkpoints::{consult_stage, CommitStage};
 
 pub(crate) use candidate_preparation::prepare_consulted_authoritative_commit;
 pub use phase_backing::RelationalCommitPhaseBackingForTest;
+pub(crate) use phase_backing::{CommitPhaseBacking, CommitPhaseReservation};
+#[cfg(test)]
+#[path = "mod_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;

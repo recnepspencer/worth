@@ -10,9 +10,7 @@ impl<'reader, 'runtime, Schema, Operation>
 where
     Schema: ApplicationSchema,
 {
-    pub(in crate::domain_computation::primary_graph::invariant_projection::operation_reader) fn live_current_identity<
-        Entity,
-    >(
+    pub(in crate::domain_computation::primary_graph) fn live_current_identity<Entity>(
         &mut self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         role: &str,
@@ -23,9 +21,8 @@ where
     {
         let projected = self
             .reader
-            .runtime
-            .read_truth()
-            .project_snapshot(self.reader.snapshot)
+            .native
+            .projection(self.reader.snapshot)
             .map(|view| {
                 view.entity_record_with_projection_scope(
                     execution,
@@ -68,6 +65,11 @@ where
             kind: projected.0,
             entity: std::sync::Arc::from(entity),
             authority_identity: self.reader.authority_identity,
+            phase: self
+                .reader
+                .native
+                .candidate_identity()
+                .map(|id| id.qualification()),
             _marker: PhantomData,
         };
         self.require_decision_entity(

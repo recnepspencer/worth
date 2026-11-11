@@ -3,6 +3,7 @@ use crate::application::{
     WorthQueryDeclarationRelationalAuthorityFamily, WorthQueryDeclarationRelationalTruthClaim,
     WorthQueryDomainEntryMarker,
 };
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryDeclarationRelationalRoutingDenialCause {
@@ -140,6 +141,7 @@ pub enum WorthQueryDeclarationRelationalRoutingTerminalError<
     D: WorthQueryDomainEntryMarker,
     I: WorthQueryDeclarationInput<D>,
 > {
+    EvidenceIdentityDerivationDenied(IdentityDerivationDenial),
     Deferred(WorthQueryDeclarationRelationalRoutingDeferred<D, I>),
     Denied(WorthQueryDeclarationRelationalRoutingDenied<D, I>),
     Failed(WorthQueryDeclarationRelationalRoutingFailed<D, I>),
@@ -149,6 +151,23 @@ pub enum WorthQueryDeclarationEntryRelationalRoutingError<
     D: WorthQueryDomainEntryMarker,
     I: WorthQueryDeclarationInput<D>,
 > {
+    EvidenceIdentityDerivationDenied(IdentityDerivationDenial),
     Entry(crate::application::WorthQueryDeclarationEntryEnvelopeError<D, I>),
     Routing(WorthQueryDeclarationRelationalRoutingTerminalError<D, I>),
+}
+
+impl<D: WorthQueryDomainEntryMarker, I: WorthQueryDeclarationInput<D>>
+    From<IdentityDerivationDenial> for WorthQueryDeclarationRelationalRoutingTerminalError<D, I>
+{
+    fn from(cause: IdentityDerivationDenial) -> Self {
+        Self::EvidenceIdentityDerivationDenied(cause)
+    }
+}
+
+impl<D: WorthQueryDomainEntryMarker, I: WorthQueryDeclarationInput<D>>
+    From<IdentityDerivationDenial> for WorthQueryDeclarationEntryRelationalRoutingError<D, I>
+{
+    fn from(cause: IdentityDerivationDenial) -> Self {
+        Self::EvidenceIdentityDerivationDenied(cause)
+    }
 }

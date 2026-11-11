@@ -14,7 +14,9 @@ use super::sharing::{
 /// Owner inventory used to cross-examine the derived sharing summary.
 ///
 /// Entries come directly from root, partition, and canonical-artifact owners;
-/// this artifact does not call or reuse `observe_branch_sharing`.
+/// this artifact does not call or reuse `observe_branch_sharing`. A payload
+/// carrier's entry includes its checked declared upper bound for nested
+/// persistent aspect backing, counted once per carrier even when shared.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct RelationalOwnerAllocationLedgerObservation {
     authoritative_allocations: Vec<RelationalAuthoritativeAllocationObservation>,
@@ -171,8 +173,12 @@ fn inventory_root(
             partition_id: region.partition_id,
             seen: Default::default(),
             entries: authoritative,
+            denial: None,
         };
         partition.visit_authoritative_allocations(false, &mut payload);
+        if let Some(denial) = payload.denial {
+            return Err(denial);
+        }
         for (kind, bytes) in [
             (
                 RelationalAuthoritativeAllocationKind::PartitionStateObject,
@@ -236,6 +242,7 @@ struct PayloadLedger<'a> {
     partition_id: PartitionId,
     seen: BTreeSet<u64>,
     entries: &'a mut Vec<RelationalAuthoritativeAllocationObservation>,
+    denial: Option<RelationalBranchSharingInspectionDenial>,
 }
 
 impl crate::storage::substrate::StorageAllocationVisitor for PayloadLedger<'_> {
@@ -243,6 +250,14 @@ impl crate::storage::substrate::StorageAllocationVisitor for PayloadLedger<'_> {
         &mut self,
         allocation: crate::storage::substrate::StorageAllocationObservation,
     ) -> bool {
+        // A carrier's declared nested bound is refused typed, never saturated.
+        let bytes = match super::partition_allocations::admitted_bytes(allocation) {
+            Ok(bytes) => bytes,
+            Err(denial) => {
+                self.denial = Some(denial);
+                return false;
+            }
+        };
         if !self.seen.insert(allocation.id) {
             return false;
         }
@@ -255,7 +270,7 @@ impl crate::storage::substrate::StorageAllocationVisitor for PayloadLedger<'_> {
                     allocation.id,
                     Some(self.partition_id),
                 ),
-                allocation.bytes,
+                bytes,
             ));
         true
     }

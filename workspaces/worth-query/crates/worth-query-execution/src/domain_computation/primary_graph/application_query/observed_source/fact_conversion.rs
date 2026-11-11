@@ -15,9 +15,19 @@ pub(in crate::domain_computation::primary_graph::application_query) struct Prepa
     'source,
     'request,
     'authority,
-    Query,
 > {
-    source: &'source WorthQueryObservedSource<Query>,
+    footprint: &'source WorthQueryObservedSourceFootprint,
+    subject: &'source str,
+    managed: Option<
+        &'source std::sync::Arc<
+            crate::domain_computation::primary_graph::application_attempt::ManagedSourceRead,
+        >,
+    >,
+    authorization: Option<
+        &'source std::sync::Arc<
+            crate::domain_computation::primary_graph::application_attempt::SourceReadAuthorization,
+        >,
+    >,
     fields: Vec<ValidatedSourceField<'source>>,
     fact_count: usize,
     control: SourceFactExpansionControl<'request, 'authority>,
@@ -220,3 +230,20 @@ fn adjacency_fact(adjacency: &WorthQueryObservedAdjacencyRevision, control: crat
 }
 
 mod court_doors_for_test;
+
+pub(super) fn applied_facts(
+    footprint: &WorthQueryObservedSourceFootprint,
+    layout: &WorthQueryPrimaryGraphLayout,
+    subject: &str,
+    control: SourceFactExpansionControl<'_, '_>,
+) -> Result<Vec<Fact>, WorthQuerySourceExpectationDenial> {
+    control.poll(subject)?;
+    if !footprint.complete {
+        return Err(WorthQuerySourceExpectationDenial::new(
+            WorthQuerySourceExpectationDenialKind::IncompleteFootprint,
+            subject,
+        ));
+    }
+    retention_validation::validate_footprint(footprint, layout, subject, control)?;
+    field_preparation::prepare_fields(footprint, subject, None, None, control)?.into_facts()
+}

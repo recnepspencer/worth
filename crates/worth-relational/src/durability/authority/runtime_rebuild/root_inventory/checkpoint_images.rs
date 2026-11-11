@@ -109,45 +109,7 @@ impl RecoveredRootInventory {
                 {
                     return Err(corrupt("recorded component source mismatch").into());
                 }
-                let schema = regions
-                    .schemas
-                    .get(&header.schema_carrier_digest)
-                    .cloned()
-                    .ok_or_else(|| corrupt("recorded canonical schema unavailable"))?;
-                let leaves =
-                    regions.regions(header.schema_carrier_digest, &header.regions, execution)?;
-                let content_records = crate::durability::checkpoints::content::read_records(
-                    execution,
-                    &header.content,
-                    directory.source.as_ref(),
-                )?;
-                let root = if directory.admission_image.is_some() {
-                    let commit = runtime
-                        .durability
-                        .checkpoint_selection()
-                        .admitted_commit(&entry)
-                        .map_err(RelationalRecoveryStop::AdmissionImage)?
-                        .ok_or_else(|| corrupt("recorded root has no admitted checkpoint row"))?;
-                    runtime.history.readmit_checkpoint_region_directory(
-                        leaves,
-                        commit,
-                        &content_records,
-                        execution,
-                    )
-                } else {
-                    let positioned = artifact
-                        .envelope_residency()
-                        .demand_positioned(execution, 1 << 30)?;
-                    runtime.history.readmit_branch_region_directory(
-                        execution,
-                        &content_records,
-                        leaves,
-                        positioned.canonical_arc().clone(),
-                        entry.root.clone(),
-                        schema,
-                    )
-                };
-                root.map_err(super::super::original_inputs::root_stop)?
+                regions.readmit_root(&runtime.history, header, execution)?
             }
         };
         if let RecoveredRootHold::Checkpoint(materialized) = &image.root {

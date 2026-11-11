@@ -15,6 +15,17 @@ pub(super) struct ReconstructedPayload {
     _funding: worth_execution::ExecutionMemoryReservation,
 }
 
+impl ReconstructedPayload {
+    pub(super) fn into_retained_parts(
+        self,
+    ) -> (
+        Option<AuthoritativeRecordAspectState>,
+        worth_execution::ExecutionMemoryReservation,
+    ) {
+        (self.state, self._funding)
+    }
+}
+
 pub(super) fn apply(
     current: Option<&AuthoritativeRecordAspectState>,
     patch: &PublishedAuthoritativePatch,
@@ -48,15 +59,26 @@ pub(super) fn apply(
     };
     drop(admission_scratch);
     let application = admitted
-        .application_allocation_bounds(current)
+        .application_retained_storage_bounds(current)
         .ok_or_else(super::memory_overflow)?;
-    let funding = allocation::reserve(lease, application.retained_bytes, context)?;
+    let mut funding = allocation::reserve(lease, application.retained_bytes, context)?;
     let _application_scratch = allocation::reserve(lease, application.transient_bytes, context)?;
     match admitted.apply_to_optional(current) {
-        worth_proof::TransitionOutcome::Success(state) => Ok(ReconstructedPayload {
-            state: state.map(|artifact| artifact.into_parts().into_parts().0),
-            _funding: funding,
-        }),
+        worth_proof::TransitionOutcome::Success(state) => {
+            if state.is_none() {
+                // Empty required States retain roots; this actual optional
+                // result has already destroyed them and retains no State bill.
+                funding.resize(0).map_err(|denial| {
+                    Stop::Request(crate::execution::denial::lease_denial(
+                        worth_execution::LeaseDenial::MemoryExhausted(denial),
+                    ))
+                })?;
+            }
+            Ok(ReconstructedPayload {
+                state: state.map(|artifact| artifact.into_parts().into_parts().0),
+                _funding: funding,
+            })
+        }
         worth_proof::TransitionOutcome::Denied(_) => {
             Err("native output patch application refused".into())
         }

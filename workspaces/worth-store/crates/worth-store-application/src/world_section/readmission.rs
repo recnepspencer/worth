@@ -1,5 +1,9 @@
 //! Concrete Home custody cannot skip Native recovery or duplicate its World slot.
 mod transition_catalog;
+mod transition_completion;
+pub use transition_completion::{
+    ApplicationHomeTransitionBindingStageDenial, ApplicationHomeTransitionFinishDenial,
+};
 use worth_execution::ExecutionRequest;
 use worth_proof::{AuthorityMarker, RelationalReadmitted, WorldReconciled};
 use worth_runtime_world::facade::RuntimeWorldOwner;
@@ -52,6 +56,13 @@ where
     T: Copy + Ord + Send + Sync + 'static,
 {
     native.consume(|home| {
+        if let Err(cause) = crate::open::readmission::unclean::admit(&home, request) {
+            return Err(WorldHomeReadmissionRefused {
+                cause,
+                home: Box::new(home),
+                composition: None,
+            });
+        }
         let super::ApplicationWorldDefinition {
             world: builder,
             bridge,
@@ -106,11 +117,6 @@ where
         .as_ref()
         .expect("one original exclusive World slot")
         .medium();
-    let source = super::checkpoint::readmission_source(home, request).map_err(|cause| {
-        crate::ApplicationHomeOpenRefusal::World(
-            worth_runtime_world::facade::WorldReadmissionDenial::Medium(cause),
-        )
-    })?;
     use crate::{ApplicationHomeOpeningEdge as Edge, ApplicationHomeOpeningStage as Stage};
     home.context
         .opening_observation
@@ -120,7 +126,11 @@ where
             home.relational.runtime().owner_component_services(),
             bridge,
             medium,
-            source,
+            super::checkpoint::readmission_source(&home.context, request).map_err(|cause| {
+                crate::ApplicationHomeOpenRefusal::World(
+                    worth_runtime_world::facade::WorldReadmissionDenial::Medium(cause),
+                )
+            })?,
             request,
             home.relational.runtime(),
             admission,
@@ -129,8 +139,12 @@ where
         builder.readmit_world_home(
             home.relational.runtime().owner_component_services(),
             bridge,
-            medium,
-            source,
+            &home
+                .context
+                .world_preparation
+                .as_ref()
+                .expect("existing original World preparation before Native replay")
+                .source,
             request,
             home.relational.runtime(),
             recovered,
@@ -160,6 +174,12 @@ where
     Ctx: Send + Sync + 'static,
     T: Copy + Ord + Send + Sync + 'static,
 {
+    if let Some(mut prepared) = home.context.world_preparation.take() {
+        if let Some(native) = home.relational.world_recovery_authority() {
+            prepared.complete(native);
+        }
+        drop(prepared);
+    }
     drop(
         home.context
             .world_slot
@@ -194,6 +214,11 @@ where
     }
     pub fn home_identity(&self) -> worth_foundational::facade::HomeIdentity {
         self.home.home_identity()
+    }
+    /// The current descriptor meaning on this same admitted Home. Reading it
+    /// grants neither transition authority nor permission to rewrite history.
+    pub fn binding(&self) -> &worth_foundational::facade::ApplicationHomeBinding {
+        self.home.binding()
     }
     pub fn incarnation(&self) -> worth_foundational::facade::HomeIncarnation {
         self.home.incarnation()

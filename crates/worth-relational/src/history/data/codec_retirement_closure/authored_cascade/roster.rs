@@ -2,8 +2,13 @@
 use super::*;
 use std::sync::Arc;
 
+#[allow(clippy::too_many_arguments)]
 pub(super) fn require_roster(
+    execution: &ExecutionRequest<'_, '_>,
+    runtime: &crate::history::data::codec_retirement_closure::history_request::RuntimeHistoryRequest<'_, '_, '_>,
+    basis: &AdmittedRelationalBranchBasis,
     anchor: EntityId,
+    anchors: &[EntityId],
     roles: &[RequiredOutputRoleTarget],
     selected: &[SelectedOutputPublication],
     latest: &[SelectedOutputPublication],
@@ -23,7 +28,8 @@ pub(super) fn require_roster(
         if role.posture != Posture::Retire {
             return Err(reject(Cause::ExtraEntity, id));
         }
-        if id == anchor {
+        charge(context, anchors.len()).map_err(stopped)?;
+        if anchors.contains(&id) {
             continue;
         }
         let mut matched = false;
@@ -57,15 +63,18 @@ pub(super) fn require_roster(
                     ));
                 }
             }
-            return Err(reject(Cause::ExtraEntity, id));
+            let cause = super::foreign_member::classify(execution, runtime, basis, id, context)?;
+            return Err(reject(cause, id));
         }
     }
-    charge(context, roles.len()).map_err(stopped)?;
-    if !roles
-        .iter()
-        .any(|role| role.target == EntityReference::Existing(anchor))
-    {
-        return Err(reject(Cause::MissingMember, anchor));
+    for &anchor in anchors {
+        charge(context, roles.len()).map_err(stopped)?;
+        if !roles
+            .iter()
+            .any(|role| role.target == EntityReference::Existing(anchor))
+        {
+            return Err(reject(Cause::MissingMember, anchor));
+        }
     }
     for envelope in selected {
         let origin = &envelope.origin;

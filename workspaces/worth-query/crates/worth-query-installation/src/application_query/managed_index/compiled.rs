@@ -29,10 +29,12 @@ impl ValidatedManagedIndex {
     pub(super) fn install(
         self,
         schema: ApplicationSchemaBindingIdentity,
+        budget: worth_foundational::facade::CanonicalDigestWorkBudget,
     ) -> Result<CompiledManagedIndex, Denial> {
         let mut parents = BTreeMap::new();
         for (name, binding) in self.parents {
             let access = WorthQueryInstalledManagedIndexAccessContract::compile(
+                budget,
                 schema.clone(),
                 &self.recipe,
                 &self.source,

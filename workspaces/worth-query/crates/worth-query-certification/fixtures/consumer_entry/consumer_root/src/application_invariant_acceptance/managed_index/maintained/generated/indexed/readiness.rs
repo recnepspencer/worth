@@ -47,7 +47,7 @@ impl WorthQueryApplicationConditionalBinding<Catalog> for Readiness {
             .delivery_ordinal(
                 installation.installed_schema(),
                 node.declaration(),
-                ItemName::reference(),
+                ItemName::at("ItemName"),
             )
             .unwrap();
         installation.bind_output_readiness::<Producer, _, _, _, _, _, _>(node, ordinal)

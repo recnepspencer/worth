@@ -19,8 +19,8 @@ impl<S: TopologySchemaBinding> OperationHandler<S, PlanarIslandCouplingBinding<S
             return HandlerResult::DomainDenied(PlanarIslandCouplingDenial::SameVertex);
         }
         let observed = (|| {
-            let from = reader.resolve_entity(BodyKey::reference(), input.scope_key.clone())?;
-            let to = reader.resolve_entity(BodyKey::reference(), input.target_key.clone())?;
+            let from = reader.resolve_entity(BodyKey::at("BodyKey"), input.scope_key.clone())?;
+            let to = reader.resolve_entity(BodyKey::at("BodyKey"), input.target_key.clone())?;
             let adjacent = reader
                 .relations_from(PlanarCoupling::reference(), &from)
                 .map_err(HandlerExecutionDenial::new)?;

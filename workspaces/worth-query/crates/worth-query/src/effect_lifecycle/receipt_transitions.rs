@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::{WorthQueryEvidenceIdentity, WorthQueryEvidenceScope, WorthQueryEvidenceTag};
 
 use super::inventory::EffectReceiptArtifactKind;
@@ -59,7 +60,7 @@ impl EffectReceiptTransitionRule {
         posture: EffectReceiptTransitionPosture,
         detail: &'static str,
         deferred_neighbor: Option<EffectDeferredNeighborFamily>,
-    ) -> Self {
+    ) -> Result<Self, IdentityDerivationDenial> {
         let mut rule = WorthQueryEvidenceIdentity::compose(EFFECT_LIFECYCLE_IDENTITY_SCOPE)
             .field_shape(
                 WorthQueryEvidenceTag::new("identity_family"),
@@ -74,14 +75,14 @@ impl EffectReceiptTransitionRule {
             }
             None => rule.field_shape(WorthQueryEvidenceTag::new("neighbor"), "none"),
         };
-        let rule_identity = rule.seal();
-        Self {
+        let rule_identity = rule.seal()?;
+        Ok(Self {
             kind,
             posture,
             detail,
             deferred_neighbor,
             rule_identity,
-        }
+        })
     }
 
     pub fn kind(&self) -> EffectReceiptTransitionKind {
@@ -117,44 +118,46 @@ pub struct EffectReceiptTransitionRules {
 }
 
 impl EffectReceiptTransitionRules {
-    pub(super) fn for_receipt_family(receipt_family: EffectReceiptArtifactKind) -> Self {
+    pub(super) fn for_receipt_family(
+        receipt_family: EffectReceiptArtifactKind,
+    ) -> Result<Self, IdentityDerivationDenial> {
         let rules = vec![
             EffectReceiptTransitionRule::new(
                 EffectReceiptTransitionKind::InspectReceipt,
                 EffectReceiptTransitionPosture::Implemented,
                 "the receipt is the canonical operational artifact for post-execution inspection",
                 None,
-            ),
+            )?,
             EffectReceiptTransitionRule::new(
                 EffectReceiptTransitionKind::DeriveEnvelope,
                 EffectReceiptTransitionPosture::Implemented,
                 "the self-describing envelope derives directly from the receipt",
                 None,
-            ),
+            )?,
             EffectReceiptTransitionRule::new(
                 EffectReceiptTransitionKind::MaterializeDiagnostics,
                 EffectReceiptTransitionPosture::Implemented,
                 "diagnostics materialization derives from receipt and envelope evidence",
                 None,
-            ),
+            )?,
             EffectReceiptTransitionRule::new(
                 EffectReceiptTransitionKind::ProjectMaterializedFacts,
                 EffectReceiptTransitionPosture::Deferred,
                 "projection fact receipts remain owned by milestone 9.3.4",
                 None,
-            ),
+            )?,
             EffectReceiptTransitionRule::new(
                 EffectReceiptTransitionKind::ReplayExecution,
                 EffectReceiptTransitionPosture::Deferred,
                 "durable effect replay remains deferred to later store-backed milestones",
                 Some(EffectDeferredNeighborFamily::DurableReplayAndRestartStableEnvelope),
-            ),
+            )?,
             EffectReceiptTransitionRule::new(
                 EffectReceiptTransitionKind::ExportPortableReceipt,
                 EffectReceiptTransitionPosture::Deferred,
                 "portable receipt import/export remains deferred to later store-backed milestones",
                 Some(EffectDeferredNeighborFamily::StoreBackedExecutionParity),
-            ),
+            )?,
         ];
         let rule_identities = rules
             .iter()
@@ -170,12 +173,12 @@ impl EffectReceiptTransitionRules {
                 receipt_family.as_str(),
             )
             .field_evidence_identity_sequence(WorthQueryEvidenceTag::new("rules"), &rule_identities)
-            .seal();
-        Self {
+            .seal()?;
+        Ok(Self {
             receipt_family,
             rules,
             rules_identity,
-        }
+        })
     }
 
     pub fn receipt_family(&self) -> EffectReceiptArtifactKind {

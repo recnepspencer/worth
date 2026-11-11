@@ -39,7 +39,8 @@ fn closes_only_from_required_phase_local_closures() {
 #[test]
 fn support_profile_contract_names_defended_exclusion() {
     let contract =
-        WorthQueryMilestoneNineSevenDerivedClosure::support_profile_publication_contract();
+        WorthQueryMilestoneNineSevenDerivedClosure::support_profile_publication_contract()
+            .expect("fixture digest must fit");
 
     assert_eq!(contract.status(), WorthQueryMilestoneClosureStatus::Partial);
     assert_eq!(
@@ -68,6 +69,7 @@ fn phase_local_closure(
             }),
         ["store-backed execution parity belongs to Milestone 10"],
     )
+    .expect("fixture digest must fit")
 }
 
 fn phase_local_closure_with_status_at(
@@ -95,4 +97,5 @@ fn phase_local_closure_with_status_at(
             }),
         ["store-backed execution parity belongs to Milestone 10"],
     )
+    .expect("fixture digest must fit")
 }

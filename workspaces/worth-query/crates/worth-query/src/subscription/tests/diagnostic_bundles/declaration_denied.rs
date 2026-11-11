@@ -8,14 +8,16 @@ fn denied_diagnostic_bundle_localizes_declaration_failure_and_omits_later_stages
         LiveQueryFamily::OrderedCollection,
         Some(LiveViewShapeFamily::KanbanGrouped),
         QuerySubscriptionConstructionSource::Direct,
-    );
+    )
+    .expect("fixture digest must fit");
     let selection = select_query_subscription_family(live, roomy_budget()).unwrap();
     let declaration_error = declare_query_subscription(
         selection.clone(),
         roomy_slice_budget().with_masked_slice_request_detected(),
     )
     .unwrap_err();
-    let failure = QuerySubscriptionDiagnosticFailure::from_declaration_denial(&declaration_error);
+    let failure = QuerySubscriptionDiagnosticFailure::from_declaration_denial(&declaration_error)
+        .expect("fixture digest must fit");
     let selection_context = QuerySubscriptionDiagnosticSelectionContext::from_selection(&selection);
     let trace = trace_denied_query_subscription_diagnostics(
         &selection_context,

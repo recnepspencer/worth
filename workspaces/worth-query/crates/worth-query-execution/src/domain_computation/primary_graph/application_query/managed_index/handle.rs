@@ -41,6 +41,11 @@ impl<S: ApplicationSchema, I: ApplicationManagedIndexBinding<S>> WorthQueryManag
     /// Releases the current image. An authenticated explicit rebuild is required
     /// before queries can use this registration again.
     pub fn evict(&self) -> Result<(), WorthQueryManagedIndexDenial> {
+        worth_execution::run_with_execution_stack(|| self.evict_on_execution_stack())
+    }
+
+    #[inline(never)]
+    fn evict_on_execution_stack(&self) -> Result<(), WorthQueryManagedIndexDenial> {
         self.state.evict().map_err(|cause| {
             WorthQueryManagedIndexDenial::new(
                 ReceiverCause::Provider(ProviderExecutionDenial::Lifecycle(cause)),
@@ -52,6 +57,11 @@ impl<S: ApplicationSchema, I: ApplicationManagedIndexBinding<S>> WorthQueryManag
     /// Irreversibly disposes and unregisters this registration for every sibling.
     /// Cleanup performs no source read or provider callback.
     pub fn close(&self) {
+        worth_execution::run_with_execution_stack(|| self.close_on_execution_stack())
+    }
+
+    #[inline(never)]
+    fn close_on_execution_stack(&self) {
         self.state.close();
         if let Some(registry) = self.registry.upgrade() {
             registry.unregister(self.id);

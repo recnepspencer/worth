@@ -25,7 +25,7 @@ fn full_verification_uses_native_facts_and_retains_the_exact_captured_image() {
         .with_host_advancement(|phase| {
             selected.resolve_entity(
                 &phase,
-                AccountStatus::reference(),
+                AccountStatus::at("AccountStatus"),
                 "open".to_owned(),
                 &live_scope(),
                 WorthQueryPrincipalResolutionMode::Ordinary,
@@ -46,7 +46,7 @@ fn full_verification_uses_native_facts_and_retains_the_exact_captured_image() {
         .unwrap();
     let handle = graph.integration_handle_for_test();
     let owner = (*handle.source_owner_for_test()).invalidation_owner_for_test();
-    let label_ref = AccountLabel::reference();
+    let label_ref = AccountLabel::at("AccountLabel");
     let label = graph
         .layout_for_test()
         .field_locator_for_test(label_ref.entity(), label_ref.aspect(), label_ref.field())

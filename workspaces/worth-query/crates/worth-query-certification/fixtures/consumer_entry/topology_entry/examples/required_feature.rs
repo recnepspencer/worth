@@ -1,6 +1,5 @@
 //! Run with `cargo run -p worth-query-topology-entry --example required_feature`.
 #![recursion_limit = "256"]
-
 use std::sync::{
     atomic::{AtomicBool, AtomicUsize, Ordering},
     Arc,
@@ -25,12 +24,7 @@ type Application =
 type Request<'a, 'p, 's> = WorthQueryApplicationRequest<'a, 'p, 's, ExampleSchema>;
 
 fn main() {
-    std::thread::Builder::new()
-        .stack_size(64 * 1024 * 1024)
-        .spawn(run)
-        .unwrap()
-        .join()
-        .unwrap();
+    run();
 }
 
 fn run() {

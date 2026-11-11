@@ -38,6 +38,22 @@ impl RelationalDurableColdSource for RetryAfterFailure {
             .read_member_owned(request, original, member, limit)
     }
 
+    fn validate_member_custody_retirement(
+        &self,
+        original: &(dyn std::any::Any + Send + Sync),
+    ) -> Result<(), crate::durability::medium::RelationalDurableMemberRetirementRefusal> {
+        self.source.validate_member_custody_retirement(original)
+    }
+
+    fn advance_member_custody_retirement(
+        &self,
+        request: &worth_execution::ExecutionRequest<'_, '_>,
+        original: &mut (dyn std::any::Any + Send + Sync),
+    ) -> crate::durability::medium::RelationalDurableMemberRetirementObservation {
+        self.source
+            .advance_member_custody_retirement(request, original)
+    }
+
     fn retain_members(
         &self,
         members: &[RelationalDurableMemberLocator],

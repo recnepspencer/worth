@@ -67,7 +67,7 @@ fn cancelled_close_returns_the_whole_original_lifecycle_then_fresh_retry_closes(
         PlatformPulseQueryMutationPurpose::Source,
     ));
     let cancellation = WorthQueryCancellationSource::new();
-    let stopped = WorthQueryRequestScope::new(None, cancellation.token());
+    let stopped = WorthQueryRequestScope::new(None, cancellation.token(), worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system());
     cancellation.cancel();
     let (lifecycle, denial) = match lifecycle.close_with_scope(&stopped) {
         Err(refused) => refused,

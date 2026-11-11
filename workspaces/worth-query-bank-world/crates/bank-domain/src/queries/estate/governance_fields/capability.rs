@@ -1,27 +1,13 @@
-use worth_query_decl::facade::{
-    application_query::{ApplicationQueryOptionalResultFieldRef, ApplicationQueryResultFieldRef},
-    application_schema::{
-        DeclaredApplicationUnit, EqualityPredicate, NoApplicationUnit, NoEqualityPredicate,
-        ReadOnly, ReadWrite,
-    },
+use worth_query_decl::facade::application_query::{
+    ApplicationQueryOptionalResultFieldRef, ApplicationQueryResultFieldRef,
 };
 
-use crate::{
-    estate::{
-        BranchId, CapabilityGrantId, CapabilityGrantStatus, DelegationLimit,
-        EstateCapabilityOperation, EstateCapabilityPurpose, EstateMoment, EstateWorkflowStage,
-        RestrictedBankField,
-    },
-    model::{AccountId, BankPrincipalId, InstitutionId, Money, USD},
-    schema::{
-        Account, AccountIdentity, BankSchema, Branch, BranchIdentity, BranchIdentityField,
-        CapabilityAmountCeilingField, CapabilityDelegationLimitField, CapabilityDisclosureField,
-        CapabilityGrant, CapabilityGrantIdentityField, CapabilityGrantRecord,
-        CapabilityGrantStatusField, CapabilityOperationField, CapabilityPurposeField,
-        CapabilityValidFromField, CapabilityValidThroughField, CapabilityWorkflowStageField,
-        Identity, Institution, InstitutionIdentity, InstitutionIdentityField, Principal,
-        PrincipalIdentity, PrincipalIdentityField, UsdCurrency,
-    },
+use crate::schema::{
+    AccountIdentity, BankSchema, BranchIdentityField, CapabilityAmountCeilingField,
+    CapabilityDelegationLimitField, CapabilityDisclosureField, CapabilityGrantIdentityField,
+    CapabilityGrantStatusField, CapabilityOperationField, CapabilityPurposeField,
+    CapabilityValidFromField, CapabilityValidThroughField, CapabilityWorkflowStageField,
+    InstitutionIdentityField, PrincipalIdentityField,
 };
 
 use super::super::governance::EstateGovernanceQuery;
@@ -58,19 +44,9 @@ slots!(
 
 macro_rules! selector {
     ($name:ident, $slot:ty, $entity:ty, $aspect:ty, $field:ty, $value:ty, $write:ty, $alias:literal) => {
-        pub(in crate::queries::estate) fn $name() -> ApplicationQueryResultFieldRef<
-            EstateGovernanceQuery,
-            $slot,
-            BankSchema,
-            $entity,
-            $aspect,
-            $field,
-            $value,
-            $write,
-            EqualityPredicate,
-            NoApplicationUnit,
-        > {
-            ApplicationQueryResultFieldRef::new($alias, <$field>::reference())
+        pub(in crate::queries::estate) fn $name(
+        ) -> ApplicationQueryResultFieldRef<EstateGovernanceQuery, $slot, BankSchema, $field> {
+            ApplicationQueryResultFieldRef::new($alias, <$field>::at(stringify!($field)))
         }
     };
 }
@@ -220,31 +196,22 @@ pub(in crate::queries::estate) fn capability_field() -> ApplicationQueryOptional
     EstateGovernanceQuery,
     CapabilityFieldSlot,
     BankSchema,
-    CapabilityGrant,
-    CapabilityGrantRecord,
     CapabilityDisclosureField,
-    RestrictedBankField,
-    ReadWrite,
-    EqualityPredicate,
-    NoApplicationUnit,
 > {
-    ApplicationQueryOptionalResultFieldRef::new("field", CapabilityDisclosureField::reference())
+    ApplicationQueryOptionalResultFieldRef::new(
+        "field",
+        CapabilityDisclosureField::at("CapabilityDisclosureField"),
+    )
 }
 
 pub(in crate::queries::estate) fn capability_amount() -> ApplicationQueryOptionalResultFieldRef<
     EstateGovernanceQuery,
     CapabilityAmountSlot,
     BankSchema,
-    CapabilityGrant,
-    CapabilityGrantRecord,
     CapabilityAmountCeilingField,
-    Money<USD>,
-    ReadWrite,
-    NoEqualityPredicate,
-    DeclaredApplicationUnit<UsdCurrency, USD>,
 > {
     ApplicationQueryOptionalResultFieldRef::new(
         "amount_ceiling",
-        CapabilityAmountCeilingField::reference(),
+        CapabilityAmountCeilingField::at("CapabilityAmountCeilingField"),
     )
 }

@@ -26,7 +26,7 @@ fn a_marked_fact_is_reverified_at_the_real_native_snapshot() {
                 .selected_product(&phase.test_host_request_for_test())
                 .resolve_entity(
                     &phase,
-                    AccountStatus::reference(),
+                    AccountStatus::at("AccountStatus"),
                     "open".to_owned(),
                     &live_scope(),
                     WorthQueryPrincipalResolutionMode::Ordinary,
@@ -36,7 +36,7 @@ fn a_marked_fact_is_reverified_at_the_real_native_snapshot() {
             let graph = (*world.application.runtime_for_test())
                 .primary_graph_for_test()
                 .unwrap();
-            let status_ref = AccountStatus::reference();
+            let status_ref = AccountStatus::at("AccountStatus");
             let status = graph
                 .layout_for_test()
                 .field_locator_for_test(
@@ -132,7 +132,7 @@ fn a_clean_settlement_reuses_without_fact_reverification() {
             let entity = selected_product
                 .resolve_entity(
                     &phase,
-                    AccountStatus::reference(),
+                    AccountStatus::at("AccountStatus"),
                     "open".to_owned(),
                     &live_scope(),
                     WorthQueryPrincipalResolutionMode::Ordinary,
@@ -144,7 +144,7 @@ fn a_clean_settlement_reuses_without_fact_reverification() {
             let graph = (*world.application.runtime_for_test()).primary_graph_for_test().unwrap();
             let handle = graph.integration_handle_for_test();
             let owner = (*handle.source_owner_for_test()).invalidation_owner_for_test();
-            let status_ref = AccountStatus::reference();
+            let status_ref = AccountStatus::at("AccountStatus");
             let status = graph
                 .layout_for_test()
                 .field_locator_for_test(status_ref.entity(), status_ref.aspect(), status_ref.field())
@@ -249,7 +249,7 @@ fn a_clean_settlement_reuses_without_fact_reverification() {
                         None,
                         Some(evidence.retain_facts_for_test(facts)),
                         RecordedComputation::Absent(PriorAbsence::FirstRun),
-                    )));
+                    )), None);
                 let candidate = worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::input_cutoff::RetainedInputCutoffCandidate::from_exact_cell_for_test(Arc::new(
                     OnceLock::from(row),
                 ));

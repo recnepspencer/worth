@@ -7,7 +7,6 @@ use crate::authority::commit::phases::applied_mutation::{
 use crate::authority::mutation::MutationApplyOutcome;
 use crate::storage::overlay::WorkingState;
 
-mod aggregate_consequences;
 mod telemetry;
 
 pub(super) struct MutatedCommitExecution {
@@ -16,10 +15,10 @@ pub(super) struct MutatedCommitExecution {
     pub(super) invariant_executions: Vec<crate::validation::engine::InvariantExecutionResult>,
     pub(super) outcome: MutationApplyOutcome,
     pub(super) mutation_identities: PendingMutationIdentities,
-    pub(super) aggregate: Option<crate::aggregate_identity::AggregateProposal>,
+    // Retain the proposal and its selected/source backing through history binding.
+    pub(super) _aggregate: Option<crate::aggregate_identity::AggregateProposal>,
     pub(super) source_interpretation:
         std::sync::Arc<crate::validation::candidate_source::NativeManagedSourceInterpretation>,
-    pub(super) aggregate_admission: Option<crate::aggregate_identity::AggregateAdmission>,
 }
 
 impl MutatedCommitExecution {
@@ -32,18 +31,16 @@ pub(super) fn mutate_commit_execution(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &crate::runtime::RelationalPreparationRuntime,
     validated: CommitPhaseBacking<BoundaryValidatedCommitExecution>,
-    control: &crate::validation::engine::InvariantPreparationControl<'_, '_>,
+    _control: &crate::validation::engine::InvariantPreparationControl<'_, '_>,
 ) -> Result<
     CommitPhaseBacking<MutatedCommitExecution>,
     crate::transactions::data::TransactionCommitError,
 > {
-    // Producer temporaries retire before funding the retained successor,
-    // matching the former caller-side allocation boundary.
     let result = {
         let validated = validated.into_inner();
         use crate::transactions::data::CommitPhase;
         super::consult_stage(execution, super::CommitStage::Mutation)?;
-        let (prepared, mut invariant_executions) = validated.into_parts();
+        let (prepared, invariant_executions) = validated.into_parts();
         let (
             mut prepared,
             AppliedMutationDraft {
@@ -54,61 +51,28 @@ pub(super) fn mutate_commit_execution(
                 source_interpretation,
             },
         ) = prepared.into_parts();
-        let selected = prepared.selected_branch_state().clone();
-        let version = prepared.version_id();
-        let prevalidated = prepared.admitted.take_prevalidated_mutation_sensitive();
         telemetry::record_preparation_telemetry(runtime, outcome.preparation_telemetry);
         crate::authority::commit::phases::prepare::record_mutation_counters(
             runtime,
             &working_state,
         );
-        let (_, _, merged_plan, _, commit_log, phase_timing) =
-            prepared.admitted.phase_view().into_parts();
+        let (_, _, _, _, commit_log, phase_timing) = prepared.admitted.phase_view().into_parts();
         commit_log.begin_phase(CommitPhase::AuthoritativeMutation);
         let started = std::time::Instant::now();
-        let invariant = match prevalidated {
-            Some(invariant) => invariant,
-            None => runtime
-                .invariant_authority()
-                .enforce_mutation_sensitive_for_working_state(
-                    &crate::branch::SelectedRelationalBranchRead::in_round(&selected, &selected),
-                    &working_state,
-                    version,
-                    merged_plan,
-                    Some(&prepared.proposal_identity),
-                    aggregate.as_ref().map(|owner| {
-                        owner.borrow(
-                            &working_state,
-                            crate::branch::SelectedRelationalBranchRead::in_round(
-                                &selected, &selected,
-                            ),
-                        )
-                    }),
-                    execution,
-                    control,
-                )
-                .map_err(|error| {
-                    super::rejection::attach_rejection(
-                        commit_log,
-                        CommitPhase::AuthoritativeMutation,
-                        error,
-                    )
-                })?,
-        };
-        commit_log.record_invariant_outcomes(&invariant);
         commit_log.complete_phase(CommitPhase::AuthoritativeMutation);
         phase_timing.authoritative_mutation_micros = super::rejection::elapsed_micros(started);
-        invariant_executions.push(invariant);
         MutatedCommitExecution {
             prepared,
             working_state,
             invariant_executions,
             outcome,
             mutation_identities,
-            aggregate,
+            _aggregate: aggregate,
             source_interpretation,
-            aggregate_admission: None,
         }
     };
     CommitPhaseBacking::new(execution, result)
 }
+#[cfg(test)]
+#[path = "mutation_execution_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;

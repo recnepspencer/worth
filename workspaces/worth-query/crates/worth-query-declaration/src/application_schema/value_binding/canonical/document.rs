@@ -1,9 +1,7 @@
 //! Entry adapters delegate sealed document construction to the pure envelope owner.
 use super::{super::*, *};
 use crate::portable_identity::WorthQueryPortableTypeIdentity;
-use worth_foundational::facade::{
-    AspectValue, CanonicalDocumentCodec, InternedString, ScalarAspectType,
-};
+use worth_foundational::facade::{AspectValue, CanonicalDocumentCodec, ScalarAspectType};
 
 pub fn encode_application_document<Codec: CanonicalDocumentCodec>(
     value: &Codec::Document,
@@ -41,7 +39,7 @@ pub fn decode_application_document<Codec: CanonicalDocumentCodec>(
             observed: raw.value_family(),
         });
     };
-    let InternedString::Raw(text) = text else {
+    let Some(text) = text.raw_text() else {
         return Err(ApplicationValueDecodeDenial::CodecRejected { binding_identity });
     };
     match admission {

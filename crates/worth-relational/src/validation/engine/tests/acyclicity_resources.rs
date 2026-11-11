@@ -28,7 +28,7 @@ fn repeated_dag_reachability_reuses_scratch_under_the_same_finite_policy() {
     );
     assert!(candidate
         .state
-        .commit_boundary
+        .invariants
         .results()
         .iter()
         .all(|result| matches!(

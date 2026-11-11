@@ -127,6 +127,9 @@ class BatchedCompilerTests(unittest.TestCase):
                     result = prepare_environment(manifest, env, root / proof_stage, runner)
                     checks = [command for command in runner.commands if command[1] == command_name]
                     self.assertEqual(len(checks), 1)
+                    self.assertNotIn('build.rustflags=', ' '.join(checks[0]))
+                    self.assertNotIn('--verbose', checks[0])
+                    self.assertEqual(runner.environment, {'CARGO_TARGET_DIR': str(root / 'active-target')})
                     self.assertEqual(result['proof_stage'], proof_stage)
                     for flag in ('--workspace', '--bins', '--keep-going', '--locked'):
                         self.assertIn(flag, checks[0])

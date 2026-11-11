@@ -4,6 +4,8 @@
 /// variable-length fields, and remain independent of host endianness.
 /// `canonical_len` must equal the exact number of bytes visited. A visitor
 /// returning false must stop the stream without producing further bytes.
+/// Retained values and their clones must keep these observable bits stable;
+/// reducers may carry an admitted encoding across immutable path copies.
 pub trait CanonicalBits {
     fn canonical_len(&self) -> Option<usize>;
     fn visit_canonical_bits(&self, visitor: &mut dyn FnMut(&[u8]) -> bool) -> bool;

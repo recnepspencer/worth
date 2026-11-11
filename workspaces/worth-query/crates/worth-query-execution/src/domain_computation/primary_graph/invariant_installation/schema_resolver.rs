@@ -135,31 +135,20 @@ impl<Schema> WorthQueryApplicationInvariantSchemaResolver<'_, Schema> {
         )
     }
 
-    pub fn typed_field<
-        Entity,
-        Aspect,
-        Field,
-        Value,
-        Write,
-        Equality,
-        Unit: worth_query_declaration::facade::application_schema::ApplicationFieldUnit,
-    >(
+    pub fn typed_field<Field>(
         &self,
-        field: worth_query_declaration::facade::application_schema::ApplicationFieldRef<
+        field: Field,
+    ) -> Option<
+        super::super::application_invariant::WorthQueryApplicationInvariantFieldBinding<
             Schema,
-            Entity,
-            Aspect,
-            Field,
-            Value,
-            Write,
-            Equality,
-            Unit,
+            Field::Entity,
+            Field::Value,
         >,
-    ) -> Option<super::super::application_invariant::WorthQueryApplicationInvariantFieldBinding<Schema, Entity, Value>>
+    >
     where
-        Field: worth_query_declaration::facade::application_schema::DeclaredApplicationFieldValue<Value = Value>,
-        Field::Binding: worth_query_declaration::facade::application_schema::ApplicationReadableScalarValueBinding,
-{
+        Field: worth_query_declaration::facade::application_schema::fragment::RecordSelection,
+    {
+        let metadata = self.layout.record_selection(field).ok()?;
         let layout = self
             .layout
             .field(field.entity(), field.aspect(), field.field())?;
@@ -173,7 +162,7 @@ impl<Schema> WorthQueryApplicationInvariantSchemaResolver<'_, Schema> {
                 entity_kind: layout.entity_kind,
                 locator: layout.locator.clone(),
                 aspect_absence,
-                presence: Field::PRESENCE,
+                presence: metadata.presence(),
                 decode: |value| {
                     <Field::Binding as worth_query_declaration::facade::application_schema::ApplicationReadableScalarValueBinding>::decode(value).map_err(|error| format!("{error:?}"))
                 },

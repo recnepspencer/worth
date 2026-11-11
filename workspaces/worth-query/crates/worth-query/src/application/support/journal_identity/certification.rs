@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::evidence_identity::{
     worth_query_evidence_identity, WorthQueryEvidenceScope, WorthQueryEvidenceTag,
 };
@@ -41,7 +42,7 @@ impl WorthQueryJournalIdentityCertification {
         inventory: WorthQueryJournalIdentityInventoryEvidence,
         schedule: WorthQueryJournalIdentityScheduleEvidence,
         replay: WorthQueryJournalReplaySurfaceEvidence,
-    ) -> Self {
+    ) -> Result<Self, IdentityDerivationDenial> {
         let posture = derive_journal_identity_posture(&inventory, &schedule, &replay);
         let failure_digest =
             worth_query_evidence_identity(WorthQueryEvidenceScope::ApplicationSupportReport)
@@ -57,7 +58,7 @@ impl WorthQueryJournalIdentityCertification {
                     WorthQueryEvidenceTag::new("journal_replay_surface_certified"),
                     replay.certified(),
                 )
-                .seal()
+                .seal()?
                 .as_str()
                 .to_string();
         let artifact_digest = worth_query_evidence_identity(
@@ -107,7 +108,7 @@ impl WorthQueryJournalIdentityCertification {
             WorthQueryEvidenceTag::new("journal_identity_failure_digest"),
             &failure_digest,
         )
-        .seal()
+        .seal()?
         .as_str()
         .to_string();
         let replay_boundary = WorthQueryJournalReplayBoundaryCertification {
@@ -120,7 +121,7 @@ impl WorthQueryJournalIdentityCertification {
             failure_digest: failure_digest.clone(),
             counter_snapshot: replay.counter_snapshot().clone(),
         };
-        Self {
+        Ok(Self {
             inventory,
             schedule,
             replay,
@@ -128,7 +129,7 @@ impl WorthQueryJournalIdentityCertification {
             replay_boundary,
             artifact_digest,
             failure_digest,
-        }
+        })
     }
 
     pub fn closed(&self) -> bool {

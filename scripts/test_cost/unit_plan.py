@@ -126,7 +126,9 @@ def inputs(command, cwd, environment, manifests=()):
 def checked_test_roots(command, graph):
     if command[1] not in ('check', 'clippy'):
         return ()
-    if '--tests' in command and not any(flag in command for flag in
+    explicit_example = any(argument == '--example' or argument.startswith('--example=')
+                           for argument in command)
+    if '--tests' in command and not explicit_example and not any(flag in command for flag in
             ('--all-targets', '--lib', '--bins', '--examples', '--benches')):
         return graph['roots']
     if '--all-targets' not in command and '--tests' not in command:
@@ -145,7 +147,29 @@ def checked_test_roots(command, graph):
             key = digest({key: value for key, value in row.items() if key != 'dependencies'})
             groups.setdefault(key, []).append(index)
     harnesses = []
+    cargo_arguments = command[:command.index('--')] if '--' in command else command
+    only_test_binaries = '--tests' in cargo_arguments and not any(
+        argument in ('--all-targets', '--bins', '--bin') or argument.startswith('--bin=')
+        for argument in cargo_arguments)
+    ordinary_examples = {
+        argument.split('=', 1)[1] if argument.startswith('--example=') else cargo_arguments[index + 1]
+        for index, argument in enumerate(cargo_arguments)
+        if argument.startswith('--example=') or argument == '--example'
+    }
+    only_test_examples = '--tests' in cargo_arguments and not any(
+        argument in ('--all-targets', '--examples') for argument in cargo_arguments)
     for indices in groups.values():
+        if len(indices) == 1 and (only_test_binaries or only_test_examples):
+            index = indices[0]
+            row = graph['units'][index]
+            # --tests includes test-enabled examples that were not explicitly
+            # selected for an ordinary stage. Their harness is a singleton.
+            test_selection = ((row['target']['kind'] == ['bin'] and only_test_binaries)
+                or (row['target']['kind'] == ['example'] and only_test_examples
+                    and row['target']['name'] not in ordinary_examples))
+            if (test_selection and row['target'].get('test', False)
+                    and index in graph['roots'] and index not in incoming):
+                harnesses.append(index)
         if len(indices) != 2:
             continue
         leaves = [index for index in indices if index in graph['roots'] and index not in incoming]
@@ -172,6 +196,30 @@ def declare(command, cwd, environment, observed):
     except (KeyError, TypeError, ValueError) as error:
         raise CompilerUnitRefusal(f'could not declare required compiler units: {error}') from error
     contract = inputs(command, cwd, environment, manifest_paths(command, cwd, graph))
+    shared = dict(contract['compiler_inputs'])
+    # Incremental mode is already part of each declared Cargo profile. Comparing
+    # the spelling of its override would invent drift for unaffected dependencies.
+    primary_flags = command[command.index('--') + 1:] if command[1:2] == ['rustc'] and '--' in command else []
+    configurations = shared['command_flags'][:-len(primary_flags)] if primary_flags else shared['command_flags']
+    effective = []
+    for value in configurations:
+        try:
+            parsed = tomllib.loads(value)
+        except tomllib.TOMLDecodeError:
+            parsed = None
+        if parsed not in ({'build': {'incremental': True}}, {'build': {'incremental': False}}):
+            effective.append(value)
+        elif any(not isinstance(row['profile'].get('incremental'), bool) for row in units):
+            raise CompilerUnitRefusal('Cargo did not declare the resolved incremental mode')
+    shared['command_flags'] = effective
+    rows = iter(units)
+    for index, unit in enumerate(graph['units']):
+        if unit['mode'] == 'run-custom-build':
+            continue
+        row = next(rows)
+        # cargo rustc's trailing arguments apply only to the selected roots.
+        row['compiler_inputs'] = digest(dict(shared, command_flags=effective +
+            (primary_flags if index in graph['roots'] else [])))
     return {'schema': 1, 'type': 'compiler-unit-plan', 'contract': contract,
             'compiler_inputs': digest(contract['compiler_inputs']), 'units': units,
             'graph': graph}

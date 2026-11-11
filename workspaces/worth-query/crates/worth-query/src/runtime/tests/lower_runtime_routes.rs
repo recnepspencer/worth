@@ -53,7 +53,8 @@ fn runtime_write_denies_when_write_authority_route_receipt_drifts_from_command()
                 &WorthQueryWriteCommand::Delete {
                     entity_identity: crate::memory_workspace::admit_authored_entity_label(
                         "drifted-entity",
-                    ),
+                    )
+                    .expect("fixture digest must fit"),
                 },
                 honest.mutation_receipt().clone(),
             ))

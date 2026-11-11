@@ -61,7 +61,7 @@ impl CourtroomWorld {
                 selected
                     .resolve_entity(
                         &phase,
-                        IntentIdentityField::reference(),
+                        IntentIdentityField::at("IntentIdentityField"),
                         "intent-1".to_string(),
                         &request,
                         primary_graph::WorthQueryPrincipalResolutionMode::Ordinary,
@@ -96,19 +96,19 @@ impl CourtroomWorld {
                 &phase, &admission,
                 |reader, scope| {
                     reader
-                        .decision_field(scope, IntentRevisionField::reference())
+                        .decision_field(scope, IntentRevisionField::at("IntentRevisionField"))
                         .unwrap();
                     reader
-                        .decision_field(scope, IntentLifecycleField::reference())
+                        .decision_field(scope, IntentLifecycleField::at("IntentLifecycleField"))
                         .unwrap();
                     reader
-                        .decision_field(scope, IntentGateField::reference())
+                        .decision_field(scope, IntentGateField::at("IntentGateField"))
                         .unwrap();
                     reader
-                        .decision_field(scope, IntentDueField::reference())
+                        .decision_field(scope, IntentDueField::at("IntentDueField"))
                         .unwrap();
                     reader
-                        .decision_field(scope, IntentInputField::reference())
+                        .decision_field(scope, IntentInputField::at("IntentInputField"))
                         .unwrap();
                 },
                 worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
@@ -140,23 +140,31 @@ impl CourtroomWorld {
             .expect("installed host call opens");
         let intent = effects.existing_entity(&intent).unwrap();
         effects
-            .write_field(&intent, IntentRevisionField::reference(), 2)
+            .write_field(&intent, IntentRevisionField::at("IntentRevisionField"), 2)
             .unwrap();
         effects
             .write_field(
                 &intent,
-                IntentLifecycleField::reference(),
+                IntentLifecycleField::at("IntentLifecycleField"),
                 "active".to_string(),
             )
             .unwrap();
         effects
-            .write_field(&intent, IntentDueField::reference(), 11)
+            .write_field(&intent, IntentDueField::at("IntentDueField"), 11)
             .unwrap();
         effects
-            .write_field(&intent, IntentInputField::reference(), input.to_string())
+            .write_field(
+                &intent,
+                IntentInputField::at("IntentInputField"),
+                input.to_string(),
+            )
             .unwrap();
         effects
-            .write_field(&intent, IntentGateField::reference(), "ready".to_string())
+            .write_field(
+                &intent,
+                IntentGateField::at("IntentGateField"),
+                "ready".to_string(),
+            )
             .unwrap();
         effects
             .advance_conditional_definition(conditional_definition)

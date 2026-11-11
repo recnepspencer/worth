@@ -45,8 +45,7 @@ pub(super) fn lower_instance(
         INSTANCE_ASPECT,
         "start-advancer",
     )?;
-    let end_advancer =
-        super::super::actor::record::WorkflowActorFields::planned(INSTANCE_ASPECT, "end-advancer")?;
+    let ending_actor = super::super::actor::ending::WorkflowEndingActorFields::planned()?;
     let shape = aspects()
         .struct_fields()
         .required("identity", ScalarAspectType::String)
@@ -70,9 +69,7 @@ pub(super) fn lower_instance(
         .required("start-advancer-partition", ScalarAspectType::UInt64)
         .required("start-advancer-slot", ScalarAspectType::UInt64)
         .required("start-advancer-generation", ScalarAspectType::UInt64)
-        .optional("end-advancer-partition", ScalarAspectType::UInt64)
-        .optional("end-advancer-slot", ScalarAspectType::UInt64)
-        .optional("end-advancer-generation", ScalarAspectType::UInt64)
+        .optional("ending-actor", ScalarAspectType::InlineBytes)
         .finish()
         .map_err(|_| invalid_member(INSTANCE_ASPECT))?;
     let registry = register_platform_entity_at_revision(
@@ -84,13 +81,13 @@ pub(super) fn lower_instance(
         INSTANCE_ASPECT,
         identity,
         shape,
-        2,
+        3,
     )?;
     Ok((
         registry,
         WorkflowInstanceLayout {
             start_advancer,
-            end_advancer,
+            ending_actor,
 
             entity_kind: kind,
             identity: identity_field,

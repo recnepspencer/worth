@@ -1,5 +1,6 @@
 use crate::runtime::{RelationalPreparationOwnerBinding, RelationalPreparationRuntime};
 use crate::transactions::data::TransactionCommitError;
+mod owned_graph_selection;
 #[path = "preparation_port/selection_admission.rs"]
 mod selection_admission;
 #[path = "preparation_port/selection_preparation.rs"]
@@ -12,7 +13,7 @@ mod selection_preparation;
 /// settlement remains exclusively owned by [`crate::mvcc::RelationalPublicationPort`].
 #[derive(Debug, Clone)]
 pub struct RelationalPreparationPort {
-    binding: RelationalPreparationOwnerBinding,
+    pub(in crate::mvcc) binding: RelationalPreparationOwnerBinding,
 }
 
 impl RelationalPreparationPort {
@@ -46,6 +47,17 @@ impl RelationalPreparationPort {
     /// Validate a branch-bound transaction and register its immutable
     /// publication candidate without requiring exclusive runtime access.
     pub fn prepare_branch_transaction(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        transaction: crate::mvcc::BranchBoundRelationalTransaction,
+    ) -> Result<crate::mvcc::PreparedRelationalCommitCandidate, TransactionCommitError> {
+        worth_execution::run_with_execution_stack(move || {
+            self.prepare_branch_transaction_on_execution_stack(execution, transaction)
+        })
+    }
+
+    #[inline(never)]
+    fn prepare_branch_transaction_on_execution_stack(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         transaction: crate::mvcc::BranchBoundRelationalTransaction,

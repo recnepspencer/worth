@@ -1,61 +1,37 @@
-use super::fixture_values::PositiveLength;
+use worth_query_decl::facade::application_schema::{
+    fragment, ApplicationRelationMinimumReachability,
+};
 use worth_query_decl::facade::application_schema::{
     ApplicationInvariantCostPosture, ApplicationInvariantDefinition,
     ApplicationInvariantEnforcement, ApplicationInvariantExecutionPoint, ApplicationInvariantGroup,
     ApplicationInvariantMarkerIdentity, ApplicationInvariantOperationalContract,
     ApplicationInvariantScopeTarget, ApplicationRelationCardinality,
-    ApplicationRelationDeletionPolicy, ApplicationRelationEndpoints, ApplicationRelationIntegrity,
-    ApplicationRelationRef, RelationalInvariantWorkBudget,
+    ApplicationRelationDeletionPolicy, ApplicationRelationRef, RelationalInvariantWorkBudget,
 };
-use worth_query_decl::facade::{worth_query_aspect, worth_query_field};
 
-use super::{Body, Metre, TopologyLengthBinding, TopologyModelBinding};
-
-worth_query_aspect!(
-    pub PlanarPosition for Schema: TopologyModelBinding, Body;
-    identity = AspectIdentity(0x9174_1011),
-    revision = AspectContractRevision(1),
-);
-worth_query_field!(
-    pub BodyKey for Schema: TopologyModelBinding, Body, PlanarPosition:
-    String => worth_query_decl::facade::application_schema::StringApplicationValueBinding, read_only, equality
-);
-worth_query_field!(
-    pub PositionX for Schema: TopologyModelBinding, Body, PlanarPosition:
-    PositiveLength => TopologyLengthBinding, unit Metre, read_write, equality
-);
-worth_query_field!(
-    pub PositionY for Schema: TopologyModelBinding, Body, PlanarPosition:
-    PositiveLength => TopologyLengthBinding, unit Metre, read_write, equality
-);
+use super::{Body, TopologyModelBinding, TopologyRecords};
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub struct PlanarSuccessor;
 
+impl fragment::Relation for PlanarSuccessor {
+    const NAME: &'static str = "PlanarSuccessor";
+    type To = Body;
+    const SELF_EDGES: bool = false;
+    const CARDINALITY: ApplicationRelationCardinality =
+        ApplicationRelationCardinality::new(Some(1), Some(1), Some(1), Some(1), None, Some(1));
+    const DELETION: ApplicationRelationDeletionPolicy =
+        ApplicationRelationDeletionPolicy::RejectDeleteWithLiveRelations;
+    const ORBIT: bool = true;
+    const REACHES_AT_LEAST: Option<ApplicationRelationMinimumReachability> =
+        Some(ApplicationRelationMinimumReachability {
+            minimum_reachable_targets: 2,
+            target_kinds: &[<Body as fragment::Entity>::NAME],
+        });
+}
 impl PlanarSuccessor {
-    pub const fn reference<Schema>() -> ApplicationRelationRef<Schema, Self, Body, Body>
-    where
-        Schema: TopologyModelBinding,
-    {
-        ApplicationRelationRef::from_schema_identifiers(
-            "PlanarSuccessor",
-            "Body",
-            "Body",
-            ApplicationRelationIntegrity::new(
-                ApplicationRelationEndpoints::same_context(false),
-                ApplicationRelationCardinality::new(
-                    Some(1),
-                    Some(1),
-                    Some(1),
-                    Some(1),
-                    None,
-                    Some(1),
-                ),
-                ApplicationRelationDeletionPolicy::RejectDeleteWithLiveRelations,
-            )
-            .reaches_at_least(2, const { &[Body::reference::<Schema>().name()] })
-            .orbit(),
-        )
+    pub fn reference<S: TopologyModelBinding>() -> ApplicationRelationRef<S, Self, Body, Body> {
+        fragment::relation(TopologyRecords, Body, Self)
     }
 }
 
@@ -65,39 +41,33 @@ pub struct UndeclaredPlanarRelation;
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub struct PlanarDiscoverySource;
 
+impl fragment::Relation for PlanarDiscoverySource {
+    const NAME: &'static str = "PlanarDiscoverySource";
+    type To = Body;
+    const SELF_EDGES: bool = false;
+    const CARDINALITY: ApplicationRelationCardinality =
+        ApplicationRelationCardinality::new(None, None, None, None, None, None);
+    const DELETION: ApplicationRelationDeletionPolicy =
+        ApplicationRelationDeletionPolicy::CascadeDeleteRelations;
+}
 impl PlanarDiscoverySource {
-    pub const fn reference<Schema>() -> ApplicationRelationRef<Schema, Self, Body, Body>
-    where
-        Schema: TopologyModelBinding,
-    {
-        ApplicationRelationRef::from_schema_identifiers(
-            "PlanarDiscoverySource",
-            "Body",
-            "Body",
-            ApplicationRelationIntegrity::new(
-                ApplicationRelationEndpoints::same_context(false),
-                ApplicationRelationCardinality::new(None, None, None, None, None, None),
-                ApplicationRelationDeletionPolicy::CascadeDeleteRelations,
-            ),
-        )
+    pub fn reference<S: TopologyModelBinding>() -> ApplicationRelationRef<S, Self, Body, Body> {
+        fragment::relation(TopologyRecords, Body, Self)
     }
 }
 
+impl fragment::Relation for UndeclaredPlanarRelation {
+    const NAME: &'static str = "UndeclaredPlanarRelation";
+    type To = Body;
+    const SELF_EDGES: bool = false;
+    const CARDINALITY: ApplicationRelationCardinality =
+        ApplicationRelationCardinality::new(None, None, None, None, None, None);
+    const DELETION: ApplicationRelationDeletionPolicy =
+        ApplicationRelationDeletionPolicy::RejectDeleteWithLiveRelations;
+}
 impl UndeclaredPlanarRelation {
-    pub const fn reference<Schema>() -> ApplicationRelationRef<Schema, Self, Body, Body>
-    where
-        Schema: TopologyModelBinding,
-    {
-        ApplicationRelationRef::from_schema_identifiers(
-            "UndeclaredPlanarRelation",
-            "Body",
-            "Body",
-            ApplicationRelationIntegrity::new(
-                ApplicationRelationEndpoints::same_context(false),
-                ApplicationRelationCardinality::new(None, None, None, None, None, None),
-                ApplicationRelationDeletionPolicy::RejectDeleteWithLiveRelations,
-            ),
-        )
+    pub fn reference<S: TopologyModelBinding>() -> ApplicationRelationRef<S, Self, Body, Body> {
+        fragment::relation(TopologyRecords, Body, Self)
     }
 }
 

@@ -31,6 +31,7 @@ impl WorthQueryApplicationContribution<CanonicalSchema> for CanonicalContributio
         setup.handler::<producer::ProduceBinding, _>(producer::Handler)?;
         setup.handler::<producer::preserve::Binding, _>(producer::preserve::Handler)?;
         setup.handler::<super::edit::EditBinding, _>(super::edit::Handler)?;
+        setup.handler::<super::retire_source::RetireBinding, _>(super::retire_source::Handler)?;
         setup.producer::<producer::Producer>(producer::Provider)?;
         setup.producer::<producer::preserve::Producer>(producer::preserve::Provider)?;
         setup.conditional::<super::readiness::DerivedReadiness>(())?;
@@ -97,10 +98,10 @@ pub fn install_owned(
                     WorthQueryApplicationEntityKey::new("nested-row").unwrap(),
                 )
                 .field(
-                    DocumentIdentityField::reference(),
+                    DocumentIdentityField::at("DocumentIdentityField"),
                     "authored-nested".to_owned(),
                 )
-                .field(DocumentValueField::reference(), value),
+                .field(DocumentValueField::at("DocumentValueField"), value),
             )?;
             Ok(())
         },
@@ -214,7 +215,7 @@ pub fn source_id(host: &Host) -> worth_runtime_bridge::facade::RelationalBridgeR
                 .unwrap()
                 .resolve_entity(
                     &phase,
-                    DocumentIdentityField::reference(),
+                    DocumentIdentityField::at("DocumentIdentityField"),
                     "authored-nested".to_owned(),
                     &request,
                     WorthQueryPrincipalResolutionMode::Ordinary,

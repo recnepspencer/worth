@@ -4,7 +4,6 @@ pub use crate::{__worth_query_complete_feature, worth_query_application_contribu
 #[doc(hidden)]
 pub use worth_query_declaration::facade as declaration;
 #[doc(hidden)]
-pub use worth_query_declaration::worth_query_application_contribution as __worth_query_schema_contribution;
 #[doc(hidden)]
 pub use worth_query_declaration::worth_query_feature_spec;
 
@@ -28,12 +27,13 @@ pub mod application_inspection {
         DiagnosticComparisonDenial, FactlessCurrentness, IndexedSelectionReobserveDenial,
         OutputFieldCaptureFailure, OwnEffectOnReads, RebaseVerificationReason, StoreDenial,
         WorthQueryApplicationDisclosureContractDenial, WorthQueryApplicationEvidenceFamily,
-        WorthQueryApplicationInspectionCanonicalRefusal, WorthQueryApplicationInspectionDenial,
-        WorthQueryApplicationInspectionOwnerRefusal, WorthQueryApplicationInspectionRequest,
-        WorthQueryApplicationInspectionResourceRefusal, WorthQueryApplicationInspectionStage,
-        WorthQueryApplicationInspectionStopKind, WorthQueryApplicationMaterializationPolicy,
-        WorthQueryApplicationMaterializationRequest, WorthQueryApplicationProducerConnection,
-        WorthQueryApplicationProducerEvaluation, WorthQueryApplicationQueryGovernanceDenialKind,
+        WorthQueryApplicationFactKey, WorthQueryApplicationInspectionCanonicalRefusal,
+        WorthQueryApplicationInspectionDenial, WorthQueryApplicationInspectionOwnerRefusal,
+        WorthQueryApplicationInspectionRequest, WorthQueryApplicationInspectionResourceRefusal,
+        WorthQueryApplicationInspectionStage, WorthQueryApplicationInspectionStopKind,
+        WorthQueryApplicationMaterializationPolicy, WorthQueryApplicationMaterializationRequest,
+        WorthQueryApplicationProducerConnection, WorthQueryApplicationProducerEvaluation,
+        WorthQueryApplicationQueryGovernanceDenialKind,
         WorthQueryApplicationQueryInstallationDenial,
         WorthQueryApplicationQueryInstallationDenialKind, WorthQueryApplicationQueryObservation,
         WorthQueryApplicationRichMaterialization, WorthQueryChangedInspectionRequest,
@@ -42,7 +42,7 @@ pub mod application_inspection {
         WorthQueryConditionalHistoryOutcome, WorthQueryConnectedApplicationInspection,
         WorthQueryConnectedInspectionRequest, WorthQueryConnectedReferenceOnlyInspectionRequest,
         WorthQueryEvaluatedApplicationInspection, WorthQueryEvaluatedInspectionRequest,
-        WorthQueryEvaluatedReferenceOnlyInspectionRequest,
+        WorthQueryEvaluatedReferenceOnlyInspectionRequest, WorthQueryHistoricalProducerRead,
         WorthQueryInspectionEvidenceAvailability, WorthQueryInspectionReadTerminalDenial,
         WorthQueryInspectionRetainedEvidence, WorthQueryInspectionSupplierEvidence,
         WorthQueryManagedGraphReadDenial, WorthQueryManagedGraphWorkSessionStartDenial,
@@ -363,3 +363,5 @@ pub use worth_execution::ExecutionRequest;
 /// Mechanically closed Host Home composition; applications use Query Host.
 #[doc(hidden)]
 pub mod application_home_integration;
+pub mod correction_material;
+pub mod program_support;

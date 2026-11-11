@@ -160,3 +160,6 @@ fn dependency(
         )?,
     ])
 }
+#[cfg(test)]
+#[path = "trigger_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;

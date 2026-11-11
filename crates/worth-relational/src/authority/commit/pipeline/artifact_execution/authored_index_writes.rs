@@ -33,43 +33,50 @@ pub(super) fn prepare(
     {
         return Ok(Evidence::default());
     }
-    let prepare = |execution: ExecutionRequest<'_, '_>| {
-        prepare_evidence(
-            runtime,
-            catalog,
-            selected,
-            working,
-            plan,
-            allocations,
-            execution,
-        )
-    };
-    let evidence = match (
-        super::super::request_lease(&execution),
-        runtime.commit_work_budget.as_ref(),
-    ) {
-        (Some(_), Some(budget)) => budget
-            .run_stage(execution, || prepare(execution))
-            .map_err(Denial::Request)
-            .and_then(std::convert::identity),
-        _ => prepare(execution),
-    };
-    let evidence = evidence.map_err(crate::runtime::authored_write_commit_denial)?;
-    if runtime
-        .recovered_authored_index_writes
-        .as_ref()
-        .is_some_and(|original| original != &evidence)
-    {
-        return Err(
-            crate::transactions::data::TransactionCommitError::publication(
-                crate::publication::data::PublicationError::new(
-                    crate::publication::bundle::PublicationStage::BundleAssembly,
-                    "recovered authored index writes disagree with original source",
-                ),
-            ),
-        );
-    }
-    Ok(evidence)
+    crate::execution::phase_observation::run(
+        &execution,
+        "authored_index_writes",
+        || {
+            let prepare = |execution: ExecutionRequest<'_, '_>| {
+                prepare_evidence(
+                    runtime,
+                    catalog,
+                    selected,
+                    working,
+                    plan,
+                    allocations,
+                    execution,
+                )
+            };
+            let evidence = match (
+                super::super::request_lease(&execution),
+                runtime.commit_work_budget.as_ref(),
+            ) {
+                (Some(_), Some(budget)) => budget
+                    .run_stage(execution, || prepare(execution))
+                    .map_err(Denial::Request)
+                    .and_then(std::convert::identity),
+                _ => prepare(execution),
+            };
+            let evidence = evidence.map_err(crate::runtime::authored_write_commit_denial)?;
+            if runtime
+                .recovered_authored_index_writes
+                .as_ref()
+                .is_some_and(|original| original != &evidence)
+            {
+                return Err(
+                    crate::transactions::data::TransactionCommitError::publication(
+                        crate::publication::data::PublicationError::new(
+                            crate::publication::bundle::PublicationStage::BundleAssembly,
+                            "recovered authored index writes disagree with original source",
+                        ),
+                    ),
+                );
+            }
+            Ok(evidence)
+        },
+        |cause| crate::runtime::authored_write_commit_denial(Denial::Execution(cause)),
+    )
 }
 
 fn prepare_evidence(
@@ -83,6 +90,11 @@ fn prepare_evidence(
 ) -> Result<Evidence, Denial> {
     crate::history::run_authored_write_stage(execution, |context| {
         let output = funding::Output::new(execution, context)?;
+        if !catalog.catalog.has_entity_field_indexes() {
+            // The actual installed catalog proves complete-empty membership
+            // independently of record residency. Missing data never makes this proof.
+            return Ok(output.finish(catalog.coverage));
+        }
         let mut builder = projection::Projection {
             execution,
             runtime,

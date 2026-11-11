@@ -21,6 +21,8 @@ use crate::application::{
     WorthQueryDeclarationRouteIntent, WorthQueryDeclarationRoutePlan,
     WorthQueryDeclarationRoutePlanTerminalError,
 };
+#[cfg(test)]
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 
 use super::super::WorthQueryInstalledDomainDeclarationContext;
 use crate::application::WorthQueryDomainOperatingContext;
@@ -162,14 +164,16 @@ impl<D: WorthQueryDomainEntryMarker, C: WorthQueryDomainOperatingContext<D>>
         &self,
         progressed: WorthQueryAdmittedDeclarationProgression<D, I>,
         intent: WorthQueryDeclarationRouteIntent,
-    ) -> WorthQueryDeclarationEnvelopeOrchestrationTranscript<D, I>
+    ) -> Result<WorthQueryDeclarationEnvelopeOrchestrationTranscript<D, I>, IdentityDerivationDenial>
     where
         I: WorthQueryDeclarationInput<D>,
     {
-        worth_query_declaration_envelope_orchestration_from_progressed_proof_on_handle(
-            self,
-            progressed,
-            Some(intent),
+        Ok(
+            worth_query_declaration_envelope_orchestration_from_progressed_proof_on_handle(
+                self,
+                progressed,
+                Some(intent),
+            ),
         )
     }
 }

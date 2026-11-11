@@ -1,8 +1,5 @@
 use crate::domain_computation::primary_graph::application_attempt::check_request_live;
-use worth_foundational::facade::{
-    AspectFieldLocator, AspectKey, AspectValue, CanonicalFieldPath, FieldKey, InternedString,
-    LocatorAuthority,
-};
+use worth_foundational::facade::{AspectFieldLocator, AspectKey, AspectValue};
 use worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope;
 use worth_relational::facade::identity::{EntityId, KindId, PartitionId, VersionId};
 
@@ -48,7 +45,7 @@ pub(in crate::domain_computation::primary_graph::application_attempt) fn observe
     Ok(observed)
 }
 
-fn observe_dependency(
+pub(in crate::domain_computation::primary_graph) fn observe_dependency(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &worth_relational::facade::runtime::RelationalRuntime,
     snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
@@ -274,49 +271,8 @@ fn observe_dependency(
     }
 }
 
-pub fn decode_field_revision_fact(
-    entity: EntityId,
-    aspect: Option<String>,
-    field: Option<String>,
-    native_revision: Option<u64>,
-    field_presence: Option<String>,
-) -> Result<WorthQueryApplicationObservedFact, WorthQueryApplicationAttemptDenial> {
-    let aspect = aspect
-        .and_then(AspectKey::new)
-        .ok_or_else(|| denial("workflow evidence dependency field aspect is invalid"))?;
-    let field = field
-        .and_then(FieldKey::new)
-        .ok_or_else(|| denial("workflow evidence dependency field key is invalid"))?;
-    let native_revision = match (native_revision, field_presence.as_deref()) {
-        (Some(version), Some("present")) => Some(
-            worth_relational::facade::runtime::RelationalFieldRevision::new(
-                VersionId(version),
-                worth_relational::facade::runtime::RelationalFieldPresence::Present,
-            ),
-        ),
-        (Some(version), Some("absent")) => Some(
-            worth_relational::facade::runtime::RelationalFieldRevision::new(
-                VersionId(version),
-                worth_relational::facade::runtime::RelationalFieldPresence::Absent,
-            ),
-        ),
-        (None, None) => None,
-        _ => {
-            return Err(denial(
-                "workflow evidence dependency field revision is invalid",
-            ))
-        }
-    };
-    Ok(WorthQueryApplicationObservedFact::SourceFieldRevision {
-        entity_id: entity,
-        locator: AspectFieldLocator::new(
-            LocatorAuthority::Authoritative,
-            aspect,
-            CanonicalFieldPath::single(field),
-        ),
-        native_revision,
-    })
-}
+mod field_revision;
+pub use field_revision::decode_field_revision_fact;
 
 fn optional_text(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
@@ -328,10 +284,10 @@ fn optional_text(
     facts: &mut Vec<WorthQueryApplicationObservedFact>,
 ) -> Result<Option<String>, WorthQueryApplicationAttemptDenial> {
     match optional_value(execution, runtime, snapshot, entity, kind, locator, facts)? {
-        Some(AspectValue::String(InternedString::Raw(value))) => Ok(Some(value)),
-        Some(_) => Err(denial(
-            "workflow evidence dependency field has the wrong type",
-        )),
+        Some(value) => value
+            .raw_text()
+            .map(|text| Some(text.to_owned()))
+            .ok_or_else(|| denial("workflow evidence dependency field has the wrong type")),
         None => Ok(None),
     }
 }

@@ -29,7 +29,9 @@ fn all(directory: &str) -> FindPublicBoxes {
 
 #[test]
 fn public_requirement_prepares_distinct_source_without_invariant_and_refuses_same_head_pinned() {
-    let declaration = Catalog::declaration().unwrap();
+    let declaration =
+        <Catalog as worth_query_decl::facade::application_schema::ApplicationSchema>::declaration()
+            .unwrap();
     assert!(!declaration
         .erased()
         .members()

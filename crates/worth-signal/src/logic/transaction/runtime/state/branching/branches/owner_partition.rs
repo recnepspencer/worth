@@ -311,3 +311,6 @@ where
             && self.retention.is_none()
     }
 }
+#[cfg(test)]
+#[path = "owner_partition_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;

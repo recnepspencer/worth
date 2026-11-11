@@ -23,6 +23,7 @@ pub(super) struct RecoveryAdmission {
 pub(in crate::durability::authority) struct AdmittedRecoveryPlan {
     plan: RecoveryPlan,
     admission: RecoveryAdmission,
+    prepared_home_schemas: Option<super::super::runtime_rebuild::OriginalSchemaGraph>,
 }
 
 impl AdmittedRecoveryPlan {
@@ -30,8 +31,21 @@ impl AdmittedRecoveryPlan {
         &self.admission
     }
 
-    pub(in crate::durability::authority) fn into_plan(self) -> RecoveryPlan {
-        self.plan
+    pub(in crate::durability::authority) fn into_parts(
+        self,
+    ) -> (
+        RecoveryPlan,
+        Option<super::super::runtime_rebuild::OriginalSchemaGraph>,
+    ) {
+        (self.plan, self.prepared_home_schemas)
+    }
+
+    pub(super) fn with_prepared_home_schemas(
+        mut self,
+        schemas: super::super::runtime_rebuild::OriginalSchemaGraph,
+    ) -> Self {
+        self.prepared_home_schemas = Some(schemas);
+        self
     }
 }
 
@@ -82,8 +96,12 @@ impl RecoveryRejection {
 
 pub(super) fn admit_recovery(
     runtime: &RelationalRuntime,
-    plan: RecoveryPlan,
+    mut plan: RecoveryPlan,
 ) -> Result<AdmittedRecoveryPlan, RecoveryRejection> {
+    plan.home_world_selection = runtime
+        .durability
+        .medium()
+        .and_then(|medium| medium.home_world_selection());
     let rejected = matches!(
         plan.authority_continuity.verification_outcome,
         crate::durability::data::RecoveryVerificationOutcome::Rejected { .. }
@@ -97,9 +115,14 @@ pub(super) fn admit_recovery(
         entry: recovery_authority_continuity_diagnostic(&plan),
     };
     let result = validate_recovery_authority_continuity(runtime, &plan)
-        .and_then(|()| validate_reported_parity(runtime, &plan));
+        .and_then(|()| validate_reported_parity(runtime, &plan))
+        .and_then(|()| validate_world_source(&plan));
     match result {
-        Ok(()) => Ok(AdmittedRecoveryPlan { plan, admission }),
+        Ok(()) => Ok(AdmittedRecoveryPlan {
+            plan,
+            admission,
+            prepared_home_schemas: None,
+        }),
         Err(error) => Err(RecoveryRejection {
             admission,
             error,
@@ -151,6 +174,25 @@ fn validate_reported_parity(
                 expected: plan.config.execution.runtime_name.clone(),
                 found: runtime.runtime_name().to_string(),
             },
+        ));
+    }
+    Ok(())
+}
+
+fn validate_world_source(plan: &RecoveryPlan) -> Result<(), DurabilityError> {
+    let selected = plan
+        .original_source
+        .as_ref()
+        .and_then(|source| source.world_selection.as_ref());
+    if let Some(selected) = selected
+        && !plan
+            .home_world_selection
+            .as_ref()
+            .is_some_and(|actual| actual.require_original_source(selected).is_ok())
+    {
+        return Err(DurabilityError::new(
+            RecoveryFailureClass::CorruptCheckpoint,
+            "original World source eligibility belongs to a different or missing Home admission",
         ));
     }
     Ok(())

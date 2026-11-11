@@ -1,3 +1,6 @@
+pub use crate::execution::phase_observation::{
+    observe_maintenance_work, MaintenancePhaseWork, MaintenanceWorkObservation,
+};
 pub use crate::history::retention::RelationalRetentionCostCounters;
 pub use crate::inspection::data::{
     CommitInspection, ConnectivityComponentSummary, ConnectivityInspectionBudget,
@@ -41,4 +44,12 @@ pub use crate::runtime::RelationalBranchSharingCostCounters;
 
 pub use crate::runtime::{
     RecordReservationObservation, RecordReservationObservationDenial, RecordReservationReport,
+};
+
+pub use crate::storage::substrate::observe_history_prefix_traversal;
+
+pub use crate::symbols::data::observe_symbol_snapshot_materialization;
+
+pub use crate::inspection::relation_law_sources::{
+    observe_relation_law_sources, RelationLawSourceObservation, RelationLawSourceWitness,
 };

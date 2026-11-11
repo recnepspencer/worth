@@ -14,33 +14,11 @@ pub struct ContentSlot;
 pub struct ProbeSlot;
 worth_query_portable_type!(KeySlot=>"content-source.key-slot.v1");
 worth_query_portable_type!(ContentSlot=>"content-source.content-slot.v1");
-pub fn key<Q>() -> ApplicationQueryResultFieldRef<
-    Q,
-    KeySlot,
-    Schema,
-    Record,
-    Identity,
-    Key,
-    String,
-    ReadOnly,
-    EqualityPredicate,
-    NoApplicationUnit,
-> {
-    ApplicationQueryResultFieldRef::new("key", Key::reference())
+pub fn key<Q>() -> ApplicationQueryResultFieldRef<Q, KeySlot, Schema, Key> {
+    ApplicationQueryResultFieldRef::new("key", Key::at("Key"))
 }
-pub fn content<Q>() -> ApplicationQueryResultFieldRef<
-    Q,
-    ContentSlot,
-    Schema,
-    Record,
-    Samples,
-    Values,
-    ContentRefId,
-    ReadWrite,
-    NoEqualityPredicate,
-    NoApplicationUnit,
-> {
-    ApplicationQueryResultFieldRef::new("samples", Values::reference())
+pub fn content<Q>() -> ApplicationQueryResultFieldRef<Q, ContentSlot, Schema, Values> {
+    ApplicationQueryResultFieldRef::new("samples", Values::at("Values"))
 }
 fn base<Q: ApplicationQueryMarkerIdentity<Schema, ResultBinding = RowBinding>>(
     reference: ApplicationQueryReference<Schema, Q, Parameters, Row, Record>,
@@ -62,25 +40,21 @@ fn base<Q: ApplicationQueryMarkerIdentity<Schema, ResultBinding = RowBinding>>(
         .lanes(ApplicationQueryLaneEligibility::one_shot())
         .public()
 }
-pub fn source() -> ApplicationQueryDefinition<Schema, SourceQuery, Parameters, Row, Record> {
+pub fn source() -> ApplicationQueryDefinitionBuilder<Schema, SourceQuery, Parameters, Row, Record> {
     base(SourceQuery::reference())
         .root_path(
             ApplicationQueryRootPath::from(Record::reference())
                 .forward(ContainsSamples::reference()),
         )
         .order_by(key(), ApplicationQueryOrderingDirection::Ascending)
-        .build()
-        .unwrap()
 }
 fn probe() -> ApplicationQueryParameterRef<ExactQuery, ProbeSlot, ProbeBinding> {
     ApplicationQueryParameterRef::from_query_identifier("minimum")
 }
-pub fn exact() -> ApplicationQueryDefinition<Schema, ExactQuery, Parameters, Row, Record> {
+pub fn exact() -> ApplicationQueryDefinitionBuilder<Schema, ExactQuery, Parameters, Row, Record> {
     base(ExactQuery::reference())
         .managed_index_refined(Index::reference(), probe())
         .order_by(key(), ApplicationQueryOrderingDirection::Ascending)
-        .build()
-        .unwrap()
 }
 impl<Q: ApplicationQueryMarkerIdentity<Schema>> WorthQueryApplicationProjection<Schema, Q> for Row {
     fn project(
@@ -88,7 +62,7 @@ impl<Q: ApplicationQueryMarkerIdentity<Schema>> WorthQueryApplicationProjection<
     ) -> Result<Self, WorthQueryApplicationProjectionDenial> {
         Ok(Self {
             key: row.field(key())?,
-            content: row.field(content())?,
+            content: row.field(content())?.0,
         })
     }
 }
@@ -113,14 +87,14 @@ fn find_root(input: Find) -> String {
 }
 worth_query_query_binding!(pub SourceBinding for ReadSource,schema Schema,identity "content-source.source-binding.v1",input SourceInput,query SourceQuery,parameters ParametersBinding=>|_|ApplicationQueryParameterSet::new(),result RowBinding,
  principal Actor,mapping Mapping,principal_entity Principal,principal_identity u64,identity_binding U64ApplicationValueBinding,
- scope Record,Identity,Key,String,ReadOnly,NoApplicationUnit,field Key::reference(),value source_root,limits results 32);
+ scope Key, field Key::at("Key"),value source_root,limits results 32);
 worth_query_query_binding!(pub FindBinding for Find,schema Schema,identity "content-source.find-binding.v1",input FindInput,query ExactQuery,parameters ParametersBinding=>|input:&Find|ApplicationQueryParameterSet::new().bind(probe(),input.minimum).unwrap(),result RowBinding,
  principal Actor,mapping Mapping,principal_entity Principal,principal_identity u64,identity_binding U64ApplicationValueBinding,
- scope Record,Identity,Key,String,ReadOnly,NoApplicationUnit,field Key::reference(),value find_root,limits results 32);
+ scope Key, field Key::at("Key"),value find_root,limits results 32);
 
 worth_query_application_query!(pub StateQuery for Schema,identity "content-source.state.v1",parameters ParametersBinding,result RowBinding,scope Record=>"Record",name "content_state");
-pub fn state() -> ApplicationQueryDefinition<Schema, StateQuery, Parameters, Row, Record> {
-    base(StateQuery::reference()).build().unwrap()
+pub fn state() -> ApplicationQueryDefinitionBuilder<Schema, StateQuery, Parameters, Row, Record> {
+    base(StateQuery::reference())
 }
 #[derive(Clone, Debug, WorthValue)]
 #[worth_value(crate = "worth_query_decl::facade::application_schema")]
@@ -133,4 +107,4 @@ fn state_root(input: ReadState) -> String {
 }
 worth_query_query_binding!(pub StateBinding for ReadState,schema Schema,identity "content-source.state-binding.v1",input StateInput,query StateQuery,parameters ParametersBinding=>|_|ApplicationQueryParameterSet::new(),result RowBinding,
  principal Actor,mapping Mapping,principal_entity Principal,principal_identity u64,identity_binding U64ApplicationValueBinding,
- scope Record,Identity,Key,String,ReadOnly,NoApplicationUnit,field Key::reference(),value state_root,limits results 1);
+ scope Key, field Key::at("Key"),value state_root,limits results 1);

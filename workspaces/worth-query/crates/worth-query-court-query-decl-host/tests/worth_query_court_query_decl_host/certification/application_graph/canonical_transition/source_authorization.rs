@@ -51,7 +51,7 @@ fn entry_custody_cancelled_source_dependency_keeps_retryable_recovery() {
             let root = selected
                 .resolve_entity(
                     &phase,
-                    DocumentIdentityField::reference(),
+                    DocumentIdentityField::at("DocumentIdentityField"),
                     "authored-nested".to_owned(),
                     &request,
                     WorthQueryPrincipalResolutionMode::Ordinary,

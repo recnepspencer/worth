@@ -27,23 +27,23 @@ pub(super) fn install_account_creation_program(
         )
         .operation_write(
             CreatePersonalAccountOperation::reference(),
-            AccountIdentity::reference(),
+            AccountIdentity::at("AccountIdentity"),
         )
         .operation_write(
             CreatePersonalAccountOperation::reference(),
-            AccountDisplayName::reference(),
+            AccountDisplayName::at("AccountDisplayName"),
         )
         .operation_write(
             CreatePersonalAccountOperation::reference(),
-            AccountingRevision::reference(),
+            AccountingRevision::at("AccountingRevision"),
         )
         .operation_write(
             CreatePersonalAccountOperation::reference(),
-            Kind::reference(),
+            Kind::at("Kind"),
         )
         .operation_write(
             CreatePersonalAccountOperation::reference(),
-            Status::reference(),
+            Status::at("Status"),
         )
         .operation_link(
             CreatePersonalAccountOperation::reference(),
@@ -59,23 +59,23 @@ pub(super) fn install_account_creation_program(
         )
         .operation_write(
             CreateBusinessAccountOperation::reference(),
-            AccountIdentity::reference(),
+            AccountIdentity::at("AccountIdentity"),
         )
         .operation_write(
             CreateBusinessAccountOperation::reference(),
-            AccountDisplayName::reference(),
+            AccountDisplayName::at("AccountDisplayName"),
         )
         .operation_write(
             CreateBusinessAccountOperation::reference(),
-            AccountingRevision::reference(),
+            AccountingRevision::at("AccountingRevision"),
         )
         .operation_write(
             CreateBusinessAccountOperation::reference(),
-            Kind::reference(),
+            Kind::at("Kind"),
         )
         .operation_write(
             CreateBusinessAccountOperation::reference(),
-            Status::reference(),
+            Status::at("Status"),
         )
         .operation_link(
             CreateBusinessAccountOperation::reference(),
@@ -144,19 +144,19 @@ pub(super) fn install_payment_program(
         )
         .operation_write(
             InitiateBusinessPaymentOperation::reference(),
-            PaymentIdentityField::reference(),
+            PaymentIdentityField::at("PaymentIdentityField"),
         )
         .operation_write(
             InitiateBusinessPaymentOperation::reference(),
-            PaymentAmount::reference(),
+            PaymentAmount::at("PaymentAmount"),
         )
         .operation_write(
             InitiateBusinessPaymentOperation::reference(),
-            PaymentStatusField::reference(),
+            PaymentStatusField::at("PaymentStatusField"),
         )
         .operation_write(
             RejectPaymentOperation::reference(),
-            PaymentStatusField::reference(),
+            PaymentStatusField::at("PaymentStatusField"),
         )
         .operation_create(RejectPaymentOperation::reference(), Approval::reference())
         .operation_link(
@@ -189,7 +189,7 @@ pub(super) fn install_approved_payment_program(
         )
         .operation_write(
             ApprovePaymentOperation::reference(),
-            PaymentStatusField::reference(),
+            PaymentStatusField::at("PaymentStatusField"),
         )
         .operation_emit(
             ApprovePaymentOperation::reference(),
@@ -208,11 +208,11 @@ pub(super) fn install_authorization_program(
         )
         .operation_write(
             GrantAccountAuthorizationOperation::reference(),
-            AccountAuthorizationIdentity::reference(),
+            AccountAuthorizationIdentity::at("AccountAuthorizationIdentity"),
         )
         .operation_write(
             GrantAccountAuthorizationOperation::reference(),
-            AuthorizationRole::reference(),
+            AuthorizationRole::at("AuthorizationRole"),
         )
         .operation_link(
             GrantAccountAuthorizationOperation::reference(),

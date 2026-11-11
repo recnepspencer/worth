@@ -1,3 +1,5 @@
+mod computed_views;
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 mod session_entry;
 use super::{
     DeclarativeLiveQueryRequest, QuerySchemaView, WorthQueryAspectApiFinalizationCloseout,
@@ -223,20 +225,28 @@ impl WorthQueryWorkspace {
         self.runtime
     }
 
-    pub fn public_api_contract(&self) -> WorthQueryRuntimePublicApiContract {
-        self.runtime.public_api_contract()
+    pub fn public_api_contract(
+        &self,
+    ) -> Result<WorthQueryRuntimePublicApiContract, IdentityDerivationDenial> {
+        Ok(self.runtime.public_api_contract()?)
     }
 
-    pub fn public_handle_contract(&self) -> WorthQueryHandleContract {
-        self.runtime.public_handle_contract()
+    pub fn public_handle_contract(
+        &self,
+    ) -> Result<WorthQueryHandleContract, IdentityDerivationDenial> {
+        Ok(self.runtime.public_handle_contract()?)
     }
 
-    pub fn public_support_matrix(&self) -> WorthQueryRuntimePublicSupportMatrix {
-        self.runtime.public_support_matrix()
+    pub fn public_support_matrix(
+        &self,
+    ) -> Result<WorthQueryRuntimePublicSupportMatrix, IdentityDerivationDenial> {
+        Ok(self.runtime.public_support_matrix()?)
     }
 
-    pub fn public_mutation_surface_report(&self) -> WorthQueryMutationSurfaceReport {
-        self.runtime.public_mutation_surface_report()
+    pub fn public_mutation_surface_report(
+        &self,
+    ) -> Result<WorthQueryMutationSurfaceReport, IdentityDerivationDenial> {
+        Ok(self.runtime.public_mutation_surface_report()?)
     }
 
     pub fn public_authoritative_mutation_evidence_support(
@@ -248,15 +258,16 @@ impl WorthQueryWorkspace {
 
     pub fn public_aspect_api_finalization_closeout(
         &self,
-    ) -> WorthQueryAspectApiFinalizationCloseout {
-        self.runtime.public_aspect_api_finalization_closeout()
+    ) -> Result<WorthQueryAspectApiFinalizationCloseout, IdentityDerivationDenial> {
+        Ok(self.runtime.public_aspect_api_finalization_closeout()?)
     }
 
     pub fn public_authoritative_mutation_evidence_closeout(
         &self,
-    ) -> WorthQueryAuthoritativeMutationEvidenceCloseout {
-        self.runtime
-            .public_authoritative_mutation_evidence_closeout()
+    ) -> Result<WorthQueryAuthoritativeMutationEvidenceCloseout, IdentityDerivationDenial> {
+        Ok(self
+            .runtime
+            .public_authoritative_mutation_evidence_closeout()?)
     }
 
     pub fn admit_public_api_family(
@@ -305,39 +316,6 @@ impl WorthQueryWorkspace {
             .declare_live_view(request_execution, name, request, schema_view)
     }
 
-    pub fn computed<T>(
-        &mut self,
-        execution: &worth_execution::ExecutionRequest<'_, '_>,
-        name: impl Into<String>,
-        view: impl FnOnce(WorthQueryComputedBuilder) -> WorthQueryComputedBuilder,
-        maintainer: impl WorthQueryDerivedViewMaintainer + 'static,
-    ) -> Result<WorthQueryDerivedViewHandle<T>, WorthQueryRuntimeError> {
-        let name = name.into();
-        let view = view(WorthQueryComputedBuilder::surface(&name)).build()?;
-        self.runtime
-            .declare_maintained_derived_view(execution, view, maintainer)
-    }
-
-    pub fn computed_view<T>(
-        &mut self,
-        execution: &worth_execution::ExecutionRequest<'_, '_>,
-        view: WorthQueryDerivedView,
-        maintainer: impl WorthQueryDerivedViewMaintainer + 'static,
-    ) -> Result<WorthQueryDerivedViewHandle<T>, WorthQueryRuntimeError> {
-        self.runtime
-            .declare_maintained_derived_view(execution, view, maintainer)
-    }
-
-    pub fn computed_definition(
-        &mut self,
-        name: impl Into<String>,
-        view: impl FnOnce(WorthQueryComputedBuilder) -> WorthQueryComputedBuilder,
-    ) -> Result<WorthQueryDerivedView, WorthQueryRuntimeError> {
-        let name = name.into();
-        let view = view(WorthQueryComputedBuilder::surface(&name)).build()?;
-        self.runtime.declare_derived_view(view)
-    }
-
     pub fn effect<T>(
         &mut self,
         name: impl Into<String>,
@@ -376,5 +354,21 @@ impl WorthQueryWorkspace {
             strategy_version,
             input_contract,
         )
+    }
+}
+#[cfg(test)]
+#[path = "workspace_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;
+
+#[cfg(test)]
+fn collect_owned_inline_type_sizes(census: &mut crate::inline_type_sizes::Census) {
+    {
+        let mut owner = census.owner::<WorthQueryWorkspace>(
+            "workspaces/worth-query/crates/worth-query/src/runtime/workspace.rs",
+            "WorthQueryWorkspace",
+            128 * 1024,
+        );
+        owner.field::<String>("name");
+        owner.field::<WorthQueryRuntime>("runtime");
     }
 }

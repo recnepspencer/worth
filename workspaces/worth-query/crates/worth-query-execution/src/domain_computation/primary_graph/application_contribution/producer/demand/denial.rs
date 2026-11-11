@@ -395,3 +395,6 @@ mod managed_index;
 mod managed_source_query;
 
 mod court_doors_for_test;
+#[cfg(test)]
+#[path = "denial_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;

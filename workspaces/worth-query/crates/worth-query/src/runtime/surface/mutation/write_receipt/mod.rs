@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::memory_workspace::WorthQueryMutationReceipt;
 use crate::runtime::mutation::WorthQueryMutationMetadata;
 
@@ -19,6 +20,11 @@ use crate::runtime::{
 };
 
 mod accessors;
+mod identity;
+use identity::{
+    write_receipt_commit_evidence_identity, write_receipt_committed_truth_identity,
+    write_receipt_snapshot_evidence_identity,
+};
 mod helpers;
 mod preview;
 
@@ -101,10 +107,10 @@ impl WorthQueryWriteReceipt {
         refresh_fallback: bool,
         decision_trace_envelope: Option<WorthQueryIntentDecisionTraceEnvelope>,
         execution_provenance: Option<WorthQueryIntentExecutionProvenance>,
-    ) -> Self {
+    ) -> Result<Self, IdentityDerivationDenial> {
         let commit_evidence_identity =
             write_receipt_commit_evidence_identity(&inner.commit_identity);
-        let committed_truth_identity = write_receipt_committed_truth_identity(&inner);
+        let committed_truth_identity = write_receipt_committed_truth_identity(&inner)?;
         let journal_position =
             WorthQueryJournalPosition::from_commit_identity(&inner.commit_identity);
         let snapshot_evidence_identity =
@@ -119,11 +125,13 @@ impl WorthQueryWriteReceipt {
         let causality_evidence = inner
             .bridge_authority
             .as_ref()
-            .map(WorthQueryMutationCausalityEvidence::from_bridge);
+            .map(WorthQueryMutationCausalityEvidence::from_bridge)
+            .transpose()?;
         let provenance_evidence = inner
             .bridge_authority
             .as_ref()
-            .map(WorthQueryMutationProvenanceEvidence::from_bridge);
+            .map(WorthQueryMutationProvenanceEvidence::from_bridge)
+            .transpose()?;
         let existing_truth_binding_evidence = existing_truth_binding
             .as_ref()
             .map(WorthQueryExistingTruthBindingEvidence::from_binding)
@@ -133,7 +141,8 @@ impl WorthQueryWriteReceipt {
                     .as_ref()
                     .and_then(|bundle| bundle.existing_truth_binding())
                     .map(WorthQueryExistingTruthBindingEvidence::from_bridge)
-            });
+            })
+            .transpose()?;
         let existing_truth_assertion_evidence = assertion_evidence(
             mutation_family,
             existing_truth_binding.as_ref(),
@@ -150,7 +159,7 @@ impl WorthQueryWriteReceipt {
                 .and_then(|bundle| bundle.symbolic_target_reference()),
             symbolic_target_reference.as_ref(),
             target_entity_identity.as_ref(),
-        );
+        )?;
         let naming_mutation_evidence = naming_mutation_evidence(
             inner
                 .bridge_authority
@@ -159,7 +168,7 @@ impl WorthQueryWriteReceipt {
             naming_intent.as_ref(),
             target_entity_identity.as_ref(),
             target_collection_identity.as_ref(),
-        );
+        )?;
         let continuity_mutation_evidence = continuity_mutation_evidence(
             inner
                 .bridge_authority
@@ -169,8 +178,8 @@ impl WorthQueryWriteReceipt {
             existing_truth_binding.as_ref(),
             target_entity_identity.as_ref(),
             target_collection_identity.as_ref(),
-        );
-        Self {
+        )?;
+        Ok(Self {
             inner,
             commit_evidence_identity,
             committed_truth_identity,
@@ -207,7 +216,7 @@ impl WorthQueryWriteReceipt {
             refresh_fallback,
             decision_trace_envelope,
             execution_provenance,
-        }
+        })
     }
 
     pub(in crate::runtime) fn batch_component(
@@ -229,10 +238,10 @@ impl WorthQueryWriteReceipt {
         mutation_metadata: WorthQueryMutationMetadata,
         affected_live_view_targets: Vec<WorthQueryLiveArtifactTarget>,
         authority_lane: WorthQueryAuthorityLane,
-    ) -> Self {
+    ) -> Result<Self, IdentityDerivationDenial> {
         let commit_evidence_identity =
             write_receipt_commit_evidence_identity(&inner.commit_identity);
-        let committed_truth_identity = write_receipt_committed_truth_identity(&inner);
+        let committed_truth_identity = write_receipt_committed_truth_identity(&inner)?;
         let journal_position =
             WorthQueryJournalPosition::from_commit_identity(&inner.commit_identity);
         let snapshot_evidence_identity =
@@ -247,11 +256,13 @@ impl WorthQueryWriteReceipt {
         let causality_evidence = inner
             .bridge_authority
             .as_ref()
-            .map(WorthQueryMutationCausalityEvidence::from_bridge);
+            .map(WorthQueryMutationCausalityEvidence::from_bridge)
+            .transpose()?;
         let provenance_evidence = inner
             .bridge_authority
             .as_ref()
-            .map(WorthQueryMutationProvenanceEvidence::from_bridge);
+            .map(WorthQueryMutationProvenanceEvidence::from_bridge)
+            .transpose()?;
         let existing_truth_binding_evidence = existing_truth_binding
             .as_ref()
             .map(WorthQueryExistingTruthBindingEvidence::from_binding)
@@ -261,7 +272,8 @@ impl WorthQueryWriteReceipt {
                     .as_ref()
                     .and_then(|bundle| bundle.existing_truth_binding())
                     .map(WorthQueryExistingTruthBindingEvidence::from_bridge)
-            });
+            })
+            .transpose()?;
         let existing_truth_assertion_evidence = assertion_evidence(
             mutation_family,
             existing_truth_binding.as_ref(),
@@ -278,7 +290,7 @@ impl WorthQueryWriteReceipt {
                 .and_then(|bundle| bundle.symbolic_target_reference()),
             symbolic_target_reference.as_ref(),
             target_entity_identity.as_ref(),
-        );
+        )?;
         let naming_mutation_evidence = naming_mutation_evidence(
             inner
                 .bridge_authority
@@ -287,7 +299,7 @@ impl WorthQueryWriteReceipt {
             naming_intent.as_ref(),
             target_entity_identity.as_ref(),
             target_collection_identity.as_ref(),
-        );
+        )?;
         let continuity_mutation_evidence = continuity_mutation_evidence(
             inner
                 .bridge_authority
@@ -297,8 +309,8 @@ impl WorthQueryWriteReceipt {
             existing_truth_binding.as_ref(),
             target_entity_identity.as_ref(),
             target_collection_identity.as_ref(),
-        );
-        Self {
+        )?;
+        Ok(Self {
             inner,
             commit_evidence_identity,
             committed_truth_identity,
@@ -335,63 +347,6 @@ impl WorthQueryWriteReceipt {
             refresh_fallback: false,
             decision_trace_envelope: None,
             execution_provenance: None,
-        }
-    }
-}
-
-fn write_receipt_commit_evidence_identity(
-    commit_identity: &WorthQueryCommitIdentity,
-) -> WorthQueryEvidenceIdentity {
-    commit_identity.evidence_identity()
-}
-
-fn write_receipt_snapshot_evidence_identity(
-    snapshot_identity: &WorthQuerySnapshotIdentity,
-) -> WorthQueryEvidenceIdentity {
-    snapshot_identity.evidence_identity()
-}
-
-fn write_receipt_committed_truth_identity(
-    receipt: &WorthQueryMutationReceipt,
-) -> WorthQueryEvidenceIdentity {
-    let delta_descriptors = receipt
-        .deltas
-        .iter()
-        .map(|delta| {
-            format!(
-                "{}:{}:{}",
-                delta.collection(),
-                mutation_kind_as_str(delta.kind()),
-                terminal_touched_aspect_digest_projections(delta.admitted_touched_aspects())
-                    .join("|")
-            )
         })
-        .collect::<Vec<_>>();
-    crate::evidence_identity::WorthQueryEvidenceIdentity::compose(
-        crate::evidence_identity::WorthQueryEvidenceScope::JournalReplayOutcome,
-    )
-    .field_evidence_identity(
-        crate::evidence_identity::WorthQueryEvidenceTag::new("committed_write_identity"),
-        &receipt.commit_identity.evidence_identity(),
-    )
-    .field_value_sequence(
-        crate::evidence_identity::WorthQueryEvidenceTag::new("committed_delta_descriptor"),
-        delta_descriptors.iter().map(String::as_str),
-    )
-    .seal()
-}
-
-fn terminal_touched_aspect_digest_projections(touches: &[WorthQueryAspectTouch]) -> Vec<String> {
-    touches
-        .iter()
-        .map(WorthQueryAspectTouch::admitted_touch_digest_part)
-        .collect()
-}
-
-fn mutation_kind_as_str(kind: &WorthQueryMutationKind) -> &'static str {
-    match kind {
-        WorthQueryMutationKind::Created => "created",
-        WorthQueryMutationKind::Updated => "updated",
-        WorthQueryMutationKind::Deleted => "deleted",
     }
 }

@@ -1,4 +1,5 @@
 use crate::evidence_identity::WorthQueryEvidenceIdentity;
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::evidence_identity::{WorthQueryEvidenceScope, WorthQueryEvidenceTag};
 use crate::identity::BasisDigest;
 
@@ -45,7 +46,7 @@ impl ResolvedBasisProof {
     pub(crate) fn from_installed_operation(
         operation_identity: &str,
         basis_capability_identity: &str,
-    ) -> Self {
+    ) -> Result<Self, IdentityDerivationDenial> {
         let identity =
             WorthQueryEvidenceIdentity::compose(WorthQueryEvidenceScope::InstalledDomainExecution)
                 .field_value(
@@ -56,8 +57,8 @@ impl ResolvedBasisProof {
                     WorthQueryEvidenceTag::new("basis_capability_identity"),
                     basis_capability_identity,
                 )
-                .seal();
-        Self::new(identity, BasisResolutionMode::RuntimeDirect)
+                .seal()?;
+        Ok(Self::new(identity, BasisResolutionMode::RuntimeDirect))
     }
 
     #[cfg(test)]
@@ -118,14 +119,14 @@ impl ResolvedSnapshotBasis {
         intent: ExecutionBasisIntent,
         identity: ResolvedSnapshotIdentity,
         resolution_mode: BasisResolutionMode,
-    ) -> Self {
-        let proof = ResolvedBasisProof::new(identity.evidence_identity(), resolution_mode.clone());
-        Self {
+    ) -> Result<Self, IdentityDerivationDenial> {
+        let proof = ResolvedBasisProof::new(identity.evidence_identity()?, resolution_mode.clone());
+        Ok(Self {
             intent,
             identity,
             resolution_mode,
             proof,
-        }
+        })
     }
 
     pub(crate) fn new_with_reporting_label(
@@ -133,15 +134,15 @@ impl ResolvedSnapshotBasis {
         identity: ResolvedSnapshotIdentity,
         resolution_mode: BasisResolutionMode,
         reporting_label: impl Into<String>,
-    ) -> Self {
-        let proof = ResolvedBasisProof::new(identity.evidence_identity(), resolution_mode.clone())
+    ) -> Result<Self, IdentityDerivationDenial> {
+        let proof = ResolvedBasisProof::new(identity.evidence_identity()?, resolution_mode.clone())
             .with_reporting_label(reporting_label);
-        Self {
+        Ok(Self {
             intent,
             identity,
             resolution_mode,
             proof,
-        }
+        })
     }
 
     #[cfg(test)]

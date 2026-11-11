@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::{WorthQueryEvidenceIdentity, WorthQueryEvidenceScope, WorthQueryEvidenceTag};
 
 use worth_runtime_bridge::facade::BridgeCausalEvidenceFamily;
@@ -27,45 +28,47 @@ pub(super) struct NamedEvidenceSlots {
     pub(super) replay_posture_digest: Option<String>,
 }
 
-pub(super) fn named_evidence_slots(artifact: &QueryCausalInspectionArtifact) -> NamedEvidenceSlots {
+pub(super) fn named_evidence_slots(
+    artifact: &QueryCausalInspectionArtifact,
+) -> Result<NamedEvidenceSlots, IdentityDerivationDenial> {
     let references = evidence_references(artifact);
-    NamedEvidenceSlots {
+    Ok(NamedEvidenceSlots {
         relational_authority_digest: digest_for_bridge_families(
             references,
             &[BridgeCausalEvidenceFamily::RelationalAuthority],
-        ),
+        )?,
         bridge_route_digest: digest_for_bridge_families(
             references,
             &[BridgeCausalEvidenceFamily::BridgeRoute],
-        ),
+        )?,
         bridge_evaluation_digest: digest_for_bridge_families(
             references,
             &[
                 BridgeCausalEvidenceFamily::BridgeHistoricalEvaluation,
                 BridgeCausalEvidenceFamily::BridgeHistoricalEvaluationFailure,
             ],
-        ),
+        )?,
         bridge_source_materialization_digest: digest_for_bridge_families(
             references,
             &[
                 BridgeCausalEvidenceFamily::BridgeSourceMaterialization,
                 BridgeCausalEvidenceFamily::BridgeSourceFailure,
             ],
-        ),
+        )?,
         bridge_structural_digest: digest_for_bridge_families(
             references,
             &[
                 BridgeCausalEvidenceFamily::BridgeStructuralRemap,
                 BridgeCausalEvidenceFamily::BridgeStructuralBranchComparison,
             ],
-        ),
+        )?,
         bridge_stream_digest: digest_for_bridge_families(
             references,
             &[
                 BridgeCausalEvidenceFamily::BridgeStreamReplay,
                 BridgeCausalEvidenceFamily::BridgeStreamCheckpoint,
             ],
-        ),
+        )?,
         bridge_preview_digest: digest_for_bridge_families(
             references,
             &[
@@ -73,8 +76,8 @@ pub(super) fn named_evidence_slots(artifact: &QueryCausalInspectionArtifact) -> 
                 BridgeCausalEvidenceFamily::BridgePreviewDiscard,
                 BridgeCausalEvidenceFamily::BridgePreviewPromotion,
             ],
-        ),
-        bridge_writeback_digest: digest_for_bridge_families(references, &writeback_families()),
+        )?,
+        bridge_writeback_digest: digest_for_bridge_families(references, &writeback_families())?,
         bridge_replay_digest: digest_for_any_family(
             references,
             &[
@@ -82,40 +85,40 @@ pub(super) fn named_evidence_slots(artifact: &QueryCausalInspectionArtifact) -> 
                 BridgeCausalEvidenceFamily::BridgeWritebackReplay.as_str(),
                 CausalEvidenceFamily::BridgeReplay.as_str(),
             ],
-        ),
+        )?,
         signal_invalidation_digest: digest_for_any_family(
             references,
             &[
                 BridgeCausalEvidenceFamily::SignalInvalidation.as_str(),
                 CausalEvidenceFamily::SignalInvalidation.as_str(),
             ],
-        ),
+        )?,
         signal_evaluation_digest: digest_for_query_families(
             references,
             &[CausalEvidenceFamily::SignalEvaluation],
-        ),
+        )?,
         signal_forensic_availability_digest: digest_for_query_families(
             references,
             &[CausalEvidenceFamily::SignalForensicAvailability],
-        ),
+        )?,
         signal_replay_cursor_digest: digest_for_query_families(
             references,
             &[CausalEvidenceFamily::SignalReplayCursor],
-        ),
+        )?,
         signal_lineage_digest: digest_for_query_families(
             references,
             &[
                 CausalEvidenceFamily::SignalLineage,
                 CausalEvidenceFamily::Lineage,
             ],
-        ),
+        )?,
         signal_provenance_digest: digest_for_query_families(
             references,
             &[
                 CausalEvidenceFamily::SignalProvenance,
                 CausalEvidenceFamily::Provenance,
             ],
-        ),
+        )?,
         replay_posture_digest: digest_for_any_family(
             references,
             &[
@@ -124,8 +127,8 @@ pub(super) fn named_evidence_slots(artifact: &QueryCausalInspectionArtifact) -> 
                 CausalEvidenceFamily::BridgeReplay.as_str(),
                 CausalEvidenceFamily::SignalReplayCursor.as_str(),
             ],
-        ),
-    }
+        )?,
+    })
 }
 
 fn writeback_families() -> [BridgeCausalEvidenceFamily; 6] {
@@ -152,38 +155,38 @@ fn evidence_references(
 fn digest_for_bridge_families(
     references: &[QueryCausalEvidenceReferenceArtifact],
     families: &[BridgeCausalEvidenceFamily],
-) -> Option<String> {
+) -> Result<Option<String>, IdentityDerivationDenial> {
     let family_names = families
         .iter()
         .map(BridgeCausalEvidenceFamily::as_str)
         .collect::<Vec<_>>();
-    digest_for_any_family(references, &family_names)
+    Ok(digest_for_any_family(references, &family_names)?)
 }
 
 fn digest_for_query_families(
     references: &[QueryCausalEvidenceReferenceArtifact],
     families: &[CausalEvidenceFamily],
-) -> Option<String> {
+) -> Result<Option<String>, IdentityDerivationDenial> {
     let family_names = families
         .iter()
         .map(CausalEvidenceFamily::as_str)
         .collect::<Vec<_>>();
-    digest_for_any_family(references, &family_names)
+    Ok(digest_for_any_family(references, &family_names)?)
 }
 
 fn digest_for_any_family(
     references: &[QueryCausalEvidenceReferenceArtifact],
     families: &[&str],
-) -> Option<String> {
+) -> Result<Option<String>, IdentityDerivationDenial> {
     let reference_identities = references
         .iter()
         .filter(|reference| families.contains(&reference.family()))
         .map(|reference| reference.reference_receipt_evidence_identity())
         .collect::<Vec<_>>();
     if reference_identities.is_empty() {
-        return None;
+        return Ok(None);
     }
-    Some(
+    Ok(Some(
         WorthQueryEvidenceIdentity::compose(
             WorthQueryEvidenceScope::CausalInspectionCertificationFailureEvidence,
         )
@@ -199,8 +202,8 @@ fn digest_for_any_family(
             WorthQueryEvidenceTag::new("reference"),
             reference_identities,
         )
-        .seal()
+        .seal()?
         .as_str()
         .to_string(),
-    )
+    ))
 }

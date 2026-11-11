@@ -45,6 +45,8 @@ pub(crate) struct PreparedRelationIntegrityScope {
     pub(crate) minimum_touched_entities: BTreeSet<EntityId>,
     pub(crate) planned_edges: Vec<PlannedRelationEdge>,
     pub(crate) visible_edges: Vec<PreparedVisibleRelationEdge>,
+    pub(crate) connectivity_sources: BTreeSet<EntityReference>,
+    pub(crate) complete_source_set: bool,
     pub(crate) visible_successors: BTreeMap<EntityReference, Vec<EntityReference>>,
     pub(crate) source_counts: BTreeMap<PreparedRelationEndpointKey, usize>,
     pub(crate) target_counts: BTreeMap<PreparedRelationEndpointKey, usize>,
@@ -60,11 +62,20 @@ pub(crate) struct PreparedRelationIntegrityScope {
 pub(crate) struct PreparedRelationIntegrityScopes(
     Arc<BTreeMap<KindId, PreparedRelationIntegrityScope>>,
     usize,
+    Option<Arc<worth_execution::ExecutionMemoryReservation>>,
 );
 
 impl PreparedRelationIntegrityScopes {
     pub(crate) fn new(scopes: BTreeMap<KindId, PreparedRelationIntegrityScope>) -> Self {
-        Self(Arc::new(scopes), 0)
+        Self(Arc::new(scopes), 0, None)
+    }
+
+    pub(super) fn with_memory(
+        mut self,
+        memory: Option<worth_execution::ExecutionMemoryReservation>,
+    ) -> Self {
+        self.2 = memory.map(Arc::new);
+        self
     }
 
     pub(crate) fn with_created_key_count(mut self, count: usize) -> Self {
@@ -117,17 +128,6 @@ impl PreparedRelationIntegrityScope {
 
     pub(crate) fn should_execute(&self) -> bool {
         self.requires_global_evaluation || !self.is_empty()
-    }
-
-    pub(crate) fn record_visible_successor(
-        &mut self,
-        source: EntityReference,
-        target: EntityReference,
-    ) {
-        self.visible_successors
-            .entry(source)
-            .or_default()
-            .push(target);
     }
 
     pub(crate) fn increment_counts(&mut self, source: EntityReference, target: EntityReference) {

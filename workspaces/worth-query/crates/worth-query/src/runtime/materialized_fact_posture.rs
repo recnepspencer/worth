@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::projection_consumption::{
     ProjectionMaterializedFactPosture, ProjectionMaterializedFactPostureKind,
 };
@@ -9,8 +10,8 @@ use super::WorthQueryRuntimeLiveSubscriptionState;
 pub(super) fn materialized_fact_posture_from_live_subscription_state(
     state: &WorthQueryRuntimeLiveSubscriptionState,
     basis_identity: &WorthQueryEvidenceIdentity,
-) -> ProjectionMaterializedFactPosture {
-    ProjectionMaterializedFactPosture::new(
+) -> Result<ProjectionMaterializedFactPosture, IdentityDerivationDenial> {
+    Ok(ProjectionMaterializedFactPosture::new(
         materialized_fact_posture_kind_from_live_subscription_state(state),
         state.installation.query_projection().label(),
         basis_identity.as_str(),
@@ -22,7 +23,7 @@ pub(super) fn materialized_fact_posture_from_live_subscription_state(
                 .label()
                 .to_string(),
         ),
-    )
+    )?)
 }
 
 fn materialized_fact_posture_kind_from_live_subscription_state(

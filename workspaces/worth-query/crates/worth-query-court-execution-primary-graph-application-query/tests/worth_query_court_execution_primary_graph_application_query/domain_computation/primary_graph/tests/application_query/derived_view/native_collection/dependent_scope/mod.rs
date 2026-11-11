@@ -21,14 +21,14 @@ fn dependent_second_scope_reconstructs_atomically_with_original_read_results() {
             let root = selected
                 .resolve_entity(
                     &phase,
-                    AccountStatus::reference(),
+                    AccountStatus::at("AccountStatus"),
                     "open".to_owned(),
                     &request,
                     WorthQueryPrincipalResolutionMode::Ordinary,
                 )
                 .unwrap();
             let graph = (*world.application.runtime_for_test()).primary_graph_for_test().unwrap();
-            let field = AccountLabel::reference();
+            let field = AccountLabel::at("AccountLabel");
             let locator = (*graph
                 .layout_for_test())
                 .field_locator_for_test(field.entity(), field.aspect(), field.field())
@@ -59,7 +59,7 @@ fn dependent_second_scope_reconstructs_atomically_with_original_read_results() {
             WorthQueryPrincipalResolutionMode::Ordinary,
         ).unwrap();
         let first_scope = selected.resolve_entity(
-            &phase, AccountStatus::reference(), "open".to_owned(), &request,
+            &phase, AccountStatus::at("AccountStatus"), "open".to_owned(), &request,
             WorthQueryPrincipalResolutionMode::Ordinary,
         ).unwrap();
         let access = WorthQueryApplicationQueryAccessContext::new(&principal, &first_scope);
@@ -86,7 +86,7 @@ fn dependent_second_scope_reconstructs_atomically_with_original_read_results() {
         let projections = Cell::new(0);
 let first = |selector: &String| {
             let root = selected.resolve_entity(
-                &phase, AccountStatus::reference(), selector.clone(), &request,
+                &phase, AccountStatus::at("AccountStatus"), selector.clone(), &request,
                 WorthQueryPrincipalResolutionMode::Ordinary,
             ).unwrap();
             let access = WorthQueryApplicationQueryAccessContext::new(&principal, &root);
@@ -108,7 +108,7 @@ let first = |selector: &String| {
 let second = |row: &AccountSummaryResult| {
             assert_eq!(row.label(), "unrelated");
             let root = selected.resolve_entity(
-                &phase, AccountStatus::reference(), row.label().to_owned(), &request,
+                &phase, AccountStatus::at("AccountStatus"), row.label().to_owned(), &request,
                 WorthQueryPrincipalResolutionMode::Ordinary,
             ).unwrap();
             assert_ne!(root.entity_id_for_test(), first_scope.entity_id_for_test());

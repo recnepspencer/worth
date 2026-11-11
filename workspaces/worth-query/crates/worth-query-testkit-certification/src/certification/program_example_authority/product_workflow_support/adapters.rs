@@ -116,10 +116,10 @@ impl
         >,
     ) -> Result<Self::Projection, primary_graph::WorthQueryTemporalInvocationFailure> {
         reader
-            .require_decision_field(scope, IntentIdentityField::reference())
+            .require_decision_field(scope, IntentIdentityField::at("IntentIdentityField"))
             .map_err(invocation_projection_failure)?;
         let identity = reader
-            .decision_field(scope, IntentIdentityField::reference())
+            .decision_field(scope, IntentIdentityField::at("IntentIdentityField"))
             .map_err(invocation_projection_failure)?
             .ok_or_else(|| {
                 primary_graph::WorthQueryTemporalInvocationFailure::new(
@@ -128,7 +128,7 @@ impl
                 )
             })?;
         reader
-            .decision_field(scope, IntentEffectField::reference())
+            .decision_field(scope, IntentEffectField::at("IntentEffectField"))
             .map_err(invocation_projection_failure)?;
         let target = reader.mutation_target(scope).map_err(|detail| {
             primary_graph::WorthQueryTemporalInvocationFailure::new(
@@ -154,7 +154,7 @@ impl
             .projected_entity(&target)
             .map_err(invocation_execution_failure)?;
         effects
-            .write_field(&target, IntentEffectField::reference(), input.0)
+            .write_field(&target, IntentEffectField::at("IntentEffectField"), input.0)
             .map_err(invocation_execution_failure)?;
         effects
             .emit(

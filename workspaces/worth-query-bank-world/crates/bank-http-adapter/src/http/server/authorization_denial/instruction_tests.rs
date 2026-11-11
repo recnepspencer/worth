@@ -1,6 +1,6 @@
 //! A lapse is cleared by the request, a refusal by nothing it can change.
 
-use bank_server::BankAuthorizationDenialKind as Authorization;
+use bank_server::BankAuthorizationDenialKind;
 
 use super::super::super::protocol::{BankHttpDenialKind as Kind, BankHttpNextAction as Next};
 use super::authorization_denial;
@@ -8,14 +8,18 @@ use super::authorization_denial;
 #[test]
 fn a_lapse_names_the_action_that_clears_it() {
     for (lapse, kind, next) in [
-        (Authorization::Cancelled, Kind::Cancelled, Next::Retry),
         (
-            Authorization::DeadlineExceeded,
+            BankAuthorizationDenialKind::Cancelled,
+            Kind::Cancelled,
+            Next::Retry,
+        ),
+        (
+            BankAuthorizationDenialKind::DeadlineExceeded,
             Kind::DeadlineExceeded,
             Next::Retry,
         ),
         (
-            Authorization::ExpiredAuthentication,
+            BankAuthorizationDenialKind::ExpiredAuthentication,
             Kind::Unauthenticated,
             Next::Authenticate,
         ),
@@ -24,7 +28,7 @@ fn a_lapse_names_the_action_that_clears_it() {
         assert_eq!((denial.kind, denial.next_action), (kind, next), "{lapse:?}");
     }
     assert_eq!(
-        authorization_denial(Authorization::PermissionDenied).next_action,
+        authorization_denial(BankAuthorizationDenialKind::PermissionDenied).next_action,
         Next::None
     );
 }
@@ -32,10 +36,10 @@ fn a_lapse_names_the_action_that_clears_it() {
 #[test]
 fn capacity_is_retried_but_spent_identity_asks_for_the_operator() {
     for capacity in [
-        Authorization::ActiveSnapshotCapacityExhausted {
+        BankAuthorizationDenialKind::ActiveSnapshotCapacityExhausted {
             maximum_active_snapshots: 4,
         },
-        Authorization::RetentionCapacityExhausted,
+        BankAuthorizationDenialKind::RetentionCapacityExhausted,
     ] {
         let denial = authorization_denial(capacity);
         assert_eq!(
@@ -45,9 +49,9 @@ fn capacity_is_retried_but_spent_identity_asks_for_the_operator() {
         );
     }
     for identity in [
-        Authorization::SnapshotIdentityExhausted,
-        Authorization::RetentionIdentityExhausted,
-        Authorization::AdmissionIdentityExhausted,
+        BankAuthorizationDenialKind::SnapshotIdentityExhausted,
+        BankAuthorizationDenialKind::RetentionIdentityExhausted,
+        BankAuthorizationDenialKind::AdmissionIdentityExhausted,
     ] {
         let denial = authorization_denial(identity);
         assert_eq!(
@@ -60,7 +64,7 @@ fn capacity_is_retried_but_spent_identity_asks_for_the_operator() {
 
 #[test]
 fn an_uninstalled_policy_requires_operator_repair() {
-    let denial = authorization_denial(Authorization::PolicyNotInstalled);
+    let denial = authorization_denial(BankAuthorizationDenialKind::PolicyNotInstalled);
     assert_eq!(
         (denial.kind, denial.next_action),
         (Kind::Unavailable, Next::ContactOperator)
@@ -69,10 +73,7 @@ fn an_uninstalled_policy_requires_operator_repair() {
 
 #[test]
 fn an_authorization_read_stop_keeps_its_http_disposition() {
-    use worth_query_host::facade::primary_graph::{
-        RelationalExecutionDenialCause as Cause,
-        WorthQueryOperationAuthorizationDenialKind as Query,
-    };
+    use worth_query_host::facade::primary_graph::RelationalExecutionDenialCause as Cause;
     for (cause, kind, next) in [
         (Cause::Cancelled, Kind::Cancelled, Next::Retry),
         (Cause::DeadlineElapsed, Kind::DeadlineExceeded, Next::Retry),
@@ -122,12 +123,7 @@ fn an_authorization_read_stop_keeps_its_http_disposition() {
         ),
     ] {
         assert_eq!(
-            authorization_denial(
-                Query::Stopped(
-                    worth_query_host::facade::primary_graph::relational_execution_kind(cause, None)
-                )
-                .into()
-            ),
+            authorization_denial(BankAuthorizationDenialKind::RelationalExecution(cause)),
             super::BankHttpDenial::new(kind, next)
         );
     }
@@ -137,27 +133,27 @@ fn an_authorization_read_stop_keeps_its_http_disposition() {
 fn recorded_actor_refusals_distinguish_permission_source_and_capacity() {
     for (cause, kind, next) in [
         (
-            Authorization::WorkflowActorContextRequired,
+            BankAuthorizationDenialKind::WorkflowActorContextRequired,
             Kind::PermissionDenied,
             Next::None,
         ),
         (
-            Authorization::WorkflowActorAbsent,
+            BankAuthorizationDenialKind::WorkflowActorAbsent,
             Kind::PermissionDenied,
             Next::None,
         ),
         (
-            Authorization::WorkflowActorComparisonMismatch,
+            BankAuthorizationDenialKind::WorkflowActorComparisonMismatch,
             Kind::PermissionDenied,
             Next::None,
         ),
         (
-            Authorization::WorkflowActorSourceInvalid,
+            BankAuthorizationDenialKind::WorkflowActorSourceInvalid,
             Kind::InternalDenied,
             Next::ContactOperator,
         ),
         (
-            Authorization::WorkflowActorEvidenceUnavailable,
+            BankAuthorizationDenialKind::WorkflowActorEvidenceUnavailable,
             Kind::Unavailable,
             Next::Retry,
         ),
@@ -171,8 +167,8 @@ fn recorded_actor_refusals_distinguish_permission_source_and_capacity() {
 fn stale_incarnation_requires_fresh_authorization_and_provider_capabilities() {
     use worth_query_host::facade::primary_graph::WorthQueryProviderSessionDenialKind as Session;
     for cause in [
-        Authorization::StaleIncarnation,
-        Authorization::ExecutionRequest(Session::StaleIncarnation),
+        BankAuthorizationDenialKind::StaleIncarnation,
+        BankAuthorizationDenialKind::ExecutionRequest(Session::StaleIncarnation),
     ] {
         let denial = authorization_denial(cause);
         assert_eq!(

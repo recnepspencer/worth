@@ -1,5 +1,6 @@
 use super::super::super::{
-    prefix::{Node, PrefixIndex, Provider, Stop},
+    prefix::{PrefixIndex, Provider},
+    prefix_provider::{Node, Stop},
     query,
     schema::Catalog,
 };

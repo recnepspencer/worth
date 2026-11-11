@@ -14,6 +14,7 @@ pub(in crate::application_entry) mod preparation;
 mod prepared_program;
 pub(in crate::application_entry) mod program_output_continuation;
 mod program_output_settlement;
+pub(in crate::application_entry) use program_output_settlement::ProgramOutputRecord;
 mod program_output_work;
 mod recorded_replay;
 mod recovery;
@@ -71,3 +72,6 @@ pub use retained::WorthQueryApplicationRetainedMutationOutcome;
 pub use prepared_program::{
     WorthQueryApplicationProgramMutationPreparation, WorthQueryPreparedProgramMutation,
 };
+#[cfg(test)]
+#[path = "mutation_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;

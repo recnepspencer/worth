@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use worth_runtime_bridge::facade::{
     BridgeHistoricalEvaluationDecisionLog, BridgeHistoricalMaterializationPath,
     BridgeTruthViewKind, BridgeTruthViewPolicyResolution, HistoricalEvaluationDeclaration,
@@ -30,7 +31,7 @@ pub(crate) fn lower_policy_resolution(
                 policy,
                 source_record,
                 requested_path_class,
-            ))
+            )?)
         }
         BridgeTruthViewPolicyResolution::Rejected(rejection) => Err(
             HistoricalEvaluationError::UnsupportedHistoricalPathRequest {
@@ -65,7 +66,7 @@ fn lower_admitted_policy(
     policy: &ResolvedTruthViewPolicy,
     source_record: Option<&SourceMaterializationRecord>,
     requested_path_class: &RequestedHistoricalPathClass,
-) -> HistoricalCapabilityDescriptor {
+) -> Result<HistoricalCapabilityDescriptor, IdentityDerivationDenial> {
     let retention_available = matches!(
         policy.retention_admission(),
         TruthViewRetentionAdmission::SnapshotResident
@@ -103,20 +104,20 @@ fn lower_admitted_policy(
         _ => None,
     };
 
-    HistoricalCapabilityDescriptor::new(
+    Ok(HistoricalCapabilityDescriptor::new(
         bridge_historical_basis(
             declaration
                 .declaration_identity()
                 .bridge_admission_evidence()
                 .terminal_projection_for_reporting(),
-        ),
+        )?,
         admitted_path_class,
         replay_permitted,
         replay_required,
         retention_available,
         historical_lookup_available,
         lower_reuse_descriptor(source_record),
-    )
+    ))
 }
 
 pub(crate) fn lower_materialization_from_decision_log(
@@ -128,7 +129,7 @@ pub(crate) fn lower_materialization_from_decision_log(
                 .declaration_identity()
                 .bridge_admission_evidence()
                 .terminal_projection_for_reporting(),
-        ),
+        )?,
         decision_log.materialization_path(),
     )
 }
@@ -145,7 +146,7 @@ pub(crate) fn lower_materialization_from_artifact(
                 .declaration_identity()
                 .bridge_admission_evidence()
                 .terminal_projection_for_reporting(),
-        ),
+        )?,
         artifact.materialization_path(),
     )
 }
@@ -162,15 +163,19 @@ fn lower_materialization_descriptor(
     )
 }
 
-pub(crate) fn bridge_historical_basis(reporting_identity: &str) -> ResolvedBasisProof {
+pub(crate) fn bridge_historical_basis(
+    reporting_identity: &str,
+) -> Result<ResolvedBasisProof, IdentityDerivationDenial> {
     let identity = worth_query_evidence_identity(WorthQueryEvidenceScope::ResolvedSnapshotBasis)
         .field_value(
             WorthQueryEvidenceTag::new("bridge_historical_declaration"),
             reporting_identity,
         )
-        .seal();
-    ResolvedBasisProof::new(identity, BasisResolutionMode::RuntimeDirect)
-        .with_reporting_label(reporting_identity)
+        .seal()?;
+    Ok(
+        ResolvedBasisProof::new(identity, BasisResolutionMode::RuntimeDirect)
+            .with_reporting_label(reporting_identity),
+    )
 }
 
 fn resolved_path_class_for(

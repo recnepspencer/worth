@@ -7,10 +7,10 @@ impl Rule {
         &self,
         planner: &mut WorthQueryApplicationInvariantScopePlanner<'_, '_, WalkSchema>,
         budget: Option<&dyn CustomInvariantLeaseBudget>,
-    ) -> Result<Vec<Root>, WorthQueryApplicationInvariantPreparationError> {
+    ) -> Result<Vec<Root>, WorthQueryApplicationInvariantError<Refusal>> {
         planner
             .check_live()
-            .map_err(|stop| failure(format!("{stop:?}")))?;
+            .map_err(WorthQueryApplicationInvariantError::from)?;
         let view = planner.proposed();
         let roots = self.discover_roots(&view, budget)?;
         let mut prepared = Vec::new();
@@ -19,7 +19,11 @@ impl Rule {
             let key = view
                 .field(&self.key, &entity)
                 .map_err(access)?
-                .ok_or_else(|| failure("root key absent"))?;
+                .ok_or_else(
+                    || WorthQueryApplicationInvariantError::MissingRequiredField {
+                        field: "root key absent",
+                    },
+                )?;
             if view.field(&self.active, &entity).map_err(access)? == Some(true) {
                 view.walk(&self.next, RelationDirection::Forward, &entity)
                     .map_err(access)?;
@@ -27,7 +31,7 @@ impl Rule {
             if budget
                 .is_some_and(|payer| !payer.claim_result((4 * std::mem::size_of::<Root>()) as u64))
             {
-                return Err(failure("root result retention refused"));
+                return Err(WorthQueryApplicationInvariantError::Stopped);
             }
             prepared.push(Root { entity, key });
         }
@@ -40,7 +44,7 @@ impl Rule {
         &self,
         view: &WorthQueryApplicationInvariantReadView<'_, WalkSchema>,
         budget: Option<&dyn CustomInvariantLeaseBudget>,
-    ) -> Result<BTreeMap<EntityId, Entity>, WorthQueryApplicationInvariantPreparationError> {
+    ) -> Result<BTreeMap<EntityId, Entity>, WorthQueryApplicationInvariantError<Refusal>> {
         let mut roots = BTreeMap::new();
         for node in view.touched_entities(&self.key).map_err(access)? {
             checkpoint(budget)?;
@@ -48,7 +52,9 @@ impl Rule {
                 .relations_from(&self.membership, &node)
                 .map_err(access)?;
             let [membership] = membership.as_slice() else {
-                return Err(failure("each node must have one authored root membership"));
+                return Err(WorthQueryApplicationInvariantError::MissingRequiredField {
+                    field: "each node must have one authored root membership",
+                });
             };
             let root = membership.to();
             if let std::collections::btree_map::Entry::Vacant(entry) = roots.entry(root.entity_id())
@@ -56,7 +62,7 @@ impl Rule {
                 let bytes = 11 * std::mem::size_of::<(EntityId, Entity)>()
                     + 14 * std::mem::size_of::<usize>();
                 if budget.is_some_and(|payer| !payer.claim_scratch(bytes as u64)) {
-                    return Err(failure("root discovery retention refused"));
+                    return Err(WorthQueryApplicationInvariantError::Stopped);
                 }
                 entry.insert(root.clone());
             }
@@ -67,20 +73,16 @@ impl Rule {
 
 pub fn checkpoint(
     budget: Option<&dyn CustomInvariantLeaseBudget>,
-) -> Result<(), WorthQueryApplicationInvariantPreparationError> {
+) -> Result<(), WorthQueryApplicationInvariantError<Refusal>> {
     if budget.is_some_and(|payer| !payer.checkpoint(1)) {
-        Err(failure("root preparation stopped"))
+        Err(WorthQueryApplicationInvariantError::Stopped)
     } else {
         Ok(())
     }
 }
 
 pub fn access(
-    error: WorthQueryInvariantAccessDenial,
-) -> WorthQueryApplicationInvariantPreparationError {
-    failure(error.to_string())
-}
-
-pub fn failure(message: impl Into<String>) -> WorthQueryApplicationInvariantPreparationError {
-    WorthQueryApplicationInvariantPreparationError::new(message.into())
+    error: impl Into<WorthQueryApplicationInvariantError<Refusal>>,
+) -> WorthQueryApplicationInvariantError<Refusal> {
+    error.into()
 }

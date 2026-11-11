@@ -1,30 +1,54 @@
-//! Read-only traversal of native payload allocations at their real sharing granularity.
+//! Read-only traversal of native payload allocations at their owner granularity.
+//!
+//! Native nodes and payload carriers are identified by their real allocation.
+//! Persistent aspect backing nested in a carrier arrives as that carrier's
+//! checked declared upper bound, so backing shared by distinct carriers is
+//! counted once per carrier. An unrepresentable bound refuses the walk.
 use super::allocation_ledger::RelationalExcludedAllocationLane;
 use super::sharing::{
     RelationalAuthoritativeAllocationKind, RelationalAuthoritativeAllocationLocator,
-    RelationalAuthoritativeAllocationObservation,
+    RelationalAuthoritativeAllocationObservation, RelationalBranchSharingInspectionDenial,
 };
 use crate::identity::data::PartitionId;
 use crate::storage::{
     overlay::PartitionState,
-    substrate::{StorageAllocationObservation, StorageAllocationVisitor},
+    substrate::{StorageAllocationExtent, StorageAllocationObservation, StorageAllocationVisitor},
 };
+
+/// Admits one owner observation's checked extent before it becomes evidence.
+pub(super) fn admitted_bytes(
+    allocation: StorageAllocationObservation,
+) -> Result<u64, RelationalBranchSharingInspectionDenial> {
+    match allocation.extent {
+        StorageAllocationExtent::Checked => Ok(allocation.bytes),
+        StorageAllocationExtent::Overflow => {
+            Err(RelationalBranchSharingInspectionDenial::AuthoritativeByteBoundOverflow)
+        }
+    }
+}
 
 pub(super) fn authoritative_partition_allocations(
     runtime_instance_id: u64,
     partition: &PartitionState,
     seen: &mut std::collections::BTreeSet<u64>,
     work: Option<&mut super::retained_storage::RelationalRetainedStorageWork>,
-) -> Vec<RelationalAuthoritativeAllocationObservation> {
+) -> Result<
+    Vec<RelationalAuthoritativeAllocationObservation>,
+    RelationalBranchSharingInspectionDenial,
+> {
     let mut walk = PartitionAllocationWalk {
         runtime_instance_id,
         partition_id: partition.partition_id,
         seen,
         allocations: Vec::new(),
         work,
+        denial: None,
     };
     partition.visit_authoritative_allocations(false, &mut walk);
-    walk.allocations
+    match walk.denial {
+        Some(denial) => Err(denial),
+        None => Ok(walk.allocations),
+    }
 }
 
 struct PartitionAllocationWalk<'a> {
@@ -33,6 +57,7 @@ struct PartitionAllocationWalk<'a> {
     seen: &'a mut std::collections::BTreeSet<u64>,
     allocations: Vec<RelationalAuthoritativeAllocationObservation>,
     work: Option<&'a mut super::retained_storage::RelationalRetainedStorageWork>,
+    denial: Option<RelationalBranchSharingInspectionDenial>,
 }
 
 impl StorageAllocationVisitor for PartitionAllocationWalk<'_> {
@@ -40,6 +65,13 @@ impl StorageAllocationVisitor for PartitionAllocationWalk<'_> {
         if let Some(work) = self.work.as_mut() {
             work.payload_allocation_attempts += 1;
         }
+        let bytes = match admitted_bytes(allocation) {
+            Ok(bytes) => bytes,
+            Err(denial) => {
+                self.denial = Some(denial);
+                return false;
+            }
+        };
         if !self.seen.insert(allocation.id) {
             return false;
         }
@@ -55,7 +87,7 @@ impl StorageAllocationVisitor for PartitionAllocationWalk<'_> {
                     allocation.id,
                     Some(self.partition_id),
                 ),
-                allocation.bytes,
+                bytes,
             ));
         true
     }

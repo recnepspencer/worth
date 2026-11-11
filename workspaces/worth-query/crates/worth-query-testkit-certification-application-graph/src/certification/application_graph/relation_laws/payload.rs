@@ -2,7 +2,12 @@
 pub use super::{handler::Handler, operation::*};
 pub use std::{marker::PhantomData, sync::Mutex};
 
-pub type Created<L> = WorthQueryApplicationCreatedRelation<GraphSchema<L>, Precedes, Node, Node>;
+pub type Created<L> = WorthQueryApplicationCreatedRelation<
+    GraphSchema<L>,
+    GraphPrecedes<GraphSchema<L>>,
+    GraphNode<GraphSchema<L>>,
+    GraphNode<GraphSchema<L>>,
+>;
 pub struct PayloadHandler<L: LawPolicy> {
     pub prior: Mutex<Option<Created<L>>>,
     pub marker: PhantomData<fn() -> L>,
@@ -47,23 +52,24 @@ impl<L: LawPolicy> PayloadHandler<L> {
             let from = writer.projected_entity(&from)?;
             let to = writer.projected_entity(&to)?;
             let key = format!("payload-{}-{index}", input.serial);
-            let target = writer.link_for_initialization(Precedes::reference(), &key, &from, &to)?;
+            let target =
+                writer.link_for_initialization(precedes::<GraphSchema<L>>(), &key, &from, &to)?;
             if input.serial == 4 {
                 // Same-program duplicate key is a separate creation refusal.
-                writer.link_for_initialization(Precedes::reference(), &key, &from, &to)?;
+                writer.link_for_initialization(precedes::<GraphSchema<L>>(), &key, &from, &to)?;
             }
             if input.serial == 2 {
                 let prior = self.prior.lock().unwrap();
                 writer.initialize_relation_field(
                     prior.as_ref().expect("prior successful program's token"),
-                    EdgeWeight::reference(),
+                    edge_weight::<GraphSchema<L>>().expect("payload record field"),
                     ApplicationEncodedScalarValue::<U64ApplicationValueBinding>::try_new(2)
                         .unwrap(),
                 )?;
             } else {
                 writer.initialize_relation_field(
                     &target,
-                    EdgeWeight::reference(),
+                    edge_weight::<GraphSchema<L>>().expect("payload record field"),
                     ApplicationEncodedScalarValue::<U64ApplicationValueBinding>::try_new(
                         input.serial,
                     )
@@ -72,7 +78,7 @@ impl<L: LawPolicy> PayloadHandler<L> {
                 if input.serial == 3 {
                     writer.initialize_relation_field(
                         &target,
-                        EdgeWeight::reference(),
+                        edge_weight::<GraphSchema<L>>().expect("payload record field"),
                         ApplicationEncodedScalarValue::<U64ApplicationValueBinding>::try_new(3)
                             .unwrap(),
                     )?;

@@ -41,6 +41,7 @@ impl<K: Ord + Copy, V: StoredValue> SharedMap<K, V> {
                 .expect("ordinary sorted construction has no request refusal"),
         }
     }
+
     pub(crate) fn len(&self) -> usize {
         self.root.as_ref().map_or(0, |root| root.len)
     }
@@ -198,6 +199,10 @@ impl<K: Ord + Copy, V: StoredValue> SharedMap<K, V> {
     pub(crate) fn iter(&self) -> SharedMapIter<'_, K, V> {
         SharedMapIter::new(self.root.as_deref())
     }
+    /// Seek once, then walk the ordered suffix without revisiting earlier keys.
+    pub(crate) fn iter_from(&self, first: &K) -> SharedMapIter<'_, K, V> {
+        SharedMapIter::from_key(self.root.as_deref(), first)
+    }
     pub(crate) fn try_iter<Stop>(
         &self,
         prepare: impl FnMut(u64, u64) -> Result<(), Stop>,
@@ -237,9 +242,7 @@ impl<'a, K: Ord + Copy, V: StoredValue> SharedMapEntry<'a, K, V> {
         }
         self.map.get_mut(&self.key).expect(/* Proof: The entry constructor installs this key before returning its exclusive entry handle; the handle exposes no removal operation. */ "entry was installed")
     }
-    pub(crate) fn or_insert(self, value: V::Value) -> &'a mut V::Value {
-        self.or_insert_with(|| value)
-    }
+
     pub(crate) fn or_default(self) -> &'a mut V::Value
     where
         V::Value: Default,

@@ -110,9 +110,10 @@ fn guarded_employee_path(
     ApplicationCapabilityGraphClause::when(
         employee_allow_path(role),
         [ApplicationCapabilityAcceptedValues::one_of(
-            CapabilityDisclosureField::reference(),
+            CapabilityDisclosureField::at("CapabilityDisclosureField"),
             fields.into_iter().map(crate::schema::encoded_bank_value),
-        )],
+        )
+        .unwrap()],
     )
 }
 
@@ -127,9 +128,10 @@ fn employee_path(
     let path = ApplicationAuthorizationPathBuilder::from_principal(Principal::reference())
         .reverse(AssignmentPrincipal::reference())
         .where_equal(
-            AssignmentRole::reference(),
+            AssignmentRole::at("AssignmentRole"),
             crate::schema::encoded_bank_value(role),
         )
+        .expect("owned record selection is valid")
         .forward(EstateAssignment::reference());
     match effect {
         ApplicationAuthorizationPathEffect::Allow => path.allow(EstateCase::reference()),
@@ -281,11 +283,12 @@ fn disclosure_rule(
     }
     ApplicationCapabilityDisclosureRule::permit([ApplicationCapabilityScopeGuard::requiring([
         ApplicationCapabilityAcceptedValues::one_of(
-            CapabilityDisclosureField::reference(),
+            CapabilityDisclosureField::at("CapabilityDisclosureField"),
             permitted_fields(purpose)
                 .into_iter()
                 .map(crate::schema::encoded_bank_value),
-        ),
+        )
+        .unwrap(),
     ])])
 }
 

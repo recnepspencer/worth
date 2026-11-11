@@ -7,6 +7,7 @@ use super::super::consumed::{
 use super::super::contracts::MaterializedProjectionContract;
 use super::super::facts::ProjectionFactKind;
 use super::super::source::ProjectionSourceFamily;
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::projection_consumption::ProjectionFactExtractionError;
 use crate::runtime::WorthQueryWriteReceipt;
 
@@ -33,7 +34,7 @@ pub(super) fn extract_write_receipt_facts(
             },
         );
     }
-    Ok(facts.into_fact_set(contract))
+    Ok(facts.into_fact_set(contract)?)
 }
 
 #[derive(Default)]
@@ -102,12 +103,12 @@ impl ExtractedWriteReceiptFacts {
                 continuity.outcome_class(),
                 ConsumedContinuityAuthorityIdentity::new(
                     continuity.prior_authoritative_identity().as_str(),
-                ),
+                )?,
                 continuity
                     .successor_authoritative_identities()
                     .iter()
                     .map(|identity| ConsumedContinuityAuthorityIdentity::new(identity.as_str()))
-                    .collect(),
+                    .collect::<Result<Vec<_>, _>>()?,
                 continuity.resolved_target_entity_identity().cloned(),
                 continuity
                     .target_collection()
@@ -142,12 +143,15 @@ impl ExtractedWriteReceiptFacts {
         Ok(())
     }
 
-    fn into_fact_set(self, contract: &MaterializedProjectionContract) -> ConsumedProjectionFactSet {
+    fn into_fact_set(
+        self,
+        contract: &MaterializedProjectionContract,
+    ) -> Result<ConsumedProjectionFactSet, IdentityDerivationDenial> {
         let extracted_count = self.target_identities.len()
             + self.source_references.len()
             + self.effect_continuity.len()
             + self.relation_endpoints.len();
-        ConsumedProjectionFactSet::new(
+        Ok(ConsumedProjectionFactSet::new(
             ConsumedProjectionContractProvenance::from_contract(contract),
             ConsumedProjectionSourceTruth::from_contract(
                 contract,
@@ -173,7 +177,7 @@ impl ExtractedWriteReceiptFacts {
                 effect_continuity_facts: self.effect_continuity,
                 relation_endpoints: self.relation_endpoints,
             },
-        )
+        )?)
     }
 }
 

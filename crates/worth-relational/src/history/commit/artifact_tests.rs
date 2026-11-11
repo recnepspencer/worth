@@ -20,7 +20,14 @@ fn recovery_relinks_an_already_sealed_payload_without_reencoding_or_weakening_ro
         .canonical_envelope()
         .cloned()
         .expect("committed root carries its canonical envelope");
-    let preencoded = RelationalCommitArtifact::from_envelope(Arc::clone(&envelope)).unwrap();
+    let preencoded = RelationalCommitArtifact::from_preencoded(
+        crate::branch::RelationalOriginalRootCommitEvidence::prepare(
+            execution,
+            Arc::clone(&envelope),
+        )
+        .unwrap(),
+    )
+    .unwrap();
     let legacy =
         RelationalCommitArtifact::from_envelope_with_root(Arc::clone(&envelope), Arc::clone(&root))
             .unwrap();

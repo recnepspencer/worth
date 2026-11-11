@@ -44,7 +44,8 @@ fn history_transcript_executes_using_only_history_capability_vocabulary() {
     let context = at(request_execution, &workspace);
     let outcome = declaration
         .using(context)
-        .run(request_execution, &mut workspace);
+        .run(request_execution, &mut workspace)
+        .expect("fixture digest must fit");
 
     assert!(outcome.completed().is_some());
     assert!(outcome.stop().is_none());

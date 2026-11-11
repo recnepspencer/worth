@@ -27,6 +27,7 @@ pub(crate) struct AdmittedRelationalHomeProgramStep {
     >,
     pub(crate) commitment: [u8; 32],
     pub(crate) association: [u8; 32],
+    pub(crate) index_budget: crate::indexes::data::DerivedIndexMaintenanceBudget,
     _memory: Option<ExecutionMemoryReservation>,
 }
 impl AdmittedRelationalHomeProgramStep {
@@ -51,6 +52,7 @@ impl RelationalRuntime {
         admission: &worth_proof::AdmittedHomeProgramTransitionStep<
             crate::branch::RelationalBranchBasisAdmissionIdentity,
         >,
+        index_budget: crate::indexes::data::DerivedIndexMaintenanceBudget,
     ) -> Result<crate::mvcc::BranchBoundRelationalTransaction, RelationalHomeProgramContractDenial>
     {
         use RelationalHomeProgramContractDenial as Denial;
@@ -85,7 +87,11 @@ impl RelationalRuntime {
                 RelationalHomeProgramStepContracts::Target { contracts, .. },
                 HomeProgramTransitionStepRole::Target,
             ) => {
-                if contracts.catalog_digest() != envelope.catalog() {
+                if contracts.catalog_digest() != envelope.catalog()
+                    || contracts.schema_digest() != plan.target_meaning().schema()
+                    || contracts.target_meaning(request, step.step())?.carrier()
+                        != plan.target_meaning().carrier()
+                {
                     return Err(Denial::TargetCatalogMismatch);
                 }
             }
@@ -99,7 +105,15 @@ impl RelationalRuntime {
                     .execution_contracts
                     .get()
                     .ok_or(Denial::TargetCatalogMismatch)?;
-                if inherited.digest != envelope.catalog() {
+                if inherited.digest != envelope.catalog()
+                    || inherited.schema.authority_digest() != plan.target_meaning().schema().bytes()
+                    || inherited
+                        .schema
+                        .recorded_image(request)
+                        .map_err(Denial::SchemaImage)?
+                        .carrier_digest()
+                        != plan.target_meaning().carrier().bytes()
+                {
                     return Err(Denial::TargetCatalogMismatch);
                 }
             }
@@ -132,6 +146,7 @@ impl RelationalRuntime {
             admission: admission.clone(),
             commitment,
             association: observed,
+            index_budget,
             _memory: memory,
         });
         match contracts {

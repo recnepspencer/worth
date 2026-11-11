@@ -8,7 +8,8 @@ fn explicit_work_budget_denies_before_subscription_selection_artifact_exists() {
         LiveQueryFamily::OrderedCollection,
         Some(LiveViewShapeFamily::KanbanGrouped),
         QuerySubscriptionConstructionSource::FacadeLive,
-    );
+    )
+    .expect("fixture digest must fit");
     let budget = QuerySubscriptionWorkBudget::no_allocation(3, 8, 8, 32, 1);
 
     let error = select_query_subscription_family(input, budget).unwrap_err();
@@ -28,7 +29,8 @@ fn exhausted_lookup_budget_denies_without_claiming_a_registry_lookup() {
         LiveQueryFamily::OrderedCollection,
         Some(LiveViewShapeFamily::Table),
         QuerySubscriptionConstructionSource::FacadeLive,
-    );
+    )
+    .expect("fixture digest must fit");
     let budget = QuerySubscriptionWorkBudget::scratch_buffer_only(8, 8, 8, 32, 0);
 
     let error = select_query_subscription_family(input, budget).unwrap_err();
@@ -43,7 +45,12 @@ fn exhausted_lookup_budget_denies_without_claiming_a_registry_lookup() {
     assert_eq!(error.counters().family_denial_count(), 1);
     assert_eq!(error.counters().work_budget_denial_count(), 1);
     assert_eq!(
-        error.diagnostic().counter_projection().label().as_str(),
+        error
+            .diagnostic()
+            .expect("fixture digest must fit")
+            .counter_projection()
+            .label()
+            .as_str(),
         error.counters().counter_projection().label()
     );
 }
@@ -54,7 +61,8 @@ fn no_allocation_budget_denies_before_digest_scratch_is_allocated() {
         LiveQueryFamily::Detail,
         None,
         QuerySubscriptionConstructionSource::FacadeLive,
-    );
+    )
+    .expect("fixture digest must fit");
     let budget = QuerySubscriptionWorkBudget::no_allocation(8, 8, 8, 32, 1);
 
     let error = select_query_subscription_family(input, budget).unwrap_err();

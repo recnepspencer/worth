@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use std::collections::BTreeMap;
 
 use crate::application::WorthQueryDeclarationEntryContributionCategoryFamily;
@@ -18,7 +19,9 @@ pub(crate) struct WorthQueryInstalledDomainSemantics {
 }
 
 impl WorthQueryInstalledDomainSemantics {
-    pub(super) fn from_artifact(artifact: &WorthQueryInstalledDomainArtifact) -> Self {
+    pub(super) fn from_artifact(
+        artifact: &WorthQueryInstalledDomainArtifact,
+    ) -> Result<Self, IdentityDerivationDenial> {
         let declaration_families = artifact
             .declaration_families
             .iter()
@@ -57,13 +60,13 @@ impl WorthQueryInstalledDomainSemantics {
                         .iter()
                         .map(|(slot, identity)| format!("{slot}:{identity}")),
                 )
-                .seal();
-        Self {
+                .seal()?;
+        Ok(Self {
             declaration_families,
             contribution_policy,
             invariant_identities,
             identity,
-        }
+        })
     }
 
     pub(crate) fn declaration_family_version(&self, family_key: &str) -> Option<u32> {

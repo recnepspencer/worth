@@ -6,8 +6,8 @@ worth_query_structured_value_binding!(pub InputBinding for Input { identity: "so
 // Existing generated entities cannot be acquired: only Source is readable.
 // Generated links can be authored only between this candidate's created handles.
 worth_query_operation!(pub Generate for Schema, input InputBinding; access {
-    read_fields: [SourceKey, SourceValue]; read_relations: [SourceMember];
-    writes: [GeneratedKey, GeneratedValue]; creates: [Generated]; links: [GeneratedMember];
+    read_fields: [SourceKey::at("SourceKey"), SourceValue::at("SourceValue")]; read_relations: [SourceMember];
+    writes: [GeneratedKey::at("GeneratedKey"), GeneratedValue::at("GeneratedValue")]; creates: [Generated]; links: [GeneratedMember];
 });
 pub struct Outputs;
 macro_rules! role {
@@ -30,15 +30,7 @@ impl ApplicationMutationOutputContract<Schema> for Outputs {
     const ROLES: &'static [ApplicationMutationOutputRoleDescriptor] =
         &[Root::DESCRIPTOR, Left::DESCRIPTOR, Right::DESCRIPTOR];
 }
-type Scope = ApplicationMutationFieldScope<
-    Schema,
-    Source,
-    SourceFacts,
-    SourceKey,
-    String,
-    ReadOnly,
-    NoApplicationUnit,
->;
+type Scope = ApplicationMutationFieldScope<SourceKey>;
 pub struct Binding;
 impl ApplicationMutationBinding<Schema> for Binding {
     type Input = Input;
@@ -64,17 +56,8 @@ impl ApplicationMutationBinding<Schema> for Binding {
     fn workflow_execution_requirements() -> ApplicationWorkflowExecutionRequirements {
         ApplicationWorkflowExecutionRequirements::not_applicable()
     }
-    fn scope_field() -> ApplicationFieldRef<
-        Schema,
-        Source,
-        SourceFacts,
-        SourceKey,
-        String,
-        ReadOnly,
-        EqualityPredicate,
-        NoApplicationUnit,
-    > {
-        SourceKey::reference()
+    fn scope_field() -> SourceKey {
+        SourceKey::at("SourceKey")
     }
     fn principal_binding() -> ApplicationPrincipalBindingRef<
         Schema,
@@ -93,7 +76,7 @@ impl ApplicationMutationIntent<Schema> for Input {
         self
     }
     fn scope_binding(&self) -> Scope {
-        Scope::new(SourceKey::reference(), self.0.key.clone())
+        Scope::new(SourceKey::at("SourceKey"), self.0.key.clone())
     }
 }
 pub struct Decision {
@@ -110,8 +93,8 @@ impl OperationHandler<Schema, Binding> for Handler {
         reader: &mut DecisionReader<'_, '_, '_, Schema, Binding>,
     ) -> HandlerResult<Decision, edit::Denial> {
         let result = (|| {
-            let source = reader.resolve_entity(SourceKey::reference(), input.0.key.clone())?;
-            let Some(value) = reader.field(&source, SourceValue::reference())? else {
+            let source = reader.resolve_entity(SourceKey::at("SourceKey"), input.0.key.clone())?;
+            let Some(value) = reader.field(&source, SourceValue::at("SourceValue"))? else {
                 return Ok(Err(edit::Denial::InvalidSourceGraph));
             };
             let edges = reader
@@ -123,10 +106,10 @@ impl OperationHandler<Schema, Binding> for Handler {
             let mut members = Vec::with_capacity(2);
             for edge in edges {
                 let child = edge.to();
-                let Some(key) = reader.field(child, SourceKey::reference())? else {
+                let Some(key) = reader.field(child, SourceKey::at("SourceKey"))? else {
                     return Ok(Err(edit::Denial::InvalidSourceGraph));
                 };
-                let Some(value) = reader.field(child, SourceValue::reference())? else {
+                let Some(value) = reader.field(child, SourceValue::at("SourceValue"))? else {
                     return Ok(Err(edit::Denial::InvalidSourceGraph));
                 };
                 // This small fixture is a star, not an arbitrary reachability walk.
@@ -184,8 +167,12 @@ impl OperationHandler<Schema, Binding> for Handler {
                     Generated::reference(),
                     WorthQueryApplicationEntityKey::new(format!("generated:{key}")).unwrap(),
                 )?;
-                writer.initialize_field(&entity, GeneratedKey::reference(), key.to_owned())?;
-                writer.initialize_field(&entity, GeneratedValue::reference(), value)?;
+                writer.initialize_field(
+                    &entity,
+                    GeneratedKey::at("GeneratedKey"),
+                    key.to_owned(),
+                )?;
+                writer.initialize_field(&entity, GeneratedValue::at("GeneratedValue"), value)?;
                 nodes.push(entity);
             }
             writer.link(

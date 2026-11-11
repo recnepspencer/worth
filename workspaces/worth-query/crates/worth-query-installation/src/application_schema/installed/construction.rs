@@ -18,6 +18,7 @@ impl<Schema: ApplicationSchema> WorthQueryInstalledApplicationSchema<Schema> {
         let invariant_catalog =
             WorthQueryInstalledApplicationInvariantCatalog::compile(&compiled.schema);
         let mut installed = Self {
+            identity_budget: compiled.identity_budget,
             operation_catalog: compiled.operation_catalog,
             package_authority: compiled.package_authority,
             schema_name: compiled.schema_name,

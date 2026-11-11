@@ -4,11 +4,7 @@ use worth_query_declaration::facade::application_operation::{
     WorthQueryPreserveOutput, WorthQueryRetireOutput,
 };
 use worth_query_installation::facade::ApplicationSchema;
-use worth_query_installation::facade::{
-    ApplicationFieldRef, ApplicationFieldUnit, ApplicationRelationRef,
-    DeclaredApplicationFieldValue, EqualityPredicate, OperationReads, OperationUnlinks,
-    WritePosture,
-};
+use worth_query_installation::facade::{ApplicationRelationRef, OperationReads, OperationUnlinks};
 
 use super::super::application_attempt::OutputRoleUse;
 use super::super::{
@@ -69,24 +65,17 @@ where
     }
 
     /// Resolves an existing effect target only from the completed decision read set.
-    pub fn resolve_entity<Entity, Aspect, Field, Value, Write, Unit>(
+    pub fn resolve_entity<Entity, Aspect, Field, Value>(
         &self,
-        field: ApplicationFieldRef<
-            Schema,
-            Entity,
-            Aspect,
-            Field,
-            Value,
-            Write,
-            EqualityPredicate,
-            Unit,
-        >,
+        field: Field,
         value: Value,
     ) -> Result<WorthQueryApplicationEffectEntity<Schema, Entity>, WorthQueryApplicationAttemptDenial>
     where
-        Field: OperationReads<Binding::Operation> + DeclaredApplicationFieldValue<Value = Value>,
-        Write: WritePosture,
-        Unit: ApplicationFieldUnit,
+        Field: worth_query_declaration::facade::application_schema::fragment::RecordSelection<
+            Entity = Entity,
+            Aspect = Aspect,
+            Value = Value,
+        >,
     {
         self.candidate.resolve_observed_entity(field, value)
     }

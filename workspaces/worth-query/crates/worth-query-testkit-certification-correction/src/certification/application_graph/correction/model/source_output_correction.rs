@@ -5,10 +5,10 @@ use worth_query_host::facade::declaration::{
 };
 pub struct RecordIssued;
 pub fn key_field() -> ApplicationCorrectionOutputField<NumericSchema> {
-    ApplicationCorrectionOutput::<IssueBinding, Actual>::field(Key::reference())
+    ApplicationCorrectionOutput::<IssueBinding, Actual>::field(Key::at("Key"))
 }
 pub fn payload_field() -> ApplicationCorrectionOutputField<NumericSchema> {
-    ApplicationCorrectionOutput::<IssueBinding, Actual>::field(Primary::reference())
+    ApplicationCorrectionOutput::<IssueBinding, Actual>::field(Primary::at("Primary"))
 }
 pub static DERIVATIONS: std::sync::atomic::AtomicUsize = std::sync::atomic::AtomicUsize::new(0);
 pub fn derivations() -> usize {
@@ -19,6 +19,43 @@ impl ApplicationCorrectionBinding<NumericSchema> for RecordIssued {
     type Source = IssueBinding;
     type InverseIntent = Record;
     type Disclosure = query::ReadBinding;
+
+    fn recover_source_input(
+        bytes: &[u8],
+        expected: worth_query_decl::facade::application_schema::CanonicalDigestId,
+        bounds: worth_query_decl::facade::application_schema::ValueDecodeBounds,
+    ) -> Result<
+        worth_query_decl::facade::application_operation::ApplicationEncodedInput<
+            <Self::Source as worth_query_decl::facade::application_operation::ApplicationMutationBinding<NumericSchema>>::InputBinding,
+        >,
+        worth_query_decl::facade::application_operation::ApplicationRetainedInputDenial,
+    >{
+        worth_query_decl::facade::application_operation::ApplicationEncodedInput::decode_retained_with_seed(
+            bytes, expected, bounds,
+            worth_query_decl::facade::application_schema::CanonicalValueSeed::<<Self::Source as worth_query_decl::facade::application_operation::ApplicationMutationBinding<NumericSchema>>::Input>::new(bounds),
+        )
+    }
+
+    fn recover_inverse_input(
+        bytes: &[u8],
+        expected: worth_query_decl::facade::application_schema::CanonicalDigestId,
+        bounds: worth_query_decl::facade::application_schema::ValueDecodeBounds,
+    ) -> Result<
+        worth_query_decl::facade::application_operation::ApplicationEncodedInput<
+            <worth_query_decl::facade::application_aftermath::ApplicationInverseBinding<
+                NumericSchema,
+                Self,
+            > as worth_query_decl::facade::application_operation::ApplicationMutationBinding<
+                NumericSchema,
+            >>::InputBinding,
+        >,
+        worth_query_decl::facade::application_operation::ApplicationRetainedInputDenial,
+    > {
+        worth_query_decl::facade::application_operation::ApplicationEncodedInput::decode_retained_with_seed(
+            bytes, expected, bounds,
+            worth_query_decl::facade::application_schema::CanonicalValueSeed::<<worth_query_decl::facade::application_aftermath::ApplicationInverseBinding<NumericSchema, Self> as worth_query_decl::facade::application_operation::ApplicationMutationBinding<NumericSchema>>::Input>::new(bounds),
+        )
+    }
     fn source_definition(
     ) -> ApplicationOperationDefinitionBuilder<NumericSchema, IssueOperation, Issue, true, false>
     {
@@ -38,7 +75,6 @@ impl ApplicationCorrectionBinding<NumericSchema> for RecordIssued {
                 identity: "original-issued-value-recorded".to_owned(),
             },
         )
-        .unwrap()
     }
     fn source_output_fields() -> Vec<ApplicationCorrectionOutputField<NumericSchema>> {
         vec![key_field(), payload_field()]
@@ -63,7 +99,8 @@ impl ApplicationCorrectionBinding<NumericSchema> for RecordIssued {
                 .field(&payload_field())
                 .map_err(|_| UnsupportedSourceMeaning)?,
         )
-        .map_err(|_| UnsupportedSourceMeaning)?;
+        .map_err(|_| UnsupportedSourceMeaning)?
+        .0;
         Ok(Record {
             key: original.key.clone(),
             original_key: key,

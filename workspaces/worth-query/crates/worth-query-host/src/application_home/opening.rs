@@ -27,6 +27,19 @@ where
         WorthQueryApplicationHome<Schema, Program>,
         WorthQueryApplicationHomeOpenRefused<Schema, Program>,
     > {
+        worth_execution::run_with_execution_stack(move || {
+            self.open_in_advancement_on_execution_stack(phase)
+        })
+    }
+
+    #[inline(never)]
+    fn open_in_advancement_on_execution_stack(
+        self,
+        phase: &WorthQueryBootstrapAdvancementPhase<'_>,
+    ) -> Result<
+        WorthQueryApplicationHome<Schema, Program>,
+        WorthQueryApplicationHomeOpenRefused<Schema, Program>,
+    > {
         match &self.location {
             WorthQueryApplicationHomeLocation::MemoryOnly => memory::open_memory(self, phase),
             WorthQueryApplicationHomeLocation::Directory(_) => {
@@ -38,9 +51,9 @@ where
 }
 
 mod custody;
-mod existing;
+pub(super) mod existing;
 mod fresh;
-mod initialization;
+pub(super) mod initialization;
 mod memory;
-mod preparation;
-mod service;
+pub(super) mod preparation;
+pub(super) mod service;

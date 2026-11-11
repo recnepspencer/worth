@@ -26,14 +26,16 @@ fn equivalent_consumers_share_one_lane_but_keep_distinct_attachment_state() {
     let first_attachment = attach_subscription_consumer(
         &mut runtime,
         &first_handle,
-        SubscriptionConsumerAttachmentRequest::admitted("consumer-a", "cursor-a"),
+        SubscriptionConsumerAttachmentRequest::admitted("consumer-a", "cursor-a")
+            .expect("fixture digest must fit"),
         attachment_budget(2, DeliveryBackpressurePolicy::RetainWithinWindow),
     )
     .unwrap();
     let second_attachment = attach_subscription_consumer(
         &mut runtime,
         &second_handle,
-        SubscriptionConsumerAttachmentRequest::admitted("consumer-b", "cursor-b"),
+        SubscriptionConsumerAttachmentRequest::admitted("consumer-b", "cursor-b")
+            .expect("fixture digest must fit"),
         attachment_budget(2, DeliveryBackpressurePolicy::RetainWithinWindow),
     )
     .unwrap();
@@ -74,7 +76,8 @@ fn stale_or_foreign_lane_handle_denies_consumer_attachment() {
     let error = attach_subscription_consumer(
         &mut foreign_runtime,
         &handle,
-        SubscriptionConsumerAttachmentRequest::admitted("consumer-a", "cursor-a"),
+        SubscriptionConsumerAttachmentRequest::admitted("consumer-a", "cursor-a")
+            .expect("fixture digest must fit"),
         attachment_budget(2, DeliveryBackpressurePolicy::RetainWithinWindow),
     )
     .unwrap_err();
@@ -99,7 +102,8 @@ fn acknowledgement_requires_receipt_for_same_attachment_and_advancing_sequence()
     let attachment = attach_subscription_consumer(
         &mut runtime,
         &handle,
-        SubscriptionConsumerAttachmentRequest::admitted("consumer-a", "cursor-a"),
+        SubscriptionConsumerAttachmentRequest::admitted("consumer-a", "cursor-a")
+            .expect("fixture digest must fit"),
         attachment_budget(2, DeliveryBackpressurePolicy::RetainWithinWindow),
     )
     .unwrap();
@@ -155,14 +159,16 @@ fn acknowledgement_receipt_from_another_consumer_is_denied() {
     let first_attachment = attach_subscription_consumer(
         &mut runtime,
         &first_handle,
-        SubscriptionConsumerAttachmentRequest::admitted("consumer-a", "cursor-a"),
+        SubscriptionConsumerAttachmentRequest::admitted("consumer-a", "cursor-a")
+            .expect("fixture digest must fit"),
         attachment_budget(2, DeliveryBackpressurePolicy::RetainWithinWindow),
     )
     .unwrap();
     let second_attachment = attach_subscription_consumer(
         &mut runtime,
         &second_handle,
-        SubscriptionConsumerAttachmentRequest::admitted("consumer-b", "cursor-b"),
+        SubscriptionConsumerAttachmentRequest::admitted("consumer-b", "cursor-b")
+            .expect("fixture digest must fit"),
         attachment_budget(2, DeliveryBackpressurePolicy::RetainWithinWindow),
     )
     .unwrap();
@@ -205,14 +211,16 @@ fn slow_consumer_gap_policy_changes_only_that_consumer_delivery_digest() {
     let normal = attach_subscription_consumer(
         &mut runtime,
         &first_handle,
-        SubscriptionConsumerAttachmentRequest::admitted("consumer-a", "cursor-a"),
+        SubscriptionConsumerAttachmentRequest::admitted("consumer-a", "cursor-a")
+            .expect("fixture digest must fit"),
         attachment_budget(2, DeliveryBackpressurePolicy::RetainWithinWindow),
     )
     .unwrap();
     let slow = attach_subscription_consumer(
         &mut runtime,
         &second_handle,
-        SubscriptionConsumerAttachmentRequest::admitted("consumer-b", "cursor-b"),
+        SubscriptionConsumerAttachmentRequest::admitted("consumer-b", "cursor-b")
+            .expect("fixture digest must fit"),
         attachment_budget(2, DeliveryBackpressurePolicy::DropWithGapNotice),
     )
     .unwrap();
@@ -257,14 +265,16 @@ fn shared_consumers_emit_independent_fanout_delivery_evidence() {
     let first_attachment = attach_subscription_consumer(
         &mut runtime,
         &first_handle,
-        SubscriptionConsumerAttachmentRequest::admitted("consumer-a", "cursor-a"),
+        SubscriptionConsumerAttachmentRequest::admitted("consumer-a", "cursor-a")
+            .expect("fixture digest must fit"),
         attachment_budget(2, DeliveryBackpressurePolicy::RetainWithinWindow),
     )
     .unwrap();
     let second_attachment = attach_subscription_consumer(
         &mut runtime,
         &second_handle,
-        SubscriptionConsumerAttachmentRequest::admitted("consumer-b", "cursor-b"),
+        SubscriptionConsumerAttachmentRequest::admitted("consumer-b", "cursor-b")
+            .expect("fixture digest must fit"),
         attachment_budget(2, DeliveryBackpressurePolicy::RetainWithinWindow),
     )
     .unwrap();
@@ -294,7 +304,8 @@ fn inadmissible_backpressure_request_denies_before_attachment_exists() {
     let error = attach_subscription_consumer(
         &mut runtime,
         &handle,
-        SubscriptionConsumerAttachmentRequest::admitted("consumer-a", "cursor-a"),
+        SubscriptionConsumerAttachmentRequest::admitted("consumer-a", "cursor-a")
+            .expect("fixture digest must fit"),
         attachment_budget(2, DeliveryBackpressurePolicy::RetainWithinWindow)
             .with_backpressure_denial_request(),
     )

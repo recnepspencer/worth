@@ -20,7 +20,7 @@ pub(in super::super) struct OriginalReceiptRows {
     pub(in super::super) binding: RecordedOriginalBinding,
     pub(in super::super) before_component: RecordedRelationalComponentReference,
     pub(in super::super) after_component: RecordedRelationalComponentReference,
-    pub(in super::super) outbox: Option<(RecordRef, WorthQueryDispatchOutboxRecord)>,
+    pub(in super::super) outbox: Option<WorthQueryRecoveredDispatchOutbox>,
     pub(in super::super) causality: Option<WorthQueryRecoveredAftermathCausality>,
     pub(in super::super) funding: Option<worth_execution::ExecutionMemoryReservation>,
 }
@@ -111,9 +111,7 @@ fn from_rows(rows: OriginalReceiptRows, publication: RecordedPublication) -> Rec
         binding: rows.binding,
         before_component: rows.before_component,
         after_component: rows.after_component,
-        outbox: rows.outbox.map(|(record_ref, record)| {
-            WorthQueryRecoveredDispatchOutbox::from_source_row(record_ref, record)
-        }),
+        outbox: rows.outbox,
         causality: rows.causality,
         _funding: rows.funding,
         old_head: publication.old_head,

@@ -68,7 +68,7 @@ impl EffectDeferredSupportContract {
                     WorthQueryEvidenceTag::new("residue"),
                     residue_posture.as_str(),
                 )
-                .seal();
+                .seal().expect("fixed digest grammar: literal tags, primitive values, closed enum labels, or sealed digest tokens");
         Self {
             neighbor_family,
             denial_kind,

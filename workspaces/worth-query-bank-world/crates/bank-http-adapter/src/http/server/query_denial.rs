@@ -40,12 +40,15 @@ pub(super) fn query_denial(denial: BankApplicationQueryDenial) -> BankHttpDenial
         BankApplicationQueryDenial::ScopeResolution(denial) => entity(denial.kind()),
         BankApplicationQueryDenial::Admission(denial) => admission(denial.kind()),
         BankApplicationQueryDenial::Execution(denial) => execution(denial.kind()),
-        BankApplicationQueryDenial::OutputSettlement(kind) => output_settlement::denial(kind),
+        BankApplicationQueryDenial::OutputSettlement(kind) => output_settlement::output_settlement(kind),
         BankApplicationQueryDenial::ManagedIndex(cause) => managed_index(&cause),
     }
 }
 
 pub(super) mod managed_index;
+mod predecessor_read;
+mod publication_read;
+mod source_observation;
 use managed_index::managed_index;
 
 fn product_selection(kind: BankProductSelectionDenialKind) -> BankHttpDenial {
@@ -139,12 +142,10 @@ fn admission(kind: BankApplicationQueryAdmissionDenialKind) -> BankHttpDenial {
 fn execution(kind: BankApplicationOneShotDenialKind) -> BankHttpDenial {
     use BankApplicationOneShotDenialKind as Execution;
     match kind {
-        Execution::Content(cause) => {
-            super::relational_execution_denial::denial(cause.into_execution_cause())
-        }
         Execution::ExecutionRequest(kind) => {
             super::mutation_application::pending_execution_denial(kind)
         }
+        Execution::Content(cause) => super::relational_execution_denial::content(cause),
         Execution::Authorization(kind) => authorization_denial(kind),
         Execution::Cancelled => cancelled(),
         Execution::DeadlineExceeded => deadline(),
@@ -207,7 +208,7 @@ fn projection(kind: BankApplicationProjectionDenialKind) -> BankHttpDenial {
     }
 }
 
-fn value_decode(
+pub(in crate::http::server) fn value_decode(
     cause: worth_query_host::facade::primary_graph::WorthQueryValueDecodeDenial,
 ) -> BankHttpDenial {
     use worth_query_host::facade::{
@@ -215,15 +216,11 @@ fn value_decode(
         runtime::{LeaseDenial, WorkCeilingDenial as Request},
     };
     match cause {
-        Decode::Content(cause) => {
-            crate::http::server::relational_execution_denial::denial(cause.into_execution_cause())
-        }
+        Decode::Content(cause) => super::relational_execution_denial::content(cause),
         Decode::ContentProjectionWorkExceeded => exhausted(),
         Decode::RequiredContentFieldAbsent
         | Decode::ContentBasisUnavailable
-        | Decode::ContentProjectionWorkOverflow => {
-            BankHttpDenial::new(Kind::InternalDenied, Next::ContactOperator)
-        }
+        | Decode::ContentProjectionWorkOverflow => internal_denied(),
         Decode::Checkpoint(stop) => super::advancement_denial::request(Request::Stopped(stop)),
         Decode::Memory(limit) => super::advancement_denial::request(Request::Admission(
             LeaseDenial::MemoryExhausted(limit),
@@ -271,6 +268,7 @@ fn entity(kind: BankEntityResolutionDenialKind) -> BankHttpDenial {
 
 mod history_output;
 mod output_settlement;
+use output_settlement::output_settlement;
 mod retained_execution;
 
 const fn malformed() -> BankHttpDenial {

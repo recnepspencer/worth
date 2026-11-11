@@ -101,7 +101,7 @@ impl ContinuationTestContext {
                     .expect("the selected product branch remains admitted")
                     .resolve_entity(
                         phase_custody,
-                        AccountIdentity::reference(),
+                        AccountIdentity::at("AccountIdentity"),
                         "account-1".to_owned(),
                         &request,
                         WorthQueryPrincipalResolutionMode::Ordinary,
@@ -286,7 +286,7 @@ impl ContinuationTestContext {
         let graph = (*self.world.application.runtime_for_test())
             .primary_graph_for_test()
             .expect("test world publishes a primary graph");
-        let field = AccountIdentity::reference();
+        let field = AccountIdentity::at("AccountIdentity");
         let locator = (*graph.layout_for_test())
             .field_locator_for_test(field.entity(), field.aspect(), field.field())
             .expect("account identity is installed")

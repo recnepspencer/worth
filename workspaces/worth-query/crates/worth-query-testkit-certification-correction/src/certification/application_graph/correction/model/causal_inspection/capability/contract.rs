@@ -12,25 +12,37 @@ pub(super) fn definition(
         Grant::reference(),
     )
     .target(ApplicationCapabilityTargetDefinition::new(
-        ApplicationCapabilityValueBinding::new(GrantAction::reference(), text("inspect")),
+        ApplicationCapabilityValueBinding::new(GrantAction::at("GrantAction"), text("inspect"))
+            .unwrap(),
         ApplicationCapabilityRelationBinding::from_reference(GrantResource::reference()),
         ApplicationCapabilityRelationDimension::not_applicable(),
-        ApplicationCapabilityFieldDimension::bound(Disclosure::reference()),
-        ApplicationCapabilityValueBinding::new(GrantPurpose::reference(), text("audit")),
+        ApplicationCapabilityFieldDimension::bound(Disclosure::at("Disclosure")).unwrap(),
+        ApplicationCapabilityValueBinding::new(GrantPurpose::at("GrantPurpose"), text("audit"))
+            .unwrap(),
     ))
     .constraints(ApplicationCapabilityConstraintDefinition::new(
         ApplicationCapabilityMagnitudeDimension::not_applicable(),
         ApplicationCapabilityCardinalityDimension::One,
         ApplicationCapabilityCurrentnessDefinition::new(
-            ApplicationCapabilityValueBinding::new(GrantStatus::reference(), text("active")),
+            ApplicationCapabilityValueBinding::new(GrantStatus::at("GrantStatus"), text("active"))
+                .unwrap(),
             ApplicationCapabilityWorkflowDefinition::new(
-                ApplicationCapabilityFieldBinding::from_reference(GrantScopeKey::reference()),
-                ApplicationCapabilityFieldBinding::from_reference(Key::reference()),
+                ApplicationCapabilityFieldBinding::from_reference(GrantScopeKey::at(
+                    "GrantScopeKey",
+                ))
+                .unwrap(),
+                ApplicationCapabilityFieldBinding::from_reference(Key::at("Key")).unwrap(),
             ),
             ApplicationCapabilityValidityDefinition::new(
                 ApplicationCapabilityValidityTimeline::UnixEpochSeconds,
-                ApplicationCapabilityFieldBinding::from_reference(GrantNotBefore::reference()),
-                ApplicationCapabilityFieldBinding::from_reference(GrantNotAfter::reference()),
+                ApplicationCapabilityFieldBinding::from_reference(GrantNotBefore::at(
+                    "GrantNotBefore",
+                ))
+                .unwrap(),
+                ApplicationCapabilityFieldBinding::from_reference(GrantNotAfter::at(
+                    "GrantNotAfter",
+                ))
+                .unwrap(),
             ),
         ),
         AdoptContext::reference(),
@@ -39,7 +51,7 @@ pub(super) fn definition(
         ApplicationCapabilityRelationBinding::from_reference(GrantParent::reference()),
         ApplicationCapabilityRelationBinding::from_reference(GrantGrantor::reference()),
         ApplicationCapabilityRelationBinding::from_reference(GrantGrantee::reference()),
-        ApplicationCapabilityFieldBinding::from_reference(GrantDepth::reference()),
+        ApplicationCapabilityFieldBinding::from_reference(GrantDepth::at("GrantDepth")).unwrap(),
         AdoptProvenance::reference(),
     ))
     .composition(ApplicationCapabilityComposition::new(
@@ -60,9 +72,10 @@ pub(super) fn definition(
             ApplicationCapabilityDisclosureRule::permit([
                 ApplicationCapabilityScopeGuard::requiring([
                     ApplicationCapabilityAcceptedValues::one_of(
-                        Disclosure::reference(),
+                        Disclosure::at("Disclosure"),
                         [text("calculation")],
-                    ),
+                    )
+                    .unwrap(),
                 ]),
             ]),
         ),

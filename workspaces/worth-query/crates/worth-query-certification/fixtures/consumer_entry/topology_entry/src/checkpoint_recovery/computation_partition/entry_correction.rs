@@ -1,8 +1,8 @@
 //! A value correction retains the exact value its inverse restores.
 
-pub(super) mod capability;
+pub(crate) mod capability;
 pub(super) mod program_adoption;
-pub(in crate::checkpoint_recovery) mod recorded;
+pub(crate) mod recorded;
 use super::{
     facts::{BodyEntrySet, EntryNumber, EntrySet, EntrySetMember, EntryValueBits, SetEntry},
     *,
@@ -11,16 +11,15 @@ use std::marker::PhantomData;
 use worth_query_consumer_values::PlanarAdjustmentResult;
 use worth_query_decl::facade::{
     application_operation::*, application_schema::*, worth_query_operation,
-    worth_query_operation_reads, worth_query_operation_writes,
-    worth_query_structured_value_binding,
+    worth_query_operation_reads, worth_query_structured_value_binding,
 };
 use worth_query_host::facade::primary_graph::{
     CandidateWriter, DecisionReader, HandlerExecutionDenial, HandlerResult, OperationHandler,
     WorthQueryInvariantMutationTarget,
 };
 
-#[derive(Clone, Debug, serde::Serialize)]
-pub(super) struct EntryCorrection {
+#[derive(Clone, Debug, serde::Serialize, serde::Deserialize)]
+pub struct EntryCorrection {
     pub(super) scope_key: String,
     pub(super) entry: u64,
     pub(super) mask: u64,
@@ -28,28 +27,28 @@ pub(super) struct EntryCorrection {
     pub(super) expected: Option<u64>,
 }
 #[derive(Clone, Debug, Eq, PartialEq)]
-pub(super) enum EntryCorrectionDenial {
+pub enum EntryCorrectionDenial {
     MissingValue,
     CurrentValueChanged,
     OutsideScope,
 }
-worth_query_structured_value_binding!(pub(super) EntryCorrectionDenialBinding for EntryCorrectionDenial {
+worth_query_structured_value_binding!(pub EntryCorrectionDenialBinding for EntryCorrectionDenial {
     identity: "worth.query.certification.entry-correction-denial.v1"
 });
-worth_query_structured_value_binding!(pub(super) EntryCorrectionInput for EntryCorrection {
+worth_query_structured_value_binding!(pub EntryCorrectionInput for EntryCorrection {
     identity: "worth.query.certification.entry-correction-input.v1"
 });
-worth_query_operation!(pub(super) CorrectEntryValue for Schema: TopologySchemaBinding, input EntryCorrectionInput);
-worth_query_operation_reads!(CorrectEntryValue => [Body, BodyKey, BodyEntrySet, EntrySet, EntrySetMember, SetEntry, EntryNumber, EntryValueBits]);
-worth_query_operation_writes!(CorrectEntryValue => [EntryValueBits]);
-pub(super) struct EntryCorrectionBinding<Schema>(PhantomData<fn() -> Schema>);
+worth_query_operation!(pub CorrectEntryValue for Schema: TopologySchemaBinding, input EntryCorrectionInput);
+worth_query_operation_reads!(CorrectEntryValue =>[Body,BodyEntrySet,EntrySet,EntrySetMember,SetEntry]);
+
+pub struct EntryCorrectionBinding<Schema>(PhantomData<fn() -> Schema>);
 impl<Schema: TopologySchemaBinding> ApplicationMutationIntent<Schema> for EntryCorrection {
     type Binding = EntryCorrectionBinding<Schema>;
     fn input(&self) -> &Self {
         self
     }
-    fn scope_binding(&self) -> PlanarMutationScope<Schema> {
-        PlanarMutationScope::new(BodyKey::reference(), self.scope_key.clone())
+    fn scope_binding(&self) -> PlanarMutationScope {
+        PlanarMutationScope::new(BodyKey::at("BodyKey"), self.scope_key.clone())
     }
 }
 impl<Schema: TopologySchemaBinding> ApplicationMutationBinding<Schema>
@@ -72,7 +71,7 @@ impl<Schema: TopologySchemaBinding> ApplicationMutationBinding<Schema>
     type Denial = EntryCorrectionDenial;
     type DenialBinding = EntryCorrectionDenialBinding;
     type Output = NoApplicationMutationOutputs;
-    type ScopeBinding = PlanarMutationScope<Schema>;
+    type ScopeBinding = PlanarMutationScope;
     type PrincipalBinding = ConsumerPrincipalBinding;
     type Mapping = ExternalPrincipalMapping;
     type Principal = Principal;
@@ -84,17 +83,8 @@ impl<Schema: TopologySchemaBinding> ApplicationMutationBinding<Schema>
     const IDEMPOTENCY_IDENTITY: &'static str =
         "worth.query.certification.entry-correction-command.v1";
 
-    fn scope_field() -> ApplicationFieldRef<
-        Schema,
-        Body,
-        PlanarPosition,
-        BodyKey,
-        String,
-        ReadOnly,
-        EqualityPredicate,
-        NoApplicationUnit,
-    > {
-        BodyKey::reference()
+    fn scope_field() -> BodyKey {
+        BodyKey::at("BodyKey")
     }
     fn principal_binding() -> ApplicationPrincipalBindingRef<
         Schema,
@@ -120,8 +110,8 @@ impl<Schema: TopologySchemaBinding> OperationHandler<Schema, EntryCorrectionBind
         EntryCorrectionDenial,
     > {
         let decision = (|| {
-            let scope = reader.resolve_entity(BodyKey::reference(), input.scope_key.clone())?;
-            let entry = reader.resolve_entity(EntryNumber::reference(), input.entry)?;
+            let scope = reader.resolve_entity(BodyKey::at("BodyKey"), input.scope_key.clone())?;
+            let entry = reader.resolve_entity(EntryNumber::at("EntryNumber"), input.entry)?;
             let mut belongs = false;
             for owned in reader
                 .relations_from(BodyEntrySet::reference(), &scope)
@@ -137,7 +127,7 @@ impl<Schema: TopologySchemaBinding> OperationHandler<Schema, EntryCorrectionBind
             if !belongs {
                 return Ok(None);
             }
-            let value = reader.field(&entry, EntryValueBits::reference())?;
+            let value = reader.field(&entry, EntryValueBits::at("EntryValueBits"))?;
             reader
                 .mutation_target(&entry)
                 .map(|target| Some((target, value)))
@@ -168,7 +158,7 @@ impl<Schema: TopologySchemaBinding> OperationHandler<Schema, EntryCorrectionBind
                 writer
                     .write_field(
                         &entity,
-                        EntryValueBits::reference(),
+                        EntryValueBits::at("EntryValueBits"),
                         decision.1 ^ input.mask,
                     )
                     .map_err(HandlerExecutionDenial::new)
@@ -184,7 +174,7 @@ impl<Schema: TopologySchemaBinding> OperationHandler<Schema, EntryCorrectionBind
 pub(super) fn declare<Schema: TopologySchemaBinding>(
     schema: ApplicationSchemaDeclarationBuilder<Schema>,
 ) -> ApplicationSchemaDeclarationBuilder<Schema> {
-    capability::declare(schema.correction::<recorded::RecordedEntryCorrection<Schema>>())
+    capability::declare(schema)
 }
 
 impl<Schema: TopologySchemaBinding> ApplicationDeclaredOperation<Schema> for CorrectEntryValue {
@@ -195,15 +185,15 @@ impl<Schema: TopologySchemaBinding> ApplicationDeclaredOperation<Schema> for Cor
         schema
             .operation_projection_work_budget(operation, 4096)
             .operation_read_entity(operation, Body::reference())
-            .operation_read_field(operation, BodyKey::reference())
+            .operation_read_field(operation, BodyKey::at("BodyKey"))
             .operation_read_relation(operation, BodyEntrySet::reference())
             .operation_read_entity(operation, EntrySet::reference())
             .operation_read_relation(operation, EntrySetMember::reference())
-            .operation_expected_fact(operation, BodyKey::reference())
+            .operation_expected_fact(operation, BodyKey::at("BodyKey"))
             .operation_read_entity(operation, SetEntry::reference())
-            .operation_read_field(operation, EntryNumber::reference())
-            .operation_read_field(operation, EntryValueBits::reference())
-            .operation_write(operation, EntryValueBits::reference())
+            .operation_read_field(operation, EntryNumber::at("EntryNumber"))
+            .operation_read_field(operation, EntryValueBits::at("EntryValueBits"))
+            .operation_write(operation, EntryValueBits::at("EntryValueBits"))
     }
 }
 
@@ -224,4 +214,3 @@ impl<Schema: TopologySchemaBinding> ApplicationMutationAdmissionBinding<Schema>
 {
     type Admission = ApplicationCapabilityAdmission<capability::CorrectEntryCapability<Schema>>;
 }
-worth_query_decl::facade::worth_query_operation_expects_fact!(CorrectEntryValue => [BodyKey]);

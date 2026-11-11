@@ -21,25 +21,24 @@ impl Withdraw {
 }
 worth_query_structured_value_binding!(pub InputBinding for Withdraw { identity: "inspection-grant.withdraw-input.v1" });
 worth_query_operation!(pub WithdrawInspectionGrant for NumericSchema, input InputBinding);
-worth_query_operation_reads!(WithdrawInspectionGrant => [GrantIdentity, GrantStatus]);
-worth_query_operation_writes!(WithdrawInspectionGrant => [GrantStatus]);
+
 worth_query_mutation_binding!(pub Binding for Withdraw, schema NumericSchema,
     identity "inspection-grant.withdraw-binding.v1", input InputBinding, operation WithdrawInspectionGrant, result ResultBinding,
     idempotency String, identity "inspection-grant.withdraw-key.v1",
     decision WorthQueryInvariantMutationTarget<NumericSchema,Grant>, denial DenialBinding,
     handler identity "inspection-grant.withdraw-handler.v1", outputs NoApplicationMutationOutputs,
     principal ActorBinding, mapping ExternalMapping, principal_entity Principal, principal_identity u64, identity_binding U64ApplicationValueBinding,
-    scope Grant,GrantFacts,GrantIdentity,String,ReadOnly,NoApplicationUnit,
-    field GrantIdentity::reference(), value Withdraw::scope_key,
+    scope GrantIdentity,
+    field GrantIdentity::at("GrantIdentity"), value Withdraw::scope_key,
 );
 impl ApplicationDeclaredOperation<NumericSchema> for WithdrawInspectionGrant {
     fn declare_access(
         schema: ApplicationSchemaDeclarationBuilder<NumericSchema>,
     ) -> ApplicationSchemaDeclarationBuilder<NumericSchema> {
         schema
-            .operation_read_field(Self::reference(), GrantIdentity::reference())
-            .operation_read_field(Self::reference(), GrantStatus::reference())
-            .operation_write(Self::reference(), GrantStatus::reference())
+            .operation_read_field(Self::reference(), GrantIdentity::at("GrantIdentity"))
+            .operation_read_field(Self::reference(), GrantStatus::at("GrantStatus"))
+            .operation_write(Self::reference(), GrantStatus::at("GrantStatus"))
     }
 }
 pub fn declare(
@@ -64,8 +63,13 @@ impl OperationHandler<NumericSchema, Binding> for Handler {
         reader: &mut DecisionReader<'_, '_, '_, NumericSchema, Binding>,
     ) -> HandlerResult<WorthQueryInvariantMutationTarget<NumericSchema, Grant>, MissingValue> {
         let result = (|| {
-            let grant = reader.resolve_entity(GrantIdentity::reference(), input.grant.clone())?;
-            if reader.field(&grant, GrantStatus::reference())?.as_deref() != Some("active") {
+            let grant =
+                reader.resolve_entity(GrantIdentity::at("GrantIdentity"), input.grant.clone())?;
+            if reader
+                .field(&grant, GrantStatus::at("GrantStatus"))?
+                .as_deref()
+                != Some("active")
+            {
                 return Ok(None);
             }
             reader.mutation_target(&grant).map(Some)
@@ -83,7 +87,11 @@ impl OperationHandler<NumericSchema, Binding> for Handler {
         writer: &mut CandidateWriter<'_, NumericSchema, Binding>,
     ) -> HandlerResult<Edited, MissingValue> {
         let result = writer.projected_entity(&target).and_then(|grant| {
-            writer.write_field(&grant, GrantStatus::reference(), "withdrawn".to_owned())
+            writer.write_field(
+                &grant,
+                GrantStatus::at("GrantStatus"),
+                "withdrawn".to_owned(),
+            )
         });
         match result {
             Ok(()) => HandlerResult::Completed(Edited),

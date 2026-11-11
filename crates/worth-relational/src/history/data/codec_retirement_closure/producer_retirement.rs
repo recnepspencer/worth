@@ -1,17 +1,22 @@
 //! Independently reconstruct a serialized succession closure from its before image.
 use super::{charge, source_scope_closure, CodecRetirementClosureStop as Stop};
+use crate::history::data::canonical_commit_envelope::{
+    OutputOriginHistory, ValidatedOutputOrigins,
+};
 use crate::{
-    history::data::CanonicalCommitEnvelope, mvcc::RequiredOutputRolePosture as Posture,
-    publication::patch::data::RecordStructuralChange as Change, runtime::RelationalRuntime,
-    transactions::data::RecordRef,
+    mvcc::RequiredOutputRolePosture as Posture,
+    publication::patch::data::RecordStructuralChange as Change, transactions::data::RecordRef,
 };
 use worth_execution::MapKernelContext;
 
 pub(super) fn validate(
-    runtime: &RelationalRuntime,
-    envelope: &CanonicalCommitEnvelope,
+    runtime: &crate::history::data::codec_retirement_closure::history_request::RuntimeHistoryRequest<'_, '_, '_>,
+    view: ValidatedOutputOrigins<'_>,
+    validated_history: &mut OutputOriginHistory,
     context: &mut MapKernelContext<'_, '_>,
+    schema: &crate::branch::RelationalBranchRootSchemaAuthority,
 ) -> Result<(), Stop> {
+    let envelope = view.envelope();
     let Some(event) = &envelope.producer_cascade_retirement else {
         return Ok(());
     };
@@ -23,9 +28,13 @@ pub(super) fn validate(
         .publication
         .predecessor()
         .ok_or("producer retirement lost generator predecessor")?;
-    let previous = runtime
-        .history
-        .canonical_envelope(predecessor)
+    let previous = validated_history
+        .by_commit(
+            predecessor,
+            &mut |commit| runtime.commit(commit),
+            &runtime.execution(),
+            context,
+        )?
         .ok_or("producer retirement lost canonical predecessor")?;
     let prior = previous.output_origin_for_route(&root.meaning, context)?;
     charge(
@@ -51,14 +60,14 @@ pub(super) fn validate(
             "producer retirement anchors differ from canonical predecessor deletions".into(),
         );
     }
-    let latest = source_scope_closure::current(
+    let latest = source_scope_closure::historical_positions(
         envelope.commit.parents.first().copied(),
-        runtime.history.catalog_len(),
+        runtime.runtime.history.catalog_len(),
         None,
-        &mut |commit| runtime.history.canonical_envelope(commit),
+        &mut |commit| runtime.commit(commit),
         &mut |event, context| {
             if event.required_output_materialization.is_some() {
-                super::materialization::validate_semantics(runtime, event, context, None)?;
+                super::materialization::validate_semantics(runtime, event, context, None, schema)?;
             }
             Ok(())
         },
@@ -88,12 +97,7 @@ pub(super) fn validate(
         if retired.publication.predecessor() != Some(selected.origin.commit.commit_id) {
             return Err("producer retirement changes its selected predecessor".into());
         }
-        super::publication_succession::validate_route(
-            runtime,
-            envelope,
-            &selected.origin,
-            context,
-        )?;
+        super::publication_succession::validate_route(runtime, view, &selected.origin, context)?;
         for edge in &selected.origin.relations {
             charge(context, envelope.patch.authoritative_record_patches.len())?;
             if !envelope.patch.authoritative_record_patches.iter().any(|p| {

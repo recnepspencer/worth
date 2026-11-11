@@ -1,5 +1,6 @@
 //! Candidate work runs under its attempt owner, outside the document selection cell.
 use super::*;
+use crate::domain_computation::execution_runtime::product_world::WorthQueryPreparedProductPublication;
 use crate::domain_computation::primary_graph::{
     WorthQueryAdvancementPhase, WorthQueryExpectedProductBranch,
 };
@@ -51,7 +52,8 @@ impl<'runtime, S: ApplicationSchema> NavigationProgress<'runtime, S> {
             },
             NavigationPhase::Candidate(candidate) => {
                 match self.prepare_candidate(phase, request, &candidate) {
-                    Ok(publication) => {
+                    Ok((publication, transport)) => {
+                        self.output_transport = transport;
                         self.phase = NavigationPhase::Publication {
                             candidate,
                             publication,
@@ -129,7 +131,13 @@ impl<'runtime, S: ApplicationSchema> NavigationProgress<'runtime, S> {
         phase: &WorthQueryAdvancementPhase<'_>,
         request: &WorthQueryRequestScope,
         candidate: &WorthQueryExpectedProductBranch<'runtime, S>,
-    ) -> Result<crate::domain_computation::execution_runtime::product_world::WorthQueryPreparedProductPublication, WorthQueryHistoryNavigationDenial>{
+    ) -> Result<
+        (
+            WorthQueryPreparedProductPublication,
+            Option<super::output_custody::HistoryOutputTransport>,
+        ),
+        WorthQueryHistoryNavigationDenial,
+    > {
         use WorthQueryHistoryNavigationDenial as Denial;
         let execution = phase
             .checked_execution_request_for(&self.application.runtime.product_runtime)
@@ -148,7 +156,8 @@ impl<'runtime, S: ApplicationSchema> NavigationProgress<'runtime, S> {
             .select_application_read_observation(phase, &source.source)
             .map_err(Denial::ProductAdmission)?;
         let graph = &self.application.runtime.primary_provider.graph;
-        let mut prepared = graph.with_runtime(&execution, |native| {
+        let publisher = graph.application_publication.as_deref();
+        let (prepared, custody) = graph.with_runtime(&execution, |native| {
             let transaction = native
                 .begin_branch_transaction(
                     current.product().relational_basis(),
@@ -156,6 +165,25 @@ impl<'runtime, S: ApplicationSchema> NavigationProgress<'runtime, S> {
                 )
                 .map_err(Denial::Transaction)?;
             let port = native.preparation_port();
+            if let Some(ownership) = self.ownership {
+                let selected = native
+                    .prepare_owned_model_graph_selection(
+                        &execution,
+                        current.product().relational_basis(),
+                        historical.product().relational_basis(),
+                        ownership,
+                        graph.layout.installed_history_ownership(),
+                        self.model.entity(),
+                    )
+                    .map_err(Denial::OwnedGraph)?;
+                return super::output_custody::prepare(
+                    &execution,
+                    native,
+                    publisher,
+                    transaction,
+                    selected,
+                );
+            }
             let selection = port
                 .admit_retained_entity_selection(
                     transaction,
@@ -164,25 +192,47 @@ impl<'runtime, S: ApplicationSchema> NavigationProgress<'runtime, S> {
                 )
                 .map_err(|cause| Denial::Preparation(Preparation::Admission(cause)))?;
             port.prepare_retained_entity_selection(&execution, selection)
+                .map(|prepared| (prepared, None))
                 .map_err(Denial::Preparation)
         })?;
-        super::super::super::candidate_selectors::prepare(&execution, &current, &mut prepared)
-            .map_err(selector_denial)?;
+        let transport = match custody {
+            Some(custody) => Some(super::output_custody::HistoryOutputTransport {
+                publications: prepared
+                    .prepare_required_output_publications(&execution, &custody.publisher.native)
+                    .map_err(|cause| {
+                        Denial::GraphPreparation(
+                            worth_relational::facade::mvcc::RelationalOwnedGraphSelectionPreparationError::Preparation(cause),
+                        )
+                    })?,
+                lineage: graph
+                    .output_lineage
+                    .lock()
+                    .unwrap_or_else(std::sync::PoisonError::into_inner)
+                    .prepare_historical_transport(
+                        &execution,
+                        self.application.runtime.authority_identity().as_u64(),
+                        &self.application.installed_schema.binding_identity(),
+                        &graph.layout,
+                        historical.product().observation(),
+                        custody.routes.iter(),
+                    )
+                    .map_err(|cause| {
+                        use crate::domain_computation::primary_graph::output_lineage::HistoricalTransportDenial as Cause;
+                        match cause {
+                            Cause::Lookup(stop) => Denial::OutputLineage(stop),
+                            Cause::PublicationCorrespondence(subject) => Denial::OutputPublicationCorrespondence(subject),
+                        }
+                    })?,
+            }),
+            None => None,
+        };
+
         current
             .product()
             .publication_binding()
             .prepare_relational_candidate(prepared, request, true)
+            .map(|publication| (publication, transport))
             .map_err(super::publication::publication_denial)
-    }
-}
-
-fn selector_denial(
-    cause: super::super::super::candidate_selectors::CandidateSelectorMaintenanceDenial,
-) -> WorthQueryHistoryNavigationDenial {
-    use super::super::super::candidate_selectors::CandidateSelectorMaintenanceDenial as Cause;
-    match cause {
-        Cause::Snapshot(cause) => WorthQueryHistoryNavigationDenial::SelectorSnapshot(cause),
-        Cause::Maintenance(cause) => WorthQueryHistoryNavigationDenial::SelectorMaintenance(cause),
     }
 }
 

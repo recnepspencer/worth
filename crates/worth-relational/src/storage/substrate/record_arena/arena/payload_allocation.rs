@@ -1,4 +1,5 @@
 //! Owned bytes inside record values; shared column/index nodes are measured separately.
+//! An extra carrier adds its checked declared bound for nested aspect backing.
 use super::RecordKind;
 use crate::symbols::data::Symbol;
 use std::collections::BTreeMap;
@@ -49,9 +50,7 @@ pub(super) fn visit_metadata<K: RecordKind>(
     if allocation.visit(visitor) {
         let extra = K::metadata_extra(metadata);
         let mut payload = extra.observation(allocation.unique);
-        payload.bytes = payload
-            .bytes
-            .saturating_add(K::extra_owned_allocation_bytes(extra));
+        payload.add_checked_nested_bound(K::extra_reachable_bound_bytes(extra));
         visitor.visit(payload);
     }
 }

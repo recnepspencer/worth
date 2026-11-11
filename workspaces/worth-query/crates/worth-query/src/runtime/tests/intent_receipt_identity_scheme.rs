@@ -39,4 +39,5 @@ fn probe_identity(
             "identity|with:delimiter",
         )
         .seal()
+        .expect("fixture digest must fit")
 }

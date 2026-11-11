@@ -12,6 +12,7 @@ pub struct WorldDurableHomeBinding {
     program_revision: [u8; 32],
     transition: Option<worth_proof::HomeProgramTransitionAuthority>,
     transition_attempt_frontier: Option<u64>,
+    pub(in crate::durability) lineage: Option<std::sync::Arc<super::WorldHomeProgramLineage>>,
 }
 impl WorldDurableHomeBinding {
     /// Data provided by the trusted admitted adapter contract, not physical
@@ -27,6 +28,7 @@ impl WorldDurableHomeBinding {
             program_revision,
             transition: None,
             transition_attempt_frontier: None,
+            lineage: None,
         }
     }
     pub const fn owner(&self) -> DurableWorldOwnerIdentity {
@@ -37,6 +39,87 @@ impl WorldDurableHomeBinding {
     }
     pub const fn program_revision(&self) -> [u8; 32] {
         self.program_revision
+    }
+
+    pub(crate) fn prepare_program_history(
+        mut self,
+        steps: impl ExactSizeIterator<
+            Item = worth_foundational::facade::HomeProgramTransitionProgramStep,
+        >,
+        request: &ExecutionRequest<'_, '_>,
+    ) -> Result<Self, super::WorldReadmissionDenial> {
+        let lineage = self
+            .lineage
+            .take()
+            .ok_or(super::WorldReadmissionDenial::ProgramRevisionMismatch)?;
+        self.lineage = Some(lineage.with_program_steps(steps, request)?);
+        Ok(self)
+    }
+
+    pub(crate) fn successor(
+        &self,
+        program_revision: [u8; 32],
+        through: worth_foundational::facade::DurableCompositePublicationAttemptIdentity,
+        request: &ExecutionRequest<'_, '_>,
+    ) -> Result<Self, super::WorldReadmissionDenial> {
+        if through.owner() != self.owner {
+            return Err(super::WorldReadmissionDenial::ForeignOwner);
+        }
+        let boundary = worth_foundational::facade::HomeProgramRevisionBoundary::from_recorded(
+            worth_foundational::facade::CanonicalDigestId::new(self.program_revision),
+            worth_foundational::facade::CanonicalDigestId::new(program_revision),
+            through,
+        );
+        let lineage =
+            super::WorldHomeProgramLineage::extend(self.lineage.as_deref(), boundary, request)?;
+        let mut successor = self.clone();
+        successor.program_revision = program_revision;
+        successor.lineage = Some(lineage);
+        Ok(successor)
+    }
+
+    /// Source DATA from the protected Home intent chain. This grants neither
+    /// a World writer nor permission to fabricate an original publication.
+    pub fn with_recorded_program_lineage(
+        mut self,
+        lineage: std::sync::Arc<super::WorldHomeProgramLineage>,
+    ) -> Result<Self, super::WorldReadmissionDenial> {
+        if lineage.owner() != self.owner || lineage.current().bytes() != &self.program_revision {
+            return Err(super::WorldReadmissionDenial::ProgramRevisionMismatch);
+        }
+        self.lineage = Some(lineage);
+        Ok(self)
+    }
+
+    pub(crate) fn admits_checkpoint_revision(
+        &self,
+        revision: [u8; 32],
+        request: &ExecutionRequest<'_, '_>,
+    ) -> Result<bool, super::WorldReadmissionDenial> {
+        match &self.lineage {
+            None => Ok(revision == self.program_revision),
+            Some(lineage) => lineage.admits_checkpoint(revision, request),
+        }
+    }
+
+    pub(crate) fn admits_root_revision(&self, revision: [u8; 32]) -> bool {
+        self.lineage
+            .as_ref()
+            .map_or(self.program_revision == revision, |lineage| {
+                lineage.initial().bytes() == &revision
+            })
+    }
+
+    pub(crate) fn admits_attempt_revision(
+        &self,
+        revision: [u8; 32],
+        attempt: u64,
+        request: &ExecutionRequest<'_, '_>,
+    ) -> Result<bool, super::WorldReadmissionDenial> {
+        match &self.lineage {
+            None => Ok(revision == self.program_revision),
+            Some(lineage) => lineage.matches_recorded_attempt(revision, attempt, request),
+        }
     }
 
     /// The actual Home composition attaches this verifier once. An individual

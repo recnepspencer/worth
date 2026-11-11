@@ -14,6 +14,7 @@ use crate::domain_computation::primary_graph::WorthQueryAdvancementPhase;
 
 mod cleanup_dispatch;
 pub(crate) mod denial;
+mod durable_attempt;
 enum OriginalDispatchObservation<'a> {
     Starting,
     Observed(&'a WorthQueryExternalEffectDispatch),
@@ -41,6 +42,7 @@ pub use denial::{
     WorthQueryExternalDispatchAttemptDenial, WorthQueryExternalDispatchPreparationDenial,
     WorthQueryExternalRedispatchDenial, WorthQueryExternalTransportInstallationDenial,
 };
+pub use durable_attempt::WorthQueryDurableDispatchRecordDenial;
 
 /// Owner-sealed material for one re-dispatch that actually crossed the
 /// runtime's committed-observation dispatch operation.
@@ -292,12 +294,42 @@ where
             .primary_provider
             .begin_external_dispatch_in_flight(&completion_owner)
             .map_err(denial::from_in_flight)?;
-        let dispatch = dispatch_external_effect(transport, admitted, || observe(OriginalDispatchObservation::Starting)).map_err(|denial| match denial {
-            crate::domain_computation::application_aftermath::WorthQueryAftermathDerivationFailure::RuntimeTimeUnavailable => {
-                WorthQueryExternalDispatchPreparationDenial::TimeObservationDenied
+        // Durable before contact: a refused record returns before the transport.
+        let contact = self.begin_durable_dispatch_contact(execution, completion_owner.record())?;
+        let dispatch = match dispatch_external_effect(transport, admitted, || {
+            observe(OriginalDispatchObservation::Starting)
+        }) {
+            Ok(dispatch) => dispatch,
+            Err(denial) => {
+                use crate::domain_computation::application_aftermath::dispatch_journal::{
+                    QueryDispatchProvenNoEffect, QueryDispatchRecordedObservation,
+                };
+                use crate::domain_computation::application_aftermath::WorthQueryAftermathDerivationFailure as Failure;
+                // Every derivation failure precedes the transport call.
+                contact.observe(
+                    execution,
+                    QueryDispatchRecordedObservation::ProvenNoEffect(
+                        QueryDispatchProvenNoEffect::ContactNotStarted,
+                    ),
+                );
+                return Err(match denial {
+                    Failure::RuntimeTimeUnavailable => {
+                        WorthQueryExternalDispatchPreparationDenial::TimeObservationDenied
+                    }
+                    Failure::RetentionCapacityExhausted
+                    | Failure::RetentionIdentityExhausted
+                    | Failure::SnapshotIdentityExhausted
+                    | Failure::BasisRejected
+                    | Failure::DigestRejected
+                    | Failure::EmptyCorrelationBasis
+                    | Failure::MissingExternalPayload => {
+                        WorthQueryExternalDispatchPreparationDenial::CanonicalDerivationDenied
+                    }
+                });
             }
-            _ => WorthQueryExternalDispatchPreparationDenial::CanonicalDerivationDenied,
-        })?;
+        };
+        // Durable before live: the record precedes every observer of the outcome.
+        contact.observe(execution, durable_attempt::recorded_observation(&dispatch));
         observe(OriginalDispatchObservation::Observed(&dispatch));
         if completion_owner.record().inbound().is_some() && dispatch.is_external_completion() {
             let evidence =

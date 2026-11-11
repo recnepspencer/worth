@@ -40,30 +40,33 @@ impl BridgeCausalInspectionAdmissionSummary {
     pub fn admitted(
         query_admission_identity: BridgeIdentityEvidence,
         causal_observation_anchor_identity: BridgeIdentityEvidence,
-    ) -> Result<Self, BridgeCausalEnvelopeDenial> {
-        Self::new(
+    ) -> Result<Self, crate::diagnostics::causal_envelope::BridgeCausalEnvelopeConstructionStop>
+    {
+        Ok(Self::new(
             BridgeCausalInspectionAdmissionSummaryKind::Admitted,
             query_admission_identity,
             causal_observation_anchor_identity,
-        )
+        )?)
     }
 
     pub fn advisory(
         query_admission_identity: BridgeIdentityEvidence,
         causal_observation_anchor_identity: BridgeIdentityEvidence,
-    ) -> Result<Self, BridgeCausalEnvelopeDenial> {
-        Self::new(
+    ) -> Result<Self, crate::diagnostics::causal_envelope::BridgeCausalEnvelopeConstructionStop>
+    {
+        Ok(Self::new(
             BridgeCausalInspectionAdmissionSummaryKind::Advisory,
             query_admission_identity,
             causal_observation_anchor_identity,
-        )
+        )?)
     }
 
     fn new(
         kind: BridgeCausalInspectionAdmissionSummaryKind,
         query_admission_identity: BridgeIdentityEvidence,
         causal_observation_anchor_identity: BridgeIdentityEvidence,
-    ) -> Result<Self, BridgeCausalEnvelopeDenial> {
+    ) -> Result<Self, crate::diagnostics::causal_envelope::BridgeCausalEnvelopeConstructionStop>
+    {
         validate_admission_summary_inputs(
             query_admission_identity.as_str(),
             causal_observation_anchor_identity.as_str(),
@@ -75,7 +78,7 @@ impl BridgeCausalInspectionAdmissionSummary {
                 evidence_part(&query_admission_identity),
                 evidence_part(&causal_observation_anchor_identity),
             ],
-        );
+        )?;
         Ok(Self {
             kind,
             query_admission_identity,
@@ -96,7 +99,8 @@ impl BridgeCausalInspectionAdmissionSummary {
         query_admission_identity: BridgeIdentityEvidence,
         causal_observation_anchor_identity: BridgeIdentityEvidence,
         expected_query_observation: BridgeIdentityEvidence,
-    ) -> Result<Self, BridgeCausalEnvelopeDenial> {
+    ) -> Result<Self, crate::diagnostics::causal_envelope::BridgeCausalEnvelopeConstructionStop>
+    {
         validate_admission_summary_inputs(
             expected_query_observation.as_str(),
             causal_observation_anchor_identity.as_str(),
@@ -114,7 +118,7 @@ impl BridgeCausalInspectionAdmissionSummary {
                 evidence_part(&summary.causal_observation_anchor_identity),
                 evidence_part(&expected_query_observation),
             ],
-        );
+        )?;
         summary.expected_query_observation = Some(expected_query_observation);
         Ok(summary)
     }
@@ -193,7 +197,8 @@ impl BridgeCausalEnvelopeAssemblyRequest {
     pub fn from_query_admission(
         admission_summary: BridgeCausalInspectionAdmissionSummary,
         references: Vec<BridgeCausalEvidenceReference>,
-    ) -> Result<Self, BridgeCausalEnvelopeDenial> {
+    ) -> Result<Self, crate::diagnostics::causal_envelope::BridgeCausalEnvelopeConstructionStop>
+    {
         validate_request_inputs(&references)?;
         if let Some(expected) = admission_summary.expected_query_observation_identity() {
             let actual = references
@@ -203,14 +208,15 @@ impl BridgeCausalEnvelopeAssemblyRequest {
                 })
                 .unwrap();
             if actual.reference_evidence_identity() != expected {
-                return Err(BridgeCausalEnvelopeDenial::new(
+                return Err((BridgeCausalEnvelopeDenial::new(
                     BridgeCausalEnvelopeDenialKind::QueryObservationAssociationMismatch,
                     actual.family(),
                     actual.owner(),
                     actual.family().expected_owner(),
                     actual.reference_evidence_identity().clone(),
-                    BridgeCausalEnvelopeCounters::empty(),
-                ));
+                    BridgeCausalEnvelopeCounters::empty()?,
+                )?)
+                .into());
             }
         }
         let mut request_parts = Vec::with_capacity(references.len() + 1);
@@ -224,7 +230,7 @@ impl BridgeCausalEnvelopeAssemblyRequest {
         let request_identity = compose_bridge_causal_envelope_evidence_identity(
             BridgeCausalEnvelopeDigestArtifact::AssemblyRequest,
             &request_parts,
-        );
+        )?;
         Ok(Self {
             admission_summary,
             references: Arc::from(references),
@@ -261,9 +267,9 @@ impl BridgeCausalEnvelopeAssemblyRequest {
 fn validate_admission_summary_inputs(
     query_admission_digest: &str,
     causal_observation_anchor_digest: &str,
-) -> Result<(), BridgeCausalEnvelopeDenial> {
+) -> Result<(), crate::diagnostics::causal_envelope::BridgeCausalEnvelopeConstructionStop> {
     if query_admission_digest.is_empty() || causal_observation_anchor_digest.is_empty() {
-        return Err(BridgeCausalEnvelopeDenial::new(
+        return Err((BridgeCausalEnvelopeDenial::new(
             BridgeCausalEnvelopeDenialKind::EmptyAssemblyRequestDigest,
             BridgeCausalEvidenceFamily::QueryObservation,
             BridgeCausalEvidenceOwner::Query,
@@ -271,18 +277,19 @@ fn validate_admission_summary_inputs(
             denial_sentinel_identity(
                 BridgeCausalEnvelopeDenialKind::EmptyAssemblyRequestDigest,
                 "empty-query-admission-or-anchor",
-            ),
-            BridgeCausalEnvelopeCounters::empty(),
-        ));
+            )?,
+            BridgeCausalEnvelopeCounters::empty()?,
+        )?)
+        .into());
     }
     Ok(())
 }
 
 fn validate_request_inputs(
     references: &[BridgeCausalEvidenceReference],
-) -> Result<(), BridgeCausalEnvelopeDenial> {
+) -> Result<(), crate::diagnostics::causal_envelope::BridgeCausalEnvelopeConstructionStop> {
     if references.is_empty() {
-        return Err(BridgeCausalEnvelopeDenial::new(
+        return Err((BridgeCausalEnvelopeDenial::new(
             BridgeCausalEnvelopeDenialKind::MissingEvidenceReference,
             BridgeCausalEvidenceFamily::BridgeRoute,
             BridgeCausalEvidenceOwner::RuntimeBridge,
@@ -290,9 +297,10 @@ fn validate_request_inputs(
             denial_sentinel_identity(
                 BridgeCausalEnvelopeDenialKind::MissingEvidenceReference,
                 "missing-evidence-reference",
-            ),
-            BridgeCausalEnvelopeCounters::empty(),
-        ));
+            )?,
+            BridgeCausalEnvelopeCounters::empty()?,
+        )?)
+        .into());
     }
     validate_unique_references(references)?;
     validate_query_observation_anchor(references)?;
@@ -301,7 +309,7 @@ fn validate_request_inputs(
 
 fn validate_unique_references(
     references: &[BridgeCausalEvidenceReference],
-) -> Result<(), BridgeCausalEnvelopeDenial> {
+) -> Result<(), crate::diagnostics::causal_envelope::BridgeCausalEnvelopeConstructionStop> {
     let mut seen_references = HashSet::new();
     for reference in references {
         let reference_key = (
@@ -310,14 +318,15 @@ fn validate_unique_references(
             reference.reference_evidence_identity(),
         );
         if !seen_references.insert(reference_key) {
-            return Err(BridgeCausalEnvelopeDenial::new(
+            return Err((BridgeCausalEnvelopeDenial::new(
                 BridgeCausalEnvelopeDenialKind::DuplicateEvidenceReference,
                 reference.family(),
                 reference.owner(),
                 reference.family().expected_owner(),
                 reference.reference_evidence_identity().clone(),
-                BridgeCausalEnvelopeCounters::empty(),
-            ));
+                BridgeCausalEnvelopeCounters::empty()?,
+            )?)
+            .into());
         }
     }
     Ok(())
@@ -325,7 +334,7 @@ fn validate_unique_references(
 
 fn validate_query_observation_anchor(
     references: &[BridgeCausalEvidenceReference],
-) -> Result<(), BridgeCausalEnvelopeDenial> {
+) -> Result<(), crate::diagnostics::causal_envelope::BridgeCausalEnvelopeConstructionStop> {
     let query_observation_anchor_count = references
         .iter()
         .filter(|reference| {
@@ -335,7 +344,7 @@ fn validate_query_observation_anchor(
         .count();
     match query_observation_anchor_count {
         1 => Ok(()),
-        0 => Err(BridgeCausalEnvelopeDenial::new(
+        0 => Err((BridgeCausalEnvelopeDenial::new(
             BridgeCausalEnvelopeDenialKind::MissingQueryObservationAnchor,
             BridgeCausalEvidenceFamily::QueryObservation,
             BridgeCausalEvidenceOwner::Query,
@@ -343,33 +352,39 @@ fn validate_query_observation_anchor(
             denial_sentinel_identity(
                 BridgeCausalEnvelopeDenialKind::MissingQueryObservationAnchor,
                 "missing-query-observation-anchor",
-            ),
-            BridgeCausalEnvelopeCounters::empty(),
-        )),
-        count => Err(BridgeCausalEnvelopeDenial::new(
+            )?,
+            BridgeCausalEnvelopeCounters::empty()?,
+        )?)
+        .into()),
+        count => Err((BridgeCausalEnvelopeDenial::new(
             BridgeCausalEnvelopeDenialKind::QueryObservationAnchorOverclaim,
             BridgeCausalEvidenceFamily::QueryObservation,
             BridgeCausalEvidenceOwner::Query,
             BridgeCausalEvidenceOwner::Query,
-            overclaimed_query_observation_anchor_identity(count),
-            BridgeCausalEnvelopeCounters::empty(),
-        )),
+            overclaimed_query_observation_anchor_identity(count)?,
+            BridgeCausalEnvelopeCounters::empty()?,
+        )?)
+        .into()),
     }
 }
 
 fn denial_sentinel_identity(
     kind: BridgeCausalEnvelopeDenialKind,
     label: &'static str,
-) -> BridgeIdentityEvidence {
-    compose_bridge_causal_envelope_evidence_identity(
+) -> Result<BridgeIdentityEvidence, crate::diagnostics::causal_envelope::BridgeCausalDigestRefusal>
+{
+    Ok(compose_bridge_causal_envelope_evidence_identity(
         BridgeCausalEnvelopeDigestArtifact::Denial,
         &[shape_part(kind.as_str()), shape_part(label)],
-    )
+    )?)
 }
 
-fn overclaimed_query_observation_anchor_identity(count: usize) -> BridgeIdentityEvidence {
+fn overclaimed_query_observation_anchor_identity(
+    count: usize,
+) -> Result<BridgeIdentityEvidence, crate::diagnostics::causal_envelope::BridgeCausalDigestRefusal>
+{
     let count_text = count.to_string();
-    compose_bridge_causal_envelope_evidence_identity(
+    Ok(compose_bridge_causal_envelope_evidence_identity(
         BridgeCausalEnvelopeDigestArtifact::Denial,
         &[
             shape_part(BridgeCausalEnvelopeDenialKind::QueryObservationAnchorOverclaim.as_str()),
@@ -377,5 +392,5 @@ fn overclaimed_query_observation_anchor_identity(count: usize) -> BridgeIdentity
             shape_part("query-observation-anchor-count"),
             shape_part(count_text.as_str()),
         ],
-    )
+    )?)
 }

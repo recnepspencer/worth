@@ -34,7 +34,7 @@ pub fn body<const DESTINATION: u64>(
     };
     let body = SetRetention::reference::<DocumentRetentionSchema<DESTINATION>>()
         .body()
-        .expect(DocumentRetentionField::reference(), 7)
+        .expect(DocumentRetentionField::at("DocumentRetentionField"), 7)
         .unwrap();
     let body = if DESTINATION == 30 {
         body.in_scope(Document::reference()).unwrap()
@@ -43,7 +43,7 @@ pub fn body<const DESTINATION: u64>(
     };
     let body = if DESTINATION >= 100 {
         body.assign_input(
-            DocumentRetentionField::reference(),
+            DocumentRetentionField::at("DocumentRetentionField"),
             match DESTINATION {
                 101 => "identity",
                 102 => "missing",
@@ -52,24 +52,30 @@ pub fn body<const DESTINATION: u64>(
         )
         .unwrap()
     } else {
-        body.assign(DocumentRetentionField::reference(), authored_destination)
-            .unwrap()
+        body.assign(
+            DocumentRetentionField::at("DocumentRetentionField"),
+            authored_destination,
+        )
+        .unwrap()
     };
     if matches!(DESTINATION, 20 | 21 | 23..=29 | 36) {
         let creation = body
             .create_in_scope(Audit::reference(), "audit")
             .unwrap()
-            .initialize_input(AuditIdentityField::reference(), "identity")
+            .initialize_input(AuditIdentityField::at("AuditIdentityField"), "identity")
             .unwrap()
-            .initialize(AuditRetentionField::reference(), authored_destination)
+            .initialize(
+                AuditRetentionField::at("AuditRetentionField"),
+                authored_destination,
+            )
             .unwrap();
         let creation = creation
             .link_from_scope(DocumentMembers::reference(), "audit-owner")
             .unwrap();
         let creation = if DESTINATION == 36 {
             creation
-                .initialize_from_principal_identity::<BodyBinding<DESTINATION>, _, _, _, _, _>(
-                    AuditActorField::reference(),
+                .initialize_from_principal_identity::<BodyBinding<DESTINATION>>(
+                    AuditActorField::at("AuditActorField"),
                 )
                 .unwrap()
         } else {
@@ -78,15 +84,15 @@ pub fn body<const DESTINATION: u64>(
         let creation = if DESTINATION == 23 {
             creation
                 .initialize_from_scope(
-                    DocumentAuditSourceField::reference(),
-                    AuditPriorRetentionField::reference(),
+                    DocumentAuditSourceField::at("DocumentAuditSourceField"),
+                    AuditPriorRetentionField::at("AuditPriorRetentionField"),
                 )
                 .unwrap()
         } else {
             creation
                 .initialize_from_scope(
-                    DocumentRetentionField::reference(),
-                    AuditPriorRetentionField::reference(),
+                    DocumentRetentionField::at("DocumentRetentionField"),
+                    AuditPriorRetentionField::at("AuditPriorRetentionField"),
                 )
                 .unwrap()
         };

@@ -124,3 +124,6 @@ impl WorthQueryManagedLiveWorkspaceCapability {
             .unwrap_or_else(std::sync::PoisonError::into_inner)
     }
 }
+#[cfg(test)]
+#[path = "workspace_capability_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;

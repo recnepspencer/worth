@@ -29,15 +29,7 @@ macro_rules! worlds_certification_native_graph_input_guards_path_signing_binding
             type Denial = WorthQueryOperationBodyDenial;
             type DenialBinding = DenialBinding;
             type Output = NoApplicationMutationOutputs;
-            type ScopeBinding = ApplicationMutationFieldScope<
-                Schema,
-                Row,
-                RowFacts,
-                RowIdentity,
-                String,
-                ReadOnly,
-                NoApplicationUnit,
-            >;
+            type ScopeBinding = ApplicationMutationFieldScope<RowIdentity>;
             type PrincipalBinding = PrincipalBinding;
             type Mapping = Mapping;
             type Principal = Principal;
@@ -53,17 +45,8 @@ macro_rules! worlds_certification_native_graph_input_guards_path_signing_binding
             fn workflow_execution_requirements() -> ApplicationWorkflowExecutionRequirements {
                 ApplicationWorkflowExecutionRequirements::not_applicable()
             }
-            fn scope_field() -> ApplicationFieldRef<
-                Schema,
-                Row,
-                RowFacts,
-                RowIdentity,
-                String,
-                ReadOnly,
-                EqualityPredicate,
-                NoApplicationUnit,
-            > {
-                RowIdentity::reference()
+            fn scope_field() -> RowIdentity {
+                RowIdentity::at("RowIdentity")
             }
             fn principal_binding() -> ApplicationPrincipalBindingRef<
                 Schema,
@@ -82,7 +65,7 @@ macro_rules! worlds_certification_native_graph_input_guards_path_signing_binding
                 self
             }
             fn scope_binding(&self) -> <$name as ApplicationMutationBinding<Schema>>::ScopeBinding {
-                ApplicationMutationFieldScope::new(RowIdentity::reference(), self.0.clone())
+                ApplicationMutationFieldScope::new(RowIdentity::at("RowIdentity"), self.0.clone())
             }
         }
     };

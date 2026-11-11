@@ -1,5 +1,6 @@
 pub(crate) mod binding;
 mod codec;
+pub(crate) mod transition_binding;
 mod transition_required;
 
 use worth_execution::{ExecutionRequest, WorkCeilingDenial};
@@ -20,6 +21,7 @@ pub(crate) struct HomeDescriptor {
     pub(crate) incarnation: HomeIncarnation,
     pub(crate) binding: ApplicationHomeBinding,
     pub(crate) build: worth_foundational::facade::ApplicationBuildIdentity,
+    pub(crate) _binding_memory: Option<worth_execution::ExecutionMemoryReservation>,
 }
 
 impl DurableArtifactRetention for HomeDescriptor {
@@ -64,6 +66,21 @@ pub(crate) struct PreparedDescriptor {
     transition: crate::open::readmission::transition::HomeTransitionAdmission,
 }
 impl PreparedDescriptor {
+    pub(crate) fn world_program_lineage(
+        &self,
+        request: &ExecutionRequest<'_, '_>,
+    ) -> Result<
+        Option<std::sync::Arc<worth_runtime_world::facade::WorldHomeProgramLineage>>,
+        crate::ApplicationHomeTransitionIntentDenial,
+    > {
+        self.transition
+            .history()
+            .program_lineage(&self.descriptor.binding, request)
+    }
+
+    pub(crate) fn descriptor(&self) -> &HomeDescriptor {
+        &self.descriptor
+    }
     pub(crate) fn home_identity(&self) -> HomeIdentity {
         self.descriptor.identity
     }

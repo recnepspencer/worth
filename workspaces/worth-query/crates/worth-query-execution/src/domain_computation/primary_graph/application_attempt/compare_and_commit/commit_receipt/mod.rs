@@ -1,4 +1,5 @@
 //! Closed application commit receipt.
+pub(in crate::domain_computation::primary_graph) mod recording;
 
 mod committed_changes;
 mod description;
@@ -372,3 +373,6 @@ pub(in crate::domain_computation::primary_graph) use committed_changes::Material
 mod court_doors_for_test;
 
 pub use pending::WorthQueryPendingApplicationCommitReceipt;
+#[cfg(test)]
+#[path = "mod_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;

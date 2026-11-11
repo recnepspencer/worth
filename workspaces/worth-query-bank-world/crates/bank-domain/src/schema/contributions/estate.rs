@@ -1,5 +1,3 @@
-use worth_query_decl::facade::worth_query_application_contribution;
-
 use crate::authorization::{
     install_estate_ability_policies, ViewEstateCase, ViewEstateLegalCompliance,
     ViewEstateMandatoryReview,
@@ -7,11 +5,29 @@ use crate::authorization::{
 
 use super::super::{estate::install_estate_world, BankSchema};
 
-worth_query_application_contribution! {
-    pub contribution BankEstate in BankSchema {
-        identity: "worth.bank.estate.v1",
-        corrections: [crate::schema::RestoreRecordedEstateFreeze],
-        members: |schema| {
+use worth_query_decl::facade::application_schema::{fragment::*, *};
+pub struct BankEstate;
+impl ApplicationSchemaContribution<BankSchema> for BankEstate {
+    const IDENTITY: ApplicationSchemaContributionIdentity =
+        ApplicationSchemaContributionIdentity::new("worth.bank.estate.v1");
+    type Members = (
+        crate::schema::EstateRecords,
+        Contracts,
+        crate::schema::RestoreRecordedEstateFreeze,
+    );
+}
+impl BankEstate {
+    pub const fn reference() -> ApplicationSchemaContributionRef<BankSchema, Self> {
+        ApplicationSchemaContributionRef::from_contribution()
+    }
+}
+pub struct Contracts;
+impl Registration<BankSchema> for Contracts {
+    fn register(
+        schema: ApplicationSchemaDeclarationBuilder<BankSchema>,
+    ) -> Result<ApplicationSchemaDeclarationBuilder<BankSchema>, ApplicationSchemaDeclarationDenial>
+    {
+        Ok({
             let schema = install_estate_world(schema)
                 .ability(ViewEstateCase::reference())
                 .ability(ViewEstateLegalCompliance::reference())
@@ -38,6 +54,6 @@ worth_query_application_contribution! {
                 .application_mutation_binding::<crate::schema::ReleaseEstateMutationBinding>()
                 .application_mutation_binding::<crate::schema::DisburseEstateMutationBinding>();
             install_estate_ability_policies(schema)
-        }
+        })
     }
 }

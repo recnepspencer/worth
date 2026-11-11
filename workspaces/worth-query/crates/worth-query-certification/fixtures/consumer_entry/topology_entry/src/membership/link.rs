@@ -29,7 +29,7 @@ worth_query_structured_value_binding!(pub PlanarDiscoveryLinkDenialBinding for P
     identity: "worth.query.certification.planar-discovery-link-denial.v1"
 });
 worth_query_operation!(pub LinkPlanarDiscovery for Schema: MembershipSchemaBinding, input PlanarDiscoveryLinkInputBinding);
-worth_query_operation_reads!(LinkPlanarDiscovery => [Body, BodyKey, PlanarDiscoverySource]);
+worth_query_operation_reads!(LinkPlanarDiscovery => [Body, PlanarDiscoverySource]);
 worth_query_operation_links!(LinkPlanarDiscovery => [PlanarDiscoverySource]);
 
 pub struct PlanarDiscoveryLinkBinding<Schema>(PhantomData<fn() -> Schema>);
@@ -53,7 +53,7 @@ impl<Schema: MembershipSchemaBinding> ApplicationMutationBinding<Schema>
     type Denial = PlanarMutationDenial;
     type DenialBinding = PlanarDiscoveryLinkDenialBinding;
     type Output = NoApplicationMutationOutputs;
-    type ScopeBinding = PlanarMutationScope<Schema>;
+    type ScopeBinding = PlanarMutationScope;
     type PrincipalBinding = ConsumerPrincipalBinding;
     type Mapping = ExternalPrincipalMapping;
     type Principal = Principal;
@@ -67,17 +67,8 @@ impl<Schema: MembershipSchemaBinding> ApplicationMutationBinding<Schema>
     const IDEMPOTENCY_IDENTITY: &'static str =
         "worth.query.certification.planar-discovery-link-command.v1";
 
-    fn scope_field() -> ApplicationFieldRef<
-        Schema,
-        Body,
-        PlanarPosition,
-        BodyKey,
-        String,
-        ReadOnly,
-        EqualityPredicate,
-        NoApplicationUnit,
-    > {
-        BodyKey::reference()
+    fn scope_field() -> BodyKey {
+        BodyKey::at("BodyKey")
     }
 
     fn principal_binding() -> ApplicationPrincipalBindingRef<
@@ -99,8 +90,8 @@ impl<Schema: MembershipSchemaBinding> ApplicationMutationIntent<Schema> for Plan
         self
     }
 
-    fn scope_binding(&self) -> PlanarMutationScope<Schema> {
-        PlanarMutationScope::new(BodyKey::reference(), self.scope_key.clone())
+    fn scope_binding(&self) -> PlanarMutationScope {
+        PlanarMutationScope::new(BodyKey::at("BodyKey"), self.scope_key.clone())
     }
 }
 
@@ -116,8 +107,8 @@ impl<Schema: MembershipSchemaBinding> OperationHandler<Schema, PlanarDiscoveryLi
     ) -> HandlerResult<[WorthQueryInvariantMutationTarget<Schema, Body>; 2], PlanarMutationDenial>
     {
         let result = (|| {
-            let from = reader.resolve_entity(BodyKey::reference(), input.scope_key.clone())?;
-            let to = reader.resolve_entity(BodyKey::reference(), input.target_key.clone())?;
+            let from = reader.resolve_entity(BodyKey::at("BodyKey"), input.scope_key.clone())?;
+            let to = reader.resolve_entity(BodyKey::at("BodyKey"), input.target_key.clone())?;
             reader
                 .relations_from(PlanarDiscoverySource::reference(), &from)
                 .map_err(HandlerExecutionDenial::new)?;
@@ -175,7 +166,7 @@ pub(crate) fn declare_planar_discovery_link<Schema: MembershipSchemaBinding>(
         )
         .operation_projection_work_budget(operation, 128)
         .operation_read_entity(operation, Body::reference())
-        .operation_read_field(operation, BodyKey::reference())
+        .operation_read_field(operation, BodyKey::at("BodyKey"))
         .operation_read_relation(operation, PlanarDiscoverySource::reference())
         .operation_link(operation, PlanarDiscoverySource::reference())
         .application_mutation_binding::<PlanarDiscoveryLinkBinding<Schema>>()

@@ -65,19 +65,19 @@ pub fn install_program<L: LawPolicy>(
             )?;
             for node in 0..nodes {
                 graph.bind_entity(
-                    WorthQueryApplicationEntitySeed::new(Node::reference(), key::<L>(node))
-                        .field(NodeKey::reference(), node),
+                    WorthQueryApplicationEntitySeed::new(super::schema::node::<GraphSchema<L>>(), key::<L>(node))
+                        .field(node_key::<GraphSchema<L>>(), node),
                 )?;
             }
             for leaf in 0..leaves {
                 graph.bind_entity(
                     WorthQueryApplicationEntitySeed::new(Leaf::reference(), leaf_key::<L>(leaf))
-                        .field(LeafKey::reference(), leaf),
+                        .field(LeafKey::at("LeafKey"), leaf),
                 )?;
             }
             for (index, &(source, target)) in feeds.iter().enumerate() {
                 graph.bind_relation(WorthQueryApplicationRelationSeed::new(
-                    Feeds::reference(),
+                    super::schema::feeds::<GraphSchema<L>>(),
                     format!("feed-seed-{index}"),
                     key::<L>(source),
                     leaf_key::<L>(target),
@@ -85,7 +85,7 @@ pub fn install_program<L: LawPolicy>(
             }
             for (index, &(source, target)) in edges.iter().enumerate() {
                 graph.bind_relation(WorthQueryApplicationRelationSeed::new(
-                    Precedes::reference(),
+                    precedes::<GraphSchema<L>>(),
                     format!("seed-{index}"),
                     key::<L>(source),
                     key::<L>(target),
@@ -102,7 +102,9 @@ pub fn install_program<L: LawPolicy>(
         leaves,
     })
 }
-pub fn key<L: LawPolicy>(node: u64) -> WorthQueryApplicationEntityKey<GraphSchema<L>, Node> {
+pub fn key<L: LawPolicy>(
+    node: u64,
+) -> WorthQueryApplicationEntityKey<GraphSchema<L>, GraphNode<GraphSchema<L>>> {
     WorthQueryApplicationEntityKey::new(format!("node-{node}")).unwrap()
 }
 pub fn leaf_key<L: LawPolicy>(leaf: u64) -> WorthQueryApplicationEntityKey<GraphSchema<L>, Leaf> {

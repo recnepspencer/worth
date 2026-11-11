@@ -8,6 +8,7 @@ use crate::{
 };
 use std::sync::Arc;
 
+#[derive(Clone)]
 pub struct RelationalAuthoredRestoration {
     pub(crate) before: AdmittedRelationalBranchBasis,
     pub(crate) retirement: Arc<CanonicalCommitEnvelope>,
@@ -16,6 +17,8 @@ pub struct RelationalAuthoredRestoration {
     pub(crate) relations: Vec<(RelationId, CreatedRelationRef)>,
     pub(crate) publications: Vec<RelationalRequiredOutputPublication>,
     pub(crate) inverse: Vec<MutationIntent>,
+    pub(crate) content: crate::content::RelationalContentAttachments,
+    pub(crate) aggregate_memberships: Vec<crate::aggregate_identity::RestoredMembership>,
 }
 impl std::fmt::Debug for RelationalAuthoredRestoration {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -26,6 +29,10 @@ impl std::fmt::Debug for RelationalAuthoredRestoration {
     }
 }
 impl RelationalAuthoredRestoration {
+    /// Exact retained content for the Native-owned inverse records.
+    pub fn content(&self) -> &crate::content::RelationalContentAttachments {
+        &self.content
+    }
     pub fn authorities(
         &self,
     ) -> impl Iterator<Item = &worth_proof::RequiredOutputPublicationAuthority> {
@@ -59,3 +66,6 @@ impl RelationalAuthoredRestoration {
             .map_err(super::custody::execution_stop)
     }
 }
+#[cfg(test)]
+#[path = "authored_restoration_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;

@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use std::collections::BTreeSet;
 
 use crate::consumer_kit::support_pinning::error::{
@@ -19,16 +20,16 @@ pub(super) fn rebuild_contract_digest(
     source_matrix_digest: &str,
     requirements: &[WorthQuerySupportPinRequirement],
     observed_rows: &[WorthQueryObservedSupportPin],
-) -> String {
+) -> Result<String, IdentityDerivationDenial> {
     let requirement_identities = requirements
         .iter()
         .map(derive_support_pin_requirement_identity)
-        .collect::<Vec<_>>();
+        .collect::<Result<Vec<_>, IdentityDerivationDenial>>()?;
     let observed_identities = observed_rows
         .iter()
         .map(derive_support_pin_observed_row_identity)
-        .collect::<Vec<_>>();
-    derive_support_pin_contract_identity(
+        .collect::<Result<Vec<_>, IdentityDerivationDenial>>()?;
+    Ok(derive_support_pin_contract_identity(
         consumer_name,
         contract_schema_identity,
         pinned_vocabulary_identity,
@@ -36,9 +37,9 @@ pub(super) fn rebuild_contract_digest(
         source_matrix_digest,
         &requirement_identities,
         &observed_identities,
-    )
+    )?
     .terminal_projection_for_reporting()
-    .to_string()
+    .to_string())
 }
 
 pub(super) fn reject_duplicate_document_families(

@@ -7,9 +7,14 @@ impl RelationalRuntime {
         schema: Arc<RelationalBranchRootSchemaAuthority>,
         contracts: Arc<SchemaContractRuntimeSubsystem>,
         digest: HomeProgramTransitionCatalogDigest,
+        receiver_epoch: crate::runtime::RelationalRuntimeConfigurationSnapshot,
     ) -> Result<PreparedRelationalHomeProgramContracts, RelationalHomeProgramContractDenial> {
         use RelationalHomeProgramContractDenial as Denial;
-        let snapshot = self.configuration_binding().snapshot();
+        let binding = self.configuration_binding();
+        let current = binding.operation();
+        if !receiver_epoch.same_epoch(&current) {
+            return Err(Denial::SourceContractChanged);
+        }
         let layout = std::alloc::Layout::new::<[usize; 2]>()
             .extend(std::alloc::Layout::new::<RelationalRootExecutionContracts>())
             .map_err(|_| Denial::CapacityOverflow)?
@@ -24,13 +29,14 @@ impl RelationalRuntime {
             meaning: Arc::new(RelationalRootExecutionContracts {
                 identity,
                 runtime: self.runtime_instance_id(),
-                configuration: snapshot.config,
-                configuration_contracts: snapshot.schema_contract_runtime,
                 schema,
                 contracts,
                 digest,
                 _memory: memory,
             }),
+            receiver_epoch,
+            index_definitions: None,
+            configuration: None,
         })
     }
 }

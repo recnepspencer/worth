@@ -78,7 +78,14 @@ impl WorldCheckpointImage {
                 }
                 self.owner = Some(WorldOwnerRecordLocation { position, digest });
             }
-            WorldRecord::Branch { head, .. } => {
+            WorldRecord::Branch {
+                head,
+                program_revision,
+                ..
+            } => {
+                if !self.binding.admits_root_revision(*program_revision) {
+                    return Err(WorldReadmissionDenial::ProgramRevisionMismatch);
+                }
                 let key = WorldBranchImageKey::new(record.clone(), position, digest);
                 if head.generation.get() != 0
                     || self.branches.contains_key(&key)
@@ -92,6 +99,13 @@ impl WorldCheckpointImage {
                 insert(&mut self.history, &head.commit, &image_head, execution)?;
             }
             WorldRecord::OpenAttempt(open) => {
+                if !self.binding.admits_attempt_revision(
+                    open.program_revision,
+                    open.association.attempt().ordinal(),
+                    execution,
+                )? {
+                    return Err(WorldReadmissionDenial::ProgramRevisionMismatch);
+                }
                 let attempt = open.association.attempt();
                 if self.opens.contains_key(&attempt) {
                     return Err(WorldReadmissionDenial::DuplicateIdentity);

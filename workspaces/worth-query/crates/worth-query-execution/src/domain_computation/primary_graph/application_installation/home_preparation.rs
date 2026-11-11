@@ -17,10 +17,18 @@ use worth_relational::facade::runtime::{
     RelationalInitialSchemaInstallationReceipt, RelationalRuntime, RelationalRuntimeDefinition,
 };
 mod binding;
+mod transition;
+pub use transition::{
+    PreparedHomeProgramTransitionTarget, QueryHomeProgramTransitionSourceDenial,
+    QueryHomeTransitionPreparationDenial, QueryHomeTransitionPreparationRefused,
+    QueryHomeTransitionPromotionRefused, QueryHomeWorkflowDispositionDenial,
+    WorthQueryHomeProgramTransitionBodyDenial, WorthQueryHomeProgramTransitionReadSource,
+    WorthQueryHomeProgramTransitionTarget,
+};
 mod world;
 pub use world::{
     QueryHomeCustodyReadmissionDenial, QueryHomeCustodyReadmissionRefused,
-    QueryHomeWorldAttachmentRefused, ReadmittedHomeQueryService,
+    QueryHomeProgramActivationDenial, QueryHomeWorldAttachmentRefused, ReadmittedHomeQueryService,
 };
 mod existing;
 mod native;
@@ -61,6 +69,11 @@ struct HomeApplicationState<Schema: ApplicationSchemaComposition, Program> {
     support: program_admission::WorthQueryAdmittedProgramSupport<Schema>,
     pending: PreparedApplicationRuntimeContributions<Schema>,
     activation: WorthQueryProgramActivationCell,
+    transition_installation: Option<
+        worth_proof::AdmittedHomeProgramTransitionSuccessor<
+            worth_foundational::facade::HomeProgramTransitionInstallationBinding,
+        >,
+    >,
     limits: WorthQueryApplicationLimits,
     build_identity: worth_foundational::facade::ApplicationBuildIdentity,
     authorization_time_source:
@@ -127,6 +140,7 @@ where
             support,
             pending,
             activation,
+            transition_installation: None,
             limits,
             build_identity,
             authorization_time_source,

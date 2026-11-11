@@ -193,10 +193,10 @@ fn elevation_definition_with_lifecycle(
         ReviewPosture::Duplicate => 1,
     };
     ApplicationCapabilityElevationDefinition::new(
-        elevation_binding::<ElevationIdentity>("ElevationIdentity"),
-        elevation_binding::<ElevationReason>("ElevationReason"),
-        elevation_binding::<ElevationStatus>("ElevationStatus"),
-        elevation_binding::<ElevationClosedAt>("ElevationClosedAt"),
+        elevation_binding("ElevationIdentity"),
+        elevation_binding("ElevationReason"),
+        elevation_binding("ElevationStatus"),
+        elevation_binding("ElevationClosedAt"),
         ApplicationCapabilityElevationStates::new(
             elevation_value(values[0]),
             elevation_value(values[1]),
@@ -205,8 +205,8 @@ fn elevation_definition_with_lifecycle(
         ),
         ApplicationCapabilityValidityDefinition::new(
             ApplicationCapabilityValidityTimeline::UnixEpochSeconds,
-            elevation_binding::<ElevationNotBefore>("ElevationNotBefore"),
-            elevation_binding::<ElevationNotAfter>("ElevationNotAfter"),
+            elevation_binding("ElevationNotBefore"),
+            elevation_binding("ElevationNotAfter"),
         ),
         maximum_duration,
         relation::<Requester, Principal, Elevation>("Requester", "Principal", "Elevation"),
@@ -219,15 +219,13 @@ fn elevation_definition_with_lifecycle(
                 "Elevation",
                 "Review",
             ),
-            review_binding::<ReviewIdentity>("ReviewIdentity"),
-            ApplicationCapabilityValueBinding::new(
-                review_field::<ReviewKind>("ReviewKind"),
-                encoded(1_u64),
-            ),
+            review_binding("ReviewIdentity"),
+            ApplicationCapabilityValueBinding::new(review_field("ReviewKind"), encoded(1_u64))
+                .unwrap(),
             relation::<ReviewScope, Review, Resource>("ReviewScope", "Review", "Resource"),
             relation::<Reviewer, Principal, Review>("Reviewer", "Principal", "Review"),
-            review_binding::<ReviewStatus>("ReviewStatus"),
-            review_binding::<ReviewReviewedAt>("ReviewReviewedAt"),
+            review_binding("ReviewStatus"),
+            review_binding("ReviewReviewedAt"),
             review_value(1),
             review_value(completed),
         ),
@@ -320,8 +318,8 @@ fn elevation_members(
     result.extend([
         entity_member("Elevation"),
         entity_member("Review"),
-        aspect_member("Elevation", "ElevationFacts"),
-        aspect_member("Review", "ReviewFacts"),
+        aspect_member("Elevation", crate::application_schema::fragment::aspect(crate::application_schema::capability_member_closure_tests::elevation_lifecycle::bindings::ElevationModel, Elevation, ElevationFacts).name()),
+        aspect_member("Review", crate::application_schema::fragment::aspect(crate::application_schema::capability_member_closure_tests::elevation_lifecycle::bindings::ElevationModel, Review, ReviewFacts).name()),
         elevation_field_member("ElevationIdentity"),
         elevation_field_member("ElevationReason"),
         elevation_field_member("ElevationStatus"),

@@ -1,4 +1,5 @@
 use crate::domain_installation::WorthQueryBoundCapabilityGeneration;
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct WorthQueryCollectionCursor {
@@ -32,8 +33,10 @@ impl WorthQueryCollectionCursor {
         self.next_row_ordinal == 0
     }
 
-    pub fn identity_evidence(&self) -> crate::WorthQueryEvidenceIdentity {
-        crate::WorthQueryEvidenceIdentity::compose(
+    pub fn identity_evidence(
+        &self,
+    ) -> Result<crate::WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
+        Ok(crate::WorthQueryEvidenceIdentity::compose(
             crate::WorthQueryEvidenceScope::ProjectionConsumptionIdentity,
         )
         .field_shape(
@@ -60,7 +63,7 @@ impl WorthQueryCollectionCursor {
             crate::WorthQueryEvidenceTag::new("next-row"),
             self.next_row_ordinal,
         )
-        .seal()
+        .seal()?)
     }
 
     pub(super) fn rebind(

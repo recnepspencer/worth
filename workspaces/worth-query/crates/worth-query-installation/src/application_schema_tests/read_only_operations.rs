@@ -29,7 +29,6 @@ impl ApplicationOperationMarkerIdentity<ReadTestSchema> for EmptyOperation {
     const IDENTIFIER: &'static str = "EmptyOperation";
 }
 
-impl<Schema> OperationReads<ReadOnlyOperation> for FixturePrincipalIdentityField<Schema> {}
 impl OperationRequiresAbility<ReadOnlyOperation> for TestAbility {}
 impl OperationRequiresAbility<EmptyOperation> for TestAbility {}
 
@@ -47,7 +46,7 @@ impl ApplicationSchema for ReadTestSchema {
             ApplicationOperationRef::<Self, ReadOnlyOperation, ReadOnlyInput>::from_declaration();
         let empty = ApplicationOperationRef::<Self, EmptyOperation, EmptyInput>::from_declaration();
         let ability =
-            ApplicationAbilityRef::<Self, TestAbility, FixtureEntity<Self>>::from_schema_identifiers(
+            ApplicationAbilityRef::<Self, TestAbility, FixtureEntity>::from_schema_identifiers(
                 "TestAbility",
                 "TestEntity",
             );
@@ -62,15 +61,12 @@ impl ApplicationSchema for ReadTestSchema {
             .operation_requires_ability(read, ability)
             .operation_read_field(
                 read,
-                ApplicationFieldRef::<
-                    Self,
-                    FixtureEntity<Self>,
-                    FixtureIdentityAspect<Self>,
-                    FixturePrincipalIdentityField<Self>,
+                worth_query_declaration::facade::application_schema::fragment::FieldSelection::<
+                    InstallationFields,
+                    FixtureEntity,
+                    FixtureIdentityAspect,
                     u64,
-                    ReadOnly,
-                    EqualityPredicate,
-                >::from_schema_types(),
+                >::at("PrincipalIdentityField"),
             )
             .operation(
                 empty

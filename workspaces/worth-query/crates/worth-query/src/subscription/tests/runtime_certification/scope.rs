@@ -31,7 +31,8 @@ fn runtime_certification_scope_rejects_cross_family_coverage_handles() {
             QuerySubscriptionLifecycleCoverageClass::ActiveLifecycle,
         )
         .unwrap(),
-    ]);
+    ])
+    .expect("fixture digest must fit");
     let collection_handle = build_certified_family_coverage_handle(
         &collection_matrix,
         collection.declaration.family(),
@@ -59,7 +60,8 @@ fn runtime_family_certification_rejects_non_runtime_support_subjects() {
     let artifacts = runtime_certification_artifacts_for(LiveQueryFamily::Detail, None);
     let hostile = hostile_support_failure_for(&artifacts);
     let declaration_support = report_query_subscription_support(
-        QuerySubscriptionSupportSubject::declaration(&artifacts.declaration),
+        QuerySubscriptionSupportSubject::declaration(&artifacts.declaration)
+            .expect("fixture digest must fit"),
         QuerySubscriptionSupportEvidence::declaration(&artifacts.declaration),
     )
     .unwrap()

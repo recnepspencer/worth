@@ -5,6 +5,7 @@ use super::super::{
 use super::OperationBodyHandler;
 use std::marker::PhantomData;
 use worth_query_declaration::facade::application_operation::ApplicationMutationBinding;
+use worth_query_declaration::facade::application_schema::fragment::RecordSelection;
 use worth_query_declaration::facade::application_schema::ApplicationStructuredValueBinding;
 use worth_query_installation::facade::{
     ApplicationSchema, WorthQueryInstalledApplicationMutationBinding,

@@ -24,6 +24,7 @@ fn ordinary_prepared_continuation_keeps_future_projection_visible() {
         future_signal_bridge_request(),
         OrdinaryFutureSignalFamily::aspect_contract(),
     )
+    .expect("fixture digest must fit")
     .into_checked()
     .into_outcome();
 
@@ -53,6 +54,7 @@ fn temporal_and_async_signal_debt_stop_before_prepared_continuation_exists() {
         future_signal_bridge_request(),
         TemporalFutureSignalFamily::aspect_contract(),
     )
+    .expect("fixture digest must fit")
     .into_checked()
     .into_outcome();
     let async_signal = prepare_continuation_from_signal_checked_on_handle(
@@ -64,6 +66,7 @@ fn temporal_and_async_signal_debt_stop_before_prepared_continuation_exists() {
         future_signal_bridge_request(),
         AsyncFutureSignalFamily::aspect_contract(),
     )
+    .expect("fixture digest must fit")
     .into_checked()
     .into_outcome();
 

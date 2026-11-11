@@ -1,18 +1,17 @@
 use worth_foundational::facade::AspectIdentity;
-use worth_query_installation::facade::WorthQueryInstalledApplicationSchemaContractCatalog;
 
 use super::{contract_space_exhausted, WorthQueryPrimaryGraphInstallationDenial};
 
 pub(super) fn allocate_platform_aspect_identities(
-    catalog: &WorthQueryInstalledApplicationSchemaContractCatalog,
+    maximum_application_identity: Option<AspectIdentity>,
 ) -> Result<[AspectIdentity; 18], WorthQueryPrimaryGraphInstallationDenial> {
-    allocate_after(catalog.maximum_aspect_identity())
+    allocate_after(maximum_application_identity)
 }
 
 pub(super) fn allocate_aggregate_aspect_identities(
-    catalog: &WorthQueryInstalledApplicationSchemaContractCatalog,
+    maximum_application_identity: Option<AspectIdentity>,
 ) -> Result<[AspectIdentity; 2], WorthQueryPrimaryGraphInstallationDenial> {
-    let installed = allocate_platform_aspect_identities(catalog)?;
+    let installed = allocate_platform_aspect_identities(maximum_application_identity)?;
     let last = installed.last().expect("platform aspects are nonempty").0;
     Ok([
         AspectIdentity(last.checked_add(1).ok_or_else(contract_space_exhausted)?),
@@ -21,9 +20,9 @@ pub(super) fn allocate_aggregate_aspect_identities(
 }
 
 pub(super) fn allocate_projected_aggregate_aspect_identities(
-    catalog: &WorthQueryInstalledApplicationSchemaContractCatalog,
+    maximum_application_identity: Option<AspectIdentity>,
 ) -> Result<[AspectIdentity; 2], WorthQueryPrimaryGraphInstallationDenial> {
-    let aggregate = allocate_aggregate_aspect_identities(catalog)?;
+    let aggregate = allocate_aggregate_aspect_identities(maximum_application_identity)?;
     let last = aggregate[1].0;
     Ok([
         AspectIdentity(last.checked_add(1).ok_or_else(contract_space_exhausted)?),
@@ -42,6 +41,71 @@ fn allocate_after(
         *identity = AspectIdentity(next);
     }
     Ok(identities)
+}
+
+/// Resolve every role's actual contract; numeric adjacency is not provenance.
+pub(super) fn readmit_roles(
+    registry: &worth_relational::facade::schema::RelationalSchemaRegistry,
+    snapshot: &worth_relational::facade::schema::SchemaAuthoritySnapshot,
+    application: &std::collections::BTreeSet<worth_relational::facade::identity::KindId>,
+) -> Result<
+    (
+        worth_relational::facade::identity::KindId,
+        [AspectIdentity; 18],
+    ),
+    WorthQueryPrimaryGraphInstallationDenial,
+> {
+    const ROLES: [(&str, &str); 18] = [
+        ("worth-query-provider-idempotency", "idempotency"),
+        ("worth-query-dispatch-outbox", "dispatch-outbox"),
+        ("worth-query-aftermath-causality", "aftermath-causality"),
+        ("worth-query-program-activation", "activation"),
+        ("worth-query-workflow-lineage", "workflow-lineage"),
+        ("worth-query-workflow-definition", "workflow-definition"),
+        ("worth-query-workflow-node", "workflow-node"),
+        ("worth-query-workflow-connection", "workflow-connection"),
+        ("worth-query-workflow-instance", "workflow-instance"),
+        ("worth-query-workflow-transition", "workflow-transition"),
+        ("worth-query-workflow-proposal", "workflow-proposal"),
+        (
+            "worth-query-workflow-assessment-evidence",
+            "workflow-assessment-evidence",
+        ),
+        ("worth-query-workflow-approval", "workflow-approval"),
+        (
+            "worth-query-workflow-evidence-dependency",
+            "workflow-evidence-dependency",
+        ),
+        (
+            "worth-query-workflow-proposal-coverage",
+            "workflow-proposal-coverage",
+        ),
+        ("worth-query-inbound-completion", "inbound-completion"),
+        (
+            "worth-query-workflow-operation-output",
+            "workflow-operation-output",
+        ),
+        (
+            "worth-query-workflow-captured-input",
+            "workflow-captured-input",
+        ),
+    ];
+    let mut first = None;
+    let mut identities = [AspectIdentity(0); 18];
+    for (index, (name, aspect)) in ROLES.into_iter().enumerate() {
+        let (kind, identity) = super::physical_identity::private_entity_role(
+            registry,
+            snapshot,
+            application,
+            name,
+            aspect,
+        )?;
+        if index == 0 {
+            first = Some(kind);
+        }
+        identities[index] = identity;
+    }
+    Ok((first.expect("nonempty platform roles"), identities))
 }
 
 #[cfg(test)]

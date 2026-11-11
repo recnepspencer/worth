@@ -58,12 +58,13 @@ fn install_program_seeded<
         (),
     );
     let program = ApplicationProgramAuthoring::<Schema, P>::begin()
-        .with_schema(&Schema::declaration().expect("the completed schema is valid"))
+        .with_schema(&<Schema as worth_query_decl::facade::application_schema::ApplicationSchema>::declaration().expect("the completed schema is valid"))
         .validated_program()
         .expect("the separate membership graph and operation authorization are complete");
     let application = in_memory_program(
         program,
-        Schema::declaration().unwrap(),
+        <Schema as worth_query_decl::facade::application_schema::ApplicationSchema>::declaration()
+            .unwrap(),
         configuration,
         ApplicationBuildIdentity::parse("11111111-1111-1111-1111-111111111111").unwrap(),
         resources::application_limits(),

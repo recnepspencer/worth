@@ -21,6 +21,11 @@ pub struct QueryContextCounters {
 }
 
 impl QueryContextCounters {
+    pub(crate) fn for_identity_refusal(historical_lookup: bool) -> Self {
+        let mut counters = Self::for_denial(historical_lookup, false);
+        counters.unsupported_basis_denial_count = 0;
+        counters
+    }
     pub fn query_basis_binding_count(&self) -> usize {
         self.query_basis_binding_count
     }

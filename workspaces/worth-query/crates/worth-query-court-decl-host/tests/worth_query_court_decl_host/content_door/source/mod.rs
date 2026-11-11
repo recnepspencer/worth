@@ -7,6 +7,7 @@ use std::sync::{
 use worth_query_decl::facade::application_query::*;
 use worth_query_host::facade::application_invariants::*;
 mod courts;
+mod directory_home;
 pub mod expectation;
 mod provider;
 pub mod query;
@@ -43,11 +44,6 @@ pub fn declare(
     schema: ApplicationSchemaDeclarationBuilder<Schema>,
 ) -> ApplicationSchemaDeclarationBuilder<Schema> {
     expectation::declare(schema)
-        .relation(
-            ContainsSamples::reference(),
-            Record::reference(),
-            Record::reference(),
-        )
         .application_query(query::state())
         .application_query_binding::<query::StateBinding>()
         .application_query(query::source())

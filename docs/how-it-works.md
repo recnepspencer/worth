@@ -361,6 +361,30 @@ not redefine it.
    movement, so a moved head always has a recovery record. Concurrent callers
    converge on one `RelationalCommitReceipt`.
 
+Preparation holds each installed commit invariant for one exact proposed state in a
+single pass. Registrations retain their declared commit-boundary, mutation-sensitive
+or publication failure meaning. Publication carries this result when the state is
+unchanged. Native prerequisites and commit-boundary custom rules retain their
+business-state view. The pass suspends while private aggregate writes complete,
+then checks the remaining families against the complete proposed snapshot.
+Native refusal still precedes custom execution within each family.
+Certification and graph-composition observations remain separate.
+
+The root carries its schema projection and digest. Ordinary commits compare that
+digest and share the projection; declared schema transitions build a new one.
+Snapshot authors construct `SchemaAuthoritySnapshotParts` and convert it into the
+shared snapshot. Mutating an authored clone detaches and invalidates its cached digest.
+Canonical commit payloads reference schema by digest and include projection material
+on transitions. Self-contained checkpoint and artifact exports retain the vocabulary
+needed for cold readmission. Branch-root image version 5 and canonical artifact
+version 7 refuse prior encodings before admitting their different commitments.
+
+Transaction reads carry the effective record forward over appended staged mutations.
+Their immutable staged-history handle provides `iter()`, `len()` and `is_empty()`;
+cloning a read shares that history. Savepoints carry the retained intent prefix and
+its projection frontier; rollback restores both. Normalization that rekeys a prefix
+rebuilds its projection before another read.
+
 **Conflict scope.** Conflicts are detected per branch, not per record. A
 candidate is `Stale` if the branch moved at all after the observation it was
 prepared from, even if the other commit touched unrelated records. The
@@ -596,8 +620,12 @@ workflows, and aftermath with `worth-query-decl` macros and types. Nothing
 runs. A declaration cannot install, authenticate, authorize, execute, or
 publish.
 
-- Schema: `worth_query_application_schema`, `worth_query_entity`,
-  `worth_query_aspect`, `worth_query_field`, `worth_query_relation`.
+- Storage schemas: `Fragment::Members`, `Entity::Aspects` and
+  `Entity::Relations` declare membership through tuples. `Aspect::Row`,
+  `Record<T>` and `Scalar<T>` declare the stored form once per binding set;
+  `OneOf::Cases` declares exclusive case aspects. See
+  [native schema fragments](native-schema-fragments.md) for declarations and
+  typed field handles.
 - Operations: `worth_query_operation!(... access { ... })` declares a concrete
   schema operation's reads, effects and expectations once. Install those same
   facts with `schema.declared_operation::<Operation>(definition)`, retaining
@@ -636,11 +664,12 @@ The host composes contributions with a schema, compiles each operation
 contract, derives graph obligations, admits the package, and installs it into
 an execution runtime with bounded resources.
 
-Each graph-obligation identity admits at most 4,096 canonical entries and 1 MiB
-of digest material. Distinct aspect contracts are encoded once, with one
-reference per projection/touch; masks, field paths, bindings and structural
-scopes also count. An operation installation denial retains requested and
-maximum counts in `canonical_denial()`. See
+Graph-obligation and authorization identity allowances derive from the admitted
+declaration's canonical size, with a proven factor of 16 for entries and bytes.
+Package validation owns the shared 64 MiB declaration ceiling and byte-derived
+entry bound; it reports typed size refusals with requested and maximum counts.
+Distinct contracts count once and complete field masks once per projection;
+references, partial masks, paths and bindings remain exact. See
 [installation limits](build-an-application.md#4-install-or-reopen).
 
 <!-- illustrative -->
@@ -650,7 +679,7 @@ let runtime = in_memory_program(
     program,        // ValidatedApplicationProgram<Schema, Program>
     declaration,
     configuration,  // handlers, invariants, producers, conditional nodes
-    limits,         // WorthQueryInMemoryApplicationLimits
+    limits,         // WorthQueryApplicationLimits
     initial_state,
 )?;
 ```

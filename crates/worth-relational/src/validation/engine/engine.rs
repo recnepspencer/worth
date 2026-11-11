@@ -1,6 +1,8 @@
+mod proposed_pass;
 use crate::validation::engine::InvariantRuntimeView;
 use crate::validation::execution::InvariantStage;
 use crate::validation::reduction::ReducedInvariantPrefix;
+pub(crate) use proposed_pass::{PendingProposedPass, StartedProposedPass};
 use worth_execution::{ExecutionResourceLease, ExecutionWorkCeiling};
 
 use super::request::InvariantExecutionRequest;
@@ -32,7 +34,62 @@ impl<'runtime> InvariantEngine<'runtime> {
     where
         'runtime: 'state,
     {
+        self.execute_from(execution, request, None)
+    }
+
+    pub(crate) fn complete_proposed<'state>(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        request: InvariantExecutionRequest<'state>,
+        pending: PendingProposedPass,
+    ) -> Result<InvariantExecutionResult, crate::transactions::data::TransactionCommitError>
+    where
+        'runtime: 'state,
+    {
+        if request.proposal_identity() != Some(&pending.proposal) {
+            return Err(crate::transactions::data::TransactionCommitError::conflict(
+                crate::transactions::data::CommitConflict::new(
+                    crate::transactions::data::ConflictClass::StaleValidationBasis {
+                        detail: "native prerequisite evidence belongs to a different proposal"
+                            .into(),
+                    },
+                ),
+            ));
+        }
+        self.execute_from(execution, request, Some(pending))
+    }
+
+    fn execute_from<'state>(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        request: InvariantExecutionRequest<'state>,
+        pending: Option<PendingProposedPass>,
+    ) -> Result<InvariantExecutionResult, crate::transactions::data::TransactionCommitError>
+    where
+        'runtime: 'state,
+    {
         check_live(*execution)?;
+        self.admit_custom_posture(execution, &request)?;
+        // An absent accounting contract stays absent. Already active accounted
+        // ancestors still govern the same inner patterns and reservations.
+        if !execution.has_accounting() {
+            return self.execute_inner(*execution, request, pending);
+        }
+        // One original scope spans both stages even when no preparation account
+        // is attached to the runtime view. Do not bill its aggregate report again.
+        execution
+            .run(ExecutionWorkCeiling::new(execution.work_ceiling()), |_| {
+                self.execute_inner(*execution, request, pending)
+            })
+            .map(|(result, _)| result)
+            .map_err(request_failure)?
+    }
+
+    fn admit_custom_posture(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        request: &InvariantExecutionRequest<'_>,
+    ) -> Result<(), crate::transactions::data::TransactionCommitError> {
         let lease = crate::authority::commit::pipeline::request_lease(execution);
         if lease.is_some_and(|lease| {
             lease.resolved_posture() == worth_foundational::ExecutionPosture::Automatic
@@ -40,7 +97,7 @@ impl<'runtime> InvariantEngine<'runtime> {
             .runtime
             .schema_contract_runtime
             .custom_invariant_registries
-            .iter()
+            .at(request.execution_point())
             .filter(|registration| request.includes_custom_registration(registration))
             .any(|registration| !registration.supports_checked_preparation())
         {
@@ -55,25 +112,14 @@ impl<'runtime> InvariantEngine<'runtime> {
                 ),
             );
         }
-        // An absent accounting contract stays absent. Already active accounted
-        // ancestors still govern the same inner patterns and reservations.
-        if !execution.has_accounting() {
-            return self.execute_inner(*execution, request);
-        }
-        // One original scope spans both stages even when no preparation account
-        // is attached to the runtime view. Do not bill its aggregate report again.
-        execution
-            .run(ExecutionWorkCeiling::new(execution.work_ceiling()), |_| {
-                self.execute_inner(*execution, request)
-            })
-            .map(|(result, _)| result)
-            .map_err(request_failure)?
+        Ok(())
     }
 
     fn execute_inner<'state>(
         &self,
         execution: worth_execution::ExecutionRequest<'state, 'state>,
         request: InvariantExecutionRequest<'state>,
+        pending: Option<PendingProposedPass>,
     ) -> Result<InvariantExecutionResult, crate::transactions::data::TransactionCommitError>
     where
         'runtime: 'state,
@@ -85,13 +131,21 @@ impl<'runtime> InvariantEngine<'runtime> {
             worth_foundational::ExecutionPosture::Serial,
             ExecutionResourceLease::resolved_posture,
         );
-        let mut prefix = ReducedInvariantPrefix::new();
+        let has_boundary = pending.is_some();
+        let mut prefix = pending.map_or_else(ReducedInvariantPrefix::new, |pending| pending.prefix);
+        let native_stage = if has_boundary {
+            InvariantStage::NativeAfterBoundary {
+                packet_offset: prefix.packet_count(),
+            }
+        } else {
+            InvariantStage::Native
+        };
         if let Some(stage) = super::stage_execution::execute_stage(
             &runtime,
             execution,
             &request,
             lease,
-            InvariantStage::Native,
+            native_stage,
         )? {
             let reduced = prefix.absorb_in_request(
                 stage,
@@ -104,8 +158,14 @@ impl<'runtime> InvariantEngine<'runtime> {
         }
         check_live(execution)?;
         if !prefix.prevents_custom(request.execution_point()) {
-            let selection = InvariantStage::Custom {
-                packet_offset: prefix.packet_count(),
+            let selection = if has_boundary {
+                InvariantStage::CustomAfterBoundary {
+                    packet_offset: prefix.packet_count(),
+                }
+            } else {
+                InvariantStage::Custom {
+                    packet_offset: prefix.packet_count(),
+                }
             };
             if let Some(stage) = super::stage_execution::execute_stage(
                 &runtime, execution, &request, lease, selection,

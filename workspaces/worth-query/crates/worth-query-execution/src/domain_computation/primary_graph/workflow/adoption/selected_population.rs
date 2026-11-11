@@ -1,7 +1,7 @@
 //! Exact native lineage-population proof for the private adoption inventory.
 
-use super::inventory::WorkflowAdoptionInventoryRequest;
 use super::WorkflowAdoptionReadDenial as Denial;
+use crate::domain_computation::primary_graph::workflow::schema::WorthQueryWorkflowLayout;
 
 use worth_relational::facade::branch::AdmittedRelationalBranchBasis;
 use worth_relational::facade::indexes::BoundedEntityFieldLookupDenial;
@@ -15,12 +15,11 @@ pub(super) fn is_empty(
     runtime: &RelationalRuntime,
     basis: &AdmittedRelationalBranchBasis,
     view: &VisibilityProjectionView,
-    request: &WorkflowAdoptionInventoryRequest<'_>,
+    layout: &WorthQueryWorkflowLayout,
 ) -> Result<bool, Denial> {
-    // This is the caller's remaining selection allowance, not a new host
-    // allowance. Its exact charge is returned and deducted before truth reads.
-
-    let lineage = &request.layout.lineage;
+    // Native index admission uses this exact execution and source. Bounded
+    // graph-record reads remain the inventory owner's separate responsibility.
+    let lineage = &layout.lineage;
     // Currency is one logical metadata selection. The native owner pays its
     // real branch-key comparisons/copies and any authentic fork preparation
     // on this same original execution, even when the selected index is warm.
@@ -28,7 +27,7 @@ pub(super) fn is_empty(
     runtime.index_authority().ensure_field_index_for_basis(
         lineage.identity_index_id,
         basis,
-        crate::domain_computation::primary_graph::index_maintenance_budget::cold_index_reconstruction_budget(),
+        crate::domain_computation::primary_graph::index_maintenance_budget::ordinary_index_maintenance_budget(),
         execution,
     ).map_err(|cause| match cause.kind {
         DerivedIndexMaintenanceDenialKind::Execution(cause) => Denial::ReadExecution(cause),
@@ -56,4 +55,21 @@ fn index_denial(cause: BoundedEntityFieldLookupDenial) -> Denial {
         BoundedEntityFieldLookupDenialKind::Execution(cause) => Denial::ReadExecution(cause),
         _ => Denial::SelectedIndexUnavailable,
     }
+}
+
+/// An explicit Home transition reads its exact authoritative source. It must not
+/// require or rebuild a live-adoption derived generation during cold planning.
+pub(in crate::domain_computation::primary_graph) fn workflow_record_population_is_empty(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    view: &VisibilityProjectionView,
+    layout: &WorthQueryWorkflowLayout,
+    maximum_work_units: usize,
+) -> Result<(bool, usize), Denial> {
+    let read = view
+        .bounded_entities_of_kind(execution, layout.lineage.entity_kind, maximum_work_units)
+        .map_err(Denial::ReadExecution)?
+        .map_err(|limit| Denial::WorkLimitExceeded {
+            consumed_work_units: limit.consumed_work_units(),
+        })?;
+    Ok((read.records().is_empty(), read.work_units()))
 }

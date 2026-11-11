@@ -2,25 +2,7 @@
 use super::*;
 use worth_query_decl::facade::{application_aftermath::*, application_query::*};
 
-pub(in super::super) struct RecordedEntryCorrection<Schema>(PhantomData<fn() -> Schema>);
-
-/// The enclosing composition dispatches correction meaning without exporting its binding.
-pub(in crate::checkpoint_recovery) fn visit<
-    Visitor: ApplicationCorrectionVisitor<CheckpointSchema>,
->(
-    source_binding: std::any::TypeId,
-    visitor: Visitor,
-) -> Result<Visitor::Output, Visitor> {
-    if source_binding == std::any::TypeId::of::<EntryCorrectionBinding<CheckpointSchema>>() {
-        Ok(dispatch_application_correction::<
-            CheckpointSchema,
-            RecordedEntryCorrection<CheckpointSchema>,
-            Visitor,
-        >(visitor))
-    } else {
-        Err(visitor)
-    }
-}
+pub struct RecordedEntryCorrection<Schema>(PhantomData<fn() -> Schema>);
 
 impl<Schema: TopologySchemaBinding> ApplicationCorrectionBinding<Schema>
     for RecordedEntryCorrection<Schema>
@@ -29,6 +11,41 @@ impl<Schema: TopologySchemaBinding> ApplicationCorrectionBinding<Schema>
     type Source = EntryCorrectionBinding<Schema>;
     type InverseIntent = EntryCorrection;
     type Disclosure = PlanarReadBinding<Schema>;
+
+    fn recover_source_input(
+        bytes: &[u8],
+        expected: worth_query_decl::facade::application_schema::CanonicalDigestId,
+        bounds: worth_query_decl::facade::application_schema::ValueDecodeBounds,
+    ) -> Result<
+        worth_query_decl::facade::application_operation::ApplicationEncodedInput<
+            <Self::Source as worth_query_decl::facade::application_operation::ApplicationMutationBinding<Schema>>::InputBinding,
+        >,
+        worth_query_decl::facade::application_operation::ApplicationRetainedInputDenial,
+    >{
+        worth_query_decl::facade::application_operation::ApplicationEncodedInput::decode_retained(
+            bytes, expected, bounds,
+        )
+    }
+
+    fn recover_inverse_input(
+        bytes: &[u8],
+        expected: worth_query_decl::facade::application_schema::CanonicalDigestId,
+        bounds: worth_query_decl::facade::application_schema::ValueDecodeBounds,
+    ) -> Result<
+        worth_query_decl::facade::application_operation::ApplicationEncodedInput<
+            <worth_query_decl::facade::application_aftermath::ApplicationInverseBinding<
+                Schema,
+                Self,
+            > as worth_query_decl::facade::application_operation::ApplicationMutationBinding<
+                Schema,
+            >>::InputBinding,
+        >,
+        worth_query_decl::facade::application_operation::ApplicationRetainedInputDenial,
+    > {
+        worth_query_decl::facade::application_operation::ApplicationEncodedInput::decode_retained(
+            bytes, expected, bounds,
+        )
+    }
 
     fn disclosure_parameters(
         _: &EntryCorrection,
@@ -48,17 +65,14 @@ impl<Schema: TopologySchemaBinding> ApplicationCorrectionBinding<Schema>
             .no_external_effect()
     }
     fn mechanism() -> DeclaredCorrectionMechanism<Schema> {
-        DeclaredCorrectionMechanism::recorded_inverse_binding::<Self>(
-            DeclaredPreImageDemand::new(
-                [DeclaredPreImageLocus::from_field(
-                    EntryValueBits::reference(),
-                )],
-                U64ApplicationValueBinding::encode(&u64::MAX)
-                    .unwrap()
-                    .semantic_byte_width(),
-            )
-            .unwrap(),
-        )
+        DeclaredCorrectionMechanism::recorded_inverse_binding::<Self>(DeclaredPreImageDemand::new(
+            [DeclaredPreImageLocus::from_field(EntryValueBits::at(
+                "EntryValueBits",
+            ))],
+            U64ApplicationValueBinding::encode(&u64::MAX)
+                .unwrap()
+                .semantic_byte_width(),
+        ))
     }
     fn derive_correction(
         original: &EntryCorrection,
@@ -70,9 +84,9 @@ impl<Schema: TopologySchemaBinding> ApplicationCorrectionBinding<Schema>
         };
         let prior = U64ApplicationValueBinding::decode(
             preimage
-                .field(&DeclaredPreImageLocus::from_field(
-                    EntryValueBits::reference(),
-                ))
+                .field(&DeclaredPreImageLocus::from_field(EntryValueBits::at(
+                    "EntryValueBits",
+                )))
                 .ok_or(MissingPreImage)?,
         )
         .map_err(|_| InvalidPreImage)?;

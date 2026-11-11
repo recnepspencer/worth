@@ -18,7 +18,14 @@ impl<Schema: ApplicationSchema, Operation, Input, Scope>
         elevation_currentness: Option<WorthQueryElevationCommitCurrentness>,
         aftermath_causality: Option<WorthQueryPendingAftermathCausality>,
     ) -> Result<
-        super::super::running::WorthQueryRunningApplicationCommit<Schema, Operation, Input, Scope>,
+        super::super::running::completion_storage::PhaseStorage<
+            super::super::running::WorthQueryRunningApplicationCommit<
+                Schema,
+                Operation,
+                Input,
+                Scope,
+            >,
+        >,
         WorthQueryApplicationCommitOutcome,
     >
     where
@@ -38,6 +45,8 @@ impl<Schema: ApplicationSchema, Operation, Input, Scope>
             WorthQueryApplicationCommitPreparation::Ready(prepared) => prepared,
             WorthQueryApplicationCommitPreparation::Terminal(outcome) => return Err(outcome),
         };
-        start_managed_application_commit(phase, application, prepared)
+        let storage = super::super::running::completion_storage::PhaseStorage::prepare(execution)?;
+        let running = start_managed_application_commit(phase, application, prepared)?;
+        Ok(storage.fill(running))
     }
 }

@@ -1,0 +1,17 @@
+Command: ["C:\\Users\\shepworth\\AppData\\Local\\Programs\\Python\\Python314\\python.exe", "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\scripts\\test_cost\\account.py", "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\workspaces\\worth-query\\crates\\worth-query-certification\\fixtures\\consumer_entry\\target\\debug\\examples\\shared_execution.exe"]
+Working directory: C:\programming\worth worktees\worktrees\m3-host-home\workspaces\worth-query\crates\worth-query-certification\fixtures\consumer_entry\topology_entry
+HEAD: 4d063ecf8da0e13d3b7b92f73a8865185a9afce2
+Git status --short empty: True
+Start: 2026-11-07T07:14:04.299772+00:00
+
+{"type": "cargo-invocation", "command": ["C:\\Users\\shepworth\\AppData\\Local\\Programs\\Python\\Python314\\python.exe", "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\scripts\\test_cost\\account.py", "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\workspaces\\worth-query\\crates\\worth-query-certification\\fixtures\\consumer_entry\\target\\debug\\examples\\shared_execution.exe"], "cwd": "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\workspaces\\worth-query\\crates\\worth-query-certification\\fixtures\\consumer_entry\\topology_entry", "capture": "separate", "mode": "build", "target_dir": null, "cargo_profile": null}
+
+
+thread 'main' (32224) has overflowed its stack
+
+{"type": "cargo-result", "exit_code": 3221225725}
+
+End: 2026-11-07T07:14:08.422456+00:00
+Exit code: 3221225725
+
+{"type": "test", "event": "failed", "name": "worth-query-topology-entry::example/shared_execution$<main>", "exec_time": 4.680782499723136, "test-cost": {"execution": "standalone-process", "target-kind": "example"}}

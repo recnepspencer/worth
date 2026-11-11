@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::evidence_identity::{
     worth_query_evidence_identity, WorthQueryEvidenceScope, WorthQueryEvidenceTag,
 };
@@ -35,7 +36,9 @@ pub struct WorthQueryExistingTruthBindingEvidence {
 }
 
 impl WorthQueryExistingTruthBindingEvidence {
-    pub(in crate::runtime) fn from_bridge(binding: &BridgeExistingTruthBindingBundle) -> Self {
+    pub(in crate::runtime) fn from_bridge(
+        binding: &BridgeExistingTruthBindingBundle,
+    ) -> Result<Self, IdentityDerivationDenial> {
         let family = match binding.family() {
             BridgeExistingTruthBindingFamily::DirectEntityIdentity => {
                 crate::runtime::WorthQueryExistingTruthBindingFamily::DirectEntityIdentity
@@ -53,15 +56,21 @@ impl WorthQueryExistingTruthBindingEvidence {
             WorthQueryMutationAuthorityIdentity::from_bridge_existing_truth_authority(
                 "existing-truth-binding-authority",
                 binding.authoritative_identity_handle(),
-            );
+            )?;
         let resolved_entity_identity = WorthQueryEntityIdentity::from_relational_record(
             binding
                 .resolved_target_identity_handle()
                 .relational_record_parts(),
         );
-        let target_collection = binding.target_collection().map(|collection| {
-            WorthQueryMutationTargetCollectionIdentity::new("existing-truth-binding", collection)
-        });
+        let target_collection = binding
+            .target_collection()
+            .map(|collection| {
+                WorthQueryMutationTargetCollectionIdentity::new(
+                    "existing-truth-binding",
+                    collection,
+                )
+            })
+            .transpose()?;
         let binding_identity =
             worth_query_evidence_identity(WorthQueryEvidenceScope::MutationEvidenceAggregateDigest)
                 .field_shape(WorthQueryEvidenceTag::new("role"), "existing-truth-binding")
@@ -81,8 +90,8 @@ impl WorthQueryExistingTruthBindingEvidence {
                         .as_ref()
                         .map(WorthQueryMutationTargetCollectionIdentity::evidence_identity),
                 )
-                .seal();
-        Self {
+                .seal()?;
+        Ok(Self {
             family,
             outcome,
             authoritative_identity,
@@ -91,13 +100,13 @@ impl WorthQueryExistingTruthBindingEvidence {
             binding_digest: WorthQueryMutationEvidenceDigest::aggregate(
                 "existing-truth-binding",
                 binding_identity,
-            ),
-        }
+            )?,
+        })
     }
 
     pub(in crate::runtime) fn from_binding(
         binding: &crate::runtime::WorthQueryExistingTruthTargetBinding,
-    ) -> Self {
+    ) -> Result<Self, IdentityDerivationDenial> {
         let resolved_entity_identity = binding
             .resolved_target_identity()
             .relational_record_parts()
@@ -105,7 +114,7 @@ impl WorthQueryExistingTruthBindingEvidence {
             .expect(
                 "existing-truth binding evidence must carry a relational record target identity",
             );
-        Self {
+        Ok(Self {
             family: binding.family(),
             outcome: WorthQueryExistingTruthBindingOutcome::ExistingAuthoritativeTarget,
             authoritative_identity: binding.authoritative_identity().clone(),
@@ -114,8 +123,8 @@ impl WorthQueryExistingTruthBindingEvidence {
             binding_digest: WorthQueryMutationEvidenceDigest::source_identity(
                 "existing-truth-binding",
                 binding.binding_evidence_identity(),
-            ),
-        }
+            )?,
+        })
     }
 
     pub fn family(&self) -> crate::runtime::WorthQueryExistingTruthBindingFamily {

@@ -35,7 +35,7 @@ impl BridgeCausalEnvelopeIdentity {
         causal_observation_anchor_identity: BridgeIdentityEvidence,
         evidence_binding_identity: BridgeIdentityEvidence,
         counter_identity: BridgeIdentityEvidence,
-    ) -> Self {
+    ) -> Result<Self, crate::diagnostics::causal_envelope::BridgeCausalDigestRefusal> {
         let envelope_identity = compose_bridge_causal_envelope_evidence_identity(
             BridgeCausalEnvelopeDigestArtifact::Identity,
             &[
@@ -44,14 +44,14 @@ impl BridgeCausalEnvelopeIdentity {
                 evidence_part(&evidence_binding_identity),
                 evidence_part(&counter_identity),
             ],
-        );
-        Self {
+        )?;
+        Ok(Self {
             request_identity,
             causal_observation_anchor_identity,
             evidence_binding_identity,
             counter_identity,
             envelope_identity,
-        }
+        })
     }
 
     pub fn request_for_reporting(&self) -> &str {

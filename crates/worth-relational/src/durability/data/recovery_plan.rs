@@ -72,6 +72,13 @@ pub enum RecoveryAuthorityParity {
 
 #[derive(Debug, Clone)]
 pub struct RecoveryPlan {
+    pub(crate) home_world_selection: Option<
+        std::sync::Arc<
+            worth_proof::VerifiedHomeWorldSelection<
+                std::sync::Arc<crate::durability::RelationalWorldSourceCatalog>,
+            >,
+        >,
+    >,
     pub(crate) original_source: Option<
         std::sync::Arc<
             crate::durability::source_initial_inputs::source_admission::SourceOriginalInputs,
@@ -171,6 +178,7 @@ impl RecoveryPlan {
             .as_ref()
             .map(crate::durability::access::checkpoint_coverage);
         Self {
+            home_world_selection: None,
             original_source: None,
             config,
             cold_source,

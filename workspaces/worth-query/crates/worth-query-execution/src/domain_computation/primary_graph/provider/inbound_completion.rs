@@ -50,7 +50,6 @@ pub enum WorthQueryInboundCompletionPreparationDenial {
     ValidationUnavailable,
     PreparationUnavailable,
     SnapshotUnavailable,
-    IndexPreparationUnavailable,
     InstalledBindingMismatch,
     DispatchOwnerMismatch,
 }
@@ -192,13 +191,9 @@ impl WorthQueryPrimaryGraphProvider {
                 let validated = transaction
                     .validate(execution, runtime)
                     .map_err(|error| preparation_denial::validation_denial(&error))?;
-                let mut candidate = runtime
+                let candidate = runtime
                     .prepare_validated_proposal(execution, validated)
                     .map_err(|error| preparation_denial::preparation_denial(&error))?;
-                crate::domain_computation::primary_graph::index_maintenance_budget::prepare_candidate_with_cold_fallback(execution,
-                    runtime, &mut candidate, &self.graph.primary_index_ids, &before,
-                    crate::domain_computation::primary_graph::index_maintenance_budget::ordinary_index_maintenance_budget(),
-                ).map_err(|_| Denial::IndexPreparationUnavailable)?;
                 Ok(candidate)
             })();
             crate::relational_snapshot_release::release_query_snapshot(runtime, &before);

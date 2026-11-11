@@ -9,26 +9,36 @@ use crate::{oracle::CanonicalBits, report::ChargedBytes};
 
 use super::{
     value_storage::{BoundedValues, ValueStorage},
-    Link, Node, ReductionMetrics, ReductionRunFailure, ReductionRunStop,
+    Admitted, Link, Node, ReductionMetrics, ReductionRunFailure, ReductionRunStop,
 };
 
 /// One node policy; both reduction values and native settled slots use the
 /// same Cartesian insertion, path copying, deletion and merge machinery.
 pub(super) trait NodeEngine<T, E> {
     fn inspect(&mut self) {}
-    fn validate(&self, value: &T) -> Result<(), ReductionRunStop<E>>;
-    fn same(&self, left: &T, right: &T) -> Result<bool, ReductionRunStop<E>>;
+    fn admit(&self, value: T) -> Result<Admitted<T>, ReductionRunStop<E>>;
+    fn same(&self, left: &Admitted<T>, right: &Admitted<T>) -> Result<bool, ReductionRunStop<E>>;
     fn build(
         &mut self,
         identity: PartitionIdentity,
         value: T,
         left: Link<T>,
         right: Link<T>,
+    ) -> Result<Arc<Node<T>>, ReductionRunStop<E>> {
+        let value = self.admit(value)?;
+        self.build_proven(identity, value, left, right)
+    }
+    fn build_proven(
+        &mut self,
+        identity: PartitionIdentity,
+        value: Admitted<T>,
+        left: Link<T>,
+        right: Link<T>,
     ) -> Result<Arc<Node<T>>, ReductionRunStop<E>>;
     fn carry(
         &mut self,
         old: &Arc<Node<T>>,
-        value: T,
+        value: Admitted<T>,
         left: Link<T>,
         right: Link<T>,
     ) -> Result<Arc<Node<T>>, ReductionRunStop<E>>;
@@ -41,25 +51,25 @@ where
     F: Fn(&T, &T) -> T,
     H: FnMut() -> Result<(), E>,
 {
-    fn validate(&self, value: &T) -> Result<(), ReductionRunStop<E>> {
-        self.validate(value)
+    fn admit(&self, value: T) -> Result<Admitted<T>, ReductionRunStop<E>> {
+        self.admit(value)
     }
-    fn same(&self, left: &T, right: &T) -> Result<bool, ReductionRunStop<E>> {
+    fn same(&self, left: &Admitted<T>, right: &Admitted<T>) -> Result<bool, ReductionRunStop<E>> {
         self.same(left, right)
     }
-    fn build(
+    fn build_proven(
         &mut self,
         id: PartitionIdentity,
-        value: T,
+        value: Admitted<T>,
         left: Link<T>,
         right: Link<T>,
     ) -> Result<Arc<Node<T>>, ReductionRunStop<E>> {
-        self.build(id, value, left, right)
+        self.build_proven(id, value, left, right)
     }
     fn carry(
         &mut self,
         old: &Arc<Node<T>>,
-        value: T,
+        value: Admitted<T>,
         left: Link<T>,
         right: Link<T>,
     ) -> Result<Arc<Node<T>>, ReductionRunStop<E>> {
@@ -158,11 +168,35 @@ where
         self.storage.validate(value)
     }
 
-    pub(super) fn same(&self, left: &T, right: &T) -> Result<bool, ReductionRunStop<E>> {
-        Ok(self.storage.canonical(left)? == self.storage.canonical(right)?)
+    pub(super) fn admit(&self, value: T) -> Result<Admitted<T>, ReductionRunStop<E>> {
+        let canonical = Arc::new(self.storage.canonical(&value)?);
+        Ok(Admitted {
+            value,
+            canonical: Some(canonical),
+        })
+    }
+    pub(super) fn same(
+        &self,
+        left: &Admitted<T>,
+        right: &Admitted<T>,
+    ) -> Result<bool, ReductionRunStop<E>> {
+        let a = self.proof(left, false)?;
+        let b = self.proof(right, false)?;
+        Ok(a == b)
+    }
+    fn proof<'v>(
+        &self,
+        value: &'v Admitted<T>,
+        payload: bool,
+    ) -> Result<&'v super::value_storage::CanonicalBytes, ReductionRunStop<E>> {
+        let proof = value.canonical.as_deref().ok_or(ReductionRunStop::Denial(
+            super::ReductionDenial::InvalidCanonicalEncoding,
+        ))?;
+        self.storage.check_proof(&value.value, proof, payload)?;
+        Ok(proof)
     }
 
-    fn call(&mut self, left: &T, right: &T) -> Result<T, ReductionRunStop<E>> {
+    fn call(&mut self, left: &T, right: &T) -> Result<Admitted<T>, ReductionRunStop<E>> {
         (self.before_combine)().map_err(ReductionRunStop::Hook)?;
         if self.metrics.has_accounting() {
             self.metrics
@@ -171,8 +205,7 @@ where
         }
         let value = catch_unwind(AssertUnwindSafe(|| (self.combine)(left, right)))
             .map_err(|_| ReductionRunStop::Panic)?;
-        self.validate(&value)?;
-        Ok(value)
+        self.admit(value)
     }
 
     pub(super) fn build(
@@ -182,9 +215,23 @@ where
         left: Link<T>,
         right: Link<T>,
     ) -> Result<Arc<Node<T>>, ReductionRunStop<E>> {
-        self.validate(&value)?;
-        let left_aggregate = left.as_ref().map_or(self.identity, |node| &node.aggregate);
-        let right_aggregate = right.as_ref().map_or(self.identity, |node| &node.aggregate);
+        let value = self.admit(value)?;
+        self.build_proven(identity, value, left, right)
+    }
+    pub(super) fn build_proven(
+        &mut self,
+        identity: PartitionIdentity,
+        value: Admitted<T>,
+        left: Link<T>,
+        right: Link<T>,
+    ) -> Result<Arc<Node<T>>, ReductionRunStop<E>> {
+        self.proof(&value, true)?;
+        let left_aggregate = left
+            .as_ref()
+            .map_or(self.identity, |node| &node.aggregate.value);
+        let right_aggregate = right
+            .as_ref()
+            .map_or(self.identity, |node| &node.aggregate.value);
         let middle = self.call(left_aggregate, &value)?;
         let aggregate = self.call(&middle, right_aggregate)?;
         if self.metrics.has_accounting() {
@@ -198,7 +245,7 @@ where
     pub(super) fn carry(
         &self,
         old: &Arc<Node<T>>,
-        value: T,
+        value: Admitted<T>,
         left: Link<T>,
         right: Link<T>,
     ) -> Result<Arc<Node<T>>, ReductionRunStop<E>> {
@@ -216,12 +263,22 @@ where
 fn make_node<T, E>(
     storage: &impl ValueStorage<T>,
     identity: PartitionIdentity,
-    value: T,
-    aggregate: T,
+    value: Admitted<T>,
+    aggregate: Admitted<T>,
     left: Link<T>,
     right: Link<T>,
 ) -> Result<Arc<Node<T>>, ReductionRunStop<E>> {
-    let (retained_bytes, memory) = storage.node(&value, &aggregate, &left, &right)?;
+    let (retained_bytes, memory) = storage.node(&value.value, &aggregate.value, &left, &right)?;
+    let retained_bytes = retained_bytes
+        .map(|bytes| {
+            let proof_bytes =
+                |value: &Admitted<T>| value.canonical.as_ref().map_or(0, |p| p.retained_bytes());
+            bytes
+                .checked_add(proof_bytes(&value))
+                .and_then(|n| n.checked_add(proof_bytes(&aggregate)))
+                .ok_or(ReductionRunStop::ResultCapacityExceeded)
+        })
+        .transpose()?;
     let full_subtree_span = if storage.has_accounting() {
         let span = |link: &Link<T>| match link {
             None => Ok(0),

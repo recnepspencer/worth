@@ -1,9 +1,14 @@
+pub(crate) use publication::BoundAuthoredCoupling;
 mod observation;
 pub use crate::history::data::{RelationalCallerAssociation, RelationalCallerAssociationRefusal};
 pub(crate) mod publication;
 pub use publication::RelationalPublicationReadDependencyDenial;
 pub use publication::{PreparedMemoryRelationalCutover, ScopedRelationalPublication};
+pub(crate) mod owned_graph_selection;
 pub(crate) mod retained_entity_selection;
+pub use owned_graph_selection::{
+    RelationalOwnedGraphSelection, RelationalOwnedGraphSelectionPreparationError,
+};
 mod transaction;
 pub(crate) use transaction::normalized_plan as plan_copy_admission;
 pub(crate) use transaction::normalized_plan::OwnedNormalizedPlan;
@@ -42,14 +47,19 @@ pub use publication::{
     RetiredPublicationCompanionRegistration, StaleRelationalBranchObservation,
 };
 pub(crate) use publication::{
-    ManagedSourceHistoryOwner, ManagedSourceRootImage, PreparedIndexRefreshBasis,
-    PreparedManagedIndexSourceFork, PreparedRelationalCandidateAdmissionStop,
-    PreparedRelationalPublication, PreparedRelationalPublicationAccelerators,
-    PublicationPreparationDenial,
+    ManagedSourceHistoryOwner, ManagedSourceRootImage, PreparedManagedIndexSourceFork,
+    PreparedRelationalCandidateAdmissionStop, PreparedRelationalPublication,
+    PreparedRelationalPublicationAccelerators, PublicationPreparationDenial,
 };
 pub use publication::{
-    RelationalAuthoredRestoration, RelationalAuthoredRetirement,
-    RelationalRequiredOutputPublication, RelationalRequiredOutputRouteAbsence,
+    RelationalAuthoredCoupledCandidate, RelationalAuthoredCoupledOwners,
+    RelationalAuthoredCoupledProducerAssembly, RelationalAuthoredCoupledTransaction,
+    RelationalAuthoredRestoration, RelationalAuthoredRetirement, RelationalCoupledAssemblyFailure,
+    RelationalCoupledAuthoredPublication, RelationalDeclaredCoupledOwner,
+    RelationalHistoricalOutputSelection, RelationalPerformedOutputPublications,
+    RelationalPredecessorBasisDenial, RelationalPredecessorBasisOrigin,
+    RelationalPreparedOutputPublications, RelationalRequiredOutputPublication,
+    RelationalRequiredOutputRouteAbsence, RelationalRestoredProducerPrior,
     RequiredOutputProducingImplementation, RequiredOutputPublication,
     RequiredOutputPublicationMeaning, RequiredOutputRolePosture, RequiredOutputRoleTarget,
 };
@@ -68,7 +78,8 @@ pub use transaction::{
     RelationalPreparationPort, RelationalTransactionEntityRead, RelationalTransactionFootprint,
     RelationalTransactionIntent, RelationalTransactionReadDenial, RelationalTransactionReadLocus,
     RelationalTransactionRelationRead, RelationalTransactionRelationValue,
-    RelationalTransactionStagingDenial, RelationalTransactionWriteLocus,
+    RelationalTransactionStagedMutations, RelationalTransactionStagingDenial,
+    RelationalTransactionWriteLocus,
 };
 pub(crate) use validation::RelationalTransactionValidationInput;
 pub use validation::{
@@ -77,7 +88,8 @@ pub use validation::{
     ValidatedEntityStructTouch, ValidatedMutationFootprint, ValidatedMutationFootprintNotRequested,
     ValidatedMutationFootprintProjection, ValidatedMutationFootprintWork, ValidatedMutationTouch,
     ValidatedMutationTouchProjectionError, ValidatedMutationTouchProjectionWork,
-    ValidatedMutationTouches, ValidatedRelationalProposal,
+    ValidatedMutationTouches, ValidatedRelationMutation, ValidatedRelationMutationFootprint,
+    ValidatedRelationalProposal,
 };
 
 #[cfg(test)]
@@ -87,3 +99,7 @@ pub(crate) use publication::{native_birth_fixture, native_meaning_fixture};
 pub(crate) use publication::native_roles_fixture;
 
 pub(crate) use validation::ValidatedProposalState;
+#[cfg(test)]
+#[path = "mod_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;
+pub(crate) use publication::require_graph_coverage;

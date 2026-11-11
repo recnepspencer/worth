@@ -14,7 +14,6 @@ impl<'runtime, S: ApplicationSchema, H: ApplicationHistoryBinding<S>>
     ) -> Result<WorthQueryHistoryGroupMemberAdmission, WorthQueryDocumentHistoryDenial>
     where
         M: ApplicationMutationBinding<S, SourceExpectation = NoApplicationMutationSource>,
-        M::ScopeBinding: ApplicationMutationScopeBinding<S, Scope = ApplicationHistoryModel<S, H>>,
     {
         use WorthQueryDocumentHistoryDenial as Denial;
         self.application()
@@ -39,6 +38,7 @@ impl<'runtime, S: ApplicationSchema, H: ApplicationHistoryBinding<S>>
         }
         let selected = self.selection.lock();
         Ok(WorthQueryHistoryGroupMemberAdmission {
+            operation_scope: HistoryOperationScope::from_admitted(operation.admitted),
             parent: selected.journal.current_step().id(),
             expected: selected.expected.clone(),
             model: self.model.clone(),
@@ -127,12 +127,17 @@ impl<'runtime, S: ApplicationSchema, H: ApplicationHistoryBinding<S>>
             .len()
             .checked_mul(
                 std::mem::size_of::<WorthQueryApplicationIdempotencyBinding>()
+                    + std::mem::size_of::<HistoryOperationScope>()
                     + std::mem::size_of::<CapturedMember>(),
             )
             .ok_or(Denial::GroupMemberLimitExceeded)?;
         let (allocation, _) =
             allocation::HistoryInsertionAllocation::reserve::<Self>(&execution, 0, bytes)
                 .map_err(Denial::Recording)?;
+        let scopes = members
+            .iter()
+            .map(|member| member.operation_scope.clone())
+            .collect();
         let completed = Vec::with_capacity(members.len());
         let label = &installed.definition().parts().operations[first.operation_index].label;
         let members = members.into_iter().map(|member| member.meaning).collect();
@@ -142,12 +147,15 @@ impl<'runtime, S: ApplicationSchema, H: ApplicationHistoryBinding<S>>
         Ok(WorthQueryDocumentHistoryGroupPreparation::Reserved(
             WorthQueryDocumentHistoryGroupReservation {
                 reservation: WorthQueryDocumentHistoryReservation {
+                    operation_scope: None,
                     record,
                     expected,
                     meaning,
                 },
                 members,
+                scopes,
                 completed,
+                outputs: None,
                 candidate: None,
                 _allocation: allocation,
             },
@@ -218,12 +226,16 @@ impl<'runtime, S: ApplicationSchema, H: ApplicationHistoryBinding<S>>
         let WorthQueryDocumentHistoryGroupReservation {
             reservation,
             members,
+            scopes,
             completed,
+            outputs,
             candidate,
             _allocation,
         } = group;
+        drop(outputs);
         drop(completed);
         drop(members);
+        drop(scopes);
         Ok(WorthQueryDocumentHistoryGroupAborting {
             reservation,
             runtime_authority: self.application().runtime.authority_identity().as_u64(),

@@ -1,0 +1,16 @@
+COMMAND: ["C:/Program Files/Git/bin/bash.exe", "scripts/ci/check_workspace_rust_line_caps.sh", "dirty"]
+HEAD: 307539feba2f331a8b7406f3a69868bc3ee3b45d
+CLEAN: false
+START: 2026-11-08T22:03:23.447437+00:00
+ENV: removed stale external linker override; RUST_MIN_STACK unset in parent
+[workspace-rust-line-caps] enforcing 400-line cap for dirty Rust files
+warning: in the working copy of 'crates/worth-relational/src/indexes/authority/maintenance/candidate.rs', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'crates/worth-relational/src/mvcc/publication/port_cutover.rs', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'crates/worth-relational/src/runtime/state/subsystems/indexing.rs', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'crates/worth-relational/src/runtime/state/subsystems/indexing/cold_checkpoint.rs', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'crates/worth-relational/src/runtime/state/subsystems/indexing/generation_catalog/admitted_publication.rs', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'crates/worth-relational/src/runtime/state/subsystems/indexing/prepared_publication.rs', LF will be replaced by CRLF the next time Git touches it
+[workspace-rust-line-caps] PASS: checked 16 Rust files
+
+END: 2026-11-08T22:03:38.073264+00:00
+EXIT: 0

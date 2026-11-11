@@ -19,7 +19,10 @@ impl<Schema: ApplicationSchemaComposition, Program: 'static> AuthorityMarker
 {
 }
 
-pub(super) fn finish_service<Schema: ApplicationSchemaComposition, Program: 'static>(
+pub(in crate::application_home) fn finish_service<
+    Schema: ApplicationSchemaComposition,
+    Program: 'static,
+>(
     phase: &WorthQueryBootstrapAdvancementPhase<'_>,
     query: ReadmittedHomeQueryService<Schema, Program>,
     home: DirectoryHome,
@@ -47,12 +50,25 @@ pub(super) fn finish_service<Schema: ApplicationSchemaComposition, Program: 'sta
         ApplicationHomeOpeningEdge::Before,
     );
     let settled = custody.consume(|HomeServiceCustody { query, home }| {
+        let obligations = home.query_obligations_medium();
+        let material = home.query_corrections_medium();
+        let dispatch = super::super::dispatch_journal::HomeQueryDispatchMedium::over(
+            home.query_dispatch_journal_operation(),
+        );
         match home.readmit_no_pending_owners(&phase.execution_request()) {
             Ok(home) => Ok(TransitionSettled::from_owner(SettledHomeService {
                 query,
                 home,
             })),
-            Err(home) => Err(WorthQueryApplicationHomeOpenRefused::OwnerAdmission { query, home }),
+            Err(home) => Err(WorthQueryApplicationHomeOpenRefused::OwnerAdmission {
+                query: super::super::UnadmittedHomeQueryService::retain(
+                    query,
+                    obligations,
+                    material,
+                    dispatch,
+                ),
+                home,
+            }),
         }
     })?;
     let home = settled.consume(

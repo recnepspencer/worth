@@ -5,8 +5,7 @@ use worth_query_consumer_values::{PlanarAdjustmentResult, PlanarMutationDenial};
 use worth_query_decl::facade::{
     worth_query_effect, worth_query_operation, worth_query_operation_creates,
     worth_query_operation_emits, worth_query_operation_links, worth_query_operation_reads,
-    worth_query_operation_unlinks, worth_query_operation_writes,
-    worth_query_structured_value_binding,
+    worth_query_operation_unlinks, worth_query_structured_value_binding,
 };
 
 pub struct EscapingNoticePayload;
@@ -42,8 +41,8 @@ worth_query_structured_value_binding!(pub EscapingPlanarInputBinding for Escapin
 });
 worth_query_operation!(pub EscapePlanar for Schema: TopologySchemaBinding, input EscapingPlanarInputBinding);
 worth_query_operation_emits!(EscapePlanar => [EscapingPlanarNotice]);
-worth_query_operation_reads!(EscapePlanar => [Body, BodyKey, PositionX, PositionY, Length, PlanarSuccessor]);
-worth_query_operation_writes!(EscapePlanar => [BodyKey, PositionX, PositionY, Length]);
+worth_query_operation_reads!(EscapePlanar => [Body, PlanarSuccessor]);
+
 worth_query_operation_creates!(EscapePlanar => [Body]);
 worth_query_operation_links!(EscapePlanar => [PlanarSuccessor]);
 worth_query_operation_unlinks!(EscapePlanar => [PlanarSuccessor]);
@@ -60,7 +59,7 @@ impl<S: TopologySchemaBinding> ApplicationMutationBinding<S> for EscapingPlanarB
     type Denial = PlanarMutationDenial;
     type DenialBinding = PlanarMutationDenialBinding;
     type Output = PlanarOutputs;
-    type ScopeBinding = PlanarMutationScope<S>;
+    type ScopeBinding = PlanarMutationScope;
     type PrincipalBinding = ConsumerPrincipalBinding;
     type Mapping = ExternalPrincipalMapping;
     type Principal = Principal;
@@ -74,17 +73,8 @@ impl<S: TopologySchemaBinding> ApplicationMutationBinding<S> for EscapingPlanarB
     fn workflow_execution_requirements() -> ApplicationWorkflowExecutionRequirements {
         ApplicationWorkflowExecutionRequirements::not_applicable()
     }
-    fn scope_field() -> ApplicationFieldRef<
-        S,
-        Body,
-        PlanarPosition,
-        BodyKey,
-        String,
-        ReadOnly,
-        EqualityPredicate,
-        NoApplicationUnit,
-    > {
-        BodyKey::reference()
+    fn scope_field() -> BodyKey {
+        BodyKey::at("BodyKey")
     }
     fn principal_binding() -> ApplicationPrincipalBindingRef<
         S,
@@ -102,7 +92,7 @@ impl<S: TopologySchemaBinding> ApplicationMutationIntent<S> for EscapingPlanarIn
     fn input(&self) -> &Self {
         self
     }
-    fn scope_binding(&self) -> PlanarMutationScope<S> {
-        PlanarMutationScope::new(BodyKey::reference(), self.0.scope_key.clone())
+    fn scope_binding(&self) -> PlanarMutationScope {
+        PlanarMutationScope::new(BodyKey::at("BodyKey"), self.0.scope_key.clone())
     }
 }

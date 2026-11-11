@@ -5,6 +5,7 @@ use worth_query_decl::facade::application_program::{
     ApplicationAction, ApplicationConnectionShape, ApplicationFixedActionDelivery,
     ApplicationOutputEdgeShape, ApplicationOutputGraphShape,
 };
+use worth_query_host::facade::application_entry::WorthQueryHistoryOutputsMode;
 use worth_query_host::facade::primary_graph::WorthQueryOutputDemandDenialKind;
 
 mod disposal;
@@ -16,9 +17,13 @@ type Group<'a, Outputs = WorthQueryHistoryNoOutputs> = WorthQueryGroupedHistoryD
     'a,
     ConsumerSchema,
     History,
-    Original,
     FixedProgram,
-    FixedAction,
+    worth_query_host::facade::application_entry::WorthQueryHistoryTypedMembers<
+        ConsumerSchema,
+        Original,
+        FixedProgram,
+        FixedAction,
+    >,
     OrdinaryHistoryPayload,
     Outputs,
 >;
@@ -65,7 +70,7 @@ fn group<'a, Outputs>(
             .unwrap_or_else(|(_, cause)| panic!("capture original grouped fixed trees: {cause:?}"))
     })
 }
-fn until<Outputs>(
+fn until<Outputs: WorthQueryHistoryOutputsMode<ConsumerSchema, History>>(
     app: &App,
     group: &mut Group<'_, Outputs>,
     mut ready: impl FnMut(&mut Group<'_, Outputs>) -> bool,
@@ -134,7 +139,7 @@ fn two_fixed_members_keep_their_original_trees_and_record_the_last_complete_endp
         );
         (
             tree.observation().selected_commit().clone(),
-            child.commit_reference().commit_id.clone(),
+            child.commit_reference().commit_id,
         )
     };
     until(app, &mut group, |group| {

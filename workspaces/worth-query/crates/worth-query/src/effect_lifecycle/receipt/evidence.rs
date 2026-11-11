@@ -117,7 +117,7 @@ impl EffectReceiptDecisionTrace {
                     WorthQueryEvidenceTag::new("authority_owner"),
                     authority_owner.as_str(),
                 )
-                .seal();
+                .seal().expect("fixed performed artifact grammar: closed labels, primitive coordinates, sealed identities, and Bridge-owned SHA256 output tokens");
         Self {
             admitted_or_batch_identity,
             lowered_identity,
@@ -179,7 +179,7 @@ impl EffectReceiptIntegrityMarkers {
                     &counter_snapshot_identity,
                 )
                 .field_evidence_identity(WorthQueryEvidenceTag::new("receipt"), receipt_identity)
-                .seal();
+                .seal().expect("fixed performed artifact grammar: closed labels, primitive coordinates, sealed identities, and Bridge-owned SHA256 output tokens");
         Self {
             authority_artifact_identity,
             counter_snapshot_identity,

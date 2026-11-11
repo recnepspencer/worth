@@ -12,6 +12,7 @@ fn continuation_test_identity(label: &str) -> WorthQueryEvidenceIdentity {
         )
         .field_shape(WorthQueryEvidenceTag::new("label"), label)
         .seal()
+        .expect("fixture digest must fit")
 }
 
 #[test]
@@ -231,7 +232,8 @@ fn future_bearing_continuation_retains_checkpoint_and_future_identity() {
                 "request",
                 "employees",
             )],
-        ),
+        )
+        .expect("fixture digest must fit"),
         1,
         2,
         DeliveryBackpressurePolicy::RetainWithinWindow,

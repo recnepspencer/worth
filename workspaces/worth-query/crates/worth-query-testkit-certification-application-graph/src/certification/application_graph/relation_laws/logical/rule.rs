@@ -27,7 +27,8 @@ pub fn definition<L: LawPolicy>() -> ApplicationInvariantDefinition<GraphSchema<
         ),
     )
 }
-pub type Entity<L> = WorthQueryApplicationInvariantEntity<GraphSchema<L>, Node>;
+pub type Entity<L> =
+    WorthQueryApplicationInvariantEntity<GraphSchema<L>, GraphNode<GraphSchema<L>>>;
 pub type Member<L> = WorthQueryApplicationInvariantGraphMember<GraphSchema<L>, Uses>;
 pub type Coordinate = (EntityId, String);
 #[derive(Debug, PartialEq)]
@@ -42,13 +43,26 @@ pub struct Root<L: LawPolicy> {
 }
 pub struct Rule<L: LawPolicy> {
     pub observer: Option<observation::Observer>,
-    pub node: WorthQueryApplicationInvariantEntityBinding<GraphSchema<L>, Node>,
-    pub physical:
-        WorthQueryApplicationInvariantRelationBinding<GraphSchema<L>, Precedes, Node, Node>,
-    pub negative:
-        WorthQueryApplicationInvariantProjectedCaseBinding<GraphSchema<L>, Uses, Node, Negative>,
-    pub roots:
-        WorthQueryApplicationInvariantDerivedRelationBinding<GraphSchema<L>, RootUses, Node, Uses>,
+    pub node:
+        WorthQueryApplicationInvariantEntityBinding<GraphSchema<L>, GraphNode<GraphSchema<L>>>,
+    pub physical: WorthQueryApplicationInvariantRelationBinding<
+        GraphSchema<L>,
+        GraphPrecedes<GraphSchema<L>>,
+        GraphNode<GraphSchema<L>>,
+        GraphNode<GraphSchema<L>>,
+    >,
+    pub negative: WorthQueryApplicationInvariantProjectedCaseBinding<
+        GraphSchema<L>,
+        Uses,
+        GraphNode<GraphSchema<L>>,
+        Negative,
+    >,
+    pub roots: WorthQueryApplicationInvariantDerivedRelationBinding<
+        GraphSchema<L>,
+        RootUses,
+        GraphNode<GraphSchema<L>>,
+        Uses,
+    >,
     pub source: WorthQueryApplicationInvariantDerivedRelationBinding<
         GraphSchema<L>,
         UseSuccessor,
@@ -62,9 +76,11 @@ pub fn resolve<L: LawPolicy>(
 ) -> Result<Rule<L>, String> {
     Ok(Rule {
         observer: L::logical_read_observer(),
-        node: resolver.typed_entity(Node::reference()).ok_or("Node")?,
+        node: resolver
+            .typed_entity(node::<GraphSchema<L>>())
+            .ok_or("Node")?,
         physical: resolver
-            .typed_relation(Precedes::reference())
+            .typed_relation(precedes::<GraphSchema<L>>())
             .ok_or("Precedes")?,
         negative: resolver
             .typed_projected_case(Uses::reference(), Negative::reference())
@@ -160,7 +176,7 @@ impl<L: LawPolicy> Rule<L> {
     pub fn prepare(
         &self,
         planner: &mut WorthQueryApplicationInvariantScopePlanner<'_, '_, GraphSchema<L>>,
-    ) -> Result<Vec<Root<L>>, WorthQueryApplicationInvariantPreparationError> {
+    ) -> Result<Vec<Root<L>>, WorthQueryApplicationInvariantError> {
         let proposed = planner.proposed();
         let committed = planner.committed();
         // The default Logical policy exercises census; LocalLogical measures scoped reads.
@@ -196,10 +212,8 @@ impl<L: LawPolicy> Rule<L> {
         &self,
         context: &WorthQueryApplicationInvariantContext<'_, '_, GraphSchema<L>>,
         roots: &[Root<L>],
-    ) -> Result<
-        WorthQueryApplicationInvariantVerdict<()>,
-        WorthQueryApplicationInvariantExecutionError,
-    > {
+    ) -> Result<WorthQueryApplicationInvariantVerdict<()>, WorthQueryApplicationInvariantError>
+    {
         let proposed = context.proposed();
         let committed = context.committed();
         if L::LOGICAL_CENSUS {
@@ -207,9 +221,7 @@ impl<L: LawPolicy> Rule<L> {
             committed.graph_components(&self.set).map_err(execution)?;
         }
         for root in roots {
-            context
-                .check_live()
-                .map_err(|cause| execution(format!("{cause:?}")))?;
+            context.check_live().map_err(execution)?;
             assert_eq!(
                 self.inspect(&proposed, &root.proposed).map_err(execution)?,
                 root.proposed_answer
@@ -234,16 +246,16 @@ impl<L: LawPolicy> WorthQueryApplicationInvariantRule<GraphSchema<L>> for Rule<L
     fn prepare_scope(
         &self,
         planner: &mut WorthQueryApplicationInvariantScopePlanner<'_, '_, GraphSchema<L>>,
-    ) -> Result<Self::Scope, WorthQueryApplicationInvariantPreparationError> {
+    ) -> Result<Self::Scope, WorthQueryApplicationInvariantError> {
         self.prepare(planner)
     }
     fn prepare_scope_checked(
         &self,
         planner: &mut WorthQueryApplicationInvariantScopePlanner<'_, '_, GraphSchema<L>>,
         budget: &dyn CustomInvariantLeaseBudget,
-    ) -> Option<Result<Self::Scope, WorthQueryApplicationInvariantPreparationError>> {
+    ) -> Option<Result<Self::Scope, WorthQueryApplicationInvariantError>> {
         if !budget.checkpoint(1) {
-            return Some(Err(preparation("original preparation stopped")));
+            return Some(Err(WorthQueryApplicationInvariantError::Stopped));
         }
         Some(self.prepare(planner))
     }
@@ -251,10 +263,8 @@ impl<L: LawPolicy> WorthQueryApplicationInvariantRule<GraphSchema<L>> for Rule<L
         &self,
         context: &WorthQueryApplicationInvariantContext<'_, '_, GraphSchema<L>>,
         scope: &Self::Scope,
-    ) -> Result<
-        WorthQueryApplicationInvariantVerdict<()>,
-        WorthQueryApplicationInvariantExecutionError,
-    > {
+    ) -> Result<WorthQueryApplicationInvariantVerdict<()>, WorthQueryApplicationInvariantError>
+    {
         self.judge(context, scope)
     }
     fn evaluate_checked(
@@ -263,22 +273,21 @@ impl<L: LawPolicy> WorthQueryApplicationInvariantRule<GraphSchema<L>> for Rule<L
         scope: &Self::Scope,
         budget: &dyn CustomInvariantLeaseBudget,
     ) -> Option<
-        Result<
-            WorthQueryApplicationInvariantVerdict<()>,
-            WorthQueryApplicationInvariantExecutionError,
-        >,
+        Result<WorthQueryApplicationInvariantVerdict<()>, WorthQueryApplicationInvariantError>,
     > {
         if !budget.checkpoint(1) {
-            return Some(Err(execution("original evaluation stopped")));
+            return Some(Err(WorthQueryApplicationInvariantError::Stopped));
         }
         Some(self.judge(context, scope))
     }
 }
 pub fn preparation(
-    cause: impl std::fmt::Display,
-) -> WorthQueryApplicationInvariantPreparationError {
-    WorthQueryApplicationInvariantPreparationError::new(cause.to_string())
+    cause: impl Into<WorthQueryApplicationInvariantError>,
+) -> WorthQueryApplicationInvariantError {
+    cause.into()
 }
-pub fn execution(cause: impl std::fmt::Display) -> WorthQueryApplicationInvariantExecutionError {
-    WorthQueryApplicationInvariantExecutionError::new(cause.to_string())
+pub fn execution(
+    cause: impl Into<WorthQueryApplicationInvariantError>,
+) -> WorthQueryApplicationInvariantError {
+    cause.into()
 }
