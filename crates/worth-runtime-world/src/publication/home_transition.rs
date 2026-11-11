@@ -22,6 +22,7 @@ pub fn home_transition_caller_association_commitment(
 pub(crate) struct HomeTransitionOpenAssignment {
     pub(crate) attempt: crate::identity::CompositePublicationAttemptIdentity,
     pub(crate) association: ExecutionArray<u8>,
+    pub(crate) original_program_revision: [u8; 32],
 }
 
 /// The Home intent may describe these assignments, but only World issues them.
