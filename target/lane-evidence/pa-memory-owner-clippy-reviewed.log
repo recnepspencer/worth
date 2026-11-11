@@ -1,0 +1,40 @@
+command: cargo clippy -p worth-relational --all-targets
+HEAD: f9a53a5d17e01562d503b39b4627252bb63d8639
+git_status_short_empty: false
+start_utc: 2026-11-11T02:13:17.744544+00:00
+    Checking worth-relational v0.1.0 (C:\programming\worth worktees\worktrees\m3-p3-reopen\crates\worth-relational)
+warning: field `0` is never read
+  --> crates\worth-relational\src\tests\support\durable_medium.rs:54:12
+   |
+54 |     Commit(RelationalCanonicalCommitArtifactFrameRefusal),
+   |     ------ ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |     |
+   |     field in this variant
+   |
+   = note: `TestRecoverySourceRefusal` has a derived impl for the trait `Debug`, but this is intentionally ignored during dead code analysis
+   = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+help: consider changing the field to be of unit type to suppress this warning while preserving the field numbering, or remove the field
+   |
+54 -     Commit(RelationalCanonicalCommitArtifactFrameRefusal),
+54 +     Commit(()),
+   |
+
+warning: field `0` is never read
+  --> crates\worth-relational\src\tests\support\durable_medium.rs:55:16
+   |
+55 |     Transition(RelationalBranchTransitionArtifactFrameRefusal),
+   |     ---------- ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |     |
+   |     field in this variant
+   |
+   = note: `TestRecoverySourceRefusal` has a derived impl for the trait `Debug`, but this is intentionally ignored during dead code analysis
+help: consider changing the field to be of unit type to suppress this warning while preserving the field numbering, or remove the field
+   |
+55 -     Transition(RelationalBranchTransitionArtifactFrameRefusal),
+55 +     Transition(()),
+   |
+
+warning: `worth-relational` (lib test) generated 2 warnings
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 38.70s
+end_utc: 2026-11-11T02:13:57.182713+00:00
+exit_code: 0

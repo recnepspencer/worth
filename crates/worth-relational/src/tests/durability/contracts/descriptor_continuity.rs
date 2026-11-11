@@ -8,12 +8,10 @@ fn durability_contract_failure_descriptor_semantics_version_mismatch_is_explicit
 
     let runtime = runtime_with_test_schema();
     create_entity_outcome(execution, &runtime, "main-a");
-    let mut plan = crate::tests::support::recovery_plan_for(
-        execution,
-        &runtime,
-        RecoveryMode::NormalRecoveryVerification,
-    )
-    .unwrap();
+    let mut plan = runtime
+        .durability()
+        .recovery_plan(execution, RecoveryMode::NormalRecoveryVerification)
+        .unwrap();
     plan.descriptor_semantics_version = DescriptorSemanticsVersion(99);
 
     let mut recovered = runtime_with_test_schema();
