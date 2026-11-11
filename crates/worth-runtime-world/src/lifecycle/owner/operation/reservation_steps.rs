@@ -6,6 +6,8 @@ use crate::identity::{
 use crate::publication::NoEffectCause;
 use crate::recovery::{RecoveryCatalogDenial, ReservedProductUnpublishedSlot};
 use crate::retention::ReservedComponentPinPairCapacity;
+mod readmitted;
+pub(super) use readmitted::reserve_readmitted_resources;
 
 use super::{
     LoweredOwnerComponentPlan, ProductBranchObservation, ReservedAttemptCapacities,
@@ -42,14 +44,38 @@ where
     I: Copy + Ord + Send + Sync + 'static,
     T: Copy + Ord + Send + Sync + 'static,
 {
+    if owner.state.recovery.has_recovered() {
+        return Err(NoEffectCause::OwnerDeniedBeforeEffect);
+    }
+    issue_publication_identities_for_attempt(owner, None)
+}
+
+pub(super) fn issue_publication_identities_for_attempt<D, I, E, Ctx, T>(
+    owner: &RuntimeWorldOwnerRoot<D, I, E, Ctx, T>,
+    assigned: Option<CompositePublicationAttemptIdentity>,
+) -> Result<IssuedPublicationIdentities, NoEffectCause>
+where
+    D: Copy + Ord + std::fmt::Debug + Send + Sync + 'static,
+    I: Copy + Ord + Send + Sync + 'static,
+    T: Copy + Ord + Send + Sync + 'static,
+{
     let mut identities = owner
         .state
         .identities
         .lock()
         .unwrap_or_else(|error| error.into_inner());
-    let attempt_identity = identities
-        .publication_attempt()
-        .map_err(|_| NoEffectCause::PreEffectFailure)?;
+    let attempt_identity = match assigned {
+        Some(attempt)
+            if attempt.owner_identity() == owner.owner_identity()
+                && attempt.owner_identity().get() == owner.owner_identity().get() =>
+        {
+            attempt
+        }
+        Some(_) => return Err(NoEffectCause::OwnerDeniedBeforeEffect),
+        None => identities
+            .publication_attempt()
+            .map_err(|_| NoEffectCause::PreEffectFailure)?,
+    };
     let commit_identity = identities
         .composite_commit()
         .map_err(|_| NoEffectCause::PreEffectFailure)?;
@@ -69,6 +95,7 @@ pub(super) fn reserve_publication_resources<D, I, E, Ctx, T>(
     commit_identity: &CompositeCommitIdentity,
     publication_attempt: Option<&CompositePublicationAttemptIdentity>,
     successor_observation_requested: bool,
+    recovered_slot: Option<ReservedProductUnpublishedSlot>,
 ) -> Result<ReservedPublicationResources, NoEffectCause>
 where
     D: Copy + Ord + std::fmt::Debug + Send + Sync + 'static,
@@ -78,7 +105,10 @@ where
     let history = owner.state.history.clone();
     let reserved_commit_capacity =
         reserve_history(&history, expected, commit_identity, publication_attempt)?;
-    let reserved_recovery_slot = reserve_recovery(owner)?;
+    let reserved_recovery_slot = match recovered_slot {
+        Some(slot) => slot,
+        None => reserve_recovery(owner)?,
+    };
     let reserved_component_pin_pair = reserve_component_pin_pair(owner)?;
     let reserved_successor_observation = successor_observation_requested
         .then(|| reserve_successor_observation(owner))
@@ -229,28 +259,60 @@ pub(super) fn assemble_reserved_attempt(
         deadline,
         operation,
     } = assembly;
-    let (reserved_successor_observation_capacity, reserved_successor_observation_pin_pair) =
-        reserved_successor_observation.map_or((None, None), |reserved| {
-            (Some(reserved.capacity), Some(reserved.component_pin_pair))
-        });
+    let capacities = resources_to_capacities(
+        ReservedPublicationResources {
+            history,
+            reserved_commit_capacity,
+            reserved_recovery_slot,
+            reserved_component_pin_pair,
+            reserved_successor_observation,
+            reserved_publication_capacity,
+        },
+        admitted_at,
+        commit_identity,
+        product_unpublished_identity,
+        operation,
+    );
     ReservedCompositePublicationAttempt::new(
         attempt_identity,
         expected_head.clone(),
         expected_head.basis().clone(),
         plan,
-        ReservedAttemptCapacities::new(ReservedAttemptCapacityInputs {
-            admitted_at,
-            reserved_commit_identity: commit_identity,
-            product_unpublished_identity,
-            reserved_commit_capacity,
-            reserved_recovery_slot,
-            reserved_component_pin_pair,
-            reserved_successor_observation_capacity,
-            reserved_successor_observation_pin_pair,
-            reserved_publication_capacity,
-            history,
-            operation,
-        }),
+        capacities,
         deadline,
     )
+}
+
+pub(super) fn resources_to_capacities(
+    resources: ReservedPublicationResources,
+    admitted_at: RuntimeWorldInstant,
+    commit_identity: CompositeCommitIdentity,
+    product_unpublished_identity: ProductUnpublishedOwnerEffectsIdentity,
+    operation: RuntimeWorldOperationReservation,
+) -> ReservedAttemptCapacities {
+    let ReservedPublicationResources {
+        history,
+        reserved_commit_capacity,
+        reserved_recovery_slot,
+        reserved_component_pin_pair,
+        reserved_successor_observation,
+        reserved_publication_capacity,
+    } = resources;
+    let (reserved_successor_observation_capacity, reserved_successor_observation_pin_pair) =
+        reserved_successor_observation.map_or((None, None), |reserved| {
+            (Some(reserved.capacity), Some(reserved.component_pin_pair))
+        });
+    ReservedAttemptCapacities::new(ReservedAttemptCapacityInputs {
+        admitted_at,
+        reserved_commit_identity: commit_identity,
+        product_unpublished_identity,
+        reserved_commit_capacity,
+        reserved_recovery_slot,
+        reserved_component_pin_pair,
+        reserved_successor_observation_capacity,
+        reserved_successor_observation_pin_pair,
+        reserved_publication_capacity,
+        history,
+        operation,
+    })
 }

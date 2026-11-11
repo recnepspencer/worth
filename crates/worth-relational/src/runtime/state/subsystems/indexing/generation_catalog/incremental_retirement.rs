@@ -40,6 +40,14 @@ impl GenerationCatalog {
         self.work.enumerate_inventory(candidates.len());
         let mut retired = Vec::new();
         for id in candidates {
+            // A performed batch still owns the promise to publish these artifacts.
+            if self
+                .artifact_visibility
+                .get(&id)
+                .is_some_and(|v| v.awaits_settlement())
+            {
+                continue;
+            }
             let Some(generation) = self.entries.get(&id) else {
                 continue;
             };

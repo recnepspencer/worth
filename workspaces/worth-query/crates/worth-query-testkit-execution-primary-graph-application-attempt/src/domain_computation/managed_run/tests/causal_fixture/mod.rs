@@ -96,8 +96,8 @@ impl CausalManagedAdmissionContext {
 pub fn managed_admission_context(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
 ) -> CausalManagedAdmissionContext {
-    let mut runtime = relational_runtime();
-    let committed = create_fixture_entity(execution, &mut runtime);
+    let runtime = relational_runtime();
+    let committed = create_fixture_entity(execution, &runtime);
     let identity = runtime.main_branch_identity();
     let (descriptor, basis) = runtime.observe_branch(&identity).unwrap();
     assert!(runtime
@@ -121,8 +121,8 @@ pub fn managed_admission_context(
 pub fn source_profile_substitution_context(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
 ) -> SourceProfileSubstitutionContext {
-    let mut runtime = relational_runtime();
-    let committed = create_fixture_entity(execution, &mut runtime);
+    let runtime = relational_runtime();
+    let committed = create_fixture_entity(execution, &runtime);
     let identity = runtime.main_branch_identity();
     let (descriptor, basis) = runtime.observe_branch(&identity).unwrap();
     assert!(runtime

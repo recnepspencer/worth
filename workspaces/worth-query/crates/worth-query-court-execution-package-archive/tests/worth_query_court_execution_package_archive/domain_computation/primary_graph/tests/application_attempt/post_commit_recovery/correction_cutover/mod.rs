@@ -92,10 +92,12 @@ fn pending_correction_cutover_never_looks_unseen_on_another_branch() {
         "the held real post-commit boundary must leave pending custody: {outcome:?}"
     );
     let provider = (*world.application.runtime_for_test()).primary_provider_for_test();
-    assert!(
-        matches!(provider.observe_correction_key_for_test(&sibling_observation, binding.key_identity()),
-        Observed::Pending(Some(recorded)) if recorded.key_identity() == binding.key_identity())
-    );
+    let Observed::Pending(Some(admitted_binding)) =
+        provider.observe_correction_key_for_test(&sibling_observation, binding.key_identity())
+    else {
+        panic!("the exact original key retains pending custody");
+    };
+    assert_eq!(admitted_binding.key_identity(), binding.key_identity());
     drop(held);
     let barrier = std::sync::Barrier::new(2);
     let (resolved, observed) = std::thread::scope(|threads| {
@@ -109,15 +111,15 @@ fn pending_correction_cutover_never_looks_unseen_on_another_branch() {
         });
         (resolver.join().unwrap(), observer.join().unwrap())
     });
-    let WorthQueryApplicationIdempotencyResolution::AlreadyCommitted(receipt) = resolved else {
+    let WorthQueryApplicationIdempotencyResolution::RecoveredCommitted(receipt) = resolved else {
         panic!("the fresh admitted resolver must finish the original correction custody");
     };
     match observed {
         Observed::Pending(Some(recorded)) => {
-            assert_eq!(recorded, receipt.authority_binding().idempotency_binding())
+            assert_eq!(recorded, admitted_binding)
         }
         Observed::Completed(recorded, committed) => {
-            assert_eq!(recorded, receipt.authority_binding().idempotency_binding());
+            assert_eq!(recorded, admitted_binding);
             assert_eq!(
                 committed.commit_reference_for_test(),
                 receipt.commit_reference()
@@ -127,12 +129,7 @@ fn pending_correction_cutover_never_looks_unseen_on_another_branch() {
     }
     assert_eq!(provider.pending_application_publication_count_for_test(), 0);
     assert_eq!(receipt.emitted_effect_count(), 1);
-    assert_eq!(
-        provider
-            .committed_application_emissions_for_test(receipt.committed_product_publication())
-            .len(),
-        1
-    );
+    assert_eq!(provider.published_application_commit_count_for_test(), 1);
     let snapshots = || {
         let host = worth_query_testkit_execution_primary_graph_application_attempt::bridge_host_request::serial_request();
         let execution = worth_execution::ExecutionRequest::serial(&host);
@@ -146,10 +143,10 @@ fn pending_correction_cutover_never_looks_unseen_on_another_branch() {
     };
     let baseline = snapshots();
     let replayed = resolve(&world, &request, binding);
-    let WorthQueryApplicationIdempotencyResolution::AlreadyCommitted(replayed) = replayed else {
+    let WorthQueryApplicationIdempotencyResolution::RecoveredCommitted(replayed) = replayed else {
         panic!("the completed command remains exactly replayable");
     };
-    assert!(replayed.is_same_authoritative_commit(&receipt));
+    assert_eq!(replayed, receipt);
     assert_eq!(
         snapshots(),
         baseline,

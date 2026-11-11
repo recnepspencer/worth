@@ -50,11 +50,11 @@ where
 pub(crate) fn stateful_bridge_task_runtime_with_merge(
     request_execution: &worth_execution::ExecutionRequest<'_, '_>,
 ) -> WorthQueryRuntime {
-    let mut relational =
+    let relational =
         crate::harness::fixtures::effect_authorities::relational_runtime_with_intent_strategy();
     crate::harness::fixtures::effect_authorities::create_entity(
         request_execution,
-        &mut relational,
+        &relational,
         "main",
         BranchId("main".to_string()),
     );
@@ -66,7 +66,7 @@ pub(crate) fn stateful_bridge_task_runtime_with_merge(
         .expect("candidate branch should be created");
     crate::harness::fixtures::effect_authorities::create_entity(
         request_execution,
-        &mut relational,
+        &relational,
         "candidate-only",
         BranchId("candidate".to_string()),
     );

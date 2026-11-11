@@ -47,8 +47,8 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
                 .lock()
                 .unwrap_or_else(std::sync::PoisonError::into_inner);
             let read = lineage_read(|| {
-                if let Some(receipt) = settlement.application_commit_receipt() {
-                    lineage.source_facts_for_receipt(
+                if let Some(receipt) = settlement.publication_view() {
+                    lineage.source_facts_for_publication(
                         runtime.runtime.authority_identity().as_u64(),
                         &runtime.installed_schema.binding_identity(),
                         self.product().observation(),
@@ -75,7 +75,7 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
             })?;
             drop(lineage);
             let Some(read) = read else {
-                let receipt = settlement.application_commit_receipt();
+                let receipt = settlement.publication_view();
                 require_own_publication(receipt, self.product().observation())?;
                 continue;
             };
@@ -83,7 +83,7 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
                 &execution,
                 relational,
                 &read,
-                settlement.application_commit_receipt(),
+                settlement.publication_view(),
                 verification,
             )?;
         }

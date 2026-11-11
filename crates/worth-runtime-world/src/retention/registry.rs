@@ -10,7 +10,7 @@ pub(crate) use owner::{ReservedComponentPinPairCapacity, RuntimeWorldRetentionOw
 
 /// Why the Runtime World could not issue an exact component dependency claim.
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub(crate) enum RetentionObligationDenial {
+pub enum RetentionObligationDenial {
     ForeignOwner {
         expected: RuntimeWorldOwnerIdentity,
         actual: RuntimeWorldOwnerIdentity,

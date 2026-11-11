@@ -2,6 +2,7 @@
 use super::super::super::{mutation, query as source, schema::Directory};
 use super::super::page;
 use super::*;
+use crate::application_invariant_acceptance::managed_index::prefix_observation;
 use std::num::NonZeroUsize;
 type Page = WorthQueryApplicationContinuationPageResult<
     Catalog,
@@ -47,7 +48,7 @@ fn protected_continuation_readmits_current_capability_read_and_hidden_pagination
     lifecycle::isolated_allocation_case(run,concat!(module_path!(),"::protected_continuation_readmits_current_capability_read_and_hidden_pagination_influence"));
 }
 fn run() {
-    let calls = Arc::new(prefix::Calls::default());
+    let calls = Arc::new(prefix_observation::Calls::default());
     let world = host::install(calls.clone(), Arc::new(rule::Calls::new(calls)));
     let scope = authentication::request_scope();
     let principal = authentication::block_on(

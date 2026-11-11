@@ -175,6 +175,14 @@ impl WorthQueryPrimaryGraphCommitEvidence {
     ) -> Option<&crate::domain_computation::primary_graph::workflow::operation_output::WorkflowOperationOrigin>{
         self.workflow_origin.as_ref()
     }
+    pub(in crate::domain_computation::primary_graph) fn retain_original_authority(
+        &self,
+    ) -> std::sync::Arc<
+        crate::domain_computation::primary_graph::WorthQueryApplicationCommitAuthorityBinding,
+    > {
+        std::sync::Arc::clone(&self.original_authority)
+    }
+
     /// Original admitted meaning co-retained with the performed occurrence.
     /// This is historical evidence; current authority is admitted separately.
     pub(in crate::domain_computation::primary_graph) fn original_authority(

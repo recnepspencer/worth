@@ -1,0 +1,4981 @@
+[
+  {
+    "rendered": "error: use of a disallowed method `std::thread::Builder::spawn`\n  --> topology_entry\\examples\\invariant_reads.rs:48:10\n   |\n48 |         .spawn(run)\n   |          ^^^^^\n   |\n   = note: Threads and async executors belong only to the reviewed owning sites; computation belongs to worth-execution\n   = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.99.0/index.html#disallowed_methods\n   = note: `-D clippy::disallowed-methods` implied by `-D warnings`\n   = help: to override `-D warnings` add `#[allow(clippy::disallowed_methods)]`\n\n",
+    "$message_type": "diagnostic",
+    "children": [
+      {
+        "children": [],
+        "code": null,
+        "level": "note",
+        "message": "Threads and async executors belong only to the reviewed owning sites; computation belongs to worth-execution",
+        "rendered": null,
+        "spans": []
+      },
+      {
+        "children": [],
+        "code": null,
+        "level": "help",
+        "message": "for further information visit https://rust-lang.github.io/rust-clippy/rust-1.99.0/index.html#disallowed_methods",
+        "rendered": null,
+        "spans": []
+      },
+      {
+        "children": [],
+        "code": null,
+        "level": "note",
+        "message": "`-D clippy::disallowed-methods` implied by `-D warnings`",
+        "rendered": null,
+        "spans": []
+      },
+      {
+        "children": [],
+        "code": null,
+        "level": "help",
+        "message": "to override `-D warnings` add `#[allow(clippy::disallowed_methods)]`",
+        "rendered": null,
+        "spans": []
+      }
+    ],
+    "level": "error",
+    "message": "use of a disallowed method `std::thread::Builder::spawn`",
+    "spans": [
+      {
+        "byte_end": 1700,
+        "byte_start": 1695,
+        "column_end": 15,
+        "column_start": 10,
+        "expansion": null,
+        "file_name": "topology_entry\\examples\\invariant_reads.rs",
+        "is_primary": true,
+        "label": null,
+        "line_end": 48,
+        "line_start": 48,
+        "suggested_replacement": null,
+        "suggestion_applicability": null,
+        "text": [
+          {
+            "highlight_end": 15,
+            "highlight_start": 10,
+            "text": "        .spawn(run)"
+          }
+        ]
+      }
+    ],
+    "code": {
+      "code": "clippy::disallowed_methods",
+      "explanation": null
+    }
+  },
+  {
+    "rendered": "error: use of a disallowed method `std::thread::Builder::new`\n  --> topology_entry\\examples\\invariant_reads.rs:46:5\n   |\n46 |     std::thread::Builder::new()\n   |     ^^^^^^^^^^^^^^^^^^^^^^^^^\n   |\n   = note: Threads and async executors belong only to the reviewed owning sites; computation belongs to worth-execution\n   = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.99.0/index.html#disallowed_methods\n\n",
+    "$message_type": "diagnostic",
+    "children": [
+      {
+        "children": [],
+        "code": null,
+        "level": "note",
+        "message": "Threads and async executors belong only to the reviewed owning sites; computation belongs to worth-execution",
+        "rendered": null,
+        "spans": []
+      },
+      {
+        "children": [],
+        "code": null,
+        "level": "help",
+        "message": "for further information visit https://rust-lang.github.io/rust-clippy/rust-1.99.0/index.html#disallowed_methods",
+        "rendered": null,
+        "spans": []
+      }
+    ],
+    "level": "error",
+    "message": "use of a disallowed method `std::thread::Builder::new`",
+    "spans": [
+      {
+        "byte_end": 1643,
+        "byte_start": 1618,
+        "column_end": 30,
+        "column_start": 5,
+        "expansion": null,
+        "file_name": "topology_entry\\examples\\invariant_reads.rs",
+        "is_primary": true,
+        "label": null,
+        "line_end": 46,
+        "line_start": 46,
+        "suggested_replacement": null,
+        "suggestion_applicability": null,
+        "text": [
+          {
+            "highlight_end": 30,
+            "highlight_start": 5,
+            "text": "    std::thread::Builder::new()"
+          }
+        ]
+      }
+    ],
+    "code": {
+      "code": "clippy::disallowed_methods",
+      "explanation": null
+    }
+  },
+  {
+    "rendered": "error: use of a disallowed method `std::thread::Builder::spawn`\n  --> topology_entry\\examples\\shared_execution.rs:32:10\n   |\n32 |         .spawn(run)\n   |          ^^^^^\n   |\n   = note: Threads and async executors belong only to the reviewed owning sites; computation belongs to worth-execution\n   = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.99.0/index.html#disallowed_methods\n   = note: `-D clippy::disallowed-methods` implied by `-D warnings`\n   = help: to override `-D warnings` add `#[allow(clippy::disallowed_methods)]`\n\n",
+    "$message_type": "diagnostic",
+    "children": [
+      {
+        "children": [],
+        "code": null,
+        "level": "note",
+        "message": "Threads and async executors belong only to the reviewed owning sites; computation belongs to worth-execution",
+        "rendered": null,
+        "spans": []
+      },
+      {
+        "children": [],
+        "code": null,
+        "level": "help",
+        "message": "for further information visit https://rust-lang.github.io/rust-clippy/rust-1.99.0/index.html#disallowed_methods",
+        "rendered": null,
+        "spans": []
+      },
+      {
+        "children": [],
+        "code": null,
+        "level": "note",
+        "message": "`-D clippy::disallowed-methods` implied by `-D warnings`",
+        "rendered": null,
+        "spans": []
+      },
+      {
+        "children": [],
+        "code": null,
+        "level": "help",
+        "message": "to override `-D warnings` add `#[allow(clippy::disallowed_methods)]`",
+        "rendered": null,
+        "spans": []
+      }
+    ],
+    "level": "error",
+    "message": "use of a disallowed method `std::thread::Builder::spawn`",
+    "spans": [
+      {
+        "byte_end": 1161,
+        "byte_start": 1156,
+        "column_end": 15,
+        "column_start": 10,
+        "expansion": null,
+        "file_name": "topology_entry\\examples\\shared_execution.rs",
+        "is_primary": true,
+        "label": null,
+        "line_end": 32,
+        "line_start": 32,
+        "suggested_replacement": null,
+        "suggestion_applicability": null,
+        "text": [
+          {
+            "highlight_end": 15,
+            "highlight_start": 10,
+            "text": "        .spawn(run)"
+          }
+        ]
+      }
+    ],
+    "code": {
+      "code": "clippy::disallowed_methods",
+      "explanation": null
+    }
+  },
+  {
+    "rendered": "error: use of a disallowed method `std::thread::Builder::new`\n  --> topology_entry\\examples\\shared_execution.rs:30:5\n   |\n30 |     std::thread::Builder::new()\n   |     ^^^^^^^^^^^^^^^^^^^^^^^^^\n   |\n   = note: Threads and async executors belong only to the reviewed owning sites; computation belongs to worth-execution\n   = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.99.0/index.html#disallowed_methods\n\n",
+    "$message_type": "diagnostic",
+    "children": [
+      {
+        "children": [],
+        "code": null,
+        "level": "note",
+        "message": "Threads and async executors belong only to the reviewed owning sites; computation belongs to worth-execution",
+        "rendered": null,
+        "spans": []
+      },
+      {
+        "children": [],
+        "code": null,
+        "level": "help",
+        "message": "for further information visit https://rust-lang.github.io/rust-clippy/rust-1.99.0/index.html#disallowed_methods",
+        "rendered": null,
+        "spans": []
+      }
+    ],
+    "level": "error",
+    "message": "use of a disallowed method `std::thread::Builder::new`",
+    "spans": [
+      {
+        "byte_end": 1104,
+        "byte_start": 1079,
+        "column_end": 30,
+        "column_start": 5,
+        "expansion": null,
+        "file_name": "topology_entry\\examples\\shared_execution.rs",
+        "is_primary": true,
+        "label": null,
+        "line_end": 30,
+        "line_start": 30,
+        "suggested_replacement": null,
+        "suggestion_applicability": null,
+        "text": [
+          {
+            "highlight_end": 30,
+            "highlight_start": 5,
+            "text": "    std::thread::Builder::new()"
+          }
+        ]
+      }
+    ],
+    "code": {
+      "code": "clippy::disallowed_methods",
+      "explanation": null
+    }
+  },
+  {
+    "rendered": "error: file is loaded as a module multiple times: `consumer_root\\src\\application_invariant_acceptance\\managed_index\\boxes\\access\\contract.rs`\n  |\n  = help: replace all but one `mod` item with `use` items\n  = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.99.0/index.html#duplicate_mod\n  = note: `-D clippy::duplicate-mod` implied by `-D warnings`\n  = help: to override `-D warnings` add `#[allow(clippy::duplicate_mod)]`\n\n",
+    "$message_type": "diagnostic",
+    "children": [
+      {
+        "children": [],
+        "code": null,
+        "level": "help",
+        "message": "replace all but one `mod` item with `use` items",
+        "rendered": null,
+        "spans": []
+      },
+      {
+        "children": [],
+        "code": null,
+        "level": "help",
+        "message": "for further information visit https://rust-lang.github.io/rust-clippy/rust-1.99.0/index.html#duplicate_mod",
+        "rendered": null,
+        "spans": []
+      },
+      {
+        "children": [],
+        "code": null,
+        "level": "note",
+        "message": "`-D clippy::duplicate-mod` implied by `-D warnings`",
+        "rendered": null,
+        "spans": []
+      },
+      {
+        "children": [],
+        "code": null,
+        "level": "help",
+        "message": "to override `-D warnings` add `#[allow(clippy::duplicate_mod)]`",
+        "rendered": null,
+        "spans": []
+      }
+    ],
+    "level": "error",
+    "message": "file is loaded as a module multiple times: `consumer_root\\src\\application_invariant_acceptance\\managed_index\\boxes\\access\\contract.rs`",
+    "spans": [
+      {
+        "byte_end": 3431,
+        "byte_start": 190,
+        "column_end": 96,
+        "column_start": 1,
+        "expansion": null,
+        "file_name": "consumer_root\\src\\application_invariant_acceptance\\managed_index\\boxes\\access.rs",
+        "is_primary": true,
+        "label": "first loaded here",
+        "line_end": 1,
+        "line_start": 4,
+        "suggested_replacement": null,
+        "suggestion_applicability": null,
+        "text": []
+      },
+      {
+        "byte_end": 3431,
+        "byte_start": 190,
+        "column_end": 96,
+        "column_start": 1,
+        "expansion": null,
+        "file_name": "consumer_root\\src\\application_invariant_acceptance\\managed_index\\boxes\\access.rs",
+        "is_primary": true,
+        "label": "loaded again here",
+        "line_end": 1,
+        "line_start": 4,
+        "suggested_replacement": null,
+        "suggestion_applicability": null,
+        "text": []
+      },
+      {
+        "byte_end": 3431,
+        "byte_start": 190,
+        "column_end": 96,
+        "column_start": 1,
+        "expansion": null,
+        "file_name": "consumer_root\\src\\application_invariant_acceptance\\managed_index\\maintained\\..\\boxes\\access.rs",
+        "is_primary": true,
+        "label": "loaded again here",
+        "line_end": 1,
+        "line_start": 4,
+        "suggested_replacement": null,
+        "suggestion_applicability": null,
+        "text": []
+      }
+    ],
+    "code": {
+      "code": "clippy::duplicate_mod",
+      "explanation": null
+    }
+  },
+  {
+    "rendered": "error: file is loaded as a module multiple times: `consumer_root\\src\\application_invariant_acceptance\\managed_index\\boxes\\access\\grants.rs`\n  |\n  = help: replace all but one `mod` item with `use` items\n  = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.99.0/index.html#duplicate_mod\n\n",
+    "$message_type": "diagnostic",
+    "children": [
+      {
+        "children": [],
+        "code": null,
+        "level": "help",
+        "message": "replace all but one `mod` item with `use` items",
+        "rendered": null,
+        "spans": []
+      },
+      {
+        "children": [],
+        "code": null,
+        "level": "help",
+        "message": "for further information visit https://rust-lang.github.io/rust-clippy/rust-1.99.0/index.html#duplicate_mod",
+        "rendered": null,
+        "spans": []
+      }
+    ],
+    "level": "error",
+    "message": "file is loaded as a module multiple times: `consumer_root\\src\\application_invariant_acceptance\\managed_index\\boxes\\access\\grants.rs`",
+    "spans": [
+      {
+        "byte_end": 7191,
+        "byte_start": 237,
+        "column_end": 84,
+        "column_start": 1,
+        "expansion": null,
+        "file_name": "consumer_root\\src\\application_invariant_acceptance\\managed_index\\boxes\\access.rs",
+        "is_primary": true,
+        "label": "first loaded here",
+        "line_end": 1,
+        "line_start": 6,
+        "suggested_replacement": null,
+        "suggestion_applicability": null,
+        "text": []
+      },
+      {
+        "byte_end": 7191,
+        "byte_start": 237,
+        "column_end": 84,
+        "column_start": 1,
+        "expansion": null,
+        "file_name": "consumer_root\\src\\application_invariant_acceptance\\managed_index\\boxes\\access.rs",
+        "is_primary": true,
+        "label": "loaded again here",
+        "line_end": 1,
+        "line_start": 6,
+        "suggested_replacement": null,
+        "suggestion_applicability": null,
+        "text": []
+      },
+      {
+        "byte_end": 7191,
+        "byte_start": 237,
+        "column_end": 84,
+        "column_start": 1,
+        "expansion": null,
+        "file_name": "consumer_root\\src\\application_invariant_acceptance\\managed_index\\maintained\\..\\boxes\\access.rs",
+        "is_primary": true,
+        "label": "loaded again here",
+        "line_end": 1,
+        "line_start": 6,
+        "suggested_replacement": null,
+        "suggestion_applicability": null,
+        "text": []
+      }
+    ],
+    "code": {
+      "code": "clippy::duplicate_mod",
+      "explanation": null
+    }
+  },
+  {
+    "rendered": "error: file is loaded as a module multiple times: `consumer_root\\src\\application_invariant_acceptance\\managed_index\\boxes\\access.rs`\n  |\n  = help: replace all but one `mod` item with `use` items\n  = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.99.0/index.html#duplicate_mod\n\n",
+    "$message_type": "diagnostic",
+    "children": [
+      {
+        "children": [],
+        "code": null,
+        "level": "help",
+        "message": "replace all but one `mod` item with `use` items",
+        "rendered": null,
+        "spans": []
+      },
+      {
+        "children": [],
+        "code": null,
+        "level": "help",
+        "message": "for further information visit https://rust-lang.github.io/rust-clippy/rust-1.99.0/index.html#duplicate_mod",
+        "rendered": null,
+        "spans": []
+      }
+    ],
+    "level": "error",
+    "message": "file is loaded as a module multiple times: `consumer_root\\src\\application_invariant_acceptance\\managed_index\\boxes\\access.rs`",
+    "spans": [
+      {
+        "byte_end": 2026,
+        "byte_start": 87,
+        "column_end": 73,
+        "column_start": 1,
+        "expansion": null,
+        "file_name": "consumer_root\\src\\application_invariant_acceptance\\managed_index\\boxes\\mod.rs",
+        "is_primary": true,
+        "label": "first loaded here",
+        "line_end": 1,
+        "line_start": 2,
+        "suggested_replacement": null,
+        "suggestion_applicability": null,
+        "text": []
+      },
+      {
+        "byte_end": 2026,
+        "byte_start": 87,
+        "column_end": 73,
+        "column_start": 1,
+        "expansion": null,
+        "file_name": "consumer_root\\src\\application_invariant_acceptance\\managed_index\\boxes\\mod.rs",
+        "is_primary": true,
+        "label": "loaded again here",
+        "line_end": 1,
+        "line_start": 2,
+        "suggested_replacement": null,
+        "suggestion_applicability": null,
+        "text": []
+      },
+      {
+        "byte_end": 1507,
+        "byte_start": 82,
+        "column_end": 73,
+        "column_start": 1,
+        "expansion": null,
+        "file_name": "consumer_root\\src\\application_invariant_acceptance\\managed_index\\maintained\\protected.rs",
+        "is_primary": true,
+        "label": "loaded again here",
+        "line_end": 1,
+        "line_start": 2,
+        "suggested_replacement": null,
+        "suggestion_applicability": null,
+        "text": []
+      }
+    ],
+    "code": {
+      "code": "clippy::duplicate_mod",
+      "explanation": null
+    }
+  },
+  {
+    "rendered": "error: file is loaded as a module multiple times: `consumer_root\\src\\application_invariant_acceptance\\managed_index\\boxes\\affinity.rs`\n  |\n  = help: replace all but one `mod` item with `use` items\n  = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.99.0/index.html#duplicate_mod\n\n",
+    "$message_type": "diagnostic",
+    "children": [
+      {
+        "children": [],
+        "code": null,
+        "level": "help",
+        "message": "replace all but one `mod` item with `use` items",
+        "rendered": null,
+        "spans": []
+      },
+      {
+        "children": [],
+        "code": null,
+        "level": "help",
+        "message": "for further information visit https://rust-lang.github.io/rust-clippy/rust-1.99.0/index.html#duplicate_mod",
+        "rendered": null,
+        "spans": []
+      }
+    ],
+    "level": "error",
+    "message": "file is loaded as a module multiple times: `consumer_root\\src\\application_invariant_acceptance\\managed_index\\boxes\\affinity.rs`",
+    "spans": [
+      {
+        "byte_end": 12708,
+        "byte_start": 110,
+        "column_end": 85,
+        "column_start": 1,
+        "expansion": null,
+        "file_name": "consumer_root\\src\\application_invariant_acceptance\\managed_index\\boxes\\mod.rs",
+        "is_primary": true,
+        "label": "first loaded here",
+        "line_end": 1,
+        "line_start": 3,
+        "suggested_replacement": null,
+        "suggestion_applicability": null,
+        "text": []
+      },
+      {
+        "byte_end": 12708,
+        "byte_start": 110,
+        "column_end": 85,
+        "column_start": 1,
+        "expansion": null,
+        "file_name": "consumer_root\\src\\application_invariant_acceptance\\managed_index\\boxes\\mod.rs",
+        "is_primary": true,
+        "label": "loaded again here",
+        "line_end": 1,
+        "line_start": 3,
+        "suggested_replacement": null,
+        "suggestion_applicability": null,
+        "text": []
+      }
+    ],
+    "code": {
+      "code": "clippy::duplicate_mod",
+      "explanation": null
+    }
+  },
+  {
+    "rendered": "error: file is loaded as a module multiple times: `consumer_root\\src\\application_invariant_acceptance\\managed_index\\boxes\\authority.rs`\n  |\n  = help: replace all but one `mod` item with `use` items\n  = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.99.0/index.html#duplicate_mod\n\n",
+    "$message_type": "diagnostic",
+    "children": [
+      {
+        "children": [],
+        "code": null,
+        "level": "help",
+        "message": "replace all but one `mod` item with `use` items",
+        "rendered": null,
+        "spans": []
+      },
+      {
+        "children": [],
+        "code": null,
+        "level": "help",
+        "message": "for further information visit https://rust-lang.github.io/rust-clippy/rust-1.99.0/index.html#duplicate_mod",
+        "rendered": null,
+        "spans": []
+      }
+    ],
+    "level": "error",
+    "message": "file is loaded as a module multiple times: `consumer_root\\src\\application_invariant_acceptance\\managed_index\\boxes\\authority.rs`",
+    "spans": [
+      {
+        "byte_end": 19285,
+        "byte_start": 137,
+        "column_end": 72,
+        "column_start": 1,
+        "expansion": null,
+        "file_name": "consumer_root\\src\\application_invariant_acceptance\\managed_index\\boxes\\mod.rs",
+        "is_primary": true,
+        "label": "first loaded here",
+        "line_end": 1,
+        "line_start": 5,
+        "suggested_replacement": null,
+        "suggestion_applicability": null,
+        "text": []
+      },
+      {
+        "byte_end": 19285,
+        "byte_start": 137,
+        "column_end": 72,
+        "column_start": 1,
+        "expansion": null,
+        "file_name": "consumer_root\\src\\application_invariant_acceptance\\managed_index\\boxes\\mod.rs",
+        "is_primary": true,
+        "label": "loaded again here",
+        "line_end": 1,
+        "line_start": 5,
+        "suggested_replacement": null,
+        "suggestion_applicability": null,
+        "text": []
+      }
+    ],
+    "code": {
+      "code": "clippy::duplicate_mod",
+      "explanation": null
+    }
+  },
+  {
+    "rendered": "error: file is loaded as a module multiple times: `consumer_root\\src\\application_invariant_acceptance\\managed_index\\boxes\\candidate_allocation.rs`\n  |\n  = help: replace all but one `mod` item with `use` items\n  = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.99.0/index.html#duplicate_mod\n\n",
+    "$message_type": "diagnostic",
+    "children": [
+      {
+        "children": [],
+        "code": null,
+        "level": "help",
+        "message": "replace all but one `mod` item with `use` items",
+        "rendered": null,
+        "spans": []
+      },
+      {
+        "children": [],
+        "code": null,
+        "level": "help",
+        "message": "for further information visit https://rust-lang.github.io/rust-clippy/rust-1.99.0/index.html#duplicate_mod",
+        "rendered": null,
+        "spans": []
+      }
+    ],
+    "level": "error",
+    "message": "file is loaded as a module multiple times: `consumer_root\\src\\application_invariant_acceptance\\managed_index\\boxes\\candidate_allocation.rs`",
+    "spans": [
+      {
+        "byte_end": 32324,
+        "byte_start": 152,
+        "column_end": 97,
+        "column_start": 1,
+        "expansion": null,
+        "file_name": "consumer_root\\src\\application_invariant_acceptance\\managed_index\\boxes\\mod.rs",
+        "is_primary": true,
+        "label": "first loaded here",
+        "line_end": 1,
+        "line_start": 6,
+        "suggested_replacement": null,
+        "suggestion_applicability": null,
+        "text": []
+      },
+      {
+        "byte_end": 32324,
+        "byte_start": 152,
+        "column_end": 97,
+        "column_start": 1,
+        "expansion": null,
+        "file_name": "consumer_root\\src\\application_invariant_acceptance\\managed_index\\boxes\\mod.rs",
+        "is_primary": true,
+        "label": "loaded again here",
+        "line_end": 1,
+        "line_start": 6,
+        "suggested_replacement": null,
+        "suggestion_applicability": null,
+        "text": []
+      }
+    ],
+    "code": {
+      "code": "clippy::duplicate_mod",
+      "explanation": null
+    }
+  },
+  {
+    "rendered": "error: file is loaded as a module multiple times: `consumer_root\\src\\application_invariant_acceptance\\managed_index\\boxes\\coordinates.rs`\n  |\n  = help: replace all but one `mod` item with `use` items\n  = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.99.0/index.html#duplicate_mod\n\n",
+    "$message_type": "diagnostic",
+    "children": [
+      {
+        "children": [],
+        "code": null,
+        "level": "help",
+        "message": "replace all but one `mod` item with `use` items",
+        "rendered": null,
+        "spans": []
+      },
+      {
+        "children": [],
+        "code": null,
+        "level": "help",
+        "message": "for further information visit https://rust-lang.github.io/rust-clippy/rust-1.99.0/index.html#duplicate_mod",
+        "rendered": null,
+        "spans": []
+      }
+    ],
+    "level": "error",
+    "message": "file is loaded as a module multiple times: `consumer_root\\src\\application_invariant_acceptance\\managed_index\\boxes\\coordinates.rs`",
+    "spans": [
+      {
+        "byte_end": 35590,
+        "byte_start": 191,
+        "column_end": 84,
+        "column_start": 1,
+        "expansion": null,
+        "file_name": "consumer_root\\src\\application_invariant_acceptance\\managed_index\\boxes\\mod.rs",
+        "is_primary": true,
+        "label": "first loaded here",
+        "line_end": 1,
+        "line_start": 8,
+        "suggested_replacement": null,
+        "suggestion_applicability": null,
+        "text": []
+      },
+      {
+        "byte_end": 35590,
+        "byte_start": 191,
+        "column_end": 84,
+        "column_start": 1,
+        "expansion": null,
+        "file_name": "consumer_root\\src\\application_invariant_acceptance\\managed_index\\boxes\\mod.rs",
+        "is_primary": true,
+        "label": "loaded again here",
+        "line_end": 1,
+        "line_start": 8,
+        "suggested_replacement": null,
+        "suggestion_applicability": null,
+        "text": []
+      },
+      {
+        "byte_end": 392,
+        "byte_start": 83,
+        "column_end": 84,
+        "column_start": 1,
+        "expansion": null,
+        "file_name": "consumer_root\\src\\application_invariant_acceptance\\managed_index\\maintained\\bounds.rs",
+        "is_primary": true,
+        "label": "loaded again here",
+        "line_end": 1,
+        "line_start": 2,
+        "suggested_replacement": null,
+        "suggestion_applicability": null,
+        "text": []
+      }
+    ],
+    "code": {
+      "code": "clippy::duplicate_mod",
+      "explanation": null
+    }
+  },
+  {
+    "rendered": "error: file is loaded as a module multiple times: `consumer_root\\src\\application_invariant_acceptance\\managed_index\\boxes\\field.rs`\n  |\n  = help: replace all but one `mod` item with `use` items\n  = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.99.0/index.html#duplicate_mod\n\n",
+    "$message_type": "diagnostic",
+    "children": [
+      {
+        "children": [],
+        "code": null,
+        "level": "help",
+        "message": "replace all but one `mod` item with `use` items",
+        "rendered": null,
+        "spans": []
+      },
+      {
+        "children": [],
+        "code": null,
+        "level": "help",
+        "message": "for further information visit https://rust-lang.github.io/rust-clippy/rust-1.99.0/index.html#duplicate_mod",
+        "rendered": null,
+        "spans": []
+      }
+    ],
+    "level": "error",
+    "message": "file is loaded as a module multiple times: `consumer_root\\src\\application_invariant_acceptance\\managed_index\\boxes\\field.rs`",
+    "spans": [
+      {
+        "byte_end": 38536,
+        "byte_start": 208,
+        "column_end": 73,
+        "column_start": 1,
+        "expansion": null,
+        "file_name": "consumer_root\\src\\application_invariant_acceptance\\managed_index\\boxes\\mod.rs",
+        "is_primary": true,
+        "label": "first loaded here",
+        "line_end": 1,
+        "line_start": 9,
+        "suggested_replacement": null,
+        "suggestion_applicability": null,
+        "text": []
+      },
+      {
+        "byte_end": 38536,
+        "byte_start": 208,
+        "column_end": 73,
+        "column_start": 1,
+        "expansion": null,
+        "file_name": "consumer_root\\src\\application_invariant_acceptance\\managed_index\\boxes\\mod.rs",
+        "is_primary": true,
+        "label": "loaded again here",
+        "line_end": 1,
+        "line_start": 9,
+        "suggested_replacement": null,
+        "suggestion_applicability": null,
+        "text": []
+      },
+      {
+        "byte_end": 3338,
+        "byte_start": 138,
+        "column_end": 73,
+        "column_start": 1,
+        "expansion": null,
+        "file_name": "consumer_root\\src\\application_invariant_acceptance\\managed_index\\maintained\\bounds.rs",
+        "is_primary": true,
+        "label": "loaded again here",
+        "line_end": 1,
+        "line_start": 4,
+        "suggested_replacement": null,
+        "suggestion_applicability": null,
+        "text": []
+      }
+    ],
+    "code": {
+      "code": "clippy::duplicate_mod",
+      "explanation": null
+    }
+  },
+  {
+    "rendered": "error: file is loaded as a module multiple times: `consumer_root\\src\\application_invariant_acceptance\\managed_index\\boxes\\geometry.rs`\n  |\n  = help: replace all but one `mod` item with `use` items\n  = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.99.0/index.html#duplicate_mod\n\n",
+    "$message_type": "diagnostic",
+    "children": [
+      {
+        "children": [],
+        "code": null,
+        "level": "help",
+        "message": "replace all but one `mod` item with `use` items",
+        "rendered": null,
+        "spans": []
+      },
+      {
+        "children": [],
+        "code": null,
+        "level": "help",
+        "message": "for further information visit https://rust-lang.github.io/rust-clippy/rust-1.99.0/index.html#duplicate_mod",
+        "rendered": null,
+        "spans": []
+      }
+    ],
+    "level": "error",
+    "message": "file is loaded as a module multiple times: `consumer_root\\src\\application_invariant_acceptance\\managed_index\\boxes\\geometry.rs`",
+    "spans": [
+      {
+        "byte_end": 39259,
+        "byte_start": 219,
+        "column_end": 81,
+        "column_start": 1,
+        "expansion": null,
+        "file_name": "consumer_root\\src\\application_invariant_acceptance\\managed_index\\boxes\\mod.rs",
+        "is_primary": true,
+        "label": "first loaded here",
+        "line_end": 1,
+        "line_start": 10,
+        "suggested_replacement": null,
+        "suggestion_applicability": null,
+        "text": []
+      },
+      {
+        "byte_end": 39259,
+        "byte_start": 219,
+        "column_end": 81,
+        "column_start": 1,
+        "expansion": null,
+        "file_name": "consumer_root\\src\\application_invariant_acceptance\\managed_index\\boxes\\mod.rs",
+        "is_primary": true,
+        "label": "loaded again here",
+        "line_end": 1,
+        "line_start": 10,
+        "suggested_replacement": null,
+        "suggestion_applicability": null,
+        "text": []
+      }
+    ],
+    "code": {
+      "code": "clippy::duplicate_mod",
+      "explanation": null
+    }
+  },
+  {
+    "rendered": "error: file is loaded as a module multiple times: `consumer_root\\src\\application_invariant_acceptance\\managed_index\\boxes\\lifecycle.rs`\n  |\n  = help: replace all but one `mod` item with `use` items\n  = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.99.0/index.html#duplicate_mod\n\n",
+    "$message_type": "diagnostic",
+    "children": [
+      {
+        "children": [],
+        "code": null,
+        "level": "help",
+        "message": "replace all but one `mod` item with `use` items",
+        "rendered": null,
+        "spans": []
+      },
+      {
+        "children": [],
+        "code": null,
+        "level": "help",
+        "message": "for further information visit https://rust-lang.github.io/rust-clippy/rust-1.99.0/index.html#duplicate_mod",
+        "rendered": null,
+        "spans": []
+      }
+    ],
+    "level": "error",
+    "message": "file is loaded as a module multiple times: `consumer_root\\src\\application_invariant_acceptance\\managed_index\\boxes\\lifecycle.rs`",
+    "spans": [
+      {
+        "byte_end": 48109,
+        "byte_start": 233,
+        "column_end": 70,
+        "column_start": 1,
+        "expansion": null,
+        "file_name": "consumer_root\\src\\application_invariant_acceptance\\managed_index\\boxes\\mod.rs",
+        "is_primary": true,
+        "label": "first loaded here",
+        "line_end": 1,
+        "line_start": 11,
+        "suggested_replacement": null,
+        "suggestion_applicability": null,
+        "text": []
+      },
+      {
+        "byte_end": 48109,
+        "byte_start": 233,
+        "column_end": 70,
+        "column_start": 1,
+        "expansion": null,
+        "file_name": "consumer_root\\src\\application_invariant_acceptance\\managed_index\\boxes\\mod.rs",
+        "is_primary": true,
+        "label": "loaded again here",
+        "line_end": 1,
+        "line_start": 11,
+        "suggested_replacement": null,
+        "suggestion_applicability": null,
+        "text": []
+      }
+    ],
+    "code": {
+      "code": "clippy::duplicate_mod",
+      "explanation": null
+    }
+  },
+  {
+    "rendered": "error: file is loaded as a module multiple times: `consumer_root\\src\\application_invariant_acceptance\\managed_index\\boxes\\mod.rs`\n  |\n  = help: replace all but one `mod` item with `use` items\n  = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.99.0/index.html#duplicate_mod\n\n",
+    "$message_type": "diagnostic",
+    "children": [
+      {
+        "children": [],
+        "code": null,
+        "level": "help",
+        "message": "replace all but one `mod` item with `use` items",
+        "rendered": null,
+        "spans": []
+      },
+      {
+        "children": [],
+        "code": null,
+        "level": "help",
+        "message": "for further information visit https://rust-lang.github.io/rust-clippy/rust-1.99.0/index.html#duplicate_mod",
+        "rendered": null,
+        "spans": []
+      }
+    ],
+    "level": "error",
+    "message": "file is loaded as a module multiple times: `consumer_root\\src\\application_invariant_acceptance\\managed_index\\boxes\\mod.rs`",
+    "spans": [
+      {
+        "byte_end": 1159,
+        "byte_start": 90,
+        "column_end": 87,
+        "column_start": 1,
+        "expansion": null,
+        "file_name": "consumer_root\\src\\application_invariant_acceptance\\candidate_index.rs",
+        "is_primary": true,
+        "label": "first loaded here",
+        "line_end": 1,
+        "line_start": 2,
+        "suggested_replacement": null,
+        "suggestion_applicability": null,
+        "text": []
+      },
+      {
+        "byte_end": 163619,
+        "byte_start": 0,
+        "column_end": 11,
+        "column_start": 1,
+        "expansion": null,
+        "file_name": "consumer_root\\src\\application_invariant_acceptance\\managed_index\\boxes\\mod.rs",
+        "is_primary": true,
+        "label": "loaded again here",
+        "line_end": 2,
+        "line_start": 1,
+        "suggested_replacement": null,
+        "suggestion_applicability": null,
+        "text": []
+      }
+    ],
+    "code": {
+      "code": "clippy::duplicate_mod",
+      "explanation": null
+    }
+  },
+  {
+    "rendered": "error: file is loaded as a module multiple times: `consumer_root\\src\\application_invariant_acceptance\\managed_index\\boxes\\provider\\storage.rs`\n  |\n  = help: replace all but one `mod` item with `use` items\n  = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.99.0/index.html#duplicate_mod\n\n",
+    "$message_type": "diagnostic",
+    "children": [
+      {
+        "children": [],
+        "code": null,
+        "level": "help",
+        "message": "replace all but one `mod` item with `use` items",
+        "rendered": null,
+        "spans": []
+      },
+      {
+        "children": [],
+        "code": null,
+        "level": "help",
+        "message": "for further information visit https://rust-lang.github.io/rust-clippy/rust-1.99.0/index.html#duplicate_mod",
+        "rendered": null,
+        "spans": []
+      }
+    ],
+    "level": "error",
+    "message": "file is loaded as a module multiple times: `consumer_root\\src\\application_invariant_acceptance\\managed_index\\boxes\\provider\\storage.rs`",
+    "spans": [
+      {
+        "byte_end": 10475,
+        "byte_start": 479,
+        "column_end": 74,
+        "column_start": 1,
+        "expansion": null,
+        "file_name": "consumer_root\\src\\application_invariant_acceptance\\managed_index\\boxes\\provider.rs",
+        "is_primary": true,
+        "label": "first loaded here",
+        "line_end": 1,
+        "line_start": 12,
+        "suggested_replacement": null,
+        "suggestion_applicability": null,
+        "text": []
+      },
+      {
+        "byte_end": 10475,
+        "byte_start": 479,
+        "column_end": 74,
+        "column_start": 1,
+        "expansion": null,
+        "file_name": "consumer_root\\src\\application_invariant_acceptance\\managed_index\\boxes\\provider.rs",
+        "is_primary": true,
+        "label": "loaded again here",
+        "line_end": 1,
+        "line_start": 12,
+        "suggested_replacement": null,
+        "suggestion_applicability": null,
+        "text": []
+      }
+    ],
+    "code": {
+      "code": "clippy::duplicate_mod",
+      "explanation": null
+    }
+  },
+  {
+    "rendered": "error: file is loaded as a module multiple times: `consumer_root\\src\\application_invariant_acceptance\\managed_index\\boxes\\provider.rs`\n  |\n  = help: replace all but one `mod` item with `use` items\n  = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.99.0/index.html#duplicate_mod\n\n",
+    "$message_type": "diagnostic",
+    "children": [
+      {
+        "children": [],
+        "code": null,
+        "level": "help",
+        "message": "replace all but one `mod` item with `use` items",
+        "rendered": null,
+        "spans": []
+      },
+      {
+        "children": [],
+        "code": null,
+        "level": "help",
+        "message": "for further information visit https://rust-lang.github.io/rust-clippy/rust-1.99.0/index.html#duplicate_mod",
+        "rendered": null,
+        "spans": []
+      }
+    ],
+    "level": "error",
+    "message": "file is loaded as a module multiple times: `consumer_root\\src\\application_invariant_acceptance\\managed_index\\boxes\\provider.rs`",
+    "spans": [
+      {
+        "byte_end": 57586,
+        "byte_start": 261,
+        "column_end": 94,
+        "column_start": 1,
+        "expansion": null,
+        "file_name": "consumer_root\\src\\application_invariant_acceptance\\managed_index\\boxes\\mod.rs",
+        "is_primary": true,
+        "label": "first loaded here",
+        "line_end": 1,
+        "line_start": 13,
+        "suggested_replacement": null,
+        "suggestion_applicability": null,
+        "text": []
+      },
+      {
+        "byte_end": 57586,
+        "byte_start": 261,
+        "column_end": 94,
+        "column_start": 1,
+        "expansion": null,
+        "file_name": "consumer_root\\src\\application_invariant_acceptance\\managed_index\\boxes\\mod.rs",
+        "is_primary": true,
+        "label": "loaded again here",
+        "line_end": 1,
+        "line_start": 13,
+        "suggested_replacement": null,
+        "suggestion_applicability": null,
+        "text": []
+      }
+    ],
+    "code": {
+      "code": "clippy::duplicate_mod",
+      "explanation": null
+    }
+  },
+  {
+    "rendered": "error: file is loaded as a module multiple times: `consumer_root\\src\\application_invariant_acceptance\\managed_index\\boxes\\query.rs`\n  |\n  = help: replace all but one `mod` item with `use` items\n  = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.99.0/index.html#duplicate_mod\n\n",
+    "$message_type": "diagnostic",
+    "children": [
+      {
+        "children": [],
+        "code": null,
+        "level": "help",
+        "message": "replace all but one `mod` item with `use` items",
+        "rendered": null,
+        "spans": []
+      },
+      {
+        "children": [],
+        "code": null,
+        "level": "help",
+        "message": "for further information visit https://rust-lang.github.io/rust-clippy/rust-1.99.0/index.html#duplicate_mod",
+        "rendered": null,
+        "spans": []
+      }
+    ],
+    "level": "error",
+    "message": "file is loaded as a module multiple times: `consumer_root\\src\\application_invariant_acceptance\\managed_index\\boxes\\query.rs`",
+    "spans": [
+      {
+        "byte_end": 70094,
+        "byte_start": 275,
+        "column_end": 82,
+        "column_start": 1,
+        "expansion": null,
+        "file_name": "consumer_root\\src\\application_invariant_acceptance\\managed_index\\boxes\\mod.rs",
+        "is_primary": true,
+        "label": "first loaded here",
+        "line_end": 1,
+        "line_start": 14,
+        "suggested_replacement": null,
+        "suggestion_applicability": null,
+        "text": []
+      },
+      {
+        "byte_end": 70094,
+        "byte_start": 275,
+        "column_end": 82,
+        "column_start": 1,
+        "expansion": null,
+        "file_name": "consumer_root\\src\\application_invariant_acceptance\\managed_index\\boxes\\mod.rs",
+        "is_primary": true,
+        "label": "loaded again here",
+        "line_end": 1,
+        "line_start": 14,
+        "suggested_replacement": null,
+        "suggestion_applicability": null,
+        "text": []
+      }
+    ],
+    "code": {
+      "code": "clippy::duplicate_mod",
+      "explanation": null
+    }
+  },
+  {
+    "rendered": "error: file is loaded as a module multiple times: `consumer_root\\src\\application_invariant_acceptance\\managed_index\\boxes\\seed.rs`\n  |\n  = help: replace all but one `mod` item with `use` items\n  = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.99.0/index.html#duplicate_mod\n\n",
+    "$message_type": "diagnostic",
+    "children": [
+      {
+        "children": [],
+        "code": null,
+        "level": "help",
+        "message": "replace all but one `mod` item with `use` items",
+        "rendered": null,
+        "spans": []
+      },
+      {
+        "children": [],
+        "code": null,
+        "level": "help",
+        "message": "for further information visit https://rust-lang.github.io/rust-clippy/rust-1.99.0/index.html#duplicate_mod",
+        "rendered": null,
+        "spans": []
+      }
+    ],
+    "level": "error",
+    "message": "file is loaded as a module multiple times: `consumer_root\\src\\application_invariant_acceptance\\managed_index\\boxes\\seed.rs`",
+    "spans": [
+      {
+        "byte_end": 79287,
+        "byte_start": 286,
+        "column_end": 62,
+        "column_start": 1,
+        "expansion": null,
+        "file_name": "consumer_root\\src\\application_invariant_acceptance\\managed_index\\boxes\\mod.rs",
+        "is_primary": true,
+        "label": "first loaded here",
+        "line_end": 1,
+        "line_start": 15,
+        "suggested_replacement": null,
+        "suggestion_applicability": null,
+        "text": []
+      },
+      {
+        "byte_end": 79287,
+        "byte_start": 286,
+        "column_end": 62,
+        "column_start": 1,
+        "expansion": null,
+        "file_name": "consumer_root\\src\\application_invariant_acceptance\\managed_index\\boxes\\mod.rs",
+        "is_primary": true,
+        "label": "loaded again here",
+        "line_end": 1,
+        "line_start": 15,
+        "suggested_replacement": null,
+        "suggestion_applicability": null,
+        "text": []
+      }
+    ],
+    "code": {
+      "code": "clippy::duplicate_mod",
+      "explanation": null
+    }
+  },
+  {
+    "rendered": "error: file is loaded as a module multiple times: `consumer_root\\src\\application_invariant_acceptance\\managed_index\\boxes\\status.rs`\n  |\n  = help: replace all but one `mod` item with `use` items\n  = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.99.0/index.html#duplicate_mod\n\n",
+    "$message_type": "diagnostic",
+    "children": [
+      {
+        "children": [],
+        "code": null,
+        "level": "help",
+        "message": "replace all but one `mod` item with `use` items",
+        "rendered": null,
+        "spans": []
+      },
+      {
+        "children": [],
+        "code": null,
+        "level": "help",
+        "message": "for further information visit https://rust-lang.github.io/rust-clippy/rust-1.99.0/index.html#duplicate_mod",
+        "rendered": null,
+        "spans": []
+      }
+    ],
+    "level": "error",
+    "message": "file is loaded as a module multiple times: `consumer_root\\src\\application_invariant_acceptance\\managed_index\\boxes\\status.rs`",
+    "spans": [
+      {
+        "byte_end": 82745,
+        "byte_start": 307,
+        "column_end": 82,
+        "column_start": 1,
+        "expansion": null,
+        "file_name": "consumer_root\\src\\application_invariant_acceptance\\managed_index\\boxes\\mod.rs",
+        "is_primary": true,
+        "label": "first loaded here",
+        "line_end": 1,
+        "line_start": 16,
+        "suggested_replacement": null,
+        "suggestion_applicability": null,
+        "text": []
+      },
+      {
+        "byte_end": 82745,
+        "byte_start": 307,
+        "column_end": 82,
+        "column_start": 1,
+        "expansion": null,
+        "file_name": "consumer_root\\src\\application_invariant_acceptance\\managed_index\\boxes\\mod.rs",
+        "is_primary": true,
+        "label": "loaded again here",
+        "line_end": 1,
+        "line_start": 16,
+        "suggested_replacement": null,
+        "suggestion_applicability": null,
+        "text": []
+      },
+      {
+        "byte_end": 69750,
+        "byte_start": 227,
+        "column_end": 82,
+        "column_start": 1,
+        "expansion": null,
+        "file_name": "consumer_root\\src\\application_invariant_acceptance\\managed_index\\maintained\\protected.rs",
+        "is_primary": true,
+        "label": "loaded again here",
+        "line_end": 1,
+        "line_start": 10,
+        "suggested_replacement": null,
+        "suggestion_applicability": null,
+        "text": []
+      }
+    ],
+    "code": {
+      "code": "clippy::duplicate_mod",
+      "explanation": null
+    }
+  },
+  {
+    "rendered": "error: file is loaded as a module multiple times: `consumer_root\\src\\application_invariant_acceptance\\managed_index\\boxes\\summary.rs`\n  |\n  = help: replace all but one `mod` item with `use` items\n  = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.99.0/index.html#duplicate_mod\n\n",
+    "$message_type": "diagnostic",
+    "children": [
+      {
+        "children": [],
+        "code": null,
+        "level": "help",
+        "message": "replace all but one `mod` item with `use` items",
+        "rendered": null,
+        "spans": []
+      },
+      {
+        "children": [],
+        "code": null,
+        "level": "help",
+        "message": "for further information visit https://rust-lang.github.io/rust-clippy/rust-1.99.0/index.html#duplicate_mod",
+        "rendered": null,
+        "spans": []
+      }
+    ],
+    "level": "error",
+    "message": "file is loaded as a module multiple times: `consumer_root\\src\\application_invariant_acceptance\\managed_index\\boxes\\summary.rs`",
+    "spans": [
+      {
+        "byte_end": 87865,
+        "byte_start": 330,
+        "column_end": 81,
+        "column_start": 1,
+        "expansion": null,
+        "file_name": "consumer_root\\src\\application_invariant_acceptance\\managed_index\\boxes\\mod.rs",
+        "is_primary": true,
+        "label": "first loaded here",
+        "line_end": 1,
+        "line_start": 17,
+        "suggested_replacement": null,
+        "suggestion_applicability": null,
+        "text": []
+      },
+      {
+        "byte_end": 87865,
+        "byte_start": 330,
+        "column_end": 81,
+        "column_start": 1,
+        "expansion": null,
+        "file_name": "consumer_root\\src\\application_invariant_acceptance\\managed_index\\boxes\\mod.rs",
+        "is_primary": true,
+        "label": "loaded again here",
+        "line_end": 1,
+        "line_start": 17,
+        "suggested_replacement": null,
+        "suggestion_applicability": null,
+        "text": []
+      }
+    ],
+    "code": {
+      "code": "clippy::duplicate_mod",
+      "explanation": null
+    }
+  },
+  {
+    "rendered": "error: file is loaded as a module multiple times: `consumer_root\\src\\application_invariant_acceptance\\managed_index\\directory.rs`\n  |\n  = help: replace all but one `mod` item with `use` items\n  = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.99.0/index.html#duplicate_mod\n\n",
+    "$message_type": "diagnostic",
+    "children": [
+      {
+        "children": [],
+        "code": null,
+        "level": "help",
+        "message": "replace all but one `mod` item with `use` items",
+        "rendered": null,
+        "spans": []
+      },
+      {
+        "children": [],
+        "code": null,
+        "level": "help",
+        "message": "for further information visit https://rust-lang.github.io/rust-clippy/rust-1.99.0/index.html#duplicate_mod",
+        "rendered": null,
+        "spans": []
+      }
+    ],
+    "level": "error",
+    "message": "file is loaded as a module multiple times: `consumer_root\\src\\application_invariant_acceptance\\managed_index\\directory.rs`",
+    "spans": [
+      {
+        "byte_end": 97799,
+        "byte_start": 154,
+        "column_end": 81,
+        "column_start": 1,
+        "expansion": null,
+        "file_name": "consumer_root\\src\\application_invariant_acceptance\\candidate_index.rs",
+        "is_primary": true,
+        "label": "first loaded here",
+        "line_end": 1,
+        "line_start": 5,
+        "suggested_replacement": null,
+        "suggestion_applicability": null,
+        "text": []
+      },
+      {
+        "byte_end": 66988,
+        "byte_start": 0,
+        "column_end": 15,
+        "column_start": 1,
+        "expansion": null,
+        "file_name": "consumer_root\\src\\application_invariant_acceptance\\managed_index\\directory.rs",
+        "is_primary": true,
+        "label": "loaded again here",
+        "line_end": 3,
+        "line_start": 1,
+        "suggested_replacement": null,
+        "suggestion_applicability": null,
+        "text": []
+      },
+      {
+        "byte_end": 1064157,
+        "byte_start": 0,
+        "column_end": 15,
+        "column_start": 1,
+        "expansion": null,
+        "file_name": "consumer_root\\src\\application_invariant_acceptance\\managed_index\\directory.rs",
+        "is_primary": true,
+        "label": "loaded again here",
+        "line_end": 5,
+        "line_start": 1,
+        "suggested_replacement": null,
+        "suggestion_applicability": null,
+        "text": []
+      }
+    ],
+    "code": {
+      "code": "clippy::duplicate_mod",
+      "explanation": null
+    }
+  },
+  {
+    "rendered": "error: file is loaded as a module multiple times: `consumer_root\\src\\application_invariant_acceptance\\managed_index\\host.rs`\n  |\n  = help: replace all but one `mod` item with `use` items\n  = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.99.0/index.html#duplicate_mod\n\n",
+    "$message_type": "diagnostic",
+    "children": [
+      {
+        "children": [],
+        "code": null,
+        "level": "help",
+        "message": "replace all but one `mod` item with `use` items",
+        "rendered": null,
+        "spans": []
+      },
+      {
+        "children": [],
+        "code": null,
+        "level": "help",
+        "message": "for further information visit https://rust-lang.github.io/rust-clippy/rust-1.99.0/index.html#duplicate_mod",
+        "rendered": null,
+        "spans": []
+      }
+    ],
+    "level": "error",
+    "message": "file is loaded as a module multiple times: `consumer_root\\src\\application_invariant_acceptance\\managed_index\\host.rs`",
+    "spans": [
+      {
+        "byte_end": 106405,
+        "byte_start": 210,
+        "column_end": 84,
+        "column_start": 1,
+        "expansion": null,
+        "file_name": "consumer_root\\src\\application_invariant_acceptance\\candidate_index.rs",
+        "is_primary": true,
+        "label": "first loaded here",
+        "line_end": 1,
+        "line_start": 7,
+        "suggested_replacement": null,
+        "suggestion_applicability": null,
+        "text": []
+      },
+      {
+        "byte_end": 58444,
+        "byte_start": 0,
+        "column_end": 10,
+        "column_start": 1,
+        "expansion": null,
+        "file_name": "consumer_root\\src\\application_invariant_acceptance\\managed_index\\host.rs",
+        "is_primary": true,
+        "label": "loaded again here",
+        "line_end": 6,
+        "line_start": 1,
+        "suggested_replacement": null,
+        "suggestion_applicability": null,
+        "text": []
+      }
+    ],
+    "code": {
+      "code": "clippy::duplicate_mod",
+      "explanation": null
+    }
+  },
+  {
+    "rendered": "error: file is loaded as a module multiple times: `consumer_root\\src\\application_invariant_acceptance\\managed_index\\maintained\\nested\\authoring\\handler.rs`\n  |\n  = help: replace all but one `mod` item with `use` items\n  = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.99.0/index.html#duplicate_mod\n\n",
+    "$message_type": "diagnostic",
+    "children": [
+      {
+        "children": [],
+        "code": null,
+        "level": "help",
+        "message": "replace all but one `mod` item with `use` items",
+        "rendered": null,
+        "spans": []
+      },
+      {
+        "children": [],
+        "code": null,
+        "level": "help",
+        "message": "for further information visit https://rust-lang.github.io/rust-clippy/rust-1.99.0/index.html#duplicate_mod",
+        "rendered": null,
+        "spans": []
+      }
+    ],
+    "level": "error",
+    "message": "file is loaded as a module multiple times: `consumer_root\\src\\application_invariant_acceptance\\managed_index\\maintained\\nested\\authoring\\handler.rs`",
+    "spans": [
+      {
+        "byte_end": 3999,
+        "byte_start": 234,
+        "column_end": 81,
+        "column_start": 1,
+        "expansion": null,
+        "file_name": "consumer_root\\src\\application_invariant_acceptance\\managed_index\\maintained\\nested\\authoring.rs",
+        "is_primary": true,
+        "label": "first loaded here",
+        "line_end": 1,
+        "line_start": 5,
+        "suggested_replacement": null,
+        "suggestion_applicability": null,
+        "text": []
+      },
+      {
+        "byte_end": 3999,
+        "byte_start": 234,
+        "column_end": 81,
+        "column_start": 1,
+        "expansion": null,
+        "file_name": "consumer_root\\src\\application_invariant_acceptance\\managed_index\\maintained\\nested\\authoring.rs",
+        "is_primary": true,
+        "label": "loaded again here",
+        "line_end": 1,
+        "line_start": 5,
+        "suggested_replacement": null,
+        "suggestion_applicability": null,
+        "text": []
+      }
+    ],
+    "code": {
+      "code": "clippy::duplicate_mod",
+      "explanation": null
+    }
+  },
+  {
+    "rendered": "error: file is loaded as a module multiple times: `consumer_root\\src\\application_invariant_acceptance\\managed_index\\maintained\\nested\\authoring.rs`\n  |\n  = help: replace all but one `mod` item with `use` items\n  = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.99.0/index.html#duplicate_mod\n\n",
+    "$message_type": "diagnostic",
+    "children": [
+      {
+        "children": [],
+        "code": null,
+        "level": "help",
+        "message": "replace all but one `mod` item with `use` items",
+        "rendered": null,
+        "spans": []
+      },
+      {
+        "children": [],
+        "code": null,
+        "level": "help",
+        "message": "for further information visit https://rust-lang.github.io/rust-clippy/rust-1.99.0/index.html#duplicate_mod",
+        "rendered": null,
+        "spans": []
+      }
+    ],
+    "level": "error",
+    "message": "file is loaded as a module multiple times: `consumer_root\\src\\application_invariant_acceptance\\managed_index\\maintained\\nested\\authoring.rs`",
+    "spans": [
+      {
+        "byte_end": 1476,
+        "byte_start": 89,
+        "column_end": 80,
+        "column_start": 1,
+        "expansion": null,
+        "file_name": "consumer_root\\src\\application_invariant_acceptance\\managed_index\\maintained\\events.rs",
+        "is_primary": true,
+        "label": "first loaded here",
+        "line_end": 1,
+        "line_start": 2,
+        "suggested_replacement": null,
+        "suggestion_applicability": null,
+        "text": []
+      },
+      {
+        "byte_end": 517471,
+        "byte_start": 0,
+        "column_end": 15,
+        "column_start": 1,
+        "expansion": null,
+        "file_name": "consumer_root\\src\\application_invariant_acceptance\\managed_index\\maintained\\nested\\authoring.rs",
+        "is_primary": true,
+        "label": "loaded again here",
+        "line_end": 2,
+        "line_start": 1,
+        "suggested_replacement": null,
+        "suggestion_applicability": null,
+        "text": []
+      }
+    ],
+    "code": {
+      "code": "clippy::duplicate_mod",
+      "explanation": null
+    }
+  },
+  {
+    "rendered": "error: file is loaded as a module multiple times: `consumer_root\\src\\application_invariant_acceptance\\managed_index\\maintained\\nested\\query.rs`\n  |\n  = help: replace all but one `mod` item with `use` items\n  = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.99.0/index.html#duplicate_mod\n\n",
+    "$message_type": "diagnostic",
+    "children": [
+      {
+        "children": [],
+        "code": null,
+        "level": "help",
+        "message": "replace all but one `mod` item with `use` items",
+        "rendered": null,
+        "spans": []
+      },
+      {
+        "children": [],
+        "code": null,
+        "level": "help",
+        "message": "for further information visit https://rust-lang.github.io/rust-clippy/rust-1.99.0/index.html#duplicate_mod",
+        "rendered": null,
+        "spans": []
+      }
+    ],
+    "level": "error",
+    "message": "file is loaded as a module multiple times: `consumer_root\\src\\application_invariant_acceptance\\managed_index\\maintained\\nested\\query.rs`",
+    "spans": [
+      {
+        "byte_end": 95331,
+        "byte_start": 324,
+        "column_end": 82,
+        "column_start": 1,
+        "expansion": null,
+        "file_name": "consumer_root\\src\\application_invariant_acceptance\\managed_index\\maintained\\events.rs",
+        "is_primary": true,
+        "label": "first loaded here",
+        "line_end": 1,
+        "line_start": 14,
+        "suggested_replacement": null,
+        "suggestion_applicability": null,
+        "text": []
+      },
+      {
+        "byte_end": 424014,
+        "byte_start": 0,
+        "column_end": 11,
+        "column_start": 1,
+        "expansion": null,
+        "file_name": "consumer_root\\src\\application_invariant_acceptance\\managed_index\\maintained\\nested\\query.rs",
+        "is_primary": true,
+        "label": "loaded again here",
+        "line_end": 12,
+        "line_start": 1,
+        "suggested_replacement": null,
+        "suggestion_applicability": null,
+        "text": []
+      }
+    ],
+    "code": {
+      "code": "clippy::duplicate_mod",
+      "explanation": null
+    }
+  },
+  {
+    "rendered": "error: file is loaded as a module multiple times: `consumer_root\\src\\application_invariant_acceptance\\managed_index\\maintained\\nested\\shape.rs`\n  |\n  = help: replace all but one `mod` item with `use` items\n  = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.99.0/index.html#duplicate_mod\n\n",
+    "$message_type": "diagnostic",
+    "children": [
+      {
+        "children": [],
+        "code": null,
+        "level": "help",
+        "message": "replace all but one `mod` item with `use` items",
+        "rendered": null,
+        "spans": []
+      },
+      {
+        "children": [],
+        "code": null,
+        "level": "help",
+        "message": "for further information visit https://rust-lang.github.io/rust-clippy/rust-1.99.0/index.html#duplicate_mod",
+        "rendered": null,
+        "spans": []
+      }
+    ],
+    "level": "error",
+    "message": "file is loaded as a module multiple times: `consumer_root\\src\\application_invariant_acceptance\\managed_index\\maintained\\nested\\shape.rs`",
+    "spans": [
+      {
+        "byte_end": 118129,
+        "byte_start": 411,
+        "column_end": 87,
+        "column_start": 1,
+        "expansion": null,
+        "file_name": "consumer_root\\src\\application_invariant_acceptance\\managed_index\\maintained\\events.rs",
+        "is_primary": true,
+        "label": "first loaded here",
+        "line_end": 1,
+        "line_start": 18,
+        "suggested_replacement": null,
+        "suggestion_applicability": null,
+        "text": []
+      },
+      {
+        "byte_end": 401260,
+        "byte_start": 0,
+        "column_end": 11,
+        "column_start": 1,
+        "expansion": null,
+        "file_name": "consumer_root\\src\\application_invariant_acceptance\\managed_index\\maintained\\nested\\shape.rs",
+        "is_primary": true,
+        "label": "loaded again here",
+        "line_end": 15,
+        "line_start": 1,
+        "suggested_replacement": null,
+        "suggestion_applicability": null,
+        "text": []
+      }
+    ],
+    "code": {
+      "code": "clippy::duplicate_mod",
+      "explanation": null
+    }
+  },
+  {
+    "rendered": "error: file is loaded as a module multiple times: `consumer_root\\src\\application_invariant_acceptance\\managed_index\\maintained\\rule\\evaluation.rs`\n  |\n  = help: replace all but one `mod` item with `use` items\n  = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.99.0/index.html#duplicate_mod\n\n",
+    "$message_type": "diagnostic",
+    "children": [
+      {
+        "children": [],
+        "code": null,
+        "level": "help",
+        "message": "replace all but one `mod` item with `use` items",
+        "rendered": null,
+        "spans": []
+      },
+      {
+        "children": [],
+        "code": null,
+        "level": "help",
+        "message": "for further information visit https://rust-lang.github.io/rust-clippy/rust-1.99.0/index.html#duplicate_mod",
+        "rendered": null,
+        "spans": []
+      }
+    ],
+    "level": "error",
+    "message": "file is loaded as a module multiple times: `consumer_root\\src\\application_invariant_acceptance\\managed_index\\maintained\\rule\\evaluation.rs`",
+    "spans": [
+      {
+        "byte_end": 1635,
+        "byte_start": 1501,
+        "column_end": 71,
+        "column_start": 1,
+        "expansion": null,
+        "file_name": "consumer_root\\src\\application_invariant_acceptance\\managed_index\\maintained\\rule.rs",
+        "is_primary": true,
+        "label": "first loaded here",
+        "line_end": 1,
+        "line_start": 37,
+        "suggested_replacement": null,
+        "suggestion_applicability": null,
+        "text": []
+      },
+      {
+        "byte_end": 1553,
+        "byte_start": 1373,
+        "column_end": 71,
+        "column_start": 1,
+        "expansion": null,
+        "file_name": "consumer_root\\src\\application_invariant_acceptance\\managed_index\\refusing\\rule.rs",
+        "is_primary": true,
+        "label": "loaded again here",
+        "line_end": 1,
+        "line_start": 35,
+        "suggested_replacement": null,
+        "suggestion_applicability": null,
+        "text": []
+      }
+    ],
+    "code": {
+      "code": "clippy::duplicate_mod",
+      "explanation": null
+    }
+  },
+  {
+    "rendered": "error: file is loaded as a module multiple times: `consumer_root\\src\\application_invariant_acceptance\\managed_index\\mutation\\handler.rs`\n  |\n  = help: replace all but one `mod` item with `use` items\n  = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.99.0/index.html#duplicate_mod\n\n",
+    "$message_type": "diagnostic",
+    "children": [
+      {
+        "children": [],
+        "code": null,
+        "level": "help",
+        "message": "replace all but one `mod` item with `use` items",
+        "rendered": null,
+        "spans": []
+      },
+      {
+        "children": [],
+        "code": null,
+        "level": "help",
+        "message": "for further information visit https://rust-lang.github.io/rust-clippy/rust-1.99.0/index.html#duplicate_mod",
+        "rendered": null,
+        "spans": []
+      }
+    ],
+    "level": "error",
+    "message": "file is loaded as a module multiple times: `consumer_root\\src\\application_invariant_acceptance\\managed_index\\mutation\\handler.rs`",
+    "spans": [
+      {
+        "byte_end": 4782,
+        "byte_start": 277,
+        "column_end": 87,
+        "column_start": 1,
+        "expansion": null,
+        "file_name": "consumer_root\\src\\application_invariant_acceptance\\managed_index\\mutation.rs",
+        "is_primary": true,
+        "label": "first loaded here",
+        "line_end": 1,
+        "line_start": 7,
+        "suggested_replacement": null,
+        "suggestion_applicability": null,
+        "text": []
+      },
+      {
+        "byte_end": 4782,
+        "byte_start": 277,
+        "column_end": 87,
+        "column_start": 1,
+        "expansion": null,
+        "file_name": "consumer_root\\src\\application_invariant_acceptance\\managed_index\\maintained\\..\\mutation.rs",
+        "is_primary": true,
+        "label": "loaded again here",
+        "line_end": 1,
+        "line_start": 7,
+        "suggested_replacement": null,
+        "suggestion_applicability": null,
+        "text": []
+      },
+      {
+        "byte_end": 4782,
+        "byte_start": 277,
+        "column_end": 87,
+        "column_start": 1,
+        "expansion": null,
+        "file_name": "consumer_root\\src\\application_invariant_acceptance\\managed_index\\mutation.rs",
+        "is_primary": true,
+        "label": "loaded again here",
+        "line_end": 1,
+        "line_start": 7,
+        "suggested_replacement": null,
+        "suggestion_applicability": null,
+        "text": []
+      },
+      {
+        "byte_end": 4782,
+        "byte_start": 277,
+        "column_end": 87,
+        "column_start": 1,
+        "expansion": null,
+        "file_name": "consumer_root\\src\\application_invariant_acceptance\\managed_index\\maintained\\..\\mutation.rs",
+        "is_primary": true,
+        "label": "loaded again here",
+        "line_end": 1,
+        "line_start": 7,
+        "suggested_replacement": null,
+        "suggestion_applicability": null,
+        "text": []
+      },
+      {
+        "byte_end": 4782,
+        "byte_start": 277,
+        "column_end": 87,
+        "column_start": 1,
+        "expansion": null,
+        "file_name": "consumer_root\\src\\application_invariant_acceptance\\managed_index\\mutation.rs",
+        "is_primary": true,
+        "label": "loaded again here",
+        "line_end": 1,
+        "line_start": 7,
+        "suggested_replacement": null,
+        "suggestion_applicability": null,
+        "text": []
+      },
+      {
+        "byte_end": 4782,
+        "byte_start": 277,
+        "column_end": 87,
+        "column_start": 1,
+        "expansion": null,
+        "file_name": "consumer_root\\src\\application_invariant_acceptance\\managed_index\\mutation.rs",
+        "is_primary": true,
+        "label": "loaded again here",
+        "line_end": 1,
+        "line_start": 7,
+        "suggested_replacement": null,
+        "suggestion_applicability": null,
+        "text": []
+      }
+    ],
+    "code": {
+      "code": "clippy::duplicate_mod",
+      "explanation": null
+    }
+  },
+  {
+    "rendered": "error: file is loaded as a module multiple times: `consumer_root\\src\\application_invariant_acceptance\\managed_index\\mutation.rs`\n  |\n  = help: replace all but one `mod` item with `use` items\n  = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.99.0/index.html#duplicate_mod\n\n",
+    "$message_type": "diagnostic",
+    "children": [
+      {
+        "children": [],
+        "code": null,
+        "level": "help",
+        "message": "replace all but one `mod` item with `use` items",
+        "rendered": null,
+        "spans": []
+      },
+      {
+        "children": [],
+        "code": null,
+        "level": "help",
+        "message": "for further information visit https://rust-lang.github.io/rust-clippy/rust-1.99.0/index.html#duplicate_mod",
+        "rendered": null,
+        "spans": []
+      }
+    ],
+    "level": "error",
+    "message": "file is loaded as a module multiple times: `consumer_root\\src\\application_invariant_acceptance\\managed_index\\mutation.rs`",
+    "spans": [
+      {
+        "byte_end": 113622,
+        "byte_start": 272,
+        "column_end": 79,
+        "column_start": 1,
+        "expansion": null,
+        "file_name": "consumer_root\\src\\application_invariant_acceptance\\candidate_index.rs",
+        "is_primary": true,
+        "label": "first loaded here",
+        "line_end": 1,
+        "line_start": 10,
+        "suggested_replacement": null,
+        "suggestion_applicability": null,
+        "text": []
+      },
+      {
+        "byte_end": 46925,
+        "byte_start": 207,
+        "column_end": 79,
+        "column_start": 1,
+        "expansion": null,
+        "file_name": "consumer_root\\src\\application_invariant_acceptance\\managed_index\\maintained\\events.rs",
+        "is_primary": true,
+        "label": "loaded again here",
+        "line_end": 1,
+        "line_start": 8,
+        "suggested_replacement": null,
+        "suggestion_applicability": null,
+        "text": []
+      },
+      {
+        "byte_end": 121068,
+        "byte_start": 0,
+        "column_end": 14,
+        "column_start": 1,
+        "expansion": null,
+        "file_name": "consumer_root\\src\\application_invariant_acceptance\\managed_index\\mutation.rs",
+        "is_primary": true,
+        "label": "loaded again here",
+        "line_end": 14,
+        "line_start": 1,
+        "suggested_replacement": null,
+        "suggestion_applicability": null,
+        "text": []
+      },
+      {
+        "byte_end": 472279,
+        "byte_start": 0,
+        "column_end": 14,
+        "column_start": 1,
+        "expansion": null,
+        "file_name": "consumer_root\\src\\application_invariant_acceptance\\managed_index\\maintained\\..\\mutation.rs",
+        "is_primary": true,
+        "label": "loaded again here",
+        "line_end": 9,
+        "line_start": 1,
+        "suggested_replacement": null,
+        "suggestion_applicability": null,
+        "text": []
+      },
+      {
+        "byte_end": 51428,
+        "byte_start": 0,
+        "column_end": 14,
+        "column_start": 1,
+        "expansion": null,
+        "file_name": "consumer_root\\src\\application_invariant_acceptance\\managed_index\\mutation.rs",
+        "is_primary": true,
+        "label": "loaded again here",
+        "line_end": 11,
+        "line_start": 1,
+        "suggested_replacement": null,
+        "suggestion_applicability": null,
+        "text": []
+      },
+      {
+        "byte_end": 1048504,
+        "byte_start": 0,
+        "column_end": 14,
+        "column_start": 1,
+        "expansion": null,
+        "file_name": "consumer_root\\src\\application_invariant_acceptance\\managed_index\\mutation.rs",
+        "is_primary": true,
+        "label": "loaded again here",
+        "line_end": 8,
+        "line_start": 1,
+        "suggested_replacement": null,
+        "suggestion_applicability": null,
+        "text": []
+      }
+    ],
+    "code": {
+      "code": "clippy::duplicate_mod",
+      "explanation": null
+    }
+  },
+  {
+    "rendered": "error: file is loaded as a module multiple times: `consumer_root\\src\\application_invariant_acceptance\\managed_index\\prefix\\definition.rs`\n  |\n  = help: replace all but one `mod` item with `use` items\n  = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.99.0/index.html#duplicate_mod\n\n",
+    "$message_type": "diagnostic",
+    "children": [
+      {
+        "children": [],
+        "code": null,
+        "level": "help",
+        "message": "replace all but one `mod` item with `use` items",
+        "rendered": null,
+        "spans": []
+      },
+      {
+        "children": [],
+        "code": null,
+        "level": "help",
+        "message": "for further information visit https://rust-lang.github.io/rust-clippy/rust-1.99.0/index.html#duplicate_mod",
+        "rendered": null,
+        "spans": []
+      }
+    ],
+    "level": "error",
+    "message": "file is loaded as a module multiple times: `consumer_root\\src\\application_invariant_acceptance\\managed_index\\prefix\\definition.rs`",
+    "spans": [
+      {
+        "byte_end": 12537,
+        "byte_start": 631,
+        "column_end": 69,
+        "column_start": 1,
+        "expansion": null,
+        "file_name": "consumer_root\\src\\application_invariant_acceptance\\managed_index\\prefix.rs",
+        "is_primary": true,
+        "label": "first loaded here",
+        "line_end": 1,
+        "line_start": 15,
+        "suggested_replacement": null,
+        "suggestion_applicability": null,
+        "text": []
+      },
+      {
+        "byte_end": 12537,
+        "byte_start": 631,
+        "column_end": 69,
+        "column_start": 1,
+        "expansion": null,
+        "file_name": "consumer_root\\src\\application_invariant_acceptance\\managed_index\\maintained\\..\\prefix.rs",
+        "is_primary": true,
+        "label": "loaded again here",
+        "line_end": 1,
+        "line_start": 15,
+        "suggested_replacement": null,
+        "suggestion_applicability": null,
+        "text": []
+      },
+      {
+        "byte_end": 12537,
+        "byte_start": 631,
+        "column_end": 69,
+        "column_start": 1,
+        "expansion": null,
+        "file_name": "consumer_root\\src\\application_invariant_acceptance\\managed_index\\maintained\\..\\prefix.rs",
+        "is_primary": true,
+        "label": "loaded again here",
+        "line_end": 1,
+        "line_start": 15,
+        "suggested_replacement": null,
+        "suggestion_applicability": null,
+        "text": []
+      },
+      {
+        "byte_end": 12537,
+        "byte_start": 631,
+        "column_end": 69,
+        "column_start": 1,
+        "expansion": null,
+        "file_name": "consumer_root\\src\\application_invariant_acceptance\\managed_index\\prefix.rs",
+        "is_primary": true,
+        "label": "loaded again here",
+        "line_end": 1,
+        "line_start": 15,
+        "suggested_replacement": null,
+        "suggestion_applicability": null,
+        "text": []
+      },
+      {
+        "byte_end": 12537,
+        "byte_start": 631,
+        "column_end": 69,
+        "column_start": 1,
+        "expansion": null,
+        "file_name": "consumer_root\\src\\application_invariant_acceptance\\managed_index\\prefix.rs",
+        "is_primary": true,
+        "label": "loaded again here",
+        "line_end": 1,
+        "line_start": 15,
+        "suggested_replacement": null,
+        "suggestion_applicability": null,
+        "text": []
+      },
+      {
+        "byte_end": 12537,
+        "byte_start": 631,
+        "column_end": 69,
+        "column_start": 1,
+        "expansion": null,
+        "file_name": "consumer_root\\src\\application_invariant_acceptance\\managed_index\\prefix.rs",
+        "is_primary": true,
+        "label": "loaded again here",
+        "line_end": 1,
+        "line_start": 15,
+        "suggested_replacement": null,
+        "suggestion_applicability": null,
+        "text": []
+      }
+    ],
+    "code": {
+      "code": "clippy::duplicate_mod",
+      "explanation": null
+    }
+  },
+  {
+    "rendered": "error: file is loaded as a module multiple times: `consumer_root\\src\\application_invariant_acceptance\\managed_index\\prefix\\predicate.rs`\n  |\n  = help: replace all but one `mod` item with `use` items\n  = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.99.0/index.html#duplicate_mod\n\n",
+    "$message_type": "diagnostic",
+    "children": [
+      {
+        "children": [],
+        "code": null,
+        "level": "help",
+        "message": "replace all but one `mod` item with `use` items",
+        "rendered": null,
+        "spans": []
+      },
+      {
+        "children": [],
+        "code": null,
+        "level": "help",
+        "message": "for further information visit https://rust-lang.github.io/rust-clippy/rust-1.99.0/index.html#duplicate_mod",
+        "rendered": null,
+        "spans": []
+      }
+    ],
+    "level": "error",
+    "message": "file is loaded as a module multiple times: `consumer_root\\src\\application_invariant_acceptance\\managed_index\\prefix\\predicate.rs`",
+    "spans": [
+      {
+        "byte_end": 14361,
+        "byte_start": 680,
+        "column_end": 73,
+        "column_start": 1,
+        "expansion": null,
+        "file_name": "consumer_root\\src\\application_invariant_acceptance\\managed_index\\prefix.rs",
+        "is_primary": true,
+        "label": "first loaded here",
+        "line_end": 1,
+        "line_start": 17,
+        "suggested_replacement": null,
+        "suggestion_applicability": null,
+        "text": []
+      },
+      {
+        "byte_end": 14361,
+        "byte_start": 680,
+        "column_end": 73,
+        "column_start": 1,
+        "expansion": null,
+        "file_name": "consumer_root\\src\\application_invariant_acceptance\\managed_index\\maintained\\..\\prefix.rs",
+        "is_primary": true,
+        "label": "loaded again here",
+        "line_end": 1,
+        "line_start": 17,
+        "suggested_replacement": null,
+        "suggestion_applicability": null,
+        "text": []
+      },
+      {
+        "byte_end": 14361,
+        "byte_start": 680,
+        "column_end": 73,
+        "column_start": 1,
+        "expansion": null,
+        "file_name": "consumer_root\\src\\application_invariant_acceptance\\managed_index\\maintained\\..\\prefix.rs",
+        "is_primary": true,
+        "label": "loaded again here",
+        "line_end": 1,
+        "line_start": 17,
+        "suggested_replacement": null,
+        "suggestion_applicability": null,
+        "text": []
+      },
+      {
+        "byte_end": 14361,
+        "byte_start": 680,
+        "column_end": 73,
+        "column_start": 1,
+        "expansion": null,
+        "file_name": "consumer_root\\src\\application_invariant_acceptance\\managed_index\\prefix.rs",
+        "is_primary": true,
+        "label": "loaded again here",
+        "line_end": 1,
+        "line_start": 17,
+        "suggested_replacement": null,
+        "suggestion_applicability": null,
+        "text": []
+      },
+      {
+        "byte_end": 14361,
+        "byte_start": 680,
+        "column_end": 73,
+        "column_start": 1,
+        "expansion": null,
+        "file_name": "consumer_root\\src\\application_invariant_acceptance\\managed_index\\prefix.rs",
+        "is_primary": true,
+        "label": "loaded again here",
+        "line_end": 1,
+        "line_start": 17,
+        "suggested_replacement": null,
+        "suggestion_applicability": null,
+        "text": []
+      },
+      {
+        "byte_end": 14361,
+        "byte_start": 680,
+        "column_end": 73,
+        "column_start": 1,
+        "expansion": null,
+        "file_name": "consumer_root\\src\\application_invariant_acceptance\\managed_index\\prefix.rs",
+        "is_primary": true,
+        "label": "loaded again here",
+        "line_end": 1,
+        "line_start": 17,
+        "suggested_replacement": null,
+        "suggestion_applicability": null,
+        "text": []
+      }
+    ],
+    "code": {
+      "code": "clippy::duplicate_mod",
+      "explanation": null
+    }
+  },
+  {
+    "rendered": "error: file is loaded as a module multiple times: `consumer_root\\src\\application_invariant_acceptance\\managed_index\\prefix\\refinement.rs`\n  |\n  = help: replace all but one `mod` item with `use` items\n  = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.99.0/index.html#duplicate_mod\n\n",
+    "$message_type": "diagnostic",
+    "children": [
+      {
+        "children": [],
+        "code": null,
+        "level": "help",
+        "message": "replace all but one `mod` item with `use` items",
+        "rendered": null,
+        "spans": []
+      },
+      {
+        "children": [],
+        "code": null,
+        "level": "help",
+        "message": "for further information visit https://rust-lang.github.io/rust-clippy/rust-1.99.0/index.html#duplicate_mod",
+        "rendered": null,
+        "spans": []
+      }
+    ],
+    "level": "error",
+    "message": "file is loaded as a module multiple times: `consumer_root\\src\\application_invariant_acceptance\\managed_index\\prefix\\refinement.rs`",
+    "spans": [
+      {
+        "byte_end": 15803,
+        "byte_start": 727,
+        "column_end": 77,
+        "column_start": 1,
+        "expansion": null,
+        "file_name": "consumer_root\\src\\application_invariant_acceptance\\managed_index\\prefix.rs",
+        "is_primary": true,
+        "label": "first loaded here",
+        "line_end": 1,
+        "line_start": 19,
+        "suggested_replacement": null,
+        "suggestion_applicability": null,
+        "text": []
+      },
+      {
+        "byte_end": 15803,
+        "byte_start": 727,
+        "column_end": 77,
+        "column_start": 1,
+        "expansion": null,
+        "file_name": "consumer_root\\src\\application_invariant_acceptance\\managed_index\\maintained\\..\\prefix.rs",
+        "is_primary": true,
+        "label": "loaded again here",
+        "line_end": 1,
+        "line_start": 19,
+        "suggested_replacement": null,
+        "suggestion_applicability": null,
+        "text": []
+      },
+      {
+        "byte_end": 15803,
+        "byte_start": 727,
+        "column_end": 77,
+        "column_start": 1,
+        "expansion": null,
+        "file_name": "consumer_root\\src\\application_invariant_acceptance\\managed_index\\maintained\\..\\prefix.rs",
+        "is_primary": true,
+        "label": "loaded again here",
+        "line_end": 1,
+        "line_start": 19,
+        "suggested_replacement": null,
+        "suggestion_applicability": null,
+        "text": []
+      },
+      {
+        "byte_end": 15803,
+        "byte_start": 727,
+        "column_end": 77,
+        "column_start": 1,
+        "expansion": null,
+        "file_name": "consumer_root\\src\\application_invariant_acceptance\\managed_index\\prefix.rs",
+        "is_primary": true,
+        "label": "loaded again here",
+        "line_end": 1,
+        "line_start": 19,
+        "suggested_replacement": null,
+        "suggestion_applicability": null,
+        "text": []
+      },
+      {
+        "byte_end": 15803,
+        "byte_start": 727,
+        "column_end": 77,
+        "column_start": 1,
+        "expansion": null,
+        "file_name": "consumer_root\\src\\application_invariant_acceptance\\managed_index\\prefix.rs",
+        "is_primary": true,
+        "label": "loaded again here",
+        "line_end": 1,
+        "line_start": 19,
+        "suggested_replacement": null,
+        "suggestion_applicability": null,
+        "text": []
+      },
+      {
+        "byte_end": 15803,
+        "byte_start": 727,
+        "column_end": 77,
+        "column_start": 1,
+        "expansion": null,
+        "file_name": "consumer_root\\src\\application_invariant_acceptance\\managed_index\\prefix.rs",
+        "is_primary": true,
+        "label": "loaded again here",
+        "line_end": 1,
+        "line_start": 19,
+        "suggested_replacement": null,
+        "suggestion_applicability": null,
+        "text": []
+      }
+    ],
+    "code": {
+      "code": "clippy::duplicate_mod",
+      "explanation": null
+    }
+  },
+  {
+    "rendered": "error: file is loaded as a module multiple times: `consumer_root\\src\\application_invariant_acceptance\\managed_index\\prefix\\storage.rs`\n  |\n  = help: replace all but one `mod` item with `use` items\n  = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.99.0/index.html#duplicate_mod\n\n",
+    "$message_type": "diagnostic",
+    "children": [
+      {
+        "children": [],
+        "code": null,
+        "level": "help",
+        "message": "replace all but one `mod` item with `use` items",
+        "rendered": null,
+        "spans": []
+      },
+      {
+        "children": [],
+        "code": null,
+        "level": "help",
+        "message": "for further information visit https://rust-lang.github.io/rust-clippy/rust-1.99.0/index.html#duplicate_mod",
+        "rendered": null,
+        "spans": []
+      }
+    ],
+    "level": "error",
+    "message": "file is loaded as a module multiple times: `consumer_root\\src\\application_invariant_acceptance\\managed_index\\prefix\\storage.rs`",
+    "spans": [
+      {
+        "byte_end": 17138,
+        "byte_start": 776,
+        "column_end": 75,
+        "column_start": 1,
+        "expansion": null,
+        "file_name": "consumer_root\\src\\application_invariant_acceptance\\managed_index\\prefix.rs",
+        "is_primary": true,
+        "label": "first loaded here",
+        "line_end": 1,
+        "line_start": 21,
+        "suggested_replacement": null,
+        "suggestion_applicability": null,
+        "text": []
+      },
+      {
+        "byte_end": 17138,
+        "byte_start": 776,
+        "column_end": 75,
+        "column_start": 1,
+        "expansion": null,
+        "file_name": "consumer_root\\src\\application_invariant_acceptance\\managed_index\\maintained\\..\\prefix.rs",
+        "is_primary": true,
+        "label": "loaded again here",
+        "line_end": 1,
+        "line_start": 21,
+        "suggested_replacement": null,
+        "suggestion_applicability": null,
+        "text": []
+      },
+      {
+        "byte_end": 17138,
+        "byte_start": 776,
+        "column_end": 75,
+        "column_start": 1,
+        "expansion": null,
+        "file_name": "consumer_root\\src\\application_invariant_acceptance\\managed_index\\maintained\\..\\prefix.rs",
+        "is_primary": true,
+        "label": "loaded again here",
+        "line_end": 1,
+        "line_start": 21,
+        "suggested_replacement": null,
+        "suggestion_applicability": null,
+        "text": []
+      },
+      {
+        "byte_end": 17138,
+        "byte_start": 776,
+        "column_end": 75,
+        "column_start": 1,
+        "expansion": null,
+        "file_name": "consumer_root\\src\\application_invariant_acceptance\\managed_index\\prefix.rs",
+        "is_primary": true,
+        "label": "loaded again here",
+        "line_end": 1,
+        "line_start": 21,
+        "suggested_replacement": null,
+        "suggestion_applicability": null,
+        "text": []
+      },
+      {
+        "byte_end": 17138,
+        "byte_start": 776,
+        "column_end": 75,
+        "column_start": 1,
+        "expansion": null,
+        "file_name": "consumer_root\\src\\application_invariant_acceptance\\managed_index\\prefix.rs",
+        "is_primary": true,
+        "label": "loaded again here",
+        "line_end": 1,
+        "line_start": 21,
+        "suggested_replacement": null,
+        "suggestion_applicability": null,
+        "text": []
+      },
+      {
+        "byte_end": 17138,
+        "byte_start": 776,
+        "column_end": 75,
+        "column_start": 1,
+        "expansion": null,
+        "file_name": "consumer_root\\src\\application_invariant_acceptance\\managed_index\\prefix.rs",
+        "is_primary": true,
+        "label": "loaded again here",
+        "line_end": 1,
+        "line_start": 21,
+        "suggested_replacement": null,
+        "suggestion_applicability": null,
+        "text": []
+      }
+    ],
+    "code": {
+      "code": "clippy::duplicate_mod",
+      "explanation": null
+    }
+  },
+  {
+    "rendered": "error: file is loaded as a module multiple times: `consumer_root\\src\\application_invariant_acceptance\\managed_index\\prefix\\structure.rs`\n  |\n  = help: replace all but one `mod` item with `use` items\n  = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.99.0/index.html#duplicate_mod\n\n",
+    "$message_type": "diagnostic",
+    "children": [
+      {
+        "children": [],
+        "code": null,
+        "level": "help",
+        "message": "replace all but one `mod` item with `use` items",
+        "rendered": null,
+        "spans": []
+      },
+      {
+        "children": [],
+        "code": null,
+        "level": "help",
+        "message": "for further information visit https://rust-lang.github.io/rust-clippy/rust-1.99.0/index.html#duplicate_mod",
+        "rendered": null,
+        "spans": []
+      }
+    ],
+    "level": "error",
+    "message": "file is loaded as a module multiple times: `consumer_root\\src\\application_invariant_acceptance\\managed_index\\prefix\\structure.rs`",
+    "spans": [
+      {
+        "byte_end": 19597,
+        "byte_start": 819,
+        "column_end": 85,
+        "column_start": 1,
+        "expansion": null,
+        "file_name": "consumer_root\\src\\application_invariant_acceptance\\managed_index\\prefix.rs",
+        "is_primary": true,
+        "label": "first loaded here",
+        "line_end": 1,
+        "line_start": 23,
+        "suggested_replacement": null,
+        "suggestion_applicability": null,
+        "text": []
+      },
+      {
+        "byte_end": 19597,
+        "byte_start": 819,
+        "column_end": 85,
+        "column_start": 1,
+        "expansion": null,
+        "file_name": "consumer_root\\src\\application_invariant_acceptance\\managed_index\\maintained\\..\\prefix.rs",
+        "is_primary": true,
+        "label": "loaded again here",
+        "line_end": 1,
+        "line_start": 23,
+        "suggested_replacement": null,
+        "suggestion_applicability": null,
+        "text": []
+      },
+      {
+        "byte_end": 19597,
+        "byte_start": 819,
+        "column_end": 85,
+        "column_start": 1,
+        "expansion": null,
+        "file_name": "consumer_root\\src\\application_invariant_acceptance\\managed_index\\maintained\\..\\prefix.rs",
+        "is_primary": true,
+        "label": "loaded again here",
+        "line_end": 1,
+        "line_start": 23,
+        "suggested_replacement": null,
+        "suggestion_applicability": null,
+        "text": []
+      },
+      {
+        "byte_end": 19597,
+        "byte_start": 819,
+        "column_end": 85,
+        "column_start": 1,
+        "expansion": null,
+        "file_name": "consumer_root\\src\\application_invariant_acceptance\\managed_index\\prefix.rs",
+        "is_primary": true,
+        "label": "loaded again here",
+        "line_end": 1,
+        "line_start": 23,
+        "suggested_replacement": null,
+        "suggestion_applicability": null,
+        "text": []
+      },
+      {
+        "byte_end": 19597,
+        "byte_start": 819,
+        "column_end": 85,
+        "column_start": 1,
+        "expansion": null,
+        "file_name": "consumer_root\\src\\application_invariant_acceptance\\managed_index\\prefix.rs",
+        "is_primary": true,
+        "label": "loaded again here",
+        "line_end": 1,
+        "line_start": 23,
+        "suggested_replacement": null,
+        "suggestion_applicability": null,
+        "text": []
+      },
+      {
+        "byte_end": 19597,
+        "byte_start": 819,
+        "column_end": 85,
+        "column_start": 1,
+        "expansion": null,
+        "file_name": "consumer_root\\src\\application_invariant_acceptance\\managed_index\\prefix.rs",
+        "is_primary": true,
+        "label": "loaded again here",
+        "line_end": 1,
+        "line_start": 23,
+        "suggested_replacement": null,
+        "suggestion_applicability": null,
+        "text": []
+      }
+    ],
+    "code": {
+      "code": "clippy::duplicate_mod",
+      "explanation": null
+    }
+  },
+  {
+    "rendered": "error: file is loaded as a module multiple times: `consumer_root\\src\\application_invariant_acceptance\\managed_index\\prefix\\summary.rs`\n  |\n  = help: replace all but one `mod` item with `use` items\n  = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.99.0/index.html#duplicate_mod\n\n",
+    "$message_type": "diagnostic",
+    "children": [
+      {
+        "children": [],
+        "code": null,
+        "level": "help",
+        "message": "replace all but one `mod` item with `use` items",
+        "rendered": null,
+        "spans": []
+      },
+      {
+        "children": [],
+        "code": null,
+        "level": "help",
+        "message": "for further information visit https://rust-lang.github.io/rust-clippy/rust-1.99.0/index.html#duplicate_mod",
+        "rendered": null,
+        "spans": []
+      }
+    ],
+    "level": "error",
+    "message": "file is loaded as a module multiple times: `consumer_root\\src\\application_invariant_acceptance\\managed_index\\prefix\\summary.rs`",
+    "spans": [
+      {
+        "byte_end": 22271,
+        "byte_start": 877,
+        "column_end": 76,
+        "column_start": 1,
+        "expansion": null,
+        "file_name": "consumer_root\\src\\application_invariant_acceptance\\managed_index\\prefix.rs",
+        "is_primary": true,
+        "label": "first loaded here",
+        "line_end": 1,
+        "line_start": 25,
+        "suggested_replacement": null,
+        "suggestion_applicability": null,
+        "text": []
+      },
+      {
+        "byte_end": 22271,
+        "byte_start": 877,
+        "column_end": 76,
+        "column_start": 1,
+        "expansion": null,
+        "file_name": "consumer_root\\src\\application_invariant_acceptance\\managed_index\\maintained\\..\\prefix.rs",
+        "is_primary": true,
+        "label": "loaded again here",
+        "line_end": 1,
+        "line_start": 25,
+        "suggested_replacement": null,
+        "suggestion_applicability": null,
+        "text": []
+      },
+      {
+        "byte_end": 22271,
+        "byte_start": 877,
+        "column_end": 76,
+        "column_start": 1,
+        "expansion": null,
+        "file_name": "consumer_root\\src\\application_invariant_acceptance\\managed_index\\maintained\\..\\prefix.rs",
+        "is_primary": true,
+        "label": "loaded again here",
+        "line_end": 1,
+        "line_start": 25,
+        "suggested_replacement": null,
+        "suggestion_applicability": null,
+        "text": []
+      },
+      {
+        "byte_end": 22271,
+        "byte_start": 877,
+        "column_end": 76,
+        "column_start": 1,
+        "expansion": null,
+        "file_name": "consumer_root\\src\\application_invariant_acceptance\\managed_index\\prefix.rs",
+        "is_primary": true,
+        "label": "loaded again here",
+        "line_end": 1,
+        "line_start": 25,
+        "suggested_replacement": null,
+        "suggestion_applicability": null,
+        "text": []
+      },
+      {
+        "byte_end": 22271,
+        "byte_start": 877,
+        "column_end": 76,
+        "column_start": 1,
+        "expansion": null,
+        "file_name": "consumer_root\\src\\application_invariant_acceptance\\managed_index\\prefix.rs",
+        "is_primary": true,
+        "label": "loaded again here",
+        "line_end": 1,
+        "line_start": 25,
+        "suggested_replacement": null,
+        "suggestion_applicability": null,
+        "text": []
+      },
+      {
+        "byte_end": 22271,
+        "byte_start": 877,
+        "column_end": 76,
+        "column_start": 1,
+        "expansion": null,
+        "file_name": "consumer_root\\src\\application_invariant_acceptance\\managed_index\\prefix.rs",
+        "is_primary": true,
+        "label": "loaded again here",
+        "line_end": 1,
+        "line_start": 25,
+        "suggested_replacement": null,
+        "suggestion_applicability": null,
+        "text": []
+      }
+    ],
+    "code": {
+      "code": "clippy::duplicate_mod",
+      "explanation": null
+    }
+  },
+  {
+    "rendered": "error: file is loaded as a module multiple times: `consumer_root\\src\\application_invariant_acceptance\\managed_index\\prefix\\text_read.rs`\n  |\n  = help: replace all but one `mod` item with `use` items\n  = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.99.0/index.html#duplicate_mod\n\n",
+    "$message_type": "diagnostic",
+    "children": [
+      {
+        "children": [],
+        "code": null,
+        "level": "help",
+        "message": "replace all but one `mod` item with `use` items",
+        "rendered": null,
+        "spans": []
+      },
+      {
+        "children": [],
+        "code": null,
+        "level": "help",
+        "message": "for further information visit https://rust-lang.github.io/rust-clippy/rust-1.99.0/index.html#duplicate_mod",
+        "rendered": null,
+        "spans": []
+      }
+    ],
+    "level": "error",
+    "message": "file is loaded as a module multiple times: `consumer_root\\src\\application_invariant_acceptance\\managed_index\\prefix\\text_read.rs`",
+    "spans": [
+      {
+        "byte_end": 25451,
+        "byte_start": 920,
+        "column_end": 74,
+        "column_start": 1,
+        "expansion": null,
+        "file_name": "consumer_root\\src\\application_invariant_acceptance\\managed_index\\prefix.rs",
+        "is_primary": true,
+        "label": "first loaded here",
+        "line_end": 1,
+        "line_start": 27,
+        "suggested_replacement": null,
+        "suggestion_applicability": null,
+        "text": []
+      },
+      {
+        "byte_end": 25451,
+        "byte_start": 920,
+        "column_end": 74,
+        "column_start": 1,
+        "expansion": null,
+        "file_name": "consumer_root\\src\\application_invariant_acceptance\\managed_index\\maintained\\..\\prefix.rs",
+        "is_primary": true,
+        "label": "loaded again here",
+        "line_end": 1,
+        "line_start": 27,
+        "suggested_replacement": null,
+        "suggestion_applicability": null,
+        "text": []
+      },
+      {
+        "byte_end": 25451,
+        "byte_start": 920,
+        "column_end": 74,
+        "column_start": 1,
+        "expansion": null,
+        "file_name": "consumer_root\\src\\application_invariant_acceptance\\managed_index\\maintained\\..\\prefix.rs",
+        "is_primary": true,
+        "label": "loaded again here",
+        "line_end": 1,
+        "line_start": 27,
+        "suggested_replacement": null,
+        "suggestion_applicability": null,
+        "text": []
+      },
+      {
+        "byte_end": 25451,
+        "byte_start": 920,
+        "column_end": 74,
+        "column_start": 1,
+        "expansion": null,
+        "file_name": "consumer_root\\src\\application_invariant_acceptance\\managed_index\\prefix.rs",
+        "is_primary": true,
+        "label": "loaded again here",
+        "line_end": 1,
+        "line_start": 27,
+        "suggested_replacement": null,
+        "suggestion_applicability": null,
+        "text": []
+      },
+      {
+        "byte_end": 25451,
+        "byte_start": 920,
+        "column_end": 74,
+        "column_start": 1,
+        "expansion": null,
+        "file_name": "consumer_root\\src\\application_invariant_acceptance\\managed_index\\prefix.rs",
+        "is_primary": true,
+        "label": "loaded again here",
+        "line_end": 1,
+        "line_start": 27,
+        "suggested_replacement": null,
+        "suggestion_applicability": null,
+        "text": []
+      },
+      {
+        "byte_end": 25451,
+        "byte_start": 920,
+        "column_end": 74,
+        "column_start": 1,
+        "expansion": null,
+        "file_name": "consumer_root\\src\\application_invariant_acceptance\\managed_index\\prefix.rs",
+        "is_primary": true,
+        "label": "loaded again here",
+        "line_end": 1,
+        "line_start": 27,
+        "suggested_replacement": null,
+        "suggestion_applicability": null,
+        "text": []
+      }
+    ],
+    "code": {
+      "code": "clippy::duplicate_mod",
+      "explanation": null
+    }
+  },
+  {
+    "rendered": "error: file is loaded as a module multiple times: `consumer_root\\src\\application_invariant_acceptance\\managed_index\\prefix.rs`\n  |\n  = help: replace all but one `mod` item with `use` items\n  = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.99.0/index.html#duplicate_mod\n\n",
+    "$message_type": "diagnostic",
+    "children": [
+      {
+        "children": [],
+        "code": null,
+        "level": "help",
+        "message": "replace all but one `mod` item with `use` items",
+        "rendered": null,
+        "spans": []
+      },
+      {
+        "children": [],
+        "code": null,
+        "level": "help",
+        "message": "for further information visit https://rust-lang.github.io/rust-clippy/rust-1.99.0/index.html#duplicate_mod",
+        "rendered": null,
+        "spans": []
+      }
+    ],
+    "level": "error",
+    "message": "file is loaded as a module multiple times: `consumer_root\\src\\application_invariant_acceptance\\managed_index\\prefix.rs`",
+    "spans": [
+      {
+        "byte_end": 120158,
+        "byte_start": 326,
+        "column_end": 86,
+        "column_start": 1,
+        "expansion": null,
+        "file_name": "consumer_root\\src\\application_invariant_acceptance\\candidate_index.rs",
+        "is_primary": true,
+        "label": "first loaded here",
+        "line_end": 1,
+        "line_start": 12,
+        "suggested_replacement": null,
+        "suggestion_applicability": null,
+        "text": []
+      },
+      {
+        "byte_end": 65448,
+        "byte_start": 274,
+        "column_end": 86,
+        "column_start": 1,
+        "expansion": null,
+        "file_name": "consumer_root\\src\\application_invariant_acceptance\\managed_index\\maintained\\events.rs",
+        "is_primary": true,
+        "label": "loaded again here",
+        "line_end": 1,
+        "line_start": 12,
+        "suggested_replacement": null,
+        "suggestion_applicability": null,
+        "text": []
+      },
+      {
+        "byte_end": 453687,
+        "byte_start": 0,
+        "column_end": 23,
+        "column_start": 1,
+        "expansion": null,
+        "file_name": "consumer_root\\src\\application_invariant_acceptance\\managed_index\\maintained\\..\\prefix.rs",
+        "is_primary": true,
+        "label": "loaded again here",
+        "line_end": 11,
+        "line_start": 1,
+        "suggested_replacement": null,
+        "suggestion_applicability": null,
+        "text": []
+      },
+      {
+        "byte_end": 114461,
+        "byte_start": 0,
+        "column_end": 12,
+        "column_start": 1,
+        "expansion": null,
+        "file_name": "consumer_root\\src\\application_invariant_acceptance\\managed_index\\prefix.rs",
+        "is_primary": true,
+        "label": "loaded again here",
+        "line_end": 17,
+        "line_start": 1,
+        "suggested_replacement": null,
+        "suggestion_applicability": null,
+        "text": []
+      },
+      {
+        "byte_end": 44787,
+        "byte_start": 0,
+        "column_end": 12,
+        "column_start": 1,
+        "expansion": null,
+        "file_name": "consumer_root\\src\\application_invariant_acceptance\\managed_index\\prefix.rs",
+        "is_primary": true,
+        "label": "loaded again here",
+        "line_end": 12,
+        "line_start": 1,
+        "suggested_replacement": null,
+        "suggestion_applicability": null,
+        "text": []
+      },
+      {
+        "byte_end": 1041885,
+        "byte_start": 0,
+        "column_end": 12,
+        "column_start": 1,
+        "expansion": null,
+        "file_name": "consumer_root\\src\\application_invariant_acceptance\\managed_index\\prefix.rs",
+        "is_primary": true,
+        "label": "loaded again here",
+        "line_end": 10,
+        "line_start": 1,
+        "suggested_replacement": null,
+        "suggestion_applicability": null,
+        "text": []
+      }
+    ],
+    "code": {
+      "code": "clippy::duplicate_mod",
+      "explanation": null
+    }
+  },
+  {
+    "rendered": "error: file is loaded as a module multiple times: `consumer_root\\src\\application_invariant_acceptance\\managed_index\\query.rs`\n  |\n  = help: replace all but one `mod` item with `use` items\n  = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.99.0/index.html#duplicate_mod\n\n",
+    "$message_type": "diagnostic",
+    "children": [
+      {
+        "children": [],
+        "code": null,
+        "level": "help",
+        "message": "replace all but one `mod` item with `use` items",
+        "rendered": null,
+        "spans": []
+      },
+      {
+        "children": [],
+        "code": null,
+        "level": "help",
+        "message": "for further information visit https://rust-lang.github.io/rust-clippy/rust-1.99.0/index.html#duplicate_mod",
+        "rendered": null,
+        "spans": []
+      }
+    ],
+    "level": "error",
+    "message": "file is loaded as a module multiple times: `consumer_root\\src\\application_invariant_acceptance\\managed_index\\query.rs`",
+    "spans": [
+      {
+        "byte_end": 150041,
+        "byte_start": 376,
+        "column_end": 82,
+        "column_start": 1,
+        "expansion": null,
+        "file_name": "consumer_root\\src\\application_invariant_acceptance\\candidate_index.rs",
+        "is_primary": true,
+        "label": "first loaded here",
+        "line_end": 1,
+        "line_start": 14,
+        "suggested_replacement": null,
+        "suggestion_applicability": null,
+        "text": []
+      },
+      {
+        "byte_end": 84621,
+        "byte_start": 0,
+        "column_end": 11,
+        "column_start": 1,
+        "expansion": null,
+        "file_name": "consumer_root\\src\\application_invariant_acceptance\\managed_index\\query.rs",
+        "is_primary": true,
+        "label": "loaded again here",
+        "line_end": 20,
+        "line_start": 1,
+        "suggested_replacement": null,
+        "suggestion_applicability": null,
+        "text": []
+      },
+      {
+        "byte_end": 15016,
+        "byte_start": 0,
+        "column_end": 11,
+        "column_start": 1,
+        "expansion": null,
+        "file_name": "consumer_root\\src\\application_invariant_acceptance\\managed_index\\query.rs",
+        "is_primary": true,
+        "label": "loaded again here",
+        "line_end": 16,
+        "line_start": 1,
+        "suggested_replacement": null,
+        "suggestion_applicability": null,
+        "text": []
+      },
+      {
+        "byte_end": 1012030,
+        "byte_start": 0,
+        "column_end": 11,
+        "column_start": 1,
+        "expansion": null,
+        "file_name": "consumer_root\\src\\application_invariant_acceptance\\managed_index\\query.rs",
+        "is_primary": true,
+        "label": "loaded again here",
+        "line_end": 12,
+        "line_start": 1,
+        "suggested_replacement": null,
+        "suggestion_applicability": null,
+        "text": []
+      }
+    ],
+    "code": {
+      "code": "clippy::duplicate_mod",
+      "explanation": null
+    }
+  },
+  {
+    "rendered": "error: file is loaded as a module multiple times: `consumer_root\\src\\application_invariant_acceptance\\managed_index\\schema.rs`\n  |\n  = help: replace all but one `mod` item with `use` items\n  = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.99.0/index.html#duplicate_mod\n\n",
+    "$message_type": "diagnostic",
+    "children": [
+      {
+        "children": [],
+        "code": null,
+        "level": "help",
+        "message": "replace all but one `mod` item with `use` items",
+        "rendered": null,
+        "spans": []
+      },
+      {
+        "children": [],
+        "code": null,
+        "level": "help",
+        "message": "for further information visit https://rust-lang.github.io/rust-clippy/rust-1.99.0/index.html#duplicate_mod",
+        "rendered": null,
+        "spans": []
+      }
+    ],
+    "level": "error",
+    "message": "file is loaded as a module multiple times: `consumer_root\\src\\application_invariant_acceptance\\managed_index\\schema.rs`",
+    "spans": [
+      {
+        "byte_end": 159889,
+        "byte_start": 424,
+        "column_end": 83,
+        "column_start": 1,
+        "expansion": null,
+        "file_name": "consumer_root\\src\\application_invariant_acceptance\\candidate_index.rs",
+        "is_primary": true,
+        "label": "first loaded here",
+        "line_end": 1,
+        "line_start": 16,
+        "suggested_replacement": null,
+        "suggestion_applicability": null,
+        "text": []
+      },
+      {
+        "byte_end": 5195,
+        "byte_start": 0,
+        "column_end": 12,
+        "column_start": 1,
+        "expansion": null,
+        "file_name": "consumer_root\\src\\application_invariant_acceptance\\managed_index\\schema.rs",
+        "is_primary": true,
+        "label": "loaded again here",
+        "line_end": 18,
+        "line_start": 1,
+        "suggested_replacement": null,
+        "suggestion_applicability": null,
+        "text": []
+      }
+    ],
+    "code": {
+      "code": "clippy::duplicate_mod",
+      "explanation": null
+    }
+  },
+  {
+    "rendered": "error: unused import: `runtime_time::RuntimeTime`\n --> consumer_root\\src\\application_invariant_acceptance\\resources.rs:2:16\n  |\n2 | pub(super) use runtime_time::RuntimeTime;\n  |                ^^^^^^^^^^^^^^^^^^^^^^^^^\n  |\n  = note: `-D unused-imports` implied by `-D warnings`\n  = help: to override `-D warnings` add `#[allow(unused_imports)]`\n\n",
+    "$message_type": "diagnostic",
+    "children": [
+      {
+        "children": [],
+        "code": null,
+        "level": "note",
+        "message": "`-D unused-imports` implied by `-D warnings`",
+        "rendered": null,
+        "spans": []
+      },
+      {
+        "children": [],
+        "code": null,
+        "level": "help",
+        "message": "to override `-D warnings` add `#[allow(unused_imports)]`",
+        "rendered": null,
+        "spans": []
+      },
+      {
+        "children": [],
+        "code": null,
+        "level": "help",
+        "message": "remove the whole `use` item",
+        "rendered": null,
+        "spans": [
+          {
+            "byte_end": 60,
+            "byte_start": 18,
+            "column_end": 1,
+            "column_start": 1,
+            "expansion": null,
+            "file_name": "consumer_root\\src\\application_invariant_acceptance\\resources.rs",
+            "is_primary": true,
+            "label": null,
+            "line_end": 3,
+            "line_start": 2,
+            "suggested_replacement": "",
+            "suggestion_applicability": "MachineApplicable",
+            "text": [
+              {
+                "highlight_end": 42,
+                "highlight_start": 1,
+                "text": "pub(super) use runtime_time::RuntimeTime;"
+              },
+              {
+                "highlight_end": 1,
+                "highlight_start": 1,
+                "text": "use worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock;"
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "level": "error",
+    "message": "unused import: `runtime_time::RuntimeTime`",
+    "spans": [
+      {
+        "byte_end": 58,
+        "byte_start": 33,
+        "column_end": 41,
+        "column_start": 16,
+        "expansion": null,
+        "file_name": "consumer_root\\src\\application_invariant_acceptance\\resources.rs",
+        "is_primary": true,
+        "label": null,
+        "line_end": 2,
+        "line_start": 2,
+        "suggested_replacement": null,
+        "suggestion_applicability": null,
+        "text": [
+          {
+            "highlight_end": 41,
+            "highlight_start": 16,
+            "text": "pub(super) use runtime_time::RuntimeTime;"
+          }
+        ]
+      }
+    ],
+    "code": {
+      "code": "unused_imports",
+      "explanation": null
+    }
+  },
+  {
+    "rendered": "error: use of a disallowed method `std::thread::Builder::spawn`\n  --> topology_entry\\examples\\required_feature.rs:30:10\n   |\n30 |         .spawn(run)\n   |          ^^^^^\n   |\n   = note: Threads and async executors belong only to the reviewed owning sites; computation belongs to worth-execution\n   = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.99.0/index.html#disallowed_methods\n   = note: `-D clippy::disallowed-methods` implied by `-D warnings`\n   = help: to override `-D warnings` add `#[allow(clippy::disallowed_methods)]`\n\n",
+    "$message_type": "diagnostic",
+    "children": [
+      {
+        "children": [],
+        "code": null,
+        "level": "note",
+        "message": "Threads and async executors belong only to the reviewed owning sites; computation belongs to worth-execution",
+        "rendered": null,
+        "spans": []
+      },
+      {
+        "children": [],
+        "code": null,
+        "level": "help",
+        "message": "for further information visit https://rust-lang.github.io/rust-clippy/rust-1.99.0/index.html#disallowed_methods",
+        "rendered": null,
+        "spans": []
+      },
+      {
+        "children": [],
+        "code": null,
+        "level": "note",
+        "message": "`-D clippy::disallowed-methods` implied by `-D warnings`",
+        "rendered": null,
+        "spans": []
+      },
+      {
+        "children": [],
+        "code": null,
+        "level": "help",
+        "message": "to override `-D warnings` add `#[allow(clippy::disallowed_methods)]`",
+        "rendered": null,
+        "spans": []
+      }
+    ],
+    "level": "error",
+    "message": "use of a disallowed method `std::thread::Builder::spawn`",
+    "spans": [
+      {
+        "byte_end": 1026,
+        "byte_start": 1021,
+        "column_end": 15,
+        "column_start": 10,
+        "expansion": null,
+        "file_name": "topology_entry\\examples\\required_feature.rs",
+        "is_primary": true,
+        "label": null,
+        "line_end": 30,
+        "line_start": 30,
+        "suggested_replacement": null,
+        "suggestion_applicability": null,
+        "text": [
+          {
+            "highlight_end": 15,
+            "highlight_start": 10,
+            "text": "        .spawn(run)"
+          }
+        ]
+      }
+    ],
+    "code": {
+      "code": "clippy::disallowed_methods",
+      "explanation": null
+    }
+  },
+  {
+    "rendered": "error: use of a disallowed method `std::thread::Builder::new`\n  --> topology_entry\\examples\\required_feature.rs:28:5\n   |\n28 |     std::thread::Builder::new()\n   |     ^^^^^^^^^^^^^^^^^^^^^^^^^\n   |\n   = note: Threads and async executors belong only to the reviewed owning sites; computation belongs to worth-execution\n   = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.99.0/index.html#disallowed_methods\n\n",
+    "$message_type": "diagnostic",
+    "children": [
+      {
+        "children": [],
+        "code": null,
+        "level": "note",
+        "message": "Threads and async executors belong only to the reviewed owning sites; computation belongs to worth-execution",
+        "rendered": null,
+        "spans": []
+      },
+      {
+        "children": [],
+        "code": null,
+        "level": "help",
+        "message": "for further information visit https://rust-lang.github.io/rust-clippy/rust-1.99.0/index.html#disallowed_methods",
+        "rendered": null,
+        "spans": []
+      }
+    ],
+    "level": "error",
+    "message": "use of a disallowed method `std::thread::Builder::new`",
+    "spans": [
+      {
+        "byte_end": 969,
+        "byte_start": 944,
+        "column_end": 30,
+        "column_start": 5,
+        "expansion": null,
+        "file_name": "topology_entry\\examples\\required_feature.rs",
+        "is_primary": true,
+        "label": null,
+        "line_end": 28,
+        "line_start": 28,
+        "suggested_replacement": null,
+        "suggestion_applicability": null,
+        "text": [
+          {
+            "highlight_end": 30,
+            "highlight_start": 5,
+            "text": "    std::thread::Builder::new()"
+          }
+        ]
+      }
+    ],
+    "code": {
+      "code": "clippy::disallowed_methods",
+      "explanation": null
+    }
+  },
+  {
+    "rendered": "error: associated function `issued_for_sibling_owner` is never used\n  --> consumer_root\\src\\application_invariant_acceptance\\authentication.rs:22:19\n   |\n18 | impl LocalCredential {\n   | -------------------- associated function in this implementation\n...\n22 |     pub(super) fn issued_for_sibling_owner() -> Self {\n   |                   ^^^^^^^^^^^^^^^^^^^^^^^^\n   |\n   = note: `-D dead-code` implied by `-D warnings`\n   = help: to override `-D warnings` add `#[expect(dead_code)]` or `#[allow(dead_code)]`\n\n",
+    "$message_type": "diagnostic",
+    "children": [
+      {
+        "children": [],
+        "code": null,
+        "level": "note",
+        "message": "`-D dead-code` implied by `-D warnings`",
+        "rendered": null,
+        "spans": []
+      },
+      {
+        "children": [],
+        "code": null,
+        "level": "help",
+        "message": "to override `-D warnings` add `#[expect(dead_code)]` or `#[allow(dead_code)]`",
+        "rendered": null,
+        "spans": []
+      }
+    ],
+    "level": "error",
+    "message": "associated function `issued_for_sibling_owner` is never used",
+    "spans": [
+      {
+        "byte_end": 535,
+        "byte_start": 515,
+        "column_end": 21,
+        "column_start": 1,
+        "expansion": null,
+        "file_name": "consumer_root\\src\\application_invariant_acceptance\\authentication.rs",
+        "is_primary": false,
+        "label": "associated function in this implementation",
+        "line_end": 18,
+        "line_start": 18,
+        "suggested_replacement": null,
+        "suggestion_applicability": null,
+        "text": [
+          {
+            "highlight_end": 21,
+            "highlight_start": 1,
+            "text": "impl LocalCredential {"
+          }
+        ]
+      },
+      {
+        "byte_end": 671,
+        "byte_start": 647,
+        "column_end": 43,
+        "column_start": 19,
+        "expansion": null,
+        "file_name": "consumer_root\\src\\application_invariant_acceptance\\authentication.rs",
+        "is_primary": true,
+        "label": null,
+        "line_end": 22,
+        "line_start": 22,
+        "suggested_replacement": null,
+        "suggestion_applicability": null,
+        "text": [
+          {
+            "highlight_end": 43,
+            "highlight_start": 19,
+            "text": "    pub(super) fn issued_for_sibling_owner() -> Self {"
+          }
+        ]
+      }
+    ],
+    "code": {
+      "code": "dead_code",
+      "explanation": null
+    }
+  },
+  {
+    "rendered": "error: field `producer_domain_denial` is never read\n  --> consumer_root\\src\\application_invariant_acceptance\\installation.rs:33:16\n   |\n28 | pub(super) struct ConsumerWorld<Program = ConsumerProgram> {\n   |                   ------------- field in this struct\n...\n33 |     pub(super) producer_domain_denial: Arc<AtomicBool>,\n   |                ^^^^^^^^^^^^^^^^^^^^^^\n\n",
+    "$message_type": "diagnostic",
+    "children": [],
+    "level": "error",
+    "message": "field `producer_domain_denial` is never read",
+    "spans": [
+      {
+        "byte_end": 1086,
+        "byte_start": 1073,
+        "column_end": 32,
+        "column_start": 19,
+        "expansion": null,
+        "file_name": "consumer_root\\src\\application_invariant_acceptance\\installation.rs",
+        "is_primary": false,
+        "label": "field in this struct",
+        "line_end": 28,
+        "line_start": 28,
+        "suggested_replacement": null,
+        "suggestion_applicability": null,
+        "text": [
+          {
+            "highlight_end": 32,
+            "highlight_start": 19,
+            "text": "pub(super) struct ConsumerWorld<Program = ConsumerProgram> {"
+          }
+        ]
+      },
+      {
+        "byte_end": 1377,
+        "byte_start": 1355,
+        "column_end": 38,
+        "column_start": 16,
+        "expansion": null,
+        "file_name": "consumer_root\\src\\application_invariant_acceptance\\installation.rs",
+        "is_primary": true,
+        "label": null,
+        "line_end": 33,
+        "line_start": 33,
+        "suggested_replacement": null,
+        "suggestion_applicability": null,
+        "text": [
+          {
+            "highlight_end": 38,
+            "highlight_start": 16,
+            "text": "    pub(super) producer_domain_denial: Arc<AtomicBool>,"
+          }
+        ]
+      }
+    ],
+    "code": {
+      "code": "dead_code",
+      "explanation": null
+    }
+  },
+  {
+    "rendered": "error: function `application_limits_with_clock` is never used\n  --> consumer_root\\src\\application_invariant_acceptance\\resources.rs:95:15\n   |\n95 | pub(super) fn application_limits_with_clock(\n   |               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n\n",
+    "$message_type": "diagnostic",
+    "children": [],
+    "level": "error",
+    "message": "function `application_limits_with_clock` is never used",
+    "spans": [
+      {
+        "byte_end": 3924,
+        "byte_start": 3895,
+        "column_end": 44,
+        "column_start": 15,
+        "expansion": null,
+        "file_name": "consumer_root\\src\\application_invariant_acceptance\\resources.rs",
+        "is_primary": true,
+        "label": null,
+        "line_end": 95,
+        "line_start": 95,
+        "suggested_replacement": null,
+        "suggestion_applicability": null,
+        "text": [
+          {
+            "highlight_end": 44,
+            "highlight_start": 15,
+            "text": "pub(super) fn application_limits_with_clock("
+          }
+        ]
+      }
+    ],
+    "code": {
+      "code": "dead_code",
+      "explanation": null
+    }
+  },
+  {
+    "rendered": "error: function `application_limits_with_observations` is never used\n   --> consumer_root\\src\\application_invariant_acceptance\\resources.rs:107:15\n    |\n107 | pub(super) fn application_limits_with_observations(\n    |               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n\n",
+    "$message_type": "diagnostic",
+    "children": [],
+    "level": "error",
+    "message": "function `application_limits_with_observations` is never used",
+    "spans": [
+      {
+        "byte_end": 4305,
+        "byte_start": 4269,
+        "column_end": 51,
+        "column_start": 15,
+        "expansion": null,
+        "file_name": "consumer_root\\src\\application_invariant_acceptance\\resources.rs",
+        "is_primary": true,
+        "label": null,
+        "line_end": 107,
+        "line_start": 107,
+        "suggested_replacement": null,
+        "suggestion_applicability": null,
+        "text": [
+          {
+            "highlight_end": 51,
+            "highlight_start": 15,
+            "text": "pub(super) fn application_limits_with_observations("
+          }
+        ]
+      }
+    ],
+    "code": {
+      "code": "dead_code",
+      "explanation": null
+    }
+  },
+  {
+    "rendered": "error: struct `RuntimeTime` is never constructed\n --> consumer_root\\src\\application_invariant_acceptance\\resources\\runtime_time.rs:7:19\n  |\n7 | pub(crate) struct RuntimeTime(pub WorthQueryAdmissionClock);\n  |                   ^^^^^^^^^^^\n\n",
+    "$message_type": "diagnostic",
+    "children": [],
+    "level": "error",
+    "message": "struct `RuntimeTime` is never constructed",
+    "spans": [
+      {
+        "byte_end": 302,
+        "byte_start": 291,
+        "column_end": 30,
+        "column_start": 19,
+        "expansion": null,
+        "file_name": "consumer_root\\src\\application_invariant_acceptance\\resources\\runtime_time.rs",
+        "is_primary": true,
+        "label": null,
+        "line_end": 7,
+        "line_start": 7,
+        "suggested_replacement": null,
+        "suggestion_applicability": null,
+        "text": [
+          {
+            "highlight_end": 30,
+            "highlight_start": 19,
+            "text": "pub(crate) struct RuntimeTime(pub WorthQueryAdmissionClock);"
+          }
+        ]
+      }
+    ],
+    "code": {
+      "code": "dead_code",
+      "explanation": null
+    }
+  },
+  {
+    "rendered": "error: function `seed_cycles` is never used\n  --> consumer_root\\src\\application_invariant_acceptance\\seed.rs:12:15\n   |\n12 | pub(super) fn seed_cycles<Schema: TopologySchemaBinding>(\n   |               ^^^^^^^^^^^\n\n",
+    "$message_type": "diagnostic",
+    "children": [],
+    "level": "error",
+    "message": "function `seed_cycles` is never used",
+    "spans": [
+      {
+        "byte_end": 523,
+        "byte_start": 512,
+        "column_end": 26,
+        "column_start": 15,
+        "expansion": null,
+        "file_name": "consumer_root\\src\\application_invariant_acceptance\\seed.rs",
+        "is_primary": true,
+        "label": null,
+        "line_end": 12,
+        "line_start": 12,
+        "suggested_replacement": null,
+        "suggestion_applicability": null,
+        "text": [
+          {
+            "highlight_end": 26,
+            "highlight_start": 15,
+            "text": "pub(super) fn seed_cycles<Schema: TopologySchemaBinding>("
+          }
+        ]
+      }
+    ],
+    "code": {
+      "code": "dead_code",
+      "explanation": null
+    }
+  },
+  {
+    "rendered": "error: called `.err().expect()` on a `Result` value\n  --> consumer_root\\src\\application_invariant_acceptance\\proof\\application_program\\document_history\\aggregate\\group\\disposal.rs:37:6\n   |\n37 |       .err()\n   |  ______^\n38 | |     .expect(\"stopped close retains the same grouped root\");\n   | |___________^ help: try: `expect_err`\n   |\n   = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.99.0/index.html#err_expect\n   = note: `-D clippy::err-expect` implied by `-D warnings`\n   = help: to override `-D warnings` add `#[allow(clippy::err_expect)]`\n\n",
+    "$message_type": "diagnostic",
+    "children": [
+      {
+        "children": [],
+        "code": null,
+        "level": "help",
+        "message": "for further information visit https://rust-lang.github.io/rust-clippy/rust-1.99.0/index.html#err_expect",
+        "rendered": null,
+        "spans": []
+      },
+      {
+        "children": [],
+        "code": null,
+        "level": "note",
+        "message": "`-D clippy::err-expect` implied by `-D warnings`",
+        "rendered": null,
+        "spans": []
+      },
+      {
+        "children": [],
+        "code": null,
+        "level": "help",
+        "message": "to override `-D warnings` add `#[allow(clippy::err_expect)]`",
+        "rendered": null,
+        "spans": []
+      },
+      {
+        "children": [],
+        "code": null,
+        "level": "help",
+        "message": "try",
+        "rendered": null,
+        "spans": [
+          {
+            "byte_end": 1459,
+            "byte_start": 1441,
+            "column_end": 12,
+            "column_start": 6,
+            "expansion": null,
+            "file_name": "consumer_root\\src\\application_invariant_acceptance\\proof\\application_program\\document_history\\aggregate\\group\\disposal.rs",
+            "is_primary": true,
+            "label": null,
+            "line_end": 38,
+            "line_start": 37,
+            "suggested_replacement": "expect_err",
+            "suggestion_applicability": "MachineApplicable",
+            "text": [
+              {
+                "highlight_end": 11,
+                "highlight_start": 6,
+                "text": "    .err()"
+              },
+              {
+                "highlight_end": 12,
+                "highlight_start": 1,
+                "text": "    .expect(\"stopped close retains the same grouped root\");"
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "level": "error",
+    "message": "called `.err().expect()` on a `Result` value",
+    "spans": [
+      {
+        "byte_end": 1459,
+        "byte_start": 1441,
+        "column_end": 12,
+        "column_start": 6,
+        "expansion": null,
+        "file_name": "consumer_root\\src\\application_invariant_acceptance\\proof\\application_program\\document_history\\aggregate\\group\\disposal.rs",
+        "is_primary": true,
+        "label": null,
+        "line_end": 38,
+        "line_start": 37,
+        "suggested_replacement": null,
+        "suggestion_applicability": null,
+        "text": [
+          {
+            "highlight_end": 11,
+            "highlight_start": 6,
+            "text": "    .err()"
+          },
+          {
+            "highlight_end": 12,
+            "highlight_start": 1,
+            "text": "    .expect(\"stopped close retains the same grouped root\");"
+          }
+        ]
+      }
+    ],
+    "code": {
+      "code": "clippy::err_expect",
+      "explanation": null
+    }
+  },
+  {
+    "rendered": "error: using `clone` on type `CommitId` which implements the `Copy` trait\n   --> consumer_root\\src\\application_invariant_acceptance\\proof\\application_program\\document_history\\aggregate\\group.rs:137:13\n    |\n137 |             child.commit_reference().commit_id.clone(),\n    |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ help: try removing the `clone` call: `child.commit_reference().commit_id`\n    |\n    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.99.0/index.html#clone_on_copy\n    = note: `-D clippy::clone-on-copy` implied by `-D warnings`\n    = help: to override `-D warnings` add `#[allow(clippy::clone_on_copy)]`\n\n",
+    "$message_type": "diagnostic",
+    "children": [
+      {
+        "children": [],
+        "code": null,
+        "level": "help",
+        "message": "for further information visit https://rust-lang.github.io/rust-clippy/rust-1.99.0/index.html#clone_on_copy",
+        "rendered": null,
+        "spans": []
+      },
+      {
+        "children": [],
+        "code": null,
+        "level": "note",
+        "message": "`-D clippy::clone-on-copy` implied by `-D warnings`",
+        "rendered": null,
+        "spans": []
+      },
+      {
+        "children": [],
+        "code": null,
+        "level": "help",
+        "message": "to override `-D warnings` add `#[allow(clippy::clone_on_copy)]`",
+        "rendered": null,
+        "spans": []
+      },
+      {
+        "children": [],
+        "code": null,
+        "level": "help",
+        "message": "try removing the `clone` call",
+        "rendered": null,
+        "spans": [
+          {
+            "byte_end": 5006,
+            "byte_start": 4964,
+            "column_end": 55,
+            "column_start": 13,
+            "expansion": null,
+            "file_name": "consumer_root\\src\\application_invariant_acceptance\\proof\\application_program\\document_history\\aggregate\\group.rs",
+            "is_primary": true,
+            "label": null,
+            "line_end": 137,
+            "line_start": 137,
+            "suggested_replacement": "child.commit_reference().commit_id",
+            "suggestion_applicability": "MachineApplicable",
+            "text": [
+              {
+                "highlight_end": 55,
+                "highlight_start": 13,
+                "text": "            child.commit_reference().commit_id.clone(),"
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "level": "error",
+    "message": "using `clone` on type `CommitId` which implements the `Copy` trait",
+    "spans": [
+      {
+        "byte_end": 5006,
+        "byte_start": 4964,
+        "column_end": 55,
+        "column_start": 13,
+        "expansion": null,
+        "file_name": "consumer_root\\src\\application_invariant_acceptance\\proof\\application_program\\document_history\\aggregate\\group.rs",
+        "is_primary": true,
+        "label": null,
+        "line_end": 137,
+        "line_start": 137,
+        "suggested_replacement": null,
+        "suggestion_applicability": null,
+        "text": [
+          {
+            "highlight_end": 55,
+            "highlight_start": 13,
+            "text": "            child.commit_reference().commit_id.clone(),"
+          }
+        ]
+      }
+    ],
+    "code": {
+      "code": "clippy::clone_on_copy",
+      "explanation": null
+    }
+  },
+  {
+    "rendered": "error: called `.err().expect()` on a `Result` value\n  --> consumer_root\\src\\application_invariant_acceptance\\proof\\application_program\\document_history\\navigation_outputs\\profile.rs:48:14\n   |\n48 |             .err().expect(\"the unrelated secondary root shares a READ but has no history edit ownership\"))).unwrap();\n   |              ^^^^^^^^^^^^ help: try: `expect_err`\n   |\n   = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.99.0/index.html#err_expect\n\n",
+    "$message_type": "diagnostic",
+    "children": [
+      {
+        "children": [],
+        "code": null,
+        "level": "help",
+        "message": "for further information visit https://rust-lang.github.io/rust-clippy/rust-1.99.0/index.html#err_expect",
+        "rendered": null,
+        "spans": []
+      },
+      {
+        "children": [],
+        "code": null,
+        "level": "help",
+        "message": "try",
+        "rendered": null,
+        "spans": [
+          {
+            "byte_end": 1914,
+            "byte_start": 1902,
+            "column_end": 26,
+            "column_start": 14,
+            "expansion": null,
+            "file_name": "consumer_root\\src\\application_invariant_acceptance\\proof\\application_program\\document_history\\navigation_outputs\\profile.rs",
+            "is_primary": true,
+            "label": null,
+            "line_end": 48,
+            "line_start": 48,
+            "suggested_replacement": "expect_err",
+            "suggestion_applicability": "MachineApplicable",
+            "text": [
+              {
+                "highlight_end": 26,
+                "highlight_start": 14,
+                "text": "            .err().expect(\"the unrelated secondary root shares a READ but has no history edit ownership\"))).unwrap();"
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "level": "error",
+    "message": "called `.err().expect()` on a `Result` value",
+    "spans": [
+      {
+        "byte_end": 1914,
+        "byte_start": 1902,
+        "column_end": 26,
+        "column_start": 14,
+        "expansion": null,
+        "file_name": "consumer_root\\src\\application_invariant_acceptance\\proof\\application_program\\document_history\\navigation_outputs\\profile.rs",
+        "is_primary": true,
+        "label": null,
+        "line_end": 48,
+        "line_start": 48,
+        "suggested_replacement": null,
+        "suggestion_applicability": null,
+        "text": [
+          {
+            "highlight_end": 26,
+            "highlight_start": 14,
+            "text": "            .err().expect(\"the unrelated secondary root shares a READ but has no history edit ownership\"))).unwrap();"
+          }
+        ]
+      }
+    ],
+    "code": {
+      "code": "clippy::err_expect",
+      "explanation": null
+    }
+  },
+  {
+    "rendered": "error: unneeded `return` statement\n  --> consumer_root\\src\\application_invariant_acceptance\\managed_index\\prefix\\structure.rs:15:9\n   |\n15 | /         return Ok(match fault {\n16 | |             Fault::OmitSource => WorthQueryManagedIndexNodeRegion::new(None, region.children()),\n17 | |             Fault::DuplicateSource => WorthQueryManagedIndexNodeRegion::new(\n18 | |                 Some(\n...  |\n34 | |             _ => region,\n35 | |         });\n   | |__________^\n   |\n   = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.99.0/index.html#needless_return\nhelp: remove `return`\n   |\n15 ~         Ok(match fault {\n16 +             Fault::OmitSource => WorthQueryManagedIndexNodeRegion::new(None, region.children()),\n17 +             Fault::DuplicateSource => WorthQueryManagedIndexNodeRegion::new(\n18 +                 Some(\n19 +                     calls\n20 +                         .first_source\n21 +                         .lock()\n22 +                         .unwrap()\n23 +                         .expect(\"the actual build observed its first genuine slot\"),\n24 +                 ),\n25 +                 region.children(),\n26 +             ),\n27 +             Fault::DuplicateChild => match region.children().into_iter().flatten().next() {\n28 +                 Some(child) => WorthQueryManagedIndexNodeRegion::new(\n29 +                     region.source(),\n30 +                     [Some(child), Some(child)],\n31 +                 ),\n32 +                 None => region,\n33 +             },\n34 +             _ => region,\n35 ~         })\n   |\n\n",
+    "$message_type": "diagnostic",
+    "children": [
+      {
+        "children": [],
+        "code": null,
+        "level": "help",
+        "message": "for further information visit https://rust-lang.github.io/rust-clippy/rust-1.99.0/index.html#needless_return",
+        "rendered": null,
+        "spans": []
+      },
+      {
+        "children": [],
+        "code": null,
+        "level": "help",
+        "message": "remove `return`",
+        "rendered": null,
+        "spans": [
+          {
+            "byte_end": 1417,
+            "byte_start": 565,
+            "column_end": 11,
+            "column_start": 9,
+            "expansion": null,
+            "file_name": "consumer_root\\src\\application_invariant_acceptance\\managed_index\\prefix\\structure.rs",
+            "is_primary": true,
+            "label": null,
+            "line_end": 35,
+            "line_start": 15,
+            "suggested_replacement": "Ok(match fault {\n            Fault::OmitSource => WorthQueryManagedIndexNodeRegion::new(None, region.children()),\n            Fault::DuplicateSource => WorthQueryManagedIndexNodeRegion::new(\n                Some(\n                    calls\n                        .first_source\n                        .lock()\n                        .unwrap()\n                        .expect(\"the actual build observed its first genuine slot\"),\n                ),\n                region.children(),\n            ),\n            Fault::DuplicateChild => match region.children().into_iter().flatten().next() {\n                Some(child) => WorthQueryManagedIndexNodeRegion::new(\n                    region.source(),\n                    [Some(child), Some(child)],\n                ),\n                None => region,\n            },\n            _ => region,\n        })",
+            "suggestion_applicability": "MachineApplicable",
+            "text": [
+              {
+                "highlight_end": 32,
+                "highlight_start": 9,
+                "text": "        return Ok(match fault {"
+              },
+              {
+                "highlight_end": 97,
+                "highlight_start": 1,
+                "text": "            Fault::OmitSource => WorthQueryManagedIndexNodeRegion::new(None, region.children()),"
+              },
+              {
+                "highlight_end": 77,
+                "highlight_start": 1,
+                "text": "            Fault::DuplicateSource => WorthQueryManagedIndexNodeRegion::new("
+              },
+              {
+                "highlight_end": 22,
+                "highlight_start": 1,
+                "text": "                Some("
+              },
+              {
+                "highlight_end": 26,
+                "highlight_start": 1,
+                "text": "                    calls"
+              },
+              {
+                "highlight_end": 38,
+                "highlight_start": 1,
+                "text": "                        .first_source"
+              },
+              {
+                "highlight_end": 32,
+                "highlight_start": 1,
+                "text": "                        .lock()"
+              },
+              {
+                "highlight_end": 34,
+                "highlight_start": 1,
+                "text": "                        .unwrap()"
+              },
+              {
+                "highlight_end": 85,
+                "highlight_start": 1,
+                "text": "                        .expect(\"the actual build observed its first genuine slot\"),"
+              },
+              {
+                "highlight_end": 19,
+                "highlight_start": 1,
+                "text": "                ),"
+              },
+              {
+                "highlight_end": 35,
+                "highlight_start": 1,
+                "text": "                region.children(),"
+              },
+              {
+                "highlight_end": 15,
+                "highlight_start": 1,
+                "text": "            ),"
+              },
+              {
+                "highlight_end": 92,
+                "highlight_start": 1,
+                "text": "            Fault::DuplicateChild => match region.children().into_iter().flatten().next() {"
+              },
+              {
+                "highlight_end": 70,
+                "highlight_start": 1,
+                "text": "                Some(child) => WorthQueryManagedIndexNodeRegion::new("
+              },
+              {
+                "highlight_end": 37,
+                "highlight_start": 1,
+                "text": "                    region.source(),"
+              },
+              {
+                "highlight_end": 48,
+                "highlight_start": 1,
+                "text": "                    [Some(child), Some(child)],"
+              },
+              {
+                "highlight_end": 19,
+                "highlight_start": 1,
+                "text": "                ),"
+              },
+              {
+                "highlight_end": 32,
+                "highlight_start": 1,
+                "text": "                None => region,"
+              },
+              {
+                "highlight_end": 15,
+                "highlight_start": 1,
+                "text": "            },"
+              },
+              {
+                "highlight_end": 25,
+                "highlight_start": 1,
+                "text": "            _ => region,"
+              },
+              {
+                "highlight_end": 11,
+                "highlight_start": 1,
+                "text": "        });"
+              }
+            ]
+          },
+          {
+            "byte_end": 1418,
+            "byte_start": 1417,
+            "column_end": 12,
+            "column_start": 11,
+            "expansion": null,
+            "file_name": "consumer_root\\src\\application_invariant_acceptance\\managed_index\\prefix\\structure.rs",
+            "is_primary": true,
+            "label": null,
+            "line_end": 35,
+            "line_start": 35,
+            "suggested_replacement": "",
+            "suggestion_applicability": "MachineApplicable",
+            "text": [
+              {
+                "highlight_end": 12,
+                "highlight_start": 11,
+                "text": "        });"
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "level": "error",
+    "message": "unneeded `return` statement",
+    "spans": [
+      {
+        "byte_end": 1417,
+        "byte_start": 565,
+        "column_end": 11,
+        "column_start": 9,
+        "expansion": null,
+        "file_name": "consumer_root\\src\\application_invariant_acceptance\\managed_index\\prefix\\structure.rs",
+        "is_primary": true,
+        "label": null,
+        "line_end": 35,
+        "line_start": 15,
+        "suggested_replacement": null,
+        "suggestion_applicability": null,
+        "text": [
+          {
+            "highlight_end": 32,
+            "highlight_start": 9,
+            "text": "        return Ok(match fault {"
+          },
+          {
+            "highlight_end": 97,
+            "highlight_start": 1,
+            "text": "            Fault::OmitSource => WorthQueryManagedIndexNodeRegion::new(None, region.children()),"
+          },
+          {
+            "highlight_end": 77,
+            "highlight_start": 1,
+            "text": "            Fault::DuplicateSource => WorthQueryManagedIndexNodeRegion::new("
+          },
+          {
+            "highlight_end": 22,
+            "highlight_start": 1,
+            "text": "                Some("
+          },
+          {
+            "highlight_end": 26,
+            "highlight_start": 1,
+            "text": "                    calls"
+          },
+          {
+            "highlight_end": 38,
+            "highlight_start": 1,
+            "text": "                        .first_source"
+          },
+          {
+            "highlight_end": 32,
+            "highlight_start": 1,
+            "text": "                        .lock()"
+          },
+          {
+            "highlight_end": 34,
+            "highlight_start": 1,
+            "text": "                        .unwrap()"
+          },
+          {
+            "highlight_end": 85,
+            "highlight_start": 1,
+            "text": "                        .expect(\"the actual build observed its first genuine slot\"),"
+          },
+          {
+            "highlight_end": 19,
+            "highlight_start": 1,
+            "text": "                ),"
+          },
+          {
+            "highlight_end": 35,
+            "highlight_start": 1,
+            "text": "                region.children(),"
+          },
+          {
+            "highlight_end": 15,
+            "highlight_start": 1,
+            "text": "            ),"
+          },
+          {
+            "highlight_end": 92,
+            "highlight_start": 1,
+            "text": "            Fault::DuplicateChild => match region.children().into_iter().flatten().next() {"
+          },
+          {
+            "highlight_end": 70,
+            "highlight_start": 1,
+            "text": "                Some(child) => WorthQueryManagedIndexNodeRegion::new("
+          },
+          {
+            "highlight_end": 37,
+            "highlight_start": 1,
+            "text": "                    region.source(),"
+          },
+          {
+            "highlight_end": 48,
+            "highlight_start": 1,
+            "text": "                    [Some(child), Some(child)],"
+          },
+          {
+            "highlight_end": 19,
+            "highlight_start": 1,
+            "text": "                ),"
+          },
+          {
+            "highlight_end": 32,
+            "highlight_start": 1,
+            "text": "                None => region,"
+          },
+          {
+            "highlight_end": 15,
+            "highlight_start": 1,
+            "text": "            },"
+          },
+          {
+            "highlight_end": 25,
+            "highlight_start": 1,
+            "text": "            _ => region,"
+          },
+          {
+            "highlight_end": 11,
+            "highlight_start": 1,
+            "text": "        });"
+          }
+        ]
+      }
+    ],
+    "code": {
+      "code": "clippy::needless_return",
+      "explanation": null
+    }
+  },
+  {
+    "rendered": "error: this `if` statement can be collapsed\n  --> consumer_root\\src\\application_invariant_acceptance\\managed_index\\maintained\\authoring\\handler.rs:11:9\n   |\n11 | /         if let Edit::Items { items, .. } = edit {\n12 | |             if items.is_empty() || items.len() > MAX_ITEMS_PER_BATCH {\n13 | |                 return HandlerResult::DomainDenied(Denial::InvalidBatch);\n14 | |             }\n15 | |         }\n   | |_________^\n   |\n   = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.99.0/index.html#collapsible_if\n   = note: `-D clippy::collapsible-if` implied by `-D warnings`\n   = help: to override `-D warnings` add `#[allow(clippy::collapsible_if)]`\nhelp: collapse nested if block\n   |\n11 ~         if let Edit::Items { items, .. } = edit\n12 ~             && (items.is_empty() || items.len() > MAX_ITEMS_PER_BATCH) {\n13 |                 return HandlerResult::DomainDenied(Denial::InvalidBatch);\n14 ~             }\n   |\n\n",
+    "$message_type": "diagnostic",
+    "children": [
+      {
+        "children": [],
+        "code": null,
+        "level": "help",
+        "message": "for further information visit https://rust-lang.github.io/rust-clippy/rust-1.99.0/index.html#collapsible_if",
+        "rendered": null,
+        "spans": []
+      },
+      {
+        "children": [],
+        "code": null,
+        "level": "note",
+        "message": "`-D clippy::collapsible-if` implied by `-D warnings`",
+        "rendered": null,
+        "spans": []
+      },
+      {
+        "children": [],
+        "code": null,
+        "level": "help",
+        "message": "to override `-D warnings` add `#[allow(clippy::collapsible_if)]`",
+        "rendered": null,
+        "spans": []
+      },
+      {
+        "children": [],
+        "code": null,
+        "level": "help",
+        "message": "collapse nested if block",
+        "rendered": null,
+        "spans": [
+          {
+            "byte_end": 398,
+            "byte_start": 396,
+            "column_end": 50,
+            "column_start": 48,
+            "expansion": null,
+            "file_name": "consumer_root\\src\\application_invariant_acceptance\\managed_index\\maintained\\authoring\\handler.rs",
+            "is_primary": true,
+            "label": null,
+            "line_end": 11,
+            "line_start": 11,
+            "suggested_replacement": "",
+            "suggestion_applicability": "MachineApplicable",
+            "text": [
+              {
+                "highlight_end": 50,
+                "highlight_start": 48,
+                "text": "        if let Edit::Items { items, .. } = edit {"
+              }
+            ]
+          },
+          {
+            "byte_end": 571,
+            "byte_start": 560,
+            "column_end": 10,
+            "column_start": 14,
+            "expansion": null,
+            "file_name": "consumer_root\\src\\application_invariant_acceptance\\managed_index\\maintained\\authoring\\handler.rs",
+            "is_primary": true,
+            "label": null,
+            "line_end": 15,
+            "line_start": 14,
+            "suggested_replacement": "",
+            "suggestion_applicability": "MachineApplicable",
+            "text": [
+              {
+                "highlight_end": 14,
+                "highlight_start": 14,
+                "text": "            }"
+              },
+              {
+                "highlight_end": 10,
+                "highlight_start": 1,
+                "text": "        }"
+              }
+            ]
+          },
+          {
+            "byte_end": 414,
+            "byte_start": 412,
+            "column_end": 15,
+            "column_start": 13,
+            "expansion": null,
+            "file_name": "consumer_root\\src\\application_invariant_acceptance\\managed_index\\maintained\\authoring\\handler.rs",
+            "is_primary": true,
+            "label": null,
+            "line_end": 12,
+            "line_start": 12,
+            "suggested_replacement": "&&",
+            "suggestion_applicability": "MachineApplicable",
+            "text": [
+              {
+                "highlight_end": 15,
+                "highlight_start": 13,
+                "text": "            if items.is_empty() || items.len() > MAX_ITEMS_PER_BATCH {"
+              }
+            ]
+          },
+          {
+            "byte_end": 415,
+            "byte_start": 415,
+            "column_end": 16,
+            "column_start": 16,
+            "expansion": null,
+            "file_name": "consumer_root\\src\\application_invariant_acceptance\\managed_index\\maintained\\authoring\\handler.rs",
+            "is_primary": true,
+            "label": null,
+            "line_end": 12,
+            "line_start": 12,
+            "suggested_replacement": "(",
+            "suggestion_applicability": "MachineApplicable",
+            "text": [
+              {
+                "highlight_end": 16,
+                "highlight_start": 16,
+                "text": "            if items.is_empty() || items.len() > MAX_ITEMS_PER_BATCH {"
+              }
+            ]
+          },
+          {
+            "byte_end": 468,
+            "byte_start": 468,
+            "column_end": 69,
+            "column_start": 69,
+            "expansion": null,
+            "file_name": "consumer_root\\src\\application_invariant_acceptance\\managed_index\\maintained\\authoring\\handler.rs",
+            "is_primary": true,
+            "label": null,
+            "line_end": 12,
+            "line_start": 12,
+            "suggested_replacement": ")",
+            "suggestion_applicability": "MachineApplicable",
+            "text": [
+              {
+                "highlight_end": 69,
+                "highlight_start": 69,
+                "text": "            if items.is_empty() || items.len() > MAX_ITEMS_PER_BATCH {"
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "level": "error",
+    "message": "this `if` statement can be collapsed",
+    "spans": [
+      {
+        "byte_end": 571,
+        "byte_start": 357,
+        "column_end": 10,
+        "column_start": 9,
+        "expansion": null,
+        "file_name": "consumer_root\\src\\application_invariant_acceptance\\managed_index\\maintained\\authoring\\handler.rs",
+        "is_primary": true,
+        "label": null,
+        "line_end": 15,
+        "line_start": 11,
+        "suggested_replacement": null,
+        "suggestion_applicability": null,
+        "text": [
+          {
+            "highlight_end": 50,
+            "highlight_start": 9,
+            "text": "        if let Edit::Items { items, .. } = edit {"
+          },
+          {
+            "highlight_end": 71,
+            "highlight_start": 1,
+            "text": "            if items.is_empty() || items.len() > MAX_ITEMS_PER_BATCH {"
+          },
+          {
+            "highlight_end": 74,
+            "highlight_start": 1,
+            "text": "                return HandlerResult::DomainDenied(Denial::InvalidBatch);"
+          },
+          {
+            "highlight_end": 14,
+            "highlight_start": 1,
+            "text": "            }"
+          },
+          {
+            "highlight_end": 10,
+            "highlight_start": 1,
+            "text": "        }"
+          }
+        ]
+      }
+    ],
+    "code": {
+      "code": "clippy::collapsible_if",
+      "explanation": null
+    }
+  },
+  {
+    "rendered": "error: redundant pattern matching\n  --> consumer_root\\src\\application_invariant_acceptance\\managed_index\\maintained\\court\\exact_refinement.rs:53:9\n   |\n53 |         matches!(request.query(exact()).next_watch(&mut broad), Err(_)),\n   |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n   |\n   = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.99.0/index.html#redundant_pattern_matching\n   = note: `-D clippy::redundant-pattern-matching` implied by `-D warnings`\n   = help: to override `-D warnings` add `#[allow(clippy::redundant_pattern_matching)]`\nhelp: consider using `is_err()`\n   |\n53 -         matches!(request.query(exact()).next_watch(&mut broad), Err(_)),\n53 +         request.query(exact()).next_watch(&mut broad).is_err(),\n   |\n\n",
+    "$message_type": "diagnostic",
+    "children": [
+      {
+        "children": [],
+        "code": null,
+        "level": "help",
+        "message": "for further information visit https://rust-lang.github.io/rust-clippy/rust-1.99.0/index.html#redundant_pattern_matching",
+        "rendered": null,
+        "spans": []
+      },
+      {
+        "children": [],
+        "code": null,
+        "level": "note",
+        "message": "`-D clippy::redundant-pattern-matching` implied by `-D warnings`",
+        "rendered": null,
+        "spans": []
+      },
+      {
+        "children": [],
+        "code": null,
+        "level": "help",
+        "message": "to override `-D warnings` add `#[allow(clippy::redundant_pattern_matching)]`",
+        "rendered": null,
+        "spans": []
+      },
+      {
+        "children": [],
+        "code": null,
+        "level": "help",
+        "message": "consider using `is_err()`",
+        "rendered": null,
+        "spans": [
+          {
+            "byte_end": 1808,
+            "byte_start": 1745,
+            "column_end": 72,
+            "column_start": 9,
+            "expansion": null,
+            "file_name": "consumer_root\\src\\application_invariant_acceptance\\managed_index\\maintained\\court\\exact_refinement.rs",
+            "is_primary": true,
+            "label": null,
+            "line_end": 53,
+            "line_start": 53,
+            "suggested_replacement": "request.query(exact()).next_watch(&mut broad).is_err()",
+            "suggestion_applicability": "MachineApplicable",
+            "text": [
+              {
+                "highlight_end": 72,
+                "highlight_start": 9,
+                "text": "        matches!(request.query(exact()).next_watch(&mut broad), Err(_)),"
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "level": "error",
+    "message": "redundant pattern matching",
+    "spans": [
+      {
+        "byte_end": 1808,
+        "byte_start": 1745,
+        "column_end": 72,
+        "column_start": 9,
+        "expansion": null,
+        "file_name": "consumer_root\\src\\application_invariant_acceptance\\managed_index\\maintained\\court\\exact_refinement.rs",
+        "is_primary": true,
+        "label": null,
+        "line_end": 53,
+        "line_start": 53,
+        "suggested_replacement": null,
+        "suggestion_applicability": null,
+        "text": [
+          {
+            "highlight_end": 72,
+            "highlight_start": 9,
+            "text": "        matches!(request.query(exact()).next_watch(&mut broad), Err(_)),"
+          }
+        ]
+      }
+    ],
+    "code": {
+      "code": "clippy::redundant_pattern_matching",
+      "explanation": null
+    }
+  },
+  {
+    "rendered": "error: this `if` statement can be collapsed\n  --> consumer_root\\src\\application_invariant_acceptance\\managed_index\\maintained\\court\\prefix_growth\\work_attribution.rs:25:9\n   |\n25 | /         if let Some(trace) = slot.borrow_mut().as_mut() {\n26 | |             if trace.sdk.is_current_scope_observed_for_test() {\n27 | |                 trace.events.push((stage, trace.sdk.count_for_test()));\n28 | |             }\n29 | |         }\n   | |_________^\n   |\n   = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.99.0/index.html#collapsible_if\nhelp: collapse nested if block\n   |\n25 ~         if let Some(trace) = slot.borrow_mut().as_mut()\n26 ~             && trace.sdk.is_current_scope_observed_for_test() {\n27 |                 trace.events.push((stage, trace.sdk.count_for_test()));\n28 ~             }\n   |\n\n",
+    "$message_type": "diagnostic",
+    "children": [
+      {
+        "children": [],
+        "code": null,
+        "level": "help",
+        "message": "for further information visit https://rust-lang.github.io/rust-clippy/rust-1.99.0/index.html#collapsible_if",
+        "rendered": null,
+        "spans": []
+      },
+      {
+        "children": [],
+        "code": null,
+        "level": "help",
+        "message": "collapse nested if block",
+        "rendered": null,
+        "spans": [
+          {
+            "byte_end": 949,
+            "byte_start": 947,
+            "column_end": 58,
+            "column_start": 56,
+            "expansion": null,
+            "file_name": "consumer_root\\src\\application_invariant_acceptance\\managed_index\\maintained\\court\\prefix_growth\\work_attribution.rs",
+            "is_primary": true,
+            "label": null,
+            "line_end": 25,
+            "line_start": 25,
+            "suggested_replacement": "",
+            "suggestion_applicability": "MachineApplicable",
+            "text": [
+              {
+                "highlight_end": 58,
+                "highlight_start": 56,
+                "text": "        if let Some(trace) = slot.borrow_mut().as_mut() {"
+              }
+            ]
+          },
+          {
+            "byte_end": 1109,
+            "byte_start": 1099,
+            "column_end": 10,
+            "column_start": 14,
+            "expansion": null,
+            "file_name": "consumer_root\\src\\application_invariant_acceptance\\managed_index\\maintained\\court\\prefix_growth\\work_attribution.rs",
+            "is_primary": true,
+            "label": null,
+            "line_end": 29,
+            "line_start": 28,
+            "suggested_replacement": "",
+            "suggestion_applicability": "MachineApplicable",
+            "text": [
+              {
+                "highlight_end": 14,
+                "highlight_start": 14,
+                "text": "            }"
+              },
+              {
+                "highlight_end": 10,
+                "highlight_start": 1,
+                "text": "        }"
+              }
+            ]
+          },
+          {
+            "byte_end": 964,
+            "byte_start": 962,
+            "column_end": 15,
+            "column_start": 13,
+            "expansion": null,
+            "file_name": "consumer_root\\src\\application_invariant_acceptance\\managed_index\\maintained\\court\\prefix_growth\\work_attribution.rs",
+            "is_primary": true,
+            "label": null,
+            "line_end": 26,
+            "line_start": 26,
+            "suggested_replacement": "&&",
+            "suggestion_applicability": "MachineApplicable",
+            "text": [
+              {
+                "highlight_end": 15,
+                "highlight_start": 13,
+                "text": "            if trace.sdk.is_current_scope_observed_for_test() {"
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "level": "error",
+    "message": "this `if` statement can be collapsed",
+    "spans": [
+      {
+        "byte_end": 1109,
+        "byte_start": 900,
+        "column_end": 10,
+        "column_start": 9,
+        "expansion": null,
+        "file_name": "consumer_root\\src\\application_invariant_acceptance\\managed_index\\maintained\\court\\prefix_growth\\work_attribution.rs",
+        "is_primary": true,
+        "label": null,
+        "line_end": 29,
+        "line_start": 25,
+        "suggested_replacement": null,
+        "suggestion_applicability": null,
+        "text": [
+          {
+            "highlight_end": 58,
+            "highlight_start": 9,
+            "text": "        if let Some(trace) = slot.borrow_mut().as_mut() {"
+          },
+          {
+            "highlight_end": 64,
+            "highlight_start": 1,
+            "text": "            if trace.sdk.is_current_scope_observed_for_test() {"
+          },
+          {
+            "highlight_end": 72,
+            "highlight_start": 1,
+            "text": "                trace.events.push((stage, trace.sdk.count_for_test()));"
+          },
+          {
+            "highlight_end": 14,
+            "highlight_start": 1,
+            "text": "            }"
+          },
+          {
+            "highlight_end": 10,
+            "highlight_start": 1,
+            "text": "        }"
+          }
+        ]
+      }
+    ],
+    "code": {
+      "code": "clippy::collapsible_if",
+      "explanation": null
+    }
+  },
+  {
+    "rendered": "error: call to `std::mem::drop` with a value that does not implement `Drop`. Dropping such a type only extends its contained lifetimes\n   --> consumer_root\\src\\application_invariant_acceptance\\managed_index\\maintained\\court.rs:301:5\n    |\n301 |     drop(request);\n    |     ^^^^^^^^^^^^^\n    |\nnote: argument has type `worth_query_host::facade::application_entry::WorthQueryApplicationRequest<'_, '_, '_, application_invariant_acceptance::managed_index::maintained::schema::Catalog>`\n   --> consumer_root\\src\\application_invariant_acceptance\\managed_index\\maintained\\court.rs:301:10\n    |\n301 |     drop(request);\n    |          ^^^^^^^\n    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.99.0/index.html#drop_non_drop\n    = note: `-D clippy::drop-non-drop` implied by `-D warnings`\n    = help: to override `-D warnings` add `#[allow(clippy::drop_non_drop)]`\n\n",
+    "$message_type": "diagnostic",
+    "children": [
+      {
+        "children": [],
+        "code": null,
+        "level": "note",
+        "message": "argument has type `worth_query_host::facade::application_entry::WorthQueryApplicationRequest<'_, '_, '_, application_invariant_acceptance::managed_index::maintained::schema::Catalog>`",
+        "rendered": null,
+        "spans": [
+          {
+            "byte_end": 10713,
+            "byte_start": 10706,
+            "column_end": 17,
+            "column_start": 10,
+            "expansion": null,
+            "file_name": "consumer_root\\src\\application_invariant_acceptance\\managed_index\\maintained\\court.rs",
+            "is_primary": true,
+            "label": null,
+            "line_end": 301,
+            "line_start": 301,
+            "suggested_replacement": null,
+            "suggestion_applicability": null,
+            "text": [
+              {
+                "highlight_end": 17,
+                "highlight_start": 10,
+                "text": "    drop(request);"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "children": [],
+        "code": null,
+        "level": "help",
+        "message": "for further information visit https://rust-lang.github.io/rust-clippy/rust-1.99.0/index.html#drop_non_drop",
+        "rendered": null,
+        "spans": []
+      },
+      {
+        "children": [],
+        "code": null,
+        "level": "note",
+        "message": "`-D clippy::drop-non-drop` implied by `-D warnings`",
+        "rendered": null,
+        "spans": []
+      },
+      {
+        "children": [],
+        "code": null,
+        "level": "help",
+        "message": "to override `-D warnings` add `#[allow(clippy::drop_non_drop)]`",
+        "rendered": null,
+        "spans": []
+      }
+    ],
+    "level": "error",
+    "message": "call to `std::mem::drop` with a value that does not implement `Drop`. Dropping such a type only extends its contained lifetimes",
+    "spans": [
+      {
+        "byte_end": 10714,
+        "byte_start": 10701,
+        "column_end": 18,
+        "column_start": 5,
+        "expansion": null,
+        "file_name": "consumer_root\\src\\application_invariant_acceptance\\managed_index\\maintained\\court.rs",
+        "is_primary": true,
+        "label": null,
+        "line_end": 301,
+        "line_start": 301,
+        "suggested_replacement": null,
+        "suggestion_applicability": null,
+        "text": [
+          {
+            "highlight_end": 18,
+            "highlight_start": 5,
+            "text": "    drop(request);"
+          }
+        ]
+      }
+    ],
+    "code": {
+      "code": "clippy::drop_non_drop",
+      "explanation": null
+    }
+  },
+  {
+    "rendered": "error: unneeded `return` statement\n  --> consumer_root\\src\\application_invariant_acceptance\\managed_index\\maintained\\..\\prefix\\structure.rs:15:9\n   |\n15 | /         return Ok(match fault {\n16 | |             Fault::OmitSource => WorthQueryManagedIndexNodeRegion::new(None, region.children()),\n17 | |             Fault::DuplicateSource => WorthQueryManagedIndexNodeRegion::new(\n18 | |                 Some(\n...  |\n34 | |             _ => region,\n35 | |         });\n   | |__________^\n   |\n   = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.99.0/index.html#needless_return\nhelp: remove `return`\n   |\n15 ~         Ok(match fault {\n16 +             Fault::OmitSource => WorthQueryManagedIndexNodeRegion::new(None, region.children()),\n17 +             Fault::DuplicateSource => WorthQueryManagedIndexNodeRegion::new(\n18 +                 Some(\n19 +                     calls\n20 +                         .first_source\n21 +                         .lock()\n22 +                         .unwrap()\n23 +                         .expect(\"the actual build observed its first genuine slot\"),\n24 +                 ),\n25 +                 region.children(),\n26 +             ),\n27 +             Fault::DuplicateChild => match region.children().into_iter().flatten().next() {\n28 +                 Some(child) => WorthQueryManagedIndexNodeRegion::new(\n29 +                     region.source(),\n30 +                     [Some(child), Some(child)],\n31 +                 ),\n32 +                 None => region,\n33 +             },\n34 +             _ => region,\n35 ~         })\n   |\n\n",
+    "$message_type": "diagnostic",
+    "children": [
+      {
+        "children": [],
+        "code": null,
+        "level": "help",
+        "message": "for further information visit https://rust-lang.github.io/rust-clippy/rust-1.99.0/index.html#needless_return",
+        "rendered": null,
+        "spans": []
+      },
+      {
+        "children": [],
+        "code": null,
+        "level": "help",
+        "message": "remove `return`",
+        "rendered": null,
+        "spans": [
+          {
+            "byte_end": 1417,
+            "byte_start": 565,
+            "column_end": 11,
+            "column_start": 9,
+            "expansion": null,
+            "file_name": "consumer_root\\src\\application_invariant_acceptance\\managed_index\\maintained\\..\\prefix\\structure.rs",
+            "is_primary": true,
+            "label": null,
+            "line_end": 35,
+            "line_start": 15,
+            "suggested_replacement": "Ok(match fault {\n            Fault::OmitSource => WorthQueryManagedIndexNodeRegion::new(None, region.children()),\n            Fault::DuplicateSource => WorthQueryManagedIndexNodeRegion::new(\n                Some(\n                    calls\n                        .first_source\n                        .lock()\n                        .unwrap()\n                        .expect(\"the actual build observed its first genuine slot\"),\n                ),\n                region.children(),\n            ),\n            Fault::DuplicateChild => match region.children().into_iter().flatten().next() {\n                Some(child) => WorthQueryManagedIndexNodeRegion::new(\n                    region.source(),\n                    [Some(child), Some(child)],\n                ),\n                None => region,\n            },\n            _ => region,\n        })",
+            "suggestion_applicability": "MachineApplicable",
+            "text": [
+              {
+                "highlight_end": 32,
+                "highlight_start": 9,
+                "text": "        return Ok(match fault {"
+              },
+              {
+                "highlight_end": 97,
+                "highlight_start": 1,
+                "text": "            Fault::OmitSource => WorthQueryManagedIndexNodeRegion::new(None, region.children()),"
+              },
+              {
+                "highlight_end": 77,
+                "highlight_start": 1,
+                "text": "            Fault::DuplicateSource => WorthQueryManagedIndexNodeRegion::new("
+              },
+              {
+                "highlight_end": 22,
+                "highlight_start": 1,
+                "text": "                Some("
+              },
+              {
+                "highlight_end": 26,
+                "highlight_start": 1,
+                "text": "                    calls"
+              },
+              {
+                "highlight_end": 38,
+                "highlight_start": 1,
+                "text": "                        .first_source"
+              },
+              {
+                "highlight_end": 32,
+                "highlight_start": 1,
+                "text": "                        .lock()"
+              },
+              {
+                "highlight_end": 34,
+                "highlight_start": 1,
+                "text": "                        .unwrap()"
+              },
+              {
+                "highlight_end": 85,
+                "highlight_start": 1,
+                "text": "                        .expect(\"the actual build observed its first genuine slot\"),"
+              },
+              {
+                "highlight_end": 19,
+                "highlight_start": 1,
+                "text": "                ),"
+              },
+              {
+                "highlight_end": 35,
+                "highlight_start": 1,
+                "text": "                region.children(),"
+              },
+              {
+                "highlight_end": 15,
+                "highlight_start": 1,
+                "text": "            ),"
+              },
+              {
+                "highlight_end": 92,
+                "highlight_start": 1,
+                "text": "            Fault::DuplicateChild => match region.children().into_iter().flatten().next() {"
+              },
+              {
+                "highlight_end": 70,
+                "highlight_start": 1,
+                "text": "                Some(child) => WorthQueryManagedIndexNodeRegion::new("
+              },
+              {
+                "highlight_end": 37,
+                "highlight_start": 1,
+                "text": "                    region.source(),"
+              },
+              {
+                "highlight_end": 48,
+                "highlight_start": 1,
+                "text": "                    [Some(child), Some(child)],"
+              },
+              {
+                "highlight_end": 19,
+                "highlight_start": 1,
+                "text": "                ),"
+              },
+              {
+                "highlight_end": 32,
+                "highlight_start": 1,
+                "text": "                None => region,"
+              },
+              {
+                "highlight_end": 15,
+                "highlight_start": 1,
+                "text": "            },"
+              },
+              {
+                "highlight_end": 25,
+                "highlight_start": 1,
+                "text": "            _ => region,"
+              },
+              {
+                "highlight_end": 11,
+                "highlight_start": 1,
+                "text": "        });"
+              }
+            ]
+          },
+          {
+            "byte_end": 1418,
+            "byte_start": 1417,
+            "column_end": 12,
+            "column_start": 11,
+            "expansion": null,
+            "file_name": "consumer_root\\src\\application_invariant_acceptance\\managed_index\\maintained\\..\\prefix\\structure.rs",
+            "is_primary": true,
+            "label": null,
+            "line_end": 35,
+            "line_start": 35,
+            "suggested_replacement": "",
+            "suggestion_applicability": "MachineApplicable",
+            "text": [
+              {
+                "highlight_end": 12,
+                "highlight_start": 11,
+                "text": "        });"
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "level": "error",
+    "message": "unneeded `return` statement",
+    "spans": [
+      {
+        "byte_end": 1417,
+        "byte_start": 565,
+        "column_end": 11,
+        "column_start": 9,
+        "expansion": null,
+        "file_name": "consumer_root\\src\\application_invariant_acceptance\\managed_index\\maintained\\..\\prefix\\structure.rs",
+        "is_primary": true,
+        "label": null,
+        "line_end": 35,
+        "line_start": 15,
+        "suggested_replacement": null,
+        "suggestion_applicability": null,
+        "text": [
+          {
+            "highlight_end": 32,
+            "highlight_start": 9,
+            "text": "        return Ok(match fault {"
+          },
+          {
+            "highlight_end": 97,
+            "highlight_start": 1,
+            "text": "            Fault::OmitSource => WorthQueryManagedIndexNodeRegion::new(None, region.children()),"
+          },
+          {
+            "highlight_end": 77,
+            "highlight_start": 1,
+            "text": "            Fault::DuplicateSource => WorthQueryManagedIndexNodeRegion::new("
+          },
+          {
+            "highlight_end": 22,
+            "highlight_start": 1,
+            "text": "                Some("
+          },
+          {
+            "highlight_end": 26,
+            "highlight_start": 1,
+            "text": "                    calls"
+          },
+          {
+            "highlight_end": 38,
+            "highlight_start": 1,
+            "text": "                        .first_source"
+          },
+          {
+            "highlight_end": 32,
+            "highlight_start": 1,
+            "text": "                        .lock()"
+          },
+          {
+            "highlight_end": 34,
+            "highlight_start": 1,
+            "text": "                        .unwrap()"
+          },
+          {
+            "highlight_end": 85,
+            "highlight_start": 1,
+            "text": "                        .expect(\"the actual build observed its first genuine slot\"),"
+          },
+          {
+            "highlight_end": 19,
+            "highlight_start": 1,
+            "text": "                ),"
+          },
+          {
+            "highlight_end": 35,
+            "highlight_start": 1,
+            "text": "                region.children(),"
+          },
+          {
+            "highlight_end": 15,
+            "highlight_start": 1,
+            "text": "            ),"
+          },
+          {
+            "highlight_end": 92,
+            "highlight_start": 1,
+            "text": "            Fault::DuplicateChild => match region.children().into_iter().flatten().next() {"
+          },
+          {
+            "highlight_end": 70,
+            "highlight_start": 1,
+            "text": "                Some(child) => WorthQueryManagedIndexNodeRegion::new("
+          },
+          {
+            "highlight_end": 37,
+            "highlight_start": 1,
+            "text": "                    region.source(),"
+          },
+          {
+            "highlight_end": 48,
+            "highlight_start": 1,
+            "text": "                    [Some(child), Some(child)],"
+          },
+          {
+            "highlight_end": 19,
+            "highlight_start": 1,
+            "text": "                ),"
+          },
+          {
+            "highlight_end": 32,
+            "highlight_start": 1,
+            "text": "                None => region,"
+          },
+          {
+            "highlight_end": 15,
+            "highlight_start": 1,
+            "text": "            },"
+          },
+          {
+            "highlight_end": 25,
+            "highlight_start": 1,
+            "text": "            _ => region,"
+          },
+          {
+            "highlight_end": 11,
+            "highlight_start": 1,
+            "text": "        });"
+          }
+        ]
+      }
+    ],
+    "code": {
+      "code": "clippy::needless_return",
+      "explanation": null
+    }
+  }
+]

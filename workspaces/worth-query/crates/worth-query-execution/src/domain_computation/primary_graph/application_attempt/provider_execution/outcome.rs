@@ -1,8 +1,7 @@
 use super::super::{
     WorthQueryApplicationCommitDenial, WorthQueryApplicationCommitDenialStage,
-    WorthQueryApplicationCommitOutcome, WorthQueryApplicationCommitReceipt,
-    WorthQueryApplicationNoEffect, WorthQueryApplicationStaleAttempt,
-    WorthQueryPendingApplicationCommitReceipt,
+    WorthQueryApplicationCommitOutcome, WorthQueryApplicationNoEffect,
+    WorthQueryApplicationStaleAttempt, WorthQueryPendingApplicationCommitReceipt,
 };
 use crate::domain_computation::provider_session::WorthQueryMutationGraphWorkCompletion;
 
@@ -10,9 +9,12 @@ pub enum WorthQueryProviderProgressionOutcome {
     CoupledFailure(super::super::WorthQueryApplicationUncommitted),
     ProductStale(crate::domain_computation::WorthQueryProductStaleApplication),
     ProductUnpublished(crate::domain_computation::WorthQueryProductUnpublishedApplication),
+    ProductPreparationPending(crate::domain_computation::WorthQueryProductPreparationPending),
+    ProductPreparationRefused(crate::domain_computation::WorthQueryProductPreparationRefused),
+
     NoEffect(WorthQueryApplicationNoEffect),
     Committed(WorthQueryPendingApplicationCommitReceipt),
-    AlreadyCommitted(WorthQueryApplicationCommitReceipt),
+    RecoveredCommitted(crate::domain_computation::primary_graph::provider::WorthQueryRecoveredApplicationCommitReceipt),
     Stale(WorthQueryApplicationStaleAttempt),
     Cancelled,
     TimedOut,
@@ -33,14 +35,18 @@ impl WorthQueryProviderProgressionOutcome {
             Self::ProductUnpublished(unpublished) => {
                 WorthQueryApplicationCommitOutcome::ProductUnpublished(unpublished)
             }
+            Self::ProductPreparationPending(owner) => {
+                WorthQueryApplicationCommitOutcome::ProductPreparationPending(owner)
+            }
+            Self::ProductPreparationRefused(owner) => {
+                WorthQueryApplicationCommitOutcome::ProductPreparationRefused(owner)
+            }
             Self::NoEffect(no_effect) => WorthQueryApplicationCommitOutcome::NoEffect(no_effect),
             Self::Committed(receipt) => {
                 WorthQueryApplicationCommitOutcome::Committed(receipt.complete(completion)?)
             }
-            Self::AlreadyCommitted(receipt) => {
-                WorthQueryApplicationCommitOutcome::AlreadyCommitted(
-                    receipt.with_retry_cleanup(completion)?,
-                )
+            Self::RecoveredCommitted(receipt) => {
+                WorthQueryApplicationCommitOutcome::RecoveredCommitted(receipt)
             }
             Self::Stale(stale) => WorthQueryApplicationCommitOutcome::Stale(stale),
             Self::Cancelled => WorthQueryApplicationCommitOutcome::Cancelled,

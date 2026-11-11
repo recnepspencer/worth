@@ -1,7 +1,9 @@
 //! Refuse remains fixed through construction, warm use, eviction and public refill.
 use super::super::super::authentication;
 use super::super::lifecycle;
-use super::{directory, host, mutation, prefix, query, rule};
+use super::{host, mutation, prefix, query, rule};
+use crate::application_invariant_acceptance::managed_index::directory_edit;
+use crate::application_invariant_acceptance::managed_index::prefix_observation;
 use stats_alloc::Region;
 use std::sync::{atomic::Ordering, Arc};
 use worth_query_host::facade::{
@@ -55,7 +57,7 @@ fn expected(directory: &str, shared: &str) -> Vec<(String, String)> {
         .map(|(id, name)| (id.into(), name.into()))
         .collect()
 }
-fn configured(calls: &Arc<prefix::Calls>) -> (host::Configuration, Arc<rule::Calls>) {
+fn configured(calls: &Arc<prefix_observation::Calls>) -> (host::Configuration, Arc<rule::Calls>) {
     let rules = Arc::new(rule::Calls::new(Arc::clone(calls)));
     (
         host::Configuration {
@@ -66,18 +68,18 @@ fn configured(calls: &Arc<prefix::Calls>) -> (host::Configuration, Arc<rule::Cal
     )
 }
 fn publication_denial(
-    error: WorthQueryInMemoryApplicationDenial,
+    error: WorthQueryApplicationPreparationDenial,
 ) -> WorthQueryPrimaryGraphInstallationDenial {
     match error {
-        WorthQueryInMemoryApplicationDenial::Publication(denial) => denial,
+        WorthQueryApplicationPreparationDenial::Publication(denial) => denial,
         other => panic!("expected the actual unpublished graph denial: {other:?}"),
     }
 }
 fn initial_state_denial(
-    error: WorthQueryInMemoryApplicationDenial,
+    error: WorthQueryApplicationPreparationDenial,
 ) -> WorthQueryPrimaryGraphInstallationDenial {
     match error {
-        WorthQueryInMemoryApplicationDenial::InitialState(denial) => denial,
+        WorthQueryApplicationPreparationDenial::InitialState(denial) => denial,
         other => panic!("expected the actual initial-state API denial: {other:?}"),
     }
 }
@@ -101,7 +103,7 @@ fn require_cold_refusal(
     );
 }
 fn journey() {
-    let calls = Arc::new(prefix::Calls::default());
+    let calls = Arc::new(prefix_observation::Calls::default());
     let (configuration, rules) = configured(&calls);
     let error = host::install(configuration, host::omit, ["alpha", "amber", "beta"])
         .err()
@@ -173,6 +175,7 @@ fn journey() {
         .unwrap()
         .iter()
         .any(|record| record
+            .source
             .after
             .iter()
             .filter(|row| row.name == "taken")
@@ -191,7 +194,7 @@ fn journey() {
         .lock()
         .unwrap()
         .iter()
-        .all(|record| record.before.is_none()));
+        .all(|record| record.source.before.is_none()));
     let scope = authentication::request_scope();
     let principal = authentication::block_on(
         authentication::admit(world.installed_schema()).authenticate(
@@ -320,8 +323,8 @@ fn journey() {
         .clone();
     let created = request
         .advanced()
-        .mutate(directory::Replace {
-            edit: directory::Edit::Create,
+        .mutate(directory_edit::Replace {
+            edit: directory_edit::Edit::Create,
         })
         .idempotency(&0x919482u64)
         .execute_in_program(&world, ExecutionAllocationPolicy::SystemAllocation)

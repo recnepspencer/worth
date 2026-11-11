@@ -36,7 +36,6 @@ pub mod stability;
 #[cfg(test)]
 mod terminal_head_retirement_fixture;
 mod work;
-
 pub use admission::{
     AdmissionError, CancelledPhysicalRuntimeAdmission, DeclaredStoreRootDenialKind,
     PhysicalRuntimeAdmission, PhysicalStore,
@@ -295,9 +294,10 @@ pub use recovery_yieldpoint::{
 pub use runtime::AdmittedPhysicalRuntime;
 pub use shutdown::{AbortedRuntime, ClosedRuntime};
 pub use stability::{
-    PhysicalProtectedRootObservation, PhysicalReadProtectionDenial,
-    PhysicalReadProtectionDisposition, PhysicalReadProtectionObservation,
-    PhysicalReadProtectionObserver, PhysicalReadProtectionPolicy, PhysicalReadProtectionShutdown,
+    PhysicalCheckpointReadProtectionDenial, PhysicalProtectedRootObservation,
+    PhysicalReadProtectionDenial, PhysicalReadProtectionDisposition,
+    PhysicalReadProtectionObservation, PhysicalReadProtectionObserver,
+    PhysicalReadProtectionPolicy, PhysicalReadProtectionShutdown,
 };
 pub use work::{
     AdmittedPhysicalWork, AdmittedPhysicalWorkAuthority, BlockedPhysicalWork,
@@ -349,6 +349,7 @@ pub use worth_store_physical_backend::{
     BoundedRecoveryFilesystemDiscovery, CompletedRecoveryStagingWrite,
     CompletedScheduledRecoveryReopenRead, CompletedScheduledRecoveryStagingWrite,
     DeniedScheduledRecoveryReopenRead, ExceededFilesystemObservationBound, FilesystemAccessPosture,
+    FilesystemHomeDiscard, FilesystemHomeDiscardDenial, FilesystemHomeDiscardStage,
     FilesystemObservationBound, FixedArtifact, GrantOverrun, GrantedRead, GrantedReadStop,
     IndeterminateRecoveryStagingWrite, MediaOwnerIdentity, ObservedRecoveryArtifact,
     ObservedWalArtifact, PageAddress, PhysicalRecoveryMediaGeneration,
@@ -359,7 +360,7 @@ pub use worth_store_physical_backend::{
     RecoveryRootProtocolPublicationDenial, RecoveryRootProtocolPublicationPlan,
     RecoveryStagingIndeterminatePhysical, RecoveryStagingWriteDisposition,
     RecoveryStagingWriteOutcome, RecoveryStorePresence, RecoveryWalObservationIdentity,
-    StreamArtifact, Uncharged, UnchargedRead, WalInventoryOutcome,
+    StreamArtifact, Uncharged, UnchargedRead, WalInventoryOutcome, HOME_DISCARD_TOMBSTONE,
 };
 
 pub use work::PhysicalEffectRecoveryObligation;
@@ -392,3 +393,8 @@ pub mod production {
 pub use worth_store_physical_backend::{
     BackendCapabilityAdmissionDenial, PhysicalDurabilityAdmissionBasis,
 };
+
+// Existing public physical retirement errors already carry this nested cause.
+pub use worth_store_buffer_pool::PhysicalResidencyRetirementDenial;
+#[cfg(test)]
+pub(crate) mod inline_type_budget;

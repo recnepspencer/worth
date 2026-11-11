@@ -1,0 +1,18 @@
+[
+  "native_checkpoint_round_trip_restores_a_live_editable_world",
+  "recovery_authority_only_admits_a_basis_from_the_recovered_image",
+  "native_checkpoint_round_trip_restores_current_relation_adjacency",
+  "native_checkpoint_rejects_a_foreign_runtime_name_without_publishing_state",
+  "checkpoint_recovery_readmits_shared_root_once_for_sibling_heads",
+  "tail_recovery_resolves_the_checkpoint_target_root_not_the_fork_source_head",
+  "a_durable_fork_without_a_subsequent_commit_reopens_and_commits",
+  "a_fork_covered_by_a_checkpoint_after_its_source_moves_accepts_a_target_tail",
+  "a_fork_in_the_transition_tail_is_merged_before_the_target_commit",
+  "lifecycle_postures_and_retired_names_survive_checkpoints_and_crashes",
+  "independent_runtimes_encode_byte_identical_transition_histories",
+  "durability_contract_checkpoint_tail_recovery_preserves_post_checkpoint_commits",
+  "durability_contract_checkpoint_recovers_index_metadata",
+  "acknowledged_transition_admits_only_its_exact_successor_and_releases_snapshot",
+  "foreign_recovery_and_foreign_candidate_are_refused_before_effects",
+  "moved_source_and_stale_candidate_cannot_extend_recovery_lineage"
+]

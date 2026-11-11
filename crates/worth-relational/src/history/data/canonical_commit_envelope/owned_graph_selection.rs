@@ -11,7 +11,7 @@ struct SelectedEntity {
     id: EntityId,
     kind: KindId,
 }
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct CanonicalOwnedGraphSelection {
     selected_basis: crate::branch::RelationalBranchBasisDescriptor,
     model: EntityId,
@@ -21,8 +21,18 @@ pub struct CanonicalOwnedGraphSelection {
     selected_entities: Vec<SelectedEntity>,
     current_relations: Vec<StructuralRelationRecord>,
     selected_relations: Vec<StructuralRelationRecord>,
+    #[serde(skip)]
+    pub(crate) _decoded_memory: Option<std::sync::Arc<worth_execution::ExecutionMemoryReservation>>,
 }
 impl CanonicalOwnedGraphSelection {
+    pub(crate) fn selected_entity_decode_storage(capacity: usize) -> Option<u64> {
+        u64::try_from(
+            std::alloc::Layout::array::<SelectedEntity>(capacity)
+                .ok()?
+                .size(),
+        )
+        .ok()
+    }
     pub(crate) fn from_prepared(
         graph: &RelationalOwnedModelGraphSelection,
     ) -> Result<Self, crate::transactions::data::TransactionCommitError> {
@@ -39,6 +49,7 @@ impl CanonicalOwnedGraphSelection {
             selected_entities.push(SelectedEntity { id, kind });
         }
         Ok(Self {
+            _decoded_memory: None,
             selected_basis: entities
                 .selected_basis()
                 .descriptor()
@@ -136,3 +147,16 @@ impl CanonicalOwnedGraphSelection {
             )
     }
 }
+
+impl PartialEq for CanonicalOwnedGraphSelection {
+    fn eq(&self, other: &Self) -> bool {
+        self.selected_basis == other.selected_basis
+            && self.model == other.model
+            && self.current_entities == other.current_entities
+            && self.transfer_participants == other.transfer_participants
+            && self.selected_entities == other.selected_entities
+            && self.current_relations == other.current_relations
+            && self.selected_relations == other.selected_relations
+    }
+}
+impl Eq for CanonicalOwnedGraphSelection {}

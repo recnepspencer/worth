@@ -32,6 +32,7 @@ pub(super) fn mutation_config() -> crate::config::data::MutationConfig {
 }
 
 pub(super) fn empty_workspace<'a>(
+    request: &'a worth_execution::SerialRequest,
     state: &'a mut WorkingState,
     symbols: &'a mut PendingSymbolMeanings,
     aspect_plans: &'a AspectContractPlanCatalog,
@@ -39,6 +40,7 @@ pub(super) fn empty_workspace<'a>(
     schema: &'a RelationalSchemaRegistry,
 ) -> MutationWorkspace<'a> {
     MutationWorkspace::new(
+        worth_execution::ExecutionRequest::serial(request),
         state,
         symbols,
         config,

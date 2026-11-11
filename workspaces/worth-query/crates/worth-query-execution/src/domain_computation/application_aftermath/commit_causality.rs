@@ -23,6 +23,11 @@ impl ApplicationCommitCausality {
         match self {
             Self::Ordinary => Ok(None),
             Self::RecordedCorrection(source) => {
+                let product = admission
+                    .graph_work()
+                    .mutation_product()
+                    .ok_or_else(WorthQueryApplicationCommitDenial::correction_context_mismatch)?;
+                source.admit_receiver(product.observation().owner_identity())?;
                 if !source.matches_admission(admission) {
                     return Err(WorthQueryApplicationCommitDenial::correction_context_mismatch());
                 }

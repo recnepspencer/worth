@@ -133,8 +133,12 @@ where
                 BranchManager::with_live_catalog(Default::default(), runtime_instance_id);
             let branches = std::mem::replace(&mut self.branches, empty_legacy);
             let partition = branches.into_owner_partition(active_state);
-            self.owner_services
-                .seal(partition, conditional_budget, temporal_budget);
+            self.owner_services.seal(
+                partition,
+                self.schema_registry.registry_digest().to_owned(),
+                conditional_budget,
+                temporal_budget,
+            );
         }
         let weak_owner = self
             .owner_services

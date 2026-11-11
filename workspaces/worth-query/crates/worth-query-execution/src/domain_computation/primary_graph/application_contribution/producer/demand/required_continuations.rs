@@ -71,7 +71,7 @@ pub(in crate::domain_computation::primary_graph) enum RequiredFreshOutcome {
 
 /// This trait is private to the admitted-demand owner. The erased value is
 /// always an actual typed admitted demand, with its original real interest.
-trait ErasedRequiredSuccessor<Schema: ApplicationSchema>: Send + Sync {
+trait ErasedRequiredSuccessor<Schema: ApplicationSchema>: Send {
     fn close_read_request(
         &mut self,
         phase: &WorthQueryAdvancementPhase<'_>,
@@ -141,7 +141,7 @@ impl<Schema, Family> ErasedRequiredSuccessor<Schema> for TypedRequiredSuccessor<
 where
     Schema: ApplicationSchema + 'static,
     Family: WorthQueryProducerOutputFamily<Schema> + 'static,
-    WorthQueryAdmittedOutputDemand<Schema, Family>: Send + Sync,
+    WorthQueryAdmittedOutputDemand<Schema, Family>: Send,
     FamilySourceValue<Schema, Family>:
         WorthQueryApplicationProjection<Schema, FamilySourceQuery<Schema, Family>> + 'static,
     FamilySourceQuery<Schema, Family>: 'static,

@@ -22,7 +22,10 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphBootstrap<Schema> {
             ));
         }
         let initialization = self.take_source_initialization();
-        if self.rows.is_empty() && self.entity_rows.is_empty() && self.relation_rows.is_empty() {
+        if self.rows.is_empty()
+            && self.typed_rows.entity_rows.is_empty()
+            && self.typed_rows.relation_rows.is_empty()
+        {
             if initialization.is_some() {
                 self.seed_batch_failed = true;
                 return Err(primary_graph_denial(
@@ -50,22 +53,22 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphBootstrap<Schema> {
             commit_initial_program_activation(execution, &self.graph, seed)?;
         }
         let principal_count = self.rows.len();
-        let entity_count = self.entity_rows.len();
-        let relation_count = self.relation_rows.len();
+        let entity_count = self.typed_rows.entity_rows.len();
+        let relation_count = self.typed_rows.relation_rows.len();
         let commit_id = commit_bootstrap_rows(
             execution,
             &self.graph,
             initialization,
             self.committed_principal_count,
             std::mem::take(&mut self.rows),
-            std::mem::take(&mut self.entity_rows),
-            std::mem::take(&mut self.relation_rows),
+            std::mem::take(&mut self.typed_rows.entity_rows),
+            std::mem::take(&mut self.typed_rows.relation_rows),
         )?;
         self.committed_principal_count += principal_count;
         self.committed_entity_count += entity_count;
         self.committed_relation_count += relation_count;
         self.last_seed_commit_id = Some(commit_id);
-        self.pending_entity_keys.clear();
+        self.typed_rows.pending_entity_keys.clear();
         Ok(())
     }
 }

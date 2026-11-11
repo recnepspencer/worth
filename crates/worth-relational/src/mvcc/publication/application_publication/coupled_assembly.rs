@@ -89,7 +89,7 @@ pub struct RelationalAuthoredCoupledCandidate<'a> {
 
 pub(crate) struct CoupledPublicationPart {
     pub(crate) publication: RequiredOutputPublication,
-    pub(crate) commands: crate::transactions::data::MergedCommitPlan,
+    pub(crate) commands: crate::mvcc::OwnedNormalizedPlan,
     pub(crate) records: Vec<crate::transactions::data::RecordRef>,
 }
 

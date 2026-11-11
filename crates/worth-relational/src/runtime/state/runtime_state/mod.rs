@@ -1,15 +1,31 @@
+mod complete_checkpoint_preparation;
+pub use complete_checkpoint_preparation::CompleteRelationalCheckpointPreparation;
 mod branch_authority;
 mod close_authority;
 mod codec_recovery_destination;
 mod configuration;
+mod configuration_epoch_control;
 mod core_access;
+mod memory_close;
+mod source_close;
+pub use source_close::{
+    PreparedRelationalSourceClose, RelationalSourceClose, RelationalSourceCloseDenial,
+    RelationalSourceCloseProgress, RetiredSourceRelationalAllocation,
+};
 mod court_doors_for_test;
 mod merge_authority;
 mod owner_lifecycle;
 mod partition_edition_access;
+mod preparation_home_contracts;
 mod preparation_round;
 mod preparation_runtime;
+mod prepared_close;
+mod publication_close_custody;
 mod publication_lifecycle;
+pub use publication_close_custody::{
+    RelationalPublicationCompanionCustody, RelationalPublicationCustodyHolders,
+    RelationalPublicationRegistryCustody,
+};
 mod publication_settlement_registry;
 mod tenure;
 #[cfg(test)]
@@ -32,6 +48,10 @@ pub(crate) use owner_lifecycle::{
 };
 pub(crate) use preparation_runtime::RelationalPreparationOwnerBinding;
 pub(crate) use preparation_runtime::RelationalPreparationRuntime;
+pub use prepared_close::{
+    PreparedRelationalRuntimeClose, RelationalReadCustodyHolders, RelationalRuntimeCloseDenial,
+    RelationalRuntimeCloseRefused,
+};
 pub(in crate::runtime) use publication_lifecycle::RelationalRuntimePublicationOwner;
 pub(crate) use publication_lifecycle::{
     RelationalCandidateRegistrationDenial, RelationalRuntimePublicationBinding,
@@ -92,6 +112,7 @@ pub struct RelationalRuntime {
     pub(crate) schema_contract_runtime: std::sync::Arc<super::SchemaContractRuntimeSubsystem>,
     state: std::sync::Arc<RelationalRuntimeState>,
     tenure: RelationalRuntimeTenure,
+    _outer_memory: Option<worth_execution::ExecutionMemoryReservation>,
 }
 
 impl RelationalRuntime {
@@ -107,6 +128,7 @@ impl RelationalRuntime {
             schema_contract_runtime: installed.schema_contract_runtime,
             state: std::sync::Arc::new(state),
             tenure: RelationalRuntimeTenure::Owner(close),
+            _outer_memory: None,
         }
     }
 
@@ -124,6 +146,7 @@ impl RelationalRuntime {
             schema_contract_runtime: installed.schema_contract_runtime,
             state,
             tenure: RelationalRuntimeTenure::Admitted(operation),
+            _outer_memory: None,
         }
     }
 
@@ -142,6 +165,19 @@ impl RelationalRuntime {
         let installed = self.state.configuration.snapshot();
         self.config = installed.config;
         self.schema_contract_runtime = installed.schema_contract_runtime;
+    }
+
+    /// The outer owner observes the current pair; an admitted operation keeps
+    /// the coherent pair it captured at entry, including historical readers.
+    pub(crate) fn operation_configuration(&self) -> RelationalRuntimeConfigurationSnapshot {
+        if self.is_owner() {
+            self.configuration_binding().snapshot()
+        } else {
+            RelationalRuntimeConfigurationSnapshot {
+                config: self.config.clone(),
+                schema_contract_runtime: self.schema_contract_runtime.clone(),
+            }
+        }
     }
 
     /// A weak binding to this runtime's exact state, for a service that must
@@ -230,4 +266,26 @@ impl RelationalRuntime {
     pub(crate) fn publication_binding(&self) -> RelationalRuntimePublicationBinding {
         self.publication_owner.binding()
     }
+}
+#[cfg(test)]
+#[path = "mod_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;
+
+#[cfg(test)]
+fn collect_owned_inline_type_sizes(census: &mut crate::inline_type_sizes::Census) {
+    {
+        let mut owner = census.owner::<RelationalRuntime>(
+            "crates/worth-relational/src/runtime/state/runtime_state/mod.rs",
+            "RelationalRuntime",
+            128 * 1024,
+        );
+        owner.field::<std::sync::Arc<crate::runtime::RelationalRuntimeConfig>>("config");
+        owner.field::<std::sync::Arc<super::SchemaContractRuntimeSubsystem>>(
+            "schema_contract_runtime",
+        );
+        owner.field::<std::sync::Arc<RelationalRuntimeState>>("state");
+        owner.field::<RelationalRuntimeTenure>("tenure");
+        owner.field::<Option<worth_execution::ExecutionMemoryReservation>>("_outer_memory");
+    }
+    preparation_runtime::inline_type_budget::collect(census);
 }

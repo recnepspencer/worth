@@ -123,7 +123,7 @@ fn child_values(
             return Ok(None);
         }
         let Some(value) = authoritative_state_query_locus_value(
-            record.extra().authoritative_aspect_state.as_ref(),
+            record.extra().authoritative_aspect_state(),
             field.locator(),
         ) else {
             return Ok(None);

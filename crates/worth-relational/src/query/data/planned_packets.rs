@@ -42,6 +42,9 @@ pub enum QueryPlanEvidenceBasis {
     CanonicalCommitEnvelope {
         commit_id: CommitId,
     },
+    CheckpointAdmissionImage {
+        commit_id: CommitId,
+    },
     GenesisRuntimeBootstrap,
 }
 

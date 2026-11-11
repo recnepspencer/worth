@@ -1,0 +1,72 @@
+[
+  {
+    "path": "crates/worth-court-relational-certification/tests/worth_court_relational_certification/process/serial/relational/managed_source_work_account/public_only.rs",
+    "line": 38,
+    "lint": "int_plus_one",
+    "lifecycle_diff_exit": 0,
+    "master_diff_exit": 1
+  },
+  {
+    "path": "crates/worth-court-relational-certification/tests/worth_court_relational_certification/process/serial/relational/managed_source_work_account.rs",
+    "line": 292,
+    "lint": "int_plus_one",
+    "lifecycle_diff_exit": 0,
+    "master_diff_exit": 1
+  },
+  {
+    "path": "crates/worth-court-relational-certification/tests/worth_court_relational_certification/process/serial/relational/managed_source_work_account.rs",
+    "line": 104,
+    "lint": "unnecessary_lazy_evaluations",
+    "lifecycle_diff_exit": 0,
+    "master_diff_exit": 1
+  },
+  {
+    "path": "crates/worth-court-relational-certification/tests/worth_court_relational_certification/relational/durable_publication/index_catalog/recovery.rs",
+    "line": 109,
+    "lint": "needless_borrow",
+    "lifecycle_diff_exit": 0,
+    "master_diff_exit": 1
+  },
+  {
+    "path": "crates/worth-court-relational-certification/tests/worth_court_relational_certification/relational/durable_publication/index_catalog/recovery.rs",
+    "line": 340,
+    "lint": "needless_borrow",
+    "lifecycle_diff_exit": 0,
+    "master_diff_exit": 1
+  },
+  {
+    "path": "crates/worth-court-relational-certification/tests/worth_court_relational_certification/relational/durable_publication/index_catalog.rs",
+    "line": 169,
+    "lint": "needless_borrow",
+    "lifecycle_diff_exit": 0,
+    "master_diff_exit": 1
+  },
+  {
+    "path": "crates/worth-court-relational-certification/tests/worth_court_relational_certification/relational/durable_publication/index_catalog.rs",
+    "line": 212,
+    "lint": "needless_borrow",
+    "lifecycle_diff_exit": 0,
+    "master_diff_exit": 1
+  },
+  {
+    "path": "crates/worth-court-relational-certification/tests/worth_court_relational_certification/relational/managed_source/nested.rs",
+    "line": 110,
+    "lint": "err_expect",
+    "lifecycle_diff_exit": 0,
+    "master_diff_exit": 1
+  },
+  {
+    "path": "crates/worth-court-relational-certification/tests/worth_court_relational_certification/relational/managed_source/row_read.rs",
+    "line": 48,
+    "lint": "err_expect",
+    "lifecycle_diff_exit": 0,
+    "master_diff_exit": 1
+  },
+  {
+    "path": "crates/worth-court-relational-certification/tests/worth_court_relational_certification/relational/managed_source/owner.rs",
+    "line": 267,
+    "lint": "collapsible_if",
+    "lifecycle_diff_exit": 0,
+    "master_diff_exit": 1
+  }
+]

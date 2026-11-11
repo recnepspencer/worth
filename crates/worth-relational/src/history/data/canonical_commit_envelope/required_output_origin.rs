@@ -1,5 +1,5 @@
 //! Complete producer publication membership, independent of member data patches.
-use super::CanonicalCommitEnvelope;
+use super::{CanonicalCommitEnvelope, CanonicalCommitEnvelopeBody};
 use crate::branch::{AdmittedRelationalBranchBasis, RelationalBranchBasisDescriptor};
 use crate::history::data::CommitId;
 use crate::identity::data::{EntityId, KindId, VersionId};
@@ -13,14 +13,13 @@ pub(crate) use coupled_authored::{
 };
 mod authored_restoration;
 mod historical_selection;
+mod history_request;
 pub(crate) use historical_selection::CanonicalHistoricalOutputSelection;
 mod installation;
 pub(crate) use authored_cascade::CanonicalAuthoredRetirement;
 pub(crate) use authored_restoration::CanonicalAuthoredRestoration;
 pub(crate) use installation::CanonicalProducerRetirement;
 mod group_selection;
-mod header_corruption;
-mod header_work;
 mod origin_history;
 pub(crate) use group_selection::{OwnedValidatedOutputOrigins, ValidatedOutputOrigins};
 pub(crate) use origin_history::OutputOriginHistory;
@@ -87,7 +86,7 @@ pub(crate) struct CanonicalOutputMember {
     pub(crate) posture: crate::mvcc::RequiredOutputRolePosture,
     pub(crate) birth: CommitId,
     pub(crate) birth_producer: String,
-    pub(crate) birth_dependency: [u8; 32],
+    pub(crate) birth_dependency: worth_foundational::CanonicalDigestId,
     pub(crate) before_write: Option<VersionId>,
     pub(crate) after_write: VersionId,
 }
@@ -98,19 +97,21 @@ pub(crate) struct CanonicalRequiredOutputOrigin {
     pub(crate) basis: RelationalBranchBasisDescriptor,
     pub(crate) producer: String,
     pub(crate) source_scope_owned: bool,
-    pub(crate) dependency_identity: [u8; 32],
+    pub(crate) dependency_identity: worth_foundational::CanonicalDigestId,
     pub(crate) outputs: Vec<EntityId>,
     pub(crate) relations: Vec<CanonicalRequiredOutputRelation>,
     pub(crate) meaning: crate::mvcc::RequiredOutputPublicationMeaning,
     pub(crate) publication: CanonicalOutputPublication,
     pub(crate) birth: CommitId,
     pub(crate) birth_producer: String,
-    pub(crate) birth_dependency: [u8; 32],
+    pub(crate) birth_dependency: worth_foundational::CanonicalDigestId,
     pub(crate) members: Vec<CanonicalOutputMember>,
     #[serde(skip)]
     pub(crate) issuer: Option<worth_proof::InstalledApplicationPublicationAuthority>,
     #[serde(skip)]
     _funding: Option<worth_execution::ExecutionMemoryReservation>,
+    #[serde(skip)]
+    _cascade_memory: Option<std::sync::Arc<worth_execution::ExecutionMemoryReservation>>,
 }
 
 impl PartialEq for CanonicalRequiredOutputOrigin {
@@ -133,10 +134,27 @@ impl PartialEq for CanonicalRequiredOutputOrigin {
 impl Eq for CanonicalRequiredOutputOrigin {}
 
 impl CanonicalRequiredOutputOrigin {
-    /// Native's complete publication coordinate survives current-fact decoding.
+    pub(crate) fn retain_cascade_memory(
+        &mut self,
+        memory: Option<std::sync::Arc<worth_execution::ExecutionMemoryReservation>>,
+    ) {
+        self._cascade_memory = memory;
+    }
+
+    /// Only the unique, unpublished decoded owner receives this admission;
+    /// no authored meaning or installation authority is changed.
+    pub(crate) fn retain_decoded_memory(
+        &mut self,
+        memory: Option<worth_execution::ExecutionMemoryReservation>,
+    ) {
+        self._funding = memory;
+    }
+    /// Native complete publication identity remains meaningful after current-fact decoding.
     pub(crate) fn same_publication(&self, other: &Self) -> bool {
         self.commit == other.commit && self.meaning == other.meaning
     }
 }
-
+#[cfg(test)]
+#[path = "required_output_origin_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;
 mod source_scope_ownership;

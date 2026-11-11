@@ -51,6 +51,17 @@ impl RelationalPreparationPort {
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         transaction: crate::mvcc::BranchBoundRelationalTransaction,
     ) -> Result<crate::mvcc::PreparedRelationalCommitCandidate, TransactionCommitError> {
+        worth_execution::run_with_execution_stack(move || {
+            self.prepare_branch_transaction_on_execution_stack(execution, transaction)
+        })
+    }
+
+    #[inline(never)]
+    fn prepare_branch_transaction_on_execution_stack(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        transaction: crate::mvcc::BranchBoundRelationalTransaction,
+    ) -> Result<crate::mvcc::PreparedRelationalCommitCandidate, TransactionCommitError> {
         crate::authority::commit::pipeline::consult_stage(
             execution,
             crate::authority::commit::pipeline::CommitStage::Validation,
@@ -92,7 +103,7 @@ impl RelationalPreparationPort {
         let epoch = configuration.operation();
         let runtime = self.binding.runtime_snapshot_from(&epoch);
         let runtime = if execution.is_leased() {
-            runtime.with_commit_work_budget(proposal.commit_work_budget.clone())
+            runtime.with_commit_work_budget(proposal.state.commit_work_budget.clone())
         } else {
             runtime
         };
@@ -121,10 +132,14 @@ impl RelationalPreparationPort {
         runtime: &RelationalPreparationRuntime,
         proposal: crate::mvcc::ValidatedRelationalProposal,
     ) -> Result<crate::mvcc::PreparedRelationalCommitCandidate, TransactionCommitError> {
+        let runtime = runtime.select_home_contracts(
+            proposal.state.validation_input.basis(),
+            proposal.state.validation_input.home_target(),
+        )?;
         let proposal = runtime.revalidate_proposal_for_publication(proposal)?;
         crate::authority::commit::pipeline::prepare_consulted_authoritative_commit(
             execution,
-            runtime,
+            &runtime,
             crate::authority::commit::pipeline::AuthoritativeCommitContext::from_validated_proposal(
                 proposal,
             ),

@@ -44,7 +44,7 @@ impl<const P: u8> ApplicationInvariantMarkerIdentity<BindingSchema<P>> for Rule 
     const MAJOR: u16 = 1;
     const MINOR: u16 = 0;
 }
-pub fn set<const P: u8>() -> ApplicationComponentSetRef<BindingSchema<P>, Set, Node> {
+fn set<const P: u8>() -> ApplicationComponentSetRef<BindingSchema<P>, Set, Node> {
     ApplicationComponentSetRef::new("Set", ApplicationEntityRef::from_schema_identifier("Node"))
 }
 impl<const P: u8> ApplicationSchema for BindingSchema<P> {

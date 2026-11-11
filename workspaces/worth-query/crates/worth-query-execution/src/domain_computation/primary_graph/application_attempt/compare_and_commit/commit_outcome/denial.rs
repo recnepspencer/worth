@@ -31,6 +31,9 @@ mod workflow;
 /// as presented.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryApplicationCommitDenialKind {
+    StaleIncarnation,
+    IdempotencyPreparationBusy,
+    OriginalEffectReleased,
     /// Retained content disagreed with its certified identity before publication.
     ContentInconsistency,
     /// Exact Native content refusal, distinct from request/resource stops.
@@ -89,13 +92,8 @@ pub enum WorthQueryApplicationCommitDenialKind {
     /// The idempotency key is already bound to a different intent. New intent needs
     /// a new key.
     IdempotencyIntentDrift,
-    /// The key records `commit` for this intent, but this runtime does not
-    /// retain its receipt: the commit was performed before a restore or
-    /// reopen, or by a product occurrence that has since retired. The commit
-    /// stands and nothing commits again; read current state to observe it.
-    IdempotencyReceiptNotRetained {
-        commit: worth_relational::facade::history::CommitId,
-    },
+    /// The durable key belongs to another product branch or lifecycle incarnation.
+    IdempotencyForeignAffinity,
     /// The key's record predates the durable intent encoding. Its durable
     /// parts match, but it names its operation only by the admitting
     /// installation's seal, which no later runtime can confirm. Nothing is
@@ -227,6 +225,14 @@ pub struct WorthQueryApplicationCommitDenial {
 }
 
 impl WorthQueryApplicationCommitDenial {
+    pub(crate) const fn stale_incarnation() -> Self {
+        Self {
+            kind: WorthQueryApplicationCommitDenialKind::StaleIncarnation,
+            stage: WorthQueryApplicationCommitDenialStage::ProposalBinding,
+            detail: None,
+            cause: None,
+        }
+    }
     pub(crate) fn correction_identity_mismatch(detail: &'static str) -> Self {
         Self {
             kind: WorthQueryApplicationCommitDenialKind::CorrectionIdentityMismatch,
@@ -367,3 +373,6 @@ impl WorthQueryApplicationCommitDenial {
 }
 
 mod court_doors_for_test;
+#[cfg(test)]
+#[path = "denial_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;

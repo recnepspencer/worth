@@ -1,5 +1,4 @@
 //! Actual admitted authentication for the Host identity fixture.
-use super::HostIdentitySchema;
 use std::{
     future::Future,
     pin::pin,
@@ -42,10 +41,10 @@ impl WorthQueryAuthenticationAdapter for IdentityAdapter {
     }
 }
 
-pub fn authenticate(
-    schema: &WorthQueryInstalledApplicationSchema<HostIdentitySchema>,
+pub fn authenticate<Schema: worth_query_decl::facade::application_schema::ApplicationSchema>(
+    schema: &WorthQueryInstalledApplicationSchema<Schema>,
     scope: &WorthQueryRequestScope,
-) -> WorthQueryAuthenticatedExternalPrincipal<HostIdentitySchema> {
+) -> WorthQueryAuthenticatedExternalPrincipal<Schema> {
     let adapter = admit_authentication_adapter(
         schema,
         WorthQueryAuthenticationAdapterAdmission::new(

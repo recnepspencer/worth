@@ -82,7 +82,7 @@ where
             plan.query.name(),
         )
     })?;
-    let live = native.with_runtime_mut(
+    let live = native.with_runtime(
         graph,
         execution,
         || {

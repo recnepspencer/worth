@@ -5,6 +5,7 @@
 /// again can succeed.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum WorthQueryOutputDemandDenialKind {
+    DurableStateAdmission(crate::domain_computation::execution_runtime::product_world::WorthQueryDurableStateAdmissionDenial),
     /// The original unpublished record refused its native recovery visit.
     WorldRecovery(worth_runtime_world::facade::RuntimeWorldRecoveryDenial),
     /// The original settled effect could not publish its World successor.
@@ -125,3 +126,6 @@ pub enum WorthQueryOutputDemandRecoveryPosture {
     /// Asking again with the same inputs will be refused again.
     Terminal,
 }
+#[cfg(test)]
+#[path = "kind_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;

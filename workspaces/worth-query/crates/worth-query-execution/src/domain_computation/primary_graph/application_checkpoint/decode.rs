@@ -10,6 +10,8 @@ impl WorthQueryApplicationCheckpoint {
             bootstrap_commit_id,
             accepted_count,
             native,
+            native_image: _,
+            world_originals: _,
             query_header: _,
             accepted_count_bytes: _,
             outputs,
@@ -246,6 +248,7 @@ impl WorthQueryApplicationCheckpoint {
         )
         .map_err(str::to_owned)?;
         Ok(DecodedApplicationCheckpoint {
+            origin: self.origin,
             native,
             bootstrap_commit_id,
             accepted_outputs,

@@ -40,3 +40,6 @@ impl PartialEq for WorthQueryGranularSourceReadBasis {
 }
 
 impl Eq for WorthQueryGranularSourceReadBasis {}
+#[cfg(test)]
+#[path = "granular_source_read_basis_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;

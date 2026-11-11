@@ -43,14 +43,20 @@ fn cancellation_at(
     settled_actions: u64,
 ) -> Option<PhysicalRecoveryCleanupCancellation> {
     let plan = build_plan(RecoveryCleanupPlanBasis {
-        selection: &reopened.state.selection,
-        base: &reopened.state.base,
-        publication: &reopened.expectation,
-        fates: &reopened.state.fates,
-        unresolved_retirement: !reopened.state.freshness.retirements().is_empty()
-            || reopened.state.freshness.extent_copy_frames().len() != 0,
-        release_intents: reopened.state.freshness.release_intents(),
-        limits: reopened.state.authority.limits.declaration(),
+        selection: &reopened.payload().state.selection,
+        base: &reopened.payload().state.base,
+        publication: &reopened.payload().expectation,
+        fates: &reopened.payload().state.fates,
+        unresolved_retirement: !reopened.payload().state.freshness.retirements().is_empty()
+            || reopened
+                .payload()
+                .state
+                .freshness
+                .extent_copy_frames()
+                .len()
+                != 0,
+        release_intents: reopened.payload().state.freshness.release_intents(),
+        limits: reopened.payload().state.authority.limits.declaration(),
     });
     (settled_actions < plan.candidates().len() as u64).then_some(
         PhysicalRecoveryCleanupCancellation::new(plan.identity(), settled_actions),

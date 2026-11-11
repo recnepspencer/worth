@@ -201,6 +201,16 @@ impl SignalAttemptProgress {
             {
                 crate::publication::CompositeSignalOwnerResult::forked(outcome)
             }
+            Some(super::SignalProgressEvidence::Durable(outcome))
+                if posture == SignalAttemptProgressPosture::Performed =>
+            {
+                crate::publication::CompositeSignalOwnerResult::durable(outcome)
+            }
+            Some(super::SignalProgressEvidence::Unresolved(task))
+                if posture == SignalAttemptProgressPosture::DurabilityUnresolved =>
+            {
+                crate::publication::CompositeSignalOwnerResult::unresolved(task)
+            }
             evidence => return Err(Self { posture, evidence }),
         };
         Ok((Self::summary(posture), result))

@@ -64,8 +64,8 @@ impl<'a> AdmittedCommitPhaseView<'a> {
         let (merged_plan, merge_history_plan) = match self.authority_input {
             super::authority_context::CommitAuthorityInput::Mutation(plan) => (plan.view(), None),
             super::authority_context::CommitAuthorityInput::Merge(plan) => (
-                RelationalSemanticPlan::Mutation(&plan.merged_plan),
-                Some(plan),
+                RelationalSemanticPlan::Mutation(&plan.plan().merged_plan),
+                Some(plan.plan()),
             ),
         };
         (
@@ -90,7 +90,7 @@ impl AdmittedCommitState {
             super::authority_context::CommitAuthorityInput::Mutation(plan) => {
                 plan.view().commands()
             }
-            super::authority_context::CommitAuthorityInput::Merge(plan) => &plan.merged_plan,
+            super::authority_context::CommitAuthorityInput::Merge(plan) => &plan.plan().merged_plan,
         }
     }
 
@@ -98,7 +98,7 @@ impl AdmittedCommitState {
         match &self.authority_input {
             super::authority_context::CommitAuthorityInput::Mutation(plan) => plan.view(),
             super::authority_context::CommitAuthorityInput::Merge(plan) => {
-                RelationalSemanticPlan::Mutation(&plan.merged_plan)
+                RelationalSemanticPlan::Mutation(&plan.plan().merged_plan)
             }
         }
     }
@@ -112,7 +112,7 @@ impl AdmittedCommitState {
     ) -> Option<&crate::transactions::data::MergeCommitMutationPlan> {
         match &self.authority_input {
             super::authority_context::CommitAuthorityInput::Mutation(_) => None,
-            super::authority_context::CommitAuthorityInput::Merge(plan) => Some(plan),
+            super::authority_context::CommitAuthorityInput::Merge(plan) => Some(plan.plan()),
         }
     }
 

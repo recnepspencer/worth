@@ -1,0 +1,19 @@
+{
+  "scope": "selected-packages",
+  "selection": {
+    "packages": [
+      "worth-court-relational-certification"
+    ],
+    "targets": {
+      "test": [
+        "worth_court_relational_certification"
+      ]
+    }
+  },
+  "cargo_arguments": [
+    "--package",
+    "worth-court-relational-certification",
+    "--test",
+    "worth_court_relational_certification"
+  ]
+}

@@ -1,4 +1,5 @@
 use std::collections::BTreeSet;
+use worth_foundational::CanonicalDigestId;
 
 use super::{
     CanonicalRedoExtentCoordinate, CanonicalRedoTarget, CanonicalRedoTargetIdentity,
@@ -103,7 +104,7 @@ fn decode_target(
         artifact,
         artifact_offset,
         artifact_length,
-        resulting_digest,
+        resulting_digest: CanonicalDigestId::new(resulting_digest),
     })
 }
 

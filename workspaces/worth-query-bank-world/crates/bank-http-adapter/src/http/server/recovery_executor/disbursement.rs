@@ -69,6 +69,7 @@ pub(super) async fn execute_disbursement<A: BankHttpApplicationAuthenticator>(
     };
     NativeRouteResult::Estate {
         record: EstateSourceRecord {
+            released_cleanup: None,
             owner,
             sequence: 1,
             custody,

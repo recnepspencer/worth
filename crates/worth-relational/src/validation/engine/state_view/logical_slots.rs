@@ -3,7 +3,7 @@ use super::InvariantStateView;
 use crate::identity::data::PartitionId;
 
 impl InvariantStateView<'_> {
-    /// O(V+B) visits and O(log V + log B) paid iterator backing. Rejected
+    /// O(V+B) visits and two fixed inline iterator stacks. Rejected
     /// reservations can make logical slots arbitrarily larger than row counts;
     /// neither the allocator frontier nor a dense ordinal is a scan bound.
     pub(crate) fn try_entity_slots<Stop>(
@@ -21,6 +21,31 @@ impl InvariantStateView<'_> {
             .transpose()?;
         let base = base
             .map(|partition| partition.entity_arena().try_occupied_slots(&mut prepare))
+            .transpose()?;
+        Ok(merge_slots(
+            visible.into_iter().flatten(),
+            base.into_iter().flatten(),
+        ))
+    }
+
+    /// O(V+B) visits and two fixed inline iterator stacks. Rejected
+    /// reservations can make logical slots arbitrarily larger than row counts;
+    /// neither the allocator frontier nor a dense ordinal is a scan bound.
+    pub(crate) fn try_relation_slots<Stop>(
+        &self,
+        partition_id: PartitionId,
+        mut prepare: impl FnMut(u64, u64) -> Result<(), Stop>,
+    ) -> Result<impl Iterator<Item = usize> + '_, Stop> {
+        let visible = self.state.get_current_partition(partition_id);
+        let base = self
+            .state
+            .base_current_partition(partition_id)
+            .filter(|base| visible.is_none_or(|visible| !base.same_region_view(visible)));
+        let visible = visible
+            .map(|partition| partition.relation_arena().try_occupied_slots(&mut prepare))
+            .transpose()?;
+        let base = base
+            .map(|partition| partition.relation_arena().try_occupied_slots(&mut prepare))
             .transpose()?;
         Ok(merge_slots(
             visible.into_iter().flatten(),

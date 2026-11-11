@@ -1,11 +1,10 @@
 //! Equality selections at a committed root or its actual applied successor.
 use super::*;
-use std::sync::Arc;
 use worth_foundational::facade::AspectValue;
 use worth_relational::facade::indexes::*;
 pub(in crate::domain_computation::primary_graph::invariant_projection) struct ProjectionEntitySelection
 {
-    definition: Arc<DerivedIndexDefinition>,
+    definition: RetainedDerivedIndexDefinition,
     candidates: Vec<EntityId>,
     examined: usize,
     overflowed: bool,
@@ -13,8 +12,8 @@ pub(in crate::domain_computation::primary_graph::invariant_projection) struct Pr
 impl ProjectionEntitySelection {
     pub(in crate::domain_computation::primary_graph::invariant_projection) fn retain_definition(
         &self,
-    ) -> Arc<DerivedIndexDefinition> {
-        Arc::clone(&self.definition)
+    ) -> RetainedDerivedIndexDefinition {
+        self.definition.clone()
     }
     pub(in crate::domain_computation::primary_graph::invariant_projection) fn candidate_entity_ids(
         &self,

@@ -21,14 +21,18 @@ pub(super) fn rebind(
             .find(|image| image.carrier_digest() == root.schema_carrier_digest)
             .ok_or_else(|| invalid("corruption recorder lost the original schema"))?;
         let (registry, contracts) = image.readmit_registry().map_err(invalid)?;
-        let expected = registry.authority_snapshot();
+        let expected = registry
+            .snapshot_for_compilation(crate::schema::SchemaCompilationControl::Request(*execution))
+            .map_err(RelationalRecoveryStop::Request)?;
         let authority = RelationalBranchRootSchemaAuthority::readmit_exact(
             1,
             registry,
             contracts,
             &expected,
             image.descriptor_semantics_version(),
+            crate::schema::SchemaCompilationControl::Request(*execution),
         )
+        .map_err(RelationalRecoveryStop::Request)?
         .ok_or_else(|| invalid("schema readmission failed"))?;
         let catalog=crate::durability::checkpoints::aspect_state_images::CheckpointAspectContractCatalog::from_contracts(authority.retained_aspect_contracts())?;
         let mut partitions = std::collections::BTreeMap::new();

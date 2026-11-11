@@ -13,7 +13,7 @@ use worth_runtime_bridge::facade::BridgeConditionalCausalEnvelopeRequest as Requ
 
 #[test]
 fn real_native_envelope_requires_fresh_admission_under_both_legacy_paths_and_policies() {
-    crate::domain_computation::primary_graph::output_lineage::ownership_oracle::with_genuine_native_observation(|owner, observation| {
+    crate::domain_computation::primary_graph::output_lineage::ownership_oracle::with_genuine_native_observation(|report, observation| {
         // These are explicitly diagnostic descriptors, never fresh admission.
         let admission: CausalInspectionOutcomeIdentity = descriptor("admission").into();
         let anchor: CausalObservationAnchorDigest = descriptor("anchor").into();
@@ -26,8 +26,7 @@ fn real_native_envelope_requires_fresh_admission_under_both_legacy_paths_and_pol
                 query.bridge_evidence_identity(),
             )
             .unwrap();
-            let envelope = owner
-                .assemble_conditional_causal_envelope(
+            let envelope = report(
                     Request::new(summary, observation.clone()).unwrap(),
                 )
                 .unwrap();

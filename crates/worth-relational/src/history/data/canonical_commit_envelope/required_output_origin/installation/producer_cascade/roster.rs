@@ -1,7 +1,7 @@
 //! Exact candidate closure excludes the generator's own continuing membership.
 use super::*;
 pub(super) fn require(
-    candidate: &CanonicalCommitEnvelope,
+    candidate: &CanonicalCommitEnvelopeBody,
     prior: &CanonicalRequiredOutputOrigin,
     roles: &[RequiredOutputRoleTarget],
     selected: &[SelectedOutputPublication],

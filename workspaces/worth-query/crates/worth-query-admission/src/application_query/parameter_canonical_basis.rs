@@ -50,8 +50,8 @@ impl WorthQueryApplicationParameterCanonicalArtifact {
     }
 }
 
-pub(super) fn prepare_parameter_basis(
-    bindings: &[(&'static str, AspectValue)],
+pub(super) fn prepare_parameter_basis<Name: AsRef<str>>(
+    bindings: &[(Name, AspectValue)],
     budget: CanonicalDigestWorkBudget,
 ) -> Result<WorthQueryApplicationParameterCanonicalArtifact, CanonicalDigestDerivationDenial> {
     let domain = CanonicalBasisDomain::Future(PARAMETER_DOMAIN);
@@ -90,8 +90,8 @@ fn entry(
 mod preparation;
 pub(super) use preparation::{prepare_parameter_basis_admitted, ParameterBasisPreparationStop};
 
-fn prepared_entries<Stop>(
-    bindings: &[(&'static str, AspectValue)],
+fn prepared_entries<Name: AsRef<str>, Stop>(
+    bindings: &[(Name, AspectValue)],
     admit: &mut impl FnMut(usize, usize) -> Result<(), Stop>,
 ) -> Result<Vec<CanonicalBasisEntry>, ParameterBasisPreparationStop<Stop>> {
     use ParameterBasisPreparationStop::{AccountingOverflow, Admission};
@@ -117,6 +117,7 @@ fn prepared_entries<Stop>(
         },
     ));
     for (index, (name, value)) in bindings.iter().enumerate() {
+        let name = name.as_ref();
         admit(3, 0).map_err(Admission)?;
         let digits = if index == 0 {
             1
@@ -147,7 +148,7 @@ fn prepared_entries<Stop>(
             entry(
                 domain,
                 parameter_locus(index, digits, ".name"),
-                CanonicalBasisValue::ExactText((*name).into()),
+                CanonicalBasisValue::ExactText(name.into()),
             ),
             entry(
                 domain,

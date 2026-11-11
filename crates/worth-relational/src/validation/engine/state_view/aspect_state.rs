@@ -20,8 +20,7 @@ impl<'state> InvariantStateView<'state> {
         self.partition_from_source(entity_id.partition_id, location.source)?
             .entity_arena()
             .current_metadata_at(entity_id.slot_index())?
-            .authoritative_aspect_state
-            .as_ref()
+            .authoritative_aspect_state()
     }
 
     fn locate_entity_aspect(&self, entity_id: EntityId) -> Option<AspectLocation> {
@@ -40,7 +39,7 @@ impl<'state> InvariantStateView<'state> {
         if !self.metadata_is_visible(metadata) {
             return None;
         }
-        metadata.authoritative_aspect_state.as_ref()?;
+        metadata.authoritative_aspect_state()?;
         Some(AspectLocation { source })
     }
 
@@ -58,8 +57,7 @@ impl<'state> InvariantStateView<'state> {
         self.partition_from_source(relation_id.partition_id, location.source)?
             .relation_arena()
             .current_metadata_at(relation_id.slot_index())?
-            .authoritative_aspect_state
-            .as_ref()
+            .authoritative_aspect_state()
     }
 
     fn locate_relation_aspect(&self, relation_id: RelationId) -> Option<AspectLocation> {
@@ -78,7 +76,7 @@ impl<'state> InvariantStateView<'state> {
         if !self.metadata_is_visible(metadata) {
             return None;
         }
-        metadata.authoritative_aspect_state.as_ref()?;
+        metadata.authoritative_aspect_state()?;
         Some(AspectLocation { source })
     }
 }

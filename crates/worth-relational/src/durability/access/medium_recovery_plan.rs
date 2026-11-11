@@ -31,6 +31,23 @@ pub(super) fn medium_recovery_plan(
     verification_mode: RecoveryVerificationMode,
 ) -> Result<RecoveryPlan, RelationalRecoveryStop> {
     let parts = source.into_parts();
+    if parts
+        .checkpoint
+        .as_ref()
+        .is_some_and(|source| source.admission_image().is_some())
+        && parts.readmitted_originals.is_none()
+    {
+        return Err(RelationalRecoveryStop::AdmissionImage(
+            crate::durability::checkpoint_admission::RelationalCheckpointAdmissionRefusal::BindingMismatch(
+                crate::durability::checkpoint_admission::CheckpointAdmissionBindingMismatch::Scope,
+            ),
+        ));
+    }
+    let complete = parts
+        .checkpoint
+        .as_ref()
+        .and_then(|source| source.complete_artifact())
+        .cloned();
     let checkpoint = parts
         .checkpoint
         .map(|source| readmit_covered_checkpoint(execution, source, parts.cold_source.clone()))
@@ -39,6 +56,18 @@ pub(super) fn medium_recovery_plan(
         .as_ref()
         .map_or(PatchStreamPosition(0), |(_, covered)| *covered);
     let checkpoint = checkpoint.map(|(checkpoint, _)| checkpoint);
+    let original_source = match parts.readmitted_originals {
+        Some(original) => Some(original),
+        None => parts.initial_inputs.map(|initial| {
+        crate::durability::source_initial_inputs::source_admission::readmit(initial, complete.as_ref(),
+            checkpoint.as_ref(), None, execution).map(std::sync::Arc::new).map_err(|cause| match cause {
+                crate::durability::source_initial_inputs::RelationalInitialInputsRefusal::Request(cause) => RelationalRecoveryStop::Request(cause),
+                crate::durability::source_initial_inputs::RelationalInitialInputsRefusal::Native(cause) => cause,
+                cause => DurabilityError::new(RecoveryFailureClass::CorruptCheckpoint,
+                    format!("original source inputs refused: {cause:?}")).into(),
+            })
+        }).transpose()?,
+    };
     let tail = readmit_contiguous_tail(execution, covered, &parts.tail)?
         .into_iter()
         .map(|commit| commit.bind_journal_source(parts.cold_source.clone()))
@@ -74,7 +103,7 @@ pub(super) fn medium_recovery_plan(
         .iter()
         .map(|entry| entry.envelope().commit.commit_id)
         .collect();
-    Ok(RecoveryPlan::new(
+    let mut plan = RecoveryPlan::new(
         runtime.runtime_config().clone(),
         checkpoint,
         tail,
@@ -85,7 +114,9 @@ pub(super) fn medium_recovery_plan(
         restore_authoritative_envelope_commit_ids,
         Some(parts.cold_source),
     )
-    .with_commit_strategy_executors(runtime.commit_strategy_executor_registry().clone()))
+    .with_commit_strategy_executors(runtime.commit_strategy_executor_registry().clone());
+    plan.original_source = original_source;
+    Ok(plan)
 }
 
 /// Decode the checkpoint and require its own coverage to be the position and
@@ -97,13 +128,22 @@ fn readmit_covered_checkpoint(
 ) -> Result<(DurableCheckpoint, PatchStreamPosition), RelationalRecoveryStop> {
     let filed_under = source.covered();
     let filed_transitions = source.covered_transitions();
-    let checkpoint =
-        crate::durability::log::native_checkpoint_codec::decode_checkpoint_from_source(
+    let checkpoint = match source.admission_image().cloned() {
+        Some(image) => {
+            crate::durability::log::native_checkpoint_codec::decode_checkpoint_with_image(
+                execution,
+                source.checkpoint().bytes(),
+                cold_source,
+                image,
+            )
+        }
+        None => crate::durability::log::native_checkpoint_codec::decode_checkpoint_from_source(
             execution,
-            source.into_checkpoint().bytes(),
+            source.checkpoint().bytes(),
             Some(cold_source),
-        )?
-        .checkpoint;
+        ),
+    }?
+    .checkpoint;
     let covered = checkpoint_coverage(&checkpoint);
     if covered != filed_under {
         return Err(DurabilityError::new(
@@ -167,7 +207,8 @@ fn readmit_contiguous_tail(
             )
             .into());
         }
-        let readmitted = RelationalCanonicalCommitArtifact::readmit(artifact.as_bytes(), execution)
+        let readmitted = artifact
+            .readmit_framed(execution)
             .map_err(|refusal| artifact_refusal_stop(expected, refusal))?;
         tail.push(readmitted);
     }

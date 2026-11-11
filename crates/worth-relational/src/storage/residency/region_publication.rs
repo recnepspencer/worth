@@ -13,7 +13,6 @@ use crate::storage::overlay::{
     RelationalPartitionAllocationInventory,
 };
 use crate::storage::substrate::{RecordArena, RecordKind};
-use std::collections::BTreeSet;
 use std::sync::Arc;
 
 pub(crate) struct RegionCaptureBasis<'region> {
@@ -118,8 +117,9 @@ impl PreparedResidentRegion {
         let inventory = partition
             .allocation_inventory_since(&previous.partition, basis.inventory)
             .map_err(RegionContentFailure::Content)?;
-        let new_payload_bytes =
-            partition.new_authoritative_allocation_bytes_since(&previous.partition);
+        let new_payload_bytes = partition
+            .new_authoritative_allocation_bytes_since(&previous.partition)
+            .map_err(RegionContentFailure::Content)?;
         let delta = unavailable_delta(
             &partition.entity_arena,
             &previous.partition.entity_arena,
@@ -185,7 +185,7 @@ impl PreparedResidentRegion {
 fn unavailable_delta<K: RecordKind>(
     current: &RecordArena<K>,
     previous: &RecordArena<K>,
-    slots: &BTreeSet<usize>,
+    slots: &crate::storage::overlay::TouchedSlots,
 ) -> isize {
     let unavailable = |arena: &RecordArena<K>, slot| {
         arena.physical_index(slot).is_some_and(|physical| {
@@ -198,3 +198,7 @@ fn unavailable_delta<K: RecordKind>(
         .map(|&slot| unavailable(current, slot) - unavailable(previous, slot))
         .sum()
 }
+
+#[cfg(test)]
+#[path = "region_publication/full/tests.rs"]
+mod full_tests;

@@ -62,13 +62,13 @@ fn singleton_keeps_original_anchor_and_promotion_admits_before_moving() {
     let first = Key::root(
         definition.clone(),
         0,
-        Member::Projected(original.clone()),
+        Member::Projected(original.clone().into()),
         false,
     );
     let equal = Key::root(
         definition.clone(),
         0,
-        Member::Projected(Arc::new((*original).clone())),
+        Member::Projected(Arc::new((*original).clone()).into()),
         false,
     );
     let second = Key::root(definition, 0, id(2).into(), false);
@@ -96,7 +96,7 @@ fn singleton_keeps_original_anchor_and_promotion_admits_before_moving() {
         panic!("equal replacement stays inline");
     };
     assert!(
-        Arc::ptr_eq(stored, &original),
+        std::ptr::eq(stored.as_ref(), original.as_ref()),
         "equal replacement preserves actual original anchor"
     );
     assert_eq!(
@@ -147,7 +147,7 @@ fn singleton_keeps_original_anchor_and_promotion_admits_before_moving() {
             else {
                 panic!("all promotion admissions precede moving One");
             };
-            assert!(Arc::ptr_eq(stored, &original));
+            assert!(std::ptr::eq(stored.as_ref(), original.as_ref()));
             assert_eq!(values, &a);
         }
         // A final poll can stop an already edited stage; it still returns no value.
@@ -167,10 +167,6 @@ fn sparse_pages_preserve_boundaries_direction_and_absent_no_allocation() {
     let page = root_pages::PAGE_NODES;
     let mut actual = MemoValues::default();
     let mut control = Control::default();
-    #[expect(
-        clippy::mutable_key_type,
-        reason = "Key orders immutable declared identity, node, member and direction; its retained binding cache is excluded"
-    )]
     let mut reference = BTreeMap::new();
     // Numeric container mechanics only: no Source read or registered-node grant.
     let nodes = [0, page - 1, page, page + 1, usize::MAX / 2, usize::MAX];

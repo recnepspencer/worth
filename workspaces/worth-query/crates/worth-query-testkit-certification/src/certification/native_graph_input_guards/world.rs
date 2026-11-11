@@ -2,7 +2,7 @@
 pub use super::{operator_identity::operator_identity, program, schema::*};
 pub use worth_query_host::facade::{
     application_installation::{
-        in_memory_program, ApplicationBuildIdentity, WorthQueryInMemoryApplicationLimits,
+        in_memory_program, ApplicationBuildIdentity, WorthQueryApplicationLimits,
         WorthQueryProgramApplicationRuntime,
     },
     declaration::authentication::WorthQueryPrincipalMappingStatus,
@@ -16,7 +16,7 @@ pub use worth_query_host::facade::{
 pub type App = WorthQueryProgramApplicationRuntime<Schema, program::Program>;
 pub fn install() -> App {
     let schema = program::schema();
-    let limits = WorthQueryInMemoryApplicationLimits::new(
+    let limits = WorthQueryApplicationLimits::new(
         worth_query_testkit_document_retention::facade::document_world_resources::world_resources(
             256,
             4 * 1024 * 1024,

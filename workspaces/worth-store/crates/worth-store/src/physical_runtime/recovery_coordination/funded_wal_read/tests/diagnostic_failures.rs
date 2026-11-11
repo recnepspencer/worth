@@ -40,7 +40,7 @@ fn context_admission_denies_before_copy_and_payload_then_same_owner_retries() {
     assert_eq!(discovery.counters().bytes_read, 0);
     assert_eq!(
         observer.snapshot().for_dimension(dimension).active_units(),
-        held.bytes()
+        SERVING_BACKING_BYTES + held.bytes()
     );
     drop(held);
     let mut window = coordination.begin_source_read_allocation().unwrap();
@@ -108,7 +108,7 @@ fn actual_media_read_failure_retains_name_and_cause_until_last_clone() {
     );
     assert_eq!(
         observer.snapshot().for_dimension(dimension).active_units(),
-        retained
+        SERVING_BACKING_BYTES + retained
     );
     let clone = failure.clone();
     assert_eq!(clone.diagnostic(), failure.diagnostic());

@@ -1,7 +1,9 @@
 //! Exact-root applicability carries persistent selections.
 mod admission;
 mod checkpoint;
+mod cold_merge;
 mod empty_basis;
+mod frozen_checkpoint;
 mod payment;
 use super::{IndexingState, IndexingSubsystem};
 use crate::history::data::{BranchId, CommitId};
@@ -10,6 +12,7 @@ use crate::indexes::data::{
     DerivedIndexGeneration, DerivedIndexId, DerivedIndexMaintenanceDenialKind as Denial,
 };
 use crate::schema::data::SchemaVersionId;
+pub(super) use frozen_checkpoint::{FrozenBasisSelections, OriginalCheckpointBases};
 use std::sync::Arc;
 
 type Key = (Option<Arc<BranchId>>, VersionId);
@@ -177,13 +180,6 @@ impl BasisSelections {
         }
         self.retirement = self.entries.keys().cloned().collect();
     }
-    pub(super) fn merge(&mut self, previous: &Self) {
-        for (key, basis) in &previous.entries {
-            if !self.entries.contains_key(key) {
-                self.replace_lookup(key.clone(), Some(Arc::clone(basis)));
-            }
-        }
-    }
     fn replace_lookup(&mut self, key: Key, basis: Option<Arc<PreparedIndexBasisSelection>>) {
         if let Some(basis) = basis {
             if self.entries.insert(key.clone(), basis).is_none() {
@@ -326,7 +322,6 @@ impl IndexingSubsystem {
         previous_branch: &BranchId,
         previous_commit: CommitId,
         previous_version: VersionId,
-        deferred: bool,
         prepare: &mut dyn FnMut(u64, u64) -> Result<(), Denial>,
     ) -> Result<PreparedIndexBasisSelection, Denial> {
         let state = self.state.read();
@@ -338,13 +333,9 @@ impl IndexingSubsystem {
                 .saturating_mul(width.saturating_add(1)),
             0,
         )?;
-        let maximum = if deferred {
-            usize::MAX
-        } else {
-            state.bases.len().saturating_add(2)
-        };
-        let (units, bytes) = payment::outer(maximum, width).ok_or(Denial::WorkBudgetExceeded)?;
-        prepare(units, bytes)?;
+        // Only the carried basis is constructed here. Its eventual keyed catalog
+        // insertion is admitted from actual protected geometry at preflight.
+        prepare(width + 1, branch.0.len() as u64)?;
         let previous = state
             .bases
             .get(Some(previous_branch), previous_version)
@@ -361,13 +352,11 @@ impl IndexingSubsystem {
             globals: state.catalog.globals.clone(),
         })
     }
-    pub(crate) fn install_basis_selection(&self, basis: PreparedIndexBasisSelection) {
-        self.state.write().bases.install(basis);
-    }
 }
 
 impl IndexingSubsystem {
     pub(crate) fn publish_generation(&self, generation: DerivedIndexGeneration) {
+        let _publication = self.generation_publication.enter_uncontrolled();
         let mut state = self.state.write();
         let id = generation.generation_id;
         state.generations.publish(generation);

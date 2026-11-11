@@ -93,49 +93,81 @@ impl Drop for RecordServingOwner {
 
 pub(in crate::physical_runtime::record_serving) struct RecordReaderLease {
     counters: Arc<RecordServingCounterCells>,
+    armed: bool,
 }
 
 impl RecordReaderLease {
     fn acquire(counters: Arc<RecordServingCounterCells>) -> Self {
         increment(&counters.reader_acquisitions);
         increment(&counters.readers_live);
-        Self { counters }
+        Self {
+            counters,
+            armed: true,
+        }
     }
 
     pub(in crate::physical_runtime::record_serving) fn read_session(
         &self,
     ) -> RecordReadSessionLease {
+        assert!(self.armed, "retired reader cannot acquire a session");
         RecordReadSessionLease::acquire(Arc::clone(&self.counters))
     }
 
     pub(in crate::physical_runtime::record_serving) fn scan_session(
         &self,
     ) -> RecordScanSessionLease {
+        assert!(self.armed, "retired reader cannot acquire a scan");
         RecordScanSessionLease::acquire(Arc::clone(&self.counters))
+    }
+
+    pub(in crate::physical_runtime::record_serving) fn retire(&mut self) {
+        if self.armed {
+            // This move-owned lease corresponds to one actual acquisition.
+            // No concurrent caller can release this same reference.
+            self.armed = false;
+            self.counters.readers_live.fetch_sub(1, Ordering::AcqRel);
+        }
     }
 }
 
 impl Drop for RecordReaderLease {
     fn drop(&mut self) {
-        decrement(&self.counters.readers_live);
+        if self.armed {
+            decrement(&self.counters.readers_live);
+        }
     }
 }
 
 pub(in crate::physical_runtime::record_serving) struct RecordReadSessionLease {
     counters: Arc<RecordServingCounterCells>,
+    armed: bool,
 }
 
 impl RecordReadSessionLease {
     fn acquire(counters: Arc<RecordServingCounterCells>) -> Self {
         increment(&counters.read_session_acquisitions);
         increment(&counters.read_sessions_live);
-        Self { counters }
+        Self {
+            counters,
+            armed: true,
+        }
+    }
+
+    pub(in crate::physical_runtime::record_serving) fn retire(&mut self) {
+        if self.armed {
+            self.armed = false;
+            self.counters
+                .read_sessions_live
+                .fetch_sub(1, Ordering::AcqRel);
+        }
     }
 }
 
 impl Drop for RecordReadSessionLease {
     fn drop(&mut self) {
-        decrement(&self.counters.read_sessions_live);
+        if self.armed {
+            decrement(&self.counters.read_sessions_live);
+        }
     }
 }
 

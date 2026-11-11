@@ -1,6 +1,15 @@
 use std::sync::{Arc, Mutex};
+mod alias_retirement;
+pub use alias_retirement::{
+    RelationalRuntimeHandleAliasRetirementDenial, RetiredRelationalRuntimeHandleAlias,
+};
 mod lock_observation;
+mod memory_close;
 pub use lock_observation::RelationalRuntimeLockObservationForTest;
+pub use memory_close::{
+    RelationalMemoryClose, RelationalMemoryCloseDenial, RelationalMemoryCloseObservation,
+    RelationalMemoryCloseRefused, RetiredMemoryRelationalAllocation,
+};
 
 use crate::runtime::RelationalRuntime;
 
@@ -70,6 +79,15 @@ impl RelationalRuntimeHandle {
                 self.lock_observation.record();
                 read(&runtime)
             }
+        }
+    }
+
+    /// Observe the actual shared runtime lock without acquiring it.
+    #[doc(hidden)]
+    pub fn is_locked_for_test(&self) -> bool {
+        match &self.ownership {
+            RuntimeOwnership::Immutable(_) => false,
+            RuntimeOwnership::Shared(runtime) => runtime.try_lock().is_err(),
         }
     }
 

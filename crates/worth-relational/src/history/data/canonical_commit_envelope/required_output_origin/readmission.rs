@@ -5,7 +5,7 @@ use crate::history::data::CodecRetirementClosureStop as Stop;
 
 pub(super) fn coverage_commit_stop(
     failure: Failure,
-    envelope: &CanonicalCommitEnvelope,
+    envelope: &CanonicalCommitEnvelopeBody,
     id: crate::identity::data::EntityId,
     plan: &crate::schema::data::LoweredAspectContractPlan,
     member_ordinal: usize,
@@ -32,7 +32,7 @@ pub(super) fn coverage_commit_stop(
     }
 }
 
-impl CanonicalCommitEnvelope {
+impl CanonicalCommitEnvelopeBody {
     /// Reconstructive callers validate the actual birth payload before any
     /// later Preserve patches, using the same native coverage rule as capture.
     pub(in crate::history::data) fn validate_required_output_entity_create(

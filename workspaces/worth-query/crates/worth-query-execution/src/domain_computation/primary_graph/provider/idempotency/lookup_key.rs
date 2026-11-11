@@ -7,6 +7,19 @@ pub(in crate::domain_computation::primary_graph) enum WorthQueryIdempotencyLooku
     Correction([u8; 32]),
 }
 impl WorthQueryIdempotencyLookupKey {
+    pub(in crate::domain_computation::primary_graph) fn for_original(
+        product: WorthQueryProductIdempotencyAffinity,
+        key: [u8; 32],
+        intent: &str,
+    ) -> Result<Self, &'static str> {
+        Ok(
+            if WorthQueryApplicationIdempotencyBinding::recorded_correction_scope(intent)? {
+                Self::Correction(key)
+            } else {
+                Self::Ordinary(product, key)
+            },
+        )
+    }
     pub(in crate::domain_computation::primary_graph) fn for_binding(
         product: &WorthQueryProductIdempotencyAffinity,
         binding: &WorthQueryApplicationIdempotencyBinding,

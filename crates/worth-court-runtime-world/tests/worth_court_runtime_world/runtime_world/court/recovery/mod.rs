@@ -52,7 +52,12 @@ fn partial_recovery_preserves_movement_rejects_foreign_and_only_releases_obligat
         Err(RuntimeWorldRecoveryDenial::ForeignHandle)
     ));
     assert!(matches!(
-        recovery.release_effects(&handle, 0),
+        recovery.release_effects(
+            request_execution,
+            &handle,
+            0,
+            court.observe_recovery_original(request_execution, &handle)
+        ),
         Err(RuntimeWorldRecoveryDenial::CallerCapabilityLive)
     ));
     let continuation = recovery.continue_effects(effects).unwrap();
@@ -75,12 +80,26 @@ fn partial_recovery_preserves_movement_rejects_foreign_and_only_releases_obligat
     assert_eq!(page.examined(), 1);
     assert_eq!(page.rows()[0].age_ticks(), Some(0));
     assert!(matches!(
-        recovery.release_effects(&handle, 1),
+        recovery.release_effects(
+            request_execution,
+            &handle,
+            1,
+            court.observe_recovery_original(request_execution, &handle)
+        ),
         Err(RuntimeWorldRecoveryDenial::TooYoung)
     ));
     let inspected = recovery.inspect_effects(&handle).unwrap();
     drop(inspected);
-    let cleanup = recovery.release_effects(&handle, 0).unwrap();
+    let cleanup = recovery
+        .release_effects(
+            request_execution,
+            &handle,
+            0,
+            court.observe_recovery_original(request_execution, &handle),
+        )
+        .unwrap()
+        .into_parts();
+    let (_original, cleanup) = cleanup;
     assert!(cleanup.owner_retirement_work().is_empty());
     assert_eq!(cleanup.unpublished_history_candidates().len(), 1);
     assert!(matches!(
@@ -204,3 +223,5 @@ fn performed_capability_loss_reopens_one_claim_and_consumption_closes_it() {
     drop((root, next));
     court.finish();
 }
+
+mod released_source;

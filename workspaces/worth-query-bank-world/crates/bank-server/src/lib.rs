@@ -89,7 +89,7 @@ pub use authentication_boundary::BankAuthenticationBoundary;
 pub use bank_projection::{BankInvariantAggregateDenialKind, BankProjectionDenial};
 pub use committed_dispatch_outbox::{
     BankCommittedDispatchOutboxObservation, BankCommittedDispatchOutboxReadDenial,
-    BankExternalDispatchAttemptDenial,
+    BankDurableDispatchRecordDenial, BankExternalDispatchAttemptDenial,
 };
 pub use error::{
     BankAuthenticationBoundaryBuildError, BankIdentityRuntimeBuildError,
@@ -125,9 +125,9 @@ pub use inbound_completion::{
     BankPaymentRailCompletionRoute,
 };
 pub use operation_commit::{
-    BankApplicationAttemptDenialKind, BankCommitCanonicalWorkEvidence,
-    BankCommitCanonicalWorkPhases, BankCommitDenialKind, BankCommitDenialStage,
-    BankCommitPreparationDenial, BankCommitReceipt, BankCommitRecoveryKind,
+    BankApplicationAttemptDenialKind, BankClosedCapabilityCommand, BankClosedSourceCompletion,
+    BankCommitCanonicalWorkEvidence, BankCommitCanonicalWorkPhases, BankCommitDenialKind,
+    BankCommitDenialStage, BankCommitPreparationDenial, BankCommitReceipt, BankCommitRecoveryKind,
     BankMutationCommitOutcome, BankProviderFailureKind, BankProviderFailureStage,
     BankUnresolvedCommitEvidence,
 };

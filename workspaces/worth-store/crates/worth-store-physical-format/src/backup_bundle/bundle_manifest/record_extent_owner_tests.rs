@@ -7,6 +7,7 @@ use crate::{
     BackupBundleFormatAuthority, BackupBundlePhysicalOwner, PhysicalExtentId, PhysicalGeneration,
     PhysicalGenerationOwner,
 };
+use worth_foundational::CanonicalDigestId;
 
 #[test]
 fn top_level_record_extent_owner_round_trips_without_a_fabricated_segment() {
@@ -29,7 +30,7 @@ fn top_level_record_extent_owner_round_trips_without_a_fabricated_segment() {
     .expect("top-level record extent row");
     let manifest = BackupBundleManifest::canonical(BackupBundleManifestDeclaration::new(
         BackupBundleManifestIdentity {
-            cut_identity: [1; 32],
+            cut_identity: CanonicalDigestId::new([1; 32]),
             store_lineage: "lineage".to_owned(),
             root_generation: 1,
             manifest_generation: 1,

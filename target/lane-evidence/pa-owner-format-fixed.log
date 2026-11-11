@@ -1,0 +1,6 @@
+command: cargo fmt -p worth-relational
+HEAD: 0dadb5c0ba823ea04fe14e0433d0369de182576b
+git_status_short_empty: false
+start_utc: 2026-11-11T01:32:01.582496+00:00
+end_utc: 2026-11-11T01:32:11.722280+00:00
+exit_code: 0

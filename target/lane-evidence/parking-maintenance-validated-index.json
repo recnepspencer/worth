@@ -1,0 +1,70 @@
+{
+  "base_head": "29f8c2eaf085097189fa514ad19346b0f1352356",
+  "index_tree": "31c89e4d3abe7c99fe6c0d8964117f968329cd74",
+  "changed_files": [
+    {
+      "path": "tools/boundary-check/config/certification-construction-callers.txt",
+      "index_oid": "fd29fbd4cdf14ddc746f33c506feeaf7cb89e409"
+    },
+    {
+      "path": "tools/boundary-check/src/seal_rules/factory_ownership.rs",
+      "index_oid": "7e5599c45245d6fa3ef2bc90b6c3064a92cf71b1"
+    },
+    {
+      "path": "workspaces/worth-query/crates/worth-query-host/AGENT_CONTEXT.md",
+      "index_oid": "d0067b8173083e7259b094c8d1e423161bbafb7c"
+    },
+    {
+      "path": "workspaces/worth-query/crates/worth-query-host/src/application_home/maintenance.rs",
+      "index_oid": "4373810b494a7aaa268280c9011addb070037a5a"
+    },
+    {
+      "path": "workspaces/worth-query/crates/worth-query-host/src/application_home/maintenance/resources.rs",
+      "index_oid": null
+    },
+    {
+      "path": "workspaces/worth-query/crates/worth-query-host/src/application_home/mod.rs",
+      "index_oid": "a2be8ed3b46731ab8749b104e031596da36d59c3"
+    },
+    {
+      "path": "workspaces/worth-query/crates/worth-query-host/src/facade.rs",
+      "index_oid": "161601a50cb191de1422ba75e8c674859b0362be"
+    },
+    {
+      "path": "workspaces/worth-store/crates/worth-store-application/src/checkpoint/maintenance.rs",
+      "index_oid": "8c9189136c79d4a013327cb1739414712d398656"
+    },
+    {
+      "path": "workspaces/worth-store/crates/worth-store-application/src/checkpoint/maintenance/panic_boundary.rs",
+      "index_oid": "a55644dfda03066ee8b33541dd711354418bc8d8"
+    },
+    {
+      "path": "workspaces/worth-store/crates/worth-store-application/src/checkpoint/maintenance/worker.rs",
+      "index_oid": "9179d3f5433104db13f9b411b9921526dcd65606"
+    },
+    {
+      "path": "workspaces/worth-store/crates/worth-store-application/src/checkpoint/mod.rs",
+      "index_oid": "23645b1649e4006c1fcf9e8740b45b55abb17458"
+    },
+    {
+      "path": "workspaces/worth-store/crates/worth-store-application/src/checkpoint/operation.rs",
+      "index_oid": "f6c93bf84c8dc85af897780e3c53d6f1b58e9668"
+    },
+    {
+      "path": "workspaces/worth-store/crates/worth-store-application/src/checkpoint/owner.rs",
+      "index_oid": "9cc7ec6a1336fe13b5d1a87492453508f50c4944"
+    },
+    {
+      "path": "workspaces/worth-store/crates/worth-store-application/src/checkpoint/publication.rs",
+      "index_oid": "fc81ac1af9f9319fb9175687238220c5bb4d3953"
+    },
+    {
+      "path": "workspaces/worth-store/crates/worth-store-application/src/facade.rs",
+      "index_oid": "6f287819c38d88cd80a39b5b19aaa4647d4cf116"
+    },
+    {
+      "path": "workspaces/worth-store/crates/worth-store-application/src/world_section/close/checkpoint.rs",
+      "index_oid": "b0950c62713846cf229fc4d1e992d2343b4d6e1d"
+    }
+  ]
+}

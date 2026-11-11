@@ -45,16 +45,20 @@ impl super::RelationalBranchRetentionOwner {
                 break;
             };
             examined = examined.saturating_add(1);
-            let reclaimable = self
-                .inner
-                .retired_roots
-                .remove_if(&root_key, |_, retired| {
+            let reclaimable = {
+                let mut roots = self.inner.write_retired_roots();
+                let removable = roots.get(&root_key).is_some_and(|retired| {
                     retired.generation == generation
                         && retired.retired
                         && retired.reservations == 0
                         && Arc::strong_count(&retired.root) == 1
-                })
-                .map(|(_, retired)| retired);
+                });
+                if removable {
+                    roots.remove(&root_key)
+                } else {
+                    None
+                }
+            };
             if let Some(retired) = reclaimable {
                 let root = retired.root;
                 self.inner
@@ -70,7 +74,7 @@ impl super::RelationalBranchRetentionOwner {
                 drop(root);
             } else if self
                 .inner
-                .retired_roots
+                .read_retired_roots()
                 .get(&root_key)
                 .is_some_and(|entry| entry.generation == generation && entry.retired)
             {
@@ -115,7 +119,7 @@ impl crate::runtime::RelationalRuntime {
 
     /// Reclaim cold immutable branch roots through the history owner. This
     /// bounded maintenance pass never walks live references or commit history.
-    pub fn run_branch_root_reclamation_pass(&mut self) -> RelationalBranchRootReclamationOutcome {
+    pub fn run_branch_root_reclamation_pass(&self) -> RelationalBranchRootReclamationOutcome {
         self.history
             .reclaim_retired_branch_roots(self.config.storage.retention.reclaim_batch_size)
     }

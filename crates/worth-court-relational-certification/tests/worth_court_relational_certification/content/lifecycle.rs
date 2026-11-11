@@ -45,7 +45,7 @@ fn checkpoint_tail_replacement_and_retained_history_keep_exact_native_content() 
             })
             .unwrap();
         // Keep the actual admitted historical field reader, not a decoded body or frame.
-        let old_reader = committed.envelope().clone();
+        let old_reader = committed.publication().envelope.clone();
         let first = capture(&runtime, &execution);
         let covered = first.covered_position().unwrap();
         let (_, selected) = runtime
@@ -68,7 +68,7 @@ fn checkpoint_tail_replacement_and_retained_history_keep_exact_native_content() 
         tx.commit(&execution, &runtime).unwrap();
         let tail = runtime
             .durability()
-            .canonical_commit_artifacts(execution.allocation_policy())
+            .canonical_commit_artifacts(&execution)
             .map(Result::unwrap)
             .filter(|artifact| artifact.position() > covered)
             .map(|artifact| {

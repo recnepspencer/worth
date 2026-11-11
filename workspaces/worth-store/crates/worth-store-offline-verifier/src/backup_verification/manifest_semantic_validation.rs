@@ -109,7 +109,7 @@ fn validate_checkpoint(
                 } if checkpoint_identity == manifest.checkpoint_identity()
                     && *manifest_generation == manifest.manifest_generation()
                     && *durable_checkpoint_lsn == manifest.durable_checkpoint_lsn()
-                    && *frontier_digest != [0; 32]
+                    && *frontier_digest.bytes() != [0; 32]
             )
         })
     {

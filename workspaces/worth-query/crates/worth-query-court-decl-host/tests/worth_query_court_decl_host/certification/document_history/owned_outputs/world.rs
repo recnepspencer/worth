@@ -56,7 +56,7 @@ pub fn install() -> Host {
 pub fn install_worker_only() -> Host {
     install_with(worker_limits())
 }
-pub(super) fn worker_limits() -> WorthQueryInMemoryApplicationLimits {
+pub(super) fn worker_limits() -> WorthQueryApplicationLimits {
     use worth_query_host::facade::runtime::*;
     let clock =
         worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system();
@@ -72,17 +72,17 @@ pub(super) fn worker_limits() -> WorthQueryInMemoryApplicationLimits {
             DeterminismContract::CanonicalBitwise,
             std::num::NonZeroUsize::new(8).unwrap(),
         ));
-    WorthQueryInMemoryApplicationLimits::new(
+    WorthQueryApplicationLimits::new(
         world,
         WorthQueryApplicationQueryResourceProfile::new(std::num::NonZeroUsize::new(128).unwrap()),
         SignalConditionalEvaluationBudget::development(),
     )
 }
-fn install_with(limits: WorthQueryInMemoryApplicationLimits) -> Host {
+fn install_with(limits: WorthQueryApplicationLimits) -> Host {
     install_program::<program::Program>(limits)
 }
 pub(super) fn install_program<P>(
-    limits: WorthQueryInMemoryApplicationLimits,
+    limits: WorthQueryApplicationLimits,
 ) -> WorthQueryProgramApplicationRuntime<Schema, P>
 where
     P: ApplicationProgramDefinition<Schema, Contributions = (Contribution,)>,
@@ -91,7 +91,7 @@ where
     install_program_with_value::<P>(limits, 1)
 }
 pub(super) fn install_program_with_value<P>(
-    limits: WorthQueryInMemoryApplicationLimits,
+    limits: WorthQueryApplicationLimits,
     initial_value: u64,
 ) -> WorthQueryProgramApplicationRuntime<Schema, P>
 where
@@ -102,7 +102,7 @@ where
 }
 /// Seed an independent model for cross-document demand-correspondence courts.
 pub(super) fn install_program_with_other_model<P>(
-    limits: WorthQueryInMemoryApplicationLimits,
+    limits: WorthQueryApplicationLimits,
     initial_value: u64,
     other_value: Option<u64>,
 ) -> WorthQueryProgramApplicationRuntime<Schema, P>
@@ -182,53 +182,6 @@ pub fn outputs(host: &Host, branch: WorthQueryProductBranch) -> (query::Row, que
         .rows()[0]
         .clone();
     (first, second)
-}
-
-pub fn restore_changed_build(checkpoint: WorthQueryApplicationCheckpoint, worker: bool) -> Host {
-    restore_program_checkpoint::<program::Program>(checkpoint, worker, true)
-}
-pub fn restore_same_build(checkpoint: WorthQueryApplicationCheckpoint, worker: bool) -> Host {
-    restore_program_checkpoint::<program::Program>(checkpoint, worker, false)
-}
-pub(super) fn restore_program_checkpoint<P>(
-    checkpoint: WorthQueryApplicationCheckpoint,
-    worker: bool,
-    changed: bool,
-) -> WorthQueryProgramApplicationRuntime<Schema, P>
-where
-    P: ApplicationProgramDefinition<Schema, Contributions = (Contribution,)>,
-    P::Outputs: WorthQueryApplicationProgramRoots<Schema>,
-{
-    let schema = Schema::declaration().unwrap();
-    let program = ApplicationProgramAuthoring::<Schema, P>::begin()
-        .with_schema(&schema)
-        .validated_program()
-        .unwrap();
-    let limits = if worker {
-        worker_limits()
-    } else {
-        host_limits(worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system())
-    };
-    in_memory_program_from_checkpoint(
-        program,
-        schema,
-        (Configuration {
-            second_derivation: if changed {
-                Some(|value| value + 2000)
-            } else {
-                None
-            },
-        },),
-        ApplicationBuildIdentity::parse(if changed {
-            "91830000-0000-0000-0000-000000005357"
-        } else {
-            "91830000-0000-0000-0000-000000005356"
-        })
-        .unwrap(),
-        limits,
-        checkpoint,
-    )
-    .unwrap()
 }
 
 pub(super) fn seed(

@@ -21,6 +21,10 @@ impl RelationalRuntime {
         let authoritative_allocations = inventory.accounting.allocations();
         let region_locators = partition_region_locators(&authoritative_allocations);
         let excluded = inventory.accounting.excluded_unique_bytes();
+        // Checked before assembly: an unrepresentable total refuses the
+        // inspection, and every per-kind total below is a subset of it.
+        let unique_authoritative_bytes = inventory.accounting.unique_bytes()?;
+        let logical_authoritative_bytes = inventory.accounting.logical_bytes()?;
         Ok(assemble_observation(SharingObservationAssembly {
             branch_count: branches.len(),
             inventory,
@@ -28,6 +32,8 @@ impl RelationalRuntime {
             authoritative_allocations,
             region_locators,
             excluded,
+            unique_authoritative_bytes,
+            logical_authoritative_bytes,
         }))
     }
 }
@@ -39,6 +45,8 @@ struct SharingObservationAssembly {
     authoritative_allocations: Vec<RelationalAuthoritativeAllocationObservation>,
     region_locators: Vec<RelationalStorageRegionLocator>,
     excluded: (u64, u64, u64, u64),
+    unique_authoritative_bytes: u64,
+    logical_authoritative_bytes: u64,
 }
 
 fn assemble_observation(
@@ -65,8 +73,8 @@ fn assemble_observation(
         unique_physical_root_reachability_bytes: accounting.unique_root_reachability_bytes(),
         logical_branch_canonical_commit_bytes: accounting.logical_canonical_commit_bytes,
         unique_physical_canonical_commit_bytes: accounting.unique_canonical_commit_bytes(),
-        logical_branch_authoritative_bytes: accounting.logical_bytes(),
-        unique_physical_authoritative_bytes: accounting.unique_bytes(),
+        logical_branch_authoritative_bytes: assembly.logical_authoritative_bytes,
+        unique_physical_authoritative_bytes: assembly.unique_authoritative_bytes,
         unique_diagnostic_bytes: excluded.0,
         unique_retention_metadata_bytes: excluded.1,
         unique_allocator_bookkeeping_bytes: excluded.2,

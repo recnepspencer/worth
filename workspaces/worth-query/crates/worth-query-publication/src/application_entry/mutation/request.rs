@@ -1,6 +1,7 @@
 mod birth;
 mod input_identity;
 mod succession;
+mod transport_intent;
 use worth_query_admission::facade::authenticated_principal::{
     WorthQueryAuthenticatedExternalPrincipal, WorthQueryRequestScope,
 };
@@ -98,6 +99,8 @@ pub struct WorthQueryApplicationMutationRequestWithIdempotency<
     >>,
     pub(in crate::application_entry) operation_input: Option<&'scope Result<ApplicationEncodedInput<<Intent::Binding as ApplicationMutationBinding<Schema>>::InputBinding>, worth_query_declaration::facade::application_schema::ApplicationValueEncodeDenial>>,
     pub(super) unstaged: Option<super::staged::UnstagedMutation>,
+    pub(in crate::application_entry) transport_intent: Option<[u8; 32]>,
+    pub(in crate::application_entry) transport_key: Option<[u8; 32]>,
     pub(in crate::application_entry) key: &'key <Intent::Binding as ApplicationMutationBinding<Schema>>::IdempotencyKey,
     pub(in crate::application_entry) workflow_actor_context: Option<worth_query_execution::publication_boundary::workflow_advance::WorthQueryWorkflowActorContext>,
     pub(in crate::application_entry) workflow_transition_identity: Option<[u8; 32]>,
@@ -300,6 +303,8 @@ where
             borrowed_preconditions: None,
             operation_input: None,
             unstaged: Some(super::staged::UnstagedMutation),
+            transport_intent: None,
+            transport_key: None,
             workflow_transition_identity: None,
             workflow_captured_input: None,
             workflow_birth_identity: None,

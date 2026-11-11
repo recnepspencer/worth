@@ -1,5 +1,6 @@
 //! Public inverse box routing: exact occurrences and B/C backlog separation.
 use super::*;
+use crate::application_invariant_acceptance::managed_index::prefix_observation;
 
 #[test]
 fn predicate_watch_boxes_preserve_each_notification_with_current_full_receipts() {
@@ -23,7 +24,7 @@ fn run() {
 }
 fn journey() {
     let calls = Arc::new(provider::Calls::default());
-    let prefix_calls = Arc::new(prefix::Calls::default());
+    let prefix_calls = Arc::new(prefix_observation::Calls::default());
     let prefix_rules = Arc::new(prefix_rule::Calls::new(prefix_calls.clone()));
     let world = host::install_geometry(prefix_calls, prefix_rules, Configuration::new(calls));
     let scope = authentication::request_scope();

@@ -1,0 +1,43 @@
+command: python target/lane-evidence/owned_native_funding_finish_probe.py funding-final-byte-controls "test(cold_inline_bytes_head_refuses_after_member_read_then_retains_exact_payload_through_edit) | test(cold_inline_bytes_history_refuses_after_read_then_retries_full_with_exact_old_values)" 2
+HEAD: ff0e8e88cad6be1b54790ff60357eb5f58deea8f
+git_status_short_empty: false
+start_utc: 2026-11-05T02:54:46.893653+00:00
+environment: removed stale CARGO_TARGET_X86_64_PC_WINDOWS_MSVC_LINKER override
+prebuild: cargo metadata --offline --format-version 1 --manifest-path "C:\programming\worth worktees\worktrees\m3-p3-reopen\Cargo.toml"
+prebuild: cargo test --message-format=json --no-run --package worth-court-relational-certification --test worth_court_relational_certification --profile dev --manifest-path "C:\programming\worth worktees\worktrees\m3-p3-reopen\Cargo.toml" --unit-graph -Z unstable-options
+prebuild: cargo nextest list --cargo-message-format=json --package worth-court-relational-certification --test worth_court_relational_certification --cargo-profile dev --manifest-path "C:\programming\worth worktees\worktrees\m3-p3-reopen\Cargo.toml" --list-type binaries-only --message-format json
+   Compiling worth-court-relational-certification v0.1.0 (C:\programming\worth worktees\worktrees\m3-p3-reopen\crates\worth-court-relational-certification)
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 11.06s
+prebuild: cargo nextest list --cargo-metadata "C:\programming\worth worktees\worktrees\m3-p3-reopen\target\test-cost\root\funding-final-byte-controls\build\cargo-metadata.json" --binaries-metadata "C:\programming\worth worktees\worktrees\m3-p3-reopen\target\test-cost\root\funding-final-byte-controls\build\binaries.json" --message-format json --ignore-default-filter -E "test(cold_inline_bytes_head_refuses_after_member_read_then_retains_exact_payload_through_edit) | test(cold_inline_bytes_history_refuses_after_read_then_retries_full_with_exact_old_values)"
+prebuild: cargo nextest run --cargo-metadata "C:\programming\worth worktees\worktrees\m3-p3-reopen\target\test-cost\root\funding-final-byte-controls\build\cargo-metadata.json" --binaries-metadata "C:\programming\worth worktees\worktrees\m3-p3-reopen\target\test-cost\root\funding-final-byte-controls\build\binaries.json" --profile ci --config-file "C:\programming\worth worktees\worktrees\m3-p3-reopen\target\test-cost\root\d12-retained-image-and-sparse-courts\nextest.toml" --ignore-default-filter --no-fail-fast --no-tests=fail --message-format libtest-json -E "test(cold_inline_bytes_head_refuses_after_member_read_then_retains_exact_payload_through_edit) | test(cold_inline_bytes_history_refuses_after_read_then_retries_full_with_exact_old_values)"
+FULL_OWNED_LOG_PATH: C:\programming\worth worktees\worktrees\m3-p3-reopen\target\lane-evidence\test-cost-root-funding-final-byte-controls-build-cargo-metadata.-ff0e8e88cad6-202611050254480075760000-9c6f0e951f40.log
+FULL_OWNED_LOG_PATH: C:\programming\worth worktees\worktrees\m3-p3-reopen\target\lane-evidence\test-cost-root-funding-final-byte-controls-build-binaries-build--ff0e8e88cad6-202611050254488127160000-c0adbd80a857.log
+FULL_OWNED_LOG_PATH: C:\programming\worth worktees\worktrees\m3-p3-reopen\target\lane-evidence\test-cost-root-funding-final-byte-controls-build-binaries-build.-ff0e8e88cad6-202611050254495485330000-40531c48fc5f.log
+FULL_OWNED_LOG_PATH: C:\programming\worth worktees\worktrees\m3-p3-reopen\target\lane-evidence\test-cost-root-funding-final-byte-controls-build-request-selecti-ff0e8e88cad6-202611050255028769970000-9cbcedef3106.log
+FULL_OWNED_LOG_PATH: C:\programming\worth worktees\worktrees\m3-p3-reopen\target\lane-evidence\test-cost-root-funding-final-byte-controls-run-selection.log-ff0e8e88cad6-202611050255038598550000-8d5c457617b1.log
+info: experimental features enabled: wrapper-scripts
+────────────
+ Nextest run ID 5fcfb0c0-92c3-43b2-a803-2ba3ec381c7b with nextest profile: ci
+    Starting 2 tests across 1 binary (196 tests skipped)
+        PASS [   4.961s] (1/2) worth-court-relational-certification::worth_court_relational_certification relational::durable_publication::source_initial_inputs::checkpoint_admission::cold_materialization::byte_payloads::cold_inline_bytes_head_refuses_after_member_read_then_retains_exact_payload_through_edit
+{"type":"suite","event":"started","test_count":3}
+{"type":"test","event":"started","name":"worth-court-relational-certification::worth_court_relational_certification$cost::relational::relational_certification::scale_invariant_admission::large_runtime_keeps_global_enforcement_and_filters_graph_planning"}
+{"type":"test","event":"started","name":"worth-court-relational-certification::worth_court_relational_certification$relational::durable_publication::source_initial_inputs::checkpoint_admission::cold_materialization::byte_payloads::cold_inline_bytes_history_refuses_after_read_then_retries_full_with_exact_old_values"}
+{"type":"test","event":"started","name":"worth-court-relational-certification::worth_court_relational_certification$relational::durable_publication::source_initial_inputs::checkpoint_admission::cold_materialization::byte_payloads::cold_inline_bytes_head_refuses_after_member_read_then_retains_exact_payload_through_edit"}
+{"type":"test","event":"ignored","name":"worth-court-relational-certification::worth_court_relational_certification$cost::relational::relational_certification::scale_invariant_admission::large_runtime_keeps_global_enforcement_and_filters_graph_planning"}
+{"type":"test","event":"ok","name":"worth-court-relational-certification::worth_court_relational_certification$relational::durable_publication::source_initial_inputs::checkpoint_admission::cold_materialization::byte_payloads::cold_inline_bytes_head_refuses_after_member_read_then_retains_exact_payload_through_edit","exec_time":4.9610769999999995}
+{"type":"suite","event":"ok","passed":1,"failed":0,"ignored":1,"measured":0,"filtered_out":195,"exec_time":4.9610769999999995}
+        PASS [   5.508s] (2/2) worth-court-relational-certification::worth_court_relational_certification relational::durable_publication::source_initial_inputs::checkpoint_admission::cold_materialization::byte_payloads::cold_inline_bytes_history_refuses_after_read_then_retries_full_with_exact_old_values
+────────────
+     Summary [   5.510s] 2 tests run: 2 passed, 196 skipped
+{"type":"suite","event":"started","test_count":3}
+{"type":"test","event":"ok","name":"worth-court-relational-certification::worth_court_relational_certification$relational::durable_publication::source_initial_inputs::checkpoint_admission::cold_materialization::byte_payloads::cold_inline_bytes_history_refuses_after_read_then_retries_full_with_exact_old_values","exec_time":5.5083801999999995}
+{"type":"suite","event":"ok","passed":1,"failed":0,"ignored":1,"measured":0,"filtered_out":196,"exec_time":5.5083801999999995}
+
+EVIDENCE_TEST_COUNTS: 2,0,0
+
+end_utc: 2026-11-05T02:55:09.753074+00:00
+exit_code: 0
+tests_passed: 2
+tests_failed: 0
+tests_ignored: 0

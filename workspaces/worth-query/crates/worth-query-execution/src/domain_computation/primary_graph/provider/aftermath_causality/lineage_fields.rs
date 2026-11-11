@@ -31,6 +31,9 @@ pub(super) fn selector_matches<Stop>(
     admit(value.len() as u64)?;
     admit(source.relational().branch_id.0.len() as u64)?;
     admit(4 * 20 + 4)?;
+    if source.world_owner_coordinate().home_owner().is_some() {
+        admit(41)?;
+    }
     let mut matching = SelectorMatch {
         expected: value,
         offset: 0,
@@ -39,7 +42,7 @@ pub(super) fn selector_matches<Stop>(
         &mut matching,
         "{}",
         Selector {
-            owner: source.world().owner_identity().get(),
+            owner: source.world_owner_coordinate(),
             commit: source.world().ordinal(),
             receipt: source.relational(),
         }
@@ -48,16 +51,26 @@ pub(super) fn selector_matches<Stop>(
 }
 
 struct Selector<'a> {
-    owner: u64,
+    owner: worth_foundational::facade::WorldOwnerCoordinate,
     commit: u64,
     receipt: &'a worth_relational::facade::history::RelationalCommitReceipt,
 }
 impl std::fmt::Display for Selector<'_> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        use worth_foundational::facade::{BoundaryProtocolVersion, WorldOwnerCoordinate};
+        match self.owner {
+            WorldOwnerCoordinate::Home { owner } => {
+                write!(f, "home-v{}:", BoundaryProtocolVersion::new(1))?;
+                for byte in owner.home().bytes() {
+                    write!(f, "{byte:02x}")?;
+                }
+                write!(f, ":{}:", owner.slot().get())?;
+            }
+            WorldOwnerCoordinate::MemoryOnly { observation } => write!(f, "{observation}:")?,
+        }
         write!(
             f,
-            "{}:{}:{}:{}:{}",
-            self.owner,
+            "{}:{}:{}:{}",
             self.commit,
             self.receipt.branch_id.0.len(),
             self.receipt.branch_id.0,
@@ -131,7 +144,9 @@ pub(super) fn values(pending: &WorthQueryPendingAftermathCausality) -> Vec<Optio
 fn coordinates(source: Option<&WorthQueryRecordedCorrectionSource>) -> [Option<AspectValue>; 4] {
     source.map_or([None, None, None, None], |source| {
         [
-            Some(AspectValue::UInt64(source.world().owner_identity().get())),
+            Some(AspectValue::UInt64(
+                source.world_owner_coordinate().row_owner_number(),
+            )),
             Some(AspectValue::UInt64(source.world().ordinal())),
             Some(AspectValue::String(InternedString::from(
                 source.relational().branch_id.0.clone(),

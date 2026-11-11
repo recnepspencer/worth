@@ -24,8 +24,8 @@ fn original_capture_guards_parent_and_identity_without_shifting_write_or_audit_s
     );
     change(&app, "parent-a", "changed-company", 2);
     match save(&app, 1, input("row-a", "company-a", 42)).unwrap() {
-        Outcome::AlreadyCommitted(replay) => {
-            assert_eq!(replay.outcome_identity(), original.outcome_identity())
+        Outcome::RecoveredCommitted(replay) => {
+            assert_eq!(Some(replay.outcome_identity()), original.outcome_identity())
         }
         other => panic!("original replay must precede today's guard: {other:?}"),
     }

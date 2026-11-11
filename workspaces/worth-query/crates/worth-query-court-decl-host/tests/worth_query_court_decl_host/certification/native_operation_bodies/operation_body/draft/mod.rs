@@ -9,7 +9,7 @@ fn native_optional_draft_set_empty_text_clear_and_replay() {
     assert_eq!(super::draft_query::read_note(&app), Some(String::new()));
     assert!(matches!(
         invoke::<SetDraftNote>(&app, 300, ""),
-        Outcome::AlreadyCommitted(_)
+        Outcome::RecoveredCommitted(_)
     ));
     assert!(matches!(
         invoke::<SetDraftNote>(&app, 301, "typed"),
@@ -35,7 +35,7 @@ fn native_optional_draft_set_empty_text_clear_and_replay() {
     assert_eq!(super::draft_query::read_note(&app), None);
     assert!(matches!(
         invoke::<ClearDraftNote>(&app, 302, ""),
-        Outcome::AlreadyCommitted(_)
+        Outcome::RecoveredCommitted(_)
     ));
 }
 

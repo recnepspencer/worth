@@ -12,7 +12,7 @@ use crate::{
 use std::sync::Arc;
 use worth_execution::{ExecutionResourceLease, MapKernelContext};
 
-#[derive(Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub(crate) struct CanonicalAuthoredRestoration {
     pub(crate) retirement: CommitId,
     pub(crate) original_anchor: EntityId,
@@ -26,12 +26,14 @@ pub(crate) struct CanonicalAuthoredRestoration {
         crate::identity::data::RelationId,
     )>,
     pub(crate) publications: Vec<Arc<CanonicalRequiredOutputOrigin>>,
+    #[serde(skip)]
+    pub(crate) _decoded_memory: Option<std::sync::Arc<worth_execution::ExecutionMemoryReservation>>,
 }
 
 #[allow(clippy::too_many_arguments)]
 pub(super) fn install(
-    envelope: &mut CanonicalCommitEnvelope,
-    runtime: &crate::runtime::RelationalPreparationRuntime,
+    envelope: &mut CanonicalCommitEnvelopeBody,
+    runtime: &crate::history::data::canonical_commit_envelope::required_output_origin::history_request::PreparationRuntimeRequest<'_, '_, '_>,
     basis: &AdmittedRelationalBranchBasis,
     created: &CommitCreatedEntityBindings,
     created_relations: &CommitCreatedRelationBindings,
@@ -67,6 +69,7 @@ pub(super) fn install(
         created,
         created_relations,
         restoration,
+        lease,
         context,
     )?;
     let anchor = created.resolve(&restoration.anchor).ok_or_else(refuse)?;
@@ -137,14 +140,13 @@ pub(super) fn install(
             .checkpoint(
                 source
                     .extra()
-                    .authoritative_aspect_state
-                    .as_ref()
+                    .authoritative_aspect_state()
                     .map_or(1, |state| state.owned_allocation_capacity_bytes())
                     as u64,
             )
             .map_err(origin_request)?;
-        if source.extra().authoritative_aspect_state
-            != new_source.extra().authoritative_aspect_state
+        if source.extra().authoritative_aspect_state()
+            != new_source.extra().authoritative_aspect_state()
         {
             return Err(refuse_source());
         }
@@ -165,6 +167,7 @@ pub(super) fn install(
             .by_commit(
                 predecessor,
                 &mut |commit| runtime.history.canonical_envelope(commit),
+                &runtime.history.execution(),
                 context,
             )
             .map_err(super::installation::relation_stop)?
@@ -204,7 +207,7 @@ pub(super) fn install(
             &roles,
             None,
             &origin.producer,
-            origin.dependency_identity,
+            *origin.dependency_identity.bytes(),
             context,
         )?;
         let mut edges = Vec::with_capacity(live.relations.len());
@@ -272,6 +275,7 @@ pub(super) fn install(
             worth_execution::ExecutionMemoryReservation::reserve_in_scope(lease, bytes)
                 .map_err(|cause| origin_request(crate::execution::denial::lease_denial(cause)))?;
         let restored = Arc::new(CanonicalRequiredOutputOrigin {
+            _cascade_memory: None,
             commit: envelope.commit.clone(),
             basis: basis
                 .descriptor()
@@ -309,6 +313,7 @@ pub(super) fn install(
         publications.push(restored);
     }
     envelope.authored_cascade_restoration = Some(Arc::new(CanonicalAuthoredRestoration {
+        _decoded_memory: None,
         retirement: restoration.retirement.commit.commit_id,
         owned_members: old.owned_members,
         original_anchor: old.anchor,
@@ -320,3 +325,19 @@ pub(super) fn install(
     }));
     Ok(positions)
 }
+
+impl PartialEq for CanonicalAuthoredRestoration {
+    fn eq(&self, other: &Self) -> bool {
+        self.retirement == other.retirement
+            && self.original_anchor == other.original_anchor
+            && self.anchor == other.anchor
+            && self.entities == other.entities
+            && self.relations == other.relations
+            && self.co_anchors == other.co_anchors
+            && self.publications == other.publications
+    }
+}
+impl Eq for CanonicalAuthoredRestoration {}
+#[cfg(test)]
+#[path = "authored_restoration_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;

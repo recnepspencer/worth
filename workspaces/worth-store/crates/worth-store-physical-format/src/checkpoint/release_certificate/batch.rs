@@ -1,4 +1,5 @@
 use crate::{OriginalDropReservationRequestV1, PersistedRecordIdentity, ReleasedDropPredecessorV1};
+use worth_foundational::CanonicalDigestId;
 
 use super::{
     read_checkpoint, read_record, Cursor, PhysicalCheckpointIdentity,
@@ -15,20 +16,20 @@ pub const RELEASE_CHECKPOINT_BATCH_WIRE_BYTES: usize =
 pub struct ReleaseCheckpointBatchV1 {
     checkpoint: PhysicalCheckpointIdentity,
     root_generation: u64,
-    root_sha256: [u8; 32],
+    root_sha256: CanonicalDigestId,
     ordinal: u16,
     descriptor_record: PersistedRecordIdentity,
-    descriptor_frame_sha256: [u8; 32],
-    custody_digest: [u8; 32],
+    descriptor_frame_sha256: CanonicalDigestId,
+    custody_digest: CanonicalDigestId,
     reservation_record: PersistedRecordIdentity,
-    reservation_frame_sha256: [u8; 32],
+    reservation_frame_sha256: CanonicalDigestId,
     request: OriginalDropReservationRequestV1,
     fate: ReleasedDropWalFateWitnessV1,
     candidate_root_generation: u64,
-    candidate_root_sha256: [u8; 32],
+    candidate_root_sha256: CanonicalDigestId,
     predecessor: Option<ReleasedDropPredecessorV1>,
     cumulative_dropped: u64,
-    cumulative_digest: [u8; 32],
+    cumulative_digest: CanonicalDigestId,
     terminal: bool,
 }
 
@@ -75,20 +76,20 @@ impl ReleaseCheckpointBatchV1 {
         Ok(Self {
             checkpoint,
             root_generation,
-            root_sha256,
+            root_sha256: CanonicalDigestId::new(root_sha256),
             ordinal,
             descriptor_record,
-            descriptor_frame_sha256,
-            custody_digest,
+            descriptor_frame_sha256: CanonicalDigestId::new(descriptor_frame_sha256),
+            custody_digest: CanonicalDigestId::new(custody_digest),
             reservation_record,
-            reservation_frame_sha256,
+            reservation_frame_sha256: CanonicalDigestId::new(reservation_frame_sha256),
             request,
             fate,
             candidate_root_generation,
-            candidate_root_sha256,
+            candidate_root_sha256: CanonicalDigestId::new(candidate_root_sha256),
             predecessor,
             cumulative_dropped,
-            cumulative_digest,
+            cumulative_digest: CanonicalDigestId::new(cumulative_digest),
             terminal,
         })
     }
@@ -122,15 +123,15 @@ impl ReleaseCheckpointBatchV1 {
         write(&[super::VERSION, BATCH_KIND]);
         write(&checkpoint);
         write(&self.root_generation.to_le_bytes());
-        write(&self.root_sha256);
+        write(self.root_sha256.bytes());
         write(&self.ordinal.to_le_bytes());
         write(&self.descriptor_record.allocation_epoch());
         write(&self.descriptor_record.ordinal().to_le_bytes());
-        write(&self.descriptor_frame_sha256);
-        write(&self.custody_digest);
+        write(self.descriptor_frame_sha256.bytes());
+        write(self.custody_digest.bytes());
         write(&self.reservation_record.allocation_epoch());
         write(&self.reservation_record.ordinal().to_le_bytes());
-        write(&self.reservation_frame_sha256);
+        write(self.reservation_frame_sha256.bytes());
         write(&self.request.idempotency());
         write(&self.request.fingerprint());
         write(&self.request.lease_issuance_generation().to_le_bytes());
@@ -140,7 +141,7 @@ impl ReleaseCheckpointBatchV1 {
         write(&self.fate.identity_digest());
         write(&self.fate.payload_digest());
         write(&self.candidate_root_generation.to_le_bytes());
-        write(&self.candidate_root_sha256);
+        write(self.candidate_root_sha256.bytes());
         if let Some(prior) = self.predecessor {
             write(&prior.descriptor_record().allocation_epoch());
             write(&prior.descriptor_record().ordinal().to_le_bytes());
@@ -149,7 +150,7 @@ impl ReleaseCheckpointBatchV1 {
             write(&[0; 56]);
         }
         write(&self.cumulative_dropped.to_le_bytes());
-        write(&self.cumulative_digest);
+        write(self.cumulative_digest.bytes());
         write(&[u8::from(self.terminal)]);
         debug_assert_eq!(cursor, RELEASE_CHECKPOINT_BATCH_WIRE_BYTES);
         out
@@ -226,7 +227,7 @@ impl ReleaseCheckpointBatchV1 {
         self.root_generation
     }
     pub const fn root_sha256(self) -> [u8; 32] {
-        self.root_sha256
+        *self.root_sha256.bytes()
     }
     pub const fn ordinal(self) -> u16 {
         self.ordinal
@@ -235,16 +236,16 @@ impl ReleaseCheckpointBatchV1 {
         self.descriptor_record
     }
     pub const fn descriptor_frame_sha256(self) -> [u8; 32] {
-        self.descriptor_frame_sha256
+        *self.descriptor_frame_sha256.bytes()
     }
     pub const fn custody_digest(self) -> [u8; 32] {
-        self.custody_digest
+        *self.custody_digest.bytes()
     }
     pub const fn reservation_record(self) -> PersistedRecordIdentity {
         self.reservation_record
     }
     pub const fn reservation_frame_sha256(self) -> [u8; 32] {
-        self.reservation_frame_sha256
+        *self.reservation_frame_sha256.bytes()
     }
     pub const fn request(self) -> OriginalDropReservationRequestV1 {
         self.request
@@ -256,7 +257,7 @@ impl ReleaseCheckpointBatchV1 {
         self.candidate_root_generation
     }
     pub const fn candidate_root_sha256(self) -> [u8; 32] {
-        self.candidate_root_sha256
+        *self.candidate_root_sha256.bytes()
     }
     pub const fn predecessor(self) -> Option<ReleasedDropPredecessorV1> {
         self.predecessor
@@ -265,7 +266,7 @@ impl ReleaseCheckpointBatchV1 {
         self.cumulative_dropped
     }
     pub const fn cumulative_digest(self) -> [u8; 32] {
-        self.cumulative_digest
+        *self.cumulative_digest.bytes()
     }
     pub const fn terminal(self) -> bool {
         self.terminal
@@ -276,13 +277,13 @@ impl ReleaseCheckpointBatchV1 {
     ) -> Result<ReleasedDropTipProvenanceV1, ReleaseCheckpointCertificateDenial> {
         ReleasedDropTipProvenanceV1::new(
             self.descriptor_record,
-            self.descriptor_frame_sha256,
+            *self.descriptor_frame_sha256.bytes(),
             self.reservation_record,
-            self.reservation_frame_sha256,
+            *self.reservation_frame_sha256.bytes(),
             self.request,
             self.fate,
             self.candidate_root_generation,
-            self.candidate_root_sha256,
+            *self.candidate_root_sha256.bytes(),
         )
     }
 }

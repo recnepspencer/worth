@@ -262,14 +262,18 @@ fn fixed_registered_reply_loss_resumes_without_handler_rerun() {
         }
         _ => panic!("completed registration cannot manufacture output completion"),
     };
-    assert!(matches!(terminal.native_outcome(), Some(worth_query_host::facade::application_entry::WorthQueryApplicationMutationOutcome::AlreadyCommitted(_))));
-    let historical_receipt = terminal.native_outcome().unwrap().receipt().unwrap();
+    assert!(matches!(terminal.native_outcome(), Some(worth_query_host::facade::application_entry::WorthQueryApplicationMutationOutcome::RecoveredCommitted(_))));
+    // D9: the original result is recorded meaning; it cannot recreate a live receipt.
+    let Some(worth_query_host::facade::application_entry::WorthQueryApplicationMutationOutcome::RecoveredCommitted(historical_receipt)) = terminal.native_outcome() else { unreachable!("recorded original asserted above") };
     assert_eq!(
-        historical_receipt
+        original_source_receipt
             .committed_product_publication()
             .composite_commit(),
         &original_commit
     );
+    assert!(original_source_receipt.matches_recorded_original(historical_receipt));
+    assert!(terminal.native_outcome().unwrap().receipt().is_none());
+    assert!(terminal.native_outcome().unwrap().result().is_none());
     terminal
         .close(&request)
         .unwrap_or_else(|(_, cause)| panic!("historical cleanup: {cause:?}"));
@@ -365,7 +369,7 @@ fn fixed_unavailable_registration_returns_historical_evidence() {
         Advance::Refused { denial, .. } | Advance::Terminal { denial, .. } => panic!("wrong registration refusal: {denial:?}"),
         _ => panic!("absent native registration cannot invent output completion"),
     };
-    assert!(matches!(terminal.native_outcome(), Some(worth_query_host::facade::application_entry::WorthQueryApplicationMutationOutcome::AlreadyCommitted(_))));
+    assert!(matches!(terminal.native_outcome(), Some(worth_query_host::facade::application_entry::WorthQueryApplicationMutationOutcome::RecoveredCommitted(_))));
     assert_eq!(
         request
             .query(PlanarRead {

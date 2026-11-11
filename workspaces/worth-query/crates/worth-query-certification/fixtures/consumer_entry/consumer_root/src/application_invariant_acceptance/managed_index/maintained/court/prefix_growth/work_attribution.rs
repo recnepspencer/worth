@@ -1,6 +1,7 @@
 //! Raw root-qualified required-work windows; only the SDK report is accepted cost.
 use super::*;
-use prefix::cost_stages::{Observer, Stage};
+use crate::application_invariant_acceptance::managed_index::prefix_cost_stages::{Observer, Stage};
+use crate::application_invariant_acceptance::managed_index::prefix_observation;
 use std::cell::RefCell;
 use worth_execution::RequestConsultObservationForTest;
 struct Trace {
@@ -9,7 +10,7 @@ struct Trace {
 }
 thread_local! { static TRACE: RefCell<Option<Trace>> = const { RefCell::new(None) }; }
 struct Guard<'a> {
-    calls: &'a prefix::Calls,
+    calls: &'a prefix_observation::Calls,
     previous: Option<Observer>,
 }
 impl Drop for Guard<'_> {
@@ -21,14 +22,17 @@ impl Drop for Guard<'_> {
 }
 fn record(stage: Stage) {
     TRACE.with(|slot| {
-        if let Some(trace) = slot.borrow_mut().as_mut() {
-            if trace.sdk.is_current_scope_observed_for_test() {
-                trace.events.push((stage, trace.sdk.count_for_test()));
-            }
+        if let Some(trace) = slot.borrow_mut().as_mut()
+            && trace.sdk.is_current_scope_observed_for_test()
+        {
+            trace.events.push((stage, trace.sdk.count_for_test()));
         }
     });
 }
-pub(super) fn invoice<T>(calls: &prefix::Calls, operation: impl FnOnce() -> T) -> (T, u64) {
+pub(super) fn invoice<T>(
+    calls: &prefix_observation::Calls,
+    operation: impl FnOnce() -> T,
+) -> (T, u64) {
     let mut guard = None;
     let (result, accepted) = super::invoice_observing(
         |context| {

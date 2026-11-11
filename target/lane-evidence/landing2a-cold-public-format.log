@@ -1,0 +1,12 @@
+command: cargo fmt -p worth-relational -p worth-testkit-relational -p worth-court-relational-cold-residency
+HEAD: b736be6f473f27870e932507bcbc2dcbf5b17687
+git_status_short_empty: false
+start_utc: 2026-11-09T16:46:42.674665+00:00
+environment: removed stale CARGO_TARGET_X86_64_PC_WINDOWS_MSVC_LINKER override
+Error writing files: failed to resolve mod `relational_certification`: \\?\C:\programming\worth worktees\worktrees\m3-p3-reopen\crates\worth-court-relational-cold-residency\tests\worth_court_relational_cold_residency\relational_certification.rs does not exist
+
+end_utc: 2026-11-09T16:46:53.651211+00:00
+exit_code: 1
+tests_passed: 0
+tests_failed: 0
+tests_ignored: 0

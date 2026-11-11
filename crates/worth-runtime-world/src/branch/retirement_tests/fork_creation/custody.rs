@@ -161,7 +161,7 @@ fn custody_capacity_denies_creation_before_any_owner_effect() {
 /// the same typed work back in its terminal report, and it counts the product
 /// references it released while doing so.
 #[test]
-fn close_reports_every_undrained_custody_record_as_outstanding_retirement_work() {
+fn close_refuses_undrained_component_custody_before_seal() {
     let (_fixture, owner, source) = setup_with_relational_source(3);
     let forked = create_forked_branch(
         &owner,
@@ -180,37 +180,18 @@ fn close_reports_every_undrained_custody_record_as_outstanding_retirement_work()
     let branches_before = owner.state.branches.branch_count();
     drop(forked);
 
-    let report = owner
-        .close()
-        .expect("undrained custody is a report row, never a close denial");
-
-    assert_eq!(report.outstanding_owner_retirement_work().len(), 2);
     assert_eq!(
-        report.outstanding_owner_retirement_work()[0].target_name(),
-        "relational-branch-unretired"
+        owner
+            .close(&worth_execution::ExecutionRequest::serial(
+                &crate::test_execution_policy::serial_request()
+            ))
+            .unwrap_err(),
+        crate::lifecycle::RuntimeWorldCloseDenial::UnresolvedBusinessCustody
     );
+    assert_eq!(owner.state.custody.installed(), 2);
+    assert_eq!(owner.state.branches.branch_count(), branches_before);
     assert_eq!(
-        report.outstanding_owner_retirement_work()[1].target_name(),
-        "signal-branch-unretired"
-    );
-    assert_eq!(
-        report.retired_owner_created_custody(),
-        2,
-        "the custody charge close released is the work it reported"
-    );
-    assert_eq!(
-        owner.state.custody.installed(),
-        0,
-        "close drains custody once; a record left installed would be unnamed"
-    );
-    assert_eq!(
-        report.released_product_head_pins(),
-        branches_before - 1,
-        "close released every non-root product reference the registry held"
-    );
-    assert_eq!(
-        owner.state.branches.branch_count(),
-        1,
-        "the root reference is the world's own, not a created branch"
+        owner.lifecycle_observation(),
+        crate::lifecycle::RuntimeWorldOwnerLifecycleObservation::Open
     );
 }

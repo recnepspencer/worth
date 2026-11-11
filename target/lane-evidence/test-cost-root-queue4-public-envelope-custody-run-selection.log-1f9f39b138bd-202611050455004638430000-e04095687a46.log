@@ -1,0 +1,27 @@
+Command: ["cargo", "nextest", "run", "--cargo-metadata", "C:\\programming\\worth worktees\\worktrees\\m3-p3-reopen\\target\\test-cost\\root\\queue4-public-envelope-custody\\build\\cargo-metadata.json", "--binaries-metadata", "C:\\programming\\worth worktees\\worktrees\\m3-p3-reopen\\target\\test-cost\\root\\queue4-public-envelope-custody\\build\\binaries.json", "--profile", "ci", "--config-file", "C:\\programming\\worth worktees\\worktrees\\m3-p3-reopen\\target\\test-cost\\root\\d12-retained-image-and-sparse-courts\\nextest.toml", "--ignore-default-filter", "--no-fail-fast", "--no-tests=fail", "--message-format", "libtest-json", "-E", "test(recovered_nonhead_envelope_custody_ends_with_the_last_inflight_read)"]
+Working directory: C:\programming\worth worktees\worktrees\m3-p3-reopen
+HEAD: 1f9f39b138bd5dcf92124317ec2e7ebe3f170153
+Git status --short empty: False
+Start: 2026-11-05T04:55:00.463843+00:00
+
+{"type": "cargo-invocation", "command": ["cargo", "nextest", "run", "--cargo-metadata", "C:\\programming\\worth worktees\\worktrees\\m3-p3-reopen\\target\\test-cost\\root\\queue4-public-envelope-custody\\build\\cargo-metadata.json", "--binaries-metadata", "C:\\programming\\worth worktees\\worktrees\\m3-p3-reopen\\target\\test-cost\\root\\queue4-public-envelope-custody\\build\\binaries.json", "--profile", "ci", "--config-file", "C:\\programming\\worth worktees\\worktrees\\m3-p3-reopen\\target\\test-cost\\root\\d12-retained-image-and-sparse-courts\\nextest.toml", "--ignore-default-filter", "--no-fail-fast", "--no-tests=fail", "--message-format", "libtest-json", "-E", "test(recovered_nonhead_envelope_custody_ends_with_the_last_inflight_read)"], "cwd": "C:\\programming\\worth worktees\\worktrees\\m3-p3-reopen", "capture": "ordered", "mode": "build", "target_dir": "C:\\programming\\worth worktees\\worktrees\\m3-p3-reopen\\target", "cargo_profile": "test"}
+info: experimental features enabled: wrapper-scripts
+────────────
+ Nextest run ID 95f55a32-2662-46ac-8704-423ef44de06d with nextest profile: ci
+    Starting 1 test across 1 binary (198 tests skipped)
+{"type":"suite","event":"started","test_count":2}
+{"type":"test","event":"started","name":"worth-court-relational-certification::worth_court_relational_certification$cost::relational::relational_certification::scale_invariant_admission::large_runtime_keeps_global_enforcement_and_filters_graph_planning"}
+{"type":"suite","event":"ok","passed":0,"failed":0,"ignored":1,"measured":0,"filtered_out":197,"exec_time":0}
+        PASS [   0.819s] (1/1) worth-court-relational-certification::worth_court_relational_certification relational::durable_publication::cold_envelope_custody::recovered_nonhead_envelope_custody_ends_with_the_last_inflight_read
+{"type":"suite","event":"started","test_count":2}
+{"type":"test","event":"started","name":"worth-court-relational-certification::worth_court_relational_certification$relational::durable_publication::cold_envelope_custody::recovered_nonhead_envelope_custody_ends_with_the_last_inflight_read"}
+{"type":"test","event":"ok","name":"worth-court-relational-certification::worth_court_relational_certification$relational::durable_publication::cold_envelope_custody::recovered_nonhead_envelope_custody_ends_with_the_last_inflight_read","exec_time":0.8188154}
+{"type":"suite","event":"ok","passed":1,"failed":0,"ignored":1,"measured":0,"filtered_out":197,"exec_time":0.8188154}
+────────────
+     Summary [   0.825s] 1 test run: 1 passed, 198 skipped
+
+
+{"type": "cargo-result", "exit_code": 0}
+
+End: 2026-11-05T04:55:01.582083+00:00
+Exit code: 0

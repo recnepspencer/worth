@@ -300,3 +300,6 @@ fn failure(
 
 mod retry_identity;
 use retry_identity::retry_matches;
+#[cfg(test)]
+#[path = "recovery_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;

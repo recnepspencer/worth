@@ -14,7 +14,6 @@ use super::super::protocol::{
 
 pub(super) fn query_denial(denial: BankApplicationQueryDenial) -> BankHttpDenial {
     match denial {
-        BankApplicationQueryDenial::HistoryOutput(_) => internal_denied(),
         BankApplicationQueryDenial::ExecutionRequest(cause) => {
             super::advancement_denial::advancement(cause)
         }
@@ -24,9 +23,10 @@ pub(super) fn query_denial(denial: BankApplicationQueryDenial) -> BankHttpDenial
         BankApplicationQueryDenial::Installation(_)
         | BankApplicationQueryDenial::CapabilityInstallation(_)
         | BankApplicationQueryDenial::PreviewSession(_)
-        | BankApplicationQueryDenial::ContinuationExecution(_)
         => unavailable(),
-        BankApplicationQueryDenial::LiveOpen(cause) => live_open(cause.kind()),
+        BankApplicationQueryDenial::ContinuationExecution(cause) => retained_execution::continuation(cause.kind()),
+        BankApplicationQueryDenial::LiveOpen(cause) => retained_execution::live(cause.kind()),
+        BankApplicationQueryDenial::HistoryOutput(cause) => history_output::denial(*cause),
         BankApplicationQueryDenial::PrincipalResolution(
             worth_query_host::facade::primary_graph::WorthQueryPrincipalResolutionDenialKind::Stopped(stop),
         ) => super::mutation_application::pending_execution_stop(stop),
@@ -40,14 +40,16 @@ pub(super) fn query_denial(denial: BankApplicationQueryDenial) -> BankHttpDenial
         BankApplicationQueryDenial::ScopeResolution(denial) => entity(denial.kind()),
         BankApplicationQueryDenial::Admission(denial) => admission(denial.kind()),
         BankApplicationQueryDenial::Execution(denial) => execution(denial.kind()),
-        BankApplicationQueryDenial::OutputSettlement(kind) => output_settlement(kind),
+        BankApplicationQueryDenial::OutputSettlement(kind) => output_settlement::output_settlement(kind),
         BankApplicationQueryDenial::ManagedIndex(cause) => managed_index(&cause),
     }
 }
 
-mod managed_index;
+pub(super) mod managed_index;
+mod predecessor_read;
+mod publication_read;
+mod source_observation;
 use managed_index::managed_index;
-pub(in crate::http::server) use managed_index::work as managed_work;
 
 fn product_selection(kind: BankProductSelectionDenialKind) -> BankHttpDenial {
     use BankProductSelectionDenialKind as Selection;
@@ -55,12 +57,16 @@ fn product_selection(kind: BankProductSelectionDenialKind) -> BankHttpDenial {
         Selection::ExpectedDescriptionVersionUnsupported { .. } => {
             BankHttpDenial::new(Kind::UnsupportedProtocol, Next::CorrectRequest)
         }
+        Selection::DurableBranchPublicationRequired => {
+            BankHttpDenial::new(Kind::Unavailable, Next::ContactOperator)
+        }
         Selection::ExpectedDescriptionNameInvalid => malformed(),
         Selection::ReadExecution(stop) => super::mutation_application::pending_execution_stop(stop),
         Selection::ForeignPhase => internal_denied(),
         Selection::ForeignOwner
         | Selection::RetiredBranch
         | Selection::IncarnationChanged
+        | Selection::StaleIncarnation
         | Selection::ObservationRejected
         | Selection::ObservationStaleSourceHead => stale(),
         Selection::ObservationStatePoisoned => internal_denied(),
@@ -260,8 +266,10 @@ fn entity(kind: BankEntityResolutionDenialKind) -> BankHttpDenial {
     }
 }
 
+mod history_output;
 mod output_settlement;
 use output_settlement::output_settlement;
+mod retained_execution;
 
 const fn malformed() -> BankHttpDenial {
     BankHttpDenial::new(Kind::MalformedRequest, Next::CorrectRequest)
@@ -307,17 +315,5 @@ mod producer_quote_tests;
 #[path = "query_denial/request_stop_tests.rs"]
 mod request_stop_tests;
 
-fn live_open(kind: bank_server::BankApplicationLiveOpenDenialKind) -> BankHttpDenial {
-    use bank_server::BankApplicationLiveOpenDenialKind as Live;
-    match kind {
-        Live::Content(cause) => super::relational_execution_denial::content(cause),
-        Live::Admission(cause) => admission(cause),
-        Live::AuthorizationDenied(cause) => authorization_denial(cause),
-        Live::ForeignAdvancementPhase | Live::BindingMismatch => internal_denied(),
-        Live::LiveContractMissing
-        | Live::ScopeIdentityUnavailable
-        | Live::BasisReleaseFailed
-        | Live::ProviderVersionUnavailable
-        | Live::BridgeBasisRejected => unavailable(),
-    }
-}
+#[cfg(test)]
+mod content_stop_tests;

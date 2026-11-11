@@ -1,0 +1,21 @@
+{
+  "nextest_configuration": null,
+  "records": [
+    {
+      "accounting": "complete",
+      "binary": "worth-court-relational-certification::worth_court_relational_certification",
+      "cpu_seconds": 1.171875,
+      "declared_slots": 1,
+      "exit": 0,
+      "observation_errors": [],
+      "observation_posture": "complete",
+      "process_accounting": "complete",
+      "reserved_slots": 1,
+      "scheduler": "nextest",
+      "scheduler_pool_size": 32,
+      "test": "cost::relational::source_initial_inputs::checkpoint_admission::selected_state_recapture_work_does_not_follow_discarded_covered_update_bytes",
+      "type": "test-cost-cpu",
+      "wall_seconds": 1.1924659002106637
+    }
+  ]
+}

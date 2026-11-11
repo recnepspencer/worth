@@ -113,21 +113,26 @@ pub fn assert_public_creation(display_name: &str) {
     else {
         panic!("keyed recovery completes")
     };
-    let worth_query_host::facade::application_entry::WorthQuerySourceCompletion::Recovered {
+    let worth_query_host::facade::application_entry::WorthQuerySourceCompletion::Recorded {
         receipt: retry_receipt,
         ..
     } = retry.evidence()
     else {
         panic!("replay never invents a result")
     };
-    let recovered_entity = retry_receipt
-        .outputs_of::<CreatePersonalAccountOutputs>()
-        .unwrap()
-        .entity::<CreatedPersonalAccountOutput>()
-        .unwrap()
-        .entity_id();
-    assert_eq!(recovered_entity, created_entity);
-    assert!(retry_receipt.is_same_authoritative_commit(first_receipt));
+    let correspondences = retry_receipt
+        .semantic_result()
+        .semantic()
+        .created_entities();
+    assert_eq!(
+        correspondences
+            .iter()
+            .filter(|entry| entry.assigned == created_entity)
+            .count(),
+        1,
+        "original durable create correspondence preserves the settled output identity"
+    );
+    crate::facade::recorded_commit_axes::assert_agrees(retry_receipt, first_receipt);
     retry
         .close(&request)
         .unwrap_or_else(|(_, cause)| panic!("retry close: {cause:?}"));

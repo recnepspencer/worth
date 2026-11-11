@@ -12,3 +12,6 @@ pub use observation::{
     WorthQueryManagedLiveLifecyclePosture, WorthQueryManagedLiveSubscriptionFamily,
 };
 pub(crate) use workspace_capability::WorthQueryManagedLiveWorkspaceCapability;
+#[cfg(test)]
+#[path = "mod_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;

@@ -26,3 +26,5 @@ pub mod workflow_instance_observation;
 pub mod workflow_instance_program;
 #[path = "workflow_transition_program/mod.rs"]
 pub mod workflow_transition_program;
+
+pub mod authority_read_stops;

@@ -1,0 +1,1244 @@
+[
+  {
+    "path": "crates/worth-relational/src/authority/commit/pipeline/publication_execution.rs",
+    "worktree": "m3-h5-signal",
+    "head": "37ba7b72df17717a4fab4ead9beb295c80c86a2f",
+    "diff_command": [
+      "git",
+      "-C",
+      "C:\\programming\\worth worktees\\worktrees\\m3-h5-signal",
+      "diff",
+      "--quiet",
+      "e787b51b3e",
+      "--",
+      "crates/worth-relational/src/authority/commit/pipeline/publication_execution.rs"
+    ],
+    "diff_exit": 0,
+    "status_command": [
+      "git",
+      "-C",
+      "C:\\programming\\worth worktees\\worktrees\\m3-h5-signal",
+      "status",
+      "--porcelain",
+      "--",
+      "crates/worth-relational/src/authority/commit/pipeline/publication_execution.rs"
+    ],
+    "status": "",
+    "granted": true
+  },
+  {
+    "path": "crates/worth-relational/src/authority/commit/pipeline/publication_execution/prepared_candidate.rs",
+    "worktree": "m3-h5-signal",
+    "head": "37ba7b72df17717a4fab4ead9beb295c80c86a2f",
+    "diff_command": [
+      "git",
+      "-C",
+      "C:\\programming\\worth worktees\\worktrees\\m3-h5-signal",
+      "diff",
+      "--quiet",
+      "e787b51b3e",
+      "--",
+      "crates/worth-relational/src/authority/commit/pipeline/publication_execution/prepared_candidate.rs"
+    ],
+    "diff_exit": 0,
+    "status_command": [
+      "git",
+      "-C",
+      "C:\\programming\\worth worktees\\worktrees\\m3-h5-signal",
+      "status",
+      "--porcelain",
+      "--",
+      "crates/worth-relational/src/authority/commit/pipeline/publication_execution/prepared_candidate.rs"
+    ],
+    "status": "",
+    "granted": true
+  },
+  {
+    "path": "crates/worth-relational/src/indexes/authority/maintenance/candidate.rs",
+    "worktree": "m3-h5-signal",
+    "head": "37ba7b72df17717a4fab4ead9beb295c80c86a2f",
+    "diff_command": [
+      "git",
+      "-C",
+      "C:\\programming\\worth worktees\\worktrees\\m3-h5-signal",
+      "diff",
+      "--quiet",
+      "e787b51b3e",
+      "--",
+      "crates/worth-relational/src/indexes/authority/maintenance/candidate.rs"
+    ],
+    "diff_exit": 0,
+    "status_command": [
+      "git",
+      "-C",
+      "C:\\programming\\worth worktees\\worktrees\\m3-h5-signal",
+      "status",
+      "--porcelain",
+      "--",
+      "crates/worth-relational/src/indexes/authority/maintenance/candidate.rs"
+    ],
+    "status": "",
+    "granted": true
+  },
+  {
+    "path": "crates/worth-relational/src/indexes/authority/maintenance/request_payment.rs",
+    "worktree": "m3-h5-signal",
+    "head": "37ba7b72df17717a4fab4ead9beb295c80c86a2f",
+    "diff_command": [
+      "git",
+      "-C",
+      "C:\\programming\\worth worktees\\worktrees\\m3-h5-signal",
+      "diff",
+      "--quiet",
+      "e787b51b3e",
+      "--",
+      "crates/worth-relational/src/indexes/authority/maintenance/request_payment.rs"
+    ],
+    "diff_exit": 0,
+    "status_command": [
+      "git",
+      "-C",
+      "C:\\programming\\worth worktees\\worktrees\\m3-h5-signal",
+      "status",
+      "--porcelain",
+      "--",
+      "crates/worth-relational/src/indexes/authority/maintenance/request_payment.rs"
+    ],
+    "status": "",
+    "granted": true
+  },
+  {
+    "path": "crates/worth-relational/src/mvcc/publication/port.rs",
+    "worktree": "m3-h5-signal",
+    "head": "37ba7b72df17717a4fab4ead9beb295c80c86a2f",
+    "diff_command": [
+      "git",
+      "-C",
+      "C:\\programming\\worth worktees\\worktrees\\m3-h5-signal",
+      "diff",
+      "--quiet",
+      "e787b51b3e",
+      "--",
+      "crates/worth-relational/src/mvcc/publication/port.rs"
+    ],
+    "diff_exit": 0,
+    "status_command": [
+      "git",
+      "-C",
+      "C:\\programming\\worth worktees\\worktrees\\m3-h5-signal",
+      "status",
+      "--porcelain",
+      "--",
+      "crates/worth-relational/src/mvcc/publication/port.rs"
+    ],
+    "status": "",
+    "granted": true
+  },
+  {
+    "path": "crates/worth-relational/src/mvcc/publication/port_cutover.rs",
+    "worktree": "m3-h5-signal",
+    "head": "37ba7b72df17717a4fab4ead9beb295c80c86a2f",
+    "diff_command": [
+      "git",
+      "-C",
+      "C:\\programming\\worth worktees\\worktrees\\m3-h5-signal",
+      "diff",
+      "--quiet",
+      "e787b51b3e",
+      "--",
+      "crates/worth-relational/src/mvcc/publication/port_cutover.rs"
+    ],
+    "diff_exit": 0,
+    "status_command": [
+      "git",
+      "-C",
+      "C:\\programming\\worth worktees\\worktrees\\m3-h5-signal",
+      "status",
+      "--porcelain",
+      "--",
+      "crates/worth-relational/src/mvcc/publication/port_cutover.rs"
+    ],
+    "status": "",
+    "granted": true
+  },
+  {
+    "path": "crates/worth-relational/src/mvcc/publication/port_handoff.rs",
+    "worktree": "m3-h5-signal",
+    "head": "37ba7b72df17717a4fab4ead9beb295c80c86a2f",
+    "diff_command": [
+      "git",
+      "-C",
+      "C:\\programming\\worth worktees\\worktrees\\m3-h5-signal",
+      "diff",
+      "--quiet",
+      "e787b51b3e",
+      "--",
+      "crates/worth-relational/src/mvcc/publication/port_handoff.rs"
+    ],
+    "diff_exit": 0,
+    "status_command": [
+      "git",
+      "-C",
+      "C:\\programming\\worth worktees\\worktrees\\m3-h5-signal",
+      "status",
+      "--porcelain",
+      "--",
+      "crates/worth-relational/src/mvcc/publication/port_handoff.rs"
+    ],
+    "status": "",
+    "granted": true
+  },
+  {
+    "path": "crates/worth-relational/src/mvcc/publication/port_preflight.rs",
+    "worktree": "m3-h5-signal",
+    "head": "37ba7b72df17717a4fab4ead9beb295c80c86a2f",
+    "diff_command": [
+      "git",
+      "-C",
+      "C:\\programming\\worth worktees\\worktrees\\m3-h5-signal",
+      "diff",
+      "--quiet",
+      "e787b51b3e",
+      "--",
+      "crates/worth-relational/src/mvcc/publication/port_preflight.rs"
+    ],
+    "diff_exit": 0,
+    "status_command": [
+      "git",
+      "-C",
+      "C:\\programming\\worth worktees\\worktrees\\m3-h5-signal",
+      "status",
+      "--porcelain",
+      "--",
+      "crates/worth-relational/src/mvcc/publication/port_preflight.rs"
+    ],
+    "status": "",
+    "granted": true
+  },
+  {
+    "path": "crates/worth-relational/src/runtime/state/runtime_state/publication_settlement_registry.rs",
+    "worktree": "m3-h5-signal",
+    "head": "37ba7b72df17717a4fab4ead9beb295c80c86a2f",
+    "diff_command": [
+      "git",
+      "-C",
+      "C:\\programming\\worth worktees\\worktrees\\m3-h5-signal",
+      "diff",
+      "--quiet",
+      "e787b51b3e",
+      "--",
+      "crates/worth-relational/src/runtime/state/runtime_state/publication_settlement_registry.rs"
+    ],
+    "diff_exit": 0,
+    "status_command": [
+      "git",
+      "-C",
+      "C:\\programming\\worth worktees\\worktrees\\m3-h5-signal",
+      "status",
+      "--porcelain",
+      "--",
+      "crates/worth-relational/src/runtime/state/runtime_state/publication_settlement_registry.rs"
+    ],
+    "status": "",
+    "granted": true
+  },
+  {
+    "path": "crates/worth-relational/src/runtime/state/runtime_state/publication_settlement_registry/record.rs",
+    "worktree": "m3-h5-signal",
+    "head": "37ba7b72df17717a4fab4ead9beb295c80c86a2f",
+    "diff_command": [
+      "git",
+      "-C",
+      "C:\\programming\\worth worktees\\worktrees\\m3-h5-signal",
+      "diff",
+      "--quiet",
+      "e787b51b3e",
+      "--",
+      "crates/worth-relational/src/runtime/state/runtime_state/publication_settlement_registry/record.rs"
+    ],
+    "diff_exit": 0,
+    "status_command": [
+      "git",
+      "-C",
+      "C:\\programming\\worth worktees\\worktrees\\m3-h5-signal",
+      "status",
+      "--porcelain",
+      "--",
+      "crates/worth-relational/src/runtime/state/runtime_state/publication_settlement_registry/record.rs"
+    ],
+    "status": "",
+    "granted": true
+  },
+  {
+    "path": "crates/worth-relational/src/runtime/state/subsystems/indexing.rs",
+    "worktree": "m3-h5-signal",
+    "head": "37ba7b72df17717a4fab4ead9beb295c80c86a2f",
+    "diff_command": [
+      "git",
+      "-C",
+      "C:\\programming\\worth worktees\\worktrees\\m3-h5-signal",
+      "diff",
+      "--quiet",
+      "e787b51b3e",
+      "--",
+      "crates/worth-relational/src/runtime/state/subsystems/indexing.rs"
+    ],
+    "diff_exit": 0,
+    "status_command": [
+      "git",
+      "-C",
+      "C:\\programming\\worth worktees\\worktrees\\m3-h5-signal",
+      "status",
+      "--porcelain",
+      "--",
+      "crates/worth-relational/src/runtime/state/subsystems/indexing.rs"
+    ],
+    "status": "",
+    "granted": true
+  },
+  {
+    "path": "crates/worth-relational/src/runtime/state/subsystems/indexing/admitted_selection.rs",
+    "worktree": "m3-h5-signal",
+    "head": "37ba7b72df17717a4fab4ead9beb295c80c86a2f",
+    "diff_command": [
+      "git",
+      "-C",
+      "C:\\programming\\worth worktees\\worktrees\\m3-h5-signal",
+      "diff",
+      "--quiet",
+      "e787b51b3e",
+      "--",
+      "crates/worth-relational/src/runtime/state/subsystems/indexing/admitted_selection.rs"
+    ],
+    "diff_exit": 0,
+    "status_command": [
+      "git",
+      "-C",
+      "C:\\programming\\worth worktees\\worktrees\\m3-h5-signal",
+      "status",
+      "--porcelain",
+      "--",
+      "crates/worth-relational/src/runtime/state/subsystems/indexing/admitted_selection.rs"
+    ],
+    "status": "",
+    "granted": true
+  },
+  {
+    "path": "crates/worth-relational/src/runtime/state/subsystems/indexing/cold_checkpoint.rs",
+    "worktree": "m3-h5-signal",
+    "head": "37ba7b72df17717a4fab4ead9beb295c80c86a2f",
+    "diff_command": [
+      "git",
+      "-C",
+      "C:\\programming\\worth worktees\\worktrees\\m3-h5-signal",
+      "diff",
+      "--quiet",
+      "e787b51b3e",
+      "--",
+      "crates/worth-relational/src/runtime/state/subsystems/indexing/cold_checkpoint.rs"
+    ],
+    "diff_exit": 0,
+    "status_command": [
+      "git",
+      "-C",
+      "C:\\programming\\worth worktees\\worktrees\\m3-h5-signal",
+      "status",
+      "--porcelain",
+      "--",
+      "crates/worth-relational/src/runtime/state/subsystems/indexing/cold_checkpoint.rs"
+    ],
+    "status": "",
+    "granted": true
+  },
+  {
+    "path": "crates/worth-relational/src/runtime/state/subsystems/indexing/generation_catalog/admitted_publication.rs",
+    "worktree": "m3-h5-signal",
+    "head": "37ba7b72df17717a4fab4ead9beb295c80c86a2f",
+    "diff_command": [
+      "git",
+      "-C",
+      "C:\\programming\\worth worktees\\worktrees\\m3-h5-signal",
+      "diff",
+      "--quiet",
+      "e787b51b3e",
+      "--",
+      "crates/worth-relational/src/runtime/state/subsystems/indexing/generation_catalog/admitted_publication.rs"
+    ],
+    "diff_exit": 0,
+    "status_command": [
+      "git",
+      "-C",
+      "C:\\programming\\worth worktees\\worktrees\\m3-h5-signal",
+      "status",
+      "--porcelain",
+      "--",
+      "crates/worth-relational/src/runtime/state/subsystems/indexing/generation_catalog/admitted_publication.rs"
+    ],
+    "status": "",
+    "granted": true
+  },
+  {
+    "path": "crates/worth-relational/src/runtime/state/subsystems/indexing/generation_catalog/insertion_quote.rs",
+    "worktree": "m3-h5-signal",
+    "head": "37ba7b72df17717a4fab4ead9beb295c80c86a2f",
+    "diff_command": [
+      "git",
+      "-C",
+      "C:\\programming\\worth worktees\\worktrees\\m3-h5-signal",
+      "diff",
+      "--quiet",
+      "e787b51b3e",
+      "--",
+      "crates/worth-relational/src/runtime/state/subsystems/indexing/generation_catalog/insertion_quote.rs"
+    ],
+    "diff_exit": 0,
+    "status_command": [
+      "git",
+      "-C",
+      "C:\\programming\\worth worktees\\worktrees\\m3-h5-signal",
+      "status",
+      "--porcelain",
+      "--",
+      "crates/worth-relational/src/runtime/state/subsystems/indexing/generation_catalog/insertion_quote.rs"
+    ],
+    "status": "",
+    "granted": true
+  },
+  {
+    "path": "crates/worth-relational/src/runtime/state/subsystems/indexing/generation_catalog/installation.rs",
+    "worktree": "m3-h5-signal",
+    "head": "37ba7b72df17717a4fab4ead9beb295c80c86a2f",
+    "diff_command": [
+      "git",
+      "-C",
+      "C:\\programming\\worth worktees\\worktrees\\m3-h5-signal",
+      "diff",
+      "--quiet",
+      "e787b51b3e",
+      "--",
+      "crates/worth-relational/src/runtime/state/subsystems/indexing/generation_catalog/installation.rs"
+    ],
+    "diff_exit": 0,
+    "status_command": [
+      "git",
+      "-C",
+      "C:\\programming\\worth worktees\\worktrees\\m3-h5-signal",
+      "status",
+      "--porcelain",
+      "--",
+      "crates/worth-relational/src/runtime/state/subsystems/indexing/generation_catalog/installation.rs"
+    ],
+    "status": "",
+    "granted": true
+  },
+  {
+    "path": "crates/worth-relational/src/runtime/state/subsystems/indexing/generation_catalog/mod.rs",
+    "worktree": "m3-h5-signal",
+    "head": "37ba7b72df17717a4fab4ead9beb295c80c86a2f",
+    "diff_command": [
+      "git",
+      "-C",
+      "C:\\programming\\worth worktees\\worktrees\\m3-h5-signal",
+      "diff",
+      "--quiet",
+      "e787b51b3e",
+      "--",
+      "crates/worth-relational/src/runtime/state/subsystems/indexing/generation_catalog/mod.rs"
+    ],
+    "diff_exit": 0,
+    "status_command": [
+      "git",
+      "-C",
+      "C:\\programming\\worth worktees\\worktrees\\m3-h5-signal",
+      "status",
+      "--porcelain",
+      "--",
+      "crates/worth-relational/src/runtime/state/subsystems/indexing/generation_catalog/mod.rs"
+    ],
+    "status": "",
+    "granted": true
+  },
+  {
+    "path": "crates/worth-relational/src/runtime/state/subsystems/indexing/generation_catalog/tests.rs",
+    "worktree": "m3-h5-signal",
+    "head": "37ba7b72df17717a4fab4ead9beb295c80c86a2f",
+    "diff_command": [
+      "git",
+      "-C",
+      "C:\\programming\\worth worktees\\worktrees\\m3-h5-signal",
+      "diff",
+      "--quiet",
+      "e787b51b3e",
+      "--",
+      "crates/worth-relational/src/runtime/state/subsystems/indexing/generation_catalog/tests.rs"
+    ],
+    "diff_exit": 0,
+    "status_command": [
+      "git",
+      "-C",
+      "C:\\programming\\worth worktees\\worktrees\\m3-h5-signal",
+      "status",
+      "--porcelain",
+      "--",
+      "crates/worth-relational/src/runtime/state/subsystems/indexing/generation_catalog/tests.rs"
+    ],
+    "status": "",
+    "granted": true
+  },
+  {
+    "path": "crates/worth-relational/src/runtime/state/subsystems/indexing/generation_publication.rs",
+    "worktree": "m3-h5-signal",
+    "head": "37ba7b72df17717a4fab4ead9beb295c80c86a2f",
+    "diff_command": [
+      "git",
+      "-C",
+      "C:\\programming\\worth worktees\\worktrees\\m3-h5-signal",
+      "diff",
+      "--quiet",
+      "e787b51b3e",
+      "--",
+      "crates/worth-relational/src/runtime/state/subsystems/indexing/generation_publication.rs"
+    ],
+    "diff_exit": 0,
+    "status_command": [
+      "git",
+      "-C",
+      "C:\\programming\\worth worktees\\worktrees\\m3-h5-signal",
+      "status",
+      "--porcelain",
+      "--",
+      "crates/worth-relational/src/runtime/state/subsystems/indexing/generation_publication.rs"
+    ],
+    "status": "",
+    "granted": true
+  },
+  {
+    "path": "crates/worth-relational/src/runtime/state/subsystems/indexing/generation_publication_gate.rs",
+    "worktree": "m3-h5-signal",
+    "head": "37ba7b72df17717a4fab4ead9beb295c80c86a2f",
+    "diff_command": [
+      "git",
+      "-C",
+      "C:\\programming\\worth worktees\\worktrees\\m3-h5-signal",
+      "diff",
+      "--quiet",
+      "e787b51b3e",
+      "--",
+      "crates/worth-relational/src/runtime/state/subsystems/indexing/generation_publication_gate.rs"
+    ],
+    "diff_exit": 0,
+    "status_command": [
+      "git",
+      "-C",
+      "C:\\programming\\worth worktees\\worktrees\\m3-h5-signal",
+      "status",
+      "--porcelain",
+      "--",
+      "crates/worth-relational/src/runtime/state/subsystems/indexing/generation_publication_gate.rs"
+    ],
+    "status": "",
+    "granted": true
+  },
+  {
+    "path": "crates/worth-relational/src/runtime/state/subsystems/indexing/generation_publication_gate/tests.rs",
+    "worktree": "m3-h5-signal",
+    "head": "37ba7b72df17717a4fab4ead9beb295c80c86a2f",
+    "diff_command": [
+      "git",
+      "-C",
+      "C:\\programming\\worth worktees\\worktrees\\m3-h5-signal",
+      "diff",
+      "--quiet",
+      "e787b51b3e",
+      "--",
+      "crates/worth-relational/src/runtime/state/subsystems/indexing/generation_publication_gate/tests.rs"
+    ],
+    "diff_exit": 0,
+    "status_command": [
+      "git",
+      "-C",
+      "C:\\programming\\worth worktees\\worktrees\\m3-h5-signal",
+      "status",
+      "--porcelain",
+      "--",
+      "crates/worth-relational/src/runtime/state/subsystems/indexing/generation_publication_gate/tests.rs"
+    ],
+    "status": "",
+    "granted": true
+  },
+  {
+    "path": "crates/worth-relational/src/runtime/state/subsystems/indexing/prepared_publication.rs",
+    "worktree": "m3-h5-signal",
+    "head": "37ba7b72df17717a4fab4ead9beb295c80c86a2f",
+    "diff_command": [
+      "git",
+      "-C",
+      "C:\\programming\\worth worktees\\worktrees\\m3-h5-signal",
+      "diff",
+      "--quiet",
+      "e787b51b3e",
+      "--",
+      "crates/worth-relational/src/runtime/state/subsystems/indexing/prepared_publication.rs"
+    ],
+    "diff_exit": 0,
+    "status_command": [
+      "git",
+      "-C",
+      "C:\\programming\\worth worktees\\worktrees\\m3-h5-signal",
+      "status",
+      "--porcelain",
+      "--",
+      "crates/worth-relational/src/runtime/state/subsystems/indexing/prepared_publication.rs"
+    ],
+    "status": "",
+    "granted": true
+  },
+  {
+    "path": "crates/worth-relational/src/runtime/state/subsystems/indexing/prepared_publication/tests.rs",
+    "worktree": "m3-h5-signal",
+    "head": "37ba7b72df17717a4fab4ead9beb295c80c86a2f",
+    "diff_command": [
+      "git",
+      "-C",
+      "C:\\programming\\worth worktees\\worktrees\\m3-h5-signal",
+      "diff",
+      "--quiet",
+      "e787b51b3e",
+      "--",
+      "crates/worth-relational/src/runtime/state/subsystems/indexing/prepared_publication/tests.rs"
+    ],
+    "diff_exit": 0,
+    "status_command": [
+      "git",
+      "-C",
+      "C:\\programming\\worth worktees\\worktrees\\m3-h5-signal",
+      "status",
+      "--porcelain",
+      "--",
+      "crates/worth-relational/src/runtime/state/subsystems/indexing/prepared_publication/tests.rs"
+    ],
+    "status": "",
+    "granted": true
+  },
+  {
+    "path": "crates/worth-relational/src/authority/commit/pipeline/publication_execution.rs",
+    "worktree": "m3-p3-lifecycle",
+    "head": "0628ad3f833f0fecf4a2fc439122b8929473d66c",
+    "diff_command": [
+      "git",
+      "-C",
+      "C:\\programming\\worth worktees\\worktrees\\m3-p3-lifecycle",
+      "diff",
+      "--quiet",
+      "e787b51b3e",
+      "--",
+      "crates/worth-relational/src/authority/commit/pipeline/publication_execution.rs"
+    ],
+    "diff_exit": 0,
+    "status_command": [
+      "git",
+      "-C",
+      "C:\\programming\\worth worktees\\worktrees\\m3-p3-lifecycle",
+      "status",
+      "--porcelain",
+      "--",
+      "crates/worth-relational/src/authority/commit/pipeline/publication_execution.rs"
+    ],
+    "status": "",
+    "granted": true
+  },
+  {
+    "path": "crates/worth-relational/src/authority/commit/pipeline/publication_execution/prepared_candidate.rs",
+    "worktree": "m3-p3-lifecycle",
+    "head": "0628ad3f833f0fecf4a2fc439122b8929473d66c",
+    "diff_command": [
+      "git",
+      "-C",
+      "C:\\programming\\worth worktees\\worktrees\\m3-p3-lifecycle",
+      "diff",
+      "--quiet",
+      "e787b51b3e",
+      "--",
+      "crates/worth-relational/src/authority/commit/pipeline/publication_execution/prepared_candidate.rs"
+    ],
+    "diff_exit": 0,
+    "status_command": [
+      "git",
+      "-C",
+      "C:\\programming\\worth worktees\\worktrees\\m3-p3-lifecycle",
+      "status",
+      "--porcelain",
+      "--",
+      "crates/worth-relational/src/authority/commit/pipeline/publication_execution/prepared_candidate.rs"
+    ],
+    "status": "",
+    "granted": true
+  },
+  {
+    "path": "crates/worth-relational/src/indexes/authority/maintenance/candidate.rs",
+    "worktree": "m3-p3-lifecycle",
+    "head": "0628ad3f833f0fecf4a2fc439122b8929473d66c",
+    "diff_command": [
+      "git",
+      "-C",
+      "C:\\programming\\worth worktees\\worktrees\\m3-p3-lifecycle",
+      "diff",
+      "--quiet",
+      "e787b51b3e",
+      "--",
+      "crates/worth-relational/src/indexes/authority/maintenance/candidate.rs"
+    ],
+    "diff_exit": 0,
+    "status_command": [
+      "git",
+      "-C",
+      "C:\\programming\\worth worktees\\worktrees\\m3-p3-lifecycle",
+      "status",
+      "--porcelain",
+      "--",
+      "crates/worth-relational/src/indexes/authority/maintenance/candidate.rs"
+    ],
+    "status": "",
+    "granted": true
+  },
+  {
+    "path": "crates/worth-relational/src/indexes/authority/maintenance/request_payment.rs",
+    "worktree": "m3-p3-lifecycle",
+    "head": "0628ad3f833f0fecf4a2fc439122b8929473d66c",
+    "diff_command": [
+      "git",
+      "-C",
+      "C:\\programming\\worth worktees\\worktrees\\m3-p3-lifecycle",
+      "diff",
+      "--quiet",
+      "e787b51b3e",
+      "--",
+      "crates/worth-relational/src/indexes/authority/maintenance/request_payment.rs"
+    ],
+    "diff_exit": 0,
+    "status_command": [
+      "git",
+      "-C",
+      "C:\\programming\\worth worktees\\worktrees\\m3-p3-lifecycle",
+      "status",
+      "--porcelain",
+      "--",
+      "crates/worth-relational/src/indexes/authority/maintenance/request_payment.rs"
+    ],
+    "status": "",
+    "granted": true
+  },
+  {
+    "path": "crates/worth-relational/src/mvcc/publication/port.rs",
+    "worktree": "m3-p3-lifecycle",
+    "head": "0628ad3f833f0fecf4a2fc439122b8929473d66c",
+    "diff_command": [
+      "git",
+      "-C",
+      "C:\\programming\\worth worktees\\worktrees\\m3-p3-lifecycle",
+      "diff",
+      "--quiet",
+      "e787b51b3e",
+      "--",
+      "crates/worth-relational/src/mvcc/publication/port.rs"
+    ],
+    "diff_exit": 1,
+    "status_command": [
+      "git",
+      "-C",
+      "C:\\programming\\worth worktees\\worktrees\\m3-p3-lifecycle",
+      "status",
+      "--porcelain",
+      "--",
+      "crates/worth-relational/src/mvcc/publication/port.rs"
+    ],
+    "status": "",
+    "granted": false
+  },
+  {
+    "path": "crates/worth-relational/src/mvcc/publication/port_cutover.rs",
+    "worktree": "m3-p3-lifecycle",
+    "head": "0628ad3f833f0fecf4a2fc439122b8929473d66c",
+    "diff_command": [
+      "git",
+      "-C",
+      "C:\\programming\\worth worktees\\worktrees\\m3-p3-lifecycle",
+      "diff",
+      "--quiet",
+      "e787b51b3e",
+      "--",
+      "crates/worth-relational/src/mvcc/publication/port_cutover.rs"
+    ],
+    "diff_exit": 0,
+    "status_command": [
+      "git",
+      "-C",
+      "C:\\programming\\worth worktees\\worktrees\\m3-p3-lifecycle",
+      "status",
+      "--porcelain",
+      "--",
+      "crates/worth-relational/src/mvcc/publication/port_cutover.rs"
+    ],
+    "status": "",
+    "granted": true
+  },
+  {
+    "path": "crates/worth-relational/src/mvcc/publication/port_handoff.rs",
+    "worktree": "m3-p3-lifecycle",
+    "head": "0628ad3f833f0fecf4a2fc439122b8929473d66c",
+    "diff_command": [
+      "git",
+      "-C",
+      "C:\\programming\\worth worktees\\worktrees\\m3-p3-lifecycle",
+      "diff",
+      "--quiet",
+      "e787b51b3e",
+      "--",
+      "crates/worth-relational/src/mvcc/publication/port_handoff.rs"
+    ],
+    "diff_exit": 1,
+    "status_command": [
+      "git",
+      "-C",
+      "C:\\programming\\worth worktees\\worktrees\\m3-p3-lifecycle",
+      "status",
+      "--porcelain",
+      "--",
+      "crates/worth-relational/src/mvcc/publication/port_handoff.rs"
+    ],
+    "status": "",
+    "granted": false
+  },
+  {
+    "path": "crates/worth-relational/src/mvcc/publication/port_preflight.rs",
+    "worktree": "m3-p3-lifecycle",
+    "head": "0628ad3f833f0fecf4a2fc439122b8929473d66c",
+    "diff_command": [
+      "git",
+      "-C",
+      "C:\\programming\\worth worktees\\worktrees\\m3-p3-lifecycle",
+      "diff",
+      "--quiet",
+      "e787b51b3e",
+      "--",
+      "crates/worth-relational/src/mvcc/publication/port_preflight.rs"
+    ],
+    "diff_exit": 0,
+    "status_command": [
+      "git",
+      "-C",
+      "C:\\programming\\worth worktees\\worktrees\\m3-p3-lifecycle",
+      "status",
+      "--porcelain",
+      "--",
+      "crates/worth-relational/src/mvcc/publication/port_preflight.rs"
+    ],
+    "status": "",
+    "granted": true
+  },
+  {
+    "path": "crates/worth-relational/src/runtime/state/runtime_state/publication_settlement_registry.rs",
+    "worktree": "m3-p3-lifecycle",
+    "head": "0628ad3f833f0fecf4a2fc439122b8929473d66c",
+    "diff_command": [
+      "git",
+      "-C",
+      "C:\\programming\\worth worktees\\worktrees\\m3-p3-lifecycle",
+      "diff",
+      "--quiet",
+      "e787b51b3e",
+      "--",
+      "crates/worth-relational/src/runtime/state/runtime_state/publication_settlement_registry.rs"
+    ],
+    "diff_exit": 0,
+    "status_command": [
+      "git",
+      "-C",
+      "C:\\programming\\worth worktees\\worktrees\\m3-p3-lifecycle",
+      "status",
+      "--porcelain",
+      "--",
+      "crates/worth-relational/src/runtime/state/runtime_state/publication_settlement_registry.rs"
+    ],
+    "status": "",
+    "granted": true
+  },
+  {
+    "path": "crates/worth-relational/src/runtime/state/runtime_state/publication_settlement_registry/record.rs",
+    "worktree": "m3-p3-lifecycle",
+    "head": "0628ad3f833f0fecf4a2fc439122b8929473d66c",
+    "diff_command": [
+      "git",
+      "-C",
+      "C:\\programming\\worth worktees\\worktrees\\m3-p3-lifecycle",
+      "diff",
+      "--quiet",
+      "e787b51b3e",
+      "--",
+      "crates/worth-relational/src/runtime/state/runtime_state/publication_settlement_registry/record.rs"
+    ],
+    "diff_exit": 0,
+    "status_command": [
+      "git",
+      "-C",
+      "C:\\programming\\worth worktees\\worktrees\\m3-p3-lifecycle",
+      "status",
+      "--porcelain",
+      "--",
+      "crates/worth-relational/src/runtime/state/runtime_state/publication_settlement_registry/record.rs"
+    ],
+    "status": "",
+    "granted": true
+  },
+  {
+    "path": "crates/worth-relational/src/runtime/state/subsystems/indexing.rs",
+    "worktree": "m3-p3-lifecycle",
+    "head": "0628ad3f833f0fecf4a2fc439122b8929473d66c",
+    "diff_command": [
+      "git",
+      "-C",
+      "C:\\programming\\worth worktees\\worktrees\\m3-p3-lifecycle",
+      "diff",
+      "--quiet",
+      "e787b51b3e",
+      "--",
+      "crates/worth-relational/src/runtime/state/subsystems/indexing.rs"
+    ],
+    "diff_exit": 0,
+    "status_command": [
+      "git",
+      "-C",
+      "C:\\programming\\worth worktees\\worktrees\\m3-p3-lifecycle",
+      "status",
+      "--porcelain",
+      "--",
+      "crates/worth-relational/src/runtime/state/subsystems/indexing.rs"
+    ],
+    "status": "",
+    "granted": true
+  },
+  {
+    "path": "crates/worth-relational/src/runtime/state/subsystems/indexing/admitted_selection.rs",
+    "worktree": "m3-p3-lifecycle",
+    "head": "0628ad3f833f0fecf4a2fc439122b8929473d66c",
+    "diff_command": [
+      "git",
+      "-C",
+      "C:\\programming\\worth worktees\\worktrees\\m3-p3-lifecycle",
+      "diff",
+      "--quiet",
+      "e787b51b3e",
+      "--",
+      "crates/worth-relational/src/runtime/state/subsystems/indexing/admitted_selection.rs"
+    ],
+    "diff_exit": 0,
+    "status_command": [
+      "git",
+      "-C",
+      "C:\\programming\\worth worktees\\worktrees\\m3-p3-lifecycle",
+      "status",
+      "--porcelain",
+      "--",
+      "crates/worth-relational/src/runtime/state/subsystems/indexing/admitted_selection.rs"
+    ],
+    "status": "",
+    "granted": true
+  },
+  {
+    "path": "crates/worth-relational/src/runtime/state/subsystems/indexing/cold_checkpoint.rs",
+    "worktree": "m3-p3-lifecycle",
+    "head": "0628ad3f833f0fecf4a2fc439122b8929473d66c",
+    "diff_command": [
+      "git",
+      "-C",
+      "C:\\programming\\worth worktees\\worktrees\\m3-p3-lifecycle",
+      "diff",
+      "--quiet",
+      "e787b51b3e",
+      "--",
+      "crates/worth-relational/src/runtime/state/subsystems/indexing/cold_checkpoint.rs"
+    ],
+    "diff_exit": 0,
+    "status_command": [
+      "git",
+      "-C",
+      "C:\\programming\\worth worktees\\worktrees\\m3-p3-lifecycle",
+      "status",
+      "--porcelain",
+      "--",
+      "crates/worth-relational/src/runtime/state/subsystems/indexing/cold_checkpoint.rs"
+    ],
+    "status": "",
+    "granted": true
+  },
+  {
+    "path": "crates/worth-relational/src/runtime/state/subsystems/indexing/generation_catalog/admitted_publication.rs",
+    "worktree": "m3-p3-lifecycle",
+    "head": "0628ad3f833f0fecf4a2fc439122b8929473d66c",
+    "diff_command": [
+      "git",
+      "-C",
+      "C:\\programming\\worth worktees\\worktrees\\m3-p3-lifecycle",
+      "diff",
+      "--quiet",
+      "e787b51b3e",
+      "--",
+      "crates/worth-relational/src/runtime/state/subsystems/indexing/generation_catalog/admitted_publication.rs"
+    ],
+    "diff_exit": 0,
+    "status_command": [
+      "git",
+      "-C",
+      "C:\\programming\\worth worktees\\worktrees\\m3-p3-lifecycle",
+      "status",
+      "--porcelain",
+      "--",
+      "crates/worth-relational/src/runtime/state/subsystems/indexing/generation_catalog/admitted_publication.rs"
+    ],
+    "status": "",
+    "granted": true
+  },
+  {
+    "path": "crates/worth-relational/src/runtime/state/subsystems/indexing/generation_catalog/insertion_quote.rs",
+    "worktree": "m3-p3-lifecycle",
+    "head": "0628ad3f833f0fecf4a2fc439122b8929473d66c",
+    "diff_command": [
+      "git",
+      "-C",
+      "C:\\programming\\worth worktees\\worktrees\\m3-p3-lifecycle",
+      "diff",
+      "--quiet",
+      "e787b51b3e",
+      "--",
+      "crates/worth-relational/src/runtime/state/subsystems/indexing/generation_catalog/insertion_quote.rs"
+    ],
+    "diff_exit": 0,
+    "status_command": [
+      "git",
+      "-C",
+      "C:\\programming\\worth worktees\\worktrees\\m3-p3-lifecycle",
+      "status",
+      "--porcelain",
+      "--",
+      "crates/worth-relational/src/runtime/state/subsystems/indexing/generation_catalog/insertion_quote.rs"
+    ],
+    "status": "",
+    "granted": true
+  },
+  {
+    "path": "crates/worth-relational/src/runtime/state/subsystems/indexing/generation_catalog/installation.rs",
+    "worktree": "m3-p3-lifecycle",
+    "head": "0628ad3f833f0fecf4a2fc439122b8929473d66c",
+    "diff_command": [
+      "git",
+      "-C",
+      "C:\\programming\\worth worktees\\worktrees\\m3-p3-lifecycle",
+      "diff",
+      "--quiet",
+      "e787b51b3e",
+      "--",
+      "crates/worth-relational/src/runtime/state/subsystems/indexing/generation_catalog/installation.rs"
+    ],
+    "diff_exit": 0,
+    "status_command": [
+      "git",
+      "-C",
+      "C:\\programming\\worth worktees\\worktrees\\m3-p3-lifecycle",
+      "status",
+      "--porcelain",
+      "--",
+      "crates/worth-relational/src/runtime/state/subsystems/indexing/generation_catalog/installation.rs"
+    ],
+    "status": "",
+    "granted": true
+  },
+  {
+    "path": "crates/worth-relational/src/runtime/state/subsystems/indexing/generation_catalog/mod.rs",
+    "worktree": "m3-p3-lifecycle",
+    "head": "0628ad3f833f0fecf4a2fc439122b8929473d66c",
+    "diff_command": [
+      "git",
+      "-C",
+      "C:\\programming\\worth worktees\\worktrees\\m3-p3-lifecycle",
+      "diff",
+      "--quiet",
+      "e787b51b3e",
+      "--",
+      "crates/worth-relational/src/runtime/state/subsystems/indexing/generation_catalog/mod.rs"
+    ],
+    "diff_exit": 0,
+    "status_command": [
+      "git",
+      "-C",
+      "C:\\programming\\worth worktees\\worktrees\\m3-p3-lifecycle",
+      "status",
+      "--porcelain",
+      "--",
+      "crates/worth-relational/src/runtime/state/subsystems/indexing/generation_catalog/mod.rs"
+    ],
+    "status": "",
+    "granted": true
+  },
+  {
+    "path": "crates/worth-relational/src/runtime/state/subsystems/indexing/generation_catalog/tests.rs",
+    "worktree": "m3-p3-lifecycle",
+    "head": "0628ad3f833f0fecf4a2fc439122b8929473d66c",
+    "diff_command": [
+      "git",
+      "-C",
+      "C:\\programming\\worth worktees\\worktrees\\m3-p3-lifecycle",
+      "diff",
+      "--quiet",
+      "e787b51b3e",
+      "--",
+      "crates/worth-relational/src/runtime/state/subsystems/indexing/generation_catalog/tests.rs"
+    ],
+    "diff_exit": 0,
+    "status_command": [
+      "git",
+      "-C",
+      "C:\\programming\\worth worktees\\worktrees\\m3-p3-lifecycle",
+      "status",
+      "--porcelain",
+      "--",
+      "crates/worth-relational/src/runtime/state/subsystems/indexing/generation_catalog/tests.rs"
+    ],
+    "status": "",
+    "granted": true
+  },
+  {
+    "path": "crates/worth-relational/src/runtime/state/subsystems/indexing/generation_publication.rs",
+    "worktree": "m3-p3-lifecycle",
+    "head": "0628ad3f833f0fecf4a2fc439122b8929473d66c",
+    "diff_command": [
+      "git",
+      "-C",
+      "C:\\programming\\worth worktees\\worktrees\\m3-p3-lifecycle",
+      "diff",
+      "--quiet",
+      "e787b51b3e",
+      "--",
+      "crates/worth-relational/src/runtime/state/subsystems/indexing/generation_publication.rs"
+    ],
+    "diff_exit": 0,
+    "status_command": [
+      "git",
+      "-C",
+      "C:\\programming\\worth worktees\\worktrees\\m3-p3-lifecycle",
+      "status",
+      "--porcelain",
+      "--",
+      "crates/worth-relational/src/runtime/state/subsystems/indexing/generation_publication.rs"
+    ],
+    "status": "",
+    "granted": true
+  },
+  {
+    "path": "crates/worth-relational/src/runtime/state/subsystems/indexing/generation_publication_gate.rs",
+    "worktree": "m3-p3-lifecycle",
+    "head": "0628ad3f833f0fecf4a2fc439122b8929473d66c",
+    "diff_command": [
+      "git",
+      "-C",
+      "C:\\programming\\worth worktees\\worktrees\\m3-p3-lifecycle",
+      "diff",
+      "--quiet",
+      "e787b51b3e",
+      "--",
+      "crates/worth-relational/src/runtime/state/subsystems/indexing/generation_publication_gate.rs"
+    ],
+    "diff_exit": 0,
+    "status_command": [
+      "git",
+      "-C",
+      "C:\\programming\\worth worktees\\worktrees\\m3-p3-lifecycle",
+      "status",
+      "--porcelain",
+      "--",
+      "crates/worth-relational/src/runtime/state/subsystems/indexing/generation_publication_gate.rs"
+    ],
+    "status": "",
+    "granted": true
+  },
+  {
+    "path": "crates/worth-relational/src/runtime/state/subsystems/indexing/generation_publication_gate/tests.rs",
+    "worktree": "m3-p3-lifecycle",
+    "head": "0628ad3f833f0fecf4a2fc439122b8929473d66c",
+    "diff_command": [
+      "git",
+      "-C",
+      "C:\\programming\\worth worktees\\worktrees\\m3-p3-lifecycle",
+      "diff",
+      "--quiet",
+      "e787b51b3e",
+      "--",
+      "crates/worth-relational/src/runtime/state/subsystems/indexing/generation_publication_gate/tests.rs"
+    ],
+    "diff_exit": 0,
+    "status_command": [
+      "git",
+      "-C",
+      "C:\\programming\\worth worktees\\worktrees\\m3-p3-lifecycle",
+      "status",
+      "--porcelain",
+      "--",
+      "crates/worth-relational/src/runtime/state/subsystems/indexing/generation_publication_gate/tests.rs"
+    ],
+    "status": "",
+    "granted": true
+  },
+  {
+    "path": "crates/worth-relational/src/runtime/state/subsystems/indexing/prepared_publication.rs",
+    "worktree": "m3-p3-lifecycle",
+    "head": "0628ad3f833f0fecf4a2fc439122b8929473d66c",
+    "diff_command": [
+      "git",
+      "-C",
+      "C:\\programming\\worth worktees\\worktrees\\m3-p3-lifecycle",
+      "diff",
+      "--quiet",
+      "e787b51b3e",
+      "--",
+      "crates/worth-relational/src/runtime/state/subsystems/indexing/prepared_publication.rs"
+    ],
+    "diff_exit": 0,
+    "status_command": [
+      "git",
+      "-C",
+      "C:\\programming\\worth worktees\\worktrees\\m3-p3-lifecycle",
+      "status",
+      "--porcelain",
+      "--",
+      "crates/worth-relational/src/runtime/state/subsystems/indexing/prepared_publication.rs"
+    ],
+    "status": "",
+    "granted": true
+  },
+  {
+    "path": "crates/worth-relational/src/runtime/state/subsystems/indexing/prepared_publication/tests.rs",
+    "worktree": "m3-p3-lifecycle",
+    "head": "0628ad3f833f0fecf4a2fc439122b8929473d66c",
+    "diff_command": [
+      "git",
+      "-C",
+      "C:\\programming\\worth worktees\\worktrees\\m3-p3-lifecycle",
+      "diff",
+      "--quiet",
+      "e787b51b3e",
+      "--",
+      "crates/worth-relational/src/runtime/state/subsystems/indexing/prepared_publication/tests.rs"
+    ],
+    "diff_exit": 0,
+    "status_command": [
+      "git",
+      "-C",
+      "C:\\programming\\worth worktees\\worktrees\\m3-p3-lifecycle",
+      "status",
+      "--porcelain",
+      "--",
+      "crates/worth-relational/src/runtime/state/subsystems/indexing/prepared_publication/tests.rs"
+    ],
+    "status": "",
+    "granted": true
+  }
+]

@@ -1,0 +1,16 @@
+{
+  "normal_lane": "process",
+  "selector": "kind(test) & test(/^process::/)",
+  "default_seeds": [
+    0,
+    1
+  ],
+  "subjects": [
+    "worth-query-execution",
+    "worth-query-host",
+    "worth-relational",
+    "worth-runtime-world",
+    "worth-store-application"
+  ],
+  "resolved_from": "build/cargo-metadata.json"
+}

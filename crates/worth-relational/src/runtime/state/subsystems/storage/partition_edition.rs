@@ -6,14 +6,17 @@ use crate::storage::overlay::{PartitionAccess, PartitionState};
 use crate::storage::residency::{Full, RelationalRegionRetention, RelationalResidencyLease};
 
 mod resident;
+mod source_retirement;
 mod symbol_read;
 pub(crate) use resident::ResidentPartitionEdition;
 
 /// The authoritative record substrate keyed by partition.
 ///
 /// The persistent spine shares untouched paths as well as partition payloads.
-pub(crate) type PartitionMap =
-    crate::storage::substrate::SharedMap<PartitionId, RelationalRegionRetention>;
+pub(crate) type PartitionMap = crate::storage::substrate::SharedMap<
+    PartitionId,
+    crate::storage::substrate::StorageAllocation<RelationalRegionRetention>,
+>;
 
 /// One immutable, structurally shared edition of the authoritative record
 /// substrate.

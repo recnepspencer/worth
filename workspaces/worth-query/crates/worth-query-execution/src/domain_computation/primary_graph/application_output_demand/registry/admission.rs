@@ -16,6 +16,7 @@ use crate::domain_computation::primary_graph::WorthQueryOutputDemandDenialKind;
 mod obligation_capacity;
 mod occurrence_notes;
 mod performed;
+mod recovered_ready;
 mod semantic_join;
 pub(super) use semantic_join::accepts_semantic_join;
 pub(super) use semantic_join::newest_semantic_key;
@@ -210,6 +211,19 @@ impl WorthQueryOutputDemandRegistry {
         let accepts_prepared_source = state.records.get(&key).is_none_or(|record| {
             record.performed_source.is_none() && matches!(record.state, DemandState::Admitted)
         });
+        let recovered_join = if accepts_prepared_source {
+            None
+        } else {
+            recovered_ready::prepare(
+                &state,
+                &requested_key,
+                &key,
+                expected_source_commit,
+                source_scope,
+                product_occurrence,
+                admission_kind,
+            )?
+        };
         let prepared_commit = accepts_prepared_source
             .then(|| match admission_kind {
                 DemandAdmissionKind::Recovery => expected_source_commit.and_then(|expected| {
@@ -325,6 +339,9 @@ impl WorthQueryOutputDemandRegistry {
         record.required_interests += usize::from(admission_kind.is_required());
         let interest = interest(self, key, &record, admission_kind.is_required());
         record.finish();
+        if let Some(join) = recovered_join {
+            state.install_performed_join(&interest.key, join);
+        }
         let pause = if joined_stable {
             super::join_observation::take_pause(
                 &mut state,

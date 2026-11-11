@@ -82,7 +82,7 @@ pub(in crate::domain_computation::primary_graph) fn read_live_instances(
             .is_none()
             || layout
                 .instance
-                .end_advancer
+                .ending_actor
                 .read_adoption(&record, execution, instance)?
                 .is_some()
         {

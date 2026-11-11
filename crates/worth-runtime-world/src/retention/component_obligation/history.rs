@@ -1,13 +1,14 @@
 use super::super::RetentionTransferDenial;
 use super::{
-    ComponentBasisPinObligation, ProductHeadRetentionObligation, PublicationRetentionObligation,
+    ComponentBasisPinObligation, ObservationRetentionObligation, ProductHeadRetentionObligation,
+    PublicationRetentionObligation,
 };
 use crate::basis::AdmittedCompositeRuntimeWorldBasis;
 use crate::identity::{CompositeBasisKey, RuntimeWorldOwnerIdentity};
 use crate::inspection::RuntimeWorldRetentionKey;
 
 /// Exact history-owned dependencies. One pair lives in each installed history
-/// occurrence; it shares the already acquired component-owner leases.
+/// occurrence or durable origin recipe; it shares the already acquired leases.
 #[derive(Debug)]
 pub(crate) struct HistoryRetentionObligation {
     owner: RuntimeWorldOwnerIdentity,
@@ -16,6 +17,19 @@ pub(crate) struct HistoryRetentionObligation {
     signal: ComponentBasisPinObligation,
 }
 impl HistoryRetentionObligation {
+    pub(crate) fn try_begin_close_retirement(
+        &mut self,
+    ) -> Result<super::RetiringHistoryComponents, ()> {
+        let relational = self.relational.claim.as_ref().ok_or(())?;
+        let signal = self.signal.claim.as_ref().ok_or(())?;
+        let retired = relational
+            .control
+            .try_take_history_pair_for_close(relational, signal)?;
+        self.relational.claim = None;
+        self.signal.claim = None;
+        Ok(retired)
+    }
+
     fn fork(
         basis: &AdmittedCompositeRuntimeWorldBasis,
         relational: &ComponentBasisPinObligation,
@@ -62,5 +76,17 @@ impl ProductHeadRetentionObligation {
             return Err(RetentionTransferDenial::BasisMismatch);
         }
         HistoryRetentionObligation::fork(basis, self.relational(), self.signal())
+    }
+}
+
+impl ObservationRetentionObligation {
+    pub(crate) fn fork_history(
+        &self,
+        commit: &crate::history::CompositeRuntimeWorldCommit,
+    ) -> Result<HistoryRetentionObligation, RetentionTransferDenial> {
+        if !self.matches_captured_head(commit) {
+            return Err(RetentionTransferDenial::BasisMismatch);
+        }
+        HistoryRetentionObligation::fork(commit.basis(), self.relational(), self.signal())
     }
 }

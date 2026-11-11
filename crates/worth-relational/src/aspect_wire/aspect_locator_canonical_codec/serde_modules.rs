@@ -62,11 +62,14 @@ pub(crate) mod serde_canonical_aspect_field_locator_arc_slice {
     where
         S: Serializer,
     {
-        locators
-            .iter()
-            .map(encode_aspect_field_locator)
-            .collect::<Vec<_>>()
-            .serialize(serializer)
+        use serde::ser::SerializeSeq;
+        let mut sequence = serializer.serialize_seq(Some(locators.len()))?;
+        for locator in locators.iter() {
+            // The canonical wire is unchanged; retain only one actual encoded
+            // locator while serializing, rather than Vec<Vec<u8>> staging.
+            sequence.serialize_element(&encode_aspect_field_locator(locator))?;
+        }
+        sequence.end()
     }
 
     pub(crate) fn deserialize<'de, D>(
@@ -75,11 +78,26 @@ pub(crate) mod serde_canonical_aspect_field_locator_arc_slice {
     where
         D: Deserializer<'de>,
     {
-        Vec::<Vec<u8>>::deserialize(deserializer)?
-            .iter()
-            .map(|bytes| decode_aspect_field_locator(bytes))
-            .collect::<Result<Vec<_>, _>>()
-            .map(Arc::from)
-            .map_err(D::Error::custom)
+        struct Locators;
+        impl<'de> serde::de::Visitor<'de> for Locators {
+            type Value = Arc<[AspectFieldLocator]>;
+            fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
+                formatter.write_str("canonical aspect field locator sequence")
+            }
+            fn visit_seq<A: serde::de::SeqAccess<'de>>(
+                self,
+                mut sequence: A,
+            ) -> Result<Self::Value, A::Error> {
+                // Count/typed backing and each binary subcodec are quoted by
+                // the enclosing Native artifact before this decoder runs.
+                // Ignore the untrusted hint; never retain an encoded roster.
+                let mut locators = Vec::new();
+                while let Some(encoded) = sequence.next_element::<Vec<u8>>()? {
+                    locators.push(decode_aspect_field_locator(&encoded).map_err(A::Error::custom)?);
+                }
+                Ok(Arc::from(locators))
+            }
+        }
+        deserializer.deserialize_seq(Locators)
     }
 }

@@ -1,0 +1,9 @@
+[
+  "source_native_stamp_compares_after_checkpoint_recovery",
+  "audit_replay_uses_checkpoint_owner_basis_when_tail_is_absent",
+  "verification_replay_returns_control_outside_its_serialized_outcome",
+  "cancellation_after_an_applied_record_leaves_the_whole_target_unchanged",
+  "recovery_entry_stops_change_no_record_or_diagnostic",
+  "cancelled_checkpoint_restore_consults_before_decoding_corrupt_bytes",
+  "corrupt_replay_keeps_its_durability_failure"
+]

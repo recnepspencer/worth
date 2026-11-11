@@ -1,4 +1,5 @@
 use sha2::{Digest, Sha256};
+use worth_foundational::CanonicalDigestId;
 
 use crate::PersistedRecordIdentity;
 
@@ -38,8 +39,8 @@ impl BlobReclaimSourceKind {
 pub struct ReleasedGenerationReclaimBasisV1 {
     publication: BlobGenerationPublicationV1,
     publication_record: PersistedRecordIdentity,
-    publication_frame_sha256: [u8; 32],
-    issuer_evidence_sha256: [u8; 32],
+    publication_frame_sha256: CanonicalDigestId,
+    issuer_evidence_sha256: CanonicalDigestId,
 }
 
 impl ReleasedGenerationReclaimBasisV1 {
@@ -58,8 +59,8 @@ impl ReleasedGenerationReclaimBasisV1 {
         Ok(Self {
             publication,
             publication_record,
-            publication_frame_sha256: nonzero_32(publication_frame_sha256)?,
-            issuer_evidence_sha256: nonzero_32(issuer_evidence_sha256)?,
+            publication_frame_sha256: CanonicalDigestId::new(nonzero_32(publication_frame_sha256)?),
+            issuer_evidence_sha256: CanonicalDigestId::new(nonzero_32(issuer_evidence_sha256)?),
         })
     }
 
@@ -79,10 +80,10 @@ impl ReleasedGenerationReclaimBasisV1 {
         self.publication_record
     }
     pub const fn publication_frame_sha256(self) -> [u8; 32] {
-        self.publication_frame_sha256
+        *self.publication_frame_sha256.bytes()
     }
     pub const fn issuer_evidence_sha256(self) -> [u8; 32] {
-        self.issuer_evidence_sha256
+        *self.issuer_evidence_sha256.bytes()
     }
 
     fn encode_into(self, target: &mut Vec<u8>) {
@@ -92,8 +93,8 @@ impl ReleasedGenerationReclaimBasisV1 {
     fn visit_bytes(self, emit: &mut dyn FnMut(&[u8])) {
         emit(&self.publication_record.allocation_epoch());
         emit(&self.publication_record.ordinal().to_le_bytes());
-        emit(&self.publication_frame_sha256);
-        emit(&self.issuer_evidence_sha256);
+        emit(self.publication_frame_sha256.bytes());
+        emit(self.issuer_evidence_sha256.bytes());
         self.publication.visit_canonical_frame(emit);
     }
 

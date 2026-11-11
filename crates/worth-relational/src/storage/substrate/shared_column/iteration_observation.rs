@@ -31,7 +31,11 @@ impl Drop for PrefixTraversalRecording {
 pub(super) fn visited<T>() {
     // Other column monomorphizations never consult the observer.
     if std::any::type_name::<T>()
-        != std::any::type_name::<Option<crate::storage::substrate::RecordHistoryPrefix>>()
+        != std::any::type_name::<
+            crate::storage::substrate::StorageAllocation<
+                Option<crate::storage::substrate::RecordHistoryPrefix>,
+            >,
+        >()
     {
         return;
     }
@@ -47,7 +51,11 @@ mod tests {
     use super::*;
     #[test]
     fn traversal_recording_restores_its_predecessor_after_unwinding() {
-        let values = crate::storage::substrate::SharedColumn::from(vec![
+        let values: crate::storage::substrate::SharedColumn<
+            crate::storage::substrate::StorageAllocation<
+                Option<crate::storage::substrate::RecordHistoryPrefix>,
+            >,
+        > = crate::storage::substrate::SharedColumn::from(vec![
             None::<
                 crate::storage::substrate::RecordHistoryPrefix,
             >;

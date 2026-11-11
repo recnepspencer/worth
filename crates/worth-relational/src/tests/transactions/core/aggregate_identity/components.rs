@@ -156,7 +156,7 @@ fn physical_couplings_drive_split_anchor_removal_merge_and_exact_fork_identity()
 fn checkpoint_tail_recovery_and_cert_replay_keep_component_memberships_and_split_merge_lineage() {
     let host = crate::test_execution_policy::serial_request();
     let execution = &ExecutionRequest::serial(&host);
-    let runtime = persisted();
+    let runtime = fixtures::runtime();
     let born = commit(execution, &runtime, birth());
     let ids = ids(&born);
     runtime
@@ -177,7 +177,18 @@ fn checkpoint_tail_recovery_and_cert_replay_keep_component_memberships_and_split
         .any(|event| event.kind() == AggregateLineageKind::SplitFrom
             && event.occurrence() == split.commit.commit_id));
     audit_component_replay(execution, &runtime, &split);
-    let (_, recovered) = recover_with(execution, &runtime, persisted);
+    let plan = runtime
+        .durability()
+        .recovery_plan(
+            execution,
+            crate::durability::data::RecoveryVerificationMode::NormalRecoveryVerification,
+        )
+        .unwrap();
+    let mut recovered = fixtures::runtime();
+    recovered
+        .durability_recovery()
+        .recover(execution, plan)
+        .unwrap();
     let snapshot = snapshot_for_owner_branch(&recovered, &BranchId("main".into()));
     let actual = read(execution, &recovered, &snapshot, false, ids[1]);
     assert_eq!(actual.identity(), expected.identity());

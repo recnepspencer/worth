@@ -31,16 +31,46 @@ impl AppliedMutationDraft {
         proposal: &crate::mvcc::RelationalMutationProposalIdentity,
         authored: Option<&crate::transactions::data::MergedCommitPlan>,
     ) -> Result<(), TransactionCommitError> {
+        crate::execution::transaction_stage(&execution, runtime.commit_work_budget.as_ref(), || {
+            self.prepare_managed_sources_in_original_stage(
+                execution, runtime, selected, proposal, authored,
+            )
+        })
+    }
+    fn prepare_managed_sources_in_original_stage(
+        &self,
+        execution: worth_execution::ExecutionRequest<'_, '_>,
+        runtime: &RelationalPreparationRuntime,
+        selected: SelectedRelationalBranchRead<'_>,
+        proposal: &crate::mvcc::RelationalMutationProposalIdentity,
+        authored: Option<&crate::transactions::data::MergedCommitPlan>,
+    ) -> Result<(), TransactionCommitError> {
         execution.check_live().map_err(|cause| {
             Denial::from(DerivedRelationReadDenial::Request(cause.into()))
                 .into_commit_error(self.source_interpretation.physical_basis())
         })?;
+        let coverage = self
+            .source_interpretation
+            .home_coverage
+            .lock()
+            .unwrap_or_else(|cause| cause.into_inner())
+            .clone();
+        let full_records = coverage
+            .as_ref()
+            .map(|coverage| {
+                coverage
+                    .include_changed(&execution, &self.outcome.effect.publication.changed_records)
+            })
+            .transpose()?;
         let context = SourcePreparationContext {
             draft: self,
             execution,
             runtime,
             selected,
             proposal,
+            records: full_records
+                .as_deref()
+                .unwrap_or(&self.outcome.effect.publication.changed_records),
         };
         let groups = context.affected_groups();
         let history_work = authored.is_some()
@@ -64,6 +94,15 @@ impl AppliedMutationDraft {
                 prepare(&context, budget, &groups, &mut discovered)
             })
         };
+        if result.is_ok() {
+            let original = self
+                .source_interpretation
+                .home_coverage
+                .lock()
+                .unwrap_or_else(|cause| cause.into_inner())
+                .take();
+            drop(original);
+        }
         result.map_err(|cause| cause.into_commit_error(self.source_interpretation.physical_basis()))
     }
 }
@@ -100,6 +139,7 @@ fn prepare(
         runtime,
         selected,
         proposal,
+        records,
     } = *context;
     execution
         .check_live()
@@ -171,20 +211,25 @@ fn prepare(
                             group,
                             &work,
                         );
-                        let source_records = changed_source_records(
-                            program,
-                            &draft.outcome.effect.publication.changed_records,
-                            &before,
-                            &after,
-                        );
-                        let closure = super::scope_closure::discover(
-                            runtime_view.selected_registry.registry(),
-                            program,
-                            &source_records,
-                            &draft.outcome.effect.adjacency.deltas,
-                            &physical.before,
-                            &physical.after,
-                        )?;
+                        let source_records =
+                            changed_source_records(program, records, &before, &after);
+                        let closure = if runtime.home_target.is_some() {
+                            super::scope_closure::discover_home_target(
+                                runtime_view.selected_registry.registry(),
+                                program,
+                                records,
+                                &physical.after,
+                            )?
+                        } else {
+                            super::scope_closure::discover(
+                                runtime_view.selected_registry.registry(),
+                                program,
+                                &source_records,
+                                &draft.outcome.effect.adjacency.deltas,
+                                &physical.before,
+                                &physical.after,
+                            )?
+                        };
                         (closure, work)
                     }
                 };
@@ -241,10 +286,11 @@ fn prepare(
             views: logical,
             availability,
             basis: draft.source_interpretation.physical_basis(),
-            committed_available: draft
-                .source_interpretation
-                .physical_basis()
-                .materialization_is_complete(),
+            committed_available: runtime.home_target.is_none()
+                && draft
+                    .source_interpretation
+                    .physical_basis()
+                    .materialization_is_complete(),
         };
         let roots = participant.prepare_managed_source(&execution, &source)?;
         source.check_complete(&roots)?;

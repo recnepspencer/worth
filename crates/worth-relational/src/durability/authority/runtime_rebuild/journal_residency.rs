@@ -1,7 +1,6 @@
 //! Release replayed envelopes only against their verified journal placement.
 use crate::durability::canonical_commit_artifact::RelationalCanonicalCommitArtifact;
 use crate::durability::data::{DurabilityError, RecoveryFailureClass, RelationalRecoveryStop};
-use crate::history::RelationalCommitIndexEntry;
 use crate::runtime::RelationalRuntime;
 use crate::storage::data::{
     RelationalStorageSubject, RelationalStorageUnavailable, RelationalStorageUnavailableCause,
@@ -37,15 +36,19 @@ pub(super) fn install(
             }
             .into());
         }
-        let entry = RelationalCommitIndexEntry {
-            commit: positioned.commit.clone(),
-            position: positioned.position(),
-            root: artifact.roots().clone(),
-            schema_version: positioned.schema_version,
-            payload_digest: digest,
-        };
+        let entry = crate::history::RetainedCanonicalIndex::from_publication(
+            &positioned,
+            artifact.roots(),
+            digest,
+            execution,
+        )
+        .map_err(|cause| {
+            RelationalRecoveryStop::from(
+                crate::durability::data::RelationalNativeCheckpointCaptureDenial::from(cause),
+            )
+        })?;
         crate::execution::check_request(execution)?;
-        cell.bind_performed(&positioned, Some((entry, source)));
+        cell.bind_performed(&positioned, Some((entry, source)), None);
         cell.settle();
     }
     Ok(())

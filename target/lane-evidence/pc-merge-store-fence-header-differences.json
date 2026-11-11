@@ -1,0 +1,43 @@
+[
+  {
+    "fixture": "planned_recovery_cannot_be_forged.rs",
+    "expected_headers": [
+      "error[E0308]: mismatched types",
+      "error[E0308]: mismatched types",
+      "error[E0308]: mismatched types",
+      "error[E0308]: mismatched types",
+      "error[E0308]: mismatched types",
+      "error: cannot construct `PlannedPhysicalRecovery` with struct literal syntax due to private fields",
+      "error[E0308]: mismatched types"
+    ],
+    "observed_headers": [
+      "error[E0560]: struct `PlannedPhysicalRecovery` has no field named `authority`",
+      "error[E0560]: struct `PlannedPhysicalRecovery` has no field named `coordination`",
+      "error[E0560]: struct `PlannedPhysicalRecovery` has no field named `selection`",
+      "error[E0560]: struct `PlannedPhysicalRecovery` has no field named `discovery_counters`",
+      "error[E0560]: struct `PlannedPhysicalRecovery` has no field named `freshness`",
+      "error[E0560]: struct `PlannedPhysicalRecovery` has no field named `fates`",
+      "error[E0560]: struct `PlannedPhysicalRecovery` has no field named `redo`"
+    ]
+  },
+  {
+    "fixture": "staged_recovery_cannot_be_forged.rs",
+    "expected_headers": [
+      "error: cannot construct `StagedPhysicalRecovery` with struct literal syntax due to private fields"
+    ],
+    "observed_headers": [
+      "error[E0560]: struct `StagedPhysicalRecovery` has no field named `authority`",
+      "error[E0560]: struct `StagedPhysicalRecovery` has no field named `coordination`",
+      "error[E0560]: struct `StagedPhysicalRecovery` has no field named `selection`",
+      "error[E0560]: struct `StagedPhysicalRecovery` has no field named `discovery_counters`",
+      "error[E0560]: struct `StagedPhysicalRecovery` has no field named `freshness`",
+      "error[E0560]: struct `StagedPhysicalRecovery` has no field named `fates`",
+      "error[E0560]: struct `StagedPhysicalRecovery` has no field named `planning_counters`",
+      "error[E0560]: struct `StagedPhysicalRecovery` has no field named `base`",
+      "error[E0560]: struct `StagedPhysicalRecovery` has no field named `publication`",
+      "error[E0560]: struct `StagedPhysicalRecovery` has no field named `quiescence`",
+      "error[E0560]: struct `StagedPhysicalRecovery` has no field named `closed`",
+      "error[E0560]: struct `StagedPhysicalRecovery` has no field named `staging_counters`"
+    ]
+  }
+]

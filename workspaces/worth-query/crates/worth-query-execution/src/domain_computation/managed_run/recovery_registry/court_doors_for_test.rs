@@ -97,3 +97,14 @@ impl WorthQueryRecoveryHandleRegistry {
         Self::clock(self)
     }
 }
+
+impl WorthQueryRecoveryHandleRegistry {
+    #[doc(hidden)]
+    pub fn recorded_claim_state_for_test(
+        &self,
+        provider: u64,
+        original: &worth_foundational::facade::RecordedProductBranchReference,
+    ) -> (bool, Option<WorthQueryRecoveryResourceTerminal>) {
+        self.recorded_claim_state(provider, original)
+    }
+}

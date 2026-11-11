@@ -2,11 +2,39 @@
 #[cfg(test)]
 mod tests;
 
+/// Whether an observation's `bytes` is a representable checked extent.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) enum StorageAllocationExtent {
+    /// The owner's exact layout plus any checked declared nested upper bound.
+    Checked,
+    /// A declared nested bound, or its sum with the layout, did not fit `u64`.
+    /// `bytes` is saturated. Owners that admit observations refuse it typed:
+    /// the publication delta and the inspection lanes. Full region inventories
+    /// and reclamation counters stay descriptive and keep saturating.
+    Overflow,
+}
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) struct StorageAllocationObservation {
     pub(crate) id: u64,
     pub(crate) bytes: u64,
     pub(crate) unique: bool,
+    pub(crate) extent: StorageAllocationExtent,
+}
+
+impl StorageAllocationObservation {
+    /// Adds the checked declared upper bound of the backing nested in this
+    /// owner. The bound may count backing shared with another owner again; it
+    /// is never an exact deduplicated measurement. `None` is unrepresentable.
+    pub(crate) fn add_checked_nested_bound(&mut self, bound: Option<u64>) {
+        match bound.and_then(|bound| self.bytes.checked_add(bound)) {
+            Some(bytes) => self.bytes = bytes,
+            None => {
+                self.bytes = u64::MAX;
+                self.extent = StorageAllocationExtent::Overflow;
+            }
+        }
+    }
 }
 
 pub(crate) trait StorageAllocationVisitor {
@@ -16,16 +44,16 @@ pub(crate) trait StorageAllocationVisitor {
 
 pub(crate) fn visit_inline_value<T>(
     _value: &T,
-    allocation: StorageAllocationObservation,
+    allocation: super::StoredValueObservation,
     visitor: &mut dyn StorageAllocationVisitor,
 ) {
-    visitor.visit(allocation);
+    allocation.visit(visitor);
 }
 
 pub(crate) fn visit_new_inline_value<T>(
     value: &T,
     _previous: Option<&T>,
-    allocation: StorageAllocationObservation,
+    allocation: super::StoredValueObservation,
     visitor: &mut dyn StorageAllocationVisitor,
 ) {
     visit_inline_value(value, allocation, visitor);
@@ -37,6 +65,7 @@ impl<T> super::StorageAllocation<T> {
             id: self.id(),
             bytes: Self::layout_bytes(),
             unique: ancestor_unique && self.is_unique(),
+            extent: StorageAllocationExtent::Checked,
         }
     }
 }

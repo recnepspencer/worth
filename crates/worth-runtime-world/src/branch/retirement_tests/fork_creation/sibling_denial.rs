@@ -23,6 +23,10 @@ fn create_partial_effects(
     )
     .expect("the later sibling denial is a product-unpublished outcome");
     match outcome {
+        RuntimeWorldBranchCreationOutcome::NoEffect(_)
+        | RuntimeWorldBranchCreationOutcome::ReleasedOriginal(_) => {
+            panic!("memory creation cannot return a Home publication fate")
+        }
         RuntimeWorldBranchCreationOutcome::Performed(_) => {
             panic!("a held Signal destination must deny the Signal fork")
         }
@@ -40,6 +44,8 @@ fn forked_relational_effect_is_retained_when_later_signal_sibling_denies() {
     let held = owner
         .state
         .signal
+        .memory_services()
+        .expect("memory-only retirement fixture")
         .mutation_port()
         .reserve_fork_exact(
             validate_signal_branch_name("signal-branch-partial").expect("valid Signal name"),
@@ -164,6 +170,8 @@ fn releasing_the_record_by_handle_drains_the_same_fork_custody() {
     let held = owner
         .state
         .signal
+        .memory_services()
+        .expect("memory-only retirement fixture")
         .mutation_port()
         .reserve_fork_exact(
             validate_signal_branch_name("signal-branch-handle").expect("valid Signal name"),
@@ -212,6 +220,8 @@ fn relational_fork_then_signal_owner_loss_retains_exact_fork_custody() {
     let held = owner
         .state
         .signal
+        .memory_services()
+        .expect("memory-only retirement fixture")
         .mutation_port()
         .reserve_fork_exact(
             validate_signal_branch_name("signal-branch-fork-loss").expect("valid Signal name"),

@@ -73,7 +73,11 @@ fn no_policy_world_keeps_distinct_originals_history_and_final_drop_custody() {
     assert!(owner.state.retention.unique_pin_count() > 512);
     let count = owner.state.retention.active_observation_count();
     assert_eq!(count, originals.len() + 1);
-    let report = owner.close().unwrap();
+    let report = owner
+        .close(&worth_execution::ExecutionRequest::serial(
+            &crate::test_execution_policy::serial_request(),
+        ))
+        .unwrap();
     assert_eq!(report.outstanding_observations(), count);
     // Close releases the owner heads, not these original observations.
     assert_eq!(owner.state.retention.active_observation_count(), count);

@@ -34,7 +34,7 @@ where
             + worth_query_declaration::facade::application_program::ApplicationRequiredOutputRoot,
         RootConnection<Schema, Root>: WorthQueryApplicationRequiredOutputConnection<Schema>,
     {
-        let phase_request = match phase.execution_request_for(&self.backing.runtime.runtime.product_runtime) {
+        let phase_request = match phase.execution_request_for(&self.backing.runtime().runtime.product_runtime) {
             Ok(request) => request,
             Err(cause) => return Err(crate::domain_computation::primary_graph::WorthQueryOutputDemandDenial::new(crate::domain_computation::primary_graph::WorthQueryOutputDemandDenialKind::ExecutionRequest(cause.into()), "program-source-phase")),
         };
@@ -46,7 +46,8 @@ where
                 "required root is not installed",
             ));
         }
-        if prepared.runtime_authority != self.backing.runtime.runtime.authority_identity().as_u64()
+        if prepared.runtime_authority
+            != self.backing.runtime().runtime.authority_identity().as_u64()
             || &prepared.source_commit != receipt.committed_product_publication().composite_commit()
             || &prepared.source_commit != observation.selected_commit()
             || prepared.product_occurrence != observation.branch_incarnation()
@@ -60,7 +61,7 @@ where
         // Retained observations remain readable after retirement; progression
         // also requires the original branch to remain open now.
         self.backing
-            .runtime
+            .runtime()
             .on_branch(branch)
             .select_with_request(execution)
             .map_err(|denial| {
@@ -70,7 +71,7 @@ where
                 )
             })?;
         self.backing
-            .runtime
+            .runtime()
             .select_application_read_observation_with_request(execution, observation)
             .map_err(|denial| {
                 WorthQueryOutputDemandDenial::product_selection(
@@ -78,7 +79,7 @@ where
                     "required continuation observation",
                 )
             })?;
-        self.backing.runtime.runtime.output_demands.validate_owned_root_kind(
+        self.backing.runtime().runtime.output_demands.validate_owned_root_kind(
             prepared,
             crate::domain_computation::primary_graph::application_output_demand::PreparedOutputRootKind::Required(TypeId::of::<Root>()),
         )?;
@@ -92,7 +93,7 @@ where
             }
             None if self
                 .backing
-                .runtime
+                .runtime()
                 .authentication_is_expired(principal.valid_until()) =>
             {
                 Some(WorthQueryOutputDemandDenialKind::SourcePrincipal(
@@ -121,7 +122,7 @@ where
     where
         Root: ApplicationOutputGraphShape<Schema>,
     {
-        let phase_request = match phase.execution_request_for(&self.backing.runtime.runtime.product_runtime) {
+        let phase_request = match phase.execution_request_for(&self.backing.runtime().runtime.product_runtime) {
             Ok(request) => request,
             Err(cause) => return Err(crate::domain_computation::primary_graph::WorthQueryOutputDemandDenial::new(crate::domain_computation::primary_graph::WorthQueryOutputDemandDenialKind::ExecutionRequest(cause.into()), "program-source-phase")),
         };
@@ -138,7 +139,7 @@ where
         // Retained observations remain readable after retirement; progression
         // also requires the original branch to remain open now.
         self.backing
-            .runtime
+            .runtime()
             .on_branch(branch)
             .select_with_request(execution)
             .map_err(|denial| {
@@ -148,7 +149,7 @@ where
                 )
             })?;
         self.backing
-            .runtime
+            .runtime()
             .select_application_read_observation_with_request(execution, observation)
             .map(|_| ())
             .map_err(|denial| {

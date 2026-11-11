@@ -1,0 +1,106 @@
+--- a/crates/worth-relational/src/storage/residency/kind_projection.rs
++++ b/crates/worth-relational/src/storage/residency/kind_projection.rs
+@@ -43,6 +43,7 @@
+ 
+ pub(super) mod full;
+ mod reconstruction;
++pub(super) use reconstruction::{rebuild_for_request, rebuild_head_history_for_request};
+ pub(super) use reconstruction::rebuild;
+ pub(super) use reconstruction::rebuild_head_history;
+ 
+--- a/crates/worth-relational/src/storage/residency/region_load.rs
++++ b/crates/worth-relational/src/storage/residency/region_load.rs
+@@ -71,21 +71,19 @@
+             execution,
+         )
+         .map_err(|cause| funding::image(cause, cold.partition_id))?;
+-        super::kind_projection::rebuild(
++        super::kind_projection::rebuild_for_request(
+             &mut partition,
+             &head.kind_projection,
+-            AdjacencyKindBasis::Current,
+-        )
+-        .map_err(|cause| unavailable(cold, cause))?;
++            AdjacencyKindBasis::Current, execution,
++        )?;
+         verify_buckets(
+             &partition,
+             &head.adjacency_kinds,
+             &head.reverse_adjacency_kinds,
+-            AdjacencyKindBasis::Current,
+-        )
+-        .map_err(|cause| unavailable(cold, cause))?;
+-        super::kind_projection::rebuild_head_history(&mut partition, &head.history_kind_projection)
+-            .map_err(|cause| unavailable(cold, cause))?;
++            AdjacencyKindBasis::Current, execution,
++        )?;
++        super::kind_projection::rebuild_head_history_for_request(
++            &mut partition, &head.history_kind_projection, execution)?;
+         let mut historical = BTreeMap::<usize, Vec<_>>::new();
+         for claim in head.history_kind_projection {
+             if claim.relation.partition_id == cold.partition_id {
+@@ -100,8 +98,8 @@
+     cold.symbols
+         .demand_symbol_ids(execution, super::required_symbols::collect(&partition))?;
+     let symbols = cold.symbols.interner_snapshot();
+-    let commitment = PartitionContentCommitment::capture_head(&partition, &symbols, &frontiers)
+-        .ok_or_else(|| unavailable(cold, Cause::Damaged))?;
++    let commitment = PartitionContentCommitment::capture_head_for_request(&partition, &symbols, &frontiers, execution)
++        .map_err(|cause| funding::content(cause, cold.partition_id))?;
+     verify_leaf(cold, &partition, &commitment).map_err(|cause| unavailable(cold, cause))?;
+     let history_custody = funding::history_custody::capture(cold, source, execution)?;
+     let (entity_openings, relation_openings) = frontiers.into_arenas();
+@@ -206,19 +204,17 @@
+         .map_err(|cause| funding::image(cause, cold.partition_id))?;
+         partition.adjacency = head.partition.adjacency.clone();
+         partition.reverse_adjacency = head.partition.reverse_adjacency.clone();
+-        super::kind_projection::rebuild(
++        super::kind_projection::rebuild_for_request(
+             &mut partition,
+             &history.image.kind_projection,
+-            AdjacencyKindBasis::Historical,
+-        )
+-        .map_err(|cause| unavailable(cold, cause))?;
++            AdjacencyKindBasis::Historical, execution,
++        )?;
+         verify_buckets(
+             &partition,
+             &history.image.adjacency_kinds,
+             &history.image.reverse_adjacency_kinds,
+-            AdjacencyKindBasis::Historical,
+-        )
+-        .map_err(|cause| unavailable(cold, cause))?;
++            AdjacencyKindBasis::Historical, execution,
++        )?;
+         Ok((partition, retained))
+     })()?;
+     cold.symbols
+--- a/crates/worth-relational/src/storage/residency/resident_history.rs
++++ b/crates/worth-relational/src/storage/residency/resident_history.rs
+@@ -119,12 +119,11 @@
+         let projection =
+             super::kind_projection::capture(&head.partition, AdjacencyKindBasis::Historical)
+                 .map_err(refuse)?;
+-        super::kind_projection::rebuild(
++        super::kind_projection::rebuild_for_request(
+             &mut partition,
+             &projection,
+-            AdjacencyKindBasis::Historical,
+-        )
+-        .map_err(refuse)?;
++            AdjacencyKindBasis::Historical, execution,
++        )?;
+         self.symbols
+             .demand_symbol_ids(execution, super::required_symbols::collect(&partition))?;
+         let (commitment, _) = PartitionContentCommitment::capture_full_for_request(
+--- a/crates/worth-relational/src/storage/residency/region_load/materialization_funding.rs
++++ b/crates/worth-relational/src/storage/residency/region_load/materialization_funding.rs
+@@ -255,7 +255,7 @@
+         request: &ExecutionRequest<'_, '_>,
+     ) -> Result<Self> {
+         Ok(Self {
+-            retained: Funding::reserve(sum(quote.native, shared::<ResidentRegion>()?)?, request)?,
++            retained: Funding::reserve(shared::<ResidentRegion>()?, request)?,
+             _transient: Funding::reserve(quote.wire, request)?,
+         })
+     }

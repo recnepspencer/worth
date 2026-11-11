@@ -6,6 +6,7 @@ impl AdjacencyContentIndex {
         &mut self,
         lane: &ReconstructionLane<'_>,
         work: &mut ReconstructionWork<'_, '_>,
+        request: super::super::request_admission::Request<'_, '_, '_>,
         current: &SparseAdjacencyTable,
     ) -> Result<u64, PartitionContentDigestError> {
         work.prepare(
@@ -32,10 +33,10 @@ impl AdjacencyContentIndex {
                 ));
                 hashed += 1;
             }
-            let (units, bytes) = DigestIndex::construction_quote(entries.len())
+            let (units, _) = DigestIndex::construction_quote(entries.len())
                 .ok_or(PartitionContentDigestError::AllocationAccountingOverflow)?;
-            work.prepare(units, bytes)?;
-            let membership = DigestIndex::from_sorted_entries(lane, &entries);
+            work.prepare(units, 0)?;
+            let membership = DigestIndex::from_sorted_entries_for_request(lane, &entries, request)?;
             self.membership_bytes = self
                 .membership_bytes
                 .checked_add(membership.allocation_bytes())
@@ -44,16 +45,23 @@ impl AdjacencyContentIndex {
             memberships.push((slot, membership));
         }
         // SparseAdjacencyTable's native map already yields ascending unique slots.
-        let (units, bytes) = DigestIndex::construction_quote(slots.len())
+        let (units, _) = DigestIndex::construction_quote(slots.len())
             .ok_or(PartitionContentDigestError::AllocationAccountingOverflow)?;
-        work.prepare(units, bytes)?;
-        self.slots = DigestIndex::from_sorted_entries(lane, &slots);
-        work.prepare(
-            memberships.len() as u64,
-            SharedMap::<usize, DigestIndex>::construction_allocation_bound(memberships.len())
-                .ok_or(PartitionContentDigestError::AllocationAccountingOverflow)?,
-        )?;
-        self.memberships = SharedMap::from_sorted_unique(memberships);
+        work.prepare(units, 0)?;
+        self.slots = DigestIndex::from_sorted_entries_for_request(lane, &slots, request)?;
+        work.prepare(memberships.len() as u64, 0)?;
+        for (slot, membership) in memberships {
+            match request {
+                Some(request) => {
+                    self.memberships
+                        .insert_for_request(slot, membership, request)
+                        .map_err(PartitionContentDigestError::Request)?;
+                }
+                None => {
+                    self.memberships.insert(slot, membership);
+                }
+            }
+        }
         Ok(hashed)
     }
 }

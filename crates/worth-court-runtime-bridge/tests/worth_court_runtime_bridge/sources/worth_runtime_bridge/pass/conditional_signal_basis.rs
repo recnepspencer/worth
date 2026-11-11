@@ -19,4 +19,6 @@ fn admitted_operations(
     let _ = bridge.deliver_authoritative_change(execution, signal, 0, patch);
 }
 
-pub(crate) fn main() {}
+pub(crate) fn main() {
+    let _ = admitted_operations;
+}

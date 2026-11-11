@@ -109,6 +109,7 @@ impl super::BranchBoundRelationalTransaction {
         let prior = self.overlay.effective_records.entities.get(&entity_id);
         let applied = prior.map_or(0, |p| p.applied);
         let effective = project_entity(
+            execution,
             self.schema_authority.as_ref(),
             prior.map_or_else(|| base.clone(), |p| p.effective.clone()),
             staged.suffix(applied),

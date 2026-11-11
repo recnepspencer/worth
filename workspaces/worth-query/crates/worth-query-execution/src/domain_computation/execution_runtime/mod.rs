@@ -18,3 +18,6 @@ pub use runtime_root::WorthQueryExecutionInstallationCommitDenial;
 pub use runtime_root::WorthQueryExecutionRuntime;
 pub use runtime_root::WorthQueryExecutionRuntimeInstaller;
 pub use source_invalidation::WorthQueryInvalidationResources;
+#[cfg(test)]
+#[path = "mod_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;

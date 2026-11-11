@@ -25,24 +25,24 @@ pub struct RelationalBranchTarget {
 /// branch-reference grammar.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct RelationalBranchRootDescriptor {
-    truth_root: [u8; 32],
-    schema_root: [u8; 32],
+    truth_root: worth_foundational::CanonicalDigestId,
+    schema_root: worth_foundational::CanonicalDigestId,
 }
 
 impl RelationalBranchRootDescriptor {
     pub const fn new(truth_root: [u8; 32], schema_root: [u8; 32]) -> Self {
         Self {
-            truth_root,
-            schema_root,
+            truth_root: worth_foundational::CanonicalDigestId::new(truth_root),
+            schema_root: worth_foundational::CanonicalDigestId::new(schema_root),
         }
     }
 
     pub const fn truth_root(&self) -> &[u8; 32] {
-        &self.truth_root
+        self.truth_root.bytes()
     }
 
     pub const fn schema_root(&self) -> &[u8; 32] {
-        &self.schema_root
+        self.schema_root.bytes()
     }
 }
 
@@ -274,6 +274,29 @@ mod tests {
                 target_runtime_instance_id: 12,
             }
         ));
+    }
+
+    #[test]
+    fn descriptive_roots_have_value_independent_binary_width_and_refuse_retired_arrays() {
+        #[derive(serde::Serialize)]
+        struct RetiredRoots {
+            truth_root: [u8; 32],
+            schema_root: [u8; 32],
+        }
+        let mut expected_length = None;
+        for byte in 0..=u8::MAX {
+            let roots = RelationalBranchRootDescriptor::new([byte; 32], [255 - byte; 32]);
+            let encoded = rmp_serde::to_vec_named(&roots).unwrap();
+            assert_eq!(encoded.len(), *expected_length.get_or_insert(encoded.len()));
+            let admitted: RelationalBranchRootDescriptor = rmp_serde::from_slice(&encoded).unwrap();
+            assert_eq!(admitted, roots);
+            let retired = rmp_serde::to_vec_named(&RetiredRoots {
+                truth_root: *roots.truth_root(),
+                schema_root: *roots.schema_root(),
+            })
+            .unwrap();
+            assert!(rmp_serde::from_slice::<RelationalBranchRootDescriptor>(&retired).is_err());
+        }
     }
 
     fn hex_bytes(value: &str) -> Vec<u8> {

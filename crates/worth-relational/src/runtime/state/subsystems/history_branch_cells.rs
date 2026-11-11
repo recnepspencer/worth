@@ -1,3 +1,7 @@
+#[path = "history_branch_cells/initial_schema.rs"]
+mod initial_schema;
+#[path = "history_branch_cells/source_empty_schema.rs"]
+mod source_empty_schema;
 use std::collections::BTreeMap;
 use std::sync::atomic::Ordering;
 use std::sync::Arc;
@@ -13,6 +17,21 @@ use crate::history::data::{BranchId, CommitId};
 use super::{history_recovery_validation, HistorySubsystem};
 
 impl HistorySubsystem {
+    /// Complete capture calls this inside the actual configuration/publication
+    /// freeze, before those guards end; the output owns DATA only.
+    pub(crate) fn capture_checkpoint_branch_metadata(
+        &self,
+        request: &worth_execution::ExecutionRequest<'_, '_>,
+        runtime_name: &str,
+    ) -> Result<
+        crate::branch::CheckpointBranchMetadata,
+        crate::branch::CheckpointBranchMetadataCaptureDenial,
+    > {
+        self.record_branch_population_scan();
+        self.branch_cells
+            .capture_checkpoint_metadata(request, runtime_name)
+    }
+
     /// Published branch truth closes initial installation even before settlement.
     pub(crate) fn has_published_branch_basis(&self) -> bool {
         self.branch_cells
@@ -32,74 +51,6 @@ impl HistorySubsystem {
             .filter_map(|cell| cell.root())
             .collect::<Vec<_>>();
         self.branch_head_versions.rebuild(lane, roots);
-    }
-
-    pub(crate) fn transition_empty_branches_to_initial_schema(
-        &self,
-        registry: &crate::schema::data::RelationalSchemaRegistry,
-    ) -> Result<(), RelationalBranchCellDenial> {
-        self.record_branch_population_scan();
-        let existing = self.branch_cells.take_all();
-        let transitioned = existing
-            .iter()
-            .map(|(branch_id, cell)| {
-                let mut candidate = cell.clone_for_head_replacement();
-                if matches!(
-                    candidate.observation().target(),
-                    FoundationalBranchTarget::Empty
-                ) {
-                    candidate.advance_metadata()?;
-                    candidate.install_root(RelationalBranchRoot::empty_with_schema(
-                        registry,
-                        crate::schema::data::runtime_descriptor_semantics_policy()
-                            .current_write_version(),
-                    ));
-                }
-                Ok((branch_id.clone(), candidate))
-            })
-            .collect::<Result<BTreeMap<_, _>, RelationalBranchCellDenial>>();
-        match transitioned {
-            Ok(cells) => {
-                let reservations = cells
-                    .values()
-                    .filter(|cell| {
-                        matches!(cell.observation().target(), FoundationalBranchTarget::Empty)
-                    })
-                    .map(|cell| {
-                        let previous_root = existing
-                            .get(cell.identity().branch_id())
-                            .and_then(RelationalBranchReferenceCell::root)
-                            .ok_or(RelationalBranchCellDenial::RetentionOwnerUnavailable)?;
-                        let next_root = cell
-                            .root()
-                            .ok_or(RelationalBranchCellDenial::RetentionOwnerUnavailable)?;
-                        self.reserve_branch_head_retirement(
-                            cell.identity(),
-                            &previous_root,
-                            cell.head_retention(),
-                        )
-                        .map(|reservation| (reservation, previous_root, next_root))
-                        .map_err(branch_head_retirement_denial)
-                    })
-                    .collect::<Result<Vec<_>, _>>();
-                let reservations = match reservations {
-                    Ok(reservations) => reservations,
-                    Err(denial) => {
-                        self.branch_cells.restore_all(existing);
-                        return Err(denial);
-                    }
-                };
-                self.branch_cells.restore_all(cells);
-                for (reservation, _previous_head_custody, next_root) in reservations {
-                    reservation.transfer_head(&next_root).replace_head();
-                }
-                Ok(())
-            }
-            Err(denial) => {
-                self.branch_cells.restore_all(existing);
-                Err(denial)
-            }
-        }
     }
 
     pub(crate) fn admit_recovered_branch_cell(
@@ -252,58 +203,6 @@ impl HistorySubsystem {
     pub(crate) fn branch_cells_snapshot(&self) -> Vec<RelationalBranchCellCheckpoint> {
         self.record_branch_population_scan();
         self.branch_cells.checkpoints()
-    }
-
-    pub(crate) fn branch_root_checkpoints(
-        &self,
-    ) -> Result<Vec<crate::branch::RelationalBranchRootCheckpoint>, String> {
-        self.record_branch_population_scan();
-        let mut roots = BTreeMap::new();
-        for cell in self.branch_cells.values() {
-            let root = cell.root().ok_or_else(|| {
-                format!(
-                    "live branch `{}` has no complete owner root",
-                    cell.identity().branch_id().0
-                )
-            })?;
-            let commit_id = match cell.observation().target() {
-                FoundationalBranchTarget::Empty => {
-                    if root.id() != 0 || root.descriptor().is_some() {
-                        return Err(format!(
-                            "empty branch `{}` carries a committed root",
-                            cell.identity().branch_id().0
-                        ));
-                    }
-                    continue;
-                }
-                FoundationalBranchTarget::Basis(target) => {
-                    let commit_id = CommitId(target.selected_commit_id());
-                    if root.commit_id() != Some(commit_id) {
-                        return Err(format!(
-                            "committed branch `{}` root identity disagrees with its target",
-                            cell.identity().branch_id().0
-                        ));
-                    }
-                    commit_id
-                }
-            };
-            if let Some(existing) = roots.get(&commit_id) {
-                if !Arc::ptr_eq(existing, &root) {
-                    return Err(format!(
-                        "commit {} is represented by competing immutable roots",
-                        commit_id.0
-                    ));
-                }
-                continue;
-            }
-            roots.insert(commit_id, Arc::clone(&root));
-        }
-        Ok(roots
-            .into_iter()
-            .map(|(commit_id, root)| {
-                crate::branch::RelationalBranchRootCheckpoint::new(commit_id, root)
-            })
-            .collect())
     }
 
     pub(crate) fn branch_ids_snapshot(&self) -> Vec<BranchId> {

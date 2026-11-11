@@ -18,10 +18,19 @@ impl DetachedRelationalTransactionOverlay {
         footprint: &mut RelationalTransactionFootprint,
         interner: &mut StringInterner,
         policy: ClientKeySymbolPolicy,
-        allocation_policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
-    ) -> (Vec<(Symbol, String)>, Result<(), Denial>) {
+        request: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> (
+        Vec<(Symbol, String)>,
+        Result<(), crate::transactions::data::TransactionCommitError>,
+    ) {
+        let allocation_policy = request.allocation_policy();
         if let Err(denial) = allocation_policy.check_live() {
-            return (Vec::new(), Err(denial.into()));
+            return (
+                Vec::new(),
+                Err(crate::transactions::data::TransactionCommitError::conflict(
+                    Denial::from(denial).into_conflict(),
+                )),
+            );
         }
         if !policy.interns_requested_strings() {
             return (Vec::new(), Ok(()));
@@ -30,35 +39,69 @@ impl DetachedRelationalTransactionOverlay {
         for intent in self.batches.iter().flat_map(|batch| &batch.intents) {
             if let Err(denial) = intent.collect_raw_client_keys(&mut raw_values, allocation_policy)
             {
-                return (Vec::new(), Err(denial.into()));
+                return (
+                    Vec::new(),
+                    Err(crate::transactions::data::TransactionCommitError::conflict(
+                        Denial::from(denial).into_conflict(),
+                    )),
+                );
             }
         }
         if let Err(denial) = footprint.collect_raw_client_keys(&mut raw_values, allocation_policy) {
-            return (Vec::new(), Err(denial));
+            return (
+                Vec::new(),
+                Err(crate::transactions::data::TransactionCommitError::conflict(
+                    denial.into_conflict(),
+                )),
+            );
         }
         // Existing IDs and already-interned created keys require no rewrite.
         // Preserve their exact admitted index/footprint backings and generation.
         if raw_values.is_empty() {
             return (
                 Vec::new(),
-                allocation_policy.check_live().map_err(Denial::from),
+                allocation_policy.check_live().map_err(|denial| {
+                    crate::transactions::data::TransactionCommitError::conflict(
+                        Denial::from(denial).into_conflict(),
+                    )
+                }),
             );
         }
         let Some(generation) = self.normalization_generation.checked_add(1) else {
-            return (Vec::new(), Err(Denial::CardinalityOverflow));
+            return (
+                Vec::new(),
+                Err(crate::transactions::data::TransactionCommitError::conflict(
+                    Denial::CardinalityOverflow.into_conflict(),
+                )),
+            );
         };
-        let mut normalized = self.normalized_client_keys.clone();
+        if let Err(denial) = self.reserve_cache_replacement(&raw_values, request) {
+            return (Vec::new(), Err(denial));
+        }
+        let mut normalized = Vec::with_capacity(raw_values.len());
         let mut entries = Vec::new();
         for raw in raw_values {
             if let Err(denial) = allocation_policy.check_live() {
-                return (entries, Err(denial.into()));
+                return (
+                    entries,
+                    Err(crate::transactions::data::TransactionCommitError::conflict(
+                        Denial::from(denial).into_conflict(),
+                    )),
+                );
             }
             let existed = interner.contains(&raw);
             let symbol = match interner.intern(&raw) {
                 Ok(symbol) => symbol,
-                Err(denial) => return (entries, Err(denial.into())),
+                Err(denial) => {
+                    return (
+                        entries,
+                        Err(crate::transactions::data::TransactionCommitError::conflict(
+                            Denial::from(denial).into_conflict(),
+                        )),
+                    )
+                }
             };
-            normalized.insert(raw.clone(), symbol);
+            normalized.push((raw.clone(), symbol));
             if !existed {
                 entries.push((symbol, raw));
             }
@@ -90,16 +133,27 @@ impl DetachedRelationalTransactionOverlay {
             Ok::<_, Denial>((index, footprint))
         })();
         match replacement {
-            Err(denial) => (entries, Err(denial)),
+            Err(denial) => (
+                entries,
+                Err(crate::transactions::data::TransactionCommitError::conflict(
+                    denial.into_conflict(),
+                )),
+            ),
             Ok((index, new_footprint)) => {
                 for intent in self.batches.iter_mut().flat_map(|batch| &mut batch.intents) {
                     if let Err(denial) = intent.normalize_client_keys(interner, policy) {
-                        return (entries, Err(denial.into()));
+                        return (
+                            entries,
+                            Err(crate::transactions::data::TransactionCommitError::conflict(
+                                Denial::from(denial).into_conflict(),
+                            )),
+                        );
                     }
                 }
                 self.index = index;
                 *footprint = new_footprint;
-                self.normalized_client_keys = normalized;
+                self.normalized_client_keys = self.normalized_client_keys.replaced(normalized);
+                self.refund_replaced_inputs();
                 self.normalization_generation = generation;
                 self.effective_records = Default::default();
                 for batch in &self.batches {

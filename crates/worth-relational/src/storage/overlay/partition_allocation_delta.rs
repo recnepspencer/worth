@@ -8,8 +8,8 @@ impl PartitionState {
         previous: &Self,
         prior: RelationalPartitionAllocationInventory,
     ) -> Result<RelationalPartitionAllocationInventory, super::PartitionContentDigestError> {
-        let introduced = self.new_allocation_inventory_since(previous);
-        let removed = previous.new_allocation_inventory_since(self);
+        let introduced = self.new_allocation_inventory_since(previous)?;
+        let removed = previous.new_allocation_inventory_since(self)?;
         Ok(RelationalPartitionAllocationInventory {
             authoritative_bytes: update(
                 prior.authoritative_bytes,
@@ -35,7 +35,7 @@ impl PartitionState {
     fn new_allocation_inventory_since(
         &self,
         previous: &Self,
-    ) -> RelationalPartitionAllocationInventory {
+    ) -> Result<RelationalPartitionAllocationInventory, super::PartitionContentDigestError> {
         let mut diagnostic = Bytes::default();
         self.entity_arena
             .visit_new_diagnostic_allocations(&previous.entity_arena, &mut diagnostic);
@@ -46,12 +46,12 @@ impl PartitionState {
             .visit_new_cache_allocations(&previous.adjacency, &mut cache);
         self.reverse_adjacency
             .visit_new_cache_allocations(&previous.reverse_adjacency, &mut cache);
-        RelationalPartitionAllocationInventory {
-            authoritative_bytes: self.new_authoritative_allocation_bytes_since(previous),
+        Ok(RelationalPartitionAllocationInventory {
+            authoritative_bytes: self.new_authoritative_allocation_bytes_since(previous)?,
             diagnostic_bytes: diagnostic.0,
             optional_cache_bytes: cache.0,
             ..Default::default()
-        }
+        })
     }
 }
 

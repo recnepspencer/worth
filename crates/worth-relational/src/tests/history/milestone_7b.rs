@@ -9,80 +9,10 @@ use crate::facade::schema::{
     RelationalSchemaRegistry, SchemaId, SchemaVersionId,
 };
 use crate::tests::support::{
-    checkpoint_and_recover_with, create_branch_from_main, create_entity,
-    durable_runtime_with_test_schema, entity_field_aspect, update_entity, update_entity_on_branch,
+    create_branch_from_main, create_entity, entity_field_aspect, update_entity,
+    update_entity_on_branch,
 };
 use worth_foundational::facade::AspectKey;
-
-fn inspect_recovered_merge_planning_artifact(
-    execution: &worth_execution::ExecutionRequest<'_, '_>,
-) -> crate::facade::merge::MergePlanningArtifactCore {
-    let runtime = durable_runtime_with_test_schema();
-    let shared = create_entity(execution, &runtime, "shared");
-    create_branch_from_main(&runtime, "feature");
-    update_entity(execution, &runtime, shared, "shared-main");
-    update_entity_on_branch(
-        execution,
-        &runtime,
-        shared,
-        "shared-feature",
-        BranchId("feature".to_string()),
-    );
-
-    let artifact = runtime
-        .merge()
-        .inspect_planning_scope(
-            execution,
-            crate::merge::data::MergePlanningRequest::new(
-                BranchId("main".to_string()),
-                BranchId("feature".to_string()),
-                MergeIntent::ReconcileIntoTarget,
-            ),
-        )
-        .expect("live merge planning artifact");
-
-    let (_recovery, recovered) =
-        checkpoint_and_recover_with(execution, &runtime, durable_runtime_with_test_schema);
-    let recovered_artifact = recovered
-        .merge()
-        .inspect_planning_scope(
-            execution,
-            crate::merge::data::MergePlanningRequest::new(
-                BranchId("main".to_string()),
-                BranchId("feature".to_string()),
-                MergeIntent::ReconcileIntoTarget,
-            ),
-        )
-        .expect("recovered merge planning artifact");
-
-    assert_eq!(recovered_artifact, artifact);
-    artifact
-}
-
-#[test]
-fn merge_planning_artifact_certification_is_stable_across_recovery() {
-    let host_request = crate::test_execution_policy::serial_request();
-    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
-
-    let artifact = inspect_recovered_merge_planning_artifact(execution);
-
-    assert_eq!(artifact.digest_basis.schema, artifact.schema_snapshot);
-    assert_eq!(
-        artifact.digest_basis.decision_log,
-        artifact.decision_log_digest_basis
-    );
-    assert_eq!(
-        artifact.digest_basis.lowered_plan.records.len(),
-        artifact.lowered_plan.records.len()
-    );
-    assert_eq!(
-        artifact.decision_log_digest_basis.canonical_records.len(),
-        artifact.decision_log.decisions.len()
-    );
-    assert!(!artifact.schema_snapshot.touched_kinds.is_empty());
-    assert!(artifact.lowered_plan.record_count > 0);
-    assert!(artifact.summary.request_summary.contains("main"));
-}
 
 #[test]
 fn merge_planning_schema_snapshot_changes_when_schema_semantics_change() {

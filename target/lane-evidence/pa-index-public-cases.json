@@ -1,0 +1,11 @@
+[
+  "semantic_result_bulk_entities_and_relations_seal_and_readmit_original_bindings",
+  "durability_contract_empty_checkpoint_restores_a_live_retained_head",
+  "real_shared_parent_root_scoped_checkpoint_restores_lookup_and_content",
+  "lagging_inherited_and_own_stream_scoped_generations_survive_checkpoint_reopen",
+  "live_fork_scoped_generation_readmits_from_shared_basis",
+  "checkpoint_index_artifact_survives_tail_replay_without_envelope_caches",
+  "durability_contract_recovery_preserves_merge_parent_order",
+  "recovery_applies_merge_currentness_once",
+  "durability_contract_replays_merge_from_typed_authority_when_diagnostics_are_absent"
+]

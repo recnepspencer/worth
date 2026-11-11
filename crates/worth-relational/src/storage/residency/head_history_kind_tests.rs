@@ -1,4 +1,4 @@
-//! Owned historical kind truth survives Head edits without old-version reads.
+//! A borrowed Head remains readable after later damage is proved.
 use super::mixed_history_tests::recapture;
 use super::*;
 use crate::identity::data::{EntityId, RelationId, VersionId};
@@ -22,7 +22,7 @@ fn a_cached_head_guard_refuses_after_full_demand_proves_region_damage() {
         history: cold.history,
         corrupt: AtomicBool::new(false),
     });
-    cold.source = source.clone();
+    cold.source = Some(source.clone());
     let cell = RelationalRegionResidency::cold(cold).unwrap();
     let retained = RelationalRegionRetention::new(cell, None);
     retained.demand_head_cached(execution, 1 << 24).unwrap();
@@ -56,9 +56,22 @@ fn head_prefixes_rebuild_owned_history_after_endpoint_edits_and_generation_reuse
     let fixture = region_with_history();
     let request = crate::test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&request);
-    let head = region_load::load_head(&fixture.cold, execution, 1 << 24).unwrap();
+    let head = region_load::load_head(
+        &fixture.cold,
+        fixture.cold.source.as_ref().unwrap(),
+        execution,
+        1 << 24,
+    )
+    .unwrap();
     assert_eq!(fixture.source.history_reads.load(Ordering::SeqCst), 0);
-    let full = region_load::load_full(&fixture.cold, &head, execution, 1 << 24).unwrap();
+    let full = region_load::load_full(
+        &fixture.cold,
+        fixture.cold.source.as_ref().unwrap(),
+        &head,
+        execution,
+        1 << 24,
+    )
+    .unwrap();
     let mut partial = head.partition.clone();
     let mut oracle = full.partition.clone();
     assert_owned_history(&mut partial, &mut oracle);
@@ -124,8 +137,21 @@ fn adopting_a_different_head_carries_its_owned_historical_projection_with_the_re
     let fixture = region_with_history();
     let request = crate::test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&request);
-    let head = region_load::load_head(&fixture.cold, execution, 1 << 24).unwrap();
-    let full = region_load::load_full(&fixture.cold, &head, execution, 1 << 24).unwrap();
+    let head = region_load::load_head(
+        &fixture.cold,
+        fixture.cold.source.as_ref().unwrap(),
+        execution,
+        1 << 24,
+    )
+    .unwrap();
+    let full = region_load::load_full(
+        &fixture.cold,
+        fixture.cold.source.as_ref().unwrap(),
+        &head,
+        execution,
+        1 << 24,
+    )
+    .unwrap();
     let mut later = full.partition.clone();
     update_target(
         &mut later,
@@ -134,7 +160,8 @@ fn adopting_a_different_head_carries_its_owned_historical_projection_with_the_re
         VersionId(1_000),
     );
     let (cold, source) = recapture(&fixture.cold, &later);
-    let selected = region_load::load_head(&cold, execution, 1 << 24).unwrap();
+    let selected =
+        region_load::load_head(&cold, cold.source.as_ref().unwrap(), execution, 1 << 24).unwrap();
     let mut partial = head.partition.clone();
     let mut oracle = full.partition.clone();
     let slots = BTreeSet::from([fixture.relation.slot_index()]);
@@ -195,8 +222,21 @@ fn a_full_target_adopting_head_prefixes_keeps_history_readmission() {
     let fixture = region_with_history();
     let request = crate::test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&request);
-    let head = region_load::load_head(&fixture.cold, execution, 1 << 24).unwrap();
-    let full = region_load::load_full(&fixture.cold, &head, execution, 1 << 24).unwrap();
+    let head = region_load::load_head(
+        &fixture.cold,
+        fixture.cold.source.as_ref().unwrap(),
+        execution,
+        1 << 24,
+    )
+    .unwrap();
+    let full = region_load::load_full(
+        &fixture.cold,
+        fixture.cold.source.as_ref().unwrap(),
+        &head,
+        execution,
+        1 << 24,
+    )
+    .unwrap();
     let readmission =
         ResidentHistoryReadmission::new(fixture.cold.schema.clone(), &fixture.cold.symbols);
     for metadata_first in [false, true] {
@@ -274,7 +314,10 @@ fn assert_owned_history(partial: &mut PartitionState, full: &mut PartitionState)
         for table in [&mut partition.adjacency, &mut partition.reverse_adjacency] {
             let slots = table.iter().map(|(&slot, _)| slot).collect::<Vec<_>>();
             for slot in slots {
-                table.get_mut(slot).unwrap().reset_historical_kind_buckets();
+                table
+                    .get_mut(slot)
+                    .unwrap()
+                    .reset_historical_kind_buckets_with_custody(None);
             }
         }
         super::super::rebuild_region_history_kind_buckets(

@@ -202,11 +202,18 @@ where
             .installed_schema()
             .installed_query_binding::<Binding<Schema, Intent>>()
             .map_err(WorthQueryApplicationLiveNextDenial::BindingInstallation)?;
-        let selected = self
+        use worth_query_execution::facade::primary_graph::WorthQueryProductBranchAdmissionDenial as Selection;
+        let selected = match self
             .application
             .on_branch(fresh_request.branch)
             .select(phase)
-            .map_err(WorthQueryApplicationLiveNextDenial::ProductSelection)?;
+        {
+            Ok(selected) => selected,
+            Err(Selection::Stopped(stop)) => return Ok(self.lease.end_with_read_stop(stop)),
+            Err(cause @ Selection::Refused(_)) => {
+                return Err(WorthQueryApplicationLiveNextDenial::ProductSelection(cause));
+            }
+        };
         let principal = match selected.resolve_authenticated_principal(phase,
             binding.principal_binding(),
             fresh_request.principal,

@@ -18,6 +18,7 @@ class NativeFeatureGraphTests(unittest.TestCase):
                                       {'id': 'external', 'name': 'external', 'features': {'host': []}}]}
         self.events = [self.artifact('store', ['cert']), self.artifact('authority', ['witness']),
                        self.artifact('external', ['host'])]
+        self.selection = {'scope': 'selected-packages', 'selection': {'packages': ['store']}}
 
     def artifact(self, package, features):
         return {'reason': 'compiler-artifact', 'package_id': package,
@@ -28,16 +29,27 @@ class NativeFeatureGraphTests(unittest.TestCase):
     def graph(self):
         (self.root / 'cargo-metadata.json').write_text(json.dumps(self.metadata))
         (self.root / 'binaries-build.log').write_text('\n'.join(map(json.dumps, self.events)))
+        (self.root / 'native-selection.json').write_text(json.dumps(self.selection))
         return load(self.root, self.root)
 
     def test_actual_workspace_features_are_carried_without_external_package_flags(self):
         graph = self.graph()
         self.assertEqual(graph.features, ('authority/witness', 'store/cert'))
-        self.assertEqual(len(graph.inputs), 2)
+        self.assertEqual(graph.packages, ('store',))
+        self.assertEqual(len(graph.inputs), 3)
         self.assertTrue(all(len(row['sha256']) == 64 for row in graph.inputs))
 
     def test_cached_identical_libraries_share_the_graph(self):
         self.assertEqual(validate(self.events, self.graph()), 3)
+
+    def test_workspace_native_selection_carries_all_actual_workspace_roots(self):
+        self.selection = {'scope': 'workspace', 'selection': None}
+        self.assertEqual(self.graph().packages, ('authority', 'store'))
+
+    def test_unknown_native_package_context_refuses(self):
+        self.selection['selection']['packages'] = ['foreign']
+        with self.assertRaisesRegex(NativeFeatureRefusal, 'foreign package'):
+            self.graph()
 
     def test_cached_different_libraries_refuse_even_when_no_compilation_occurs(self):
         graph = self.graph()

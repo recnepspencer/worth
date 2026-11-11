@@ -134,34 +134,28 @@ impl RelationalAuthoredCoupledCandidate<'_> {
         let runtime = self
             .runtime
             .with_candidate_symbols(self.mutation.candidate_symbols());
-        let mut intents = self
+        let intents = self
             .transaction
-            .normalized_intents_for_merge(&runtime, execution.allocation_policy())
-            .map_err(TransactionCommitError::conflict)?
-            .into_iter()
-            .skip(before)
-            .collect::<Vec<_>>();
-        super::fresh_references::resolve(
-            execution,
-            &self.mutation.outcome.created_entities,
-            &mut intents,
-        )?;
+            .normalized_intents_for_merge(&runtime, execution)?
+            .into_coupled_suffix(before, &self.mutation.outcome.created_entities, execution)?;
         let read = self.pin_source(execution)?;
         let root = read.resident_basis().root();
-        let plan = self
-            .transaction
-            .build_merged_plan_for_state(&runtime, root.as_ref(), intents)
-            .map_err(TransactionCommitError::conflict)?;
+        let plan = self.transaction.build_merged_plan_for_state(
+            &runtime,
+            root.as_ref(),
+            intents,
+            execution,
+        )?;
         let deferred_edges = super::writer_custody::require(
             execution,
             &self.binding.owners,
             Some(predecessor_origin.as_ref()),
-            &plan,
+            plan.plan(),
         )?;
         let (_, mut state, _) = prepare_authoritative_working_state_scope_for_base(
             &runtime,
             root.as_ref(),
-            &plan,
+            plan.plan(),
             0,
             None,
         );
@@ -173,7 +167,7 @@ impl RelationalAuthoredCoupledCandidate<'_> {
                 root.as_ref(),
                 self.identity.proposed_version_id(),
             ),
-            &plan.merged_intents,
+            &plan.plan().merged_intents,
             None,
         )?;
         let config = crate::config::data::MutationConfig {
@@ -181,12 +175,17 @@ impl RelationalAuthoredCoupledCandidate<'_> {
             adjacency_policy: runtime.config.storage.adjacency_policy.clone(),
             cross_context_policy: runtime.config.storage.cross_context_policy,
         };
+        let _apply_memory = crate::mvcc::plan_copy_admission::reserve_copy(
+            execution,
+            crate::mvcc::plan_copy_admission::intent_bytes(&plan.plan().merged_intents),
+        )?;
         let apply = AuthoritativeApplyPlan {
-            transaction_id: plan.transaction_id,
+            transaction_id: plan.plan().transaction_id,
             version_id: self.identity.proposed_version_id(),
-            merged_intents: plan.merged_intents.clone(),
+            merged_intents: plan.plan().merged_intents.clone(),
         };
         let outcome = crate::authority::mutation::apply_plan_with_publication_edges(
+            execution,
             &mut state,
             &apply,
             &config,
@@ -216,14 +215,15 @@ impl RelationalAuthoredCoupledCandidate<'_> {
             source.restoration_content(),
         )
         .map_err(RelationalCoupledAssemblyFailure::from_apply)?;
-        crate::authority::mutation::apply_adjacency_deltas(
+        crate::authority::mutation::apply_adjacency_deltas_for_request(
+            execution,
             &mut state,
             &outcome.effect.adjacency.deltas,
             self.identity.proposed_version_id(),
-        );
+        )?;
         let part = CoupledPublicationPart {
             publication,
-            commands: plan.clone(),
+            commands: plan,
             records: outcome.effect.publication.changed_records.clone(),
         };
         self.mutation
@@ -241,7 +241,21 @@ impl RelationalAuthoredCoupledCandidate<'_> {
             .preparation_telemetry
             .accumulate(outcome.preparation_telemetry);
         self.mutation.outcome.effect.accumulate(outcome.effect);
-        self.mutation.state.adopt_sequential_apply(state);
+        self.mutation
+            .state
+            .adopt_sequential_apply(state, execution)
+            .map_err(|cause| {
+                RelationalCoupledAssemblyFailure::from(
+                    crate::transactions::data::TransactionCommitError::execution(
+                        crate::transactions::data::CommitExecutionDenial {
+                            kind: crate::transactions::data::CommitExecutionDenialKind::Cause(
+                                cause,
+                            ),
+                            partition_identity: None,
+                        },
+                    ),
+                )
+            })?;
         self.mutation.aggregate = crate::aggregate_identity::AggregateProposal::capture(
             &self.prepared.schema_authority,
             &self.prepared.selected_branch_state,

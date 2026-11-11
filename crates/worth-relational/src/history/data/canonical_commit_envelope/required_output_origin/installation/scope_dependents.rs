@@ -12,8 +12,8 @@ pub(super) struct RemovedOwningScopes {
 }
 
 pub(super) fn require_retained_sources(
-    candidate: &CanonicalCommitEnvelope,
-    runtime: &crate::runtime::RelationalPreparationRuntime,
+    candidate: &CanonicalCommitEnvelopeBody,
+    runtime: &crate::history::data::canonical_commit_envelope::required_output_origin::history_request::PreparationRuntimeRequest<'_, '_, '_>,
     installed: &crate::mvcc::RelationalInstalledApplicationPublicationAuthority,
     prior: &CanonicalRequiredOutputOrigin,
     roles: &[crate::mvcc::RequiredOutputRoleTarget],
@@ -29,8 +29,8 @@ pub(super) fn require_retained_sources(
 
 /// Preserve the existing charged eligibility path for every non-cascading candidate.
 pub(super) fn select_removed_owning_scopes(
-    candidate: &CanonicalCommitEnvelope,
-    runtime: &crate::runtime::RelationalPreparationRuntime,
+    candidate: &CanonicalCommitEnvelopeBody,
+    runtime: &crate::history::data::canonical_commit_envelope::required_output_origin::history_request::PreparationRuntimeRequest<'_, '_, '_>,
     installed: &crate::mvcc::RelationalInstalledApplicationPublicationAuthority,
     prior: &CanonicalRequiredOutputOrigin,
     roles: &[crate::mvcc::RequiredOutputRoleTarget],
@@ -80,11 +80,15 @@ pub(super) fn select_removed_owning_scopes(
     }
     let dependent = crate::history::data::select_owned_scope_dependent(
         crate::history::data::OwnedScopeDependentSelection::RemovedSources(&anchors),
-        runtime.current_ownership.as_deref().ok_or_else(|| {
-            crate::mvcc::origin_denial(
-                "owning-source removal requires Native current ownership storage",
-            )
-        })?,
+        runtime
+            .runtime
+            .current_ownership
+            .as_deref()
+            .ok_or_else(|| {
+                crate::mvcc::origin_denial(
+                    "owning-source removal requires Native current ownership storage",
+                )
+            })?,
         context,
     )
     .map_err(|failure| super::relation_stop(failure.stop))?;

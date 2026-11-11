@@ -1,10 +1,10 @@
 //! The complete proposal meaning; authored commands are only one constituent.
 use crate::branch::AdmittedRelationalBranchBasis;
 use crate::history::data::CanonicalRetainedEntitySelection;
+use crate::storage::substrate::{EntityExtra, StorageAllocation};
 use crate::transactions::data::{MergedCommitPlan, TransactionId};
 use crate::validation::data::InvariantPlanContract;
 use std::sync::Arc;
-use worth_foundational::facade::AuthoritativeRecordAspectState;
 
 /// Prepared only from the actual retained record, never from canonical data.
 #[derive(Debug, Clone)]
@@ -12,19 +12,19 @@ pub(crate) struct PreparedRetainedEntityPayload {
     // Kept for its owner-governed retention, including pending publication.
     pub(crate) _source: AdmittedRelationalBranchBasis,
     pub(crate) meaning: Arc<CanonicalRetainedEntitySelection>,
-    pub(crate) payload: Option<AuthoritativeRecordAspectState>,
+    pub(crate) payload: StorageAllocation<EntityExtra>,
 }
 
 #[derive(Debug)]
 pub(crate) enum PreparedRelationalCommitPlan {
-    Mutation(MergedCommitPlan),
+    Mutation(crate::mvcc::OwnedNormalizedPlan),
     OwnedGraphSelection {
-        commands: MergedCommitPlan,
+        commands: crate::mvcc::OwnedNormalizedPlan,
         retained: crate::mvcc::owned_graph_selection::PreparedOwnedGraphSelection,
     },
     RetainedEntitySelection {
         // Native consequences may add commands; none stand in for selection.
-        commands: MergedCommitPlan,
+        commands: crate::mvcc::OwnedNormalizedPlan,
         retained: PreparedRetainedEntityPayload,
     },
 }
@@ -46,16 +46,16 @@ pub(crate) enum RelationalSemanticPlan<'plan> {
 impl PreparedRelationalCommitPlan {
     pub(crate) fn view(&self) -> RelationalSemanticPlan<'_> {
         match self {
-            Self::Mutation(plan) => RelationalSemanticPlan::Mutation(plan),
+            Self::Mutation(plan) => RelationalSemanticPlan::Mutation(plan.plan()),
             Self::OwnedGraphSelection { commands, retained } => {
                 RelationalSemanticPlan::OwnedGraphSelection {
-                    commands,
+                    commands: commands.plan(),
                     selection: &retained.meaning,
                 }
             }
             Self::RetainedEntitySelection { commands, retained } => {
                 RelationalSemanticPlan::RetainedEntitySelection {
-                    commands,
+                    commands: commands.plan(),
                     selection: &retained.meaning,
                 }
             }
@@ -73,7 +73,7 @@ impl PreparedRelationalCommitPlan {
     ) -> Option<&crate::mvcc::owned_graph_selection::PreparedOwnedGraphSelection> {
         match self {
             Self::OwnedGraphSelection { retained, .. } => Some(retained),
-            _ => None,
+            Self::Mutation(_) | Self::RetainedEntitySelection { .. } => None,
         }
     }
 }
@@ -121,7 +121,7 @@ impl<'plan> RelationalSemanticPlan<'plan> {
     ) -> Option<&'plan crate::history::data::CanonicalOwnedGraphSelection> {
         match self {
             Self::OwnedGraphSelection { selection, .. } => Some(selection),
-            _ => None,
+            Self::Mutation(_) | Self::RetainedEntitySelection { .. } => None,
         }
     }
     pub(crate) fn has_selection(self) -> bool {

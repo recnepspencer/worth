@@ -94,8 +94,8 @@ fn validate_metered(
                 return Err("codec retirement changed protected native identity".into());
             }
             for state in [
-                old.extra().authoritative_aspect_state.as_ref(),
-                new.extra().authoritative_aspect_state.as_ref(),
+                old.extra().authoritative_aspect_state(),
+                new.extra().authoritative_aspect_state(),
             ]
             .into_iter()
             .flatten()
@@ -119,8 +119,8 @@ fn validate_metered(
                 }
                 if old.extra().lineage_id != new.extra().lineage_id
                     || old.extra().structural_fingerprint != new.extra().structural_fingerprint
-                    || old.extra().authoritative_aspect_state
-                        != new.extra().authoritative_aspect_state
+                    || old.extra().authoritative_aspect_state()
+                        != new.extra().authoritative_aspect_state()
                 {
                     return Err(
                         "codec retirement changed retained historical output payload or lineage"
@@ -137,13 +137,13 @@ fn validate_metered(
             }
             if id == activation.entity_id {
                 compare_activation_payload(
-                    old.extra().authoritative_aspect_state.as_ref(),
-                    new.extra().authoritative_aspect_state.as_ref(),
+                    old.extra().authoritative_aspect_state(),
+                    new.extra().authoritative_aspect_state(),
                     activation,
                 )?;
                 activation_seen = true;
-            } else if old.extra().authoritative_aspect_state
-                != new.extra().authoritative_aspect_state
+            } else if old.extra().authoritative_aspect_state()
+                != new.extra().authoritative_aspect_state()
                 && !current.is_some_and(|storage| {
                     [Some(storage.catalog_kind), Some(storage.position_kind)]
                         .contains(&old.kind_id())
@@ -168,8 +168,8 @@ fn validate_metered(
                 .get_slot(slot)
                 .ok_or("codec retirement erased a relation")?;
             for state in [
-                old.extra().authoritative_aspect_state.as_ref(),
-                new.extra().authoritative_aspect_state.as_ref(),
+                old.extra().authoritative_aspect_state(),
+                new.extra().authoritative_aspect_state(),
             ]
             .into_iter()
             .flatten()
@@ -198,7 +198,8 @@ fn validate_metered(
                 || old.kind_id() != new.kind_id()
                 || (!retired && old.lifecycle() != new.lifecycle())
                 || old.extra().endpoints != new.extra().endpoints
-                || old.extra().authoritative_aspect_state != new.extra().authoritative_aspect_state
+                || old.extra().authoritative_aspect_state()
+                    != new.extra().authoritative_aspect_state()
             {
                 return Err(
                     "codec retirement changed protected relation payload or identity".into(),

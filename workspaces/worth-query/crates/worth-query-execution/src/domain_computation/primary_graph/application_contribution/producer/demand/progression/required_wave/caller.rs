@@ -8,7 +8,6 @@ use super::drive::drive_required_wave;
 use super::queued::QueuedRequiredRoots;
 use super::*;
 use crate::domain_computation::primary_graph::application_contribution::producer::ProducerInvocationAuthority;
-use crate::domain_computation::primary_graph::application_output_demand::WorthQueryAcceptedOutputAuthority as Authority;
 use crate::domain_computation::primary_graph::invariant_projection::ConsumedOutputVerificationStop;
 use crate::domain_computation::primary_graph::output_lineage::invalidation::SourceSettlementCurrentness;
 use crate::domain_computation::primary_graph::provider::FactlessCurrentness;
@@ -112,12 +111,15 @@ where
         // recompute would meet the same comparison, and its acceptance is
         // denied instead.
         let observation = wave.shared.selected().product().observation();
-        let superseded_without_facts = matches!(
-            &wave.anchor_ready.completion().authority,
-            Authority::Committed(receipt)
-                if receipt.currentness_without_facts_at(observation)
+        let superseded_without_facts = wave
+            .anchor_ready
+            .completion()
+            .authority
+            .publication_view()
+            .is_some_and(|publication| {
+                publication.currentness_without_facts_at(observation)
                     == Some(FactlessCurrentness::Superseded)
-        );
+            });
         match pending {
             Err(
                 stop @ (ConsumedOutputVerificationStop::SourceQueryAuthorization(_)

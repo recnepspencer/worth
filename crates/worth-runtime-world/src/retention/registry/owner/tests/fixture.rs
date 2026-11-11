@@ -267,3 +267,20 @@ pub(super) fn ordinary_commit(
     )
     .expect("explicit ordinary commit from same admitted basis")
 }
+
+#[test]
+fn checkpoint_origin_preserves_original_claims_across_busy_and_cancelled_retirement() {
+    let fixture = real_fixture(4, 4);
+    let serial = crate::test_execution_policy::serial_request();
+    let cancellation = worth_execution::CancellationSource::new();
+    cancellation.cancel();
+    let stopped = serial.clone().with_cancellation(cancellation.token());
+    fixture
+        .owner
+        .assert_checkpoint_origin_preserves_original_claims_across_busy_and_cancelled_retirement(
+            &fixture.basis,
+            &fixture.relational_runtime,
+            &worth_execution::ExecutionRequest::serial(&serial),
+            &worth_execution::ExecutionRequest::serial(&stopped),
+        );
+}

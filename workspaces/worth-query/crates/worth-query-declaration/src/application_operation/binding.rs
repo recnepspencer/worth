@@ -30,8 +30,8 @@ pub use identity::{
     ApplicationComputationPartitionIdentity, ApplicationComputationPartitionIdentityDenial,
     ApplicationEncodedInput, ApplicationEncodedMutationKey, ApplicationMutationIdentities,
     ApplicationMutationIdentityAdmittedDenial, ApplicationMutationIdentityDenial,
-    ApplicationOwnedMutationIdentities, ApplicationSharedInput, ApplicationValueIdentityDomain,
-    CanonicalEncodingCharge,
+    ApplicationOwnedMutationIdentities, ApplicationRetainedInput, ApplicationRetainedInputDenial,
+    ApplicationSharedInput, ApplicationValueIdentityDomain, CanonicalEncodingCharge,
 };
 pub use input_scope::ApplicationMutationInputScope;
 pub use intent::{

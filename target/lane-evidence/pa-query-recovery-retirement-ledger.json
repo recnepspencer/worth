@@ -1,0 +1,17 @@
+{
+  "base": "14b6075657193d0f74ce944beab6124b5dec7b3c",
+  "removed": [
+    "crates/worth-relational/src/tests/query/indexes/generation_identity_recovery.rs",
+    "crates/worth-relational/src/tests/domains/cad/topology_identity_survival.rs",
+    "crates/worth-relational/src/tests/domains/cad/mod.rs"
+  ],
+  "public_cases": [
+    "restored_catalog_allocates_fresh_identities_and_preserves_old_observations",
+    "topology_identity_survival_preserves_reidentification_truth_across_recovery"
+  ],
+  "C2_private_claims": [
+    "generation_payload_reads delta1",
+    "history_inventory_entries delta0"
+  ],
+  "legacy_generic_parity": "all original Native roots/child modules remain unchanged and mounted; separate owner/shipping-lookup split pending"
+}

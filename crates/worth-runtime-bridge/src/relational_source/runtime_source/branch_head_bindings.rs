@@ -1,6 +1,10 @@
 use std::collections::BTreeMap;
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::{Arc, Mutex, MutexGuard};
+mod retirement;
+#[cfg(test)]
+pub(in crate::relational_source) use retirement::assert_wrapped_successor_survives_abandonment;
+pub use retirement::{RelationalBridgeBranchHeadRetirement, RetiredRelationalBridgeBranchHead};
 
 use crate::facade::{RelationalBridgeSourceError, TruthBranchIdentity, TruthSnapshotIdentity};
 
@@ -82,12 +86,16 @@ impl RelationalBridgeBranchHeadBindings {
         Ok(first)
     }
 
-    fn remove(&self, branch_identity: &TruthBranchIdentity, binding_id: u64) -> bool {
+    fn remove(
+        &self,
+        branch_identity: &TruthBranchIdentity,
+        binding_id: u64,
+        snapshot_identity: &TruthSnapshotIdentity,
+    ) -> bool {
         let mut entries = self.lock_entries();
-        if entries
-            .get(branch_identity)
-            .is_some_and(|binding| binding.binding_id == binding_id)
-        {
+        if entries.get(branch_identity).is_some_and(|binding| {
+            binding.binding_id == binding_id && &binding.snapshot_identity == snapshot_identity
+        }) {
             entries.remove(branch_identity);
             true
         } else {
@@ -126,10 +134,13 @@ impl RelationalBridgeBranchHeadLease {
     }
 
     pub fn release(mut self) -> RelationalBridgeBranchHeadReleaseReceipt {
-        let unbound = self
-            .bindings
-            .take()
-            .is_some_and(|bindings| bindings.remove(&self.branch_identity, self.binding_id));
+        let unbound = self.bindings.take().is_some_and(|bindings| {
+            bindings.remove(
+                &self.branch_identity,
+                self.binding_id,
+                self.snapshot_identity(),
+            )
+        });
         let observation = self
             .observation
             .take()
@@ -146,7 +157,11 @@ impl RelationalBridgeBranchHeadLease {
 impl Drop for RelationalBridgeBranchHeadLease {
     fn drop(&mut self) {
         if let Some(bindings) = self.bindings.take() {
-            let _ = bindings.remove(&self.branch_identity, self.binding_id);
+            let _ = bindings.remove(
+                &self.branch_identity,
+                self.binding_id,
+                self.snapshot_identity(),
+            );
         }
     }
 }

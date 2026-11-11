@@ -48,6 +48,8 @@ pub enum WorthQueryExternalDispatchAttemptDenial {
     /// The installed limit on concurrent physical sends for this effect is
     /// reached; it frees when an in-flight send settles.
     InFlightCapacityExhausted,
+    /// The Home's dispatch journal did not record the attempt, so no contact began.
+    DurableAttemptRecordDenied(super::durable_attempt::WorthQueryDurableDispatchRecordDenial),
 }
 
 /// Exact failure before an initial post-commit transport call could be made.

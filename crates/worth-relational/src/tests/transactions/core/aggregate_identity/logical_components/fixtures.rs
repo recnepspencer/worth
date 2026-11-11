@@ -265,11 +265,14 @@ pub(super) fn commit(
     physical::commit(execution, runtime, "main", batch)
 }
 pub(super) fn key(carrier: EntityId, side: usize) -> NativeMemberKey {
-    NativeMemberKey::Projected(std::sync::Arc::new(ProjectedMemberCoordinate {
-        domain: domain(),
-        carrier,
-        case: CASES[side].into(),
-    }))
+    NativeMemberKey::Projected(
+        std::sync::Arc::new(ProjectedMemberCoordinate {
+            domain: domain(),
+            carrier,
+            case: CASES[side].into(),
+        })
+        .into(),
+    )
 }
 pub(super) fn read(
     execution: &ExecutionRequest<'_, '_>,

@@ -86,7 +86,7 @@ pub(super) fn merge_unique_value_denial_kind(
 
 pub(crate) fn execute_lowered_merge(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-    runtime: &mut RelationalRuntime,
+    runtime: &RelationalRuntime,
     declaration: &crate::workflow::LoweredMergeWorkflowDeclaration,
     unique_values: MergeUniqueValueAuthority<'_>,
 ) -> Result<MergeExecutionOutcome, RelationalEffectExecutionFailure> {

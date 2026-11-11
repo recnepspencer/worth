@@ -1,0 +1,9 @@
+# Source identity and qualification chronology
+
+All60 source/config hashes in funding-final-source-state.json still match the current files exactly. Raw final lane headers recordff0e8e88ca plus dirty source. HEAD later advanced to9d04a900506d5c435fb1a8f59538cde136d5b857 only by committing the two approved Foundation files; no file content changed during that commit. Thus the snapshot still identifies both the committed component and remaining dirty candidate. It must not be represented as clean-HEAD whole-workspace certification.
+
+Root Clippy's18-error log precedes the two in-area mechanical lint corrections (history_member_directory production item placement; metadata Debug assertion redundant borrow). That Root command was not rerun, and the13-file/16-error handoff is a source-derived residual, not a measured rerun. Store Clippy is after those two corrections and passes. Later edits only relocate the new court controls to top-level cost and namespace the requested large Foundation pure assertion in the existing file; their named tests and selected compile were rerun at final paths. Host5, bounded1, Store recovery1 and CDC/recovery3 were green before those test-only relocations. No production algorithm, charge, payload contrast, caller ceiling, timeout or expected result changed after those runtime lanes.
+
+The first boundary run found one wrong nested cost category and the unregistered selected-image source constructor. Final cost-boundary output no longer finds the category error, but correctly refuses that constructor reference plus the three separately allowed BC9002 queue sites. The extra exact caller entry is proposed only. No baseline or enforcement suppression was changed.
+
+All future proposed Root lint-owner sources remain untouched. Both proposals have passing git-apply dry-run logs. That establishes patch applicability only; it is not a compiler/Clippy or runtime claim.

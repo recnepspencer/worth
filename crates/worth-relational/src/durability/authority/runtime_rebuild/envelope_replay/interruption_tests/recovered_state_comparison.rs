@@ -55,7 +55,7 @@ pub(super) fn comparable_recovered_state(target: &RelationalRuntime) -> String {
             let next = owners.len();
             let owner = *owners.entry(id).or_insert(next);
             normalized.push(format!("{indent}owner_identity: <owner {owner}>,"));
-        } else if previous.trim() == "coverage: IndexCatalogCoverage {" {
+        } else if previous.trim().ends_with("IndexCatalogCoverage {") {
             let id = field
                 .strip_prefix("incarnation: ")
                 .and_then(|id| id.strip_suffix(','))
@@ -92,7 +92,11 @@ fn canonicalize_retired_roots(lines: &[String]) -> Vec<String> {
         let line = &lines[index];
         output.push(line.clone());
         index += 1;
-        if line.trim() != "retired_roots: {" {
+        let retired_map = line.trim() == "retired_roots: {"
+            || (line.trim() == "data: {"
+                && index >= 2
+                && lines[index - 2].trim() == "retired_roots: RwLock {");
+        if !retired_map {
             continue;
         }
         let indent = line.len() - line.trim_start().len();

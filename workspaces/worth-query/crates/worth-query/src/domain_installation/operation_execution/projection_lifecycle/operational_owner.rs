@@ -119,3 +119,6 @@ impl<S, L: BasisOperationLane, P: PhaseMarker> WorthQueryOperationalProjection<S
         }
     }
 }
+#[cfg(test)]
+#[path = "operational_owner_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;

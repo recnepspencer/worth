@@ -17,3 +17,17 @@ pub use crate::domain_computation::primary_graph::application_attempt::fact::Wor
 pub use crate::domain_computation::primary_graph::application_attempt::fact::WorthQueryApplicationFactKey;
 pub use crate::domain_computation::primary_graph::application_attempt::fact::WorthQueryApplicationObservedFact;
 pub use crate::domain_computation::primary_graph::application_attempt::fact::WorthQueryApplicationObservedRelation;
+
+pub use crate::domain_computation::primary_graph::component_selection::ComponentSelectionKey;
+
+pub use crate::domain_computation::primary_graph::application_attempt::fact::SourcePublicationRead;
+
+pub use crate::domain_computation::primary_graph::application_attempt::fact::ManagedSourceReadKey;
+
+pub use crate::domain_computation::primary_graph::application_attempt::fact::SourceReadAuthorizationKey;
+
+pub use crate::domain_computation::primary_graph::application_attempt::fact::SourceReadAuthorization;
+
+pub use crate::domain_computation::primary_graph::DerivedSourceObservation;
+
+pub use crate::domain_computation::primary_graph::output_lineage::invalidation::ObservedSourcePublication;

@@ -3,11 +3,10 @@
 //! isolates placement lifetime from Relational record admission.
 use super::*;
 use sha2::{Digest, Sha256};
-use worth_relational::facade::branch::RelationalBranchTransitionSequence;
 use worth_relational::facade::durability::RelationalCheckpointArtifactPolicy;
 use worth_relational::facade::runtime::RelationalRuntimeApi;
 use worth_store::physical_runtime::{
-    AnchoredRecordMember, AnchoredRecordPublication, PhysicalMutationDeadline,
+    AnchoredRecordMember, AnchoredRecordName, AnchoredRecordPublication, PhysicalMutationDeadline,
 };
 
 #[test]
@@ -19,13 +18,7 @@ fn checkpoint_replacement_carries_a_member_until_its_last_read_custody_drops() {
     );
     let execution = worth_execution::ExecutionRequest::serial(&request);
     let directory = tempfile::tempdir().unwrap();
-    let serving = Arc::new(
-        crate::physical_store::initialize(
-            directory.path(),
-            crate::physical_store::PhysicalOpening::production(),
-        )
-        .unwrap(),
-    );
+    let serving = Arc::new(super::test_store::initialize(directory.path()));
     let source = StoreColdSource::new(serving.clone());
     let runtime = RelationalRuntimeApi::builder()
         .build()
@@ -42,18 +35,40 @@ fn checkpoint_replacement_carries_a_member_until_its_last_read_custody_drops() {
         )
         .unwrap();
     let replace = || {
-        crate::checkpoint_record::publish(
-            &serving,
-            &source,
-            PatchStreamPosition(0),
-            RelationalBranchTransitionSequence(0),
-            &native,
-        )
-        .unwrap()
+        let prepared =
+            crate::section::checkpoint::prepare_captured(&source, native.clone(), &execution)
+                .unwrap();
+        let records = serving.anchored_records().unwrap();
+        let anchor = AnchoredRecordName::new("home.checkpoint").unwrap();
+        let previous = records.read(anchor, 1 << 30).unwrap();
+        let generation = previous
+            .as_ref()
+            .map_or(0, |record| record.version().generation());
+        let (members, _memory) = prepared
+            .prepare_members(
+                previous.as_ref().map_or(&[], |record| record.members()),
+                &execution,
+            )
+            .unwrap();
+        let published = records
+            .publish(
+                AnchoredRecordPublication::new(
+                    anchor,
+                    generation,
+                    prepared.bytes().to_vec(),
+                    worth_store_testkit_store::fixture::placement(),
+                    PhysicalMutationDeadline::after_milliseconds(30_000).unwrap(),
+                )
+                .with_members(members),
+            )
+            .unwrap();
+        let generation = published.version().generation();
+        source.select_members(published.membership()).unwrap();
+        generation
     };
     let initial = replace();
     let records = serving.anchored_records().unwrap();
-    let anchor = AnchoredRecordName::new("relational.checkpoint").unwrap();
+    let anchor = AnchoredRecordName::new("home.checkpoint").unwrap();
     let previous = records.read(anchor, 1 << 20).unwrap().unwrap();
     let bytes = b"retained older history placement".to_vec();
     let locator = RelationalDurableMemberLocator {
@@ -66,7 +81,7 @@ fn checkpoint_replacement_carries_a_member_until_its_last_read_custody_drops() {
                 anchor,
                 initial,
                 previous.bytes().to_vec(),
-                crate::physical_store::placement(),
+                worth_store_testkit_store::fixture::placement(),
                 PhysicalMutationDeadline::after_milliseconds(30_000).unwrap(),
             )
             .with_members(
@@ -82,7 +97,7 @@ fn checkpoint_replacement_carries_a_member_until_its_last_read_custody_drops() {
             ),
         )
         .unwrap();
-    source.select_members(published.version().generation(), published.members());
+    source.select_members(published.membership()).unwrap();
 
     let before = source.counters();
     let custody = source.retain_members(&[locator, locator]).unwrap();

@@ -1,3 +1,7 @@
+mod mutation_input;
+mod selected_directory;
+mod source_retirement;
+pub(crate) use mutation_input::MutationSymbolMeanings;
 mod admission_transfer;
 mod cold_pages;
 mod state;
@@ -6,7 +10,9 @@ use state::RuntimeSymbolState;
 
 use std::sync::{Arc, RwLock};
 
-use crate::symbols::data::{StoredSymbolText, StringInterner, Symbol, SymbolTableSnapshot};
+use crate::symbols::data::{
+    StoredSymbolText, StringInterner, Symbol, SymbolTableSnapshot, SymbolTextLookupKey,
+};
 
 #[path = "symbol_table/reservations.rs"]
 mod reservations;
@@ -19,6 +25,7 @@ pub(crate) struct RuntimeSymbolTable {
     state: Arc<RwLock<RuntimeSymbolState>>,
     cold: Arc<RwLock<Option<Arc<super::symbol_residency::RuntimeSymbolResidency>>>>,
     reservations: Arc<std::sync::Mutex<reservations::SymbolReservationDirectory>>,
+    _memory: Option<Arc<worth_execution::ExecutionMemoryReservation>>,
 }
 
 impl Default for RuntimeSymbolTable {
@@ -27,6 +34,7 @@ impl Default for RuntimeSymbolTable {
             state: Arc::default(),
             cold: Arc::new(RwLock::new(None)),
             reservations: Arc::default(),
+            _memory: None,
         }
     }
 }
@@ -37,6 +45,7 @@ impl Clone for RuntimeSymbolTable {
             state: Arc::clone(&self.state),
             cold: self.cold.clone(),
             reservations: self.reservations.clone(),
+            _memory: self._memory.clone(),
         }
     }
 }
@@ -87,6 +96,7 @@ impl RuntimeSymbolTable {
             state: Arc::new(RwLock::new(state)),
             reservations: Arc::default(),
             cold: Arc::new(RwLock::new(cold)),
+            _memory: None,
         }
     }
     pub(crate) fn normalize_client_keys(
@@ -95,7 +105,9 @@ impl RuntimeSymbolTable {
     ) {
         self.update(|state| {
             for (symbol, value) in normalize(&mut state.interner) {
-                state.configuration.insert(value.into(), symbol);
+                state
+                    .configuration
+                    .insert(SymbolTextLookupKey::from_owned(value.into()), symbol);
             }
         });
     }
@@ -140,7 +152,9 @@ impl RuntimeSymbolTable {
         execution.check_live().map_err(Denial::Stopped)?;
         let symbol = self.admit_with_pending_identity(&mut state.interner, text.clone())?;
         state.configuration.remove(text.as_str());
-        state.configuration.insert(text.clone(), symbol);
+        state
+            .configuration
+            .insert(SymbolTextLookupKey::from_text(&text), symbol);
         Ok((symbol, text))
     }
 
@@ -156,8 +170,13 @@ impl RuntimeSymbolTable {
                     .interner
                     .retained_text(*symbol)
                     .ok_or("admitted canonical dictionary lacks its symbol")?;
+                if state.retains_configuration_text(*symbol, text) {
+                    continue;
+                }
                 state.configuration.remove(text.as_str());
-                state.configuration.insert(text.clone(), *symbol);
+                state
+                    .configuration
+                    .insert(SymbolTextLookupKey::from_text(text), *symbol);
             }
             Ok(())
         })
@@ -173,7 +192,7 @@ impl RuntimeSymbolTable {
             entries: state
                 .configuration
                 .iter()
-                .map(|(text, symbol)| (*symbol, text.clone()))
+                .map(|(text, symbol)| (*symbol, text.retained_text()))
                 .collect(),
         })
     }
@@ -188,7 +207,7 @@ impl RuntimeSymbolTable {
                 .snapshot()
                 .entries
                 .into_iter()
-                .map(|(symbol, text)| (text, symbol))
+                .map(|(symbol, text)| (SymbolTextLookupKey::from_owned(text), symbol))
                 .collect();
             state.admissions.clear();
             state.interner = interner;
@@ -205,3 +224,7 @@ impl RuntimeSymbolTable {
 #[cfg(test)]
 #[path = "symbol_table/tests.rs"]
 mod tests;
+
+#[path = "symbol_table/publication_control.rs"]
+mod publication_control;
+pub use publication_control::RelationalSymbolTableForTest;

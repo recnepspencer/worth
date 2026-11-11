@@ -23,7 +23,7 @@ use worth_relational::facade::identity::KindId;
 use worth_relational::facade::transactions::{CreateIntent, EntitySpec, MutationIntent};
 
 use crate::domain_computation::application_aftermath::{
-    dispatch_outbox_create_intent, WorthQueryDispatchOutboxLayout, WorthQueryDispatchOutboxRecord,
+    WorthQueryDispatchOutboxLayout, WorthQueryDispatchOutboxRecord,
 };
 use crate::domain_computation::primary_graph::application_attempt::{
     WorthQueryApplicationCommitOutcomeIdentity, WorthQueryApplicationIdempotencyBinding,
@@ -281,3 +281,5 @@ fn text(value: String) -> AspectValue {
 fn hex(bytes: Vec<u8>) -> String {
     bytes.iter().map(|byte| format!("{byte:02x}")).collect()
 }
+
+use crate::domain_computation::application_aftermath::external_effect::outbox::dispatch_outbox_create_intent;

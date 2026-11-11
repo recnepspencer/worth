@@ -53,12 +53,11 @@ pub(super) use worth_foundational::facade::AspectKey;
 
 // Test helper index:
 // - `schema`: baseline schema builders plus declared-aspect fixtures
-// - `runtime`: runtime builders, including durable runtimes on the test medium
+// - `runtime`: ordinary schema/runtime fixture construction
 // - `records`: common entity/relation verbs and branch-aware mutation helpers
 // - `history`: aspect/history digest helpers and small read utilities
 // - `inspection`: canonical inspection request builders and historical read helpers
-// - `durability`: branch/recovery helpers for durable round trips
-// - `durable_medium`: the in-crate test medium durable runtimes publish to
+// - `durability`: branch transition setup and typed recovery failure observations
 // - `relation_integrity`: schema fixtures and scenario helpers for milestone-4 legality work
 // - `savepoint`: hostile savepoint residue assertions for patch/subscriber surfaces
 //
@@ -67,7 +66,6 @@ pub(super) use worth_foundational::facade::AspectKey;
 mod aspect_field_patches;
 #[path = "support/durability.rs"]
 mod durability;
-mod durable_medium;
 #[path = "support/history.rs"]
 mod history;
 mod history_snapshot;
@@ -89,7 +87,6 @@ mod transaction_authority;
 
 pub(crate) use aspect_field_patches::*;
 pub(crate) use durability::*;
-pub(crate) use durable_medium::*;
 pub(crate) use history::*;
 pub(crate) use history_snapshot::demand_canonical_history_snapshot;
 pub(crate) use inspection::*;
@@ -380,6 +377,7 @@ pub(super) fn assert_lineage_history_origin_invariants(
 
 #[path = "support/truth_comparison.rs"]
 mod truth_comparison;
+pub(crate) use truth_comparison::assert_durable_commit_meaning_eq;
 pub(super) use truth_comparison::assert_recovered_commit_truth_matches;
 pub(super) use truth_comparison::assert_stable_aspect_truth_bundle_eq;
 mod worker_completion;

@@ -2,6 +2,28 @@
 use super::*;
 
 impl ContentDirectory {
+    /// The predecessor supplies actual retained bytes. Incoming records are
+    /// admitted afresh and the reconstructed fields choose the exact closure.
+    pub(crate) fn reconstruct_original(
+        &self,
+        lane: &crate::storage::substrate::maintenance::ReconstructionLane<'_>,
+        execution: &ExecutionRequest<'_, '_>,
+        schema: &RelationalSchemaRegistry,
+        incoming: &crate::content::RelationalContentAttachments,
+        state: &dyn crate::storage::overlay::CurrentPartitionAccess,
+        version: crate::identity::data::VersionId,
+    ) -> Result<Self, Denial> {
+        let directory = self
+            .prepare_schema_transition(lane, execution, schema, incoming, state, version, None)?;
+        if directory
+            .unreferenced_attachment(execution, incoming)?
+            .is_some()
+        {
+            return Err(Denial::NonCanonicalContent);
+        }
+        Ok(directory)
+    }
+
     pub(crate) fn reconstruct(
         lane: &crate::storage::substrate::maintenance::ReconstructionLane<'_>,
         execution: &ExecutionRequest<'_, '_>,

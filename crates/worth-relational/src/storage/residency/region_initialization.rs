@@ -1,61 +1,98 @@
-//! Initial owned region image; there is no maintained predecessor to update.
+//! Service-free construction from exact Full row data and its original request.
 use super::{
-    PreparedResidentRegion, RegionContentFailure, RelationalRegionResidency,
-    RelationalRegionRetention,
+    PreparedResidentRegion, RegionContentFailure, RelationalRegionKindCommitment,
+    RelationalRegionResidency, RelationalRegionRetention,
 };
 use crate::storage::overlay::{PartitionContentCommitment, PartitionState};
-use crate::storage::substrate::maintenance::ReconstructionLane;
-use crate::symbols::data::StringInterner;
-use std::sync::Arc;
+use crate::storage::residency::kind_projection::full::FullKindProjection;
+use worth_execution::ExecutionRequest;
+
 impl PreparedResidentRegion {
     pub(crate) fn initial(
-        lane: &ReconstructionLane<'_>,
-        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        lane: &crate::storage::substrate::maintenance::ReconstructionLane<'_>,
+        request: &ExecutionRequest<'_, '_>,
         mut partition: PartitionState,
-        symbols: &StringInterner,
+        symbols: &dyn crate::symbols::data::SymbolTextLookup,
     ) -> Result<Self, RegionContentFailure> {
-        let kind_indexes = super::kind_admission::recover(
-            lane,
-            execution,
-            partition.partition_id,
-            |checkpoint, retain| {
-                super::kind_admission::normalize_value(lane, &mut partition, checkpoint, retain)?;
-                super::kind_incremental::RegionKindIndexes::capture_controlled(
-                    lane, &partition, checkpoint,
-                )
-            },
-        )
-        .map(Arc::new)
-        .map_err(RegionContentFailure::from)?;
+        // Never promote a Head frontier, retained sibling hash or source-backed
+        // prefix into reconstructed Full truth.
+        if partition
+            .entity_arena
+            .history_prefixes
+            .iter()
+            .chain(partition.relation_arena.history_prefixes.iter())
+            .any(Option::is_some)
+        {
+            return Err(RegionContentFailure::Content(
+                crate::storage::overlay::PartitionContentDigestError::InvalidHistoryCoverage,
+            ));
+        }
+        request
+            .consult()
+            .map_err(|cause| RegionContentFailure::Execution(cause.into()))?;
+        let kind_commitment = {
+            let history = FullKindProjection::normalize(lane, &mut partition, request)?;
+            let head = FullKindProjection::capture(
+                lane,
+                &partition,
+                crate::storage::partition::AdjacencyKindBasis::Current,
+                request,
+            )?;
+            RelationalRegionKindCommitment {
+                head: crate::storage::residency::kind_commitment::digest_full(
+                    lane, &head, request,
+                )?,
+                history: crate::storage::residency::kind_commitment::digest_full(
+                    lane, &history, request,
+                )?,
+            }
+        };
         partition.clear_runtime_pin_counters();
-        let (commitment, hashed) =
-            PartitionContentCommitment::capture(lane, execution, &partition, symbols)
-                .map_err(RegionContentFailure::Content)?;
-        let inventory = partition.allocation_inventory();
-        let unavailable_records = partition.entity_arena.lifecycle_counts().unavailable
-            + partition.relation_arena.lifecycle_counts().unavailable;
-        let kind_commitment = kind_indexes.commitment();
+        let (commitment, hashed) = PartitionContentCommitment::capture(
+            lane, request, &partition, symbols,
+        )
+        .map_err(|cause| match cause {
+            crate::storage::overlay::PartitionContentDigestError::Request(cause)
+            | crate::storage::overlay::PartitionContentDigestError::Execution(cause) => {
+                RegionContentFailure::Execution(cause)
+            }
+            other => RegionContentFailure::Content(other),
+        })?;
+        let kind_indexes = super::kind_admission::reconstruct(lane, request, &partition)
+            .map_err(RegionContentFailure::from)?;
+        if kind_indexes.commitment() != kind_commitment {
+            return Err(RegionContentFailure::Adjacency);
+        }
+        let requirements =
+            super::required_symbols::CapturedSymbolRequirements::capture_for_request(
+                lane, &partition, true, request,
+            )
+            .map_err(RegionContentFailure::from)?;
         let directory = lane
-            .recover(execution, |lane, work| {
+            .recover(request, |lane, work| {
                 super::RegionRecordDirectory::capture(lane, &partition, &mut |units, bytes| {
                     Ok(work.prepare(units, bytes)?)
                 })
             })
             .map_err(|error| error.into_content_failure(partition.partition_id))?;
         let live_counts = super::LiveRecordCounts::from_partition(&partition);
+        let inventory = partition.allocation_inventory();
+        let unavailable_records = partition.entity_arena.lifecycle_counts().unavailable
+            + partition.relation_arena.lifecycle_counts().unavailable;
         let entity_slots = partition.entity_arena.slot_count();
         let relation_slots = partition.relation_arena.slot_count();
-        let content_digest = commitment.digest(partition.partition_id);
-        let requirements =
-            super::required_symbols::CapturedSymbolRequirements::capture(lane, &partition, true);
+        let partition_id = partition.partition_id;
+        let content_digest = commitment.digest(partition_id);
+        let lease = RelationalRegionResidency::resident_for_request(
+            partition,
+            commitment,
+            kind_indexes,
+            Some(requirements),
+            request,
+        )?;
         Ok(Self {
-            partition_id: partition.partition_id,
-            retention: RelationalRegionRetention::from_lease(RelationalRegionResidency::resident(
-                partition,
-                commitment,
-                kind_indexes,
-                Some(requirements),
-            )),
+            partition_id,
+            retention: RelationalRegionRetention::from_lease(lease),
             inventory,
             content_digest,
             kind_commitment,

@@ -61,6 +61,10 @@ mod serial {
     }
 
     #[test]
+    #[expect(
+        clippy::result_large_err,
+        reason = "The fixture preserves the original typed owner denial."
+    )]
     fn restored_current_output_is_tracked_before_any_producer_demand_and_rejects_source_change() {
         let _guard = checkpoint_recovery_test_guard();
         let provider_observation = crate::producer::ProviderContacts::default();

@@ -118,6 +118,8 @@ impl WorthQuerySessionPrepareOutcome<'_> {
                     unpublished,
                 ),
             )) => WorthQuerySessionCommitOutcome::ProductUnpublished(unpublished),
+            Ok(Err(super::super::super::super::WorthQueryProviderSessionCommitStop::ProductPreparationPending(owner))) => WorthQuerySessionCommitOutcome::ProductPreparationPending(owner),
+            Ok(Err(super::super::super::super::WorthQueryProviderSessionCommitStop::ProductPreparationRefused(owner))) => WorthQuerySessionCommitOutcome::ProductPreparationRefused(owner),
             Ok(Err(super::super::super::super::WorthQueryProviderSessionCommitStop::NoEffect(
                 no_effect,
             ))) => WorthQuerySessionCommitOutcome::NoEffect(no_effect),

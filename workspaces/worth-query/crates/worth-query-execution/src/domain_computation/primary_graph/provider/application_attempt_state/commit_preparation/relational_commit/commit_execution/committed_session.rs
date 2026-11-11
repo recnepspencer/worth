@@ -1,6 +1,25 @@
 //! Access to the actual performed application session.
 use super::*;
 impl WorthQueryCommittedApplicationSession {
+    pub(in crate::domain_computation::primary_graph::provider::application_attempt_state::commit_preparation::relational_commit) fn retain_recovered_producer_facts(
+        &self,
+        evidence: &super::super::WorthQueryPrimaryGraphCommitEvidence,
+        memory: Option<worth_execution::ExecutionMemoryReservation>,
+    ) -> std::sync::Arc<crate::domain_computation::primary_graph::application_output_demand::RecoveredProducerOutputFacts>{
+        use crate::domain_computation::primary_graph::application_output_demand::RecoveredProducerOutputFacts;
+        std::sync::Arc::new(RecoveredProducerOutputFacts {
+            publication: crate::domain_computation::primary_graph::WorthQueryCommittedProductPublication::from_receipt(self.product_publication.clone()),
+            changes: evidence.committed_changes().clone(),
+            outcome: self.attempt.outcome_identity(),
+            correspondence: evidence.retain_output_correspondence(),
+            authority: evidence.retain_original_authority(),
+            inputs: evidence.performed_input_facts().cloned(),
+            fields: evidence.performed_output_fields().cloned(),
+            unrebased_own_effect: evidence.rebased_source_facts().err().map(|failure| failure.own_effect),
+            settlement: self.prepared_lineage_slot.as_ref().map(|slot| slot.identity().clone()),
+            _memory: memory,
+        })
+    }
     pub(in crate::domain_computation::primary_graph::provider::application_attempt_state::commit_preparation::relational_commit) fn take_predicate_preparation(&mut self) -> Option<crate::domain_computation::primary_graph::application_query::derived_view::PredicatePreparationOwner>{
         self.predicate.take()
     }
@@ -86,7 +105,7 @@ impl WorthQueryCommittedApplicationSession {
         self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         provider: &WorthQueryPrimaryGraphProvider,
-        runtime: &mut worth_relational::facade::runtime::RelationalRuntime,
+        runtime: &worth_relational::facade::runtime::RelationalRuntime,
         evidence: super::super::WorthQueryPrimaryGraphCommitEvidence,
         predicate: &mut Option<crate::domain_computation::primary_graph::application_query::derived_view::PredicatePreparationOwner>,
         retired: &mut crate::domain_computation::primary_graph::application_query::derived_view::PredicatePreparationRetirement,

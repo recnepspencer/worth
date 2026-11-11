@@ -107,10 +107,12 @@ where
             let read = self.read_recovery_idempotency(phase, &prepared)?;
             self.check_recovery_liveness()?;
             match read.into_resolution() {
-                WorthQueryApplicationIdempotencyResolution::AlreadyCommitted(receipt) => {
-                    Ok(receipt)
-                }
-                _ => Err(mismatch()),
+                WorthQueryApplicationIdempotencyResolution::ReleasedOriginal(original) => Err(WorthQueryApplicationRecoveryRequestDenial::ReleasedOriginal(original)),
+                WorthQueryApplicationIdempotencyResolution::RecoveredCommitted(receipt) => Err(WorthQueryApplicationRecoveryRequestDenial::RecoveredCommitted(receipt)),
+                WorthQueryApplicationIdempotencyResolution::ProductUnpublished(_)
+                | WorthQueryApplicationIdempotencyResolution::ProductPreparationPending(_)
+                | WorthQueryApplicationIdempotencyResolution::IntentDrift
+                | WorthQueryApplicationIdempotencyResolution::Unseen => Err(mismatch()),
             }
         })();
         let published = match admitted {

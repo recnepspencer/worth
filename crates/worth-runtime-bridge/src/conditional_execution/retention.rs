@@ -21,4 +21,7 @@ pub(super) use ledger::{BridgeRetentionDenial, BridgeRetentionLedger, BridgeRete
 pub use observation::BridgeConditionalRetentionObservation;
 
 #[cfg(test)]
+#[path = "retention_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;
+#[cfg(test)]
 mod tests;

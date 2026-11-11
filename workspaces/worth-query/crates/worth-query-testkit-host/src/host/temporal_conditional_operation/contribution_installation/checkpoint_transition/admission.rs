@@ -25,7 +25,7 @@ pub fn assert_target_record(
     checkpoint: application_installation::WorthQueryApplicationCheckpoint,
     value: u64,
 ) {
-    let reopened = application_installation::in_memory_program_from_checkpoint(
+    let reopened = application_installation::WorthQueryInterimCheckpointRestore::program(
         validated_program(),
         TemporalHostSchema::declaration().unwrap(),
         configuration(),

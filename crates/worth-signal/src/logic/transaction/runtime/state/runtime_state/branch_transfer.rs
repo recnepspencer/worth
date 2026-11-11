@@ -100,3 +100,6 @@ where
             .project_catalog(active_branch, &mut self.graph);
     }
 }
+#[cfg(test)]
+#[path = "branch_transfer_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;

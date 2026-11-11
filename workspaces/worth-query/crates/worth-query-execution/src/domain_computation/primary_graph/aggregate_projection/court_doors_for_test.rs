@@ -6,7 +6,7 @@ impl WorthQueryAggregateProjections {
     pub fn refresh_after_commit_for_test(
         &mut self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
-        runtime: &mut RelationalRuntime,
+        runtime: &RelationalRuntime,
         before: &SnapshotHandle,
         after: &SnapshotHandle,
         patches: &[PublishedAuthoritativeRecordPatch],

@@ -57,7 +57,7 @@ fn native_projection_continuation_keeps_exact_bindings_and_rejects_source_races(
         .field_locator_for_test(label_ref.entity(), label_ref.aspect(), label_ref.field())
         .unwrap()
         .clone();
-    handle.with_runtime_mut_for_test(request_execution, |runtime| {
+    handle.with_runtime_for_test(request_execution, |runtime| {
         write_field(request_execution, runtime, entity, label, "prime")
     });
     let (before_handle, before, facts) = world
@@ -89,7 +89,7 @@ fn native_projection_continuation_keeps_exact_bindings_and_rejects_source_races(
         .facts_for_test())
     .clone();
     let original_body = original.postconditions_for_test().clone();
-    let continuation = handle.with_runtime_mut_for_test(request_execution, |runtime| {
+    let continuation = handle.with_runtime_for_test(request_execution, |runtime| {
         let changes = owner
             .computation_changes_for_test(runtime, &before_handle, &first, &original)
             .unwrap()
@@ -246,7 +246,7 @@ fn native_projection_continuation_keeps_exact_bindings_and_rejects_source_races(
             Some(continuation),
         ))
         .unwrap();
-    handle.with_runtime_mut_for_test(request_execution, |runtime| {
+    handle.with_runtime_for_test(request_execution, |runtime| {
         write_field(request_execution, runtime, entity, status, "closed")
     });
     assert!(prepared.install_for_test().is_err());
@@ -267,7 +267,7 @@ fn native_projection_continuation_keeps_exact_bindings_and_rejects_source_races(
     drop(historical);
     drop(original);
 
-    handle.with_runtime_mut_for_test(request_execution, |runtime| {
+    handle.with_runtime_for_test(request_execution, |runtime| {
         runtime
             .snapshots()
             .release_snapshot(&before_handle)

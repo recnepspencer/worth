@@ -195,6 +195,23 @@ where
                     Err(denial) => return Err(denial),
                 }
             }
+            Authority::Recovered(_) => {
+                match Settlement::from_committed_ready(
+                    execution,
+                    self,
+                    completion,
+                    &demand.selected.identity,
+                    Family::IDENTITY,
+                    demand.producer_contacts_in_this_demand,
+                ) {
+                    Ok(settlement) => alias(settlement)?,
+                    Err(stop) if stop.kind() == WorthQueryOutputDemandDenialKind::Superseded => {
+                        own_effect_observation::record(Stage::ReadySuperseded);
+                        Err(ReadyUnavailable::Superseded)
+                    }
+                    Err(stop) => return Err(stop),
+                }
+            }
             Authority::Stable(stable) => alias(Settlement::from_stable(
                 execution,
                 self,

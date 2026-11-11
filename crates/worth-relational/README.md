@@ -125,6 +125,26 @@ A checkpoint captures the catalog as it exists at capture time; reopening a
 checkpoint captured after a completed discard does not itself reconstruct the
 missing generations from source records.
 
+## Durable index definitions
+
+`index_authority().register` installs a definition and its original issued ID in
+this owner. The next authoritative canonical commit carries the newly introduced
+ordered definition prefix, including full names, kinds, scoping and duplicate
+equivalent definitions at distinct IDs. Artifact v4 requires this delta in full,
+authoritative and embedded checkpoint envelope projections; CHK18 carries the
+catalog and issued frontier from one capture. Earlier development formats refuse.
+Only an actual performed canonical cutover or acknowledged checkpoint selection
+advances the accepted frontier. Preparation, refusal and uncertain fate do not.
+
+Recovery admits checkpoint definitions and exact overlapping tail declarations
+before replay, retaining the original tail payload and catalog-prefix coverage.
+The catalog is global; sibling schema bases do not prune it. Embedded restoration
+retains original canonical backing as data; an unselected standalone checkpoint
+can re-emit checkpoint-only definitions. Actual selected cold restoration and
+completed selection acknowledgement install accepted catalog coverage.
+Generations remain derived: use the existing owner build/demand doors.
+Catalog coverage incarnation/epochs are live observations and never enter wire.
+
 ## Mental model
 
 - `RelationalRuntimeApi::builder()` is the setup door
@@ -141,6 +161,171 @@ If you find yourself reaching into crate internals instead of
 [`facade`](./src/facade.rs), you are probably leaving the intended public
 surface.
 
+## Opaque caller association
+
+`facade::mvcc::RelationalCallerAssociation::from_bytes` accepts nonempty opaque
+bytes of at most 4096 bytes. Bind them by consuming a validated proposal with
+`bind_caller_association` before the existing `prepare_validated_proposal` call;
+binding twice refuses and a prepared candidate cannot be rebound. Candidate
+`caller_association()` observes its retained sealed payload; the canonical
+envelope exposes the same immutable bytes. Native preserves the caller's bytes
+without interpreting them or granting completion authority. Canonical artifact
+v5 and native checkpoint CHK18 retain the field through journal and embedded or
+cold checkpoint recovery. Older artifact and checkpoint versions refuse rather
+than acquiring the new grammar implicitly. Association bytes or successful
+artifact decoding alone establish no durable World effect or product movement.
+
+The canonical envelope also requires the original immutable
+`facade::transactions::RelationalCommitSemanticResult`. Native produces it once
+before sealing the envelope and shares that same value with the live result.
+It retains canonical create names and assigned identities, ordered changed
+records, structural/schema/history/change/aspect meaning, actual publication
+counts, and original validation checks and decisions. It has no live snapshot,
+timing, work measurements, publication status, journal position or self-digest.
+Each checkpoint commit index explicitly records `RelationalAssociationDiscovery`
+from the same envelope, so discovery need not demand unrelated cold bodies.
+Missing semantic images or discovery fields refuse. Artifact v1/v2 and
+checkpoint CHK13/CHK14/CHK15 refuse cleanly. These data fields establish neither
+source-backed recovery nor recovered publication authority on their own.
+
+## Record a current Native component
+
+`owner_component_services().basis_port().export_recorded_current_component`
+takes the original execution request and an owner-admitted current basis. It
+returns a serde-transportable `RecordedRelationalComponentReference` in Native's
+canonical runtime frame. Its explicit `Empty` target has no commit, position or
+digest; `Canonical` retains the actual full receipt, performed position,
+artifact digest and roots. The descriptor retains exact reference, truth,
+lifecycle, schema and visibility axes. Foreign or stale bases refuse. This is
+descriptive export: memory backing remains memory-only, and the reference grants
+no retained-root, durable-source or recovered-publication authority. Native
+recovery must admit the recorded subject before it can become an operational
+basis; callers cannot rewrite its canonical runtime frame into a live identity.
+
+`export_recorded_retained_component(execution, &original_basis)` uses that same
+owner fact path for an already-admitted, pinned subject after a later commit
+advances the branch. It preserves the original performed position and artifact
+digest; it neither selects the latest head nor pairs a caller-supplied result
+with a descriptor. Foreign owners refuse. Historical Journal or checkpoint
+subjects demand their exact catalog-backed positioned body under the original
+request. Independently readmitted bodies must match the complete authoritative
+payload; resident canonical Arc identity remains the constant-time acceptance
+path. A failed source demand returns a source refusal, without substituting the
+current head or retaining every journal body permanently.
+
+Recovery binds each reconstructed current root to the authenticated original
+canonical envelope before recording it as a historical image. Original
+validation is retained from that source, without rerunning its executor. Replay
+private completeness survives only the catalog's existing full authoritative
+payload equivalence; it is not transferred to a different original validation
+result. Recorded-component admission checks that same complete artifact payload.
+
+## Retire one provider member-custody share
+
+`RelationalDurableMemberCustody::new_from_source(owner, issuing_weak_source)`
+binds the original provider payload to its actual source allocation. Consuming
+`into_retirement()` produces `RelationalDurableMemberRetirement`; retain it
+outside disposable callbacks and advance it with the original execution request
+and borrowed issuing source. Native checks issuance identity before callbacks or
+share consumption, without upgrading the Weak. Unknown `new(owner)` payloads
+and composite region exports return `UnsupportedProvider`; foreign sources and
+foreign custody refuse without replacing the original payload.
+
+`Complete` discharges this local share only. Another clone or independently
+retained cold reader continues protecting its original placement. After Complete,
+`into_retired()` returns opaque allocation custody; `reclaim()` and generic final
+Drop are explicitly unbudgeted. Incomplete Drop may run the original provider
+destructor and grants no close proof. Neither result establishes whole cold graph,
+Native, Home or physical close.
+
+The sized boxed-owner representation adds one acquisition allocation and one
+indirection. Advance allocates/reserves nothing, never waits for locks or destroys
+the original payload/last physical owner. A Store member step is O(log distinct
+members); BTreeMap removal may rebalance/deallocate nodes, and Arc share release
+may reclaim a small control allocation. These are not hard O(1) or wall-clock
+destructor bounds.
+
+## Readmit an associated Native effect
+
+`durability_authority().discover_associated_effects(execution, &association)`
+selects actual catalog or performed-route subjects from their required discovery
+metadata. Unrelated cold bodies remain cold. Each returned subject records the
+exact runtime and Journal index with weak identities for the actual source and
+cell; the live Native owner retains their custody. Associated Memory refuses.
+`discover_all_associated_effects(execution)` uses the same metadata scan without
+a known-association filter. It returns all associated subjects with their exact
+opaque bytes, so the caller can validate its own namespace and original opens
+before claiming reconciliation. It skips unassociated entries without loading
+them and retains the same Memory, missing-metadata and changed-subject refusals.
+Native interprets no caller namespace.
+
+For closed readmission, the actual recovered authority's
+`discover_recovered_associated_effects(execution, &runtime)` unconditionally
+checks its exact runtime affinity before this same full inventory scan, including
+an empty inventory. This historical authority grants neither a live publication
+fence nor an absence witness; the not-yet-exposed composition supplies exclusion.
+
+`readmit_associated_effect(execution, &subject)` reads that source even when a
+body is resident, validates its full receipt, position, digest, association and
+schema/root metadata, and exposes the original immutable semantic image.
+Refusal leaves the borrowed original subject intact. Closed or unavailable
+owners refuse, and descriptive observers do not keep a closed Home serving.
+
+Settlement descriptions distinguish matching `PerformedPending` and
+`PerformedSettled` route flags from `CheckpointReadmitted` directory evidence.
+Missing registration is not settlement evidence. These read-only observations
+grant no recovered publication or product adoption authority.
+
+## Admit an original recovered publication
+
+`durability_recovery().recover_with_authority(execution, plan)` runs the existing
+reconstruction once and returns `RecoveredRelationalRuntimeAuthority` alongside
+the outcome. Its `admit_recorded_component(execution, &runtime, &recorded)` door
+admits an exact source-produced Empty or canonical image with real observation
+pins. This is distinct from its existing current-image admission. Canonical
+Memory, foreign runtimes, mismatched source fields and unavailable images refuse;
+no old runtime identity is rewritten and no latest root is substituted.
+
+If a crash preceded the caller's occurrence, use
+`recorded_publication_successor(execution, &runtime, &effect)` to describe the
+original successor. Native selects the same effect's exact source/index and an
+unambiguous original observation captured by this recovery, even after later
+Native advancement. Missing or ambiguous images refuse while the effect stays
+borrowed. This grants no basis, settlement or adoption authority and never uses
+the current head as a substitute.
+
+`admit_recorded_publication(execution, &runtime, effect, &before, &after)` consumes
+an actual `ReadmittedRelationalAssociatedEffect`, validates its original
+predecessor and complete successor subject, and acquires actual component leases
+for both bases before returning
+`worth_proof::RelationalPublicationReadmitted<RelationalRecoveredPublicationCustody>`.
+The phase offers read-only `custody()` and one consuming transfer. Its private
+Native payload exposes the original semantic data and actual bases; consuming
+`into_retained_parts()` moves the effect and both basis/lease pairs to the next
+owner. Native creates no live `Performed`, `CommitResult`, snapshot or timing.
+Pending settlement must be completed by its existing actual owner first.
+An owning refusal preserves the original source image and any acquired pins;
+`into_effect()` explicitly releases partial new pins for a fresh request.
+
+CHK18 records exact current observations and live external component obligations.
+Canonical root headers require `recorded_components`; explicit
+`retained_empty_components` bind Empty observations to their schema carriers.
+These fields come from the same actual observations that created the external
+leases, rather than an arbitrary descriptor or the previous checkpoint union.
+Capture retains those selected actual bases through encoding and actual selection
+acknowledgement, or until the last actual capture is abandoned, even if a caller
+releases its original lease. Clones share that custody; interrupted acknowledgement
+keeps it until the original progression completes. Plain observations and released external obligations do not
+become additional durable component obligations.
+
+Reopen installs current heads and retains historical component headers without
+reading their artifact bodies. Exact admission demands the original source
+artifact and immutable region directory, verifies all recorded commitments, and
+acquires real pins before exposure. Unrelated history remains cold; missing or
+mismatched selected material refuses. Checkpoint coverage alone grants no adoption.
+The concrete Store/World recovered-adoption journey and coherent cross-owner Home
+checkpoint cut remain separate integration obligations; this Native phase alone
+grants no product movement.
 ## Fork an actually retained root
 
 For a memory-only runtime, pass an original `AdmittedRelationalBranchBasis` to
@@ -317,6 +502,275 @@ Relational commit
   -> Query consequence
 ```
 
+
+## Release an original commit-result snapshot
+
+The existing weak basis service provides
+`release_commit_result_snapshot(&CommitResult)` for an owning caller's explicit
+cleanup. It checks the immutable Native-issued result, snapshot axes and the same
+actual published registration. `RelationalCommitResultSnapshotRelease::Released`
+reports real removal; `AlreadyReleased` requires the original registration's
+private released fact, including normal snapshot release or owner closeout.
+Unknown or mismatched registrations and foreign/unavailable owners refuse.
+Result clones share that fact; dropping a result does not automatically release
+its snapshot. Only this original registration is released, and independently
+admitted reads remain retained. The observation cell holds a weak registry
+reference and adds no serialized semantic field or runtime ownership cycle.
+
+For request-bounded cleanup, call the same basis service's
+`begin_commit_result_snapshot_cleanup(Arc<CommitResult>)`, then consume the task
+with `advance(&original_request, &actual_native_owner)`. `Pending` and `Refused`
+return the owning task; `Complete` returns the original result Arc and release
+outcome. Keep the original result and pending task in the owning Home/World
+progress across stops and lost responses. Native checks owner tenure, exact
+runtime/registry/cell affinity and immutable result axes without constructing an
+admitted runtime copy. Source readmission never reissues an old published cell.
+
+Removal stores the actual binding in that original cell before unlocking and
+releases capacity once. Cooperative retirement then relinquishes its observation,
+retention-lane obligation and basis-registry lease with nonwaiting owner steps.
+Normal synchronous release and closeout join the same retirement. Completion
+requires actual retirement; interrupted destructive retirement refuses. Independent
+readers keep their own custody. While each step borrows the real owner, live heads
+or the existing retired-root inventory retain its roots; provider destruction is
+outside that path. Final task/result/owner Drop remains unbudgeted Rust destruction.
+This task supplies no whole-Home close, memory-close or Native-finish guarantee.
+Materialized visibility caches may retain separate observations even after the
+original result and independent snapshot handles release. Native close then
+truthfully refuses `ReadCustodyRetained`; cache retirement remains a separate
+Native terminal-cleanup obligation.
+
+## Retain applied aspect payloads
+
+Entity and relation mutation application admits the Foundation output and its
+existing extra allocation against the original execution request before growth.
+Current rows, historical metadata and private mutation views retain that same
+extra owner and its reservation. Replacement and lineage copies admit independent
+output; old snapshots retain their original owners. Public materialized records
+remain independent copies. Checkpoint image export borrows state while retaining
+the whole extra. Moving a unique extra also moves its reservation; its small fixed
+allocation bill remains conservatively charged until that moved value drops.
+
+The generic storage handle stays one word and gains no allocation or footer.
+Only entity/relation extras gain a move-only reservation. On the qualified
+64-bit target, their inline sizes change from 80 to 128 and 56 to 104 bytes;
+entity/relation metadata changes from 64 to 56 and 80 to 72 bytes. The concrete
+existing extra Arc layout is included in the admitted bill. Metadata preserves
+its six original wire fields and order, and funding is excluded from extra
+serialization and relation-content hashing. Ordinary extra cloning makes an
+independent copy and carries no old reservation.
+
+Successful field-authored construction also admits its borrowed ordering scratch,
+selected value copies, portable buffers and readmitted patch against the same
+original request. Endpoint augmentation moves the original operations rather
+than cloning them again; the relation-aspect prefix copy is admitted before it
+is made. The move-only private `MutationAspectPatch` retains the bill until its
+actual original patch is destroyed in publication filtering, including failure.
+Dead construction/admission scratch refunds before applied Extra growth. Checked
+Foundation `clone_allocation_bytes()` descriptions count actual copied lengths;
+retained-capacity reports measure existing output, not future copies.
+
+On the qualified target the Foundation patch is 48 bytes, its private funded
+owner is 96 bytes, and `RecordMutation` is 200 bytes. This adds no Arc or generic
+storage footer. Explicit ordinary-unfunded constructors remain available only
+for the existing independent portable/deletion data routes; they qualify no
+funding. No wire format or scalar/struct winner and validation order changes.
+
+Request-driven record birth, update, retirement, reuse, rematerialization and
+lineage replacement also admit each historical metadata allocation before editing
+its history. The same existing metadata Arc retains its own small fixed bill;
+its Extra payload keeps its independent reservation. Retiring and new metadata
+are prepared together before mutation, so quota refusal leaves prior history
+unchanged. A unique moved metadata value conservatively retains its fixed bill
+until Drop. On the qualified 64-bit target, entity/relation metadata is 104/120
+bytes inline and its actual Arc allocation is 120/136 bytes. This is a localized
+48-byte footer per metadata value, with no change to generic storage handles.
+Metadata's six wire fields and Debug meaning exclude funding.
+
+Ordinary image construction and maintenance cloning remain independently
+unfunded. Controlled metadata replacement creates a fresh existing-type owner
+even when the previous metadata was unique; no additional wrapper Arc is added.
+The controlled node/page and scalar-directory guarantees below cover separate
+backing allocations. This does not qualify whole-arena or Complete funding.
+
+These are successful-path backing guarantees. Existing semantic-error locator,
+path, key and formatted-detail copies, and returned-error Clone/Serde, retain
+their ordinary allocation contract. Other portable-input copies, supplemental
+and canonical projection copies, remaining replay construction, ordinary radix
+construction, Complete capture and selected-backing handoff remain separate obligations.
+
+## Retain controlled node and page backing
+
+Request-driven column, AVL and scalar slot-directory writes use the original
+mutation request. Each actual node owns its own reservation; a column leaf also
+owns its fixed page buffer. Temporary dense-build directories release their
+separate bills after destruction. Unique fixed-capacity edits need no replacement
+allocation. Shared edits admit each replacement before shallow copying; partial
+construction retains its admitted nodes until the unpublished workspace drops.
+Published roots remain readable after refusal.
+
+Scalars, shallow nested column headers, adjacency headers and DigestIndex map
+headers are inline. Independently shared metadata, Extra and Digest child nodes
+keep explicit existing allocation handles. Parent bills exclude those independent
+allocations. Where a payload is funded, its escaped handles retain that owner's
+independent bill. Allocation observation reports actual node and payload identities
+without inventing scalar or inline header identities. Generic storage handle
+layout and tree wire meaning remain unchanged.
+
+On the qualified 64-bit target, an inline kind-bucket node is 112 bytes, replacing
+a 112-byte node plus a 24-byte header Arc. An inline adjacency node is 168 bytes,
+replacing a 112-byte node plus an 80-byte header Arc. Each removes 24 bytes of
+backing. Child nodes retain their actual identities and reservations; no separate
+header allocation or payload bill remains. This changes no selective publication
+algorithm and adds no adjacency or bitset funding guarantee.
+
+DigestIndex map nodes grow from 112 to 120 bytes while each distinct 32-byte
+header Arc disappears. This trades fewer allocations for larger copied nodes:
+the measured dense 64-entry owner falls from 15,360 to 13,824 bytes. Retaining
+64 append roots grows usage from 51,312 to 52,344 bytes; retaining 129 hot-history
+roots grows it from 160,864 to 161,376. These are measured examples, not universal
+savings or bounds.
+The actual Patricia and HistoryLastValue child owners stay shared and unchanged.
+Their funding and general nonshallow defaults remain separate obligations.
+
+Borrowed map walks keep their bounded path stack inline and report zero heap
+scratch while preserving original work and stop polling. On the qualified
+64-bit target each iterator occupies 1,040 bytes, including when empty; a pair
+occupies 2,080 bytes before adapters and compiler temporaries. This exchanges
+heap scratch for stack space. Owned IntoIterator and mutable iteration keep
+their existing allocation contracts. No whole-operation funding is implied.
+
+This qualifies controlled column/map nodes, fixed pages and scalar-directory
+writes. Ordinary image and maintenance construction, legacy adjacency/bitset
+backing, revision-map payloads, independently constructed Digest/default payloads
+and Complete capture retain separate allocation obligations.
+
+## Retire an immutable Memory runtime
+
+Platform lifecycle owners consume their actual `RelationalRuntimeHandle` with
+`into_memory_close`. Shared representations, aliased owners, admitted read copies
+and actual medium/cold/transition-source affinity refuse without losing the handle.
+Retain `RelationalMemoryClose` outside disposable callbacks and call its
+`advance(&original_request)` through `&mut` progress. Reversible preflight refuses
+retained candidates, accepted settlements and explicit snapshot/replay custody;
+repair them before retrying. `into_refused_handle` is an explicitly unbudgeted
+preseal restoration around the same runtime and original handle metadata.
+
+After sealing, no serving restoration exists. Each nonwaiting step retires one
+actual cached Exact/Historical observation or head obligation. Independent reads
+keep their own custody and cause a truthful refusal until released. An existing
+original-result cleanup task can advance through the phase's narrow forwarding
+method. Completion retires business obligations, retaining the authentic private
+root/cache allocations and their funding. `into_retired_memory` yields only an
+opaque nonserving allocation whose `reclaim` is explicitly unbudgeted.
+
+Incomplete phase Drop is also unbudgeted owner-loss abandonment and proves no
+successful close. Concrete Home progress must retain the phase across request
+stops and lost responses. This Native Memory contract grants no durable/cold Home
+close or arbitrary destructor deadline. Dense cache/head tables retain their
+existing allocation semantics; metadata footprint and worst-case O(1) cost are
+not claimed, and close never allocates/reserves/rehashes/shrinks those tables.
+
+
+## Read an original protected source cut
+
+`RelationalDurableReadProtection::capture` binds the original source allocation
+and the provider's frozen canonical/transition bounds. Its owned read methods
+reject foreign sources before callbacks and never fall back to legacy `Vec`
+reads. Unknown providers return `UnsupportedProvider`. The two original test
+media copy/fund immutable snapshots; inline checkpoint images expose members
+with zero journal bounds and do not manufacture an original journal prefix.
+
+`RelationalDurableRecoverySource::from_protected_source` feeds exact original
+owned artifacts into the existing recovery admission. Canonical admission
+retains the funded original raw buffer. Transport/plan collections and decoded
+transition heaps retain their ordinary allocation contract. This capability
+confers no Complete checkpoint, CHK18 coverage, schema reconstruction, selected
+residency transfer or acknowledgement authority.
+
+
+## Retain original Memory publication frames
+
+A new Memory publication admits and issues its original canonical artifact v4
+frame under the caller's original request after reserving the position and
+before publishing any head or position. The existing residency cell retains
+that immutable frame. Artifact export verifies and shares the original bytes;
+it does not encode a replacement. This adds count/hash and emission passes plus
+frame verification to Memory publication while the position reservation is held.
+The exact byte buffer is admitted before growth; failure moves no head or position.
+
+Preparation keeps the legacy authoritative tuple's exact scalar length/digest
+using its existing serializer, without retaining tuple bytes. The positioned
+artifact digest remains separate. There is one retained frame allocation rather
+than both a frame and tuple payload. Ordinary Journal and legacy resident export
+behavior remains; strict CHK18 capture requires an actual original frame.
+
+## Canonical checkpoint members
+
+CHK18 requires one ordered canonical member for every indexed position, including
+positions covered by an earlier checkpoint. Each member is the original complete
+artifact v4 frame. Its member SHA covers the whole frame; the index retains
+the separate positioned payload digest. Capture verifies original Memory backing,
+protected Journal reads, or the installed prior selected read. It cannot reconstruct
+a missing original from an image or resident body. Earlier CHK17 selections refuse.
+Embedded checkpoints include these same original byte strings; external checkpoints
+publish them as singleton members alongside the manifest.
+
+`durability().canonical_commit_artifacts(&request)` takes the original execution
+request so selected reads enforce its limits. Skipping with `nth` or
+`after_position` remains lazy. Memory export shares its original byte owner.
+
+After actual physical selection, `checkpoint.acknowledge_selected(&request, context)`
+progresses the same captured cells before releasing component holds. A stop or Busy
+retains the same pending capture and cursor. The new directory data pointer may be
+readable while old read/member retirement remains pending; that placement does not
+complete acknowledgement, advance the accepted index-definition frontier or
+advance completion cadence. Historical, component, associated-effect and head
+demands use the selected original member source, without
+covered canonical journal fallback. Ordinary uncovered tail replay keeps its existing
+contract.
+
+Capture now visits the full indexed canonical prefix and original artifact bytes;
+metadata ordering and validation cost O(C log C), plus actual artifact/image work.
+New roster, mixed member list, retained per-entry owner, selected-read and ACK storage
+use original-request admission and shared intrinsic custody. Existing schema/image
+and other untouched manifest heaps remain outside that funding claim. Fixed
+weak-retained control metadata keeps its existing ordinary allocation contract.
+This ordinary checkpoint path does not issue Complete, reconstruct every historical schema/root,
+or provide service-free reconstruction or a complete-checkpoint preparation port.
+
+## Admit the original fresh Home source
+
+The closed Store Home route uses
+`durability_recovery().admit_fresh_home_source(&request, source_plan)` only
+while private physical custody proves genuine newness. Native validates the
+actual protected empty source against its attached medium and retains the SAME
+runtime, initial root and original birth/installation schema data. The returned
+`FreshRelationalSourceAdmission` is fixed-size owner data with existing schema
+shares and a weak reference to that actual root; it retains no second runtime
+or operational root archive.
+
+Query validates its same-runtime initial installation against this receipt,
+then registers its indexes. World validates the receipt before attaching its
+fresh source. These are named, restricted owner integrations, not application
+construction APIs. A foreign source/runtime, moved initial root, incompatible
+installation or stopped original request refuses explicitly.
+
+`RecoveredRelationalRuntimeAuthority` continues to mean genuine source-driven
+runtime reconstruction. An existing empty Home still uses recovery, even with
+no selected checkpoint or journal tail. Fresh admission never creates recovered
+authority or restore-work evidence. It does not supply missing historical
+original inputs on reopen, admit a selected Complete Home source, or retire
+Native/provider service graphs.
+
+### Retire one external branch lease
+
+`RelationalBranchRetentionLease::into_observation_retirement` consumes that
+original issued lease through the existing retained-observation retirement
+task. It retires the external obligation and the lease's original observation
+share under the supplied request, retaining inert original allocations until
+explicit reclaim. An independently held observation keeps its genuine read
+veto. This local retirement does not establish whole-runtime or physical close.
 ## Content custody and atomic scalars
 
 Native owns content identity, format/version admission, integrity, retention

@@ -23,10 +23,43 @@ pub enum ApplicationCorrectionDerivationDenial {
 /// One installed source operation's deterministic corrective action association.
 pub trait ApplicationCorrectionBinding<Schema: ApplicationSchema>: Sized + 'static {
     const IDENTITY: &'static str;
-    type Source: ApplicationMutationBinding<Schema, Operation: ApplicationDeclaredOperation<Schema>>;
-    type InverseIntent: ApplicationMutationIntent<Schema>;
+    type Source: ApplicationMutationBinding<
+        Schema,
+        Input: serde::Serialize,
+        Operation: ApplicationDeclaredOperation<Schema>,
+    >;
+    type InverseIntent: ApplicationMutationIntent<
+        Schema,
+        Binding: ApplicationMutationBinding<Schema, Input: serde::Serialize>,
+    >;
     /// Current read authority for this binding's retained input and pre-images.
     type Disclosure: crate::application_query::ApplicationQueryBinding<Schema>;
+
+    /// Reconstruct the exact retained source input as fresh DATA. This required
+    /// factory grants no historical authority, disclosure, or operation admission.
+    fn recover_source_input(
+        bytes: &[u8],
+        expected: worth_foundational::facade::CanonicalDigestId,
+        bounds: worth_foundational::facade::ValueDecodeBounds,
+    ) -> Result<
+        crate::application_operation::ApplicationEncodedInput<
+            <Self::Source as ApplicationMutationBinding<Schema>>::InputBinding,
+        >,
+        crate::application_operation::ApplicationRetainedInputDenial,
+    >;
+
+    /// Reconstruct the exact performed inverse input for a retry as fresh DATA.
+    /// Recovery must never rerun inverse derivation to replace this input.
+    fn recover_inverse_input(
+        bytes: &[u8],
+        expected: worth_foundational::facade::CanonicalDigestId,
+        bounds: worth_foundational::facade::ValueDecodeBounds,
+    ) -> Result<
+        crate::application_operation::ApplicationEncodedInput<
+            <ApplicationInverseBinding<Schema, Self> as ApplicationMutationBinding<Schema>>::InputBinding,
+        >,
+        crate::application_operation::ApplicationRetainedInputDenial,
+    >;
 
     /// Captured while the original operation is admitted, before history becomes protected.
     fn disclosure_parameters(

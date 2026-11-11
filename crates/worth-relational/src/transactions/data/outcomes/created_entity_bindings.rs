@@ -1,8 +1,11 @@
 use std::collections::BTreeMap;
+mod semantic;
 
 use crate::identity::data::EntityId;
 use crate::identity::data::{KindId, PartitionId};
+#[cfg(test)]
 use crate::symbols::data::StringInterner;
+use crate::symbols::data::SymbolTextLookup;
 use crate::transactions::data::CreatedEntityRef;
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
@@ -54,15 +57,12 @@ impl CommitCreatedEntityBindings {
 
     pub(crate) fn from_owner_map(
         by_create_reference: BTreeMap<CreatedEntityRef, EntityId>,
-        symbols: &StringInterner,
+        symbols: &dyn SymbolTextLookup,
     ) -> Self {
         let by_stable_reference = by_create_reference
             .iter()
             .filter_map(|(created, entity_id)| {
-                let client_key = created
-                    .client_key
-                    .resolve_with_interner(symbols)?
-                    .to_owned();
+                let client_key = resolve_client_key(&created.client_key, symbols)?.to_owned();
                 Some((
                     StableCreatedEntityRef {
                         partition_id: created.partition_id,
@@ -185,6 +185,17 @@ impl CommitCreatedEntityBindings {
             })
             .copied()
     }
+}
+
+fn resolve_client_key<'a>(
+    client: &'a crate::symbols::data::ClientKey,
+    symbols: &'a dyn SymbolTextLookup,
+) -> Option<&'a str> {
+    client.as_raw_str().or_else(|| {
+        client
+            .as_symbol()
+            .and_then(|symbol| symbols.resolve(symbol))
+    })
 }
 
 #[cfg(test)]

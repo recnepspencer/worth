@@ -29,8 +29,8 @@ fn schema_diff_atom_requires_structured_detail_and_strata() {
         HistoricalInterpretationSensitivity::SensitiveToPublicationMeaning,
         SchemaDiffDetail::TypeChanged {
             field: field_key("timing_domain"),
-            from_type: Arc::<str>::from("enum<previous>"),
-            to_type: Arc::<str>::from("enum<expanded>"),
+            from_type: Arc::<str>::from("enum<previous>").into(),
+            to_type: Arc::<str>::from("enum<expanded>").into(),
         },
     );
 
@@ -158,7 +158,7 @@ fn schema_transition_summary_derives_changed_strata_without_duplicate_noise() {
                 SchemaSubscriberImpact::RenegotiationRequired,
                 HistoricalInterpretationSensitivity::SensitiveToValueMeaning,
                 SchemaDiffDetail::FreeText {
-                    detail: Arc::<str>::from("unit semantics widened"),
+                    detail: Arc::<str>::from("unit semantics widened").into(),
                     declared_intent: FreeFormSchemaDiffIntent::StructuralContinuityDenied,
                 },
             ),
@@ -175,7 +175,7 @@ fn schema_transition_summary_derives_changed_strata_without_duplicate_noise() {
                 SchemaSubscriberImpact::ConsumableSurfaceChanged,
                 HistoricalInterpretationSensitivity::SensitiveToPublicationMeaning,
                 SchemaDiffDetail::ProjectionContractChanged {
-                    projection_name: Arc::<str>::from("mass-properties"),
+                    projection_name: Arc::<str>::from("mass-properties").into(),
                 },
             ),
         ],

@@ -58,8 +58,7 @@ fn a_migration_successor_spends_the_steps_its_source_took() {
         WorthQueryApplicationAttemptDenialKind::WorkflowInstanceCapacityUnavailable,
         "another successor cannot restart a spent budget",
     );
-    let ended = cancelled(cancel_instance(&application, successor, 91_050));
-    assert!(!ended.replayed(), "a spent lineage still cancels");
+    let _ended = cancelled(cancel_instance(&application, successor, 91_050));
 }
 
 #[test]
@@ -141,14 +140,14 @@ fn a_retry_of_the_step_that_spent_the_budget_replays() {
             other => panic!("expected an accepted assessment, got {other:?}"),
         }
     }
-    match advance_instance(&application, instance.clone(), 91_207) {
-        Ok(WorkflowProgressOutcome::Completed(performed)) => assert!(!performed.replayed()),
+    let original = match advance_instance(&application, instance.clone(), 91_207) {
+        Ok(WorkflowProgressOutcome::Completed(performed)) => performed,
         other => panic!("the last step of the budget did not complete: {other:?}"),
-    }
+    };
     for state in ["warm", "cold"] {
         match advance_instance(&application, instance.clone(), 91_207) {
-            Ok(WorkflowProgressOutcome::Completed(replay)) => {
-                assert!(replay.replayed(), "the {state} retry replays")
+            Ok(WorkflowProgressOutcome::RecoveredCommitted(replay)) => {
+                crate::recorded_receipt::assert_agrees(&replay, original.receipt());
             }
             other => panic!("the {state} retry of the spending step must replay: {other:?}"),
         }

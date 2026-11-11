@@ -36,19 +36,22 @@ pub enum LineageCertifiedSurfaceKind {
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct CertifiedLineageSurfaceDigest {
     kind: LineageCertifiedSurfaceKind,
-    digest: [u8; 32],
+    digest: worth_foundational::CanonicalDigestId,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct CertifiedLineageSurfaceComparisonBasis {
     kind: LineageCertifiedSurfaceKind,
     exact_digest: Option<CertifiedLineageSurfaceDigest>,
-    summary_digest: Option<[u8; 32]>,
+    summary_digest: Option<worth_foundational::CanonicalDigestId>,
 }
 
 impl CertifiedLineageSurfaceDigest {
     pub(crate) fn from_digest(kind: LineageCertifiedSurfaceKind, digest: [u8; 32]) -> Self {
-        Self { kind, digest }
+        Self {
+            kind,
+            digest: worth_foundational::CanonicalDigestId::new(digest),
+        }
     }
 
     pub fn kind(&self) -> LineageCertifiedSurfaceKind {
@@ -56,7 +59,7 @@ impl CertifiedLineageSurfaceDigest {
     }
 
     pub fn digest(&self) -> &[u8; 32] {
-        &self.digest
+        self.digest.bytes()
     }
 }
 
@@ -69,7 +72,7 @@ impl CertifiedLineageSurfaceComparisonBasis {
         Self {
             kind,
             exact_digest,
-            summary_digest,
+            summary_digest: summary_digest.map(worth_foundational::CanonicalDigestId::new),
         }
     }
 
@@ -82,7 +85,9 @@ impl CertifiedLineageSurfaceComparisonBasis {
     }
 
     pub fn summary_digest(&self) -> Option<&[u8; 32]> {
-        self.summary_digest.as_ref()
+        self.summary_digest
+            .as_ref()
+            .map(worth_foundational::CanonicalDigestId::bytes)
     }
 }
 

@@ -20,6 +20,29 @@ enum ResidentTargetContents {
     Editing,
 }
 impl ResidentMirrorTarget {
+    pub(super) fn source_retirement_binding(
+        &self,
+        retire_native: bool,
+    ) -> Result<
+        (
+            Arc<crate::storage::residency::RelationalRegionResidency>,
+            Option<crate::runtime::RuntimeSymbolTable>,
+        ),
+        (),
+    > {
+        let contents = match self.contents.try_lock() {
+            Ok(contents) => contents,
+            Err(std::sync::TryLockError::Poisoned(error)) => error.into_inner(),
+            Err(std::sync::TryLockError::WouldBlock) => return Err(()),
+        };
+        match &*contents {
+            ResidentTargetContents::Resident { lease, .. } => {
+                Ok(lease.source_retirement_binding(retire_native))
+            }
+            ResidentTargetContents::Editing => Err(()),
+        }
+    }
+
     pub(super) fn new(lease: RelationalResidencyLease<Full>, clear_pins: bool) -> Self {
         let id = lease.full_view().partition().partition_id;
         Self {

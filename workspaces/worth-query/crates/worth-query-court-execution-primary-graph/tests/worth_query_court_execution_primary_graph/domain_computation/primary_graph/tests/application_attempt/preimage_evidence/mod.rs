@@ -84,7 +84,7 @@ fn later_commit_recovery_selects_exact_evidence_and_rejects_foreign_reference_ax
     let first_outcome = world.application.compare_and_commit_application(
         first,
         idempotency(85, 86),
-        worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        worth_query_execution::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
     );
     assert!(
         matches!(
@@ -126,22 +126,25 @@ fn later_commit_recovery_selects_exact_evidence_and_rejects_foreign_reference_ax
         world.application.compare_and_commit_application(
             later,
             idempotency(87, 88),
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+            worth_query_execution::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
         )
     else {
         panic!("the later exact-evidence target commits");
     };
-    let WorthQueryApplicationCommitOutcome::AlreadyCommitted(recovered) =
+    let WorthQueryApplicationCommitOutcome::RecoveredCommitted(recovered) =
         world.application.compare_and_commit_application(
             retry,
             idempotency(87, 88),
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+            worth_query_execution::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
         )
     else {
         panic!("the later commit must not select the first stored entry");
     };
-    assert!(recovered.is_same_authoritative_commit(&later_receipt));
-    assert_retained_status(&recovered, "unrelated");
+    worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::recorded_receipt::assert_original(
+        &recovered,
+        &later_receipt,
+    );
+    assert_retained_status(&later_receipt, "unrelated");
 
     let mut foreign_version = later_receipt.commit_reference().clone();
     foreign_version.version_id =
@@ -153,9 +156,9 @@ fn later_commit_recovery_selects_exact_evidence_and_rejects_foreign_reference_ax
     foreign_parents.parents.push(foreign_parents.commit_id);
     for foreign in [foreign_version, foreign_branch, foreign_parents] {
         assert!(
-            (*(*world
+            world
                 .application
-                .runtime_for_test()).primary_provider_for_test())
+                .runtime_for_test().primary_provider_for_test()
                 .observe_completed_application_for_test(&foreign)
                 .is_none(),
             "equal CommitId with any foreign RelationalCommitReceipt axis must not observe evidence"

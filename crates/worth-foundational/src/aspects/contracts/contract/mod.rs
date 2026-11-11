@@ -29,6 +29,11 @@ struct AspectContractDefinition {
 }
 
 impl AspectContract {
+    /// Clone shares the immutable definition and allocates no heap backing.
+    pub fn clone_allocation_bytes(&self) -> Option<usize> {
+        Some(0)
+    }
+
     pub fn key(&self) -> &AspectKey {
         &self.definition.key
     }

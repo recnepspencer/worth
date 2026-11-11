@@ -70,7 +70,7 @@ where
                     attempt.record_relational_performed(&performed);
                 match self
                     .state
-                    .relational
+                    .relational_services()
                     .settlement_port()
                     .settle_performed_publication(performed)
                 {
@@ -91,12 +91,27 @@ where
                 Err(pre_effect_failure(NoEffectCause::StaleExpectedProductHead))
             }
             RelationalPublicationOutcome::Denied(denial) => {
-                let cause = match denial {
+                let cause = match &denial {
                     worth_relational::facade::mvcc::RelationalPublicationDenial::OwnerUnavailable { .. } => NoEffectCause::OwnerUnavailable,
-                    worth_relational::facade::mvcc::RelationalPublicationDenial::CurrentReadDependency(denial) => NoEffectCause::CurrentReadDependency(crate::publication::CurrentProductReadDependencyDenial::Native(denial)),
+                    worth_relational::facade::mvcc::RelationalPublicationDenial::CurrentReadDependency(denial) => NoEffectCause::CurrentReadDependency(crate::publication::CurrentProductReadDependencyDenial::Native(*denial)),
                     worth_relational::facade::mvcc::RelationalPublicationDenial::ScopedCutoverDurabilityUnsupported => NoEffectCause::CurrentReadDependency(crate::publication::CurrentProductReadDependencyDenial::DurabilityUnsupported),
                     worth_relational::facade::mvcc::RelationalPublicationDenial::CutoverDeadlineElapsed => NoEffectCause::CurrentReadDependency(crate::publication::CurrentProductReadDependencyDenial::CutoverDeadlineElapsed),
-                    _ => NoEffectCause::OwnerDeniedBeforeEffect,
+                    worth_relational::facade::mvcc::RelationalPublicationDenial::CanonicalArtifactEncoding(_)
+                    | worth_relational::facade::mvcc::RelationalPublicationDenial::RetainedEntitySelectionDurabilityUnsupported
+                    | worth_relational::facade::mvcc::RelationalPublicationDenial::OwnedGraphSelectionDurabilityUnsupported { .. }
+                    | worth_relational::facade::mvcc::RelationalPublicationDenial::RecoveredCodecTransitionRequired
+                    | worth_relational::facade::mvcc::RelationalPublicationDenial::HomeProgramContractsRequired
+                    | worth_relational::facade::mvcc::RelationalPublicationDenial::HomeProgramIndexDefinitionsRequired
+                    | worth_relational::facade::mvcc::RelationalPublicationDenial::StaleIndexDefinitions
+                    | worth_relational::facade::mvcc::RelationalPublicationDenial::IndexDefinitionPublicationContended
+                    | worth_relational::facade::mvcc::RelationalPublicationDenial::HomeProgramTransition(_)
+                    | worth_relational::facade::mvcc::RelationalPublicationDenial::StaleInvariantGeneration { .. }
+                    | worth_relational::facade::mvcc::RelationalPublicationDenial::StaleConfigurationEpoch
+                    | worth_relational::facade::mvcc::RelationalPublicationDenial::ForeignRuntime { .. }
+                    | worth_relational::facade::mvcc::RelationalPublicationDenial::OwnerMismatch
+                    | worth_relational::facade::mvcc::RelationalPublicationDenial::Archived
+                    | worth_relational::facade::mvcc::RelationalPublicationDenial::Deleting
+                    | worth_relational::facade::mvcc::RelationalPublicationDenial::DurablePublicationRefused(_) => NoEffectCause::OwnerDeniedBeforeEffect,
                 };
                 Err(pre_effect_failure(cause))
             }

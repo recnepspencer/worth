@@ -12,6 +12,12 @@ pub(crate) struct RecoveredCodecPublicationCustody {
     _memory: worth_execution::ExecutionMemoryReservation,
 }
 impl RecoveredCodecPublicationCustody {
+    pub(crate) fn admits_source(
+        &self,
+        source: &crate::branch::AdmittedRelationalBranchBasis,
+    ) -> bool {
+        self.source.admission_identity() == source.admission_identity()
+    }
     pub(super) fn new(
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         source: &crate::branch::AdmittedRelationalBranchBasis,

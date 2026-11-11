@@ -1,6 +1,7 @@
 //! Genuine reverse/repeated emissions preserve ordinary identity order and slot ownership.
 use super::super::authentication;
 use super::{host, prefix, query};
+use crate::application_invariant_acceptance::managed_index::prefix_observation;
 use std::sync::{atomic::Ordering, Arc};
 use worth_query_host::facade::{application_entry::*, primary_graph::*};
 fn input(directory: &str, prefix: &str) -> query::FindPrefix {
@@ -19,7 +20,7 @@ fn actual_candidate_slots_are_output_ordered_duplicate_idempotent_and_foreign_re
         .unwrap();
 }
 fn journey() {
-    let calls = Arc::new(prefix::Calls::default());
+    let calls = Arc::new(prefix_observation::Calls::default());
     let world = host::install(calls.clone());
     let scope = authentication::request_scope();
     let principal = authentication::block_on(

@@ -4,6 +4,7 @@ use crate::domain_computation::primary_graph::WorthQueryApplicationIdempotencyBi
 
 pub enum CorrectionIdempotencyObservation {
     Unseen,
+    Recorded(super::idempotency::snapshot_resolution::WorthQueryRecoveredApplicationCommitReceipt),
     Completed(
         WorthQueryApplicationIdempotencyBinding,
         WorthQueryPrimaryGraphCommittedApplication,
@@ -16,6 +17,25 @@ pub enum CorrectionIdempotencyObservation {
 }
 
 impl WorthQueryPrimaryGraphProvider {
+    pub(in crate::domain_computation::primary_graph) fn observe_correction_command(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        product: &crate::domain_computation::execution_runtime::product_world::WorthQueryProductPublicationBinding,
+        key: &[u8; 32],
+    ) -> Result<
+        CorrectionIdempotencyObservation,
+        super::idempotency::WorthQueryProviderIdempotencyResolutionDenial,
+    > {
+        if product.observation().owner_identity().durable().is_none() {
+            return Ok(self.observe_correction_key(product.observation(), key));
+        }
+        if let Some(receipt) =
+            super::idempotency::snapshot_resolution::observe(execution, self, product, *key)?
+        {
+            return Ok(CorrectionIdempotencyObservation::Recorded(receipt));
+        }
+        Ok(self.observe_correction_key(product.observation(), key))
+    }
     /// Observation never resumes pending publication or claims a recovery handle.
     pub(in crate::domain_computation::primary_graph) fn observe_correction_key(
         &self,

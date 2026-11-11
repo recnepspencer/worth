@@ -6,7 +6,10 @@ fn faulted_dispatch_then_safe_retry_escapes_exactly_once() {
     world
         .transport
         .under(FaultScript::DisappearMidDispatch, world::PATIENT);
-    let receipt = world.commit_notification(81);
+    let receipt_closed = world.commit_notification(81);
+    let receipt = receipt_closed
+        .live_receipt()
+        .expect("fresh source retains its full native owner");
     assert!(receipt.co_committed_dispatch_outbox());
     assert_eq!(
         receipt
@@ -17,7 +20,7 @@ fn faulted_dispatch_then_safe_retry_escapes_exactly_once() {
     assert_eq!(world.transport.admission_count(), 0);
     let correlation = world.transport.attempts()[0].clone();
 
-    let handle = world.open_recovery(&receipt);
+    let handle = world.open_recovery(receipt);
     let specialist = world.fixture.authenticate_specialist();
     let action = world.specialist_action();
     let scope = request_scope();
@@ -36,7 +39,7 @@ fn faulted_dispatch_then_safe_retry_escapes_exactly_once() {
             .fixture
             .world
             .runtime
-            .commit_recovery_claim_status(&receipt),
+            .commit_recovery_claim_status(receipt),
         Ok(BankRecoveryClaimStatus::Completed)
     );
     assert_eq!(
@@ -63,7 +66,10 @@ fn lost_response_safe_retry_reissues_same_request_and_completes_once() {
     world
         .transport
         .under(FaultScript::CommitThenLoseResponse, world::PATIENT);
-    let receipt = world.commit_notification(86);
+    let receipt_closed = world.commit_notification(86);
+    let receipt = receipt_closed
+        .live_receipt()
+        .expect("fresh source retains its full native owner");
     assert!(receipt.co_committed_dispatch_outbox());
     assert_eq!(
         receipt
@@ -82,7 +88,7 @@ fn lost_response_safe_retry_reissues_same_request_and_completes_once() {
         LedgerStatus::Completed
     );
 
-    let handle = world.open_recovery(&receipt);
+    let handle = world.open_recovery(receipt);
     let specialist = world.fixture.authenticate_specialist();
     let action = world.specialist_action();
     let scope = request_scope();
@@ -119,8 +125,11 @@ fn foreign_principal_safe_retry_denies_before_transport() {
     world
         .transport
         .under(FaultScript::DisappearMidDispatch, world::PATIENT);
-    let receipt = world.commit_notification(83);
-    let handle = world.open_recovery(&receipt);
+    let receipt_closed = world.commit_notification(83);
+    let receipt = receipt_closed
+        .live_receipt()
+        .expect("fresh source retains its full native owner");
+    let handle = world.open_recovery(receipt);
     let action = world.specialist_action();
     let scope = request_scope();
     let attempts_before = world.transport.attempts().len();
@@ -168,8 +177,11 @@ fn unresolved_redispatch_retains_the_handle_for_a_later_completed_attempt() {
     world
         .transport
         .under(FaultScript::DisappearMidDispatch, world::PATIENT);
-    let receipt = world.commit_notification(87);
-    let handle = world.open_recovery(&receipt);
+    let receipt_closed = world.commit_notification(87);
+    let receipt = receipt_closed
+        .live_receipt()
+        .expect("fresh source retains its full native owner");
+    let handle = world.open_recovery(receipt);
     let specialist = world.fixture.authenticate_specialist();
     let action = world.specialist_action();
     let scope = request_scope();
@@ -208,8 +220,11 @@ fn expired_handle_safe_retry_denies_before_transport() {
     world
         .transport
         .under(FaultScript::DisappearMidDispatch, world::PATIENT);
-    let receipt = world.commit_notification(84);
-    let handle = world.open_recovery(&receipt);
+    let receipt_closed = world.commit_notification(84);
+    let receipt = receipt_closed
+        .live_receipt()
+        .expect("fresh source retains its full native owner");
+    let handle = world.open_recovery(receipt);
     let specialist = world.fixture.authenticate_specialist();
     let action = world.specialist_action();
     let scope = request_scope();

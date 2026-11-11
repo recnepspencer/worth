@@ -36,4 +36,7 @@ pub use refresh::*;
 pub use relevance::*;
 pub use telemetry::*;
 #[cfg(test)]
+#[path = "mod_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;
+#[cfg(test)]
 mod tests;

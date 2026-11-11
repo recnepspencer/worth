@@ -1,0 +1,10 @@
+[
+  "fresh_scalar_commit_seals_exact_native_lifecycle_and_field_touches",
+  "installed_field_index_commit_touch_carries_native_old_and_new_keys",
+  "abandoned_client_preparation_leaves_publication_unchanged_and_later_keys_recover",
+  "semantic_result_preserves_custom_enforcement_version_distinct_from_aggregate_request",
+  "original_capture_request_refusals_and_escaped_output_preserve_editable_truth",
+  "checkpoint_source_recovers_each_original_lineage_node_and_create_event",
+  "published_lineage_identities_stay_spent_after_image_embedded_and_cold_recovery",
+  "inflight_lineage_tail_recovery_keeps_every_published_identity_spent"
+]

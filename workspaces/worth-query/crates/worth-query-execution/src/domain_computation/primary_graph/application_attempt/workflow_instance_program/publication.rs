@@ -108,13 +108,11 @@ impl PublishedWorkflowInstanceRef {
     }
 }
 
-/// A workflow instance start that landed: the instance, its commit receipt, and whether the
-/// idempotency key replayed an already-landed commit.
+/// A real workflow instance start and its owner-issued commit receipt.
 #[derive(Debug)]
 pub struct PerformedWorkflowInstanceStart {
     instance: PublishedWorkflowInstanceRef,
     receipt: super::super::WorthQueryApplicationCommitReceipt,
-    replayed: bool,
 }
 
 impl PerformedWorkflowInstanceStart {
@@ -125,22 +123,19 @@ impl PerformedWorkflowInstanceStart {
     pub const fn receipt(&self) -> &super::super::WorthQueryApplicationCommitReceipt {
         &self.receipt
     }
-
-    pub const fn replayed(&self) -> bool {
-        self.replayed
-    }
 }
 
 /// What executing a workflow instance start produced. `ProjectionDenied` means the commit
 /// landed but its receipt did not record exactly one started instance.
 #[derive(Debug)]
 pub enum WorkflowInstanceStartOutcome {
+    RecoveredCommitted(crate::domain_computation::primary_graph::provider::WorthQueryRecoveredApplicationCommitReceipt),
     Started(PerformedWorkflowInstanceStart),
     /// The branch holds another definition current. Nothing was written.
     Superseded(super::supersession::SupersededWorkflowDefinitionStart),
     /// The definition's lineage is retired. Nothing was written.
     Retired(super::supersession::RetiredWorkflowDefinitionStart),
-    /// The commit did not land. A landed commit, first or replayed, is the
+    /// The commit did not land. A fresh landed commit is the
     /// performed variant.
     Application(WorthQueryApplicationUncommitted),
     ProjectionDenied(super::super::WorthQueryApplicationCommitReceipt),
@@ -207,7 +202,7 @@ where
             crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
         );
         match outcome.landed() {
-            Ok((receipt, replayed)) => project(
+            Ok(crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationLandedCommit::Live { receipt }) => project(
                 receipt,
                 definition_content_identity,
                 definition,
@@ -215,8 +210,8 @@ where
                 discovery_intent.lookup_identity(),
                 instance_identity_locator,
                 start_path,
-                replayed,
-            ),
+                ),
+            Ok(crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationLandedCommit::Recovered(receipt)) => WorkflowInstanceStartOutcome::RecoveredCommitted(receipt),
             Err(uncommitted) => match supersession {
                 Some(supersession) => supersession
                     .outcome(uncommitted)
@@ -235,7 +230,6 @@ fn project(
     instance_identity: &str,
     instance_identity_locator: worth_foundational::facade::AspectFieldLocator,
     start_path: String,
-    replayed: bool,
 ) -> WorkflowInstanceStartOutcome {
     match project_instance(
         &receipt,
@@ -249,7 +243,6 @@ fn project(
         Some(instance) => WorkflowInstanceStartOutcome::Started(PerformedWorkflowInstanceStart {
             instance,
             receipt,
-            replayed,
         }),
         None => WorkflowInstanceStartOutcome::ProjectionDenied(receipt),
     }

@@ -11,7 +11,7 @@ pub(super) fn bind(
     snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
     attempt: &WorthQueryPrimaryGraphApplicationAttempt,
     candidate: &mut worth_relational::facade::mvcc::PreparedRelationalCommitCandidate,
-) -> Result<(), crate::domain_computation::WorthQueryProviderSessionCommitStop> {
+) -> Result<(), ManagedSourcePreparationDenial> {
     for fact in attempt.facts().values() {
         let (DecisionFact::Application { fact, .. }
         | DecisionFact::ObservedSource { fact }
@@ -21,8 +21,8 @@ pub(super) fn bind(
         };
         if let Fact::ManagedIndexSource { observation } = fact.as_ref() {
             let checked = provider.graph.with_runtime(execution, |runtime| observation.checked_at(runtime, execution, snapshot))
-                .map_err(comparison_stop)?
-                .ok_or_else(|| native_output_witness_stop(worth_relational::facade::mvcc::CompanionPreflightStop::ManagedSourceChanged))?;
+                .map_err(ManagedSourcePreparationDenial::Currentness)?
+                .ok_or_else(|| ManagedSourcePreparationDenial::Native(worth_relational::facade::mvcc::CompanionPreflightStop::ManagedSourceChanged))?;
             if checked.is_realized() {
                 provider
                     .application_attempt_operation_control
@@ -33,10 +33,26 @@ pub(super) fn bind(
             // runtime loan above is released before this final pin operation.
             candidate
                 .require_managed_source(execution, checked.native())
-                .map_err(native_output_witness_stop)?;
+                .map_err(ManagedSourcePreparationDenial::Native)?;
         }
     }
     Ok(())
+}
+
+#[derive(Debug)]
+pub(super) enum ManagedSourcePreparationDenial {
+    Currentness(crate::domain_computation::primary_graph::application_attempt::WorthQuerySourceCurrentnessFailure),
+    Native(worth_relational::facade::mvcc::CompanionPreflightStop),
+}
+impl ManagedSourcePreparationDenial {
+    pub(super) fn into_memory_stop(
+        self,
+    ) -> crate::domain_computation::WorthQueryProviderSessionCommitStop {
+        match self {
+            Self::Currentness(cause) => comparison_stop(cause),
+            Self::Native(cause) => native_output_witness_stop(cause),
+        }
+    }
 }
 
 fn comparison_stop(

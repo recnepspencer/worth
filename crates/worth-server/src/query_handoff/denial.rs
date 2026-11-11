@@ -198,18 +198,6 @@ impl WorthServerQueryHandoffDenialFacts {
         self.observed_validator = Some(observed_validator.into());
         self
     }
-
-    pub(crate) fn with_idempotency_conflict(
-        mut self,
-        idempotency_key: impl Into<String>,
-        conflicting_request_digest: impl Into<String>,
-        bound_request_digest: impl Into<String>,
-    ) -> Self {
-        self.idempotency_key = Some(idempotency_key.into());
-        self.conflicting_request_digest = Some(conflicting_request_digest.into());
-        self.bound_request_digest = Some(bound_request_digest.into());
-        self
-    }
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]

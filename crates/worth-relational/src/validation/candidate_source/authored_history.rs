@@ -51,7 +51,15 @@ pub(crate) struct PreparedSourceImpactHistory {
     pub(crate) branch: BranchId,
     pub(crate) parent: Option<CommitId>,
     pub(crate) proposed: VersionId,
+    #[allow(
+        dead_code,
+        reason = "Original diagnostic, proof and funding custody remains owned through retirement"
+    )]
     pub(crate) records: ExecutionOrderedMap<RecordRef, AuthoredSourceRecordUse>,
+    #[allow(
+        dead_code,
+        reason = "Original diagnostic, proof and funding custody remains owned through retirement"
+    )]
     pub(crate) incidence: ExecutionOrderedMap<RelationId, AuthoredSourceIncidence>,
     pub(crate) impacts: ExecutionOrderedMap<ManagedSourceImpactKey, ManagedSourceImpactRows>,
     pub(crate) _memory: Option<worth_execution::ExecutionMemoryReservation>,

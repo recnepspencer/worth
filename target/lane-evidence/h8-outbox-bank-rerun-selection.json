@@ -1,0 +1,9 @@
+{
+  "names": [
+    "process::server_owned_effects::server::ordinary_mutations::estate_operations::c4_retry_outbox_rebind::ordinary_equivalent_retry_skips_materialization_and_the_external_rail",
+    "process::server_owned_effects::server::ordinary_mutations::estate_operations::external_effect_dispatch::committed_outbox::committed_outbox_is_fresh_owner_truth_with_exact_commit_affinity",
+    "process::server_owned_effects::server::ordinary_mutations::estate_operations::external_effect_dispatch::committed_outbox::another_runtime_without_the_exact_commit_cannot_observe_a_receipts_committed_outbox"
+  ],
+  "RUST_MIN_STACK_present": false,
+  "exit": 0
+}

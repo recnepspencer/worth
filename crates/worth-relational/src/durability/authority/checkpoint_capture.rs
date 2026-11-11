@@ -1,14 +1,18 @@
 use crate::branch::RelationalBranchRootCheckpoint;
 use crate::capabilities::RuntimeIdentitySource;
 use crate::durability::data::DurabilityError;
-use crate::history::data::{
-    PositionedCanonicalCommit, RecordAllocationClass, RecordAllocationOrigin,
-    RelationalCommitReceipt,
-};
-use crate::identity::data::PartitionId;
+use crate::history::data::{PositionedCanonicalCommit, RelationalCommitReceipt};
 use crate::runtime::RelationalRuntime;
 
 pub(super) struct CapturedCheckpointBasis {
+    pub(super) recorded_components: std::collections::BTreeMap<
+        crate::history::data::CommitId,
+        Vec<crate::branch::RelationalBranchBasisDescriptor>,
+    >,
+    pub(super) retained_empty_components:
+        Vec<crate::durability::data::RelationalCheckpointEmptyComponent>,
+    pub(super) empty_component_schemas: Vec<crate::durability::data::DurableBranchRootSchemaImage>,
+    pub(super) component_holds: Vec<crate::branch::AdmittedRelationalBranchBasis>,
     pub(super) latest_commit: Option<RelationalCommitReceipt>,
     pub(super) selected_directory:
         Option<std::sync::Arc<crate::durability::data::RelationalCheckpointDirectory>>,
@@ -54,18 +58,7 @@ pub(super) struct CapturedCheckpointBasis {
     pub(super) runtime_name: String,
 }
 
-pub(super) struct CapturedRecordIdentity {
-    pub(super) generation_high_water: Vec<(RecordAllocationClass, PartitionId, u64, u32)>,
-    pub(super) reusable_slots: Vec<(RecordAllocationClass, PartitionId, usize)>,
-    pub(super) append_frontiers: Vec<(RecordAllocationClass, PartitionId, usize)>,
-    pub(super) pending_reservations: Vec<(
-        RecordAllocationClass,
-        PartitionId,
-        u64,
-        u32,
-        RecordAllocationOrigin,
-    )>,
-}
+pub(super) type CapturedRecordIdentity = crate::durability::data::DurableRecordIdentityState;
 
 impl CapturedCheckpointBasis {
     /// Select one immutable recovery basis while publication handoff is
@@ -75,6 +68,20 @@ impl CapturedCheckpointBasis {
         runtime: &RelationalRuntime,
         routes: &crate::runtime::RelationalCanonicalPublicationRoutes,
         selection: crate::runtime::PerformedCheckpointSelection,
+    ) -> Result<Self, DurabilityError> {
+        Self::capture_with_record_identity(
+            runtime,
+            routes,
+            selection,
+            runtime.record_identity.checkpoint_identity(),
+        )
+    }
+
+    pub(super) fn capture_with_record_identity(
+        runtime: &RelationalRuntime,
+        routes: &crate::runtime::RelationalCanonicalPublicationRoutes,
+        selection: crate::runtime::PerformedCheckpointSelection,
+        record_identity: CapturedRecordIdentity,
     ) -> Result<Self, DurabilityError> {
         // Checkpointing is a cold lane: retire expired reader roots and their
         // derived generations before selecting bounded payloads.
@@ -98,18 +105,14 @@ impl CapturedCheckpointBasis {
             })
             .collect();
         let covered_transitions = selection.covered_transitions();
-        let branch_roots = runtime
-            .history
-            .branch_root_checkpoints()
-            .map_err(|detail| {
-                DurabilityError::new(
-                    crate::durability::data::RecoveryFailureClass::CorruptCheckpoint,
-                    detail,
-                )
-            })?;
-        let envelope_versions = envelopes
+        let components = super::checkpoint_components::capture(runtime)?;
+        let branch_roots = components.roots;
+        let envelope_versions = artifacts
             .iter()
-            .map(|envelope| (envelope.commit.commit_id, envelope.commit.version_id))
+            .map(|artifact| {
+                let receipt = artifact.receipt();
+                (receipt.commit_id, receipt.version_id)
+            })
             .collect::<std::collections::BTreeMap<_, _>>();
         let root_bases = branch_roots
             .iter()
@@ -206,6 +209,10 @@ impl CapturedCheckpointBasis {
                 },
             )?;
         let captured = Self {
+            recorded_components: components.canonical,
+            retained_empty_components: components.empty,
+            empty_component_schemas: components.empty_schemas,
+            component_holds: components.held,
             envelope_cells: artifacts
                 .iter()
                 .map(|artifact| artifact.envelope_residency())
@@ -227,12 +234,7 @@ impl CapturedCheckpointBasis {
             retired_branch_names: runtime.history.retired_branch_names(),
             covered_transitions,
             branch_roots,
-            record_identity: CapturedRecordIdentity {
-                generation_high_water: runtime.record_identity.generation_snapshot(),
-                reusable_slots: runtime.record_identity.reusable_snapshot(),
-                append_frontiers: runtime.record_identity.frontier_snapshot(),
-                pending_reservations: runtime.record_identity.pending_snapshot(),
-            },
+            record_identity,
             commit_descriptors: artifacts
                 .iter()
                 .map(|artifact| (artifact.identity().commit_id(), artifact.roots().clone()))
@@ -243,6 +245,7 @@ impl CapturedCheckpointBasis {
             aspect_contracts: runtime
                 .schema_contract_runtime
                 .aspect_contract_plans
+                .as_ref()
                 .clone(),
             lineage_nodes: runtime.lineage_access().resident_nodes_snapshot(),
             lineage_event_pages_resident,
@@ -256,7 +259,7 @@ impl CapturedCheckpointBasis {
                 .chain(runtime.indexes.checkpoint_export_sources())
                 .collect(),
             lineage_events: lineage_events.into_values().collect(),
-            index_definitions: runtime.index_access().definitions_snapshot(),
+            index_definitions: index_state.definition_snapshot(),
             carried_index_image: runtime.indexes.carried_checkpoint_image(),
             index_state,
             retained_indexes: retained,

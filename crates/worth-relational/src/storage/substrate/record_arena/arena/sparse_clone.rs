@@ -1,5 +1,4 @@
 use crate::storage::substrate::SharedColumn;
-use std::collections::BTreeMap;
 
 use super::{RecordArena, RecordKind};
 
@@ -72,9 +71,11 @@ impl<K: RecordKind> RecordArena<K> {
         clone.metadata_history = SharedColumn::with_default(slot_count, SharedColumn::default());
         clone.history_prefixes = SharedColumn::with_default(slot_count, None);
         clone.extra = SharedColumn::with_default(slot_count, K::empty_extra());
-        clone.aspect_versions = SharedColumn::with_default(slot_count, BTreeMap::new());
+        clone.aspect_versions =
+            SharedColumn::with_default(slot_count, super::AspectVersions::new());
         clone.field_revisions = SharedColumn::with_default(slot_count, None);
-        clone.diagnostics_enrichment = SharedColumn::with_default(slot_count, BTreeMap::new());
+        clone.diagnostics_enrichment =
+            SharedColumn::with_default(slot_count, std::collections::BTreeMap::new());
 
         clone
     }

@@ -14,6 +14,8 @@ use worth_query_installation::facade::{
     APPLICATION_EXECUTION_PROVIDER_FAMILY, APPLICATION_EXECUTION_SAFE_POINT_FAMILY,
 };
 
+// Clones retain the same admitted capacities and immutable support snapshot.
+#[derive(Clone)]
 pub(in crate::domain_computation::primary_graph) struct WorthQueryPrimaryGraphResourceSupport {
     graph: WorthQueryExecutionResourceSupport,
     snapshot:

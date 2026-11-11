@@ -29,7 +29,7 @@ pub(crate) use {
     crate::production::harness::markers::RecoveryRuntimeMarker,
 };
 
-pub(crate) const C8_RECOVERY_MEMORY_BUDGET_BYTES: u64 = 512 * 1024;
+pub(crate) const C8_RECOVERY_MEMORY_BUDGET_BYTES: u64 = 2 * 1024 * 1024;
 
 pub(crate) struct ProcessWorld {
     pub(crate) parent: TempDir,
@@ -185,7 +185,7 @@ impl ProcessWorld {
     }
 
     pub(crate) fn recover_root(&self, root: &Path, name: &str) -> RuntimeProcess {
-        self.recover_root_with_profile(root, name, "c8-phase2-admission-v1")
+        self.recover_root_with_profile(root, name, "c8-phase2-admission-v2")
     }
 
     pub(crate) fn recover_root_with_profile(

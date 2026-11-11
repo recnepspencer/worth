@@ -13,32 +13,20 @@ use crate::orchestration::{RecoveryCoordination, ResidentSourceSelection};
 use super::{PhysicalRecoveryDiscoveryCounters, RecoveryIntegrityEvidence};
 
 pub struct PlannedPhysicalRecovery {
-    authority: AdmittedPlatformAuthority,
-    coordination: RecoveryCoordination,
-    selection: ResidentSourceSelection,
-    custody: crate::progression::PlanningCustody,
-    verified_selected_tier_custody:
-        Option<worth_store_recovery_physics::VerifiedSelectedTierEpochCustody>,
-    discovery_counters: PhysicalRecoveryDiscoveryCounters,
-    root_protocol_denials: Vec<PhysicalRecoverySourceDenial>,
-    integrity: RecoveryIntegrityEvidence,
-    freshness: StoreRecoveryBindingFreshnessSample,
-    fates: RecoveryOperationFateSet,
-    redo: ImmutablePhysicalRedoPlan,
-    plan_cost: RecoveryPlanCost,
-    planning_counters: RecoveryPlanningCounters,
-    root_protocol_counters: crate::entry::PhysicalRecoveryRootProtocolCounters,
-    staging: RecoveryStagingLayoutPlan,
-    publication: RecoveryPublicationPlan,
-    quiescence: RecoveryQuiescencePlan,
-    integrity_trace: crate::integrity_ingress::RecoveryIntegrityIngressTrace,
+    state: PlannedStateBacking,
 }
 
+mod state;
+use state::PlannedRecoveryState;
+pub(crate) use state::PlannedStateBacking;
+
 mod cancellation;
+mod staging_input;
 pub use cancellation::PhysicalRecoveryStagingCancellation;
 
 impl PlannedPhysicalRecovery {
-    pub(crate) const fn new(
+    pub(crate) fn new(
+        backing: PlannedStateBacking,
         authority: AdmittedPlatformAuthority,
         coordination: RecoveryCoordination,
         selection: ResidentSourceSelection,
@@ -60,7 +48,7 @@ impl PlannedPhysicalRecovery {
         quiescence: RecoveryQuiescencePlan,
         integrity_trace: crate::integrity_ingress::RecoveryIntegrityIngressTrace,
     ) -> Self {
-        Self {
+        backing.finish(PlannedRecoveryState {
             authority,
             coordination,
             selection,
@@ -79,61 +67,61 @@ impl PlannedPhysicalRecovery {
             publication,
             quiescence,
             integrity_trace,
-        }
+        })
     }
 
     pub fn store_identity(&self) -> StableStoreIdentity {
-        self.authority.media.store_identity()
+        self.state.state().authority.media.store_identity()
     }
     pub const fn discovery_counters(&self) -> PhysicalRecoveryDiscoveryCounters {
-        self.discovery_counters
+        self.state.state().discovery_counters
     }
     pub fn root_protocol_denials(&self) -> &[PhysicalRecoverySourceDenial] {
-        &self.root_protocol_denials
+        &self.state.state().root_protocol_denials
     }
     pub fn wal_integrity_observations(
         &self,
     ) -> &[crate::entry::PhysicalRecoveryWalIntegrityObservation] {
-        self.integrity.observations().wal()
+        self.state.state().integrity.observations().wal()
     }
     pub const fn freshness_sample(&self) -> &StoreRecoveryBindingFreshnessSample {
-        &self.freshness
+        &self.state.state().freshness
     }
     pub const fn operation_fates(&self) -> &RecoveryOperationFateSet {
-        &self.fates
+        &self.state.state().fates
     }
     pub const fn redo_plan(&self) -> &ImmutablePhysicalRedoPlan {
-        &self.redo
+        &self.state.state().redo
     }
     pub const fn plan_cost(&self) -> RecoveryPlanCost {
-        self.plan_cost
+        self.state.state().plan_cost
     }
     pub const fn planning_counters(&self) -> RecoveryPlanningCounters {
-        self.planning_counters
+        self.state.state().planning_counters
     }
     pub const fn root_protocol_counters(
         &self,
     ) -> crate::entry::PhysicalRecoveryRootProtocolCounters {
-        self.root_protocol_counters
+        self.state.state().root_protocol_counters
     }
     pub const fn staging_layout(&self) -> &RecoveryStagingLayoutPlan {
-        &self.staging
+        &self.state.state().staging
     }
     pub const fn publication_plan(&self) -> &RecoveryPublicationPlan {
-        &self.publication
+        &self.state.state().publication
     }
     pub const fn quiescence_plan(&self) -> RecoveryQuiescencePlan {
-        self.quiescence
+        self.state.state().quiescence
     }
     pub const fn selected_sources(&self) -> &PhysicalSourceSelection {
-        self.selection.facts()
+        self.state.state().selection.facts()
     }
     pub const fn integrity_observation_count(&self) -> u64 {
-        self.integrity_trace.counters().attempted
+        self.state.state().integrity_trace.counters().attempted
     }
 
     pub fn integrity_observations(&self) -> &[crate::PhysicalRecoveryIntegrityObservation] {
-        self.integrity_trace.observations()
+        self.state.state().integrity_trace.observations()
     }
 
     pub fn cancellation_after_command(
@@ -141,9 +129,9 @@ impl PlannedPhysicalRecovery {
         command_ordinal: u64,
     ) -> Option<PhysicalRecoveryStagingCancellation> {
         let index = usize::try_from(command_ordinal).ok()?;
-        self.staging.commands().get(index)?;
+        self.state.state().staging.commands().get(index)?;
         Some(PhysicalRecoveryStagingCancellation::new(
-            self.publication.plan_identity(),
+            self.state.state().publication.plan_identity(),
             command_ordinal.checked_add(1)?,
         ))
     }
@@ -153,12 +141,14 @@ impl PlannedPhysicalRecovery {
         &self,
         stage: worth_store::physical_runtime::PhysicalRecoveryStagingCommandStage,
     ) {
-        self.coordination
+        self.state
+            .state()
+            .coordination
             .fail_signal_settlement_at_for_certification(stage);
     }
 
     pub fn cancel_before_execution(self) -> PhysicalRecoveryOutcome {
-        let Self {
+        let PlannedRecoveryState {
             authority,
             coordination,
             integrity,
@@ -166,7 +156,7 @@ impl PlannedPhysicalRecovery {
             root_protocol_counters,
             integrity_trace,
             ..
-        } = self;
+        } = self.state.into_state();
         assert!(coordination.shutdown_is_quiescent());
         let recovery_effects = authority.media.recovery_effect_count();
         let crate::entry::AdmittedPlatformAuthority { media, session, .. } = authority;
@@ -198,8 +188,8 @@ impl PlannedPhysicalRecovery {
     ) -> Result<super::StagedPhysicalRecovery, PhysicalRecoveryOutcome> {
         let admitted = cancellation
             .admit(
-                self.publication.plan_identity(),
-                self.staging.commands().len() as u64,
+                self.state.state().publication.plan_identity(),
+                self.state.state().staging.commands().len() as u64,
             )
             .map_or(
                 crate::orchestration::RecoveryStagingCancellation::Invalid,
@@ -212,45 +202,8 @@ impl PlannedPhysicalRecovery {
         self,
         cancellation: crate::orchestration::RecoveryStagingCancellation,
     ) -> Result<super::StagedPhysicalRecovery, PhysicalRecoveryOutcome> {
-        let Self {
-            authority,
-            coordination,
-            selection,
-            custody,
-            verified_selected_tier_custody,
-            discovery_counters,
-            freshness,
-            fates,
-            redo: _,
-            plan_cost: _,
-            planning_counters,
-            root_protocol_counters,
-            staging,
-            publication,
-            quiescence,
-            root_protocol_denials,
-            integrity_trace,
-            integrity,
-        } = self;
-        crate::orchestration::stage_recovery(crate::orchestration::RecoveryStagingInput {
-            authority,
-            coordination,
-            selection,
-            custody,
-            verified_selected_tier_custody,
-            discovery_counters,
-            root_protocol_denials,
-            integrity,
-            freshness,
-            fates,
-            planning_counters,
-            root_protocol_counters,
-            staging,
-            publication,
-            quiescence,
-            cancellation,
-            integrity_trace,
-        })
+        let input = staging_input::prepare(self.state, cancellation);
+        crate::orchestration::stage_recovery(input)
     }
 }
 mod basis;
@@ -259,9 +212,9 @@ pub(crate) use resident_memory::{PlanningMemoryDenial, PlanningResidentAllowance
 
 pub(crate) use basis::{
     derive_execution_basis, requires_successor_candidate, verified_historical_release_transition,
-    CandidateMaterializationCost, ExecutionBasisDenial, RecoveryObservedCandidateArtifact,
-    RecoveryObservedSuccessorCandidate, RecoverySelectedSegmentPage,
-    RecoverySelectedSourceInventory,
+    ExecutionBasis, ExecutionBasisDenial, ExecutionBasisState, ExpectationPayload,
+    RecoveryObservedCandidateArtifact, RecoveryObservedSuccessorCandidate,
+    RecoverySelectedSegmentPage, RecoverySelectedSourceInventory,
 };
 pub use basis::{
     RecoveryBaseImageAction, RecoveryBaseImagePlan, RecoveryPayloadManifestAction,

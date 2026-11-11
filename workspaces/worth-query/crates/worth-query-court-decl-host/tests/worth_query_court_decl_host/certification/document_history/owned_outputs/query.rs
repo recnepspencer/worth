@@ -9,7 +9,7 @@ pub struct Row {
 worth_query_structured_value_binding!(pub RowBinding for Row { identity: "owned-outputs.row.v1" });
 pub struct Parameters;
 worth_query_structured_value_binding!(pub ParametersBinding for Parameters { identity: "owned-outputs.parameters.v1" });
-macro_rules! scalar_read { ($module:ident, $entity:ident, $facts:ident, $key:ident, $value:ident, $semantic:literal, $query:literal, $binding:literal, $input:literal, $name:literal, $authorization:ident $(, $ability:expr)?) => { pub mod $module {
+macro_rules! scalar_read { ($module:ident, $entity:ident, $key:ident, $value:ident, $semantic:literal, $query:literal, $binding:literal, $input:literal, $name:literal, $authorization:ident $(, $ability:expr)?) => { pub mod $module {
 use super::*;
 use super::super::schema::{$entity as Entity, $key as Key, $value as Value};
 worth_query_application_query!(pub Query for Schema, identity $query, parameters ParametersBinding, result RowBinding, scope Entity => $semantic, name $name);
@@ -91,7 +91,6 @@ impl ApplicationQueryIntent<Schema> for Read {
 scalar_read!(
     model,
     Model,
-    ModelFacts,
     ModelKey,
     ModelValue,
     "Model",
@@ -106,7 +105,6 @@ pub mod producer_model;
 scalar_read!(
     member,
     Member,
-    MemberFacts,
     MemberKey,
     MemberValue,
     "Member",
@@ -120,7 +118,6 @@ scalar_read!(
 scalar_read!(
     first_output,
     FirstOutput,
-    FirstFacts,
     FirstKey,
     FirstValue,
     "FirstOutput",
@@ -133,7 +130,6 @@ scalar_read!(
 scalar_read!(
     second_output,
     SecondOutput,
-    SecondFacts,
     SecondKey,
     SecondValue,
     "SecondOutput",
@@ -146,7 +142,6 @@ scalar_read!(
 scalar_read!(
     member_public,
     Member,
-    MemberFacts,
     MemberKey,
     MemberValue,
     "Member",
@@ -159,7 +154,6 @@ scalar_read!(
 scalar_read!(
     child_output,
     ChildOutput,
-    ChildFacts,
     ChildKey,
     ChildValue,
     "ChildOutput",
@@ -172,7 +166,6 @@ scalar_read!(
 scalar_read!(
     first_discovery,
     FirstOutput,
-    FirstFacts,
     FirstKey,
     FirstValue,
     "FirstOutput",
@@ -186,7 +179,6 @@ scalar_read!(
 scalar_read!(
     first_member_discovery,
     FirstOutput,
-    FirstFacts,
     FirstKey,
     FirstValue,
     "FirstOutput",

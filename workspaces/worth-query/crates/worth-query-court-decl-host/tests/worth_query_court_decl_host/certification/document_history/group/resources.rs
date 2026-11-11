@@ -3,7 +3,7 @@ use super::*;
 use std::num::NonZeroUsize;
 use worth_query_host::facade::{
     application_entry::{WorthQueryDocumentHistoryCandidateDenial, WorthQueryHistoryEditDenial},
-    application_installation::WorthQueryInMemoryApplicationLimits,
+    application_installation::WorthQueryApplicationLimits,
     primary_graph::SignalConditionalEvaluationBudget,
     product::{WorthQueryProductBranchCreateError, WorthQueryProductBranchCreationDenial},
     runtime::WorthQueryApplicationQueryResourceProfile,
@@ -104,7 +104,7 @@ fn candidate_capacity(cause: &WorthQueryProductBranchCreateError) -> bool {
 
 #[test]
 fn candidate_capacity_refusal_preserves_the_reserved_group_and_one_freed_slot_serves_all_members() {
-    let limits = WorthQueryInMemoryApplicationLimits::new(
+    let limits = WorthQueryApplicationLimits::new(
         world_resources_with_capacity(
             256,
             4 * 1024 * 1024,

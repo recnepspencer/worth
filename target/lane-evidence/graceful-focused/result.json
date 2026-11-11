@@ -1,0 +1,8 @@
+{
+  "exit": 100,
+  "names": [
+    "process::application::host_oracle::graceful::graceful_home_oracle_seed_zero_preserves_relational_and_world_prefixes",
+    "process::application::host_oracle::graceful::graceful_home_oracle_seed_one_preserves_relational_and_world_prefixes"
+  ],
+  "note": "Owned committed Store/nextest configuration; no default-stack claim. Only the three exact nonignored process courts execute."
+}

@@ -51,11 +51,11 @@ fn sealed_plan_prepares_session_binds_work_and_aborts() {
             );
             assert_eq!(plan.contract().effect_closure(), ["mutation"]);
             assert_eq!(plan.counters().authority_checks(), 1);
-            let readmitted = plan
-                .readmit(&installed_running_phase)
+            let (grant, receiver) = plan
+                .admit_session(&installed_running_phase)
                 .expect("provider should readmit the plan");
-            let prepared = readmitted
-                .prepare()
+            let prepared = grant
+                .prepare(receiver, &installed_running_phase)
                 .expect("provider should prepare the session");
             let staged = prepared.bind_reads_and_effects();
             assert_eq!(

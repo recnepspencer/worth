@@ -23,7 +23,6 @@ use crate::basis::WorthQueryProductBranch;
 
 use crate::domain_computation::primary_graph::RequiredOutputDemandContext;
 use crate::domain_computation::primary_graph::RequiredOutputExecution;
-use crate::domain_computation::primary_graph::WorthQueryApplicationCommitReceipt;
 use crate::domain_computation::primary_graph::WorthQueryApplicationIdempotencyBinding;
 use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime;
 use crate::domain_computation::primary_graph::WorthQueryPrincipalResolutionMode;
@@ -44,6 +43,7 @@ pub(crate) mod denial;
 mod input_cutoff;
 mod input_reuse;
 mod installed;
+mod ordinary_authorization;
 pub(crate) mod outcome;
 mod post_authorization;
 pub(crate) mod prepared_plan;
@@ -119,7 +119,7 @@ pub(super) trait InstalledProducerExecutor<Schema>:
 
     fn readiness_record(
         &self,
-        receipt: &WorthQueryApplicationCommitReceipt,
+        receipt: crate::domain_computation::primary_graph::application_output_demand::OutputPublicationView<'_>,
     ) -> Result<
         worth_runtime_bridge::facade::RelationalBridgeRecordIdentityParts,
         WorthQueryOutputDemandDenial,
@@ -169,7 +169,7 @@ where
 
     fn readiness_record(
         &self,
-        receipt: &WorthQueryApplicationCommitReceipt,
+        receipt: crate::domain_computation::primary_graph::application_output_demand::OutputPublicationView<'_>,
     ) -> Result<
         worth_runtime_bridge::facade::RelationalBridgeRecordIdentityParts,
         WorthQueryOutputDemandDenial,
@@ -289,3 +289,5 @@ where
         ))
     }
 }
+
+pub use unpublished::PendingProducerPublication;

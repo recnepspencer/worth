@@ -23,7 +23,7 @@ fn scope(input: &Intent) -> String {
 worth_query_mutation_binding!(pub Binding for Intent, schema Schema,
     identity "owned-outputs.edit-model.v1", input Input, operation PatchModel, result ResultBinding,
     idempotency String, identity "owned-outputs.edit-model.v1", decision WorthQueryInvariantMutationTarget<Schema, Model>, denial DenialBinding,
-    handler identity "owned-outputs.edit-model.v1", program required, outputs NoApplicationMutationOutputs,
+    handler identity "owned-outputs.edit-model.v1", program required, inspection_disclosure predecessor::inspection::Disclosure, outputs NoApplicationMutationOutputs,
     principal Actor, mapping Mapping, principal_entity Principal, principal_identity u64, identity_binding U64ApplicationValueBinding,
     scope ModelKey, field ModelKey::at("ModelKey"), value scope,
 );

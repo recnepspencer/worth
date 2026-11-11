@@ -1,0 +1,82 @@
+[
+  {
+    "log": "target/lane-evidence/landing2a-original-observation-boundary.log",
+    "command": "python scripts/application_build.py cargo run --manifest-path tools/boundary-check/Cargo.toml -- --root .",
+    "head": "559e5da598bf2f84bb318fe7c9db63c343f2e4c9",
+    "clean": "false",
+    "exit": "1",
+    "passed": "0",
+    "failed": "0",
+    "ignored": "0"
+  },
+  {
+    "log": "target/lane-evidence/landing2a-original-observation-clippy.log",
+    "command": "python scripts/application_build.py cargo clippy -p worth-relational -p worth-court-relational-certification --all-targets",
+    "head": "559e5da598bf2f84bb318fe7c9db63c343f2e4c9",
+    "clean": "false",
+    "exit": "0",
+    "passed": "0",
+    "failed": "0",
+    "ignored": "0"
+  },
+  {
+    "log": "target/lane-evidence/landing2a-original-observation-context.log",
+    "command": "python scripts/application_build.py cargo run --manifest-path tools/agent-context/Cargo.toml -- check",
+    "head": "559e5da598bf2f84bb318fe7c9db63c343f2e4c9",
+    "clean": "false",
+    "exit": "0",
+    "passed": "0",
+    "failed": "0",
+    "ignored": "0"
+  },
+  {
+    "log": "target/lane-evidence/landing2a-original-observation-fmt.log",
+    "command": "python scripts/application_build.py cargo fmt -p worth-relational -p worth-court-relational-certification",
+    "head": "559e5da598bf2f84bb318fe7c9db63c343f2e4c9",
+    "clean": "false",
+    "exit": "0",
+    "passed": "0",
+    "failed": "0",
+    "ignored": "0"
+  },
+  {
+    "log": "target/lane-evidence/landing2a-original-observation-functions.log",
+    "command": "python scripts/quality/scrutinize_rust_functions.py --dirty .",
+    "head": "559e5da598bf2f84bb318fe7c9db63c343f2e4c9",
+    "clean": "false",
+    "exit": "0",
+    "passed": "0",
+    "failed": "0",
+    "ignored": "0"
+  },
+  {
+    "log": "target/lane-evidence/landing2a-original-observation-line-caps.log",
+    "command": "\"C:/Program Files/Git/bin/bash.exe\" scripts/ci/check_workspace_rust_line_caps.sh dirty",
+    "head": "559e5da598bf2f84bb318fe7c9db63c343f2e4c9",
+    "clean": "false",
+    "exit": "0",
+    "passed": "0",
+    "failed": "0",
+    "ignored": "0"
+  },
+  {
+    "log": "target/lane-evidence/landing2a-original-observation-owner.log",
+    "command": "python target/lane-evidence/landing2a_original_observation.py native",
+    "head": "559e5da598bf2f84bb318fe7c9db63c343f2e4c9",
+    "clean": "false",
+    "exit": "0",
+    "passed": "1",
+    "failed": "0",
+    "ignored": "0"
+  },
+  {
+    "log": "target/lane-evidence/landing2a-original-observation-public.log",
+    "command": "python target/lane-evidence/landing2a_original_observation.py root",
+    "head": "559e5da598bf2f84bb318fe7c9db63c343f2e4c9",
+    "clean": "false",
+    "exit": "0",
+    "passed": "1",
+    "failed": "0",
+    "ignored": "0"
+  }
+]

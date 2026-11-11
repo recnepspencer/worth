@@ -7,6 +7,7 @@ use worth_query_execution::court_doors_for_test::domain_computation::primary_gra
 pub struct WorthQueryRecoveryHandleBindingAxisProbe {
     pub binding: WorthQueryRecoveryHandleBinding,
 }
+
 impl WorthQueryRecoveryHandleBindingAxisProbe {
     pub fn real() -> Self {
         static BASELINE: std::sync::OnceLock<WorthQueryRecoveryHandleBinding> =

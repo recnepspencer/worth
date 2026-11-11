@@ -76,7 +76,9 @@ fn canonical_consumers_resolve_around_the_real_root_to_route_cutover() {
                 .expect_err("fork rejects instead of waiting on an active publication"),
             crate::runtime::RelationalRuntimeForkDenial::PublicationInFlight
         );
-        let checkpoint_error = crate::tests::support::checkpoint_durably(execution, &runtime)
+        let checkpoint_error = runtime
+            .durability_authority()
+            .checkpoint(execution)
             .expect_err("checkpoint rejects instead of waiting on an active publication");
         assert_eq!(
             match checkpoint_error {
@@ -137,7 +139,9 @@ fn canonical_consumers_resolve_around_the_real_root_to_route_cutover() {
         .patches
         .iter()
         .any(|patch| patch.position == performed.patch_position()));
-    let checkpoint_error = crate::tests::support::checkpoint_durably(execution, &runtime)
+    let checkpoint_error = runtime
+        .durability_authority()
+        .checkpoint(execution)
         .expect_err("performed publication still requires settlement");
     assert_eq!(
         match checkpoint_error {
@@ -150,7 +154,9 @@ fn canonical_consumers_resolve_around_the_real_root_to_route_cutover() {
         .settle_performed_publication(performed)
         .expect("performed publication settles explicitly");
     release_test_commit_snapshot(&runtime, &committed);
-    crate::tests::support::checkpoint_durably(execution, &runtime)
+    runtime
+        .durability_authority()
+        .checkpoint(execution)
         .expect("checkpoint admits after settlement");
 }
 
@@ -177,8 +183,8 @@ fn observe_canonical_consumers(
             .replay()
             .canonical_commit_envelope(execution, commit_id)
             .unwrap()
-            .map(|envelope| envelope.as_ref().clone()),
-        Some(envelope.clone())
+            .as_deref(),
+        Some(envelope)
     );
     let stream = runtime
         .publication()

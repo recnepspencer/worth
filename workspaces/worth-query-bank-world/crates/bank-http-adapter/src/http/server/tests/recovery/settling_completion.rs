@@ -206,7 +206,7 @@ async fn settling_completion_asks_to_retry_later_then_answers_already_completed(
     assert!(
         matches!(
             commit_replay,
-            crate::http::protocol::BankHttpMutationOutcome::RailRecoveryReady {
+            crate::http::protocol::BankHttpMutationOutcome::RecordedRailRecoveryReady {
                 recovery_status: BankHttpRecoveryStatus::Completed,
                 ..
             }

@@ -29,12 +29,12 @@ pub(super) fn install() -> World {
         Arc,
     };
     use worth_query_host::facade::application_installation::{
-        in_memory, WorthQueryInMemoryApplicationLimits,
+        in_memory, WorthQueryApplicationLimits,
     };
     let calls = Arc::new(AtomicUsize::new(0));
     let mut invariant = None;
     let mut binding = None;
-    let limits = WorthQueryInMemoryApplicationLimits::new(
+    let limits = WorthQueryApplicationLimits::new(
         super::resources::world_resources(),
         WorthQueryApplicationQueryResourceProfile::new(
             std::num::NonZeroUsize::new(32).expect("concurrent graph work is non-zero"),

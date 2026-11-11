@@ -81,7 +81,8 @@ fn run() {
             assert_eq!(result.revision, 2);
             receipt.commit_reference().version_id.as_u64()
         }
-        WorthQuerySourceCompletion::Recovered { .. } => {
+        WorthQuerySourceCompletion::Recovered { .. }
+        | WorthQuerySourceCompletion::Recorded { .. } => {
             panic!("a new key must produce the actual handler result")
         }
     };

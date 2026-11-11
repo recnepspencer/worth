@@ -65,6 +65,8 @@ impl WorthQueryPrimaryGraphApplicationAttemptStore {
         &mut self,
         key: WorthQueryApplicationAttemptLookupKey,
     ) -> (u64, WorthQueryApplicationAttemptState) {
+        // Keep the reserved index slot and completion key while checking out the
+        // phase; do not move the large Native candidate through B-tree edits.
         let slot = self
             .attempts
             .get_mut(&key)

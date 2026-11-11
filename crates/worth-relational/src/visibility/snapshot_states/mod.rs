@@ -1,12 +1,16 @@
 mod resident_basis;
 pub(crate) use resident_basis::ResidentVisibilitySnapshotBasis;
+mod cache_retirement;
 mod exact_state_building;
 mod historical_basis;
 mod historical_state_building;
 mod pin_assembly;
 mod read_views;
 mod resolution;
+mod retirement;
+pub(crate) use cache_retirement::SnapshotStateRetirement;
 mod state;
+pub(crate) use retirement::VisibilitySnapshotBasisRetirement;
 
 pub(crate) use exact_state_building::build_visibility_state;
 pub(crate) use historical_basis::HistoricalVisibilityBasis;

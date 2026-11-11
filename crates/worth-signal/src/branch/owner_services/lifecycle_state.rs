@@ -1,3 +1,5 @@
+mod initial_empty_stop;
+pub(crate) use initial_empty_stop::{SignalPreparedOwnerStopGate, SignalStoppedOwnerGuard};
 use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 use std::sync::{Arc, Condvar, Mutex, MutexGuard};
 
@@ -380,6 +382,9 @@ fn admission_count(state: u64) -> usize {
     (state & OWNER_COUNT_MASK) as usize
 }
 
+#[cfg(test)]
+#[path = "lifecycle_state_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;
 #[cfg(test)]
 #[path = "lifecycle_state/poison_observation.rs"]
 mod poison_observation;

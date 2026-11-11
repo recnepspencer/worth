@@ -44,7 +44,7 @@ fn validate_lowered_plan_preserves_strategy_provenance_and_commit_boundary_summa
     );
     assert_eq!(validated.validated_against_version_id().0, 0);
     assert_eq!(
-        validated.prepared.plan.view().commands(),
+        validated.state.prepared.plan.view().commands(),
         &lowered_merged_plan
     );
     assert_eq!(validated.footprint(), &lowered_footprint);

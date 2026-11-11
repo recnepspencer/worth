@@ -21,6 +21,7 @@ pub use maintenance::MaintenanceAllocationGrant;
 
 #[derive(Debug)]
 pub struct OperationAllocationGrant {
+    pub(crate) armed: bool,
     pub(crate) owner: Arc<PoolInner>,
     pub(crate) scope: PhysicalOperationAllocationScope,
     pub(crate) bytes: u64,
@@ -43,6 +44,30 @@ pub struct OperationAllocationObservation {
 }
 
 impl OperationAllocationGrant {
+    /// Discharge this original reservation while retaining its inert owner.
+    /// Refusal returns the SAME active reservation without physical effects.
+    pub fn try_retire_for_request(
+        self,
+        request: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> Result<crate::RetiredOperationAllocation, (Self, crate::PhysicalResidencyRetirementDenial)>
+    {
+        let mut page = match super::observation::PreparedTracePage::new(request) {
+            Ok(page) => page,
+            Err(cause) => {
+                return Err((
+                    self,
+                    crate::PhysicalResidencyRetirementDenial::Execution(cause),
+                ))
+            }
+        };
+        let owner = Arc::clone(&self.owner);
+        let mut held = Some(self);
+        match owner.retire_operation(&mut held, request, &mut page) {
+            Ok(retired) => Ok(retired),
+            Err(cause) => Err((held.expect("refusal preserves original operation"), cause)),
+        }
+    }
+
     /// Resize only this pool-issued reservation; a failed growth changes no charge.
     pub fn try_resize(&mut self, target_bytes: u64) -> Result<(), super::PhysicalResidencyDenial> {
         if target_bytes == self.bytes {
@@ -140,7 +165,9 @@ impl Drop for OperationAllocationGrant {
             0,
             "operation allocation grant dropped with a live named allocation use"
         );
-        self.owner.release_operation(self.scope, self.bytes);
+        if self.armed {
+            self.owner.release_operation(self.scope, self.bytes);
+        }
     }
 }
 

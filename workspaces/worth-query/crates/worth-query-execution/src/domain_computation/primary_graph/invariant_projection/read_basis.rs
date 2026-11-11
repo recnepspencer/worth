@@ -12,7 +12,7 @@ use worth_relational::facade::{
 };
 
 pub enum NativeProjectionRead<'a> {
-    Committed(&'a mut RelationalRuntime),
+    Committed(&'a RelationalRuntime),
     Applied {
         before: &'a RelationalPinnedRead,
         candidate: &'a RelationalPinnedRead<RelationalAppliedCandidateReadIdentity>,
@@ -66,12 +66,6 @@ impl NativeProjectionRead<'_> {
         }
     }
     pub(super) fn committed_runtime(&self) -> Option<&RelationalRuntime> {
-        match self {
-            Self::Committed(runtime) => Some(runtime),
-            Self::Applied { .. } => None,
-        }
-    }
-    pub(super) fn committed_runtime_mut(&mut self) -> Option<&mut RelationalRuntime> {
         match self {
             Self::Committed(runtime) => Some(runtime),
             Self::Applied { .. } => None,

@@ -98,7 +98,7 @@ where
     let resolution = graph.retain_entity_resolution_context();
     graph
         .integration_handle()
-        .with_runtime_mut(execution, |relational| {
+        .with_runtime(execution, |relational| {
             let snapshot = security.snapshot_handle();
             authorization
                 .validate_currentness_in(
@@ -170,7 +170,7 @@ where
                     .map_err(InspectionAdmissionDenial::Capability)?;
                 graph
                     .integration_handle()
-                    .with_runtime_mut(execution, |relational| {
+                    .with_runtime(execution, |relational| {
                         capability
                             .validate_currentness_in(
                                 execution,

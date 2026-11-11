@@ -165,15 +165,13 @@ fn recorded_bank_correction_preserves_intervening_money_after_normal_close() {
             .prepare()
             .unwrap();
         let WorthQueryApplicationCorrectionPreparation::Settled(
-            WorthQueryApplicationMutationOutcome::AlreadyCommitted(replayed),
+            WorthQueryApplicationMutationOutcome::RecoveredCommitted(replayed),
         ) = replay
         else {
             panic!("exact response-loss retry must recover the original reversal");
         };
-        assert_eq!(replayed.commit_reference(), receipt.commit_reference());
-        assert_eq!(
-            replayed.committed_product_publication().composite_commit(),
-            receipt.committed_product_publication().composite_commit()
+        worth_query_bank_testkit_server::facade::recorded_commit_axes::assert_agrees(
+            &replayed, &receipt,
         );
         assert_eq!(world.balances(), (93, 7));
         assert_eq!(world.activity(world.source), source_entries);

@@ -19,10 +19,12 @@ use super::{
 impl<'runtime, 'principal, 'scope>
     BankAdvancedApprovedPaymentWorkflow<'runtime, 'principal, 'scope>
 {
+    #[allow(clippy::too_many_arguments)]
     pub fn accept_native_effect(
         &self,
         instance: PublishedWorkflowInstanceRef,
         required: &RequiredWorkflowOperation,
+        original: &super::BankApprovedPaymentPerformedOperation,
         authority: ApprovePayment,
         operation: ApprovePayment,
         perform_key: &BankIdempotencyKey,
@@ -46,7 +48,7 @@ impl<'runtime, 'principal, 'scope>
             .idempotency(command_key)
             .prepare_workflow_advance(self.runtime.approved_payment_workflow_runtime(), instance)
             .map_err(BankApprovedPaymentWorkflowError::Advance)?
-            .accept_operation_from_owner(required, operation)
+            .accept_operation_from_owner(required, &original.receipt, operation)
             .map_err(|denial| {
                 BankApprovedPaymentWorkflowError::OperationOwnerAcceptance(Box::new(denial))
             })
@@ -55,6 +57,7 @@ impl<'runtime, 'principal, 'scope>
     pub fn prepare_native_effect_recovery(
         &self,
         required: &RequiredWorkflowOperation,
+        original: &super::BankApprovedPaymentPerformedOperation,
         operation: ApprovePayment,
         perform_key: &BankIdempotencyKey,
     ) -> Result<BankApprovedPaymentPreparedRecovery<'runtime>, BankApprovedPaymentWorkflowError>
@@ -70,7 +73,7 @@ impl<'runtime, 'principal, 'scope>
             )
             .map_err(BankApprovedPaymentWorkflowError::OperationBinding)?
             .advanced()
-            .prepare_workflow_operation_recovery_from_owner(required)
+            .prepare_workflow_operation_recovery_from_owner(required, &original.receipt)
             .map_err(|denial| {
                 BankApprovedPaymentWorkflowError::OperationRecoveryPreparation(Box::new(denial))
             })
@@ -81,6 +84,7 @@ impl<'runtime, 'principal, 'scope>
         &self,
         instance: PublishedWorkflowInstanceRef,
         required: &RequiredWorkflowOperation,
+        original: &super::BankApprovedPaymentPerformedOperation,
         authority: ApprovePayment,
         operation: ApprovePayment,
         perform_key: &BankIdempotencyKey,
@@ -105,7 +109,7 @@ impl<'runtime, 'principal, 'scope>
             .idempotency(command_key)
             .prepare_workflow_advance(self.runtime.approved_payment_workflow_runtime(), instance)
             .map_err(BankApprovedPaymentWorkflowError::Advance)?
-            .accept_recovered_operation_from_owner(required, operation, recovery)
+            .accept_recovered_operation_from_owner(required, &original.receipt, operation, recovery)
             .map_err(|denial| {
                 BankApprovedPaymentWorkflowError::OperationOwnerAcceptance(Box::new(denial))
             })

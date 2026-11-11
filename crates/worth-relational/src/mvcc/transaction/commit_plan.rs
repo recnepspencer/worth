@@ -6,7 +6,7 @@ use crate::authority::intent_merge::{
 };
 use crate::capabilities::{InstrumentationSource, RuntimeConfigSource};
 use crate::storage::overlay::CurrentPartitionAccess;
-use crate::transactions::data::{CommitConflict, ConflictClass, MergedCommitPlan, MutationIntent};
+use crate::transactions::data::{CommitConflict, ConflictClass, MergedCommitPlan};
 use std::time::Instant;
 
 #[derive(Debug, Clone, Copy, Default)]
@@ -29,9 +29,10 @@ impl crate::mvcc::BranchBoundRelationalTransaction {
         &self,
         runtime: &crate::runtime::RelationalPreparationRuntime,
         current_state: &impl CurrentPartitionAccess,
-        intents: Vec<MutationIntent>,
-    ) -> Result<MergedCommitPlan, CommitConflict> {
-        self.build_merged_plan_for_state_with_timing(runtime, current_state, intents)
+        intents: super::OwnedNormalizedPlan,
+        request: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> Result<super::OwnedNormalizedPlan, crate::transactions::data::TransactionCommitError> {
+        self.build_merged_plan_for_state_with_timing(runtime, current_state, intents, request)
             .map(|(plan, _)| plan)
     }
 
@@ -39,15 +40,19 @@ impl crate::mvcc::BranchBoundRelationalTransaction {
         &self,
         runtime: &crate::runtime::RelationalPreparationRuntime,
         current_state: &impl CurrentPartitionAccess,
-        mut intents: Vec<MutationIntent>,
-    ) -> Result<(MergedCommitPlan, MergedPlanPreparationTiming), CommitConflict> {
-        let created_entities = collect_created_entity_refs(&intents);
-        let deleted_relations = collect_deleted_relation_ids(&intents);
+        mut intents: super::OwnedNormalizedPlan,
+        request: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> Result<
+        (super::OwnedNormalizedPlan, MergedPlanPreparationTiming),
+        crate::transactions::data::TransactionCommitError,
+    > {
+        let created_entities = collect_created_entity_refs(&intents.plan().merged_intents);
+        let deleted_relations = collect_deleted_relation_ids(&intents.plan().merged_intents);
         let validation_started = Instant::now();
-        for intent in &intents {
+        for intent in &intents.plan().merged_intents {
             validate_intent(
                 current_state,
-                self.schema_authority.as_ref(),
+                self.mutation_schema_authority().as_ref(),
                 runtime.runtime_config().storage.cross_context_policy,
                 runtime.runtime_instrumentation(),
                 &created_entities,
@@ -57,25 +62,30 @@ impl crate::mvcc::BranchBoundRelationalTransaction {
         }
         let validation_micros = validation_started.elapsed().as_micros() as u64;
         let sort_started = Instant::now();
-        intents.sort_by_key(canonical_intent_key);
+        intents.intents_mut().sort_by_key(canonical_intent_key);
         let sort_micros = sort_started.elapsed().as_micros() as u64;
         let conflict_started = Instant::now();
-        detect_conflicting_updates(&intents)?;
-        let plan = MergedCommitPlan {
-            transaction_id: self.transaction_id,
-            merged_intents: intents,
-        };
+        detect_conflicting_updates(&intents.plan().merged_intents)?;
         if self.authored_coupling.is_some() {
-            let mut prepared = self
+            let needs_copy = self
                 .prepared_coupled_commands
                 .lock()
-                .unwrap_or_else(|error| error.into_inner());
-            if prepared.is_none() {
-                *prepared = Some(plan.clone());
+                .unwrap_or_else(|e| e.into_inner())
+                .is_none();
+            if needs_copy {
+                let prepared =
+                    super::OwnedNormalizedPlan::shared_copy_for_request(intents.plan(), request)?;
+                let mut slot = self
+                    .prepared_coupled_commands
+                    .lock()
+                    .unwrap_or_else(|e| e.into_inner());
+                if slot.is_none() {
+                    *slot = Some(prepared);
+                }
             }
         }
         Ok((
-            plan,
+            intents,
             MergedPlanPreparationTiming {
                 validation_micros,
                 sort_micros,
@@ -87,41 +97,33 @@ impl crate::mvcc::BranchBoundRelationalTransaction {
     pub(crate) fn normalized_intents_for_merge(
         &mut self,
         runtime: &crate::runtime::RelationalPreparationRuntime,
-        allocation_policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
-    ) -> Result<Vec<MutationIntent>, CommitConflict> {
-        self.normalize_intents_for_merge(runtime, allocation_policy)?;
-        Ok(self
-            .batches()
-            .iter()
-            .flat_map(|batch| batch.intents.iter().cloned())
-            .collect())
+        request: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> Result<super::OwnedNormalizedPlan, crate::transactions::data::TransactionCommitError> {
+        self.normalize_intents_for_merge(runtime, request)?;
+        super::OwnedNormalizedPlan::copy_batches(self.transaction_id, self.batches(), request)
     }
 
     fn normalize_intents_for_merge(
         &mut self,
         runtime: &crate::runtime::RelationalPreparationRuntime,
-        allocation_policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
-    ) -> Result<(), CommitConflict> {
-        allocation_policy.check_live().map_err(|denial| {
-            super::RelationalTransactionStagingDenial::from(denial).into_conflict()
-        })?;
-        let client_key_symbol_policy = runtime.runtime_config().identity.client_key_symbol_policy;
-        if !client_key_symbol_policy.interns_requested_strings() {
+        request: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> Result<(), crate::transactions::data::TransactionCommitError> {
+        request
+            .consult()
+            .map_err(super::normalized_plan::request_denial)?;
+        let policy = runtime.runtime_config().identity.client_key_symbol_policy;
+        if !policy.interns_requested_strings() {
             return Ok(());
         }
-
         let mut result = Ok(());
         runtime.services.symbols.normalize_client_keys(|symbols| {
-            let (entries, outcome) = self.overlay.normalize_client_keys(
-                &mut self.footprint,
-                symbols,
-                client_key_symbol_policy,
-                allocation_policy,
-            );
+            let (entries, outcome) =
+                self.overlay
+                    .normalize_client_keys(&mut self.footprint, symbols, policy, request);
             result = outcome;
             entries
         });
-        result.map_err(super::RelationalTransactionStagingDenial::into_conflict)
+        result
     }
 
     pub(crate) fn ensure_runtime_affinity(

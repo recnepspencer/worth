@@ -38,7 +38,9 @@ fn genuine_pending_effect_backing_moves_through_serving_and_checkpoint() {
                     .owned_heap_bytes()
                     .expect("actual selected checkpoint backing")
             });
-            let consumed_bytes = fingerprint_bytes + checkpoint_bytes;
+            let serving_bytes = core.serving_evidence_backing_bytes().unwrap();
+            assert_eq!(serving_bytes, worth_store::physical_runtime::PhysicalRecoveryCoordinationCapacity::serving_evidence_backing_bytes());
+            let consumed_bytes = serving_bytes + fingerprint_bytes + checkpoint_bytes;
 
             let before_seal = allocations.snapshot();
             let seal = core

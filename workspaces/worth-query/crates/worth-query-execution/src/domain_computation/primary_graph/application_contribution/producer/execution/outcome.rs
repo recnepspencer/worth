@@ -31,29 +31,14 @@ pub(in crate::domain_computation::primary_graph::application_contribution::produ
 #[derive(Debug)]
 pub struct ProducerCommitReceipt {
     receipt: WorthQueryApplicationCommitReceipt,
-    publication: CommitPublication,
-}
-
-#[derive(Debug)]
-enum CommitPublication {
-    PublishedNow,
-    PreviouslyPublished,
 }
 
 impl ProducerCommitReceipt {
-    pub(in crate::domain_computation::primary_graph::application_contribution::producer) fn published_in_this_advance(
-        &self,
-    ) -> bool {
-        matches!(self.publication, CommitPublication::PublishedNow)
-    }
-
     pub(in crate::domain_computation::primary_graph::application_contribution::producer) fn record_publication(
         self,
         record: impl FnOnce(),
     ) -> Self {
-        if self.published_in_this_advance() {
-            record();
-        }
+        record();
         self
     }
 
@@ -142,6 +127,11 @@ pub fn commit_receipt(
         return Err(refused);
     }
     match outcome {
+        WorthQueryApplicationCommitOutcome::RecoveredCommitted(receipt) => Err(denial(
+            WorthQueryOutputDemandDenialKind::ProducerUnavailable,
+            identity.to_owned(),
+        )
+        .with_recovered_publication(receipt)),
         WorthQueryApplicationCommitOutcome::CleanupRequired(cleanup) => {
             let denial = WorthQueryOutputDemandDenial::new(
                 WorthQueryOutputDemandDenialKind::ManagedCleanupRequired(
@@ -151,15 +141,8 @@ pub fn commit_receipt(
             );
             Err(denial.with_managed_cleanup(cleanup))
         }
-        WorthQueryApplicationCommitOutcome::Committed(receipt) => Ok(ProducerCommitReceipt {
-            receipt,
-            publication: CommitPublication::PublishedNow,
-        }),
-        WorthQueryApplicationCommitOutcome::AlreadyCommitted(receipt) => {
-            Ok(ProducerCommitReceipt {
-                receipt,
-                publication: CommitPublication::PreviouslyPublished,
-            })
+        WorthQueryApplicationCommitOutcome::Committed(receipt) => {
+            Ok(ProducerCommitReceipt { receipt })
         }
         WorthQueryApplicationCommitOutcome::Deferred(deferred) => {
             match deferred.into_prerequisite_denial() {
@@ -218,6 +201,20 @@ pub fn commit_receipt(
             .with_custom_invariant_denial(commit_denial.custom_invariant_denial().cloned())
             .with_producer_requirement_denial(requirement))
         }
+        WorthQueryApplicationCommitOutcome::ProductPreparationPending(pending) => Err(denial(
+            WorthQueryOutputDemandDenialKind::ProducerUnavailable,
+            identity.to_owned(),
+        )
+        .with_uncommitted(
+            graph::WorthQueryApplicationUncommitted::ProductPreparationPending(pending),
+        )),
+        WorthQueryApplicationCommitOutcome::ProductPreparationRefused(refused) => Err(denial(
+            WorthQueryOutputDemandDenialKind::ProducerUnavailable,
+            identity.to_owned(),
+        )
+        .with_uncommitted(
+            graph::WorthQueryApplicationUncommitted::ProductPreparationRefused(refused),
+        )),
         WorthQueryApplicationCommitOutcome::ProductUnpublished(outcome) => Err(denial(
             WorthQueryOutputDemandDenialKind::ProducerUnavailable,
             identity.to_owned(),
@@ -264,7 +261,7 @@ fn refused_preflight(
         },
         WorthQueryApplicationCommitOutcome::CleanupRequired(_)
         | WorthQueryApplicationCommitOutcome::Committed(_)
-        | WorthQueryApplicationCommitOutcome::AlreadyCommitted(_)
+        | WorthQueryApplicationCommitOutcome::RecoveredCommitted(_)
         | WorthQueryApplicationCommitOutcome::ProductStale(_)
         | WorthQueryApplicationCommitOutcome::ProductUnpublished(_)
         | WorthQueryApplicationCommitOutcome::Stale(_)
@@ -272,7 +269,9 @@ fn refused_preflight(
         | WorthQueryApplicationCommitOutcome::TimedOut
         | WorthQueryApplicationCommitOutcome::Denied(_)
         | WorthQueryApplicationCommitOutcome::Aborted
-        | WorthQueryApplicationCommitOutcome::Indeterminate(_) => return None,
+        | WorthQueryApplicationCommitOutcome::Indeterminate(_)
+        | WorthQueryApplicationCommitOutcome::ProductPreparationPending(_)
+        | WorthQueryApplicationCommitOutcome::ProductPreparationRefused(_) => return None,
     };
     let kind = match stop {
         Stop::SelectedSourceMismatch => Some(WorthQueryOutputDemandDenialKind::PublicationStale),

@@ -11,9 +11,9 @@ use worth_query_declaration::facade::{
 };
 use worth_query_installation::facade::WorthQueryInstalledApplicationWorkflowSpec;
 
-use super::{WorthQueryWorkflowApplicationRuntime, WorthQueryWorkflowRuntimeBindingDenial};
+use super::WorthQueryWorkflowRuntimeBindingDenial;
 
-impl<Schema, Spec, Program> WorthQueryWorkflowApplicationRuntime<Schema, Spec, Program>
+impl<Schema, Spec> super::configuration::WorthQueryWorkflowRuntimeConfiguration<Schema, Spec>
 where
     Schema: ApplicationSchema,
     Spec: ApplicationWorkflowSpec<Schema = Schema>,
@@ -25,8 +25,9 @@ where
     /// program the roster carries and has not retired. Each program has one
     /// vocabulary, so the initial program and an already supported program are
     /// refused. Every refusal returns the original installed spec alongside its denial.
-    pub fn support_workflow_spec(
+    pub fn support_workflow_spec<Program>(
         &mut self,
+        runtime: &mut super::WorthQueryProgramApplicationRuntime<Schema, Program>,
         workflow: WorthQueryInstalledApplicationWorkflowSpec<Schema, Spec>,
     ) -> Result<
         (),
@@ -36,11 +37,12 @@ where
         ),
     > {
         let binding = (|| {
-            if workflow.schema_binding() != &self.runtime.installed_schema().binding_identity() {
+            self.admit_receiver(runtime)?;
+            if workflow.schema_binding() != &runtime.installed_schema().binding_identity() {
                 return Err(WorthQueryWorkflowRuntimeBindingDenial::ForeignSchema);
             }
             let revision = workflow.program_revision();
-            if revision == self.runtime.installed_program().revision()
+            if revision == runtime.installed_program().revision()
                 || self
                     .supported
                     .iter()
@@ -48,24 +50,21 @@ where
             {
                 return Err(WorthQueryWorkflowRuntimeBindingDenial::AlreadySupported);
             }
-            let rostered = self
-                .runtime
+            let rostered = runtime
                 .backing
                 .supported
                 .iter()
                 .any(|rostered| rostered.revision() == revision);
-            let present = self
-                .runtime
+            let present = runtime
                 .backing
-                .runtime
+                .runtime()
                 .installed_program_support()
                 .and_then(|support| support.present(revision))
                 .is_some();
             if !(rostered && present) {
                 return Err(WorthQueryWorkflowRuntimeBindingDenial::ForeignProgram);
             }
-            self.runtime
-                .install_workflow_registration(&workflow, &self.authentication)?;
+            runtime.install_workflow_registration(&workflow, &self.authentication)?;
             Ok(())
         })();
         if let Err(denial) = binding {

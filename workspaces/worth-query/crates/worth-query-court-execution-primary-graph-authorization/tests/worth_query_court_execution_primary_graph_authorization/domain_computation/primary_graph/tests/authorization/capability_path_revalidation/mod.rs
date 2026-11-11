@@ -137,7 +137,7 @@ pub fn replace_grantor_with_custodian(
         .kind_for_test();
     let handle = graph.integration_handle_for_test();
     let selected = world.selected_product(&(phase_custody).test_host_request_for_test());
-    let grantor = handle.with_runtime_mut_for_test(execution, |runtime| {
+    let grantor = handle.with_runtime_for_test(execution, |runtime| {
         let snapshot = selected.application_basis_for_test().snapshot_handle();
         runtime
             .read_truth()

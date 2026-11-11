@@ -16,7 +16,7 @@ fn parts() -> ApplicationSigningSupersessionParts {
         subject: coordinates,
         actor: coordinates,
         operation: "Save".into(),
-        logical_request: [7; 32],
+        logical_request: worth_foundational::CanonicalDigestId::new([7; 32]),
         changed_dependencies: vec![ApplicationFieldBindingLocus::new(
             "Item",
             "Facts",

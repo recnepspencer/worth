@@ -1,0 +1,300 @@
+//! Distinct cold-recovered custody; it never fabricates a live Native result.
+use crate::branch::ProductBranchObservation;
+use crate::durability::{
+    AdmittedWorldOpenAttempt, WorldCommittedPublication, WorldDurableArtifact,
+    WorldDurableMediumBinding,
+};
+use crate::identity::{
+    CompositeCommitIdentity, CompositePublicationAttemptIdentity,
+    ProductUnpublishedOwnerEffectsIdentity,
+};
+use std::sync::{Arc, Mutex};
+use worth_proof::RelationalPublicationReadmitted;
+use worth_relational::facade::durability::{
+    ReadmittedRelationalAssociatedEffect, RelationalRecoveredPublicationCustody,
+};
+
+pub(crate) mod continuation;
+mod observation;
+mod release;
+mod release_preparation;
+pub(crate) use continuation::PreparedRecoveredPublication;
+pub use continuation::{WorldRecoveredContinuationDenial, WorldRecoveredContinuationOutcome};
+pub use release::WorldRecoveredReleaseOutcome;
+pub(crate) use release_preparation::RecoveredReleaseDestination;
+mod continuation_loan;
+mod home_transition;
+pub(crate) use continuation_loan::RecoveredNativeContinuationLoan;
+pub(crate) use home_transition::{
+    ContinuationCommon, OriginalContinuationAdvance, OriginalHomeTransitionContinuation,
+    PreparedOriginalContinuation,
+};
+
+#[derive(Debug)]
+pub(crate) enum RecoveredNativeCustody {
+    OpenOnly,
+    Relational(Arc<RelationalPublicationReadmitted<RelationalRecoveredPublicationCustody>>),
+    Prepared(Arc<crate::history::PreparedReadmittedPublicationRecord>),
+    Continuing(Box<OriginalHomeTransitionContinuation>),
+    Working,
+    Released,
+}
+
+#[derive(Debug, Clone)]
+pub(crate) enum RecoveredNativeObservation {
+    Original(Arc<RelationalPublicationReadmitted<RelationalRecoveredPublicationCustody>>),
+    Prepared(Arc<crate::history::PreparedReadmittedPublicationRecord>),
+}
+impl RecoveredNativeObservation {
+    fn effect(&self) -> Option<&ReadmittedRelationalAssociatedEffect> {
+        match self {
+            Self::Original(native) => Some(native.custody().effect()),
+            Self::Prepared(record) => record.effect(),
+        }
+    }
+}
+
+#[derive(Debug)]
+pub(crate) struct RecoveredWorldPublicationRecord {
+    pub(crate) identity: ProductUnpublishedOwnerEffectsIdentity,
+    pub(crate) attempt: CompositePublicationAttemptIdentity,
+    pub(crate) commit: CompositeCommitIdentity,
+    pub(crate) open: AdmittedWorldOpenAttempt,
+    pub(crate) continued: Option<crate::durability::AdmittedWorldDisposition>,
+    pub(crate) native_identity: Option<worth_relational::facade::history::RelationalCommitIdentity>,
+    pub(crate) signal: Option<Arc<worth_signal::facade::durability::SignalReadmittedSourcePoint>>,
+    pub(crate) expected: ProductBranchObservation,
+    pub(crate) binding: Arc<WorldDurableMediumBinding>,
+    pub(crate) native: Mutex<RecoveredNativeCustody>,
+    pub(crate) control: Mutex<Option<Arc<crate::publication::HomeTransitionEffectControlState>>>,
+    pub(crate) claimed: Mutex<bool>,
+    pub(crate) release: Mutex<Option<WorldDurableArtifact>>,
+    pub(crate) committed_release: Mutex<Option<WorldCommittedPublication>>,
+    pub(crate) prepared_release: Mutex<Option<RecoveredReleaseDestination>>,
+    pub(crate) continuation: Mutex<Option<Box<PreparedRecoveredPublication>>>,
+    pub(crate) metadata_bytes: usize,
+}
+
+/// One current-Home claim over the SAME original durable custody identities.
+/// The catalog owns the Native capability independently of this caller.
+#[derive(Debug)]
+pub struct WorldRecoveredUnpublishedEffects {
+    pub(crate) record: Arc<RecoveredWorldPublicationRecord>,
+    pub(crate) catalog: super::catalog::ProductUnpublishedRecoveryCatalog,
+    pub(crate) source: Option<RecoveredNativeObservation>,
+}
+
+impl WorldRecoveredUnpublishedEffects {
+    /// Encode only this admitted original's association. This is descriptive
+    /// meaning, not permission to create or repeat an owner effect.
+    pub fn caller_association_commitment(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        plan: &worth_foundational::facade::HomeProgramTransitionPlanDescription,
+        step: worth_foundational::facade::HomeProgramTransitionStepAssociation,
+    ) -> Result<[u8; 32], crate::durability::WorldDurableMediumDenial> {
+        crate::publication::home_transition_caller_association_commitment(
+            execution,
+            plan,
+            step,
+            &self.record.open.association,
+        )
+    }
+
+    pub fn identity(&self) -> &ProductUnpublishedOwnerEffectsIdentity {
+        &self.record.identity
+    }
+    pub fn attempt_identity(&self) -> &CompositePublicationAttemptIdentity {
+        &self.record.attempt
+    }
+    pub fn reserved_commit_identity(&self) -> &CompositeCommitIdentity {
+        &self.record.commit
+    }
+    pub fn expected_head(&self) -> &ProductBranchObservation {
+        &self.record.expected
+    }
+    pub fn recovery_handle(&self) -> super::ProductUnpublishedRecoveryHandle {
+        super::ProductUnpublishedRecoveryHandle::new(
+            self.record.identity.clone(),
+            self.catalog.affinity(),
+        )
+    }
+    pub fn next_actions(&self) -> &[super::ProductUnpublishedNextAction] {
+        use super::ProductUnpublishedNextAction as Action;
+        let lost_permit = self
+            .record
+            .continuation
+            .lock()
+            .unwrap_or_else(|e| e.into_inner())
+            .as_ref()
+            .is_some_and(|phase| phase.movement_recovery_required());
+        if self.record.binding.publication_recovery_required() || lost_permit {
+            return &[Action::Inspect, Action::ReopenRequired];
+        }
+        if self
+            .record
+            .release
+            .lock()
+            .unwrap_or_else(|e| e.into_inner())
+            .is_some()
+        {
+            &[Action::Inspect, Action::ReleaseObligations]
+        } else if self.native_effect().is_none() && self.record.signal.is_none() {
+            &[
+                Action::Inspect,
+                Action::ReleaseObligations,
+                Action::CloseOwner,
+            ]
+        } else if self.continuation_already_committed()
+            || self
+                .record
+                .continuation
+                .lock()
+                .unwrap_or_else(|e| e.into_inner())
+                .is_some()
+        {
+            &[Action::Inspect, Action::ContinueOriginalPublication]
+        } else {
+            &[
+                Action::Inspect,
+                Action::ContinueOriginalPublication,
+                Action::ReleaseObligations,
+                Action::CloseOwner,
+            ]
+        }
+    }
+    pub fn claim_incarnation(&self) -> worth_foundational::facade::HomeIncarnation {
+        self.record.binding.binding().incarnation()
+    }
+    /// Actual retained progress, not a physical fate or permission to advance.
+    pub fn home_transition_effect_progress(
+        &self,
+    ) -> Result<
+        Option<crate::publication::WorldHomeTransitionEffectProgress>,
+        crate::recovery::RuntimeWorldRecoveryDenial,
+    > {
+        match &*self
+            .record
+            .native
+            .lock()
+            .unwrap_or_else(|cause| cause.into_inner())
+        {
+            RecoveredNativeCustody::OpenOnly
+            | RecoveredNativeCustody::Relational(_)
+            | RecoveredNativeCustody::Prepared(_) => Ok(None),
+            RecoveredNativeCustody::Continuing(work) => Ok(Some(work.progress())),
+            RecoveredNativeCustody::Working => {
+                Err(crate::recovery::RuntimeWorldRecoveryDenial::Busy)
+            }
+            RecoveredNativeCustody::Released => {
+                Err(crate::recovery::RuntimeWorldRecoveryDenial::MissingRecord)
+            }
+        }
+    }
+    pub fn native_receipt(
+        &self,
+    ) -> Option<worth_relational::facade::history::RelationalCommitReceipt> {
+        if let Some(effect) = self.native_effect() {
+            return Some(effect.subject().receipt().clone());
+        }
+        match &*self
+            .record
+            .native
+            .lock()
+            .unwrap_or_else(|cause| cause.into_inner())
+        {
+            RecoveredNativeCustody::Continuing(work) => Some(work.native_receipt().clone()),
+            RecoveredNativeCustody::OpenOnly
+            | RecoveredNativeCustody::Relational(_)
+            | RecoveredNativeCustody::Prepared(_)
+            | RecoveredNativeCustody::Working
+            | RecoveredNativeCustody::Released => None,
+        }
+    }
+    /// Borrow the original source admission; this never manufactures a live result.
+    pub fn native_effect(&self) -> Option<&ReadmittedRelationalAssociatedEffect> {
+        self.source
+            .as_ref()
+            .and_then(RecoveredNativeObservation::effect)
+    }
+    pub(crate) fn refresh_source(&mut self) {
+        self.source = match &*self.record.native.lock().unwrap_or_else(|e| e.into_inner()) {
+            RecoveredNativeCustody::OpenOnly => None,
+            RecoveredNativeCustody::Relational(native) => {
+                Some(RecoveredNativeObservation::Original(native.clone()))
+            }
+            RecoveredNativeCustody::Prepared(record) => {
+                Some(RecoveredNativeObservation::Prepared(record.clone()))
+            }
+            RecoveredNativeCustody::Continuing(_)
+            | RecoveredNativeCustody::Working
+            | RecoveredNativeCustody::Released => None,
+        };
+    }
+    pub fn continuation_already_committed(&self) -> bool {
+        self.record.continued.is_some()
+            || self
+                .record
+                .continuation
+                .lock()
+                .unwrap_or_else(|e| e.into_inner())
+                .as_ref()
+                .is_some_and(|phase| phase.disposition_committed())
+    }
+}
+
+impl Drop for WorldRecoveredUnpublishedEffects {
+    fn drop(&mut self) {
+        // End the immutable Native view before admitting another exclusive claim.
+        self.source = None;
+        *self
+            .record
+            .claimed
+            .lock()
+            .unwrap_or_else(|e| e.into_inner()) = false;
+    }
+}
+
+pub(crate) struct RecoveredWorldPublicationInputs {
+    pub(crate) identity: ProductUnpublishedOwnerEffectsIdentity,
+    pub(crate) attempt: CompositePublicationAttemptIdentity,
+    pub(crate) commit: CompositeCommitIdentity,
+    pub(crate) open: AdmittedWorldOpenAttempt,
+    pub(crate) continued: Option<crate::durability::AdmittedWorldDisposition>,
+    pub(crate) native_identity: Option<worth_relational::facade::history::RelationalCommitIdentity>,
+    pub(crate) signal: Option<Arc<worth_signal::facade::durability::SignalReadmittedSourcePoint>>,
+    pub(crate) expected: ProductBranchObservation,
+    pub(crate) binding: Arc<WorldDurableMediumBinding>,
+    pub(crate) native:
+        Option<RelationalPublicationReadmitted<RelationalRecoveredPublicationCustody>>,
+}
+
+impl RecoveredWorldPublicationRecord {
+    pub(crate) fn new(input: RecoveredWorldPublicationInputs, metadata_bytes: usize) -> Arc<Self> {
+        Arc::new(Self {
+            identity: input.identity,
+            attempt: input.attempt,
+            commit: input.commit,
+            open: input.open,
+            continued: input.continued,
+            native_identity: input.native_identity,
+            signal: input.signal,
+            expected: input.expected,
+            binding: input.binding,
+            native: Mutex::new(
+                input
+                    .native
+                    .map_or(RecoveredNativeCustody::OpenOnly, |native| {
+                        RecoveredNativeCustody::Relational(Arc::new(native))
+                    }),
+            ),
+            claimed: Mutex::new(false),
+            control: Mutex::new(None),
+            release: Mutex::new(None),
+            committed_release: Mutex::new(None),
+            prepared_release: Mutex::new(None),
+            continuation: Mutex::new(None),
+            metadata_bytes,
+        })
+    }
+}

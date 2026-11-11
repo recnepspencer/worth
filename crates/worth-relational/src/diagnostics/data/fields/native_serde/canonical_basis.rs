@@ -70,3 +70,12 @@ impl TryFrom<&CanonicalBasisReadyArtifact> for NativeCanonicalBasis {
         })
     }
 }
+
+impl crate::diagnostics::data::RelationalDiagnosticFields {
+    /// Actual private native entry roster layout; nested payloads are separate.
+    pub(crate) fn native_basis_roster_storage_bytes(capacity: usize) -> Option<usize> {
+        std::alloc::Layout::array::<NativeEntry>(capacity)
+            .ok()
+            .map(|layout| layout.size())
+    }
+}

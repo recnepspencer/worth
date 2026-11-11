@@ -1,6 +1,7 @@
 mod approval;
 mod context_identity;
 mod elevation_close;
+mod idempotency_observation;
 mod lifecycle_effect;
 mod mandatory_review;
 mod operation_role;

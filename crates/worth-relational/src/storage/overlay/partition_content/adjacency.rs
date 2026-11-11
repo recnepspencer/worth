@@ -66,7 +66,7 @@ impl AdjacencyContentIndex {
         self.slots.visit_allocations(visitor);
         self.memberships
             .visit_allocations(false, visitor, &mut |set, allocation, visitor| {
-                if visitor.visit(allocation) {
+                if allocation.visit(visitor) {
                     set.visit_allocations(visitor);
                 }
             });
@@ -102,7 +102,7 @@ mod tests {
         let mut incremental = AdjacencyContentIndex::default();
         assert_eq!(
             crate::storage::substrate::maintenance::ReconstructionLane::inspect_oracle(
-                |lane, work| cold.rebuild(lane, work, &table)
+                |lane, work| cold.rebuild(lane, work, None, &table)
             )
             .unwrap(),
             2

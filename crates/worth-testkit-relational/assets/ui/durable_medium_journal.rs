@@ -15,14 +15,14 @@ impl RelationalDurableMedium for Journal {
     ) -> Result<RelationalBranchTransitionArtifact, RelationalDurableTransitionReadFailure> {
         Err(RelationalDurableTransitionReadFailure::Missing(sequence))
     }
-    fn publish(&self, _: &RelationalCanonicalCommitArtifact) -> RelationalDurablePublication {
-        RelationalDurablePublication::Committed
+    fn publish(&self, _: &RelationalCanonicalCommitArtifact) -> DurablePublicationFate<String> {
+        DurablePublicationFate::Committed
     }
     fn publish_transition(
         &self,
         _: &RelationalBranchTransitionArtifact,
-    ) -> RelationalDurablePublication {
-        RelationalDurablePublication::Committed
+    ) -> DurablePublicationFate<String> {
+        DurablePublicationFate::Committed
     }
 }
 impl RelationalDurableColdSource for Journal {

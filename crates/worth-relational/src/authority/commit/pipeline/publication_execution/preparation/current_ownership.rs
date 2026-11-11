@@ -12,7 +12,7 @@ pub(super) fn select(
     execution: &ExecutionRequest<'_, '_>,
     runtime: &RelationalPreparationRuntime,
     basis: &AdmittedRelationalBranchBasis,
-    candidate: &crate::history::data::CanonicalCommitEnvelope,
+    candidate: &crate::history::data::CanonicalCommitEnvelopeBody,
     adjacency: &[crate::authority::mutation::AdjacencyDelta],
     working: &crate::storage::overlay::WorkingState,
     admission: Option<&crate::mvcc::RequiredOutputPublicationAdmission>,

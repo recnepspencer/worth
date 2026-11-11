@@ -3,15 +3,16 @@
 //! artifact bytes. Store checks only its own journal frame and the
 //! artifact frame; Relational readmits the commits.
 
-use worth_relational::facade::durability::{
-    RelationalCanonicalCommitArtifact, RelationalCanonicalCommitArtifactFrameRefusal,
-};
-use worth_store::physical_runtime::{
-    OrderedJournalDenial, OrderedJournalReadFailure, ServingPhysicalRuntime,
-};
+#[cfg(test)]
+use worth_relational::facade::durability::RelationalCanonicalCommitArtifact;
+use worth_relational::facade::durability::RelationalCanonicalCommitArtifactFrameRefusal;
+#[cfg(test)]
+use worth_store::physical_runtime::ServingPhysicalRuntime;
+use worth_store::physical_runtime::{OrderedJournalDenial, OrderedJournalReadFailure};
 
 /// The largest artifact one journal read admits. A larger record is refused
 /// rather than allocated.
+#[cfg(test)]
 const MAXIMUM_ARTIFACT_BYTES: u64 = 256 << 20;
 
 /// Why the recovered journal could not be handed to Relational.
@@ -36,6 +37,7 @@ pub enum RelationalStoreJournalRefusal {
 }
 
 /// Every artifact after `covered`, oldest first.
+#[cfg(test)]
 pub(crate) fn journal_tail(
     serving: &ServingPhysicalRuntime,
     covered: u64,

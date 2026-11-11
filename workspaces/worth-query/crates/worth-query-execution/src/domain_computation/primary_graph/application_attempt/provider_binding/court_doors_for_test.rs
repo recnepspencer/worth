@@ -8,11 +8,13 @@ impl WorthQueryPreparedApplicationProviderAttempt {
     }
 }
 
-type PreparedProviderAttemptParts = (Option<crate::domain_computation::primary_graph::workflow::operation_output::WorkflowOperationOrigin>, Option<super::super::workflow_transition_program::LocalActionSettlementProof>, Option<crate::domain_computation::primary_graph::RequiredOutputDemandContext>, crate::domain_computation::primary_graph::application_attempt::CompletedReadScopes, FactPayload, Option<std::sync::Arc<crate::domain_computation::primary_graph::application_attempt::CompletedFactProjection>>, Option<std::sync::Arc<crate::domain_computation::primary_graph::application_attempt::CompletedOriginalRead>>, Vec<crate::domain_computation::primary_graph::invariant_projection::ConsumedOutputEvidence>, effect_accumulator::WorthQueryRegisteredProviderEffects, Option<InstalledPreImageDemand>, Option<crate::domain_computation::primary_graph::WorthQueryAdmittedApplicationConditionalDefinition>, bool, bool, &'static [crate::domain_computation::primary_graph::WorthQueryProducerInvariantRequirement], Option<super::super::OutputCurrentnessFacts>,);
-
 impl WorthQueryPreparedApplicationProviderAttempt {
     #[doc(hidden)]
-    pub fn into_parts_for_test(self) -> PreparedProviderAttemptParts {
+    #[expect(
+        clippy::type_complexity,
+        reason = "The closed deconstruction court mirrors the exact private owner fields without a second data contract"
+    )]
+    pub fn into_parts_for_test(self) -> (Option<crate::domain_computation::primary_graph::workflow::operation_output::WorkflowOperationOrigin>, Option<super::super::workflow_transition_program::LocalActionSettlementProof>, Option<crate::domain_computation::primary_graph::RequiredOutputDemandContext>, crate::domain_computation::primary_graph::application_attempt::CompletedReadScopes, FactPayload, Option<std::sync::Arc<crate::domain_computation::primary_graph::application_attempt::CompletedFactProjection>>, Option<std::sync::Arc<crate::domain_computation::primary_graph::application_attempt::CompletedOriginalRead>>, Vec<crate::domain_computation::primary_graph::invariant_projection::ConsumedOutputEvidence>, effect_accumulator::WorthQueryRegisteredProviderEffects, Option<InstalledPreImageDemand>, Option<crate::domain_computation::primary_graph::WorthQueryAdmittedApplicationConditionalDefinition>, bool, bool, &'static [crate::domain_computation::primary_graph::WorthQueryProducerInvariantRequirement], Option<super::super::OutputCurrentnessFacts>,){
         (
             self.workflow_origin,
             self.local_action_settlement,

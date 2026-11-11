@@ -38,11 +38,20 @@ pub use publication_outcome::{
     RelationalBridgePublicationStale,
 };
 pub use runtime_source::{
-    PendingRelationalBridgeCanonicalSubscription, RelationalBridgeBranchHeadLease,
-    RelationalBridgeBranchHeadReleaseReceipt, RelationalBridgeCanonicalSubscription,
-    RelationalBridgeObservationLease, RelationalBridgeObservationReleaseReceipt,
-    RelationalBridgeRetainedSnapshot, RelationalBridgeSourceConfigurationError,
-    RuntimeBridgeRelationalSource,
+    PendingRelationalBridgeCanonicalSubscription, RelationalBridgeBasisRetirementDenial,
+    RelationalBridgeBasisRetirementProgress, RelationalBridgeBranchHeadLease,
+    RelationalBridgeBranchHeadReleaseReceipt, RelationalBridgeBranchHeadRetirement,
+    RelationalBridgeCanonicalSubscription, RelationalBridgeObservationLease,
+    RelationalBridgeObservationReleaseReceipt, RelationalBridgeObservationRetirement,
+    RelationalBridgeRetainedSnapshot, RelationalBridgeRetainedSnapshotRetirement,
+    RelationalBridgeRetainedSnapshotRetirementDenial,
+    RelationalBridgeRetainedSnapshotRetirementProgress, RelationalBridgeSourceConfigurationError,
+    RetiredRelationalBridgeBranchHead, RetiredRelationalBridgeCanonicalSubscription,
+    RetiredRelationalBridgeObservation, RetiredRelationalBridgeRetainedSnapshot,
+    RetiredRuntimeBridgeRelationalSource, RuntimeBridgeRelationalSource,
 };
 #[cfg(test)]
 pub use test_catalog::{PublicationBridgeCatalog, PublicationBridgeSnapshot};
+#[cfg(test)]
+#[path = "mod_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;

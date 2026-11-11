@@ -98,24 +98,33 @@ impl IndexAuthority<'_> {
                     + std::mem::size_of::<crate::runtime::PreparedIndexBasisSelection>())
                     as u64,
             )?;
-            self.runtime
+            let basis = self.runtime.indexes.prepare_basis_selection(
+                branch,
+                envelope.commit.commit_id,
+                observation.version_id(),
+                schema,
+                &envelope.branch_context,
+                envelope.commit.commit_id,
+                observation.version_id(),
+                &mut |units, bytes| work.prepare(units, bytes),
+            )?;
+            let mut publication = self
+                .runtime
                 .indexes
-                .prepare_basis_selection(
-                    branch,
-                    envelope.commit.commit_id,
-                    observation.version_id(),
-                    schema,
-                    &envelope.branch_context,
-                    envelope.commit.commit_id,
-                    observation.version_id(),
-                    false,
-                    &mut |units, bytes| work.prepare(units, bytes),
-                )
-                .map(Some)
+                .prepare_generation_batch(Vec::new(), Some(basis), |units, bytes| {
+                    work.prepare(units, bytes)
+                })
+                .map_err(admission_stop)?;
+            publication
+                .admit_actual_geometry(|units, bytes| work.prepare(units, bytes))
+                .map_err(admission_stop)?;
+            Ok(Some(publication))
         })?;
-        if let Some(prepared) = prepared.value {
-            self.runtime.indexes.install_basis_selection(prepared);
+        let (publication, funding) = prepared.into_funded_parts();
+        if let Some(mut publication) = publication {
+            publication.publish_admitted();
         }
+        drop(funding);
         Ok(counts)
     }
 }
@@ -143,5 +152,16 @@ impl IndexAuthority<'_> {
                 .with_definitions(|definitions| definitions.keys().copied().collect()),
         };
         Ok(self.build_for_basis(execution, request, basis))
+    }
+}
+
+fn admission_stop(
+    stop: crate::indexes::data::SelectedIndexGenerationAdmissionStop<Denial>,
+) -> Denial {
+    match stop {
+        crate::indexes::data::SelectedIndexGenerationAdmissionStop::Admission(stop) => stop,
+        crate::indexes::data::SelectedIndexGenerationAdmissionStop::AccountingOverflow => {
+            Denial::WorkBudgetExceeded
+        }
     }
 }

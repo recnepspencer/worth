@@ -19,10 +19,19 @@ pub(crate) fn entity_deletion_publication_patch(
     let mutation = RecordMutation::EntityDeleted {
         entity_id: id,
         kind_id,
-        authoritative_patch: authoritative_patch.clone(),
+        old_authoritative_aspect_state: None,
+        authoritative_patch: authoritative_patch
+            .map(super::outcomes::MutationAspectPatch::from_ordinary),
     };
     let delta = canonical_delta_for_mutation(&mutation, plans)
         .map_err(|error| error.to_commit_conflict())?;
+    let RecordMutation::EntityDeleted {
+        authoritative_patch,
+        ..
+    } = mutation
+    else {
+        unreachable!("this function constructed the exact entity deletion variant")
+    };
     Ok(super::effect_publication::canonical_publication_fragment(
         &delta,
         detail,
@@ -40,15 +49,10 @@ pub(crate) fn relation_deletion_publication_patch(
     plans: &impl AspectPlanSource,
     detail: PatchDetail,
 ) -> Result<PublishedAuthoritativePatch, CommitConflict> {
-    let mutation = RecordMutation::RelationDeleted {
-        relation_id: id,
-        kind_id,
-        source,
-        target,
-        authoritative_aspect_state: state.cloned(),
-    };
-    let delta = canonical_delta_for_mutation(&mutation, plans)
-        .map_err(|error| error.to_commit_conflict())?;
+    let delta = super::canonical_deltas::evaluate_relation_deletion_state(
+        plans, id, kind_id, source, target, state,
+    )
+    .map_err(|error| error.to_commit_conflict())?;
     Ok(
         super::effect_publication::canonical_publication_fragment(&delta, detail, None)?
             .published_patch,

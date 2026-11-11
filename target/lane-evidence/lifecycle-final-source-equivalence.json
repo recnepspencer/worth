@@ -1,0 +1,13 @@
+{
+  "source_head": "12db6ce1dc54727ddf3c5897c22a3025036fb27e",
+  "last_functional_source_head": "c8962903a7014ba338af9771a2f203e8276d79a0",
+  "verified_compiler_inputs": 40420,
+  "changed_inputs": [
+    "workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/topology_entry/src/checkpoint_recovery.rs",
+    "workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/topology_entry/src/lib.rs"
+  ],
+  "change_kind": "narrowed existing test-only lint allowance; independently reviewed; no runtime or type contract change",
+  "ui_raw_bytes_equal_master": true,
+  "ui_cached_diff_empty": true,
+  "ui_worktree_diff_empty": true
+}

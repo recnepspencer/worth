@@ -17,7 +17,9 @@ impl RestoredOutputOrigin {
     pub(in crate::domain_computation::primary_graph) fn partition(&self) -> [u8; 32] {
         match self {
             Self::Checkpoint(identity) => identity.source_partition,
-            Self::HistoricalSelection(origin) => origin.publication().meaning().source_partition,
+            Self::HistoricalSelection(origin) => {
+                *origin.publication().meaning().source_partition.bytes()
+            }
         }
     }
     pub(in crate::domain_computation::primary_graph) fn same_owner(&self, other: &Self) -> bool {

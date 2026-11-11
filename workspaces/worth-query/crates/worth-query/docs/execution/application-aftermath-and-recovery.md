@@ -692,11 +692,17 @@ For a committed operation, inspect:
   inspection.
 
 `Unresolved` includes typed failures such as timeout, disconnect, lost response,
-duplicate acknowledgement, payload rejection, unsupported protocol version, or
-an unknown provider outcome. Unsupported versions retain the exact produced
+duplicate acknowledgement, unsupported protocol version, or an unknown provider
+outcome. Unsupported versions retain the exact produced
 version and distinguish `PredatesWindow`, `ExceedsWindow`, and `Retired`.
 These values explain what Query observed; they do not overwrite the external
 owner's ledger.
+
+Payload rejection is instead `ProvenNoEffect(PayloadRejected)` in live dispatch,
+published aftermath and durable journal custody. The live posture's
+`proven_no_effect()` retains its exact attempt and available decision time, while
+`classification()` is absent. Published `proven_no_effect()` is distinct from
+`failure()`: no effect is neither unresolved, completed nor compensated.
 
 ## Preserve the owning recovery path
 
@@ -710,6 +716,54 @@ or correction workflow.
 Published briefs describe available support; live recovery uses the native
 owner-issued carrier. Relational owns commit ancestry and Runtime World owns
 composite publication.
+
+## Durable dispatch custody on a Directory Home
+
+A Directory Home records every physical external contact in its own
+`query.dispatch` journal. The attempt is durable before the installed transport
+is called, and exactly one observation is recorded after it:
+
+| Recorded observation | Meaning |
+|---|---|
+| `Completed` | The external owner reported the effect complete. It is never contacted again. |
+| `Acknowledged` | The external owner reported receipt and nothing further. |
+| `ProvenNoEffect(PayloadRejected)` | The external owner decoded the payload and refused it. Nothing happened. |
+| `ProvenNoEffect(ContactNotStarted)` | The attempt was recorded, but the runtime never called the transport. |
+| `Unresolved(cause)` | The contact left; its effect is unknown and stays unknown until its owner resolves it. |
+
+Read what the Home recorded with
+`runtime.durable_dispatch_custody(&correlation_token)`. The token is the one the
+committed outbox record carries
+(`receipt.dispatch_outbox()?.correlation().bytes()`) and the one every
+`WorthQueryExternalDispatchRequest` gives the transport. The answer is recorded
+data: it grants no dispatch authority. A memory-only Home returns `None`,
+because its dispatch custody is process-local.
+
+A Directory Home retains dispatch custody across graceful close and reopen
+for operations that declare neither inbound completion nor recoverable aftermath.
+Installed contracts that require either family refuse before effects, and
+recovery-claim minting independently checks Directory support. Close settles every retained observation before releasing the
+dispatch's local receipt-basis lease. Reopen readmits those same attempt
+identities and observations from `query.dispatch`; it never contacts the
+transport or reexecutes the mutation handler. The reopened Home receives a
+fresh transport installation from its host.
+
+A dispatch whose attempt record the Home refuses never reaches the transport.
+The commit's dispatch preparation reports
+`AttemptAdmissionDenied(DurableAttemptRecordDenied(cause))`.
+
+The attempt and its observation are recorded on the request that dispatches.
+If that request stops after the contact but before its observation is
+recorded, the Home keeps the observation and records it on the next dispatch
+or at graceful close; until then the Home is not quiescent. Graceful close
+settles the journal before it retires any graph or Store owner, and refuses
+while a contact is still in flight.
+
+Process death before an observation is recorded is not yet certified. A Home
+whose journal ends in an attempt with no recorded observation refuses to open,
+and `unclean_recovery_unsupported()` names the `Dispatch` owner and that
+effect. Inbound completion and recovery claims are not yet durable on a
+Directory Home.
 
 ## Recovery lifetime and scope
 

@@ -109,7 +109,7 @@ fn first_binding_conflict_prevents_later_native_decode_and_preserves_prefix_cens
             drop(window);
             assert_eq!(
                 observer.snapshot().for_dimension(dimension).active_units(),
-                shared.owned_heap_bytes().unwrap()
+                crate::physical_runtime::PhysicalRecoveryCoordinationCapacity::serving_evidence_backing_bytes() + shared.owned_heap_bytes().unwrap()
             );
             drop(shared);
         });

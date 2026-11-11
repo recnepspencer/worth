@@ -28,8 +28,8 @@ fn observe_reclaimable_node_bytes(
         *bytes = bytes.saturating_add(match leaf {
             RelationalPersistentRegionLeaf::Present(region) => {
                 let storage = std::mem::size_of_val(region.as_ref()) as u64;
-                if Arc::strong_count(&region.0) == 1 {
-                    storage.saturating_add(region.0.reclaimable_unique_authoritative_bytes())
+                if Arc::strong_count(&region.region) == 1 {
+                    storage.saturating_add(region.region.reclaimable_unique_authoritative_bytes())
                 } else {
                     storage
                 }

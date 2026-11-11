@@ -34,6 +34,7 @@ fn publication_stop_classification_preserves_control_and_ordinary_causes() {
         );
     }
     for cause in [
+            NoEffectCause::DurableOpenRequired,
             NoEffectCause::StaleExpectedProductHead,
             NoEffectCause::OwnerDeniedBeforeEffect,
             NoEffectCause::CurrentReadDependency(worth_runtime_world::facade::CurrentProductReadDependencyDenial::WorldHeadUnavailable),

@@ -3,7 +3,7 @@ use super::*;
 use worth_query_decl::facade::{
     application_operation::ApplicationMutationBinding, application_program::*,
 };
-use worth_query_host::facade::application_installation::WorthQueryInMemoryApplicationDenial;
+use worth_query_host::facade::application_installation::WorthQueryApplicationPreparationDenial;
 mod installation;
 mod program;
 use program::{JointProgram, JointSchema};
@@ -45,7 +45,7 @@ mod serial {
         let denied = installation::install::<1>()
             .err()
             .expect("operation identity is not binding membership");
-        let WorthQueryInMemoryApplicationDenial::Program(denied) = denied else {
+        let WorthQueryApplicationPreparationDenial::Program(denied) = denied else {
             panic!("required concrete membership must be the rejecting owner: {denied:?}")
         };
         assert!(
@@ -69,7 +69,7 @@ mod serial {
         ];
         assert!(
         attempts.iter().all(|(_, denied)| matches!(denied,
-            Some(WorthQueryInMemoryApplicationDenial::ConditionalProgramMismatch))),
+            Some(WorthQueryApplicationPreparationDenial::ConditionalProgramMismatch))),
         "each overlap must reach its exact conditional guard; actual returned denials: {attempts:?}"
     );
     }
@@ -92,7 +92,7 @@ mod serial {
         ];
         assert!(
         attempts.iter().all(|(_, denied)| matches!(denied,
-            Some(WorthQueryInMemoryApplicationDenial::ConditionalProgramMismatch))),
+            Some(WorthQueryApplicationPreparationDenial::ConditionalProgramMismatch))),
         "each exact-set variant must reach its conditional guard; actual returned denials: {attempts:?}"
     );
     }
@@ -102,7 +102,7 @@ mod serial {
         let denied = installation::install::<7>()
             .err()
             .expect("typed declaration cannot install its own binding");
-        let WorthQueryInMemoryApplicationDenial::Program(denied) = denied else {
+        let WorthQueryApplicationPreparationDenial::Program(denied) = denied else {
             panic!("uninstalled concrete binding must fail support: {denied:?}")
         };
         assert!(

@@ -1,0 +1,14 @@
+[
+  "crates/worth-relational/src/branch/root_authoritative_payload_tests.rs",
+  "crates/worth-relational/src/branch/root_tests.rs",
+  "crates/worth-relational/src/commit_strategies/facade_tests/native_strategy_fixtures.rs",
+  "crates/worth-relational/src/durability/data/checkpoint_images.rs",
+  "crates/worth-relational/src/durability/log/native_checkpoint_codec/inspection/tests.rs",
+  "crates/worth-relational/src/durability/log/native_checkpoint_codec/kind_authentication_tests.rs",
+  "crates/worth-relational/src/durability/log/native_checkpoint_codec/manifest_integrity_tests.rs",
+  "crates/worth-relational/src/durability/log/native_checkpoint_codec/manifest_validation/components/tests.rs",
+  "crates/worth-relational/src/durability/log/native_checkpoint_codec/tests.rs",
+  "crates/worth-relational/src/history/commit/artifact_tests.rs",
+  "crates/worth-relational/src/history/commit/envelope_residency_tests.rs",
+  "crates/worth-relational/src/tests/durability/contracts/semantic_result.rs"
+]

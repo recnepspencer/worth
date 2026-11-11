@@ -1,6 +1,7 @@
 mod adjacency;
 mod admission;
 mod reconstruction;
+mod request_admission;
 use crate::storage::substrate::maintenance::{ReconstructionLane, ReconstructionWork};
 mod head_commitment;
 #[cfg(test)]
@@ -18,6 +19,7 @@ use sha2::{Digest, Sha256};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) enum PartitionContentDigestError {
+    Request(crate::execution::RelationalExecutionDenialCause),
     UnresolvedContentSymbol(Symbol),
     InvalidHistoryCoverage,
     AllocationAccountingOverflow,
@@ -26,8 +28,11 @@ pub(crate) enum PartitionContentDigestError {
 }
 
 impl From<crate::storage::substrate::DigestIndexError> for PartitionContentDigestError {
-    fn from(_: crate::storage::substrate::DigestIndexError) -> Self {
-        Self::InvalidHistoryCoverage
+    fn from(error: crate::storage::substrate::DigestIndexError) -> Self {
+        match error {
+            crate::storage::substrate::DigestIndexError::Request(cause) => Self::Request(cause),
+            _ => Self::InvalidHistoryCoverage,
+        }
     }
 }
 
@@ -119,13 +124,13 @@ impl PartitionState {
 
 fn entity_extra(
     extra: &crate::storage::substrate::EntityExtra,
-    symbols: &StringInterner,
+    symbols: &dyn crate::symbols::data::SymbolTextLookup,
 ) -> Result<[u8; 32], PartitionContentDigestError> {
     hash_value(b"entity-extra", &entity_extra_material(extra, symbols)?)
 }
 fn entity_extra_material<'a>(
     extra: &'a crate::storage::substrate::EntityExtra,
-    symbols: &'a StringInterner,
+    symbols: &'a dyn crate::symbols::data::SymbolTextLookup,
 ) -> Result<impl Serialize + 'a, PartitionContentDigestError> {
     let fingerprint = extra
         .structural_fingerprint
@@ -141,7 +146,7 @@ fn entity_extra_material<'a>(
     Ok((
         fingerprint,
         &extra.lineage_id,
-        &extra.authoritative_aspect_state,
+        extra.authoritative_aspect_state(),
     ))
 }
 

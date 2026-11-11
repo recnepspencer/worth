@@ -3,7 +3,7 @@ use super::*;
 use crate::domain_computation::primary_graph::{
     application_attempt::WorthQueryApplicationObservedFact as Fact,
     application_contribution::producer::predecessor_reads::{
-        HistoricalProducerRead, WorthQueryPredecessorReadDenial as Denial,
+        WorthQueryHistoricalProducerRead, WorthQueryPredecessorReadDenial as Denial,
     },
 };
 use worth_query_declaration::facade::application_schema::{
@@ -63,7 +63,7 @@ impl<S: ApplicationSchema, O>
         let native = self
             .reader
             .native
-            .committed_runtime_mut()
+            .committed_runtime()
             .ok_or(Denial::PredecessorMismatch)?;
         let (prior, basis, contracts, authorization) =
             access.prepare_predecessor(&execution, native, operation, scope, partition)?;
@@ -103,12 +103,12 @@ impl<S: ApplicationSchema, O>
         let (keys, _) = facts
             .into_expected(&execution)
             .map_err(|cause| Denial::Decision(format!("{cause:?}")))?;
-        access.record_predecessor_read(HistoricalProducerRead {
-            _publication: prior.authority().publication_coordinate(),
-            _basis: basis.descriptor().clone(),
-            _operation: R::IDENTIFIER,
-            _keys: keys.into_historical_keys(),
-        });
+        access.record_predecessor_read(WorthQueryHistoricalProducerRead::from_read(
+            &prior,
+            &basis,
+            R::IDENTIFIER,
+            keys.into_historical_keys(),
+        ));
         // Only C authorization becomes a current dependency. Old read keys and
         // old values are descriptive evidence and never rechecked at C.
         self.reader

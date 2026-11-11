@@ -9,3 +9,7 @@ pub use crate::domain_computation::primary_graph::workflow::definition::compilat
 pub use crate::domain_computation::primary_graph::workflow::definition::compilation::plan::CompiledWorkflowNodeMeaning;
 pub use crate::domain_computation::primary_graph::workflow::definition::compilation::plan::CompiledWorkflowPublicationPlan;
 pub use crate::domain_computation::primary_graph::workflow::definition::compilation::plan::CompiledWorkflowSemanticConnection;
+
+pub use crate::domain_computation::primary_graph::workflow::definition::compilation::plan::CompiledWorkflowAssessmentApplicability;
+
+pub use crate::domain_computation::primary_graph::workflow::definition::CompiledWorkflowCondition;

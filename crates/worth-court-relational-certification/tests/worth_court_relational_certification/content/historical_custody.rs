@@ -162,7 +162,7 @@ fn content_transport_envelope_cannot_masquerade_as_complete_historical_custody()
     // historical root directory. Introduced records cannot stand in for that closure.
     let artifact = runtime
         .durability()
-        .canonical_commit_artifacts(execution.allocation_policy())
+        .canonical_commit_artifacts(&execution)
         .next()
         .unwrap()
         .unwrap();

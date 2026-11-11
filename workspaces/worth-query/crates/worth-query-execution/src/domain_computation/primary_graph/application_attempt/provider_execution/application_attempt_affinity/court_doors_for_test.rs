@@ -20,3 +20,12 @@ impl WorthQueryApplicationAttemptBasis {
         Self::affinity_mismatches_view(self, plan)
     }
 }
+
+impl WorthQueryApplicationAttemptBasis {
+    #[doc(hidden)]
+    pub fn take_original_completion_for_test(
+        &mut self,
+    ) -> crate::facade::primary_graph::OriginalCompletionReceiver {
+        self.take_original_completion()
+    }
+}

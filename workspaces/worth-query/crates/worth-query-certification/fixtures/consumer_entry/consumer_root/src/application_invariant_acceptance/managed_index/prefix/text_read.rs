@@ -84,7 +84,7 @@ fn wrong<Q>() -> ApplicationQueryResultFieldRef<Q, query::NameSlot, Catalog, Wro
 fn invalid(_: WorthQueryManagedIndexTextReadDenial) -> Stop {
     Stop::Domain(PrefixIndexDenial::InvalidTopology)
 }
-pub(super) fn inspect<I: PrefixSourceIndex>(
+pub(in super::super) fn inspect<I: PrefixSourceIndex<Catalog>>(
     calls: &Calls,
     row: &WorthQueryManagedIndexSourceRow<'_, Catalog, I>,
 ) -> Result<(), Stop> {

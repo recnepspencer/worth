@@ -88,3 +88,6 @@ impl BridgeObservationBaselines {
         drop(displaced);
     }
 }
+#[cfg(test)]
+#[path = "baseline_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;

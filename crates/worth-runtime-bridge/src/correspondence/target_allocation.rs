@@ -1,3 +1,4 @@
+use super::BridgeSemanticClaimOrigin;
 use std::collections::{BTreeMap, BTreeSet};
 use std::sync::RwLockWriteGuard;
 
@@ -59,7 +60,7 @@ fn allocate_with_registry<'a>(
 pub(super) fn plan_with_registry(
     mut mapped: super::target_mapping::MappedCorrespondence,
     registry: &CorrespondenceAllocationRegistry,
-    pending_owners: &mut BTreeMap<AllocationKey, BTreeSet<String>>,
+    pending_owners: &mut BTreeMap<AllocationKey, BTreeSet<BridgeSemanticClaimOrigin>>,
 ) -> Result<PlannedCorrespondence, CorrespondenceAdmissionOutcome> {
     let mut targets = Vec::with_capacity(mapped.targets.len());
     let mut pending_records = Vec::with_capacity(mapped.targets.len());

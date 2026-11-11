@@ -8,6 +8,7 @@ impl RetainedStorageForkGrowth for EdgeTopology {
     fn prepare_fork_growth(&mut self, work: &mut Work) -> Result<Charge, Denial> {
         work.reserve_visits(std::mem::size_of::<Self>())?;
         let Self {
+            declared_dependents,
             dependency_snapshots,
             dependency_snapshot_shapes,
             dependency_snapshot_storage_custody: _,
@@ -27,6 +28,7 @@ impl RetainedStorageForkGrowth for EdgeTopology {
             };
         }
         add!(dependency_snapshots);
+        add!(declared_dependents);
         add!(dependency_snapshot_shapes);
         add!(dependency_edges);
         add!(subscriber_edges);

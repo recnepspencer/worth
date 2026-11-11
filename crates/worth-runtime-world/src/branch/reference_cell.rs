@@ -14,10 +14,20 @@ pub(crate) use protection::{
     ProductBranchHeadProtection, ProductBranchHeadProtectionAdmissionFailure,
 };
 
+mod close;
+mod durable_creation;
+mod durable_movement;
+pub(crate) use durable_creation::{
+    ActualWorldCreationRelease, WorldCreationCellRetirement, WorldCreationPermitDenial,
+    WorldProductCreationPermit,
+};
 mod protection;
+use durable_movement::ProductMovementPhase;
+pub(crate) use durable_movement::WorldProductMovementPermit;
 mod publication;
 #[cfg(test)]
 pub(crate) mod publication_unwind;
+mod readmission;
 mod retirement;
 mod successor_validation;
 pub(crate) use retirement::ProductBranchReferenceRetirement;
@@ -25,6 +35,7 @@ use successor_validation::validate_successor;
 
 #[derive(Debug)]
 struct ProductBranchReferenceImage {
+    movement: ProductMovementPhase,
     snapshot: ProductBranchReferenceSnapshot,
     protection: Option<ProductBranchHeadProtection>,
 }
@@ -64,6 +75,10 @@ pub(crate) struct ProductBranchReferenceCell {
 /// Why a reference movement could not replace the selected product head.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub(crate) enum ProductBranchReferenceCellDenial {
+    ControlledInterruption,
+    MovementInFlight,
+    RecoveryRequired,
+    DurableSubjectMismatch,
     Retired,
     ExpectedHeadMismatch(ProductBranchObservationMismatch),
     SuccessorOwnerMismatch,
@@ -143,6 +158,15 @@ pub(crate) struct ProductBranchReferenceMovement {
 }
 
 impl ProductBranchReferenceMovement {
+    pub(crate) fn retirement_snapshots(
+        &mut self,
+    ) -> (
+        &mut ProductBranchReferenceSnapshot,
+        &mut ProductBranchReferenceSnapshot,
+    ) {
+        (&mut self.before, &mut self.after)
+    }
+
     pub(crate) fn before(&self) -> &ProductBranchReferenceSnapshot {
         &self.before
     }
@@ -160,6 +184,7 @@ impl ProductBranchReferenceCell {
         match protection.validate() {
             Ok(()) => Ok(Self {
                 state: ReferenceCellState::new(ProductBranchReferenceImage {
+                    movement: ProductMovementPhase::Idle,
                     snapshot: initial,
                     protection: Some(protection),
                 }),
@@ -187,7 +212,10 @@ impl ProductBranchReferenceCell {
         f: impl FnOnce(A) -> R,
     ) -> Result<R, (ProductBranchReferenceSnapshot, A)> {
         let current = self.state.read();
-        if current.protection.is_none() || expected.snapshot() != &current.snapshot {
+        if current.protection.is_none()
+            || current.movement.denial().is_some()
+            || expected.snapshot() != &current.snapshot
+        {
             return Err((current.snapshot.clone(), argument));
         }
         Ok(f(argument))

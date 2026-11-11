@@ -38,25 +38,3 @@ pub(super) fn retain(
         .map_err(custody::execution_stop)?
         .0
 }
-
-/// The sequential suffix merges against the actual prefix root, where those
-/// same Create references have already acquired their real IDs.
-pub(super) fn resolve(
-    execution: &ExecutionRequest<'_, '_>,
-    bindings: &CommitCreatedEntityBindings,
-    intents: &mut [MutationIntent],
-) -> Result<(), TransactionCommitError> {
-    execution.run_native_with_checkpoint(|context| {
-        for intent in intents {
-            checkpoint(context, 1).map_err(custody::execution_stop)?;
-            intent.visit_entity_references_mut(|reference| {
-                if let EntityReference::Created(created) = reference {
-                    checkpoint(context, bindings.resolve_work_bound(created).ok_or_else(|| custody::execution_stop(crate::execution::RelationalExecutionDenialCause::ChargedBytesOverflow))?).map_err(custody::execution_stop)?;
-                    if let Some(id) = bindings.resolve(created) { *reference = EntityReference::Existing(id); }
-                }
-                Ok::<_, TransactionCommitError>(())
-            })?;
-        }
-        Ok(())
-    }).map_err(custody::execution_stop)?.0
-}

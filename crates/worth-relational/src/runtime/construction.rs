@@ -59,10 +59,18 @@ impl RuntimeExtensions {
 
     pub(crate) fn with_post_commit_consumer(
         mut self,
-        post_commit_consumer: std::sync::Arc<dyn crate::publication::PostCommitConsumer>,
+        post_commit_consumer: Option<std::sync::Arc<dyn crate::publication::PostCommitConsumer>>,
     ) -> Self {
-        self.post_commit_consumer = Some(post_commit_consumer);
+        self.post_commit_consumer = post_commit_consumer;
         self
+    }
+
+    pub(in crate::runtime) fn is_home_configuration_only(&self) -> bool {
+        self.custom_invariants.is_empty()
+            && self.managed_sources.is_empty()
+            && self.commit_strategy_executors.is_empty()
+            && self.post_commit_consumer.is_none()
+            && self.durable_medium.is_none()
     }
 
     pub(crate) fn with_durable_medium(
@@ -79,18 +87,29 @@ impl RuntimeExtensions {
     ) -> Result<SchemaContractRuntimeSubsystem, Denial> {
         let mut schema_contract_runtime =
             <SchemaContractRuntimeSubsystem as RuntimeSubsystem>::new(config);
-        let sources =
-            crate::validation::candidate_source::SourcePreparationGroup::for_public_sources(
-                &config.schema.registry,
-                self.managed_sources.clone(),
-            )
-            .map_err(Denial::ManagedIndexSource)?;
         schema_contract_runtime.custom_invariant_registries =
-            FrozenCustomInvariantRegistry::from_registrations(
+            FrozenCustomInvariantRegistry::compile(
+                &config.schema.registry,
                 self.custom_invariants.clone(),
-                sources,
+                self.managed_sources.clone(),
+                crate::schema::SchemaCompilationControl::Configuration,
             )
-            .map_err(Denial::CustomInvariant)?;
+            .map_err(|cause| match cause {
+                crate::validation::CustomInvariantCompilationDenial::Source(cause) => {
+                    Denial::ManagedIndexSource(cause)
+                }
+                crate::validation::CustomInvariantCompilationDenial::Duplicate(cause) => {
+                    Denial::CustomInvariant(cause)
+                }
+                crate::validation::CustomInvariantCompilationDenial::Execution(cause) => {
+                    Denial::Execution(cause)
+                }
+                crate::validation::CustomInvariantCompilationDenial::CapacityOverflow => {
+                    Denial::Execution(
+                        crate::execution::RelationalExecutionDenialCause::MemoryOverflow,
+                    )
+                }
+            })?;
         Ok(schema_contract_runtime)
     }
 
@@ -202,6 +221,7 @@ impl RelationalRuntime {
             &config.schema.registry,
             crate::schema::data::runtime_descriptor_semantics_policy().current_write_version(),
         );
+        history.retain_original_empty_birth(initial_root.retained_schema_authority());
         // The new registry contains exactly one fresh cell, bound to this
         // runtime, with a nonzero retention budget and no escaped handles.
         history
@@ -230,14 +250,17 @@ impl RelationalRuntime {
     }
 
     pub fn fork(&self) -> Result<Self, RelationalRuntimeForkDenial> {
+        let binding = self.configuration_binding();
+        let configuration = binding.operation();
         let mut history = self.history.fork_snapshot()?;
         let services = RuntimeSubsystem::fork(&self.services);
         let runtime_instance_id = services.runtime_instance_id();
         history
             .bind_fork_runtime(runtime_instance_id)
             .map_err(RelationalRuntimeForkDenial::BranchIdentityRebind)?;
-        let config = self.config.as_ref().clone();
-        let schema_contract_runtime = RuntimeSubsystem::fork(self.schema_contract_runtime.as_ref());
+        let config = configuration.config.as_ref().clone();
+        let schema_contract_runtime =
+            RuntimeSubsystem::fork(configuration.schema_contract_runtime.as_ref());
         Ok(Self::from_state(crate::runtime::RelationalRuntimeState {
             configuration: RelationalRuntimeConfiguration::new(config, schema_contract_runtime),
             commit_strategies: RuntimeSubsystem::fork(&self.commit_strategies),

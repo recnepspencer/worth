@@ -13,16 +13,18 @@ mod absence;
 mod header;
 mod records;
 
-#[derive(Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub(crate) struct CanonicalHistoricalOutputSelection {
     pub(crate) selected_basis: RelationalBranchBasisDescriptor,
     pub(crate) publications: Vec<Arc<CanonicalRequiredOutputOrigin>>,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub(crate) absences: Vec<absence::CanonicalHistoricalOutputAbsence>,
+    #[serde(skip)]
+    pub(crate) _decoded_memory: Option<Arc<ExecutionMemoryReservation>>,
 }
 
 pub(super) fn install(
-    envelope: &mut CanonicalCommitEnvelope,
+    envelope: &mut CanonicalCommitEnvelopeBody,
     basis: &AdmittedRelationalBranchBasis,
     working: &WorkingState,
     installed: RelationalInstalledApplicationPublicationAuthority,
@@ -147,6 +149,7 @@ pub(super) fn install(
             })
             .collect();
         let origin = Arc::new(CanonicalRequiredOutputOrigin {
+            _cascade_memory: None,
             commit: envelope.commit.clone(),
             basis: basis
                 .descriptor()
@@ -182,6 +185,7 @@ pub(super) fn install(
         publications.push(origin);
     }
     envelope.historical_output_selection = Some(Arc::new(CanonicalHistoricalOutputSelection {
+        _decoded_memory: None,
         selected_basis,
         publications,
         absences,
@@ -198,3 +202,22 @@ pub(super) fn install(
         })?;
     Ok(positions)
 }
+
+impl CanonicalHistoricalOutputSelection {
+    pub(crate) fn absence_decode_storage(capacity: usize) -> Option<u64> {
+        u64::try_from(
+            std::alloc::Layout::array::<absence::CanonicalHistoricalOutputAbsence>(capacity)
+                .ok()?
+                .size(),
+        )
+        .ok()
+    }
+}
+impl PartialEq for CanonicalHistoricalOutputSelection {
+    fn eq(&self, other: &Self) -> bool {
+        self.selected_basis == other.selected_basis
+            && self.publications == other.publications
+            && self.absences == other.absences
+    }
+}
+impl Eq for CanonicalHistoricalOutputSelection {}

@@ -22,6 +22,15 @@ mod candidate;
 mod capture;
 #[path = "root_capture_preparation.rs"]
 mod capture_preparation;
+#[path = "root_commit_evidence.rs"]
+mod commit_evidence;
+#[path = "root_completeness.rs"]
+mod completeness;
+#[path = "root_empty.rs"]
+mod empty;
+pub(crate) use commit_evidence::{
+    RelationalOriginalRootCommitEvidence, RelationalRootCommitEvidence,
+};
 #[cfg(test)]
 #[path = "root_content_tests.rs"]
 mod content_tests;
@@ -51,12 +60,16 @@ mod visibility;
 
 pub(super) use super::root_region::RelationalRootRegion;
 pub(crate) use super::root_region::RelationalRootRegionObservation;
+pub(super) use allocation::{reserve_arc_memory, reserve_box_memory};
 pub(crate) use allocation::{
     RelationalRootAllocationVisitor, RelationalRootAuthoritativeAllocationKind,
     RelationalRootAuthoritativeAllocationObservation,
 };
 pub(crate) use identity::RelationalBranchRootIdentityIssuer;
-pub(crate) use schema::RelationalBranchRootSchemaAuthority;
+pub(crate) use schema::{
+    retained_compilation_tree_bytes, RelationalBranchRootSchemaAuthority,
+    RetainedRelationalAspectPlans, RetainedRelationalSchemaRegistry,
+};
 pub(crate) use visibility::RelationalBranchVisibilityCommitment;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -70,7 +83,10 @@ pub(crate) enum RelationalBranchRootCaptureDenial {
     AllocationAccountingOverflow(PartitionId),
     StorageUnavailable(crate::storage::data::RelationalStorageUnavailable),
     SlotCountOverflow,
+    AllocationLayoutOverflow,
+    Request(crate::execution::RelationalExecutionDenialCause),
     CanonicalEnvelopeMismatch,
+    CanonicalPayloadBacking(worth_execution::ExecutionAllocationDenial),
     UnadmittedContent,
     Content(crate::content::RelationalContentDenial),
     StorageContentMismatch {
@@ -125,8 +141,7 @@ pub(crate) struct RelationalBranchRootAxes {
 struct RelationalCommittedBranchRoot {
     commit_change: Option<Arc<crate::storage::substrate::maintenance::CommitChange>>,
     descriptor: RelationalBranchRootDescriptor,
-    canonical_envelope: Arc<CanonicalCommitEnvelope>,
-    canonical_payload: Arc<[u8]>,
+    evidence: RelationalRootCommitEvidence,
     axes: RelationalBranchRootAxes,
     publication_cost: RelationalBranchRootPublicationCost,
 }
@@ -137,7 +152,7 @@ struct RelationalCommittedBranchRoot {
 /// publication delta. Untouched region `Arc`s are retained exactly; no hash,
 /// debug representation, or collision-prone equality proxy can authorize
 /// reuse.
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub(crate) struct RelationalBranchRoot {
     pub(crate) publication_bases: OncePublicationBases,
     content: crate::content::ContentDirectory,
@@ -149,7 +164,10 @@ pub(crate) struct RelationalBranchRoot {
     pub(crate) output_publication_positions:
         crate::history::data::RequiredOutputPublicationPositions,
     schema_authority: Arc<RelationalBranchRootSchemaAuthority>,
+    pub(crate) execution_contracts:
+        std::sync::OnceLock<Arc<crate::runtime::RelationalRootExecutionContracts>>,
     committed: Option<RelationalCommittedBranchRoot>,
+    _memory: Option<worth_execution::ExecutionMemoryReservation>,
     pub(crate) managed_source_image: std::sync::OnceLock<crate::mvcc::ManagedSourceRootImage>,
 }
 
@@ -186,53 +204,6 @@ impl RelationalBranchRootState {
 }
 
 impl RelationalBranchRoot {
-    #[cfg(test)]
-    pub(crate) fn empty() -> Arc<Self> {
-        Arc::new(Self {
-            id: 0,
-            regions: RelationalPersistentRegionSet::empty(0),
-            publication_bases: Default::default(),
-            content: Default::default(),
-            entity_slot_count: 0,
-            relation_slot_count: 0,
-            content_accumulator: [0; 32],
-            output_publication_positions: Default::default(),
-            schema_authority: RelationalBranchRootSchemaAuthority::empty(),
-            committed: None,
-            managed_source_image: std::sync::OnceLock::new(),
-        })
-    }
-
-    pub(crate) fn empty_with_schema(
-        registry: &crate::schema::data::RelationalSchemaRegistry,
-        descriptor_semantics_version: crate::schema::data::DescriptorSemanticsVersion,
-    ) -> Arc<Self> {
-        let issuer = RelationalBranchRootIdentityIssuer::default();
-        let expected = registry.authority_snapshot();
-        let schema_authority_id = issuer
-            .issue_schema_authority_id()
-            .expect(/* Proof: Each empty root creates a fresh issuer at its initial frontier; these first schema and empty-reachability allocations cannot exhaust it. */ "empty root has schema authority capacity");
-        Arc::new(Self {
-            id: 0,
-            regions: RelationalPersistentRegionSet::empty(0),
-            entity_slot_count: 0,
-            relation_slot_count: 0,
-            publication_bases: Default::default(),
-            content: Default::default(),
-            content_accumulator: [0; 32],
-            output_publication_positions: Default::default(),
-            schema_authority: RelationalBranchRootSchemaAuthority::capture(
-                schema_authority_id,
-                registry,
-                &expected,
-                descriptor_semantics_version,
-                None,
-            )
-            .expect(/* Proof: Both runtime schema plans and this initial root are built from the same validated registry and current descriptor semantics policy. */ "runtime schema plans match the runtime registry"),
-            committed: None,
-            managed_source_image: std::sync::OnceLock::new(),
-        })
-    }
     pub(crate) fn prepare_capture(
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         issuer: &RelationalBranchRootIdentityIssuer,
@@ -240,8 +211,10 @@ impl RelationalBranchRoot {
         published_delta: &RelationalPublishedPartitionDelta,
         previous: Option<&Arc<Self>>,
         envelope: Arc<CanonicalCommitEnvelope>,
+        content: &crate::content::ContentPublication,
         registry: &crate::schema::data::RelationalSchemaRegistry,
         symbols: &crate::runtime::RuntimeSymbolTable,
+        execution_contracts: Option<Arc<crate::runtime::RelationalRootExecutionContracts>>,
     ) -> Result<PreparedRelationalBranchRootCapture, RelationalBranchRootCaptureDenial> {
         capture_preparation::prepare(
             execution,
@@ -250,8 +223,10 @@ impl RelationalBranchRoot {
             published_delta,
             previous,
             envelope,
+            content,
             registry,
             symbols,
+            execution_contracts,
         )
     }
     pub(crate) fn retained_content(&self) -> &crate::content::ContentDirectory {
@@ -277,55 +252,28 @@ impl RelationalBranchRoot {
         self.committed.as_ref().map(|root| root.axes)
     }
 
-    pub(crate) fn is_complete(
-        &self,
-        execution: &worth_execution::ExecutionRequest<'_, '_>,
-        symbols: &crate::symbols::data::StringInterner,
-    ) -> bool {
-        let Some(committed) = self.committed.as_ref() else {
-            return false;
-        };
-        let Ok((reconstructed_root, reconstructed_accumulator)) =
-            self.verify_resident_storage_content(execution, symbols)
-        else {
-            return false;
-        };
-        let canonical_schema_root = crate::schema::data::schema_authority_snapshot_digest_bytes(
-            &committed.canonical_envelope.schema_authority,
-        );
-        let reconstructed_visibility = RelationalBranchVisibilityCommitment::for_root(
-            &committed.canonical_envelope,
-            reconstructed_root,
-            canonical_schema_root,
-            committed.axes.correctness_index,
-        );
-        committed.axes.storage_root == reconstructed_root
-            && self.content_accumulator == reconstructed_accumulator
-            && committed.axes.storage_root == *committed.descriptor.truth_root()
-            && committed.axes.schema_root == *committed.descriptor.schema_root()
-            && committed.axes.schema_root == canonical_schema_root
-            && self
-                .schema_authority
-                .matches(&committed.canonical_envelope.schema_authority)
-            && self.schema_authority.descriptor_semantics_version()
-                == committed.canonical_envelope.descriptor_semantics_version
-            && committed.axes.storage_version == committed.canonical_envelope.commit.version_id.0
-            && committed.axes.storage_root != [0; 32]
-            && committed.axes.visibility == reconstructed_visibility
-    }
-
-    pub(crate) fn canonical_payload(&self) -> Option<Arc<[u8]>> {
-        self.committed.as_ref().map(|c| c.canonical_payload.clone())
+    pub(crate) fn canonical_payload(&self) -> Option<Arc<RelationalOriginalRootCommitEvidence>> {
+        self.commit_evidence()?.original_payload()
     }
 
     pub(crate) fn commit_id(&self) -> Option<CommitId> {
         self.committed
             .as_ref()
-            .map(|root| root.canonical_envelope.commit.commit_id)
+            .map(|root| root.evidence.receipt().commit_id)
     }
 
     pub(crate) fn canonical_envelope(&self) -> Option<&Arc<CanonicalCommitEnvelope>> {
-        self.committed.as_ref().map(|root| &root.canonical_envelope)
+        self.commit_evidence()
+            .and_then(RelationalRootCommitEvidence::original)
+    }
+
+    pub(crate) fn commit_evidence(&self) -> Option<&RelationalRootCommitEvidence> {
+        self.committed.as_ref().map(|root| &root.evidence)
+    }
+
+    pub(crate) fn commit_receipt(&self) -> Option<&crate::history::data::RelationalCommitReceipt> {
+        self.commit_evidence()
+            .map(RelationalRootCommitEvidence::receipt)
     }
 
     pub(crate) fn schema_authority(&self) -> &RelationalBranchRootSchemaAuthority {
@@ -351,11 +299,13 @@ impl RelationalBranchRoot {
     }
 
     /// Logical authoritative partition payload bytes reachable from this root.
+    /// A recorded descriptive figure: region inventories carry per-carrier
+    /// declared bounds and may be saturated, so this total saturates as well.
     pub(crate) fn logical_partition_payload_bytes(&self) -> u64 {
         self.regions
             .values()
             .map(|region| region.allocation_inventory().authoritative_bytes)
-            .sum()
+            .fold(0_u64, u64::saturating_add)
     }
 
     pub(crate) fn publication_cost(&self) -> RelationalBranchRootPublicationCost {
@@ -378,7 +328,9 @@ impl RelationalBranchRoot {
 
     pub(crate) fn links_envelope(&self, envelope: &Arc<CanonicalCommitEnvelope>) -> bool {
         self.committed.as_ref().is_some_and(|root| {
-            Arc::ptr_eq(&root.canonical_envelope, envelope)
+            root.evidence
+                .original()
+                .is_some_and(|original| Arc::ptr_eq(original, envelope))
                 && root.axes.storage_root == *root.descriptor.truth_root()
                 && root.axes.schema_root == *root.descriptor.schema_root()
             // Exact immutable envelope custody carries root admission's
@@ -389,9 +341,7 @@ impl RelationalBranchRoot {
 
     pub(crate) fn shares_canonical_envelope_with(&self, source: &Self) -> bool {
         match (&self.committed, &source.committed) {
-            (Some(target), Some(source)) => {
-                Arc::ptr_eq(&target.canonical_envelope, &source.canonical_envelope)
-            }
+            (Some(target), Some(source)) => target.evidence.shares_owner(&source.evidence),
             (None, None) => true,
             _ => false,
         }

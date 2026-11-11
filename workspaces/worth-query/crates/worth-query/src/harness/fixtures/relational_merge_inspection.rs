@@ -28,17 +28,17 @@ const SOURCE_BRANCH: &str = "candidate";
 pub fn source_addition_inspection_artifact(
     request_execution: &worth_execution::ExecutionRequest<'_, '_>,
 ) -> RelationalMergeInspectionArtifact {
-    let mut runtime = runtime_with_default_merge_registry();
+    let runtime = runtime_with_default_merge_registry();
     create_entity_on_branch(
         request_execution,
-        &mut runtime,
+        &runtime,
         "root",
         BranchId(TARGET_BRANCH.to_string()),
     );
-    create_branch_from_main(request_execution, &mut runtime, SOURCE_BRANCH);
+    create_branch_from_main(request_execution, &runtime, SOURCE_BRANCH);
     create_entity_on_branch(
         request_execution,
-        &mut runtime,
+        &runtime,
         "feature-only",
         BranchId(SOURCE_BRANCH.to_string()),
     );
@@ -48,24 +48,24 @@ pub fn source_addition_inspection_artifact(
 pub fn deleted_vs_modified_inspection_artifact(
     request_execution: &worth_execution::ExecutionRequest<'_, '_>,
 ) -> RelationalMergeInspectionArtifact {
-    let mut runtime = runtime_with_default_merge_registry();
+    let runtime = runtime_with_default_merge_registry();
     let entity = create_entity_on_branch(
         request_execution,
-        &mut runtime,
+        &runtime,
         "shared",
         BranchId(TARGET_BRANCH.to_string()),
     );
-    create_branch_from_main(request_execution, &mut runtime, SOURCE_BRANCH);
+    create_branch_from_main(request_execution, &runtime, SOURCE_BRANCH);
     update_entity_on_branch(
         request_execution,
-        &mut runtime,
+        &runtime,
         entity,
         "main-modified",
         BranchId(TARGET_BRANCH.to_string()),
     );
     delete_entity_on_branch(
         request_execution,
-        &mut runtime,
+        &runtime,
         entity,
         BranchId(SOURCE_BRANCH.to_string()),
     );
@@ -75,40 +75,40 @@ pub fn deleted_vs_modified_inspection_artifact(
 pub fn topology_region_conflict_inspection_artifact(
     request_execution: &worth_execution::ExecutionRequest<'_, '_>,
 ) -> RelationalMergeInspectionArtifact {
-    let mut runtime = runtime_with_topology_merge_registry();
+    let runtime = runtime_with_topology_merge_registry();
     let source = create_entity_on_branch(
         request_execution,
-        &mut runtime,
+        &runtime,
         "source",
         BranchId(TARGET_BRANCH.to_string()),
     );
     let target_a = create_entity_on_branch(
         request_execution,
-        &mut runtime,
+        &runtime,
         "target-a",
         BranchId(TARGET_BRANCH.to_string()),
     );
     let target_b = create_entity_on_branch(
         request_execution,
-        &mut runtime,
+        &runtime,
         "target-b",
         BranchId(TARGET_BRANCH.to_string()),
     );
     let target_c = create_entity_on_branch(
         request_execution,
-        &mut runtime,
+        &runtime,
         "target-c",
         BranchId(TARGET_BRANCH.to_string()),
     );
     let target_d = create_entity_on_branch(
         request_execution,
-        &mut runtime,
+        &runtime,
         "target-d",
         BranchId(TARGET_BRANCH.to_string()),
     );
     let relation_a = create_relation_on_branch(
         request_execution,
-        &mut runtime,
+        &runtime,
         source,
         target_a,
         "edge-a",
@@ -117,7 +117,7 @@ pub fn topology_region_conflict_inspection_artifact(
     );
     let relation_b = create_relation_on_branch(
         request_execution,
-        &mut runtime,
+        &runtime,
         source,
         target_b,
         "edge-b",
@@ -125,22 +125,22 @@ pub fn topology_region_conflict_inspection_artifact(
         BranchId(TARGET_BRANCH.to_string()),
     );
 
-    create_branch_from_main(request_execution, &mut runtime, SOURCE_BRANCH);
+    create_branch_from_main(request_execution, &runtime, SOURCE_BRANCH);
     delete_relation_on_branch(
         request_execution,
-        &mut runtime,
+        &runtime,
         relation_a,
         BranchId(SOURCE_BRANCH.to_string()),
     );
     delete_relation_on_branch(
         request_execution,
-        &mut runtime,
+        &runtime,
         relation_b,
         BranchId(SOURCE_BRANCH.to_string()),
     );
     create_relation_on_branch(
         request_execution,
-        &mut runtime,
+        &runtime,
         source,
         target_c,
         "edge-a",
@@ -149,7 +149,7 @@ pub fn topology_region_conflict_inspection_artifact(
     );
     create_relation_on_branch(
         request_execution,
-        &mut runtime,
+        &runtime,
         source,
         target_d,
         "edge-b",
@@ -277,7 +277,7 @@ fn topology_merge_registry() -> RelationalSchemaRegistry {
 
 fn create_branch_from_main(
     request_execution: &worth_execution::ExecutionRequest<'_, '_>,
-    runtime: &mut RelationalRuntime,
+    runtime: &RelationalRuntime,
     branch_name: &str,
 ) {
     crate::runtime::fork_branch_from_exact_source(

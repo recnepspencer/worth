@@ -11,6 +11,11 @@ fn mapping_contract_pending_execution_preserves_the_actor_that_can_act() {
     // the real leased owner refusal is exercised at the Query boundary.
     let cases = [
         (
+            Kind::StaleIncarnation,
+            BankHttpDenialKind::Stale,
+            BankHttpNextAction::Refresh,
+        ),
+        (
             Kind::AllocationDenied,
             BankHttpDenialKind::Unavailable,
             BankHttpNextAction::Retry,

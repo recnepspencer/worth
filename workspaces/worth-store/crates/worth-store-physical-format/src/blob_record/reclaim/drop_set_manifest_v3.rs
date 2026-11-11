@@ -1,4 +1,5 @@
 use crate::PersistedRecordIdentity;
+use worth_foundational::CanonicalDigestId;
 
 use super::super::envelope::{nonzero_16, visit_canonical_frame, BLOB_RECORD_HEADER_BYTES};
 use super::super::{BlobRecordDenial, BlobRecordKind};
@@ -19,7 +20,7 @@ pub struct DropSetManifestV3 {
     store: [u8; 16],
     reclaim_attempt: [u8; 16],
     source_basis: BlobReclaimSourceBasisV1,
-    dropped_digest: [u8; 32],
+    dropped_digest: CanonicalDigestId,
     dropped: Box<[PersistedRecordIdentity]>,
     manifest_selected_generation: u64,
 }
@@ -65,7 +66,7 @@ impl DropSetManifestV3 {
             store: nonzero_16(store)?,
             reclaim_attempt: nonzero_16(reclaim_attempt)?,
             source_basis,
-            dropped_digest: digest_dropped(&dropped),
+            dropped_digest: CanonicalDigestId::new(digest_dropped(&dropped)),
             dropped: dropped.into_boxed_slice(),
             manifest_selected_generation,
         })
@@ -125,7 +126,7 @@ impl DropSetManifestV3 {
         self.source_basis.digest(self.store)
     }
     pub const fn dropped_digest(&self) -> [u8; 32] {
-        self.dropped_digest
+        *self.dropped_digest.bytes()
     }
     pub fn dropped(&self) -> &[PersistedRecordIdentity] {
         &self.dropped

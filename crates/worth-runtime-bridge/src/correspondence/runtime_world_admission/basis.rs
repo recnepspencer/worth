@@ -18,6 +18,7 @@ pub struct AdmittedRuntimeWorldCorrespondenceBasis {
     basis: BridgeCorrespondenceBasis,
     dependency: Option<BridgeSemanticDependencyCandidate>,
     admission_identity: BridgeCorrespondenceAdmissionIdentity,
+    signal_branch: Option<worth_signal::facade::branch::SignalBranchIdentity>,
     _authority: Arc<AuthorityWitness<BridgeRuntimeWorldAdmissionAuthorityMarker>>,
 }
 
@@ -35,6 +36,7 @@ impl AdmittedRuntimeWorldCorrespondenceBasis {
         authority: AuthorityWitness<BridgeRuntimeWorldAdmissionAuthorityMarker>,
     ) -> Self {
         Self {
+            signal_branch: None,
             basis: installed.basis().clone(),
             dependency: Some(installed.dependency().clone()),
             admission_identity: installed.admission_identity().clone(),
@@ -49,6 +51,7 @@ impl AdmittedRuntimeWorldCorrespondenceBasis {
     ) -> Self {
         let stable = Arc::<str>::from("bridge-runtime-baseline");
         Self {
+            signal_branch: None,
             basis: BridgeCorrespondenceBasis {
                 source_installation_identity: stable.clone(),
                 source_basis: stable.clone(),
@@ -89,6 +92,18 @@ impl AdmittedRuntimeWorldCorrespondenceBasis {
         self.basis.signal_graph_instance_id
     }
 
+    pub(crate) fn bind_signal_branch(
+        mut self,
+        signal: &worth_signal::facade::branch::AdmittedSignalBranchBasis,
+    ) -> Self {
+        self.signal_branch = Some(signal.observation().branch_id().clone());
+        self
+    }
+    pub(crate) fn signal_branch(
+        &self,
+    ) -> Option<&worth_signal::facade::branch::SignalBranchIdentity> {
+        self.signal_branch.as_ref()
+    }
     pub(crate) fn dependency(&self) -> Option<&BridgeSemanticDependencyCandidate> {
         self.dependency.as_ref()
     }

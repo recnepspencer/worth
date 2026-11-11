@@ -37,7 +37,7 @@ fn scenario_plan_selects_ordinary_process_and_determinism_courts_by_prefix() {
     for selector in [
         "binary_id(=worth-store-court-store-replication-physical-record-journeys-durability-admission::worth_store_court_store_replication_physical_record_journeys_durability_admission)",
         "binary_id(=worth-store-court-recovery-runtime-replication::worth_store_court_recovery_runtime_replication)",
-        "binary_id(=worth-store-court-relational::worth_store_court_relational)",
+        "binary_id(=worth-store-court-application::worth_store_court_application)",
     ] {
         assert!(command.contains(selector), "missing court selector {selector}");
     }

@@ -71,7 +71,7 @@ impl RestoredMembership {
             if !row.is_live() || row.kind_id() != Some(self.kind) || ends.source != source {
                 continue;
             }
-            let current = row.extra().authoritative_aspect_state.as_ref();
+            let current = row.extra().authoritative_aspect_state();
             context
                 .checkpoint(
                     self.payload

@@ -196,6 +196,10 @@ impl RuntimeBridgeRelationalSource {
 }
 
 impl CommittedPatchSource for RuntimeBridgeRelationalSource {
+    fn runtime_world_baseline_graph_role(&self) -> Option<&str> {
+        self.partition.is_none().then_some(self.graph_role.as_ref())
+    }
+
     fn authoritative_source_profile(
         &self,
     ) -> Option<crate::facade::BridgeAuthoritativeSourceProfile> {

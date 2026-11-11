@@ -1,0 +1,64 @@
+Command: ["cargo", "nextest", "run", "--cargo-metadata", "C:\\programming\\worth worktees\\worktrees\\m3-p3-reopen\\target\\test-cost\\query\\cold-funding-partial-home-reopen\\build\\cargo-metadata.json", "--binaries-metadata", "C:\\programming\\worth worktees\\worktrees\\m3-p3-reopen\\target\\test-cost\\query\\cold-funding-partial-home-reopen\\build\\binaries.json", "--profile", "ci", "--config-file", "C:\\programming\\worth worktees\\worktrees\\m3-p3-reopen\\target\\test-cost\\query\\cold-funding-partial-home-reopen\\nextest.toml", "--success-output", "immediate", "--ignore-default-filter", "--no-fail-fast", "--no-tests=fail", "--message-format", "libtest-json", "-E", "test(initializer_refusal_reopens_at_missing_world_origin_without_replaying_initializer) | test(journal_only_killed_home_reopens_original_inputs_and_commits_without_initializing) | test(selected_complete_home_reopens_and_selects_another_complete_checkpoint)"]
+Working directory: C:\programming\worth worktees\worktrees\m3-p3-reopen\workspaces\worth-query
+HEAD: 852154d4c4bfeca63b61654a3eec125341139cb5
+Git status --short empty: False
+Start: 2026-11-04T20:19:36.013288+00:00
+
+{"type": "cargo-invocation", "command": ["cargo", "nextest", "run", "--cargo-metadata", "C:\\programming\\worth worktees\\worktrees\\m3-p3-reopen\\target\\test-cost\\query\\cold-funding-partial-home-reopen\\build\\cargo-metadata.json", "--binaries-metadata", "C:\\programming\\worth worktees\\worktrees\\m3-p3-reopen\\target\\test-cost\\query\\cold-funding-partial-home-reopen\\build\\binaries.json", "--profile", "ci", "--config-file", "C:\\programming\\worth worktees\\worktrees\\m3-p3-reopen\\target\\test-cost\\query\\cold-funding-partial-home-reopen\\nextest.toml", "--success-output", "immediate", "--ignore-default-filter", "--no-fail-fast", "--no-tests=fail", "--message-format", "libtest-json", "-E", "test(initializer_refusal_reopens_at_missing_world_origin_without_replaying_initializer) | test(journal_only_killed_home_reopens_original_inputs_and_commits_without_initializing) | test(selected_complete_home_reopens_and_selects_another_complete_checkpoint)"], "cwd": "C:\\programming\\worth worktees\\worktrees\\m3-p3-reopen\\workspaces\\worth-query", "capture": "ordered", "mode": "build", "target_dir": "C:\\programming\\worth worktees\\worktrees\\m3-p3-reopen\\workspaces\\worth-query\\target", "cargo_profile": "test"}
+info: experimental features enabled: wrapper-scripts
+────────────
+ Nextest run ID ed5d4d71-1bcf-4ed7-a906-dc2d720c9791 with nextest profile: ci
+    Starting 3 tests across 1 binary (373 tests skipped)
+        PASS [   3.973s] (1/3) worth-query-court-query-decl-host::worth_query_court_query_decl_host host::application_home::reopening::refusals::initializer_refusal_reopens_at_missing_world_origin_without_replaying_initializer
+  output ───
+
+    running 1 test
+
+    thread 'host::application_home::reopening::refusals::initializer_refusal_reopens_at_missing_world_origin_without_replaying_initializer' (59592) panicked at crates\worth-query-court-query-decl-host\tests\worth_query_court_query_decl_host\host\application_home\reopening\refusals.rs:23:13:
+    court initializer stopped before any seed publication
+    note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+    test host::application_home::reopening::refusals::initializer_refusal_reopens_at_missing_world_origin_without_replaying_initializer ... ok
+
+    test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 375 filtered out; finished in 2.53s
+
+
+{"type":"suite","event":"started","test_count":5}
+{"type":"test","event":"started","name":"worth-query-court-query-decl-host::worth_query_court_query_decl_host$cost::certification::runtime_world_branching::cumulative::scheduled_public_read_timings_report_cold_and_warm_distributions"}
+{"type":"test","event":"started","name":"worth-query-court-query-decl-host::worth_query_court_query_decl_host$cost::certification::runtime_world_branching::cumulative::scheduled_seeded_model_broadens_public_action_roster"}
+{"type":"test","event":"started","name":"worth-query-court-query-decl-host::worth_query_court_query_decl_host$host::application_home::reopening::checkpoint_restart::journal_only_killed_home_reopens_original_inputs_and_commits_without_initializing"}
+{"type":"test","event":"started","name":"worth-query-court-query-decl-host::worth_query_court_query_decl_host$host::application_home::reopening::refusals::initializer_refusal_reopens_at_missing_world_origin_without_replaying_initializer"}
+{"type":"test","event":"started","name":"worth-query-court-query-decl-host::worth_query_court_query_decl_host$host::application_home::reopening::checkpoint_restart::selected_complete_home_reopens_and_selects_another_complete_checkpoint"}
+{"type":"test","event":"ignored","name":"worth-query-court-query-decl-host::worth_query_court_query_decl_host$cost::certification::runtime_world_branching::cumulative::scheduled_public_read_timings_report_cold_and_warm_distributions"}
+{"type":"test","event":"ignored","name":"worth-query-court-query-decl-host::worth_query_court_query_decl_host$cost::certification::runtime_world_branching::cumulative::scheduled_seeded_model_broadens_public_action_roster"}
+{"type":"test","event":"ok","name":"worth-query-court-query-decl-host::worth_query_court_query_decl_host$host::application_home::reopening::refusals::initializer_refusal_reopens_at_missing_world_origin_without_replaying_initializer","exec_time":3.972788}
+{"type":"suite","event":"ok","passed":1,"failed":0,"ignored":2,"measured":0,"filtered_out":371,"exec_time":3.972788}
+        PASS [   5.399s] (2/3) worth-query-court-query-decl-host::worth_query_court_query_decl_host host::application_home::reopening::checkpoint_restart::journal_only_killed_home_reopens_original_inputs_and_commits_without_initializing
+  output ───
+
+    running 1 test
+    test host::application_home::reopening::checkpoint_restart::journal_only_killed_home_reopens_original_inputs_and_commits_without_initializing ... ok
+
+    test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 375 filtered out; finished in 3.93s
+
+
+        PASS [   5.639s] (3/3) worth-query-court-query-decl-host::worth_query_court_query_decl_host host::application_home::reopening::checkpoint_restart::selected_complete_home_reopens_and_selects_another_complete_checkpoint
+  output ───
+
+    running 1 test
+    test host::application_home::reopening::checkpoint_restart::selected_complete_home_reopens_and_selects_another_complete_checkpoint ... ok
+
+    test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 375 filtered out; finished in 4.16s
+
+
+────────────
+     Summary [   5.644s] 3 tests run: 3 passed, 373 skipped
+{"type":"suite","event":"started","test_count":5}
+{"type":"test","event":"ok","name":"worth-query-court-query-decl-host::worth_query_court_query_decl_host$host::application_home::reopening::checkpoint_restart::journal_only_killed_home_reopens_original_inputs_and_commits_without_initializing","exec_time":5.3991036}
+{"type":"test","event":"ok","name":"worth-query-court-query-decl-host::worth_query_court_query_decl_host$host::application_home::reopening::checkpoint_restart::selected_complete_home_reopens_and_selects_another_complete_checkpoint","exec_time":5.6391488}
+{"type":"suite","event":"ok","passed":2,"failed":0,"ignored":2,"measured":0,"filtered_out":372,"exec_time":11.0382524}
+
+
+{"type": "cargo-result", "exit_code": 0}
+
+End: 2026-11-04T20:19:41.929296+00:00
+Exit code: 0

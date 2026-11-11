@@ -3,4 +3,4 @@ mod domain;
 mod key;
 
 pub use domain::NativeMemberDomain;
-pub use key::{NativeMemberKey, ProjectedMemberCoordinate};
+pub use key::{NativeMemberKey, ProjectedMemberCoordinate, ProjectedMemberStorage};

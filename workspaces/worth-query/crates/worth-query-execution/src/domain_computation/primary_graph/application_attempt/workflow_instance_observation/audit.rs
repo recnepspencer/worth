@@ -46,7 +46,7 @@ pub(in crate::domain_computation::primary_graph) fn observe(
     let transitions = result.seal().map_err(Denial::Allocation)?;
     Ok(WorthQueryWorkflowAudit::Visible {
         start: Actor::observed(roles.start),
-        end: roles.end.map(Actor::observed),
+        end: roles.end,
         transitions,
     })
 }

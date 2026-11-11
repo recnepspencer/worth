@@ -205,10 +205,10 @@ pub(in crate::harness::adapter::adapter_impl::writeback) fn execute_cross_family
     let rebuilt_execution_record = rebuilt_runtime
         .diagnostics()
         .last_writeback_execution_record()
-        .ok_or_else(|| {
-            BridgeHarnessError::new(
-                "cross-family replay/loop isolation rebuilt execution record missing",
-            )
+        .map_err(|absence| {
+            BridgeHarnessError::new(format!(
+                "cross-family replay/loop isolation rebuilt execution record missing: {absence:?}",
+            ))
         })?;
     let changed_causality = writeback_causality_basis(
         "harness:writeback-family-replay-loop-isolation-causality:changed",

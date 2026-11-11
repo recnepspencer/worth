@@ -18,22 +18,15 @@ use super::correlation::ExternalEffectCorrelationIdentity;
 /// Durable outbox fields bound into the operation's MutationIntent.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct WorthQueryDispatchOutboxRecord {
-    correlation: ExternalEffectCorrelationIdentity,
-    correlation_family: WorthQueryExternalEffectCorrelationFamily,
-    effect: String,
-    protocol_identity: BoundaryProtocolIdentity,
-    protocol_version: BoundaryProtocolVersion,
-    maximum_payload_bytes: u64,
-    payload: Vec<u8>,
-    outcome_identity: u64,
-    operation_slot: Option<String>,
+    fields: WorthQueryDispatchOutboxRestoredFields,
     inbound: Option<worth_query_installation::facade::InstalledInboundOccurrenceContract>,
 }
 
-/// Fully decoded durable fields returned by the Relational owner read.
+/// Decoded durable DATA, without installed inbound meaning or dispatch authority.
+#[derive(Clone, Debug, Eq, PartialEq)]
 pub(crate) struct WorthQueryDispatchOutboxRestoredFields {
     pub correlation: ExternalEffectCorrelationIdentity,
-    pub correlation_family: String,
+    pub correlation_family: WorthQueryExternalEffectCorrelationFamily,
     pub effect: String,
     pub protocol_identity: BoundaryProtocolIdentity,
     pub protocol_version: BoundaryProtocolVersion,
@@ -85,59 +78,61 @@ impl WorthQueryDispatchOutboxRecord {
             return None;
         };
         Some(Self {
-            correlation,
-            correlation_family: correlation_family.clone(),
-            effect: effect.clone(),
-            protocol_identity: protocol.identity().clone(),
-            protocol_version: protocol.version(),
-            maximum_payload_bytes: *maximum_payload_bytes,
-            payload,
-            outcome_identity,
-            operation_slot: None,
+            fields: WorthQueryDispatchOutboxRestoredFields {
+                correlation,
+                correlation_family: correlation_family.clone(),
+                effect: effect.clone(),
+                protocol_identity: protocol.identity().clone(),
+                protocol_version: protocol.version(),
+                maximum_payload_bytes: *maximum_payload_bytes,
+                payload,
+                outcome_identity,
+                operation_slot: None,
+            },
             inbound: contract.inbound().cloned(),
         })
     }
 
     pub const fn correlation(&self) -> &ExternalEffectCorrelationIdentity {
-        &self.correlation
+        &self.fields.correlation
     }
 
     pub const fn correlation_family(&self) -> &WorthQueryExternalEffectCorrelationFamily {
-        &self.correlation_family
+        &self.fields.correlation_family
     }
 
     pub fn effect(&self) -> &str {
-        &self.effect
+        &self.fields.effect
     }
 
     pub const fn protocol_identity(&self) -> &BoundaryProtocolIdentity {
-        &self.protocol_identity
+        &self.fields.protocol_identity
     }
 
     pub const fn protocol_version(&self) -> BoundaryProtocolVersion {
-        self.protocol_version
+        self.fields.protocol_version
     }
 
     pub const fn maximum_payload_bytes(&self) -> u64 {
-        self.maximum_payload_bytes
+        self.fields.maximum_payload_bytes
     }
 
     pub fn payload(&self) -> &[u8] {
-        &self.payload
+        &self.fields.payload
     }
 
     pub const fn outcome_identity(&self) -> u64 {
-        self.outcome_identity
+        self.fields.outcome_identity
     }
 
-    /// Exact operation slot co-committed with production outboxes. Legacy
-    /// records lacking this binding cannot select transport completion.
+    /// Exact operation slot co-committed with production outboxes. Unbound
+    /// data lacking this binding cannot select transport completion.
     pub fn operation_slot(&self) -> Option<&str> {
-        self.operation_slot.as_deref()
+        self.fields.operation_slot.as_deref()
     }
 
     pub(in crate::domain_computation) fn with_operation_slot(mut self, slot: &str) -> Self {
-        self.operation_slot = Some(slot.to_owned());
+        self.fields.operation_slot = Some(slot.to_owned());
         self
     }
 
@@ -147,36 +142,11 @@ impl WorthQueryDispatchOutboxRecord {
         self.inbound.as_ref()
     }
 
-    /// Exact persistent row comparison. Inbound installation is separately
-    /// retained by the Query owner for this process-local milestone.
-    pub(crate) fn same_persisted_fields(&self, other: &Self) -> bool {
-        self.correlation == other.correlation
-            && self.correlation_family == other.correlation_family
-            && self.effect == other.effect
-            && self.protocol_identity == other.protocol_identity
-            && self.protocol_version == other.protocol_version
-            && self.maximum_payload_bytes == other.maximum_payload_bytes
-            && self.payload == other.payload
-            && self.outcome_identity == other.outcome_identity
-            && self.operation_slot == other.operation_slot
-    }
-
-    pub(crate) fn restore(fields: WorthQueryDispatchOutboxRestoredFields) -> Option<Self> {
-        Some(Self {
-            correlation: fields.correlation,
-            correlation_family: WorthQueryExternalEffectCorrelationFamily::new(
-                fields.correlation_family,
-            )
-            .ok()?,
-            effect: fields.effect,
-            protocol_identity: fields.protocol_identity,
-            protocol_version: fields.protocol_version,
-            maximum_payload_bytes: fields.maximum_payload_bytes,
-            payload: fields.payload,
-            outcome_identity: fields.outcome_identity,
-            operation_slot: fields.operation_slot,
-            inbound: None,
-        })
+    pub(crate) fn matches_persisted_fields(
+        &self,
+        fields: &WorthQueryDispatchOutboxRestoredFields,
+    ) -> bool {
+        &self.fields == fields
     }
 }
 
@@ -227,39 +197,39 @@ pub fn bind_dispatch_outbox_create_intent(
         (
             layout.family_locator.clone(),
             AspectValue::String(InternedString::from(
-                record.correlation_family.as_str().to_owned(),
+                record.fields.correlation_family.as_str().to_owned(),
             )),
         ),
         (
             layout.effect_locator.clone(),
-            AspectValue::String(InternedString::from(record.effect.clone())),
+            AspectValue::String(InternedString::from(record.fields.effect.clone())),
         ),
         (
             layout.protocol_identity_locator.clone(),
             AspectValue::String(InternedString::from(
-                record.protocol_identity.as_str().to_owned(),
+                record.fields.protocol_identity.as_str().to_owned(),
             )),
         ),
         (
             layout.protocol_version_locator.clone(),
-            AspectValue::UInt64(u64::from(record.protocol_version.get())),
+            AspectValue::UInt64(u64::from(record.fields.protocol_version.get())),
         ),
         (
             layout.maximum_payload_bytes_locator.clone(),
-            AspectValue::UInt64(record.maximum_payload_bytes),
+            AspectValue::UInt64(record.fields.maximum_payload_bytes),
         ),
         (
             layout.payload_locator.clone(),
-            AspectValue::String(InternedString::from(hex_bytes(&record.payload))),
+            AspectValue::String(InternedString::from(hex_bytes(&record.fields.payload))),
         ),
         (
             layout.outcome_identity_locator.clone(),
-            AspectValue::UInt64(record.outcome_identity),
+            AspectValue::UInt64(record.fields.outcome_identity),
         ),
         (
             layout.operation_slot_locator.clone(),
             AspectValue::String(InternedString::from(
-                record.operation_slot.clone().unwrap_or_default(),
+                record.fields.operation_slot.clone().unwrap_or_default(),
             )),
         ),
     ]);

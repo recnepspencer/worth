@@ -8,7 +8,7 @@ use crate::authority::mutation::current_records::{
 use crate::schema::current_publication_ownership::{CATALOG, PUBLICATION};
 use crate::{
     branch::{AdmittedRelationalBranchBasis, SelectedRelationalBranchState},
-    history::data::{CanonicalCommitEnvelope, CommitId},
+    history::data::{CanonicalCommitEnvelopeBody, CommitId},
     runtime::RelationalPreparationRuntime,
     storage::overlay::{OverlayStateView, WorkingState},
     transactions::data::*,
@@ -23,7 +23,7 @@ pub(crate) fn complete(
     selected: &SelectedRelationalBranchState,
     working: &mut WorkingState,
     identities: &mut crate::authority::commit::phases::applied_mutation::PendingMutationIdentities,
-    candidate: &CanonicalCommitEnvelope,
+    candidate: &CanonicalCommitEnvelopeBody,
     roster: &CurrentPublicationRoster,
     context: &mut MapKernelContext<'_, '_>,
 ) -> Result<CompletedOwnership, TransactionCommitError> {
@@ -38,8 +38,14 @@ pub(crate) fn complete(
             "current ownership completion requires its Native storage grammar",
         ));
     };
-    let mut writer = Writer::new(
-        execution, runtime, basis, working, identities, candidate, context,
+    let mut writer = Writer::in_stage(
+        execution,
+        &runtime.config.storage,
+        basis,
+        working,
+        identities,
+        candidate,
+        context,
     )?;
     let absent_count = candidate.historical_absent_routes().count();
     if absent_count != 0 {

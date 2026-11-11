@@ -12,7 +12,7 @@ fn companion_post_ack_capture_refusal_repairs_same_capsule_with_historical_roste
     let mut callbacks = 0;
     let pending = worth_query_testkit_host::facade::host::checkpoint_capture::stopped(|phase| {
         callbacks = 0;
-        installation::in_memory_rostered_program_from_checkpoint_with_transition_in_advancement(
+        installation::WorthQueryInterimCheckpointRestore::rostered_program_with_transition_in_advancement(
             phase,
             new::host::program::<new::program::TargetProgram>(),
             installation::WorthQueryApplicationProgramRoster::new(),
@@ -37,27 +37,23 @@ fn companion_post_ack_capture_refusal_repairs_same_capsule_with_historical_roste
             },
         )
     });
-    let Some(installation::WorthQueryCheckpointCaptureDenial::Allocation(cause)) =
+    let Some(installation::WorthQueryCheckpointCaptureDenial::Execution(cause)) =
         pending.capture_denial()
     else {
-        panic!("exact native allocation cause retained")
+        panic!(
+            "complete capture keeps the original typed stop: {:?}",
+            pending.capture_denial()
+        );
     };
-    let requested = cause.requested_payload_bytes().unwrap();
+    let worth_query_execution::facade::primary_graph::WorthQueryPrimaryGraphInstallationDenialKind::ExecutionDenied {
+        kind: worth_query_execution::facade::primary_graph::WorthQueryProviderSessionDenialKind::ExecutionResource {
+            denial: worth_query_execution::facade::application_contribution::WorthQueryManagedComputationResourceDenial::MemoryLimit {
+                requested, admitted: 0,
+                level: worth_query_execution::facade::application_contribution::WorthQueryMemoryLimitLevel::Policy,
+            }, partition_identity: None, policy_ancestor: Some(0),
+        }
+    } = cause.kind() else { panic!("exact zero-memory capture cause: {cause:?}"); };
     assert!(requested > 0);
-    assert_eq!(
-        cause.classify(),
-        worth_query_host::facade::runtime::ExecutionAllocationDenialClass::Request(
-            worth_execution::WorkCeilingDenial::Admission(
-                worth_execution::LeaseDenial::MemoryExhausted(
-                    worth_execution::MemoryLimitDenial::Capacity {
-                        requested,
-                        admitted: 0,
-                        level: worth_execution::MemoryLimitLevel::Policy { ancestor: 0 }
-                    }
-                )
-            )
-        )
-    );
     assert_eq!(callbacks, 1);
     assert_eq!(successor::output::decodes(), 0);
     // An unfunded original request returns the same acknowledged capsule again.

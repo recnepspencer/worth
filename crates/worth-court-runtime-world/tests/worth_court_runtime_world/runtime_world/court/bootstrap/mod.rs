@@ -113,7 +113,13 @@ fn cancelled_duplicate_foreign_and_capacity_bootstrap_are_exact_no_effect() {
         0
     );
     assert!(limited.world.inspection_port().history_snapshot().is_err());
-    let report = limited.world.lifecycle_port().close().unwrap();
+    let policy = crate::test_execution_policy::serial_request();
+    let request = worth_execution::ExecutionRequest::serial(&policy);
+    let report = limited
+        .world
+        .lifecycle_port()
+        .close(&request, &limited.world)
+        .unwrap();
     assert!(report.retained_records().is_empty());
     let relational = limited
         .records
@@ -188,3 +194,51 @@ fn incompatible_correspondence_with_own_components_denies_then_healthy_binding_b
     court.finish();
     other.finish();
 }
+
+#[test]
+fn close_is_typed_and_prevents_a_later_bootstrap() {
+    let court = crate::court::ordinary_context::CompositeSupplyChainCourt::compile();
+    let policy = crate::test_execution_policy::serial_request();
+    let request = worth_execution::ExecutionRequest::serial(&policy);
+    let lifecycle = court.world.lifecycle_port();
+    let report = lifecycle.close(&request, &court.world).unwrap();
+    assert!(report.retained_records().is_empty());
+    assert_eq!(
+        court.world.lifecycle_observation(),
+        RuntimeWorldOwnerLifecycleObservation::Closed
+    );
+    assert!(matches!(
+        lifecycle.close(&request, &court.world),
+        Err(RuntimeWorldServiceDenial::Denied(
+            RuntimeWorldCloseDenial::AlreadyClosed
+        ))
+    ));
+    assert!(lifecycle.bootstrap_root(court.initial.clone()).is_err());
+}
+
+#[test]
+fn weak_close_rejects_a_foreign_owner_without_closing_either_world() {
+    let court = crate::court::ordinary_context::CompositeSupplyChainCourt::compile();
+    let other = crate::court::ordinary_context::CompositeSupplyChainCourt::compile();
+    let policy = crate::test_execution_policy::serial_request();
+    let request = worth_execution::ExecutionRequest::serial(&policy);
+    assert!(matches!(
+        court.world.lifecycle_port().close(&request, &other.world),
+        Err(RuntimeWorldServiceDenial::OwnerUnavailable(_))
+    ));
+    assert_eq!(
+        court.world.lifecycle_observation(),
+        RuntimeWorldOwnerLifecycleObservation::Open
+    );
+    assert_eq!(
+        other.world.lifecycle_observation(),
+        RuntimeWorldOwnerLifecycleObservation::Open
+    );
+    drop(court.bootstrap());
+    drop(other.bootstrap());
+    court.finish();
+    other.finish();
+}
+
+#[path = "origin_retirement.rs"]
+mod origin_retirement;

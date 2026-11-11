@@ -7,7 +7,11 @@ fn ordinary_equivalent_retry_skips_materialization_and_the_external_rail() {
     world
         .transport
         .under(FaultScript::CommitThenLoseResponse, PATIENT);
-    let receipt = world.commit_with(binding.clone());
+    let receipt_closed = world.commit_with(binding.clone());
+    let receipt = receipt_closed
+        .live_receipt()
+        .expect("fresh source retains its full native owner");
+    assert!(receipt.co_committed_dispatch_outbox());
     assert_eq!(
         world.notice_status(),
         DeathNoticeStatus::NotificationRequested
@@ -58,15 +62,29 @@ fn ordinary_equivalent_retry_skips_materialization_and_the_external_rail() {
         };
         assert!(matches!(
             source_completed.evidence(),
-            worth_query_host::facade::application_entry::WorthQuerySourceCompletion::Recovered { .. }
+            worth_query_host::facade::application_entry::WorthQuerySourceCompletion::Recorded { .. }
         ));
         let closed_source = source_completed
             .close_with_evidence(&source_request)
             .unwrap_or_else(|(_, cause)| panic!("lawful native source close: {cause:?}"));
-        bank_server::BankCommitReceipt::from_closed_source(closed_source)
+        bank_server::BankClosedSourceCompletion::from_query(closed_source)
     };
     let recovered = retry;
-    publication_assertions::assert_recovered_commit_axes(&receipt, &recovered);
+    let original_outbox = recovered
+        .recorded_receipt()
+        .expect("same-key retry exposes original receipt DATA")
+        .dispatch_outbox()
+        .expect("original Native rows retain the emitted outbox");
+    let inbound = original_outbox
+        .inbound()
+        .expect("the original durable operation definition matches genuine installed meaning")
+        .expect("this original operation declared inbound completion");
+    assert_eq!(inbound.source_identity(), "rail-primary");
+    assert_eq!(
+        inbound.protocol().identity().as_str(),
+        "bank.estate.death-notification"
+    );
+    publication_assertions::assert_recovered_commit_axes(&receipt_closed, &recovered);
     assert_eq!(world.transport.attempts().len(), 1);
     assert!(!dispatch_observed.load(Ordering::Acquire));
     assert_eq!(
@@ -75,7 +93,10 @@ fn ordinary_equivalent_retry_skips_materialization_and_the_external_rail() {
     );
 
     world.transport.under(FaultScript::Succeed, PATIENT);
-    let second = world.commit_second_notification(152);
+    let second_closed = world.commit_second_notification(152);
+    let second = second_closed
+        .live_receipt()
+        .expect("fresh source retains its full native owner");
     assert_eq!(second.emitted_effect_count(), 1);
     assert!(dispatch_observed.load(Ordering::Acquire));
     assert_eq!(world.transport.attempts().len(), 2);
@@ -100,7 +121,10 @@ fn equivalent_binding_does_not_bypass_fresh_authorization_currentness() {
     world
         .transport
         .under(FaultScript::CommitThenLoseResponse, PATIENT);
-    let receipt = world.commit_with(binding.clone());
+    let receipt_closed = world.commit_with(binding.clone());
+    let receipt = receipt_closed
+        .live_receipt()
+        .expect("fresh source retains its full native owner");
     time.advance_to_epoch_seconds(401);
 
     let (_denied_source_custody, denied) = {

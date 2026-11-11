@@ -3,37 +3,89 @@ use crate::storage::overlay::WorkingState;
 use crate::storage::substrate::{partition_of, slot_of, EntityRecordKind, RelationRecordKind};
 use crate::transactions::data::RecordRef;
 
-pub(super) fn write_aspect_versions_for_delta(
+pub(super) fn write_aspect_versions_for_delta_for_request(
+    request: &worth_execution::ExecutionRequest<'_, '_>,
+    staged: &mut WorkingState,
+    admitted: &super::delta_symbols::AdmittedDeltaSymbols<'_, '_>,
+    version: VersionId,
+) -> Result<(), crate::execution::RelationalExecutionDenialCause> {
+    write_using(Some(request), staged, admitted, version)
+}
+#[cfg(test)]
+fn write_aspect_versions_for_delta(
+    staged: &mut WorkingState,
+    admitted: &super::delta_symbols::AdmittedDeltaSymbols<'_, '_>,
+    version: VersionId,
+) {
+    write_using(None, staged, admitted, version)
+        .expect("ordinary fixture construction cannot refuse node admission");
+}
+fn write_using(
+    request: Option<&worth_execution::ExecutionRequest<'_, '_>>,
     staged: &mut WorkingState,
     admitted: &super::delta_symbols::AdmittedDeltaSymbols<'_, '_>,
     version_id: VersionId,
-) {
+) -> Result<(), crate::execution::RelationalExecutionDenialCause> {
     let delta = admitted.delta();
     match delta.target {
         RecordRef::Entity(entity_id) => {
             let slot = slot_of::<EntityRecordKind>(&entity_id);
-            let partition = staged.get_partition_mut(partition_of::<EntityRecordKind>(&entity_id));
+            let partition = match request {
+                Some(request) => staged.get_partition_mut_for_request(
+                    partition_of::<EntityRecordKind>(&entity_id),
+                    request,
+                )?,
+                None => staged.get_partition_mut(partition_of::<EntityRecordKind>(&entity_id)),
+            };
             let versions = partition
                 .entity_arena
-                .aspect_versions_at_mut(slot)
+                .aspect_versions_at_mut_using(slot,request)?
                 .expect(/* Proof: The owner selects this slot from the same retained arena after existence and visibility admission; arena materialization installs its kind, extra and creation columns together. */ "entity aspect version update requires a materialized slot");
             for aspect in delta.changed_aspects.iter() {
-                versions.insert(admitted.aspect(aspect), version_id.0);
+                match request {
+                    Some(request) => {
+                        versions.insert_for_request(
+                            admitted.aspect(aspect),
+                            version_id.0,
+                            request,
+                        )?;
+                    }
+                    None => {
+                        versions.insert(admitted.aspect(aspect), version_id.0);
+                    }
+                }
             }
         }
         RecordRef::Relation(relation_id) => {
             let slot = slot_of::<RelationRecordKind>(&relation_id);
-            let partition =
-                staged.get_partition_mut(partition_of::<RelationRecordKind>(&relation_id));
+            let partition = match request {
+                Some(request) => staged.get_partition_mut_for_request(
+                    partition_of::<RelationRecordKind>(&relation_id),
+                    request,
+                )?,
+                None => staged.get_partition_mut(partition_of::<RelationRecordKind>(&relation_id)),
+            };
             let versions = partition
                 .relation_arena
-                .aspect_versions_at_mut(slot)
+                .aspect_versions_at_mut_using(slot,request)?
                 .expect(/* Proof: The owner selects this slot from the same retained arena after existence and visibility admission; arena materialization installs its kind, extra and creation columns together. */ "relation aspect version update requires a materialized slot");
             for aspect in delta.changed_aspects.iter() {
-                versions.insert(admitted.aspect(aspect), version_id.0);
+                match request {
+                    Some(request) => {
+                        versions.insert_for_request(
+                            admitted.aspect(aspect),
+                            version_id.0,
+                            request,
+                        )?;
+                    }
+                    None => {
+                        versions.insert(admitted.aspect(aspect), version_id.0);
+                    }
+                }
             }
         }
     }
+    Ok(())
 }
 
 #[cfg(test)]

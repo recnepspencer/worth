@@ -6,7 +6,7 @@ use worth_query_execution::facade::product::WorthQueryProductBranchCreationRecov
 use worth_runtime_world::facade::ProductBranchCreationIntent;
 use worth_runtime_world::facade::ProductBranchCreationPlans;
 use worth_runtime_world::facade::RelationalBranchCreationPlan;
-use worth_runtime_world::facade::RuntimeWorldBranchCreationOutcome;
+use worth_query_execution::facade::product::WorthQueryProductBranchCreationOutcome;
 use worth_runtime_world::facade::RuntimeWorldCancellationSource;
 use worth_runtime_world::facade::SignalBranchCreationPlan;
 
@@ -16,14 +16,19 @@ pub fn create(
 ) -> (
     WorthQueryProductBranchCreationRecovery,
     WorthQueryProductBranch,
+    String,
 ) {
     let root = world.application.current_world();
     let source = (*(*world.application.runtime_for_test()).product_runtime_for_test())
         .admit_product_occurrence_for_test(root.occurrence_for_test())
         .expect("the root occurrence remains selectable");
-    let occupied_signal =
-        worth_signal::facade::branch::validate_signal_branch_name("query-product-1-signal")
-            .expect("the public builder's first Signal destination is valid");
+    let product = (*world.application.runtime_for_test()).product_runtime_for_test();
+    let before_fixture = product.public_branch_name_frontier_for_test().unwrap();
+    let after_fixture = before_fixture.checked_add(1).unwrap();
+    let occupied_signal = worth_signal::facade::branch::validate_signal_branch_name(format!(
+        "query-product-{after_fixture}-signal"
+    ))
+    .expect("the public builder's next owner-issued Signal destination is valid");
     let intent = ProductBranchCreationIntent::from_source(
         "occupied-signal-destination",
         ProductBranchCreationPlans::new(
@@ -35,13 +40,18 @@ pub fn create(
     )
     .expect("the owner-driven collision fixture is valid");
     let cancellation = RuntimeWorldCancellationSource::new();
-    let RuntimeWorldBranchCreationOutcome::Performed(occupied) =
+    let WorthQueryProductBranchCreationOutcome::Performed(occupied) =
         (*(*world.application.runtime_for_test()).product_runtime_for_test())
             .create_product_branch_for_test(execution, &source, None, intent, &cancellation.token())
             .expect("the real Signal destination is occupied through World")
     else {
         panic!("the collision fixture must publish its Signal fork");
     };
+    assert_eq!(occupied.lifecycle_incarnation().ordinal(), before_fixture);
+    assert_eq!(
+        product.public_branch_name_frontier_for_test().unwrap(),
+        after_fixture
+    );
     drop(source);
     let occupied_branch =
         WorthQueryProductBranch::from_occurrence_for_test(occupied.lifecycle_incarnation());
@@ -61,5 +71,11 @@ pub fn create(
     let WorthQueryProductBranchCreateError::ProductUnpublished(recovery) = error else {
         panic!("the public builder preserves Query-owned recovery custody: {error:?}");
     };
-    (recovery, occupied_branch)
+    // The colliding public creation consumed the same owner-issued ordinal for
+    // its performed Relational fork.
+    (
+        recovery,
+        occupied_branch,
+        format!("query-product-{after_fixture}-relational"),
+    )
 }

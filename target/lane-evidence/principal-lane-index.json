@@ -1,0 +1,406 @@
+[
+  {
+    "log": "target/lane-evidence/principal-cold-measurement.log",
+    "command": [
+      "C:\\Users\\shepworth\\AppData\\Local\\Programs\\Python\\Python314\\python.exe",
+      "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\target\\lane-evidence\\principal_cold_measure.py",
+      "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\target\\lane-evidence\\topology-funding\\build\\binaries.json",
+      "worth_query_topology_entry",
+      "checkpoint_recovery::computation_partition::oracle::absence::serial::checkpoint_absence_rebuilds_every_owner_call_like_fresh"
+    ],
+    "head": "dbe3280daa804f95a9ec6375f85ae78d1cbcc6dd",
+    "clean": "False",
+    "start": "2026-11-08T18:54:20.742512+00:00",
+    "end": "2026-11-08T18:55:23.913995+00:00",
+    "exit": "101",
+    "counts": {
+      "passed": 0,
+      "failed": 1,
+      "ignored": 0
+    },
+    "kind": "failed-case-debugger"
+  },
+  {
+    "log": "target/lane-evidence/principal-native-check.log",
+    "command": [
+      "cargo",
+      "check",
+      "-p",
+      "worth-relational",
+      "--tests",
+      "--message-format=json",
+      "--keep-going",
+      "--manifest-path",
+      "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\Cargo.toml"
+    ],
+    "head": "dbe3280daa804f95a9ec6375f85ae78d1cbcc6dd",
+    "clean": "False",
+    "start": "2026-11-08T19:16:40.681126+00:00",
+    "end": "2026-11-08T19:17:51.856741+00:00",
+    "exit": "101",
+    "counts": null,
+    "kind": "check"
+  },
+  {
+    "log": "target/lane-evidence/principal-native-round2-check.log",
+    "command": [
+      "cargo",
+      "check",
+      "-p",
+      "worth-relational",
+      "--tests",
+      "--message-format=json",
+      "--keep-going",
+      "--manifest-path",
+      "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\Cargo.toml"
+    ],
+    "head": "dbe3280daa804f95a9ec6375f85ae78d1cbcc6dd",
+    "clean": "False",
+    "start": "2026-11-08T19:18:41.210240+00:00",
+    "end": "2026-11-08T19:20:48.218746+00:00",
+    "exit": "0",
+    "counts": null,
+    "kind": "check"
+  },
+  {
+    "log": "target/lane-evidence/principal-native-final-check.log",
+    "command": [
+      "cargo",
+      "check",
+      "-p",
+      "worth-relational",
+      "--tests",
+      "--message-format=json",
+      "--keep-going",
+      "--manifest-path",
+      "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\Cargo.toml"
+    ],
+    "head": "dbe3280daa804f95a9ec6375f85ae78d1cbcc6dd",
+    "clean": "False",
+    "start": "2026-11-08T19:25:30.906829+00:00",
+    "end": "2026-11-08T19:26:16.898366+00:00",
+    "exit": "0",
+    "counts": null,
+    "kind": "check"
+  },
+  {
+    "log": "target/lane-evidence/principal-after-measurement.log",
+    "command": [
+      "C:\\Users\\shepworth\\AppData\\Local\\Programs\\Python\\Python314\\python.exe",
+      "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\target\\lane-evidence\\principal_after_measure.py",
+      "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\target\\lane-evidence\\principal-final-focused\\topology\\build\\binaries.json",
+      "worth_query_topology_entry",
+      "checkpoint_recovery::computation_partition::oracle::absence::serial::checkpoint_absence_rebuilds_every_owner_call_like_fresh"
+    ],
+    "head": "dbe3280daa804f95a9ec6375f85ae78d1cbcc6dd",
+    "clean": "False",
+    "start": "2026-11-08T19:47:22.710010+00:00",
+    "end": "2026-11-08T19:48:49.771099+00:00",
+    "exit": "101",
+    "counts": {
+      "passed": 0,
+      "failed": 1,
+      "ignored": 0
+    },
+    "kind": "failed-case-debugger"
+  },
+  {
+    "log": "target/lane-evidence/principal-fmt.log",
+    "command": [
+      "cargo",
+      "fmt",
+      "--manifest-path",
+      "Cargo.toml",
+      "-p",
+      "worth-relational",
+      "--",
+      "--check"
+    ],
+    "head": "dbe3280daa804f95a9ec6375f85ae78d1cbcc6dd",
+    "clean": "false",
+    "start": "2026-11-08T19:52:48.410160+00:00",
+    "end": "2026-11-08T19:52:56.595792+00:00",
+    "exit": "0",
+    "counts": null,
+    "kind": "format-or-enforcement"
+  },
+  {
+    "log": "target/lane-evidence/principal-line-caps.log",
+    "command": [
+      "C:/Program Files/Git/bin/bash.exe",
+      "scripts/ci/check_workspace_rust_line_caps.sh",
+      "dirty"
+    ],
+    "head": "dbe3280daa804f95a9ec6375f85ae78d1cbcc6dd",
+    "clean": "false",
+    "start": "2026-11-08T19:52:57.671209+00:00",
+    "end": "2026-11-08T19:53:12.029526+00:00",
+    "exit": "0",
+    "counts": null,
+    "kind": "format-or-enforcement"
+  },
+  {
+    "log": "target/lane-evidence/principal-boundary.log",
+    "command": [
+      "cargo",
+      "run",
+      "--message-format=json",
+      "--target-dir",
+      "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\target\\constitution-tools",
+      "--manifest-path",
+      "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\tools\\boundary-check\\Cargo.toml",
+      "--",
+      "--root",
+      "C:\\programming\\worth worktees\\worktrees\\m3-host-home"
+    ],
+    "head": "dbe3280daa804f95a9ec6375f85ae78d1cbcc6dd",
+    "clean": "False",
+    "start": "2026-11-08T19:53:14.960275+00:00",
+    "end": "2026-11-08T19:53:48.660847+00:00",
+    "exit": "1",
+    "counts": null,
+    "kind": "format-or-enforcement"
+  },
+  {
+    "log": "target/lane-evidence/principal-context.log",
+    "command": [
+      "cargo",
+      "run",
+      "--message-format=json",
+      "--target-dir",
+      "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\target\\constitution-tools",
+      "--manifest-path",
+      "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\tools\\agent-context\\Cargo.toml",
+      "--",
+      "check"
+    ],
+    "head": "dbe3280daa804f95a9ec6375f85ae78d1cbcc6dd",
+    "clean": "False",
+    "start": "2026-11-08T19:53:52.412443+00:00",
+    "end": "2026-11-08T19:53:52.737354+00:00",
+    "exit": "0",
+    "counts": null,
+    "kind": "format-or-enforcement"
+  },
+  {
+    "log": "target/lane-evidence/principal-after-symbols.log",
+    "command": [
+      "python",
+      "target/lane-evidence/principal_after_symbols.py",
+      "target/lane-evidence/principal-final-focused/topology/build/binaries.json"
+    ],
+    "head": "dbe3280daa804f95a9ec6375f85ae78d1cbcc6dd",
+    "clean": "false",
+    "start": "2026-11-08T19:32:26.052275+00:00",
+    "end": "2026-11-08T19:33:04.987506+00:00",
+    "exit": "0",
+    "counts": null,
+    "kind": "read-only-symbol-probe"
+  },
+  {
+    "log": "target/lane-evidence/principal-after-pdb.log",
+    "command": [
+      "python",
+      "target/lane-evidence/principal_after_pdb.py",
+      "target/lane-evidence/principal-final-focused/topology/build/binaries.json"
+    ],
+    "head": "dbe3280daa804f95a9ec6375f85ae78d1cbcc6dd",
+    "clean": "false",
+    "start": "2026-11-08T19:33:06.113686+00:00",
+    "end": "2026-11-08T19:33:08.303342+00:00",
+    "exit": "1",
+    "counts": null,
+    "kind": "read-only-symbol-probe"
+  },
+  {
+    "log": "target/lane-evidence/principal-after-pdb-fixed.log",
+    "command": [
+      "python",
+      "target/lane-evidence/principal_after_pdb.py",
+      "target/lane-evidence/principal-final-focused/topology/build/binaries.json"
+    ],
+    "head": "dbe3280daa804f95a9ec6375f85ae78d1cbcc6dd",
+    "clean": "false",
+    "start": "2026-11-08T19:33:58.416121+00:00",
+    "end": "2026-11-08T19:34:06.937803+00:00",
+    "exit": "0",
+    "counts": null,
+    "kind": "read-only-symbol-probe"
+  },
+  {
+    "log": "target/lane-evidence/principal-final-focused/topology/build/binaries-build.log",
+    "command": [
+      "cargo",
+      "nextest",
+      "list",
+      "--cargo-message-format=json",
+      "--package",
+      "worth-query-topology-entry",
+      "--lib",
+      "--cargo-profile",
+      "dev",
+      "--manifest-path",
+      "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\workspaces\\worth-query\\crates\\worth-query-certification\\fixtures\\consumer_entry\\Cargo.toml",
+      "--list-type",
+      "binaries-only",
+      "--message-format",
+      "json"
+    ],
+    "head": "dbe3280daa804f95a9ec6375f85ae78d1cbcc6dd",
+    "clean": "False",
+    "start": "2026-11-08T19:26:21.922745+00:00",
+    "end": "2026-11-08T19:30:02.017911+00:00",
+    "exit": "0",
+    "counts": null,
+    "kind": "focused-build"
+  },
+  {
+    "log": "target/lane-evidence/principal-final-focused/topology/run.log",
+    "command": [
+      "cargo",
+      "nextest",
+      "run",
+      "--cargo-metadata",
+      "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\target\\lane-evidence\\principal-final-focused\\topology\\build\\cargo-metadata.json",
+      "--binaries-metadata",
+      "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\target\\lane-evidence\\principal-final-focused\\topology\\build\\binaries.json",
+      "--profile",
+      "ci",
+      "--config-file",
+      "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\target\\lane-evidence\\principal-final-focused\\topology\\nextest.toml",
+      "--ignore-default-filter",
+      "--no-fail-fast",
+      "--no-tests=fail",
+      "--message-format",
+      "libtest-json",
+      "--success-output",
+      "immediate",
+      "-E",
+      "test(=checkpoint_recovery::computation_partition::oracle::absence::serial::checkpoint_absence_rebuilds_every_owner_call_like_fresh) + test(=checkpoint_recovery::required_chain::exact_invalidation::discontinuity::serial::a_restored_chain_settles_through_its_last_consumer_alone) + test(=checkpoint_recovery::required_chain::exact_invalidation::discontinuity::serial::a_restored_consumer_never_settles_over_a_stale_upstream) + test(=checkpoint_recovery::required_chain::exact_invalidation::discontinuity::serial::a_restored_world_verifies_each_root_and_decides_each_consumer_once) + test(=checkpoint_recovery::required_chain::exact_invalidation::locality::lifecycle::serial::authored_ring_checkpoint_reopens_then_accepts_a_new_source_edit)"
+    ],
+    "head": "dbe3280daa804f95a9ec6375f85ae78d1cbcc6dd",
+    "clean": "False",
+    "start": "2026-11-08T19:30:04.577238+00:00",
+    "end": "2026-11-08T19:30:14.361203+00:00",
+    "exit": "100",
+    "counts": {
+      "passed": 4,
+      "failed": 1,
+      "ignored": 0
+    },
+    "kind": "focused-test"
+  },
+  {
+    "log": "target/lane-evidence/principal-final-focused/store/build/binaries-build.log",
+    "command": [
+      "cargo",
+      "nextest",
+      "list",
+      "--cargo-message-format=json",
+      "--package",
+      "worth-store-court-application",
+      "--test",
+      "worth_store_court_application",
+      "--cargo-profile",
+      "ci-test",
+      "--manifest-path",
+      "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\workspaces\\worth-store\\Cargo.toml",
+      "--list-type",
+      "binaries-only",
+      "--message-format",
+      "json"
+    ],
+    "head": "dbe3280daa804f95a9ec6375f85ae78d1cbcc6dd",
+    "clean": "False",
+    "start": "2026-11-08T19:30:16.404648+00:00",
+    "end": "2026-11-08T19:33:01.619561+00:00",
+    "exit": "0",
+    "counts": null,
+    "kind": "focused-build"
+  },
+  {
+    "log": "target/lane-evidence/principal-final-focused/store/run.log",
+    "command": [
+      "cargo",
+      "nextest",
+      "run",
+      "--cargo-metadata",
+      "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\target\\lane-evidence\\principal-final-focused\\store\\build\\cargo-metadata.json",
+      "--binaries-metadata",
+      "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\target\\lane-evidence\\principal-final-focused\\store\\build\\binaries.json",
+      "--profile",
+      "ci",
+      "--config-file",
+      "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\workspaces\\worth-store\\.config\\nextest.toml",
+      "--ignore-default-filter",
+      "--no-fail-fast",
+      "--no-tests=fail",
+      "--message-format",
+      "libtest-json",
+      "--success-output",
+      "immediate",
+      "-E",
+      "test(=process::application::world_durable_release::unclean::unclean_native_tail_refuses_before_world_service_and_names_the_original_effect) + test(=process::application::world_durable_release::unclean::quiescent_kill_reopens_the_acknowledged_native_and_world_heads) + test(=process::application::world_durable_release::unclean::graceful_close_reopens_the_checkpointed_native_and_world_heads) + test(=process::application::host_oracle::graceful::graceful_home_oracle_seed_zero_preserves_relational_and_world_prefixes) + test(=process::application::host_oracle::graceful::graceful_home_oracle_seed_one_preserves_relational_and_world_prefixes)"
+    ],
+    "head": "dbe3280daa804f95a9ec6375f85ae78d1cbcc6dd",
+    "clean": "False",
+    "start": "2026-11-08T19:33:03.382064+00:00",
+    "end": "2026-11-08T19:33:22.134969+00:00",
+    "exit": "0",
+    "counts": {
+      "passed": 5,
+      "failed": 0,
+      "ignored": 0
+    },
+    "kind": "focused-test"
+  },
+  {
+    "log": "target/lane-evidence/principal-final-focused/bank/build/binaries-build.log",
+    "command": [
+      "cargo",
+      "nextest",
+      "list",
+      "--cargo-message-format=json",
+      "--package",
+      "worth-query-bank-court-external-rail-server",
+      "--test",
+      "worth_query_bank_court_external_rail_server",
+      "--cargo-profile",
+      "dev",
+      "--manifest-path",
+      "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\workspaces\\worth-query-bank-world\\Cargo.toml",
+      "--list-type",
+      "binaries-only",
+      "--message-format",
+      "json"
+    ],
+    "head": "dbe3280daa804f95a9ec6375f85ae78d1cbcc6dd",
+    "clean": "False",
+    "start": "2026-11-08T19:33:34.663721+00:00",
+    "end": "2026-11-08T19:47:08.335545+00:00",
+    "exit": "0",
+    "counts": null,
+    "kind": "focused-build"
+  },
+  {
+    "log": "target/lane-evidence/principal-final-focused/bank/run.log",
+    "command": [
+      "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\workspaces\\worth-query-bank-world\\target\\debug\\deps\\worth_query_bank_court_external_rail_server-c13c2d9ded46b1fb.exe",
+      "--exact",
+      "oracle::server_owned_effects::server::parallel_history::assessment_history::assessment_history_settles_at_each_request_width",
+      "oracle::server_owned_effects::server::parallel_history::transfer_history::seeded_transfers_match_at_host_policy_and_each_request_width",
+      "--nocapture"
+    ],
+    "head": "dbe3280daa804f95a9ec6375f85ae78d1cbcc6dd",
+    "clean": "False",
+    "start": "2026-11-08T19:47:10.905201+00:00",
+    "end": "2026-11-08T19:47:18.183429+00:00",
+    "exit": "0",
+    "counts": {
+      "passed": 2,
+      "failed": 0,
+      "ignored": 0
+    },
+    "kind": "focused-test"
+  }
+]

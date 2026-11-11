@@ -1,7 +1,7 @@
 //! Real published event membership, ordinary Query and maintained Parent share truth.
 use super::super::super::super::authentication;
 use super::super::host;
-use super::{authoring, history, mutation, paths, plain, prefix, query, rule};
+use super::{history, mutation, paths, plain, prefix, query, rule};
 use std::{collections::BTreeSet, sync::Arc};
 use worth_query_host::facade::{
     application_entry::*, primary_graph::*, runtime::ExecutionAllocationPolicy,

@@ -34,14 +34,42 @@ impl RuntimeWorldLifecyclePort {
     ) -> Result<crate::branch::RuntimeWorldBootstrapOutcome, RuntimeWorldOwnerUnavailable> {
         Ok(self.service()?.bootstrap_root(intent))
     }
-    pub fn close(
+    /// The authentic owner borrow keeps this exact root alive through every
+    /// return, including Busy/Stopped after partial retirement. No weak upgrade
+    /// can become a last-root destructor on the request-bound close path.
+    ///
+    /// ```compile_fail,E0382
+    /// use worth_runtime_world::facade::RuntimeWorldOwner;
+    /// fn close_after_drop(owner: RuntimeWorldOwner<(), (), (), (), ()>,
+    ///     request: &worth_execution::ExecutionRequest<'_, '_>) {
+    ///     let port = owner.lifecycle_port();
+    ///     drop(owner);
+    ///     port.close(request, &owner).unwrap();
+    /// }
+    /// ```
+    pub fn close<D, I, E, Ctx, T>(
         &self,
+        request: &worth_execution::ExecutionRequest<'_, '_>,
+        owner: &super::super::RuntimeWorldOwner<D, I, E, Ctx, T>,
     ) -> Result<
         super::super::RuntimeWorldCloseReport,
         super::super::RuntimeWorldServiceDenial<super::super::RuntimeWorldCloseDenial>,
-    > {
-        self.service()?
-            .close()
+    >
+    where
+        D: Copy + Ord + std::fmt::Debug + Send + Sync + 'static,
+        I: Copy + Ord + Send + Sync + 'static,
+        E: Send + Sync + 'static,
+        Ctx: Send + Sync + 'static,
+        T: Copy + Ord + Send + Sync + 'static,
+    {
+        // Close alone may reach the SAME owner in Closing to resume its task.
+        // All ordinary operations continue using service() and require Open.
+        let expected = Arc::downgrade(&owner.root);
+        let expected: Weak<dyn RuntimeWorldLifecycleService + Send + Sync> = expected;
+        if !Weak::ptr_eq(&self.owner, &expected) {
+            return Err(RuntimeWorldOwnerUnavailable::new().into());
+        }
+        RuntimeWorldLifecycleService::close(owner.root.as_ref(), request)
             .map_err(super::super::RuntimeWorldServiceDenial::Denied)
     }
     /// Automatically retires changed, unprotected history interiors throughout

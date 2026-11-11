@@ -1,9 +1,14 @@
 //! Final support compares genuine post-own and complete candidate images before World.
 use super::*;
 use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationDecisionFact as Fact;
-use crate::domain_computation::{
-    WorthQueryInvariantExecutionFailure as Failure, WorthQueryProviderSessionCommitStop as Stop,
-};
+use crate::domain_computation::WorthQueryInvariantExecutionFailure as Failure;
+
+#[derive(Debug)]
+pub(in super::super) enum CoupledSupportPreparationDenial {
+    Execution(worth_relational::facade::transactions::RelationalExecutionDenialCause),
+    Allocation(worth_execution::ExecutionAllocationDenial),
+    Changed(Failure),
+}
 pub(super) fn require(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     provider: &WorthQueryPrimaryGraphProvider,
@@ -13,7 +18,7 @@ pub(super) fn require(
         worth_relational::facade::runtime::RelationalAppliedCandidateReadIdentity,
     >,
     source: worth_relational::facade::identity::EntityId,
-) -> Result<(), Stop> {
+) -> Result<(), CoupledSupportPreparationDenial> {
     let after_own = attempt
         .coupled_preparation()
         .expect("actual registered writer")
@@ -43,12 +48,10 @@ pub(super) fn require(
             ),
             Err(cause) => {
                 if let Some(cause) = cause.relational_execution_cause() {
-                    return Err(crate::domain_computation::primary_graph::provider::relational_execution_denial::relational_execution_stop(cause, None));
+                    return Err(CoupledSupportPreparationDenial::Execution(cause));
                 }
                 if let Some(cause) = cause.allocation_denial() {
-                    return Err(Stop::PreEffectDenied(
-                        WorthQueryProviderSessionFailure::allocation_denied(cause.clone()),
-                    ));
+                    return Err(CoupledSupportPreparationDenial::Allocation(cause.clone()));
                 }
                 Failure::coupled_read_support(
                     source,
@@ -57,10 +60,23 @@ pub(super) fn require(
                 )
             }
         };
-        return Err(Stop::PreEffectDenied(
-            super::super::failure("coupled candidate decision support refused before publication")
-                .with_candidate_support_failure(failure),
-        ));
+        return Err(CoupledSupportPreparationDenial::Changed(failure));
     }
     Ok(())
+}
+
+impl CoupledSupportPreparationDenial {
+    pub(in super::super) fn into_memory_stop(
+        self,
+    ) -> crate::domain_computation::WorthQueryProviderSessionCommitStop {
+        use crate::domain_computation::WorthQueryProviderSessionCommitStop as Stop;
+        match self {
+            Self::Execution(cause) => crate::domain_computation::primary_graph::provider::relational_execution_denial::relational_execution_stop(cause, None),
+            Self::Allocation(cause) => Stop::PreEffectDenied(WorthQueryProviderSessionFailure::allocation_denied(cause)),
+            Self::Changed(failure) => Stop::PreEffectDenied(
+                super::super::failure("coupled candidate decision support refused before publication")
+                    .with_candidate_support_failure(failure),
+            ),
+        }
+    }
 }

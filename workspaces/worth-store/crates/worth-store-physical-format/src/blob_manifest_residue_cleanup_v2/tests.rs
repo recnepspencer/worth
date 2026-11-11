@@ -1,4 +1,5 @@
 use super::*;
+use worth_foundational::CanonicalDigestId;
 
 fn record(ordinal: u64) -> PersistedRecordIdentity {
     PersistedRecordIdentity::new([3; 16], ordinal).unwrap()
@@ -34,16 +35,16 @@ fn explicit_no_prep_and_exact_reserved_positive_proofs_round_trip() {
     );
     let reserved = ReservedDropRecordV1::new(record(5), [7; 32]).unwrap();
     let positive = intent(OriginalDropProofV1::ProvenNoEffect {
-        idempotency: [8; 32],
-        fingerprint: [9; 32],
+        idempotency: CanonicalDigestId::new([8; 32]),
+        fingerprint: CanonicalDigestId::new([9; 32]),
         reserved: Some(reserved),
     });
     let decoded = BlobManifestResidueCleanup::decode(&positive.encode()).unwrap();
     assert_eq!(decoded, BlobManifestResidueCleanup::V2(positive));
     assert_eq!(decoded.reserved_record(), Some(reserved));
     let recovered = intent(OriginalDropProofV1::RecoveredNoBinding {
-        idempotency: [8; 32],
-        fingerprint: [9; 32],
+        idempotency: CanonicalDigestId::new([8; 32]),
+        fingerprint: CanonicalDigestId::new([9; 32]),
         reserved,
     });
     assert_eq!(
@@ -67,8 +68,8 @@ fn invalid_or_truncated_v2_proof_does_not_fall_back_to_v1() {
     bytes.pop();
     assert!(BlobManifestResidueCleanup::decode(&bytes).is_err());
     let positive_without_reserved = OriginalDropProofV1::ProvenNoEffect {
-        idempotency: [8; 32],
-        fingerprint: [9; 32],
+        idempotency: CanonicalDigestId::new([8; 32]),
+        fingerprint: CanonicalDigestId::new([9; 32]),
         reserved: None,
     };
     assert!(BlobManifestResidueCleanupV2::intent(
@@ -93,8 +94,8 @@ fn invalid_or_truncated_v2_proof_does_not_fall_back_to_v1() {
         [5; 32],
         [6; 32],
         OriginalDropProofV1::ProvenNoEffect {
-            idempotency: [8; 32],
-            fingerprint: [9; 32],
+            idempotency: CanonicalDigestId::new([8; 32]),
+            fingerprint: CanonicalDigestId::new([9; 32]),
             reserved: Some(same_record),
         },
         7,
@@ -111,8 +112,8 @@ fn invalid_or_truncated_v2_proof_does_not_fall_back_to_v1() {
         [5; 32],
         [6; 32],
         OriginalDropProofV1::RecoveredNoBinding {
-            idempotency: [0; 32],
-            fingerprint: [9; 32],
+            idempotency: CanonicalDigestId::new([0; 32]),
+            fingerprint: CanonicalDigestId::new([9; 32]),
             reserved: same_record,
         },
         7,

@@ -18,7 +18,7 @@ where
 pub(super) fn try_install_definition<
     S: Scenario,
     P: ApplicationProgramDefinition<S, Contributions = (Contribution,)>,
->() -> Result<WorthQueryProgramApplicationRuntime<S, P>, WorthQueryInMemoryApplicationDenial>
+>() -> Result<WorthQueryProgramApplicationRuntime<S, P>, WorthQueryApplicationPreparationDenial>
 where
     P::Outputs: WorthQueryApplicationProgramRoots<S>,
 {
@@ -28,8 +28,8 @@ pub(super) fn try_install_definition_with_limits<
     S: Scenario,
     P: ApplicationProgramDefinition<S, Contributions = (Contribution,)>,
 >(
-    limits: WorthQueryInMemoryApplicationLimits,
-) -> Result<WorthQueryProgramApplicationRuntime<S, P>, WorthQueryInMemoryApplicationDenial>
+    limits: WorthQueryApplicationLimits,
+) -> Result<WorthQueryProgramApplicationRuntime<S, P>, WorthQueryApplicationPreparationDenial>
 where
     P::Outputs: WorthQueryApplicationProgramRoots<S>,
 {

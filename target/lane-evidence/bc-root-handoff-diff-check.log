@@ -1,0 +1,11 @@
+command: git diff --cached --check
+HEAD: 5692704eb7bf41cc9c182c1506067b94a7836eb5
+git_status_short_empty: false
+start_utc: 2026-11-05T05:27:56.511601+00:00
+environment: removed stale CARGO_TARGET_X86_64_PC_WINDOWS_MSVC_LINKER override
+
+end_utc: 2026-11-05T05:27:56.752901+00:00
+exit_code: 0
+tests_passed: 0
+tests_failed: 0
+tests_ignored: 0

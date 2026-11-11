@@ -1,6 +1,7 @@
 use std::fs::OpenOptions;
 use std::io::{Read, Write};
 use std::path::{Path, PathBuf};
+use worth_foundational::CanonicalDigestId;
 
 use serde::de::DeserializeOwned;
 use serde::{Deserialize, Serialize};
@@ -19,8 +20,8 @@ const PROCESS_PROTOCOL_VERSION: u16 = 1;
 pub(crate) struct ProcessSubjectRequest {
     version: u16,
     role: RootWireRole,
-    scenario_identity: [u8; 32],
-    run_identity: [u8; 32],
+    scenario_identity: CanonicalDigestId,
+    run_identity: CanonicalDigestId,
     store_root: PathBuf,
     report_path: PathBuf,
     store_identity: Option<[u8; 16]>,
@@ -40,7 +41,7 @@ pub(crate) struct ProcessSubjectReport {
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub(crate) struct ProcessIdentity {
     process_id: u32,
-    executable_sha256: [u8; 32],
+    executable_sha256: CanonicalDigestId,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -60,8 +61,8 @@ impl ProcessSubjectRequest {
         Self {
             version: PROCESS_PROTOCOL_VERSION,
             role: RootWireRole::Producer,
-            scenario_identity,
-            run_identity,
+            scenario_identity: CanonicalDigestId::new(scenario_identity),
+            run_identity: CanonicalDigestId::new(run_identity),
             store_root,
             report_path,
             store_identity: None,
@@ -82,8 +83,8 @@ impl ProcessSubjectRequest {
         Self {
             version: PROCESS_PROTOCOL_VERSION,
             role: RootWireRole::ArtifactEditor,
-            scenario_identity,
-            run_identity,
+            scenario_identity: CanonicalDigestId::new(scenario_identity),
+            run_identity: CanonicalDigestId::new(run_identity),
             store_root,
             report_path,
             store_identity: Some(manifest.store_identity()),
@@ -103,8 +104,8 @@ impl ProcessSubjectRequest {
         Self {
             version: PROCESS_PROTOCOL_VERSION,
             role: RootWireRole::Recovery,
-            scenario_identity,
-            run_identity,
+            scenario_identity: CanonicalDigestId::new(scenario_identity),
+            run_identity: CanonicalDigestId::new(run_identity),
             store_root,
             report_path,
             store_identity: Some(store_identity),
@@ -128,10 +129,10 @@ impl ProcessSubjectRequest {
         self
     }
     pub(crate) const fn scenario_identity(&self) -> [u8; 32] {
-        self.scenario_identity
+        *self.scenario_identity.bytes()
     }
     pub(crate) const fn run_identity(&self) -> [u8; 32] {
-        self.run_identity
+        *self.run_identity.bytes()
     }
     pub(crate) fn store_root(&self) -> &Path {
         &self.store_root
@@ -186,7 +187,7 @@ impl ProcessSubjectReport {
         if self.process.process_id != observed_process {
             return Err("process identity substitution".to_owned());
         }
-        if self.process.executable_sha256 != executable_sha256 {
+        if *self.process.executable_sha256.bytes() != executable_sha256 {
             return Err("process executable substitution".to_owned());
         }
         Ok(())
@@ -201,10 +202,10 @@ impl ProcessIdentity {
     fn current() -> Result<Self, String> {
         Ok(Self {
             process_id: std::process::id(),
-            executable_sha256: executable_sha256(
+            executable_sha256: CanonicalDigestId::new(executable_sha256(
                 &std::env::current_exe()
                     .map_err(|error| format!("resolve current executable: {error}"))?,
-            )?,
+            )?),
         })
     }
 }

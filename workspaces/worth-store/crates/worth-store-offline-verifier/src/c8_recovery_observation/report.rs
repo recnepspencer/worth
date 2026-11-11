@@ -1,4 +1,5 @@
 use std::path::Path;
+use worth_foundational::CanonicalDigestId;
 
 use super::artifact_walk;
 use super::conclusion;
@@ -11,7 +12,7 @@ use super::{RecoveryObserverLimits, RecoveryObserverObservationFailure};
 pub struct RecoveryObserverReport {
     pub(super) artifact_count: u64,
     pub(super) bytes_read: u64,
-    pub(super) artifact_set_digest: [u8; 32],
+    pub(super) artifact_set_digest: CanonicalDigestId,
     pub(super) evidence: RecoveryObserverEvidence,
 }
 
@@ -31,7 +32,7 @@ pub fn observe_recovery_artifacts(
     Ok(RecoveryObserverReport {
         artifact_count: counters.artifacts_observed(),
         bytes_read: counters.bytes_read(),
-        artifact_set_digest: conclusion.artifact_set_digest(),
+        artifact_set_digest: CanonicalDigestId::new(conclusion.artifact_set_digest()),
         evidence: conclusion.evidence(),
     })
 }
@@ -46,7 +47,7 @@ impl RecoveryObserverReport {
     }
 
     pub const fn artifact_set_digest(self) -> [u8; 32] {
-        self.artifact_set_digest
+        *self.artifact_set_digest.bytes()
     }
 
     pub const fn artifact_identity_count(self) -> u64 {

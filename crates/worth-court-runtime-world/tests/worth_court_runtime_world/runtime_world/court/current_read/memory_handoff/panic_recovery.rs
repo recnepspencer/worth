@@ -55,7 +55,12 @@ fn callback_panics_preserve_only_genuine_effects_and_original_recovery_can_settl
         }
         assert_ne!(actual_native, *target.basis().relational_basis());
         assert!(matches!(
-            recovery.release_effects(&handle, 0),
+            recovery.release_effects(
+                &execution,
+                &handle,
+                0,
+                court.observe_recovery_original(&execution, &handle)
+            ),
             Err(RuntimeWorldRecoveryDenial::SettlementRequired)
         ));
         let effects = recovery.inspect_effects(&handle).unwrap();
@@ -83,8 +88,15 @@ fn callback_panics_preserve_only_genuine_effects_and_original_recovery_can_settl
         assert_eq!(court.observe(&target), target);
         drop(effects);
         assert!(recovery
-            .release_effects(&handle, 0)
+            .release_effects(
+                &execution,
+                &handle,
+                0,
+                court.observe_recovery_original(&execution, &handle)
+            )
             .unwrap()
+            .into_parts()
+            .1
             .owner_retirement_work()
             .is_empty());
         assert_eq!(direct_basis(&court, &target), actual_native);

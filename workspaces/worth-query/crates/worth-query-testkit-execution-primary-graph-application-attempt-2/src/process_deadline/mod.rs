@@ -142,7 +142,10 @@ pub fn expiry_report(
     )
 }
 
-#[expect(clippy::disallowed_methods, reason = "Pipe-capture court")]
+#[expect(
+    clippy::disallowed_methods,
+    reason = "The process court drains child output pipes concurrently; this thread owns blocking I/O, not platform computation"
+)]
 pub fn capture(
     mut pipe: impl Read + Send + 'static,
     finished: mpsc::Sender<io::Result<()>>,

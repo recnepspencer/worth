@@ -131,8 +131,8 @@ impl ManifestResidueProof {
     pub(in crate::physical_runtime) fn wire_proof(self) -> OriginalDropProofV1 {
         match self {
             Self::ProvenNoEffect { fate, reserved } => OriginalDropProofV1::ProvenNoEffect {
-                idempotency: fate.drop_idempotency,
-                fingerprint: fate.drop_fingerprint,
+                idempotency: worth_foundational::CanonicalDigestId::new(fate.drop_idempotency),
+                fingerprint: worth_foundational::CanonicalDigestId::new(fate.drop_fingerprint),
                 reserved,
             },
             Self::NeverReserved { .. } => OriginalDropProofV1::NeverReserved,
@@ -140,8 +140,12 @@ impl ManifestResidueProof {
                 recovered,
                 reserved,
             } => OriginalDropProofV1::RecoveredNoBinding {
-                idempotency: recovered.reservation().request().idempotency(),
-                fingerprint: recovered.reservation().request().fingerprint(),
+                idempotency: worth_foundational::CanonicalDigestId::new(
+                    recovered.reservation().request().idempotency(),
+                ),
+                fingerprint: worth_foundational::CanonicalDigestId::new(
+                    recovered.reservation().request().fingerprint(),
+                ),
                 reserved,
             },
         }

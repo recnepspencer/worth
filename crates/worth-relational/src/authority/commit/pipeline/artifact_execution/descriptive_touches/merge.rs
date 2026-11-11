@@ -15,6 +15,7 @@ use super::{Failure, TouchBudget};
 /// inherited from a parent that had no local patch fragment.
 pub(super) fn append(
     runtime: &crate::runtime::RelationalPreparationRuntime,
+    catalog: &crate::runtime::CapturedIndexDefinitionCatalog,
     selected: &crate::branch::SelectedRelationalBranchState,
     working: &crate::runtime::WorkingState,
     adjacency: &[AdjacencyDelta],
@@ -39,6 +40,7 @@ pub(super) fn append(
             budget.checkpoint(1)?;
             if !records::entity(
                 runtime,
+                catalog,
                 selected,
                 working,
                 partition_id,
@@ -55,6 +57,7 @@ pub(super) fn append(
             budget.checkpoint(1)?;
             if !records::relation(
                 runtime,
+                catalog,
                 selected,
                 working,
                 partition_id,

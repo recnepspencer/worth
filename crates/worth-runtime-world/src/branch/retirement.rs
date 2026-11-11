@@ -2,6 +2,8 @@
 /// never cascades into a component-owner branch deletion.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum RuntimeWorldBranchRetirementDenial {
+    StaleIncarnation,
+    DurableBranchPublicationRequired,
     OwnerUnavailable,
     AlreadyRetired,
     CapacityExhausted,

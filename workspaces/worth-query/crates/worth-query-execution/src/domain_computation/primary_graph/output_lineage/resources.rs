@@ -5,9 +5,9 @@ impl WorthQueryApplicationOutputLineage {
     /// The exact committed record supplies its producer facts and original
     /// native output witness. Neither a query footprint nor a current head can
     /// substitute for these expectations when capturing reusable output.
-    pub(in crate::domain_computation::primary_graph) fn checkpoint_facts_for_receipt(
+    pub(in crate::domain_computation::primary_graph) fn checkpoint_facts_for_publication(
         &self,
-        receipt: &WorthQueryApplicationCommitReceipt,
+        receipt: crate::domain_computation::primary_graph::application_output_demand::OutputPublicationView<'_>,
     ) -> Option<(
         crate::domain_computation::primary_graph::application_checkpoint::facts::FactPayload,
         &super::SealedNativeOutputWitness,

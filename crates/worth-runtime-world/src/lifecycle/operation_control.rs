@@ -8,6 +8,9 @@ use std::sync::{
     Arc, Condvar, Mutex, Weak,
 };
 use std::time::Duration;
+#[path = "operation_control/recovered_disposition.rs"]
+mod recovered_disposition;
+pub use recovered_disposition::RuntimeWorldRecoveredDispositionObservationForTest;
 
 #[path = "operation_control/currentness_hold.rs"]
 mod currentness_hold;
@@ -20,6 +23,7 @@ pub use performed_publication::RuntimeWorldPerformedPublicationObservationForTes
 #[derive(Clone, Default)]
 pub struct RuntimeWorldOperationControlForTest {
     performed_publication: Arc<performed_publication::PerformedPublicationSlot>,
+    recovered_disposition: Arc<recovered_disposition::RecoveredDispositionSlot>,
     pending_product_compare: Arc<ProductCompareSlot>,
     pending_currentness: Arc<ProductCurrentnessSlot>,
 }
@@ -208,6 +212,21 @@ impl Drop for RuntimeWorldProductComparePauseForTest {
 }
 
 // Law 1, reach: issuance belongs to this sealed control file.
+impl<D, I, E, Ctx, T> super::RuntimeWorldPublicationPort<D, I, E, Ctx, T>
+where
+    D: Copy + Ord + std::fmt::Debug + Send + Sync + 'static,
+    I: Copy + Ord + Send + Sync + 'static,
+    E: Send + Sync + 'static,
+    Ctx: Send + Sync + 'static,
+    T: Copy + Ord + Send + Sync + 'static,
+{
+    pub fn world_operation_control_for_test(
+        &self,
+    ) -> Result<RuntimeWorldOperationControlForTest, super::RuntimeWorldOwnerUnavailable> {
+        Ok(self.service()?.state.operation_control.clone())
+    }
+}
+
 impl<D, I, E, Ctx, T> super::RuntimeWorldOwner<D, I, E, Ctx, T>
 where
     D: Copy + Ord + std::fmt::Debug + Send + Sync + 'static,

@@ -104,3 +104,104 @@ fn provider_is_destroyed_before_the_installed_handler() {
         assert_eq!(*events.lock().unwrap(), ["provider", "handler"]);
     }
 }
+
+#[test]
+fn erased_slot_and_active_handler_aliases_refuse_while_the_same_query_serves() {
+    use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::{self, AccountStatus, CapabilityTouchMutationBinding as Binding};
+    use worth_query_execution::facade::primary_graph::{WorthQueryHomeRetirementDenial as Failure, WorthQueryOperationHomeRetirementDenial as Denial, WorthQueryPrincipalResolutionMode};
+    use worth_execution::ExecutionRequest;
+    let host = worth_query_testkit_execution_primary_graph_application_attempt_2::test_request_policy::serial_request();
+    let execution = ExecutionRequest::serial(&host);
+    let mut world = fixture::installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
+    let scope = fixture::live_scope();
+    let original = Arc::as_ptr(
+        &*world
+            .application
+            .mutation_handlers_mut_for_test()
+            .entries_mut_for_test()
+            .get_mut(Binding::IDENTITY)
+            .unwrap()
+            .value_mut_for_test(),
+    );
+    let alias = Arc::clone(
+        &*world
+            .application
+            .mutation_handlers_mut_for_test()
+            .entries_mut_for_test()
+            .get_mut(Binding::IDENTITY)
+            .unwrap()
+            .value_mut_for_test(),
+    );
+    assert!(matches!(
+        world
+            .application
+            .mutation_handlers_mut_for_test()
+            .preflight_home_retirement_for_test(&execution),
+        Err(Failure::Handler {
+            binding: Binding::IDENTITY,
+            cause: Denial::Busy
+        })
+    ));
+    let resolve = |world: &fixture::AuthorizationWorld| {
+        world
+            .application
+            .with_host_advancement(|phase| {
+                world
+                    .selected_product(&phase.test_host_request_for_test())
+                    .resolve_entity(
+                        &phase,
+                        AccountStatus::at("AccountStatus"),
+                        "open".to_owned(),
+                        &scope,
+                        WorthQueryPrincipalResolutionMode::Ordinary,
+                    )
+                    .expect("the same original Query resolves its account after refusal")
+            })
+            .unwrap()
+    };
+    let before = resolve(&world);
+    drop(alias);
+    let alias = world
+        .application
+        .mutation_handlers_mut_for_test()
+        .get_for_test::<Binding>()
+        .unwrap();
+    assert!(matches!(
+        world
+            .application
+            .mutation_handlers_mut_for_test()
+            .preflight_home_retirement_for_test(&execution),
+        Err(Failure::Handler {
+            binding: Binding::IDENTITY,
+            cause: Denial::Busy
+        })
+    ));
+    let after = resolve(&world);
+    assert_eq!(before.entity_id_for_test(), after.entity_id_for_test());
+    assert!(std::ptr::addr_eq(
+        original,
+        Arc::as_ptr(
+            &*world
+                .application
+                .mutation_handlers_mut_for_test()
+                .entries_mut_for_test()
+                .get_mut(Binding::IDENTITY)
+                .unwrap()
+                .value_mut_for_test()
+        )
+    ));
+    drop(alias);
+    world
+        .application
+        .mutation_handlers_mut_for_test()
+        .preflight_home_retirement_for_test(&execution)
+        .unwrap();
+    let final_observation = resolve(&world);
+    assert_eq!(
+        before.entity_id_for_test(),
+        final_observation.entity_id_for_test()
+    );
+}

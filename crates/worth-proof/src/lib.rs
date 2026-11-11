@@ -7,13 +7,63 @@ mod band;
 mod binding;
 mod brand;
 mod collections;
+mod composite_signal_publication;
 mod composition;
+pub use composite_signal_publication::{
+    AdmittedCompositeSignalPublication, CompositeSignalPublicationAdmissionDenial,
+    InstalledCompositeSignalPublicationAuthority, InstalledCompositeSignalPublicationOwner,
+};
 pub mod contracts;
+mod durable_publication;
+mod proven_no_effect_publication;
+pub use proven_no_effect_publication::ProvenNoEffectPublication;
+mod signal_branch_readmission;
+pub use signal_branch_readmission::SignalBranchReadmitted;
+mod signal_owner_readmission;
+pub use signal_owner_readmission::SignalOwnerReadmitted;
 mod dx;
 mod effect;
+mod home_binding;
+mod home_query_corrections;
+pub use home_query_corrections::{
+    AdmittedHomeQueryCorrections, CommittedHomeQueryCorrection, HomeQueryCorrectionSubject,
+    HomeQueryCorrectionsAuthority, HomeQueryCorrectionsOwner, NoEffectHomeQueryCorrection,
+};
+mod home_query_dispatch;
+pub use home_query_dispatch::{
+    AdmittedHomeQueryDispatch, CommittedHomeQueryDispatch, HomeQueryDispatchAuthority,
+    HomeQueryDispatchOwner, HomeQueryDispatchSubject, NoEffectHomeQueryDispatch,
+    QueryDispatchCloseCustody,
+};
+mod home_query_obligations;
+pub use home_query_obligations::{
+    AdmittedHomeQueryObligations, CommittedHomeQueryObligation, HomeQueryObligationSubject,
+    HomeQueryObligationsAuthority, HomeQueryObligationsOwner, NoEffectHomeQueryObligation,
+};
+mod workflow_ending_actor;
+pub use workflow_ending_actor::AdmittedWorkflowEndingActor;
+mod home_incarnation;
+pub use home_incarnation::{HomeIncarnationDenial, HomeIncarnationFence};
+mod home_program_transition;
+pub use home_program_transition::{
+    AdmittedHomeProgramTransitionCatalog, AdmittedHomeProgramTransitionExecution,
+    AdmittedHomeProgramTransitionPlan, AdmittedHomeProgramTransitionPlanningRequest,
+    AdmittedHomeProgramTransitionStep, AdmittedHomeProgramTransitionSuccessor,
+    CompletedHomeProgramTransitionSteps, HomeProgramTransitionAdmissionDenial,
+    HomeProgramTransitionAuthority, HomeProgramTransitionBindingCommitted,
+    HomeProgramTransitionOwner, HomeProgramTransitionRequired,
+};
+mod home_world_selection;
+pub use home_world_selection::{
+    AdmittedHomeWorldSelection, CompletedHomeWorldSelection, HomeWorldSelectionAdmissionDenial,
+    HomeWorldSelectionAuthority, HomeWorldSelectionCompletionOwner, HomeWorldSelectionOwner,
+    VerifiedHomeWorldSelection,
+};
+mod home_recovery;
 mod linear;
 mod managed_access;
 mod managed_source;
+mod native_checkpoint_originals;
 pub use managed_access::{
     AdmittedManagedIndexCoverage, BorrowedManagedCoverageFrame, BorrowedRealizedFootprintFrame,
     CapturedRealizedFootprint, ManagedCoverageDisposition, ManagedCoverageFrontier,
@@ -21,12 +71,15 @@ pub use managed_access::{
     ManagedIndexCoverageDenial, ManagedIndexCoverageIssuer, RealizedFootprintAuthority,
     RealizedFootprintDenial, RealizedFootprintIssuer, VerifiedRealizedFootprint,
 };
+pub use native_checkpoint_originals::NativeCheckpointOriginalsVerified;
 mod phase;
 pub mod prelude;
 mod proof;
 pub mod raw;
 mod recipe;
+mod relational_publication_readmission;
 mod release;
+pub use relational_publication_readmission::RelationalPublicationReadmitted;
 mod source_observation;
 pub use application_publication::{
     AdmittedAuthoredOutputRetirement, AdmittedCheckpointProgramActivation,
@@ -58,6 +111,12 @@ pub use crate::dx::{
     ProofFlow, ProofOutcome, ProofOutcomeKind, ReadyJoinRecipeDxExt, ReadyJoinSummary,
     RecipeStageDxExt, RecipeStageKind, ResolvedBridgedRecipeDxExt, ResolvedRecipeDxExt,
     UnresolvedRecipeDxExt,
+};
+pub use durable_publication::DurablyCommitted;
+pub use home_binding::AdmittedApplicationHomeBinding;
+pub use home_recovery::{
+    CustodyReadmitted, FreshNativeInitialization, HomeAdmitted, QueryReadmitted,
+    RelationalReadmitted, StoreRecovered, TransitionSettled, WorldReconciled,
 };
 pub use raw::PhaseMarker;
 pub use raw::{
@@ -121,3 +180,16 @@ pub use source_observation::{
 
 #[doc(hidden)]
 pub use band::__band_guard_package_matches_any_prefix;
+
+pub use home_recovery::SignalReadmitted;
+
+mod branch_program_source;
+pub use branch_program_source::{
+    AdmittedBranchProgramSource, BranchProgramSourceAdmissionDenial,
+    InstalledBranchProgramSourceAuthority, InstalledBranchProgramSourceOwner,
+};
+
+mod bridge_program_installation;
+pub use bridge_program_installation::{
+    BridgeProgramInstallationBinding, BridgeProgramInstallationDenial, InstalledBridgeProgramOwner,
+};

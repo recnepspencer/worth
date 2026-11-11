@@ -85,6 +85,6 @@ const COURTS: &[(&str, &str)] = &[
     ("worth-store-court-recovery-runtime-replication-store-physical-blob-journeys", "worth_store_court_recovery_runtime_replication_store_physical_blob_journeys"),
     ("worth-store-court-recovery-runtime-replication-store-physical-record-journeys-durability-admission", "worth_store_court_recovery_runtime_replication_store_physical_record_journeys_durability_admission"),
     ("worth-store-court-recovery-runtime-replication-store-physical-record-journeys-record-chunk-views", "worth_store_court_recovery_runtime_replication_store_physical_record_journeys_record_chunk_views"),
-    ("worth-store-court-relational", "worth_store_court_relational"),
+    ("worth-store-court-application", "worth_store_court_application"),
     ("worth-store-court-snapshots", "worth_store_court_snapshots"),
 ];

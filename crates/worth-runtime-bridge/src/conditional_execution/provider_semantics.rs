@@ -80,6 +80,7 @@ impl BridgeConditionalProviderHeapRetention {
 
 #[derive(Clone)]
 pub(super) struct BridgeErasedProviderSemanticContract {
+    authored: Option<worth_foundational::facade::BridgeAuthoredProviderDescription>,
     contract_type: TypeId,
     contract: Arc<dyn Any + Send + Sync>,
     equivalent: fn(&dyn Any, &dyn Any) -> bool,
@@ -105,6 +106,7 @@ impl BridgeErasedProviderSemanticContract {
         let semantic_contract = provider.semantic_contract();
         let retained_heap = provider.retained_heap_bytes(&semantic_contract);
         Self {
+            authored: None,
             contract_type: TypeId::of::<P::SemanticContract>(),
             contract: Arc::new(semantic_contract),
             equivalent: equivalent::<P::SemanticContract>,
@@ -112,8 +114,25 @@ impl BridgeErasedProviderSemanticContract {
         }
     }
 
+    pub(super) fn capture_authored<P: BridgeConditionalProviderSemantics>(
+        provider: &P,
+        description: worth_foundational::facade::BridgeAuthoredProviderDescription,
+    ) -> Self {
+        let mut captured = Self::capture(provider);
+        captured.authored = Some(description);
+        captured
+    }
+
+    pub(super) fn retained_provider_heap_bytes(
+        &self,
+    ) -> Result<u64, BridgeConditionalProviderRetentionOverflow> {
+        self.retained_heap
+            .map(|retained| retained.provider_state_bytes())
+    }
+
     pub(super) fn is_equivalent_to(&self, candidate: &Self) -> bool {
-        self.contract_type == candidate.contract_type
+        self.authored == candidate.authored
+            && self.contract_type == candidate.contract_type
             && (self.equivalent)(self.contract.as_ref(), candidate.contract.as_ref())
     }
 

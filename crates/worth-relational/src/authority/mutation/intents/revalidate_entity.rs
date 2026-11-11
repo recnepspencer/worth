@@ -10,18 +10,25 @@
 use crate::authority::mutation::outcomes::MutationOutcome;
 use crate::authority::mutation::stale_targets::ensure_entity_target_is_current;
 use crate::authority::mutation::MutationWorkspace;
-use crate::transactions::data::{CommitConflict, RevalidateEntityIntent};
+use crate::transactions::data::{RevalidateEntityIntent, TransactionCommitError};
 
 pub(super) fn apply(
     intent: &RevalidateEntityIntent,
     workspace: &mut MutationWorkspace<'_>,
-) -> Result<MutationOutcome, CommitConflict> {
+) -> Result<MutationOutcome, TransactionCommitError> {
     workspace.with_context(|context| {
         ensure_entity_target_is_current(context.state, intent.entity_id)?;
         context
             .state
-            .mark_entity_slot_touched(intent.entity_id.partition_id, intent.entity_id.slot_index());
-        Ok::<(), CommitConflict>(())
+            .mark_entity_slot_touched_for_request(
+                intent.entity_id.partition_id,
+                intent.entity_id.slot_index(),
+                &context.execution,
+            )
+            .map_err(|cause| {
+                crate::transactions::data::TransactionCommitError::execution(cause.into())
+            })?;
+        Ok::<(), TransactionCommitError>(())
     })?;
     Ok(MutationOutcome::record_revalidated())
 }

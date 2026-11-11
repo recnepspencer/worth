@@ -141,13 +141,15 @@ fn held_completed_evidence_preserves_exact_old_replay_without_eviction() {
             idempotency(91, 91),
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         );
-        let WorthQueryApplicationCommitOutcome::AlreadyCommitted(replayed) = outcome else {
+        let WorthQueryApplicationCommitOutcome::RecoveredCommitted(replayed) = outcome else {
             panic!("the original prepared retry must recover its retained receipt: {outcome:?}")
         };
         assert_eq!(held.len(), 64);
-        assert!(replayed.is_same_authoritative_commit(first));
+        worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::recorded_receipt::assert_original(
+            &replayed, first,
+        );
         assert_eq!(replayed.commit_reference(), first.commit_reference());
-        assert_eq!(replayed.mutation_work(), Some(original_work));
+        // D9 retires reconstructed runtime work; fresh work assertions and original semantic equality remain.
         world
             .application
             .with_host_advancement(|phase| {

@@ -14,22 +14,50 @@
 //! tail back to Relational through
 //! [`DurabilityAccess::recovery_plan_from_source`](crate::durability::access::DurabilityAccess::recovery_plan_from_source).
 
+mod native_journal_source;
+mod source_retirement;
+pub(crate) use native_journal_source::NativeJournalSourceEdge;
+pub use source_retirement::{RelationalMediumRetirementDenial, RelationalMediumRetirementProgress};
 mod binding;
+mod checkpoint_selection;
+pub use checkpoint_selection::{
+    CheckpointSelectionIdentity, CheckpointSelectionObservation, OpaqueCapturedCheckpointSubject,
+    RelationalCheckpointAcknowledgementDenial, RelationalCheckpointAcknowledgementProgress,
+};
 mod cold_source;
+mod commit_publication;
 pub use cold_source::{RelationalDurableColdSource, RelationalDurableMemberLocator};
 mod member_custody;
-pub use member_custody::RelationalDurableMemberCustody;
+pub(crate) use member_custody::{
+    NativeMemberRetirementHandoff, NativeMemberSlotDenial, NativeSourceMemberState,
+};
+pub use member_custody::{
+    RelationalDurableMemberCustody, RelationalDurableMemberRetirement,
+    RelationalDurableMemberRetirementObservation, RelationalDurableMemberRetirementRefusal,
+    RetiredRelationalDurableMemberCustody,
+};
+mod read_protection;
+pub use read_protection::{
+    RelationalDurableOwnedReadRefusal, RelationalDurableReadBounds, RelationalDurableReadPayload,
+    RelationalDurableReadProtection,
+};
 mod recovery_source;
 mod transition_read;
 mod unresolved;
 pub use transition_read::RelationalDurableTransitionReadFailure;
 pub(crate) use transition_read::RelationalTransitionHistoryReader;
 
+pub use binding::RelationalHomeProgramWriteDenial;
+pub use binding::RelationalInitialInputsPublicationStop;
 pub(crate) use binding::{
-    RelationalDurableCommitReadmission, RelationalDurableMediumBinding, RelationalDurableStepStop,
+    CheckpointPublication, RelationalCommittedInitialInputs, RelationalDurableCommitReadmission,
+    RelationalDurableMediumBinding, RelationalDurableMediumTransfer, RelationalDurableStepStop,
+    RelationalDurableTransitionPublication, SealedRelationalMediumBinding,
 };
+pub(crate) use commit_publication::RelationalCommitPublication;
 pub use recovery_source::{RelationalDurableCheckpointSource, RelationalDurableRecoverySource};
 pub use unresolved::{RelationalDurabilityUnresolved, RelationalDurabilityUnresolvedSubject};
+pub use worth_foundational::facade::DurablePublicationFate;
 
 use crate::durability::branch_transition_artifact::RelationalBranchTransitionArtifact;
 use crate::durability::canonical_commit_artifact::RelationalCanonicalCommitArtifact;
@@ -51,6 +79,63 @@ use crate::durability::canonical_commit_artifact::RelationalCanonicalCommitArtif
 /// runtime, and a forked runtime never inherits publication access. Speculative
 /// forks may carry only a read-only historical-transition reader.
 pub trait RelationalDurableMedium: Send + Sync + std::fmt::Debug {
+    /// Only an Application Home composition binds its original transition
+    /// receiver. A medium without that owner admits no Home transition proof.
+    fn home_transition_authority(&self) -> Option<&worth_proof::HomeProgramTransitionAuthority> {
+        None
+    }
+    /// Only the actual Home medium carries its already source-bound selection.
+    fn home_world_selection(
+        &self,
+    ) -> Option<
+        std::sync::Arc<
+            worth_proof::VerifiedHomeWorldSelection<
+                std::sync::Arc<crate::durability::RelationalWorldSourceCatalog>,
+            >,
+        >,
+    > {
+        None
+    }
+    fn home_transition_required(&self) -> Option<&worth_proof::HomeProgramTransitionRequired> {
+        None
+    }
+    fn publish_initial_inputs(
+        &self,
+        _artifact: &crate::durability::source_initial_inputs::RelationalSourceInitialInputsArtifact,
+        _request: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> DurablePublicationFate<
+        crate::durability::source_initial_inputs::RelationalInitialInputsPublicationDetail,
+    > {
+        DurablePublicationFate::ProvenNoEffect { detail: crate::durability::source_initial_inputs::RelationalInitialInputsPublicationDetail::UnsupportedProvider }
+    }
+    /// Non-consuming validation of this original provider's retirement path.
+    /// Unknown providers refuse before the Native publication binding is sealed.
+    fn preflight_source_retirement(
+        &self,
+        source: &dyn RelationalDurableColdSource,
+        request: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> Result<(), RelationalMediumRetirementDenial> {
+        source_retirement::unsupported(request, source)
+    }
+    /// Retire this provider's actual physical capabilities. The original Box
+    /// and its inert allocations stay owned until explicit unbudgeted reclaim.
+    fn advance_source_retirement(
+        &mut self,
+        source: &dyn RelationalDurableColdSource,
+        request: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> Result<RelationalMediumRetirementProgress, RelationalMediumRetirementDenial> {
+        source_retirement::unsupported(request, source)?;
+        unreachable!("unknown provider refuses")
+    }
+
+    /// Read the exact Home attempt's actual terminal receipt. A caller-supplied
+    /// fate or separately paired receipt is not an answer to this question.
+    fn checkpoint_selection(
+        &self,
+        _subject: &OpaqueCapturedCheckpointSubject,
+    ) -> CheckpointSelectionObservation {
+        CheckpointSelectionObservation::NotSelected
+    }
     /// The same durable journal's read-only source, available before the first
     /// publication. Each committed artifact remains readable at its position;
     /// member placement and retention stay owned by the source provider.
@@ -68,41 +153,24 @@ pub trait RelationalDurableMedium: Send + Sync + std::fmt::Debug {
     /// identical retry of an artifact that already was. `ProvenNoEffect` means
     /// nothing durable changed. `Indeterminate` means the publication may or
     /// may not have become durable; only the medium's own recovery can tell.
-    fn publish(&self, artifact: &RelationalCanonicalCommitArtifact)
-        -> RelationalDurablePublication;
+    fn publish(
+        &self,
+        artifact: &RelationalCanonicalCommitArtifact,
+    ) -> DurablePublicationFate<String>;
 
     /// Make one branch transition artifact durable at its sequence, with the
     /// same answers as [`Self::publish`].
     fn publish_transition(
         &self,
         artifact: &RelationalBranchTransitionArtifact,
-    ) -> RelationalDurablePublication;
-
-    /// The in-crate test medium's durable contents behind this medium, so
-    /// Relational's own durability tests can recover from the medium a
-    /// runtime publishes to. Exists only in this crate's unit-test build.
-    #[cfg(test)]
-    #[doc(hidden)]
-    fn in_crate_test_medium(
-        &self,
-    ) -> Option<std::sync::Arc<crate::tests::support::TestDurableMedium>> {
-        None
-    }
-}
-
-/// A medium's answer to one publication.
-#[derive(Debug, Clone, PartialEq, Eq)]
-#[non_exhaustive]
-pub enum RelationalDurablePublication {
-    Committed,
-    ProvenNoEffect { detail: String },
-    Indeterminate { detail: String },
+    ) -> DurablePublicationFate<String>;
 }
 
 /// Why a medium-backed publication stopped before any effect.
 #[derive(Debug, Clone, PartialEq, Eq)]
 #[non_exhaustive]
 pub enum RelationalDurablePublicationRefusal {
+    HomeProgramTransition(RelationalHomeProgramWriteDenial),
     /// The medium proved the publication had no durable effect.
     ProvenNoEffect { detail: String },
     /// The medium moved into the runtime recovery rebuilt, so this runtime no

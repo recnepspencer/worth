@@ -2,6 +2,8 @@ mod active_registry;
 mod published_capacity;
 mod published_closeout;
 mod published_registry;
+mod published_release;
+pub(crate) use published_release::PublishedSnapshotReleaseObservation;
 mod version_counts;
 
 #[cfg(test)]
@@ -84,6 +86,9 @@ pub(crate) struct SnapshotHandleRegistryCostCounters {
 }
 
 impl SnapshotHandles {
+    pub(crate) fn try_retained_registrations(&self) -> Result<(bool, bool), ()> {
+        Ok((!self.active.try_empty()?, !self.published.try_empty()?))
+    }
     pub(crate) fn snapshot_identity_binding(&self) -> Arc<AtomicU64> {
         Arc::clone(&self.next_snapshot_id)
     }
@@ -104,6 +109,19 @@ impl SnapshotHandles {
 
     pub(crate) fn active_count(&self) -> usize {
         self.active.count()
+    }
+
+    pub(crate) fn published_release_observation(
+        &self,
+        snapshot_id: SnapshotId,
+    ) -> Option<Arc<PublishedSnapshotReleaseObservation>> {
+        self.published.release_observation(snapshot_id)
+    }
+    pub(crate) fn owns_published_release(
+        &self,
+        observation: &PublishedSnapshotReleaseObservation,
+    ) -> bool {
+        observation.belongs_to(&self.published)
     }
 
     pub(crate) fn published_count(&self) -> usize {
@@ -186,11 +204,23 @@ impl SnapshotHandles {
         self.published.insert(snapshot_id, binding);
     }
 
-    pub(crate) fn remove_published(
+    #[cfg(test)]
+    pub(crate) fn remove_published(&self, snapshot_id: SnapshotId) -> Option<()> {
+        self.published.remove(snapshot_id, None)
+    }
+    pub(crate) fn remove_published_accounted(
         &self,
         snapshot_id: SnapshotId,
-    ) -> Option<SnapshotHandleBinding> {
-        self.published.remove(snapshot_id)
+        capacity: &PublishedSnapshotCapacityOwner,
+    ) -> Option<()> {
+        self.published.remove(snapshot_id, Some(capacity))
+    }
+    pub(crate) fn try_remove_original(
+        &self,
+        original: &Arc<PublishedSnapshotReleaseObservation>,
+        capacity: &PublishedSnapshotCapacityOwner,
+    ) -> Result<Option<bool>, ()> {
+        self.published.try_remove_original(original, capacity)
     }
 
     pub(crate) fn published_binding(
@@ -213,8 +243,10 @@ impl SnapshotHandles {
         snapshot_id: SnapshotId,
     ) -> Option<PublishedSnapshotCloseout> {
         self.published
-            .retains_handle(snapshot_id)
-            .then(|| PublishedSnapshotCloseout::new(&self.published, capacity, snapshot_id))
+            .release_observation(snapshot_id)
+            .map(|original| {
+                PublishedSnapshotCloseout::new(&self.published, capacity, snapshot_id, original)
+            })
     }
 
     #[cfg(test)]

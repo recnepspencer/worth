@@ -21,15 +21,21 @@ pub(crate) use discovery::{
     discover_sources, AdmittedWalInventory, BootstrapDiscovery, CheckpointDiscovery,
     DiscoveryMaterial, WalDiscovery,
 };
-pub(crate) use handoff::finish_recovery_after_cleanup;
+pub(crate) use handoff::{finish_recovery_after_cleanup, RecoveryHandoffBacking};
 pub(crate) use manifest_facts::{ManifestFactsDiscovery, ManifestFactsState};
 pub(crate) use planning::{
     plan_recovery, ExceededManifestEntries, ValidatedManifestResidueCleanup,
 };
-pub(crate) use publication::publish_recovery;
+pub(crate) use publication::{publish_recovery, PublicationPayload, PublicationStateBacking};
 pub(crate) use recovery::recover;
-pub(crate) use reopen::reopen_recovery;
-pub(crate) use staging::{stage_recovery, RecoveryStagingCancellation, RecoveryStagingInput};
+pub(crate) use reopen::{prepare_selected_custody_rebind, reopen_recovery};
+pub(crate) use staging::{
+    stage_recovery, RecoveryStagingCancellation, RecoveryStagingInput, RecoveryStagingInputBacking,
+    RecoveryStagingInputState,
+};
 pub(crate) use wal_residency::NativeWalRoster;
 pub(crate) use wal_selection::ResidentSourceSelection;
+#[cfg(test)]
+#[path = "mod_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;
 pub(crate) mod source_copy;

@@ -24,7 +24,7 @@ pub(in crate::domain_computation::primary_graph::invariant_projection) struct Co
 
 pub(in crate::domain_computation::primary_graph::invariant_projection) enum NativeReadAccess<'a> {
     Acquire,
-    Borrowed(&'a mut worth_relational::facade::runtime::RelationalRuntime),
+    Borrowed(&'a worth_relational::facade::runtime::RelationalRuntime),
     Applied(
         &'a worth_relational::facade::runtime::RelationalPinnedRead,
         &'a worth_relational::facade::runtime::RelationalPinnedRead<
@@ -154,7 +154,7 @@ impl<Schema: ApplicationSchema> WorthQueryApplicationInvariantProjectionAuthorit
         let decode =
             super::super::super::value_decode::ValueDecodeState::new(self.value_bindings.clone());
         let decoded = decode.run(execution, |value_decode| match access {
-            NativeReadAccess::Acquire => self.graph.with_runtime_mut(execution, |runtime| {
+            NativeReadAccess::Acquire => self.graph.with_runtime(execution, |runtime| {
                 catch_unwind(AssertUnwindSafe(|| {
                     self.execute_reader(
                         execution,

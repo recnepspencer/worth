@@ -1,3 +1,4 @@
+use super::BridgeSemanticClaimOrigin;
 use std::sync::Arc;
 
 use worth_proof::{
@@ -26,7 +27,7 @@ pub(crate) struct InstalledCorrespondenceTarget {
     pub(crate) precision: BridgeCorrespondencePrecision,
     pub(crate) admitted_source_widening:
         Option<crate::input::envelope::BridgeAspectChangeWideningCause>,
-    pub(crate) allocation_sources: Vec<String>,
+    pub(crate) allocation_sources: Vec<BridgeSemanticClaimOrigin>,
 }
 
 #[derive(Debug)]
@@ -201,6 +202,9 @@ impl BridgeInstalledSemanticCorrespondence {
 
     pub fn target_count(&self) -> usize {
         self.targets.as_slice().len()
+    }
+    pub(crate) fn authored_targets(&self) -> &[InstalledCorrespondenceTarget] {
+        self.targets.as_slice()
     }
 
     #[cfg(test)]

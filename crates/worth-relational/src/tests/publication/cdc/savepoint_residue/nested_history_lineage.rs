@@ -202,7 +202,6 @@ fn nested_savepoint_abandoned_aspect_work_leaves_zero_patch_cdc_history_and_line
     let envelope = replay
         .canonical_commit_envelope(execution, outcome.commit.commit_id)
         .unwrap()
-        .map(|envelope| envelope.as_ref().clone())
         .unwrap();
     assert!(!envelope
         .lineage_decision_log()

@@ -258,12 +258,13 @@ fn strategy_merge_descriptor_carries_typed_intent_scope_targets() {
         intent_name: StrategyIntentName::new("reconcile.desired.state"),
         intent_scope_digest: StrategyIntentScopeDigest::new([5; 32]),
         intent_scope_targets: Arc::from([target.clone()]),
+        intent_scope_targets_memory: None,
         merge_semantics: StrategyMergeSemantics::new(
             StrategyMergeConflictClass::IntentReconciliation,
             true,
             true,
         ),
-        lowering_summary_digest: [9; 32],
+        lowering_summary_digest: worth_foundational::CanonicalDigestId::new([9; 32]),
     };
 
     assert_eq!(descriptor.intent_scope_targets(), &[target]);

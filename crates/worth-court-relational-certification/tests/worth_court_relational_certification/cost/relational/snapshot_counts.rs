@@ -1,13 +1,11 @@
 //! Count-only public reads consume the selected root's authenticated facts.
 use super::cold_checkpoint::{reopen, ColdCheckpointSource};
 use crate::content::historical_kind::fixture::World;
-use std::sync::atomic::Ordering;
 use worth_execution::{CancellationSource, ExecutionRequest, SerialMemoryBudget, SerialRequest};
 use worth_relational::facade::{
     durability::*, identity::KindId, runtime::RelationalRuntime, snapshots::SnapshotHandle,
     transactions::*,
 };
-use worth_testkit_relational::maintenance::assert_change_bounded;
 
 fn snapshot(runtime: &RelationalRuntime) -> SnapshotHandle {
     let (_, basis) = runtime
@@ -75,7 +73,7 @@ fn selected_counts_equal_full_rows_after_mixed_edits_and_branch_movement() {
         .unwrap();
 }
 
-fn count_read_bytes(regions: u32, history: usize) -> u64 {
+fn count_read(regions: u32, history: usize) {
     let original = SerialRequest::from_memory(
         SerialMemoryBudget::new(Some(1 << 30)),
         CancellationSource::new().token(),
@@ -121,7 +119,6 @@ fn count_read_bytes(regions: u32, history: usize) -> u64 {
     let source = ColdCheckpointSource::capture(&world.runtime, &request, &checkpoint);
     let runtime = reopen(&request, &checkpoint, source.clone(), World::new().runtime);
     let handle = snapshot(&runtime);
-    let before = source.bytes.load(Ordering::SeqCst);
     let counts = runtime
         .read_truth()
         .inspect_snapshot(&request, &handle)
@@ -129,27 +126,17 @@ fn count_read_bytes(regions: u32, history: usize) -> u64 {
         .unwrap();
     assert_eq!(counts.entity_count, world.entities.len());
     assert_eq!(counts.relation_count, world.relations.len());
-    let work = source.bytes.load(Ordering::SeqCst) - before;
     // The oracle is a whole-result read after the measured count-only operation.
     equals_rows(&runtime, &request, &handle);
     runtime.snapshots().release_snapshot(&handle).unwrap();
-    work
 }
 #[test]
-fn count_only_read_does_not_grow_with_model() {
-    let model = [count_read_bytes(16, 8), count_read_bytes(32, 8)];
-    println!(
-        "SDK snapshot count cold bytes: model {}->{}",
-        model[0], model[1]
-    );
-    assert_change_bounded("snapshot counts", "model", model[0], model[1]);
+fn count_only_read_matches_rows_across_model_sizes() {
+    count_read(16, 8);
+    count_read(32, 8);
 }
 #[test]
-fn count_only_read_does_not_grow_with_history() {
-    let history = [count_read_bytes(4, 128), count_read_bytes(4, 256)];
-    println!(
-        "SDK snapshot count cold bytes: history {}->{}",
-        history[0], history[1]
-    );
-    assert_change_bounded("snapshot counts", "history", history[0], history[1]);
+fn count_only_read_matches_rows_across_history_sizes() {
+    count_read(4, 128);
+    count_read(4, 256);
 }

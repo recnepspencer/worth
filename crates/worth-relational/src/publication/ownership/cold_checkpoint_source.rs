@@ -66,7 +66,7 @@ impl Source {
             .collect();
         let commits = runtime
             .durability()
-            .canonical_commit_artifacts(execution.allocation_policy())
+            .canonical_commit_artifacts(execution)
             .map(|artifact| {
                 let artifact = artifact.expect("the actual retained commit encodes");
                 (artifact.position(), artifact.as_bytes().to_vec())

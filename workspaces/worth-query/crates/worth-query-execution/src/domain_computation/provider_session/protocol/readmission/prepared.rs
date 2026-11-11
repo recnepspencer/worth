@@ -3,7 +3,7 @@ use super::super::{
     WorthQueryProviderSessionDenialKind, WorthQueryProviderSessionFailure,
     WorthQueryProviderSessionProtocolCounters, WorthQueryProviderSessionProtocolStage,
 };
-use super::WorthQueryProviderPlanReadmission;
+use super::{WorthQueryProviderSessionGrant, WorthQueryProviderSessionReceiver};
 
 mod staged;
 
@@ -32,40 +32,82 @@ impl std::fmt::Debug for WorthQueryPreparedProviderSession<'_> {
     }
 }
 
-impl<'run> WorthQueryProviderPlanReadmission<'run> {
-    pub fn prepare(
-        mut self,
+impl WorthQueryProviderSessionGrant {
+    /// Fence the portable grant before physical readmission or preparation.
+    pub fn prepare<'run>(
+        self,
+        receiver: WorthQueryProviderSessionReceiver<'run>,
+        phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'run>,
     ) -> Result<WorthQueryPreparedProviderSession<'run>, WorthQueryProviderSessionFailure> {
-        self.counters.called_provider();
+        let provider = receiver.plan.preparation_provider();
+        self.prepare_with_receiver(phase, phase.world_owner(), &provider, || Ok(receiver))
+    }
+
+    pub(in crate::domain_computation) fn prepare_with_receiver<'run>(
+        self,
+        phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'run>,
+        owner: Option<worth_runtime_world::facade::RuntimeWorldOwnerIdentity>,
+        provider: &std::sync::Arc<super::super::WorthQueryGraphProviderAnchor>,
+        receiver: impl FnOnce() -> Result<
+            WorthQueryProviderSessionReceiver<'run>,
+            WorthQueryProviderSessionFailure,
+        >,
+    ) -> Result<WorthQueryPreparedProviderSession<'run>, WorthQueryProviderSessionFailure> {
+        self.admission.admit_home_owner(owner)?;
+        self.admission.admit_home_owner(phase.world_owner())?;
+        let receiver = receiver()?;
+        let grant = receiver.plan.provider_grant_control().capture(self)?;
+        receiver.plan.require_current_home(phase.world_owner())?;
+        if !std::sync::Arc::ptr_eq(provider, &receiver.plan.preparation_provider())
+            || grant.contract != receiver.plan.contract
+        {
+            return Err(WorthQueryProviderSessionFailure::new(
+                WorthQueryProviderSessionDenialKind::TokenNotMintedForPlan,
+                WorthQueryProviderSessionProtocolStage::PlanReadmission,
+                "provider session grant belongs to another receiver plan",
+                grant.counters,
+            ));
+        }
+        receiver.plan.readmit_physical(phase, grant.admission)
+    }
+}
+
+impl<'run> WorthQueryPreparedProviderSession<'run> {
+    pub(in crate::domain_computation::provider_session::protocol) fn prepare_readmitted(
+        affinity: WorthQueryProviderSessionAffinity<'run>,
+        counters: WorthQueryProviderSessionProtocolCounters,
+    ) -> Result<Self, WorthQueryProviderSessionFailure> {
+        let mut session = Self { affinity, counters };
+        session.counters.called_provider();
         let invocation = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
-            self.affinity.session().provider().prepare_session(
-                &self
+            session.affinity.session().provider().prepare_session(
+                &session
                     .affinity
                     .session()
                     .token()
-                    .view(self.affinity.session().request()),
+                    .view(session.affinity.session().request()),
             )
         }));
         let failure = match invocation {
             Ok(Ok(())) => {
                 return Ok(WorthQueryPreparedProviderSession {
-                    affinity: self.affinity,
-                    counters: self.counters,
+                    affinity: session.affinity,
+                    counters: session.counters,
                 });
             }
             Ok(Err(failure)) => failure.at_stage(
                 WorthQueryProviderSessionProtocolStage::SessionPreparation,
-                self.counters,
+                session.counters,
             ),
             Err(_) => WorthQueryProviderSessionFailure::new(
                 WorthQueryProviderSessionDenialKind::ProviderPanicked,
                 WorthQueryProviderSessionProtocolStage::SessionPreparation,
                 "provider panicked while preparing the readmitted session",
-                self.counters,
+                session.counters,
             ),
         };
-        self.counters.called_provider();
-        let posture = self.affinity.session_mut().abort_after_failure();
+        session.counters.called_provider();
+        let posture = session.affinity.session_mut().abort_after_failure();
         Err(failure.with_recovery_posture(posture))
     }
 }

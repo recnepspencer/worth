@@ -103,7 +103,7 @@ pub(super) fn observe_custody(
                 if value.store() != token.store
                     || value.session() != token.session
                     || value.declaration_record() != token.declaration_record
-                    || value.declaration_digest() != token.declaration_digest
+                    || value.declaration_digest() != *token.declaration_digest.bytes()
                 {
                     return Err(BlobReclaimFailure::ConflictingSelectedFate);
                 }

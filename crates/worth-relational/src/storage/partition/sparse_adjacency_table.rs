@@ -11,17 +11,48 @@ pub(crate) struct SparseAdjacencyTable {
 }
 
 impl SparseAdjacencyTable {
+    pub(crate) fn ensure_for_request(
+        &mut self,
+        slot: usize,
+        policy: &AdjacencyPolicy,
+        request: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> Result<&mut AdjacencySet, crate::execution::RelationalExecutionDenialCause> {
+        if !self.entries.contains_key(&slot) {
+            self.entries
+                .insert_for_request(slot, AdjacencySet::new(policy), request)?;
+        }
+        Ok(self.entries.get_mut_for_request(&slot,request)?
+            .expect(/* Proof: This same exclusively borrowed table contains the slot selected or inserted above. */ "adjacency slot remains installed"))
+    }
+    pub(crate) fn clear_slot_for_request(
+        &mut self,
+        slot: usize,
+        policy: &AdjacencyPolicy,
+        request: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> Result<(), crate::execution::RelationalExecutionDenialCause> {
+        self.entries
+            .insert_for_request(slot, AdjacencySet::new(policy), request)?;
+        Ok(())
+    }
+    pub(crate) fn get_mut_for_request(
+        &mut self,
+        slot: usize,
+        request: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> Result<Option<&mut AdjacencySet>, crate::execution::RelationalExecutionDenialCause> {
+        self.entries.get_mut_for_request(&slot, request)
+    }
+
     pub(crate) fn adoption_allocation_bound(&self, slots: usize) -> Option<u64> {
         self.entries
             .adoption_allocation_bound()?
             .checked_mul(slots as u64)
     }
-    pub(crate) fn merge_slots_from(
+    pub(crate) fn merge_slots_from<'slots>(
         &mut self,
         overlay: &Self,
-        slots: &std::collections::BTreeSet<usize>,
+        slots: impl IntoIterator<Item = &'slots usize>,
     ) -> u64 {
-        slots.iter().fold(0_u64, |bytes, &slot| {
+        slots.into_iter().fold(0_u64, |bytes, &slot| {
             bytes.saturating_add(self.entries.copy_value_from(slot, &overlay.entries))
         })
     }
@@ -55,7 +86,7 @@ impl SparseAdjacencyTable {
             &previous.entries,
             visitor,
             &mut |set, previous, allocation, visitor| {
-                if visitor.visit(allocation) {
+                if allocation.visit(visitor) {
                     if let Some(previous) = previous {
                         set.visit_new_authoritative_allocations(previous, visitor);
                     } else {
@@ -82,22 +113,12 @@ impl SparseAdjacencyTable {
             .or_insert_with(|| AdjacencySet::new(policy))
     }
 
-    pub(crate) fn clear_slot(&mut self, slot: usize, policy: &AdjacencyPolicy) {
-        self.entries.insert(slot, AdjacencySet::new(policy));
-    }
-
     pub(crate) fn iter(&self) -> impl ExactSizeIterator<Item = (&usize, &AdjacencySet)> {
         self.entries.iter()
     }
 
     pub(crate) fn into_entries(self) -> impl Iterator<Item = (usize, AdjacencySet)> {
         self.entries.into_iter()
-    }
-
-    pub(crate) fn from_entries(entries: impl IntoIterator<Item = (usize, AdjacencySet)>) -> Self {
-        Self {
-            entries: entries.into_iter().collect(),
-        }
     }
 
     pub(crate) fn allocation_bytes(&self) -> u64 {
@@ -111,7 +132,7 @@ impl SparseAdjacencyTable {
     ) {
         self.entries
             .visit_allocations(unique, visitor, &mut |set, allocation, visitor| {
-                if visitor.visit(allocation) {
+                if allocation.visit(visitor) {
                     set.visit_authoritative_allocations(allocation.unique, visitor);
                 }
             });

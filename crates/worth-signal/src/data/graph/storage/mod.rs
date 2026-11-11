@@ -17,3 +17,6 @@ pub(crate) use segmented::{
     DependencyEdgeStore, PreparedSegmentBatchInsertion, SubscriberEdgeStore,
 };
 pub(crate) use slot::Slot;
+#[cfg(test)]
+#[path = "mod_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;

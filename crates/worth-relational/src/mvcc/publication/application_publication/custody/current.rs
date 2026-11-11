@@ -51,7 +51,7 @@ pub(super) fn readmit(
             let kind = installed.source_scope_ownership.scope_kind(producer);
             if !kind.is_some_and(|kind| owner_matches(installed, basis, &roster, origin, kind))
                 || origin.producer != producer
-                || &origin.dependency_identity != dependency
+                || origin.dependency_identity.bytes() != dependency
                 || &origin.meaning != meaning
                 || roles.len() != origin.members.len()
             {

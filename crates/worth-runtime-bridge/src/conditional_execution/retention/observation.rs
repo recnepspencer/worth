@@ -22,6 +22,20 @@ impl BridgeConditionalRetentionObservation {
         }
     }
 
+    pub(in crate::conditional_execution) fn checked_sum(items: &[Self]) -> Option<Self> {
+        let mut total = Self::new(0, 0, 0, 0);
+        for item in items {
+            total.managed_clocks = total.managed_clocks.checked_add(item.managed_clocks)?;
+            total.reserved_temporal_intents = total
+                .reserved_temporal_intents
+                .checked_add(item.reserved_temporal_intents)?;
+            total.retained_definition_candidates = total
+                .retained_definition_candidates
+                .checked_add(item.retained_definition_candidates)?;
+            total.retained_bytes = total.retained_bytes.checked_add(item.retained_bytes)?;
+        }
+        Some(total)
+    }
     pub const fn managed_clocks(self) -> usize {
         self.managed_clocks
     }

@@ -45,3 +45,6 @@ impl BridgeOwnedAsyncRequestResponseDeclaration {
         self
     }
 }
+#[cfg(test)]
+#[path = "declaration_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;

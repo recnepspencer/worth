@@ -1,0 +1,14 @@
+COMMAND: ["python", "target/lane-evidence/principal_charge_run.py"]
+HEAD: bb3e73655b80af464f5dfdbbd73a93b8e616d9d8
+CLEAN: false
+START: 2026-11-08T18:14:30.662087+00:00
+ENV: removed stale external linker override; RUST_MIN_STACK unset in parent
+prebuild: C:\Users\shepworth\AppData\Local\Programs\Python\Python314\python.exe "C:\programming\worth worktees\worktrees\m3-host-home\target\lane-evidence\principal_charge_debug.py" "C:\programming\worth worktees\worktrees\m3-host-home\target\lane-evidence\topology-funding\build\binaries.json" worth_query_topology_entry checkpoint_recovery::computation_partition::oracle::absence::serial::checkpoint_absence_rebuilds_every_owner_call_like_fresh
+Traceback (most recent call last):
+  File "C:\programming\worth worktees\worktrees\m3-host-home\target\lane-evidence\principal_charge_debug.py", line 42, in <module>
+    else:raise RuntimeError('PDB has no checkpoint branch line '+str(wanted))
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+RuntimeError: PDB has no checkpoint branch line 58
+
+END: 2026-11-08T18:14:34.495567+00:00
+EXIT: 1

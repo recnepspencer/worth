@@ -1,10 +1,29 @@
+mod home_owner;
+mod home_owner_progress;
 use crate::history::HistoryReclamationDenial;
+pub use home_owner::{
+    RetiredRuntimeWorldHome, RuntimeWorldHomeRetirement, RuntimeWorldHomeRetirementDenial,
+    RuntimeWorldHomeRetirementProgress,
+};
+mod admission;
 #[path = "close/drain.rs"]
 mod drain;
+pub use admission::RuntimeWorldPreCloseAdmission;
+pub(crate) use admission::{checkpoint as checkpoint_close_step, RecoveredCloseReceipt};
+mod recovered;
+mod recovered_native;
 #[path = "close/report.rs"]
 mod report;
+mod result_snapshots;
+pub(in crate::lifecycle) use recovered::retire as retire_recovered;
+pub use result_snapshots::{
+    RuntimeWorldResultSnapshotCleanup, RuntimeWorldResultSnapshotCleanupDenial,
+    RuntimeWorldResultSnapshotCleanupProgress, RuntimeWorldResultSnapshotCleanupReport,
+};
 
-pub use report::{RuntimeWorldCloseReport, RuntimeWorldRetainedRecordReport};
+pub use report::{
+    RuntimeWorldCloseReport, RuntimeWorldRecoveredCustodyReport, RuntimeWorldRetainedRecordReport,
+};
 
 /// Internal close progression for a managed Runtime World owner. The state
 /// is explicit so close cannot be represented by a boolean with no transition
@@ -18,10 +37,31 @@ pub(crate) enum RuntimeWorldCloseState {
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum RuntimeWorldCloseDenial {
+    CloseNotCompleted,
+    OwnerUnavailable,
+    Busy,
+    Stopped(worth_execution::MapKernelStop),
+    Execution(worth_execution::WorkCeilingDenial),
+    PublicationFrontierChanged,
+    UnresolvedBusinessCustody,
+    CleanupRequired,
+    DurableCreationPending {
+        attempt: worth_foundational::facade::DurableCompositePublicationAttemptIdentity,
+        destination: worth_foundational::facade::DurableProductBranchIncarnation,
+    },
+    CloseProgressPoisoned,
+    CloseProgressInvariant,
+    RecoveredNativeRetirement(
+        worth_relational::facade::change_source::RelationalRetainedObservationRetirementDenial,
+    ),
+    ReportAllocationFailed,
+    UndeliveredPublication,
     AlreadyClosing,
     AlreadyClosed,
     /// A declared in-flight critical section could not be drained.
     InFlightCriticalSection,
+    /// The Home retains an actual accepted journal job that can still settle.
+    DurablePublicationUnsettled,
 }
 
 use super::owner::RuntimeWorldOwnerRoot;
@@ -32,25 +72,17 @@ where
     I: Copy + Ord + Send + Sync + 'static,
     T: Copy + Ord + Send + Sync + 'static,
 {
-    /// Close the owner and report what the drain settled, released, and
-    /// deliberately exposed. A retained obligation is never discarded.
-    ///
-    /// Bootstrap and operation admission remain locked through the ledger
-    /// check and Open -> Closing transition. Closing excludes new work, so
-    /// the drain releases component custody outside lifecycle locks.
-    pub fn close(&self) -> Result<RuntimeWorldCloseReport, RuntimeWorldCloseDenial> {
-        drain::close_owner(&self.state)
-    }
-
-    /// How many callers are queued inside close admission right now. Close
-    /// blocks on the operation ledger before it decides, so a world that will
-    /// not close is distinguished from a world nobody is closing by this count
-    /// rather than by waiting.
-    #[cfg(test)]
-    pub fn close_admission_waiters(&self) -> usize {
-        self.state
-            .close_admission_waiters
-            .load(std::sync::atomic::Ordering::SeqCst)
+    /// Close under the caller's original request. Busy or stopped admission
+    /// leaves Open; after sealing, the SAME retained task resumes in Closing.
+    /// Unresolved live business custody refuses before sealing. Unclaimed
+    /// recovered durable obligations remain journal-backed and are reported.
+    /// Head retirement
+    /// runs outside admission locks and retains each exact item on refusal.
+    pub fn close(
+        &self,
+        request: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> Result<RuntimeWorldCloseReport, RuntimeWorldCloseDenial> {
+        drain::close_owner(&self.state, request)
     }
 
     pub fn lifecycle_observation(&self) -> super::RuntimeWorldOwnerLifecycleObservation {
@@ -66,6 +98,13 @@ where
                 super::RuntimeWorldOwnerLifecycleObservation::Closing
             }
             RuntimeWorldCloseState::Closed => super::RuntimeWorldOwnerLifecycleObservation::Closed,
+        }
+    }
+
+    fn require_optional_memory_history(&self) -> Result<(), HistoryReclamationDenial> {
+        match &self.state.durable {
+            Some(_) => Err(HistoryReclamationDenial::AuthoritativeDurableHistory),
+            None => Ok(()),
         }
     }
 }
@@ -84,12 +123,16 @@ where
         RuntimeWorldOwnerRoot::bootstrap_root(self, intent)
     }
 
-    fn close(&self) -> Result<RuntimeWorldCloseReport, RuntimeWorldCloseDenial> {
-        RuntimeWorldOwnerRoot::close(self)
+    fn close(
+        &self,
+        request: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> Result<RuntimeWorldCloseReport, RuntimeWorldCloseDenial> {
+        RuntimeWorldOwnerRoot::close(self, request)
     }
     fn retire_changed_history(
         &self,
     ) -> Result<Vec<crate::identity::CompositeCommitIdentity>, HistoryReclamationDenial> {
+        self.require_optional_memory_history()?;
         let _operation = self
             .reserve_recovery_operation_if_open_and_bootstrapped()
             .map_err(|_| {
@@ -104,6 +147,7 @@ where
         &self,
         keep: &crate::identity::CompositeCommitIdentity,
     ) -> Result<Vec<crate::identity::CompositeCommitIdentity>, HistoryReclamationDenial> {
+        self.require_optional_memory_history()?;
         let _operation = self
             .reserve_recovery_operation_if_open_and_bootstrapped()
             .map_err(|_| {
@@ -122,6 +166,7 @@ where
         &self,
         from: &crate::identity::CompositeCommitIdentity,
     ) -> Result<crate::history::RetiredBranchHistoryRelease, HistoryReclamationDenial> {
+        self.require_optional_memory_history()?;
         let _operation = self
             .reserve_recovery_operation_if_open_and_bootstrapped()
             .map_err(|_| {
@@ -164,31 +209,43 @@ where
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug)]
 pub(crate) struct RuntimeWorldCloseContract {
     state: RuntimeWorldCloseState,
+    progress: Option<std::sync::Arc<std::sync::Mutex<drain::CloseProgress>>>,
 }
 
 impl RuntimeWorldCloseContract {
+    pub(super) fn retirement_task(
+        &self,
+    ) -> Result<std::sync::Arc<std::sync::Mutex<drain::CloseProgress>>, RuntimeWorldCloseDenial>
+    {
+        match self.state {
+            RuntimeWorldCloseState::Open | RuntimeWorldCloseState::Closing => {
+                Err(RuntimeWorldCloseDenial::CloseNotCompleted)
+            }
+            RuntimeWorldCloseState::Closed => self
+                .progress
+                .as_ref()
+                .cloned()
+                .ok_or(RuntimeWorldCloseDenial::CloseProgressInvariant),
+        }
+    }
     pub(crate) const fn open() -> Self {
         Self {
             state: RuntimeWorldCloseState::Open,
+            progress: None,
         }
     }
 
-    pub(crate) const fn state(self) -> RuntimeWorldCloseState {
+    pub(crate) const fn state(&self) -> RuntimeWorldCloseState {
         self.state
     }
 
-    pub(crate) fn begin(&mut self) -> Result<(), RuntimeWorldCloseDenial> {
-        match self.state {
-            RuntimeWorldCloseState::Open => {
-                self.state = RuntimeWorldCloseState::Closing;
-                Ok(())
-            }
-            RuntimeWorldCloseState::Closing => Err(RuntimeWorldCloseDenial::AlreadyClosing),
-            RuntimeWorldCloseState::Closed => Err(RuntimeWorldCloseDenial::AlreadyClosed),
-        }
+    fn begin_admitted(&mut self, task: std::sync::Arc<std::sync::Mutex<drain::CloseProgress>>) {
+        // The private constructor retains the Open close guard until here.
+        self.state = RuntimeWorldCloseState::Closing;
+        self.progress = Some(task);
     }
 
     pub(crate) fn finish(&mut self) -> Result<(), RuntimeWorldCloseDenial> {

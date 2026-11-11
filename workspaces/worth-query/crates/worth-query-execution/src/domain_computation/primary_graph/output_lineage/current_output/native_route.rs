@@ -74,7 +74,7 @@ impl WorthQueryApplicationOutputLineage {
                 observation.lifecycle_incarnation(),
                 observation.reference_generation().get(),
                 std::slice::from_ref(binding),
-                route.source_partition,
+                *route.source_partition.bytes(),
                 execution,
             )? {
                 let Some(publication) = candidate.required_publication.as_ref() else {
@@ -93,7 +93,7 @@ impl WorthQueryApplicationOutputLineage {
                     pin.source(),
                     coordinate.occurrence,
                     coordinate.generation,
-                    Some(route.source_partition),
+                    Some(*route.source_partition.bytes()),
                     pin.slot(),
                 );
                 if !self.implementation_is_current(row) {

@@ -42,7 +42,7 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
             )
         })?;
         let installed = graph.retain_entity_resolution_context();
-        let lookup = native.with_runtime_mut(
+        let lookup = native.with_runtime(
             graph,
             execution,
             || {

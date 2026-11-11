@@ -5,30 +5,37 @@ use super::{
 };
 
 impl BasisSelections {
-    pub(in crate::runtime::state::subsystems::indexing) fn quote_updates<Stop>(
+    pub(in crate::runtime::state::subsystems::indexing) fn prepared_publication_quote(
         &self,
         generations: &[DerivedIndexGeneration],
-        deferred: bool,
-        prepare: &mut impl FnMut(u64, u64) -> Result<(), Stop>,
-    ) -> Result<(), crate::indexes::data::SelectedIndexGenerationAdmissionStop<Stop>> {
-        use crate::indexes::data::{
-            SelectedIndexGenerationAdmissionStop as StopKind, SelectedIndexReadWork,
-        };
-        let maximum = if deferred {
-            SelectedIndexReadWork::MAXIMUM_ORDERED_CONTAINER_ENTRIES
-        } else {
-            self.entries
-                .len()
-                .saturating_add(generations.len().saturating_mul(2))
-        };
+        basis: Option<&super::PreparedIndexBasisSelection>,
+    ) -> Option<(u64, u64)> {
+        use super::super::generation_catalog::insertion_quote::add;
+        if let Some(basis) = basis {
+            return super::payment::outer(
+                self.entries.len().checked_add(2)?,
+                self.retirement.len().checked_add(2)?,
+                basis.branch.0.len() as u64,
+            );
+        }
+        let maximum = self
+            .entries
+            .len()
+            .checked_add(generations.len().checked_mul(2)?)?;
+        let mut quote = (0, 0);
         for generation in generations {
-            let width = generation.source_branch_id.0.len() as u64;
-            let (mut units, mut bytes) =
-                super::payment::outer(maximum, width).ok_or(StopKind::AccountingOverflow)?;
-            let (inner_units, inner_bytes) = super::payment::inner(if deferred {
-                usize::MAX
-            } else {
-                self.get(
+            add(
+                &mut quote,
+                super::payment::outer(
+                    maximum,
+                    self.retirement
+                        .len()
+                        .checked_add(generations.len().checked_mul(2)?)?,
+                    generation.source_branch_id.0.len() as u64,
+                )?,
+            )?;
+            let previous = self
+                .get(
                     Some(&generation.source_branch_id),
                     generation.applicability.version_id,
                 )
@@ -38,19 +45,13 @@ impl BasisSelections {
                         .entries
                         .len()
                         .saturating_add(basis.state.empty.len())
-                })
-                .saturating_add(generations.len())
-            })
-            .ok_or(StopKind::AccountingOverflow)?;
-            units = units
-                .checked_add(inner_units)
-                .ok_or(StopKind::AccountingOverflow)?;
-            bytes = bytes
-                .checked_add(inner_bytes)
-                .ok_or(StopKind::AccountingOverflow)?;
-            prepare(units, bytes).map_err(StopKind::Admission)?;
+                });
+            add(
+                &mut quote,
+                super::payment::inner(previous.checked_add(generations.len())?)?,
+            )?;
         }
-        Ok(())
+        Some(quote)
     }
 }
 

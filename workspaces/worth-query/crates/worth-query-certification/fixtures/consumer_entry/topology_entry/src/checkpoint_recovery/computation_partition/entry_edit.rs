@@ -278,6 +278,10 @@ impl<Schema: TopologySchemaBinding> OperationHandler<Schema, EntryEditBinding<Sc
         }
     }
 
+    #[expect(
+        clippy::result_large_err,
+        reason = "The fixture preserves the original typed owner denial."
+    )]
     fn build_candidate(
         &self,
         input: &EntryEdit,

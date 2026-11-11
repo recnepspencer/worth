@@ -65,33 +65,36 @@ fn concurrent_equivalent_attempts_publish_one_transaction() {
             world.application.compare_and_commit_application(
                 first,
                 idempotency(12, 12),
-                worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+                worth_query_execution::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
             )
         });
         let right = scope.spawn(|| {
             world.application.compare_and_commit_application(
                 second,
                 idempotency(12, 12),
-                worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+                worth_query_execution::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
             )
         });
         (left.join().unwrap(), right.join().unwrap())
     });
-    let receipts = [left, right]
-        .into_iter()
-        .map(|outcome| match outcome {
-            WorthQueryApplicationCommitOutcome::Committed(receipt)
-            | WorthQueryApplicationCommitOutcome::AlreadyCommitted(receipt) => receipt,
-            unexpected => panic!("unexpected concurrent outcome: {unexpected:?}"),
-        })
-        .collect::<Vec<_>>();
-    assert!(receipts[0].is_same_authoritative_commit(&receipts[1]));
-    let terminal_kinds = receipts
-        .iter()
-        .map(|receipt| receipt.terminal().kind())
-        .collect::<Vec<_>>();
-    assert!(terminal_kinds.contains(&WorthQueryApplicationCommitTerminalKind::Executed));
-    assert!(terminal_kinds.contains(&WorthQueryApplicationCommitTerminalKind::Recovered));
+    let (fresh, recovered) = match (left, right) {
+        (
+            WorthQueryApplicationCommitOutcome::Committed(fresh),
+            WorthQueryApplicationCommitOutcome::RecoveredCommitted(recovered),
+        )
+        | (
+            WorthQueryApplicationCommitOutcome::RecoveredCommitted(recovered),
+            WorthQueryApplicationCommitOutcome::Committed(fresh),
+        ) => (fresh, recovered),
+        outcomes => panic!("one ordinary execution and one original-data retry: {outcomes:?}"),
+    };
+    worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::recorded_receipt::assert_original(
+        &recovered, &fresh,
+    );
+    assert_eq!(
+        fresh.terminal().kind(),
+        WorthQueryApplicationCommitTerminalKind::Executed
+    );
 }
 #[test]
 fn preparation_commit_recovery_and_retry_perform_no_execution_digest_derivation() {
@@ -151,7 +154,7 @@ fn preparation_commit_recovery_and_retry_perform_no_execution_digest_derivation(
         world.application.compare_and_commit_application(
             first,
             idempotency(31, 31),
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation
+            worth_query_execution::facade::runtime::ExecutionAllocationPolicy::SystemAllocation
         ),
         WorthQueryApplicationCommitOutcome::Committed(_)
     ));
@@ -168,9 +171,9 @@ fn preparation_commit_recovery_and_retry_perform_no_execution_digest_derivation(
         world.application.compare_and_commit_application(
             retry,
             idempotency(31, 31),
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation
+            worth_query_execution::facade::runtime::ExecutionAllocationPolicy::SystemAllocation
         ),
-        WorthQueryApplicationCommitOutcome::AlreadyCommitted(_)
+        WorthQueryApplicationCommitOutcome::RecoveredCommitted(_)
     ));
     assert_eq!(
         worth_query_execution::court_doors_for_test::execution_digest::test_hash_parts_call_count(),

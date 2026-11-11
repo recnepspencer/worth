@@ -11,12 +11,12 @@ impl WorthQueryApplicationOutputLineage {
         receipt: &WorthQueryApplicationCommitReceipt,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<Option<RetainedOutputCurrentnessRead>, CompanionPreflightStop> {
-        Self::source_facts_for_receipt(
+        Self::source_facts_for_publication(
             self,
             runtime_authority,
             schema,
             observation,
-            receipt,
+            receipt.into(),
             execution,
         )
     }
@@ -64,12 +64,12 @@ impl WorthQueryApplicationOutputLineage {
         receipt: &WorthQueryApplicationCommitReceipt,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<bool, CompanionPreflightStop> {
-        Self::current_output_matches_receipt(
+        Self::current_output_matches_publication(
             self,
             runtime_authority,
             schema,
             observation,
-            receipt,
+            receipt.into(),
             execution,
         )
     }

@@ -5,7 +5,9 @@ use std::marker::PhantomData;
 use std::sync::Arc;
 mod operation_body;
 mod registration;
+mod retirement;
 use registration::HandlerOrigin;
+pub(in crate::domain_computation::primary_graph) use retirement::HandlerRetirementCursor;
 
 use worth_query_declaration::facade::application_operation::ApplicationMutationBinding;
 use worth_query_declaration::facade::application_program::{
@@ -30,11 +32,14 @@ use super::super::{
 #[derive(Clone)]
 pub struct PendingMutationHandler {
     origin: HandlerOrigin,
-    identity: String,
+    durable_capabilities: Option<&'static [super::super::application_entry::mutation::WorthQueryOperationDurableCapability]>,
+    identity: &'static str,
     handler_identity: String,
     decision_type: TypeId,
     denial_type: TypeId,
     value: Arc<dyn Any + Send + Sync>,
+    preflight_home_retirement: retirement::PreflightHandlerRetirement,
+    advance_home_retirement: retirement::AdvanceHandlerRetirement,
 }
 
 pub struct TypedHandlerSlot<Schema, Binding>
@@ -153,6 +158,21 @@ impl<Schema> InstalledMutationHandlerRegistry<Schema>
 where
     Schema: ApplicationSchema,
 {
+    pub(in crate::domain_computation::primary_graph) fn declared_durable_capabilities<Binding>(
+        &self,
+    ) -> Result<
+        Option<&'static [super::super::application_entry::mutation::WorthQueryOperationDurableCapability]>,
+        MutationHandlerExecutionDenial,
+    >
+    where
+        Binding: ApplicationMutationBinding<Schema>,
+{
+        self.entries
+            .get(Binding::IDENTITY)
+            .map(|entry| entry.durable_capabilities)
+            .ok_or(MutationHandlerExecutionDenial::HandlerNotInstalled)
+    }
+
     fn get<Binding>(&self) -> Option<Arc<dyn OperationHandler<Schema, Binding>>>
     where
         Binding: ApplicationMutationBinding<Schema>,

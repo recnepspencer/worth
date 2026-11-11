@@ -10,12 +10,14 @@ impl WorthQueryProductRuntime {
         worth_runtime_bridge::facade::BridgeOwnedAsyncManagedRequestAdmission,
         worth_runtime_world::facade::RuntimeWorldOwnedAsyncRequestAdmissionDenial,
     > {
-        self.owner.admit_managed_owned_async_request(
-            bridge,
-            declaration,
-            selected.observation(),
-            selected.bridge_source_observation(),
-        )
+        self.owner
+            .publication_port()
+            .admit_managed_owned_async_request(
+                bridge,
+                declaration,
+                selected.observation(),
+                selected.bridge_source_observation(),
+            )
     }
 
     pub(in crate::domain_computation) fn advance_owned_async_source_clock(
@@ -28,13 +30,15 @@ impl WorthQueryProductRuntime {
         worth_signal::facade::TemporalClockAdvanceSummary,
         worth_runtime_world::facade::RuntimeWorldOwnedAsyncRequestAdmissionDenial,
     > {
-        self.owner.advance_owned_async_source_clock(
-            bridge,
-            declaration,
-            selected.observation(),
-            selected.bridge_source_observation(),
-            coordinate,
-        )
+        self.owner
+            .publication_port()
+            .advance_owned_async_source_clock(
+                bridge,
+                declaration,
+                selected.observation(),
+                selected.bridge_source_observation(),
+                coordinate,
+            )
     }
 
     pub fn admit_unqueued_owned_async_request(
@@ -46,12 +50,14 @@ impl WorthQueryProductRuntime {
         worth_runtime_bridge::facade::BridgeOwnedAsyncManagedRequestAdmission,
         worth_runtime_world::facade::RuntimeWorldOwnedAsyncRequestAdmissionDenial,
     > {
-        self.owner.admit_unqueued_owned_async_request(
-            bridge,
-            declaration,
-            selected.observation(),
-            selected.bridge_source_observation(),
-        )
+        self.owner
+            .publication_port()
+            .admit_unqueued_owned_async_request(
+                bridge,
+                declaration,
+                selected.observation(),
+                selected.bridge_source_observation(),
+            )
     }
 
     pub fn admit_unqueued_owned_async_request_at_branch_head(
@@ -64,6 +70,7 @@ impl WorthQueryProductRuntime {
         worth_runtime_world::facade::RuntimeWorldOwnedAsyncRequestAdmissionDenial,
     > {
         self.owner
+            .publication_port()
             .admit_unqueued_owned_async_request_at_branch_head(
                 bridge,
                 declaration,
@@ -81,11 +88,13 @@ impl WorthQueryProductRuntime {
         worth_runtime_bridge::facade::BridgeOwnedAsyncManagedRevalidation,
         worth_runtime_world::facade::RuntimeWorldOwnedAsyncManagedRevalidationDenial,
     > {
-        self.owner.revalidate_managed_owned_async_request(
-            bridge,
-            request,
-            selected.observation(),
-            selected.bridge_source_observation(),
-        )
+        self.owner
+            .publication_port()
+            .revalidate_managed_owned_async_request(
+                bridge,
+                request,
+                selected.observation(),
+                selected.bridge_source_observation(),
+            )
     }
 }

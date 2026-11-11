@@ -84,14 +84,11 @@ where
             }
             self.execution.closing += 1;
         }
-        if let Some(recovery) = self.execution.recovery.take()
-            && let Err(recovery) = recovery.release()
-        {
-            self.execution.recovery = Some(recovery);
-            return Err((
-                self,
-                Denial::Member(WorthQueryHistoryEditDenial::ForkRecovery),
-            ));
+        if let Err(cause) = super::super::edit::ForkRecovery::release_in_request(
+            &mut self.execution.recovery,
+            request,
+        ) {
+            return Err((self, Denial::Member(cause)));
         }
         if let Some(candidate) = self.execution.candidate.take() {
             self.execution.cleanup = Some(super::super::edit::DiscardedCandidate::Live {

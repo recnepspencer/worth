@@ -1,0 +1,33 @@
+command: "C:/Program Files/Git/bin/bash.exe" scripts/ci/check_workspace_rust_line_caps.sh dirty
+HEAD: ef95a160b2e86cc653fda0f1801dd2d3349a9fba
+git_status_short_empty: false
+start_utc: 2026-11-11T04:39:47.960435+00:00
+environment: removed stale CARGO_TARGET_X86_64_PC_WINDOWS_MSVC_LINKER override
+[workspace-rust-line-caps] enforcing 400-line cap for dirty Rust files
+warning: in the working copy of 'crates/worth-court-relational-certification/tests/worth_court_relational_certification/relational/durable_publication/checkpoint_branch_targets.rs', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'crates/worth-court-relational-certification/tests/worth_court_relational_certification/relational/durable_publication/checkpoint_managed_text.rs', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'crates/worth-court-relational-certification/tests/worth_court_relational_certification/relational/relational_certification/history_ownership/graph_persistence.rs', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'crates/worth-court-relational-certification/tests/worth_court_relational_certification/relational/relational_certification/owner_service_completion/current_read_publication/scoped_cutover.rs', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'crates/worth-court-relational-certification/tests/worth_court_relational_certification/relational/relational_certification/owner_service_completion/mod.rs', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'crates/worth-relational/src/branch/model_ownership/graph_selection.rs', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'crates/worth-relational/src/branch/model_ownership/graph_selection/transfer_history.rs', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'crates/worth-relational/src/branch/model_ownership/graph_selection/transfers.rs', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'crates/worth-relational/src/durability/derived_index_artifacts.rs', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'crates/worth-relational/src/facade.rs', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'crates/worth-relational/src/history/data/canonical_commit_envelope/required_output_origin/group_selection.rs', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'crates/worth-relational/src/history/data/canonical_commit_envelope/required_output_origin/header_work.rs', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'crates/worth-relational/src/indexes/authority/maintenance/reads.rs', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'crates/worth-relational/src/indexes/authority/maintenance/refresh_preparation.rs', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'crates/worth-relational/src/indexes/data/join_leg_state.rs', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'crates/worth-relational/src/publication/ownership/completion.rs', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'crates/worth-relational/src/runtime/state/subsystems/history_catalog_recovery/source_binding.rs', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'crates/worth-relational/src/runtime/state/subsystems/visibility/snapshot_handles/version_counts.rs', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'crates/worth-relational/src/storage/residency/lease.rs', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'crates/worth-relational/src/storage/residency/region_fixture/placement_registration.rs', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'crates/worth-relational/src/storage/residency/resident_history_tests/symbol_inheritance.rs', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'crates/worth-relational/src/validation/engine/engine/proposed_pass.rs', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'crates/worth-relational/src/visibility/snapshot_states/resident_basis.rs', LF will be replaced by CRLF the next time Git touches it
+[workspace-rust-line-caps] allowlisted: crates/worth-foundational/src/facade.rs (754 lines)
+[workspace-rust-line-caps] PASS: checked 8008 Rust files
+end_utc: 2026-11-11T04:40:21.675169+00:00
+exit_code: 0

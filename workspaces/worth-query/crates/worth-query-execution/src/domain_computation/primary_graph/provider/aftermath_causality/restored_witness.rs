@@ -15,7 +15,7 @@ impl WorthQueryPrimaryGraphProvider {
         execution
             .consult()
             .map_err(CorrectionWitnessDenial::Request)?;
-        self.graph.with_runtime_mut(&execution, |runtime| {
+        self.graph.with_runtime(&execution, |runtime| {
             let snapshot = crate::domain_computation::primary_graph::exact_basis_access::open_exact_basis_snapshot(runtime, basis)
                 .map_err(CorrectionWitnessDenial::Basis)?;
             let result = canonical_record::matches_reverse(runtime, &snapshot,

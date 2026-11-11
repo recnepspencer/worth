@@ -22,12 +22,15 @@ pub enum WorthQueryConditionalRuntimeInstallationDenialKind {
     PrimaryGraphPublication(Box<super::super::super::WorthQueryPrimaryGraphInstallationDenial>),
     /// A binding does not belong to this installation.
     ForeignBinding,
+    AuthoredProviderSourceRequired,
     /// A failed native terminal must be released through fresh progression before reconstitution.
     ManagedCleanupRetained(crate::domain_computation::WorthQueryMutationCleanupFailureKind),
     /// An allocated application resource still owns Native/provider/recovery custody.
     ResourceCleanupRetained,
     /// Another owning handle still retains the exact installed runtime.
     RuntimeKeepaliveRetained,
+    /// The adopting Query runtime does not own its application's lifecycle.
+    ApplicationHomeOwnsLifecycle,
     /// The same binding was installed twice.
     DuplicateBinding,
     /// Not every expected conditional binding was installed.

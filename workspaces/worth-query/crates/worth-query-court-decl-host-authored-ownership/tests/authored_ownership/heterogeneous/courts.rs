@@ -226,7 +226,7 @@ fn heterogeneous_non_anchor_kind_refuses_with_its_typed_subject() {
     >()
     .err()
     .expect("Body is not declared as an anchor by this correction");
-    let WorthQueryInMemoryApplicationDenial::Schema(error) = error else {
+    let WorthQueryApplicationPreparationDenial::Schema(error) = error else {
         panic!("{error:?}")
     };
     assert_eq!(
@@ -244,7 +244,7 @@ fn a_co_anchor_declared_by_a_different_operation_cannot_cover_the_retirement_dem
     >()
     .err()
     .expect("Create's co-anchor cannot cover Retire's pre-image");
-    let WorthQueryInMemoryApplicationDenial::Schema(error) = error else {
+    let WorthQueryApplicationPreparationDenial::Schema(error) = error else {
         panic!("{error:?}")
     };
     assert_eq!(

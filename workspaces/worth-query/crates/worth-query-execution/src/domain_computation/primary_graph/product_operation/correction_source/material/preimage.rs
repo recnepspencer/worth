@@ -1,9 +1,29 @@
-//! Disclosure projects the actually retained exact fields and relation endpoints.
+//! Exact disclosed pre-images retain the original Home or Memory source route.
+use super::super::occurrence::CorrectionOccurrence;
 use super::*;
-pub(super) struct DisclosedPreImage<'a> {
-    pub(super) retained: Option<&'a WorthQueryRetainedPreImage>,
-    pub(super) outputs:
-        &'a crate::domain_computation::primary_graph::WorthQueryApplicationOutputCorrespondence,
+use crate::domain_computation::primary_graph::provider::WorthQueryPrimaryGraphCommittedApplication;
+
+pub(super) enum DisclosedPreImage<'a> {
+    Retained(&'a CorrectionOccurrence),
+    Captured(&'a WorthQueryPrimaryGraphCommittedApplication),
+}
+impl DisclosedPreImage<'_> {
+    fn retained(
+        &self,
+    ) -> Option<&crate::domain_computation::application_aftermath::WorthQueryRetainedPreImage> {
+        match self {
+            Self::Retained(value) => value.memory_preimage(),
+            Self::Captured(value) => value.commit_evidence().retained_preimage(),
+        }
+    }
+    fn outputs(
+        &self,
+    ) -> &crate::domain_computation::primary_graph::WorthQueryApplicationOutputCorrespondence {
+        match self {
+            Self::Retained(value) => value.correspondence(),
+            Self::Captured(value) => value.commit_evidence().output_correspondence(),
+        }
+    }
 }
 impl<S> ApplicationCorrectionPreImage<S> for DisclosedPreImage<'_> {
     fn family_member_suffix(
@@ -11,7 +31,7 @@ impl<S> ApplicationCorrectionPreImage<S> for DisclosedPreImage<'_> {
         family: &worth_query_declaration::facade::application_operation::ApplicationMutationOutputRoleFamilyDescriptor,
         index: usize,
     ) -> Option<&str> {
-        self.outputs
+        self.outputs()
             .native_witness_roles()
             .filter(|(name, posture, entity, _)| {
                 name.starts_with(family.prefix())
@@ -26,7 +46,7 @@ impl<S> ApplicationCorrectionPreImage<S> for DisclosedPreImage<'_> {
         family: &worth_query_declaration::facade::application_operation::ApplicationMutationOutputRoleFamilyDescriptor,
         suffix: &str,
     ) -> Option<worth_foundational::facade::EntityId> {
-        self.outputs
+        self.outputs()
             .native_witness_roles()
             .find(|(name, posture, entity, _)| {
                 name.strip_prefix(family.prefix()) == Some(suffix)
@@ -42,7 +62,7 @@ impl<S> ApplicationCorrectionPreImage<S> for DisclosedPreImage<'_> {
         locus: &DeclaredPreImageLocus<S>,
     ) -> Option<&worth_foundational::facade::AspectValue> {
         let original = self
-            .outputs
+            .outputs()
             .native_witness_roles()
             .find(|(name, posture, entity, _)| {
                 name.strip_prefix(family.prefix()) == Some(suffix)
@@ -50,7 +70,7 @@ impl<S> ApplicationCorrectionPreImage<S> for DisclosedPreImage<'_> {
                     && *entity == family.entity()
             })?
             .3;
-        self.retained?
+        self.retained()?
             .fields()
             .iter()
             .find(|field| {
@@ -66,12 +86,12 @@ impl<S> ApplicationCorrectionPreImage<S> for DisclosedPreImage<'_> {
         &self,
         role: &worth_query_declaration::facade::application_operation::ApplicationMutationOutputRoleDescriptor,
     ) -> Option<worth_foundational::facade::EntityId> {
-        let mut roles = self
-            .outputs
-            .native_witness_roles()
-            .filter(|(name, posture, entity, _)| {
-                *name == role.name() && *posture == role.posture() && *entity == role.entity()
-            });
+        let mut roles =
+            self.outputs()
+                .native_witness_roles()
+                .filter(|(name, posture, entity, _)| {
+                    *name == role.name() && *posture == role.posture() && *entity == role.entity()
+                });
         let (_, _, _, id) = roles.next()?;
         if roles.next().is_some() {
             return None;
@@ -83,7 +103,7 @@ impl<S> ApplicationCorrectionPreImage<S> for DisclosedPreImage<'_> {
         &self,
         locus: &worth_query_declaration::facade::application_aftermath::DeclaredPreImageRelationLocus<S>,
     ) -> Option<usize> {
-        let retained = self.retained?;
+        let retained = self.retained()?;
         if !retained.relation_loci().iter().any(|value| {
             value.relation() == locus.relation()
                 && value.from() == locus.from()
@@ -105,7 +125,7 @@ impl<S> ApplicationCorrectionPreImage<S> for DisclosedPreImage<'_> {
     }
     fn relation_at(&self, locus: &worth_query_declaration::facade::application_aftermath::DeclaredPreImageRelationLocus<S>, index: usize) -> Option<worth_query_declaration::facade::application_aftermath::ApplicationCorrectionRelationMaterial>{
         let row = self
-            .retained?
+            .retained()?
             .relations()
             .iter()
             .filter(|row| {
@@ -122,15 +142,21 @@ impl<S> ApplicationCorrectionPreImage<S> for DisclosedPreImage<'_> {
         &self,
         locus: &DeclaredPreImageLocus<S>,
     ) -> Option<&worth_foundational::facade::AspectValue> {
-        self.retained?
-            .fields()
-            .iter()
-            .find(|field| {
-                field.locus().entity() == locus.entity()
-                    && field.locus().aspect() == locus.aspect()
-                    && field.locus().field() == locus.field()
-            })
-            .map(|field| field.value())
+        match self {
+            Self::Retained(value) => {
+                value.preimage_value(locus.entity(), locus.aspect(), locus.field())
+            }
+            Self::Captured(_) => self
+                .retained()?
+                .fields()
+                .iter()
+                .find(|field| {
+                    field.locus().entity() == locus.entity()
+                        && field.locus().aspect() == locus.aspect()
+                        && field.locus().field() == locus.field()
+                })
+                .map(|field| field.value()),
+        }
     }
     fn field_for_output(
         &self,
@@ -140,17 +166,30 @@ impl<S> ApplicationCorrectionPreImage<S> for DisclosedPreImage<'_> {
         if role.entity() != locus.entity() {
             return None;
         }
-        let mut roles = self
-            .outputs
-            .native_witness_roles()
-            .filter(|(name, posture, entity, _)| {
-                *name == role.name() && *posture == role.posture() && *entity == role.entity()
-            });
+        let mut roles =
+            self.outputs()
+                .native_witness_roles()
+                .filter(|(name, posture, entity, _)| {
+                    *name == role.name() && *posture == role.posture() && *entity == role.entity()
+                });
         let (_, _, _, original) = roles.next()?;
         if roles.next().is_some() {
             return None;
         }
-        self.retained?
+        if let Self::Retained(value) = self {
+            return value.preimage_key(
+                original,
+                locus.entity(),
+                &worth_foundational::facade::AspectFieldLocator::new(
+                    worth_foundational::facade::LocatorAuthority::Planned,
+                    worth_foundational::facade::AspectKey::new(locus.aspect())?,
+                    worth_foundational::facade::CanonicalFieldPath::single(
+                        worth_foundational::facade::FieldKey::new(locus.field())?,
+                    ),
+                ),
+            );
+        }
+        self.retained()?
             .fields()
             .iter()
             .find(|field| {

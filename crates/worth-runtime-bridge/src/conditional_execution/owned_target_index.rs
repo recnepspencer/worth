@@ -25,6 +25,9 @@ pub(super) struct BridgeOwnedConditionalTargetReservation {
 }
 
 impl BridgeOwnedConditionalTargetIndex {
+    pub(super) fn is_empty_for_home_stop(&self) -> bool {
+        self.by_dependency.is_empty()
+    }
     pub(super) fn retained_target_reference_count(&self) -> usize {
         self.by_dependency
             .values()

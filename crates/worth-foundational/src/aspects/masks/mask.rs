@@ -32,7 +32,7 @@ impl<Mode> AspectMask<Mode> {
 
     pub fn new(paths: impl IntoIterator<Item = CanonicalFieldPath>) -> Self {
         let mut paths: Vec<_> = paths.into_iter().collect();
-        paths.sort();
+        paths.sort_unstable();
         paths.dedup();
         Self {
             paths,

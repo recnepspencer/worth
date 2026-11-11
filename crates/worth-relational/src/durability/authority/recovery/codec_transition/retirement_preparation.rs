@@ -1,8 +1,6 @@
 //! Capture only complete decisions from the native retirement court.
 use super::publication_custody::RecoveredCodecPublicationCustody;
-use crate::history::data::{
-    CanonicalCommitEnvelope, RequiredOutputPublicationPositions, RequiredOutputRoutePosition,
-};
+use crate::history::data::{RequiredOutputPublicationPositions, RequiredOutputRoutePosition};
 use crate::schema::data::RelationalSchemaRegistry;
 use crate::transactions::data::TransactionCommitError;
 use crate::{
@@ -91,7 +89,7 @@ impl RecoveredCodecPublicationCustody {
     pub(crate) fn install_retirements(
         &self,
         execution: &ExecutionRequest<'_, '_>,
-        envelope: &mut CanonicalCommitEnvelope,
+        envelope: &mut crate::history::data::CanonicalCommitEnvelopeBody,
         source: &AdmittedRelationalBranchBasis,
     ) -> Result<RequiredOutputPublicationPositions, TransactionCommitError> {
         use crate::publication::patch::data::RecordStructuralChange as Change;

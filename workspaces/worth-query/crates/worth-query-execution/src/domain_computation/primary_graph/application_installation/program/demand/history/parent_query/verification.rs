@@ -106,7 +106,7 @@ impl<S: ApplicationSchema + 'static, P: ApplicationProgramDefinition<S>>
                 // disclosure, posting, original root or settlement is constructed.
                 let selected = self.runtime().select_application_read_observation_with_request(execution, basis)
                     .map_err(|cause| Denial::Authority(crate::domain_computation::primary_graph::WorthQueryHistoryNavigationDenial::ProductAdmission(cause)))?;
-                native.with_runtime_mut(self.runtime().runtime.primary_graph().ok_or_else(foreign)?, execution,
+                native.with_runtime(self.runtime().runtime.primary_graph().ok_or_else(foreign)?, execution,
                     foreign, |native| {
                         let current=if let Some(model)=authority.recording_model() {
                             crate::domain_computation::primary_graph::product_operation::document_history::navigation::output_verification::current_recording_route_is_current(
@@ -114,7 +114,7 @@ impl<S: ApplicationSchema + 'static, P: ApplicationProgramDefinition<S>>
                         } else {
                         let evidence = authority.selected_output_read(execution, native)
                             .map_err(|cause| Denial::Authority(crate::domain_computation::primary_graph::WorthQueryHistoryNavigationDenial::RestoredOutputRead(cause)))?;
-                        let route = evidence.selected_output_route(execution, family, source, partition)
+                        let route = evidence.selected_output_route(execution, family, source, worth_foundational::facade::CanonicalDigestId::new(partition))
                             .map_err(|cause| Denial::Authority(crate::domain_computation::primary_graph::WorthQueryHistoryNavigationDenial::RestoredOutputRead(cause)))?;
                         let Some(route) = route else { return Ok(None); };
                         selected.selected_route_is_current(execution, native, route).map_err(Denial::Demand)?

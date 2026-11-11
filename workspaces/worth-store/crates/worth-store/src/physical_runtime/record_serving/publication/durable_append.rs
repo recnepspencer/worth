@@ -12,7 +12,7 @@ use worth_proof::TransitionOutcome;
 use crate::physical_runtime::{
     AdmittedRecordPlacementPolicy, IndeterminatePhysicalMutation, PhysicalMutationDeadline,
     PhysicalMutationIdempotencyIssuanceDenial, PhysicalMutationIdempotencyMaterial,
-    PhysicalMutationOutcome, PhysicalMutationPreparationOutcome,
+    PhysicalMutationOutcome, PhysicalMutationPreparationRefusal,
     PhysicalMutationPreparationSuccess, PhysicalMutationRequest, PhysicalRecordSubmission,
     ProvenNoEffectPhysicalMutation, RecordAppendBatch, RecordAppendDenial,
 };
@@ -31,7 +31,7 @@ pub(in crate::physical_runtime) struct DurableRecordAppend {
 pub(in crate::physical_runtime) enum DurableRecordAppendFailure {
     Batch(RecordAppendDenial),
     Idempotency(PhysicalMutationIdempotencyIssuanceDenial),
-    Preparation(PhysicalMutationPreparationOutcome),
+    Preparation(PhysicalMutationPreparationRefusal),
     ProvenNoEffect(ProvenNoEffectPhysicalMutation),
     Indeterminate(IndeterminatePhysicalMutation),
     /// The mutation completed but did not report one record per batch entry.
@@ -82,7 +82,23 @@ impl DurableRecordAppend {
                     ),
                 ))
             }
-            other => Err(DurableRecordAppendFailure::Preparation(other.into())),
+            TransitionOutcome::Denied(cause) => Err(DurableRecordAppendFailure::Preparation(
+                PhysicalMutationPreparationRefusal::Denied(cause),
+            )),
+            TransitionOutcome::Deferred(cause) => Err(DurableRecordAppendFailure::Preparation(
+                PhysicalMutationPreparationRefusal::Deferred(cause),
+            )),
+            TransitionOutcome::Stale(cause) => Err(DurableRecordAppendFailure::Preparation(
+                PhysicalMutationPreparationRefusal::Stale(cause),
+            )),
+            TransitionOutcome::RebindRequired(cause) => {
+                Err(DurableRecordAppendFailure::Preparation(
+                    PhysicalMutationPreparationRefusal::RebindRequired(cause),
+                ))
+            }
+            TransitionOutcome::Failed(cause) => Err(DurableRecordAppendFailure::Preparation(
+                PhysicalMutationPreparationRefusal::Failed(cause),
+            )),
         }
     }
 }

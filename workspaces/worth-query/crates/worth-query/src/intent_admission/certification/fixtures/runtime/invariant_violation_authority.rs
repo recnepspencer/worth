@@ -14,7 +14,7 @@ impl WorthQueryIntentAuthorityAdapter for InvariantViolationCertificationIntentA
     fn execute_intent(
         &mut self,
         _bridge: &RuntimeBridge,
-        _relational_runtime: Option<&mut RelationalRuntime>,
+        _relational_runtime: Option<&RelationalRuntime>,
         declaration: &WorthQueryIntentDeclaration,
     ) -> Result<WorthQueryIntentExecution, WorthQueryWorkspaceError> {
         Ok(WorthQueryIntentExecution::invariant_violation(

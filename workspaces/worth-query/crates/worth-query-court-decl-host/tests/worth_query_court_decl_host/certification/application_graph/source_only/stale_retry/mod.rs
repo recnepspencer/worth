@@ -175,7 +175,7 @@ fn unpinned_stale_retry_lost_answer_uses_keyed_recovery_without_third_handler_ru
     let done = fixture::completed(operation, &fresh);
     assert!(matches!(
         done.evidence(),
-        WorthQuerySourceCompletion::Recovered {
+        WorthQuerySourceCompletion::Recorded {
             initial_posture: Some(U::Indeterminate(_)),
             ..
         }

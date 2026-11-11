@@ -8,7 +8,7 @@ use crate::identity::data::RelationId;
 use worth_execution::{ExecutionResourceLease, MapKernelContext};
 
 pub(super) fn at_source(
-    runtime: &RelationalRuntime,
+    runtime: &crate::history::data::codec_retirement_closure::history_request::RuntimeHistoryRequest<'_, '_, '_>,
     basis: &AdmittedRelationalBranchBasis,
     record: &RelationalMaterializationRecord,
     validated_history: &mut OutputOriginHistory,
@@ -67,7 +67,8 @@ pub(super) fn at_source(
         let current = validated_history
             .by_commit(
                 commit,
-                &mut |commit| runtime.history.canonical_envelope(commit),
+                &mut |commit| runtime.commit(commit),
+                &runtime.execution(),
                 context,
             )?
             .ok_or("current incident producer publication absent")?;
@@ -98,7 +99,7 @@ pub(super) fn at_source(
 }
 
 fn relation_birth(
-    runtime: &RelationalRuntime,
+    runtime: &crate::history::data::codec_retirement_closure::history_request::RuntimeHistoryRequest<'_, '_, '_>,
     basis: &AdmittedRelationalBranchBasis,
     relation_id: RelationId,
     validated_history: &mut OutputOriginHistory,
@@ -117,7 +118,8 @@ fn relation_birth(
     let birth = validated_history
         .by_version(
             created,
-            &mut |version| runtime.history.canonical_envelope_for_version(version),
+            &mut |version, context| runtime.version(version, context),
+            &runtime.execution(),
             context,
         )?
         .ok_or("incident producer exact canonical birth absent")?;
@@ -128,8 +130,9 @@ fn relation_birth(
         &*basis.inner.root,
         relation_id,
         origin,
-        &mut |version| runtime.history.canonical_envelope_for_version(version),
+        &mut |version, context| runtime.version(version, context),
         validated_history,
+        &runtime.execution(),
         context,
     )?;
     Ok(birth)

@@ -117,7 +117,7 @@ fn activation_unwind_retains_complete_definition_custody_in_first_catalog_observ
     fixture
         .owner
         .recovery_port()
-        .release_effects(handle, 0)
+        .release_effects(&execution, handle, 0, None)
         .unwrap();
     assert_eq!(lifecycle.bridge_conditional_retention().unwrap(), baseline);
 }
@@ -195,7 +195,9 @@ fn activation_denial_retains_signal_successor_without_bridge_or_product_visibili
     };
     drop(custody);
     let unpublished =
-        crate::publication::RuntimeWorldUnpublishedConditionalDefinition::new(retained_effects);
+        crate::publication::RuntimeWorldUnpublishedConditionalDefinition::from_effects(
+            retained_effects,
+        );
 
     assert_eq!(
         lifecycle.bridge_conditional_retention().unwrap(),
@@ -227,7 +229,7 @@ fn activation_denial_retains_signal_successor_without_bridge_or_product_visibili
     assert!(fixture
         .owner
         .recovery_port()
-        .release_effects(&handle, 0)
+        .release_effects(&execution, &handle, 0, None)
         .is_ok());
     assert!(matches!(
         fixture.owner.recovery_port().inspect_effects(&handle),

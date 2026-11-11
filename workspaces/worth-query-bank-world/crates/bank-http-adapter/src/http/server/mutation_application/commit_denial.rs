@@ -18,8 +18,12 @@ pub(in crate::http::server) fn commit_denial(
 ) -> BankHttpDenial {
     use WorthQueryApplicationCommitDenialKind as Denial;
     match kind {
+        Denial::WorkflowSettlementDenied { kind: Attempt::ContentInconsistency } => operator_denial(),
+        Denial::WorkflowSettlementDenied { kind: Attempt::ExecutionRequest(cause @ (worth_query_host::facade::primary_graph::WorthQueryProviderSessionDenialKind::Content(_) | worth_query_host::facade::primary_graph::WorthQueryProviderSessionDenialKind::ContentInconsistency)) } => super::denial::pending_execution_denial(cause),
         Denial::Content(cause) => super::super::relational_execution_denial::content(cause.into()),
         Denial::ContentInconsistency => operator_denial(),
+        Denial::OriginalEffectReleased => BankHttpDenial::new(BankHttpDenialKind::OriginalEffectReleased, BankHttpNextAction::ContactOperator),
+        Denial::IdempotencyPreparationBusy => BankHttpDenial::new(BankHttpDenialKind::Unavailable, BankHttpNextAction::Retry),
         Denial::DomainValueRejected => BankHttpDenial::new(BankHttpDenialKind::MalformedRequest, BankHttpNextAction::CorrectRequest),
         Denial::StorageUnavailable(failure) => super::super::relational_execution_denial::denial(worth_query_host::facade::primary_graph::RelationalExecutionDenialCause::StorageUnavailable(failure)),
         Denial::SignedCreationAuthentication {
@@ -69,7 +73,7 @@ pub(in crate::http::server) fn commit_denial(
             BankHttpNextAction::CorrectRequest,
         ),
         // The key's earlier commit took effect; reading current state shows it.
-        Denial::IdempotencyReceiptNotRetained { .. } => {
+        Denial::IdempotencyForeignAffinity => {
             BankHttpDenial::new(BankHttpDenialKind::Stale, BankHttpNextAction::Refresh)
         }
         Denial::IdempotencyIntentUnverifiable => BankHttpDenial::new(
@@ -113,7 +117,7 @@ pub(in crate::http::server) fn commit_denial(
             BankHttpDenialKind::Unavailable,
             BankHttpNextAction::ContactOperator,
         ),
-        Denial::ProgramNotActiveOnOccurrence { .. } => {
+        Denial::StaleIncarnation | Denial::ProgramNotActiveOnOccurrence { .. } => {
             BankHttpDenial::new(BankHttpDenialKind::Stale, BankHttpNextAction::Refresh)
         }
     }

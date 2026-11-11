@@ -1,0 +1,12 @@
+{"count": 11, "kind": "leaf"}
+{"binary": "bank-http-adapter", "slots": 1, "test": "http::server::estate_denial::recovery_instruction_tests::idempotency::a_committed_key_asks_for_a_refresh_and_an_unverifiable_one_for_the_operator"}
+{"binary": "bank-http-adapter", "slots": 1, "test": "http::server::mutation_application::denial::tests::a_key_committed_before_a_restore_asks_for_a_refresh_not_a_retry"}
+{"binary": "bank-server", "slots": 1, "test": "estate_capability_admission::request_entry_tests::lifecycle_canonical_work::each_lifecycle_commit_and_replay_reports_its_request_identities_once"}
+{"binary": "worth-query-bank-court-domain::worth_query_bank_court_domain", "slots": 1, "test": "domain::domain_contracts::public_consumer_transcript::forged_field_capability_type_and_currency_are_denied_independently"}
+{"binary": "worth-query-bank-court-estate-certification::worth_query_bank_court_estate_certification", "slots": 1, "test": "estate_certification::canonical_certification::capability_and_declared_disclosure_meaning_compare_canonically_before_closed_publication"}
+{"binary": "worth-query-bank-court-estate-certification::worth_query_bank_court_estate_certification", "slots": 1, "test": "estate_certification::progression_denial_surface::nested_progression_denial_payloads_are_nameable_by_external_consumers"}
+{"binary": "worth-query-bank-court-estate-certification::worth_query_bank_court_estate_certification", "slots": 1, "test": "estate_certification::residue_certification::certification_uses_only_the_entry_audience_and_foundational_surface"}
+{"binary": "worth-query-bank-court-estate-certification::worth_query_bank_court_estate_certification", "slots": 1, "test": "estate_certification::residue_certification::dependency_gate_rejects_a_renamed_forbidden_package_identity"}
+{"binary": "worth-query-bank-court-estate-certification::worth_query_bank_court_estate_certification", "slots": 1, "test": "estate_certification::residue_certification::production_bank_source_contains_no_superseded_authority_or_oracle_lane"}
+{"binary": "worth-query-bank-court-estate-certification::worth_query_bank_court_estate_certification", "slots": 1, "test": "process::estate_dependency_contract::estate_certification::residue_certification::missing_prebuilt_dependency_metadata_refuses_before_inspection"}
+{"binary": "worth-query-bank-court-estate-certification::worth_query_bank_court_estate_certification", "slots": 1, "test": "process::estate_dependency_contract::estate_certification::residue_certification::production_bank_packages_use_only_query_audience_crates"}

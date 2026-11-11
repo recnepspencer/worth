@@ -43,7 +43,10 @@ pub use conditional_binding::{
     WorthQueryPortableApplicationConditionalOperationBindingParts,
 };
 pub use conditional_clock::WorthQueryInstalledNamedClockConditionalNode;
-pub use conditional_provider::WorthQueryInstalledHostConditionalProvider;
+pub use conditional_provider::{
+    WorthQueryAuthoredHostPredicateBinding, WorthQueryBoundHostOutputComparator,
+    WorthQueryBoundHostOutputVersion, WorthQueryInstalledHostConditionalProvider,
+};
 pub use conditional_temporal::WorthQueryInstalledTemporalConditionalOperation;
 pub use contracts::{
     WorthQueryCompiledApplicationOperationContracts, WorthQueryInstalledApplicationEffectEmission,

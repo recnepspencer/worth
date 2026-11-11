@@ -10,6 +10,9 @@ pub fn run_advancement(
     execution: &QueryRequestExecution<'_>,
     owner: Option<worth_runtime_world::facade::RuntimeWorldOwnerIdentity>,
     source_instance: Option<u64>,
+    maintenance: Option<
+        &dyn crate::domain_computation::execution_runtime::product_world::WorthQueryHomeMaintenance,
+    >,
     body: &mut dyn FnMut(WorthQueryAdvancementPhase<'_>),
     discard: &mut dyn FnMut(),
 ) -> Result<(), WorthQueryAdvancementDenial> {
@@ -20,7 +23,14 @@ pub fn run_advancement(
             .unwrap_or(policy.posture()),
     };
     observation::begin(posture, execution.has_accounting());
-    let result = run_admitted_advancement(execution, owner, source_instance, body, discard);
+    let result = run_admitted_advancement(
+        execution,
+        owner,
+        source_instance,
+        maintenance,
+        body,
+        discard,
+    );
     observation::record_result(&result);
     result
 }
@@ -29,6 +39,9 @@ fn run_admitted_advancement(
     execution: &QueryRequestExecution<'_>,
     owner: Option<worth_runtime_world::facade::RuntimeWorldOwnerIdentity>,
     source_instance: Option<u64>,
+    maintenance: Option<
+        &dyn crate::domain_computation::execution_runtime::product_world::WorthQueryHomeMaintenance,
+    >,
     body: &mut dyn FnMut(WorthQueryAdvancementPhase<'_>),
     discard: &mut dyn FnMut(),
 ) -> Result<(), WorthQueryAdvancementDenial> {
@@ -59,7 +72,13 @@ fn run_admitted_advancement(
                 active: &active,
                 source,
                 owner,
-            })
+            });
+            if let Some(maintenance) = maintenance {
+                let invoking = lease
+                    .map(worth_execution::ExecutionRequest::leased)
+                    .unwrap_or(request);
+                super::directory_completion::after_business(invoking, maintenance);
+            }
         })) {
             Ok(()) => Some(handoff),
             Err(payload) => {
@@ -69,9 +88,19 @@ fn run_admitted_advancement(
         }
     };
     let outcome = if execution.has_accounting() {
-        request.run(ExecutionWorkCeiling::new(execution.declared_work), execute)
+        let ceiling = ExecutionWorkCeiling::new(execution.declared_work);
+        if maintenance.is_some() {
+            request.run_completion(ceiling, execute)
+        } else {
+            request.run(ceiling, execute)
+        }
     } else {
-        request.run_native(execute).map(|(value, physical)| {
+        let native = if maintenance.is_some() {
+            request.run_native_completion(execute)
+        } else {
+            request.run_native(execute)
+        };
+        native.map(|(value, physical)| {
             let posture = if physical.active_workers_high_watermark() > 1 {
                 worth_foundational::ExecutionPosture::Automatic
             } else {

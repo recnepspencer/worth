@@ -25,4 +25,5 @@ pub(crate) use registration::{CompanionRegistrationEpoch, CompanionRegistry};
 pub use registration::{
     PendingCompanionRegistration, PublicationCompanionRegistration,
     PublicationCompanionRegistrationPort, PublicationCompanionRegistrationStop,
+    PublicationCompanionRetirementDenial, RetiredPublicationCompanionRegistration,
 };

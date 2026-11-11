@@ -2,10 +2,10 @@
 use super::super::fixtures as physical;
 use super::fixtures::*;
 
-pub(super) fn persisted(registry: RelationalSchemaRegistry) -> RelationalRuntime {
+pub(super) fn configured_runtime(registry: RelationalSchemaRegistry) -> RelationalRuntime {
     RelationalRuntimeApi::builder()
         .schema_registry(registry)
-        .build_durable(TestDurableMedium::new().attachment())
+        .build()
         .expect("valid native runtime configuration")
 }
 
@@ -44,7 +44,7 @@ fn physical_membership_recipe_and_alternating_derived_catalog_restore_from_real_
         extended.derived_relation(&physical_identity),
         Some(handle.clone())
     );
-    let runtime = persisted(extended);
+    let runtime = configured_runtime(extended);
     let born = physical::commit(execution, &runtime, "main", physical::birth(&[1, 0]));
     let member = physical::members(&born, 2)[0];
     let truth = super::laws::current_truth(execution, &runtime);
@@ -56,7 +56,22 @@ fn physical_membership_recipe_and_alternating_derived_catalog_restore_from_real_
         })
         .collect::<Vec<_>>();
     assert_eq!(expected.len(), 1);
-    let (_, recovered) = checkpoint_and_recover_with(execution, &runtime, || persisted(registry));
+    runtime
+        .durability_authority()
+        .checkpoint(execution)
+        .unwrap();
+    let plan = runtime
+        .durability()
+        .recovery_plan(
+            execution,
+            crate::durability::data::RecoveryVerificationMode::NormalRecoveryVerification,
+        )
+        .unwrap();
+    let mut recovered = configured_runtime(registry);
+    recovered
+        .durability_recovery()
+        .recover(execution, plan)
+        .unwrap();
     let snapshot = snapshot_for_owner_branch(&recovered, &BranchId("main".into()));
     let pin = recovered
         .read_truth()
@@ -81,7 +96,7 @@ fn physical_membership_recipe_and_alternating_derived_catalog_restore_from_real_
         extended.derived_relation(&identity("Law")),
         Some(handle.clone())
     );
-    let runtime = persisted(extended);
+    let runtime = configured_runtime(extended);
     let born = commit(
         execution,
         &runtime,
@@ -92,7 +107,22 @@ fn physical_membership_recipe_and_alternating_derived_catalog_restore_from_real_
         read(execution, &runtime, &born.snapshot, key(carrier, 0)).identity(),
         read(execution, &runtime, &born.snapshot, key(carrier, 1)).identity(),
     ];
-    let (_, recovered) = checkpoint_and_recover_with(execution, &runtime, || persisted(registry));
+    runtime
+        .durability_authority()
+        .checkpoint(execution)
+        .unwrap();
+    let plan = runtime
+        .durability()
+        .recovery_plan(
+            execution,
+            crate::durability::data::RecoveryVerificationMode::NormalRecoveryVerification,
+        )
+        .unwrap();
+    let mut recovered = configured_runtime(registry);
+    recovered
+        .durability_recovery()
+        .recover(execution, plan)
+        .unwrap();
     let snapshot = snapshot_for_owner_branch(&recovered, &BranchId("main".into()));
     let pin = recovered
         .read_truth()
@@ -112,10 +142,12 @@ fn physical_membership_recipe_and_alternating_derived_catalog_restore_from_real_
             name
         );
     }
-    assert_eq!(
-        runtime.history().commit_envelopes_snapshot(),
-        recovered.history().commit_envelopes_snapshot()
-    );
+    let original = runtime.history().commit_envelopes_snapshot();
+    let restored = recovered.history().commit_envelopes_snapshot();
+    assert_eq!(original.len(), restored.len());
+    for (original, restored) in original.iter().zip(&restored) {
+        crate::tests::support::assert_durable_commit_meaning_eq(execution, original, restored);
+    }
 }
 
 #[test]
@@ -125,7 +157,7 @@ fn changed_configured_domain_cannot_replace_the_actual_recovered_root_or_its_han
     let original = source_registry();
     let definition = original.derived_relation(&identity("Adjacency")).unwrap();
     let original_domain = original.projected_member_domain(&domain()).unwrap();
-    let runtime = persisted(original.clone());
+    let runtime = configured_runtime(original.clone());
     let born = commit(
         execution,
         &runtime,
@@ -136,7 +168,18 @@ fn changed_configured_domain_cannot_replace_the_actual_recovered_root_or_its_han
         .durability_authority()
         .checkpoint(execution)
         .unwrap();
-    let (_, compatible) = recover_with(execution, &runtime, || persisted(original));
+    let plan = runtime
+        .durability()
+        .recovery_plan(
+            execution,
+            crate::durability::data::RecoveryVerificationMode::NormalRecoveryVerification,
+        )
+        .unwrap();
+    let mut compatible = configured_runtime(original);
+    compatible
+        .durability_recovery()
+        .recover(execution, plan)
+        .unwrap();
     let snapshot = snapshot_for_owner_branch(&compatible, &BranchId("main".into()));
     let pin = compatible
         .read_truth()
@@ -170,7 +213,7 @@ fn changed_configured_domain_cannot_replace_the_actual_recovered_root_or_its_han
             crate::durability::data::RecoveryVerificationMode::NormalRecoveryVerification,
         )
         .unwrap();
-    let mut restored = persisted(changed);
+    let mut restored = configured_runtime(changed);
     let before = restored.history().commit_envelopes_snapshot();
     let error = restored
         .durability_recovery()
@@ -201,7 +244,7 @@ fn changed_configured_domain_cannot_replace_the_actual_recovered_root_or_its_han
             .unwrap(),
         before
     );
-    let mut restored = persisted(source_registry());
+    let mut restored = configured_runtime(source_registry());
     restored
         .durability_recovery()
         .restore_native_checkpoint(execution, &opaque)

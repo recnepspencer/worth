@@ -135,7 +135,8 @@ where
             .runtime
             .bridge
             .conditional()
-            .prepare_conditional_reconstitution(truth.signal_basis())
+            .memory()
+            .and_then(|owner| owner.prepare_conditional_reconstitution(truth.signal_basis()))
             .map_err(|denial| {
                 WorthQueryConditionalRuntimeInstallationDenial::new(
                     WorthQueryConditionalRuntimeInstallationDenialKind::BridgeConditional(
@@ -145,7 +146,8 @@ where
                 )
             })?;
         let mut registry = self
-            .conditional_operations
+            .conditional_cleanup
+            .operations
             .get_mut()
             .unwrap_or_else(std::sync::PoisonError::into_inner)
             .snapshot();
@@ -164,7 +166,7 @@ where
             .runtime
             .bridge
             .conditional_lifecycle()
-            .activate_conditional_reconstitution(bridge_candidate)
+            .and_then(|mut owner| owner.activate_conditional_reconstitution(bridge_candidate))
             .map_err(|denial| {
                 WorthQueryConditionalRuntimeInstallationDenial::new(
                     WorthQueryConditionalRuntimeInstallationDenialKind::BridgeConditional(

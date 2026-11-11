@@ -56,13 +56,11 @@ impl WorthQueryConditionalTruthBasis {
         Ok(Self::from_selected(selected.retain_selection(execution)?))
     }
 
-    pub(in crate::domain_computation::primary_graph) fn is_publication(
+    pub(in crate::domain_computation::primary_graph) fn is_product_publication(
         &self,
-        receipt: &super::super::WorthQueryApplicationCommitReceipt,
+        publication: &super::super::WorthQueryCommittedProductPublication,
     ) -> bool {
-        receipt
-            .committed_product_publication()
-            .is_selected_at(self.product.observation())
+        publication.is_selected_at(self.product.observation())
     }
 
     pub(in crate::domain_computation::primary_graph) fn snapshot(&self) -> &TruthSnapshotIdentity {
@@ -142,6 +140,20 @@ pub(super) fn retained_decision_counts(
                 let _ = (evidence, cleanup);
                 counts.failed += 1;
             }
+            WorthQueryRetainedConditionalDecision::OperationPreparationPending(
+                evidence,
+                pending,
+            ) => {
+                let _ = (evidence, pending);
+                counts.failed += 1;
+            }
+            WorthQueryRetainedConditionalDecision::OperationPreparationRefused(
+                evidence,
+                refused,
+            ) => {
+                let _ = (evidence, refused);
+                counts.failed += 1;
+            }
             WorthQueryRetainedConditionalDecision::OperationProductStale(evidence, stale) => {
                 let _decision = evidence.signal().class();
                 let _expected_product = stale.expected_product();
@@ -182,6 +194,7 @@ pub(super) fn retained_decision_counts(
             WorthQueryRetainedConditionalDecision::OperationProductUnpublished(
                 evidence,
                 custody,
+                _,
             ) => {
                 let _decision = evidence.signal().class();
                 let _custody = custody;

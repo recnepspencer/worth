@@ -23,7 +23,12 @@ pub(super) trait PendingProducerExecutor<Schema>: Send + Sync {
         self: Box<Self>,
         support: &WorthQueryExecutionResourceSupportSnapshot,
         packages: &WorthQueryInstalledPackageIndex,
-    ) -> Result<Arc<dyn InstalledProducerExecutor<Schema>>, WorthQueryPrimaryGraphInstallationDenial>;
+    ) -> Result<Arc<dyn InstalledProducerExecutor<Schema>>, RefusedProducerExecutor<Schema>>;
+}
+
+pub(super) struct RefusedProducerExecutor<Schema> {
+    pub(super) pending: Box<dyn PendingProducerExecutor<Schema>>,
+    pub(super) cause: WorthQueryPrimaryGraphInstallationDenial,
 }
 
 pub(super) struct TypedPendingProducer<Schema, Binding>
@@ -76,26 +81,46 @@ where
         self: Box<Self>,
         support: &WorthQueryExecutionResourceSupportSnapshot,
         packages: &WorthQueryInstalledPackageIndex,
-    ) -> Result<Arc<dyn InstalledProducerExecutor<Schema>>, WorthQueryPrimaryGraphInstallationDenial>
-    {
-        let request = application_resource_request(self.mutation.operation().contracts())
-            .ok_or_else(|| denial(DenialKind::ProducerGraphWorkRejected, Binding::IDENTITY))?;
-        let prepared =
-            prepare_application_operation_graph_work(self.mutation.operation(), &request, support)
-                .map_err(|error| {
-                    denial(
+    ) -> Result<Arc<dyn InstalledProducerExecutor<Schema>>, RefusedProducerExecutor<Schema>> {
+        let request = match application_resource_request(self.mutation.operation().contracts()) {
+            Some(request) => request,
+            None => {
+                return Err(RefusedProducerExecutor {
+                    pending: self,
+                    cause: denial(DenialKind::ProducerGraphWorkRejected, Binding::IDENTITY),
+                })
+            }
+        };
+        let prepared = match prepare_application_operation_graph_work(
+            self.mutation.operation(),
+            &request,
+            support,
+        ) {
+            Ok(prepared) => prepared,
+            Err(error) => {
+                return Err(RefusedProducerExecutor {
+                    pending: self,
+                    cause: denial(
                         DenialKind::ProducerGraphWorkRejected,
                         format!("{}: {error:?}", Binding::IDENTITY),
-                    )
-                })?;
-        let principal_validation = packages
+                    ),
+                })
+            }
+        };
+        let principal_validation = match packages
             .retain_validated_principal_binding(self.source_query.principal_binding())
-            .map_err(|error| {
-                denial(
-                    DenialKind::ForeignProducerBinding,
-                    format!("{}: {error:?}", Binding::IDENTITY),
-                )
-            })?;
+        {
+            Ok(validation) => validation,
+            Err(error) => {
+                return Err(RefusedProducerExecutor {
+                    pending: self,
+                    cause: denial(
+                        DenialKind::ForeignProducerBinding,
+                        format!("{}: {error:?}", Binding::IDENTITY),
+                    ),
+                })
+            }
+        };
         Ok(Arc::new(TypedInstalledProducer::<Schema, Binding>::new(
             self.provider,
             self.mutation,

@@ -22,7 +22,7 @@ pub struct PreparedEntityFieldLookup {
     runtime_identity: u64,
     instrumentation: crate::runtime::RuntimeInstrumentation,
     basis: ResidentVisibilitySnapshotBasis,
-    definition: Arc<DerivedIndexDefinition>,
+    definition: crate::indexes::RetainedDerivedIndexDefinition,
     generation: Arc<DerivedIndexGeneration>,
     kind: KindId,
 }
@@ -35,8 +35,8 @@ impl PreparedEntityFieldLookup {
     pub(super) fn belongs_to_owner(&self, runtime_identity: u64) -> bool {
         self.runtime_identity == runtime_identity
     }
-    pub fn retain_definition(&self) -> Arc<DerivedIndexDefinition> {
-        Arc::clone(&self.definition)
+    pub fn retain_definition(&self) -> crate::indexes::RetainedDerivedIndexDefinition {
+        self.definition.clone()
     }
     pub fn index_id(&self) -> DerivedIndexId {
         self.definition.index_id
@@ -140,7 +140,7 @@ impl PreparedEntityFieldLookup {
             &mut read,
         )?;
         let outcome = BoundedEntityFieldLookupOutcome::new(
-            Arc::clone(&self.definition),
+            self.definition.clone(),
             self.generation.generation_id,
             candidates,
             examined,
@@ -192,14 +192,14 @@ impl<E, F: FnMut() -> Result<(), E>> EntityFieldCollectionRead<E>
             self.prepared.index_id(),
             self.admission,
         )?;
-        Ok(
-            crate::indexes::projected_field_values::exact_entity_field_matches(
-                self.prepared.basis.root(),
-                entity,
-                self.prepared.field_locator(),
-                self.value,
-            ),
+        crate::indexes::projected_field_values::exact_entity_field_matches(
+            &self.prepared.basis,
+            execution,
+            entity,
+            self.prepared.field_locator(),
+            self.value,
         )
+        .map_err(|cause| Stop::Lookup(denied(Denial::Execution(cause), self.prepared.index_id())))
     }
 }
 
@@ -265,7 +265,7 @@ impl PreparedEntityFieldLookup {
     pub(crate) fn pin(
         runtime_identity: u64,
         basis: ResidentVisibilitySnapshotBasis,
-        definition: Arc<DerivedIndexDefinition>,
+        definition: crate::indexes::RetainedDerivedIndexDefinition,
         kind: KindId,
         locator: &AspectFieldLocator,
         instrumentation: crate::runtime::RuntimeInstrumentation,

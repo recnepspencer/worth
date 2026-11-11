@@ -79,8 +79,8 @@ impl PreparedSelectedCheckpointFinish<'_> {
                     if matches!(output.advancement(), WorthQueryOutputAdvancement::Idle)
                         && matches!(&output.checkpoint,
                             Some(WorthQueryOutputCheckpoint::PublicationPending { .. }
-                                | WorthQueryOutputCheckpoint::Published { .. }
-                                | WorthQueryOutputCheckpoint::Delivered { .. })))
+                                | WorthQueryOutputCheckpoint::Published { .. } | WorthQueryOutputCheckpoint::RecoveredPublished { .. }
+                                | WorthQueryOutputCheckpoint::Delivered { .. } | WorthQueryOutputCheckpoint::RecoveredDelivered { .. })))
         {
             return Ok(None);
         }

@@ -14,7 +14,7 @@ use std::sync::{Arc, Weak};
 pub(crate) struct PublicationBasisRoute {
     family: Arc<str>,
     source: EntityId,
-    partition: [u8; 32],
+    partition: worth_foundational::CanonicalDigestId,
 }
 impl PublicationBasisRoute {
     pub(super) fn compare_meaning(

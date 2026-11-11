@@ -45,6 +45,37 @@ impl ApplicationCorrectionBinding<BankSchema> for ReverseApprovedPayment {
     type Source = ApprovePaymentMutationBinding;
     type InverseIntent = ReverseJournal;
     type Disclosure = PaymentDetailQueryBinding;
+
+    fn recover_source_input(
+        bytes: &[u8],
+        expected: worth_query_decl::facade::application_schema::CanonicalDigestId,
+        bounds: worth_query_decl::facade::application_schema::ValueDecodeBounds,
+    ) -> Result<
+        worth_query_decl::facade::application_operation::ApplicationEncodedInput<
+            <Self::Source as worth_query_decl::facade::application_operation::ApplicationMutationBinding<BankSchema>>::InputBinding,
+        >,
+        worth_query_decl::facade::application_operation::ApplicationRetainedInputDenial,
+    >{
+        crate::schema::correction_input::approved(bytes, expected, bounds)
+    }
+
+    fn recover_inverse_input(
+        bytes: &[u8],
+        expected: worth_query_decl::facade::application_schema::CanonicalDigestId,
+        bounds: worth_query_decl::facade::application_schema::ValueDecodeBounds,
+    ) -> Result<
+        worth_query_decl::facade::application_operation::ApplicationEncodedInput<
+            <worth_query_decl::facade::application_aftermath::ApplicationInverseBinding<
+                BankSchema,
+                Self,
+            > as worth_query_decl::facade::application_operation::ApplicationMutationBinding<
+                BankSchema,
+            >>::InputBinding,
+        >,
+        worth_query_decl::facade::application_operation::ApplicationRetainedInputDenial,
+    > {
+        crate::schema::correction_input::journal(bytes, expected, bounds)
+    }
     fn source_definition() -> ApplicationOperationDefinitionBuilder<
         BankSchema,
         ApprovePaymentOperation,

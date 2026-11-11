@@ -2,12 +2,11 @@
 use super::*;
 use crate::domain_computation::primary_graph::{
     application_output_demand::OriginalOutputTree, structural_walk::memory,
-    WorthQueryAdvancementPhase, WorthQueryApplicationCommitReceipt,
-    WorthQueryApplicationIdempotencyBinding, WorthQueryApplicationReadObservation,
-    WorthQueryCompletedRequiredOutputs, WorthQueryExpectedProductBranch,
-    WorthQueryOriginalReadOutputDenial, WorthQueryOutputDemandDenial,
-    WorthQueryOutputDemandDenialKind, WorthQueryOutputDemandSettlement,
-    WorthQueryOutputSettlementPosture,
+    WorthQueryAdvancementPhase, WorthQueryApplicationIdempotencyBinding,
+    WorthQueryApplicationReadObservation, WorthQueryCompletedRequiredOutputs,
+    WorthQueryExpectedProductBranch, WorthQueryOriginalReadOutputDenial,
+    WorthQueryOutputDemandDenial, WorthQueryOutputDemandDenialKind,
+    WorthQueryOutputDemandSettlement, WorthQueryOutputSettlementPosture,
 };
 use crate::publication_boundary::{
     discovery_currentness::WorthQueryRetainedQueryDependencies, WorthQueryProgramPublicationAccess,
@@ -146,7 +145,7 @@ impl<'runtime, S: ApplicationSchema, H: ApplicationHistoryBinding<S>>
         _: &WorthQueryProgramPublicationAccess,
         reserved: &WorthQueryDocumentHistoryReservation,
         candidate: &WorthQueryExpectedProductBranch<'runtime, S>,
-        source: &WorthQueryApplicationCommitReceipt,
+        source: super::source_evidence::WorthQueryHistorySourceEvidence<'_>,
         required: Option<&WorthQueryCompletedRequiredOutputs>,
         profile: &WorthQueryHistoryOutputProfile,
     ) -> Result<Arc<WorthQueryHistoryRecordingOutputOrigin>, WorthQueryDocumentHistoryDenial> {
@@ -154,9 +153,16 @@ impl<'runtime, S: ApplicationSchema, H: ApplicationHistoryBinding<S>>
         if !profile.is_output_forest() || !profile.matches_recording_model(&self.model) {
             return Err(Denial::ForeignModel);
         }
-        let completion = match required {
-            Some(completed) => sealing::RecordingCompletion::RequiredOutputs { source, completed },
-            None => sealing::RecordingCompletion::Source(source),
+        use super::source_evidence::WorthQueryHistorySourceEvidence as Source;
+        let completion = match (source, required) {
+            (Source::Live(source), Some(completed)) => {
+                sealing::RecordingCompletion::RequiredOutputs { source, completed }
+            }
+            (Source::Live(source), None) => sealing::RecordingCompletion::Source(source),
+            (Source::Recorded(source), None) => {
+                sealing::RecordingCompletion::RecordedSource(source)
+            }
+            (Source::Recorded(_), Some(_)) => return Err(Denial::ReceiptMismatch),
         };
         let prepared = self.prepare_binding(phase, reserved, candidate, completion)?;
         let current = self
@@ -175,7 +181,7 @@ impl<'runtime, S: ApplicationSchema, H: ApplicationHistoryBinding<S>>
             self.model.clone(),
             reserved,
             candidate.branch(),
-            source,
+            reserved.meaning,
             profile,
             prepared.source,
             prepared.node.root_posture,

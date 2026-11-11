@@ -64,7 +64,7 @@ pub fn install_with_control(cancellation: Option<WorthQueryCancellationSource>) 
 pub fn try_install_seed(
     cancellation: Option<WorthQueryCancellationSource>,
     first: Option<u64>,
-) -> Result<Host, WorthQueryInMemoryApplicationDenial> {
+) -> Result<Host, WorthQueryApplicationPreparationDenial> {
     in_memory_program(
         program(),
         Schema::declaration().unwrap(),
@@ -95,8 +95,8 @@ pub fn restore(checkpoint: WorthQueryApplicationCheckpoint) -> Host {
 }
 pub fn try_restore(
     checkpoint: WorthQueryApplicationCheckpoint,
-) -> Result<Host, WorthQueryInMemoryApplicationDenial> {
-    in_memory_program_from_checkpoint(
+) -> Result<Host, WorthQueryApplicationPreparationDenial> {
+    WorthQueryInterimCheckpointRestore::program(
         program(),
         Schema::declaration().unwrap(),
         (None,),

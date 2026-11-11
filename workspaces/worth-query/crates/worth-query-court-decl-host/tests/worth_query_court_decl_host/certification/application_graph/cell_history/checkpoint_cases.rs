@@ -68,10 +68,10 @@ fn cell_checkpoint_restores_structural_edits_and_retries_by_the_durable_record()
     assert_eq!(live_at::current(&restored, 2), untouched);
     let head = live_at::observe(&restored);
     let retry = live_at::change(&restored, replace, 502);
-    let WorthQueryApplicationMutationOutcome::PreviouslyCommitted(record) = &retry else {
+    let WorthQueryApplicationMutationOutcome::RecoveredCommitted(record) = &retry else {
         panic!("restoration resolves the durable record: {retry:?}")
     };
-    assert_eq!(record.commit_id(), original_commit);
+    assert_eq!(record.commit_reference().commit_id, original_commit);
     assert!(retry.receipt().is_none(), "history grants no live receipt");
     assert!(
         retry.result().is_none(),

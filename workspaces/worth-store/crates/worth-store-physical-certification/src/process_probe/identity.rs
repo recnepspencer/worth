@@ -2,6 +2,7 @@ use std::fs;
 use std::io::Read;
 use std::path::{Path, PathBuf};
 use std::process::Command;
+use worth_foundational::CanonicalDigestId;
 
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
@@ -23,21 +24,21 @@ const ENVIRONMENT_IDENTITY_ENV: &str = "WORTH_STORE_PROCESS_PROBE_ENVIRONMENT_ID
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub struct ProcessIdentityEvidence {
     pub role: ProcessRole,
-    pub executable_identity: [u8; 32],
+    pub executable_identity: CanonicalDigestId,
     pub process_id: u32,
     pub launch_parent_process_id: u32,
     pub working_directory: String,
-    pub working_directory_identity: [u8; 32],
+    pub working_directory_identity: CanonicalDigestId,
     pub environment: Vec<ProcessEnvironmentBindingEvidence>,
-    pub environment_identity: [u8; 32],
-    pub input_artifact_identity: [u8; 32],
-    pub runtime_identity: Option<[u8; 32]>,
+    pub environment_identity: CanonicalDigestId,
+    pub input_artifact_identity: CanonicalDigestId,
+    pub runtime_identity: Option<CanonicalDigestId>,
 }
 
 #[derive(Debug, Clone)]
 pub struct AdmittedProcessProbe {
     role: ProcessRole,
-    input_identity: [u8; 32],
+    input_identity: CanonicalDigestId,
 }
 
 #[derive(Debug)]
@@ -136,7 +137,7 @@ pub fn admit_current_process_probe(
     validate_current_environment()?;
     Ok(AdmittedProcessProbe {
         role,
-        input_identity,
+        input_identity: CanonicalDigestId::new(input_identity),
     })
 }
 
@@ -161,7 +162,7 @@ pub(crate) fn write_current_process_observation(
     .and_then(|decoded| SealedProcessProbeInput::decode_declared(&wire_encoding::encode(&decoded)?))
     .map_err(|_| ProcessProbeEvidenceDenial::InputIdentityMismatch)?;
     if sealed_input.identity() != input_artifact_identity
-        || input_artifact_identity != admission.input_identity
+        || input_artifact_identity != *admission.input_identity.bytes()
     {
         return Err(ProcessProbeEvidenceDenial::InputIdentityMismatch);
     }
@@ -177,15 +178,17 @@ pub(crate) fn write_current_process_observation(
         .replace('\\', "/");
     let evidence = ProcessIdentityEvidence {
         role,
-        executable_identity,
+        executable_identity: CanonicalDigestId::new(executable_identity),
         process_id: std::process::id(),
         launch_parent_process_id,
-        working_directory_identity: Sha256::digest(working_directory.as_bytes()).into(),
+        working_directory_identity: CanonicalDigestId::new(
+            Sha256::digest(working_directory.as_bytes()).into(),
+        ),
         working_directory,
         environment,
-        environment_identity,
-        input_artifact_identity,
-        runtime_identity,
+        environment_identity: CanonicalDigestId::new(environment_identity),
+        input_artifact_identity: CanonicalDigestId::new(input_artifact_identity),
+        runtime_identity: runtime_identity.map(CanonicalDigestId::new),
     };
     write_new_observation(&observation_path, &evidence)
 }
@@ -237,22 +240,22 @@ impl ProcessIdentityEvidence {
         {
             return Err(ProcessProbeEvidenceDenial::ProcessRelationshipMismatch);
         }
-        if self.executable_identity != declaration.executable_identity() {
+        if *self.executable_identity.bytes() != declaration.executable_identity() {
             return Err(ProcessProbeEvidenceDenial::ExecutableMismatch);
         }
-        if self.input_artifact_identity != declaration.input_identity() {
+        if *self.input_artifact_identity.bytes() != declaration.input_identity() {
             return Err(ProcessProbeEvidenceDenial::InputIdentityMismatch);
         }
         let working_directory_identity: [u8; 32] =
             Sha256::digest(self.working_directory.as_bytes()).into();
         if self.working_directory != declaration.working_directory()
-            || self.working_directory_identity != working_directory_identity
+            || *self.working_directory_identity.bytes() != working_directory_identity
         {
             return Err(ProcessProbeEvidenceDenial::WorkingDirectoryMismatch);
         }
         if !environment::is_admitted(&self.environment)
-            || environment::identity(&self.environment)? != self.environment_identity
-            || self.environment_identity != declaration.environment_identity()
+            || environment::identity(&self.environment)? != *self.environment_identity.bytes()
+            || *self.environment_identity.bytes() != declaration.environment_identity()
         {
             return Err(ProcessProbeEvidenceDenial::EnvironmentMismatch);
         }

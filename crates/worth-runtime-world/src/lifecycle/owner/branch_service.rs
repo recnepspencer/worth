@@ -13,11 +13,21 @@ use super::super::ports::{RuntimeWorldBranchCreationOutcome, RuntimeWorldBranchC
 use super::RuntimeWorldOwnerRoot;
 
 mod creation;
+mod durable_creation;
 mod exact_history;
 mod history;
+mod home_program_binding;
+mod identity_issuance;
 #[cfg(test)]
 mod install_control;
+mod memory_creation;
 mod observation;
+mod original_publication;
+mod port;
+mod readmission;
+pub(crate) use durable_creation::WorldDurableCreationCustody;
+mod native_creation_source;
+mod native_fork_denial;
 mod retained_source;
 mod retirement;
 
@@ -36,7 +46,7 @@ where
             .bootstrap
             .lock()
             .unwrap_or_else(|error| error.into_inner());
-        if *bootstrap != super::RuntimeWorldBootstrapState::Performed {
+        if !matches!(*bootstrap, super::RuntimeWorldBootstrapState::Performed) {
             return false;
         }
         self.state
@@ -45,25 +55,6 @@ where
             .unwrap_or_else(|error| error.into_inner())
             .state()
             == super::super::close::RuntimeWorldCloseState::Open
-    }
-
-    /// The branch identity is the owner plus the normalized name, so retiring
-    /// and recreating one name yields the same identity with a new
-    /// incarnation. Only the incarnation is drawn from the issuer.
-    pub(super) fn issue_branch_identities(
-        &self,
-        name: ProductBranchName,
-    ) -> Result<(ProductBranchIdentity, ProductBranchIncarnation), ()> {
-        let mut identities = self
-            .state
-            .identities
-            .lock()
-            .unwrap_or_else(|error| error.into_inner());
-        let incarnation = identities.branch_incarnation().map_err(|_| ())?;
-        Ok((
-            ProductBranchIdentity::issued(self.owner_identity(), name),
-            incarnation,
-        ))
     }
 
     /// Name a source head's admission before any charge. A source whose
@@ -75,6 +66,8 @@ where
         &self,
         expected: &ProductBranchObservation,
     ) -> Result<(), RuntimeWorldBranchAdmissionDenial> {
+        self.owner_identity()
+            .admit_branch_authority(expected.owner_identity())?;
         let cell = self
             .state
             .branches
@@ -199,68 +192,6 @@ where
         )
         .map_err(|_| RuntimeWorldBranchAdmissionDenial::OwnerUnavailable)?;
         Ok(observation)
-    }
-}
-
-impl<D, I, E, Ctx, T> super::super::ports::RuntimeWorldBranchService
-    for RuntimeWorldOwnerRoot<D, I, E, Ctx, T>
-where
-    D: Copy + Ord + std::fmt::Debug + Send + Sync + 'static,
-    I: Copy + Ord + Send + Sync + 'static,
-    T: Copy + Ord + Send + Sync + 'static,
-{
-    fn create_product_branch(
-        &self,
-        request: RuntimeWorldBranchCreationRequest<'_, '_, '_>,
-    ) -> Result<RuntimeWorldBranchCreationOutcome, RuntimeWorldBranchAdmissionDenial> {
-        let (execution, source, intent, cancellation, retained) = request.into_parts();
-        if source.owner_identity() != self.owner_identity()
-            || source.branch_identity().owner_identity() != self.owner_identity()
-        {
-            return Err(RuntimeWorldBranchAdmissionDenial::ForeignOwner);
-        }
-        if !self.branch_service_is_available() {
-            return Err(RuntimeWorldBranchAdmissionDenial::OwnerUnavailable);
-        }
-        let plans = intent
-            .plans()
-            .ok_or(RuntimeWorldBranchAdmissionDenial::PlansOmitted)?;
-        if cancellation.is_cancelled() {
-            return Err(RuntimeWorldBranchAdmissionDenial::CancelledBeforeEffect);
-        }
-        if retained.is_some() {
-            if !matches!(
-                plans.relational(),
-                crate::branch::RelationalBranchCreationPlan::ForkExact { .. }
-            ) || !matches!(
-                plans.signal(),
-                crate::branch::SignalBranchCreationPlan::ForkExact { .. }
-            ) {
-                return Err(RuntimeWorldBranchAdmissionDenial::UnsupportedRetainedSourcePlan);
-            }
-            self.admit_retained_source_lifecycle(&source)?;
-        }
-        if plans.is_exact_reuse() {
-            return self
-                .create_reused_branch(source, intent.name().clone(), cancellation)
-                .map(RuntimeWorldBranchCreationOutcome::Performed);
-        }
-        creation::create_forked_branch(self, execution, source, intent, cancellation, retained)
-    }
-
-    fn admit_retained_branch_source(
-        &self,
-        source: &ProductBranchObservation,
-    ) -> Result<crate::branch::RetainedProductBranchCreationSource, RuntimeWorldBranchAdmissionDenial>
-    {
-        self.admit_retained_creation_source(source)
-    }
-
-    fn retire_product_branch(
-        &self,
-        observed: &ProductBranchObservation,
-    ) -> Result<ProductBranchRetirementReport, RuntimeWorldBranchRetirementDenial> {
-        self.retire_observed_branch(observed)
     }
 }
 

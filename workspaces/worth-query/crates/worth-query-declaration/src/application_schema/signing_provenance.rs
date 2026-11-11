@@ -71,14 +71,14 @@ impl ApplicationSigningProvenanceMetadata {
 #[serde(deny_unknown_fields)]
 pub struct ApplicationSigningProvenanceParts {
     pub metadata: ApplicationSigningProvenanceMetadata,
-    pub operation_meaning: [u8; 32],
-    pub logical_request: [u8; 32],
-    pub input: [u8; 32],
+    pub operation_meaning: worth_foundational::CanonicalDigestId,
+    pub logical_request: worth_foundational::CanonicalDigestId,
+    pub input: worth_foundational::CanonicalDigestId,
     pub subject: ApplicationSigningEntityCoordinates,
     pub signer: ApplicationSigningEntityCoordinates,
-    pub signing_intent: [u8; 32],
-    pub subject_coverage: [u8; 32],
-    pub event_reference: [u8; 32],
+    pub signing_intent: worth_foundational::CanonicalDigestId,
+    pub subject_coverage: worth_foundational::CanonicalDigestId,
+    pub event_reference: worth_foundational::CanonicalDigestId,
     /// Named-clock coordinates. They are not UTC without a separately declared UTC timeline.
     pub issued_at_nanoseconds: u64,
     pub observed_at_nanoseconds: u64,

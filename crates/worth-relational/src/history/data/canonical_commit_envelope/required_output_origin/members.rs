@@ -11,8 +11,8 @@ use worth_execution::MapKernelContext;
 
 #[allow(clippy::too_many_arguments)]
 pub(super) fn capture(
-    envelope: &CanonicalCommitEnvelope,
-    history: &crate::runtime::RelationalPreparationHistory,
+    envelope: &CanonicalCommitEnvelopeBody,
+    history: &crate::history::data::canonical_commit_envelope::required_output_origin::history_request::PreparationHistoryRequest<'_, '_, '_>,
     basis: &AdmittedRelationalBranchBasis,
     state: &WorkingState,
     created: &CommitCreatedEntityBindings,
@@ -90,8 +90,11 @@ pub(super) fn capture(
                             member.after_write,
                             write,
                             &mut |commit| history.canonical_envelope(commit),
-                            &mut |version| history.canonical_envelope_for_version(version),
+                            &mut |version, context| {
+                                history.canonical_envelope_for_version(version, context)
+                            },
                             history.canonical_catalog_len(),
+                            &history.execution(),
                             context,
                         )
                         .map_err(super::installation::relation_stop)?)
@@ -185,7 +188,7 @@ pub(super) fn capture(
                 envelope,
                 id,
                 plan,
-                record.extra().authoritative_aspect_state.as_ref(),
+                record.extra().authoritative_aspect_state(),
                 context,
             )
             .map_err(|failure| {
@@ -209,7 +212,10 @@ pub(super) fn capture(
                 || producer.to_owned(),
                 |member| member.birth_producer.clone(),
             ),
-            birth_dependency: old.map_or(dependency, |member| member.birth_dependency),
+            birth_dependency: old.map_or(
+                worth_foundational::CanonicalDigestId::new(dependency),
+                |member| member.birth_dependency,
+            ),
             before_write,
             after_write,
         });

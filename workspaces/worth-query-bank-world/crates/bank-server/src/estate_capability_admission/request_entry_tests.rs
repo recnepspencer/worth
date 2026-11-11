@@ -55,11 +55,21 @@ fn request_entry_replays_exact_input_and_denies_changed_reason() {
         .runtime
         .request_estate_emergency_access_with_key(&principal, action, &key, &scope)
         .unwrap();
-    let BankEstateElevationRequestOutcome::AlreadyRequested(replayed) = retry else {
+    let BankEstateElevationRequestOutcome::RecoveredCommitted(replayed) = retry else {
         panic!("the exact request must replay: {retry:?}");
     };
-    assert_eq!(replayed.elevation_key(), requested.elevation_key());
-    assert_eq!(replayed.query().requester(), requested.query().requester());
+    assert_eq!(
+        replayed.changed_record_count(),
+        requested.request_changed_record_count()
+    );
+    assert_eq!(
+        replayed
+            .new_product_head()
+            .memory()
+            .unwrap()
+            .selected_commit(),
+        first_commit.ordinal()
+    );
 
     let changed = EstateAction::RequestEmergencyAccess {
         estate: ESTATE,
@@ -118,4 +128,5 @@ fn request_entry_replays_exact_input_and_denies_changed_reason() {
 }
 
 mod lifecycle_canonical_work;
+mod lifecycle_observation;
 mod lifecycle_replay;

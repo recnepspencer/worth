@@ -20,6 +20,17 @@ pub struct WorthQueryInstalledGraphParticipationAuthority {
     provider_anchor: Arc<dyn Any + Send + Sync>,
 }
 
+/// Original descriptive installation proof after its provider capability moves
+/// to the owning runtime's consuming retirement. No provider door is exposed.
+pub struct RetiredQueryGraphParticipation {
+    _recipe: InstalledGraphParticipationRecipe,
+}
+
+#[derive(Debug, Clone, Copy, Eq, PartialEq)]
+pub enum QueryGraphParticipationRetirementDenial {
+    ProviderAliasRetained,
+}
+
 #[derive(Clone, Debug, Eq, PartialEq)]
 struct InstalledGraphParticipationCandidate {
     runtime_ordinal: u64,
@@ -59,6 +70,31 @@ type InstalledGraphParticipationRecipe = Recipe<
 >;
 
 impl WorthQueryInstalledGraphParticipationAuthority {
+    /// Non-consuming preflight of the original erased provider allocation.
+    pub fn preflight_provider_retirement(
+        &mut self,
+    ) -> Result<(), QueryGraphParticipationRetirementDenial> {
+        Arc::get_mut(&mut self.provider_anchor)
+            .map(|_| ())
+            .ok_or(QueryGraphParticipationRetirementDenial::ProviderAliasRetained)
+    }
+    /// Move the original typed anchor, retaining its exact descriptive proof.
+    /// A foreign erased anchor returns the same installed authority unchanged.
+    pub fn into_provider_retirement<P: Any + Send + Sync>(
+        self,
+    ) -> Result<(Arc<P>, RetiredQueryGraphParticipation), Self> {
+        if !self.provider_anchor.is::<P>() {
+            return Err(self);
+        }
+        let Self {
+            recipe,
+            provider_anchor,
+        } = self;
+        let anchor = provider_anchor
+            .downcast::<P>()
+            .unwrap_or_else(|_| unreachable!("the same original anchor passed its type check"));
+        Ok((anchor, RetiredQueryGraphParticipation { _recipe: recipe }))
+    }
     pub fn install<P: Any + Send + Sync>(
         runtime: &WorthQueryInstallationRuntimeIdentity,
         role: impl Into<String>,

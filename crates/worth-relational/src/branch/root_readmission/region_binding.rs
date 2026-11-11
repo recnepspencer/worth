@@ -1,12 +1,12 @@
 //! Construct a private root and certify its complete content closure before selection.
 use super::*;
 
-struct ReadmittedRegionSet {
-    root_id: u64,
-    regions: Arc<crate::branch::RelationalPersistentRegionSet>,
-    entity_slot_count: usize,
-    relation_slot_count: usize,
-    publication_cost: crate::branch::root::RelationalBranchRootPublicationCost,
+pub(super) struct ReadmittedRegionSet {
+    pub(super) root_id: u64,
+    pub(super) regions: Arc<crate::branch::RelationalPersistentRegionSet>,
+    pub(super) entity_slot_count: usize,
+    pub(super) relation_slot_count: usize,
+    pub(super) publication_cost: crate::branch::root::RelationalBranchRootPublicationCost,
 }
 
 impl RelationalBranchRoot {
@@ -15,12 +15,12 @@ impl RelationalBranchRoot {
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         content_records: &crate::content::RelationalContentAttachments,
         partitions: BTreeMap<PartitionId, PartitionState>,
-        envelope: Arc<CanonicalCommitEnvelope>,
+        original: Arc<crate::branch::RelationalOriginalRootCommitEvidence>,
         descriptor: RelationalBranchRootDescriptor,
         schema_authority: Arc<crate::branch::RelationalBranchRootSchemaAuthority>,
         symbols: &crate::symbols::data::StringInterner,
     ) -> Result<Arc<Self>, RelationalBranchRootCaptureDenial> {
-        validate_schema_root(&envelope, &descriptor)?;
+        validate_schema_root(original.envelope(), &descriptor)?;
         crate::storage::substrate::maintenance::ReconstructionLane::enter_reconstruction(|lane| {
             required_text::validate(lane, &partitions, symbols)
         })?;
@@ -67,7 +67,7 @@ impl RelationalBranchRoot {
                 relation_slot_count,
                 publication_cost,
             },
-            envelope,
+            original,
             descriptor,
             schema_authority,
             execution,
@@ -79,16 +79,19 @@ impl RelationalBranchRoot {
         issuer: &RelationalBranchRootIdentityIssuer,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         content_records: &crate::content::RelationalContentAttachments,
-        directory: Vec<crate::branch::RelationalRootRegionCheckpoint>,
-        envelope: Arc<CanonicalCommitEnvelope>,
+        directory: worth_execution::ExecutionArray<crate::branch::RelationalRootRegionCheckpoint>,
+        original: Arc<crate::branch::RelationalOriginalRootCommitEvidence>,
         descriptor: RelationalBranchRootDescriptor,
         schema_authority: Arc<crate::branch::RelationalBranchRootSchemaAuthority>,
     ) -> Result<Arc<Self>, RelationalBranchRootCaptureDenial> {
         let root_id = issuer.issue_root_id()?;
-        let mut regions = BTreeMap::new();
+        let mut regions =
+            crate::branch::root_regions::PreparedRelationalRegionSet::new(root_id, execution)?;
         let mut entity_slot_count = 0_usize;
         let mut relation_slot_count = 0_usize;
-        for region in directory {
+        for region in directory.iter().cloned() {
+            crate::execution::check_request(execution)
+                .map_err(RelationalBranchRootCaptureDenial::Request)?;
             entity_slot_count = entity_slot_count
                 .checked_add(region.entity_slots)
                 .ok_or(RelationalBranchRootCaptureDenial::SlotCountOverflow)?;
@@ -96,23 +99,11 @@ impl RelationalBranchRoot {
                 .checked_add(region.relation_slots)
                 .ok_or(RelationalBranchRootCaptureDenial::SlotCountOverflow)?;
             let id = region.partition_id;
-            let region = crate::branch::root_region::RelationalRootRegion::from_checkpoint(
-                root_id,
-                issuer.issue_region_id()?,
-                region,
-            );
-            if regions.insert(id, Arc::new(region)).is_some() {
-                return Err(RelationalBranchRootCaptureDenial::DuplicateRegion(id));
-            }
+            let region =
+                readmit_checkpoint_region(root_id, issuer.issue_region_id()?, region, execution)?;
+            regions.insert(id, region, issuer, execution)?;
         }
-        let regions =
-            crate::storage::substrate::maintenance::ReconstructionLane::enter_reconstruction(
-                |lane| {
-                    crate::branch::RelationalPersistentRegionSet::initial(
-                        lane, root_id, regions, issuer,
-                    )
-                },
-            )?;
+        let regions = regions.finish();
         Self::bind_readmitted_regions(
             ReadmittedRegionSet {
                 root_id,
@@ -121,7 +112,7 @@ impl RelationalBranchRoot {
                 relation_slot_count,
                 publication_cost: Default::default(),
             },
-            envelope,
+            original,
             descriptor,
             schema_authority,
             execution,
@@ -131,7 +122,7 @@ impl RelationalBranchRoot {
 
     fn bind_readmitted_regions(
         prepared: ReadmittedRegionSet,
-        envelope: Arc<CanonicalCommitEnvelope>,
+        original: Arc<crate::branch::RelationalOriginalRootCommitEvidence>,
         descriptor: RelationalBranchRootDescriptor,
         schema_authority: Arc<crate::branch::RelationalBranchRootSchemaAuthority>,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
@@ -144,7 +135,8 @@ impl RelationalBranchRoot {
             relation_slot_count,
             mut publication_cost,
         } = prepared;
-        validate_schema_root(&envelope, &descriptor)?;
+        let envelope = original.envelope();
+        validate_schema_root(envelope, &descriptor)?;
         let (storage_root, content_accumulator) = axes::storage_root_for(&regions);
         require_descriptor_content(&descriptor, storage_root)?;
         let schema_root = *descriptor.schema_root();
@@ -161,24 +153,28 @@ impl RelationalBranchRoot {
         publication_cost.new_authoritative_bytes = publication_cost
             .new_authoritative_bytes
             .saturating_add(schema_authority.authoritative_allocation_bytes());
+        let memory = super::super::reserve_arc_memory::<Self>(Some(execution))?;
+        let evidence = super::super::RelationalRootCommitEvidence::Original(Arc::clone(&original));
         let correctness_index = RelationalRootCorrectnessIndex::AuthoritativeFallback;
         let axes = RelationalBranchRootAxes {
             storage_version: envelope.commit.version_id.0,
             storage_root,
             schema_root,
             correctness_index,
-            visibility: RelationalBranchVisibilityCommitment::for_root(
-                &envelope,
+            visibility: RelationalBranchVisibilityCommitment::for_payload_for_request(
+                original.payload(),
                 storage_root,
                 schema_root,
                 correctness_index,
-            ),
+                execution,
+            )?,
         };
         let version = envelope.commit.version_id;
         let mut root = Self {
             publication_bases: Default::default(),
             // Reconstructed storage has no live companion association.
             content: crate::content::ContentDirectory::default(),
+            execution_contracts: Default::default(),
             managed_source_image: std::sync::OnceLock::new(),
             id: root_id,
             regions,
@@ -193,14 +189,11 @@ impl RelationalBranchRoot {
             committed: Some(RelationalCommittedBranchRoot {
                 commit_change: None,
                 descriptor,
-                canonical_payload: envelope
-                    .encode_authoritative_payload()
-                    .expect("readmitted canonical encoding")
-                    .into(),
-                canonical_envelope: envelope,
+                evidence,
                 axes,
                 publication_cost,
             }),
+            _memory: memory,
         };
         root.content =
             crate::storage::substrate::maintenance::ReconstructionLane::enter_reconstruction(
@@ -233,4 +226,40 @@ impl RelationalBranchRoot {
             axes::storage_root_from_authoritative_regions(lane, execution, &self.regions, symbols)
         })
     }
+}
+
+/// The fixed checkpoint-region binding owns reconstruction entry; no lane escapes.
+pub(super) fn readmit_checkpoint_region(
+    root_id: u64,
+    region_id: u64,
+    checkpoint: crate::branch::RelationalRootRegionCheckpoint,
+    request: &worth_execution::ExecutionRequest<'_, '_>,
+) -> Result<Arc<crate::branch::root_region::RelationalRootRegion>, RelationalBranchRootCaptureDenial>
+{
+    crate::storage::substrate::maintenance::ReconstructionLane::enter_reconstruction(|lane| {
+        crate::branch::root_region::RelationalRootRegion::from_checkpoint_for_request(
+            lane, root_id, region_id, checkpoint, request,
+        )
+    })
+}
+
+/// Selected checkpoint content reconstruction stays in its authorized source owner.
+pub(super) fn readmit_checkpoint_content(
+    root: &RelationalBranchRoot,
+    records: &crate::content::RelationalContentAttachments,
+    version: crate::identity::data::VersionId,
+    request: &worth_execution::ExecutionRequest<'_, '_>,
+) -> Result<crate::content::ContentDirectory, RelationalBranchRootCaptureDenial> {
+    crate::storage::substrate::maintenance::ReconstructionLane::enter_reconstruction(|lane| {
+        crate::content::ContentDirectory::reconstruct(
+            lane,
+            request,
+            root.schema_authority.registry(),
+            records,
+            root.schema_authority.retained_aspect_contracts(),
+            root,
+            version,
+        )
+    })
+    .map_err(RelationalBranchRootCaptureDenial::Content)
 }

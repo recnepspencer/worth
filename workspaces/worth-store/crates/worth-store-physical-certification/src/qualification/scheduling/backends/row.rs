@@ -1,3 +1,4 @@
+use worth_foundational::CanonicalDigestId;
 use worth_store_physical_backend::{
     AdmittedBackendCapabilityWitness, BackendCapabilityKind, BackendCapabilitySupportPosture,
     BackendMediaAssumptionSet, BackendRebindTriggers, BackendTargetProfile,
@@ -41,7 +42,7 @@ pub struct CertifiedBackendQualificationSupport {
     profile: BackendTargetProfile,
     capability: BackendCapabilityKind,
     evidence_class: CapabilityEvidenceClass,
-    replay_identity: [u8; 32],
+    replay_identity: CanonicalDigestId,
 }
 
 impl BackendQualificationRow {
@@ -210,7 +211,7 @@ impl BackendQualificationRow {
                     profile: self.profile,
                     capability: self.capability,
                     evidence_class: self.evidence_class,
-                    replay_identity: self.harness_proof.replay_identity(),
+                    replay_identity: CanonicalDigestId::new(self.harness_proof.replay_identity()),
                 })
             }
             BackendCapabilitySupportPosture::Supported => {
@@ -261,7 +262,7 @@ impl CertifiedBackendQualificationSupport {
     }
 
     pub const fn replay_identity(self) -> [u8; 32] {
-        self.replay_identity
+        *self.replay_identity.bytes()
     }
 }
 

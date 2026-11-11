@@ -64,10 +64,10 @@ pub fn start(
     start_instance(application, definition.clone(), key)
 }
 
-/// The instance a start published, and whether it replayed.
-pub fn admitted(outcome: StartResult) -> (PublishedWorkflowInstanceRef, bool) {
+/// The instance established by an actual fresh start.
+pub fn admitted(outcome: StartResult) -> PublishedWorkflowInstanceRef {
     let performed = started(outcome);
-    (performed.instance().clone(), performed.replayed())
+    performed.instance().clone()
 }
 
 pub fn release_everything(application: &DocumentWorkflowRuntime) {

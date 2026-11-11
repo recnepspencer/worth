@@ -1,0 +1,88 @@
+--- a/crates/worth-relational/src/durability/artifact_payload_emission/request.rs
++++ b/crates/worth-relational/src/durability/artifact_payload_emission/request.rs
+@@ -137,11 +137,11 @@
+ }
+ impl Write for Emission<'_, '_, '_> {
+     fn write(&mut self, bytes: &[u8]) -> io::Result<usize> {
+-        if let Work::Charge = self.work {
+-            if let Err(cause) = account_work(&self.request, bytes.len() as u64) {
+-                self.failure = Some(cause);
+-                return Err(stopped());
+-            }
++        if let Work::Charge = self.work
++            && let Err(cause) = account_work(&self.request, bytes.len() as u64)
++        {
++            self.failure = Some(cause);
++            return Err(stopped());
+         }
+         match self.buffer.extend_from_slice(bytes) {
+             Ok(()) => Ok(bytes.len()),
+--- a/crates/worth-relational/src/durability/checkpoint_admission/wire/emission.rs
++++ b/crates/worth-relational/src/durability/checkpoint_admission/wire/emission.rs
+@@ -10,7 +10,7 @@
+     if rows.len() as u64 != cut.canonical_through() {
+         return Err(Refusal::InvalidProjectedMeaning);
+     }
+-    let description = cut.clone();
++    let description = *cut;
+     let cut = crate::durability::artifact_payload_emission::request::encode_named_charged(
+         &[],
+         &super::super::binary_encoding::BinaryFixedArrays(cut),
+--- a/crates/worth-relational/src/durability/medium/recovery_source/home_preflight.rs
++++ b/crates/worth-relational/src/durability/medium/recovery_source/home_preflight.rs
+@@ -135,7 +135,7 @@
+             .checkpoint
+             .as_ref()
+             .map(|source| {
+-                let image = source.admission_image().cloned().ok_or_else(|| Refusal::Native(
++                let image = source.admission_image().cloned().ok_or(Refusal::Native(
+                     crate::durability::data::RelationalRecoveryStop::AdmissionImage(
+                         crate::durability::checkpoint_admission::RelationalCheckpointAdmissionRefusal::MissingArtifact,
+                     ),
+--- a/crates/worth-relational/src/history/data/required_output_positions/readmission/node.rs
++++ b/crates/worth-relational/src/history/data/required_output_positions/readmission/node.rs
+@@ -52,10 +52,10 @@
+     });
+     key(cursor, "left")?;
+     let left = read(cursor, context, depth + 1)?;
+-    if let Some(previous) = &context.previous {
+-        if family::compare(previous, &route, context)? != std::cmp::Ordering::Less {
+-            return Err(Refusal::InvalidProjectedMeaning);
+-        }
++    if let Some(previous) = &context.previous
++        && family::compare(previous, &route, context)? != std::cmp::Ordering::Less
++    {
++        return Err(Refusal::InvalidProjectedMeaning);
+     }
+     context.previous = Some(route.clone());
+     key(cursor, "right")?;
+--- a/crates/worth-relational/src/runtime/state/subsystems/durability/checkpoint_selection/source_retirement.rs
++++ b/crates/worth-relational/src/runtime/state/subsystems/durability/checkpoint_selection/source_retirement.rs
+@@ -37,11 +37,11 @@
+         handoff: &mut Option<NativeDirectoryRetirementHandoff>,
+     ) -> Result<bool, Ack> {
+         let mut state = self.try_source_state()?;
+-        if let Some(admission) = &mut state.admission {
+-            if !admission.loan_source_retirement(handoff)? {
+-                state.admission_loan = true;
+-                return Ok(false);
+-            }
++        if let Some(admission) = &mut state.admission
++            && !admission.loan_source_retirement(handoff)?
++        {
++            state.admission_loan = true;
++            return Ok(false);
+         }
+         state.admission_loan = false;
+         match &mut state.directory {
+--- a/workspaces/worth-store/crates/worth-store-application/src/world_section/close.rs
++++ b/workspaces/worth-store/crates/worth-store-application/src/world_section/close.rs
+@@ -51,7 +51,7 @@
+     ) -> R {
+         retire(
+             self.home.relational().runtime(),
+-            &self
++            self
+                 .composition
+                 .as_ref()
+                 .expect("Query Home owns its original composition")

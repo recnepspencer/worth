@@ -115,7 +115,7 @@ fn trimmed_birth_uses_created_endpoints_and_refuses_forged_or_missing_evidence()
     let id = birth.created_relation(&incidental).unwrap();
     let owned_id = birth.created_relation(&owned).unwrap();
     let output_id = birth.created_entity(&output).unwrap();
-    let birth_envelope = Arc::clone(&birth.publication().envelope);
+    let birth_envelope = birth.publication().envelope.clone().into_arc();
     let origin = birth_envelope.required_output_origin.as_ref().unwrap();
     assert_eq!(origin.relations.len(), 1);
     assert_eq!(origin.relations[0].id, owned_id);
@@ -139,7 +139,7 @@ fn trimmed_birth_uses_created_endpoints_and_refuses_forged_or_missing_evidence()
         .unwrap();
     let rewritten = transaction.commit(execution, &runtime).unwrap();
     let write_version = rewritten.commit.version_id;
-    let write_envelope = Arc::clone(&rewritten.publication().envelope);
+    let write_envelope = rewritten.publication().envelope.clone().into_arc();
     assert!(write_envelope.required_output_origin.is_none());
     // Release snapshots before exercising the actual storage retention owner.
     release_test_commit_snapshot(&runtime, &rewritten);
@@ -193,8 +193,9 @@ fn trimmed_birth_uses_created_endpoints_and_refuses_forged_or_missing_evidence()
     claim.target = right;
     forged_origin.relations.push(claim);
     forged_origin.relations.sort_unstable_by_key(|row| row.id);
-    let mut forged = birth_envelope.as_ref().clone();
-    forged.required_output_origin = Some(Arc::new(forged_origin));
+    let mut forged = birth_envelope.copy_original_for_test(execution);
+    forged.body_mut_for_test().required_output_origin = Some(Arc::new(forged_origin));
+    let forged = Arc::new(forged);
     let denied = run(
         execution,
         &edition,
@@ -210,8 +211,9 @@ fn trimmed_birth_uses_created_endpoints_and_refuses_forged_or_missing_evidence()
         "{denied:?}"
     );
 
-    let mut contradictory_endpoints = birth_envelope.as_ref().clone();
+    let mut contradictory_endpoints = birth_envelope.copy_original_for_test(execution);
     contradictory_endpoints
+        .body_mut_for_test()
         .patch
         .authoritative_record_patches
         .iter_mut()
@@ -221,6 +223,7 @@ fn trimmed_birth_uses_created_endpoints_and_refuses_forged_or_missing_evidence()
         .as_mut()
         .unwrap()
         .source = output_id;
+    let contradictory_endpoints = Arc::new(contradictory_endpoints);
     assert!(
         run(
             execution,
@@ -234,30 +237,17 @@ fn trimmed_birth_uses_created_endpoints_and_refuses_forged_or_missing_evidence()
         .is_err(),
         "structural birth and exposed endpoint operations must agree"
     );
-    let mut missing = birth_envelope.as_ref().clone();
-    let patch = missing
+    let mut missing = Arc::new(birth_envelope.copy_original_for_test(execution));
+    let patch = Arc::get_mut(&mut missing)
+        .expect("the fixture owns its mutable twin")
+        .body_mut_for_test()
         .patch
         .authoritative_record_patches
         .iter_mut()
         .find(|patch| patch.target == RecordRef::Relation(id))
         .unwrap();
-    let operations = patch
-        .authoritative_patch
-        .full_grammar_operations()
-        .iter()
-        .filter(|operation| {
-            !matches!(
-                operation,
-                Op::WholeAspectSet {
-                    binding: AspectBinding::RelationSourceEndpoint
-                        | AspectBinding::RelationTargetEndpoint,
-                    ..
-                }
-            )
-        })
-        .cloned()
-        .collect();
-    patch.authoritative_patch = PublishedAuthoritativePatch::new(operations);
+    patch.authoritative_patch =
+        endpoint_aspect_inputs::without_endpoint_aspects(&patch.authoritative_patch);
     assert!(
         patch.relation_birth.is_some(),
         "actual native creation publishes structural birth independently of optional aspects"
@@ -275,8 +265,24 @@ fn trimmed_birth_uses_created_endpoints_and_refuses_forged_or_missing_evidence()
         .is_ok(),
         "retired metadata plus absent endpoint aspects still has the actual structural birth"
     );
-    let mut contradictory = missing.clone();
+    let mut contradictory = birth_envelope.copy_original_for_test(execution);
+    let changed_patch = &missing
+        .patch
+        .authoritative_record_patches
+        .iter()
+        .find(|patch| patch.target == RecordRef::Relation(id))
+        .unwrap()
+        .authoritative_patch;
     contradictory
+        .body_mut_for_test()
+        .patch
+        .authoritative_record_patches
+        .iter_mut()
+        .find(|patch| patch.target == RecordRef::Relation(id))
+        .unwrap()
+        .authoritative_patch = changed_patch.clone();
+    contradictory
+        .body_mut_for_test()
         .patch
         .authoritative_record_patches
         .iter_mut()
@@ -286,6 +292,7 @@ fn trimmed_birth_uses_created_endpoints_and_refuses_forged_or_missing_evidence()
         .as_mut()
         .unwrap()
         .kind = KindId(999);
+    let contradictory = Arc::new(contradictory);
     assert!(
         run(
             execution,
@@ -299,7 +306,9 @@ fn trimmed_birth_uses_created_endpoints_and_refuses_forged_or_missing_evidence()
         .is_err(),
         "a contradictory native structural kind cannot support custody"
     );
-    missing
+    Arc::get_mut(&mut missing)
+        .expect("the owner court retains no mutation input")
+        .body_mut_for_test()
         .patch
         .authoritative_record_patches
         .iter_mut()
@@ -327,7 +336,7 @@ fn run(
     state: &dyn CurrentPartitionAccess,
     id: RelationId,
     selected: &CanonicalRequiredOutputOrigin,
-    birth: &CanonicalCommitEnvelope,
+    birth: &CanonicalCommitEnvelopeBody,
     write: &Arc<CanonicalCommitEnvelope>,
     owned: bool,
 ) -> Result<(), Stop> {
@@ -337,39 +346,44 @@ fn run(
                 lease,
                 None,
                 |context| {
-                    let mut lookup = |version| {
-                        if version == birth.commit.version_id {
-                            Some(Arc::new(birth.clone()))
-                        } else if version == write.commit.version_id {
-                            Some(Arc::clone(write))
-                        } else {
-                            None
-                        }
+                    // Genuine rewritten history; hostile Body inputs mint no custody.
+                    let mut lookup = |version, _context: &mut MapKernelContext<'_, '_>| {
+                        Ok((version == write.commit.version_id).then(|| Arc::clone(write)))
                     };
+                    let current = Some(super::super::CurrentPublicationFrame::Retiring(birth));
+                    let mut history = OutputOriginHistory::default();
                     if owned {
-                        validate_owned(
+                        if !ownership_at_creation(
                             state,
                             id,
                             selected,
+                            current,
                             &mut lookup,
-                            &mut OutputOriginHistory::default(),
+                            &mut history,
+                            execution,
                             context,
-                        )
+                        )? {
+                            return Err("claimed relation was not producer-owned at birth".into());
+                        }
+                        Ok(())
                     } else {
                         validate(
                             state,
                             id,
                             selected,
-                            None,
+                            current,
                             &mut lookup,
-                            &mut OutputOriginHistory::default(),
+                            &mut history,
+                            execution,
                             context,
                         )
                     }
                 },
             )
         })
-        .unwrap()
-        .unwrap()
+        .map_err(crate::history::data::codec_retirement_closure::request)?
+        .map_err(crate::history::data::codec_retirement_closure::request)?
         .0
 }
+
+mod endpoint_aspect_inputs;

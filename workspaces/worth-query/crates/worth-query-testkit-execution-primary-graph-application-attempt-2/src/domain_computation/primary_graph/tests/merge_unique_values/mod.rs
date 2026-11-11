@@ -215,7 +215,7 @@ impl MergeWorld {
     pub fn mutate<T>(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
-        mutate: impl FnOnce(&mut RelationalRuntime) -> T,
+        mutate: impl FnOnce(&RelationalRuntime) -> T,
     ) -> T {
         self.handle
             .execute_mutation_with_index_refresh(execution, |runtime| Ok::<_, ()>(mutate(runtime)))
@@ -223,9 +223,10 @@ impl MergeWorld {
             .expect("the fixture mutation is infallible")
     }
 }
+
 pub fn prepared_merge(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-    runtime: &mut RelationalRuntime,
+    runtime: &RelationalRuntime,
 ) -> PreparedMergeExecution {
     let bound = runtime
         .bind_merge_execution_request(merge_request())
@@ -241,7 +242,7 @@ pub fn merge_request() -> MergeExecutionRequest {
 }
 pub fn commit(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-    runtime: &mut RelationalRuntime,
+    runtime: &RelationalRuntime,
     branch: &str,
     intent: MutationIntent,
 ) -> worth_relational::facade::transactions::CommitResult {

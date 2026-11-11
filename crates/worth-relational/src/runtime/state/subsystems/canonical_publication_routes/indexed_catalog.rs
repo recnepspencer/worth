@@ -7,20 +7,46 @@ use crate::identity::data::VersionId;
 use crate::publication::patch::data::PatchStreamPosition;
 use std::sync::{atomic::Ordering, Arc};
 
+#[derive(Default)]
+pub(super) struct IndexedPublicationCatalog {
+    entries: std::collections::BTreeMap<CommitId, Arc<crate::history::RelationalCommitArtifact>>,
+    pub(super) head: Option<crate::history::RetainedCanonicalIndex>,
+}
+impl std::ops::Deref for IndexedPublicationCatalog {
+    type Target =
+        std::collections::BTreeMap<CommitId, Arc<crate::history::RelationalCommitArtifact>>;
+    fn deref(&self) -> &Self::Target {
+        &self.entries
+    }
+}
+
 impl RelationalCanonicalPublicationRoutes {
     pub(crate) fn install_checkpoint_catalog(
         &self,
         entries: Vec<Arc<crate::history::RelationalCommitArtifact>>,
     ) {
+        let head = entries
+            .iter()
+            .filter_map(|artifact| {
+                artifact
+                    .envelope_residency()
+                    .source_placement()
+                    .map(|(entry, _)| entry)
+            })
+            .max_by_key(|entry| entry.position);
+        if let Some(head) = &head {
+            self.performed_stream.advance_position_floor(head.position);
+        }
         *self
             .checkpoint_catalog
             .write()
-            .unwrap_or_else(|error| error.into_inner()) = Arc::new(
-            entries
+            .unwrap_or_else(|error| error.into_inner()) = Arc::new(IndexedPublicationCatalog {
+            head,
+            entries: entries
                 .into_iter()
                 .map(|artifact| (artifact.commit_id(), artifact))
                 .collect(),
-        );
+        });
     }
     pub(crate) fn performed_envelope_residency(
         &self,
@@ -78,6 +104,42 @@ impl RelationalCanonicalPublicationRoutes {
                 .read()
                 .unwrap_or_else(|error| error.into_inner())
                 .len()
+    }
+
+    pub(crate) fn commit_for_version_in_context(
+        &self,
+        version: VersionId,
+        context: &mut worth_execution::MapKernelContext<'_, '_>,
+    ) -> Result<Option<CommitId>, crate::execution::RelationalExecutionDenialCause> {
+        if context.has_accounting() {
+            context.checkpoint(1)
+        } else {
+            context.poll()
+        }
+        .map_err(crate::execution::RelationalExecutionDenialCause::from)?;
+        if let Some(route) = self
+            .by_version
+            .get(&version)
+            .filter(|route| route.is_visible())
+        {
+            return Ok(Some(route.commit.commit_id));
+        }
+        let catalog = self
+            .checkpoint_catalog
+            .read()
+            .unwrap_or_else(|error| error.into_inner());
+        let work = u64::try_from(catalog.len())
+            .map_err(|_| crate::execution::RelationalExecutionDenialCause::WorkCounterOverflow)?;
+        if context.has_accounting() {
+            context.checkpoint(work)
+        } else {
+            context.poll()
+        }
+        .map_err(crate::execution::RelationalExecutionDenialCause::from)?;
+        Ok(catalog
+            .values()
+            .find(|artifact| artifact.version_id() == version)
+            .map(|artifact| artifact.commit_id()))
     }
 
     pub(crate) fn by_version(&self, version_id: VersionId) -> Option<Arc<CanonicalCommitEnvelope>> {

@@ -34,7 +34,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         let graph = &self.runtime.primary_provider.graph;
         let owner = &graph.source_owner.invalidation_owner;
 
-        let sealed = graph.with_runtime_mut(execution, |runtime| {
+        let sealed = graph.with_runtime(execution, |runtime| {
             let prepared =
                 PreparedNativeOutputWitness::prepare_republication(&correspondence, &graph.layout)
                     .ok()??;

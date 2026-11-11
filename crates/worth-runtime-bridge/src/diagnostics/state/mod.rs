@@ -35,6 +35,7 @@ use crate::writeback::{
     BridgeWritebackReplayRecordIdentity,
 };
 
+use super::writeback_retention::{WritebackDiagnosticScope, WritebackDiagnosticSlot};
 mod config;
 mod evict;
 mod query;
@@ -46,6 +47,7 @@ pub(crate) use config::BridgeDiagnosticsConfig;
 
 #[derive(Debug, Default)]
 pub(crate) struct BridgeDiagnosticsState {
+    pub(super) writeback_scope: Arc<WritebackDiagnosticScope>,
     pub(super) conditional_history: super::conditional_history::ConditionalExecutionHistory,
     route_records: VecDeque<Arc<BridgeRouteRecord>>,
     bulk_records: VecDeque<Arc<BridgeCanonicalBulkPlanRecord>>,
@@ -64,9 +66,10 @@ pub(crate) struct BridgeDiagnosticsState {
     writeback_admission_records: VecDeque<Arc<BridgeWritebackFamilyAdmissionRecord>>,
     writeback_mapper_envelopes: VecDeque<Arc<BridgeWritebackMapperEnvelope>>,
     writeback_mapped_family_inputs: VecDeque<Arc<BridgeMappedWritebackFamilyInput>>,
-    writeback_execution_records: VecDeque<Arc<BridgeWritebackExecutionRecord>>,
+    writeback_execution_records:
+        VecDeque<Arc<WritebackDiagnosticSlot<BridgeWritebackExecutionRecord>>>,
     writeback_mapper_records: VecDeque<Arc<BridgeWritebackMapperRecord>>,
-    writeback_replay_records: VecDeque<Arc<BridgeWritebackReplayRecord>>,
+    writeback_replay_records: VecDeque<Arc<WritebackDiagnosticSlot<BridgeWritebackReplayRecord>>>,
     stream_checkpoints: VecDeque<Arc<ConsumerCheckpointToken>>,
     stream_replay_records: VecDeque<Arc<CanonicalStreamReplayRecord>>,
     failure_records: VecDeque<Arc<BridgeFailureRecord>>,
@@ -114,12 +117,13 @@ pub(crate) struct BridgeDiagnosticsState {
     latest_writeback_mapped_input_by_digest:
         BTreeMap<String, Arc<BridgeMappedWritebackFamilyInput>>,
     latest_writeback_execution_by_record_identity:
-        BTreeMap<String, Arc<BridgeWritebackExecutionRecord>>,
+        BTreeMap<String, Arc<WritebackDiagnosticSlot<BridgeWritebackExecutionRecord>>>,
     latest_writeback_execution_by_candidate_digest:
-        BTreeMap<String, Arc<BridgeWritebackExecutionRecord>>,
+        BTreeMap<String, Arc<WritebackDiagnosticSlot<BridgeWritebackExecutionRecord>>>,
     latest_writeback_mapper_by_record_identity: BTreeMap<String, Arc<BridgeWritebackMapperRecord>>,
     latest_writeback_mapper_by_candidate_digest: BTreeMap<String, Arc<BridgeWritebackMapperRecord>>,
-    latest_writeback_replay_by_record_identity: BTreeMap<String, Arc<BridgeWritebackReplayRecord>>,
+    latest_writeback_replay_by_record_identity:
+        BTreeMap<String, Arc<WritebackDiagnosticSlot<BridgeWritebackReplayRecord>>>,
     reserved_preview_session_identities: BTreeSet<BridgePreviewSessionIdentity>,
     latest_stream_checkpoint_by_identity: BTreeMap<String, Arc<ConsumerCheckpointToken>>,
     latest_stream_replay_by_identity: BTreeMap<String, Arc<CanonicalStreamReplayRecord>>,

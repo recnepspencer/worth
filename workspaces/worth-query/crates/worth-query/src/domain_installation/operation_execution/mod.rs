@@ -212,3 +212,6 @@ pub use workflow_stage_lineage::*;
 pub use workflow_stage_workspace::*;
 pub use workflow_start_evidence::*;
 pub use workflow_trace::*;
+#[cfg(test)]
+#[path = "mod_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;

@@ -68,7 +68,7 @@ impl<Schema: ApplicationSchema> SourceQueryReaderAccess<'_, Schema> {
                     .runtime
                     .primary_graph()
                     .ok_or(Stop::ForeignClosure)?;
-                native.with_runtime_mut(
+                native.with_runtime(
                     graph,
                     execution,
                     || Stop::ForeignClosure,

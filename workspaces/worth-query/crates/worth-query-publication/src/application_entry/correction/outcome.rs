@@ -47,7 +47,7 @@ pub(super) fn erase<Schema: ApplicationSchema, Binding: ApplicationMutationBindi
             value: Box::new(denial),
         }),
         Outcome::AlreadyCommitted(receipt) => Outcome::AlreadyCommitted(receipt),
-        Outcome::PreviouslyCommitted(receipt) => Outcome::PreviouslyCommitted(receipt),
+        Outcome::RecoveredCommitted(receipt) => Outcome::RecoveredCommitted(receipt),
         Outcome::IdempotencyIntentDrift => Outcome::IdempotencyIntentDrift,
         Outcome::Cancelled => Outcome::Cancelled,
         Outcome::DeadlineExceeded => Outcome::DeadlineExceeded,

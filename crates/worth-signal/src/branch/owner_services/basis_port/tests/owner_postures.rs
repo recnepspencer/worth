@@ -254,3 +254,23 @@ fn assert_only_owner_upgrade_changed(
     );
     assert_eq!(after.close_batches(), before.close_batches());
 }
+
+#[test]
+fn original_signal_lease_survives_busy_and_stop_then_retires_once_without_drop_release() {
+    let world = basis_port_world();
+    let original = world.port.retain_exact(&world.basis_b).unwrap();
+    let serial = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::new(None),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let cancellation = worth_execution::CancellationSource::new();
+    cancellation.cancel();
+    let stopped = serial.clone().with_cancellation(cancellation.token());
+    original
+        .into_retirement()
+        .assert_busy_stop_and_exact_explicit_retirement(
+            &worth_execution::ExecutionRequest::serial(&serial),
+            &worth_execution::ExecutionRequest::serial(&stopped),
+        );
+}

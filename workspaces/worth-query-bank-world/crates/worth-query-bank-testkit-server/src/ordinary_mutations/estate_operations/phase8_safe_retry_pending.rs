@@ -23,10 +23,16 @@ pub use crate::facade::support::request_scope;
 pub fn completed_before_the_source_installs(
     label: &str,
     seed: u8,
-) -> (CrossGateWorld, BankCommitRecoveryHandle, [u8; 32]) {
+) -> (
+    CrossGateWorld,
+    BankCommitRecoveryHandle,
+    [u8; 32],
+    bank_server::BankClosedSourceCompletion<bank_domain::schema::EstateMutationResult>,
+) {
     let world = world::cross_gate_world(label);
     world.transport.under(FaultScript::Succeed, world::PATIENT);
-    let receipt = world.commit_notification(seed);
+    let closed = world.commit_notification(seed);
+    let receipt = closed.live_receipt().expect("actual original completion");
     assert_eq!(
         receipt
             .external_dispatch_posture()
@@ -40,8 +46,8 @@ pub fn completed_before_the_source_installs(
     world
         .transport
         .under(FaultScript::DuplicateAcknowledgement, world::PATIENT);
-    let handle = world.open_recovery(&receipt);
-    (world, handle, token)
+    let handle = world.open_recovery(receipt);
+    (world, handle, token, closed)
 }
 
 /// Runs one safe retry that must be refused with `expected`, and proves the

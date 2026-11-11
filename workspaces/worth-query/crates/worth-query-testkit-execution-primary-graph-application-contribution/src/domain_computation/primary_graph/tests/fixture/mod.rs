@@ -309,3 +309,5 @@ pub mod schema_types;
 pub mod world_authentication;
 #[path = "world_installation/mod.rs"]
 pub mod world_installation;
+
+pub mod recorded_receipt;

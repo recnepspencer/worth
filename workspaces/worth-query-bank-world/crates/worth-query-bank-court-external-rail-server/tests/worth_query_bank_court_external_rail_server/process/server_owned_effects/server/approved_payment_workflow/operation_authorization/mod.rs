@@ -38,7 +38,8 @@ fn revoked_starter_cannot_execute_or_spend_guarded_operation() {
         payment: fixture.payment,
         approver: principal_id(STRANGER),
     };
-    let instance = journey::start_approved_payment_instance(&starter_workflow, &starter_input);
+    let (_definition, instance) =
+        journey::start_approved_payment_instance(&starter_workflow, &starter_input);
     let (instance, proposal, approval) = journey::prepare_approved_payment_approval_on_instance(
         &actor_workflow,
         instance,

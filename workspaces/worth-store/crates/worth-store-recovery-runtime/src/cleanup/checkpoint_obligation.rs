@@ -39,6 +39,7 @@ impl SettledCheckpointResidue {
     pub(super) fn after_residue_stage(reopened: &ReopenedPhysicalRecovery) -> Self {
         Self {
             selected: reopened
+                .payload()
                 .state
                 .coordination
                 .owner()

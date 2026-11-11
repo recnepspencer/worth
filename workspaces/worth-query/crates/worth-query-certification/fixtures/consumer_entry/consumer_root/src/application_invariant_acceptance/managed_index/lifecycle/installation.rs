@@ -1,14 +1,16 @@
 //! Prefix-specific installed/runtime identity and actual executable version twins.
+use crate::application_invariant_acceptance::managed_index::prefix_observation;
+mod incompatible_version;
 use super::super::boxes;
 use super::*;
-use worth_query_host::facade::application_installation::WorthQueryInMemoryApplicationDenial;
+use worth_query_host::facade::application_installation::WorthQueryApplicationPreparationDenial;
 
 #[test]
 fn registered_prefix_rejects_foreign_runtime_and_incompatible_executable_before_callbacks() {
     run(installation_twins);
 }
 fn installation_twins() {
-    let calls = Arc::new(prefix::Calls::default());
+    let calls = Arc::new(prefix_observation::Calls::default());
     let world = host::install(Arc::clone(&calls));
     let scope = authentication::request_scope();
     let principal = authenticate(&world, &scope);
@@ -32,7 +34,7 @@ fn installation_twins() {
         journey::expected(source.rows(), "al")
     );
     let before = calls.totals();
-    let other_calls = Arc::new(prefix::Calls::default());
+    let other_calls = Arc::new(prefix_observation::Calls::default());
     let other = host::install(Arc::clone(&other_calls));
     let other_principal = authenticate(&other, &scope);
     let foreign = other
@@ -54,14 +56,22 @@ fn installation_twins() {
     assert_eq!(calls.totals(), before);
     assert_eq!(index.lifecycle(), WorthQueryManagedIndexLifecycle::Ready);
 
-    let version_calls = Arc::new(prefix::Calls::default());
+    let version_calls = Arc::new(prefix_observation::Calls::default());
     let box_calls = Arc::new(boxes::Calls::default());
-    let error =
-        host::try_install_prefix_version(Arc::clone(&version_calls), Arc::clone(&box_calls))
-            .err()
-            .expect("actual prefix executable v2 disagrees with installed v1 binding");
+    let error = host::install_configuration(host::Configuration {
+        prefix: Arc::clone(&version_calls),
+        configure_prefix: |calls, setup| {
+            setup.managed_index::<prefix::PrefixIndex, _>(
+                incompatible_version::IncompatibleVersion(prefix::Provider(calls)),
+            )
+        },
+        boxes: Arc::clone(&box_calls),
+        incompatible: false,
+    })
+    .err()
+    .expect("actual prefix executable v2 disagrees with installed v1 binding");
     assert!(
-        matches!(error, WorthQueryInMemoryApplicationDenial::Contributions(ref cause)
+        matches!(error, WorthQueryApplicationPreparationDenial::Contributions(ref cause)
         if cause.kind() == WorthQueryPrimaryGraphInstallationDenialKind::ManagedIndexProviderMeaningMismatch),
         "actual typed installation mismatch: {error:?}"
     );

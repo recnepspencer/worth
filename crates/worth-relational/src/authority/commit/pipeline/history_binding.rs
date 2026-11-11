@@ -1,5 +1,6 @@
 use super::history_resolution_phase::resolve_authoritative_history_phase;
 use super::mutation_execution::MutatedCommitExecution;
+use super::phase_backing::CommitPhaseBacking;
 use crate::authority::commit::phases::schema_continuity::{
     prepare_schema_continuity_diagnostics, resolve_schema_continuity,
 };
@@ -51,67 +52,79 @@ impl HistoryBoundCommitExecution {
 pub(super) fn bind_commit_history(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &crate::runtime::RelationalPreparationRuntime,
-    mut mutated: MutatedCommitExecution,
-) -> Result<HistoryBoundCommitExecution, crate::transactions::data::TransactionCommitError> {
-    super::consult_stage(execution, super::CommitStage::History)?;
-    let version_id = mutated.version_id();
-    let commit_id = mutated.prepared.proposal_identity.commit_id();
-    let admitted = &mut mutated.prepared.admitted;
-    let merge_diagnostics_plan = admitted.merge_execution_diagnostics_plan().cloned();
-    let (transaction_id, validation_input, _, merge_plan, commit_log, phase_timing) =
-        admitted.phase_view().into_parts();
-    let history = resolve_authoritative_history_phase(
-        execution,
-        runtime,
-        commit_log,
-        phase_timing,
-        transaction_id,
-        validation_input,
-        version_id,
-        commit_id,
-        merge_plan,
-    )?;
-    let additional_diagnostics_entries = merge_plan
-        .map(|plan| {
-            vec![crate::merge::merge_execution_summary_entry(
-                &plan.merge_execution_summary,
-                &plan.structural_summary,
-                history.commit_id,
-            )]
-        })
-        .unwrap_or_default();
-    let mut deferred_diagnostic_artifacts = if let (Some(plan), Some(diagnostics_plan)) =
-        (merge_plan, merge_diagnostics_plan.as_ref())
-    {
-        vec![crate::merge::merge_execution_success_artifact(
-            &plan.merge_execution_summary,
-            diagnostics_plan,
-            history.commit_id,
-            runtime.config.diagnostics.profile.max_entries_per_artifact,
-        )]
-    } else {
-        Vec::new()
-    };
-    let merge_execution_authority =
-        merge_plan.map(PublishedMergeExecutionAuthority::from_merge_plan);
-    let schema_continuity =
-        resolve_schema_continuity(runtime, &history.branch_id, validation_input).map_err(
-            |error| {
-                super::rejection::attach_rejection(commit_log, CommitPhase::ArtifactAssembly, error)
-            },
+    mutated: CommitPhaseBacking<MutatedCommitExecution>,
+) -> Result<
+    CommitPhaseBacking<HistoryBoundCommitExecution>,
+    crate::transactions::data::TransactionCommitError,
+> {
+    // Producer temporaries retire before funding the retained successor,
+    // matching the former caller-side allocation boundary.
+    let result = {
+        let mut mutated = mutated.into_inner();
+        super::consult_stage(execution, super::CommitStage::History)?;
+        let version_id = mutated.version_id();
+        let commit_id = mutated.prepared.proposal_identity.commit_id();
+        let admitted = &mut mutated.prepared.admitted;
+        let merge_diagnostics_plan = admitted.merge_execution_diagnostics_plan().cloned();
+        let (transaction_id, validation_input, _, merge_plan, commit_log, phase_timing) =
+            admitted.phase_view().into_parts();
+        let history = resolve_authoritative_history_phase(
+            execution,
+            runtime,
+            commit_log,
+            phase_timing,
+            transaction_id,
+            validation_input,
+            version_id,
+            commit_id,
+            merge_plan,
         )?;
-    deferred_diagnostic_artifacts.extend(prepare_schema_continuity_diagnostics(
-        &history.branch_id,
-        &schema_continuity,
-    ));
-    let merge_parent_branches = validation_input.merge_parent_branch_ids();
-    Ok(HistoryBoundCommitExecution {
-        mutated,
-        history,
-        merge_parent_branches,
-        additional_diagnostics_entries,
-        merge_execution_authority,
-        schema_continuity,
-        deferred_diagnostic_artifacts,
-    })
+        let additional_diagnostics_entries = merge_plan
+            .map(|plan| {
+                vec![crate::merge::merge_execution_summary_entry(
+                    &plan.merge_execution_summary,
+                    &plan.structural_summary,
+                    history.commit_id,
+                )]
+            })
+            .unwrap_or_default();
+        let mut deferred_diagnostic_artifacts = if let (Some(plan), Some(diagnostics_plan)) =
+            (merge_plan, merge_diagnostics_plan.as_ref())
+        {
+            vec![crate::merge::merge_execution_success_artifact(
+                &plan.merge_execution_summary,
+                diagnostics_plan,
+                history.commit_id,
+                runtime.config.diagnostics.profile.max_entries_per_artifact,
+            )]
+        } else {
+            Vec::new()
+        };
+        let merge_execution_authority =
+            merge_plan.map(PublishedMergeExecutionAuthority::from_merge_plan);
+        let schema_continuity =
+            resolve_schema_continuity(execution, runtime, &history.branch_id, validation_input)
+                .map_err(|error| {
+                    super::rejection::attach_rejection(
+                        commit_log,
+                        CommitPhase::ArtifactAssembly,
+                        error,
+                    )
+                })?;
+        deferred_diagnostic_artifacts.extend(prepare_schema_continuity_diagnostics(
+            &history.branch_id,
+            &schema_continuity,
+        ));
+        let merge_parent_branches = validation_input.merge_parent_branch_ids();
+        HistoryBoundCommitExecution {
+            mutated,
+            history,
+            merge_parent_branches,
+            additional_diagnostics_entries,
+            merge_execution_authority,
+            schema_continuity,
+            deferred_diagnostic_artifacts,
+        }
+    };
+    CommitPhaseBacking::new(execution, result)
 }

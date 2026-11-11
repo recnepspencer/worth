@@ -7,6 +7,10 @@ pub(crate) struct DenseSlotBitSet {
 }
 
 impl DenseSlotBitSet {
+    /// Borrow canonical nonzero words; full serialization creates no scratch Vec.
+    pub(crate) fn words(&self) -> impl ExactSizeIterator<Item = (usize, u64)> + '_ {
+        self.words.iter().map(|(&index, &word)| (index, word))
+    }
     pub(crate) fn stored_word_count(&self) -> usize {
         self.words.len()
     }
@@ -62,15 +66,39 @@ impl DenseSlotBitSet {
         })
     }
 
-    pub(crate) fn set(&mut self, slot: usize, value: bool) -> u64 {
+    pub(crate) fn set_for_request(
+        &mut self,
+        slot: usize,
+        value: bool,
+        request: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> Result<u64, crate::execution::RelationalExecutionDenialCause> {
+        let (word, previous, next) = self.changed_word(slot, value);
+        let changed = if next == previous {
+            Ok(0)
+        } else if next == 0 {
+            self.words
+                .remove_for_request(&word, request)
+                .map(|(_, bytes)| bytes)
+        } else {
+            self.words.insert_for_request(word, next, request)
+        }?;
+        self.population =
+            self.population - previous.count_ones() as usize + next.count_ones() as usize;
+        Ok(changed)
+    }
+    fn changed_word(&self, slot: usize, value: bool) -> (usize, u64, u64) {
         let word = slot / 64;
-        let bit = slot % 64;
         let previous = self.words.get(&word).copied().unwrap_or(0);
         let next = if value {
-            previous | (1 << bit)
+            previous | (1 << (slot % 64))
         } else {
-            previous & !(1 << bit)
+            previous & !(1 << (slot % 64))
         };
+        (word, previous, next)
+    }
+
+    pub(crate) fn set(&mut self, slot: usize, value: bool) -> u64 {
+        let (word, previous, next) = self.changed_word(slot, value);
         self.population =
             self.population - previous.count_ones() as usize + next.count_ones() as usize;
         if next == previous {
@@ -182,6 +210,24 @@ impl DenseSlotBitSet {
         Self { words, population }
     }
 
+    pub(crate) fn from_words_for_request(
+        _lane: &crate::storage::substrate::maintenance::ReconstructionLane<'_>,
+        words: impl IntoIterator<Item = (usize, u64)>,
+        request: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> Result<Self, crate::execution::RelationalExecutionDenialCause> {
+        let mut result = Self::with_capacity(0);
+        for (index, word) in words {
+            request.consult()?;
+            if word != 0 {
+                let previous = result.words.get(&index).copied().unwrap_or(0);
+                result.words.insert_for_request(index, word, request)?;
+                result.population =
+                    result.population - previous.count_ones() as usize + word.count_ones() as usize;
+            }
+        }
+        Ok(result)
+    }
+
     pub(crate) fn sparse_words(&self) -> Vec<(u64, u64)> {
         self.words
             .iter()
@@ -193,10 +239,6 @@ impl DenseSlotBitSet {
         self.words
             .last_key_value()
             .map_or(0, |(&word, _)| (word + 1).saturating_mul(64))
-    }
-
-    pub(crate) fn authoritative_allocation_bytes(&self) -> u64 {
-        self.words.allocation_bytes()
     }
 
     pub(crate) fn visit_allocations(
@@ -212,7 +254,7 @@ impl DenseSlotBitSet {
     }
 }
 
-/// A borrowed word walk with its original preclaimed AVL stack.
+/// A borrowed word walk with its addressably bounded inline AVL stack.
 pub(crate) struct DenseSlotIterator<'a> {
     words: crate::storage::substrate::SharedMapIter<'a, usize, u64>,
     word_index: usize,

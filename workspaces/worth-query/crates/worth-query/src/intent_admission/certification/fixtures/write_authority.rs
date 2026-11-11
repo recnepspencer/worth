@@ -21,7 +21,7 @@ impl WorthQueryRuntimeWriteAuthorityAdapter for CertificationWriteAuthority {
         &mut self,
         _execution: &worth_execution::ExecutionRequest<'_, '_>,
         bridge: &RuntimeBridge,
-        _relational_runtime: Option<&mut RelationalRuntime>,
+        _relational_runtime: Option<&RelationalRuntime>,
         mutation: WorthQueryBackendAdmissibleMutation,
     ) -> Result<WriteAuthorityExecutionReceipt, WorthQueryWorkspaceError> {
         let (collection, aspect_touches) = write_receipt_shape(&mutation);

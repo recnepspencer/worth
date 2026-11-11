@@ -1,5 +1,3 @@
-use std::collections::BTreeSet;
-
 use serde::{Deserialize, Serialize};
 
 use crate::history::data::BranchId;
@@ -236,13 +234,7 @@ pub struct SchemaTransitionSummary {
 
 impl SchemaTransitionSummary {
     pub fn from_artifact(artifact: &SchemaTransitionArtifact) -> Self {
-        let changed_strata = artifact
-            .diff_atoms
-            .iter()
-            .flat_map(|atom| atom.strata.iter().copied())
-            .collect::<BTreeSet<_>>()
-            .into_iter()
-            .collect();
+        let changed_strata = observed_strata(artifact).collect();
         Self {
             changed_atom_count: artifact.diff_atoms.len(),
             changed_strata,
@@ -255,4 +247,55 @@ impl SchemaTransitionSummary {
                 .historical_interpretation,
         }
     }
+}
+
+impl SchemaTransitionSummary {
+    /// Compare the SAME summary meaning without constructing a second vector.
+    pub(crate) fn matches_artifact(&self, artifact: &SchemaTransitionArtifact) -> bool {
+        self.changed_atom_count == artifact.diff_atoms.len()
+            && self
+                .changed_strata
+                .iter()
+                .copied()
+                .eq(observed_strata(artifact))
+            && self.continuation == artifact.continuation_descriptor.bridge.continuation
+            && self.bridgeability == artifact.continuation_descriptor.bridge.bridgeability
+            && self.reconciliation == artifact.reconciliation_descriptor.classification
+            && self.historical_interpretation
+                == artifact
+                    .continuation_descriptor
+                    .bridge
+                    .historical_interpretation
+    }
+}
+fn observed_strata(artifact: &SchemaTransitionArtifact) -> impl Iterator<Item = SchemaStratum> {
+    use SchemaStratum::*;
+    let mut present = [false; 8];
+    for stratum in artifact.diff_atoms.iter().flat_map(|atom| &atom.strata) {
+        let index = match stratum {
+            StructuralShape => 0,
+            ValueDomain => 1,
+            EntityIdentitySemantics => 2,
+            CorrespondenceSemantics => 3,
+            LineageSemantics => 4,
+            BehavioralSemantics => 5,
+            PublicationContract => 6,
+            SubscriberContract => 7,
+        };
+        present[index] = true;
+    }
+    // This is the enum's original Ord order, exactly the prior BTreeSet order.
+    [
+        StructuralShape,
+        ValueDomain,
+        EntityIdentitySemantics,
+        CorrespondenceSemantics,
+        LineageSemantics,
+        BehavioralSemantics,
+        PublicationContract,
+        SubscriberContract,
+    ]
+    .into_iter()
+    .zip(present)
+    .filter_map(|(stratum, present)| present.then_some(stratum))
 }

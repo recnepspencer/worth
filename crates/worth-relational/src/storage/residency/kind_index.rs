@@ -9,7 +9,7 @@ use sha2::{Digest, Sha256};
 
 #[derive(Debug, Clone, Default)]
 pub(super) struct KindIndex {
-    relations: SharedMap<RelationId, KindIncidence>,
+    relations: SharedMap<RelationId, crate::storage::substrate::StorageAllocation<KindIncidence>>,
     digest: DigestIndex,
     incidence_bytes: u64,
 }
@@ -158,7 +158,7 @@ impl KindIndex {
         self.digest.visit_allocations(visitor);
         self.relations
             .visit_allocations(false, visitor, &mut |incidence, allocation, visitor| {
-                if visitor.visit(allocation) {
+                if allocation.visit(visitor) {
                     incidence.outgoing.visit_allocations(visitor);
                     incidence.incoming.visit_allocations(visitor);
                 }

@@ -7,7 +7,7 @@ use worth_query_host::facade::application_contribution::{
     WorthQueryManagedComputationCheckpoint, WorthQueryManagedComputationDenial,
     WorthQueryManagedComputationOwner, WorthQueryPartitionedComputationOwner,
 };
-use worth_query_host::facade::application_installation::WorthQueryInMemoryApplicationDenial;
+use worth_query_host::facade::application_installation::WorthQueryApplicationPreparationDenial;
 use worth_query_host::facade::primary_graph::WorthQueryPrimaryGraphInstallationDenialKind;
 
 use super::demand::{RegionTotalsHandler, TotalRegions};
@@ -172,7 +172,7 @@ fn installation_refusal<Binding: RegionTotalsBinding>(
     );
     match installed.err().map(|denial| *denial) {
         None => None,
-        Some(WorthQueryInMemoryApplicationDenial::Contributions(denial)) => Some(denial.kind()),
+        Some(WorthQueryApplicationPreparationDenial::Contributions(denial)) => Some(denial.kind()),
         Some(other) => panic!("the contribution's own setup decides the binding: {other:?}"),
     }
 }

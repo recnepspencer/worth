@@ -18,6 +18,15 @@ impl ValidatedCheckpointSize {
         accepted_outputs: &[WorthQueryAcceptedOutputCheckpointIdentity],
         policy: WorthQueryCheckpointCapturePolicy<'_, '_>,
     ) -> Result<Self, WorthQueryCheckpointCaptureDenial> {
+        Self::with_originals(native_len, 0, 0, accepted_outputs, policy)
+    }
+    pub(super) fn with_originals(
+        native_len: usize,
+        image_len: usize,
+        world_len: usize,
+        accepted_outputs: &[WorthQueryAcceptedOutputCheckpointIdentity],
+        policy: WorthQueryCheckpointCapturePolicy<'_, '_>,
+    ) -> Result<Self, WorthQueryCheckpointCaptureDenial> {
         policy.check_live()?;
         let accepted = accepted_outputs.iter().try_fold(
             0_usize,
@@ -50,7 +59,7 @@ impl ValidatedCheckpointSize {
                 ])?)
             },
         )?;
-        let total = checked_sum(&[HEADER_BYTES, native_len, accepted])?;
+        let total = checked_sum(&[HEADER_BYTES, native_len, image_len, world_len, accepted])?;
         wire_length(total)?;
         if total > isize::MAX as usize {
             return Err(size_overflow().into());

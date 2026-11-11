@@ -8,10 +8,13 @@ pub fn publication(
         NoEffectCause::CancelledBeforeEffect => Err(Stop::Stopped(MapKernelStop::Cancelled)),
         NoEffectCause::DeadlineBeforeEffect => Err(Stop::Stopped(MapKernelStop::DeadlineElapsed)),
         NoEffectCause::ExecutionRequest(cause) => Err(cause),
-        ordinary @ (NoEffectCause::StaleExpectedProductHead
+        ordinary @ (NoEffectCause::DurableOpenRequired
+        | NoEffectCause::StaleExpectedProductHead
         | NoEffectCause::OwnerDeniedBeforeEffect
         | NoEffectCause::CurrentReadDependency(_)
+        | NoEffectCause::StaleIncarnation
         | NoEffectCause::CorrespondenceRebindRequired
+        | NoEffectCause::CorrespondenceAdmissionDenied(_)
         | NoEffectCause::ReferenceGenerationExhausted
         | NoEffectCause::CapacityExhausted
         | NoEffectCause::OwnerUnavailable

@@ -244,7 +244,7 @@ fn declared_schema_transition_requires_non_empty_runtime_basis() {
             SchemaSubscriberImpact::None,
             HistoricalInterpretationSensitivity::NotSensitive,
             SchemaDiffDetail::FreeText {
-                detail: Arc::<str>::from("bootstrap"),
+                detail: Arc::<str>::from("bootstrap").into(),
                 declared_intent: FreeFormSchemaDiffIntent::Additive,
             },
         )],
@@ -316,8 +316,8 @@ fn declared_type_continuity_denied_schema_transition_reports_specific_conflict_c
             HistoricalInterpretationSensitivity::SensitiveToValueMeaning,
             SchemaDiffDetail::TypeChanged {
                 field: field_key("tag"),
-                from_type: Arc::<str>::from("string"),
-                to_type: Arc::<str>::from("enum<tag>"),
+                from_type: Arc::<str>::from("string").into(),
+                to_type: Arc::<str>::from("enum<tag>").into(),
             },
         )],
     };

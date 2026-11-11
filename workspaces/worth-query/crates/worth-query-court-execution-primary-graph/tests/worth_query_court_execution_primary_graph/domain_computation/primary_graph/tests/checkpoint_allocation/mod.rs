@@ -1,6 +1,4 @@
 //! Actual Query capture, native-region custody and ordinary fresh readmission.
-use worth_execution::ExecutionAllocationDenialClass;
-use worth_execution::LeaseDenial;
 use worth_query_declaration::facade::authentication::WorthQueryPrincipalMappingStatus;
 
 use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::world_installation::installed_world;
@@ -39,20 +37,18 @@ pub fn leased_checkpoint_retains_one_frame_charge_through_native_handoff_and_reo
         })
         .expect("installed host call opens")
         .unwrap_err();
-    let WorthQueryCheckpointCaptureDenial::Allocation(refusal) = refusal else {
-        panic!("genuine lease refusal must preserve its exact typed cause");
+    let WorthQueryCheckpointCaptureDenial::Execution(cause) = refusal else {
+        panic!("complete capture preserves its original admission cause: {refusal:?}");
     };
-    assert_eq!(
-        refusal.classify(),
-        ExecutionAllocationDenialClass::Request(worth_execution::WorkCeilingDenial::Admission(
-            LeaseDenial::MemoryExhausted(worth_execution::MemoryLimitDenial::Capacity {
-                requested: refusal.requested_payload_bytes().unwrap(),
-                admitted: 0,
-                level: worth_execution::MemoryLimitLevel::Policy { ancestor: 0 }
-            })
-        ))
-    );
-    assert!(refusal.requested_payload_bytes().unwrap() > 0);
+    let worth_query_execution::facade::primary_graph::WorthQueryPrimaryGraphInstallationDenialKind::ExecutionDenied {
+        kind: worth_query_execution::facade::primary_graph::WorthQueryProviderSessionDenialKind::ExecutionResource {
+            denial: worth_query_execution::facade::application_contribution::WorthQueryManagedComputationResourceDenial::MemoryLimit {
+                requested, admitted: 0,
+                level: worth_query_execution::facade::application_contribution::WorthQueryMemoryLimitLevel::Policy,
+            }, partition_identity: None, policy_ancestor: Some(0),
+        }
+    } = cause.kind() else { panic!("exact zero-memory capture cause: {cause:?}"); };
+    assert!(requested > 0);
 
     const LIMIT: u64 = 8 * 1024 * 1024;
     let (checkpoint, sections, mut probe) = world
@@ -72,29 +68,53 @@ pub fn leased_checkpoint_retains_one_frame_charge_through_native_handoff_and_reo
     assert_eq!(checkpoint.charged_payload_bytes(), Some(charge));
     assert_eq!(sections.total_bytes(), checkpoint.bytes().len());
     assert!(charge < LIMIT);
+    let retained = held_by_policy(&mut probe);
+    assert!(
+        retained > charge,
+        "the complete origin retains its admitted Native and World custody"
+    );
+    assert!(checkpoint.capture_origin().is_some());
     let pointer = checkpoint.bytes().as_ptr();
     let clone = checkpoint.clone();
     assert_eq!(clone.bytes().as_ptr(), pointer);
     assert_eq!(clone.charged_payload_bytes(), Some(charge));
+    assert_eq!(
+        held_by_policy(&mut probe),
+        retained,
+        "cloning shares every original charge"
+    );
     let decoded = clone.decode_for_test().unwrap();
-    let (system, system_sections) = worth_query_execution::facade::application_installation::WorthQueryApplicationCheckpoint::encode_for_test(
-        (*decoded.native_for_test()).clone(),
-        world.application.publication(),
-        decoded.accepted_outputs_for_test(),
-        Policy::SystemAllocation,
-    )
-    .unwrap();
-    // Both policies encode the SAME actual native payload and accepted rows.
-    // Policy changes physical custody, never the authenticated current grammar.
-    assert_eq!(system.bytes(), checkpoint.bytes());
+    let (system, system_sections) = world
+        .application
+        .with_host_advancement(|phase| {
+            let (system, sections) = world
+                .application
+                .capture_application_checkpoint_with_sections(&phase, Policy::SystemAllocation)
+                .unwrap();
+            let funded = world
+                .application
+                .inspect_application_checkpoint(&phase, checkpoint.bytes())
+                .unwrap();
+            let ordinary = world
+                .application
+                .inspect_application_checkpoint(&phase, system.bytes())
+                .unwrap();
+            assert_eq!(
+                funded.model, ordinary.model,
+                "both policies capture the same complete authored model"
+            );
+            assert!(system.capture_origin().is_some());
+            (system, sections)
+        })
+        .unwrap();
     assert_eq!(system.charged_payload_bytes(), None);
     assert_eq!(system_sections.total_bytes(), sections.total_bytes());
     drop(system);
     let native = decoded.native_into_for_test();
     // Independent current wire layout: magic, checksum, Query/facts/instances
-    // versions (u16 each), bootstrap commit, native length and accepted count.
+    // versions (u16 each), bootstrap commit and four section/count lengths.
     const NATIVE_OFFSET: usize =
-        8 + 32 + 3 * std::mem::size_of::<u16>() + 3 * std::mem::size_of::<u64>();
+        8 + 32 + 3 * std::mem::size_of::<u16>() + 5 * std::mem::size_of::<u64>();
     assert_eq!(native.bytes().as_ptr(), pointer.wrapping_add(NATIVE_OFFSET));
     let native_clone = native.clone();
     assert_eq!(native_clone.bytes().as_ptr(), native.bytes().as_ptr());
@@ -117,14 +137,38 @@ pub fn leased_checkpoint_retains_one_frame_charge_through_native_handoff_and_reo
     drop(native);
     // A native-region clone alone retains the ENTIRE enclosing frame charge,
     // after the originating lease, Query frame and original World have gone.
+    let held = held_by_policy(&mut probe);
+    assert_eq!(
+        held, charge,
+        "the native-region alias holds exactly the entire frame, nothing more"
+    );
     assert!(matches!(
-        probe.resize(LIMIT - charge + 1),
-        Err(memory) if memory == worth_execution::MemoryLimitDenial::Capacity { requested: LIMIT - charge + 1, admitted: LIMIT - charge, level: worth_execution::MemoryLimitLevel::Policy { ancestor: 0 } }
+        probe.resize(LIMIT - held + 1),
+        Err(memory) if memory == worth_execution::MemoryLimitDenial::Capacity { requested: LIMIT - held + 1, admitted: LIMIT - held, level: worth_execution::MemoryLimitLevel::Policy { ancestor: 0 } }
     ));
-    probe.resize(LIMIT - charge).unwrap();
-    assert_eq!(probe.bytes(), LIMIT - charge);
+    probe.resize(LIMIT - held).unwrap();
+    assert_eq!(probe.bytes(), LIMIT - held);
     probe.resize(0).unwrap();
     drop(native_clone);
+    assert_eq!(held_by_policy(&mut probe), 0);
     probe.resize(LIMIT).unwrap();
     assert_eq!(probe.bytes(), LIMIT);
+}
+
+/// The empty probe's exact policy room exposes every other charge the policy holds.
+fn held_by_policy(probe: &mut worth_execution::ExecutionMemoryReservation) -> u64 {
+    const LIMIT: u64 = 8 * 1024 * 1024;
+    assert_eq!(
+        probe.bytes(),
+        0,
+        "only an empty probe observes the policy's other charges"
+    );
+    match probe.resize(LIMIT + 1) {
+        Err(worth_execution::MemoryLimitDenial::Capacity {
+            admitted,
+            level: worth_execution::MemoryLimitLevel::Policy { ancestor: 0 },
+            ..
+        }) => LIMIT - admitted,
+        other => panic!("the policy capacity observes its held charge: {other:?}"),
+    }
 }

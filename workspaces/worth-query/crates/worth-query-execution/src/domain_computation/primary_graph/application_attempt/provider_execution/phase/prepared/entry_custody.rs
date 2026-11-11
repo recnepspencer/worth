@@ -6,7 +6,6 @@ use crate::domain_computation::primary_graph::{
     WorthQueryElevationRequestProgram, WorthQueryMandatoryReviewProgram,
 };
 mod carrier;
-pub(in crate::domain_computation::primary_graph) use carrier::CommitCarrier;
 
 /// The exact program whose installed seal and current authority were readmitted.
 /// Entry callers can neither construct nor extract its owned program.
@@ -83,7 +82,7 @@ impl<'a, Schema: ApplicationSchema, Program: CommitCarrier<Schema>>
         self,
         cause: crate::domain_computation::primary_graph::WorthQueryAdvancementDenial,
     ) -> Program::Refusal {
-        self.program.refuse(cause.into_commit_outcome())
+        self.program.refuse(crate::domain_computation::primary_graph::application_attempt::effect_program::WorthQueryCommitEntryRefusal::from_advancement(cause))
     }
     /// Immutable seal facts are carried; lapse is refreshed after advancement opens.
     pub(in crate::domain_computation::primary_graph) fn in_advancement<'phase, 'request>(
@@ -110,6 +109,7 @@ mod conditional_operation;
 mod output_source;
 
 mod forwarding;
+mod managed_start;
 pub(crate) mod preparation;
 mod progression;
 pub(in crate::domain_computation::primary_graph::application_attempt::provider_execution) use preparation::prepare_application_commit;
@@ -122,3 +122,5 @@ mod elevation_request;
 mod mandatory_review;
 
 mod court_doors_for_test;
+
+pub use carrier::CommitCarrier;

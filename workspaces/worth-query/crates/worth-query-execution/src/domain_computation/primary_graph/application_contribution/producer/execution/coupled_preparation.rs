@@ -150,7 +150,7 @@ where
         );
     let report = match prepared_handler {
         Ok(handler) => handler.run(runtime, &identities),
-        Err(report) => report,
+        Err(report) => report.into_uncompleted_report(),
     };
     let completed = completed_handler::<
         _,

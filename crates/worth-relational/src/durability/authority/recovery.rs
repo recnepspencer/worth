@@ -1,10 +1,30 @@
+mod associated_branch_transitions;
+mod catalog_readmission;
+mod fork_effect;
 use crate::durability::data::RelationalRecoveryStop;
+pub use catalog_readmission::{
+    ReadmittedRelationalHomeProgramCatalogs, RefusedRelationalHomeProgramCatalogReadmission,
+    RelationalHomeProgramCatalogReadmissionDenial,
+};
 pub(crate) use codec_transition::{
     AdmittedRecoveredCodecPublication, RecoveredCodecPublicationCustody,
+};
+pub use fork_effect::{
+    ReadmittedRelationalAssociatedFork, RefusedRelationalForkReadmission,
+    RelationalForkReadmissionCause,
 };
 pub(super) mod admission;
 pub(super) mod codec_transition;
 mod declared_schema;
+mod prepared_home;
+pub use prepared_home::{
+    PreparedRelationalHomeRecovery, RefusedPreparedRelationalHomeRecovery,
+    RelationalHomeRecoveryPreparationDenial,
+};
+mod home_program_transition;
+pub use home_program_transition::{
+    RelationalHomeProgramTransitionSource, RelationalHomeProgramTransitionSourceRefusal,
+};
 
 use crate::diagnostics::data::{DiagnosticsArtifactKind, DiagnosticsScope};
 use crate::durability::data::{DurabilityError, RecoveryCoverage, RecoveryPlan};
@@ -23,31 +43,6 @@ impl<'runtime> DurabilityRecoveryAuthority<'runtime> {
         checkpoint: &crate::durability::data::RelationalNativeCheckpoint,
     ) -> Result<(RuntimeRecoveryOutcome, RecoveredRelationalRuntimeAuthority), RelationalRecoveryStop>
     {
-        let outcome = self.restore_native_checkpoint(execution, checkpoint)?;
-        Ok((outcome, self.restored_runtime_authority()))
-    }
-
-    fn restored_runtime_authority(&self) -> RecoveredRelationalRuntimeAuthority {
-        let recovered_branch_images = self
-            .runtime
-            .history()
-            .branch_cells_snapshot()
-            .into_iter()
-            .map(|cell| (cell.branch_id, (cell.observation, cell.truth_version)))
-            .collect();
-        RecoveredRelationalRuntimeAuthority {
-            runtime_instance_id: self.runtime.runtime_instance_id(),
-            recovered_branch_images,
-            codec_transition: None,
-            performed_codec_retirement: None,
-        }
-    }
-
-    pub fn restore_native_checkpoint(
-        &mut self,
-        execution: &worth_execution::ExecutionRequest<'_, '_>,
-        checkpoint: &crate::durability::data::RelationalNativeCheckpoint,
-    ) -> Result<RuntimeRecoveryOutcome, RelationalRecoveryStop> {
         crate::execution::check_request(execution).map_err(RelationalRecoveryStop::Request)?;
         let native_bytes_read = checkpoint.bytes().len();
         let checkpoint = crate::durability::log::native_checkpoint_codec::decode_checkpoint(
@@ -55,7 +50,32 @@ impl<'runtime> DurabilityRecoveryAuthority<'runtime> {
             checkpoint.bytes(),
         )?
         .checkpoint;
-        self.restore_decoded_native_checkpoint(execution, checkpoint, native_bytes_read)
+        self.restore_decoded_native_checkpoint_with_authority(
+            execution,
+            checkpoint,
+            native_bytes_read,
+        )
+    }
+
+    fn restored_runtime_authority(
+        &self,
+        recovered_roots: super::runtime_rebuild::RecoveredRootInventory,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> Result<RecoveredRelationalRuntimeAuthority, RelationalRecoveryStop> {
+        let recovered_roots = recovered_roots.into_readmission(execution)?;
+        self.runtime
+            .durability
+            .install_source_root_inventory(recovered_roots.clone());
+        Ok(recovered_authority(self.runtime, recovered_roots))
+    }
+
+    pub fn restore_native_checkpoint(
+        &mut self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        checkpoint: &crate::durability::data::RelationalNativeCheckpoint,
+    ) -> Result<RuntimeRecoveryOutcome, RelationalRecoveryStop> {
+        self.restore_native_checkpoint_with_authority(execution, checkpoint)
+            .map(|(outcome, _authority)| outcome)
     }
 
     pub(in crate::durability::authority) fn restore_decoded_native_checkpoint_with_authority(
@@ -65,32 +85,18 @@ impl<'runtime> DurabilityRecoveryAuthority<'runtime> {
         native_bytes_read: usize,
     ) -> Result<(RuntimeRecoveryOutcome, RecoveredRelationalRuntimeAuthority), RelationalRecoveryStop>
     {
-        let outcome =
-            self.restore_decoded_native_checkpoint(execution, checkpoint, native_bytes_read)?;
-        Ok((outcome, self.restored_runtime_authority()))
-    }
-
-    fn restore_decoded_native_checkpoint(
-        &mut self,
-        execution: &worth_execution::ExecutionRequest<'_, '_>,
-        checkpoint: crate::durability::data::DurableCheckpoint,
-        native_bytes_read: usize,
-    ) -> Result<RuntimeRecoveryOutcome, RelationalRecoveryStop> {
-        let initial_schema_authority = self.runtime.initial_schema_authority_snapshot();
         let native_envelopes_readmitted = checkpoint.envelopes.len();
         let plan = crate::durability::access::native_checkpoint_recovery_plan(
             self.runtime,
             checkpoint,
             crate::durability::data::RecoveryVerificationMode::NormalRecoveryVerification,
         );
-        let mut outcome = self.recover(execution, plan)?;
+        let (mut outcome, recovered) = self.recover_with_authority(execution, plan)?;
         if let Some(work) = &mut outcome.checkpoint_restore_work {
             work.native_bytes_read = Some(native_bytes_read);
             work.native_envelopes_readmitted = Some(native_envelopes_readmitted);
         }
-        self.runtime
-            .restore_initial_schema_authority_after_recovery(initial_schema_authority);
-        Ok(outcome)
+        Ok((outcome, recovered))
     }
 
     pub fn recover(
@@ -98,14 +104,66 @@ impl<'runtime> DurabilityRecoveryAuthority<'runtime> {
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         plan: RecoveryPlan,
     ) -> Result<RuntimeRecoveryOutcome, RelationalRecoveryStop> {
+        self.recover_with_authority(execution, plan)
+            .map(|(outcome, _authority)| outcome)
+    }
+
+    /// Reconstruct once and retain the source-produced exact images with their
+    /// real root owners. This grants neither currentness nor World adoption.
+    pub fn recover_with_authority(
+        &mut self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        plan: RecoveryPlan,
+    ) -> Result<(RuntimeRecoveryOutcome, RecoveredRelationalRuntimeAuthority), RelationalRecoveryStop>
+    {
         crate::execution::check_request(execution).map_err(RelationalRecoveryStop::Request)?;
         let admitted = admit_recovery_or_emit(self.runtime, plan)?;
+        self.recover_admitted_with_authority(execution, admitted)
+    }
+
+    fn recover_admitted_with_authority(
+        &mut self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        admitted: admission::AdmittedRecoveryPlan,
+    ) -> Result<(RuntimeRecoveryOutcome, RecoveredRelationalRuntimeAuthority), RelationalRecoveryStop>
+    {
+        let initial_schema_authority = self.runtime.initial_schema_authority_snapshot();
         let mut material = rebuild_admitted_recovery_or_emit(execution, self.runtime, admitted)?;
         crate::execution::check_request(execution).map_err(RelationalRecoveryStop::Request)?;
+        // Source replay reconstructs durable data, not the installed executors.
+        // Preserve this owner's actual sealed inventory before runtime cutover.
+        material
+            .restored
+            .restore_initial_schema_authority_after_recovery(initial_schema_authority);
         declared_schema::require_declared_schema_of_recovered_main(&material.restored)?;
         move_durable_medium(self.runtime, &mut material.restored)?;
-        let outcome = publish_recovered_runtime(self.runtime, material);
-        Ok(outcome)
+        let (outcome, recovered_roots) = publish_recovered_runtime(self.runtime, material);
+        Ok((
+            outcome,
+            self.restored_runtime_authority(recovered_roots, execution)?,
+        ))
+    }
+}
+
+fn recovered_authority(
+    runtime: &RelationalRuntime,
+    recovered_roots: std::sync::Arc<super::runtime_rebuild::RecoveredRootInventory>,
+) -> RecoveredRelationalRuntimeAuthority {
+    let recovered_branch_images = runtime
+        .history()
+        .branch_cells_snapshot()
+        .into_iter()
+        .map(|cell| (cell.branch_id, (cell.observation, cell.truth_version)))
+        .collect();
+    RecoveredRelationalRuntimeAuthority {
+        interim_bootstrap_phase: None,
+        home_catalog_readmission: std::sync::Mutex::new(()),
+        home_program_predecessor: None,
+        runtime_instance_id: runtime.runtime_instance_id(),
+        recovered_branch_images,
+        recovered_roots,
+        codec_transition: None,
+        performed_codec_retirement: None,
     }
 }
 
@@ -114,9 +172,10 @@ struct RecoveredRuntimeMaterial {
     plan: RecoveryPlan,
     admission: admission::RecoveryAdmission,
     checkpoint_restore_work: Option<crate::durability::data::CheckpointRestoreWork>,
+    recovered_roots: super::runtime_rebuild::RecoveredRootInventory,
 }
 
-fn admit_recovery_or_emit(
+pub(super) fn admit_recovery_or_emit(
     runtime: &RelationalRuntime,
     plan: RecoveryPlan,
 ) -> Result<admission::AdmittedRecoveryPlan, DurabilityError> {
@@ -136,18 +195,24 @@ fn rebuild_admitted_recovery_or_emit(
 ) -> Result<RecoveredRuntimeMaterial, RelationalRecoveryStop> {
     let admission = admitted.admission().clone();
     match rebuild_runtime_from_plan(execution, admitted) {
-        Ok((restored, plan, checkpoint_restore_work)) => Ok(RecoveredRuntimeMaterial {
-            restored,
-            plan,
-            admission,
-            checkpoint_restore_work,
-        }),
+        Ok((restored, plan, checkpoint_restore_work, recovered_roots)) => {
+            Ok(RecoveredRuntimeMaterial {
+                restored,
+                plan,
+                admission,
+                checkpoint_restore_work,
+                recovered_roots,
+            })
+        }
         Err(RelationalRecoveryStop::Durability(error)) => {
             admission.emit(runtime);
             Err(RelationalRecoveryStop::Durability(error))
         }
         Err(RelationalRecoveryStop::Content(cause)) => Err(RelationalRecoveryStop::Content(cause)),
         Err(RelationalRecoveryStop::Request(cause)) => Err(RelationalRecoveryStop::Request(cause)),
+        Err(RelationalRecoveryStop::AdmissionImage(cause)) => {
+            Err(RelationalRecoveryStop::AdmissionImage(cause))
+        }
         Err(RelationalRecoveryStop::Allocation(cause)) => {
             Err(RelationalRecoveryStop::Allocation(cause))
         }
@@ -178,19 +243,23 @@ fn move_durable_medium(
         .durability
         .detach_medium()
         .ok_or_else(|| unmovable("the recovering runtime's durable medium already moved"))?;
-    rebuilt.durability.attach_medium(medium);
+    rebuilt.durability.attach_recovered_medium(medium);
     Ok(())
 }
 
 fn publish_recovered_runtime(
     runtime: &mut RelationalRuntime,
     material: RecoveredRuntimeMaterial,
-) -> RuntimeRecoveryOutcome {
+) -> (
+    RuntimeRecoveryOutcome,
+    super::runtime_rebuild::RecoveredRootInventory,
+) {
     let RecoveredRuntimeMaterial {
         restored,
         plan,
         admission,
         checkpoint_restore_work,
+        recovered_roots,
     } = material;
     let tail_commits = plan.tail_commit_count();
     let checkpoint_commits = restored
@@ -234,7 +303,7 @@ fn publish_recovered_runtime(
         checkpoint_restore_work,
     };
     *runtime = restored;
-    outcome
+    (outcome, recovered_roots)
 }
 
 impl RelationalRuntime {
@@ -245,6 +314,6 @@ impl RelationalRuntime {
     ) -> Result<RelationalRuntime, RelationalRecoveryStop> {
         let admitted =
             admission::admit_recovery(self, plan).map_err(|rejection| rejection.into_error())?;
-        rebuild_runtime_from_plan(execution, admitted).map(|(restored, _, _)| restored)
+        rebuild_runtime_from_plan(execution, admitted).map(|(restored, _, _, _)| restored)
     }
 }

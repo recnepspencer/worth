@@ -10,6 +10,8 @@ mod state;
 mod state_transitions;
 
 #[cfg(test)]
+mod conditional_source_tests;
+#[cfg(test)]
 mod tests;
 
 pub(crate) use definition::NodeDefinitionData;

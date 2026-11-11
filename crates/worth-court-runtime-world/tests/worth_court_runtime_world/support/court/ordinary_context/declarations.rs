@@ -149,7 +149,7 @@ impl CompositeSupplyChainCourt {
             .observe_product_branch(prior.branch_identity())
             .expect("observation: product head")
     }
-    pub(crate) fn finish(mut self) {
+    pub(crate) fn assert_no_pending_attempts(&self) {
         let inspection = self.world.inspection_port();
         let recovery = inspection.recovery_snapshot().unwrap();
         assert_eq!(
@@ -161,10 +161,18 @@ impl CompositeSupplyChainCourt {
             (0, 0, 0),
             "teardown: no pending attempts"
         );
+    }
+    pub(crate) fn finish(self) {
+        self.assert_no_pending_attempts();
+        self.finish_admitted_close();
+    }
+    pub(crate) fn finish_admitted_close(mut self) {
+        let policy = crate::test_execution_policy::serial_request();
+        let request = worth_execution::ExecutionRequest::serial(&policy);
         let report = self
             .world
             .lifecycle_port()
-            .close()
+            .close(&request, &self.world)
             .expect("teardown: close World");
         assert_eq!(
             report.outstanding_observations(),

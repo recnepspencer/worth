@@ -12,10 +12,12 @@ use crate::{
 use std::sync::Arc;
 mod roster;
 
-#[derive(Debug, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
+#[derive(Debug, serde::Serialize, serde::Deserialize)]
 pub(crate) struct CanonicalProducerRetirement {
     pub(crate) anchors: Vec<EntityId>,
     pub(crate) publications: Vec<Arc<CanonicalRequiredOutputOrigin>>,
+    #[serde(skip)]
+    pub(crate) _decoded_memory: Option<std::sync::Arc<worth_execution::ExecutionMemoryReservation>>,
 }
 
 pub(super) struct ProducerRetirementClosure {
@@ -37,10 +39,10 @@ pub(super) fn reject(cause: Cause, id: EntityId) -> TransactionCommitError {
 
 #[allow(clippy::too_many_arguments)]
 pub(super) fn prepare(
-    candidate: &CanonicalCommitEnvelope,
+    candidate: &CanonicalCommitEnvelopeBody,
     execution: &ExecutionRequest<'_, '_>,
     basis: &AdmittedRelationalBranchBasis,
-    runtime: &crate::runtime::RelationalPreparationRuntime,
+    runtime: &crate::history::data::canonical_commit_envelope::required_output_origin::history_request::PreparationRuntimeRequest<'_, '_, '_>,
     installed: &crate::mvcc::RelationalInstalledApplicationPublicationAuthority,
     prior: &CanonicalRequiredOutputOrigin,
     roles: &[RequiredOutputRoleTarget],
@@ -67,7 +69,7 @@ pub(super) fn prepare(
         context,
     )?;
     let mut latest = source_scope_closure::from_current(
-        Arc::clone(runtime.current_ownership.as_ref().ok_or_else(|| {
+        Arc::clone(runtime.runtime.current_ownership.as_ref().ok_or_else(|| {
             crate::mvcc::origin_denial("producer cascade requires current Native ownership")
         })?),
         Some(installed),
@@ -148,11 +150,11 @@ pub(super) fn prepare(
     }))
 }
 
-impl CanonicalCommitEnvelope {
+impl CanonicalCommitEnvelopeBody {
     #[allow(clippy::too_many_arguments)]
     pub(super) fn install_producer_cascade(
         &mut self,
-        runtime: &crate::runtime::RelationalPreparationRuntime,
+        runtime: &crate::history::data::canonical_commit_envelope::required_output_origin::history_request::PreparationRuntimeRequest<'_, '_, '_>,
         basis: &AdmittedRelationalBranchBasis,
         created: &CommitCreatedEntityBindings,
         created_relations: &CommitCreatedRelationBindings,
@@ -190,7 +192,7 @@ impl CanonicalCommitEnvelope {
             let origin = &selected.origin;
             // Native constructs custody only for the exact canonical selection, never a caller roster.
             let predecessor = crate::mvcc::RelationalRequiredOutputPublication {
-                runtime_instance_id: runtime.runtime_instance_id(),
+                runtime_instance_id: runtime.runtime.runtime_instance_id(),
                 evidence: selected.evidence,
                 origin: Arc::clone(origin),
                 authority: installed.authority.seal_required_output_publication_at(
@@ -242,7 +244,7 @@ impl CanonicalCommitEnvelope {
                 RouteCompletion {
                     contribution_records: None,
                     producer: &origin.producer,
-                    dependency_identity: origin.dependency_identity,
+                    dependency_identity: *origin.dependency_identity.bytes(),
                     meaning: &origin.meaning,
                     roles: &roles,
                     previous: Some(origin),
@@ -269,6 +271,7 @@ impl CanonicalCommitEnvelope {
         }
         self.required_output_origin = Some(root_origin);
         self.producer_cascade_retirement = Some(Arc::new(CanonicalProducerRetirement {
+            _decoded_memory: None,
             anchors: closure.anchors,
             publications,
         }));
@@ -285,3 +288,10 @@ fn typed_corruption(failure: TransactionCommitError, subject: EntityId) -> Trans
         other => other,
     }
 }
+
+impl PartialEq for CanonicalProducerRetirement {
+    fn eq(&self, other: &Self) -> bool {
+        self.anchors == other.anchors && self.publications == other.publications
+    }
+}
+impl Eq for CanonicalProducerRetirement {}

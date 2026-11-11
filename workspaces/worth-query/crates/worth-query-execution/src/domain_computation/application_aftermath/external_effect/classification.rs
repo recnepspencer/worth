@@ -7,17 +7,14 @@ use crate::domain_computation::runtime_time::WorthQueryRuntimeTimeSample;
 use super::causal_event::DispatchAttemptEvent;
 use super::causal_event::ExternalEffectPosture;
 
-/// Observed external-rail transport faults. None of these are completion.
+/// Observed external-rail transport faults. Each leaves the external effect
+/// unknown: none is completion and none proves that nothing happened.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum ExternalRailTransportFault {
     Timeout,
     Disconnect,
     LostResponse,
     DuplicatedAcknowledgement,
-    /// The external owner decoded the projected payload and refused it. Unlike
-    /// the other faults this one is determinate — the effect did not happen —
-    /// but it is still not completion, so it classifies as unresolved.
-    PayloadRejected,
     UnsupportedProtocolVersion(worth_foundational::facade::BoundaryProtocolUnsupportedVersion),
     UnknownProviderOutcome,
     /// A transport response was observed, but its causal observation could not

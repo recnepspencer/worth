@@ -89,7 +89,7 @@ impl PreparedRelatedLookup<'_> {
 /// The lookup shape this request is bound to, holding its definition by shared
 /// ownership so the ordering fields outlive the subsystem read that found them.
 pub(super) struct RelatedLookupContract<'request> {
-    definition: std::sync::Arc<crate::indexes::data::DerivedIndexDefinition>,
+    definition: crate::indexes::RetainedDerivedIndexDefinition,
     relation_kind: crate::identity::data::KindId,
     parent_endpoint: RelatedEntityEndpoint,
     child_kind: crate::identity::data::KindId,

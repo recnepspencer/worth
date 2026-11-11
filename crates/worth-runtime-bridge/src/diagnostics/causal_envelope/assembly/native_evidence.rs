@@ -2,9 +2,8 @@
 use super::super::{
     compose_bridge_causal_envelope_evidence_identity as compose,
     digest_basis::BridgeCausalEnvelopeDigestArtifact as Artifact, evidence_part, shape_part,
-    value_part, BridgeCausalEnvelopeDenial, BridgeCausalEvidenceFamily as Family,
-    BridgeCausalEvidenceOwner as Owner, BridgeCausalEvidenceReference as Reference,
-    BridgeCausalEvidenceReferenceIdentity as Identity,
+    value_part, BridgeCausalEvidenceFamily as Family, BridgeCausalEvidenceOwner as Owner,
+    BridgeCausalEvidenceReference as Reference, BridgeCausalEvidenceReferenceIdentity as Identity,
 };
 use crate::conditional_execution::BridgeConditionalCausalObservation;
 use crate::identity::BridgeIdentityEvidence;

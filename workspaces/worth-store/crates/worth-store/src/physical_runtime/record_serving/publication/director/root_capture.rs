@@ -21,6 +21,19 @@ impl RecordPublicationDirector {
         self.root_owner.snapshot().0
     }
 
+    pub(in crate::physical_runtime) fn try_capture_read_root(
+        &self,
+        request: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> Result<
+        (
+            DurablePhysicalRootManifest,
+            crate::physical_runtime::stability::PhysicalRootReadLease,
+        ),
+        crate::physical_runtime::PhysicalCheckpointReadProtectionDenial,
+    > {
+        self.root_owner.try_capture_read_root(request)
+    }
+
     pub(in crate::physical_runtime) fn capture_read_root(
         &self,
     ) -> Result<

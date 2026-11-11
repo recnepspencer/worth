@@ -3,6 +3,8 @@
 //! and never performs fallible allocation.
 
 use super::{certificate_capacity, release_capacity, PhysicalCurrentRootOwner};
+#[cfg(feature = "recovery-runtime-owner")]
+use crate::physical_runtime::record_serving::RecoveredReleaseCustody;
 use crate::physical_runtime::record_serving::VerifiedRecoveredCheckpointCustody;
 #[cfg(feature = "recovery-runtime-owner")]
 use crate::physical_runtime::recovery_residency::StoreRejoinResidentLedger;
@@ -31,17 +33,18 @@ impl PreparedRecoveredCheckpointCustody {
         resident
             .retain(std::mem::size_of::<PreparedCheckpointCustodyState>() as u64)
             .map_err(Denial::Resident)?;
-        let (head_v2, no_release, pending, effective, historical, tier) =
-            source.seal().verified_basis();
-        let selected_root = head_v2
-            .map(|claim| claim.selected_root())
-            .or_else(|| no_release.map(|claim| claim.selected_root()))
-            .or_else(|| pending.and_then(|claim| claim.published_root()))
-            .or_else(|| historical.map(|claim| claim.selected_root()))
-            .ok_or(Denial::SelectedFactMismatch)?
-            .clone();
-        let release_ledger = match (head_v2, no_release, pending, historical) {
-            (Some(verified), None, None, None) => {
+        let release = source.seal().release_custody();
+        let tier = source.seal().tier_custody();
+        let selected_root = match release {
+            RecoveredReleaseCustody::HeadV2(claim) => Some(claim.selected_root()),
+            RecoveredReleaseCustody::NoRelease(claim) => Some(claim.selected_root()),
+            RecoveredReleaseCustody::PendingWal { claim, .. } => claim.published_root(),
+            RecoveredReleaseCustody::OrderedHistorical { claim, .. } => Some(claim.selected_root()),
+        }
+        .ok_or(Denial::SelectedFactMismatch)?
+        .clone();
+        let release_ledger = match release {
+            RecoveredReleaseCustody::HeadV2(verified) => {
                 release_capacity::ReleaseLedgerState::from_verified_v2_source(
                     verified.accumulator_v2(),
                     verified
@@ -51,24 +54,19 @@ impl PreparedRecoveredCheckpointCustody {
                     resident,
                 )?
             }
-            (None, Some(verified), None, None) => {
+            RecoveredReleaseCustody::NoRelease(verified) => {
                 release_capacity::ReleaseLedgerState::from_verified_no_release(verified)
             }
-            (None, None, Some(verified), None) => {
+            RecoveredReleaseCustody::PendingWal { claim, effective } => {
                 release_capacity::ReleaseLedgerState::from_verified_pending_wal(
-                    verified,
-                    effective.ok_or(Denial::SelectedFactMismatch)?,
-                    resident,
+                    claim, effective, resident,
                 )?
             }
-            (None, None, None, Some(verified)) => {
+            RecoveredReleaseCustody::OrderedHistorical { effective, claim } => {
                 release_capacity::ReleaseLedgerState::from_verified_ordered_historical(
-                    verified,
-                    effective.ok_or(Denial::SelectedFactMismatch)?,
-                    resident,
+                    claim, effective, resident,
                 )?
             }
-            _ => return Err(Denial::SelectedFactMismatch),
         };
         let checkpoint_custody = match tier {
             Some(verified) => {
@@ -124,7 +122,7 @@ impl PhysicalCurrentRootOwner {
         } = *recovered.backing;
         let mut state = self.lock_publication_state();
         assert_eq!(selected_root, state.current_root);
-        if let Some(tier) = source.seal().verified_basis().5 {
+        if let Some(tier) = source.seal().tier_custody() {
             assert_eq!(tier.free_header(), &state.free_space);
         }
         // Drop the old proof backing only after its conversion has completed.

@@ -40,13 +40,13 @@ impl RelationalDurableMedium for UnusedMedium {
     ) -> Result<RelationalBranchTransitionArtifact, RelationalDurableTransitionReadFailure> {
         panic!("no historical medium read")
     }
-    fn publish(&self, _: &RelationalCanonicalCommitArtifact) -> RelationalDurablePublication {
+    fn publish(&self, _: &RelationalCanonicalCommitArtifact) -> DurablePublicationFate<String> {
         panic!("no unsupported commit publication")
     }
     fn publish_transition(
         &self,
         _: &RelationalBranchTransitionArtifact,
-    ) -> RelationalDurablePublication {
+    ) -> DurablePublicationFate<String> {
         panic!("no unsupported transition publication")
     }
 }

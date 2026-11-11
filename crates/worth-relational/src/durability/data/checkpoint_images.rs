@@ -159,9 +159,10 @@ pub struct DurableBranchRootImage {
 }
 
 impl DurableBranchRootImage {
-    // Version 4 binds native field-revision provenance into each arena image.
-    // Earlier descriptors cannot be readmitted under the new commitment grammar.
-    pub(crate) const CURRENT_FORMAT_VERSION: u16 = 5;
+    // Version 6 binds the complete Original v4 payload projection together with
+    // both parents' current schema, index and field-revision provenance.
+    // Earlier descriptors are refused before readmission, never reinterpreted.
+    pub(crate) const CURRENT_FORMAT_VERSION: u16 = 6;
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
@@ -209,38 +210,7 @@ pub(crate) struct DurablePendingRecordReservation {
     pub(crate) origin: DurableRecordReservationOrigin,
 }
 
-#[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(deny_unknown_fields)]
-pub(crate) struct DurableRecordIdentityState {
-    pub(crate) schema_version: u16,
-    #[serde(default)]
-    pub(crate) generation_high_water: Vec<DurableRecordGenerationHighWater>,
-    #[serde(default)]
-    pub(crate) reusable_slots: Vec<DurableReusableRecordSlot>,
-    #[serde(default)]
-    pub(crate) append_frontiers: Vec<DurableRecordSlotFrontier>,
-    #[serde(default)]
-    pub(crate) pending_reservations: Vec<DurablePendingRecordReservation>,
-}
-
-impl DurableRecordIdentityState {
-    pub(crate) const CURRENT_SCHEMA_VERSION: u16 = 2;
-
-    pub(crate) fn current(
-        generation_high_water: Vec<DurableRecordGenerationHighWater>,
-        reusable_slots: Vec<DurableReusableRecordSlot>,
-        append_frontiers: Vec<DurableRecordSlotFrontier>,
-        pending_reservations: Vec<DurablePendingRecordReservation>,
-    ) -> Self {
-        Self {
-            schema_version: Self::CURRENT_SCHEMA_VERSION,
-            generation_high_water,
-            reusable_slots,
-            append_frontiers,
-            pending_reservations,
-        }
-    }
-}
+pub(crate) use super::record_identity_image::DurableRecordIdentityState;
 
 pub(crate) fn branch_root_partition_image_digest(
     _lane: &crate::storage::substrate::maintenance::ReconstructionLane<'_>,
@@ -297,11 +267,18 @@ pub(crate) fn branch_root_image_digest(
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct DurableCheckpoint {
+    pub(crate) recorded_components:
+        BTreeMap<CommitId, Vec<crate::branch::RelationalBranchBasisDescriptor>>,
+    pub(crate) retained_empty_components: Vec<super::RelationalCheckpointEmptyComponent>,
     pub(crate) root_kind_images:
         BTreeMap<CommitId, crate::storage::residency::CheckpointRegionKindImages>,
     pub(crate) mirror_kind_images: crate::storage::residency::CheckpointRegionKindImages,
     pub coverage: CheckpointCoverage,
-    pub(crate) directory: Option<std::sync::Arc<super::RelationalCheckpointDirectory>>,
+    /// Deferred selected-medium restoration owns its original cold directory.
+    pub(crate) directory: Option<super::NativeCheckpointDirectoryEdge>,
+    /// Eager/Embedded restoration retains ORIGINAL canonical bytes as DATA.
+    /// Empty materialized images are valid and cannot select the cold path.
+    pub(crate) canonical_directory: Option<super::NativeCheckpointDirectoryEdge>,
     pub(crate) commit_descriptors:
         BTreeMap<CommitId, crate::branch::RelationalBranchRootDescriptor>,
     pub(crate) mirror_schema_digest: Option<[u8; 32]>,
@@ -323,6 +300,7 @@ pub struct DurableCheckpoint {
     pub aspect_contracts: Vec<PortableAspectContract>,
     pub lineage: LineageCheckpointArtifact,
     pub(crate) index_generation_frontier: u64,
+    pub(crate) index_definition_frontier: u64,
     pub index_definitions: Vec<DerivedIndexDefinition>,
     pub derived_index_artifacts: DerivedIndexArtifacts,
     pub(crate) derived_index_checkpoint:
@@ -346,7 +324,7 @@ mod tests {
         let host_request = crate::test_execution_policy::serial_request();
         let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
-        let runtime = durable_runtime_with_test_schema();
+        let runtime = runtime_with_test_schema();
         create_entity(execution, &runtime, "streamed-image-seed");
         let sibling = create_branch_from_main(&runtime, "streamed-image-sibling");
         let changed =

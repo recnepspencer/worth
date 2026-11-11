@@ -126,6 +126,7 @@ fn an_outstanding_approval_requires_migration_before_adoption() {
     let main = application.current_world();
     for choices in [
         worth_query_host::facade::primary_graph::WorthQueryWorkflowDispositions::carry_compatible(),
+        worth_query_host::facade::primary_graph::WorthQueryWorkflowDispositions::retire_and_cancel_unperformed(),
         worth_query_host::facade::primary_graph::WorthQueryWorkflowDispositions::new()
             .definition(&definition, WorthQueryWorkflowDefinitionDisposition::Carry)
             .instance(&instance, WorthQueryWorkflowInstanceDisposition::Cancel),
@@ -201,4 +202,87 @@ fn a_cancelled_instance_names_its_cancellation_to_every_request() {
         ),
         "{cancellation:?}"
     );
+}
+
+#[test]
+fn a_total_retirement_policy_cancels_unperformed_instances_and_retires_their_definition() {
+    let mut application =
+        super::super::document_retention_model::host::publish_workflow_on_first_program();
+    let definition = match publish_definition(
+        &application,
+        reviewed_document_definition("approved"),
+        WorkflowDefinitionExpectedPredecessor::Absent,
+        98_300,
+    )
+    .unwrap()
+    {
+        WorkflowDefinitionPublicationOutcome::Published(performed) => {
+            performed.definition().clone()
+        }
+        other => panic!("definition must publish: {other:?}"),
+    };
+    let instance = match start_instance(&application, definition.clone(), 98_301).unwrap() {
+        WorkflowInstanceStartOutcome::Started(performed) => performed.instance().clone(),
+        other => panic!("instance must start: {other:?}"),
+    };
+    support_workflow_program::<RetentionProgramP1>(&mut application);
+    let branch = application.current_world();
+    publish_adoption(&application, prepare_second_program_adoption(&application, branch,
+        Some(worth_query_host::facade::primary_graph::WorthQueryWorkflowDispositions::retire_and_cancel_unperformed())));
+    let refusal = advance_instance(&application, instance.clone(), 98_302)
+        .expect_err("a cancelled instance cannot advance");
+    assert!(
+        matches!(refusal, WorthQueryWorkflowAdvancePreparationDenial::TransitionPreparation(
+        WorkflowTransitionPreparationDenial::Attempt(ref attempt)) if attempt.kind() == WorthQueryApplicationAttemptDenialKind::WorkflowInstanceCancelled)
+    );
+    let refusal = propose_instance(&application, instance.clone(), 98_305)
+        .expect_err("a cancelled instance cannot accept a proposal");
+    assert!(
+        matches!(&refusal, WorthQueryWorkflowProposalPreparationDenial::ProposalPreparation(
+        WorkflowProposalPreparationDenial::Attempt(attempt)) if attempt.kind() == WorthQueryApplicationAttemptDenialKind::WorkflowInstanceCancelled),
+        "{refusal:?}"
+    );
+    let refusal = cancel_instance(&application, instance, 98_306)
+        .expect_err("the adopted cancellation is already terminal");
+    assert!(
+        matches!(&refusal, WorthQueryWorkflowInstancePreparationDenial::InstancePreparation(
+        WorkflowInstancePreparationDenial::Attempt(attempt)) if attempt.kind() == WorthQueryApplicationAttemptDenialKind::WorkflowInstanceCancelled),
+        "{refusal:?}"
+    );
+    let stale = publish_definition(
+        &application,
+        reviewed_document_definition("reopened"),
+        WorkflowDefinitionExpectedPredecessor::Published(definition.clone()),
+        98_303,
+    )
+    .expect("the prior definition is no longer current");
+    assert!(matches!(
+        stale,
+        WorkflowDefinitionPublicationOutcome::Application(
+            worth_query_host::facade::primary_graph::WorthQueryApplicationUncommitted::Stale(_)
+        )
+    ));
+    let reopened = match publish_definition(
+        &application,
+        reviewed_document_definition("reopened"),
+        WorkflowDefinitionExpectedPredecessor::Absent,
+        98_304,
+    )
+    .expect("the retired lineage has no current predecessor")
+    {
+        WorkflowDefinitionPublicationOutcome::Published(performed) => {
+            performed.definition().clone()
+        }
+        other => panic!("the lineage must reopen under P1: {other:?}"),
+    };
+    assert_ne!(reopened.entity_id(), definition.entity_id());
+    match start_instance(&application, reopened.clone(), 98_307)
+        .expect("the current P1 definition starts")
+    {
+        WorkflowInstanceStartOutcome::Started(started) => assert_eq!(
+            started.instance().definition_entity_id(),
+            reopened.entity_id()
+        ),
+        other => panic!("the current replacement must start normally: {other:?}"),
+    }
 }

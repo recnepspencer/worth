@@ -81,7 +81,8 @@ impl crate::mvcc::ValidatedRelationalProposal {
     /// The real scoped assembly has already bound each admitted writer's
     /// publication. An outer authored origin must not bind it a second time.
     pub fn has_coupled_authored_publication(&self) -> bool {
-        self.required_output_publication
+        self.state
+            .required_output_publication
             .as_ref()
             .is_some_and(|admission| {
                 matches!(
@@ -96,15 +97,16 @@ impl crate::mvcc::ValidatedRelationalProposal {
         installed: &RelationalInstalledApplicationPublicationAuthority,
         publication: RequiredOutputPublication,
     ) -> Result<Self, TransactionCommitError> {
-        if self.required_output_publication.is_some()
+        if self.state.required_output_publication.is_some()
             || !publication.admitted_by(installed)
             || self
+                .state
                 .validation_input
                 .basis()
                 .descriptor()
                 .runtime_instance_id()
                 != installed.runtime_instance_id
-            || self.custom_invariant_generation != installed.custom_invariant_generation
+            || self.state.custom_invariant_generation != installed.custom_invariant_generation
         {
             return Err(origin_denial(
                 "required-output publication has a foreign or repeated installed owner",
@@ -113,9 +115,10 @@ impl crate::mvcc::ValidatedRelationalProposal {
         if !installed.source_scope_ownership.is_empty()
             && let Some(source) = publication.ownership_subject(installed)
         {
-            installed.require_current_ownership_storage(self.validation_input.basis(), source)?;
+            installed
+                .require_current_ownership_storage(self.state.validation_input.basis(), source)?;
         }
-        self.required_output_publication = Some(RequiredOutputPublicationAdmission {
+        self.state.required_output_publication = Some(RequiredOutputPublicationAdmission {
             installed: installed.clone(),
             publication,
         });
@@ -193,7 +196,10 @@ pub(crate) fn native_meaning_fixture(family: &str) -> RequiredOutputPublicationM
             0,
             1,
         ),
-        source_partition: [0; 32],
-        source_epoch: [0; 32],
+        source_partition: worth_foundational::CanonicalDigestId::new([0; 32]),
+        source_epoch: worth_foundational::CanonicalDigestId::new([0; 32]),
     }
 }
+#[cfg(test)]
+#[path = "application_publication_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;

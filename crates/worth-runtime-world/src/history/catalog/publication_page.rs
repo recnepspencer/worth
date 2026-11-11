@@ -1,4 +1,5 @@
 //! Bounded read-only traversal of canonical performed publication envelopes.
+mod close_admission;
 
 use std::num::NonZeroUsize;
 use std::ops::Bound;
@@ -25,10 +26,10 @@ pub struct RuntimeWorldPublicationCursor {
 /// Owner-scoped immutable frontier for a bounded reconstruction pass.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct RuntimeWorldPublicationFrontier {
-    owner: RuntimeWorldOwnerIdentity,
-    catalog_affinity: usize,
-    revision: u64,
-    upper_bound: Option<CompositeCommitIdentity>,
+    pub(super) owner: RuntimeWorldOwnerIdentity,
+    pub(super) catalog_affinity: usize,
+    pub(super) revision: u64,
+    pub(super) upper_bound: Option<CompositeCommitIdentity>,
 }
 
 /// One committed publication retained by history, independent of live heads.
@@ -102,13 +103,17 @@ impl CompositeHistoryCatalog {
         clippy::disallowed_methods,
         reason = "Addresses serve live allocation lookup and custody; canonical order uses declared identity"
     )]
+    pub(super) fn allocation_affinity(&self) -> usize {
+        Arc::as_ptr(&self.state) as usize
+    }
+
     pub(crate) fn performed_publication_page(
         &self,
         after: Option<&RuntimeWorldPublicationCursor>,
         maximum: NonZeroUsize,
     ) -> Result<RuntimeWorldPublicationPage, CompositeHistoryCatalogDenial> {
         let state = lock_state(&self.state);
-        let affinity = Arc::as_ptr(&self.state) as usize;
+        let affinity = self.allocation_affinity();
         let frontier = match after {
             Some(cursor) => {
                 validate_frontier(&state, affinity, &cursor.frontier)?;
@@ -143,13 +148,17 @@ impl CompositeHistoryCatalog {
             examined += 1;
             last = Some(identity.clone());
             let entry = state.entries.get(identity).and_then(|slot| slot.get());
-            match entry
-                .and_then(|entry| entry.publication.as_ref().map(|envelope| (entry, envelope)))
-            {
+            match entry.and_then(|entry| {
+                entry
+                    .publication
+                    .as_ref()
+                    .and_then(|evidence| evidence.live())
+                    .map(|envelope| (entry, envelope))
+            }) {
                 Some((entry, envelope)) if envelope.facts().is_some() => {
                     lock_index(&state.reachability).increment_direct_protection(identity)?;
                     rows.push(RuntimeWorldPublicationRow {
-                        commit: Arc::clone(&entry.commit),
+                        commit: entry.shared_commit(),
                         envelope: Arc::clone(envelope),
                         _protection: CompositeHistoryProtectionObligation::new(
                             Arc::clone(&state.reachability),
@@ -158,7 +167,14 @@ impl CompositeHistoryCatalog {
                         ),
                     });
                 }
-                Some(_) | None if entry.is_none_or(|entry| entry.publication.is_some()) => {
+                Some(_) | None
+                    if entry.is_none_or(|entry| {
+                        entry
+                            .publication
+                            .as_ref()
+                            .is_some_and(|evidence| evidence.live().is_some())
+                    }) =>
+                {
                     pending = true
                 }
                 _ => {} // Root commits have no publication envelope.
@@ -184,17 +200,13 @@ impl CompositeHistoryCatalog {
         })
     }
 
-    #[expect(
-        clippy::disallowed_methods,
-        reason = "Addresses serve live allocation lookup and custody; canonical order uses declared identity"
-    )]
     pub(crate) fn publication_frontier_is_current(
         &self,
         frontier: &RuntimeWorldPublicationFrontier,
     ) -> Result<bool, CompositeHistoryCatalogDenial> {
         let state = lock_state(&self.state);
         validate_owner(&state, frontier.owner)?;
-        if frontier.catalog_affinity != Arc::as_ptr(&self.state) as usize {
+        if frontier.catalog_affinity != self.allocation_affinity() {
             return Err(CompositeHistoryCatalogDenial::ForeignInspectionCursor);
         }
         Ok(frontier.revision != u64::MAX
@@ -215,4 +227,10 @@ fn validate_frontier(
         return Err(CompositeHistoryCatalogDenial::InspectionFrontierChanged);
     }
     Ok(())
+}
+
+impl RuntimeWorldPublicationFrontier {
+    pub(crate) fn belongs_to(&self, owner: RuntimeWorldOwnerIdentity) -> bool {
+        self.owner == owner
+    }
 }

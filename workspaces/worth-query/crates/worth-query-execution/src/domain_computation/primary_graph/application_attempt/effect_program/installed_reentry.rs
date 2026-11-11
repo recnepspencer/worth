@@ -33,6 +33,47 @@ impl<Schema, Operation, Input, Scope>
     }
 }
 
+/// Opaque entry refusal. Its causes cannot contain a landed receipt or cleanup
+/// outcome; only real entry validation and advancement construct this value.
+#[derive(Debug)]
+pub struct WorthQueryCommitEntryRefusal {
+    cause: CommitEntryCause,
+}
+#[derive(Debug)]
+enum CommitEntryCause {
+    Installation(WorthQueryApplicationCommitDenial),
+    Authorization(WorthQueryOperationAuthorizationDenial),
+    Advancement(crate::domain_computation::primary_graph::WorthQueryAdvancementDenial),
+}
+impl WorthQueryCommitEntryRefusal {
+    fn installation(cause: WorthQueryApplicationCommitDenial) -> Self {
+        Self {
+            cause: CommitEntryCause::Installation(cause),
+        }
+    }
+    fn authorization(cause: WorthQueryOperationAuthorizationDenial) -> Self {
+        Self {
+            cause: CommitEntryCause::Authorization(cause),
+        }
+    }
+    pub(in crate::domain_computation::primary_graph) fn from_advancement(
+        cause: crate::domain_computation::primary_graph::WorthQueryAdvancementDenial,
+    ) -> Self {
+        Self {
+            cause: CommitEntryCause::Advancement(cause),
+        }
+    }
+    pub(in crate::domain_computation) fn into_outcome(self) -> WorthQueryApplicationCommitOutcome {
+        match self.cause {
+            CommitEntryCause::Installation(cause) => {
+                WorthQueryApplicationCommitOutcome::Denied(cause)
+            }
+            CommitEntryCause::Authorization(cause) => current_authority_outcome(cause),
+            CommitEntryCause::Advancement(cause) => cause.into_commit_outcome(),
+        }
+    }
+}
+
 impl WorthQueryApplicationRuntimeCore {
     pub(in crate::domain_computation::primary_graph) fn validate_commit_program(
         &self,
@@ -40,34 +81,39 @@ impl WorthQueryApplicationRuntimeCore {
         core: &WorthQueryAdmittedOperation,
         tag: &BrandTag,
         binding: &ApplicationSchemaBindingIdentity,
-    ) -> Result<(), WorthQueryApplicationCommitOutcome> {
+    ) -> Result<(), WorthQueryCommitEntryRefusal> {
+        core.refuse_stale_home_authority(self.product_runtime.owner.owner_identity())
+            .map_err(WorthQueryCommitEntryRefusal::authorization)?;
         self.validate_commit_phase(phase)?;
         self.validate_commit_installation(core, tag, binding)
-            .map_err(WorthQueryApplicationCommitOutcome::Denied)?;
+            .map_err(WorthQueryCommitEntryRefusal::installation)?;
         core.validate_current_authority()
-            .map_err(current_authority_outcome)
+            .map_err(WorthQueryCommitEntryRefusal::authorization)
     }
     pub(in crate::domain_computation::primary_graph) fn validate_commit_lapse_in_advancement(
         &self,
         phase: &WorthQueryAdvancementPhase<'_>,
         core: &WorthQueryAdmittedOperation,
-    ) -> Result<(), WorthQueryApplicationCommitOutcome> {
+    ) -> Result<(), WorthQueryCommitEntryRefusal> {
+        core.refuse_stale_home_authority(self.product_runtime.owner.owner_identity())
+            .map_err(WorthQueryCommitEntryRefusal::authorization)?;
         self.validate_commit_phase(Some(phase))?;
         core.validate_current_authority()
-            .map_err(current_authority_outcome)
+            .map_err(WorthQueryCommitEntryRefusal::authorization)
     }
     fn validate_commit_phase(
         &self,
         phase: Option<&WorthQueryAdvancementPhase<'_>>,
-    ) -> Result<(), WorthQueryApplicationCommitOutcome> {
+    ) -> Result<(), WorthQueryCommitEntryRefusal> {
         if let Some(phase) = phase {
             phase
                 .execution_request_for(&self.product_runtime)
                 .map_err(|cause| {
-                    crate::domain_computation::primary_graph::WorthQueryAdvancementDenial::from(
-                        cause,
+                    WorthQueryCommitEntryRefusal::from_advancement(
+                        crate::domain_computation::primary_graph::WorthQueryAdvancementDenial::from(
+                            cause,
+                        ),
                     )
-                    .into_commit_outcome()
                 })?;
         }
         Ok(())

@@ -8,3 +8,7 @@ pub(crate) fn serial_request() -> SerialRequest {
         None,
     )
 }
+
+pub(crate) fn serial_request_with_memory(memory: SerialMemoryBudget) -> SerialRequest {
+    SerialRequest::from_memory(memory, CancellationSource::new().token(), None)
+}

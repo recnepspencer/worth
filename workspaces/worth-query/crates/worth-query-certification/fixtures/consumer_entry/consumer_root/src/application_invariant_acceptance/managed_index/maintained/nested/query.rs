@@ -131,10 +131,7 @@ impl<Q: ApplicationQueryMarkerIdentity<Catalog>> WorthQueryApplicationProjection
     }
 }
 
-#[derive(Clone, Debug, worth_foundational::facade::WorthValue)]
-pub struct Probe {
-    pub prefix: String,
-}
+pub use crate::application_invariant_acceptance::managed_index::prefix_probe::Probe;
 worth_query_value_binding!(pub ProbeBinding for Probe {
     identity: "nested-catalog.prefix-probe.v1", scalar: String,
     canonical: ValueDecodeBounds::new(2048, 1024, 8, 8),

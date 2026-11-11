@@ -1,5 +1,4 @@
 use super::encoding::{json, json_length, FactBytes};
-use std::sync::Arc;
 
 use worth_foundational::facade::AspectValue;
 use worth_relational::facade::indexes::{DerivedIndexDefinition, DerivedIndexId, DerivedIndexKind};
@@ -90,14 +89,16 @@ pub(super) fn decode(cursor: &mut CheckpointCursor<'_>) -> Result<Fact, String> 
         }
         candidates.push(candidate);
     }
-    let definition = Arc::new(DerivedIndexDefinition {
-        index_id,
-        name,
-        kind: DerivedIndexKind::EntityField {
-            field_locator: locator.clone(),
+    let definition = worth_relational::facade::indexes::RetainedDerivedIndexDefinition::from_owned(
+        DerivedIndexDefinition {
+            index_id,
+            name,
+            kind: DerivedIndexKind::EntityField {
+                field_locator: locator.clone(),
+            },
+            branch_scoped,
         },
-        branch_scoped,
-    });
+    );
     Ok(Fact::IndexedEntitySelection {
         index_id,
         definition,
@@ -125,14 +126,17 @@ mod tests {
         );
         Fact::IndexedEntitySelection {
             index_id: DerivedIndexId(4),
-            definition: Arc::new(DerivedIndexDefinition {
-                index_id: DerivedIndexId(4),
-                name: "predicate-index".to_owned(),
-                kind: DerivedIndexKind::EntityField {
-                    field_locator: locator.clone(),
-                },
-                branch_scoped: false,
-            }),
+            definition:
+                worth_relational::facade::indexes::RetainedDerivedIndexDefinition::from_owned(
+                    DerivedIndexDefinition {
+                        index_id: DerivedIndexId(4),
+                        name: "predicate-index".to_owned(),
+                        kind: DerivedIndexKind::EntityField {
+                            field_locator: locator.clone(),
+                        },
+                        branch_scoped: false,
+                    },
+                ),
             entity_kind: KindId(2),
             locator,
             value: AspectValue::UInt64(u64::MAX),

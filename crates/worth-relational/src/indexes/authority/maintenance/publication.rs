@@ -63,7 +63,7 @@ impl PreparedRefresh {
                 generation.source_branch_id.0.len() + generation.applicability.branch_id.0.len();
             work.prepare(width as u64 + 1, width as u64)?;
         }
-        let publication = runtime
+        let mut publication = runtime
             .indexes
             .prepare_generation_batch(generations.clone(), self.basis.take(), |units, bytes| {
                 work.prepare(units, bytes)
@@ -75,7 +75,15 @@ impl PreparedRefresh {
                 }
             })?;
         // All work, allocation, generation issuance and binding quotes precede effects.
-        publication.publish();
+        publication
+            .admit_actual_geometry(|units, bytes| work.prepare(units, bytes))
+            .map_err(|stop| match stop {
+                SelectedIndexGenerationAdmissionStop::Admission(stop) => stop,
+                SelectedIndexGenerationAdmissionStop::AccountingOverflow => {
+                    Denial::WorkBudgetExceeded
+                }
+            })?;
+        publication.publish_admitted();
         generations.extend(self.reused);
         generations.sort_unstable_by_key(|generation| generation.index_id);
         Ok(generations)

@@ -8,7 +8,7 @@ impl<S: ApplicationSchema> SourceQueryReaderAccess<'_, S> {
     pub(in crate::domain_computation::primary_graph) fn predecessor_control(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
-        native: &mut RelationalRuntime,
+        native: &RelationalRuntime,
     ) -> Result<(), Denial> {
         if let Some(cause) = self.predecessor_refused.borrow().as_ref() {
             return Err(cause.clone());
@@ -34,7 +34,7 @@ impl<S: ApplicationSchema> SourceQueryReaderAccess<'_, S> {
     pub(in crate::domain_computation::primary_graph) fn prepare_predecessor<O, I>(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
-        native: &mut RelationalRuntime,
+        native: &RelationalRuntime,
         operation: ApplicationOperationRef<S, O, I>,
         scope: worth_relational::facade::identity::EntityId,
         partition: [u8; 32],
@@ -96,7 +96,7 @@ impl<S: ApplicationSchema> SourceQueryReaderAccess<'_, S> {
     }
     pub(in crate::domain_computation::primary_graph) fn record_predecessor_read(
         &self,
-        read: crate::domain_computation::primary_graph::application_contribution::producer::predecessor_reads::HistoricalProducerRead,
+        read: crate::domain_computation::primary_graph::application_contribution::producer::predecessor_reads::WorthQueryHistoricalProducerRead,
     ) {
         self.predecessor
             .as_ref()

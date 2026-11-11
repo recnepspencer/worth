@@ -73,7 +73,7 @@ impl OwnedCodecRetirementClosure {
                 *id,
                 *kind,
                 member.birth_producer.as_str(),
-                &member.birth_dependency,
+                member.birth_dependency.bytes(),
                 member.posture,
                 origin.publication.predecessor().map_or(
                     crate::mvcc::RequiredOutputRolePosture::Create,
@@ -88,7 +88,7 @@ impl OwnedCodecRetirementClosure {
                 *id,
                 *kind,
                 origin.producer.as_str(),
-                &origin.dependency_identity,
+                origin.dependency_identity.bytes(),
             )
         })
     }

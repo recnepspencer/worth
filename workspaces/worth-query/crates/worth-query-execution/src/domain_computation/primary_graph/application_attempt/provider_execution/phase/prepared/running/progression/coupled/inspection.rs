@@ -13,6 +13,9 @@ struct CoupledWriterCustody {
     cleanup: WorthQueryApplicationMutationCleanupOwner,
     lease: WorthQueryApplicationSnapshotLease,
     request: worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope,
+    original_completion:
+        crate::domain_computation::primary_graph::provider::OriginalCompletionReceiver,
+    completion_storage: super::super::super::completion_storage::ApplicationCommitCompletionStorage,
 }
 pub(in crate::domain_computation::primary_graph) struct InspectedCoupledWriter<'run> {
     custody: CoupledWriterCustody,
@@ -53,6 +56,8 @@ where
         returned,
         cleanup,
         lease,
+        original_completion,
+        completion_storage,
     } = registered;
     let authority = typed
         .downcast_ref::<CoupledWriterAdmission<S, B>>()
@@ -69,11 +74,12 @@ where
         Ok(inspected) => inspected,
         Err(outcome) => {
             drop(typed);
-            return Err(progressed::finish_application_commit(
+            return Err(progressed::finish_coupled_application_commit(
                 execution,
                 phase,
                 application,
-                WorthQueryProgressedApplicationCommit {
+                completion_storage.complete(WorthQueryProgressedApplicationCommit {
+                    original_completion,
                     outcome,
                     workflow_settlement_publication: None,
                     lease,
@@ -82,7 +88,7 @@ where
                         .expect("closed inspection returned its actual run"),
                     cleanup,
                     request,
-                },
+                }),
             ));
         }
     };
@@ -121,11 +127,12 @@ where
             drop(typed);
             let outcome = WorthQueryProviderProgressionOutcome::Denied(crate::domain_computation::primary_graph::WorthQueryApplicationCommitDenial::invariant_execution_denied(
                 crate::domain_computation::primary_graph::WorthQueryApplicationCommitDenialStage::InvariantExecution, cause));
-            return Err(progressed::finish_application_commit(
+            return Err(progressed::finish_coupled_application_commit(
                 execution,
                 phase,
                 application,
-                WorthQueryProgressedApplicationCommit {
+                completion_storage.complete(WorthQueryProgressedApplicationCommit {
+                    original_completion,
                     outcome,
                     workflow_settlement_publication: None,
                     lease,
@@ -134,7 +141,7 @@ where
                         .expect("discarded inspection returned its actual run"),
                     cleanup,
                     request,
-                },
+                }),
             ));
         }
     };
@@ -148,6 +155,8 @@ where
                 cleanup,
                 lease,
                 request,
+                original_completion,
+                completion_storage,
             },
             inspection,
         },
@@ -210,13 +219,16 @@ impl CoupledWriterCustody {
             cleanup,
             lease,
             request,
+            original_completion,
+            completion_storage,
         } = self;
         drop(typed);
         progressed::finish_coupled_application_commit(
             execution,
             phase,
             application,
-            WorthQueryProgressedApplicationCommit {
+            completion_storage.complete(WorthQueryProgressedApplicationCommit {
+                original_completion,
                 outcome,
                 workflow_settlement_publication: None,
                 lease,
@@ -225,7 +237,7 @@ impl CoupledWriterCustody {
                     .expect("closed coupled protocol returns actual run"),
                 cleanup,
                 request,
-            },
+            }),
         )
     }
 }

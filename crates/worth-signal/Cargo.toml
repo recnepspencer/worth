@@ -22,7 +22,7 @@ test-peak-allocation = []
 [dependencies]
 serde = { version = "1", features = ["derive", "rc"] }
 smallvec = { version = "1", features = ["serde"] }
-serde_json = "1"
+serde_json = { version = "1", features = ["raw_value"] }
 worth-proof = { path = "../worth-proof" }
 worth-foundational = { path = "../worth-foundational" }
 worth-execution = { path = "../worth-execution" }

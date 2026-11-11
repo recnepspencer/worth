@@ -22,6 +22,7 @@ pub(crate) fn select_authored_retirement(
     roles: &[RequiredOutputRoleTarget],
     owned_only: bool,
 ) -> Result<Option<SelectedOutputPublication>, Stop> {
+    let runtime = &crate::history::data::codec_retirement_closure::history_request::RuntimeHistoryRequest::new(runtime, execution);
     let result = execution.in_scope(|lease| {
         ExecutionWorkCeiling::new(execution.work_ceiling()).run_with_checkpoint(
             lease,
@@ -57,7 +58,7 @@ pub(crate) fn select_authored_retirement(
 }
 
 fn select(
-    runtime: &RelationalRuntime,
+    runtime: &crate::history::data::codec_retirement_closure::history_request::RuntimeHistoryRequest<'_, '_, '_>,
     basis: &AdmittedRelationalBranchBasis,
     roles: &[RequiredOutputRoleTarget],
     owned_only: bool,
@@ -67,14 +68,15 @@ fn select(
 ) -> Result<Option<SelectedOutputPublication>, Stop> {
     // The private caller has verified current full-GEN Retire targets at birth.
     let mut next = basis.inner.root.commit_id();
-    let bound = runtime.history.catalog_len();
+    let bound = runtime.runtime.history.catalog_len();
     for _ in 0..bound {
         let Some(commit) = next else { return Ok(None) };
         charge(context, bound.saturating_add(roles.len()))?;
         let envelope = validated_history
             .by_commit(
                 commit,
-                &mut |commit| runtime.history.canonical_envelope(commit),
+                &mut |commit| runtime.commit(commit),
+                &runtime.execution(),
                 context,
             )?
             .ok_or("authored retirement lost selected canonical history")?;
@@ -168,7 +170,7 @@ fn require_complete_membership(
 /// not require the unrelated branch's producer-continuity history.
 fn has_owned_birth(
     execution: &ExecutionRequest<'_, '_>,
-    runtime: &RelationalRuntime,
+    runtime: &crate::history::data::codec_retirement_closure::history_request::RuntimeHistoryRequest<'_, '_, '_>,
     basis: &AdmittedRelationalBranchBasis,
     roles: &[RequiredOutputRoleTarget],
     owned_only: bool,
@@ -179,7 +181,7 @@ fn has_owned_birth(
         publication::patch::data::RecordStructuralChange, storage::overlay::PartitionAccess,
         transactions::data::RecordRef,
     };
-    if basis.descriptor().runtime_instance_id() != runtime.runtime_instance_id()
+    if basis.descriptor().runtime_instance_id() != runtime.runtime.runtime_instance_id()
         || !basis.is_current()
     {
         return Err("authored retirement requires the exact current native basis".into());
@@ -220,7 +222,8 @@ fn has_owned_birth(
         let envelope = validated_history
             .by_version(
                 created,
-                &mut |version| runtime.history.canonical_envelope_for_version(version),
+                &mut |version, context| runtime.version(version, context),
+                &runtime.execution(),
                 context,
             )?
             .ok_or("retirement canonical birth unavailable")?;

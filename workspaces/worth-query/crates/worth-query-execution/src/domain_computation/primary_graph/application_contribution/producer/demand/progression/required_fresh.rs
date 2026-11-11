@@ -51,7 +51,7 @@ where
                     FamilySourceQuery<Schema, Family>,
                 > + 'static,
         FamilySourceQuery<Schema, Family>: 'static,
-        WorthQueryAdmittedOutputDemand<Schema, Family>: Send + Sync,
+        WorthQueryAdmittedOutputDemand<Schema, Family>: Send,
 {
         let execution = phase
             .execution_request_for(&self.runtime.product_runtime)

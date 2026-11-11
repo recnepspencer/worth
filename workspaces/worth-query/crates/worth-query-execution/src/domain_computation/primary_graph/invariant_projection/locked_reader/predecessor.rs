@@ -8,7 +8,7 @@ impl<S: ApplicationSchema> WorthQueryApplicationInvariantProjectionAuthority<S> 
     >(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
-        native: &mut worth_relational::facade::runtime::RelationalRuntime,
+        native: &worth_relational::facade::runtime::RelationalRuntime,
         basis: &worth_relational::facade::branch::AdmittedRelationalBranchBasis,
         maximum_work: Option<usize>,
         projection: impl FnOnce(&mut WorthQueryApplicationInvariantProjectionReader<'_, S>) -> T,

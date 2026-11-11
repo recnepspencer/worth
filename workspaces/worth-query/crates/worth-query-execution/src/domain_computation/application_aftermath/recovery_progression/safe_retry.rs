@@ -108,10 +108,25 @@ pub fn safe_retry_recovery_handle(
                 WorthQueryRecoveryHandleDenialKind::CorrelationMismatch,
             ));
         }
-        if !redispatch.dispatch().is_external_completion() {
-            return Err(WorthQueryRecoveryHandleDenial::new(
-                WorthQueryRecoveryHandleDenialKind::UnresolvedExternalPosture,
-            ));
+        use super::super::WorthQueryExternalDispatchPostureKind as Posture;
+        match redispatch.dispatch().posture().kind() {
+            Posture::Completed => {}
+            Posture::ProvenNoEffect => {
+                let cause = redispatch
+                    .dispatch()
+                    .posture()
+                    .proven_no_effect()
+                    .expect("the no-effect posture retains its cause")
+                    .cause();
+                return Err(WorthQueryRecoveryHandleDenial::new(
+                    WorthQueryRecoveryHandleDenialKind::ProvenNoEffect(cause),
+                ));
+            }
+            Posture::Acknowledged | Posture::Unresolved => {
+                return Err(WorthQueryRecoveryHandleDenial::new(
+                    WorthQueryRecoveryHandleDenialKind::UnresolvedExternalPosture,
+                ));
+            }
         }
         Ok(())
     })();

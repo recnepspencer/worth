@@ -13,6 +13,7 @@ use crate::runtime::{
 /// held ports observe atomic schema/configuration replacement.
 #[derive(Debug, Clone)]
 pub(crate) struct RelationalPreparationOwnerBinding {
+    checkpoint_selection: crate::runtime::RelationalCheckpointManifestSelection,
     configuration: RelationalRuntimeConfigurationBinding,
     history: RelationalPreparationHistory,
     record_identity: RecordIdentitySubsystem,
@@ -31,6 +32,10 @@ pub(crate) struct RelationalPreparationOwnerBinding {
 /// Narrow cloneable state used only for validation and candidate preparation.
 #[derive(Debug, Clone)]
 pub(crate) struct RelationalPreparationRuntime {
+    pub(crate) checkpoint_selection: crate::runtime::RelationalCheckpointManifestSelection,
+    pub(crate) recovered_index_catalog: Option<crate::history::data::CanonicalIndexDefinitionDelta>,
+    pub(crate) recovered_authored_index_writes:
+        Option<crate::history::data::CanonicalAuthoredIndexWrites>,
     pub(crate) current_ownership:
         Option<Arc<crate::publication::ownership::CurrentPublicationRoster>>,
     pub(crate) authored_coupling: Option<Arc<crate::mvcc::BoundAuthoredCoupling>>,
@@ -38,6 +43,11 @@ pub(crate) struct RelationalPreparationRuntime {
     pub(crate) commit_work_budget: Option<crate::execution::RequestWorkBudget>,
     pub(crate) config: Arc<RelationalRuntimeConfig>,
     pub(crate) schema_contract_runtime: Arc<SchemaContractRuntimeSubsystem>,
+    pub(crate) configuration_generation: u64,
+    pub(crate) configuration_epoch: super::RelationalRuntimeConfigurationSnapshot,
+    pub(crate) execution_contracts: Option<Arc<crate::runtime::RelationalRootExecutionContracts>>,
+    pub(crate) execution_registry: Option<crate::branch::RetainedRelationalSchemaRegistry>,
+    pub(crate) home_target: Option<Arc<crate::runtime::AdmittedRelationalHomeProgramTarget>>,
     pub(crate) diagnostics: crate::runtime::RelationalDiagnosticArtifactStore,
     pub(crate) index_definitions: crate::runtime::state::IndexDefinitionReadBinding,
     pub(crate) mirror_residency: crate::runtime::MirrorResidencyDemandBinding,
@@ -58,6 +68,7 @@ impl RelationalPreparationOwnerBinding {
         #[cfg(test)]
         crate::mvcc::split_contacts::binding_capture();
         Self {
+            checkpoint_selection: runtime.durability.checkpoint_selection().clone(),
             configuration: runtime.configuration_binding(),
             history: runtime.history.preparation_binding(),
             record_identity: runtime.record_identity.clone(),
@@ -92,12 +103,22 @@ impl RelationalPreparationOwnerBinding {
         configuration: &crate::runtime::RelationalRuntimeConfigurationSnapshot,
     ) -> RelationalPreparationRuntime {
         RelationalPreparationRuntime {
+            checkpoint_selection: self.checkpoint_selection.clone(),
+            recovered_index_catalog: None,
+            recovered_authored_index_writes: None,
             current_ownership: None,
             authored_coupling: None,
             symbol_references: Arc::default(),
             commit_work_budget: None,
+            configuration_epoch: configuration.clone(),
             config: Arc::clone(&configuration.config),
             schema_contract_runtime: Arc::clone(&configuration.schema_contract_runtime),
+            configuration_generation: configuration
+                .schema_contract_runtime
+                .custom_invariant_generation,
+            execution_contracts: None,
+            execution_registry: None,
+            home_target: None,
             diagnostics: self.diagnostics.clone(),
             index_definitions: self.index_definitions.clone(),
             mirror_residency: self.mirror_residency.clone(),
@@ -263,9 +284,9 @@ impl RelationalPreparationRuntime {
             }
             worth_foundational::FoundationalBranchTarget::Basis(target) => cell
                 .root()
-                .and_then(|root| root.canonical_envelope().cloned())
-                .filter(|envelope| envelope.commit.commit_id.0 == target.selected_commit_id())
-                .map(|envelope| envelope.commit.version_id),
+                .and_then(|root| root.commit_receipt().cloned())
+                .filter(|receipt| receipt.commit_id.0 == target.selected_commit_id())
+                .map(|receipt| receipt.version_id),
         }
     }
 
@@ -332,7 +353,9 @@ impl crate::capabilities::PublicationPolicySource for RelationalPreparationRunti
 
 impl crate::capabilities::SchemaSource for RelationalPreparationRuntime {
     fn schema_registry(&self) -> &crate::schema::data::RelationalSchemaRegistry {
-        &self.config.schema.registry
+        self.execution_registry
+            .as_ref()
+            .map_or(&self.config.schema.registry, |registry| registry.as_ref())
     }
 }
 
@@ -361,3 +384,6 @@ impl crate::capabilities::AspectPlanSource for RelationalPreparationRuntime {
             .get(&kind_id)
     }
 }
+#[cfg(test)]
+#[path = "preparation_runtime_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;

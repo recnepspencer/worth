@@ -8,7 +8,7 @@ use crate::domain_computation::primary_graph::{
 use worth_query_declaration::facade::application_operation::ApplicationEncodedInput;
 
 pub(in crate::domain_computation::primary_graph) struct RecoveredProducerPublication {
-    pub(in crate::domain_computation::primary_graph) receipt: WorthQueryApplicationCommitReceipt,
+    pub(in crate::domain_computation::primary_graph) receipt: crate::domain_computation::primary_graph::WorthQueryRecoveredProducerPublication,
     pub(in crate::domain_computation::primary_graph) change: crate::domain_computation::execution_runtime::product_world::WorthQueryPerformedRelationalProductChange,
     pub(in crate::domain_computation::primary_graph) observation: worth_runtime_world::facade::ProductBranchObservation,
     pub(in crate::domain_computation::primary_graph) retired_carrier: WorthQueryRecoveredProgramOutputSource,
@@ -51,16 +51,16 @@ impl ContinuationState {
                     .expected_product()
                     .lifecycle_incarnation(),
             ),
-            PublicationState::Performed {
-                carrier: Some(carrier),
-                ..
-            } => carrier.product_branch(),
-            PublicationState::Performed { carrier: None, .. } => {
-                return Err(denial(
-                    WorthQueryOutputDemandDenialKind::RetainedBasisUnavailable,
-                    B::IDENTITY,
-                ))
-            }
+            PublicationState::Performed { custody } => custody
+                .carrier
+                .as_ref()
+                .ok_or_else(|| {
+                    denial(
+                        WorthQueryOutputDemandDenialKind::RetainedBasisUnavailable,
+                        B::IDENTITY,
+                    )
+                })?
+                .product_branch(),
             PublicationState::Closed | PublicationState::Closing => {
                 return Err(denial(
                     WorthQueryOutputDemandDenialKind::Closed,
@@ -121,12 +121,15 @@ impl ContinuationState {
             readmission_denial(selected_public::preparation_stop::<S, B>(stop).into_output_denial())
         })?;
         if let PublicationState::Unpublished(recovery) = &self.state {
-            let (outcome, carrier) = runtime
+            let recovery = recovery.clone();
+            let idempotency = self.idempotency;
+            let outcome = runtime
                 .recover_original_producer_publication(
                     phase,
-                    recovery,
+                    &recovery,
                     &prepared.operation,
-                    self.idempotency,
+                    idempotency,
+                    &mut |custody| self.state = PublicationState::Performed { custody },
                 )
                 .map_err(recovery_denial)?;
             match outcome {
@@ -138,18 +141,27 @@ impl ContinuationState {
                     self.state = PublicationState::Unpublished(next);
                     self.prior_cleanup = prior_cleanup_failure;
                 }
-                RecoveryOutcome::Performed(outcome) => {
-                    self.state = PublicationState::Performed { outcome, carrier };
+                RecoveryOutcome::Performed(_) => {
+                    assert!(
+                        matches!(self.state, PublicationState::Performed { .. }),
+                        "genuine performed custody precedes optional publication"
+                    );
                 }
             }
             // World may have moved D. Reenter the new D before keyed receipt
             // inspection and delivery on a later invocation.
             return Ok(None);
         }
-        let PublicationState::Performed { outcome, carrier } = &mut self.state else {
+        let PublicationState::Performed { custody } = &mut self.state else {
             unreachable!()
         };
-        let binding = outcome.bind_original_definition(self.idempotency);
+        let binding = if self.idempotency.conditional_definition_identity().is_none() {
+            self.idempotency.bind_conditional_definition(
+                custody.binding.conditional_definition_identity().as_ref(),
+            )
+        } else {
+            self.idempotency
+        };
         let receipt = runtime
             .resolve_admitted_application_idempotency(phase, &prepared.operation, binding)
             .map_err(|stop| {
@@ -158,42 +170,52 @@ impl ContinuationState {
                     B::IDENTITY,
                 )
             })?;
-        let Resolution::AlreadyCommitted(receipt) = receipt.into_resolution() else {
+        let Resolution::RecoveredCommitted(receipt) = receipt.into_resolution() else {
             return Err(denial(
                 WorthQueryOutputDemandDenialKind::ForeignSource,
                 B::IDENTITY,
             ));
         };
-        let original = crate::domain_computation::primary_graph::application_output_demand::OriginalProducingPublication::for_successor(
-            &execution, self.original_publication.clone(), &receipt,
-        )?;
-        if let Some(failure) = outcome.take_original_cleanup_failure() {
-            self.prior_cleanup = Some(failure);
-            return Ok(None);
+        let facts = &custody.facts;
+        if !facts.matches_original(&receipt) {
+            return Err(denial(
+                WorthQueryOutputDemandDenialKind::ForeignSource,
+                B::IDENTITY,
+            ));
         }
-        if let Some(recovery) = outcome.take_original_cleanup()
+        let receipt =
+            crate::domain_computation::primary_graph::WorthQueryRecoveredProducerPublication {
+                original: receipt,
+                facts: std::sync::Arc::clone(facts),
+            };
+        let original = crate::domain_computation::primary_graph::application_output_demand::OriginalProducingPublication::for_successor(
+            &execution, self.original_publication.clone(), receipt.view(),
+        )?;
+        if let Some(recovery) = custody.cleanup.take()
             && let Err(failure) =
                 runtime.close_product_publication_recovery_in_advancement(phase, recovery)
         {
             self.prior_cleanup = Some(failure);
             return Ok(None);
         }
+        let carrier = &mut custody.carrier;
         let actual = carrier.take().ok_or_else(|| {
             denial(
                 WorthQueryOutputDemandDenialKind::RetainedBasisUnavailable,
                 B::IDENTITY,
             )
         })?;
-        let (change, observation, retired_carrier) = match actual.into_producer_delivery(&receipt) {
-            Ok(parts) => parts,
-            Err(actual) => {
-                *carrier = Some(actual);
-                return Err(denial(
-                    WorthQueryOutputDemandDenialKind::ForeignSource,
-                    B::IDENTITY,
-                ));
-            }
-        };
+        let (change, observation, retired_carrier) =
+            match actual.into_producer_delivery(receipt.view().committed_product_publication()) {
+                Ok(parts) => parts,
+                Err(actual) => {
+                    *carrier = Some(actual);
+                    return Err(denial(
+                        WorthQueryOutputDemandDenialKind::ForeignSource,
+                        B::IDENTITY,
+                    ));
+                }
+            };
         self.state = PublicationState::Closed;
         Ok(Some(RecoveredProducerPublication {
             receipt,
@@ -245,6 +267,9 @@ fn recovery_denial(stop: RecoveryDenial) -> WorthQueryOutputDemandDenial {
             WorthQueryOutputDemandDenialKind::RetentionBudgetExceeded
         }
         RecoveryDenial::ProviderBusy => WorthQueryOutputDemandDenialKind::SchedulingDeferred,
+        RecoveryDenial::Bridge(cause) => {
+            WorthQueryOutputDemandDenialKind::BridgeConditional(Box::new(cause.kind()))
+        }
         RecoveryDenial::ProductUnavailable => WorthQueryOutputDemandDenialKind::ProducerUnavailable,
     };
     readmission_denial(denial(kind, "producer publication recovery"))

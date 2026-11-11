@@ -94,6 +94,7 @@ pub enum PhysicalRecoveryWalInventoryAllocationBoundary {
     CandidateRoster,
     CandidateFrameFacts,
     TailPartition,
+    SourceSelection,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]

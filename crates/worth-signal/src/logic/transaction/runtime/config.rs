@@ -1,3 +1,4 @@
+mod authored_source;
 use crate::data::comparator::VersionComparatorPolicy;
 use crate::data::graph::SignalGraph;
 use crate::data::handle::NodeId;
@@ -274,3 +275,6 @@ impl<T: Copy + Ord> SignalRuntimeConfig<T> {
         )
     }
 }
+#[cfg(test)]
+#[path = "config_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;

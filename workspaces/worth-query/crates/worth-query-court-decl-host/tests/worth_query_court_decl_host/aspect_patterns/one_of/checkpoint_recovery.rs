@@ -31,7 +31,7 @@ fn checkpoint_recovery_retains_corruption_and_unsupported_semantics_by_type() {
             Err(denial) => denial,
             Ok(_) => panic!("damaged checkpoint installed"),
         };
-        let WorthQueryInMemoryApplicationDenial::Graph(denial) = denial else {
+        let WorthQueryApplicationPreparationDenial::Graph(denial) = denial else {
             panic!("wrong checkpoint reconstruction phase: {denial:?}")
         };
         let Some(RelationalRecoveryStop::Durability(cause)) = denial.native_recovery_cause() else {

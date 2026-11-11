@@ -179,3 +179,14 @@ impl From<worth_execution::WorkCeilingDenial> for Cause {
         }
     }
 }
+
+impl From<crate::execution::RelationalExecutionDenialCause>
+    for crate::transactions::data::CommitExecutionDenial
+{
+    fn from(cause: crate::execution::RelationalExecutionDenialCause) -> Self {
+        Self {
+            kind: crate::transactions::data::CommitExecutionDenialKind::Cause(cause),
+            partition_identity: None,
+        }
+    }
+}

@@ -147,6 +147,8 @@ pub struct BridgeConditionalProviderSet {
     pub(crate) wake: Option<Arc<dyn BridgeConditionalWakeProvider>>,
     pub(crate) compute: Option<Arc<dyn BridgeConditionalComputeProvider>>,
     pub(super) semantic_contracts: BridgeConditionalProviderSemanticContracts,
+    pub(super) authored: super::BridgeAuthoredProviderDescriptions,
+    pub(super) decoder_sources: Vec<super::authored_provider::BridgeAuthoredProviderBinding>,
 }
 
 impl BridgeConditionalProviderSet {
@@ -157,6 +159,7 @@ impl BridgeConditionalProviderSet {
     where
         P: BridgeConditionalConditionProvider + BridgeConditionalProviderSemantics,
     {
+        self.authored.condition = None;
         self.semantic_contracts.condition =
             Some(BridgeErasedProviderSemanticContract::capture(&provider));
         self.condition = Some(Arc::new(provider));
@@ -166,6 +169,7 @@ impl BridgeConditionalProviderSet {
     where
         P: BridgeConditionalComparatorProvider + BridgeConditionalProviderSemantics,
     {
+        self.authored.dependency_comparator = None;
         self.semantic_contracts.dependency_comparator =
             Some(BridgeErasedProviderSemanticContract::capture(&provider));
         self.dependency_comparator = Some(Arc::new(provider));
@@ -175,6 +179,7 @@ impl BridgeConditionalProviderSet {
     where
         P: BridgeConditionalComparatorProvider + BridgeConditionalProviderSemantics,
     {
+        self.authored.output_comparator = None;
         self.semantic_contracts.output_comparator =
             Some(BridgeErasedProviderSemanticContract::capture(&provider));
         self.output_comparator = Some(Arc::new(provider));
@@ -184,6 +189,7 @@ impl BridgeConditionalProviderSet {
     where
         P: BridgeConditionalComparatorProvider + BridgeConditionalProviderSemantics,
     {
+        self.authored.reuse_comparator = None;
         self.semantic_contracts.reuse_comparator =
             Some(BridgeErasedProviderSemanticContract::capture(&provider));
         self.reuse_comparator = Some(Arc::new(provider));
@@ -193,6 +199,7 @@ impl BridgeConditionalProviderSet {
     where
         P: BridgeConditionalTriggerProvider + BridgeConditionalProviderSemantics,
     {
+        self.authored.trigger = None;
         self.semantic_contracts.trigger =
             Some(BridgeErasedProviderSemanticContract::capture(&provider));
         self.trigger = Some(Arc::new(provider));
@@ -202,6 +209,7 @@ impl BridgeConditionalProviderSet {
     where
         P: BridgeConditionalWakeProvider + BridgeConditionalProviderSemantics,
     {
+        self.authored.wake = None;
         self.semantic_contracts.wake =
             Some(BridgeErasedProviderSemanticContract::capture(&provider));
         self.wake = Some(Arc::new(provider));
@@ -211,6 +219,7 @@ impl BridgeConditionalProviderSet {
     where
         P: BridgeConditionalComputeProvider + BridgeConditionalProviderSemantics,
     {
+        self.authored.compute = None;
         self.semantic_contracts.compute =
             Some(BridgeErasedProviderSemanticContract::capture(&provider));
         self.compute = Some(Arc::new(provider));
@@ -255,6 +264,10 @@ impl BridgeConditionalProviderSet {
         super::retention::sum(&[
             provider_bytes,
             self.semantic_contracts.retained_arc_bytes()?,
+            self.authored_retained_arc_bytes()?,
         ])
     }
 }
+#[cfg(test)]
+#[path = "providers_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;

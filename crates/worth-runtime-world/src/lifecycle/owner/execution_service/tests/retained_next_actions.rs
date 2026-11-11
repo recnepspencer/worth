@@ -78,7 +78,7 @@ fn settled_relational_evidence(
     let successor_basis = performed.next_basis().clone();
     let result = owner
         .state
-        .relational
+        .relational_services()
         .settlement_port()
         .settle_performed_publication(performed)
         .expect("the production settlement port settles the performed commit");

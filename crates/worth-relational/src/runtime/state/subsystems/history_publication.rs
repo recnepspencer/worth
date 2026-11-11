@@ -17,7 +17,7 @@ pub(crate) struct PreparedVersionedArtifactPublication {
     pub(crate) next_cell: RelationalBranchReferenceCell,
     pub(crate) envelope: Arc<CanonicalCommitEnvelope>,
     pub(crate) root: Arc<RelationalBranchRoot>,
-    pub(crate) artifact: RelationalCommitArtifact,
+    pub(crate) artifact: Arc<RelationalCommitArtifact>,
     pub(crate) new_authoritative_bytes: u64,
     pub(crate) recovery_readmission: bool,
     pub(crate) sequence: PreparedCommitSequence,
@@ -37,7 +37,7 @@ pub(crate) struct PreparedVersionedArtifactAccelerators {
     commit_reference: RelationalCommitReceipt,
     branch_id: BranchId,
     root: Arc<RelationalBranchRoot>,
-    artifact: RelationalCommitArtifact,
+    artifact: Arc<RelationalCommitArtifact>,
     new_authoritative_bytes: u64,
     recovery_readmission: bool,
     sequence: PreparedCommitSequence,
@@ -133,6 +133,10 @@ impl HistorySubsystem {
             recovery_readmission,
             sequence,
         } = prepared;
+        // Preparation had scalar observations only. The real Memory frame was
+        // admitted later at position binding and is observed once at settlement.
+        let new_authoritative_bytes = new_authoritative_bytes
+            .saturating_add(artifact.envelope_residency().payload_storage_bytes());
         self.with_ledger_mut(|ledger| {
             ledger.install_published_commit(
                 commit_id,

@@ -22,6 +22,10 @@ pub(crate) struct RelationalResidencyLease<Level> {
 }
 
 impl<Level> RelationalResidencyLease<Level> {
+    pub(super) fn retire_native(&self) {
+        self.custody.retire_native();
+    }
+
     pub(super) fn into_owned_contents(self) -> crate::storage::overlay::PartitionState {
         let Self {
             custody, region, ..

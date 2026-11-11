@@ -1,0 +1,42 @@
+Command: ["cargo", "nextest", "run", "--cargo-metadata", "C:\\programming\\worth worktees\\worktrees\\m3-p3-reopen\\target\\test-cost\\funding-merge-query\\build\\cargo-metadata.json", "--binaries-metadata", "C:\\programming\\worth worktees\\worktrees\\m3-p3-reopen\\target\\test-cost\\funding-merge-query\\build\\binaries.json", "--profile", "ci", "--config-file", "C:\\programming\\worth worktees\\worktrees\\m3-p3-reopen\\target\\test-cost\\funding-merge-query-extra\\nextest.toml", "--ignore-default-filter", "--no-fail-fast", "--no-tests=fail", "--message-format", "libtest-json", "-E", "test(=host::application_home::reopening::checkpoint_funding::automatic_checkpoint_exhaustion_keeps_business_results_and_explicit_capture_uses_its_own_allowance) | test(=host::application_home::reopening::checkpoint_funding::automatic_checkpoint_progresses_after_caller_cancellation_without_replacing_the_body_value) | test(=host::application_home::reopening::checkpoint_state::automatic_capture_at_head_forty_one_preserves_ordinary_request_results) | test(=host::application_home::reopening::checkpoint_state::close_checkpoint_exhaustion_reports_failure_and_preserves_journal_reopen) | test(=host::application_home::reopening::checkpoint_state::live_checkpoint_recapture_keeps_all_covered_canonical_bodies_cold)"]
+Working directory: C:\programming\worth worktees\worktrees\m3-p3-reopen\workspaces\worth-query
+HEAD: 25619ac5d1ae6092ab5a91bc4b7123be6042475c
+Git status --short empty: False
+Start: 2026-11-06T17:50:38.811168+00:00
+
+{"type": "cargo-invocation", "command": ["cargo", "nextest", "run", "--cargo-metadata", "C:\\programming\\worth worktees\\worktrees\\m3-p3-reopen\\target\\test-cost\\funding-merge-query\\build\\cargo-metadata.json", "--binaries-metadata", "C:\\programming\\worth worktees\\worktrees\\m3-p3-reopen\\target\\test-cost\\funding-merge-query\\build\\binaries.json", "--profile", "ci", "--config-file", "C:\\programming\\worth worktees\\worktrees\\m3-p3-reopen\\target\\test-cost\\funding-merge-query-extra\\nextest.toml", "--ignore-default-filter", "--no-fail-fast", "--no-tests=fail", "--message-format", "libtest-json", "-E", "test(=host::application_home::reopening::checkpoint_funding::automatic_checkpoint_exhaustion_keeps_business_results_and_explicit_capture_uses_its_own_allowance) | test(=host::application_home::reopening::checkpoint_funding::automatic_checkpoint_progresses_after_caller_cancellation_without_replacing_the_body_value) | test(=host::application_home::reopening::checkpoint_state::automatic_capture_at_head_forty_one_preserves_ordinary_request_results) | test(=host::application_home::reopening::checkpoint_state::close_checkpoint_exhaustion_reports_failure_and_preserves_journal_reopen) | test(=host::application_home::reopening::checkpoint_state::live_checkpoint_recapture_keeps_all_covered_canonical_bodies_cold)"], "cwd": "C:\\programming\\worth worktees\\worktrees\\m3-p3-reopen\\workspaces\\worth-query", "capture": "ordered", "mode": "build", "target_dir": null, "cargo_profile": "test"}
+info: experimental features enabled: wrapper-scripts
+────────────
+ Nextest run ID 1ced976f-a88d-4f7d-9c18-12d868f01997 with nextest profile: ci
+    Starting 5 tests across 1 binary (385 tests skipped)
+        PASS [   3.816s] (1/5) worth-query-court-query-decl-host::worth_query_court_query_decl_host host::application_home::reopening::checkpoint_funding::automatic_checkpoint_exhaustion_keeps_business_results_and_explicit_capture_uses_its_own_allowance
+        PASS [   4.496s] (2/5) worth-query-court-query-decl-host::worth_query_court_query_decl_host host::application_home::reopening::checkpoint_state::close_checkpoint_exhaustion_reports_failure_and_preserves_journal_reopen
+        PASS [   5.047s] (3/5) worth-query-court-query-decl-host::worth_query_court_query_decl_host host::application_home::reopening::checkpoint_funding::automatic_checkpoint_progresses_after_caller_cancellation_without_replacing_the_body_value
+{"type":"suite","event":"started","test_count":7}
+{"type":"test","event":"started","name":"worth-query-court-query-decl-host::worth_query_court_query_decl_host$cost::certification::runtime_world_branching::cumulative::scheduled_public_read_timings_report_cold_and_warm_distributions"}
+{"type":"test","event":"started","name":"worth-query-court-query-decl-host::worth_query_court_query_decl_host$cost::certification::runtime_world_branching::cumulative::scheduled_seeded_model_broadens_public_action_roster"}
+{"type":"test","event":"started","name":"worth-query-court-query-decl-host::worth_query_court_query_decl_host$host::application_home::reopening::checkpoint_state::close_checkpoint_exhaustion_reports_failure_and_preserves_journal_reopen"}
+{"type":"test","event":"started","name":"worth-query-court-query-decl-host::worth_query_court_query_decl_host$host::application_home::reopening::checkpoint_state::automatic_capture_at_head_forty_one_preserves_ordinary_request_results"}
+{"type":"test","event":"started","name":"worth-query-court-query-decl-host::worth_query_court_query_decl_host$host::application_home::reopening::checkpoint_funding::automatic_checkpoint_progresses_after_caller_cancellation_without_replacing_the_body_value"}
+{"type":"test","event":"started","name":"worth-query-court-query-decl-host::worth_query_court_query_decl_host$host::application_home::reopening::checkpoint_state::live_checkpoint_recapture_keeps_all_covered_canonical_bodies_cold"}
+{"type":"test","event":"started","name":"worth-query-court-query-decl-host::worth_query_court_query_decl_host$host::application_home::reopening::checkpoint_funding::automatic_checkpoint_exhaustion_keeps_business_results_and_explicit_capture_uses_its_own_allowance"}
+{"type":"test","event":"ignored","name":"worth-query-court-query-decl-host::worth_query_court_query_decl_host$cost::certification::runtime_world_branching::cumulative::scheduled_public_read_timings_report_cold_and_warm_distributions"}
+{"type":"test","event":"ignored","name":"worth-query-court-query-decl-host::worth_query_court_query_decl_host$cost::certification::runtime_world_branching::cumulative::scheduled_seeded_model_broadens_public_action_roster"}
+{"type":"test","event":"ok","name":"worth-query-court-query-decl-host::worth_query_court_query_decl_host$host::application_home::reopening::checkpoint_funding::automatic_checkpoint_exhaustion_keeps_business_results_and_explicit_capture_uses_its_own_allowance","exec_time":3.8164297}
+{"type":"test","event":"ok","name":"worth-query-court-query-decl-host::worth_query_court_query_decl_host$host::application_home::reopening::checkpoint_state::close_checkpoint_exhaustion_reports_failure_and_preserves_journal_reopen","exec_time":4.4958131}
+{"type":"test","event":"ok","name":"worth-query-court-query-decl-host::worth_query_court_query_decl_host$host::application_home::reopening::checkpoint_funding::automatic_checkpoint_progresses_after_caller_cancellation_without_replacing_the_body_value","exec_time":5.0467295}
+{"type":"suite","event":"ok","passed":3,"failed":0,"ignored":2,"measured":0,"filtered_out":383,"exec_time":13.3589723}
+        PASS [   6.085s] (4/5) worth-query-court-query-decl-host::worth_query_court_query_decl_host host::application_home::reopening::checkpoint_state::live_checkpoint_recapture_keeps_all_covered_canonical_bodies_cold
+        PASS [  23.233s] (5/5) worth-query-court-query-decl-host::worth_query_court_query_decl_host host::application_home::reopening::checkpoint_state::automatic_capture_at_head_forty_one_preserves_ordinary_request_results
+────────────
+     Summary [  23.236s] 5 tests run: 5 passed, 385 skipped
+{"type":"suite","event":"started","test_count":7}
+{"type":"test","event":"ok","name":"worth-query-court-query-decl-host::worth_query_court_query_decl_host$host::application_home::reopening::checkpoint_state::live_checkpoint_recapture_keeps_all_covered_canonical_bodies_cold","exec_time":6.0851528}
+{"type":"test","event":"ok","name":"worth-query-court-query-decl-host::worth_query_court_query_decl_host$host::application_home::reopening::checkpoint_state::automatic_capture_at_head_forty_one_preserves_ordinary_request_results","exec_time":23.2333629}
+{"type":"suite","event":"ok","passed":2,"failed":0,"ignored":2,"measured":0,"filtered_out":386,"exec_time":29.3185157}
+
+
+{"type": "cargo-result", "exit_code": 0}
+
+End: 2026-11-06T17:51:02.300892+00:00
+Exit code: 0

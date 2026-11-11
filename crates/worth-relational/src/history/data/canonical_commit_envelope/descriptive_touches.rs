@@ -97,7 +97,7 @@ impl RelationalDescriptiveTouchGraph {
     }
 }
 
-impl super::CanonicalCommitEnvelope {
+impl super::CanonicalCommitEnvelopeDraft {
     /// Late Native consequences carry the same actual adjacency effects as ordinary
     /// mutation. Full generations and kinds come from the mutation owner, never
     /// from dense patch detail or invented authored endpoint intents.

@@ -28,6 +28,17 @@ impl RuntimeWorldInspectionPort {
         }
         Ok(service)
     }
+    pub fn observe_program_activation_history(
+        &self,
+        request: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> Result<
+        crate::durability::WorldProgramActivationHistory,
+        RuntimeWorldServiceDenial<crate::durability::WorldReadmissionDenial>,
+    > {
+        self.service()?
+            .observe_program_activation_history(request)
+            .map_err(RuntimeWorldServiceDenial::Denied)
+    }
     pub fn history_snapshot(
         &self,
     ) -> Result<crate::inspection::RuntimeWorldHistorySnapshot, RuntimeWorldOwnerUnavailable> {

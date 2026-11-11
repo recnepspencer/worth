@@ -9,6 +9,7 @@ impl WorthQueryProviderProgressionCompletion {
         running: crate::domain_computation::WorthQueryRunningDirectRun,
         workflow_settlement_publication: Option<super::super::LocalWorkflowSettlementPublication>,
         request: worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope,
+        original_completion: crate::facade::primary_graph::OriginalCompletionReceiver,
     ) -> WorthQueryProgressedApplicationCommit {
         Self::finish(
             self,
@@ -16,6 +17,7 @@ impl WorthQueryProviderProgressionCompletion {
             running,
             workflow_settlement_publication,
             request,
+            original_completion,
         )
     }
 }
@@ -39,6 +41,7 @@ impl<'a, 'provider, Schema, Operation, Input, Scope>
         idempotency: WorthQueryApplicationIdempotencyBinding,
         coordination: &'a WorthQueryApplicationBranchCommitCoordination<'provider>,
         product: &'a crate::basis::WorthQueryProductBranchLease,
+        original_completion: &'a crate::facade::primary_graph::OriginalCompletionReceiver,
         aftermath_causality: Option<
             crate::domain_computation::application_aftermath::WorthQueryPendingAftermathCausality,
         >,
@@ -53,6 +56,7 @@ impl<'a, 'provider, Schema, Operation, Input, Scope>
             idempotency,
             coordination,
             product,
+            original_completion,
             aftermath_causality,
             history,
             coupled_outputs,
@@ -69,6 +73,7 @@ impl WorthQueryProgressedApplicationCommit {
         running: crate::domain_computation::WorthQueryRunningDirectRun,
         cleanup: WorthQueryApplicationMutationCleanupOwner,
         request: worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope,
+        original_completion: crate::facade::primary_graph::OriginalCompletionReceiver,
     ) -> Self {
         Self {
             workflow_settlement_publication,
@@ -77,6 +82,7 @@ impl WorthQueryProgressedApplicationCommit {
             running,
             cleanup,
             request,
+            original_completion,
         }
     }
 }

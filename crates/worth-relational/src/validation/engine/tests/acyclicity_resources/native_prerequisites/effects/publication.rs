@@ -66,7 +66,7 @@ fn a_native_publication_failure_blocks_custom_preparation_while_a_commit_effect_
             assert_eq!(hooks.observed(), (0, 0));
         } else {
             let candidate = outcome.unwrap();
-            let result = &candidate.invariants;
+            let result = &candidate.state.invariants;
             let results = result
                 .results()
                 .iter()

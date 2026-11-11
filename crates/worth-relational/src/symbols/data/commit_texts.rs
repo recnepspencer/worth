@@ -30,53 +30,64 @@ pub(crate) fn required_commit_symbols(
     plan: &MergedCommitPlan,
     patch: &crate::publication::patch::data::CanonicalAuthoritativePatch,
 ) -> BTreeSet<Symbol> {
+    let mut symbols = BTreeSet::new();
+    visit_required_commit_symbols(plan, patch, &mut |symbol| {
+        symbols.insert(symbol);
+    });
+    symbols
+}
+
+/// One traversal serves ordinary set capture and funded cold readmission.
+pub(crate) fn visit_required_commit_symbols(
+    plan: &MergedCommitPlan,
+    patch: &crate::publication::patch::data::CanonicalAuthoritativePatch,
+    symbols: &mut impl FnMut(Symbol),
+) {
     use crate::publication::patch::data::{
         PublishedAuthoritativePatchOperation as Operation,
         PublishedAuthoritativePatchValue as Payload,
     };
-    let mut symbols = BTreeSet::new();
     for intent in &plan.merged_intents {
-        visit_intent(intent, &mut symbols);
+        visit_intent(intent, symbols);
     }
     for record in &patch.authoritative_record_patches {
         for operation in record.authoritative_patch.full_grammar_operations() {
             match operation {
                 Operation::WholeAspectSet { value: input, .. } => match input {
-                    Payload::Scalar(input) => value(input, &mut symbols),
+                    Payload::Scalar(input) => value(input, symbols),
                     Payload::Struct(input) => {
                         for (_, field) in input.fields() {
-                            value(field, &mut symbols);
+                            value(field, symbols);
                         }
                     }
                 },
                 Operation::FieldLevelPatch { field_sets, .. } => {
                     for field in field_sets {
-                        value(&field.value, &mut symbols);
+                        value(&field.value, symbols);
                     }
                 }
                 Operation::WholeAspectClear { .. } => {}
             }
         }
     }
-    symbols
 }
 
-fn value(value: &AspectValue, symbols: &mut BTreeSet<Symbol>) {
+fn value(value: &AspectValue, symbols: &mut impl FnMut(Symbol)) {
     if let AspectValue::String(InternedString::Symbol(symbol)) = value {
-        symbols.insert(Symbol(symbol.0));
+        symbols(Symbol(symbol.0));
     }
 }
-fn client_key(key: &super::ClientKey, symbols: &mut BTreeSet<Symbol>) {
+fn client_key(key: &super::ClientKey, symbols: &mut impl FnMut(Symbol)) {
     if let Some(symbol) = key.as_symbol() {
-        symbols.insert(symbol);
+        symbols(symbol);
     }
 }
-fn fields(patch: &AspectFieldPatch, symbols: &mut BTreeSet<Symbol>) {
+fn fields(patch: &AspectFieldPatch, symbols: &mut impl FnMut(Symbol)) {
     for (_, field) in patch.iter() {
         value(field, symbols);
     }
 }
-fn portable(patch: &PortableRecordAspectPatch, symbols: &mut BTreeSet<Symbol>) {
+fn portable(patch: &PortableRecordAspectPatch, symbols: &mut impl FnMut(Symbol)) {
     for operation in patch.operations() {
         match operation {
             PortableAspectPatchOperation::SetWhole { value: input, .. } => match input {
@@ -96,7 +107,7 @@ fn portable(patch: &PortableRecordAspectPatch, symbols: &mut BTreeSet<Symbol>) {
         }
     }
 }
-fn visit_intent(intent: &MutationIntent, symbols: &mut BTreeSet<Symbol>) {
+fn visit_intent(intent: &MutationIntent, symbols: &mut impl FnMut(Symbol)) {
     match intent {
         MutationIntent::Create(create) => match create {
             CreateIntent::Entity(entity) => {

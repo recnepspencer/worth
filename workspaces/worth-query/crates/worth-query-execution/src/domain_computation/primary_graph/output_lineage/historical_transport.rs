@@ -69,7 +69,7 @@ impl WorthQueryApplicationOutputLineage {
                 selected.lifecycle_incarnation(),
                 selected.reference_generation().get(),
                 &bindings,
-                meaning.source_partition,
+                *meaning.source_partition.bytes(),
                 execution,
             )?;
             let mut found = None;
@@ -100,7 +100,7 @@ impl WorthQueryApplicationOutputLineage {
                         .as_ref()
                         .is_some_and(|prior| {
                             prior.producer() == route.producer()
-                                && prior.source() == meaning.source_epoch
+                                && prior.source() == *meaning.source_epoch.bytes()
                         });
                 if owns_route {
                     if !origin

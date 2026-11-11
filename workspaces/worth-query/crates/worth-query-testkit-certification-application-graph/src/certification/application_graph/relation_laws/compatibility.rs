@@ -68,7 +68,7 @@ pub fn unbound_refused<L: LawPolicy>() {
         Err(refusal) => refusal,
         Ok(_) => panic!("an unbound program cannot govern a law-bearing schema"),
     };
-    let WorthQueryInMemoryApplicationDenial::Program(refusal) = refusal else {
+    let WorthQueryApplicationPreparationDenial::Program(refusal) = refusal else {
         panic!("{refusal:?}")
     };
     assert!(matches!(refusal.support_denial(), Some(worth_query_host::facade::domain::WorthQueryProgramSupportDenial::RelationLawMeaningMismatch { .. })), "{refusal:?}");
@@ -92,9 +92,9 @@ pub fn restore<L: LawPolicy>(
     checkpoint: WorthQueryApplicationCheckpoint,
 ) -> Result<
     WorthQueryProgramApplicationRuntime<GraphSchema<L>, GraphProgram<L>>,
-    WorthQueryInMemoryApplicationDenial,
+    WorthQueryApplicationPreparationDenial,
 > {
-    in_memory_program_from_checkpoint(
+    WorthQueryInterimCheckpointRestore::program(
         program::<L>(),
         GraphSchema::<L>::declaration().unwrap(),
         ((),),
@@ -117,7 +117,7 @@ pub fn checkpoint_laws<Old: LawPolicy, L: LawPolicy>(edges: &[(u64, u64)]) {
         Err(refusal) => refusal,
         Ok(_) => panic!("old installed meaning cannot become a different schema/program"),
     };
-    let WorthQueryInMemoryApplicationDenial::Graph(refusal) = refusal else {
+    let WorthQueryApplicationPreparationDenial::Graph(refusal) = refusal else {
         panic!("{refusal:?}")
     };
     assert_eq!(refusal.kind(), worth_query_host::facade::primary_graph::WorthQueryPrimaryGraphInstallationDenialKind::CheckpointRecoveryRejected);
@@ -132,7 +132,7 @@ pub fn checkpoint_laws<Old: LawPolicy, L: LawPolicy>(edges: &[(u64, u64)]) {
     assert!(
         matches!(
             restore::<Old>(removed),
-            Err(WorthQueryInMemoryApplicationDenial::Graph(_))
+            Err(WorthQueryApplicationPreparationDenial::Graph(_))
         ),
         "removing a law is also changed installed meaning"
     );

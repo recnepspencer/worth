@@ -1,0 +1,12 @@
+COMMAND: ["python", "target/lane-evidence/deferred_geometry_finish.py"]
+HEAD: 307539feba2f331a8b7406f3a69868bc3ee3b45d
+CLEAN: false
+START: 2026-11-08T22:02:52.587647+00:00
+ENV: removed stale external linker override; RUST_MIN_STACK unset in parent
+  File "C:\programming\worth worktees\worktrees\m3-host-home\target\lane-evidence\deferred_geometry_finish.py", line 1
+    ï»¿from pathlib import Path
+     ^
+SyntaxError: invalid character '¯' (U+00AF)
+
+END: 2026-11-08T22:02:54.130511+00:00
+EXIT: 1

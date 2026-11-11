@@ -198,76 +198,6 @@ where
         }
     }
 
-    /// Selects the exact committed product occurrence identified by a receipt.
-    pub fn at_commit(
-        &self,
-        phase: &worth_query_execution::facade::application_contribution::WorthQueryAdvancementPhase<
-            '_,
-        >,
-        commit: &worth_query_execution::facade::primary_graph::WorthQueryApplicationCommitReceipt,
-        maximum_history_work: Option<std::num::NonZeroUsize>,
-    ) -> Result<
-        WorthQueryApplicationRetainedRequest<'application, 'principal, 'scope, Schema>,
-        WorthQueryApplicationHistorySelectionDenial,
-    > {
-        self.at_selected_commit(
-            phase,
-            commit.committed_product_publication().composite_commit(),
-            maximum_history_work,
-        )
-    }
-
-    /// Selects the exact product occurrence that issued an approved elevation.
-    pub fn at_approved_elevation(
-        &self,
-        phase: &worth_query_execution::facade::application_contribution::WorthQueryAdvancementPhase<
-            '_,
-        >,
-        approved: &worth_query_execution::facade::primary_graph::WorthQueryApprovedElevation,
-        maximum_history_work: Option<std::num::NonZeroUsize>,
-    ) -> Result<
-        WorthQueryApplicationRetainedRequest<'application, 'principal, 'scope, Schema>,
-        WorthQueryApplicationHistorySelectionDenial,
-    > {
-        self.at_selected_commit(
-            phase,
-            approved.approval_product_publication().composite_commit(),
-            maximum_history_work,
-        )
-    }
-
-    fn at_selected_commit(
-        &self,
-        phase: &worth_query_execution::facade::application_contribution::WorthQueryAdvancementPhase<
-            '_,
-        >,
-        selected_commit: &worth_runtime_world::facade::CompositeCommitIdentity,
-        maximum_history_work: Option<std::num::NonZeroUsize>,
-    ) -> Result<
-        WorthQueryApplicationRetainedRequest<'application, 'principal, 'scope, Schema>,
-        WorthQueryApplicationHistorySelectionDenial,
-    > {
-        let history = self
-            .application
-            .branches()
-            .history(phase, self.branch, maximum_history_work)
-            .map_err(WorthQueryApplicationHistorySelectionDenial::ProductSelection)?;
-        let entry = history
-            .entries()
-            .find(|entry| entry.selected_commit() == selected_commit)
-            .ok_or(WorthQueryApplicationHistorySelectionDenial::CommitUnavailable)?;
-        let selected = history
-            .select(phase, &entry)
-            .map_err(WorthQueryApplicationHistorySelectionDenial::ProductSelection)?;
-        Ok(WorthQueryApplicationRetainedRequest {
-            application: self.application,
-            principal: self.principal,
-            scope: self.scope,
-            branch: self.branch,
-            observation: selected.retain_application_read(),
-        })
-    }
-
     pub fn retain_read(
         &self,
         phase: &worth_query_execution::facade::application_contribution::WorthQueryAdvancementPhase<
@@ -368,3 +298,20 @@ where
 }
 
 mod discovery_currentness;
+
+mod history_selection;
+#[cfg(test)]
+#[path = "request_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;
+
+#[cfg(test)]
+fn collect_owned_inline_type_sizes(census: &mut crate::inline_type_sizes::Census) {
+    {
+        let mut owner = census.owner::<WorthQueryApplicationRequest<'static, 'static, 'static, ()>>("workspaces/worth-query/crates/worth-query-publication/src/application_entry/request.rs", "WorthQueryApplicationRequest", 128 * 1024);
+        owner.field::<&'static WorthQueryPrimaryGraphApplicationRuntime<()>>("application");
+        owner.field::<&'static WorthQueryAuthenticatedExternalPrincipal<()>>("principal");
+        owner.field::<&'static WorthQueryRequestScope>("scope");
+        owner.field::<worth_query_execution::facade::product::WorthQueryProductBranch>("branch");
+    }
+    program_outputs::inline_type_budget::collect(census);
+}

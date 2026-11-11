@@ -90,6 +90,7 @@ mod execution_basis;
 mod execution_contact;
 pub mod facade;
 mod historical;
+mod home_retirement;
 mod identity;
 mod identity_authority;
 mod input;
@@ -118,3 +119,8 @@ mod tests {}
 
 #[cfg(test)]
 mod host_execution;
+#[cfg(test)]
+#[path = "lib_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;
+#[cfg(test)]
+mod inline_type_sizes;

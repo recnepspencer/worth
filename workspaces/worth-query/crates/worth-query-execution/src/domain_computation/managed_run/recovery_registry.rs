@@ -2,7 +2,7 @@
 //!
 //! Owned by one application runtime and stamped with that runtime's authority
 //! identity at construction. Registry slots are membership tokens local to one
-//! instance — they are not cross-runtime authority. Slot allocation still
+//! instance â€” they are not cross-runtime authority. Slot allocation still
 //! starts at `1` in every instance; recovery effect/inspect authority binds to
 //! the runtime identity basis instead (Q8.20).
 
@@ -17,7 +17,8 @@ use worth_runtime_world::facade::CompositeCommitIdentity;
 #[derive(Clone, Debug, Eq, Hash, PartialEq)]
 pub struct WorthQueryRecoveryMintClaim {
     provider_runtime_instance_id: u64,
-    product_commit: CompositeCommitIdentity,
+    world_owner: worth_foundational::facade::WorldOwnerCoordinate,
+    commit_ordinal: u64,
 }
 
 impl WorthQueryRecoveryMintClaim {
@@ -27,7 +28,13 @@ impl WorthQueryRecoveryMintClaim {
     ) -> Self {
         Self {
             provider_runtime_instance_id,
-            product_commit,
+            world_owner: match product_commit.owner_identity().durable() {
+                Some(owner) => worth_foundational::facade::WorldOwnerCoordinate::Home { owner },
+                None => worth_foundational::facade::WorldOwnerCoordinate::MemoryOnly {
+                    observation: product_commit.owner_identity().get(),
+                },
+            },
+            commit_ordinal: product_commit.ordinal(),
         }
     }
 }
@@ -47,7 +54,7 @@ pub enum WorthQueryRecoveryResourceTerminal {
     ForceTerminated,
     /// The handle left without a transition because the attempt was denied.
     ///
-    /// Distinct from `Disposed` on purpose. Disposal is a decision — the holder
+    /// Distinct from `Disposed` on purpose. Disposal is a decision â€” the holder
     /// chose to end recovery. Relinquishment is a non-event: authority was
     /// wrong or stale, nothing was consumed, and the commit is exactly as
     /// recoverable as it was a moment earlier. Only this fate releases the
@@ -112,7 +119,7 @@ impl RecoveryRegistryState {
 ///
 /// The registry also carries the owning runtime's authorization clock. That is
 /// what lets a handle re-check its own deadline without any transition growing
-/// a clock parameter — freshness stays something the runtime samples, never
+/// a clock parameter â€” freshness stays something the runtime samples, never
 /// something a caller presents (R8.31).
 pub struct WorthQueryRecoveryHandleRegistry {
     runtime_authority: WorthQueryRuntimeAuthorityIdentity,
@@ -155,7 +162,7 @@ impl WorthQueryRecoveryHandleRegistry {
         self.runtime_authority
     }
 
-    /// The owning runtime's authorization clock (R8.31). Not a caller lane —
+    /// The owning runtime's authorization clock (R8.31). Not a caller lane â€”
     /// `WorthQueryRuntimeClock` is crate-private and samples itself.
     pub(crate) fn clock(&self) -> &WorthQueryRuntimeClock {
         &self.clock
@@ -190,8 +197,8 @@ impl WorthQueryRecoveryHandleRegistry {
 
     /// Retire a slot *without* consuming the recovery it stands for.
     ///
-    /// The mint claim goes back, so the receipt — cloneable historical evidence
-    /// the holder still has — can mint a fresh handle and the attempt can be
+    /// The mint claim goes back, so the receipt â€” cloneable historical evidence
+    /// the holder still has â€” can mint a fresh handle and the attempt can be
     /// made again with correct authority. The slot still leaves the live set
     /// exactly once, atomically, under the same lock that releases the claim.
     ///
@@ -200,8 +207,8 @@ impl WorthQueryRecoveryHandleRegistry {
     /// denies, the denial relinquishes, and there is nothing to give back.
     ///
     /// Unlike [`Self::mark_terminal`] this records no `terminated` entry. A
-    /// relinquished slot is unobservable — its handle is gone, `terminal_of` is
-    /// reached only from `consume` and `Drop`, and a retry gets a fresh slot —
+    /// relinquished slot is unobservable â€” its handle is gone, `terminal_of` is
+    /// reached only from `consume` and `Drop`, and a retry gets a fresh slot â€”
     /// so an entry would be pure residue. It would also be residue a caller
     /// controls: retrying a denied transition in a loop is the one path that can
     /// produce unboundedly many slots for a single commit.
@@ -236,25 +243,28 @@ impl WorthQueryRecoveryHandleRegistry {
             .contains_key(&slot)
     }
 
-    /// Every live slot in this instance — including slots belonging to handles
+    /// Every live slot in this instance â€” including slots belonging to handles
     /// the asker does not hold. This is what turns a slot-addressed terminal
     /// into a cross-holder one, so it is fixture-only; no production path needs
     /// to ask the question, and clippy confirms it (the method is dead code in
     /// a build without this gate).
     pub(crate) fn enumerate_live(&self) -> Vec<WorthQueryRecoveryRegistrySlot> {
-        self.state
+        let mut slots: Vec<_> = self
+            .state
             .lock()
             .expect("recovery registry lock")
             .live
             .keys()
             .copied()
-            .collect()
+            .collect();
+        slots.sort_unstable_by_key(|slot| slot.0);
+        slots
     }
 
     /// Retire a slot and record why.
     ///
     /// Slot-addressed rather than handle-addressed, and the terminal kind is
-    /// the caller's to choose — so this is a privileged operation taking an
+    /// the caller's to choose â€” so this is a privileged operation taking an
     /// identity instead of the resource. Crate-private: the only production
     /// callers are `WorthQueryRecoveryHandle::consume` and its `Drop`, both of
     /// which hold the handle itself and name the terminal the runtime caused.
@@ -302,6 +312,4 @@ impl WorthQueryRecoveryHandleRegistry {
 }
 
 mod court_doors_for_test;
-
-#[cfg(test)]
-mod tests;
+mod recorded_observation;

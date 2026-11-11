@@ -1,6 +1,11 @@
 //! Source material and exact target retained between inverse preparation and publication.
 use super::*;
+mod custody;
+mod directory_admission;
+mod home;
+mod identity;
 mod member_inverse;
+mod recovery;
 mod relation_inverse;
 mod workflow;
 use crate::basis::WorthQueryProductBranchReadIdentity;
@@ -9,6 +14,7 @@ use crate::domain_computation::application_aftermath::{
 };
 use crate::domain_computation::execution_runtime::WorthQueryRuntimeAuthorityIdentity;
 use crate::domain_computation::primary_graph::workflow::correction::PreparedWorkflowCorrection;
+use custody::PreparedCorrectionCustody;
 pub(super) use workflow::prepare_workflow;
 use worth_query_declaration::facade::application_operation::{
     ApplicationEncodedInput, ApplicationMutationBinding, ApplicationMutationScopeResolution,
@@ -21,19 +27,18 @@ use worth_relational::facade::{
 /// Native correction meaning retained from derivation through ordinary publication.
 ///
 /// It binds the exact source, action input, caller, scope, target and lineage to
-/// their checked program interpretation. Its ancestry pins preserve optional
-/// material until publication releases this preparation; it grants no standalone
-/// mutation or recovery authority.
+/// their checked program interpretation. Memory retains ancestry. A Home owner
+/// records the mandatory material use and its transfer to an actual publication.
+/// Owning close durably discharges unperformed preparations; they never become
+/// first use after reopen. This value grants no standalone mutation authority.
 pub struct WorthQueryPreparedCorrectionSource {
-    coupled_capture: Option<fn(&WorthQueryPrimaryGraphCommittedApplication, &worth_execution::ExecutionRequest<'_, '_>) -> crate::domain_computation::primary_graph::application_attempt::coupled_outputs::DeclaredCoupledOutputDemands>,
+    coupled_capture: Option<fn(&super::occurrence::CorrectionOccurrence, &worth_execution::ExecutionRequest<'_, '_>) -> crate::domain_computation::primary_graph::application_attempt::coupled_outputs::DeclaredCoupledOutputDemands>,
     content: worth_relational::facade::content::RelationalContentAttachments,
     authored_identity: Option<super::authored_identity::PreparedAuthoredCorrection>,
     workflow: Option<PreparedWorkflowCorrection>,
-    ancestry: ProductBranchAncestorSelection,
-    /// Keeps selected and active reversal material pinned for the prepared action's lifetime.
-    _alternative_ancestry: Option<(ProductBranchAncestorSelection, ProductBranchAncestorSelection)>,
+    custody: PreparedCorrectionCustody,
+    target: WorthQueryProductBranchReadIdentity,
     lineage: WorthQueryCorrectionLineageBinding,
-    material: WorthQueryPrimaryGraphCommittedApplication,
     runtime: WorthQueryRuntimeAuthorityIdentity,
     actor: EntityId,
     scope: EntityId,
@@ -47,10 +52,6 @@ pub struct WorthQueryPreparedCorrectionSource {
 }
 
 impl WorthQueryPreparedCorrectionSource {
-    #[expect(
-        clippy::disallowed_methods,
-        reason = "Type identity and names serve point lookup or diagnostics; canonical order uses declared identity"
-    )]
     pub(super) fn retain<
         Schema: ApplicationSchema,
         C: ApplicationCorrectionBinding<Schema>,
@@ -71,11 +72,12 @@ impl WorthQueryPreparedCorrectionSource {
         workflow: Option<PreparedWorkflowCorrection>,
     ) -> Result<Self, WorthQueryCorrectionDerivationDenial>
     where
+        Binding::Input: serde::Serialize,
         Binding::ScopeBinding:
             ApplicationMutationScopeResolution<Schema, Binding::PrincipalIdentity>,
     {
         use WorthQueryCorrectionDerivationDenial as Denial;
-        let (target, source, ancestry, target_program, required_root) = checked.into_parts();
+        let target = checked.target();
         let binding = target
             .application()
             .installed_schema()
@@ -88,6 +90,48 @@ impl WorthQueryPreparedCorrectionSource {
         let scope = target.resolve_entity(phase, field, value, request,
             crate::domain_computation::primary_graph::WorthQueryPrincipalResolutionMode::Ordinary)
             .map_err(Denial::Scope)?;
+        Self::retain_resolved::<Schema, C, Binding>(
+            checked,
+            phase,
+            alternative_ancestry,
+            lineage,
+            key,
+            input,
+            actor.principal_entity_id(),
+            scope.retain_scope_selector(),
+            workflow,
+        )
+    }
+
+    #[expect(
+        clippy::disallowed_methods,
+        reason = "Exact installed type lookup never persists TypeId"
+    )]
+    fn retain_resolved<Schema, C, Binding>(
+        checked: super::compatibility::CheckedCorrectionSource<'_, '_, '_, Schema, C, Binding>,
+        phase: &WorthQueryAdvancementPhase<'_>,
+        alternative_ancestry: Option<(
+            ProductBranchAncestorSelection,
+            ProductBranchAncestorSelection,
+        )>,
+        lineage: WorthQueryCorrectionLineageBinding,
+        key: &WorthQueryCorrectionCommandKey,
+        input: &ApplicationEncodedInput<Binding::InputBinding>,
+        actor: EntityId,
+        scope: std::sync::Arc<
+            crate::domain_computation::primary_graph::WorthQueryObservedScopeSelector,
+        >,
+        workflow: Option<PreparedWorkflowCorrection>,
+    ) -> Result<Self, WorthQueryCorrectionDerivationDenial>
+    where
+        Schema: ApplicationSchema,
+        C: ApplicationCorrectionBinding<Schema>,
+        Binding: ApplicationMutationBinding<Schema>,
+        Binding::Input: serde::Serialize,
+    {
+        use WorthQueryCorrectionDerivationDenial as Denial;
+        let (target, source, ancestry, target_program, required_root) = checked.into_parts();
+        directory_admission::admit(target, source, &ancestry, &lineage, required_root.is_some())?;
         let basis = target.product().relational_basis();
         let target_parent = basis
             .observation()
@@ -105,10 +149,11 @@ impl WorthQueryPreparedCorrectionSource {
         } else {
             None
         };
-        let mut content = match source.occurrence().commit_evidence().retained_preimage() {
-            Some(preimage) => preimage.content().clone(),
-            None => Default::default(),
-        };
+        let mut content = source
+            .occurrence()
+            .preimage_content()
+            .cloned()
+            .unwrap_or_default();
         let outputs =
             super::material::source_outputs::SourceOutputs::<Schema, C>::new(source, execution)
                 .retained_content()
@@ -123,21 +168,40 @@ impl WorthQueryPreparedCorrectionSource {
         let intent = WorthQueryCorrectionIntent::from_disclosed_source::<Schema, C>(
             target, source, key, &lineage,
         );
+        let target_identity =
+            WorthQueryProductBranchReadIdentity::from_observation(ancestry.target());
+        let custody = match source.occurrence().home_material() {
+            Some(_) => home::prepare::<Schema, Binding>(
+                target,
+                source,
+                input,
+                &intent,
+                key,
+                actor,
+                &scope,
+                &target_program,
+                &execution,
+            )?,
+            None => PreparedCorrectionCustody::Memory {
+                _ancestry: ancestry,
+                _alternatives: alternative_ancestry,
+                material: source.occurrence().clone(),
+            },
+        };
         Ok(Self {
             coupled_capture: (lineage.role() == WorthQueryAftermathCausalRole::RecordedReverse)
                 .then_some(super::material::capture_coupled::<Schema, C>),
             content,
             authored_identity,
             workflow,
-            ancestry,
-            _alternative_ancestry: alternative_ancestry,
+            custody,
+            target: target_identity,
             lineage,
             target_program,
             required_root,
-            material: source.occurrence().clone(),
             runtime: target.application().runtime.authority_identity(),
-            actor: actor.principal_entity_id(),
-            scope: scope.entity_id(),
+            actor,
+            scope: scope.subject(),
             action_input: *input.identity(),
             action_binding: std::any::TypeId::of::<Binding>(),
             target_parent,
@@ -150,7 +214,7 @@ impl WorthQueryPreparedCorrectionSource {
         &self, execution: &worth_execution::ExecutionRequest<'_, '_>,
     ) -> Option<crate::domain_computation::primary_graph::application_attempt::coupled_outputs::DeclaredCoupledOutputDemands>{
         self.coupled_capture
-            .map(|capture| capture(&self.material, execution))
+            .map(|capture| capture(&self.custody.occurrence(), execution))
     }
 
     pub(in crate::domain_computation::primary_graph) fn content(
@@ -242,13 +306,33 @@ impl WorthQueryPreparedCorrectionSource {
             .and_then(|identity| identity.restoration_anchor(roles)))
     }
 
+    pub(in crate::domain_computation::primary_graph) fn material_pin(
+        &self,
+    ) -> Option<worth_foundational::facade::CorrectionMaterialPinIdentity> {
+        self.custody.pin()
+    }
+    pub(in crate::domain_computation::primary_graph) fn admit_home_receiver(
+        &self,
+        owner: worth_runtime_world::facade::RuntimeWorldOwnerIdentity,
+    ) -> Result<(), worth_proof::HomeIncarnationDenial> {
+        self.custody.admit_receiver(owner)
+    }
+    pub(in crate::domain_computation) fn admit_receiver(
+        &self,
+        owner: worth_runtime_world::facade::RuntimeWorldOwnerIdentity,
+    ) -> Result<(), crate::domain_computation::primary_graph::WorthQueryApplicationCommitDenial>
+    {
+        self.admit_home_receiver(owner).map_err(|cause| match cause {
+            worth_proof::HomeIncarnationDenial::StaleIncarnation => crate::domain_computation::primary_graph::WorthQueryApplicationCommitDenial::stale_incarnation(),
+            worth_proof::HomeIncarnationDenial::ForeignHome => crate::domain_computation::primary_graph::WorthQueryApplicationCommitDenial::correction_context_mismatch(),
+        })
+    }
+
     pub(crate) fn source_commit(&self) -> &RelationalCommitReceipt {
-        self.material.commit_reference()
+        self.custody.commit()
     }
     pub(crate) fn source_world(&self) -> &worth_runtime_world::facade::CompositeCommitIdentity {
-        self.material
-            .committed_product_publication()
-            .composite_commit()
+        self.custody.world()
     }
     pub(crate) fn target_parent(&self) -> &RelationalCommitReceipt {
         &self.target_parent
@@ -284,7 +368,7 @@ impl WorthQueryPreparedCorrectionSource {
                 == crate::domain_computation::authorization::WorthQueryOperationScopeEntityBinding::from_entity(self.scope)
             && admission.graph_work().mutation_product().is_some_and(|product|
                 WorthQueryProductBranchReadIdentity::from_observation(product.observation())
-                    == WorthQueryProductBranchReadIdentity::from_observation(self.ancestry.target()))
+                    == self.target)
     }
 }
 
@@ -292,30 +376,7 @@ impl std::fmt::Debug for WorthQueryPreparedCorrectionSource {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("WorthQueryPreparedCorrectionSource")
             .field("source", self.source_world())
-            .field("target", self.ancestry.target().selected_commit())
+            .field("target", &self.target)
             .finish_non_exhaustive()
     }
 }
-
-impl PartialEq for WorthQueryPreparedCorrectionSource {
-    fn eq(&self, other: &Self) -> bool {
-        self.runtime == other.runtime
-            && self.authored_identity == other.authored_identity
-            && self.workflow == other.workflow
-            && self.required_root == other.required_root
-            && self.target_program.same_support_as(&other.target_program)
-            && self.actor == other.actor
-            && self.scope == other.scope
-            && self.action_input == other.action_input
-            && self.action_binding == other.action_binding
-            && self.lineage == other.lineage
-            && self.intent == other.intent
-            && self.target_parent == other.target_parent
-            && self.target_branch == other.target_branch
-            && self.source_world() == other.source_world()
-            && self.source_commit() == other.source_commit()
-            && WorthQueryProductBranchReadIdentity::from_observation(self.ancestry.target())
-                == WorthQueryProductBranchReadIdentity::from_observation(other.ancestry.target())
-    }
-}
-impl Eq for WorthQueryPreparedCorrectionSource {}

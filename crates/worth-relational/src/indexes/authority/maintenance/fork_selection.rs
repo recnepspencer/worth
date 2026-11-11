@@ -15,7 +15,13 @@ pub(crate) struct PreparedForkIndexSelection {
 }
 impl PreparedForkIndexSelection {
     pub(crate) fn publish(self) {
-        self.publication.publish();
+        let Self {
+            mut publication,
+            _funding: funding,
+        } = self;
+        publication.publish_admitted();
+        drop(publication);
+        drop(funding);
     }
 }
 impl IndexDefinitionReadBinding {
@@ -50,7 +56,6 @@ impl IndexDefinitionReadBinding {
                     source,
                     envelope.commit.commit_id,
                     envelope.commit.version_id,
-                    true,
                     &mut |units, bytes| work.prepare(units, bytes),
                 );
                 let basis = match basis {
@@ -59,11 +64,18 @@ impl IndexDefinitionReadBinding {
                     Err(Denial::ColdReconstructionRequired) => return Ok(None),
                     Err(stop) => return Err(stop),
                 };
-                indexes.prepare_generation_batch(Vec::new(), Some(basis), |units, bytes| work.prepare(units, bytes))
-                .map(Some).map_err(|stop| match stop {
+                let mut publication = indexes.prepare_generation_batch(
+                    Vec::new(), Some(basis), |units, bytes| work.prepare(units, bytes),
+                ).map_err(|stop| match stop {
                     crate::indexes::data::SelectedIndexGenerationAdmissionStop::Admission(stop) => stop,
                     crate::indexes::data::SelectedIndexGenerationAdmissionStop::AccountingOverflow => Denial::WorkBudgetExceeded,
-                })
+                })?;
+                publication.admit_actual_geometry(|units, bytes| work.prepare(units, bytes))
+                    .map_err(|stop| match stop {
+                        crate::indexes::data::SelectedIndexGenerationAdmissionStop::Admission(stop) => stop,
+                        crate::indexes::data::SelectedIndexGenerationAdmissionStop::AccountingOverflow => Denial::WorkBudgetExceeded,
+                    })?;
+                Ok(Some(publication))
             },
         )?;
         let (prepared, funding) = prepared.into_funded_parts();

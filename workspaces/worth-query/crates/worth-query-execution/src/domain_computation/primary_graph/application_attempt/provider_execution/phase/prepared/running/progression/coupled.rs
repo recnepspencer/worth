@@ -1,6 +1,6 @@
 //! Keep each actual producer's typed admission through the shared publication.
 use super::super::super::{
-    prepare_application_commit, WorthQueryApplicationCommitPreparation,
+    entry_custody::prepare_application_commit, WorthQueryApplicationCommitPreparation,
     WorthQueryApplicationCommitPreparationRequest,
 };
 use super::super::start_managed_application_commit;
@@ -73,6 +73,9 @@ pub(in crate::domain_computation::primary_graph) struct RegisteredCoupledWriter<
     returned: crate::domain_computation::provider_session::ReturnedProviderDirectRun,
     cleanup: WorthQueryApplicationMutationCleanupOwner,
     lease: WorthQueryApplicationSnapshotLease,
+    original_completion:
+        crate::domain_computation::primary_graph::provider::OriginalCompletionReceiver,
+    completion_storage: super::super::completion_storage::ApplicationCommitCompletionStorage,
 }
 struct CoupledWriterAdmission<S: ApplicationSchema, B: WorthQueryApplicationProducerBinding<S>> {
     admission: crate::domain_computation::primary_graph::WorthQueryAdmittedApplicationOperation<
@@ -102,6 +105,7 @@ where
         .unwrap_or_else(|_| panic!("installed executor retains its own nominal producer attempt"));
     let source = attempt.source;
     let WorthQueryRunningApplicationCommit {
+        completion_storage,
         admission,
         lease,
         provider_attempt,
@@ -110,20 +114,25 @@ where
         idempotency,
         running,
         mutation_run,
-        attempt_basis,
+        mut attempt_basis,
         workflow_settlement_publication,
         aftermath_causality,
         ..
     } = attempt.commit;
+    let original_completion = attempt_basis.take_original_completion();
     let request = admission.publication_request().clone();
     let fail = |completion: WorthQueryProviderProgressionCompletion,
                 running: crate::domain_computation::WorthQueryRunningDirectRun,
-                lease| {
-        progressed::finish_application_commit(
+                lease,
+                original_completion,
+                completion_storage: super::super::completion_storage::ApplicationCommitCompletionStorage| {
+        progressed::finish_coupled_application_commit(
             execution,
             phase,
             application,
-            completion.finish(lease, running, workflow_settlement_publication, request),
+            completion_storage.complete(completion.finish(
+                lease, running, workflow_settlement_publication, request, original_completion,
+            )),
         )
     };
     use session_admission::CoupledProviderSessionAdmission as Admission;
@@ -151,6 +160,8 @@ where
                 },
                 run,
                 lease,
+                original_completion,
+                completion_storage,
             ));
         }
     };
@@ -161,6 +172,8 @@ where
                 failure.into_completion(),
                 returned.take().expect("closed plan returned actual run"),
                 lease,
+                original_completion,
+                completion_storage,
             ))
         }
     };
@@ -185,6 +198,8 @@ where
                     .take()
                     .expect("closed registration returned actual run"),
                 lease,
+                original_completion,
+                completion_storage,
             ))
         }
     };
@@ -195,6 +210,8 @@ where
             completion,
             returned.take().expect("closed session returned actual run"),
             lease,
+            original_completion,
+            completion_storage,
         ));
     };
     let (registered, mutation_run) = registered.into_coupled_parts();
@@ -210,6 +227,8 @@ where
         returned,
         cleanup: WorthQueryApplicationMutationCleanupOwner::ProviderBound(mutation_run),
         lease,
+        original_completion,
+        completion_storage,
     })
 }
 

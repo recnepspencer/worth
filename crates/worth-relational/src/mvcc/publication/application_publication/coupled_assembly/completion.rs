@@ -10,8 +10,9 @@ use crate::publication::data::AuthoredRetirementRefusal as Cause;
 pub struct RelationalCoupledAuthoredPublication {
     pub(crate) binding: Arc<BoundAuthoredCoupling>,
     pub(crate) authored_records: Vec<crate::transactions::data::RecordRef>,
-    pub(crate) authored_commands: crate::transactions::data::MergedCommitPlan,
+    pub(crate) authored_commands: Arc<crate::mvcc::OwnedNormalizedPlan>,
     pub(crate) parts: Vec<CoupledPublicationPart>,
+    _authored_records_memory: Option<worth_execution::ExecutionMemoryReservation>,
 }
 impl std::fmt::Debug for RelationalCoupledAuthoredPublication {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -48,7 +49,7 @@ impl RelationalCoupledAuthoredPublication {
 /// adopts it. It is neither a preview nor a second application of its commands.
 pub(crate) struct CoupledAppliedCandidate {
     pub(crate) identity: RelationalMutationProposalIdentity,
-    pub(crate) commands: crate::transactions::data::MergedCommitPlan,
+    pub(crate) commands: crate::mvcc::OwnedNormalizedPlan,
     pub(crate) mutation: AppliedMutationCore,
 }
 
@@ -66,11 +67,10 @@ pub(crate) fn prepare_coupled_candidate(
     };
     let runtime = round.with_candidate_symbols(symbols);
     let mut prepared = crate::authority::commit::phases::prepare::prepare_working_state_scope(
-        execution,
         &runtime,
         transaction,
         selected,
-        execution.allocation_policy(),
+        execution,
     )?;
     let authored_commands = transaction
         .prepared_coupled_commands
@@ -86,13 +86,19 @@ pub(crate) fn prepare_coupled_candidate(
             &runtime,
             &selected,
             &prepared,
-            &authored_commands,
+            authored_commands.plan(),
             identity,
             owned_symbols,
             &transaction.content,
         )?;
+    let authored_records_memory = crate::mvcc::plan_copy_admission::reserve_copy(
+        execution,
+        crate::mvcc::plan_copy_admission::slots::<crate::transactions::data::RecordRef>(
+            mutation.outcome.effect.publication.changed_records.len(),
+        ),
+    )?;
     let authored_records = mutation.outcome.effect.publication.changed_records.clone();
-    writer_custody::require(execution, &binding.owners, None, &authored_commands)?;
+    writer_custody::require(execution, &binding.owners, None, authored_commands.plan())?;
     let mut candidate = RelationalAuthoredCoupledCandidate {
         runtime: &runtime,
         transaction,
@@ -125,15 +131,12 @@ pub(crate) fn prepare_coupled_candidate(
         Ok(())
     }).map_err(custody::execution_stop)?.0?;
     let final_runtime = round.with_candidate_symbols(mutation.candidate_symbols());
-    let intents = transaction
-        .normalized_intents_for_merge(&final_runtime, execution.allocation_policy())
-        .map_err(TransactionCommitError::conflict)?;
-    let commands = transaction
-        .build_merged_plan_for_state(&final_runtime, &selected, intents)
-        .map_err(TransactionCommitError::conflict)?;
+    let intents = transaction.normalized_intents_for_merge(&final_runtime, execution)?;
+    let commands =
+        transaction.build_merged_plan_for_state(&final_runtime, &selected, intents, execution)?;
     transaction
         .footprint
-        .derive_validation_dependencies(&commands, execution.allocation_policy())
+        .derive_validation_dependencies(commands.plan(), execution.allocation_policy())
         .map_err(|failure| TransactionCommitError::conflict(failure.into_conflict()))?;
     mutation.aggregate = crate::aggregate_identity::AggregateProposal::capture(
         &prepared.schema_authority,
@@ -150,6 +153,7 @@ pub(crate) fn prepare_coupled_candidate(
                 authored_records,
                 authored_commands,
                 parts,
+                _authored_records_memory: authored_records_memory,
             },
         },
     });

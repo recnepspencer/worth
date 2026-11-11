@@ -3,6 +3,8 @@ use std::sync::Arc;
 use serde::{Deserialize, Serialize};
 use worth_foundational::facade::AspectFieldLocator;
 
+mod intent_scope_targets;
+
 use crate::commit_strategies::data::canonical_digest::serial_intent_scope_digest;
 use crate::commit_strategies::data::native_strategy_intent_scope::{
     native_strategy_intent_scope_digest, native_strategy_intent_scope_targets,
@@ -21,7 +23,7 @@ pub enum StrategyMergeConflictClass {
     Custom,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 pub struct StrategyIntentScopeDigest([u8; 32]);
 
 impl StrategyIntentScopeDigest {
@@ -67,7 +69,7 @@ impl StrategyMergeSemantics {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Clone, Serialize, Deserialize)]
 pub struct StrategyMergeDescriptor {
     pub(super) strategy_id: CommitStrategyId,
     pub(super) descriptor_digest: CommitStrategyDescriptorDigest,
@@ -79,7 +81,11 @@ pub struct StrategyMergeDescriptor {
     #[serde(with = "crate::aspect_wire::serde_canonical_aspect_field_locator_arc_slice")]
     pub(super) intent_scope_targets: Arc<[AspectFieldLocator]>,
     pub(super) merge_semantics: StrategyMergeSemantics,
-    pub(super) lowering_summary_digest: [u8; 32],
+    pub(super) lowering_summary_digest: worth_foundational::CanonicalDigestId,
+    // Last: original locators and their nested data precede their cold grant.
+    #[serde(skip)]
+    pub(super) intent_scope_targets_memory:
+        Option<Arc<worth_execution::ExecutionMemoryReservation>>,
 }
 
 impl StrategyMergeDescriptor {
@@ -97,10 +103,12 @@ impl StrategyMergeDescriptor {
             intent_scope_digest: strategy_intent_scope_digest(descriptor, lowered),
             intent_scope_targets: strategy_intent_scope_targets(descriptor, lowered),
             merge_semantics: merge_semantics_for_descriptor(descriptor),
-            lowering_summary_digest:
+            lowering_summary_digest: worth_foundational::CanonicalDigestId::new(
                 crate::commit_strategies::data::canonical_digest::lowering_summary_digest(
                     lowered.lowering_summary(),
                 ),
+            ),
+            intent_scope_targets_memory: None,
         }
     }
 
@@ -141,7 +149,7 @@ impl StrategyMergeDescriptor {
     }
 
     pub fn lowering_summary_digest(&self) -> &[u8; 32] {
-        &self.lowering_summary_digest
+        self.lowering_summary_digest.bytes()
     }
 }
 
@@ -197,4 +205,16 @@ fn strategy_intent_scope_targets(
     native_strategy_intent_scope_targets(descriptor, lowered)
         .unwrap_or_default()
         .into()
+}
+
+impl Serialize for StrategyIntentScopeDigest {
+    fn serialize<S: serde::Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
+        worth_foundational::CanonicalDigestId::new(self.0).serialize(serializer)
+    }
+}
+impl<'de> Deserialize<'de> for StrategyIntentScopeDigest {
+    fn deserialize<D: serde::Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
+        worth_foundational::CanonicalDigestId::deserialize(deserializer)
+            .map(|digest| Self(*digest.bytes()))
+    }
 }

@@ -1,0 +1,8 @@
+COMMAND: ["cargo", "fmt", "--manifest-path", "workspaces/worth-query/Cargo.toml", "-p", "worth-query-host", "--", "--check"]
+HEAD: 7e2a7b85ff02fa253c1d99649625fa666f90e306
+CLEAN: false
+START: 2026-11-08T16:56:26.518928+00:00
+ENV: removed stale external linker override; RUST_MIN_STACK unset in parent
+
+END: 2026-11-08T16:56:27.257491+00:00
+EXIT: 0

@@ -1,6 +1,8 @@
 //! Current complete canonical publication per family/source route at one native root.
 //! This derived selection image grants no ownership without native/proof custody.
+mod checkpoint;
 pub(crate) mod presence;
+mod readmission;
 use super::CommitId;
 use crate::execution::request_stage::checkpoint;
 use crate::identity::data::EntityId;
@@ -29,7 +31,7 @@ struct PublicationRoute {
     family: String,
     source: EntityId,
     partition: [u8; 32],
-    _funding: ExecutionMemoryReservation,
+    _funding: Option<ExecutionMemoryReservation>,
 }
 
 #[derive(Debug)]
@@ -39,7 +41,7 @@ struct PositionNode {
     left: Option<Arc<Self>>,
     right: Option<Arc<Self>>,
     height: u8,
-    _funding: ExecutionMemoryReservation,
+    _funding: Option<ExecutionMemoryReservation>,
 }
 
 type Lease<'a, 'scope> = Option<&'a ExecutionResourceLease<'scope>>;
@@ -107,8 +109,8 @@ fn insert(
         let route = Arc::new(PublicationRoute {
             family: meaning.family.clone(),
             source: meaning.source_scope,
-            partition: meaning.source_partition,
-            _funding: funding,
+            partition: *meaning.source_partition.bytes(),
+            _funding: Some(funding),
         });
         return node(route, publication, None, None, lease, context);
     };
@@ -174,7 +176,7 @@ fn compare(
         .family
         .cmp(&meaning.family)
         .then_with(|| route.source.cmp(&meaning.source_scope))
-        .then_with(|| route.partition.cmp(&meaning.source_partition)))
+        .then_with(|| route.partition.cmp(meaning.source_partition.bytes())))
 }
 
 fn height(node: &Option<Arc<PositionNode>>) -> u8 {
@@ -204,7 +206,7 @@ fn node(
         left,
         right,
         height,
-        _funding: funding,
+        _funding: Some(funding),
     }))
 }
 

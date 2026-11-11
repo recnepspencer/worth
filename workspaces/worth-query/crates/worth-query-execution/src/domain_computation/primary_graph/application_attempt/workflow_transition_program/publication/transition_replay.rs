@@ -29,20 +29,16 @@ impl<Schema, Operation, Input, Scope> PreparedWorkflowAdvance<Schema, Operation,
         Operation: 'static,
         Input: Clone + Send + Sync + 'static,
     {
-        let (admission, locator, approval_identity, approval, replays) = match self {
+        let (admission, approval_identity, replays) = match self {
             Self::Transition {
                 program,
-                transition_identity_locator,
-                approval,
                 approval_identity,
                 approval_authentication,
                 replays,
                 ..
             } => (
                 &program.read_set.admission,
-                transition_identity_locator,
                 *approval_identity,
-                approval.as_ref(),
                 approval_authentication
                     .as_ref()
                     .and_then(|authentication| authentication.trusted_replays())
@@ -50,59 +46,36 @@ impl<Schema, Operation, Input, Scope> PreparedWorkflowAdvance<Schema, Operation,
             ),
             Self::AwaitingAssessment(prepared) => (
                 &prepared.admitted.read_set().admission,
-                &prepared.layout.transition.identity,
-                None,
                 None,
                 &prepared.replays,
             ),
             Self::AwaitingCondition(prepared) => (
                 &prepared.admitted.read_set().admission,
-                &prepared.layout.transition.identity,
-                None,
                 None,
                 &prepared.replays,
             ),
             Self::AwaitingOperation(prepared) => (
                 &prepared.admitted.read_set().admission,
-                &prepared.layout.transition.identity,
-                None,
                 None,
                 &prepared.replays,
             ),
             Self::AwaitingEvidence {
-                read_set,
-                transition_identity_locator,
-                replays,
-                ..
+                read_set, replays, ..
             }
             | Self::AwaitingProposal {
-                read_set,
-                transition_identity_locator,
-                replays,
-                ..
+                read_set, replays, ..
             }
             | Self::AwaitingApproval {
-                read_set,
-                transition_identity_locator,
-                replays,
-                ..
+                read_set, replays, ..
             }
             | Self::ReplayOnly {
-                read_set,
-                transition_identity_locator,
-                replays,
-                ..
+                read_set, replays, ..
             } => (
                 &read_set.admission,
-                transition_identity_locator,
                 match self {
                     Self::ReplayOnly {
                         approval_identity, ..
                     } => *approval_identity,
-                    _ => None,
-                },
-                match self {
-                    Self::ReplayOnly { approval, .. } => approval.as_ref(),
                     _ => None,
                 },
                 replays,
@@ -114,11 +87,21 @@ impl<Schema, Operation, Input, Scope> PreparedWorkflowAdvance<Schema, Operation,
                 admission,
                 idempotency.bind_workflow_transition(&probe_identity),
             )?;
-            if matches!(
-                probe.into_resolution(),
-                WorthQueryApplicationIdempotencyResolution::Unseen
-            ) {
-                return Ok(None);
+            match probe.into_resolution() {
+                WorthQueryApplicationIdempotencyResolution::ReleasedOriginal(_) => return Ok(Some(WorkflowProgressOutcome::Application(WorthQueryApplicationUncommitted::Denied(crate::domain_computation::primary_graph::WorthQueryApplicationCommitDenial::original_effect_released())))),
+            WorthQueryApplicationIdempotencyResolution::Unseen => return Ok(None),
+                WorthQueryApplicationIdempotencyResolution::ProductUnpublished(owner) => {
+                    return Ok(Some(WorkflowProgressOutcome::Application(
+                        WorthQueryApplicationUncommitted::ProductUnpublished(owner),
+                    )))
+                }
+                WorthQueryApplicationIdempotencyResolution::ProductPreparationPending(owner) => {
+                    return Ok(Some(WorkflowProgressOutcome::Application(
+                        WorthQueryApplicationUncommitted::ProductPreparationPending(owner),
+                    )))
+                }
+                WorthQueryApplicationIdempotencyResolution::IntentDrift
+                | WorthQueryApplicationIdempotencyResolution::RecoveredCommitted(_) => {}
             }
         }
         let replays = replays.materialize();
@@ -138,29 +121,23 @@ impl<Schema, Operation, Input, Scope> PreparedWorkflowAdvance<Schema, Operation,
         });
         let resolutions =
             runtime.resolve_admitted_application_idempotencies(execution, admission, bindings)?;
-        for (replay, resolution) in replays.iter().zip(resolutions) {
+        for resolution in resolutions {
             match resolution.into_resolution() {
-                WorthQueryApplicationIdempotencyResolution::Unseen => {}
-                WorthQueryApplicationIdempotencyResolution::IntentDrift => drift = true,
-                WorthQueryApplicationIdempotencyResolution::AlreadyCommitted(receipt) => {
-                    return Ok(Some(runtime.runtime.primary_provider.graph.with_runtime(
-                        execution,
-                        |relational| {
-                            super::project(
-                                execution,
-                                relational,
-                                receipt,
-                                replay.identity.clone(),
-                                locator.clone(),
-                                replay.node_path.clone(),
-                                replay.terminal,
-                                None,
-                                approval.cloned(),
-                                replay.operation_receipt_identity,
-                                true,
-                            )
-                        },
+                WorthQueryApplicationIdempotencyResolution::ReleasedOriginal(_) => return Ok(Some(WorkflowProgressOutcome::Application(WorthQueryApplicationUncommitted::Denied(crate::domain_computation::primary_graph::WorthQueryApplicationCommitDenial::original_effect_released())))),
+            WorthQueryApplicationIdempotencyResolution::Unseen => {}
+                WorthQueryApplicationIdempotencyResolution::ProductUnpublished(owner) => {
+                    return Ok(Some(WorkflowProgressOutcome::Application(
+                        WorthQueryApplicationUncommitted::ProductUnpublished(owner),
                     )))
+                }
+                WorthQueryApplicationIdempotencyResolution::ProductPreparationPending(owner) => {
+                    return Ok(Some(WorkflowProgressOutcome::Application(
+                        WorthQueryApplicationUncommitted::ProductPreparationPending(owner),
+                    )))
+                }
+                WorthQueryApplicationIdempotencyResolution::IntentDrift => drift = true,
+                WorthQueryApplicationIdempotencyResolution::RecoveredCommitted(receipt) => {
+                    return Ok(Some(WorkflowProgressOutcome::RecoveredCommitted(receipt)))
                 }
             }
         }
@@ -321,6 +298,7 @@ impl<Schema, Operation, Input, Scope> PreparedWorkflowAdvance<Schema, Operation,
                 })
         };
         Ok(match resolution.into_resolution() {
+            WorthQueryApplicationIdempotencyResolution::ReleasedOriginal(_) => return Ok(Some(WorkflowProgressOutcome::Application(WorthQueryApplicationUncommitted::Denied(crate::domain_computation::primary_graph::WorthQueryApplicationCommitDenial::original_effect_released())))),
             WorthQueryApplicationIdempotencyResolution::Unseen => {
                 // Local effects settle this original transition atomically. A fresh
                 // confirmation key observes that settlement without recording a command.
@@ -339,13 +317,23 @@ impl<Schema, Operation, Input, Scope> PreparedWorkflowAdvance<Schema, Operation,
                     None
                 }
             }
+            WorthQueryApplicationIdempotencyResolution::ProductUnpublished(owner) => {
+                Some(WorkflowProgressOutcome::Application(
+                    WorthQueryApplicationUncommitted::ProductUnpublished(owner),
+                ))
+            }
+            WorthQueryApplicationIdempotencyResolution::ProductPreparationPending(owner) => {
+                Some(WorkflowProgressOutcome::Application(
+                    WorthQueryApplicationUncommitted::ProductPreparationPending(owner),
+                ))
+            }
             WorthQueryApplicationIdempotencyResolution::IntentDrift => Some(
                 WorkflowProgressOutcome::Application(WorthQueryApplicationUncommitted::Denied(
                     WorthQueryApplicationCommitDenial::idempotency_intent_drift(),
                 )),
             ),
-            WorthQueryApplicationIdempotencyResolution::AlreadyCommitted(receipt) => {
-                Some(project_original(receipt))
+            WorthQueryApplicationIdempotencyResolution::RecoveredCommitted(receipt) => {
+                return Ok(Some(WorkflowProgressOutcome::RecoveredCommitted(receipt)))
             }
         })
     }

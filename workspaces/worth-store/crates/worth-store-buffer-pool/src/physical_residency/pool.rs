@@ -40,6 +40,7 @@ mod pin_lifecycle;
 mod public_api;
 mod range_invalidation;
 mod recovery_admission;
+mod retirement;
 mod writeback_claim;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]

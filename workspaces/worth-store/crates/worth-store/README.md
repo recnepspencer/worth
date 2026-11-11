@@ -31,6 +31,42 @@ for the implemented caller contract, limits, and later-phase boundaries.
 returns a typed admission denial. Readers, sessions, and scans retain that
 root's protection; root observations cannot manufacture a reader.
 
+`try_records_for_checkpoint(original_request)` makes one nonwaiting attempt
+under the same current-root, reclaim and protection-registry order. Busy,
+stopped and protection refusals install no reader. Retain the accepted reader
+before consulting cancellation again; no fallible request check follows lease
+installation. Existing reader construction still allocates its read-source Arc;
+this is no hard wall-clock or allocation-free guarantee.
+
+`AnchoredRecords::open_payload_from` and `OrderedJournal::open_payload_from`
+read through that exact protected reader. `describe_entry_from` provides an
+original-request-funded journal header description without consuming the full
+payload; this is metadata, not verified payload evidence. Their streams retain the original
+request, copy at most 64 KiB per call, and latch any refusal. Header coordinates
+are descriptive until verified EOF. Anchor EOF validates the complete anchor
+record, member table and payload; journal EOF validates the target payload and,
+for the selected head, its full record hash. Older journal linkage uses the
+selected physical manifest's immutable identities and validated frames, not a
+transitive journal hash chain. Metadata is admitted before growth; payload
+storage belongs to the caller. Perform payload I/O outside logical reservations.
+Controlled open reserves the fixed future carrier Arc BEFORE record I/O and
+member-table growth, including payload-only readers. The table has its separate
+actual reservation. After verified EOF,
+`into_verified_membership(original_reader)` moves both original owners into
+`AnchoredRecordReadMembership` with ONE pre-funded private Arc allocation.
+Before EOF, after refusal or for a mismatching root, both resources and their
+grants return unchanged. No new request consultation discards completed EOF.
+Clone shares only that private Arc; callers receive no Arc/Weak/unwrap escape.
+Both table and Arc grants stay inside the original shared backing through its
+last owner. `validate_read_membership` checks its physical owner, original root
+and live protection without waiting. `open_read_member(carrier, table_index,
+limit)` selects the actual verified table entry in O(1), and journal
+`*_from_read` methods delegate through the same private reader. No latest-anchor
+recapture, second reader registration or source wrapper participates. Retain
+this same carrier through all selected-section consumers.
+Disposal follows ordinary unbudgeted physical protection release, not a Home
+close or complete semantic-checkpoint proof.
+
 `physical_runtime::stability` owns the live chunk guard, security-scope
 propagation adapter, and `StablePhysicalReadExecution`. Its
 `StablePhysicalReadReceipt` carries actual execution counters plus lower plan

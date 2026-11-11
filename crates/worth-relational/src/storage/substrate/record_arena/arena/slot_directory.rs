@@ -1,4 +1,6 @@
 use crate::storage::substrate::{SharedColumn, SharedMap};
+#[cfg(test)]
+mod custody_tests;
 
 #[derive(Debug, Clone, Default)]
 pub(crate) struct RecordSlotDirectory {
@@ -50,6 +52,18 @@ impl RecordSlotDirectory {
         Ok(directory)
     }
 
+    pub(crate) fn restore_for_request(
+        _lane: &crate::storage::substrate::maintenance::ReconstructionLane<'_>,
+        slots: Vec<u64>,
+        request: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> Result<Self, super::MetadataWriteDenial> {
+        let mut directory = Self::with_capacity(slots.len());
+        for slot in slots {
+            directory.insert_for_request(slot, request)?;
+        }
+        Ok(directory)
+    }
+
     pub(crate) fn physical_index(&self, logical_slot: usize) -> Option<usize> {
         self.physical_by_logical
             .get(&(logical_slot as u64))
@@ -72,6 +86,28 @@ impl RecordSlotDirectory {
         Ok(copied_bytes.saturating_add(self.physical_by_logical.insert(logical_slot, physical)))
     }
 
+    pub(super) fn insert_for_request(
+        &mut self,
+        logical_slot: u64,
+        request: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> Result<u64, super::MetadataWriteDenial> {
+        if self.physical_by_logical.contains_key(&logical_slot) {
+            return Err(super::MetadataWriteDenial::Invalid(
+                "record slot directory contains a duplicate logical slot",
+            ));
+        }
+        let physical = self.logical_by_physical.len();
+        let copied = self
+            .logical_by_physical
+            .push_for_request(logical_slot, request)?;
+        Ok(
+            copied.saturating_add(self.physical_by_logical.insert_for_request(
+                logical_slot,
+                physical,
+                request,
+            )?),
+        )
+    }
     pub(crate) fn try_occupied_slots<Stop>(
         &self,
         prepare: impl FnMut(u64, u64) -> Result<(), Stop>,
@@ -102,12 +138,6 @@ impl RecordSlotDirectory {
 
     pub(crate) fn len(&self) -> usize {
         self.logical_by_physical.len()
-    }
-
-    pub(crate) fn allocation_bytes(&self) -> u64 {
-        self.logical_by_physical
-            .allocation_bytes()
-            .saturating_add(self.physical_by_logical.allocation_bytes())
     }
 
     pub(super) fn visit_allocations(

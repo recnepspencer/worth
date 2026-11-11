@@ -1,8 +1,13 @@
-use std::collections::{BTreeMap, BTreeSet};
-
 use super::{FieldDeclaration, FieldKey};
 use crate::values::AspectValue;
 use serde::{Deserialize, Serialize};
+
+mod field_map;
+mod patch_storage;
+mod storage_bounds;
+pub use storage_bounds::StructAspectValueStorageBounds;
+#[cfg(test)]
+mod tests;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct StructAspectShape {
@@ -14,11 +19,8 @@ impl StructAspectShape {
         let mut fields: Vec<_> = fields.into_iter().collect();
         fields.sort_by(|left, right| left.key().cmp(right.key()));
 
-        let mut seen = BTreeSet::new();
-        for field in &fields {
-            if !seen.insert(field.key().clone()) {
-                return None;
-            }
+        if fields.windows(2).any(|pair| pair[0].key() == pair[1].key()) {
+            return None;
         }
 
         Some(Self { fields })
@@ -73,13 +75,60 @@ impl<'de> Deserialize<'de> for StructAspectValue {
     fn deserialize<D: serde::Deserializer<'de>>(decoder: D) -> Result<Self, D::Error> {
         #[derive(Deserialize)]
         struct Image {
-            fields: BTreeMap<FieldKey, AspectValue>,
+            #[serde(deserialize_with = "field_map::deserialize")]
+            fields: Box<[(FieldKey, AspectValue)]>,
         }
-        Self::new(Image::deserialize(decoder)?.fields)
+        Self::from_sorted_fields(Image::deserialize(decoder)?.fields)
             .map_err(|error| serde::de::Error::custom(format!("{error:?}")))
     }
 }
 impl StructAspectValue {
+    /// Cloning shares the immutable root; it allocates no heap backing.
+    pub(crate) fn clone_allocation_bytes(&self) -> Option<usize> {
+        Some(0)
+    }
+
+    /// Admit strictly ordered fields and move them into a balanced tree in O(n).
+    /// Invalid input is returned without consuming or reallocating its backing.
+    /// Success allocates tree/key/value Arc backing, but does not clone payloads.
+    pub fn from_sorted_fields(
+        fields: Box<[(FieldKey, AspectValue)]>,
+    ) -> Result<Self, StructAspectValueSortedFieldsDenied> {
+        if let Some(invalid_pair_index) = fields.windows(2).position(|pair| pair[0].0 >= pair[1].0)
+        {
+            return Err(StructAspectValueSortedFieldsDenied {
+                fields,
+                invalid_pair_index,
+            });
+        }
+        let (allocation_bytes, semantic_bytes) =
+            fields
+                .iter()
+                .fold((0u128, 0u128), |(allocation, semantic), (key, value)| {
+                    let (next_allocation, next_semantic) = field_extent(key, value);
+                    (allocation + next_allocation, semantic + next_semantic)
+                });
+        Ok(Self {
+            fields: super::field_tree::StructFields::from_sorted_fields(
+                fields.into_vec().into_iter(),
+            ),
+            allocation_bytes,
+            semantic_bytes,
+        })
+    }
+
+    /// New tree/key/value Arc backing for sorted admission. Existing input and
+    /// nested key/value heaps are excluded: ownership moves without cloning.
+    pub fn sorted_construction_storage_bytes(entry_count: usize) -> Option<usize> {
+        storage_bounds::sorted_construction(entry_count)
+    }
+
+    /// Tree backing and contiguous decode staging for actual raw entry count.
+    /// Nested heaps are excluded; duplicate keys may reduce final retention.
+    pub fn decode_storage_bounds(entry_count: usize) -> Option<StructAspectValueStorageBounds> {
+        storage_bounds::decode(entry_count)
+    }
+
     pub fn len(&self) -> usize {
         self.fields.len()
     }
@@ -110,6 +159,10 @@ impl StructAspectValue {
     }
     pub fn owned_allocation_capacity_bytes(&self) -> usize {
         self.allocation_bytes.min(usize::MAX as u128) as usize
+    }
+    /// Checked reachable immutable backing for an independent retained holder.
+    pub fn retained_storage_bytes(&self) -> Option<usize> {
+        usize::try_from(self.allocation_bytes).ok()
     }
     pub(crate) fn semantic_byte_width(&self) -> usize {
         self.semantic_bytes.min(usize::MAX as u128) as usize
@@ -153,6 +206,28 @@ fn field_extent(key: &FieldKey, value: &AspectValue) -> (u128, u128) {
         allocation,
         key.as_str().len() as u128 + value.semantic_byte_width() as u128,
     )
+}
+
+/// Original owned fields rejected for nonascending or duplicate adjacent keys.
+#[derive(Debug)]
+pub struct StructAspectValueSortedFieldsDenied {
+    fields: Box<[(FieldKey, AspectValue)]>,
+    invalid_pair_index: usize,
+}
+
+impl StructAspectValueSortedFieldsDenied {
+    pub fn fields(&self) -> &[(FieldKey, AspectValue)] {
+        &self.fields
+    }
+
+    /// Index of the left field in the first invalid adjacent pair.
+    pub fn invalid_pair_index(&self) -> usize {
+        self.invalid_pair_index
+    }
+
+    pub fn into_fields(self) -> Box<[(FieldKey, AspectValue)]> {
+        self.fields
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]

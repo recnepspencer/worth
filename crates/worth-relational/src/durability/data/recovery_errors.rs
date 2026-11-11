@@ -18,6 +18,11 @@ pub enum RecoveryFailureClass {
     ProfileMismatch,
     RuntimeNameMismatch,
     CorruptCheckpoint,
+    /// The branch-root image uses another undeployed commitment grammar.
+    UnsupportedBranchRootImageVersion {
+        found: u16,
+        supported: u16,
+    },
     /// A canonical commit artifact a medium returned did not readmit.
     CorruptCanonicalArtifact,
     /// A medium's tail skipped or repeated a position after the checkpoint.
@@ -244,6 +249,7 @@ impl DurabilityError {
                 ErrorOperation::WriteDurableStore
             }
             RecoveryFailureClass::CorruptCheckpoint
+            | RecoveryFailureClass::UnsupportedBranchRootImageVersion { .. }
             | RecoveryFailureClass::CorruptCanonicalArtifact
             | RecoveryFailureClass::NonContiguousCanonicalTail
             | RecoveryFailureClass::CorruptBranchTransitionArtifact

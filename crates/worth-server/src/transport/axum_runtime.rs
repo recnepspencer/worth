@@ -28,10 +28,6 @@ pub(crate) async fn serve_runtime(runtime: WorthServerRuntime) -> io::Result<()>
             query_handoff: runtime.assembly().query_handoff_facade().clone(),
             responses: runtime.assembly().response_facade().clone(),
             operator_evidence: runtime.assembly().operator_evidence_facade().clone(),
-            idempotency_store: runtime
-                .assembly()
-                .compat_http_mutation_retry_store()
-                .clone(),
             product_operation_retry_store: runtime
                 .assembly()
                 .product_operation_retry_store()

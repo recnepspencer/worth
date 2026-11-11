@@ -152,10 +152,10 @@ fn response_loss_and_interleaving_preserve_one_preimage_and_outbox_bundle() {
             idempotency(83, 84),
             worth_execution::ExecutionAllocationPolicy::SystemAllocation
         ),
-        WorthQueryApplicationCommitOutcome::AlreadyCommitted(_)
+        WorthQueryApplicationCommitOutcome::RecoveredCommitted(_)
     ));
     assert_eq!(commit_count(), baseline + 2);
-    let WorthQueryApplicationCommitOutcome::AlreadyCommitted(recovered) =
+    let WorthQueryApplicationCommitOutcome::RecoveredCommitted(recovered) =
         world.application.compare_and_commit_application(
             retry,
             idempotency(81, 82),
@@ -165,21 +165,50 @@ fn response_loss_and_interleaving_preserve_one_preimage_and_outbox_bundle() {
         panic!("later equivalent resolution must reopen the original evidence");
     };
 
-    assert!(recovered.is_same_authoritative_commit(&original));
-    assert_eq!(recovered.mutation_work(), original.mutation_work());
-    assert_eq!(recovered.dispatch_outbox(), original.dispatch_outbox());
-    assert_eq!(
-        recovered.retained_preimage_for_test(),
-        original.retained_preimage_for_test()
+    worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::recorded_receipt::assert_original(
+        &recovered, &original,
     );
+    assert_retained_status(&original, "open");
     assert_eq!(original.terminal().attempt_resources_released(), Some(true));
-    assert_eq!(recovered.terminal().attempt_resources_released(), None);
+    // Recorded data cannot supply live preimage authority. Inspect the actual
+    // already-retained owner custody independently, without minting a receipt.
+    assert!(recovered.world_journal_position().is_none());
     assert!(recovered.dispatch_outbox().is_some());
-    assert_retained_status(&recovered, "open");
+    assert_eq!(
+        world.application.provider_session_resource_count_for_test(),
+        0
+    );
     assert_eq!(commit_count(), baseline + 2);
     let commit = original.commit_reference().clone();
-    let original_meaning = original.authority_binding().clone();
-    let original_preimage = original.retained_preimage_for_test().cloned();
+    let owner_evidence = world
+        .application
+        .runtime_for_test()
+        .primary_provider_for_test()
+        .observe_completed_application_for_test(&commit)
+        .expect("the actual performed source still owns its preimage");
+    let retained = owner_evidence
+        .commit_evidence()
+        .retained_preimage_for_test()
+        .unwrap();
+    assert!(!format!("{retained:?}").contains("open"));
+    assert_eq!(
+        retained
+            .field_for(AccountStatus::at("AccountStatus"))
+            .unwrap()
+            .value(),
+        &worth_foundational::facade::AspectValue::String(
+            worth_foundational::facade::InternedString::from("open")
+        )
+    );
+    let original_meaning = owner_evidence
+        .commit_evidence()
+        .original_authority_for_test()
+        .clone();
+    let original_preimage = owner_evidence
+        .commit_evidence()
+        .retained_preimage_for_test()
+        .cloned();
+    drop(owner_evidence);
     drop(original);
     drop(recovered);
     let occurrence = (*(*world.application.runtime_for_test()).primary_provider_for_test())

@@ -22,13 +22,14 @@ pub use crate::validation::data::{
     CustomInvariantRuleId, CustomInvariantScopePlanner, CustomInvariantSemanticIdentity,
     CustomInvariantSemanticVersion, CustomInvariantVerdict, InvariantCatalog, InvariantCheckResult,
     InvariantClass, InvariantCostClass, InvariantDecisionKind, InvariantDecisionRecord,
-    InvariantExecutionPoint, InvariantFailureEffect, InvariantGroup, InvariantGroupSet,
-    InvariantRegistration, InvariantReportedRule, InvariantRule, InvariantVerdict,
-    PlannedRelationEndpointUpdate, StructuralAspectStateView, StructuralReadError,
-    StructuralRelationRecord, StructuralRelationView, StructuralWalkDenial,
-    StructuralWalkDenialKind, StructuralWalkReads, StructuralWalkStep,
+    InvariantEntityIds, InvariantExecutionPoint, InvariantFailureEffect, InvariantGroup,
+    InvariantGroupSet, InvariantPartitionIds, InvariantRegistration, InvariantRelationIds,
+    InvariantReportedRule, InvariantRule, InvariantVerdict, PlannedRelationEndpointUpdate,
+    RecordKindTag, StructuralAspectStateView, StructuralReadError, StructuralRelationRecord,
+    StructuralRelationView, StructuralWalkDenial, StructuralWalkDenialKind, StructuralWalkReads,
+    StructuralWalkStep,
 };
-pub use crate::validation::engine::InvariantExecutionResult;
+pub use crate::validation::engine::{InvariantExecutionResult, InvariantObservationKind};
 
 pub use crate::mvcc::{ManagedIndexSourceObservation, ManagedIndexSourceRebuild};
 pub use crate::validation::candidate_source::{

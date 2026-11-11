@@ -8,18 +8,20 @@ use worth_relational::facade::transactions::RecordRef;
 use super::WorthQueryPrimaryGraphProvider;
 use crate::domain_computation::application_aftermath::{
     WorthQueryDispatchOutboxLayout, WorthQueryDispatchOutboxRecord,
+    WorthQueryDispatchOutboxRestoredFields,
 };
 use crate::domain_computation::primary_graph::{
     WorthQueryApplicationCommitReceipt, WorthQueryCommittedProductPublication,
 };
 
 mod correlation;
-
+mod original_attempt;
+mod original_row;
+mod readmission;
 pub(crate) mod restoration;
-
 mod work;
 
-use restoration::{required_fields, restore_record};
+use restoration::{decode_fields, required_fields};
 
 pub use work::WorthQueryCommittedDispatchOutboxReadWork;
 
@@ -171,11 +173,12 @@ impl WorthQueryPrimaryGraphProvider {
         let Some(binding) = receipt.committed_dispatch_outbox() else {
             return Ok(None);
         };
-        self.observe_expected(
+        self.observe_held_original(
             execution,
             binding,
             receipt.commit_reference(),
             receipt.provider_runtime_instance_id(),
+            receipt.committed_product_publication(),
         )
         .map(|owner| {
             WorthQueryCommittedDispatchOutboxObservation::seal(
@@ -192,11 +195,12 @@ impl WorthQueryPrimaryGraphProvider {
         binding: &crate::domain_computation::application_aftermath::WorthQueryRecoveryHandleBinding,
     ) -> Result<WorthQueryCommittedDispatchOutboxObservation, Denial> {
         let committed = binding.committed_dispatch_outbox().ok_or(Denial::Missing)?;
-        self.observe_expected(
+        self.observe_held_original(
             execution,
             committed,
             binding.commit_reference(),
             binding.runtime_instance_id(),
+            binding.committed_product_publication(),
         )
         .map(|owner| {
             WorthQueryCommittedDispatchOutboxObservation::seal(
@@ -221,7 +225,7 @@ impl WorthQueryPrimaryGraphProvider {
             .unwrap_or_else(|poisoned| poisoned.into_inner())
             .acquire(expected_commit.commit_id)
             .ok_or(Denial::ExactCommitUnavailable)?;
-        self.graph.with_runtime_mut(execution, |runtime| {
+        self.graph.with_runtime(execution, |runtime| {
             crate::domain_computation::execution_runtime::product_world::record_installed_source_read_for_test();
             CommittedOutboxRead {
                 runtime,
@@ -229,7 +233,7 @@ impl WorthQueryPrimaryGraphProvider {
                 binding,
                 expected_commit: &expected_commit,
                 expected_runtime,
-                retained_basis: &retained_basis,
+                retained_basis: retained_basis.lease(),
             }
             .resolve(execution, )
         })
@@ -301,8 +305,7 @@ where
 mod record_read;
 use record_read::CommittedOutboxRead;
 
-#[cfg(test)]
-#[path = "committed_dispatch_outbox/restoration_tests.rs"]
-mod restoration_tests;
-
 mod court_doors_for_test;
+
+#[cfg(test)]
+mod restoration_tests;

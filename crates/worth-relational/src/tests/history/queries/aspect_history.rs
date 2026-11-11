@@ -188,8 +188,10 @@ fn bulk_like_aspect_history_filters_and_query_packets_stay_stable_after_recovery
     let host_request = crate::test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
-    let runtime =
-        durable_runtime_with_declared_aspect_schema(CascadeDeletePolicy::RetainDanglingForAudit);
+    let runtime = runtime_with_declared_aspect_schema_profile(
+        crate::facade::config::RelationalRuntimeProfile::CertificationCore,
+        CascadeDeletePolicy::RetainDanglingForAudit,
+    );
     let hub = create_entity(execution, &runtime, "hub");
     let leaves = (0..8)
         .map(|index| {
@@ -272,16 +274,19 @@ fn bulk_like_aspect_history_filters_and_query_packets_stay_stable_after_recovery
             relation_aspect_history_digest(execution, &runtime, *relation, Some(&lifecycle_filter))
         })
         .collect::<Vec<_>>();
-    crate::tests::support::checkpoint_durably(execution, &runtime).unwrap();
-    let recovery_plan = crate::tests::support::recovery_plan_for(
-        execution,
-        &runtime,
-        RecoveryMode::NormalRecoveryVerification,
-    )
-    .unwrap();
+    runtime
+        .durability_authority()
+        .checkpoint(execution)
+        .unwrap();
+    let recovery_plan = runtime
+        .durability()
+        .recovery_plan(execution, RecoveryMode::NormalRecoveryVerification)
+        .unwrap();
 
-    let mut recovered =
-        durable_runtime_with_declared_aspect_schema(CascadeDeletePolicy::RetainDanglingForAudit);
+    let mut recovered = runtime_with_declared_aspect_schema_profile(
+        crate::facade::config::RelationalRuntimeProfile::CertificationCore,
+        CascadeDeletePolicy::RetainDanglingForAudit,
+    );
     let recovery = recovered
         .durability_recovery()
         .recover(execution, recovery_plan)

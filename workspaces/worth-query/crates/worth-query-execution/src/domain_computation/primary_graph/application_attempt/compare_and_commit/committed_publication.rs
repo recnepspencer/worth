@@ -39,6 +39,29 @@ struct DescriptiveProductPublication {
 }
 
 impl WorthQueryCommittedProductPublication {
+    pub(in crate::domain_computation::primary_graph) fn preflight_home_retirement(
+        &mut self,
+        request: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> Result<(), crate::domain_computation::primary_graph::WorthQueryHomeRetirementDenial> {
+        match &mut self.custody {
+            PublicationCustody::Performed(receipt) => receipt.preflight_home_retirement(request),
+            PublicationCustody::Described(_) => Ok(()),
+        }
+    }
+    pub(in crate::domain_computation::primary_graph) fn advance_home_retirement(
+        &mut self,
+        request: &worth_execution::ExecutionRequest<'_, '_>,
+        native: &worth_relational::facade::runtime::RelationalRuntime,
+    ) -> Result<
+        crate::domain_computation::primary_graph::WorthQueryOperationHomeRetirementProgress,
+        crate::domain_computation::primary_graph::WorthQueryHomeRetirementDenial,
+    > {
+        match &mut self.custody {
+            PublicationCustody::Performed(receipt) => receipt.advance_home_retirement(request, native),
+            PublicationCustody::Described(_) => Ok(crate::domain_computation::primary_graph::WorthQueryOperationHomeRetirementProgress::Complete),
+        }
+    }
+
     /// Canonical World facts remain available only from actual consumed custody.
     pub(in crate::domain_computation::primary_graph) fn original_movement(
         &self,
@@ -90,16 +113,6 @@ impl WorthQueryCommittedProductPublication {
         match &mut self.custody {
             PublicationCustody::Performed(receipt) => receipt.take_history(),
             PublicationCustody::Described(_) => None,
-        }
-    }
-
-    /// Keeps this copy's commit in World history for as long as it lives.
-    pub(in crate::domain_computation::primary_graph) fn hold_history(
-        &mut self,
-        hold: crate::domain_computation::execution_runtime::product_world::WorthQueryCommitHistoryHold,
-    ) {
-        if let PublicationCustody::Performed(receipt) = &mut self.custody {
-            receipt.hold_history(hold);
         }
     }
 

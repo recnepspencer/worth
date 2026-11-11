@@ -1,3 +1,4 @@
+use worth_foundational::CanonicalDigestId;
 use worth_proof::{
     AdmitRecipeTransition, AuthorityMarker, AuthorityWitness, CapabilityMarker, CapabilityWitness,
     ContextualTransition, LowerRecipeTransition, Recipe, RecipeResolutionContext,
@@ -17,7 +18,7 @@ pub fn reject_raw_json_scenario_authority_attempt(
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub(crate) struct PhysicalScenarioResolutionBasis {
-    digest: [u8; 32],
+    digest: CanonicalDigestId,
     canonical_basis_entry_count: u32,
 }
 
@@ -27,7 +28,7 @@ pub(crate) fn certify_scenario_definition(
     let identity = definition.canonical_identity();
     let identity = identity?;
     let basis = PhysicalScenarioResolutionBasis {
-        digest: *identity.digest_bytes(),
+        digest: CanonicalDigestId::new(*identity.digest_bytes()),
         canonical_basis_entry_count: identity.canonical_basis_entry_count(),
     };
     require_resolution_basis(&basis)?;
@@ -62,7 +63,7 @@ pub(crate) fn certify_scenario_definition(
 fn require_resolution_basis(
     basis: &PhysicalScenarioResolutionBasis,
 ) -> Result<(), PhysicalScenarioDefinitionDenial> {
-    if basis.digest == [0; 32] || basis.canonical_basis_entry_count == 0 {
+    if *basis.digest.bytes() == [0; 32] || basis.canonical_basis_entry_count == 0 {
         return Err(PhysicalScenarioDefinitionDenial::ProofProgressionSkipped);
     }
     Ok(())

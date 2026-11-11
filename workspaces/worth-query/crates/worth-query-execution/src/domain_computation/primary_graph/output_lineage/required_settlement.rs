@@ -137,6 +137,39 @@ impl WorthQueryApplicationOutputLineage {
                         receipt.exact_output_settlement(),
                     )
                 }
+                WorthQueryAcceptedOutputAuthority::Recovered(publication) => {
+                    let receipt = publication.view();
+                    if receipt.principal_scope().runtime_authority() != runtime_authority
+                        || receipt.principal_scope().binding_identity() != schema
+                    {
+                        return Err(Unresolved::Stop(RequiredSettlementStop::Foreign));
+                    }
+                    let publication = receipt.committed_product_publication();
+                    let idempotency = receipt.idempotency_binding();
+                    let Some(source) = idempotency.source_identity() else {
+                        return Err(FullVerificationReason::NativeRevisionUnavailable.into());
+                    };
+                    let Some(partition) = idempotency.source_partition_identity() else {
+                        return Err(FullVerificationReason::UnsupportedFact.into());
+                    };
+                    (
+                        receipt.output_correspondence(),
+                        receipt.principal_scope().scope(),
+                        ProductCoordinate {
+                            occurrence: publication.product_incarnation(),
+                            generation: publication.product_generation().get(),
+                        },
+                        RecordedSourceIdentity::Runtime(
+                            super::super::application_query::WorthQueryRuntimeSourceIdentity::new(
+                                source,
+                            ),
+                        ),
+                        partition,
+                        idempotency.producer_dependency_identity(),
+                        *idempotency.key_identity(),
+                        receipt.exact_output_settlement(),
+                    )
+                }
                 WorthQueryAcceptedOutputAuthority::Stable(stable) => (
                     stable.output_correspondence().as_ref(),
                     stable.exact_settlement().source().scope,

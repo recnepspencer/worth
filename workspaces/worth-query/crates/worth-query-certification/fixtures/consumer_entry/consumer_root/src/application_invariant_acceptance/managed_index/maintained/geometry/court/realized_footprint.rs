@@ -1,13 +1,14 @@
 //! Indirect Source inputs participate in real retained expectation comparison.
 use super::super::refresh;
 use super::*;
+use crate::application_invariant_acceptance::managed_index::prefix_observation;
 
 #[test]
 fn realized_footprint_geometry_preserves_nonmatching_motion_and_refuses_candidate_endpoint_change()
 {
     lifecycle::run(|| {
         let boxes = Arc::new(provider::Calls::default());
-        let prefixes = Arc::new(prefix::Calls::default());
+        let prefixes = Arc::new(prefix_observation::Calls::default());
         let world = host::install_geometry(
             prefixes.clone(),
             Arc::new(prefix_rule::Calls::new(prefixes)),

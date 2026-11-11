@@ -233,3 +233,5 @@ pub use super::super::materialization::CausalInspectionMaterializationPolicy as 
 const _: () = assert!(CausalEvidenceFamily::ALL.len() <= 64);
 
 mod court_doors_for_test;
+
+pub use source::SourceMaterializationDenial;

@@ -1,9 +1,9 @@
-use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex};
 
+use super::signal_services::RuntimeWorldSignalServices;
 use worth_relational::facade::branch::RelationalOwnerServicePorts;
 use worth_runtime_bridge::facade::RuntimeWorldCorrespondencePort;
-use worth_signal::facade::branch::SignalOwnerServicePorts;
 
 use crate::branch::registry::ProductBranchRegistry;
 use crate::history::CompositeHistoryCatalog;
@@ -15,10 +15,12 @@ use crate::retention::RuntimeWorldRetentionOwner;
 
 use super::clock::RuntimeWorldClock;
 use super::close::RuntimeWorldCloseContract;
-use super::owner_inputs::RuntimeWorldOwnerInputs;
+use super::owner_inputs::{RuntimeWorldInstalledOwnerInputs, RuntimeWorldOwnerInputs};
 
 mod bootstrap;
 mod branch_service;
+pub(crate) use branch_service::WorldDurableCreationCustody;
+mod checkpoint_origin;
 mod construction;
 mod current_read_publication;
 pub use current_read_publication::PreparedWorldRelationalCutover;
@@ -37,18 +39,19 @@ pub(crate) use construction::{
 };
 pub(crate) use operation::{
     ReservedPublicationAttemptCapacity, RuntimeWorldOperationLedger,
-    RuntimeWorldOperationReservation, RuntimeWorldPublicationCapacityLedger,
+    RuntimeWorldOperationLedgerState, RuntimeWorldOperationReservation,
+    RuntimeWorldPublicationCapacityLedger,
 };
 pub use owned_async_product::{
     RuntimeWorldOwnedAsyncManagedRevalidationDenial, RuntimeWorldOwnedAsyncRequestAdmissionDenial,
     RuntimeWorldOwnedAsyncRevalidationDenial,
 };
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) enum RuntimeWorldBootstrapState {
     Unperformed,
     InProgress,
     Performed,
+    Pending(Arc<bootstrap::WorldDurableBootstrapCustody>),
 }
 
 /// The sole managed Runtime World owner. All identity, budget, component,
@@ -86,11 +89,10 @@ where
     pub(super) owner_present: AtomicBool,
     pub(super) owner_identity: RuntimeWorldOwnerIdentity,
     pub(super) identities: Mutex<RuntimeWorldIdentityIssuer>,
-    pub(super) relational: RelationalOwnerServicePorts,
-    pub(super) signal: SignalOwnerServicePorts<D, I, E, Ctx, T>,
-    pub(super) signal_definition_publication:
-        worth_signal::facade::branch::SignalConditionalDefinitionPublicationPort<D, I, E, Ctx, T>,
-    pub(super) bridge: RuntimeWorldCorrespondencePort,
+    pub(crate) durable: Option<Arc<crate::durability::WorldDurableMediumBinding>>,
+    pub(super) relational: Option<RelationalOwnerServicePorts>,
+    pub(super) signal: RuntimeWorldSignalServices<D, I, E, Ctx, T>,
+    pub(super) bridge: Option<RuntimeWorldCorrespondencePort>,
     pub(super) execution: super::execution::InstalledExecution,
     pub(super) clock: RuntimeWorldClock,
     pub(super) history: CompositeHistoryCatalog,
@@ -100,11 +102,6 @@ where
     pub(super) recovery: RecoveryCatalog,
     pub(super) bootstrap: Mutex<RuntimeWorldBootstrapState>,
     pub(super) close: Mutex<RuntimeWorldCloseContract>,
-    /// Callers currently blocked on the operation ledger inside close
-    /// admission. Close stops new admission, so an operator watching a world
-    /// that will not close needs to see that a close is queued rather than
-    /// absent.
-    pub(super) close_admission_waiters: AtomicUsize,
     pub(super) operation: RuntimeWorldOperationLedger,
     pub(super) publication_capacity: RuntimeWorldPublicationCapacityLedger,
 }
@@ -118,16 +115,23 @@ where
     pub fn new(
         inputs: RuntimeWorldOwnerInputs<D, I, E, Ctx, T>,
     ) -> Result<Self, RuntimeWorldIdentityExhaustion> {
-        let RuntimeWorldOwnerInputs {
+        let construction = RuntimeWorldOwnerConstructionContract::new()?;
+        Self::construct(inputs.into_installed(), construction, None)
+    }
+
+    pub(in crate::lifecycle) fn construct(
+        inputs: RuntimeWorldInstalledOwnerInputs<D, I, E, Ctx, T>,
+        construction: RuntimeWorldOwnerConstructionContract,
+        durable: Option<Arc<crate::durability::WorldDurableMediumBinding>>,
+    ) -> Result<Self, RuntimeWorldIdentityExhaustion> {
+        let RuntimeWorldInstalledOwnerInputs {
             relational,
             signal,
-            signal_definition_publication,
             bridge,
             budgets,
             clock,
             execution,
         } = inputs;
-        let construction = RuntimeWorldOwnerConstructionContract::new()?;
         let owner_identity = construction.owner_identity();
         let identities = construction.into_issuer();
         let history = CompositeHistoryCatalog::new(
@@ -137,10 +141,10 @@ where
                 budgets.history_metadata_bytes(),
             ),
         );
-        let retention = RuntimeWorldRetentionOwner::from_component_services(
+        let retention = RuntimeWorldRetentionOwner::new(
             owner_identity,
-            &relational,
-            &signal,
+            relational.basis_port(),
+            signal.basis_port(),
             budgets.unique_exact_component_pins(),
             budgets.in_flight_pin_acquisition_reservations(),
             budgets.active_observations(),
@@ -162,10 +166,10 @@ where
                 owner_present: AtomicBool::new(true),
                 owner_identity,
                 identities: Mutex::new(identities),
-                relational,
+                durable,
+                relational: Some(relational),
                 signal,
-                signal_definition_publication,
-                bridge,
+                bridge: Some(bridge),
                 execution,
                 clock,
                 history,
@@ -175,7 +179,6 @@ where
                 recovery,
                 bootstrap: Mutex::new(RuntimeWorldBootstrapState::Unperformed),
                 close: Mutex::new(RuntimeWorldCloseContract::open()),
-                close_admission_waiters: AtomicUsize::new(0),
                 operation: RuntimeWorldOperationLedger::new(),
                 publication_capacity,
             }),
@@ -209,3 +212,16 @@ where
 #[cfg(test)]
 #[path = "owner_tests.rs"]
 mod tests;
+
+impl<D, I, E, Ctx, T> RuntimeWorldOwnerState<D, I, E, Ctx, T>
+where
+    D: Copy + Ord + std::fmt::Debug + Send + Sync + 'static,
+    I: Copy + Ord + Send + Sync + 'static,
+    T: Copy + Ord + Send + Sync + 'static,
+{
+    pub(super) fn relational_services(&self) -> &RelationalOwnerServicePorts {
+        self.relational
+            .as_ref()
+            .expect("only the original serving World uses Native services")
+    }
+}

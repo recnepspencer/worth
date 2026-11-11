@@ -73,6 +73,7 @@ where
                 Operation::IDENTIFIER,
             ));
         }
+        self.refuse_ended_workflow_instance(execution, &instance)?;
         let input_type = <Operation::InputBinding as ApplicationStructuredValueBinding>::IDENTITY;
         let layout = self.lease.layout.workflow().clone();
         let published = super::PublishedWorkflowDefinitionRef::retained(

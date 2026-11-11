@@ -82,8 +82,9 @@ impl RelationalRuntime {
             return Ok(None);
         };
         let envelope = self
-            .history
-            .canonical_envelope(commit)
+            .history_access()
+            .demand_commit_envelope(execution, commit)
+            .map_err(custody::execution_stop)?
             .ok_or_else(|| origin_denial("selected retirement successor history absent"))?;
         let origin = execution
             .in_scope(|lease| {
@@ -143,7 +144,7 @@ impl RelationalRuntime {
                 installed,
                 basis,
                 &origin.producer,
-                &origin.dependency_identity,
+                origin.dependency_identity.bytes(),
                 &origin.meaning,
                 &roles,
             );
@@ -203,7 +204,7 @@ impl RelationalRuntime {
             installed,
             basis,
             &origin.producer,
-            &origin.dependency_identity,
+            origin.dependency_identity.bytes(),
             &origin.meaning,
             &roles,
         )

@@ -6,8 +6,9 @@ impl WorthQueryRecoveryEffectAuthority {
     pub fn mint_for_test(
         runtime_authority: WorthQueryRuntimeAuthorityIdentity,
         handle_authority: WorthQueryRecoveryHandleAuthorityIdentity,
+        handle: &WorthQueryRecoveryHandle,
     ) -> Self {
-        Self::mint(runtime_authority, handle_authority)
+        Self::mint(runtime_authority, handle_authority, handle.home_owner())
     }
 }
 
@@ -16,7 +17,8 @@ impl WorthQueryRecoveryInspectAuthority {
     pub fn mint_for_test(
         runtime_authority: WorthQueryRuntimeAuthorityIdentity,
         handle_authority: WorthQueryRecoveryHandleAuthorityIdentity,
+        handle: &WorthQueryRecoveryHandle,
     ) -> Self {
-        Self::mint(runtime_authority, handle_authority)
+        Self::mint(runtime_authority, handle_authority, handle.home_owner())
     }
 }

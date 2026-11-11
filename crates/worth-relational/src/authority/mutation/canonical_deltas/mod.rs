@@ -1,3 +1,5 @@
+mod borrowed_evidence;
+pub(crate) use borrowed_evidence::{BorrowedAspectDeltaEvidence, BorrowedPatchOperation};
 mod aspect_trace_projection;
 mod changed_authoritative_patch;
 mod data;
@@ -17,10 +19,9 @@ mod patch_fragments_tests;
 #[cfg(test)]
 use data::CanonicalDeltaError;
 pub(crate) use data::{
-    AuthoritativePatchDeltaOperation, CanonicalAspectDeltaEvidence, CanonicalRecordAspectDelta,
-    EvaluatedAspectBinding,
+    CanonicalAspectDeltaEvidence, CanonicalRecordAspectDelta, EvaluatedAspectBinding,
 };
-pub(crate) use engine::canonical_delta_for_mutation;
+pub(crate) use engine::{canonical_delta_for_mutation, evaluate_relation_deletion_state};
 pub(crate) use patch_fragments::{
     authoritative_patch_with_delta_supplements, published_patch_for_delta,
     FoundationalPatchFragment,

@@ -10,8 +10,8 @@ pub use manifest_capacity_transition::PhysicalManifestCapacityTransition;
 pub use outcome::{
     PhysicalMutationPreparationDeferred, PhysicalMutationPreparationDenial,
     PhysicalMutationPreparationFailure, PhysicalMutationPreparationOutcome,
-    PhysicalMutationPreparationRebindRequired, PhysicalMutationPreparationStale,
-    PhysicalMutationPreparationSuccess,
+    PhysicalMutationPreparationRebindRequired, PhysicalMutationPreparationRefusal,
+    PhysicalMutationPreparationStale, PhysicalMutationPreparationSuccess,
 };
 pub(in crate::physical_runtime::record_serving) use payload::{
     prepare_canonical_payload, CanonicalPayloadMaterializationObservation,

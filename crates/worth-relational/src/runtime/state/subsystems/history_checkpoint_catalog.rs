@@ -9,8 +9,8 @@ use crate::history::data::CommitId;
 use super::HistorySubsystem;
 
 impl HistorySubsystem {
-    /// Seal checkpoint envelopes only after the branch images have passed
-    /// root readmission. No provisional, unlinked catalog is needed.
+    /// Link the admitted checkpoint artifacts to verified branch images while
+    /// retaining each artifact's original source and residency cell.
     pub(super) fn rebuild_checkpoint_catalog(
         &self,
         checkpoints: &[RelationalBranchCellCheckpoint],
@@ -71,12 +71,18 @@ impl HistorySubsystem {
             .retained_entries_except(&replaced);
         for envelope in envelopes {
             let commit_id = envelope.commit.commit_id;
-            catalog
-                .append_checkpoint_recovery(
-                    envelope,
+            let admitted = self
+                .commit_artifact(commit_id)
+                .ok_or("checkpoint root has no admitted catalog artifact")?;
+            let artifact = admitted
+                .relink_preencoded_recovery(
+                    &envelope,
                     roots.get(&commit_id),
                     descriptors.get(&commit_id),
                 )
+                .map_err(|denial| format!("recovered catalog root linkage denied: {denial:?}"))?;
+            catalog
+                .append_preencoded_recovery(Arc::new(artifact))
                 .map_err(|denial| format!("recovered catalog root linkage denied: {denial:?}"))?;
         }
         self.install_commit_catalog(catalog);

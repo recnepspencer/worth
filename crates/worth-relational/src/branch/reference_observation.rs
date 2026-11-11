@@ -1,3 +1,4 @@
+use std::fmt::Write as _;
 use worth_foundational::{
     FoundationalBranchComparisonBasis, FoundationalBranchForkBasis, FoundationalBranchId,
     FoundationalBranchIdConstructionDenial, FoundationalBranchReferenceGeneration,
@@ -46,8 +47,18 @@ pub fn relational_branch_observation(
             },
         );
     }
-    let branch_id =
-        FoundationalBranchId::new(format!("relational/{runtime_instance_id}/{branch_name}"))?;
+    let runtime_digits = runtime_instance_id
+        .checked_ilog10()
+        .map_or(1, |digits| digits as usize + 1);
+    let length = "relational//"
+        .len()
+        .checked_add(runtime_digits)
+        .and_then(|length| length.checked_add(branch_name.len()))
+        .expect("relational branch identity length exceeds usize");
+    let mut name = String::with_capacity(length);
+    write!(&mut name, "relational/{runtime_instance_id}/{branch_name}")
+        .expect("writing a branch identity into String cannot fail");
+    let branch_id = FoundationalBranchId::new(name)?;
     Ok(RelationalBranchReferenceObservation::new(
         branch_id, target, generation,
     ))

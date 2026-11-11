@@ -72,7 +72,8 @@ fn inbound_publication_consumers_keep_real_execution_refusals_and_retry_posture(
                     .application
                     .admit_external_dispatch_attempt_for_test(owner.clone())
                     .unwrap();
-                let completed = dispatch_external_effect(&CompletingTransport, admitted).unwrap();
+                let completed =
+                    dispatch_external_effect(&CompletingTransport, admitted, || {}).unwrap();
                 let evidence = Arc::new(
                     InstalledTransportCompletion::from_observed_dispatch_for_test(
                         owner, &completed,

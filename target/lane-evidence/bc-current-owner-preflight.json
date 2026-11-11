@@ -1,0 +1,44 @@
+[
+  {
+    "path": "crates/worth-relational/src/branch/root_tests.rs",
+    "committed_diff_exit": 1,
+    "lifecycle_dirty": "",
+    "dirty_exit": 0
+  },
+  {
+    "path": "crates/worth-relational/src/branch/root_tests",
+    "committed_diff_exit": 1,
+    "lifecycle_dirty": "",
+    "dirty_exit": 0
+  },
+  {
+    "path": "crates/worth-relational/src/branch/root_authoritative_payload_tests.rs",
+    "committed_diff_exit": 1,
+    "lifecycle_dirty": "",
+    "dirty_exit": 0
+  },
+  {
+    "path": "crates/worth-relational/src/branch/root_completeness.rs",
+    "committed_diff_exit": 1,
+    "lifecycle_dirty": "",
+    "dirty_exit": 0
+  },
+  {
+    "path": "crates/worth-relational/src/branch/root_allocation.rs",
+    "committed_diff_exit": 0,
+    "lifecycle_dirty": "",
+    "dirty_exit": 0
+  },
+  {
+    "path": "crates/worth-relational/src/tests/support/durable_medium/runtime_attachment.rs",
+    "committed_diff_exit": 0,
+    "lifecycle_dirty": "",
+    "dirty_exit": 0
+  },
+  {
+    "path": "crates/worth-relational/src/runtime/state/subsystems/record_identity/partition_frontier.rs",
+    "committed_diff_exit": 1,
+    "lifecycle_dirty": "",
+    "dirty_exit": 0
+  }
+]

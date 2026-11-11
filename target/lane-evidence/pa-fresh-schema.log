@@ -1,0 +1,20 @@
+command: python target/lane-evidence/claude_lane_tests.py root pa-fresh-schema target/lane-evidence/pa-fresh-public-cases.json fresh_source_keeps_original_installation_receipts_and_unused_constraints_in_complete
+HEAD: 14b6075657193d0f74ce944beab6124b5dec7b3c
+git_status_short_empty: false
+start_utc: 2026-11-11T03:09:54.252226+00:00
+prebuild: cargo metadata --offline --format-version 1 --manifest-path "C:\programming\worth worktees\worktrees\m3-p3-reopen\Cargo.toml"
+prebuild: cargo test --message-format=json --no-run --package worth-court-relational-certification --test worth_court_relational_certification --profile dev --manifest-path "C:\programming\worth worktees\worktrees\m3-p3-reopen\Cargo.toml" --unit-graph -Z unstable-options
+prebuild: cargo nextest list --cargo-message-format=json --package worth-court-relational-certification --test worth_court_relational_certification --cargo-profile dev --manifest-path "C:\programming\worth worktees\worktrees\m3-p3-reopen\Cargo.toml" --list-type binaries-only --message-format json
+   Compiling worth-court-relational-certification v0.1.0 (C:\programming\worth worktees\worktrees\m3-p3-reopen\crates\worth-court-relational-certification)
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 14.04s
+prebuild: cargo nextest list --cargo-metadata "C:\programming\worth worktees\worktrees\m3-p3-reopen\target\test-cost\pa-fresh-schema\build\cargo-metadata.json" --binaries-metadata "C:\programming\worth worktees\worktrees\m3-p3-reopen\target\test-cost\pa-fresh-schema\build\binaries.json" --message-format json --ignore-default-filter -E test(fresh_source_keeps_original_installation_receipts_and_unused_constraints_in_complete)
+prebuild: cargo nextest run --cargo-metadata "C:\programming\worth worktees\worktrees\m3-p3-reopen\target\test-cost\pa-fresh-schema\build\cargo-metadata.json" --binaries-metadata "C:\programming\worth worktees\worktrees\m3-p3-reopen\target\test-cost\pa-fresh-schema\build\binaries.json" --profile ci --config-file "C:\programming\worth worktees\worktrees\m3-p3-reopen\target\test-cost\pa-fresh-schema\nextest.toml" --ignore-default-filter --no-fail-fast --no-tests=fail --message-format libtest-json -E test(=relational::durable_publication::source_initial_inputs::fresh_schema::fresh_source_keeps_original_installation_receipts_and_unused_constraints_in_complete)
+FULL_OWNED_LOG_PATH: C:\programming\worth worktees\worktrees\m3-p3-reopen\target\lane-evidence\test-cost-pa-fresh-schema-build-cargo-metadata.log-14b607565719-202611110309561087220000-2b3b4773d259.log
+FULL_OWNED_LOG_PATH: C:\programming\worth worktees\worktrees\m3-p3-reopen\target\lane-evidence\test-cost-pa-fresh-schema-build-binaries-build-unit-plan.log-14b607565719-202611110309569310240000-7a517b242df3.log
+FULL_OWNED_LOG_PATH: C:\programming\worth worktees\worktrees\m3-p3-reopen\target\lane-evidence\test-cost-pa-fresh-schema-build-binaries-build.log-14b607565719-202611110309576300760000-50f2a480872c.log
+FULL_OWNED_LOG_PATH: C:\programming\worth worktees\worktrees\m3-p3-reopen\target\lane-evidence\test-cost-pa-fresh-schema-selection.log-14b607565719-202611110310151288620000-feb3a5d5abb5.log
+FULL_OWNED_LOG_PATH: C:\programming\worth worktees\worktrees\m3-p3-reopen\target\lane-evidence\test-cost-pa-fresh-schema-run.log-14b607565719-202611110310163930830000-59f349d67add.log
+FAILED_NAMES: []
+EVIDENCE_TEST_COUNTS: 1,0,0
+end_utc: 2026-11-11T03:10:18.373278+00:00
+exit_code: 0

@@ -5,6 +5,7 @@ pub mod adapters;
 #[allow(dead_code, unused_imports)]
 #[path = "application_entry_current_read.rs"]
 pub mod application_entry_current_read;
+pub mod application_home;
 #[allow(dead_code, unused_imports)]
 #[path = "application_runtime_surface.rs"]
 pub mod application_runtime_surface;
@@ -22,6 +23,7 @@ pub mod conditional_authoring_surface;
 #[allow(dead_code, unused_imports)]
 #[path = "temporal_conditional_operation/contract.rs"]
 pub mod contract;
+pub mod dispatch_home;
 #[allow(dead_code, unused_imports)]
 #[path = "installed_contract_inspection.rs"]
 pub mod installed_contract_inspection;

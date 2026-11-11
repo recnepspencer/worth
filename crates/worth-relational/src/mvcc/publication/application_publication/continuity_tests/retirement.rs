@@ -257,7 +257,7 @@ fn cold_replacement(
         absence.is_none(),
         "a published route requires its exact predecessor"
     );
-    let mut after = checkpoint_manifest(
+    let after = checkpoint_manifest(
         &runtime
             .durability_authority()
             .native_checkpoint(execution, execution.allocation_policy())
@@ -267,9 +267,10 @@ fn cold_replacement(
     // Every other committed directory fact must remain byte-for-byte equal.
     assert_ne!(after.record_identity, before.record_identity);
     assert!(after.symbol_identity_frontier >= before.symbol_identity_frontier);
+    let mut after = after.ordinary_owned_draft();
     after.record_identity = before.record_identity.clone();
     after.symbol_identity_frontier = before.symbol_identity_frontier;
-    assert_eq!(after, before);
+    assert_eq!(after.seal_ordinary(), before);
     let roles = replacement_ids
         .into_iter()
         .enumerate()

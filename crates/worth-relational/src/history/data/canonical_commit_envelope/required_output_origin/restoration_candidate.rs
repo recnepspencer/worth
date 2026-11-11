@@ -10,6 +10,7 @@ pub(crate) fn validate(
     created: &CommitCreatedEntityBindings,
     created_relations: &CommitCreatedRelationBindings,
     restoration: &crate::mvcc::RelationalAuthoredRestoration,
+    lease: Option<&worth_execution::ExecutionResourceLease<'_>>,
     context: &mut MapKernelContext<'_, '_>,
 ) -> Result<(), TransactionCommitError> {
     let after = OverlayStateView::new(basis.inner.root.as_ref(), state);
@@ -82,7 +83,7 @@ pub(crate) fn validate(
                         .entity_aspect_plan(spec.kind_id)
                         .ok_or_else(refused)?,
                     &spec.aspect_patch,
-                    row.extra().authoritative_aspect_state.as_ref(),
+                    row.extra().authoritative_aspect_state(),
                     subject.clone(),
                 )?;
             }
@@ -137,14 +138,17 @@ pub(crate) fn validate(
                     .schema_authority()
                     .relation_aspect_plan(spec.kind_id)
                     .ok_or_else(refused)?;
-                let patch = crate::authority::mutation::intents::relation_endpoint_candidate::append_authoritative_endpoints(
-                    spec.aspect_patch.clone(), Some(plan), source, target);
-                validate_payload(
-                    plan,
-                    &patch,
-                    row.extra().authoritative_aspect_state.as_ref(),
-                    subject.clone(),
-                )?;
+                let candidate = crate::authority::mutation::intents::relation_endpoint_candidate::append_portable_in_scope(
+                    &spec.aspect_patch, plan, source, target, lease, context,
+                ).map_err(origin_request)?;
+                candidate.compare(|patch| {
+                    validate_payload(
+                        plan,
+                        &patch,
+                        row.extra().authoritative_aspect_state(),
+                        subject.clone(),
+                    )
+                })?;
             }
             _ => return Err(refused()),
         };

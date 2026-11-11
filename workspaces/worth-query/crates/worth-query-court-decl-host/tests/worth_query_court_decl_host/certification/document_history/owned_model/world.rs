@@ -36,7 +36,7 @@ pub fn install_worker_only() -> Host {
         ));
     install_with_limits(
         false,
-        WorthQueryInMemoryApplicationLimits::new(
+        WorthQueryApplicationLimits::new(
             world,
             WorthQueryApplicationQueryResourceProfile::new(
                 std::num::NonZeroUsize::new(128).unwrap(),
@@ -45,7 +45,7 @@ pub fn install_worker_only() -> Host {
         ),
     )
 }
-fn install_with_limits(shared: bool, limits: WorthQueryInMemoryApplicationLimits) -> Host {
+fn install_with_limits(shared: bool, limits: WorthQueryApplicationLimits) -> Host {
     in_memory_program(
         ApplicationProgramAuthoring::<Schema, Program>::begin()
             .validated_program()

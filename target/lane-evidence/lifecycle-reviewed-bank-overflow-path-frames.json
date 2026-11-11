@@ -1,0 +1,716 @@
+{
+  "executable": "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\workspaces\\worth-query-bank-world\\target\\debug\\deps\\worth_query_bank_court_external_rail_server-345a21da29cfa8db.exe",
+  "source": "compiler x64 PE unwind",
+  "frames": [
+    {
+      "index": 0,
+      "name": "__chkstk",
+      "compiler_frame_bytes": 16
+    },
+    {
+      "index": 1,
+      "name": "__chkstk",
+      "compiler_frame_bytes": 16
+    },
+    {
+      "index": 2,
+      "name": "im::nodes::btree::Node::insert<tuple$<enum2$<core::option::Option<worth_relational::publication::patch::data::patch_position::PatchStreamPosition> >,worth_query_execution::domain_computation::primary_graph::output_lineage::invalidation::source_alignment::HistoricalMarkState> >",
+      "compiler_frame_bytes": 59016
+    },
+    {
+      "index": 3,
+      "name": "im::ord::map::OrdMap::insert<enum2$<core::option::Option<worth_relational::publication::patch::data::patch_position::PatchStreamPosition> >,worth_query_execution::domain_computation::primary_graph::output_lineage::invalidation::source_alignment::HistoricalMarkState>",
+      "compiler_frame_bytes": 25304
+    },
+    {
+      "index": 4,
+      "name": "worth_query_execution::domain_computation::primary_graph::output_lineage::invalidation::source_publication::impl$0::prepare",
+      "compiler_frame_bytes": 8136
+    },
+    {
+      "index": 5,
+      "name": "worth_runtime_bridge::relational_source::runtime_source::canonical_subscription::impl$3::prepare",
+      "compiler_frame_bytes": 360
+    },
+    {
+      "index": 6,
+      "name": "worth_relational::mvcc::publication::port::PreparedCanonicalBranchMovement::preflight",
+      "compiler_frame_bytes": 47176
+    },
+    {
+      "index": 7,
+      "name": "worth_relational::mvcc::publication::port::RelationalPublicationPort::with_prepared_consulted",
+      "compiler_frame_bytes": 39928
+    },
+    {
+      "index": 8,
+      "name": "worth_relational::mvcc::publication::port::RelationalPublicationPort::with_prepared_publication",
+      "compiler_frame_bytes": 2312
+    },
+    {
+      "index": 9,
+      "name": "worth_relational::mvcc::publication::port::RelationalPublicationPort::compare_and_publish_with_codec_admission",
+      "compiler_frame_bytes": 2344
+    },
+    {
+      "index": 10,
+      "name": "worth_relational::mvcc::publication::port::RelationalPublicationPort::compare_and_publish",
+      "compiler_frame_bytes": 200
+    },
+    {
+      "index": 11,
+      "name": "worth_runtime_world::lifecycle::owner::RuntimeWorldOwnerRoot::publish_relational_with_current_read<tuple$<>,tuple$<>,tuple$<>,tuple$<>,tuple$<> >",
+      "compiler_frame_bytes": 6440
+    },
+    {
+      "index": 12,
+      "name": "worth_runtime_world::lifecycle::owner::RuntimeWorldOwnerRoot::publish_relational_candidate<tuple$<>,tuple$<>,tuple$<>,tuple$<>,tuple$<> >",
+      "compiler_frame_bytes": 25256
+    },
+    {
+      "index": 13,
+      "name": "worth_runtime_world::lifecycle::owner::RuntimeWorldOwnerRoot::execute_relational<tuple$<>,tuple$<>,tuple$<>,tuple$<>,tuple$<> >",
+      "compiler_frame_bytes": 4872
+    },
+    {
+      "index": 14,
+      "name": "worth_runtime_world::lifecycle::owner::RuntimeWorldOwnerRoot::execute_publication<tuple$<>,tuple$<>,tuple$<>,tuple$<>,tuple$<>,enum2$<core::result::Result<tuple$<>,enum2$<worth_signal::data::error::SignalError> > > (*)(ref_mut$<worth_signal::logic::transaction::runtime::transaction::transaction_types::handles::SignalTransaction<tuple$<>,tuple$<>,tuple$<>,tuple$<>,tuple$<> > >),enum2$<core::result::Result<tuple$<>,enum2$<worth_signal::data::error::SignalError> > > (*)(enum2$<core::option::Option<worth_signal::branch::owner_services::conditional_execution::installation_extension::applied_binding::SignalConditionalDefinitionAdvanceBinding> >)>",
+      "compiler_frame_bytes": 21176
+    },
+    {
+      "index": 15,
+      "name": "worth_runtime_world::lifecycle::owner::execution_service::impl$0::execute_without_signal_with_cutover<tuple$<>,tuple$<>,tuple$<>,tuple$<>,tuple$<> >",
+      "compiler_frame_bytes": 2024
+    },
+    {
+      "index": 16,
+      "name": "worth_runtime_world::lifecycle::service_ports::publication::RuntimeWorldPublicationPort::execute_without_signal_cutover<tuple$<>,tuple$<>,tuple$<>,tuple$<>,tuple$<> >",
+      "compiler_frame_bytes": 4920
+    },
+    {
+      "index": 17,
+      "name": "worth_runtime_world::lifecycle::service_ports::publication::RuntimeWorldPublicationPort::execute_without_signal<tuple$<>,tuple$<>,tuple$<>,tuple$<>,tuple$<> >",
+      "compiler_frame_bytes": 968
+    },
+    {
+      "index": 18,
+      "name": "worth_query_execution::domain_computation::execution_runtime::product_world::request_control::WorthQueryPreparedProductPublication::execute",
+      "compiler_frame_bytes": 2168
+    },
+    {
+      "index": 19,
+      "name": "worth_query_execution::domain_computation::primary_graph::provider::application_attempt_state::commit_preparation::relational_commit::commit_execution::product_publication::publish",
+      "compiler_frame_bytes": 49784
+    },
+    {
+      "index": 20,
+      "name": "worth_query_execution::domain_computation::primary_graph::provider::application_attempt_state::commit_preparation::relational_commit::commit_execution::memory::publication::publish",
+      "compiler_frame_bytes": 93032
+    },
+    {
+      "index": 21,
+      "name": "worth_query_execution::domain_computation::primary_graph::provider::application_attempt_state::commit_preparation::relational_commit::commit_execution::memory::commit",
+      "compiler_frame_bytes": 16040
+    },
+    {
+      "index": 22,
+      "name": "worth_query_execution::domain_computation::primary_graph::provider::application_attempt_state::commit_preparation::relational_commit::commit_execution::commit",
+      "compiler_frame_bytes": 109688
+    },
+    {
+      "index": 23,
+      "name": "worth_query_execution::domain_computation::primary_graph::provider::application_attempt_state::commit_preparation::relational_commit::commit_owner_validated",
+      "compiler_frame_bytes": 80728
+    },
+    {
+      "index": 24,
+      "name": "worth_query_execution::domain_computation::primary_graph::provider::application_attempt_state::commit_preparation::commit_prepared_application",
+      "compiler_frame_bytes": 52456
+    },
+    {
+      "index": 25,
+      "name": "worth_query_execution::domain_computation::primary_graph::provider::session_commit::commit_prepared_session",
+      "compiler_frame_bytes": 120
+    },
+    {
+      "index": 26,
+      "name": "worth_query_execution::domain_computation::primary_graph::provider::session_lifecycle::impl$0::commit_prepared_session",
+      "compiler_frame_bytes": 3400
+    },
+    {
+      "index": 27,
+      "name": "worth_query_execution::domain_computation::provider_session::graph_provider::bounded_step::provider_anchor::impl$1::commit<alloc::sync::Arc<worth_query_execution::domain_computation::primary_graph::provider::WorthQueryPrimaryGraphProvider,alloc::alloc::Global> >",
+      "compiler_frame_bytes": 40
+    },
+    {
+      "index": 28,
+      "name": "worth_query_execution::domain_computation::provider_session::graph_provider::bounded_step::provider_anchor::WorthQueryGraphProviderAnchor::commit_session",
+      "compiler_frame_bytes": 2120
+    },
+    {
+      "index": 29,
+      "name": "worth_query_execution::domain_computation::provider_session::protocol::readmission::prepared::staged::prepare_outcome::impl$2::commit::closure$0",
+      "compiler_frame_bytes": 56
+    },
+    {
+      "index": 30,
+      "name": "worth_query_execution::domain_computation::provider_session::protocol::session_lease::WorthQueryProviderSessionLease::commit_using<worth_query_execution::domain_computation::provider_session::protocol::readmission::prepared::staged::prepare_outcome::impl$2::commit::closure_env$0>",
+      "compiler_frame_bytes": 584
+    },
+    {
+      "index": 31,
+      "name": "worth_query_execution::domain_computation::provider_session::protocol::readmission::prepared::staged::prepare_outcome::impl$2::commit_using::closure$0<worth_query_execution::domain_computation::provider_session::protocol::readmission::prepared::staged::prepare_outcome::impl$2::commit::closure_env$0>",
+      "compiler_frame_bytes": 72
+    },
+    {
+      "index": 32,
+      "name": "core::panic::unwind_safe::impl$25::call_once<enum2$<core::result::Result<worth_query_execution::domain_computation::provider_session::protocol::terminal_outcome::WorthQueryProviderTerminalDescription,enum2$<worth_query_execution::domain_computation::provider_session::protocol::commit_stop::WorthQueryProviderSessionCommitStop> > >,worth_query_execution::domain_computation::provider_session::protocol::readmission::prepared::staged::prepare_outcome::impl$2::commit_using::closure_env$0<worth_query_execution::domain_computation::provider_session::protocol::readmission::prepared::staged::prepare_outcome::impl$2::commit::closure_env$0> >",
+      "compiler_frame_bytes": 56
+    },
+    {
+      "index": 33,
+      "name": "std::panicking::catch_unwind::do_call<core::panic::unwind_safe::AssertUnwindSafe<worth_query_execution::domain_computation::provider_session::protocol::readmission::prepared::staged::prepare_outcome::impl$2::commit_using::closure_env$0<worth_query_execution::domain_computation::provider_session::protocol::readmission::prepared::staged::prepare_outcome::impl$2::commit::closure_env$0> >,enum2$<core::result::Result<worth_query_execution::domain_computation::provider_session::protocol::terminal_outcome::WorthQueryProviderTerminalDescription,enum2$<worth_query_execution::domain_computation::provider_session::protocol::commit_stop::WorthQueryProviderSessionCommitStop> > > >",
+      "compiler_frame_bytes": 1272
+    },
+    {
+      "index": 34,
+      "name": "core::cmp::PartialEq::ne<worth_query_execution::domain_computation::application_aftermath::external_effect::identity::ExternalEffectPostureIdentity,worth_query_execution::domain_computation::application_aftermath::external_effect::identity::ExternalEffectPostureIdentity>",
+      "compiler_frame_bytes": 72
+    },
+    {
+      "index": 35,
+      "name": "std::panic::catch_unwind<core::panic::unwind_safe::AssertUnwindSafe<worth_query_execution::domain_computation::provider_session::protocol::readmission::prepared::staged::prepare_outcome::impl$2::commit_using::closure_env$0<worth_query_execution::domain_computation::provider_session::protocol::readmission::prepared::staged::prepare_outcome::impl$2::commit::closure_env$0> >,enum2$<core::result::Result<worth_query_execution::domain_computation::provider_session::protocol::terminal_outcome::WorthQueryProviderTerminalDescription,enum2$<worth_query_execution::domain_computation::provider_session::protocol::commit_stop::WorthQueryProviderSessionCommitStop> > > >",
+      "compiler_frame_bytes": 1288
+    },
+    {
+      "index": 36,
+      "name": "worth_query_execution::domain_computation::provider_session::protocol::readmission::prepared::staged::prepare_outcome::WorthQuerySessionPrepareOutcome::commit_using<worth_query_execution::domain_computation::provider_session::protocol::readmission::prepared::staged::prepare_outcome::impl$2::commit::closure_env$0>",
+      "compiler_frame_bytes": 7048
+    },
+    {
+      "index": 37,
+      "name": "worth_query_execution::domain_computation::provider_session::protocol::readmission::prepared::staged::prepare_outcome::WorthQuerySessionPrepareOutcome::commit",
+      "compiler_frame_bytes": 1464
+    },
+    {
+      "index": 38,
+      "name": "worth_query_execution::domain_computation::primary_graph::application_attempt::provider_execution::phase::prepared::running::progression::authorized::resolve_idempotency_under_authority::closure$0<bank_domain::schema::manifest::BankSchema,bank_domain::schema::workflow::assessment::PublishApprovedPaymentAssessment,bank_domain::schema::workflow::assessment::ApprovedPaymentAssessmentInput,bank_domain::schema::entities::PaymentIntent>",
+      "compiler_frame_bytes": 3064
+    },
+    {
+      "index": 39,
+      "name": "worth_query_execution::domain_computation::provider_session::provisional_attempt::commit_progression::WorthQueryInvariantApprovedProposedState::commit_fresh<worth_query_execution::domain_computation::primary_graph::application_attempt::provider_execution::phase::prepared::running::progression::authorized::resolve_idempotency_under_authority::closure_env$0<bank_domain::schema::manifest::BankSchema,bank_domain::schema::workflow::assessment::PublishApprovedPaymentAssessment,bank_domain::schema::workflow::assessment::ApprovedPaymentAssessmentInput,bank_domain::schema::entities::PaymentIntent> >",
+      "compiler_frame_bytes": 15048
+    },
+    {
+      "index": 40,
+      "name": "worth_query_execution::domain_computation::provider_session::provisional_attempt::commit_progression::WorthQueryInvariantApprovedProposedState::compare_and_commit_with<worth_query_execution::domain_computation::primary_graph::application_attempt::provider_execution::phase::prepared::running::progression::authorized::resolve_idempotency_under_authority::closure_env$0<bank_domain::schema::manifest::BankSchema,bank_domain::schema::workflow::assessment::PublishApprovedPaymentAssessment,bank_domain::schema::workflow::assessment::ApprovedPaymentAssessmentInput,bank_domain::schema::entities::PaymentIntent>,worth_query_execution::domain_computation::primary_graph::application_attempt::provider_execution::phase::prepared::running::progression::authorized::resolve_idempotency_under_authority::closure_env$1<bank_domain::schema::manifest::BankSchema,bank_domain::schema::workflow::assessment::PublishApprovedPaymentAssessment,bank_domain::schema::workflow::assessment::ApprovedPaymentAssessmentInput,bank_domain::schema::entities::PaymentIntent> >",
+      "compiler_frame_bytes": 8136
+    },
+    {
+      "index": 41,
+      "name": "worth_query_execution::domain_computation::primary_graph::application_attempt::provider_execution::phase::prepared::running::progression::authorized::resolve_idempotency_under_authority<bank_domain::schema::manifest::BankSchema,bank_domain::schema::workflow::assessment::PublishApprovedPaymentAssessment,bank_domain::schema::workflow::assessment::ApprovedPaymentAssessmentInput,bank_domain::schema::entities::PaymentIntent>",
+      "compiler_frame_bytes": 45544
+    },
+    {
+      "index": 42,
+      "name": "worth_query_execution::domain_computation::primary_graph::application_attempt::provider_execution::phase::prepared::running::progression::authorized::resolve_authorized_provider_commit::closure$0<bank_domain::schema::manifest::BankSchema,bank_domain::schema::workflow::assessment::PublishApprovedPaymentAssessment,bank_domain::schema::workflow::assessment::ApprovedPaymentAssessmentInput,bank_domain::schema::entities::PaymentIntent>",
+      "compiler_frame_bytes": 2488
+    },
+    {
+      "index": 43,
+      "name": "worth_query_execution::domain_computation::authorization::application_commit_authorization::WorthQueryApplicationCommitAuthorization::govern<bank_domain::schema::manifest::BankSchema,bank_domain::schema::workflow::assessment::PublishApprovedPaymentAssessment,bank_domain::schema::workflow::assessment::ApprovedPaymentAssessmentInput,bank_domain::schema::entities::PaymentIntent,worth_query_execution::domain_computation::provider_session::provisional_attempt::commit_progression::WorthQueryInvariantApprovedProposedState,enum2$<worth_query_execution::domain_computation::primary_graph::application_attempt::provider_execution::outcome::WorthQueryProviderProgressionOutcome>,worth_query_execution::domain_computation::primary_graph::application_attempt::provider_execution::phase::prepared::running::progression::authorized::resolve_authorized_provider_commit::closure_env$0<bank_domain::schema::manifest::BankSchema,bank_domain::schema::workflow::assessment::PublishApprovedPaymentAssessment,bank_domain::schema::workflow::assessment::ApprovedPaymentAssessmentInput,bank_domain::schema::entities::PaymentIntent> >",
+      "compiler_frame_bytes": 15800
+    },
+    {
+      "index": 44,
+      "name": "worth_query_execution::domain_computation::primary_graph::application_attempt::provider_execution::phase::prepared::running::progression::authorized::resolve_authorized_provider_commit<bank_domain::schema::manifest::BankSchema,bank_domain::schema::workflow::assessment::PublishApprovedPaymentAssessment,bank_domain::schema::workflow::assessment::ApprovedPaymentAssessmentInput,bank_domain::schema::entities::PaymentIntent>",
+      "compiler_frame_bytes": 25288
+    },
+    {
+      "index": 45,
+      "name": "worth_query_execution::domain_computation::primary_graph::application_attempt::provider_execution::phase::prepared::running::progression::authorized::authorize_and_resolve_provider_commit<bank_domain::schema::manifest::BankSchema,bank_domain::schema::workflow::assessment::PublishApprovedPaymentAssessment,bank_domain::schema::workflow::assessment::ApprovedPaymentAssessmentInput,bank_domain::schema::entities::PaymentIntent>",
+      "compiler_frame_bytes": 4872
+    },
+    {
+      "index": 46,
+      "name": "worth_query_execution::domain_computation::primary_graph::application_attempt::provider_execution::phase::prepared::running::progression::registered::WorthQueryRegisteredProviderAttempt::progress<bank_domain::schema::manifest::BankSchema,bank_domain::schema::workflow::assessment::PublishApprovedPaymentAssessment,bank_domain::schema::workflow::assessment::ApprovedPaymentAssessmentInput,bank_domain::schema::entities::PaymentIntent>",
+      "compiler_frame_bytes": 38840
+    },
+    {
+      "index": 47,
+      "name": "worth_query_execution::domain_computation::primary_graph::application_attempt::provider_execution::phase::prepared::running::progression::session_admission::WorthQueryRegisteredProviderSession::progress<bank_domain::schema::manifest::BankSchema,bank_domain::schema::workflow::assessment::PublishApprovedPaymentAssessment,bank_domain::schema::workflow::assessment::ApprovedPaymentAssessmentInput,bank_domain::schema::entities::PaymentIntent>",
+      "compiler_frame_bytes": 9240
+    },
+    {
+      "index": 48,
+      "name": "worth_query_execution::domain_computation::primary_graph::application_attempt::provider_execution::phase::prepared::running::progression::progress_provider_application<bank_domain::schema::manifest::BankSchema,bank_domain::schema::workflow::assessment::PublishApprovedPaymentAssessment,bank_domain::schema::workflow::assessment::ApprovedPaymentAssessmentInput,bank_domain::schema::entities::PaymentIntent>",
+      "compiler_frame_bytes": 87496
+    },
+    {
+      "index": 49,
+      "name": "worth_query_execution::domain_computation::primary_graph::application_attempt::provider_execution::phase::prepared::running::progression::progress_application_commit<bank_domain::schema::manifest::BankSchema,bank_domain::schema::workflow::assessment::PublishApprovedPaymentAssessment,bank_domain::schema::workflow::assessment::ApprovedPaymentAssessmentInput,bank_domain::schema::entities::PaymentIntent>",
+      "compiler_frame_bytes": 89064
+    },
+    {
+      "index": 50,
+      "name": "worth_query_execution::domain_computation::primary_graph::application_attempt::provider_execution::phase::prepared::entry_custody::CurrentCommitProgram::compare_and_commit_application_inner_with_currentness_and_aftermath<bank_domain::schema::manifest::BankSchema,bank_domain::schema::workflow::assessment::PublishApprovedPaymentAssessment,bank_domain::schema::workflow::assessment::ApprovedPaymentAssessmentInput,bank_domain::schema::entities::PaymentIntent>",
+      "compiler_frame_bytes": 117240
+    },
+    {
+      "index": 51,
+      "name": "worth_query_execution::domain_computation::primary_graph::application_attempt::provider_execution::phase::prepared::entry_custody::CurrentCommitProgram::compare_and_commit_application_with_causality<bank_domain::schema::manifest::BankSchema,bank_domain::schema::workflow::assessment::PublishApprovedPaymentAssessment,bank_domain::schema::workflow::assessment::ApprovedPaymentAssessmentInput,bank_domain::schema::entities::PaymentIntent>",
+      "compiler_frame_bytes": 31864
+    },
+    {
+      "index": 52,
+      "name": "worth_query_execution::domain_computation::primary_graph::application_attempt::provider_execution::phase::prepared::entry_custody::CurrentCommitProgram::compare_and_commit_application_with_output_observation<bank_domain::schema::manifest::BankSchema,bank_domain::schema::workflow::assessment::PublishApprovedPaymentAssessment,bank_domain::schema::workflow::assessment::ApprovedPaymentAssessmentInput,bank_domain::schema::entities::PaymentIntent>",
+      "compiler_frame_bytes": 7976
+    },
+    {
+      "index": 53,
+      "name": "worth_query_execution::domain_computation::primary_graph::application_attempt::provider_execution::phase::prepared::entry_custody::CurrentCommitProgram::compare_and_commit_application_for_program_output_producer<bank_domain::schema::manifest::BankSchema,bank_domain::schema::workflow::assessment::PublishApprovedPaymentAssessment,bank_domain::schema::workflow::assessment::ApprovedPaymentAssessmentInput,bank_domain::schema::entities::PaymentIntent>",
+      "compiler_frame_bytes": 32568
+    },
+    {
+      "index": 54,
+      "name": "worth_query_execution::domain_computation::primary_graph::application_runtime::WorthQueryPrimaryGraphApplicationRuntime::compare_and_commit_application_for_program_output_producer<bank_domain::schema::manifest::BankSchema,bank_domain::schema::workflow::assessment::PublishApprovedPaymentAssessment,bank_domain::schema::workflow::assessment::ApprovedPaymentAssessmentInput,bank_domain::schema::entities::PaymentIntent>",
+      "compiler_frame_bytes": 51688
+    },
+    {
+      "index": 55,
+      "name": "worth_query_execution::domain_computation::primary_graph::application_contribution::producer::execution::post_authorization::preparation::prepare_authorized::closure$11<bank_domain::schema::manifest::BankSchema,bank_domain::schema::workflow::assessment::ApprovedPaymentAssessmentProducer>",
+      "compiler_frame_bytes": 181672
+    },
+    {
+      "index": 56,
+      "name": "core::ops::function::FnOnce::call_once<worth_query_execution::domain_computation::primary_graph::application_contribution::producer::execution::post_authorization::preparation::prepare_authorized::closure_env$11<bank_domain::schema::manifest::BankSchema,bank_domain::schema::workflow::assessment::ApprovedPaymentAssessmentProducer>,tuple$<alloc::vec::Vec<worth_query_execution::domain_computation::primary_graph::application_contribution::computation::prepared_request::ComputedSlot,alloc::alloc::Global> > >",
+      "compiler_frame_bytes": 72
+    },
+    {
+      "index": 57,
+      "name": "alloc::boxed::impl$31::call_once<tuple$<alloc::vec::Vec<worth_query_execution::domain_computation::primary_graph::application_contribution::computation::prepared_request::ComputedSlot,alloc::alloc::Global> >,dyn$<core::ops::function::FnOnce<tuple$<alloc::vec::Vec<worth_query_execution::domain_computation::primary_graph::application_contribution::computation::prepared_request::ComputedSlot,alloc::alloc::Global> >,assoc$<Output,enum2$<core::result::Result<enum2$<worth_query_execution::domain_computation::primary_graph::application_contribution::producer::execution::outcome::ProducerExecutionOutcome>,enum2$<worth_query_execution::domain_computation::primary_graph::application_contribution::producer::execution::denial::ProducerExecutionStop> > > > > >,alloc::alloc::Global>",
+      "compiler_frame_bytes": 104
+    },
+    {
+      "index": 58,
+      "name": "worth_query_execution::domain_computation::primary_graph::application_contribution::producer::execution::prepared_plan::canonical_apply::impl$0::apply::closure$0<tuple$<>,enum2$<worth_query_execution::domain_computation::primary_graph::application_contribution::producer::execution::outcome::ProducerExecutionOutcome>,enum2$<worth_query_execution::domain_computation::primary_graph::application_contribution::producer::execution::denial::ProducerExecutionStop>,worth_query_execution::domain_computation::primary_graph::application_contribution::producer::execution::prepared_plan::canonical_apply::run_one::closure_env$1,worth_query_execution::domain_computation::primary_graph::application_contribution::producer::execution::prepared_plan::canonical_apply::run_one::closure_env$2>",
+      "compiler_frame_bytes": 72
+    },
+    {
+      "index": 59,
+      "name": "worth_query_execution::domain_computation::primary_graph::application_contribution::computation::wave_dispatch::ComputedMember::finish<enum2$<core::result::Result<enum2$<worth_query_execution::domain_computation::primary_graph::application_contribution::producer::execution::outcome::ProducerExecutionOutcome>,enum2$<worth_query_execution::domain_computation::primary_graph::application_contribution::producer::execution::denial::ProducerExecutionStop> > >,worth_query_execution::domain_computation::primary_graph::application_contribution::producer::execution::prepared_plan::canonical_apply::impl$0::apply::closure_env$0<tuple$<>,enum2$<worth_query_execution::domain_computation::primary_graph::application_contribution::producer::execution::outcome::ProducerExecutionOutcome>,enum2$<worth_query_execution::domain_computation::primary_graph::application_contribution::producer::execution::denial::ProducerExecutionStop>,worth_query_execution::domain_computation::primary_graph::application_contribution::producer::execution::prepared_plan::canonical_apply::run_one::closure_env$1,worth_query_execution::domain_computation::primary_graph::application_contribution::producer::execution::prepared_plan::canonical_apply::run_one::closure_env$2> >",
+      "compiler_frame_bytes": 104
+    },
+    {
+      "index": 60,
+      "name": "worth_query_execution::domain_computation::primary_graph::application_contribution::producer::execution::prepared_plan::canonical_apply::CanonicalApplyCursor::apply<tuple$<>,enum2$<worth_query_execution::domain_computation::primary_graph::application_contribution::producer::execution::outcome::ProducerExecutionOutcome>,enum2$<worth_query_execution::domain_computation::primary_graph::application_contribution::producer::execution::denial::ProducerExecutionStop>,worth_query_execution::domain_computation::primary_graph::application_contribution::producer::execution::prepared_plan::canonical_apply::run_one::closure_env$1,worth_query_execution::domain_computation::primary_graph::application_contribution::producer::execution::prepared_plan::canonical_apply::run_one::closure_env$2>",
+      "compiler_frame_bytes": 11848
+    },
+    {
+      "index": 61,
+      "name": "worth_query_execution::domain_computation::primary_graph::application_contribution::producer::execution::prepared_plan::canonical_apply::run_one",
+      "compiler_frame_bytes": 16648
+    },
+    {
+      "index": 62,
+      "name": "worth_query_execution::domain_computation::primary_graph::application_contribution::producer::execution::post_authorization::execute_authorized<bank_domain::schema::manifest::BankSchema,bank_domain::schema::workflow::assessment::ApprovedPaymentAssessmentProducer>",
+      "compiler_frame_bytes": 13480
+    },
+    {
+      "index": 63,
+      "name": "worth_query_execution::domain_computation::primary_graph::application_contribution::producer::execution::admitted::execute_fresh<bank_domain::schema::manifest::BankSchema,bank_domain::schema::workflow::assessment::ApprovedPaymentAssessmentProducer>",
+      "compiler_frame_bytes": 161176
+    },
+    {
+      "index": 64,
+      "name": "worth_query_execution::domain_computation::primary_graph::application_contribution::producer::execution::impl$0::execute<bank_domain::schema::manifest::BankSchema,bank_domain::schema::workflow::assessment::ApprovedPaymentAssessmentProducer>",
+      "compiler_frame_bytes": 58280
+    },
+    {
+      "index": 65,
+      "name": "worth_query_execution::domain_computation::primary_graph::application_contribution::producer::demand::progression::validated::running_execution::impl$0::execute_running_output::closure$2::closure$0<bank_domain::schema::manifest::BankSchema,bank_domain::schema::workflow::assessment::ApprovedPaymentAssessmentOutputFamily>",
+      "compiler_frame_bytes": 2648
+    },
+    {
+      "index": 66,
+      "name": "worth_query_execution::domain_computation::primary_graph::application_contribution::producer::demand::disclosure::producer_input::PreparedProducerInput::with_erased<bank_domain::queries::payment_detail::PaymentDetailQuery,bank_domain::reads::payment::PaymentSummary,enum2$<core::result::Result<worth_query_execution::domain_computation::primary_graph::application_contribution::producer::execution::outcome::PreparedProducerExecutionOutcome,enum2$<worth_query_execution::domain_computation::primary_graph::application_contribution::producer::execution::denial::ProducerExecutionStop> > >,worth_query_execution::domain_computation::primary_graph::application_contribution::producer::demand::progression::validated::running_execution::impl$0::execute_running_output::closure$2::closure_env$0<bank_domain::schema::manifest::BankSchema,bank_domain::schema::workflow::assessment::ApprovedPaymentAssessmentOutputFamily> >",
+      "compiler_frame_bytes": 4744
+    },
+    {
+      "index": 67,
+      "name": "worth_query_execution::domain_computation::primary_graph::application_contribution::producer::demand::progression::validated::running_execution::impl$0::execute_running_output::closure$2<bank_domain::schema::manifest::BankSchema,bank_domain::schema::workflow::assessment::ApprovedPaymentAssessmentOutputFamily>",
+      "compiler_frame_bytes": 3368
+    },
+    {
+      "index": 68,
+      "name": "core::result::Result::and_then<worth_query_execution::domain_computation::primary_graph::application_contribution::producer::demand::disclosure::producer_input::PreparedProducerInput<bank_domain::queries::payment_detail::PaymentDetailQuery,bank_domain::reads::payment::PaymentSummary>,enum2$<worth_query_execution::domain_computation::primary_graph::application_contribution::producer::execution::denial::ProducerExecutionStop>,worth_query_execution::domain_computation::primary_graph::application_contribution::producer::execution::outcome::PreparedProducerExecutionOutcome,worth_query_execution::domain_computation::primary_graph::application_contribution::producer::demand::progression::validated::running_execution::impl$0::execute_running_output::closure_env$2<bank_domain::schema::manifest::BankSchema,bank_domain::schema::workflow::assessment::ApprovedPaymentAssessmentOutputFamily> >",
+      "compiler_frame_bytes": 4632
+    },
+    {
+      "index": 69,
+      "name": "worth_query_execution::domain_computation::primary_graph::application_runtime::WorthQueryPrimaryGraphApplicationRuntime::execute_running_output<bank_domain::schema::manifest::BankSchema,bank_domain::schema::workflow::assessment::ApprovedPaymentAssessmentOutputFamily>",
+      "compiler_frame_bytes": 60856
+    },
+    {
+      "index": 70,
+      "name": "worth_query_execution::domain_computation::primary_graph::application_runtime::WorthQueryPrimaryGraphApplicationRuntime::prepare_validated_output_demand_with_schedule<bank_domain::schema::manifest::BankSchema,bank_domain::schema::workflow::assessment::ApprovedPaymentAssessmentOutputFamily>",
+      "compiler_frame_bytes": 23256
+    },
+    {
+      "index": 71,
+      "name": "worth_query_execution::domain_computation::primary_graph::application_runtime::WorthQueryPrimaryGraphApplicationRuntime::advance_ordinary_validated_output_demand<bank_domain::schema::manifest::BankSchema,bank_domain::schema::workflow::assessment::ApprovedPaymentAssessmentOutputFamily>",
+      "compiler_frame_bytes": 7464
+    },
+    {
+      "index": 72,
+      "name": "worth_query_execution::domain_computation::primary_graph::application_runtime::WorthQueryPrimaryGraphApplicationRuntime::advance_validated_output_demand<bank_domain::schema::manifest::BankSchema,bank_domain::schema::workflow::assessment::ApprovedPaymentAssessmentOutputFamily>",
+      "compiler_frame_bytes": 31880
+    },
+    {
+      "index": 73,
+      "name": "worth_query_execution::domain_computation::primary_graph::application_contribution::producer::demand::progression::caller_pass::impl$0::advance_caller_pass::closure$1<bank_domain::schema::manifest::BankSchema,bank_domain::schema::workflow::assessment::ApprovedPaymentAssessmentOutputFamily,worth_query_execution::domain_computation::primary_graph::application_contribution::producer::demand::progression::impl$0::advance_output_demand_with_commit_authority::closure_env$0<bank_domain::schema::manifest::BankSchema,bank_domain::schema::workflow::assessment::ApprovedPaymentAssessmentOutputFamily> >",
+      "compiler_frame_bytes": 90840
+    },
+    {
+      "index": 74,
+      "name": "worth_query_execution::domain_computation::primary_graph::application_runtime::WorthQueryPrimaryGraphApplicationRuntime::advance_caller_pass<bank_domain::schema::manifest::BankSchema,bank_domain::schema::workflow::assessment::ApprovedPaymentAssessmentOutputFamily,worth_query_execution::domain_computation::primary_graph::application_contribution::producer::demand::progression::impl$0::advance_output_demand_with_commit_authority::closure_env$0<bank_domain::schema::manifest::BankSchema,bank_domain::schema::workflow::assessment::ApprovedPaymentAssessmentOutputFamily> >",
+      "compiler_frame_bytes": 9288
+    },
+    {
+      "index": 75,
+      "name": "worth_query_execution::domain_computation::primary_graph::application_runtime::WorthQueryPrimaryGraphApplicationRuntime::advance_output_demand_with_prepared_source<bank_domain::schema::manifest::BankSchema,bank_domain::schema::workflow::assessment::ApprovedPaymentAssessmentOutputFamily,worth_query_execution::domain_computation::primary_graph::application_contribution::producer::demand::progression::impl$0::advance_output_demand_with_commit_authority::closure_env$0<bank_domain::schema::manifest::BankSchema,bank_domain::schema::workflow::assessment::ApprovedPaymentAssessmentOutputFamily> >",
+      "compiler_frame_bytes": 4952
+    },
+    {
+      "index": 76,
+      "name": "worth_query_execution::domain_computation::primary_graph::application_runtime::WorthQueryPrimaryGraphApplicationRuntime::advance_output_demand_with_commit_authority<bank_domain::schema::manifest::BankSchema,bank_domain::schema::workflow::assessment::ApprovedPaymentAssessmentOutputFamily>",
+      "compiler_frame_bytes": 4920
+    },
+    {
+      "index": 77,
+      "name": "worth_query_execution::domain_computation::primary_graph::application_contribution::producer::demand::progression::impl$0::advance_program_output_demand::closure$1<bank_domain::schema::manifest::BankSchema,bank_domain::schema::workflow::assessment::ApprovedPaymentAssessmentOutputFamily>",
+      "compiler_frame_bytes": 4968
+    },
+    {
+      "index": 78,
+      "name": "worth_query_execution::domain_computation::primary_graph::application_runtime::WorthQueryPrimaryGraphApplicationRuntime::advance_as_caller<bank_domain::schema::manifest::BankSchema,bank_domain::schema::workflow::assessment::ApprovedPaymentAssessmentOutputFamily,worth_query_execution::domain_computation::primary_graph::application_contribution::producer::demand::progression::impl$0::advance_program_output_demand::closure_env$1<bank_domain::schema::manifest::BankSchema,bank_domain::schema::workflow::assessment::ApprovedPaymentAssessmentOutputFamily> >",
+      "compiler_frame_bytes": 5640
+    },
+    {
+      "index": 79,
+      "name": "worth_query_execution::domain_computation::primary_graph::application_runtime::WorthQueryPrimaryGraphApplicationRuntime::advance_program_output_demand<bank_domain::schema::manifest::BankSchema,bank_domain::schema::workflow::assessment::ApprovedPaymentAssessmentOutputFamily>",
+      "compiler_frame_bytes": 5128
+    },
+    {
+      "index": 80,
+      "name": "worth_query_execution::publication_boundary::WorthQueryProgramPublicationAccess::advance_workflow_assessment_output<bank_domain::schema::manifest::BankSchema,bank_domain::schema::workflow::assessment::ApprovedPaymentAssessmentOutputFamily>",
+      "compiler_frame_bytes": 5048
+    },
+    {
+      "index": 81,
+      "name": "worth_query_publication::application_entry::workflow::assessment::advancement::advance_assessment_in_advancement<bank_domain::schema::manifest::BankSchema,bank_domain::schema::workflow::assessment::ApprovedPaymentAssessmentDemand>",
+      "compiler_frame_bytes": 53240
+    },
+    {
+      "index": 82,
+      "name": "worth_query_publication::application_entry::workflow::assessment::owning::WorthQueryWorkflowAssessmentOperation::advance_in_advancement<bank_domain::schema::manifest::BankSchema,bank_domain::schema::workflow::ApprovedBusinessPaymentWorkflow,bank_domain::schema::workflow::assessment::ApprovedPaymentAssessmentDemand,bank_server::application_definition::composition::BankApplication>",
+      "compiler_frame_bytes": 200
+    },
+    {
+      "index": 83,
+      "name": "worth_query_publication::application_entry::workflow::assessment::owning::advance::impl$0::advance::closure$0<bank_domain::schema::manifest::BankSchema,bank_domain::schema::workflow::ApprovedBusinessPaymentWorkflow,bank_domain::schema::workflow::assessment::ApprovedPaymentAssessmentDemand,bank_server::application_definition::composition::BankApplication>",
+      "compiler_frame_bytes": 56
+    },
+    {
+      "index": 84,
+      "name": "worth_query_execution::domain_computation::primary_graph::application_contribution::request_execution::advancement::impl$3::run_advancement_with_maintenance::closure$0<enum2$<core::result::Result<enum2$<worth_query_publication::application_entry::workflow::assessment::WorthQueryWorkflowAssessmentDemandProgress<bank_domain::queries::payment_detail::PaymentDetailQuery> >,enum2$<worth_query_publication::application_entry::demand::request::WorthQueryApplicationOutputDemandDenial> > >,worth_query_publication::application_entry::workflow::assessment::owning::advance::impl$0::advance::closure_env$0<bank_domain::schema::manifest::BankSchema,bank_domain::schema::workflow::ApprovedBusinessPaymentWorkflow,bank_domain::schema::workflow::assessment::ApprovedPaymentAssessmentDemand,bank_server::application_definition::composition::BankApplication> >",
+      "compiler_frame_bytes": 1800
+    },
+    {
+      "index": 85,
+      "name": "worth_query_execution::domain_computation::primary_graph::application_contribution::request_execution::advancement::runner::run_admitted_advancement::closure$0::closure$1",
+      "compiler_frame_bytes": 392
+    },
+    {
+      "index": 86,
+      "name": "core::ops::function::FnOnce::call_once<worth_query_execution::domain_computation::primary_graph::application_contribution::request_execution::advancement::runner::run_admitted_advancement::closure$0::closure_env$1,tuple$<> >",
+      "compiler_frame_bytes": 40
+    },
+    {
+      "index": 87,
+      "name": "core::panic::unwind_safe::impl$25::call_once<tuple$<>,worth_query_execution::domain_computation::primary_graph::application_contribution::request_execution::advancement::runner::run_admitted_advancement::closure$0::closure_env$1>",
+      "compiler_frame_bytes": 104
+    },
+    {
+      "index": 88,
+      "name": "std::panicking::catch_unwind::do_call<core::panic::unwind_safe::AssertUnwindSafe<worth_query_execution::domain_computation::primary_graph::application_contribution::request_execution::advancement::runner::run_admitted_advancement::closure$0::closure_env$1>,tuple$<> >",
+      "compiler_frame_bytes": 104
+    },
+    {
+      "index": 89,
+      "name": "core::cmp::PartialEq::ne<worth_query_execution::domain_computation::application_aftermath::external_effect::identity::ExternalEffectPostureIdentity,worth_query_execution::domain_computation::application_aftermath::external_effect::identity::ExternalEffectPostureIdentity>",
+      "compiler_frame_bytes": 72
+    },
+    {
+      "index": 90,
+      "name": "std::panic::catch_unwind<core::panic::unwind_safe::AssertUnwindSafe<worth_query_execution::domain_computation::primary_graph::application_contribution::request_execution::advancement::runner::run_admitted_advancement::closure$0::closure_env$1>,tuple$<> >",
+      "compiler_frame_bytes": 264
+    },
+    {
+      "index": 91,
+      "name": "worth_query_execution::domain_computation::primary_graph::application_contribution::request_execution::advancement::runner::run_admitted_advancement::closure$0",
+      "compiler_frame_bytes": 504
+    },
+    {
+      "index": 92,
+      "name": "worth_execution::authority::request::impl$0::run::closure$0<enum2$<core::option::Option<worth_query_execution::domain_computation::primary_graph::application_contribution::request_execution::advancement::runner::AdvancementHandoff> >,worth_query_execution::domain_computation::primary_graph::application_contribution::request_execution::advancement::runner::run_admitted_advancement::closure_env$0>",
+      "compiler_frame_bytes": 136
+    },
+    {
+      "index": 93,
+      "name": "worth_execution::pattern::work_ceiling::impl$0::run_within::closure$0<enum2$<core::option::Option<worth_query_execution::domain_computation::primary_graph::application_contribution::request_execution::advancement::runner::AdvancementHandoff> >,worth_execution::authority::request::impl$0::run::closure_env$0<enum2$<core::option::Option<worth_query_execution::domain_computation::primary_graph::application_contribution::request_execution::advancement::runner::AdvancementHandoff> >,worth_query_execution::domain_computation::primary_graph::application_contribution::request_execution::advancement::runner::run_admitted_advancement::closure_env$0> >",
+      "compiler_frame_bytes": 200
+    },
+    {
+      "index": 94,
+      "name": "worth_execution::backend::scope::run_scope_within::closure$0<tuple$<>,tuple$<>,worth_execution::pattern::work_ceiling::impl$0::run_within::closure_env$0<enum2$<core::option::Option<worth_query_execution::domain_computation::primary_graph::application_contribution::request_execution::advancement::runner::AdvancementHandoff> >,worth_execution::authority::request::impl$0::run::closure_env$0<enum2$<core::option::Option<worth_query_execution::domain_computation::primary_graph::application_contribution::request_execution::advancement::runner::AdvancementHandoff> >,worth_query_execution::domain_computation::primary_graph::application_contribution::request_execution::advancement::runner::run_admitted_advancement::closure_env$0> > >",
+      "compiler_frame_bytes": 136
+    },
+    {
+      "index": 95,
+      "name": "worth_execution::backend::scope::body::impl$0::invoke<tuple$<>,tuple$<>,worth_execution::backend::scope::run_scope_within::closure_env$0<tuple$<>,tuple$<>,worth_execution::pattern::work_ceiling::impl$0::run_within::closure_env$0<enum2$<core::option::Option<worth_query_execution::domain_computation::primary_graph::application_contribution::request_execution::advancement::runner::AdvancementHandoff> >,worth_execution::authority::request::impl$0::run::closure_env$0<enum2$<core::option::Option<worth_query_execution::domain_computation::primary_graph::application_contribution::request_execution::advancement::runner::AdvancementHandoff> >,worth_query_execution::domain_computation::primary_graph::application_contribution::request_execution::advancement::runner::run_admitted_advancement::closure_env$0> > > >",
+      "compiler_frame_bytes": 408
+    },
+    {
+      "index": 96,
+      "name": "worth_execution::backend::scope::body::impl$1::invoke<tuple$<>,tuple$<> >",
+      "compiler_frame_bytes": 56
+    },
+    {
+      "index": 97,
+      "name": "worth_execution::backend::scope::execution::invoke_kernel::closure$0",
+      "compiler_frame_bytes": 40
+    },
+    {
+      "index": 98,
+      "name": "core::panic::unwind_safe::impl$25::call_once<enum2$<core::result::Result<worth_execution::backend::scope::body::HeldPayload,enum2$<worth_execution::backend::meter::KernelFailure<worth_execution::backend::scope::body::HeldPayload> > > >,worth_execution::backend::scope::execution::invoke_kernel::closure_env$0>",
+      "compiler_frame_bytes": 88
+    },
+    {
+      "index": 99,
+      "name": "worth_execution::backend::panic_boundary::contain::closure$0::closure$0<enum2$<core::result::Result<worth_execution::backend::scope::body::HeldPayload,enum2$<worth_execution::backend::meter::KernelFailure<worth_execution::backend::scope::body::HeldPayload> > > >,core::panic::unwind_safe::AssertUnwindSafe<worth_execution::backend::scope::execution::invoke_kernel::closure_env$0> >",
+      "compiler_frame_bytes": 72
+    },
+    {
+      "index": 100,
+      "name": "core::option::Option::map<core::panic::unwind_safe::AssertUnwindSafe<worth_execution::backend::scope::execution::invoke_kernel::closure_env$0>,enum2$<core::result::Result<worth_execution::backend::scope::body::HeldPayload,enum2$<worth_execution::backend::meter::KernelFailure<worth_execution::backend::scope::body::HeldPayload> > > >,worth_execution::backend::panic_boundary::contain::closure$0::closure_env$0<enum2$<core::result::Result<worth_execution::backend::scope::body::HeldPayload,enum2$<worth_execution::backend::meter::KernelFailure<worth_execution::backend::scope::body::HeldPayload> > > >,core::panic::unwind_safe::AssertUnwindSafe<worth_execution::backend::scope::execution::invoke_kernel::closure_env$0> > >",
+      "compiler_frame_bytes": 136
+    },
+    {
+      "index": 101,
+      "name": "worth_execution::backend::panic_boundary::contain::closure$0<enum2$<core::result::Result<worth_execution::backend::scope::body::HeldPayload,enum2$<worth_execution::backend::meter::KernelFailure<worth_execution::backend::scope::body::HeldPayload> > > >,core::panic::unwind_safe::AssertUnwindSafe<worth_execution::backend::scope::execution::invoke_kernel::closure_env$0> >",
+      "compiler_frame_bytes": 88
+    },
+    {
+      "index": 102,
+      "name": "core::ops::function::impls::impl$4::call_once<tuple$<>,dyn$<core::ops::function::FnMut<tuple$<>,assoc$<Output,tuple$<> > > > >",
+      "compiler_frame_bytes": 40
+    },
+    {
+      "index": 103,
+      "name": "core::panic::unwind_safe::impl$25::call_once<tuple$<>,ref_mut$<dyn$<core::ops::function::FnMut<tuple$<>,assoc$<Output,tuple$<> > > > > >",
+      "compiler_frame_bytes": 40
+    },
+    {
+      "index": 104,
+      "name": "std::panicking::catch_unwind::do_call<core::panic::unwind_safe::AssertUnwindSafe<ref_mut$<dyn$<core::ops::function::FnMut<tuple$<>,assoc$<Output,tuple$<> > > > > >,tuple$<> >",
+      "compiler_frame_bytes": 40
+    },
+    {
+      "index": 105,
+      "name": "std::panic::catch_unwind<core::panic::unwind_safe::AssertUnwindSafe<ref_mut$<dyn$<core::ops::function::FnMut<tuple$<>,assoc$<Output,tuple$<> > > > > >,tuple$<> >",
+      "compiler_frame_bytes": 72
+    },
+    {
+      "index": 106,
+      "name": "std::panic::catch_unwind<core::panic::unwind_safe::AssertUnwindSafe<ref_mut$<dyn$<core::ops::function::FnMut<tuple$<>,assoc$<Output,tuple$<> > > > > >,tuple$<> >",
+      "compiler_frame_bytes": 88
+    },
+    {
+      "index": 107,
+      "name": "worth_execution::backend::panic_boundary::contain_erased",
+      "compiler_frame_bytes": 72
+    },
+    {
+      "index": 108,
+      "name": "worth_execution::backend::panic_boundary::contain<enum2$<core::result::Result<worth_execution::backend::scope::body::HeldPayload,enum2$<worth_execution::backend::meter::KernelFailure<worth_execution::backend::scope::body::HeldPayload> > > >,core::panic::unwind_safe::AssertUnwindSafe<worth_execution::backend::scope::execution::invoke_kernel::closure_env$0> >",
+      "compiler_frame_bytes": 104
+    },
+    {
+      "index": 109,
+      "name": "worth_execution::backend::scope::execution::invoke_kernel",
+      "compiler_frame_bytes": 200
+    },
+    {
+      "index": 110,
+      "name": "worth_execution::backend::scope::execution::run_admitted_scope",
+      "compiler_frame_bytes": 1176
+    },
+    {
+      "index": 111,
+      "name": "worth_execution::backend::scope::execution::run_concrete_scope",
+      "compiler_frame_bytes": 1112
+    },
+    {
+      "index": 112,
+      "name": "worth_execution::backend::scope::body::run_typed_scope<tuple$<>,tuple$<> >",
+      "compiler_frame_bytes": 760
+    },
+    {
+      "index": 113,
+      "name": "worth_execution::backend::scope::body::run_scope_inner<tuple$<>,tuple$<>,worth_execution::backend::scope::run_scope_within::closure_env$0<tuple$<>,tuple$<>,worth_execution::pattern::work_ceiling::impl$0::run_within::closure_env$0<enum2$<core::option::Option<worth_query_execution::domain_computation::primary_graph::application_contribution::request_execution::advancement::runner::AdvancementHandoff> >,worth_execution::authority::request::impl$0::run::closure_env$0<enum2$<core::option::Option<worth_query_execution::domain_computation::primary_graph::application_contribution::request_execution::advancement::runner::AdvancementHandoff> >,worth_query_execution::domain_computation::primary_graph::application_contribution::request_execution::advancement::runner::run_admitted_advancement::closure_env$0> > > >",
+      "compiler_frame_bytes": 344
+    },
+    {
+      "index": 114,
+      "name": "worth_execution::backend::scope::run_scope_within<tuple$<>,tuple$<>,worth_execution::pattern::work_ceiling::impl$0::run_within::closure_env$0<enum2$<core::option::Option<worth_query_execution::domain_computation::primary_graph::application_contribution::request_execution::advancement::runner::AdvancementHandoff> >,worth_execution::authority::request::impl$0::run::closure_env$0<enum2$<core::option::Option<worth_query_execution::domain_computation::primary_graph::application_contribution::request_execution::advancement::runner::AdvancementHandoff> >,worth_query_execution::domain_computation::primary_graph::application_contribution::request_execution::advancement::runner::run_admitted_advancement::closure_env$0> > >",
+      "compiler_frame_bytes": 376
+    },
+    {
+      "index": 115,
+      "name": "worth_execution::pattern::work_ceiling::ExecutionWorkCeiling::run_within<enum2$<core::option::Option<worth_query_execution::domain_computation::primary_graph::application_contribution::request_execution::advancement::runner::AdvancementHandoff> >,worth_execution::authority::request::impl$0::run::closure_env$0<enum2$<core::option::Option<worth_query_execution::domain_computation::primary_graph::application_contribution::request_execution::advancement::runner::AdvancementHandoff> >,worth_query_execution::domain_computation::primary_graph::application_contribution::request_execution::advancement::runner::run_admitted_advancement::closure_env$0> >",
+      "compiler_frame_bytes": 792
+    },
+    {
+      "index": 116,
+      "name": "worth_execution::pattern::work_ceiling::ExecutionWorkCeiling::run<enum2$<core::option::Option<worth_query_execution::domain_computation::primary_graph::application_contribution::request_execution::advancement::runner::AdvancementHandoff> >,worth_execution::authority::request::impl$0::run::closure_env$0<enum2$<core::option::Option<worth_query_execution::domain_computation::primary_graph::application_contribution::request_execution::advancement::runner::AdvancementHandoff> >,worth_query_execution::domain_computation::primary_graph::application_contribution::request_execution::advancement::runner::run_admitted_advancement::closure_env$0> >",
+      "compiler_frame_bytes": 184
+    },
+    {
+      "index": 117,
+      "name": "worth_execution::authority::request::ExecutionRequest::run<enum2$<core::option::Option<worth_query_execution::domain_computation::primary_graph::application_contribution::request_execution::advancement::runner::AdvancementHandoff> >,worth_query_execution::domain_computation::primary_graph::application_contribution::request_execution::advancement::runner::run_admitted_advancement::closure_env$0>",
+      "compiler_frame_bytes": 280
+    },
+    {
+      "index": 118,
+      "name": "worth_query_execution::domain_computation::primary_graph::application_contribution::request_execution::advancement::runner::run_admitted_advancement",
+      "compiler_frame_bytes": 1320
+    },
+    {
+      "index": 119,
+      "name": "worth_query_execution::domain_computation::primary_graph::application_contribution::request_execution::advancement::runner::run_advancement",
+      "compiler_frame_bytes": 392
+    },
+    {
+      "index": 120,
+      "name": "worth_query_execution::domain_computation::primary_graph::application_contribution::request_execution::QueryRequestExecution::run_advancement_with_maintenance<enum2$<core::result::Result<enum2$<worth_query_publication::application_entry::workflow::assessment::WorthQueryWorkflowAssessmentDemandProgress<bank_domain::queries::payment_detail::PaymentDetailQuery> >,enum2$<worth_query_publication::application_entry::demand::request::WorthQueryApplicationOutputDemandDenial> > >,worth_query_publication::application_entry::workflow::assessment::owning::advance::impl$0::advance::closure_env$0<bank_domain::schema::manifest::BankSchema,bank_domain::schema::workflow::ApprovedBusinessPaymentWorkflow,bank_domain::schema::workflow::assessment::ApprovedPaymentAssessmentDemand,bank_server::application_definition::composition::BankApplication> >",
+      "compiler_frame_bytes": 4216
+    },
+    {
+      "index": 121,
+      "name": "worth_query_execution::domain_computation::primary_graph::application_contribution::request_execution::QueryRequestExecution::run_advancement<enum2$<core::result::Result<enum2$<worth_query_publication::application_entry::workflow::assessment::WorthQueryWorkflowAssessmentDemandProgress<bank_domain::queries::payment_detail::PaymentDetailQuery> >,enum2$<worth_query_publication::application_entry::demand::request::WorthQueryApplicationOutputDemandDenial> > >,worth_query_publication::application_entry::workflow::assessment::owning::advance::impl$0::advance::closure_env$0<bank_domain::schema::manifest::BankSchema,bank_domain::schema::workflow::ApprovedBusinessPaymentWorkflow,bank_domain::schema::workflow::assessment::ApprovedPaymentAssessmentDemand,bank_server::application_definition::composition::BankApplication> >",
+      "compiler_frame_bytes": 200
+    },
+    {
+      "index": 122,
+      "name": "worth_query_execution::domain_computation::primary_graph::application_contribution::request_execution::QueryRequestExecution::run_product_advancement<enum2$<core::result::Result<enum2$<worth_query_publication::application_entry::workflow::assessment::WorthQueryWorkflowAssessmentDemandProgress<bank_domain::queries::payment_detail::PaymentDetailQuery> >,enum2$<worth_query_publication::application_entry::demand::request::WorthQueryApplicationOutputDemandDenial> > >,worth_query_publication::application_entry::workflow::assessment::owning::advance::impl$0::advance::closure_env$0<bank_domain::schema::manifest::BankSchema,bank_domain::schema::workflow::ApprovedBusinessPaymentWorkflow,bank_domain::schema::workflow::assessment::ApprovedPaymentAssessmentDemand,bank_server::application_definition::composition::BankApplication> >",
+      "compiler_frame_bytes": 424
+    },
+    {
+      "index": 123,
+      "name": "worth_query_execution::domain_computation::primary_graph::application_contribution::request_execution::advancement::installed_opening::impl$0::with_application_advancement::closure$0<bank_domain::schema::manifest::BankSchema,enum2$<core::result::Result<enum2$<worth_query_publication::application_entry::workflow::assessment::WorthQueryWorkflowAssessmentDemandProgress<bank_domain::queries::payment_detail::PaymentDetailQuery> >,enum2$<worth_query_publication::application_entry::demand::request::WorthQueryApplicationOutputDemandDenial> > >,worth_query_publication::application_entry::workflow::assessment::owning::advance::impl$0::advance::closure_env$0<bank_domain::schema::manifest::BankSchema,bank_domain::schema::workflow::ApprovedBusinessPaymentWorkflow,bank_domain::schema::workflow::assessment::ApprovedPaymentAssessmentDemand,bank_server::application_definition::composition::BankApplication> >",
+      "compiler_frame_bytes": 392
+    },
+    {
+      "index": 124,
+      "name": "worth_runtime_world::lifecycle::service_ports::publication::RuntimeWorldPublicationPort::with_execution_placement<tuple$<>,tuple$<>,tuple$<>,tuple$<>,tuple$<>,enum2$<core::result::Result<enum2$<core::result::Result<enum2$<worth_query_publication::application_entry::workflow::assessment::WorthQueryWorkflowAssessmentDemandProgress<bank_domain::queries::payment_detail::PaymentDetailQuery> >,enum2$<worth_query_publication::application_entry::demand::request::WorthQueryApplicationOutputDemandDenial> > >,enum2$<worth_query_execution::domain_computation::primary_graph::application_contribution::request_execution::advancement::WorthQueryAdvancementDenial> > >,worth_query_execution::domain_computation::primary_graph::application_contribution::request_execution::advancement::installed_opening::impl$0::with_application_advancement::closure_env$0<bank_domain::schema::manifest::BankSchema,enum2$<core::result::Result<enum2$<worth_query_publication::application_entry::workflow::assessment::WorthQueryWorkflowAssessmentDemandProgress<bank_domain::queries::payment_detail::PaymentDetailQuery> >,enum2$<worth_query_publication::application_entry::demand::request::WorthQueryApplicationOutputDemandDenial> > >,worth_query_publication::application_entry::workflow::assessment::owning::advance::impl$0::advance::closure_env$0<bank_domain::schema::manifest::BankSchema,bank_domain::schema::workflow::ApprovedBusinessPaymentWorkflow,bank_domain::schema::workflow::assessment::ApprovedPaymentAssessmentDemand,bank_server::application_definition::composition::BankApplication> > >",
+      "compiler_frame_bytes": 1096
+    },
+    {
+      "index": 125,
+      "name": "worth_query_execution::domain_computation::execution_runtime::product_world::runtime::WorthQueryProductRuntime::with_execution_placement<enum2$<core::result::Result<enum2$<core::result::Result<enum2$<worth_query_publication::application_entry::workflow::assessment::WorthQueryWorkflowAssessmentDemandProgress<bank_domain::queries::payment_detail::PaymentDetailQuery> >,enum2$<worth_query_publication::application_entry::demand::request::WorthQueryApplicationOutputDemandDenial> > >,enum2$<worth_query_execution::domain_computation::primary_graph::application_contribution::request_execution::advancement::WorthQueryAdvancementDenial> > >,worth_query_execution::domain_computation::primary_graph::application_contribution::request_execution::advancement::installed_opening::impl$0::with_application_advancement::closure_env$0<bank_domain::schema::manifest::BankSchema,enum2$<core::result::Result<enum2$<worth_query_publication::application_entry::workflow::assessment::WorthQueryWorkflowAssessmentDemandProgress<bank_domain::queries::payment_detail::PaymentDetailQuery> >,enum2$<worth_query_publication::application_entry::demand::request::WorthQueryApplicationOutputDemandDenial> > >,worth_query_publication::application_entry::workflow::assessment::owning::advance::impl$0::advance::closure_env$0<bank_domain::schema::manifest::BankSchema,bank_domain::schema::workflow::ApprovedBusinessPaymentWorkflow,bank_domain::schema::workflow::assessment::ApprovedPaymentAssessmentDemand,bank_server::application_definition::composition::BankApplication> > >",
+      "compiler_frame_bytes": 888
+    },
+    {
+      "index": 126,
+      "name": "worth_query_execution::domain_computation::primary_graph::application_runtime::WorthQueryPrimaryGraphApplicationRuntime::with_application_advancement<bank_domain::schema::manifest::BankSchema,enum2$<core::result::Result<enum2$<worth_query_publication::application_entry::workflow::assessment::WorthQueryWorkflowAssessmentDemandProgress<bank_domain::queries::payment_detail::PaymentDetailQuery> >,enum2$<worth_query_publication::application_entry::demand::request::WorthQueryApplicationOutputDemandDenial> > >,worth_query_publication::application_entry::workflow::assessment::owning::advance::impl$0::advance::closure_env$0<bank_domain::schema::manifest::BankSchema,bank_domain::schema::workflow::ApprovedBusinessPaymentWorkflow,bank_domain::schema::workflow::assessment::ApprovedPaymentAssessmentDemand,bank_server::application_definition::composition::BankApplication> >",
+      "compiler_frame_bytes": 2568
+    },
+    {
+      "index": 127,
+      "name": "worth_query_publication::application_entry::workflow::assessment::owning::WorthQueryWorkflowAssessmentOperation::advance<bank_domain::schema::manifest::BankSchema,bank_domain::schema::workflow::ApprovedBusinessPaymentWorkflow,bank_domain::schema::workflow::assessment::ApprovedPaymentAssessmentDemand,bank_server::application_definition::composition::BankApplication>",
+      "compiler_frame_bytes": 5224
+    },
+    {
+      "index": 128,
+      "name": "bank_server::approved_payment_workflow::BankApprovedPaymentWorkflow::advance_payment_assessment",
+      "compiler_frame_bytes": 10600
+    },
+    {
+      "index": 129,
+      "name": "worth_query_bank_court_external_rail_server::oracle::server_owned_effects::server::parallel_history::assessment_history::prepare_assessment_history::closure$0::closure$1",
+      "compiler_frame_bytes": 2392
+    },
+    {
+      "index": 130,
+      "name": "worth_query_bank_testkit_server::facade::server_world::parallel_history::assessment_trace::Trace::phase<worth_query_publication::application_entry::workflow::assessment::WorthQueryWorkflowAssessmentDemandSettlement<bank_domain::queries::payment_detail::PaymentDetailQuery>,worth_query_bank_court_external_rail_server::oracle::server_owned_effects::server::parallel_history::assessment_history::prepare_assessment_history::closure$0::closure_env$1>",
+      "compiler_frame_bytes": 1624
+    },
+    {
+      "index": 131,
+      "name": "worth_query_bank_court_external_rail_server::oracle::server_owned_effects::server::parallel_history::assessment_history::prepare_assessment_history::closure$0",
+      "compiler_frame_bytes": 19800
+    },
+    {
+      "index": 132,
+      "name": "worth_query_bank_court_external_rail_server::oracle::server_owned_effects::server::parallel_history::assessment_history::assessment_history_settles_at_each_request_width",
+      "compiler_frame_bytes": 14056
+    },
+    {
+      "index": 133,
+      "name": "worth_query_bank_court_external_rail_server::oracle::server_owned_effects::server::parallel_history::assessment_history::assessment_history_settles_at_each_request_width::closure$0",
+      "compiler_frame_bytes": 56
+    },
+    {
+      "index": 134,
+      "name": "core::ops::function::FnOnce::call_once<worth_query_bank_court_external_rail_server::oracle::server_owned_effects::server::parallel_history::assessment_history::assessment_history_settles_at_each_request_width::closure_env$0,tuple$<> >",
+      "compiler_frame_bytes": 56
+    },
+    {
+      "index": 135,
+      "name": "test::__rust_begin_short_backtrace<enum2$<core::result::Result<tuple$<>,alloc::string::String> >,enum2$<core::result::Result<tuple$<>,alloc::string::String> > (*)()>",
+      "compiler_frame_bytes": 56
+    },
+    {
+      "index": 136,
+      "name": "test::run_test::closure$0",
+      "compiler_frame_bytes": 1688
+    },
+    {
+      "index": 137,
+      "name": "std::sys::backtrace::__rust_begin_short_backtrace<test::run_test::closure_env$1,tuple$<> >",
+      "compiler_frame_bytes": 392
+    },
+    {
+      "index": 138,
+      "name": "core::ops::function::FnOnce::call_once<std::thread::lifecycle::spawn_unchecked::closure_env$1<test::run_test::closure_env$1,tuple$<> >,tuple$<> >",
+      "compiler_frame_bytes": 184
+    },
+    {
+      "index": 139,
+      "name": "std::sys::thread::windows::impl$0::new::thread_start",
+      "compiler_frame_bytes": 168
+    },
+    {
+      "index": 140,
+      "name": "<unresolved>",
+      "compiler_frame_bytes": null
+    },
+    {
+      "index": 141,
+      "name": "RtlUserThreadStart",
+      "compiler_frame_bytes": null
+    }
+  ]
+}

@@ -82,7 +82,7 @@ impl<'runtime, Schema: ApplicationSchema>
                 binding,
             )
         })?;
-        let evidence = native.with_runtime_mut(graph, execution, || resolution_denial(
+        let evidence = native.with_runtime(graph, execution, || resolution_denial(
             WorthQueryPrincipalResolutionDenialKind::Refused(PrincipalRefusal::ForeignRuntime), binding,
         ), |relational| {
             let view = relational

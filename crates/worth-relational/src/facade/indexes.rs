@@ -28,5 +28,9 @@ pub use crate::indexes::data::{
 pub use crate::indexes::{
     AppliedEntityFieldLookupDenial, AppliedEntityFieldLookupOutcome, AppliedEntityFieldMatch,
     BoundedEntityFieldLookupRead, BoundedEntityFieldSelectedLookup, DerivedIndexDefinitionLookup,
-    PreparedEntityFieldLookup,
+    PreparedEntityFieldLookup, RetainedDerivedIndexDefinition,
+};
+pub use crate::runtime::{
+    PreparedRelationalIndexDefinitions, RelationalIndexDefinitionPreparation,
+    RelationalIndexDefinitionPreparationDenial,
 };

@@ -19,4 +19,3 @@ export function registerSignalCleanup(signal, cleanup) {
   cleanups.push(cleanup);
   SIGNAL_CLEANUP_CALLBACKS.set(signal, cleanups);
 }
-

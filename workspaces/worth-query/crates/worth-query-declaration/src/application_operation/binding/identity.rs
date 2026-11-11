@@ -23,8 +23,7 @@
 //!
 //! The input identity is scoped to the input type, not to the binding, so a
 //! workflow proposal and the guarded operation it names agree on the input they
-//! carry. Every request encodes its input exactly once and its key exactly
-//! once. A mutation request encodes both at its entry point into
+//! carry. A mutation request encodes its input and key at its entry point into
 //! `ApplicationMutationIdentities`, which keeps both values beside the
 //! identities encoded from them and the deterministic work (`canonical_work`)
 //! that encoding took. A request bound to a workflow requirement encodes its
@@ -33,8 +32,11 @@
 //! mutation request takes the input identity from those identities, and a
 //! capability workflow request encodes its input into an
 //! `ApplicationEncodedInput` that its admission and its idempotency binding
-//! both reuse. Admission, the handler and the commit never encode the input
-//! again, and the request's derivation work is reported once, in the admission
+//! both reuse. Admission, the handler and the commit reuse those request identities.
+//! Explicit original-input retention shares an existing canonical capture or
+//! captures a new stream and verifies that it still has the original identity.
+//! That retention pass preserves the request's identity and derivation evidence.
+//! The request's derivation work is reported once, in the admission
 //! phase of the receipt's canonical-work evidence, on fresh commits and
 //! replayed retries alike. The binding itself joins the idempotency intent
 //! through `WorthQueryApplicationIdempotencyBinding::for_mutation_identities`,
@@ -43,6 +45,8 @@
 //! the operation it commits under, and is the only constructor a host names.
 
 mod captured_input;
+mod recorded_input;
+pub use recorded_input::ApplicationRetainedInputDenial;
 mod encoder;
 mod input;
 #[cfg(test)]
@@ -62,6 +66,7 @@ pub use captured_input::{
 };
 pub use encoder::CanonicalEncodingCharge;
 pub use input::ApplicationEncodedInput;
+mod retained_input;
 pub use partition::{
     application_computation_input_digest, application_computation_item_digest,
     application_computation_partition_identity, ApplicationComputationPartitionIdentity,
@@ -76,6 +81,7 @@ pub use request::{
     ApplicationMutationIdentityAdmittedDenial, ApplicationMutationIdentityDenial,
     ApplicationOwnedMutationIdentities,
 };
+pub use retained_input::ApplicationRetainedInput;
 pub use work::ApplicationCanonicalWork;
 
 use serde::Serialize;

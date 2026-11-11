@@ -1,9 +1,3 @@
-use std::collections::VecDeque;
-
-use worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope;
-use worth_query_declaration::facade::application_program::ApplicationProgramRevision;
-use worth_query_installation::facade::ApplicationSchema;
-
 use super::{
     progress::WorthQueryBranchSetAdoptionProgress, WorthQueryOrderedProgramAdoptionCoverage,
 };
@@ -12,7 +6,10 @@ use crate::domain_computation::primary_graph::{
     WorthQueryBranchAdoptionPreparationDenial, WorthQueryBranchAdoptionPublicationOutcome,
     WorthQueryPreparedBranchAdoption, WorthQueryPrimaryGraphApplicationRuntime,
 };
-
+use std::collections::VecDeque;
+use worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope;
+use worth_query_declaration::facade::application_program::ApplicationProgramRevision;
+use worth_query_installation::facade::ApplicationSchema;
 mod admission;
 mod recovery;
 mod resume;
@@ -24,10 +21,10 @@ pub use resume::{
     WorthQueryBranchSetAdoptionResumeDenial, WorthQueryBranchSetAdoptionResumeFailure,
     WorthQueryStoppedBranchSetAdoption,
 };
-
 /// Why a branch-set adoption could not be prepared. Nothing was published.
 #[derive(Debug)]
 pub enum WorthQueryBranchSetAdoptionPreparationDenial {
+    DurableStateAdmission(crate::domain_computation::execution_runtime::product_world::WorthQueryDurableStateAdmissionDenial),
     /// The preparation call could not enter its execution request.
     ExecutionDenied(crate::domain_computation::primary_graph::WorthQueryAdvancementDenial),
     /// Memory to hold the prepared branches could not be allocated.
@@ -45,12 +42,12 @@ pub enum WorthQueryBranchSetAdoptionPreparationDenial {
     /// The total selection work could not be counted without overflow.
     WorkAccountingOverflow,
 }
-
 impl WorthQueryBranchSetAdoptionPreparationDenial {
     pub const fn branch(&self) -> Option<WorthQueryProductBranch> {
         match self {
             Self::ProductSelection { branch, .. } | Self::Adoption { branch, .. } => Some(*branch),
-            Self::ExecutionDenied(_)
+            Self::DurableStateAdmission(_)
+            | Self::ExecutionDenied(_)
             | Self::RetentionAllocationRejected
             | Self::WorkAccountingOverflow => None,
         }
@@ -346,6 +343,9 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         (VecDeque<PendingBranchAdoption>, usize),
         WorthQueryBranchSetAdoptionPreparationDenial,
     > {
+        self.runtime.product_runtime
+            .admit_directory_capability(crate::domain_computation::primary_graph::WorthQueryOperationDurableCapability::ProgramAdoption)
+            .map_err(WorthQueryBranchSetAdoptionPreparationDenial::DurableStateAdmission)?;
         let mut pending = VecDeque::new();
         pending.try_reserve(branches.len()).map_err(|_| {
             WorthQueryBranchSetAdoptionPreparationDenial::RetentionAllocationRejected

@@ -18,7 +18,8 @@ impl From<String> for PublicationPreparationDenial {
 impl From<RelationalBranchRootCaptureDenial> for PublicationPreparationDenial {
     fn from(denial: RelationalBranchRootCaptureDenial) -> Self {
         match denial {
-            RelationalBranchRootCaptureDenial::Execution(cause) => Self::Execution(cause),
+            RelationalBranchRootCaptureDenial::Execution(cause)
+            | RelationalBranchRootCaptureDenial::Request(cause) => Self::Execution(cause),
             RelationalBranchRootCaptureDenial::StorageUnavailable(failure) => {
                 Self::StorageUnavailable(failure)
             }

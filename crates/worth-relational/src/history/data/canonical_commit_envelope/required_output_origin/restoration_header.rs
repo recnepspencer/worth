@@ -7,7 +7,7 @@ use crate::{
 use std::collections::{HashMap, HashSet};
 use worth_execution::MapKernelContext;
 
-impl CanonicalCommitEnvelope {
+impl CanonicalCommitEnvelopeBody {
     pub(crate) fn validate_restoration_header(
         &self,
         context: &mut MapKernelContext<'_, '_>,
@@ -21,18 +21,6 @@ impl CanonicalCommitEnvelope {
     /// Expected linear work and scratch in patches, generations, publication
     /// membership and route text. Shared source ancestry is resolved once.
     pub(super) fn validate_authored_restoration_components(
-        &self,
-        event: &CanonicalAuthoredRestoration,
-        allow_empty: bool,
-        context: &mut MapKernelContext<'_, '_>,
-    ) -> Result<(), Stop> {
-        let before = super::header_work::begin(self, context);
-        let result = self.validate_indexed_restoration(event, allow_empty, context);
-        super::header_work::finish(self, context, before);
-        result
-    }
-
-    fn validate_indexed_restoration(
         &self,
         event: &CanonicalAuthoredRestoration,
         allow_empty: bool,
@@ -155,7 +143,7 @@ struct RestorationIndex {
 
 impl RestorationIndex {
     fn build(
-        envelope: &CanonicalCommitEnvelope,
+        envelope: &CanonicalCommitEnvelopeBody,
         event: &CanonicalAuthoredRestoration,
         context: &mut MapKernelContext<'_, '_>,
     ) -> Result<Self, Stop> {

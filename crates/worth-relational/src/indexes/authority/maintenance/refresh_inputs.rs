@@ -18,12 +18,16 @@ impl super::owner::IndexMaintenanceOwner<'_> {
         let root = after.root();
         let schema_version = root.schema_authority().schema_version();
         let authoring = root
-            .canonical_envelope()
-            .map(|envelope| &envelope.branch_context);
+            .commit_evidence()
+            .map(|evidence| evidence.authoring_branch());
         let mut patch_changes = None;
         let mut basis = if let Some(before) = before {
             let previous = before.root();
-            if let Some(envelope) = previous.canonical_envelope() {
+            if let Some(receipt) = previous.commit_receipt() {
+                let authoring = previous
+                    .commit_evidence()
+                    .ok_or(DerivedIndexMaintenanceDenialKind::CommitMismatch)?
+                    .authoring_branch();
                 self.indexes
                     .prepare_basis_selection(
                         &request.branch_id,
@@ -31,24 +35,22 @@ impl super::owner::IndexMaintenanceOwner<'_> {
                         after.version_id(),
                         schema_version,
                         &request.branch_id,
-                        envelope.commit.commit_id,
+                        receipt.commit_id,
                         before.version_id(),
-                        work.publication_is_deferred(),
                         &mut |units, bytes| work.prepare(units, bytes),
                     )
                     .or_else(|stop| {
                         if stop == DerivedIndexMaintenanceDenialKind::ColdReconstructionRequired
-                            && envelope.branch_context != request.branch_id
+                            && authoring != &request.branch_id
                         {
                             self.indexes.prepare_basis_selection(
                                 &request.branch_id,
                                 request.source_commit_id,
                                 after.version_id(),
                                 schema_version,
-                                &envelope.branch_context,
-                                envelope.commit.commit_id,
+                                authoring,
+                                receipt.commit_id,
                                 before.version_id(),
-                                work.publication_is_deferred(),
                                 &mut |units, bytes| work.prepare(units, bytes),
                             )
                         } else {
@@ -64,13 +66,17 @@ impl super::owner::IndexMaintenanceOwner<'_> {
                         }
                     })?
             } else {
+                if previous.id() != 0 || previous.commit_id().is_some() || previous.axes().is_some()
+                {
+                    return Err(DerivedIndexMaintenanceDenialKind::BeforeRootMismatch);
+                }
                 Some(self.indexes.prepare_empty_basis_selection(
                     &request.branch_id,
                     request.source_commit_id,
                     after.version_id(),
                     schema_version,
-                    work.publication_is_deferred(),
                     &mut |units, bytes| work.prepare(units, bytes),
+                    self.prepared_catalog(),
                 )?)
             }
         } else if let Some(authoring) = authoring.filter(|branch| *branch != &request.branch_id) {
@@ -83,7 +89,6 @@ impl super::owner::IndexMaintenanceOwner<'_> {
                     authoring,
                     request.source_commit_id,
                     after.version_id(),
-                    work.publication_is_deferred(),
                     &mut |units, bytes| work.prepare(units, bytes),
                 )
                 .map(Some)
@@ -104,7 +109,6 @@ impl super::owner::IndexMaintenanceOwner<'_> {
                     &request.branch_id,
                     request.source_commit_id,
                     after.version_id(),
-                    work.publication_is_deferred(),
                     &mut |units, bytes| work.prepare(units, bytes),
                 )
                 .map(Some)
@@ -122,7 +126,7 @@ impl super::owner::IndexMaintenanceOwner<'_> {
                 .ok_or(DerivedIndexMaintenanceDenialKind::ColdReconstructionRequired)?;
             let changes = changes::ChangedRecords::patch(change, work)?;
             let affected = affected_indexes::select(
-                self.indexes,
+                self.routes(after.root())?.as_ref(),
                 change,
                 execution,
                 &changes,
@@ -141,7 +145,7 @@ impl super::owner::IndexMaintenanceOwner<'_> {
                 basis.remove_admitted(*index, &mut |units, bytes| work.prepare(units, bytes))?;
             }
         }
-        let requested = if work.routes_installed_indexes() {
+        let mut requested = if work.routes_installed_indexes() {
             if basis.is_none() {
                 return Err(DerivedIndexMaintenanceDenialKind::ColdReconstructionRequired);
             }
@@ -155,6 +159,12 @@ impl super::owner::IndexMaintenanceOwner<'_> {
             requested
         };
 
+        if let Some(definitions) = self.definitions {
+            for index in definitions.introduced_ids() {
+                work.ordered::<DerivedIndexId, ()>(requested.len(), 1, 0)?;
+                requested.insert(index);
+            }
+        }
         Ok(RootMaintenanceInputs {
             basis,
             inherited,

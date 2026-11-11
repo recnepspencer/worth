@@ -13,6 +13,17 @@ pub(crate) struct RelationalRuntimeConfigurationSnapshot {
     pub(crate) schema_contract_runtime: Arc<SchemaContractRuntimeSubsystem>,
 }
 
+impl RelationalRuntimeConfigurationSnapshot {
+    /// A semantic generation is not an identity for a replaced receiver pair.
+    pub(crate) fn same_epoch(&self, other: &Self) -> bool {
+        Arc::ptr_eq(&self.config, &other.config)
+            && Arc::ptr_eq(
+                &self.schema_contract_runtime,
+                &other.schema_contract_runtime,
+            )
+    }
+}
+
 /// The one authority for a relational runtime's configuration.
 ///
 /// The owner reconfigures through this cell rather than through exclusive
@@ -83,6 +94,16 @@ impl RelationalRuntimeConfiguration {
 }
 
 impl RelationalRuntimeConfigurationBinding {
+    pub(in crate::runtime) fn try_home_promotion(
+        &self,
+    ) -> Option<std::sync::RwLockWriteGuard<'_, RelationalRuntimeConfigurationSnapshot>> {
+        match self.state.try_write() {
+            Ok(guard) => Some(guard),
+            Err(std::sync::TryLockError::Poisoned(cause)) => Some(cause.into_inner()),
+            Err(std::sync::TryLockError::WouldBlock) => None,
+        }
+    }
+
     /// Hold the configuration epoch through preparation or publication. The owner
     /// takes the matching write guard across initial branch and schema cutover.
     pub(crate) fn operation(

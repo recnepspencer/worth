@@ -166,23 +166,12 @@ pub fn assert_early_failure(
             let plan = running
                 .admit_provider_execution_plan(graph)
                 .expect("failure fixture plan should admit");
-            let failure = match point {
-                SessionFailurePoint::ReadmissionRejection
-                | SessionFailurePoint::ReadmissionPanic => {
-                    let fixture_target = plan;
-                    fixture_target.readmit(&installed_fixture_phase)
-                }
-                .expect_err("readmission should fail"),
-                SessionFailurePoint::PreparationRejection
-                | SessionFailurePoint::PreparationPanic => {
-                    let fixture_target = plan;
-                    fixture_target.readmit(&installed_fixture_phase)
-                }
-                .expect("readmission should succeed")
-                .prepare()
-                .expect_err("preparation should fail"),
-                _ => unreachable!("early failure helper received a later phase"),
-            };
+            let (grant, receiver) = plan
+                .admit_session(&installed_fixture_phase)
+                .expect("the grant has no provider effect");
+            let failure = grant
+                .prepare(receiver, &installed_fixture_phase)
+                .expect_err("physical readmission or preparation should fail");
             assert_failure(&failure, stage, posture);
         },
         resource_request,

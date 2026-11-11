@@ -1,4 +1,4 @@
-use std::{cell::Cell, sync::Arc};
+use std::cell::Cell;
 
 use worth_foundational::facade::{
     AspectFieldLocator, AspectKey, AspectValue, CanonicalF64, CanonicalFieldPath, FieldKey,
@@ -123,14 +123,16 @@ fn indexed_selection_matches_old_key_and_definition_touches() {
     let value = AspectValue::Float64(CanonicalF64::from_f64(-0.0));
     let fact = Fact::IndexedEntitySelection {
         index_id: index,
-        definition: Arc::new(DerivedIndexDefinition {
-            index_id: index,
-            name: "account-status".to_owned(),
-            kind: DerivedIndexKind::EntityField {
-                field_locator: locator.clone(),
+        definition: worth_relational::facade::indexes::RetainedDerivedIndexDefinition::from_owned(
+            DerivedIndexDefinition {
+                index_id: index,
+                name: "account-status".to_owned(),
+                kind: DerivedIndexKind::EntityField {
+                    field_locator: locator.clone(),
+                },
+                branch_scoped: true,
             },
-            branch_scoped: true,
-        }),
+        ),
         entity_kind: kind,
         locator: locator.clone(),
         value: value.clone(),

@@ -121,7 +121,7 @@ pub fn validated_status_footprint(
     let graph = (*(*(*world.application.runtime_for_test()).primary_provider_for_test())
         .graph_for_test())
     .clone();
-    let validated = graph.with_runtime_mut_for_test(request_execution, |runtime| {
+    let validated = graph.with_runtime_for_test(request_execution, |runtime| {
         let fields = AspectFieldPatch::from(BTreeMap::from([(
             locator,
             AspectValue::String(InternedString::from("frozen")),

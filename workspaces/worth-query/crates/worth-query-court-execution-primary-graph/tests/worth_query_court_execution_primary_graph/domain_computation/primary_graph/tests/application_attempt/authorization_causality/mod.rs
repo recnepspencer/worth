@@ -214,7 +214,7 @@ pub fn revoke_account_ownership(
         .expect("account ownership is installed")
         .kind_for_test();
     let selected = world.selected_product(&(phase_custody).test_host_request_for_test());
-    let relation = graph.with_runtime_mut_for_test(execution, |runtime| {
+    let relation = graph.with_runtime_for_test(execution, |runtime| {
         let snapshot = selected.application_basis_for_test().snapshot_handle();
         runtime
             .read_truth()

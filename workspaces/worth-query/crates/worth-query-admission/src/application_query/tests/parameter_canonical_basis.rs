@@ -169,6 +169,74 @@ fn parameter_canonicalization_denies_entry_and_encoded_byte_overflow() {
     ));
 }
 
+#[test]
+fn recorded_disclosure_parameters_retain_owned_names_and_match_current_admission() {
+    use crate::facade::application_query::readmit_recorded_application_query_parameters;
+    use std::borrow::Cow;
+    let query = installed_query();
+    let recorded = vec![(
+        String::from("account"),
+        admitted(&query, 7).bindings()[0].1.clone(),
+    )];
+    let restored = readmit_recorded_application_query_parameters(&query, recorded).unwrap();
+    let ordinary = admitted(&query, 7);
+    assert!(matches!(&restored.bindings()[0].0, Cow::Owned(_)));
+    assert!(matches!(&ordinary.bindings()[0].0, Cow::Borrowed(_)));
+    assert_eq!(restored.bindings(), ordinary.bindings());
+    assert_eq!(restored.identity(), ordinary.identity());
+    assert_eq!(restored.canonical_basis(), ordinary.canonical_basis());
+    let reissued = readmit_application_query_parameters(&query, &restored).unwrap();
+    assert_eq!(reissued.bindings(), restored.bindings());
+    assert!(matches!(&reissued.bindings()[0].0, Cow::Owned(_)));
+    let expected = |account| {
+        ApplicationQueryParameterSet::new()
+            .bind(account_parameter(), account)
+            .unwrap()
+    };
+    assert!(restored.matches_expected(expected(7)).unwrap());
+    assert!(!restored.matches_expected(expected(8)).unwrap());
+    assert!(restored
+        .matches_expected_with_preflight(expected(7), |_, _| Ok::<_, ()>(()))
+        .unwrap()
+        .unwrap());
+}
+
+#[test]
+fn recorded_disclosure_parameters_refuse_missing_duplicate_foreign_names_and_wrong_types() {
+    use crate::facade::application_query::{
+        readmit_recorded_application_query_parameters,
+        WorthQueryApplicationQueryParameterDenialKind as Kind,
+    };
+    let query = installed_query();
+    for (recorded, kind) in [
+        (vec![], Kind::ParameterSetMismatch),
+        (
+            vec![
+                (
+                    "account".into(),
+                    admitted(&query, 7).bindings()[0].1.clone(),
+                ),
+                (
+                    "account".into(),
+                    admitted(&query, 7).bindings()[0].1.clone(),
+                ),
+            ],
+            Kind::ParameterSetMismatch,
+        ),
+        (
+            vec![("other".into(), admitted(&query, 7).bindings()[0].1.clone())],
+            Kind::ParameterSetMismatch,
+        ),
+        (
+            vec![("account".into(), AspectValue::Bool(true))],
+            Kind::ParameterTypeMismatch,
+        ),
+    ] {
+        let denial = readmit_recorded_application_query_parameters(&query, recorded).unwrap_err();
+        assert_eq!(denial.kind(), kind);
+    }
+}
+
 fn admitted(
     query: &worth_query_installation::facade::WorthQueryInstalledApplicationQuery<
         super::PlanningTestSchema,

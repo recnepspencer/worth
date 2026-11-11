@@ -7,6 +7,7 @@ impl EdgeTopology {
         resources: &mut SignalConditionalRetentionReservation,
     ) -> Self {
         Self {
+            declared_dependents: self.declared_dependents.fork_reserved(resources),
             dependency_snapshots: self.dependency_snapshots.fork_reserved(resources),
             dependency_snapshot_shapes: self.dependency_snapshot_shapes.fork_reserved(resources),
             dependency_snapshot_storage_custody: self.dependency_snapshot_storage_custody.clone(),

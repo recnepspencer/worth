@@ -18,6 +18,7 @@ pub mod evidence_identity {
 #[doc(hidden)]
 pub mod causal_inspection {
     pub use crate::domain_computation::primary_graph::causal_inspection::*;
+    pub use crate::domain_computation::primary_graph::managed_bridge::causal_reporting::WorthQueryBridgeCausalReportingDenial;
 }
 
 /// Fresh application inspection; only its supported result and request vocabulary.
@@ -27,12 +28,13 @@ pub mod application_inspection {
         DiagnosticComparisonDenial, FactlessCurrentness, IndexedSelectionReobserveDenial,
         OutputFieldCaptureFailure, OwnEffectOnReads, RebaseVerificationReason, StoreDenial,
         WorthQueryApplicationDisclosureContractDenial, WorthQueryApplicationEvidenceFamily,
-        WorthQueryApplicationInspectionCanonicalRefusal, WorthQueryApplicationInspectionDenial,
-        WorthQueryApplicationInspectionOwnerRefusal, WorthQueryApplicationInspectionRequest,
-        WorthQueryApplicationInspectionResourceRefusal, WorthQueryApplicationInspectionStage,
-        WorthQueryApplicationInspectionStopKind, WorthQueryApplicationMaterializationPolicy,
-        WorthQueryApplicationMaterializationRequest, WorthQueryApplicationProducerConnection,
-        WorthQueryApplicationProducerEvaluation, WorthQueryApplicationQueryGovernanceDenialKind,
+        WorthQueryApplicationFactKey, WorthQueryApplicationInspectionCanonicalRefusal,
+        WorthQueryApplicationInspectionDenial, WorthQueryApplicationInspectionOwnerRefusal,
+        WorthQueryApplicationInspectionRequest, WorthQueryApplicationInspectionResourceRefusal,
+        WorthQueryApplicationInspectionStage, WorthQueryApplicationInspectionStopKind,
+        WorthQueryApplicationMaterializationPolicy, WorthQueryApplicationMaterializationRequest,
+        WorthQueryApplicationProducerConnection, WorthQueryApplicationProducerEvaluation,
+        WorthQueryApplicationQueryGovernanceDenialKind,
         WorthQueryApplicationQueryInstallationDenial,
         WorthQueryApplicationQueryInstallationDenialKind, WorthQueryApplicationQueryObservation,
         WorthQueryApplicationRichMaterialization, WorthQueryChangedInspectionRequest,
@@ -41,7 +43,7 @@ pub mod application_inspection {
         WorthQueryConditionalHistoryOutcome, WorthQueryConnectedApplicationInspection,
         WorthQueryConnectedInspectionRequest, WorthQueryConnectedReferenceOnlyInspectionRequest,
         WorthQueryEvaluatedApplicationInspection, WorthQueryEvaluatedInspectionRequest,
-        WorthQueryEvaluatedReferenceOnlyInspectionRequest,
+        WorthQueryEvaluatedReferenceOnlyInspectionRequest, WorthQueryHistoricalProducerRead,
         WorthQueryInspectionEvidenceAvailability, WorthQueryInspectionReadTerminalDenial,
         WorthQueryInspectionRetainedEvidence, WorthQueryInspectionSupplierEvidence,
         WorthQueryManagedGraphReadDenial, WorthQueryManagedGraphWorkSessionStartDenial,
@@ -128,12 +130,13 @@ pub mod runtime {
     };
     pub use worth_runtime_world::facade::{
         CompositeComponentChangePosture, CompositeSignalPublicationIdentity, NoEffectCause,
-        ProductUnpublishedCause, RuntimeWorldBranchBudgetInstallation, RuntimeWorldBudgetDenial,
+        ProductUnpublishedCause, RuntimeWorldBranchAdmissionDenial,
+        RuntimeWorldBranchBudgetInstallation, RuntimeWorldBudgetDenial,
         RuntimeWorldBudgetInstallation, RuntimeWorldBudgets, RuntimeWorldCancellationSource,
         RuntimeWorldCancellationToken, RuntimeWorldCustodyBudgetInstallation,
         RuntimeWorldHistoryBudgetInstallation, RuntimeWorldObservationBudgetInstallation,
         RuntimeWorldPublicationBudgetInstallation, RuntimeWorldRecoveryBudgetInstallation,
-        RuntimeWorldRetentionBudgetInstallation,
+        RuntimeWorldRetentionBudgetInstallation, RuntimeWorldServiceDenial,
     };
     pub use worth_signal::facade::branch::{
         validate_signal_branch_name, ValidatedSignalBranchName,
@@ -362,3 +365,9 @@ pub mod integration {
 
 pub use crate::domain_computation::primary_graph::application_query::WorthQueryDerivedPairReadPlans;
 pub use worth_execution::ExecutionRequest;
+
+/// Mechanically closed Host Home composition; applications use Query Host.
+#[doc(hidden)]
+pub mod application_home_integration;
+pub mod correction_material;
+pub mod program_support;

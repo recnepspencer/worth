@@ -12,7 +12,40 @@ impl RelationalPreparationRuntime {
         #[cfg(test)]
         crate::mvcc::transaction::split_contacts::revalidation();
         self.ensure_validated_proposal_branch_is_current(&candidate)?;
-        if candidate.custom_invariant_generation
+        if !candidate
+            .state
+            .receiver_epoch
+            .same_epoch(&self.configuration_epoch)
+        {
+            return Err(stale_validated_proposal(
+                "validated mutation belongs to an obsolete receiver epoch",
+            ));
+        }
+        let same_execution = match (
+            &candidate.state.execution_contracts,
+            &self.execution_contracts,
+        ) {
+            (None, None) => true,
+            (Some(before), Some(now)) => std::sync::Arc::ptr_eq(before, now),
+            (None, Some(_)) | (Some(_), None) => false,
+        };
+        if !same_execution {
+            return Err(stale_validated_proposal(
+                "validated mutation belongs to another root execution inventory",
+            ));
+        }
+        if let Some(step) = candidate.state.validation_input.home_step()
+            && !candidate
+                .state
+                .caller_association
+                .as_ref()
+                .is_some_and(|association| step.admits_association(association.as_bytes()))
+        {
+            return Err(stale_validated_proposal(
+                "Home target has no exact original World association",
+            ));
+        }
+        if candidate.state.custom_invariant_generation
             != self.schema_contract_runtime.custom_invariant_generation
         {
             return Err(stale_validated_proposal(
@@ -26,7 +59,7 @@ impl RelationalPreparationRuntime {
         &self,
         candidate: &ValidatedRelationalProposal,
     ) -> Result<(), TransactionCommitError> {
-        let binding = candidate.validation_input.basis();
+        let binding = candidate.state.validation_input.basis();
         if binding.identity().runtime_instance_id() != self.runtime_instance_id() {
             return Err(TransactionCommitError::conflict(CommitConflict::new(
                 ConflictClass::ForeignRuntime {
@@ -42,7 +75,7 @@ impl RelationalPreparationRuntime {
         }
         let Some(cell) = self
             .history
-            .branch_cell(candidate.validation_input.target_branch())
+            .branch_cell(candidate.state.validation_input.target_branch())
         else {
             return Err(stale_validated_proposal(
                 "validated mutation branch is no longer registered",
@@ -50,7 +83,7 @@ impl RelationalPreparationRuntime {
         };
         if cell.identity() != binding.identity()
             || cell.observation() != *binding.reference()
-            || cell.truth_version() != candidate.validated_against_branch_version
+            || cell.truth_version() != candidate.state.validated_against_branch_version
         {
             return Err(stale_validated_proposal(
                 "validated mutation no longer matches the current branch reference",

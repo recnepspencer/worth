@@ -12,8 +12,7 @@ pub(super) fn candidate_entity_bytes(
                 record.kind_id()?,
                 record
                     .extra()
-                    .authoritative_aspect_state
-                    .as_ref()
+                    .authoritative_aspect_state()
                     .map_or(0, |state| state.clone_allocation_capacity_bytes() as u64),
             ))
         })
@@ -26,8 +25,7 @@ pub(super) fn candidate_entity_bytes(
                 (
                     metadata.kind_id,
                     metadata
-                        .authoritative_aspect_state
-                        .as_ref()
+                        .authoritative_aspect_state()
                         .map_or(0, |state| state.clone_allocation_capacity_bytes() as u64),
                 )
             })
@@ -60,8 +58,7 @@ pub(super) fn candidate_relation_bytes(
                 record.kind_id()?,
                 record
                     .extra()
-                    .authoritative_aspect_state
-                    .as_ref()
+                    .authoritative_aspect_state()
                     .map_or(0, |state| state.clone_allocation_capacity_bytes() as u64),
             ))
         })
@@ -70,8 +67,7 @@ pub(super) fn candidate_relation_bytes(
             (
                 metadata.kind_id,
                 metadata
-                    .authoritative_aspect_state
-                    .as_ref()
+                    .authoritative_aspect_state()
                     .map_or(0, |state| state.clone_allocation_capacity_bytes() as u64),
             )
         })

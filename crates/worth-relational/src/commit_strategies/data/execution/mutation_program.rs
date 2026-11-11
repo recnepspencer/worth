@@ -4,7 +4,7 @@ use serde::{de::Error as DeError, Deserialize, Deserializer, Serialize};
 
 use crate::transactions::data::WorkerIntentBatch;
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct StrategyMutationProgramDigest(pub [u8; 32]);
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
@@ -91,5 +91,17 @@ pub(super) fn forged_mutation_program_for_digest_test(
         worker_batches: Arc::from(program.worker_batches()),
         digest,
         total_intent_count: program.total_intent_count(),
+    }
+}
+
+impl Serialize for StrategyMutationProgramDigest {
+    fn serialize<S: serde::Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
+        worth_foundational::CanonicalDigestId::new(self.0).serialize(serializer)
+    }
+}
+impl<'de> Deserialize<'de> for StrategyMutationProgramDigest {
+    fn deserialize<D: serde::Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
+        worth_foundational::CanonicalDigestId::deserialize(deserializer)
+            .map(|digest| Self(*digest.bytes()))
     }
 }

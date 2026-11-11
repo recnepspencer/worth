@@ -57,7 +57,7 @@ fn source_only_freeze_correction_closes_and_replays_through_its_original_owner()
     else {
         panic!("source-only retry recovers the original completion directly");
     };
-    let WorthQuerySourceCompletion::Recovered {
+    let WorthQuerySourceCompletion::Recorded {
         receipt: recovered,
         retained: None,
         ..
@@ -65,10 +65,8 @@ fn source_only_freeze_correction_closes_and_replays_through_its_original_owner()
     else {
         panic!("recovered source-only completion has its original receipt");
     };
-    assert_eq!(recovered.commit_reference(), receipt.commit_reference());
-    assert_eq!(
-        recovered.committed_product_publication().composite_commit(),
-        receipt.committed_product_publication().composite_commit()
+    worth_query_bank_testkit_server::facade::recorded_commit_axes::assert_agrees(
+        recovered, &receipt,
     );
     assert!(replayed.close(&request).is_ok());
     assert_eq!(estate_account_status(&fixture), AccountStatus::Open);

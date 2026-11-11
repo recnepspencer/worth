@@ -9,8 +9,9 @@ use worth_query_host::facade::{
         WorthQueryOperationAdvance as Advance, WorthQueryOperationCloseDenial,
     },
     primary_graph::{
-        WorthQueryApplicationUncommitted as U, WorthQueryPrincipalResolutionMode,
-        WorthQueryProductBranchAdmissionDenial, WorthQueryProductBranchAdmissionRefusalKind,
+        WorthQueryApplicationCommitOutcome as C, WorthQueryApplicationUncommitted as U,
+        WorthQueryPrincipalResolutionMode, WorthQueryProductBranchAdmissionDenial,
+        WorthQueryProductBranchAdmissionRefusalKind,
     },
 };
 use worth_query_topology_entry::{
@@ -329,7 +330,7 @@ fn fixed_producer_cleanup_survives_diagnostic_drop_and_refused_release() {
                 worth_query_host::facade::primary_graph::BridgeExecutionBasisFinalizationFailureKind::SignalRuntimeThreadAffinityViolation)));
     assert!(matches!(
         terminal.producer_native_outcome(),
-        Some(U::Indeterminate(_))
+        Some(C::Indeterminate(_))
     ));
     let head = request
         .retain_current_read()
@@ -375,7 +376,7 @@ fn fixed_producer_cleanup_survives_diagnostic_drop_and_refused_release() {
     assert_eq!(planar_source_adjustment_contacts(&input), (1, 1));
     assert!(matches!(
         terminal.producer_native_outcome(),
-        Some(U::Indeterminate(_))
+        Some(C::Indeterminate(_))
     ));
     assert!(matches!(
         terminal.close(&request),

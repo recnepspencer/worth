@@ -20,7 +20,7 @@ impl BridgeConditionalLoweringLease {
     }
 }
 
-impl super::BridgeOwnedSignalRuntime {
+impl super::execution_view::BridgeConditionalExecutionView<'_> {
     /// Graph identity alone cannot keep a retired or revoked installation live.
     /// The runtime's installed entry and its retained lease must agree before
     /// opening a source or executing against Signal.

@@ -31,7 +31,9 @@ fn readmission_failure(stop: RelationalRecoveryStop, subject: RelationalStorageS
         RelationalRecoveryStop::Request(cause) => Failure::Request(cause),
         RelationalRecoveryStop::Allocation(_) => failure(Cause::MemoryExhausted),
         RelationalRecoveryStop::Content(cause) => Failure::Content(cause),
-        RelationalRecoveryStop::Durability(_) => failure(Cause::Damaged),
+        RelationalRecoveryStop::Durability(_) | RelationalRecoveryStop::AdmissionImage(_) => {
+            failure(Cause::Damaged)
+        }
     }
 }
 

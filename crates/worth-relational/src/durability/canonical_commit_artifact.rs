@@ -11,24 +11,40 @@
 //! | 8..10  | artifact format version (`u16`)         |
 //! | 10..18 | `PatchStreamPosition` (`u64`)           |
 //! | 18..26 | `CommitId` (`u64`)                      |
-//! | 26..58 | SHA-256 of the payload                  |
+//! | 26..58 | v8 composite payload commitment         |
 //! | 58..66 | payload length (`u64`)                  |
 //! | 66..   | payload: MessagePack named map          |
 //!
-//! The payload is `{position, canonical}` where `canonical` is the
-//! authoritative envelope projection. The position is inside the digested
-//! payload so a rewritten header position cannot pass readmission.
+//! Version 8 carries `{position, canonical, original_inputs}`. The canonical
+//! projection and exact schema/policy input DATA have separate SHA-256 leaves;
+//! the composite commitment also binds the header position and commit. See
+//! `payload_digest` for its exact domain-separated grammar.
 
+pub(crate) mod borrowed_payload;
+#[cfg(test)]
+mod checkpoint_body;
+mod decoded_quote;
+pub(crate) use decoded_quote::schema_image::{
+    prepare as prepare_schema_image_decode, SchemaImageDecodeAdmission,
+};
+pub(crate) use decoded_quote::{decode_checkpoint_effect, CheckpointEffectData};
+mod commitment_writer;
 pub(crate) const MAXIMUM_ARTIFACT_BYTES: usize = 256 * 1024 * 1024;
 
 mod encode_denial;
 mod encoding;
 mod frame;
 mod frame_refusal;
+pub(crate) mod input_commitment;
+mod memory_publication;
+pub(crate) use memory_publication::MemoryFramePreparationDenial;
+mod prepared_payload;
+pub(crate) use prepared_payload::PreparedOriginalCanonicalPayload;
 mod payload_digest;
 mod payload_wire;
 mod readmission;
 mod readmission_refusal;
+mod request_agreement;
 mod request_encoding;
 pub(crate) use request_encoding::ControlledFrameCopyDenial;
 mod retained_export;
@@ -58,6 +74,16 @@ pub struct RelationalCanonicalCommitArtifact {
 }
 
 impl RelationalCanonicalCommitArtifact {
+    /// Bounded version eligibility only, never frame or payload admission.
+    pub fn preflight_frame_version(
+        prefix: &[u8],
+    ) -> Result<(), RelationalCanonicalCommitArtifactFrameRefusal> {
+        frame::validate_frame_version(prefix)
+    }
+    pub const PROTOCOL: worth_foundational::facade::BoundaryProtocolIdentity =
+        worth_foundational::facade::BoundaryProtocolIdentity::new(
+            "worth.relational.canonical-commit",
+        );
     /// The artifact format version this build writes and readmits. Bytes
     /// carrying any other version are refused, never reinterpreted.
     pub const FORMAT_VERSION: u16 = frame::FORMAT_VERSION;
@@ -70,7 +96,16 @@ impl RelationalCanonicalCommitArtifact {
     pub fn from_untrusted_bytes(
         bytes: impl Into<Box<[u8]>>,
     ) -> Result<Self, RelationalCanonicalCommitArtifactFrameRefusal> {
-        let bytes = ExecutionImmutableBytes::from_external_bytes(Arc::new(bytes.into()));
+        Self::from_owned_bytes(ExecutionImmutableBytes::from_external_bytes(Arc::new(
+            bytes.into(),
+        )))
+    }
+
+    /// Keep the original provider allocation and its intrinsic charge while
+    /// checking this same frame. No encoding or byte-copy path participates.
+    pub(crate) fn from_owned_bytes(
+        bytes: ExecutionImmutableBytes,
+    ) -> Result<Self, RelationalCanonicalCommitArtifactFrameRefusal> {
         let (header, _) = CanonicalCommitArtifactHeader::verify(bytes.bytes())?;
         Ok(Self { bytes, header })
     }

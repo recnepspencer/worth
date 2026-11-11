@@ -254,7 +254,7 @@ fn expected_none_violation_witness_value() -> RelationalDiagnosticValue {
 }
 
 fn diagnostic_object_field<'a>(
-    object: &'a std::collections::BTreeMap<String, RelationalDiagnosticValue>,
+    object: &'a crate::diagnostics::data::DiagnosticObjectFields,
     field: &str,
 ) -> &'a RelationalDiagnosticValue {
     object

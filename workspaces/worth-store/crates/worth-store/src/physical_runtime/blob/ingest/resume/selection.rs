@@ -316,7 +316,7 @@ fn observe_selected_payload(
                 if frontier.store() != token.store
                     || frontier.session() != token.session
                     || frontier.declaration_record() != token.declaration_record
-                    || frontier.declaration_digest() != token.declaration_digest
+                    || frontier.declaration_digest() != *token.declaration_digest.bytes()
                 {
                     return Err(BlobResumeFailure::ConflictingClaims);
                 }

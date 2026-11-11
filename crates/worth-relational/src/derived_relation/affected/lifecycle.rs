@@ -105,16 +105,27 @@ pub(super) fn seed_domain(
                                 size_of::<ProjectedMemberCoordinate>() + 2 * size_of::<usize>(),
                             )
                         })
+                        .and_then(|bytes| {
+                            bytes.checked_add(
+                                usize::try_from(
+                                    crate::graph_member::ProjectedMemberStorage::control_bytes()?,
+                                )
+                                .ok()?,
+                            )
+                        })
                         .ok_or(DefinitionDenial::WorkBudgetExceeded)?;
                     read.retain(bytes)?;
                     insert_member(
                         read,
                         roots,
-                        Member::Projected(Arc::new(ProjectedMemberCoordinate {
-                            domain: projected.clone(),
-                            carrier: event.carrier,
-                            case: case.clone(),
-                        })),
+                        Member::Projected(
+                            Arc::new(ProjectedMemberCoordinate {
+                                domain: projected.clone(),
+                                carrier: event.carrier,
+                                case: case.clone(),
+                            })
+                            .into(),
+                        ),
                     )?;
                 }
             }

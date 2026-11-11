@@ -174,4 +174,5 @@ fn captured_producer_predicate_reuses_after_reopen_and_refreshes_after_source_ch
 
 pub(crate) mod ordinary_source;
 
+mod changed_build;
 pub(crate) mod transition;

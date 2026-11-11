@@ -9,6 +9,17 @@ impl RelationalRuntime {
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         proposal: crate::mvcc::ValidatedRelationalProposal,
     ) -> Result<crate::mvcc::PreparedRelationalCommitCandidate, TransactionCommitError> {
+        worth_execution::run_with_execution_stack(move || {
+            self.prepare_validated_proposal_on_execution_stack(execution, proposal)
+        })
+    }
+
+    #[inline(never)]
+    fn prepare_validated_proposal_on_execution_stack(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        proposal: crate::mvcc::ValidatedRelationalProposal,
+    ) -> Result<crate::mvcc::PreparedRelationalCommitCandidate, TransactionCommitError> {
         crate::authority::commit::pipeline::consult_stage(
             execution,
             crate::authority::commit::pipeline::CommitStage::Admission,

@@ -1,0 +1,79 @@
+command: python target/lane-evidence/merge_funding_proofs.py store
+HEAD: 25619ac5d1ae6092ab5a91bc4b7123be6042475c
+git_status_short_empty: false
+start_utc: 2026-11-06T17:44:07.607261+00:00
+environment: removed stale CARGO_TARGET_X86_64_PC_WINDOWS_MSVC_LINKER override
+prebuild: cargo metadata --offline --format-version 1 --manifest-path "C:\programming\worth worktees\worktrees\m3-p3-reopen\workspaces\worth-store\Cargo.toml"
+prebuild: cargo test --message-format=json --no-run --package worth-store-court-application --test worth_store_court_application --profile dev --manifest-path "C:\programming\worth worktees\worktrees\m3-p3-reopen\workspaces\worth-store\Cargo.toml" --unit-graph -Z unstable-options
+prebuild: cargo nextest list --cargo-message-format=json --package worth-store-court-application --test worth_store_court_application --cargo-profile dev --manifest-path "C:\programming\worth worktees\worktrees\m3-p3-reopen\workspaces\worth-store\Cargo.toml" --list-type binaries-only --message-format json
+sical-backend)
+   Compiling sysinfo v0.38.4
+   Compiling stacker v0.1.25
+   Compiling cap-std v4.0.2
+   Compiling serde_stacker v0.1.14
+   Compiling cap-fs-ext v4.0.2
+   Compiling worth-foundational v0.1.0 (C:\programming\worth worktees\worktrees\m3-p3-reopen\crates\worth-foundational)
+   Compiling worth-store-aspect-native v0.1.0 (C:\programming\worth worktees\worktrees\m3-p3-reopen\workspaces\worth-store\crates\worth-store-aspect-native)
+   Compiling worth-execution v0.1.0 (C:\programming\worth worktees\worktrees\m3-p3-reopen\crates\worth-execution)
+   Compiling worth-query-declaration v0.1.0 (C:\programming\worth worktees\worktrees\m3-p3-reopen\workspaces\worth-query\crates\worth-query-declaration)
+   Compiling worth-store-authority v0.1.0 (C:\programming\worth worktees\worktrees\m3-p3-reopen\workspaces\worth-store\crates\worth-store-authority)
+   Compiling worth-store-physical-format v0.1.0 (C:\programming\worth worktees\worktrees\m3-p3-reopen\workspaces\worth-store\crates\worth-store-physical-format)
+   Compiling worth-store-security v0.1.0 (C:\programming\worth worktees\worktrees\m3-p3-reopen\workspaces\worth-store\crates\worth-store-security)
+   Compiling worth-store-modes v0.1.0 (C:\programming\worth worktees\worktrees\m3-p3-reopen\workspaces\worth-store\crates\worth-store-modes)
+   Compiling worth-signal v0.1.0 (C:\programming\worth worktees\worktrees\m3-p3-reopen\crates\worth-signal)
+   Compiling worth-relational v0.1.0 (C:\programming\worth worktees\worktrees\m3-p3-reopen\crates\worth-relational)
+   Compiling worth-query-installation v0.1.0 (C:\programming\worth worktees\worktrees\m3-p3-reopen\workspaces\worth-query\crates\worth-query-installation)
+   Compiling worth-query-decl v0.1.0 (C:\programming\worth worktees\worktrees\m3-p3-reopen\workspaces\worth-query\crates\worth-query-decl)
+   Compiling worth-store-physical-integrity v0.1.0 (C:\programming\worth worktees\worktrees\m3-p3-reopen\workspaces\worth-store\crates\worth-store-physical-integrity)
+   Compiling worth-store-wal v0.1.0 (C:\programming\worth worktees\worktrees\m3-p3-reopen\workspaces\worth-store\crates\worth-store-wal)
+   Compiling worth-store-buffer-pool v0.1.0 (C:\programming\worth worktees\worktrees\m3-p3-reopen\workspaces\worth-store\crates\worth-store-buffer-pool)
+   Compiling worth-store-recovery-physics v0.1.0 (C:\programming\worth worktees\worktrees\m3-p3-reopen\workspaces\worth-store\crates\worth-store-recovery-physics)
+   Compiling worth-store-physical-isolation v0.1.0 (C:\programming\worth worktees\worktrees\m3-p3-reopen\workspaces\worth-store\crates\worth-store-physical-isolation)
+   Compiling worth-store-io-scheduler v0.1.0 (C:\programming\worth worktees\worktrees\m3-p3-reopen\workspaces\worth-store\crates\worth-store-io-scheduler)
+   Compiling worth-query-admission v0.1.0 (C:\programming\worth worktees\worktrees\m3-p3-reopen\workspaces\worth-query\crates\worth-query-admission)
+   Compiling worth-query-testkit-installation v0.1.0 (C:\programming\worth worktees\worktrees\m3-p3-reopen\workspaces\worth-query\crates\worth-query-testkit-installation)
+   Compiling worth-store-reclaim-policy v0.1.0 (C:\programming\worth worktees\worktrees\m3-p3-reopen\workspaces\worth-store\crates\worth-store-reclaim-policy)
+   Compiling worth-store-retention v0.1.0 (C:\programming\worth worktees\worktrees\m3-p3-reopen\workspaces\worth-store\crates\worth-store-retention)
+   Compiling worth-store-lsm-authority v0.1.0 (C:\programming\worth worktees\worktrees\m3-p3-reopen\workspaces\worth-store\crates\worth-store-lsm-authority)
+   Compiling worth-store-tiering v0.1.0 (C:\programming\worth worktees\worktrees\m3-p3-reopen\workspaces\worth-store\crates\worth-store-tiering)
+   Compiling worth-store-blob-chunks v0.1.0 (C:\programming\worth worktees\worktrees\m3-p3-reopen\workspaces\worth-store\crates\worth-store-blob-chunks)
+   Compiling worth-store-layout-indexes v0.1.0 (C:\programming\worth worktees\worktrees\m3-p3-reopen\workspaces\worth-store\crates\worth-store-layout-indexes)
+   Compiling worth-store v0.1.0 (C:\programming\worth worktees\worktrees\m3-p3-reopen\workspaces\worth-store\crates\worth-store)
+   Compiling worth-store-recovery-runtime v0.1.0 (C:\programming\worth worktees\worktrees\m3-p3-reopen\workspaces\worth-store\crates\worth-store-recovery-runtime)
+   Compiling worth-runtime-bridge v0.1.0 (C:\programming\worth worktees\worktrees\m3-p3-reopen\crates\worth-runtime-bridge)
+   Compiling worth-store-relational v0.1.0 (C:\programming\worth worktees\worktrees\m3-p3-reopen\workspaces\worth-store\crates\worth-store-relational)
+   Compiling worth-runtime-world v0.1.0 (C:\programming\worth worktees\worktrees\m3-p3-reopen\crates\worth-runtime-world)
+   Compiling worth-query-execution v0.1.0 (C:\programming\worth worktees\worktrees\m3-p3-reopen\workspaces\worth-query\crates\worth-query-execution)
+   Compiling worth-store-application v0.1.0 (C:\programming\worth worktees\worktrees\m3-p3-reopen\workspaces\worth-store\crates\worth-store-application)
+   Compiling worth-query-publication v0.1.0 (C:\programming\worth worktees\worktrees\m3-p3-reopen\workspaces\worth-query\crates\worth-query-publication)
+   Compiling worth-query-host v0.1.0 (C:\programming\worth worktees\worktrees\m3-p3-reopen\workspaces\worth-query\crates\worth-query-host)
+   Compiling worth-query v0.1.0 (C:\programming\worth worktees\worktrees\m3-p3-reopen\workspaces\worth-query\crates\worth-query)
+   Compiling worth-query-testkit-host v0.1.0 (C:\programming\worth worktees\worktrees\m3-p3-reopen\workspaces\worth-query\crates\worth-query-testkit-host)
+   Compiling worth-store-testkit-application-oracle v0.1.0 (C:\programming\worth worktees\worktrees\m3-p3-reopen\workspaces\worth-store\crates\worth-store-testkit-application-oracle)
+   Compiling worth-store-court-application v0.1.0 (C:\programming\worth worktees\worktrees\m3-p3-reopen\workspaces\worth-store\crates\worth-store-court-application)
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 14m 36s
+prebuild: cargo nextest list --cargo-metadata "C:\programming\worth worktees\worktrees\m3-p3-reopen\target\test-cost\funding-merge-store\build\cargo-metadata.json" --binaries-metadata "C:\programming\worth worktees\worktrees\m3-p3-reopen\target\test-cost\funding-merge-store\build\binaries.json" --message-format json --ignore-default-filter -E test(selected_checkpoint_survives_observer_drop_online_history_and_mutation_before_ack_recovery)
+prebuild: cargo nextest run --cargo-metadata "C:\programming\worth worktees\worktrees\m3-p3-reopen\target\test-cost\funding-merge-store\build\cargo-metadata.json" --binaries-metadata "C:\programming\worth worktees\worktrees\m3-p3-reopen\target\test-cost\funding-merge-store\build\binaries.json" --profile ci --config-file "C:\programming\worth worktees\worktrees\m3-p3-reopen\target\test-cost\funding-merge-store\nextest.toml" --ignore-default-filter --no-fail-fast --no-tests=fail --message-format libtest-json -E test(=process::application::native_components::checkpoint::selected_checkpoint_survives_observer_drop_online_history_and_mutation_before_ack_recovery)
+info: experimental features enabled: wrapper-scripts
+────────────
+ Nextest run ID 622d2a12-9ebf-45bf-b68a-dd5ac1d38665 with nextest profile: ci
+    Starting 1 test across 1 binary (179 tests skipped)
+{"type":"suite","event":"started","test_count":1}
+{"type":"test","event":"started","name":"worth-store-court-application::worth_store_court_application$process::application::native_components::checkpoint::selected_checkpoint_survives_observer_drop_online_history_and_mutation_before_ack_recovery"}
+{"type":"test","event":"ok","name":"worth-store-court-application::worth_store_court_application$process::application::native_components::checkpoint::selected_checkpoint_survives_observer_drop_online_history_and_mutation_before_ack_recovery","exec_time":3.2583161}
+{"type":"suite","event":"ok","passed":1,"failed":0,"ignored":0,"measured":0,"filtered_out":179,"exec_time":3.2583161}
+────────────
+     Summary [   3.260s] 1 test run: 1 passed, 179 skipped
+
+FULL_OWNED_LOG_PATH: C:\programming\worth worktees\worktrees\m3-p3-reopen\target\lane-evidence\test-cost-funding-merge-store-build-cargo-metadata.log-25619ac5d1ae-202611061744092108340000-bcb6c7d2e443.log
+FULL_OWNED_LOG_PATH: C:\programming\worth worktees\worktrees\m3-p3-reopen\target\lane-evidence\test-cost-funding-merge-store-build-binaries-build-unit-plan.log-25619ac5d1ae-202611061744144381230000-bf9496bcea9a.log
+FULL_OWNED_LOG_PATH: C:\programming\worth worktees\worktrees\m3-p3-reopen\target\lane-evidence\test-cost-funding-merge-store-build-binaries-build.log-25619ac5d1ae-202611061744153332940000-8ce3a1b5084b.log
+FULL_OWNED_LOG_PATH: C:\programming\worth worktees\worktrees\m3-p3-reopen\target\lane-evidence\test-cost-funding-merge-store-selection.log-25619ac5d1ae-202611061758582587970000-dd5ad471f500.log
+FULL_OWNED_LOG_PATH: C:\programming\worth worktees\worktrees\m3-p3-reopen\target\lane-evidence\test-cost-funding-merge-store-run.log-25619ac5d1ae-202611061758595030140000-20e1edf286a8.log
+EVIDENCE_TEST_COUNTS: 1,0,0
+
+end_utc: 2026-11-06T17:59:03.046864+00:00
+exit_code: 0
+tests_passed: 1
+tests_failed: 0
+tests_ignored: 0

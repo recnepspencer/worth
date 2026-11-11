@@ -88,7 +88,7 @@ mod serial {
     use super::*;
     #[test]
     fn collection_installation_refuses_missing_or_misbound_owner_before_initial_effects() {
-        use worth_query_host::facade::application_installation::WorthQueryInMemoryApplicationDenial as Denial;
+        use worth_query_host::facade::application_installation::WorthQueryApplicationPreparationDenial as Denial;
         use worth_query_host::facade::primary_graph::WorthQueryPrimaryGraphInstallationDenialKind as Kind;
         fn refusal<const MODE: u8>() -> Kind {
             let reached = std::cell::Cell::new(false);

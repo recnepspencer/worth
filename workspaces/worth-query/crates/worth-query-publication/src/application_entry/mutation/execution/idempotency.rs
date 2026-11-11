@@ -1,4 +1,4 @@
-//! Recorded idempotency resolution preserves historical outcomes.
+//! Recorded idempotency resolution returns the exact original durable meaning.
 use super::*;
 
 impl<'application, 'principal, 'scope, 'key, Schema, Intent, SourcePreparation>
@@ -53,20 +53,16 @@ where
         {
             Ok(read) => read.into_resolution(),
             Err(denial) => {
-                return match denial.historical_commit() {
-                    Some(observation) => Ok(Some(
-                        WorthQueryApplicationMutationOutcome::PreviouslyCommitted(observation),
-                    )),
-                    None => Err(WorthQueryApplicationRequestMutationDenial::Idempotency(
-                        denial,
-                    )),
-                };
+                return Err(WorthQueryApplicationRequestMutationDenial::Idempotency(
+                    denial,
+                ))
             }
         };
         Ok(match resolution {
-            WorthQueryApplicationIdempotencyResolution::AlreadyCommitted(receipt) => Some(
-                WorthQueryApplicationMutationOutcome::AlreadyCommitted(receipt),
-            ),
+            WorthQueryApplicationIdempotencyResolution::ReleasedOriginal(_) => return Err(WorthQueryApplicationRequestMutationDenial::Idempotency(worth_query_execution::facade::primary_graph::WorthQueryApplicationIdempotencyResolutionDenial::original_effect_released())),
+            WorthQueryApplicationIdempotencyResolution::RecoveredCommitted(receipt) => Some(WorthQueryApplicationMutationOutcome::RecoveredCommitted(receipt)),
+            WorthQueryApplicationIdempotencyResolution::ProductUnpublished(effects) => Some(WorthQueryApplicationMutationOutcome::Commit(worth_query_execution::facade::primary_graph::WorthQueryApplicationUncommitted::ProductUnpublished(effects))),
+            WorthQueryApplicationIdempotencyResolution::ProductPreparationPending(owner) => Some(WorthQueryApplicationMutationOutcome::Commit(worth_query_execution::facade::primary_graph::WorthQueryApplicationUncommitted::ProductPreparationPending(owner))),
             WorthQueryApplicationIdempotencyResolution::IntentDrift => {
                 Some(WorthQueryApplicationMutationOutcome::IdempotencyIntentDrift)
             }

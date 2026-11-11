@@ -9,7 +9,7 @@ use worth_store_physical_format::{
     SelectedRecordContentClass, BLOB_CONTROL_FRAME_MAX_BYTES,
 };
 
-use super::super::super::{context::PlanningContext, resolved_basis::ResolvedPlanningBasis};
+use super::super::super::{context::PlanningContext, resolved_basis::ResolvedPlanningState};
 use super::super::historical_publication::{self, HistoricalFailure};
 use super::record;
 
@@ -42,7 +42,7 @@ mod selected;
 
 pub(super) fn preflight(
     mut context: PlanningContext,
-    basis: &mut ResolvedPlanningBasis,
+    basis: &mut ResolvedPlanningState,
     descriptor: BlobReclaimDescriptorV2,
     descriptor_record: PersistedRecordIdentity,
     operation_id: [u8; 32],
@@ -210,7 +210,7 @@ fn binding_matches(
 
 fn selected_blob_record(
     context: PlanningContext,
-    basis: &mut ResolvedPlanningBasis,
+    basis: &mut ResolvedPlanningState,
     generation: u64,
     identity: PersistedRecordIdentity,
     kind: BlobRecordKind,

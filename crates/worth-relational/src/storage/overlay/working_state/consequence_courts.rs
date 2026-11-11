@@ -5,6 +5,7 @@ use crate::storage::substrate::{
     EntityArena, EntityRecordKind, RecordKind, RelationArena, RelationEndpoints, RelationExtra,
     SlotInit,
 };
+use std::collections::BTreeMap;
 
 #[test]
 fn consequence_demand_recovers_untouched_adjacency_after_sequential_promotion() {
@@ -34,12 +35,13 @@ fn consequence_demand_recovers_untouched_adjacency_after_sequential_promotion() 
         partition_id: id,
         kind_id: KindId(2),
         version_id: VersionId(1),
-        extra: RelationExtra {
-            endpoints: Some(RelationEndpoints {
+        extra: {
+            let mut extra = RelationExtra::from_unbudgeted_parts(None, None);
+            extra.endpoints = Some(RelationEndpoints {
                 source: EntityId::new(id, 0, 1),
                 target: EntityId::new(id, 1, 1),
-            }),
-            authoritative_aspect_state: None,
+            });
+            extra
         },
     });
     let claim = RelationId::new(id, 0, 1);
@@ -64,7 +66,7 @@ fn consequence_demand_recovers_untouched_adjacency_after_sequential_promotion() 
         policy,
         PartitionCloneMode::GraphSparseEntities,
     );
-    earlier.adopt_sequential_apply(later);
+    earlier.adopt_sequential_apply_using(later, None).unwrap();
     assert!(earlier.partitions[&id].reverse_adjacency.get(1).is_none());
     earlier
         .materialize_consequence_records(

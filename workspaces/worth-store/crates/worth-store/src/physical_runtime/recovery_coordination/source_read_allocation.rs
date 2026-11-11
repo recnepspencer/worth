@@ -59,7 +59,7 @@ impl<'coordination> PhysicalRecoveryReadAllocation<'coordination> {
         Self::new(owner, owner.recovery_allocation_admission(), generation)
     }
 
-    fn new(
+    pub(in crate::physical_runtime::recovery_coordination) fn new(
         owner: &'coordination PhysicalResidencyOwner,
         original: PhysicalRecoveryAllocationAdmission,
         generation: LifecycleGeneration,

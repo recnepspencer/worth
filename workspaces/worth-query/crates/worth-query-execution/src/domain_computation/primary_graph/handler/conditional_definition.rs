@@ -10,7 +10,7 @@ use crate::domain_computation::primary_graph::{
 use std::sync::Arc;
 use worth_query_declaration::facade::application_operation::ApplicationMutationBinding;
 use worth_query_installation::facade::{
-    ApplicationSchema, WorthQueryHostConditionalPredicateProvider,
+    ApplicationSchema, WorthQueryAuthoredHostConditionalPredicateProvider,
 };
 
 pub struct ConditionalDefinitionAdmission<'a, Schema> {
@@ -49,7 +49,7 @@ impl<Schema: ApplicationSchema, Binding: ApplicationMutationBinding<Schema>>
         >,
         Node: 'static,
         Clock: 'static,
-        Provider: WorthQueryHostConditionalPredicateProvider<Node>,
+        Provider: WorthQueryAuthoredHostConditionalPredicateProvider<Node>,
     {
         self.checkpoint().map_err(HandlerExecutionDenial::new)?;
         self.context_use.set(self.context_use.get().opaque_reader());

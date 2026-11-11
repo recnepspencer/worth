@@ -9,6 +9,10 @@ use crate::domain_computation::primary_graph::{
 /// nothing took effect.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryApplicationIdempotencyResolutionDenialKind {
+    /// The original owner effect was released; this retry did not execute.
+    OriginalEffectReleased,
+    /// The same subject is being prepared before an authentic World handle exists.
+    PreparationBusy,
     /// Execution refused to finish the pending publication used by this read.
     ExecutionDenied(
         Result<
@@ -34,13 +38,6 @@ pub enum WorthQueryApplicationIdempotencyResolutionDenialKind {
     /// The provider could not answer, the product was unpublished, or the
     /// recorded receipt could not be projected.
     ProviderUnavailable,
-    /// The key is recorded with the same intent at `commit`, but this runtime
-    /// no longer holds that commit's receipt: it was committed before a
-    /// restore or reopen, or its product was retired. The commit took effect;
-    /// retrying the same request cannot commit it again.
-    CommittedReceiptNotRetained {
-        commit: worth_relational::facade::history::CommitId,
-    },
     /// The key's recorded intent was written by an earlier encoding whose
     /// operation part cannot be checked against this request. Neither the same
     /// intent nor drift is proven.
@@ -60,24 +57,10 @@ pub struct WorthQueryApplicationIdempotencyResolutionDenial {
 }
 
 impl WorthQueryApplicationIdempotencyResolutionDenial {
-    /// The key's earlier commit is proven, but its live receipt is unavailable.
-    /// Other denials carry no historical commit observation.
-    pub const fn historical_commit(&self) -> Option<super::WorthQueryHistoricalApplicationCommit> {
-        match self.kind {
-            WorthQueryApplicationIdempotencyResolutionDenialKind::CommittedReceiptNotRetained {
-                commit,
-            } => Some(super::WorthQueryHistoricalApplicationCommit::observed(
-                commit,
-            )),
-            WorthQueryApplicationIdempotencyResolutionDenialKind::ExecutionDenied(_)
-            | WorthQueryApplicationIdempotencyResolutionDenialKind::Authorization(_)
-            | WorthQueryApplicationIdempotencyResolutionDenialKind::ForeignAdmission
-            | WorthQueryApplicationIdempotencyResolutionDenialKind::ActiveSnapshotCapacityExhausted { .. }
-            | WorthQueryApplicationIdempotencyResolutionDenialKind::RetentionCapacityExhausted
-            | WorthQueryApplicationIdempotencyResolutionDenialKind::RetentionIdentityExhausted
-            | WorthQueryApplicationIdempotencyResolutionDenialKind::SnapshotIdentityExhausted
-            | WorthQueryApplicationIdempotencyResolutionDenialKind::ProviderUnavailable
-            | WorthQueryApplicationIdempotencyResolutionDenialKind::RecordedIntentUnverifiable => None,
+    pub const fn original_effect_released() -> Self {
+        Self {
+            kind: WorthQueryApplicationIdempotencyResolutionDenialKind::OriginalEffectReleased,
+            authorization: None,
         }
     }
 
@@ -119,6 +102,7 @@ impl WorthQueryApplicationIdempotencyResolutionDenial {
 
     pub(in crate::domain_computation::primary_graph) fn from_provider(denial: Provider) -> Self {
         let kind = match denial {
+            Provider::ForeignAffinity => WorthQueryApplicationIdempotencyResolutionDenialKind::ForeignAdmission,
             Provider::ExecutionDenied(kind) => WorthQueryApplicationIdempotencyResolutionDenialKind::ExecutionDenied(kind),
             Provider::ActiveSnapshotCapacityExhausted {
                 maximum_active_snapshots,
@@ -134,13 +118,9 @@ impl WorthQueryApplicationIdempotencyResolutionDenial {
             Provider::SnapshotIdentityExhausted => {
                 WorthQueryApplicationIdempotencyResolutionDenialKind::SnapshotIdentityExhausted
             }
+            Provider::PreparationBusy => WorthQueryApplicationIdempotencyResolutionDenialKind::PreparationBusy,
             Provider::Unavailable => {
                 WorthQueryApplicationIdempotencyResolutionDenialKind::ProviderUnavailable
-            }
-            Provider::CommittedReceiptNotRetained { commit } => {
-                WorthQueryApplicationIdempotencyResolutionDenialKind::CommittedReceiptNotRetained {
-                    commit,
-                }
             }
             Provider::RecordedIntentUnverifiable => {
                 WorthQueryApplicationIdempotencyResolutionDenialKind::RecordedIntentUnverifiable

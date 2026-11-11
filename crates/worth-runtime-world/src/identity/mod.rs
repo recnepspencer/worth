@@ -3,7 +3,9 @@ mod basis_key;
 mod bootstrap;
 mod branch;
 mod commit;
+mod durable_issuance;
 mod owner;
+pub(crate) mod readmission;
 mod retained_partial;
 
 pub use attempt::CompositePublicationAttemptIdentity;
@@ -15,7 +17,8 @@ pub use branch::{
 pub use commit::CompositeCommitIdentity;
 pub(crate) use owner::RuntimeWorldIdentityIssuer;
 pub use owner::{
-    RuntimeWorldIdentityExhaustion, RuntimeWorldIdentityFamily, RuntimeWorldOwnerIdentity,
+    EphemeralWorldOwnerIdentity, RuntimeWorldIdentityExhaustion, RuntimeWorldIdentityFamily,
+    RuntimeWorldOwnerIdentity,
 };
 pub use retained_partial::ProductUnpublishedOwnerEffectsIdentity;
 

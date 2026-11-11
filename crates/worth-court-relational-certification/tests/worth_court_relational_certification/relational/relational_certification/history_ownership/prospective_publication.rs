@@ -18,7 +18,7 @@ fn a_publications_first_candidate_cannot_give_its_new_member_two_document_owners
     );
     let mut meaning = world.meaning.clone();
     meaning.source_scope = source;
-    meaning.source_epoch = [2; 32];
+    meaning.source_epoch = worth_foundational::facade::CanonicalDigestId::new([2; 32]);
     let output = CreatedEntityRef {
         partition_id: PartitionId(4),
         kind_id: KindId(3),

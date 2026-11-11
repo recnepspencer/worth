@@ -1,0 +1,8 @@
+[
+  "merge_planning_conflict_classification_carries_target_view_visibility_evidence_for_exact_shared_truth",
+  "merge_planning_conflict_classification_carries_base_window_evidence_for_target_deleted_record",
+  "merge_planning_conflict_classification_carries_target_lookup_evidence_for_source_deleted_record",
+  "merge_planning_digest_basis_carries_visibility_evidence_rows",
+  "merge_planning_policy_surface_is_explicitly_runtime_owned_before_lowering",
+  "merge_planning_digest_basis_carries_policy_ownership_surface_rows"
+]

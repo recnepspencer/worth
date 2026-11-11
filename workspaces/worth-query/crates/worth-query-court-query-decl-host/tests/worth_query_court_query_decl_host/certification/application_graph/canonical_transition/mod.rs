@@ -64,24 +64,25 @@ fn accepted_created_canonical_output_refuses_unsupported_transition_without_chan
     )
     .unwrap();
     let mut callback_ran = false;
-    let denied = installation::in_memory_rostered_program_from_checkpoint_with_transition(
-        host::program(),
-        installation::WorthQueryApplicationProgramRoster::new(),
-        schema::CanonicalSchema::declaration().unwrap(),
-        ((),),
-        ApplicationBuildIdentity::parse("11111111-1111-1111-1111-111111111111").unwrap(),
-        host::limits(),
-        checkpoint.clone(),
-        predecessor,
-        installation::WorthQueryCheckpointTransitionResources::bounded(512, 32, 16384).unwrap(),
-        CapturePolicy::SystemAllocation,
-        |_, _| {
-            callback_ran = true;
-            Ok(())
-        },
-    )
-    .err()
-    .expect("unmapped actual accepted output must refuse transition");
+    let denied =
+        installation::WorthQueryInterimCheckpointRestore::rostered_program_with_transition(
+            host::program(),
+            installation::WorthQueryApplicationProgramRoster::new(),
+            schema::CanonicalSchema::declaration().unwrap(),
+            ((),),
+            ApplicationBuildIdentity::parse("11111111-1111-1111-1111-111111111111").unwrap(),
+            host::limits(),
+            checkpoint.clone(),
+            predecessor,
+            installation::WorthQueryCheckpointTransitionResources::bounded(512, 32, 16384).unwrap(),
+            CapturePolicy::SystemAllocation,
+            |_, _| {
+                callback_ran = true;
+                Ok(())
+            },
+        )
+        .err()
+        .expect("unmapped actual accepted output must refuse transition");
     assert!(!callback_ran, "refusal must precede callback authoring");
     assert!(format!("{denied:?}").contains("accepted-output migration support"));
     drop(demand);

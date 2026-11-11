@@ -68,7 +68,7 @@ pub fn run_population(population: usize) -> WorthQueryNativeMarkingWork {
     );
     let status = locator(status_ref.entity(), status_ref.aspect(), status_ref.field());
     let label = locator(label_ref.entity(), label_ref.aspect(), label_ref.field());
-    handle.with_runtime_mut_for_test(execution, |runtime| {
+    handle.with_runtime_for_test(execution, |runtime| {
         let references: Vec<_> = (0..population).map(|ordinal| CreatedEntityRef {
             partition_id: PartitionId::main(), kind_id: kind,
             client_key: ClientKey::raw(format!("logical-marking-{ordinal}")),

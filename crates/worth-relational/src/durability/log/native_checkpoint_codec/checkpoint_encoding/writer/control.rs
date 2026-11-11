@@ -7,7 +7,6 @@
 //! charge and boundary observes cancellation and the deadline; none opens a
 //! scope, consults the request, or takes a reservation. Retained buffers admit
 //! their exact bytes on the stage's memory lineage once, before allocation.
-use crate::durability::canonical_commit_artifact::RelationalCanonicalCommitArtifact as Artifact;
 use crate::durability::data::RelationalNativeCheckpointCaptureDenial as Denial;
 use crate::durability::log::native_checkpoint_codec::member_frame;
 use crate::durability::medium::RelationalDurableMemberLocator;
@@ -72,36 +71,6 @@ impl CheckpointEncodingControl<'_, '_, '_, '_, '_> {
             #[cfg(test)]
             Self::Policy(_) => Ok(member_frame::locator(bytes)),
         }
-    }
-    pub(crate) fn payload_digest(
-        &mut self,
-        commit: &crate::history::data::PositionedCanonicalCommit,
-    ) -> Result<[u8; 32], Denial> {
-        match self {
-            Self::Original { stage, .. } => {
-                Artifact::positioned_payload_digest_in_stage(commit, stage).map_err(Denial::from)
-            }
-            #[cfg(test)]
-            Self::Policy(_) => Artifact::positioned_payload_digest(commit).map_err(|error| {
-                super::super::super::manifest_capture::corrupt(format!(
-                    "canonical checkpoint digest: {error}"
-                ))
-                .into()
-            }),
-        }
-    }
-    /// A carried envelope's journal export keeps its owner's stage, nested in
-    /// this one and drawing on its remaining work.
-    pub(crate) fn export_artifact(
-        &mut self,
-        cell: &crate::history::RelationalCommitEnvelopeResidency,
-    ) -> Result<Artifact, Denial> {
-        match self {
-            Self::Original { execution, .. } => cell.export_artifact_original(execution),
-            #[cfg(test)]
-            Self::Policy(policy) => cell.export_artifact(*policy),
-        }
-        .map_err(Denial::from)
     }
 }
 

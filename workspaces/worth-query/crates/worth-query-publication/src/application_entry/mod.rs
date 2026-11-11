@@ -37,6 +37,8 @@ mod denial;
 mod elevation_approval;
 mod elevation_close;
 mod elevation_request;
+mod lifecycle_idempotency;
+pub use lifecycle_idempotency::WorthQueryCapabilityLifecycleIdempotencyDenial;
 mod history;
 mod inbound_occurrence;
 #[doc(hidden)]
@@ -68,16 +70,17 @@ pub use history::{
     WorthQueryHistoryNavigationDenial, WorthQueryHistoryNavigationEligibilityDenial,
     WorthQueryHistoryNavigationIntent, WorthQueryHistoryNavigationPosture,
     WorthQueryHistoryNoOutputs, WorthQueryHistoryNodeId, WorthQueryHistoryOutputAdvanceDenial,
-    WorthQueryHistoryOutputDenial, WorthQueryHistoryOutputQualificationDenial,
-    WorthQueryHistoryOutputReadDenial, WorthQueryHistoryOutputsMode, WorthQueryHistoryPage,
-    WorthQueryHistoryPageCursor, WorthQueryHistoryPageDenial, WorthQueryHistoryPageEntry,
-    WorthQueryHistoryPageLimits, WorthQueryHistoryPageRow, WorthQueryHistoryParentBoundary,
-    WorthQueryHistoryPayloadMode, WorthQueryHistoryPreviewResult, WorthQueryHistoryRedoChoice,
-    WorthQueryHistoryRedoChoices, WorthQueryHistoryReleaseOutcome,
-    WorthQueryHistoryRetentionStatus, WorthQueryHistoryRootOutputAdmissionDenial,
-    WorthQueryHistorySelection, WorthQueryHistoryStep, WorthQueryHistoryTypedMembers,
-    WorthQueryHistoryWindowChange, WorthQueryHistoryWithOutputTrees, WorthQueryHistoryWithOutputs,
-    WorthQueryOriginalReadOutputDenial, WorthQueryRecordingOutputQualificationDenial,
+    WorthQueryHistoryOutputControlDenial, WorthQueryHistoryOutputDenial,
+    WorthQueryHistoryOutputQualificationDenial, WorthQueryHistoryOutputReadDenial,
+    WorthQueryHistoryOutputsMode, WorthQueryHistoryPage, WorthQueryHistoryPageCursor,
+    WorthQueryHistoryPageDenial, WorthQueryHistoryPageEntry, WorthQueryHistoryPageLimits,
+    WorthQueryHistoryPageRow, WorthQueryHistoryParentBoundary, WorthQueryHistoryPayloadMode,
+    WorthQueryHistoryPreviewResult, WorthQueryHistoryRedoChoice, WorthQueryHistoryRedoChoices,
+    WorthQueryHistoryReleaseOutcome, WorthQueryHistoryRetentionStatus,
+    WorthQueryHistoryRootOutputAdmissionDenial, WorthQueryHistorySelection, WorthQueryHistoryStep,
+    WorthQueryHistoryTypedMembers, WorthQueryHistoryWindowChange, WorthQueryHistoryWithOutputTrees,
+    WorthQueryHistoryWithOutputs, WorthQueryOriginalReadOutputDenial,
+    WorthQueryRecordingOutputQualificationDenial,
 };
 #[doc(hidden)]
 pub use history::{
@@ -273,5 +276,8 @@ pub use workflow::{
     WorthQueryWorkflowProposalRequest, WorthQueryWorkflowSuccessionBindingDenial,
 };
 pub use worth_query_execution::facade::primary_graph::WorthQueryApplicationQueryBatchResourceDenial;
+#[cfg(test)]
+#[path = "mod_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;
 
 pub use history::WorthQueryHistoryPublicationCorrespondenceMismatch;

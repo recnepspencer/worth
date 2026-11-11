@@ -13,14 +13,6 @@ impl WorthQueryPrimaryGraph {
     ) -> T {
         self.source_owner.with_runtime(execution, read)
     }
-
-    pub(in crate::domain_computation::primary_graph) fn with_runtime_mut<T>(
-        &self,
-        execution: &worth_execution::ExecutionRequest<'_, '_>,
-        mutate: impl FnOnce(&mut RelationalRuntime) -> T,
-    ) -> T {
-        self.source_owner.with_runtime_mut(execution, mutate)
-    }
 }
 
 mod court_doors_for_test;

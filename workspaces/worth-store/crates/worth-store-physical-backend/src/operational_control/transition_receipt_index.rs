@@ -2,6 +2,7 @@ use std::cmp::Ordering;
 use std::collections::HashMap;
 use std::fs::File;
 use std::io::{Read, Seek, SeekFrom, Write};
+use worth_foundational::CanonicalDigestId;
 
 use sha2::{Digest, Sha256};
 use worth_store_authority::ControlStoreGeneration;
@@ -14,16 +15,16 @@ const INDEX_ENTRY_BYTES: usize = 32 + 8 + 32 + 32;
 
 #[derive(Debug)]
 pub(super) struct TransitionReceiptIndex {
-    recent: HashMap<[u8; 32], IndexedTransitionReceipt>,
+    recent: HashMap<CanonicalDigestId, IndexedTransitionReceipt>,
     levels: [Option<TransitionIndexSegment>; INDEX_LEVELS],
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(super) struct IndexedTransitionReceipt {
-    key: [u8; 32],
+    key: CanonicalDigestId,
     generation: ControlStoreGeneration,
-    payload_digest: [u8; 32],
-    prefix_digest: [u8; 32],
+    payload_digest: CanonicalDigestId,
+    prefix_digest: CanonicalDigestId,
 }
 
 #[derive(Debug)]
@@ -76,8 +77,8 @@ impl TransitionReceiptIndex {
         self.insert(IndexedTransitionReceipt {
             key: transition_key(transition_identity),
             generation,
-            payload_digest,
-            prefix_digest,
+            payload_digest: CanonicalDigestId::new(payload_digest),
+            prefix_digest: CanonicalDigestId::new(prefix_digest),
         })
     }
 
@@ -145,8 +146,8 @@ impl IndexedTransitionReceipt {
         Self {
             key: transition_key(record.transition_identity()),
             generation: record.generation(),
-            payload_digest: Sha256::digest(record.payload()).into(),
-            prefix_digest: record.prefix_digest(),
+            payload_digest: CanonicalDigestId::new(Sha256::digest(record.payload()).into()),
+            prefix_digest: CanonicalDigestId::new(record.prefix_digest()),
         }
     }
 
@@ -155,11 +156,11 @@ impl IndexedTransitionReceipt {
     }
 
     pub(super) const fn payload_digest(self) -> [u8; 32] {
-        self.payload_digest
+        *self.payload_digest.bytes()
     }
 
     pub(super) const fn prefix_digest(self) -> [u8; 32] {
-        self.prefix_digest
+        *self.prefix_digest.bytes()
     }
 }
 
@@ -179,7 +180,7 @@ impl TransitionIndexSegment {
 
     fn lookup(
         &mut self,
-        key: [u8; 32],
+        key: CanonicalDigestId,
     ) -> Result<Option<IndexedTransitionReceipt>, ControlMediaFault> {
         let mut low = 0u64;
         let mut high = self.entries;
@@ -246,21 +247,21 @@ impl TransitionIndexSegment {
     }
 }
 
-fn transition_key(transition_identity: &str) -> [u8; 32] {
+fn transition_key(transition_identity: &str) -> CanonicalDigestId {
     let mut digest = Sha256::new();
     digest.update(b"worth-store-control-transition-index-v1\0");
     digest.update(transition_identity.as_bytes());
-    digest.finalize().into()
+    CanonicalDigestId::new(digest.finalize().into())
 }
 
 fn write_receipt(
     file: &mut File,
     receipt: IndexedTransitionReceipt,
 ) -> Result<(), ControlMediaFault> {
-    file.write_all(&receipt.key)?;
+    file.write_all(receipt.key.bytes())?;
     file.write_all(&receipt.generation.get().to_le_bytes())?;
-    file.write_all(&receipt.payload_digest)?;
-    file.write_all(&receipt.prefix_digest)?;
+    file.write_all(receipt.payload_digest.bytes())?;
+    file.write_all(receipt.prefix_digest.bytes())?;
     Ok(())
 }
 
@@ -283,9 +284,9 @@ fn read_next(file: &mut File) -> Result<Option<IndexedTransitionReceipt>, Contro
     let mut prefix_digest = [0; 32];
     prefix_digest.copy_from_slice(&bytes[72..104]);
     Ok(Some(IndexedTransitionReceipt {
-        key,
+        key: CanonicalDigestId::new(key),
         generation,
-        payload_digest,
-        prefix_digest,
+        payload_digest: CanonicalDigestId::new(payload_digest),
+        prefix_digest: CanonicalDigestId::new(prefix_digest),
     }))
 }

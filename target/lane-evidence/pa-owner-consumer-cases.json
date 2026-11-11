@@ -1,0 +1,23 @@
+[
+  "checkpoint_readmission_refuses_retired_integer_array_digest_before_restore",
+  "shared_members_with_inconsistent_leaf_facts_refuse_the_manifest",
+  "recorded_component_checkpoint_header_tamper_refuses_without_defaults_or_foreign_binding",
+  "inspection_compares_every_native_model_value_as_original_bytes",
+  "inspection_refuses_unknown_root_allocator_and_row_fields",
+  "the_live_census_includes_divergent_retained_branch_roots",
+  "burned_symbol_frontier_does_not_hide_published_symbol_damage",
+  "streamed_branch_root_image_digest_matches_buffered_wire_for_divergent_roots",
+  "relink_rejects_schema_authority_mutation",
+  "relink_rejects_visibility_tuple_mutation",
+  "visibility_commitment_binds_every_visible_tuple_axis",
+  "strategy_artifacts_are_bound_into_the_committed_root",
+  "schema_transition_descriptors_are_each_bound_into_the_committed_root",
+  "unpositioned_memory_envelopes_and_cold_digests_refuse_explicitly",
+  "streamed_visibility_preserves_original_buffered_preimage_and_request_stop",
+  "current_manifest_deduplicates_equal_region_members_and_round_trips",
+  "current_directory_rejects_damaged_duplicate_and_missing_members",
+  "native_capture_sections_count_current_directory_values",
+  "chk6_and_retired_inner_partition_grammars_are_refused",
+  "recovery_relinks_an_already_sealed_payload_without_reencoding_or_weakening_root_checks",
+  "semantic_result_discovery_must_be_present_in_each_actual_index_entry"
+]

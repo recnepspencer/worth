@@ -1,4 +1,7 @@
 mod allocation;
+mod entity_lineage;
+mod extra_allocations;
+pub(crate) use entity_lineage::ExtraLineageDenial;
 mod allocation_delta;
 mod allocation_walk;
 mod historical_selection;
@@ -7,8 +10,12 @@ mod merge;
 mod payload_allocation;
 mod pin_counts;
 mod pinning;
+mod revision_maps;
+mod slot_adoption;
+pub(crate) use revision_maps::{AspectVersions, FieldRevisions};
 mod slot_directory;
 mod slot_lifecycle;
+pub(crate) use slot_lifecycle::MetadataWriteDenial;
 mod slot_visitation;
 mod sparse_clone;
 
@@ -16,12 +23,11 @@ use pin_counts::RecordPinCounts;
 pub(crate) use slot_directory::RecordSlotDirectory;
 pub(crate) use slot_visitation::RecordSlotVisit;
 
-use crate::storage::substrate::SharedColumn;
+use crate::storage::substrate::{SharedColumn, StorageAllocation};
 use std::collections::BTreeMap;
 
 use crate::identity::data::{KindId, PartitionId, RecordId, VersionId};
 use crate::storage::data::RecordLifecycleState;
-use crate::storage::data::RelationalFieldRevision;
 use crate::storage::partition::DenseSlotBitSet;
 use crate::symbols::data::Symbol;
 
@@ -44,15 +50,15 @@ pub(crate) struct RecordArena<K: RecordKind> {
     pub(crate) generations: SharedColumn<u32>,
     pub(crate) lifecycle: SharedColumn<RecordLifecycleState>,
     pub(crate) kind_ids: SharedColumn<Option<KindId>>,
-    pub(crate) metadata_history: SharedColumn<SharedColumn<K::Meta>>,
-    pub(crate) history_prefixes: SharedColumn<Option<super::RecordHistoryPrefix>>,
+    pub(crate) metadata_history: SharedColumn<SharedColumn<StorageAllocation<K::Meta>>>,
+    pub(crate) history_prefixes:
+        SharedColumn<StorageAllocation<Option<super::RecordHistoryPrefix>>>,
     pub(crate) created_at: SharedColumn<VersionId>,
     pub(crate) retired_at: SharedColumn<Option<VersionId>>,
-    pub(crate) extra: SharedColumn<K::Extra>,
-    pub(crate) aspect_versions: SharedColumn<BTreeMap<Symbol, u64>>,
-    pub(crate) field_revisions:
-        SharedColumn<Option<BTreeMap<(Symbol, Symbol), RelationalFieldRevision>>>,
-    pub(crate) diagnostics_enrichment: SharedColumn<BTreeMap<Symbol, String>>,
+    pub(crate) extra: SharedColumn<StorageAllocation<K::Extra>>,
+    pub(crate) aspect_versions: SharedColumn<AspectVersions>,
+    pub(crate) field_revisions: SharedColumn<Option<FieldRevisions>>,
+    pub(crate) diagnostics_enrichment: SharedColumn<StorageAllocation<BTreeMap<Symbol, String>>>,
     pub(crate) branch_pins: RecordPinCounts,
     pub(crate) replay_pins: RecordPinCounts,
     pub(crate) snapshot_pins: RecordPinCounts,
@@ -136,7 +142,10 @@ impl<K: RecordKind> RecordArena<K> {
             .and_then(|physical| self.retired_at.get(physical).copied().flatten())
     }
 
-    pub(crate) fn metadata_history_at(&self, slot: usize) -> Option<&SharedColumn<K::Meta>> {
+    pub(crate) fn metadata_history_at(
+        &self,
+        slot: usize,
+    ) -> Option<&SharedColumn<StorageAllocation<K::Meta>>> {
         self.physical_index(slot)
             .and_then(|physical| self.metadata_history.get(physical))
     }
@@ -144,39 +153,58 @@ impl<K: RecordKind> RecordArena<K> {
     pub(crate) fn metadata_history_at_mut(
         &mut self,
         slot: usize,
-    ) -> Option<&mut SharedColumn<K::Meta>> {
+    ) -> Option<&mut SharedColumn<StorageAllocation<K::Meta>>> {
         let physical = self.physical_index(slot)?;
         self.metadata_history.get_mut(physical)
     }
 
-    pub(crate) fn aspect_versions_at(&self, slot: usize) -> Option<&BTreeMap<Symbol, u64>> {
+    pub(crate) fn aspect_versions_at(&self, slot: usize) -> Option<&AspectVersions> {
         self.physical_index(slot)
             .and_then(|physical| self.aspect_versions.get(physical))
     }
 
-    pub(crate) fn aspect_versions_at_mut(
-        &mut self,
-        slot: usize,
-    ) -> Option<&mut BTreeMap<Symbol, u64>> {
+    #[cfg(test)]
+    pub(crate) fn aspect_versions_at_mut(&mut self, slot: usize) -> Option<&mut AspectVersions> {
         let physical = self.physical_index(slot)?;
         self.aspect_versions.get_mut(physical)
     }
 
-    pub(crate) fn field_revisions_at(
-        &self,
-        slot: usize,
-    ) -> Option<&BTreeMap<(Symbol, Symbol), RelationalFieldRevision>> {
+    pub(crate) fn field_revisions_at(&self, slot: usize) -> Option<&FieldRevisions> {
         self.physical_index(slot)
             .and_then(|physical| self.field_revisions.get(physical))
             .and_then(Option::as_ref)
     }
 
-    pub(crate) fn field_revisions_at_mut(
+    /// Admit the column path before borrowing its shallow map header; each
+    /// subsequent map edit admits its actual persistent nodes independently.
+    pub(crate) fn aspect_versions_at_mut_using(
         &mut self,
         slot: usize,
-    ) -> Option<&mut BTreeMap<(Symbol, Symbol), RelationalFieldRevision>> {
-        let physical = self.physical_index(slot)?;
-        self.field_revisions.get_mut(physical)?.as_mut()
+        request: Option<&worth_execution::ExecutionRequest<'_, '_>>,
+    ) -> Result<Option<&mut AspectVersions>, crate::execution::RelationalExecutionDenialCause> {
+        let Some(physical) = self.physical_index(slot) else {
+            return Ok(None);
+        };
+        self.aspect_versions.carrier_mut_using(physical, request)
+    }
+    pub(crate) fn field_revisions_at_mut_using(
+        &mut self,
+        slot: usize,
+        request: Option<&worth_execution::ExecutionRequest<'_, '_>>,
+    ) -> Result<Option<&mut FieldRevisions>, crate::execution::RelationalExecutionDenialCause> {
+        let Some(physical) = self.physical_index(slot) else {
+            return Ok(None);
+        };
+        Ok(self
+            .field_revisions
+            .carrier_mut_using(physical, request)?
+            .and_then(Option::as_mut))
+    }
+    pub(crate) fn retained_extra(
+        &self,
+        slot: usize,
+    ) -> Option<crate::storage::substrate::StorageAllocation<K::Extra>> {
+        self.extra.retained_value(self.physical_index(slot)?)
     }
 
     pub(crate) fn extra_at(&self, slot: usize) -> Option<&K::Extra> {

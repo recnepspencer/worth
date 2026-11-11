@@ -49,6 +49,7 @@ where
         presented: &WorthQueryPresentedProgram<'_>,
         program: &WorthQueryApplicationEffectProgram<Schema, Operation, Input, Scope>,
     ) -> Result<(), WorthQueryApplicationCommitOutcome> {
+        self.require_program_incarnation(program)?;
         let Some(support) = self.program_support.as_ref() else {
             return Err(WorthQueryApplicationCommitOutcome::Denied(
                 WorthQueryApplicationCommitDenial::application_program_required(),
@@ -85,6 +86,7 @@ where
     where
         Operation: 'static,
     {
+        self.require_program_incarnation(program)?;
         let Some(support) = self.program_support.as_ref() else {
             return Err(WorthQueryApplicationCommitOutcome::Denied(
                 WorthQueryApplicationCommitDenial::application_program_required(),
@@ -115,6 +117,9 @@ where
         Operation: 'static,
         Input: Clone + Send + Sync + 'static,
     {
+        if let Err(outcome) = self.require_program_incarnation(&program) {
+            return outcome;
+        }
         let entry = match self.validate_commit_program_in_advancement(phase, program) {
             Ok(entry) => entry,
             Err(outcome) => return outcome,
@@ -124,5 +129,6 @@ where
 }
 
 mod application_commit;
+mod incarnation;
 
 mod output_source;

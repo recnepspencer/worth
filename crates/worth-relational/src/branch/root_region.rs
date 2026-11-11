@@ -22,6 +22,7 @@ pub(crate) struct RelationalRootRegion {
     pub(super) relation_slots: usize,
     pub(super) content_values_hashed: u64,
     materialization_unavailable_records: usize,
+    _memory: Option<worth_execution::ExecutionMemoryReservation>,
 }
 
 impl RelationalRootRegion {
@@ -58,10 +59,12 @@ impl RelationalRootRegion {
             partition: prepared.retention,
             content_values_hashed: prepared.content_values_hashed,
             materialization_unavailable_records: prepared.unavailable_records,
+            _memory: None,
         }
     }
 
     pub(super) fn from_checkpoint(
+        _lane: &crate::storage::substrate::maintenance::ReconstructionLane<'_>,
         creation_root_id: u64,
         id: u64,
         checkpoint: super::root_checkpoint::RelationalRootRegionCheckpoint,
@@ -80,7 +83,21 @@ impl RelationalRootRegion {
             relation_slots: checkpoint.relation_slots,
             content_values_hashed: 0,
             materialization_unavailable_records: checkpoint.unavailable_records,
+            _memory: None,
         }
+    }
+
+    pub(in crate::branch) fn from_checkpoint_for_request(
+        lane: &crate::storage::substrate::maintenance::ReconstructionLane<'_>,
+        creation_root_id: u64,
+        id: u64,
+        checkpoint: super::root_checkpoint::RelationalRootRegionCheckpoint,
+        request: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> Result<std::sync::Arc<Self>, RelationalBranchRootCaptureDenial> {
+        let memory = super::root::reserve_arc_memory::<Self>(Some(request))?;
+        let mut region = Self::from_checkpoint(lane, creation_root_id, id, checkpoint);
+        region._memory = memory;
+        Ok(std::sync::Arc::new(region))
     }
 
     pub(super) fn allocation_inventory(
@@ -145,6 +162,9 @@ pub(super) fn capture_failure(
         RegionContentFailure::Execution(cause) => {
             RelationalBranchRootCaptureDenial::Execution(cause)
         }
+        RegionContentFailure::Content(
+            crate::storage::overlay::PartitionContentDigestError::Request(cause),
+        ) => RelationalBranchRootCaptureDenial::Request(cause),
         RegionContentFailure::Storage(failure) => {
             RelationalBranchRootCaptureDenial::StorageUnavailable(failure)
         }

@@ -33,6 +33,7 @@ pub struct WorthQueryOutputDemandDenial {
 
 #[derive(Clone, Debug, Default, Eq, PartialEq)]
 struct DemandDenialEvidence {
+    recovered_publication: Option<crate::domain_computation::primary_graph::provider::WorthQueryRecoveredApplicationCommitReceipt>,
     managed_source_query: Option<std::sync::Arc<crate::domain_computation::primary_graph::application_query::managed_index::WorthQueryManagedIndexDenial>>,
     managed_index: Option<crate::domain_computation::primary_graph::application_query::managed_index::WorthQueryManagedIndexWorkDenial>,
     output_comparison: Option<worth_runtime_bridge::facade::BridgeOutputComparisonDenial>,
@@ -61,6 +62,19 @@ struct DemandDenialEvidence {
 }
 
 impl WorthQueryOutputDemandDenial {
+    /// The producer was already published. Its original settlement is durable
+    /// data; this observation cannot stand in for a live output-delivery proof.
+    pub fn recovered_publication(&self) -> Option<&crate::domain_computation::primary_graph::provider::WorthQueryRecoveredApplicationCommitReceipt>{
+        self.evidence.as_ref()?.recovered_publication.as_ref()
+    }
+    pub(in crate::domain_computation::primary_graph) fn with_recovered_publication(
+        mut self,
+        receipt: crate::domain_computation::primary_graph::provider::WorthQueryRecoveredApplicationCommitReceipt,
+    ) -> Self {
+        self.evidence_mut().recovered_publication = Some(receipt);
+        self
+    }
+
     pub(in crate::domain_computation::primary_graph) fn with_managed_cleanup(
         mut self,
         cleanup: Box<
@@ -91,7 +105,12 @@ impl WorthQueryOutputDemandDenial {
     pub(super) fn release_managed_cleanup(
         &mut self,
         phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
-    ) -> Result<Option<crate::domain_computation::WorthQueryDirectRunCleanupReceipt>, Self> {
+    ) -> Result<
+        Option<
+            crate::domain_computation::primary_graph::WorthQueryApplicationManagedCleanupReceipt,
+        >,
+        Self,
+    > {
         match self.cleanup.as_mut().map(|custody| custody.release(phase)) {
             Some(Err(denial)) => Err(denial),
             Some(Ok(receipt)) => Ok(receipt),
@@ -376,3 +395,6 @@ mod managed_index;
 mod managed_source_query;
 
 mod court_doors_for_test;
+#[cfg(test)]
+#[path = "denial_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;

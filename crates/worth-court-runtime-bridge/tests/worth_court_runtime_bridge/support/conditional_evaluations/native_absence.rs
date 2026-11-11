@@ -1,5 +1,7 @@
 //! A declared Bridge adapter supplies authoritative absence for one selected packet.
+mod authored_sources;
 use super::*;
+pub(crate) use authored_sources::authored_providers;
 use std::sync::{
     atomic::{AtomicU64, AtomicUsize, Ordering},
     Arc,
@@ -23,6 +25,37 @@ pub(crate) fn owner(
     readers: Arc<AtomicUsize>,
 ) -> (
     BridgeSealedRuntimeAssembly,
+    Arc<BridgeInstalledConditionalLowering>,
+) {
+    let (builder, lowering) = installed_builder(contacts, readers);
+    (builder.seal().unwrap(), lowering)
+}
+pub(crate) fn installed_builder(
+    contacts: Arc<Contacts>,
+    readers: Arc<AtomicUsize>,
+) -> (
+    Box<BridgeConditionalRuntimeBuilder>,
+    Arc<BridgeInstalledConditionalLowering>,
+) {
+    let roles = providers(contacts.clone());
+    installed_builder_with_providers(contacts, readers, roles)
+}
+pub(crate) fn installed_authored_builder(
+    contacts: Arc<Contacts>,
+    readers: Arc<AtomicUsize>,
+) -> (
+    Box<BridgeConditionalRuntimeBuilder>,
+    Arc<BridgeInstalledConditionalLowering>,
+) {
+    let roles = authored_providers(contacts.clone());
+    installed_builder_with_providers(contacts, readers, roles)
+}
+fn installed_builder_with_providers(
+    contacts: Arc<Contacts>,
+    readers: Arc<AtomicUsize>,
+    roles: BridgeConditionalProviderSet,
+) -> (
+    Box<BridgeConditionalRuntimeBuilder>,
     Arc<BridgeInstalledConditionalLowering>,
 ) {
     let contract = AspectContract::struct_aspect(
@@ -73,11 +106,13 @@ pub(crate) fn owner(
         .register_aspect_mapping(aspect)
         .build()
         .unwrap();
-    let mut builder = BridgeConditionalRuntimeBuilder::with_owned_signal_graph(
-        bridge,
-        worth_signal::facade::runtime::SignalConditionalEvaluationBudget::development(),
-    )
-    .unwrap();
+    let mut builder = Box::new(
+        BridgeConditionalRuntimeBuilder::with_owned_signal_graph(
+            bridge,
+            worth_signal::facade::runtime::SignalConditionalEvaluationBudget::development(),
+        )
+        .unwrap(),
+    );
     let dependency =
         BridgeSemanticDependencyCandidate::admit(BridgeSemanticDependencyCandidateParts {
             source_installation_identity: Arc::from(format!("absence-adapter:{installation}")),
@@ -106,7 +141,6 @@ pub(crate) fn owner(
             relevant_changes: vec![AuthoritativeAspectChangeKind::FieldSet],
         })
         .unwrap();
-    let providers = Providers(contacts);
     let lowering = builder
         .install_owned_conditional(BridgeOwnedConditionalInstallationRequest {
             contract: BridgeConditionalContract::new(BridgeConditionalContractParts {
@@ -120,12 +154,15 @@ pub(crate) fn owner(
             }),
             location: BridgeConditionalLocation::operation("query:one"),
             dependencies: vec![dependency],
-            providers: BridgeConditionalProviderSet::new()
-                .condition(providers.clone())
-                .compute(providers),
+            providers: roles,
         })
         .unwrap();
-    (builder.seal().unwrap(), lowering)
+    (builder, lowering)
+}
+pub(crate) fn providers(contacts: Arc<Contacts>) -> BridgeConditionalProviderSet {
+    BridgeConditionalProviderSet::new()
+        .condition(Providers(Arc::clone(&contacts)))
+        .compute(Providers(contacts))
 }
 #[derive(Clone)]
 struct Providers(Arc<Contacts>);

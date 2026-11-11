@@ -10,7 +10,7 @@ impl WorthQueryAdmittedOperation {
         &mut self,
         work: worth_query_installation::facade::WorthQueryCanonicalWorkEvidence,
     ) {
-        self.canonical_work = self.canonical_work.with_execution_work(work);
+        self.data.canonical_work = self.data.canonical_work.with_execution_work(work);
     }
 
     pub(super) fn bind_delegation_activation(
@@ -18,24 +18,24 @@ impl WorthQueryAdmittedOperation {
         binding: WorthQueryDelegationActivationBinding,
     ) -> Result<Self, WorthQueryOperationAuthorizationDenial> {
         if !matches!(
-            self.authorization_basis,
+            self.data.authorization_basis,
             ErasedAuthorizationBasis::Capability
         ) {
             return Err(WorthQueryOperationAuthorizationDenial::new(
                 WorthQueryOperationAuthorizationDenialKind::Refused(
                     AuthorizationRefusal::InconsistentDecision,
                 ),
-                &self.operation,
+                &self.data.operation,
             ));
         }
-        self.authorization_basis = ErasedAuthorizationBasis::DelegationActivation { binding };
+        self.data.authorization_basis = ErasedAuthorizationBasis::DelegationActivation { binding };
         Ok(self)
     }
 
     pub(in crate::domain_computation) fn delegation_activation_binding(
         &self,
     ) -> Option<&WorthQueryDelegationActivationBinding> {
-        match &self.authorization_basis {
+        match &self.data.authorization_basis {
             ErasedAuthorizationBasis::DelegationActivation { binding } => Some(binding),
             _ => None,
         }

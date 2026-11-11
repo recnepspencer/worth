@@ -44,10 +44,10 @@ pub use durable_preparation::{
     PhysicalManifestCapacityTransition, PhysicalMutationAdmissionDisposition,
     PhysicalMutationPreparationDeferred, PhysicalMutationPreparationDenial,
     PhysicalMutationPreparationFailure, PhysicalMutationPreparationOutcome,
-    PhysicalMutationPreparationRebindRequired, PhysicalMutationPreparationStale,
-    PhysicalMutationPreparationSuccess, PhysicalMutationResourceShape,
-    PhysicalPreSealCancellationDenial, PhysicalPreSealCancellationOutcome,
-    PreparedPhysicalMutation,
+    PhysicalMutationPreparationRebindRequired, PhysicalMutationPreparationRefusal,
+    PhysicalMutationPreparationStale, PhysicalMutationPreparationSuccess,
+    PhysicalMutationResourceShape, PhysicalPreSealCancellationDenial,
+    PhysicalPreSealCancellationOutcome, PreparedPhysicalMutation,
 };
 pub(in crate::physical_runtime) use durable_preparation::{
     PlannedPhysicalMutationParts, PreparedDerivedDirectoryBasis, PreparedPhysicalMutationContext,

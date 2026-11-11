@@ -25,6 +25,22 @@ pub(crate) struct SignalInstalledBranchCell<'a, S> {
 }
 
 impl<'a, S> SignalPreparedBranchInstallation<'a, S> {
+    pub(crate) fn into_owned(
+        self,
+        registry: Arc<super::SignalBranchRegistry<S>>,
+    ) -> (
+        super::SignalBranchOwnedReservation<S>,
+        SignalPreparedBranchCell<S>,
+    ) {
+        (
+            self.reservation.into_owned(registry),
+            SignalPreparedBranchCell {
+                cell: self.cell,
+                is_fork_destination: self.is_fork_destination,
+            },
+        )
+    }
+
     pub(crate) fn install(
         self,
     ) -> Result<Arc<SignalBranchExecutionCell<S>>, SignalBranchRegistryDenial> {
@@ -112,5 +128,14 @@ impl<S> Drop for SignalInstalledBranchCell<'_, S> {
                 .checked_sub(1)
                 .expect("fork installation rollback releases exact live capacity");
         }
+    }
+}
+
+impl<S> SignalPreparedBranchCell<S> {
+    /// Unique unpublished storage; no canonical cell or metadata lock escapes.
+    pub(crate) fn state_mut(&mut self) -> &mut S {
+        Arc::get_mut(&mut self.cell)
+            .expect("uninstalled cell has one owner")
+            .unpublished_state_mut()
     }
 }

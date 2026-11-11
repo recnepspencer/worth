@@ -21,7 +21,7 @@ pub(in crate::physical_runtime::blob::ingest) fn basis(
         store: [1; 16],
         session: [2; 16],
         declaration_record: record(3, 1),
-        declaration_digest: [4; 32],
+        declaration_digest: worth_foundational::CanonicalDigestId::new([4; 32]),
         chunk_size: 64 << 10,
         total_bytes: 128 << 10,
         max_checkpoint_sequence: 9,

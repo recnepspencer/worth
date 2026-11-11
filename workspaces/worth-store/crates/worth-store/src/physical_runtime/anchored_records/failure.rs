@@ -2,7 +2,7 @@
 
 use crate::physical_runtime::{
     IndeterminatePhysicalMutation, PhysicalMutationIdempotencyIssuanceDenial,
-    PhysicalMutationPreparationOutcome, PhysicalReadProtectionDenial,
+    PhysicalMutationPreparationRefusal, PhysicalReadProtectionDenial,
     ProvenNoEffectPhysicalMutation, RecordAppendDenial, RecordReadError, RecordStreamFailure,
 };
 
@@ -49,7 +49,7 @@ pub enum AnchoredRecordPublicationFailure {
     Batch(RecordAppendDenial),
     Idempotency(PhysicalMutationIdempotencyIssuanceDenial),
     /// Physical preparation refused before any WAL effect.
-    Preparation(PhysicalMutationPreparationOutcome),
+    Preparation(PhysicalMutationPreparationRefusal),
     ProvenNoEffect(ProvenNoEffectPhysicalMutation),
     /// The publication may or may not be durable.
     Indeterminate(IndeterminatePhysicalMutation),
@@ -67,13 +67,42 @@ pub enum AnchoredRecordPublicationFailure {
     Read(AnchoredRecordReadFailure),
 }
 
+impl AnchoredRecordPublicationFailure {
+    /// Classify inside the owner so every future failure requires an explicit
+    /// fate decision. The actual failure, including stopped custody, is retained.
+    pub fn into_publication_fate(self) -> worth_foundational::facade::DurablePublicationFate<Self> {
+        use worth_foundational::facade::DurablePublicationFate as Fate;
+        match self {
+            failure @ (Self::PublicationBusy
+            | Self::ReservedForOrderedJournal
+            | Self::EmptyPayload
+            | Self::TooManyMembers { .. }
+            | Self::MemberKeyMismatch { .. }
+            | Self::MemberTooLarge { .. }
+            | Self::CarriedMemberNotCurrent { .. }
+            | Self::GenerationConflict { .. }
+            | Self::AnchorTableFull
+            | Self::Unresolved
+            | Self::Batch(_)
+            | Self::Idempotency(_)
+            | Self::Preparation(_)
+            | Self::ProvenNoEffect(_)
+            | Self::Read(_)) => Fate::ProvenNoEffect { detail: failure },
+            failure @ (Self::Indeterminate(_)
+            | Self::CompletedWithoutRecord
+            | Self::OwnedPublication(_)
+            | Self::MemberWrite { .. }) => Fate::Indeterminate { detail: failure },
+        }
+    }
+}
+
 /// Why one batch of new members was not reported durable. Only
 /// `Indeterminate` and `CompletedWithoutRecords` may have written records.
 #[non_exhaustive]
 pub enum AnchoredRecordMemberWriteFailure {
     Batch(RecordAppendDenial),
     Idempotency(PhysicalMutationIdempotencyIssuanceDenial),
-    Preparation(PhysicalMutationPreparationOutcome),
+    Preparation(PhysicalMutationPreparationRefusal),
     ProvenNoEffect(ProvenNoEffectPhysicalMutation),
     Indeterminate(IndeterminatePhysicalMutation),
     CompletedWithoutRecords,
@@ -157,6 +186,15 @@ impl std::fmt::Debug for AnchoredRecordMemberWriteFailure {
 #[derive(Debug)]
 #[non_exhaustive]
 pub enum AnchoredRecordReadFailure {
+    /// Live protection could not be inspected without waiting.
+    ProtectionBusy,
+    /// A nonterminal stream was called with no output storage.
+    EmptyReadBuffer,
+    /// The original refusal was returned; this same stream cannot advance again.
+    PreviouslyRefused,
+    Allocation(worth_execution::ExecutionAllocationDenial),
+    Execution(worth_execution::WorkCeilingDenial),
+    ForeignReader,
     Protection(PhysicalReadProtectionDenial),
     Open(RecordReadError),
     Stream(RecordStreamFailure),
@@ -193,6 +231,7 @@ pub enum AnchoredRecordDamage {
 #[derive(Debug)]
 #[non_exhaustive]
 pub enum AnchoredRecordMemberReadFailure {
+    ForeignReader,
     /// The current value, whose table decides membership, could not be read
     /// and verified.
     Value(AnchoredRecordReadFailure),

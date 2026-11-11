@@ -10,20 +10,19 @@ mod generated;
 mod geometry;
 mod handler;
 mod host;
-#[path = "mutation.rs"]
 mod mutation;
 mod nested;
 #[cfg(test)]
 mod ordered_refusing;
-#[path = "prefix.rs"]
 mod prefix;
 mod protected;
-#[path = "query.rs"]
 mod query;
 mod refinement;
 mod rule;
+pub(super) mod rule_observation;
 mod schema;
 mod source_authorization;
+pub(super) mod source_observation;
 
 const PREFIX_MEMBERSHIP: worth_query_decl::facade::application_query::ApplicationManagedIndexMembership =
     worth_query_decl::facade::application_query::ApplicationManagedIndexMembership::CheckedSummarySourceTree;

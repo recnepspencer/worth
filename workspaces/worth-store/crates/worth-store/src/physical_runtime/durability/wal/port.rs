@@ -329,3 +329,6 @@ impl PhysicalWalAppendPort {
         ))
     }
 }
+#[cfg(test)]
+#[path = "port_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;

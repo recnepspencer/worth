@@ -1,7 +1,7 @@
 pub(crate) use worth_query_testkit_certification_application_graph::facade::certification::application_graph::restored_replay::cross_process::*;
 
 #[test]
-fn a_key_committed_in_another_process_resolves_by_its_durable_record() {
+fn byte_only_interim_checkpoint_from_another_process_refuses_without_capture_origin() {
     let directory = std::env::temp_dir().join(format!(
         "worth-query-restored-replay-{}",
         std::process::id()
@@ -40,31 +40,26 @@ fn capture_phase() {
 
 #[test]
 fn restore_phase() {
-    let host_request =
-        worth_query_testkit_host::facade::host::certification_support::execution_policy::serial_request();
-    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
-
     let Some(directory) = phase_directory() else {
         return;
     };
     let bytes = std::fs::read(directory.join("checkpoint")).expect("capture is read");
     let record = std::fs::read_to_string(directory.join("record")).expect("the record is read");
-    let [commit, ordinal] = record
+    let [_commit, _ordinal] = record
         .split(' ')
         .map(|part| part.parse::<u64>().expect("the record holds numbers"))
         .collect::<Vec<_>>()[..]
     else {
         panic!("the record holds the commit and the ordinal");
     };
-    let restored = restore_on_first_program(
+    let denial = restore_on_first_program(
         WorthQueryApplicationCheckpoint::from_untrusted_bytes(bytes),
         WorthQueryApplicationProgramRoster::new().support(validated_second_program()),
     )
-    .expect("the host restores under the roster it installed");
-    assert_eq!(
-        binding_runtime_ordinal(&restored),
-        ordinal,
-        "a fresh process mints the capturing process's runtime ordinal again"
-    );
-    assert_the_key_resolves_by_its_durable_record(request_execution, &restored, CommitId(commit));
+    .err()
+    .expect("a file of bytes carries no capture-issued original authority");
+    let worth_query_host::facade::application_installation::WorthQueryApplicationPreparationDenial::Graph(denial) = denial else {
+        panic!("expected the typed missing-origin refusal: {denial:?}");
+    };
+    assert_eq!(denial.kind(), worth_query_host::facade::primary_graph::WorthQueryPrimaryGraphInstallationDenialKind::InterimCheckpointCaptureOriginMissing);
 }

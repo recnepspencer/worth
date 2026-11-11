@@ -70,9 +70,10 @@ pub mod change_source;
 pub mod diagnostics {
     pub use crate::diagnostics::data::RelationalDiagnosticsFacade;
     pub use crate::diagnostics::data::{
-        DeterminismExpectation, DiagnosticCode, DiagnosticsArtifactKind, DiagnosticsDeliveryClass,
-        DiagnosticsScope, RelationalArtifactPolicy, RelationalDiagnosticArtifact,
-        RelationalDiagnosticsEntry, RelationalDiagnosticsProfile,
+        DeterminismExpectation, DiagnosticCode, DiagnosticObjectFields, DiagnosticsArtifactKind,
+        DiagnosticsDeliveryClass, DiagnosticsScope, RelationalArtifactPolicy,
+        RelationalDiagnosticArtifact, RelationalDiagnosticValue, RelationalDiagnosticsEntry,
+        RelationalDiagnosticsProfile,
     };
 }
 
@@ -94,15 +95,15 @@ pub mod history {
         CanonicalRetainedEntitySelection, CommitId, CommittedVersionSummary,
         HistoryAspectQueryTarget, HistoryDriftClass, HistoryRetentionClass,
         HistoryShapeClassification, LineageAspectHistory, LineageAspectHistoryQueryResult,
-        LineageAspectResolutionDigest, MergeConflictRecord, MergeInspection, OrderedParentList,
-        RelationalCommitReceipt, RelationalDescriptiveTouch, RelationalDescriptiveTouchGraph,
-        RelationalDescriptiveTouchPrecision, RelationalMergeBranchBasisDenial,
-        RelationalReplayRetentionDenial, RelationalTouchAdjacencyDirection, VersionGraphPolicy,
+        LineageAspectResolutionDigest, MergeBasisAncestors, MergeConflictRecord, MergeInspection,
+        OrderedParentList, RelationalCommitReceipt, RelationalDescriptiveTouch,
+        RelationalDescriptiveTouchGraph, RelationalDescriptiveTouchPrecision,
+        RelationalIntroducedSchemaObservation, RelationalMergeBranchBasis,
+        RelationalMergeBranchBasisDenial, RelationalOriginalInputObservation,
+        RelationalReplayRetentionDenial, RelationalTouchAdjacencyDirection,
+        SharedCanonicalCommitEnvelope, VersionGraphPolicy,
     };
-    pub use crate::history::{
-        BoundedCanonicalCommitPatchDenial, HistoryAccess, HistoryAuthority,
-        OutputOriginHeaderCorruptionForTest,
-    };
+    pub use crate::history::{BoundedCanonicalCommitPatchDenial, HistoryAccess, HistoryAuthority};
     pub use crate::history::{
         RelationalAuthoredEntityIndexDefinition, RelationalAuthoredManagedSourceImpact,
         RelationalAuthoredManagedSourceMaterial, RelationalAuthoredManagedSourcePayloads,
@@ -133,13 +134,13 @@ pub mod identity_authority {
     pub use crate::identity_authority::*;
 }
 
+#[path = "facade/indexes.rs"]
+pub mod indexes;
 #[path = "facade/inspection.rs"]
 pub mod inspection;
 
-#[path = "facade/indexes.rs"]
-pub mod indexes;
-
 pub mod lineage {
+    pub use crate::lineage::access::{RelationalLineageDiscoveryDenial, RelationalLineageNodeRead};
     pub use crate::lineage::data::{
         HistoricalLineageResolution, HistoricalLineageResolutionDigestBasis,
         HistoricalLineageResolutionMetrics, HistoricalResolutionBoundednessBasis,
@@ -160,34 +161,35 @@ pub mod merge {
         AspectPolicyResolutionRecord, AuthorizedAspectValueSurface, AuthorizedAspectValueUsage,
         BranchCausalDot, BranchDeltaSummary, CausalAnnotationSummary, CausalFrontier,
         CommitCausalMetadata, CommitCausalRelation, ConflictClassificationSummary,
-        CustomIdentityBasisIdentity, CustomMergePolicyIdentity, DeletionExecutionClass,
-        DeletionMergeClass, EndpointContinuityClass, ExecutedMergeAspectClass,
-        ExecutedMergeAspectDiagnosticRow, ExecutedMergeRecordClass,
+        CustomIdentityBasisIdentity, CustomMergePolicyIdentity, DeclaredIdentityKeys,
+        DeletionExecutionClass, DeletionMergeClass, EndpointContinuityClass,
+        ExecutedMergeAspectClass, ExecutedMergeAspectDiagnosticRow, ExecutedMergeRecordClass,
         ExecutedMergeRecordDiagnosticRow, IdentityBasisDeclaration, IdentityBasisKind,
-        IdentityBasisScope, IdentityDiscoverySummary, IdentityMatchCandidate, IdentityMatchClass,
-        IdentityResolutionReason, LoweredAspectAction, LoweredAspectOutcome, LoweredMergeAction,
-        LoweredMergeBlockedReason, LoweredMergePlanRecord, LoweredMergePlanSummary,
-        LoweredMergeRejectedReason, LoweredRecordDecision, LoweredRecordDecisionKind,
-        LoweredRecordDenialBundle, LoweredRecordDenialKind, LoweredRecordExecutionBundle,
-        LoweredRecordExecutionIntentKind, MergeAncestrySummary, MergeArtifactDigestBasis,
-        MergeBaseSelectionRule, MergeCausalEvidenceModel, MergeConflictClass,
-        MergeConflictClassification, MergeExecutableClass, MergeExecutionAuthorityContract,
-        MergeExecutionAuthorizationRule, MergeExecutionCompilationError,
-        MergeExecutionConsumptionRule, MergeExecutionDecisionSurface, MergeExecutionDeniedRecord,
-        MergeExecutionDiagnosticsPlan, MergeExecutionError, MergeExecutionFreshnessPolicy,
-        MergeExecutionMutationPlanError, MergeExecutionPreparationError, MergeExecutionReadiness,
-        MergeExecutionReadinessReport, MergeExecutionRequest, MergeIntent,
-        MergeManualResolutionClass, MergePlanningArtifactCore, MergePlanningDecisionKind,
-        MergePlanningDecisionLog, MergePlanningDecisionLogDigestBasis, MergePlanningDecisionRecord,
-        MergePlanningError, MergePlanningRequest, MergePlanningSummary,
-        MergePolicyDecisionBoundary, MergePolicyOwnershipClass, MergePolicyOwnershipSurface,
-        MergePolicyProofBoundary, MergePolicyRejectClass, MergePolicyResolution,
-        MergeRecordCausalAnnotation, MergeRecordCausalDisposition, MergeRecordIdentity,
-        MergeResolutionClass, MergeResolvedAspectValueStrategy, MergeSchemaKindClass,
-        MergeSchemaKindSemanticSnapshot, MergeSchemaSnapshotDigestBasis, MergeVisibilityEvidence,
-        MergeVisibilityEvidenceKind, MergeVisibilityState, NormalizedRelationalMergeRequest,
-        OwnerBoundMergeExecutionRequest, OwnerBoundMergePlanningRequest, PreparedMergeExecution,
-        RelationConflictPropagation, RelationContinuityClass, RelationalFoundationalMergeRequest,
+        IdentityBasisName, IdentityBasisScope, IdentityDiscoverySummary, IdentityMatchCandidate,
+        IdentityMatchClass, IdentityResolutionReason, LoweredAspectAction, LoweredAspectOutcome,
+        LoweredMergeAction, LoweredMergeBlockedReason, LoweredMergePlanRecord,
+        LoweredMergePlanSummary, LoweredMergeRejectedReason, LoweredRecordDecision,
+        LoweredRecordDecisionKind, LoweredRecordDenialBundle, LoweredRecordDenialKind,
+        LoweredRecordExecutionBundle, LoweredRecordExecutionIntentKind, MergeAncestrySummary,
+        MergeArtifactDigestBasis, MergeBaseSelectionRule, MergeCausalEvidenceModel,
+        MergeConflictClass, MergeConflictClassification, MergeExecutableClass,
+        MergeExecutionAuthorityContract, MergeExecutionAuthorizationRule,
+        MergeExecutionCompilationError, MergeExecutionConsumptionRule,
+        MergeExecutionDecisionSurface, MergeExecutionDeniedRecord, MergeExecutionDiagnosticsPlan,
+        MergeExecutionError, MergeExecutionFreshnessPolicy, MergeExecutionMutationPlanError,
+        MergeExecutionPreparationError, MergeExecutionReadiness, MergeExecutionReadinessReport,
+        MergeExecutionRequest, MergeIntent, MergeManualResolutionClass, MergePlanningArtifactCore,
+        MergePlanningDecisionKind, MergePlanningDecisionLog, MergePlanningDecisionLogDigestBasis,
+        MergePlanningDecisionRecord, MergePlanningError, MergePlanningRequest,
+        MergePlanningSummary, MergePolicyDecisionBoundary, MergePolicyName,
+        MergePolicyOwnershipClass, MergePolicyOwnershipSurface, MergePolicyProofBoundary,
+        MergePolicyRejectClass, MergePolicyResolution, MergeRecordCausalAnnotation,
+        MergeRecordCausalDisposition, MergeRecordIdentity, MergeResolutionClass,
+        MergeResolvedAspectValueStrategy, MergeSchemaKindClass, MergeSchemaKindSemanticSnapshot,
+        MergeSchemaSnapshotDigestBasis, MergeVisibilityEvidence, MergeVisibilityEvidenceKind,
+        MergeVisibilityState, NormalizedRelationalMergeRequest, OwnerBoundMergeExecutionRequest,
+        OwnerBoundMergePlanningRequest, PreparedMergeExecution, RelationConflictPropagation,
+        RelationContinuityClass, RelationalFoundationalMergeRequest,
         RelationalMergeAdmittedSurfaceRow, RelationalMergeAspectPolicyWitnessRow,
         RelationalMergeCorrespondencePosture, RelationalMergeCorrespondenceWitness,
         RelationalMergeCorrespondenceWitnessPosture, RelationalMergeCorrespondenceWitnessRow,
@@ -205,12 +207,13 @@ pub mod merge {
         SchemaDeclaredCorrespondenceValidationSummary, TopologyExecutionClass,
         TopologyRegionConflictReason, TopologyRewireAdmissionPolicy,
     };
-    pub use crate::merge::MergeAccess;
+    pub use crate::merge::{MergeAccess, RelationalMergePlanningObservation};
     pub use crate::transactions::data::MergeExecutionOutcome;
 }
 
 pub mod runtime {
     pub use super::runtime_validation_exports::*;
+    pub use crate::execution::RelationalWorkAccountRecorderForTest;
     pub use crate::presentation::facade::runtime::{
         ImmutableReadContract, RelationalBoundaryContract, RelationalRuntimeApi,
     };
@@ -221,18 +224,19 @@ pub mod runtime {
     pub use crate::publication::{
         PostCommitConsumer, PostCommitConsumptionContext, PostCommitConsumptionFailure,
     };
-    pub use crate::runtime::builder::RelationalRuntimeBuilder;
+    pub use crate::runtime::builder::{RelationalRuntimeBuilder, RelationalRuntimeDefinition};
     #[cfg(test)]
     pub use crate::runtime::HarnessAuditMode;
     pub use crate::runtime::{
-        custom_invariant_inventory_digest, AdjacencyStructuralRevision,
-        AdjacencyStructuralRevisionDenial, BoundedFrontierReadStop,
+        custom_invariant_inventory_digest, home_program_transition_body_digest,
+        AdjacencyStructuralRevision, AdjacencyStructuralRevisionDenial, BoundedFrontierReadStop,
         CompiledArtifactAuthorityStatus, CompiledArtifactError, CompiledExecutionArtifact,
         ComplexityContract, ComplexityStatus, EntityProjectionRecord, EntityRecordProjection,
-        InvariantAccess, PinnedStructuralWalk, PinnedStructuralWalkDenial,
-        PinnedStructuralWalkDenialKind, PinnedStructuralWalkReads, PinnedStructuralWalkScope,
-        PinnedStructuralWalkVisit, PositionedRelationalSnapshot, QueryLeasedReadOutcome,
-        QueryReadExecutionStop, QueryReadPacketDenial, RecoveredCheckpointProgramActivationUpdate,
+        FreshRelationalInitialSchemaInstallation, InvariantAccess, PinnedStructuralWalk,
+        PinnedStructuralWalkDenial, PinnedStructuralWalkDenialKind, PinnedStructuralWalkReads,
+        PinnedStructuralWalkScope, PinnedStructuralWalkVisit, PositionedRelationalSnapshot,
+        PreparedRelationalHomeProgramContracts, QueryLeasedReadOutcome, QueryReadExecutionStop,
+        QueryReadPacketDenial, RecoveredCheckpointProgramActivationUpdate,
         RelationProjectionRecord, RelationRecordProjection, RelationalAdjacencyDirection,
         RelationalAdjacencySupportDenial, RelationalAdjacencyVisit,
         RelationalAppliedCandidateReadIdentity, RelationalAppliedCandidateReadQualification,
@@ -241,11 +245,14 @@ pub mod runtime {
         RelationalEntityMetadataPinDenial, RelationalEntityRetirement,
         RelationalFieldSupportComparisonDenial, RelationalHistoricalSelectionRead,
         RelationalHistoricalSelectionReadDenial, RelationalHistoricalSourcePresence,
-        RelationalHistoricalSourceReadDenial, RelationalInitialSchemaInstallation,
-        RelationalInitialSchemaInstallationDenial, RelationalInitialSchemaInstallationDenialKind,
-        RelationalInitialSchemaInstallationReceipt, RelationalPatchPositionReservationCounters,
-        RelationalPhase4ReferenceCostCounters, RelationalPinnedEntityMetadata,
-        RelationalPinnedRead, RelationalPinnedReadAdmissionDenial,
+        RelationalHistoricalSourceReadDenial, RelationalHomeProgramBodyDenial,
+        RelationalHomeProgramCatalogReadmissionSource, RelationalHomeProgramCatalogReceipt,
+        RelationalHomeProgramContractDenial, RelationalHomeProgramPlanningSource,
+        RelationalHomeProgramPromotionRefused, RelationalHomeProgramStepContracts,
+        RelationalInitialSchemaInstallation, RelationalInitialSchemaInstallationDenial,
+        RelationalInitialSchemaInstallationDenialKind, RelationalInitialSchemaInstallationReceipt,
+        RelationalPatchPositionReservationCounters, RelationalPhase4ReferenceCostCounters,
+        RelationalPinnedEntityMetadata, RelationalPinnedRead, RelationalPinnedReadAdmissionDenial,
         RelationalProjectedFieldObservation, RelationalRelationMetadata, RelationalReplayRecord,
         RelationalRetentionPassProgress, RelationalRetentionPassStop, RelationalRuntime,
         RelationalRuntimeConfig, RelationalRuntimeConstructionDenial, RelationalRuntimeForkDenial,
@@ -254,6 +261,13 @@ pub mod runtime {
         ReplaySchemaVersion, RuntimeComplexityCounters, SimulationAccess, SimulationAuthority,
         SnapshotGuard, SnapshotPositionDenial, TopologyFreezeMode, VisibilityProjectionView,
         VisibilityReadContext, VisibilityRetentionAuthority,
+    };
+    pub use crate::runtime::{
+        PreparedRelationalRuntimeClose, PreparedRelationalSourceClose,
+        RelationalPublicationCompanionCustody, RelationalPublicationCustodyHolders,
+        RelationalPublicationRegistryCustody, RelationalRuntimeCloseDenial,
+        RelationalRuntimeCloseRefused, RelationalSourceClose, RelationalSourceCloseDenial,
+        RelationalSourceCloseProgress, RetiredSourceRelationalAllocation,
     };
     pub use crate::storage::data::{
         ChunkVisibilitySummary, ChunkedStorageSummary, EntityReadRecord, PartitionStorageStats,
@@ -369,6 +383,7 @@ pub mod storage {
 }
 
 pub mod symbols {
+    pub use crate::runtime::RelationalSymbolTableForTest;
     pub use crate::symbols::data::RelationalSymbolExhausted;
     pub use crate::symbols::data::{
         ClientKey, ClientKeySymbolPolicy, InternedString, RelationalFieldText,

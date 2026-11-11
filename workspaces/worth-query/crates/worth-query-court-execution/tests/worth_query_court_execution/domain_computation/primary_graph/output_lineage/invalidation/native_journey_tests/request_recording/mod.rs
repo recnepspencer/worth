@@ -160,7 +160,7 @@ fn a_restored_output_registers_before_commit() {
         Ok(())
     );
 
-    handle.with_runtime_mut_for_test(request_execution, |runtime| {
+    handle.with_runtime_for_test(request_execution, |runtime| {
         runtime.snapshots().release_snapshot(&head_handle).unwrap();
     });
 }

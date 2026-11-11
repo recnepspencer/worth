@@ -1,5 +1,4 @@
 use serde::{Deserialize, Serialize};
-use std::collections::BTreeMap;
 use worth_foundational::facade::{
     AspectFieldLocator, AspectKey, AspectMask, AspectMaskLocator, AspectValue, AspectValueLocator,
     CanonicalBasisReadyArtifact, CanonicalFieldPath, DiagnosticMask, FieldKey, StructAspectValue,
@@ -19,6 +18,8 @@ use crate::snapshots::data::SnapshotId;
 
 mod aspect_value_diagnostic_terms;
 mod native_serde;
+mod object_fields;
+pub use object_fields::DiagnosticObjectFields;
 pub(crate) mod terminal_projection;
 mod terminal_serde_projection;
 
@@ -52,7 +53,7 @@ pub enum RelationalDiagnosticValue {
     String(String),
     CanonicalBytes(Vec<u8>),
     Array(Vec<RelationalDiagnosticValue>),
-    Object(BTreeMap<String, RelationalDiagnosticValue>),
+    Object(DiagnosticObjectFields),
     AspectKey(AspectKey),
     FieldKey(FieldKey),
     #[serde(with = "native_serde::canonical_field_path")]

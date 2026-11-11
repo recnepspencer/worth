@@ -59,7 +59,8 @@ impl PhysicalRecordReader {
             runtime: self.runtime.clone(),
             health_permit,
             _lifecycle: self.lifecycle.read_session(),
-            _allocation: allocation,
+            _allocation: Some(allocation),
+            _retired_allocation: None,
         })
     }
 }

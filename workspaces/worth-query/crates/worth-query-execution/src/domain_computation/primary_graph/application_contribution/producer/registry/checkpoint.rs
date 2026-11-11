@@ -28,8 +28,10 @@ where
                     checkpoint.scope.local_slot(),
                     checkpoint.scope.generation(),
                 ),
-                source_partition: checkpoint.source_partition,
-                source_epoch: checkpoint.source,
+                source_partition: worth_foundational::CanonicalDigestId::new(
+                    checkpoint.source_partition,
+                ),
+                source_epoch: worth_foundational::CanonicalDigestId::new(checkpoint.source),
             },
         )
     }

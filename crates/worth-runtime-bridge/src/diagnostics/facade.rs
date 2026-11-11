@@ -53,6 +53,7 @@ mod record;
 mod sink;
 mod speculation;
 mod writeback;
+mod writeback_readmission;
 
 #[derive(Debug, Clone)]
 pub struct BridgeDiagnosticsFacade {

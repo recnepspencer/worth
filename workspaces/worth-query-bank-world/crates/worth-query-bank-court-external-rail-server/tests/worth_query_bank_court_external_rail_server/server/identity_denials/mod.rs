@@ -59,7 +59,7 @@ fn ambiguous_dynamic_identity_is_denied() {
 
     match error {
         BankIdentityRuntimeBuildError::ApplicationInstallation(denial) => match *denial {
-            WorthQueryInMemoryApplicationDenial::InitialState(denial) => assert_eq!(
+            WorthQueryApplicationPreparationDenial::InitialState(denial) => assert_eq!(
                 denial.kind(),
                 WorthQueryPrimaryGraphInstallationDenialKind::DuplicateExternalIdentity
             ),

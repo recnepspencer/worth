@@ -4,7 +4,7 @@ use crate::schema::current_publication_ownership::POSITION;
 use crate::{
     authority::mutation::current_records::{CompletedCurrentRecords, Writer},
     branch::AdmittedRelationalBranchBasis,
-    history::data::CanonicalCommitEnvelope,
+    history::data::CanonicalCommitEnvelopeBody,
     runtime::RelationalPreparationRuntime,
     storage::overlay::WorkingState,
     transactions::data::{RecordRef, TransactionCommitError},
@@ -18,7 +18,7 @@ pub(crate) fn complete(
     basis: &AdmittedRelationalBranchBasis,
     working: &mut WorkingState,
     identities: &mut crate::authority::commit::phases::applied_mutation::PendingMutationIdentities,
-    candidate: &CanonicalCommitEnvelope,
+    candidate: &CanonicalCommitEnvelopeBody,
     current: &[PresenceRow],
     positions: &mut Option<crate::history::data::RequiredOutputPublicationPositions>,
     context: &mut MapKernelContext<'_, '_>,
@@ -56,8 +56,14 @@ pub(crate) fn complete(
         *positions = Some(basis.inner.root.output_publication_positions.clone());
     }
     let mut positions = positions.as_mut();
-    let mut writer = Writer::new(
-        execution, runtime, basis, working, identities, candidate, context,
+    let mut writer = Writer::in_stage(
+        execution,
+        &runtime.config.storage,
+        basis,
+        working,
+        identities,
+        candidate,
+        context,
     )?;
     for (ordinal, origin) in candidate
         .output_origins()

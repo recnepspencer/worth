@@ -3,6 +3,7 @@ use super::super::super::super::authentication;
 use super::super::super::lifecycle;
 use super::super::{bounds, host, prefix, query, rule, schema::*};
 use super::{operation, producer, program, source};
+use crate::application_invariant_acceptance::managed_index::prefix_observation;
 use std::sync::{atomic::Ordering, Arc};
 use worth_query_host::facade::{application_entry::*, primary_graph::*};
 mod cancellation;
@@ -47,7 +48,7 @@ fn run() {
     );
 }
 fn journey() {
-    let provider = Arc::new(prefix::Calls::default());
+    let provider = Arc::new(prefix_observation::Calls::default());
     let rules = Arc::new(rule::Calls::new(Arc::clone(&provider)));
     let world = host::install(provider.clone(), rules.clone());
     let scope = authentication::request_scope();
@@ -154,12 +155,16 @@ fn journey() {
         for (scope, directory) in [(a_scope, "A"), (b_scope, "B")] {
             let row = records
                 .iter()
-                .find(|record| record.scope == scope)
+                .find(|record| record.source.scope == scope)
                 .expect("logical proposed Source preserves the real generated row");
-            assert_eq!(values(&row.after), expected(directory, "taken-generated"));
+            assert_eq!(
+                values(&row.source.after),
+                expected(directory, "taken-generated")
+            );
             assert_eq!(
                 values(
-                    row.before
+                    row.source
+                        .before
                         .as_ref()
                         .expect("suspension reads the real available logical before")
                 ),
@@ -196,10 +201,10 @@ fn journey() {
         let records = rules.records.lock().unwrap();
         let b = records
             .iter()
-            .find(|record| record.scope == b_scope)
+            .find(|record| record.source.scope == b_scope)
             .expect("unopened B sees the actual invalid reconstructed name");
-        assert_eq!(values(&b.after), expected("B", "taken"));
-        assert!(b.before.is_none(), "the committed physical Source is genuinely suspended, never empty success or logical fallback");
+        assert_eq!(values(&b.source.after), expected("B", "taken"));
+        assert!(b.source.before.is_none(), "the committed physical Source is genuinely suspended, never empty success or logical fallback");
     }
     assert_suspended(request.query(find("A")).execute());
     assert_eq!(
@@ -243,10 +248,16 @@ fn journey() {
             "both required rules run with corresponding payloads"
         );
         for (scope, directory) in [(a_scope, "A"), (b_scope, "B")] {
-            let row = records.iter().find(|row| row.scope == scope).unwrap();
-            assert_eq!(values(&row.after), expected(directory, "taken-generated"));
+            let row = records
+                .iter()
+                .find(|row| row.source.scope == scope)
+                .unwrap();
+            assert_eq!(
+                values(&row.source.after),
+                expected(directory, "taken-generated")
+            );
             assert!(
-                row.before.is_none(),
+                row.source.before.is_none(),
                 "correspondence never opens committed suspension Source"
             );
         }

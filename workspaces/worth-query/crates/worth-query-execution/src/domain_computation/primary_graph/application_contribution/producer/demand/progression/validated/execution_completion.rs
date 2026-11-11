@@ -98,7 +98,7 @@ pub(super) fn finish(
         .into_parts();
 
     super::super::caller_pass_observation::observe_publication(
-        receipt.published_in_this_advance(),
+        true,
         *recorded,
         runtime_identity,
         root,
@@ -107,7 +107,7 @@ pub(super) fn finish(
     let receipt = receipt.into_receipt();
     drop(record);
     let retained = crate::domain_computation::primary_graph::application_output_demand::OriginalProducingPublication::for_successor(
-        execution, original_publication, &receipt,
+        execution, original_publication, (&receipt).into(),
     );
     let (original_publication, continuation_denial) = match retained {
         Ok(original) => (original, None),

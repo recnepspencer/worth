@@ -29,7 +29,8 @@ fn authenticated_actor_cannot_be_relabelled_in_payment_input() {
         payment: fixture.payment,
         approver: principal_id(STRANGER),
     };
-    let (instance, operation) = journey::prepare_approved_payment_operation(&workflow, &relabelled);
+    let (_definition, instance, operation) =
+        journey::prepare_approved_payment_operation(&workflow, &relabelled);
     let denied = workflow
         .advanced()
         .execute_operation(

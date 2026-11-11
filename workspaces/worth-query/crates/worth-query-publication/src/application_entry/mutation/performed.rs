@@ -248,7 +248,7 @@ where
     // Classify the already-produced native evidence; this invokes no handler or publication.
     if let WorthQueryApplicationMutationOutcome::Commit(worth_query_execution::facade::primary_graph::WorthQueryApplicationUncommitted::CleanupRequired(required)) = outcome {
         let (outcome, cleanup) = required.into_parts();
-        return WorthQueryApplicationPerformedMutationOutcome::CleanupRequired { cleanup, outcome: Box::new(performed_outcome::<Schema, Binding, Program, Root>(demand, WorthQueryApplicationMutationOutcome::Commit(outcome), source)) };
+        return WorthQueryApplicationPerformedMutationOutcome::CleanupRequired { cleanup, outcome: Box::new(performed_outcome::<Schema, Binding, Program, Root>(demand, WorthQueryApplicationMutationOutcome::from_commit_outcome(outcome), source)) };
     }
     let outcome = match outcome {
         WorthQueryApplicationMutationOutcome::Commit(worth_query_execution::facade::primary_graph::WorthQueryApplicationUncommitted::ProductUnpublished(partial)) => {
@@ -262,6 +262,8 @@ where
     };
     if matches!(&outcome, WorthQueryApplicationMutationOutcome::Commit(
         worth_query_execution::facade::primary_graph::WorthQueryApplicationUncommitted::Indeterminate(_)
+        | worth_query_execution::facade::primary_graph::WorthQueryApplicationUncommitted::ProductPreparationPending(_)
+        | worth_query_execution::facade::primary_graph::WorthQueryApplicationUncommitted::ProductPreparationRefused(_)
 ))
         && let Some(preparation) = source.take_unpublished() {
             return WorthQueryApplicationPerformedMutationOutcome::Blocked(super::performed_source::WorthQueryBlockedProgramSource { _preparation: preparation, payload: demand, outcome });
@@ -314,3 +316,6 @@ pub use denied::WorthQueryRequiredOutputRetentionFailure;
 pub use preparation::WorthQueryRequiredOutputPreparation;
 pub use recovered::WorthQueryRecoveredRequiredOutputs;
 pub use unpublished::WorthQueryUnpublishedRequiredApplicationMutation;
+#[cfg(test)]
+#[path = "performed_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;

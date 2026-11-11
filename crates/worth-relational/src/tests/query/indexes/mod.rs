@@ -10,7 +10,6 @@ mod entity_field_pages;
 mod entity_field_selection_cardinality;
 mod exact_observation;
 mod fork_observation_currency;
-mod generation_identity_recovery;
 mod generation_routing;
 mod generation_selection_locality;
 mod historical_relation_field_lookup;
@@ -45,8 +44,11 @@ fn runtime_with_index_field_aspects() -> RelationalRuntime {
     runtime_with_declared_aspect_schema(CascadeDeletePolicy::CascadeDeleteRelations)
 }
 
-fn durable_runtime_with_index_field_aspects() -> RelationalRuntime {
-    durable_runtime_with_declared_aspect_schema(CascadeDeletePolicy::CascadeDeleteRelations)
+fn certification_index_runtime() -> RelationalRuntime {
+    runtime_with_declared_aspect_schema_profile(
+        RelationalRuntimeProfile::CertificationCore,
+        CascadeDeletePolicy::CascadeDeleteRelations,
+    )
 }
 
 fn sampled_plan_key_for(

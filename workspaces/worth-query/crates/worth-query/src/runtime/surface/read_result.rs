@@ -82,3 +82,6 @@ impl WorthQueryReadExecutionProduct for WorthQueryReadResult {
         &mut self.receipt
     }
 }
+#[cfg(test)]
+#[path = "read_result_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;

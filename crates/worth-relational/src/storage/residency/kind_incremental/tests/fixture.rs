@@ -48,10 +48,7 @@ fn create(partition: &mut PartitionState, slot: usize, version: u64) {
         partition_id: partition.partition_id,
         kind_id: kind,
         version_id: VersionId(version),
-        extra: RelationExtra {
-            endpoints: Some(endpoints.clone()),
-            authoritative_aspect_state: None,
-        },
+        extra: relation_extra(endpoints.clone()),
     });
     assert_eq!(actual, slot);
     insert(
@@ -107,10 +104,7 @@ pub(super) fn edit(
         .relation_arena
         .apply_extra_update(
             slot,
-            RelationExtra {
-                endpoints: Some(new.clone()),
-                authoritative_aspect_state: None,
-            },
+            relation_extra(new.clone()),
             VersionId(step as u64 + 2),
         )
         .unwrap();
@@ -160,7 +154,7 @@ pub(super) fn restore(
     }
     partition
         .relation_arena
-        .merge_slots_from_owned(&mut source.relation_arena.clone(), &[slot].into());
+        .merge_slots_from_owned(&mut source.relation_arena.clone(), &[slot]);
     let new = partition.relation_arena.get_slot(slot).unwrap();
     let new_endpoints = new.extra().endpoints.clone();
     if let (Some(endpoints), Some(kind)) = (&new_endpoints, new.kind_id()) {
@@ -205,4 +199,8 @@ fn journal<'a>(
             .insert(endpoint.target.slot_index());
     }
     journal
+}
+
+fn relation_extra(endpoints: RelationEndpoints) -> RelationExtra {
+    RelationExtra::from_unbudgeted_parts(Some(endpoints), None)
 }

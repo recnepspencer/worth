@@ -16,6 +16,10 @@ use super::{NodeEvaluationConfig, NodeState};
 
 #[derive(Debug, Clone, PartialEq)]
 pub(crate) struct CheckpointNodeImageParts {
+    pub(crate) conditional_definition: Option<
+        std::sync::Arc<crate::data::conditional_execution::SignalConditionalContractDefinition>,
+    >,
+    pub(crate) declared_dependencies: Option<crate::data::dependency::CanonicalDependencies>,
     pub(crate) state: NodeState,
     pub(crate) dirty_aspects: AspectMask,
     pub(crate) dirty_partition_scopes: Vec<(Aspect, PartitionSubscription)>,
@@ -41,6 +45,12 @@ pub(crate) struct CheckpointNodeImageParts {
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct CheckpointNodeImage {
+    #[serde(default)]
+    declared_dependencies: Option<crate::data::dependency::CanonicalDependencies>,
+    #[serde(default)]
+    conditional_definition: Option<
+        std::sync::Arc<crate::data::conditional_execution::SignalConditionalContractDefinition>,
+    >,
     state: NodeState,
     dirty_aspects: AspectMask,
     #[serde(default)]
@@ -80,6 +90,8 @@ pub struct CheckpointNodeImage {
 impl CheckpointNodeImage {
     pub(crate) fn from_parts(parts: CheckpointNodeImageParts) -> Self {
         Self {
+            conditional_definition: parts.conditional_definition,
+            declared_dependencies: parts.declared_dependencies,
             state: parts.state,
             dirty_aspects: parts.dirty_aspects,
             dirty_partition_scopes: parts.dirty_partition_scopes,
@@ -105,6 +117,8 @@ impl CheckpointNodeImage {
 
     pub(crate) fn into_parts(self) -> CheckpointNodeImageParts {
         CheckpointNodeImageParts {
+            conditional_definition: self.conditional_definition,
+            declared_dependencies: self.declared_dependencies,
             state: self.state,
             dirty_aspects: self.dirty_aspects,
             dirty_partition_scopes: self.dirty_partition_scopes,

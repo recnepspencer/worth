@@ -30,3 +30,6 @@ pub use physical_residency::{
     PrefetchResidencyGrant, ReadAheadFrameGrant, ReadAheadResidencyGrant,
     WriteBehindResidencyGrant,
 };
+pub use physical_residency::{
+    PhysicalResidencyRetirementDenial, RetiredOperationAllocation, RetiredPhysicalFrame,
+};

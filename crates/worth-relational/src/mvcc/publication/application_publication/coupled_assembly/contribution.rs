@@ -7,7 +7,8 @@ impl crate::mvcc::ValidatedRelationalProposal {
         producer: &str,
         meaning: &RequiredOutputPublicationMeaning,
     ) -> Option<&[crate::transactions::data::RecordRef]> {
-        self.required_output_publication
+        self.state
+            .required_output_publication
             .iter()
             .find_map(|admission| {
                 let RequiredOutputPublication::CoupledAuthored { group } = &admission.publication
@@ -31,7 +32,8 @@ impl crate::mvcc::ValidatedRelationalProposal {
     pub fn coupled_participants(
         &self,
     ) -> impl Iterator<Item = (&str, &RequiredOutputPublicationMeaning)> {
-        self.required_output_publication
+        self.state
+            .required_output_publication
             .iter()
             .filter_map(|admission| match &admission.publication {
                 RequiredOutputPublication::CoupledAuthored { group } => Some(group),

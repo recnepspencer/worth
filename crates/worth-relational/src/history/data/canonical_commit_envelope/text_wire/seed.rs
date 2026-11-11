@@ -8,18 +8,21 @@ pub(crate) struct CanonicalEnvelopeSeed<'a, 'r, 'c, 's>(
     pub(crate) &'a ContentDecodeContext<'r, 'c, 's>,
 );
 impl<'de> DeserializeSeed<'de> for CanonicalEnvelopeSeed<'_, '_, '_, '_> {
-    type Value = CanonicalEnvelopeWire<'de>;
+    type Value = CanonicalEnvelopeWire<crate::symbols::data::SymbolSnapshotWire<'de>>;
     fn deserialize<D: Deserializer<'de>>(self, deserializer: D) -> Result<Self::Value, D::Error> {
         deserializer.deserialize_map(self)
     }
 }
 impl<'de> Visitor<'de> for CanonicalEnvelopeSeed<'_, '_, '_, '_> {
-    type Value = CanonicalEnvelopeWire<'de>;
+    type Value = CanonicalEnvelopeWire<crate::symbols::data::SymbolSnapshotWire<'de>>;
     fn expecting(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.write_str("canonical Native envelope map")
     }
     fn visit_map<M: MapAccess<'de>>(self, mut map: M) -> Result<Self::Value, M::Error> {
         let mut content = None;
+        let mut index_definition_delta = None;
+        let mut semantic_result = None;
+        let mut caller_association = None;
         let mut coupled_authored_publication = None;
         let mut required_output_codec_retirements = None;
         let mut required_output_origin = None;
@@ -54,6 +57,24 @@ impl<'de> Visitor<'de> for CanonicalEnvelopeSeed<'_, '_, '_, '_> {
         let mut descriptor_semantics_version = None;
         while let Some(key) = map.next_key::<&str>()? {
             match key {
+                "index_definition_delta" => {
+                    if index_definition_delta.is_some() {
+                        return Err(M::Error::duplicate_field("index_definition_delta"));
+                    }
+                    index_definition_delta = Some(map.next_value()?);
+                }
+                "semantic_result" => {
+                    if semantic_result.is_some() {
+                        return Err(M::Error::duplicate_field("semantic_result"));
+                    }
+                    semantic_result = Some(map.next_value()?);
+                }
+                "caller_association" => {
+                    if caller_association.is_some() {
+                        return Err(M::Error::duplicate_field("caller_association"));
+                    }
+                    caller_association = Some(map.next_value()?);
+                }
                 "content" => {
                     if content.is_some() {
                         return Err(M::Error::duplicate_field("content"));
@@ -260,6 +281,13 @@ impl<'de> Visitor<'de> for CanonicalEnvelopeSeed<'_, '_, '_, '_> {
             }
         }
         Ok(CanonicalEnvelopeWire {
+            index_definition_delta: index_definition_delta
+                .ok_or_else(|| M::Error::missing_field("index_definition_delta"))?,
+            semantic_result: semantic_result
+                .ok_or_else(|| M::Error::missing_field("semantic_result"))?,
+            caller_association: caller_association
+                .ok_or_else(|| M::Error::missing_field("caller_association"))?,
+            readmission_memory: Default::default(),
             historical_output_selection: historical_output_selection.flatten(),
             content: content.ok_or_else(|| M::Error::missing_field("content"))?,
             coupled_authored_publication: coupled_authored_publication.flatten(),

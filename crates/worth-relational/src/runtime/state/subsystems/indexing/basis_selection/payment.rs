@@ -6,7 +6,7 @@ use super::{
 };
 use crate::indexes::data::DerivedIndexId;
 
-pub(super) fn outer(entries: usize, width: u64) -> Option<(u64, u64)> {
+pub(super) fn outer(entries: usize, retirement_entries: usize, width: u64) -> Option<(u64, u64)> {
     let mut quote = (0_u64, 0_u64);
     for _ in 0..2 {
         add(
@@ -41,7 +41,7 @@ pub(super) fn outer(entries: usize, width: u64) -> Option<(u64, u64)> {
     quote.0 = quote.0.checked_add(4)?;
     // Two FIFO insertions reuse the same now-owned append path. im's 64-slot
     // RRB geometry bounds its fringe copies by 5h+4 branches and four leaves.
-    let mut queue_entries = entries;
+    let mut queue_entries = retirement_entries;
     let mut height = 1_u64;
     while queue_entries > 64 {
         queue_entries = queue_entries.div_ceil(32);

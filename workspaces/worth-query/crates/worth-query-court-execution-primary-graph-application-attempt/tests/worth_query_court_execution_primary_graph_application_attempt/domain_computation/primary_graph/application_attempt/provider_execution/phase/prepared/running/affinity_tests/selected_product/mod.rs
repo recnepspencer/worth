@@ -16,7 +16,9 @@ fn an_exact_sibling_product_cannot_substitute_at_provider_plan_binding() {
                 phase,
                 &world,
                 retained_program(
-                    &host_custody.phase_for_application_for_test(&world.application),
+                    &host_custody
+                        .phase_for_application_for_test(&world.application)
+                        .test_host_request_for_test(),
                     &world,
                     "product-owner",
                 ),
@@ -35,6 +37,7 @@ fn an_exact_sibling_product_cannot_substitute_at_provider_plan_binding() {
                 mutation_run,
                 _attempt_basis,
                 _aftermath_causality,
+                _completion_storage,
             ) = running.into_parts_for_test();
             let sibling = fork_product(&world, lease.product());
             let sibling = world
@@ -72,7 +75,9 @@ fn the_exact_selected_product_binds_at_provider_plan_boundary() {
                 phase,
                 &world,
                 retained_program(
-                    &host_custody.phase_for_application_for_test(&world.application),
+                    &host_custody
+                        .phase_for_application_for_test(&world.application)
+                        .test_host_request_for_test(),
                     &world,
                     "product-owner",
                 ),
@@ -91,6 +96,7 @@ fn the_exact_selected_product_binds_at_provider_plan_boundary() {
                 mutation_run,
                 _attempt_basis,
                 _aftermath_causality,
+                _completion_storage,
             ) = running.into_parts_for_test();
             let result = direct_run
                 .admit_provider_execution_plan(
@@ -130,7 +136,7 @@ fn foreign_installed_phase_refuses_provider_readmission_before_read_or_charge() 
                 start(
                     &phase,
                     &a,
-                    retained_program(&phase, &a, "readmission-a"),
+                    retained_program(&phase.test_host_request_for_test(), &a, "readmission-a"),
                     idempotency(181, 181),
                 )
             })
@@ -141,7 +147,7 @@ fn foreign_installed_phase_refuses_provider_readmission_before_read_or_charge() 
                 start(
                     &phase,
                     &b,
-                    retained_program(&phase, &b, "readmission-b"),
+                    retained_program(&phase.test_host_request_for_test(), &b, "readmission-b"),
                     idempotency(182, 182),
                 )
             })
@@ -158,7 +164,7 @@ fn foreign_installed_phase_refuses_provider_readmission_before_read_or_charge() 
                     .unwrap()
                     .bind_application_product_for_test(product)
                     .unwrap();
-                let refusal = match plan.readmit(&phase) {
+                let refusal = match plan.admit_session(&phase) {
                     Err(refusal) => refusal,
                     Ok(_) => panic!("foreign phase cannot call B's provider"),
                 };
@@ -202,6 +208,7 @@ fn foreign_installed_phase_refuses_provider_readmission_before_read_or_charge() 
             a_mutation_run,
             _a_basis,
             _a_causality,
+            _a_completion_storage,
         ) = arun.into_parts_for_test();
         finish_uncommitted(a_mutation_run, a_running, a_lease);
         let (
@@ -217,6 +224,7 @@ fn foreign_installed_phase_refuses_provider_readmission_before_read_or_charge() 
             b_mutation_run,
             _b_basis,
             _b_causality,
+            _b_completion_storage,
         ) = brun.into_parts_for_test();
         finish_uncommitted(b_mutation_run, b_running, b_lease);
         place(previous);

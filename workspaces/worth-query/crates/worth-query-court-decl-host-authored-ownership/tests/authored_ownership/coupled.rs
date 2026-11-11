@@ -2,7 +2,6 @@
 use super::*;
 mod co_anchors;
 mod courts;
-pub(super) mod history;
 pub(super) mod multi;
 pub(super) mod producer;
 
@@ -43,9 +42,6 @@ impl<S: Scenario> WorthQueryApplicationRequiredOutputSource<S, program::Start>
 mod component_reads;
 
 mod fresh_subject;
-
-mod history_seams;
-mod owner_set_history;
 
 mod append;
 pub(super) mod creation_inverse;

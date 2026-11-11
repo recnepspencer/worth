@@ -223,5 +223,6 @@ pub(super) fn committed_ready(
     Ok(matches!(
         &ready.completion().authority,
         crate::domain_computation::primary_graph::application_output_demand::WorthQueryAcceptedOutputAuthority::Committed(_)
+        | crate::domain_computation::primary_graph::application_output_demand::WorthQueryAcceptedOutputAuthority::Recovered(_)
     ))
 }

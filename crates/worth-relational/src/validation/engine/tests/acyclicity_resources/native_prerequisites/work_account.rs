@@ -7,15 +7,17 @@ fn the_original_proposal_account_covers_both_stages_and_their_handoff() {
     let before = fixture.head();
     let funded =
         super::super::fixture::request(8 * 1024 * 1024, 4_000_000, CancellationToken::new(), None);
-    let (candidate, charges) = crate::execution::work_observation::capture(|| {
-        fixture.validate(&ExecutionRequest::leased(&funded), fixture.chain_batch(2))
-    });
+    let (candidate, charges) = crate::execution::RelationalWorkAccountRecorderForTest::new()
+        .record_for_test(|| {
+            fixture.validate(&ExecutionRequest::leased(&funded), fixture.chain_batch(2))
+        });
     let candidate = candidate.unwrap();
     assert!(
-        candidate.commit_work_budget.is_some(),
+        candidate.state.commit_work_budget.is_some(),
         "the real validation owner carries its account"
     );
     let declared = candidate
+        .state
         .invariants
         .results()
         .iter()
@@ -23,6 +25,7 @@ fn the_original_proposal_account_covers_both_stages_and_their_handoff() {
             r.execution_point == crate::validation::data::InvariantExecutionPoint::CommitBoundary
         })
         .collect::<Vec<_>>();
+    assert_eq!(declared.len(), 2);
     assert!(declared.iter().any(|r| matches!(
         r.rule,
         InvariantReportedRule::Native(InvariantRule::AcyclicityContract(_))
@@ -31,8 +34,8 @@ fn the_original_proposal_account_covers_both_stages_and_their_handoff() {
         .iter()
         .any(|r| matches!(r.rule, InvariantReportedRule::Custom(_))));
     assert_eq!(
-        candidate.invariants.decision_log().len(),
-        candidate.invariants.results().len()
+        candidate.state.invariants.decision_log().len(),
+        candidate.state.invariants.results().len()
     );
     assert_eq!(hooks.observed(), (1, 1));
     drop(candidate);

@@ -36,7 +36,7 @@ pub(super) fn commit_bootstrap_rows(
     let mut initialization_guard = None;
     let result = graph
         .integration_handle()
-        .with_runtime_mut(execution, |runtime| {
+        .with_runtime(execution, |runtime| {
             let main_identity = runtime.main_branch_identity();
             let options = runtime
                 .admit_branch_basis(&main_identity)
@@ -271,7 +271,7 @@ pub(super) fn build_identity_indexes(
 ) -> Result<(), WorthQueryPrimaryGraphInstallationDenial> {
     graph
         .integration_handle()
-        .with_runtime_mut(execution, |runtime| {
+        .with_runtime(execution, |runtime| {
             let build = build_requested_indexes(
                 execution,
                 runtime,

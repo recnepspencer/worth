@@ -1,3 +1,4 @@
+use worth_foundational::CanonicalDigestId;
 use worth_store_io_scheduler::{
     foreground_reservation::ForegroundIoLaneKind, BackgroundIoPressureClass,
     LatencyEnvelopeAssessmentStatus,
@@ -76,7 +77,7 @@ pub struct IoPressureHarnessEvidence {
     fault_phase: PhysicalScenarioFaultKind,
     maturity: IoPressureEvidenceMaturity,
     replay_profile: PhysicalSimulationProfile,
-    replay_identity: [u8; 32],
+    replay_identity: CanonicalDigestId,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -217,7 +218,7 @@ impl IoPressureHarnessEvidence {
             driver: PhysicalDriverKind::IoPressureBoundary,
             fault_phase,
             replay_profile,
-            replay_identity,
+            replay_identity: CanonicalDigestId::new(replay_identity),
         }
     }
 
@@ -238,7 +239,7 @@ impl IoPressureHarnessEvidence {
     }
 
     pub const fn replay_identity(&self) -> &[u8; 32] {
-        &self.replay_identity
+        self.replay_identity.bytes()
     }
 
     pub const fn replay_profile(&self) -> PhysicalSimulationProfile {

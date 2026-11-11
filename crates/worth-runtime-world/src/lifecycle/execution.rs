@@ -76,6 +76,12 @@ impl InstalledExecution {
             },
         }
     }
+    pub(crate) fn authority_handle(&self) -> Option<Arc<ExecutionAuthority>> {
+        match self {
+            Self::Serial(_) => None,
+            Self::Leased { authority, .. } => Some(Arc::clone(authority)),
+        }
+    }
 }
 
 fn policy_denial(denial: ExecutionPolicyDenial) -> RuntimeWorldBuildDenial {

@@ -267,6 +267,22 @@ The `publish_*_stop` functions above represent application-owned response
 handling. They must preserve the typed Query outcome; they must not infer a
 policy explanation from strings.
 
+### Lifecycle retry observation
+
+A retry returns original immutable receipt data. It cannot mint a new Requested,
+Approved or MandatoryReview owner. Keep each actual fresh predecessor for its
+next transition; approval, close and review return that supplied predecessor
+beside any recorded result.
+
+To inspect a lifecycle key after its predecessor has already advanced, call
+`request.observe_capability_lifecycle_idempotency_in_program` with the actual
+installed program, principal binding, capability, operation, typed input, key and
+preconditions. The owner freshly authorizes the request and resolves the original
+key. It runs no handler or lifecycle transition. Its typed resolution reports
+original data, unseen, changed intent or pending custody; its denial retains the
+current authorization or execution cause. Original data grants no stage, live
+receipt, read lease or physical effect authority.
+
 ## How It Relates To Other Features
 
 - Pair application capability admission with an installed application query or

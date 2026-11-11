@@ -8,7 +8,6 @@ use crate::branch::SelectedRelationalBranchState;
 use crate::history::data::CanonicalRetainedEntitySelection;
 use crate::runtime::RelationalPreparationRuntime;
 use crate::storage::overlay::CurrentPartitionAccess;
-use std::sync::Arc;
 
 pub(in crate::mvcc) fn prepare(
     runtime: &RelationalPreparationRuntime,
@@ -17,7 +16,7 @@ pub(in crate::mvcc) fn prepare(
 ) -> Result<PreparedRetainedEntityPayload, Error> {
     let current = SelectedRelationalBranchState::from_admitted_basis(&input.transaction.basis);
     let historical = SelectedRelationalBranchState::from_admitted_basis(&input.historical);
-    crate::storage::residency::probe_head(
+    let payload = crate::storage::residency::probe_head(
         execution,
         &historical.with_symbol_admission(&runtime.services.symbols),
         |source| {
@@ -30,14 +29,37 @@ pub(in crate::mvcc) fn prepare(
             .map_err(Error::Admission)
         },
     )
-    .map_err(|failure| storage(&input.historical, failure))?
+    .map_err(|failure| storage(&input.historical, failure))??;
+    let meaning = CanonicalRetainedEntitySelection::from_admitted(
+        execution,
+        &input.historical,
+        input.entity,
+        payload.0,
+    )
+    .map_err(|cause| {
+        Error::Preparation(
+            crate::transactions::data::TransactionCommitError::execution(cause.into()),
+        )
+    })?
+    .ok_or(Error::Admission(Denial::HistoricalSourceUnavailable))?;
+    Ok(PreparedRetainedEntityPayload {
+        _source: input.historical.clone(),
+        meaning,
+        payload: payload.1,
+    })
 }
 
 fn read(
     input: &RelationalRetainedEntitySelection,
     historical: &dyn CurrentPartitionAccess,
     current: &dyn CurrentPartitionAccess,
-) -> Result<PreparedRetainedEntityPayload, Denial> {
+) -> Result<
+    (
+        crate::identity::data::KindId,
+        crate::storage::substrate::StorageAllocation<crate::storage::substrate::EntityExtra>,
+    ),
+    Denial,
+> {
     let entity = input.entity;
     let old_region = historical
         .get_current_partition(entity.partition_id)
@@ -64,13 +86,7 @@ fn read(
     {
         return Err(Denial::UnsupportedIdentityMeaning);
     }
-    let meaning = CanonicalRetainedEntitySelection::from_admitted(&input.historical, entity, kind)
-        .ok_or(Denial::HistoricalSourceUnavailable)?;
-    Ok(PreparedRetainedEntityPayload {
-        _source: input.historical.clone(),
-        meaning: Arc::new(meaning),
-        payload: old.extra().authoritative_aspect_state.clone(),
-    })
+    Ok((kind, old.retained_extra()))
 }
 
 fn storage(

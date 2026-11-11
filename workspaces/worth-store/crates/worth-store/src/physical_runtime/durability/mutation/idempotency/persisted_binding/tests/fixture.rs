@@ -1,4 +1,5 @@
 use std::num::NonZeroU32;
+use worth_foundational::CanonicalDigestId;
 
 use super::super::super::test_support::{fingerprint, fixture, mutation, RegistryFixture};
 use super::super::*;
@@ -38,7 +39,7 @@ pub(in crate::physical_runtime::durability::mutation::idempotency) fn binding(
         mutation,
         group,
         member: PhysicalWalMemberBasis::new(member_identity, mutation, range),
-        redo_digest: [127; 32],
+        redo_digest: CanonicalDigestId::new([127; 32]),
         bytes: Box::default(),
     };
     binding.bytes = binding.encode().into_boxed_slice();

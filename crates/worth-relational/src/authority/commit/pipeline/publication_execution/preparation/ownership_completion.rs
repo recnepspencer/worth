@@ -9,13 +9,23 @@ pub(super) fn complete(
     selected: &crate::branch::SelectedRelationalBranchState,
     working: &mut crate::storage::overlay::WorkingState,
     identities: &mut crate::authority::commit::phases::applied_mutation::PendingMutationIdentities,
-    canonical: &mut crate::history::data::CanonicalCommitEnvelope,
+    canonical: &mut crate::history::data::CanonicalCommitEnvelopeDraft,
     artifacts: &mut crate::storage::overlay::PublicationArtifacts,
     changed: &mut Vec<crate::transactions::data::RecordRef>,
     positions: &mut Option<crate::history::data::RequiredOutputPublicationPositions>,
-) -> Result<Option<worth_execution::ExecutionMemoryReservation>, TransactionCommitError> {
+) -> Result<
+    (
+        Option<(
+            worth_execution::ExecutionMemoryReservation,
+            worth_execution::ExecutionMemoryReservation,
+        )>,
+        Vec<crate::authority::mutation::CanonicalRecordAspectDelta>,
+        usize,
+    ),
+    TransactionCommitError,
+> {
     let Some(current) = &runtime.current_ownership else {
-        return Ok(None);
+        return Ok((None, Vec::new(), 0));
     };
     let mut answer = None;
     let mut run = || {
@@ -92,7 +102,7 @@ pub(super) fn complete(
             (Ok(_), None) => unreachable!("completed publication ownership stage executed"),
         }
     };
-    let (completed, _roster_funding) = match (
+    let (completed, roster_funding) = match (
         super::super::super::request_lease(execution),
         runtime.commit_work_budget.as_ref(),
     ) {
@@ -138,5 +148,9 @@ pub(super) fn complete(
         })
         .map_err(crate::mvcc::origin_denial)?;
     artifacts.patch = canonical.patch.clone();
-    Ok(Some(completed.funding))
+    Ok((
+        Some((completed.funding, roster_funding)),
+        effect.publication.canonical_deltas,
+        effect.adjacency.deltas.len(),
+    ))
 }

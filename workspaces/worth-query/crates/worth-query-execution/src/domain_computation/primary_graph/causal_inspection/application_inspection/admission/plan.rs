@@ -13,6 +13,10 @@ use worth_query_installation::facade::{
 };
 
 pub enum InspectionPlanDenial {
+    #[allow(
+        dead_code,
+        reason = "The typed diagnostic or custody payload stays owned through return and Drop; this owner does not inspect it"
+    )]
     Graph(WorthQueryGraphWorkAdmissionDenial),
     Storage(RetainedStorageDenial),
     Overflow,

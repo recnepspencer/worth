@@ -52,7 +52,7 @@ fn full_verification_uses_native_facts_and_retains_the_exact_captured_image() {
         .field_locator_for_test(label_ref.entity(), label_ref.aspect(), label_ref.field())
         .unwrap()
         .clone();
-    handle.with_runtime_mut_for_test(request_execution, |runtime| {
+    handle.with_runtime_for_test(request_execution, |runtime| {
         let (old_handle, old_basis) = snapshot(runtime);
         use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::invariant_projection::consumed_output::ConsumedOutputEvidence;
         use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::invariant_projection::consumed_output::verification::ConsumedOutputVerification;

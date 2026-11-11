@@ -41,15 +41,13 @@ fn closed_freeze_restores_the_recorded_status_and_exact_retry_preserves_its_rece
         .prepare()
         .unwrap();
     let WorthQueryApplicationCorrectionPreparation::Settled(
-        WorthQueryApplicationMutationOutcome::AlreadyCommitted(replayed),
+        WorthQueryApplicationMutationOutcome::RecoveredCommitted(replayed),
     ) = retry
     else {
         panic!("retry recovers the performed inverse before re-evaluating Frozen");
     };
-    assert_eq!(replayed.commit_reference(), receipt.commit_reference());
-    assert_eq!(
-        replayed.committed_product_publication().composite_commit(),
-        receipt.committed_product_publication().composite_commit()
+    worth_query_bank_testkit_server::facade::recorded_commit_axes::assert_agrees(
+        &replayed, &receipt,
     );
 
     // The canonical reversal already consumed this exact source occurrence.

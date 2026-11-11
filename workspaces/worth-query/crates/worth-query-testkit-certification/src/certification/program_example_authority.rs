@@ -25,7 +25,7 @@ pub use worth_query_host::facade::{
     application_entry::{
         WorthQueryApplicationRequestExt, WorthQueryApplicationRequestMutationDenial,
     },
-    application_installation::{self, WorthQueryInMemoryApplicationDenial},
+    application_installation::{self, WorthQueryApplicationPreparationDenial},
     declaration::application_operation::ApplicationMutationBinding,
     declaration::application_program::{
         ApplicationFeature, ApplicationFeatureInputLeaf, ApplicationFeatureSpec,

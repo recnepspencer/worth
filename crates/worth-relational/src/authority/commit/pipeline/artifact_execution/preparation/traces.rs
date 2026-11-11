@@ -1,6 +1,9 @@
 use std::collections::BTreeMap;
 
+use crate::diagnostics::data::{DiagnosticsArtifactKind, DiagnosticsScope};
+use crate::publication::patch::data::CanonicalAuthoritativePatch;
 use crate::transactions::data::AspectEmissionTrace;
+use crate::transactions::data::AspectEvaluationTrace;
 
 #[derive(Debug, Clone)]
 pub(in crate::authority::commit::pipeline) struct PreparedAspectEmissionTrace {
@@ -54,6 +57,44 @@ pub(super) fn derive_aspect_emission_traces(
             }
         })
         .collect()
+}
+
+pub(super) struct PublicationTraceCapture {
+    pub(super) aspect_evaluation_traces: Vec<AspectEvaluationTrace>,
+    pub(super) aspect_emission_traces: Vec<PreparedAspectEmissionTrace>,
+}
+
+pub(super) fn capture_publication_traces(
+    runtime: &crate::runtime::RelationalPreparationRuntime,
+    patch: &CanonicalAuthoritativePatch,
+    canonical_deltas: &[crate::authority::mutation::CanonicalRecordAspectDelta],
+) -> PublicationTraceCapture {
+    let diagnostics_profile = &runtime.config.diagnostics.profile;
+    let capture_transaction_traces = diagnostics_profile.should_capture_artifact(
+        DiagnosticsScope::Transaction,
+        DiagnosticsArtifactKind::DetailedTrace,
+    );
+    let capture_patch_publication_traces = diagnostics_profile.should_capture_artifact(
+        DiagnosticsScope::PatchPublication,
+        DiagnosticsArtifactKind::DetailedTrace,
+    );
+    let aspect_evaluation_traces = if capture_transaction_traces {
+        canonical_deltas
+            .iter()
+            .map(|delta| delta.evaluation_trace())
+            .collect::<Vec<_>>()
+    } else {
+        Vec::new()
+    };
+    let aspect_emission_traces = if capture_patch_publication_traces {
+        derive_aspect_emission_traces(&patch.authoritative_record_patches, canonical_deltas)
+    } else {
+        Vec::new()
+    };
+    PublicationTraceCapture {
+        aspect_evaluation_traces,
+        aspect_emission_traces,
+    }
 }
 
 #[cfg(test)]

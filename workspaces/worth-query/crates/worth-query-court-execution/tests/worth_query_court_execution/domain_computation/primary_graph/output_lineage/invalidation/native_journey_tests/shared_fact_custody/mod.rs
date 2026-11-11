@@ -25,7 +25,7 @@ fn shared_original_facts_survive_restored_prerequisite_custody() {
         let status = AccountStatus::at("AccountStatus");
         let status = graph.layout_for_test().field_locator_for_test(status.entity(), status.aspect(), status.field())
             .unwrap().clone();
-        let (snapshot_handle, basis, identity, _facts, first, second) = handle.with_runtime_mut_for_test(&execution, |runtime| {
+        let (snapshot_handle, basis, identity, _facts, first, second) = handle.with_runtime_for_test(&execution, |runtime| {
             let (snapshot_handle, basis) = snapshot(runtime);
             let basis = Arc::new(basis);
             let identity = RecordedSettlementIdentity::retain_for_test(&SemanticSource::new_for_test((*world.application.runtime_for_test()).authority_identity_for_test().as_u64(), (*world.application.installed_schema_for_test()).binding_identity(), worth_query_execution::facade::domain_computation::WorthQueryOperationScopeEntityBinding::from_entity_for_test(entity), OutputBindingIdentity::declared_for_test("StatusOutput")), coordinate, 0);
@@ -54,7 +54,7 @@ fn shared_original_facts_survive_restored_prerequisite_custody() {
                 SourceSettlementCurrentness::Clean));
             assert!(first.claim_verified_checkpoint_root_for_test(owner).unwrap(),
                 "actual restored prerequisite custody must be established, not bypassed");
-        handle.with_runtime_mut_for_test(&execution, |runtime| {
+        handle.with_runtime_for_test(&execution, |runtime| {
             assert_eq!(ConsumedOutputEvidence::verify_many_with_admission_for_test(
                 &execution, &[first.clone(), second.clone()], owner, runtime, &snapshot_handle,
                 &basis,
@@ -72,7 +72,7 @@ fn shared_original_facts_survive_restored_prerequisite_custody() {
             assert_eq!(owner.retire_settlements_for_test(std::slice::from_ref(&identity)),
                 vec![identity]);
 
-        handle.with_runtime_mut_for_test(&execution, |runtime| {
+        handle.with_runtime_for_test(&execution, |runtime| {
             runtime.snapshots().release_snapshot(&snapshot_handle).unwrap();
         });
     }).expect("the native custody journey owns its installed host call");

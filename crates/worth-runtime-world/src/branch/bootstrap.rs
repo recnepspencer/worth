@@ -108,6 +108,7 @@ impl RuntimeWorldBootstrapIntent {
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum RuntimeWorldBootstrapNoEffectCause {
+    DurableBootstrapRequired,
     AlreadyBootstrapped,
     ForeignBasis,
     IncompatibleCorrespondence,

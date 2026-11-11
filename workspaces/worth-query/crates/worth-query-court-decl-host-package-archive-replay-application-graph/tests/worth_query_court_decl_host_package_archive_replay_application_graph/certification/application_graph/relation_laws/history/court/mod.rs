@@ -213,31 +213,28 @@ fn disclosed_physical_occurrences_and_deleted_generations_page_without_losing_ro
         let observed_page = page(&world, &entities, &mut cursor, &selected, &request_scope())
             .unwrap()
             .unwrap();
-        imported |= observed_page.is_root_import() && observed_page.entries().next().is_some();
+        if observed_page.is_root_import() {
+            assert_eq!(observed_page.product_commit(), Some(root.selected_commit()));
+            // f1809bdcfb's common completion is the imported component; the
+            // seed ancestors before the World root are outside this history.
+            assert!(observed_page.entries().next().is_none());
+            imported = true;
+        }
         actual.extend(events(&observed_page));
         if observed_page.is_complete() {
             break;
         }
     }
-    let mut original_entities = vec![
-        identities[&0],
-        identities[&1],
-        identities[&2],
-        identities[&3],
-    ];
-    original_entities.sort();
-    let mut expected = vec![Event {
+    let expected = vec![Event {
         commit: deleted.commit_reference().commit_id.0,
         entity: Some(identities[&1]),
         relation: None,
         structure: RecordStructuralChange::Deleted,
     }];
-    expected.extend(original_entities.into_iter().map(|id| Event {
-        commit: root_commit,
-        entity: Some(id),
-        relation: None,
-        structure: RecordStructuralChange::Created,
-    }));
+    assert!(
+        actual.iter().all(|event| event.commit != root_commit),
+        "the completion commit cannot invent seed creation occurrences"
+    );
     assert_eq!(
         actual, expected,
         "replacement must not lend record identity to the captured generation"

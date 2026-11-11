@@ -1,10 +1,9 @@
 //! Publication delta accounting traverses changed column/index paths, not occupied rows.
-use super::payload_allocation::{
-    aspect_version_bytes, diagnostic_enrichment_bytes, field_revision_bytes, visit_metadata,
-    visit_new_history_prefix,
-};
+use super::payload_allocation::{diagnostic_enrichment_bytes, visit_new_history_prefix};
 use super::{RecordArena, RecordKind};
-use crate::storage::substrate::{visit_new_inline_value, StorageAllocationVisitor};
+use crate::storage::substrate::{
+    visit_inline_value, visit_new_inline_value, StorageAllocationVisitor,
+};
 
 impl<K: RecordKind> RecordArena<K> {
     pub(crate) fn visit_new_diagnostic_allocations(
@@ -16,8 +15,8 @@ impl<K: RecordKind> RecordArena<K> {
             &previous.diagnostics_enrichment,
             visitor,
             &mut |entries, _, mut allocation, visitor| {
-                allocation.bytes += diagnostic_enrichment_bytes(entries);
-                visitor.visit(allocation);
+                allocation.add_owned_bytes(diagnostic_enrichment_bytes(entries));
+                allocation.visit(visitor);
             },
         );
     }
@@ -71,43 +70,57 @@ impl<K: RecordKind> RecordArena<K> {
             &previous.metadata_history,
             visitor,
             &mut |history, previous, allocation, visitor| {
-                if visitor.visit(allocation) {
+                if allocation.visit(visitor) {
                     if let Some(previous) = previous {
                         history.visit_new_allocations(
                             previous,
                             visitor,
                             &mut |metadata, _, allocation, visitor| {
-                                visit_metadata::<K>(metadata, allocation, visitor)
+                                let _ = metadata;
+                                allocation.visit(visitor);
                             },
                         );
                     } else {
-                        history.visit_allocations(false, visitor, &mut visit_metadata::<K>);
+                        history.visit_allocations(false, visitor, &mut |_, allocation, visitor| {
+                            allocation.visit(visitor);
+                        });
                     }
                 }
             },
         );
-        self.extra.visit_new_allocations(
-            &previous.extra,
-            visitor,
-            &mut |extra, _, mut allocation, visitor| {
-                allocation.bytes += K::extra_owned_allocation_bytes(extra);
-                visitor.visit(allocation);
-            },
-        );
+        self.extra
+            .visit_new_allocations(&previous.extra, visitor, &mut |_, _, _, _| {});
+        self.visit_new_extra_allocations(previous, visitor);
         self.aspect_versions.visit_new_allocations(
             &previous.aspect_versions,
             visitor,
-            &mut |versions, _, mut allocation, visitor| {
-                allocation.bytes += aspect_version_bytes(versions);
-                visitor.visit(allocation);
+            &mut |versions, previous, allocation, visitor| {
+                if let Some(previous) = previous {
+                    versions.visit_new_allocations(previous, visitor, &mut visit_new_inline_value);
+                } else {
+                    versions.visit_allocations(allocation.unique, visitor, &mut visit_inline_value);
+                }
             },
         );
         self.field_revisions.visit_new_allocations(
             &previous.field_revisions,
             visitor,
-            &mut |revisions, _, mut allocation, visitor| {
-                allocation.bytes += field_revision_bytes(revisions);
-                visitor.visit(allocation);
+            &mut |revisions, previous, allocation, visitor| {
+                if let Some(revisions) = revisions {
+                    if let Some(previous) = previous.and_then(Option::as_ref) {
+                        revisions.visit_new_allocations(
+                            previous,
+                            visitor,
+                            &mut visit_new_inline_value,
+                        );
+                    } else {
+                        revisions.visit_allocations(
+                            allocation.unique,
+                            visitor,
+                            &mut visit_inline_value,
+                        );
+                    }
+                }
             },
         );
     }

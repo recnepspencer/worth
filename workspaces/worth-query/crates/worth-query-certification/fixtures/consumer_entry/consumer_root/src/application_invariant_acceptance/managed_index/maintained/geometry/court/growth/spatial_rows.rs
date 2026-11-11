@@ -1,5 +1,6 @@
 //! Alternating real rows expose broad lexicographic unions between disjoint bands.
 use super::*;
+use crate::application_invariant_acceptance::managed_index::prefix_observation;
 const HIGH: i64 = 1_i64 << 40;
 type Authored = (String, Coordinates, Coordinates);
 #[test]
@@ -12,7 +13,7 @@ fn separated_alternating_rows_keep_checked_queries_sparse_through_cold_and_warm_
 }
 fn rows(count: u32) {
     let calls = Arc::new(provider::Calls::default());
-    let prefixes = Arc::new(prefix::Calls::default());
+    let prefixes = Arc::new(prefix_observation::Calls::default());
     let world = host::install_growth(
         prefixes.clone(),
         Arc::new(prefix_rule::Calls::new(prefixes)),

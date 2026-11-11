@@ -10,6 +10,6 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
         read: &RetainedOutputCurrentnessRead,
         receipt: Option<&WorthQueryApplicationCommitReceipt>,
     ) -> Result<(), WorthQueryOutputDemandDenial> {
-        Self::require_current_read(self, execution, relational, read, receipt)
+        Self::require_current_read(self, execution, relational, read, receipt.map(Into::into))
     }
 }

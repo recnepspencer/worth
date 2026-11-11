@@ -5,6 +5,7 @@ use worth_execution::ExecutionAllocationDenial;
 #[derive(Debug, Clone, PartialEq, Eq)]
 #[non_exhaustive]
 pub enum RelationalCanonicalCommitArtifactEncodeDenial {
+    Readmission(crate::durability::data::RelationalRecoveryStop),
     Frame(super::RelationalCanonicalCommitArtifactFrameRefusal),
     Request(crate::execution::RelationalExecutionDenialCause),
     StorageUnavailable(crate::storage::data::RelationalStorageUnavailable),
@@ -51,6 +52,7 @@ impl From<crate::durability::artifact_payload_emission::ArtifactPayloadEmissionD
 impl std::fmt::Display for RelationalCanonicalCommitArtifactEncodeDenial {
     fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
+            Self::Readmission(cause) => write!(formatter, "selected canonical source: {cause}"),
             Self::Frame(cause) => write!(formatter, "canonical artifact source frame: {cause:?}"),
             Self::Request(cause) => {
                 write!(formatter, "canonical artifact original request: {cause:?}")
@@ -88,6 +90,21 @@ impl std::error::Error for RelationalCanonicalCommitArtifactEncodeDenial {
         match self {
             Self::Allocation(denial) => Some(denial),
             _ => None,
+        }
+    }
+}
+
+impl From<worth_execution::ExecutionRequestArrayDenial>
+    for RelationalCanonicalCommitArtifactEncodeDenial
+{
+    fn from(cause: worth_execution::ExecutionRequestArrayDenial) -> Self {
+        match cause {
+            worth_execution::ExecutionRequestArrayDenial::Request(cause) => {
+                Self::Request(cause.into())
+            }
+            worth_execution::ExecutionRequestArrayDenial::Allocation(cause) => {
+                Self::Allocation(cause)
+            }
         }
     }
 }

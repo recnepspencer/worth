@@ -81,7 +81,9 @@ pub(in crate::domain_computation::primary_graph) fn selected_profile_root_is_cur
             execution,
             profile.family,
             profile.source_intent().source_subject(),
-            profile.source_intent().source_partition(),
+            worth_foundational::facade::CanonicalDigestId::new(
+                profile.source_intent().source_partition(),
+            ),
         )
         .map_err(Denial::SelectionRead)?;
     let Some(route) = route else {

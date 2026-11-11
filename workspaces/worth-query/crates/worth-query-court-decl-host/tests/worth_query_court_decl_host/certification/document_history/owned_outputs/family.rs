@@ -14,7 +14,7 @@ worth_query_structured_value_binding!(pub DenialBinding for Denial { identity: "
 worth_query_structured_value_binding!(pub ResultBinding for () { identity: "owned-outputs.producer-result.v1" });
 pub type Request<'a, 'p, 's> = WorthQueryApplicationRequest<'a, 'p, 's, Schema>;
 macro_rules! family {
-    ($module:ident, $ownership:ident, $direction:ident, $source_entity:ident, $source_facts:ident, $source_key:ident, $source_value:ident, $source_query:ident, $profile:literal, $initial:literal, $preserve:literal, $initial_op:ident, $preserve_op:ident,
+    ($module:ident, $ownership:ident, $direction:ident, $source_entity:ident, $source_key:ident, $source_value:ident, $source_query:ident, $profile:literal, $initial:literal, $preserve:literal, $initial_op:ident, $preserve_op:ident,
      $entity:ident, $facts:ident, $key:ident, $value:ident, $of:ident, $derive:expr $(, $settle:ident => $tree:ident)?) => {
         pub mod $module {
             use super::super::schema::{
@@ -163,7 +163,6 @@ family!(
     SourceScopeCascade,
     output,
     Model,
-    ModelFacts,
     ModelKey,
     ModelValue,
     producer_model,
@@ -185,7 +184,6 @@ family!(
     SourceScopeCascade,
     output,
     Model,
-    ModelFacts,
     ModelKey,
     ModelValue,
     producer_model,
@@ -208,7 +206,6 @@ family!(
     Independent,
     none,
     Member,
-    MemberFacts,
     MemberKey,
     MemberValue,
     member_public,
@@ -231,7 +228,6 @@ family!(
     Independent,
     none,
     Member,
-    MemberFacts,
     MemberKey,
     MemberValue,
     member,
@@ -254,7 +250,6 @@ family!(
     SourceScopeCascade,
     output,
     Model,
-    ModelFacts,
     ModelKey,
     ModelValue,
     model,
@@ -276,7 +271,6 @@ family!(
     SourceScopeCascade,
     source,
     Member,
-    MemberFacts,
     MemberKey,
     MemberValue,
     member_public,
@@ -299,7 +293,6 @@ family!(
     SourceScopeCascade,
     source,
     Member,
-    MemberFacts,
     MemberKey,
     MemberValue,
     member,
@@ -322,7 +315,6 @@ family!(
     SourceScopeCascade,
     source,
     FirstOutput,
-    FirstFacts,
     FirstKey,
     FirstValue,
     first_output,
@@ -343,7 +335,6 @@ family!(
     SourceScopeCascade,
     source,
     FirstOutput,
-    FirstFacts,
     FirstKey,
     FirstValue,
     first_discovery,
@@ -365,7 +356,6 @@ family!(
     SourceScopeCascade,
     output,
     Model,
-    ModelFacts,
     ModelKey,
     ModelValue,
     producer_model,

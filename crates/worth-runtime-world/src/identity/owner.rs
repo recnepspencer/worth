@@ -1,17 +1,118 @@
 use std::sync::atomic::{AtomicU64, Ordering};
 
-/// One process-local live Runtime World composition owner.
+/// A process-local live owner handle. It never implements DurableIdentity.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
-pub struct RuntimeWorldOwnerIdentity(u64);
-
-impl RuntimeWorldOwnerIdentity {
-    const fn from_ordinal(ordinal: u64) -> Self {
-        Self(ordinal)
-    }
-
-    /// Descriptive owner ordinal for stable identity derivation.
+pub struct EphemeralWorldOwnerIdentity(u64);
+impl EphemeralWorldOwnerIdentity {
     pub const fn get(self) -> u64 {
         self.0
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+enum OwnerScope {
+    Ephemeral(EphemeralWorldOwnerIdentity),
+    Home(worth_foundational::facade::DurableWorldOwnerIdentity),
+}
+
+/// Live identity carriage. Home authority equality includes its admitted
+/// incarnation. Durable data uses the separate Foundation identity instead.
+#[derive(Debug, Clone, Copy)]
+pub struct RuntimeWorldOwnerIdentity {
+    scope: OwnerScope,
+    instance: EphemeralWorldOwnerIdentity,
+    home_fence: Option<worth_proof::HomeIncarnationFence>,
+}
+impl RuntimeWorldOwnerIdentity {
+    const fn from_ordinal(ordinal: u64) -> Self {
+        let instance = EphemeralWorldOwnerIdentity(ordinal);
+        Self {
+            scope: OwnerScope::Ephemeral(instance),
+            instance,
+            home_fence: None,
+        }
+    }
+    /// Process-local observation ordinal, not a durable identity encoding.
+    pub const fn get(self) -> u64 {
+        self.instance.get()
+    }
+    pub const fn durable(self) -> Option<worth_foundational::facade::DurableWorldOwnerIdentity> {
+        match self.scope {
+            OwnerScope::Ephemeral(_) => None,
+            OwnerScope::Home(home) => Some(home),
+        }
+    }
+    pub(crate) fn for_admitted_home(
+        home: worth_foundational::facade::DurableWorldOwnerIdentity,
+        incarnation: worth_foundational::facade::HomeIncarnation,
+    ) -> Result<Self, RuntimeWorldIdentityExhaustion> {
+        let instance = issue_owner_identity()?.instance;
+        Ok(Self {
+            scope: OwnerScope::Home(home),
+            instance,
+            home_fence: Some(incarnation.fence()),
+        })
+    }
+
+    /// The fence carried by live Home authorities; never a durable identity.
+    pub const fn home_incarnation_fence(self) -> Option<worth_proof::HomeIncarnationFence> {
+        self.home_fence
+    }
+
+    pub fn admit_incarnation(
+        self,
+        presented: Self,
+    ) -> Result<(), worth_proof::HomeIncarnationDenial> {
+        if let (OwnerScope::Home(current), OwnerScope::Home(other)) = (self.scope, presented.scope)
+            && current != other
+        {
+            return Err(worth_proof::HomeIncarnationDenial::ForeignHome);
+        }
+        match (self.home_fence, presented.home_fence) {
+            (Some(current), Some(presented)) => current.admit(presented),
+            (None, None) if self.scope == presented.scope => Ok(()),
+            (None, None) | (Some(_), None) | (None, Some(_)) => {
+                Err(worth_proof::HomeIncarnationDenial::ForeignHome)
+            }
+        }
+    }
+
+    pub(crate) fn admit_branch_authority(
+        self,
+        presented: Self,
+    ) -> Result<(), crate::branch::RuntimeWorldBranchAdmissionDenial> {
+        use crate::branch::RuntimeWorldBranchAdmissionDenial as Denial;
+        self.admit_incarnation(presented)
+            .map_err(|cause| match cause {
+                worth_proof::HomeIncarnationDenial::ForeignHome => Denial::ForeignOwner,
+                worth_proof::HomeIncarnationDenial::StaleIncarnation => Denial::StaleIncarnation,
+            })?;
+        if self != presented {
+            return Err(Denial::ForeignOwner);
+        }
+        Ok(())
+    }
+}
+impl PartialEq for RuntimeWorldOwnerIdentity {
+    fn eq(&self, other: &Self) -> bool {
+        self.scope == other.scope && self.home_fence == other.home_fence
+    }
+}
+impl Eq for RuntimeWorldOwnerIdentity {}
+impl PartialOrd for RuntimeWorldOwnerIdentity {
+    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+        Some(self.cmp(other))
+    }
+}
+impl Ord for RuntimeWorldOwnerIdentity {
+    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
+        (self.scope, self.home_fence).cmp(&(other.scope, other.home_fence))
+    }
+}
+impl std::hash::Hash for RuntimeWorldOwnerIdentity {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        std::hash::Hash::hash(&self.scope, state);
+        std::hash::Hash::hash(&self.home_fence, state);
     }
 }
 
@@ -54,12 +155,12 @@ static NEXT_OWNER_IDENTITY: AtomicU64 = AtomicU64::new(0);
 /// from owner-issued component admission identities rather than a cursor.
 #[derive(Debug)]
 pub(crate) struct RuntimeWorldIdentityIssuer {
-    owner: RuntimeWorldOwnerIdentity,
-    next_branch_incarnation: u64,
-    next_composite_commit: u64,
-    next_bootstrap_attempt: u64,
-    next_publication_attempt: u64,
-    next_product_unpublished: u64,
+    pub(super) owner: RuntimeWorldOwnerIdentity,
+    pub(super) next_branch_incarnation: u64,
+    pub(super) next_composite_commit: u64,
+    pub(super) next_bootstrap_attempt: u64,
+    pub(super) next_publication_attempt: u64,
+    pub(super) next_product_unpublished: u64,
 }
 
 impl RuntimeWorldIdentityIssuer {
@@ -94,6 +195,10 @@ impl RuntimeWorldIdentityIssuer {
             .checked_add(1)
             .ok_or(RuntimeWorldIdentityExhaustion::new(family))?;
         Ok(current)
+    }
+
+    pub(crate) fn branch_incarnation_frontier(&self) -> u64 {
+        self.next_branch_incarnation
     }
 
     pub(crate) fn branch_incarnation(

@@ -22,6 +22,17 @@ pub type PhysicalMutationPreparationOutcome = ProofOutcome<
     PhysicalMutationPreparationFailure,
 >;
 
+/// A preparation that issued no successful result. Record-door failures carry
+/// only these outcomes, never a prepared mutation or a terminal success.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum PhysicalMutationPreparationRefusal {
+    Denied(PhysicalMutationPreparationDenial),
+    Deferred(PhysicalMutationPreparationDeferred),
+    Stale(PhysicalMutationPreparationStale),
+    RebindRequired(PhysicalMutationPreparationRebindRequired),
+    Failed(PhysicalMutationPreparationFailure),
+}
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum PhysicalMutationPreparationDenial {
     RecordAppend(RecordAppendDenial),

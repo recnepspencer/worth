@@ -7,6 +7,8 @@ use worth_relational::facade::branch::{
     RelationalBranchBasisDescriptor, RelationalBranchRetentionLease,
 };
 use worth_relational::facade::history::CommitId;
+mod home_retirement;
+use home_retirement::RetirableReceiptBasis;
 
 const RETAINED_RECEIPT_BASIS_LIMIT: usize = 64;
 
@@ -55,8 +57,9 @@ impl Eq for WorthQueryRetainedApplicationCommitBasis {}
 #[derive(Default)]
 pub struct WorthQueryReceiptBasisRetentionStore {
     order: VecDeque<CommitId>,
-    by_commit: BTreeMap<CommitId, WorthQueryRetainedApplicationCommitBasis>,
-    mandatory: BTreeMap<CommitId, (WorthQueryRetainedApplicationCommitBasis, usize)>,
+    by_commit: BTreeMap<CommitId, RetirableReceiptBasis>,
+    mandatory: BTreeMap<CommitId, (RetirableReceiptBasis, usize)>,
+    retirement_cursor: Option<CommitId>,
 }
 
 impl WorthQueryReceiptBasisRetentionStore {
@@ -105,7 +108,8 @@ impl WorthQueryReceiptBasisRetentionStore {
         lease: RelationalBranchRetentionLease,
         dispatch_claims: usize,
     ) {
-        let retention = WorthQueryRetainedApplicationCommitBasis::new(lease);
+        let retention =
+            RetirableReceiptBasis::new(WorthQueryRetainedApplicationCommitBasis::new(lease));
         if dispatch_claims != 0 {
             assert!(
                 self.mandatory
@@ -137,7 +141,7 @@ impl WorthQueryReceiptBasisRetentionStore {
             .get(&commit)
             .map(|(basis, _)| basis)
             .or_else(|| self.by_commit.get(&commit))
-            .cloned()
+            .map(RetirableReceiptBasis::retain_serving)
     }
 
     pub(in crate::domain_computation::primary_graph) fn retained_count(&self) -> usize {

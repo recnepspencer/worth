@@ -1,21 +1,22 @@
 //! Bind the installed producer declarations to the active Native publication handle.
 use super::super::{
     application_contribution::WorthQueryInstalledApplicationProducerRegistry,
-    WorthQueryPrimaryGraphBootstrap, WorthQueryPrimaryGraphInstallationDenial as Denial,
+    WorthQueryPrimaryGraphInstallationDenial as Denial,
     WorthQueryPrimaryGraphInstallationDenialKind as Kind,
 };
 use worth_query_installation::facade::ApplicationSchema;
 
 pub(super) fn seal<S: ApplicationSchema>(
-    graph: &mut WorthQueryPrimaryGraphBootstrap<S>,
+    layout: &super::super::WorthQueryPrimaryGraphLayout,
+    publication: &mut Option<
+        std::sync::Arc<super::super::root::application_publication::ApplicationPublication>,
+    >,
     producers: &WorthQueryInstalledApplicationProducerRegistry<S>,
 ) -> Result<(), Denial> {
     let declarations = producers
         .source_scope_owned_producers()
         .map(|(producer, entity)| {
-            graph
-                .graph
-                .layout
+            layout
                 .entity_kind(entity)
                 .map(|kind| (producer.to_owned(), kind))
                 .ok_or_else(|| {
@@ -26,7 +27,7 @@ pub(super) fn seal<S: ApplicationSchema>(
     if declarations.is_empty() {
         return Ok(());
     }
-    let publisher = graph.graph.application_publication.take().ok_or_else(|| {
+    let publisher = publication.take().ok_or_else(|| {
         Denial::new(
             Kind::ProducerOwnershipRequiresEntitySourceScope,
             declarations[0].0.clone(),
@@ -38,7 +39,7 @@ pub(super) fn seal<S: ApplicationSchema>(
             "source-scope ownership must be sealed before publisher sharing",
         )
     })?;
-    graph.graph.application_publication = Some(std::sync::Arc::new(
+    *publication = Some(std::sync::Arc::new(
         super::super::root::application_publication::ApplicationPublication::recovered(
             publisher.owner,
             publisher

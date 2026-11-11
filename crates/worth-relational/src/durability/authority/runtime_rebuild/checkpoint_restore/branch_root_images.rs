@@ -22,8 +22,12 @@ pub(super) fn restore_branch_root_images(
     restored: &mut RelationalRuntime,
     checkpoint: &DurableCheckpoint,
     work: &mut CheckpointRestoreWork,
+    original_schemas: Option<&super::super::original_schemas::OriginalSchemaGraph>,
 ) -> Result<RestoredBranchRootImages, crate::durability::data::RelationalRecoveryStop> {
-    let mut schema_catalog = RootSchemaReadmissionCatalog::readmit(checkpoint)?;
+    let mut schema_catalog = match original_schemas {
+        Some(_) => None,
+        None => Some(RootSchemaReadmissionCatalog::readmit(checkpoint)?),
+    };
     let mut partitions = BTreeMap::new();
     let mut schema_authorities = BTreeMap::new();
     let mut envelopes = BTreeMap::new();
@@ -64,7 +68,21 @@ pub(super) fn restore_branch_root_images(
             .into());
         }
         work.root_images_verified += 1;
-        let schema_authority = schema_catalog.readmit_root(lane, restored, image, envelope)?;
+        let schema_authority = match original_schemas {
+            Some(graph) => {
+                super::root_schema_readmission::validate_root_image_integrity(lane, image)?;
+                let schema = graph.schemas.rows.get(&image.schema_carrier_digest)
+                    .ok_or_else(|| corrupt_checkpoint("source root carrier unavailable".into()))?;
+                if !schema.matches(&envelope.schema_authority)
+                    || schema.descriptor_semantics_version() != envelope.descriptor_semantics_version {
+                    return Err(corrupt_checkpoint("source root schema binding mismatch".into()).into());
+                }
+                schema.clone()
+            }
+            None => schema_catalog.as_mut()
+                .expect(/* Proof: the local catalog is constructed above exactly when original_schemas is None. */ "ordinary schema admission owns its catalog")
+                .readmit_root(lane, execution, restored, image, envelope)?,
+        };
         let root_contracts = crate::durability::checkpoints::aspect_state_images::CheckpointAspectContractCatalog::from_contracts(
             schema_authority.retained_aspect_contracts(),
         )?;

@@ -33,11 +33,14 @@ where
         .identity
         .clone();
     let receipt = match resolution.into_resolution() {
-        WorthQueryApplicationIdempotencyResolution::AlreadyCommitted(receipt) => Some(receipt),
+        WorthQueryApplicationIdempotencyResolution::RecoveredCommitted(receipt) => return Ok(Some(WorkflowProgressOutcome::RecoveredCommitted(receipt))),
+        WorthQueryApplicationIdempotencyResolution::ProductUnpublished(owner) => return Ok(Some(WorkflowProgressOutcome::Application(WorthQueryApplicationUncommitted::ProductUnpublished(owner)))),
+            WorthQueryApplicationIdempotencyResolution::ProductPreparationPending(owner) => return Ok(Some(WorkflowProgressOutcome::Application(WorthQueryApplicationUncommitted::ProductPreparationPending(owner)))),
         WorthQueryApplicationIdempotencyResolution::IntentDrift => return Ok(Some(
             WorkflowProgressOutcome::Application(WorthQueryApplicationUncommitted::Denied(
                 crate::domain_computation::primary_graph::WorthQueryApplicationCommitDenial::idempotency_intent_drift())))),
-        WorthQueryApplicationIdempotencyResolution::Unseen => {
+        WorthQueryApplicationIdempotencyResolution::ReleasedOriginal(_) => return Ok(Some(WorkflowProgressOutcome::Application(WorthQueryApplicationUncommitted::Denied(crate::domain_computation::primary_graph::WorthQueryApplicationCommitDenial::original_effect_released())))),
+            WorthQueryApplicationIdempotencyResolution::Unseen => {
             super::super::super::publication::transition_entity_in_receipt(original, required.transition_identity(), &locator)
                 .map(|_| original.clone())
         }

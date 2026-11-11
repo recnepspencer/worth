@@ -6,7 +6,7 @@ use worth_store_physical_format::{
     DropSetManifestV1, PersistedRecordIdentity, BLOB_TREE_NODE_FRAME_MAX_BYTES,
 };
 
-use super::super::super::{context::PlanningContext, resolved_basis::ResolvedPlanningBasis};
+use super::super::super::{context::PlanningContext, resolved_basis::ResolvedPlanningState};
 use super::super::historical_publication::{remaining_observation, unobserved, HistoricalFailure};
 use super::record;
 use crate::orchestration::reader_limit::UNCOUNTED_READS;
@@ -21,7 +21,7 @@ pub(super) use reservation::ExpectedReserved;
 
 pub(super) fn verify_source(
     context: PlanningContext,
-    basis: &mut ResolvedPlanningBasis,
+    basis: &mut ResolvedPlanningState,
     manifest: &DropSetManifestV1,
     declaration: BlobSessionDeclarationV1,
     descriptor_record: PersistedRecordIdentity,
@@ -42,7 +42,7 @@ pub(super) fn verify_source(
 
 pub(super) fn verify_manifest_residue(
     context: PlanningContext,
-    basis: &mut ResolvedPlanningBasis,
+    basis: &mut ResolvedPlanningState,
     manifest: &DropSetManifestV1,
     declaration: BlobSessionDeclarationV1,
     manifest_record: PersistedRecordIdentity,
@@ -130,7 +130,7 @@ impl SourceInspectionKind {
 
 fn scan_source(
     mut context: PlanningContext,
-    basis: &mut ResolvedPlanningBasis,
+    basis: &mut ResolvedPlanningState,
     manifest: &DropSetManifestV1,
     declaration: BlobSessionDeclarationV1,
     kind: SourceInspectionKind,

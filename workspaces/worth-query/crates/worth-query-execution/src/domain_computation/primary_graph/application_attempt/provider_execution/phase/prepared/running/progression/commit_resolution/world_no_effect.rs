@@ -7,6 +7,7 @@ use worth_runtime_world::facade::{NoEffectCause as Cause, NoEffectCompositePubli
 
 pub(super) fn classify(terminal: NoEffectCompositePublication) -> Outcome {
     let cause = match terminal.cause() {
+        Cause::DurableOpenRequired => QueryCause::DurableOpenRequired,
         Cause::StaleExpectedProductHead => {
             return Outcome::ProductStale(
                 crate::domain_computation::WorthQueryProductStaleApplication::new(terminal),
@@ -23,7 +24,11 @@ pub(super) fn classify(terminal: NoEffectCompositePublication) -> Outcome {
         Cause::ExecutionRequest(cause) => QueryCause::ExecutionRequest(cause),
         Cause::OwnerDeniedBeforeEffect => QueryCause::OwnerDeniedBeforeEffect,
         Cause::CurrentReadDependency(cause) => QueryCause::CurrentReadDependency(cause),
+        Cause::StaleIncarnation => QueryCause::StaleIncarnation,
         Cause::CorrespondenceRebindRequired => QueryCause::CorrespondenceRebindRequired,
+        Cause::CorrespondenceAdmissionDenied(cause) => {
+            QueryCause::CorrespondenceAdmissionDenied(cause)
+        }
         Cause::ReferenceGenerationExhausted => QueryCause::ReferenceGenerationExhausted,
         Cause::CapacityExhausted => QueryCause::CapacityExhausted,
         Cause::OwnerUnavailable => QueryCause::OwnerUnavailable,

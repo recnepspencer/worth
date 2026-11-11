@@ -5,6 +5,7 @@ mod denial;
 mod handle;
 pub(crate) mod identity;
 mod mint;
+mod recorded_status;
 
 pub use binding::WorthQueryRecoveryHandleBinding;
 pub use denial::{WorthQueryRecoveryHandleDenial, WorthQueryRecoveryHandleDenialKind};

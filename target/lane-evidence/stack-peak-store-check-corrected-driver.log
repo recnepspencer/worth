@@ -1,0 +1,14 @@
+COMMAND: ["python", "target/lane-evidence/stack_peak_store_check.py"]
+HEAD: 7eeb6fa326b46f1924c1defe9670261245cb1d92
+CLEAN: false
+START: 2026-11-07T09:54:25.451378+00:00
+ENV: removed stale external linker override; RUST_MIN_STACK unset in parent
+C_FREE_BYTES 353171628032
+prebuild: cargo check --message-format=json --manifest-path "C:\programming\worth worktees\worktrees\m3-host-home\workspaces\worth-store\Cargo.toml" -p worth-store --tests --keep-going --unit-graph -Z unstable-options
+prebuild: cargo check --message-format=json --manifest-path "C:\programming\worth worktees\worktrees\m3-host-home\workspaces\worth-store\Cargo.toml" -p worth-store --tests --keep-going
+    Checking worth-store v0.1.0 (C:\programming\worth worktees\worktrees\m3-host-home\workspaces\worth-store\crates\worth-store)
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 6.25s
+DIAGNOSTICS []
+
+END: 2026-11-07T09:54:34.519291+00:00
+EXIT: 0

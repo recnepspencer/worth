@@ -44,13 +44,15 @@ pub(in crate::domain_computation::primary_graph) fn require_complete_binding_inv
     expected: usize,
     bindings: &[Box<dyn WorthQueryPendingConditionalOperation<Schema>>],
     output_readiness_count: usize,
+    definition_count: usize,
 ) -> Result<(), WorthQueryConditionalRuntimeInstallationDenial> {
     let unique = bindings
         .iter()
         .map(|binding| binding.binding_identity())
         .collect::<BTreeSet<_>>();
-    if bindings.len().saturating_add(output_readiness_count) == expected
-        && unique.len().saturating_add(output_readiness_count) == expected
+    let non_temporal = output_readiness_count.saturating_add(definition_count);
+    if bindings.len().saturating_add(non_temporal) == expected
+        && unique.len().saturating_add(non_temporal) == expected
     {
         Ok(())
     } else {
@@ -58,7 +60,7 @@ pub(in crate::domain_computation::primary_graph) fn require_complete_binding_inv
             WorthQueryConditionalRuntimeInstallationDenialKind::IncompleteBindingInventory,
             format!(
                 "expected {expected} exact conditional bindings, admitted {}",
-                unique.len().saturating_add(output_readiness_count)
+                unique.len().saturating_add(non_temporal)
             ),
         ))
     }

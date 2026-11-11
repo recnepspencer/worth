@@ -6,9 +6,12 @@ fn mint_and_repeat_inspection_leave_recovery_work_at_zero() {
     world
         .transport
         .under(FaultScript::CommitThenLoseResponse, PATIENT);
-    let receipt = world.commit_notification(89);
+    let receipt_closed = world.commit_notification(89);
+    let receipt = receipt_closed
+        .live_receipt()
+        .expect("fresh source retains its full native owner");
     let aftermath = installed_notify_death_aftermath(&world.fixture.world.runtime);
-    let handle = world.open_recovery(&receipt);
+    let handle = world.open_recovery(receipt);
     assert_eq!(handle.installed_operation(), aftermath.operation_slot());
     let specialist = world.fixture.authenticate_specialist();
     let action = world.specialist_action();

@@ -132,7 +132,7 @@ where
         self.graph.clear_branch_mutation_nodes();
 
         let authority = AuthorityState {
-            graph: *std::mem::take(&mut self.graph),
+            graph: std::mem::take(&mut self.graph),
             config: std::mem::take(&mut self.config),
         };
         let checkpoint_policy = self.checkpoint.policy().clone();
@@ -154,3 +154,6 @@ where
             .capture_active_state(authority, derived, ancestry, mutation_ledger))
     }
 }
+#[cfg(test)]
+#[path = "branch_state_capture_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;

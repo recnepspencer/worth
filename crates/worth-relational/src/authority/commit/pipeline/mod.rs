@@ -2,6 +2,7 @@ mod artifact_execution;
 mod authority_context;
 mod boundary_validation;
 mod bulk_mutation_telemetry;
+mod candidate_preparation;
 mod draft_execution;
 mod draft_preparation_phase;
 mod execution;
@@ -11,17 +12,16 @@ mod history_preparation;
 mod history_resolution_phase;
 mod merge_draft;
 mod mutation_execution;
+mod phase_backing;
 mod publication_execution;
 mod rejection;
 mod request_resources;
 mod result_assembly;
+mod semantic_result;
 mod snapshot_validation;
 
 pub(crate) use authority_context::AuthoritativeCommitContext;
-pub(crate) use execution::{
-    execute_authoritative_commit, prepare_consulted_authoritative_commit,
-    publish_prepared_authoritative_commit,
-};
+pub(crate) use execution::{execute_authoritative_commit, publish_prepared_authoritative_commit};
 pub(crate) use publication_execution::publish_commit_execution;
 pub(crate) use publication_execution::PreparedCommitPublicationCompletion;
 pub(crate) use publication_execution::PreparedCommitPublicationExecution;
@@ -33,3 +33,10 @@ mod request_checkpoints;
 #[cfg(test)]
 pub(crate) use request_checkpoints::observation as stage_observation;
 pub(crate) use request_checkpoints::{consult_stage, CommitStage};
+
+pub(crate) use candidate_preparation::prepare_consulted_authoritative_commit;
+pub use phase_backing::RelationalCommitPhaseBackingForTest;
+pub(crate) use phase_backing::{CommitPhaseBacking, CommitPhaseReservation};
+#[cfg(test)]
+#[path = "mod_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;

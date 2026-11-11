@@ -1,0 +1,27 @@
+{
+  "before_tree": "f9d6ed682b817fa60ddef9e294d1a4ff321beeeb",
+  "after_tree": "3349dc1c2a1754ff67efa085a0a48cca95c03644",
+  "changed_compiler_inputs": [
+    "crates/worth-court-relational-certification/tests/worth_court_relational_certification/cost/relational/incremental_indexes/fixture.rs",
+    "workspaces/worth-query/crates/worth-query-court-decl-host/tests/worth_query_court_decl_host/certification/document_history/owned_outputs/family.rs",
+    "workspaces/worth-query/crates/worth-query-court-decl-host/tests/worth_query_court_decl_host/certification/document_history/owned_outputs/family/phase.rs",
+    "workspaces/worth-query/crates/worth-query-court-decl-host/tests/worth_query_court_decl_host/certification/document_history/owned_outputs/predecessor.rs",
+    "workspaces/worth-query/crates/worth-query-court-decl-host/tests/worth_query_court_decl_host/certification/document_history/owned_outputs/predecessor/program.rs",
+    "workspaces/worth-store/crates/worth-store-physical-certification/src/scenario/canonical_basis.rs",
+    "workspaces/worth-store/crates/worth-store-testkit-application-oracle/src/host_observation/semantic_text.rs"
+  ],
+  "root": {
+    "public_library_changes": false,
+    "test_package": "worth-court-relational-certification",
+    "focused_check": "master2-r13-root-private-check.log"
+  },
+  "query": {
+    "public_library_changes": false,
+    "test_package": "worth-query-court-decl-host",
+    "focused_check": "master2-r13-query-private-check.log"
+  },
+  "store": {
+    "affected_library_changes": true,
+    "full_check": "master2-r13-store-check.log"
+  }
+}

@@ -72,8 +72,8 @@ impl RelationalReference {
             })
             .build()
             .expect("valid native runtime configuration");
+        let execution = worth_execution::ExecutionRequest::serial(&request);
         {
-            let execution = worth_execution::ExecutionRequest::serial(&request);
             let mut generator = Xorshift(seed | 1);
             let mut live: Vec<EntityId> = Vec::new();
             for step in 0..commits {
@@ -110,9 +110,7 @@ impl RelationalReference {
         }
         let artifacts = runtime
             .durability()
-            .canonical_commit_artifacts(
-                worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-            )
+            .canonical_commit_artifacts(&execution)
             .map(|artifact| {
                 artifact
                     .expect("retained commits encode")

@@ -15,6 +15,153 @@ pub struct RelationalBranchBasisPort {
 }
 
 impl RelationalBranchBasisPort {
+    pub fn capture_interim_bootstrap_component(
+        &self,
+        request: &worth_execution::ExecutionRequest<'_, '_>,
+        continuation: &crate::durability::authority::NativeInterimBootstrapContinuation,
+        capture: &crate::durability::authority::CapturedNativeInterimAdmission,
+    ) -> Result<
+        crate::durability::authority::CapturedNativeInterimComponent,
+        crate::durability::checkpoint_admission::RelationalCheckpointAdmissionRefusal,
+    > {
+        let runtime = self.admitted_runtime().map_err(|_| crate::durability::checkpoint_admission::RelationalCheckpointAdmissionRefusal::OwnerUnavailable)?;
+        continuation.capture_current(&runtime, capture, request)
+    }
+    pub fn install_interim_bootstrap_receiver(
+        &self,
+        request: &worth_execution::ExecutionRequest<'_, '_>,
+        continuation: &crate::durability::authority::NativeInterimBootstrapContinuation,
+        receiver: &crate::durability::authority::AdmittedNativeInterimReceiver,
+        basis: &AdmittedRelationalBranchBasis,
+    ) -> Result<(), crate::durability::checkpoint_admission::RelationalCheckpointAdmissionRefusal>
+    {
+        let runtime = self.admitted_runtime().map_err(|_| crate::durability::checkpoint_admission::RelationalCheckpointAdmissionRefusal::OwnerUnavailable)?;
+        continuation.install_receiver(&runtime, receiver, basis, request)
+    }
+    pub fn capture_interim_current_memory_component(
+        &self,
+        request: &worth_execution::ExecutionRequest<'_, '_>,
+        capture: &crate::durability::authority::CapturedNativeInterimAdmission,
+        component: &crate::branch::ObservedRelationalMemoryComponent,
+    ) -> Result<
+        crate::durability::authority::CapturedNativeInterimComponent,
+        crate::branch::RelationalRecordedComponentRefusal,
+    > {
+        let runtime = self
+            .admitted_runtime()
+            .map_err(crate::branch::RelationalRecordedComponentRefusal::Basis)?;
+        capture.capture_current_component(&runtime, component, request)
+    }
+    pub fn capture_interim_memory_component(
+        &self,
+        request: &worth_execution::ExecutionRequest<'_, '_>,
+        capture: &crate::durability::authority::CapturedNativeInterimAdmission,
+        component: &crate::branch::ObservedRelationalMemoryComponent,
+    ) -> Result<
+        crate::durability::authority::CapturedNativeInterimComponent,
+        crate::branch::RelationalRecordedComponentRefusal,
+    > {
+        let runtime = self
+            .admitted_runtime()
+            .map_err(crate::branch::RelationalRecordedComponentRefusal::Basis)?;
+        capture.capture_component(&runtime, component, request)
+    }
+
+    pub fn readmit_interim_memory_component(
+        &self,
+        request: &worth_execution::ExecutionRequest<'_, '_>,
+        receiver: &crate::durability::authority::AdmittedNativeInterimReceiver,
+        component: &crate::durability::authority::CapturedNativeInterimComponent,
+    ) -> Result<
+        crate::branch::ObservedRelationalMemoryComponent,
+        crate::durability::checkpoint_admission::RelationalCheckpointAdmissionRefusal,
+    > {
+        let runtime = self.admitted_runtime().map_err(|_| crate::durability::checkpoint_admission::RelationalCheckpointAdmissionRefusal::OwnerUnavailable)?;
+        receiver.readmit_component(&runtime, component, request)
+    }
+    pub(super) fn matches_home_retirement_owner(
+        &self,
+        owner: &crate::runtime::RelationalRuntime,
+    ) -> bool {
+        self.owner.matches_owner(owner)
+    }
+
+    /// Begin cleanup without observing another runtime or granting close authority.
+    pub fn begin_commit_result_snapshot_cleanup(
+        &self,
+        result: std::sync::Arc<crate::transactions::data::CommitResult>,
+    ) -> super::RelationalCommitResultSnapshotCleanup {
+        super::RelationalCommitResultSnapshotCleanup::new(self.owner.clone(), result)
+    }
+    /// Release only this immutable native-issued result's original registration.
+    pub fn release_commit_result_snapshot(
+        &self,
+        result: &crate::transactions::data::CommitResult,
+    ) -> Result<
+        super::RelationalCommitResultSnapshotRelease,
+        super::RelationalCommitResultSnapshotReleaseDenial,
+    > {
+        let runtime = self
+            .admitted_runtime()
+            .map_err(super::RelationalCommitResultSnapshotReleaseDenial::Owner)?;
+        super::result_snapshot_release::release(&runtime, result)
+    }
+
+    pub fn observe_memory_component(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        basis: &AdmittedRelationalBranchBasis,
+    ) -> Result<
+        crate::branch::ObservedRelationalMemoryComponent,
+        crate::branch::RelationalRecordedComponentRefusal,
+    > {
+        self.admitted_runtime()
+            .map_err(crate::branch::RelationalRecordedComponentRefusal::Basis)?
+            .observe_memory_component(execution, basis)
+    }
+    pub fn export_memory_component(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        component: &crate::branch::ObservedRelationalMemoryComponent,
+    ) -> Result<
+        crate::branch::RecordedRelationalComponentReference,
+        crate::branch::RelationalRecordedComponentRefusal,
+    > {
+        self.admitted_runtime()
+            .map_err(crate::branch::RelationalRecordedComponentRefusal::Basis)?
+            .export_memory_component(execution, component)
+    }
+
+    /// Describe the original owner-admitted pinned subject independently of
+    /// later branch advancement. This creates no recovery or durability proof.
+    pub fn export_recorded_retained_component(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        basis: &AdmittedRelationalBranchBasis,
+    ) -> Result<
+        crate::branch::RecordedRelationalComponentReference,
+        crate::branch::RelationalRecordedComponentRefusal,
+    > {
+        self.admitted_runtime()
+            .map_err(crate::branch::RelationalRecordedComponentRefusal::Basis)?
+            .export_recorded_retained_component(execution, basis)
+    }
+
+    /// Record one exact current component for durable composition. This is
+    /// descriptive export only; readmission still belongs to Native recovery.
+    pub fn export_recorded_current_component(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        basis: &AdmittedRelationalBranchBasis,
+    ) -> Result<
+        crate::branch::RecordedRelationalComponentReference,
+        crate::branch::RelationalRecordedComponentRefusal,
+    > {
+        self.admitted_runtime()
+            .map_err(crate::branch::RelationalRecordedComponentRefusal::Basis)?
+            .export_recorded_current_component(execution, basis)
+    }
+
     pub(super) fn new(owner: RelationalOwnerServiceBinding) -> Self {
         Self { owner }
     }

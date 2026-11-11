@@ -48,6 +48,8 @@ impl RelationalRegionResidency {
             history_presence,
             partition,
             commitment,
+            _history_custody: None,
+            _memory: None,
             kind_indexes,
         });
         let cell = Arc::new(Self {
@@ -55,17 +57,19 @@ impl RelationalRegionResidency {
             checkpoint_bindings: Mutex::new(Default::default()),
             backing: None,
             head_readmission: Some(readmission),
-            _backing_custody: None,
             raw_head: Mutex::new(None),
             raw_full: Mutex::new(None),
-            state: Mutex::new(ResidencyState::Head {
-                region: region.clone(),
-            }),
+            state: Mutex::new(RegionState::new(
+                ResidencyState::Head {
+                    region: region.clone(),
+                },
+                None,
+            )),
             damage: OnceLock::new(),
             symbol_inheritance: OnceLock::new(),
             symbol_aliases: OnceLock::new(),
-            symbol_identity: Arc::new(()),
             leases: AtomicUsize::new(1),
+            _control_memory: None,
         });
         RelationalResidencyLease::accepted(cell, region)
     }

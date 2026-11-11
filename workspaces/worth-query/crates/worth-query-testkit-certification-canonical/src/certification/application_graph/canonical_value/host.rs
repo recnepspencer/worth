@@ -40,7 +40,7 @@ impl WorthQueryApplicationContribution<CanonicalSchema> for CanonicalContributio
 
 pub type Host = WorthQueryProgramApplicationRuntime<CanonicalSchema, Program>;
 
-pub fn install(value: NestedValue) -> Result<Host, WorthQueryInMemoryApplicationDenial> {
+pub fn install(value: NestedValue) -> Result<Host, WorthQueryApplicationPreparationDenial> {
     in_memory_program(
         ApplicationProgramAuthoring::<CanonicalSchema, Program>::begin()
             .validated_program()
@@ -77,7 +77,7 @@ pub fn install(value: NestedValue) -> Result<Host, WorthQueryInMemoryApplication
 }
 
 pub fn restore(checkpoint: WorthQueryApplicationCheckpoint) -> Host {
-    in_memory_program_from_checkpoint(
+    WorthQueryInterimCheckpointRestore::program(
         ApplicationProgramAuthoring::<CanonicalSchema, Program>::begin()
             .validated_program()
             .unwrap(),

@@ -62,3 +62,6 @@ pub use settlement_recovery::WorthQuerySettlementRecoveryBackend;
 pub(in crate::runtime) use snapshot_identity::unavailable_snapshot_identity;
 pub use source_adapter_contract::WorthQueryRuntimeSourceAdapter;
 pub use subscription_support_identity::runtime_subscription_support_evidence_identity;
+#[cfg(test)]
+#[path = "mod_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;

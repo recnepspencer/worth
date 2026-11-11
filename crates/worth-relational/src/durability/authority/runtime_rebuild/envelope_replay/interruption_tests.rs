@@ -19,12 +19,13 @@ fn fixture() -> (RelationalRuntime, Vec<u8>) {
     for name in ["replay-first", "replay-second", "replay-third"] {
         create_entity(&ExecutionRequest::serial(&host), &source, name);
     }
-    let plan = crate::tests::support::recovery_plan_for(
-        execution,
-        &source,
-        RecoveryVerificationMode::NormalRecoveryVerification,
-    )
-    .unwrap();
+    let plan = source
+        .durability()
+        .recovery_plan(
+            execution,
+            RecoveryVerificationMode::NormalRecoveryVerification,
+        )
+        .unwrap();
     assert_eq!(plan.tail_log.len(), 3);
     let persisted: Vec<_> = plan
         .tail_log
@@ -42,12 +43,13 @@ fn plan_from_bytes(source: &RelationalRuntime, bytes: &[u8]) -> RecoveryPlan {
     let host = crate::test_execution_policy::serial_request();
     let execution = &ExecutionRequest::serial(&host);
     let persisted: Vec<Vec<u8>> = rmp_serde::from_slice(bytes).unwrap();
-    let mut plan = crate::tests::support::recovery_plan_for(
-        execution,
-        source,
-        RecoveryVerificationMode::NormalRecoveryVerification,
-    )
-    .unwrap();
+    let mut plan = source
+        .durability()
+        .recovery_plan(
+            execution,
+            RecoveryVerificationMode::NormalRecoveryVerification,
+        )
+        .unwrap();
     plan.tail_log = persisted
         .into_iter()
         .map(|record| crate::durability::canonical_commit_artifact::RelationalCanonicalCommitArtifact::readmit(&record, execution).unwrap())
@@ -279,21 +281,36 @@ fn cancelled_checkpoint_restore_consults_before_decoding_corrupt_bytes() {
 fn corrupt_replay_keeps_its_durability_failure() {
     let (source, bytes) = fixture();
     let plan = plan_from_bytes(&source, &bytes);
-    let mut envelope = plan.tail_log[0].envelope().clone();
-    // A merge without its required execution authority is corrupt evidence.
-    envelope
-        .merge_parent_branches
-        .push(envelope.branch_context.clone());
-    let mut target = runtime_with_test_schema();
     let host = crate::test_execution_policy::serial_request();
+    let execution = &ExecutionRequest::serial(&host);
+    let mut envelope = plan.tail_log[0]
+        .envelope()
+        .copy_original_for_test(execution);
+    // A merge without its required execution authority is corrupt evidence.
+    let branch_context = envelope.branch_context.clone();
+    envelope
+        .body_mut_for_test()
+        .merge_parent_branches
+        .push(branch_context);
+    let mut target = runtime_with_test_schema();
+    let catalog = super::super::index_catalog::readmit(
+        &ExecutionRequest::serial(&host),
+        &target,
+        &plan.tail_log[0],
+    )
+    .unwrap();
     let error = super::effect::replay_merge_commit(
         &ExecutionRequest::serial(&host),
         &mut target,
         &envelope,
         plan.tail_log[0].position(),
+        catalog,
     )
     .unwrap_err();
     match error {
+        RelationalRecoveryStop::AdmissionImage(cause) => {
+            panic!("corrupt original evidence became image refusal: {cause:?}")
+        }
         RelationalRecoveryStop::Durability(error) => {
             assert_eq!(error.class, RecoveryFailureClass::ReplayFailure)
         }

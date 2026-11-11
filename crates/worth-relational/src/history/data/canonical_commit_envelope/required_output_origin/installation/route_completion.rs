@@ -10,11 +10,11 @@ pub(super) struct RouteCompletion<'a> {
     pub(super) previous: Option<&'a CanonicalRequiredOutputOrigin>,
     pub(super) completion: CanonicalOutputPublication,
 }
-impl CanonicalCommitEnvelope {
+impl CanonicalCommitEnvelopeBody {
     #[allow(clippy::too_many_arguments)]
     pub(super) fn install_route(
         &mut self,
-        runtime: &crate::runtime::RelationalPreparationRuntime,
+        runtime: &crate::history::data::canonical_commit_envelope::required_output_origin::history_request::PreparationRuntimeRequest<'_, '_, '_>,
         basis: &AdmittedRelationalBranchBasis,
         created: &CommitCreatedEntityBindings,
         created_relations: &CommitCreatedRelationBindings,
@@ -184,7 +184,7 @@ impl CanonicalCommitEnvelope {
                 |prior| prior.source_scope_owned,
             ),
             producer: producer.to_owned(),
-            dependency_identity,
+            dependency_identity: worth_foundational::CanonicalDigestId::new(dependency_identity),
             outputs,
             relations,
             meaning: meaning.clone(),
@@ -193,9 +193,13 @@ impl CanonicalCommitEnvelope {
             birth: previous.map_or(self.commit.commit_id, |prior| prior.birth),
             birth_producer: previous
                 .map_or_else(|| producer.to_owned(), |prior| prior.birth_producer.clone()),
-            birth_dependency: previous.map_or(dependency_identity, |prior| prior.birth_dependency),
+            birth_dependency: previous.map_or(
+                worth_foundational::CanonicalDigestId::new(dependency_identity),
+                |prior| prior.birth_dependency,
+            ),
             issuer: Some(installed.authority.clone()),
             _funding: Some(memory),
+            _cascade_memory: None,
         }));
         if contribution_records.is_none() {
             use crate::history::data::publication_relations::CurrentPublicationFrame;
@@ -213,10 +217,10 @@ impl CanonicalCommitEnvelope {
             self.required_output_origin.as_deref().unwrap(/* Proof: This method assigns Some(required_output_origin) immediately above and borrows it without an intervening take or mutation. */ ),
             Some(current),
             &mut |commit| runtime.history.canonical_envelope(commit),
-            &mut |version| runtime.history.canonical_envelope_for_version(version),
+            &mut |version, context| runtime.history.canonical_envelope_for_version(version, context),
             runtime.history.canonical_catalog_len(),
             lease,
-            validated_history,
+            validated_history,&runtime.history.execution(),
             context,
         )
         .map_err(|stop| relation_context(stop, "candidate", basis, self))?;

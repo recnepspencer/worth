@@ -47,6 +47,7 @@ impl RuntimeSymbolResidency {
         &self,
         previous: &Self,
     ) -> bool {
-        Arc::ptr_eq(&self.by_id, &previous.by_id) && Arc::ptr_eq(&self.by_value, &previous.by_value)
+        self.by_id.shares_backing(&previous.by_id)
+            && self.by_value.shares_backing(&previous.by_value)
     }
 }

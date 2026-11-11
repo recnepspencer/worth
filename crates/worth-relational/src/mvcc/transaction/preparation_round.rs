@@ -12,7 +12,7 @@ struct PreparationOverlayRound<'transaction> {
     overlay: DetachedRelationalTransactionOverlay,
     content: crate::content::RelationalContentAttachments,
     footprint: RelationalTransactionFootprint,
-    cached_plan: Option<crate::transactions::data::MergedCommitPlan>,
+    cached_plan: Option<super::OwnedNormalizedPlan>,
 }
 
 impl Drop for PreparationOverlayRound<'_> {
@@ -56,10 +56,41 @@ impl BranchBoundRelationalTransaction {
             .get_mut()
             .unwrap_or_else(|error| error.into_inner()) = None;
         let guard = PreparationOverlayRound {
-            overlay: self.overlay.clone(),
+            overlay: self.overlay.copy_for_ordinary_preview(),
             content: self.content.clone(),
             footprint: self.footprint.clone(),
-            cached_plan: self.last_merged_plan.clone(),
+            cached_plan: self
+                .last_merged_plan
+                .as_ref()
+                .map(super::OwnedNormalizedPlan::copy_for_ordinary_preview),
+            transaction: self,
+            accepted: false,
+        };
+        round(&mut *guard.transaction)
+    }
+
+    pub(crate) fn with_funded_preparation_overlay<T, E>(
+        &mut self,
+        request: &worth_execution::ExecutionRequest<'_, '_>,
+        round: impl FnOnce(&mut Self) -> Result<T, E>,
+    ) -> Result<T, E>
+    where
+        E: From<crate::transactions::data::TransactionCommitError>,
+    {
+        // Build both independent originals before changing the live round.
+        let overlay = self.overlay.copy_for_request(request)?;
+        let cached_plan = self
+            .last_merged_plan
+            .as_ref()
+            .map(|plan| super::OwnedNormalizedPlan::copy_for_request(plan.plan(), request))
+            .transpose()?;
+        let original_overlay = std::mem::replace(&mut self.overlay, overlay);
+        let original_plan = std::mem::replace(&mut self.last_merged_plan, cached_plan);
+        let guard = PreparationOverlayRound {
+            content: self.content.clone(),
+            overlay: original_overlay,
+            footprint: self.footprint.clone(),
+            cached_plan: original_plan,
             transaction: self,
             accepted: false,
         };
@@ -68,13 +99,22 @@ impl BranchBoundRelationalTransaction {
 
     pub(crate) fn with_accepted_preparation_overlay<T>(
         &mut self,
+        request: &worth_execution::ExecutionRequest<'_, '_>,
         round: impl FnOnce(&mut Self) -> Result<T, MutationApplyDenial>,
     ) -> Result<T, MutationApplyDenial> {
+        let overlay = self.overlay.copy_for_request(request)?;
+        let cached_plan = self
+            .last_merged_plan
+            .as_ref()
+            .map(|plan| super::OwnedNormalizedPlan::copy_for_request(plan.plan(), request))
+            .transpose()?;
+        let original_overlay = std::mem::replace(&mut self.overlay, overlay);
+        let original_plan = std::mem::replace(&mut self.last_merged_plan, cached_plan);
         let mut guard = PreparationOverlayRound {
-            overlay: self.overlay.clone(),
+            overlay: original_overlay,
             content: self.content.clone(),
             footprint: self.footprint.clone(),
-            cached_plan: self.last_merged_plan.clone(),
+            cached_plan: original_plan,
             transaction: self,
             accepted: false,
         };

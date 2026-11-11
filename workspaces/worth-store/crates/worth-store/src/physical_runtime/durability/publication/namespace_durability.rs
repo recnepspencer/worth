@@ -142,3 +142,6 @@ impl IndeterminatePhysicalRootNamespaceDurability {
         self.namespace_synchronization.recovery_disposition()
     }
 }
+#[cfg(test)]
+#[path = "namespace_durability_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;

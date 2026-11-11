@@ -17,6 +17,9 @@ pub(super) enum RelationalOwnerServiceLifecyclePosture {
 }
 
 impl RelationalOwnerServiceBinding {
+    pub(super) fn matches_owner(&self, owner: &RelationalRuntime) -> bool {
+        Weak::ptr_eq(&self.state, &owner.state_binding())
+    }
     pub(super) fn new(
         state: Weak<RelationalRuntimeState>,
         lifecycle: RelationalRuntimeOwnerBinding,

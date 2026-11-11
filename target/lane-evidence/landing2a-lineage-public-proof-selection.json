@@ -1,0 +1,18 @@
+[
+  "a_damaged_cold_member_is_a_sticky_typed_transaction_read_refusal",
+  "tail_replay_refuses_a_damaged_touched_member_as_cold_storage_unavailable",
+  "recovered_nonhead_envelope_custody_ends_with_the_last_inflight_read",
+  "bounded_history_reads_only_the_selected_envelope_and_refuses_sticky_body_damage",
+  "patch_stream_demands_only_the_requested_batch_and_refuses_sticky_journal_damage",
+  "envelope_surfaces_keep_index_facts_readable_and_refuse_cold_body_damage",
+  "an_older_lineage_directory_retains_its_cold_pages_after_home_replacement",
+  "concurrent_lineage_history_reads_share_one_actual_event_member_load",
+  "simultaneous_lineage_point_reads_share_one_page_load",
+  "lineage_node_observation_refuses_foreign_root_before_member_reads",
+  "authored_lineage_discovery_refuses_original_pending_effect_and_continues_after_settlement",
+  "lineage_node_observation_demands_its_head_and_node_without_opening_history",
+  "residency_failure_matrix_lineage_event_doors_preserve_every_failure_class",
+  "changed_event_bytes_damage_only_their_page_and_share_the_refusal_with_export",
+  "cold_source_is_bound_before_a_durable_runtime_publishes_its_first_commit",
+  "scripted_medium_answers_distinguish_physical_no_effect_and_unknown_effect"
+]

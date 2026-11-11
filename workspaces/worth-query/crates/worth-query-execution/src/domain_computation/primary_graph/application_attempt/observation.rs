@@ -15,6 +15,7 @@ pub(in crate::domain_computation::primary_graph) use aspect_presence::{
     observe_aspect_presence, observe_aspect_presence_in_view,
 };
 pub(crate) mod read_rendezvous;
+
 std::thread_local! {
     static NATIVE_FIELD_CONTACTS: std::cell::Cell<usize> = const { std::cell::Cell::new(0) };
 }

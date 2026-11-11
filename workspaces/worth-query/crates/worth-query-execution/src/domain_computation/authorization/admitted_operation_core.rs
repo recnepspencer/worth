@@ -21,6 +21,12 @@ use crate::domain_computation::primary_graph::WorthQueryBoundMutationPreconditio
 /// `Clone`, `Default`, `Deserialize` or `From`, and only the admission
 /// phases that mint a brand construct it.
 pub(in crate::domain_computation) struct WorthQueryAdmittedOperation {
+    pub(super) home_owner: worth_runtime_world::facade::RuntimeWorldOwnerIdentity,
+    pub(super) data: Box<WorthQueryAdmittedOperationData>,
+    _memory: Option<worth_execution::ExecutionMemoryReservation>,
+}
+
+pub(in crate::domain_computation) struct WorthQueryAdmittedOperationData {
     pub(super) runtime_authority:
         crate::domain_computation::execution_runtime::WorthQueryRuntimeAuthorityIdentity,
     pub(super) binding_identity: ApplicationSchemaBindingIdentity,
@@ -67,3 +73,35 @@ const _: fn() = || {
     fn send<T: Send>() {}
     send::<WorthQueryAdmittedOperation>();
 };
+
+impl WorthQueryAdmittedOperation {
+    pub(super) fn retain_original(
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        home_owner: worth_runtime_world::facade::RuntimeWorldOwnerIdentity,
+        data: WorthQueryAdmittedOperationData,
+    ) -> Result<
+        Self,
+        crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenial,
+    > {
+        let memory = execution
+            .reserve_retained_memory(std::mem::size_of::<WorthQueryAdmittedOperationData>() as u64)
+            .map_err(|stop| {
+                crate::domain_computation::authorization::denial::relational_read_denial(
+                    stop.into(),
+                    &data.operation,
+                )
+            })?;
+        Ok(Self {
+            home_owner,
+            data: Box::new(data),
+            _memory: memory,
+        })
+    }
+    #[cfg(test)]
+    pub(in crate::domain_computation) fn observe_inline_budget(
+        census: &mut crate::inline_type_sizes::Census,
+    ) {
+        let _core=census.owner::<Self>("workspaces/worth-query/crates/worth-query-execution/src/domain_computation/authorization/admitted_operation_core.rs","WorthQueryAdmittedOperation",128);
+        let _data=census.owner::<WorthQueryAdmittedOperationData>("workspaces/worth-query/crates/worth-query-execution/src/domain_computation/authorization/admitted_operation_core.rs","WorthQueryAdmittedOperationData",16*1024);
+    }
+}

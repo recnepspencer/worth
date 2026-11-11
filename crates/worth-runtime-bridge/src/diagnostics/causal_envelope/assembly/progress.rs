@@ -1,6 +1,6 @@
 use super::super::{
-    BridgeCausalEnvelopeCounters, BridgeCausalEnvelopeDenial, BridgeCausalEvidenceBinding,
-    BridgeCausalEvidenceFamily, BridgeCausalEvidenceReference,
+    BridgeCausalEnvelopeCounters, BridgeCausalEvidenceBinding, BridgeCausalEvidenceFamily,
+    BridgeCausalEvidenceReference,
 };
 use super::source::{ResolvedBinding, SourceContext};
 use super::BridgeCausalEnvelopeAssemblyRequest;

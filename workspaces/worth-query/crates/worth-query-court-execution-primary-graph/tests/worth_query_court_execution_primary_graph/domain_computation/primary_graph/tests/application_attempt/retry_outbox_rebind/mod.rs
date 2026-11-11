@@ -15,7 +15,6 @@ use worth_query_testkit_execution_primary_graph_application_contribution::domain
 use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::application_attempt::resolved_account;
 use worth_query_execution::facade::domain_computation::WorthQueryApplicationCommitDenialStage;
 use worth_query_execution::facade::domain_computation::WorthQueryApplicationCommitOutcome;
-use worth_query_execution::facade::domain_computation::WorthQueryApplicationCommitTerminalKind;
 use worth_query_execution::facade::domain_computation::WorthQueryApplicationCommitReceipt;
 use worth_query_execution::facade::domain_computation::WorthQueryExternalDispatchRequest;
 use worth_query_execution::facade::domain_computation::WorthQueryExternalEffectTransport;
@@ -115,10 +114,9 @@ pub fn commit_response_lost(
     assert_eq!((*committed_work.external_dispatch_admissions_for_test()), 1);
     assert_eq!(transport.0.load(Ordering::Acquire), 1);
     assert_eq!(
-        original.terminal().kind(),
-        WorthQueryApplicationCommitTerminalKind::Executed
+        world.application.provider_session_resource_count_for_test(),
+        0
     );
-    assert_eq!(original.terminal().attempt_resources_released(), Some(true));
     original
 }
 
@@ -172,7 +170,7 @@ pub fn retry_without_managed_work(
     world.faults.reject_next_session_prepare();
     world.faults.skip_next_invariant_owner_execution();
     let before_retry = world.application.application_attempt_work_for_test();
-    let WorthQueryApplicationCommitOutcome::AlreadyCommitted(recovered) =
+    let WorthQueryApplicationCommitOutcome::RecoveredCommitted(recovered) =
         world.application.compare_and_commit_application(
             retry,
             idempotency(201, 202),
@@ -188,9 +186,10 @@ pub fn retry_without_managed_work(
     assert_eq!((*retry_work.retained_resolutions_for_test()), 1);
     assert_no_managed_attempt_work(retry_work);
     assert_eq!(transport.0.load(Ordering::Acquire), 1);
-    assert!(recovered.is_same_authoritative_commit(original));
-    assert_eq!(recovered.dispatch_outbox(), original.dispatch_outbox());
-    assert_eq!(recovered.terminal().attempt_resources_released(), None);
+    worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::recorded_receipt::assert_original(
+        &recovered, original,
+    );
+    assert!(recovered.world_journal_position().is_none());
     assert_eq!(
         world.application.provider_session_resource_count_for_test(),
         0

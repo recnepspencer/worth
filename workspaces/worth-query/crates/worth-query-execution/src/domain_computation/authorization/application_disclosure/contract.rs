@@ -23,10 +23,8 @@ pub(super) use result_rules::selector_parts;
 mod diagnostic;
 mod history;
 mod inspection;
+pub(in crate::domain_computation) use diagnostic::compile_diagnostic_disclosure_contract;
 pub(super) use diagnostic::diagnostic_shape_supported;
-pub(in crate::domain_computation) use diagnostic::{
-    compile_diagnostic_disclosure_contract, DiagnosticContractDenial,
-};
 mod resource;
 pub(in crate::domain_computation) use history::{
     compile_document_history_disclosure_contract, compile_history_disclosure_contract,
@@ -134,6 +132,8 @@ pub(super) fn denial(subject: impl Into<String>) -> WorthQueryApplicationDisclos
         subject: subject.into(),
     }
 }
+
+pub use diagnostic::DiagnosticContractDenial;
 
 #[cfg(test)]
 mod cause_tests {

@@ -37,6 +37,7 @@ fn an_authorization_refusal_keeps_its_exact_kind() {
 #[test]
 fn every_other_refusal_keeps_its_own_cause() {
     for (query, bank) in [
+        (Query::OriginalEffectReleased, Bank::OriginalEffectReleased),
         (Query::ForeignAdmission, Bank::ForeignAdmission),
         (
             Query::ActiveSnapshotCapacityExhausted {

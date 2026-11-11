@@ -70,12 +70,15 @@ fn idempotency_denial(denial: BankEstateIdempotencyResolutionDenial) -> BankHttp
     use BankHttpDenialKind as Denial;
     use BankHttpNextAction as Next;
     let (denial, next) = match denial {
+        Idempotency::OriginalEffectReleased => {
+            (Denial::OriginalEffectReleased, Next::ContactOperator)
+        }
+        Idempotency::PreparationBusy => (Denial::Unavailable, Next::Retry),
         Idempotency::ExecutionDenied(kind) => {
             return super::mutation_application::pending_execution_stop(kind)
         }
         Idempotency::Authorization(denial) => return authorization_denial(denial.kind()),
         // The key's earlier commit took effect; reading current state shows it.
-        Idempotency::CommittedReceiptNotRetained => (Denial::Stale, Next::Refresh),
         // Capacity in use frees as other reads settle.
         Idempotency::ActiveSnapshotCapacityExhausted { .. }
         | Idempotency::RetentionCapacityExhausted
@@ -102,9 +105,23 @@ fn recovery_denial(kind: BankRecoveryDenialKind) -> BankHttpDenial {
     use BankRecoveryDenialKind as Kind;
     let (denial, next) = match kind {
         Kind::AdmissionAuthorization(cause) => return authorization_denial(cause),
+        Kind::CompletionExecutionDenied { kind: worth_query_host::facade::primary_graph::WorthQueryProviderSessionDenialKind::Content(cause), .. } => return super::relational_execution_denial::denial(worth_query_host::facade::primary_graph::RelationalExecutionDenialCause::Content(cause)),
+        Kind::CompletionExecutionDenied { kind: worth_query_host::facade::primary_graph::WorthQueryProviderSessionDenialKind::ContentInconsistency, .. } => (Denial::InternalDenied, Next::ContactOperator),
         Kind::CompletionExecutionRequest(cause) => {
             return super::advancement_denial::advancement(cause)
         }
+        // Durable custody support is a runtime configuration fact, not a caller retry.
+        Kind::DurableStateAdmission(cause) => match cause {
+            worth_query_host::facade::product::WorthQueryDurableStateAdmissionDenial::Unsupported { .. }
+            | worth_query_host::facade::product::WorthQueryDurableStateAdmissionDenial::UnsupportedCorrectionRelationPreimage
+            | worth_query_host::facade::product::WorthQueryDurableStateAdmissionDenial::UnsupportedCorrectionCoupledOutputs
+            | worth_query_host::facade::product::WorthQueryDurableStateAdmissionDenial::UnsupportedCorrectionCompensation
+            | worth_query_host::facade::product::WorthQueryDurableStateAdmissionDenial::UnsupportedCorrectionOutputMaterial
+            | worth_query_host::facade::product::WorthQueryDurableStateAdmissionDenial::UnsupportedCorrectionReapplication
+            | worth_query_host::facade::product::WorthQueryDurableStateAdmissionDenial::UnsupportedDivergentCorrection => (Denial::Unavailable, Next::ContactOperator),
+            worth_query_host::facade::product::WorthQueryDurableStateAdmissionDenial::PolicyUnavailable
+            | worth_query_host::facade::product::WorthQueryDurableStateAdmissionDenial::UndeclaredSupplierCapabilities => (Denial::InternalDenied, Next::ContactOperator),
+        },
         // The installed contract refuses this recovery, or the principal is not
         // the one it belongs to. No retry, refresh, or new credential changes
         // that.
@@ -114,7 +131,7 @@ fn recovery_denial(kind: BankRecoveryDenialKind) -> BankHttpDenial {
         | Kind::ForeignPrincipal => (Denial::PermissionDenied, Next::None),
         // The recovery already moved on: it was opened, or it ended. Reading
         // the commit again reports its current recovery status.
-        Kind::RecoveryAlreadyMinted | Kind::AlreadyTerminal => (Denial::Stale, Next::Refresh),
+        Kind::StaleIncarnation | Kind::RecoveryAlreadyMinted | Kind::AlreadyTerminal => (Denial::Stale, Next::Refresh),
         // The live recovery can never be admitted again: its window closed, or
         // installed truth moved past the commit it was bound to. The effect
         // stays unsettled, so an operator settles it.
@@ -142,6 +159,12 @@ fn recovery_denial(kind: BankRecoveryDenialKind) -> BankHttpDenial {
         | Kind::CompletionInputDirectoryAllocationDenied { .. }
         | Kind::TerminalIndexUnavailable
         | Kind::TimeObservationDenied => (Denial::Unavailable, Next::Retry),
+        Kind::ProvenNoEffect(cause) => match cause {
+            // The original payload is immutable: repeating this recovery request
+            // cannot correct the external owner's semantic rejection.
+            worth_foundational::facade::ExternalEffectNoEffectCause::PayloadRejected => (Denial::Unavailable, Next::ContactOperator),
+            worth_foundational::facade::ExternalEffectNoEffectCause::ContactNotStarted => (Denial::Unavailable, Next::Retry),
+        },
         Kind::TransportNotInstalled => (Denial::Unavailable, Next::ContactOperator),
         Kind::DispatchOwnerReadDenied(read) => return dispatch_owner_read_denial(read),
         Kind::AttemptAdmissionDenied(attempt) => return dispatch_attempt_denial(attempt),
@@ -197,6 +220,7 @@ fn dispatch_owner_read_denial(read: BankCommittedDispatchOutboxReadDenial) -> Ba
 }
 
 fn dispatch_attempt_denial(attempt: BankExternalDispatchAttemptDenial) -> BankHttpDenial {
+    use bank_server::BankDurableDispatchRecordDenial as Record;
     use BankExternalDispatchAttemptDenial as Attempt;
     use BankHttpDenialKind as Denial;
     use BankHttpNextAction as Next;
@@ -207,6 +231,18 @@ fn dispatch_attempt_denial(attempt: BankExternalDispatchAttemptDenial) -> BankHt
         Attempt::OriginalPublicationPending | Attempt::InFlightCapacityExhausted => {
             (Denial::Unavailable, Next::Retry)
         }
+        // Nothing was sent. An earlier send is still being observed, the
+        // request stopped, or the record was proven unwritten: the same
+        // request records and sends once that clears.
+        Attempt::DurableAttemptRecordDenied(
+            Record::AttemptAwaitingObservation
+            | Record::RequestStopped
+            | Record::PublicationNoEffect,
+        ) => (Denial::Unavailable, Next::Retry),
+        // The record's fate, or the journal itself, needs the Home reopened.
+        Attempt::DurableAttemptRecordDenied(
+            Record::PublicationUnresolved | Record::JournalRefused,
+        ) => (Denial::Unavailable, Next::ContactOperator),
         // No physical attempt identity remains on this runtime.
         Attempt::AttemptIdentityExhausted => (Denial::Unavailable, Next::ContactOperator),
         // A restored legacy row lacks the slot its completion needs, so no

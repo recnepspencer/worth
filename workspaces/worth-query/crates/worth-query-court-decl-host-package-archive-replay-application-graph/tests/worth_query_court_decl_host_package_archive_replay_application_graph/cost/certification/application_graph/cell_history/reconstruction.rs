@@ -10,12 +10,19 @@ use worth_query_host::facade::application_entry::WorthQueryApplicationRequestExt
 
 const REPETITIONS: usize = 3;
 
-pub fn measure(bytes: Box<[u8]>, retained_steps: u64, current: &[CellRow], untouched: &[CellRow]) {
+pub fn measure(
+    bytes: worth_query_host::facade::application_installation::WorthQueryApplicationCheckpoint,
+    retained_steps: u64,
+    current: &[CellRow],
+    untouched: &[CellRow],
+) {
     // Expected rows contain only issued weak identities and values already
     // checked against independent authored inputs. No old basis or host enters.
     let mut copies = Vec::with_capacity(REPETITIONS);
     let mut readmissions = Vec::with_capacity(REPETITIONS);
     let mut materializations = Vec::with_capacity(REPETITIONS);
+    // The current transport value carries the capture origin and shares its
+    // immutable bytes. This metric measures that actual public Clone contract.
     for sample in 0..REPETITIONS {
         let copy_start = Instant::now();
         let (transport, allocation) = super::peak::measure(|| bytes.clone());

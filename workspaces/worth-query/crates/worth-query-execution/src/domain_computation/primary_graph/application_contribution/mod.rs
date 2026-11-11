@@ -1,4 +1,5 @@
 mod composition;
+pub(in crate::domain_computation::primary_graph) use composition::PreparedApplicationRuntimeContributions;
 mod derived_relation;
 pub(crate) mod native_field_contract;
 pub use derived_relation::WorthQueryDerivedRelationCountOwner;
@@ -16,7 +17,7 @@ pub(crate) mod partitioned_computation;
 pub(crate) mod producer;
 pub(in crate::domain_computation::primary_graph) use producer::DeclaredProducerAssembly;
 pub(in crate::domain_computation::primary_graph) use producer::OwnerPlan;
-pub(in crate::domain_computation::primary_graph) use producer::PendingProducerPublication;
+pub use producer::PendingProducerPublication;
 pub(in crate::domain_computation::primary_graph) use producer::{CurrentBasis, CurrentProof};
 pub(crate) mod request_execution;
 pub(in crate::domain_computation::primary_graph) use request_execution::{
@@ -74,11 +75,12 @@ pub use partitioned_computation::{
     WorthQueryPartitionedComputationOwner, WorthQueryPreparedPartitionedComputation,
     WorthQueryReductionInputDenial,
 };
+pub use producer::OutputSourceAddress;
 pub(in crate::domain_computation::primary_graph) use producer::{
     install_output_readiness_routes, InstalledProducerEdition, MatchedRequiredPredecessors,
-    OutputSourceAddress, PendingOutputReadiness, QualifiedOutputSource,
-    TypedPendingOutputReadiness, WorthQueryInstalledOutputProducerRoutes,
-    WorthQueryInstalledOutputReadinessRoutes, WorthQueryProducerCommitAuthority,
+    PendingOutputReadiness, QualifiedOutputSource, TypedPendingOutputReadiness,
+    WorthQueryInstalledOutputProducerRoutes, WorthQueryInstalledOutputReadinessRoutes,
+    WorthQueryProducerCommitAuthority,
 };
 pub use producer::{
     WorthQueryAdmittedOutputDemand, WorthQueryApplicationOutputDemand,
@@ -124,7 +126,7 @@ pub use request_execution::{
 };
 
 #[cfg(test)]
-pub(crate) use request_execution::advancement::with_test_advancement;
+pub(crate) use request_execution::with_test_advancement;
 pub(crate) use request_execution::TestHostRequest;
 
 pub use request_execution::{with_bootstrap_advancement, with_bootstrap_advancement_from_request};
@@ -134,6 +136,13 @@ pub use request_execution::WorthQueryBootstrapAdvancementPhase;
 pub(in crate::domain_computation::primary_graph) use execution_denial::publication_execution_kind;
 pub(in crate::domain_computation::primary_graph) use request_execution::advancement::observation::application::record_commit as record_advancement_commit;
 
+pub use producer::ProducerOutputEvaluation;
 pub(in crate::domain_computation::primary_graph) use producer::{
-    ComparedProducerOutput, ProducerOutputEvaluation, ProducerOutputEvaluationState,
+    ComparedProducerOutput, ProducerOutputEvaluationState,
 };
+#[cfg(test)]
+#[path = "mod_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;
+
+pub(in crate::domain_computation::primary_graph) use conditional::RefusedConditionalBatch;
+pub(in crate::domain_computation::primary_graph) use producer::RefusedProducerSeal;

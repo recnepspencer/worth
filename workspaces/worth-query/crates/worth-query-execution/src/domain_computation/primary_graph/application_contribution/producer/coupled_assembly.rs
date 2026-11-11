@@ -95,26 +95,33 @@ impl<'a, 'run, 'phase, S: ApplicationSchema> DeclaredProducerAssembly<'a, 'run, 
         root: crate::domain_computation::primary_graph::application_attempt::WorthQueryProviderProgressionOutcome,
     ) -> crate::domain_computation::primary_graph::application_attempt::WorthQueryProviderProgressionOutcome{
         use crate::domain_computation::primary_graph::application_attempt::WorthQueryProviderProgressionOutcome as Progression;
-        use crate::domain_computation::primary_graph::{
-            WorthQueryApplicationCommitOutcome as Outcome,
-            WorthQueryApplicationUncommitted as Uncommitted,
-        };
+        use crate::domain_computation::primary_graph::WorthQueryApplicationUncommitted as Uncommitted;
         let unpublished = match &root {
             Progression::ProductUnpublished(value) => Some(value),
-            _ => None,
+            Progression::CoupledFailure(_)
+            | Progression::Committed(_)
+            | Progression::RecoveredCommitted(_)
+            | Progression::ProductPreparationPending(_)
+            | Progression::ProductPreparationRefused(_)
+            | Progression::ProductStale(_)
+            | Progression::NoEffect(_)
+            | Progression::Denied(_)
+            | Progression::Indeterminate(_)
+            | Progression::Stale(_)
+            | Progression::Cancelled
+            | Progression::TimedOut
+            | Progression::Aborted
+            | Progression::Deferred(_) => None,
         };
-        let mut failure = None;
+        let mut failure: Option<Uncommitted> = None;
         for writer in self.writers.borrow_mut().drain(..) {
             let Some(CoupledWriterStage::Prepared(prepared)) = writer.stage else {
                 unreachable!("whole candidate prepares each writer before World")
             };
-            let terminal = prepared.terminal_binding();
             let completion = prepared.completion();
             let provider = &self.application.runtime.primary_provider;
             let effected = unpublished.is_some()
-                || provider
-                    .observe_completed_application_for_session(&terminal)
-                    .is_some()
+                || prepared.has_original_completion()
                 || provider
                     .inspect_pending_application_idempotency(
                         self.before.observation().lifecycle_incarnation(),
@@ -131,24 +138,48 @@ impl<'a, 'run, 'phase, S: ApplicationSchema> DeclaredProducerAssembly<'a, 'run, 
             } else {
                 prepared.abort(execution, self.phase, self.application)
             };
-            let uncommitted = match outcome {
-                Outcome::Committed(receipt) | Outcome::AlreadyCommitted(receipt) => {
-                    completion.complete(receipt);
+            let uncommitted = match outcome.landed() {
+                Ok(landed) => {
+                    completion.complete(landed);
                     continue;
                 }
-                Outcome::ProductUnpublished(_) => continue,
-                Outcome::Aborted if !effected => continue,
-                other => match other.landed() {
-                    Err(failure) => failure,
-                    Ok(_) => unreachable!("only an uncommitted participant outcome remains"),
-                },
+                Err(Uncommitted::ProductUnpublished(_)) => continue,
+                Err(Uncommitted::Aborted) if !effected => continue,
+                Err(
+                    uncommitted @ (Uncommitted::CleanupRequired(_)
+                    | Uncommitted::ProductStale(_)
+                    | Uncommitted::ProductPreparationPending(_)
+                    | Uncommitted::ProductPreparationRefused(_)
+                    | Uncommitted::NoEffect(_)
+                    | Uncommitted::Stale(_)
+                    | Uncommitted::Cancelled
+                    | Uncommitted::TimedOut
+                    | Uncommitted::Denied(_)
+                    | Uncommitted::Aborted
+                    | Uncommitted::Deferred(_)
+                    | Uncommitted::Indeterminate(_)),
+                ) => uncommitted,
             };
             failure = Some(match (failure.take(), uncommitted) {
                 (Some(prior), Uncommitted::CleanupRequired(cleanup)) => {
                     let (_, cleanup) = cleanup.into_parts();
-                    Uncommitted::CleanupRequired(crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationCleanupRequired::from_parts(prior, cleanup))
+                    Uncommitted::CleanupRequired(crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationCleanupRequired::from_parts(prior.into(), cleanup))
                 }
-                (Some(prior), _) => prior,
+                (
+                    Some(prior),
+                    Uncommitted::ProductStale(_)
+                    | Uncommitted::ProductUnpublished(_)
+                    | Uncommitted::ProductPreparationPending(_)
+                    | Uncommitted::ProductPreparationRefused(_)
+                    | Uncommitted::NoEffect(_)
+                    | Uncommitted::Stale(_)
+                    | Uncommitted::Cancelled
+                    | Uncommitted::TimedOut
+                    | Uncommitted::Denied(_)
+                    | Uncommitted::Aborted
+                    | Uncommitted::Deferred(_)
+                    | Uncommitted::Indeterminate(_),
+                ) => prior,
                 (None, failure) => failure,
             });
         }
@@ -188,7 +219,7 @@ impl<'a, 'run, 'phase, S: ApplicationSchema> DeclaredProducerAssembly<'a, 'run, 
             )
         })?;
         let graph = &self.application.runtime.primary_provider.graph;
-        let before_pin = graph.with_runtime_mut(execution, |runtime| {
+        let before_pin = graph.with_runtime(execution, |runtime| {
             let snapshot = crate::domain_computation::primary_graph::exact_basis_access::open_exact_basis_snapshot(
                 runtime, self.before.relational_basis(),
             ).map_err(|cause| WorthQueryOutputDemandDenial::new(WorthQueryOutputDemandDenialKind::ForeignSource, format!("coupled before basis: {cause:?}")))?;

@@ -170,15 +170,25 @@ impl WorthQueryCompletedRecordingOutputs {
         &self,
         reserved: &WorthQueryDocumentHistoryReservation,
         candidate: &WorthQueryExpectedProductBranch<'_, impl ApplicationSchema>,
-        source: &WorthQueryApplicationCommitReceipt,
+        scope: &super::super::HistoryOperationScope,
+        source: super::super::source_evidence::WorthQueryHistorySourceEvidence<'_>,
         required: Option<&WorthQueryCompletedRequiredOutputs>,
     ) -> Result<(), WorthQueryDocumentHistoryDenial> {
         let origin = &self.origin;
         if origin.node != reserved.record.node
             || origin.expected != reserved.expected
             || origin.candidate != candidate.branch()
-            || origin.intent != source.idempotency_binding()
-            || &origin.source != source.committed_product_publication().composite_commit()
+            || !source.matches(scope, origin.intent)
+            || !match source {
+                super::super::source_evidence::WorthQueryHistorySourceEvidence::Live(receipt) => {
+                    origin.intent == receipt.idempotency_binding()
+                        && &origin.source
+                            == receipt.committed_product_publication().composite_commit()
+                }
+                super::super::source_evidence::WorthQueryHistorySourceEvidence::Recorded(_) => {
+                    source.is_selected_at(origin.observation.product_observation())
+                }
+            }
             || self.endpoint.branch_incarnation() != candidate.branch().occurrence()
         {
             return Err(WorthQueryDocumentHistoryDenial::ReceiptMismatch);
@@ -186,8 +196,14 @@ impl WorthQueryCompletedRecordingOutputs {
         match (origin.root_posture, required) {
             (None, None) => {}
             (Some(posture), Some(required))
-                if posture == required.root_posture()
-                    && required.matches_source(source)
+                if posture == required.root_posture() && match source {
+                    super::super::source_evidence::WorthQueryHistorySourceEvidence::Live(
+                        receipt,
+                    ) => required.matches_source(receipt),
+                    super::super::source_evidence::WorthQueryHistorySourceEvidence::Recorded(_) => {
+                        false
+                    }
+                }
                     && required.retained_output().product_observation()
                         == self.endpoint.product_observation() => {}
             _ => return Err(WorthQueryDocumentHistoryDenial::ReceiptMismatch),

@@ -47,12 +47,18 @@ impl RuntimeWorldOwnerUnavailable {
 #[path = "ports/branch_creation.rs"]
 mod branch_creation;
 pub(crate) use branch_creation::RuntimeWorldBranchCreationRequest;
+pub use branch_creation::{
+    RuntimeWorldBranchCreationCompletion, RuntimeWorldBranchCreationNoEffect,
+    RuntimeWorldBranchCreationRelease, RuntimeWorldHomeBranchCreationRequest,
+};
 
 /// Terminal owned by the branch-creation service. A performed value is a new
-/// product reference occurrence; a partial value keeps performed owner work
-/// in the bounded recovery authority without publishing a product head.
+/// product reference occurrence; a partial value keeps the original custody
+/// and any actual owner work in the bounded recovery authority.
 #[derive(Debug)]
 pub enum RuntimeWorldBranchCreationOutcome {
+    NoEffect(RuntimeWorldBranchCreationNoEffect),
+    ReleasedOriginal(RuntimeWorldBranchCreationRelease),
     Performed(ProductBranchObservation),
     ProductUnpublished(ProductUnpublishedOwnerEffects),
 }
@@ -60,6 +66,29 @@ pub enum RuntimeWorldBranchCreationOutcome {
 pub(crate) trait RuntimeWorldObservationService:
     super::availability::RuntimeWorldAvailability
 {
+    fn observe_memory_original_publication(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        effect: worth_relational::facade::durability::ObservedRelationalMemoryCommit,
+    ) -> Result<
+        crate::history::WorldObservedMemoryPublication,
+        crate::history::WorldReadmittedPublicationDenial,
+    >;
+    fn readmitted_native_publication(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        effect: worth_relational::facade::durability::ReadmittedRelationalAssociatedEffect,
+    ) -> Result<
+        crate::history::WorldReadmittedPublication,
+        crate::history::WorldReadmittedPublicationDenial,
+    >;
+    fn readmitted_publication(
+        &self,
+        identity: &worth_foundational::facade::DurableCompositeCommitIdentity,
+    ) -> Result<
+        crate::history::WorldReadmittedPublication,
+        crate::history::WorldReadmittedPublicationDenial,
+    >;
     fn product_branch_writers_are_locked_out_for_test(
         &self,
         expected: &ProductBranchObservation,
@@ -78,11 +107,19 @@ pub(crate) trait RuntimeWorldObservationService:
         RuntimeWorldBranchAdmissionDenial,
     >;
 
+    fn observe_installed_product_branches(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> Result<crate::branch::ObservedProductBranches, crate::branch::ProductBranchInventoryDenial>;
+
     fn observe_product_branch(
         &self,
         branch: &ProductBranchIdentity,
     ) -> Result<ProductBranchObservation, RuntimeWorldBranchAdmissionDenial>;
 
+    fn observe_root_product_branch(
+        &self,
+    ) -> Result<ProductBranchObservation, RuntimeWorldBranchAdmissionDenial>;
     fn observe_product_branch_occurrence(
         &self,
         occurrence: crate::identity::ProductBranchIncarnation,
@@ -153,14 +190,34 @@ pub(crate) trait RuntimeWorldObservationService:
 pub(crate) trait RuntimeWorldBranchService:
     super::availability::RuntimeWorldAvailability
 {
+    fn with_home_program_binding(
+        &self,
+        request: &worth_execution::ExecutionRequest<'_, '_>,
+        expected: &ProductBranchObservation,
+        required: &worth_proof::HomeProgramTransitionRequired,
+        successor: &worth_proof::AdmittedHomeProgramTransitionSuccessor<
+            &worth_foundational::facade::ApplicationHomeBinding,
+        >,
+        handoff: &mut dyn for<'owner> FnMut(super::PreparedWorldHomeProgramBinding<'owner>),
+    ) -> Result<(), super::WorldHomeProgramBindingDenial>;
+
     fn admit_retained_branch_source(
         &self,
         source: &ProductBranchObservation,
     ) -> Result<crate::branch::RetainedProductBranchCreationSource, RuntimeWorldBranchAdmissionDenial>;
+    fn reserve_creation_name_ordinal(&self) -> Result<u64, RuntimeWorldBranchAdmissionDenial>;
+
     fn create_product_branch(
         &self,
         request: RuntimeWorldBranchCreationRequest<'_, '_, '_>,
     ) -> Result<RuntimeWorldBranchCreationOutcome, RuntimeWorldBranchAdmissionDenial>;
+
+    fn resume_creation(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        handle: &crate::recovery::ProductUnpublishedRecoveryHandle,
+        cancellation: &RuntimeWorldCancellationToken,
+    ) -> Result<RuntimeWorldBranchCreationOutcome, crate::recovery::RuntimeWorldRecoveryDenial>;
 
     /// Retire the installed occurrence proved by this observation. Later head
     /// movement is allowed; a recreated name is a different occurrence.
@@ -209,46 +266,8 @@ pub(crate) trait RuntimeWorldProductPublicationService {
     ) -> RuntimeWorldPublicationOutcome;
 }
 
-/// Shared internal seam for retained owner effects. Recovery never fabricates
-/// a product commit or promotes a partial record to performed publication.
-pub(crate) trait RuntimeWorldRecoveryService:
-    super::availability::RuntimeWorldAvailability
-{
-    fn prepare_settled_relational_adoption(
-        &self,
-        effects: &ProductUnpublishedOwnerEffects,
-        cancellation: &crate::publication::RuntimeWorldCancellationToken,
-        deadline: Option<RuntimeWorldInstant>,
-    ) -> Result<
-        crate::publication::PreparedCompositePublicationWithoutSignal,
-        crate::recovery::RuntimeWorldSettledRelationalAdoptionDenial,
-    >;
-
-    fn inspect_effects(
-        &self,
-        handle: &crate::recovery::ProductUnpublishedRecoveryHandle,
-    ) -> Result<ProductUnpublishedOwnerEffects, crate::recovery::RuntimeWorldRecoveryDenial>;
-    fn release_effects(
-        &self,
-        handle: &crate::recovery::ProductUnpublishedRecoveryHandle,
-        minimum_age_ticks: u64,
-    ) -> Result<
-        crate::recovery::ProductUnpublishedCleanup,
-        crate::recovery::RuntimeWorldRecoveryDenial,
-    >;
-
-    fn continue_effects(
-        &self,
-        effects: ProductUnpublishedOwnerEffects,
-    ) -> Result<RecoveryContinuationContract, crate::recovery::RuntimeWorldRecoveryDenial>;
-    fn recover_performed(
-        &self,
-        identity: &crate::identity::CompositeCommitIdentity,
-    ) -> Result<
-        crate::publication::PerformedCompositePublication,
-        crate::recovery::PerformedPublicationRecoveryDenial,
-    >;
-}
+mod recovery;
+pub(crate) use recovery::RuntimeWorldRecoveryService;
 
 /// Shared internal seam for one-shot root bootstrap and owner close. Close
 /// reports what it drained and what it deliberately left to the component
@@ -258,7 +277,10 @@ pub(crate) trait RuntimeWorldLifecycleService:
 {
     fn bootstrap_root(&self, intent: RuntimeWorldBootstrapIntent) -> RuntimeWorldBootstrapOutcome;
 
-    fn close(&self) -> Result<RuntimeWorldCloseReport, RuntimeWorldCloseDenial>;
+    fn close(
+        &self,
+        request: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> Result<RuntimeWorldCloseReport, RuntimeWorldCloseDenial>;
     /// Owner-wide automatic retirement of changed, eligible history interiors.
     fn retire_changed_history(
         &self,

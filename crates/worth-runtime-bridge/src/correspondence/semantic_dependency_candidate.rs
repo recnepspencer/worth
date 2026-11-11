@@ -1,3 +1,4 @@
+use serde::{Deserialize, Serialize};
 use std::sync::Arc;
 
 use worth_foundational::facade::{
@@ -7,7 +8,7 @@ use worth_foundational::facade::{
 
 use super::{BridgeCorrespondenceDenial, BridgeCorrespondenceDenialKind};
 
-#[derive(Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+#[derive(Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd, Serialize, Deserialize)]
 pub enum BridgeSemanticLocality {
     SourceRecord,
     /// One exact source record supplied by a Bridge-managed temporal intent.

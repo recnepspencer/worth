@@ -32,3 +32,6 @@ pub(in crate::logic::transaction::runtime) use transaction_types::{
 pub(in crate::logic::transaction::runtime) use transaction_types::{
     TransactionRollbackPacket, TransactionRollbackPacketSet,
 };
+#[cfg(test)]
+#[path = "mod_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;

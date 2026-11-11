@@ -6,7 +6,7 @@ impl WorthQueryPrimaryGraphIntegrationHandle {
     pub fn carry_primary_index_basis_for_basis_for_test(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
-        runtime: &mut RelationalRuntime,
+        runtime: &RelationalRuntime,
         basis: &AdmittedRelationalBranchBasis,
     ) -> Result<(), WorthQueryPrimaryIndexCurrencyDenial> {
         Self::carry_primary_index_basis_for_basis(self, execution, runtime, basis)

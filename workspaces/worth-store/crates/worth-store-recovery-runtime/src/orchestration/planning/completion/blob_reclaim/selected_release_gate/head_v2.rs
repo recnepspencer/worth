@@ -8,7 +8,7 @@ use worth_store_recovery_physics::{
     VerifiedCheckpointReleaseHeadRosterV2, VerifiedSelectedReleaseHeadCustodyV2,
 };
 
-use super::super::super::super::{context::PlanningContext, resolved_basis::ResolvedPlanningBasis};
+use super::super::super::super::{context::PlanningContext, resolved_basis::ResolvedPlanningState};
 use super::resident_basis;
 use crate::entry::{
     PhysicalRecoveryBlockKind, PhysicalRecoveryPlanningDenial,
@@ -34,7 +34,7 @@ const ARTIFACT: &str = "checkpoint-source-release-head-v2";
 
 pub(super) fn admit(
     mut context: PlanningContext,
-    basis: &mut ResolvedPlanningBasis,
+    basis: &mut ResolvedPlanningState,
 ) -> Result<PlanningContext, crate::entry::PhysicalRecoveryOutcome> {
     let remaining_bytes = remaining_observation(&context, basis);
     let mut resident = match resident_basis::seed(&context, basis) {
@@ -297,7 +297,7 @@ fn roster_refused(
 
 fn block(
     context: PlanningContext,
-    basis: &ResolvedPlanningBasis,
+    basis: &ResolvedPlanningState,
     denial: Denial,
     limit: Option<crate::entry::PhysicalRecoveryLimitFailure>,
 ) -> crate::entry::PhysicalRecoveryOutcome {

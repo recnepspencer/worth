@@ -55,6 +55,7 @@ where
             + ApplicationCapabilityElevationRequest<Schema, Operation>
             + 'static,
     {
+        access.refuse_stale_incarnation(self)?;
         let execution = match phase.execution_request_for(&self.runtime.product_runtime) {
             Ok(execution) => execution,
             Err(_) => return Err(crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenial::new(crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenialKind::Refused(AuthorizationRefusal::ForeignPhase), "phase-custody")),
@@ -96,6 +97,7 @@ where
             + ApplicationCapabilityElevationRequest<Schema, Operation>
             + 'static,
     {
+        access.refuse_stale_incarnation(self)?;
         let proposed = access
             .capability_input()
             .elevation_request()

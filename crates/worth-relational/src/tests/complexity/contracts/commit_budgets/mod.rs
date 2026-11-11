@@ -11,7 +11,6 @@ mod preparation_packetization;
 mod relation_identity_validation;
 mod relation_integrity_counters;
 mod replay_verification;
-mod schema_continuity_boundaries;
 mod unique_invariant_lookup;
 
 use fixtures::*;

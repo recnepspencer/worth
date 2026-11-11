@@ -322,6 +322,19 @@ where
     super::canonical_identity::prepare_temporal_binding_identity(
         super::canonical_identity::TemporalBindingIdentityParts {
             node_authority: node.authority_identity(),
+            node_definition: super::canonical_identity::prepare_temporal_node_definition(
+                worth_foundational::facade::CanonicalDigestId::new(
+                    node.operation()
+                        .application_operation()
+                        .definition_identity_bytes(),
+                ),
+                node.operation()
+                    .domain_operation()
+                    .definition()
+                    .canonical_identity(),
+                node.operation().binding().domain_operation_slot(),
+                node.location(),
+            )?,
             clock: binding.clocked_node().clock_identity(),
             source: binding.clocked_node().source_identity().as_str(),
             timeline: binding.clocked_node().timeline_identity().as_str(),

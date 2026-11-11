@@ -14,6 +14,29 @@ pub(crate) enum ResidentRegionLease {
     Full(RelationalResidencyLease<Full>),
 }
 impl ResidentRegionLease {
+    pub(crate) fn source_retirement_binding(
+        &self,
+        retire_native: bool,
+    ) -> (
+        std::sync::Arc<RelationalRegionResidency>,
+        Option<crate::runtime::RuntimeSymbolTable>,
+    ) {
+        match self {
+            Self::Head { lease, readmission } => {
+                if retire_native {
+                    lease.retire_native();
+                }
+                (lease.cell().clone(), Some(readmission.symbols().clone()))
+            }
+            Self::Full(lease) => {
+                if retire_native {
+                    lease.retire_native();
+                }
+                (lease.cell().clone(), None)
+            }
+        }
+    }
+
     pub(crate) fn admitted_head(
         lease: RelationalResidencyLease<Head>,
     ) -> Result<Self, crate::storage::data::RelationalStorageUnavailable> {

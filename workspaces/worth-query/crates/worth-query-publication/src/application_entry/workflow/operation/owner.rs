@@ -27,6 +27,8 @@ use super::{
 /// committed the operation.
 #[derive(Debug)]
 pub enum WorthQueryWorkflowOperationOwnerPosture {
+    ReleasedOriginal(worth_query_execution::facade::primary_graph::WorthQueryReleasedApplicationEffect),
+    RecoveredCommitted(worth_query_execution::facade::primary_graph::WorthQueryRecoveredApplicationCommitReceipt),
     Unseen,
     IntentDrift,
     PublicationPending,
@@ -101,6 +103,7 @@ where
     pub fn accept_operation_from_owner<Intent, SourcePreparation>(
         self,
         required: &RequiredWorkflowOperation,
+        original: &worth_query_execution::facade::primary_graph::WorthQueryApplicationCommitReceipt,
         operation: WorthQueryBoundWorkflowOperation<
             '_,
             '_,
@@ -126,7 +129,8 @@ where
         let scope = self.scope.clone();
         application
             .with_application_advancement(&scope, |phase| {
-                let (prepared, custody) = resolve_owner(&phase, &self, required, &mut operation)?;
+                let (prepared, custody) =
+                    resolve_owner(&phase, &self, required, original, &mut operation)?;
                 match custody {
                     WorthQueryGuardedWorkflowOperationCustody::Committed(receipt)
                     | WorthQueryGuardedWorkflowOperationCustody::ExternallySettled(receipt) => self
@@ -161,6 +165,7 @@ where
     pub fn accept_recovered_operation_from_owner<Intent, SourcePreparation>(
         self,
         required: &RequiredWorkflowOperation,
+        original: &worth_query_execution::facade::primary_graph::WorthQueryApplicationCommitReceipt,
         operation: WorthQueryBoundWorkflowOperation<
             '_,
             '_,
@@ -187,7 +192,8 @@ where
         let scope = self.scope.clone();
         application
             .with_application_advancement(&scope, |phase| {
-                let (prepared, custody) = resolve_owner(&phase, &self, required, &mut operation)?;
+                let (prepared, custody) =
+                    resolve_owner(&phase, &self, required, original, &mut operation)?;
                 match custody {
                     WorthQueryGuardedWorkflowOperationCustody::DispatchPending(receipt)
                     | WorthQueryGuardedWorkflowOperationCustody::ExternallySettled(receipt) => self
@@ -220,6 +226,7 @@ fn resolve_owner<Schema, Spec, Operation, Input, Scope, Intent, SourcePreparatio
     phase: &worth_query_execution::facade::application_contribution::WorthQueryAdvancementPhase<'_>,
     advance: &WorthQueryWorkflowAdvanceRequest<'_, '_, '_, Schema, Spec, Operation, Input, Scope>,
     required: &RequiredWorkflowOperation,
+    original: &worth_query_execution::facade::primary_graph::WorthQueryApplicationCommitReceipt,
     operation: &mut WorthQueryApplicationMutationRequestWithIdempotency<
         '_,
         '_,
@@ -273,7 +280,7 @@ where
         &prepared.admission,
         prepared.idempotency,
         required.transition_identity_bytes(),
-        None,
+        Some(original),
     )
     .map_err(WorthQueryWorkflowOperationOwnerAcceptanceDenial::Inspection)?;
     Ok((prepared, custody))
@@ -285,6 +292,8 @@ pub(in crate::application_entry) fn other_custody(
     use WorthQueryGuardedWorkflowOperationCustody as Custody;
     use WorthQueryWorkflowOperationOwnerPosture as Posture;
     match custody {
+        Custody::RecoveredCommitted(receipt) => Posture::RecoveredCommitted(receipt),
+        Custody::ReleasedOriginal(original) => Posture::ReleasedOriginal(original),
         Custody::Unseen => Posture::Unseen,
         Custody::IntentDrift => Posture::IntentDrift,
         Custody::PublicationPending => Posture::PublicationPending,
@@ -296,5 +305,8 @@ pub(in crate::application_entry) fn other_custody(
     }
 }
 
+#[cfg(test)]
+#[path = "owner_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;
 #[path = "owner/owning.rs"]
 mod owning;

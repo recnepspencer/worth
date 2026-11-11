@@ -1,6 +1,7 @@
 //! Real Decl/Host expectations; no caller supplies physical dependency facts.
 use super::super::authentication;
 use super::{host, mutation, prefix, query, schema::Catalog};
+use crate::application_invariant_acceptance::managed_index::prefix_observation;
 use std::sync::Arc;
 use worth_query_host::facade::admission::authenticated_principal::{
     WorthQueryAuthenticatedExternalPrincipal, WorthQueryRequestScope,
@@ -21,7 +22,7 @@ fn run(
         .name("managed-source-expectations".into())
         .stack_size(8 * 1024 * 1024)
         .spawn(move || {
-            let world = host::install(Arc::new(prefix::Calls::default()));
+            let world = host::install(Arc::new(prefix_observation::Calls::default()));
             let scope = authentication::request_scope();
             let adapter = authentication::admit(world.installed_schema());
             let principal = authentication::block_on(adapter.authenticate(

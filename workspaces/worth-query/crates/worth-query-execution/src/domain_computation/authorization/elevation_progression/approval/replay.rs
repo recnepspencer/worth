@@ -33,6 +33,12 @@ where
         Operation: ApplicationOperationMarkerIdentity<Schema>,
         Input: ApplicationCapabilityRequest<Schema, Capability> + Clone + Send + Sync + 'static,
     {
+        if let Err(denial) = access.refuse_stale_incarnation(self) {
+            return Err((
+                Some(WorthQueryApplicationIdempotencyResolutionDenial::from_authorization(denial)),
+                requested,
+            ));
+        }
         let execution = match phase.execution_request_for(&self.runtime.product_runtime) {
             Ok(execution) => execution,
             Err(_) => {
@@ -88,6 +94,12 @@ where
         Operation: ApplicationOperationMarkerIdentity<Schema>,
         Input: ApplicationCapabilityRequest<Schema, Capability> + Clone + Send + Sync + 'static,
     {
+        if let Err(denial) = access.refuse_stale_incarnation(self) {
+            return Err((
+                Some(WorthQueryApplicationIdempotencyResolutionDenial::from_authorization(denial)),
+                requested,
+            ));
+        }
         let draft = match bind_approval(execution, self, &requested, &access, operation) {
             Ok(draft) => draft,
             Err(denial) => match denial.kind() {
@@ -128,8 +140,14 @@ where
             },
         };
         let mut admission = admission
-            .bind_elevation_approval(draft.bind(requested))
-            .map_err(|(_, binding)| (None, binding.into_requested()))?;
+            .bind_elevation_approval(execution, draft.bind(requested))
+            .map_err(|(denial, binding)| {
+                let cause = match denial.kind() {
+                    crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenialKind::Stopped(_) => Some(WorthQueryApplicationIdempotencyResolutionDenial::from_authorization(denial)),
+                    crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenialKind::Refused(_) => None,
+                };
+                (cause, binding.into_requested())
+            })?;
         match self.resolve_admitted_elevation_approval_replay_with_request(
             execution,
             &mut admission,

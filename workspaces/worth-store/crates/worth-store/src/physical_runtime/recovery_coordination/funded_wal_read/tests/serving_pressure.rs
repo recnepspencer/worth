@@ -31,7 +31,7 @@ fn borrowed_serving_read_denies_before_address_then_retries_with_same_media_owne
     let held = ports
         .begin_operation(
             Scope::Recovery,
-            NonZeroU64::new(ORIGINAL - metadata - 1).unwrap(),
+            NonZeroU64::new(ORIGINAL - SERVING_BACKING_BYTES - metadata - 1).unwrap(),
         )
         .unwrap();
     let mut window = PhysicalRecoveryReadAllocation::for_serving(
@@ -62,7 +62,7 @@ fn borrowed_serving_read_denies_before_address_then_retries_with_same_media_owne
     assert_eq!(window.charged_bytes(), 0);
     assert_eq!(
         observer.snapshot().for_dimension(dimension).active_units(),
-        held.bytes()
+        SERVING_BACKING_BYTES + held.bytes()
     );
     assert_eq!(std::fs::read(wal.join(FIRST)).unwrap(), [17; PAYLOAD]);
     drop(failure);
@@ -81,7 +81,7 @@ fn borrowed_serving_read_denies_before_address_then_retries_with_same_media_owne
     assert_eq!(observed.charged_bytes(), retained);
     assert_eq!(
         observer.snapshot().for_dimension(dimension).active_units(),
-        retained
+        SERVING_BACKING_BYTES + retained
     );
     drop(window);
     drop(coordination);

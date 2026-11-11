@@ -35,6 +35,23 @@ impl RecordPinCounts {
         }
         self.len += 1;
     }
+    pub(crate) fn restore_values_for_request(
+        &mut self,
+        values: Vec<u32>,
+        request: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> Result<(), crate::execution::RelationalExecutionDenialCause> {
+        let mut result = Self::new();
+        result.len = values.len();
+        for (index, value) in values.into_iter().enumerate() {
+            request.consult()?;
+            if value != 0 {
+                result.values.insert_for_request(index, value, request)?;
+            }
+        }
+        *self = result;
+        Ok(())
+    }
+
     pub(crate) fn get(&self, index: usize) -> Option<&u32> {
         (index < self.len).then(|| self.values.get(&index).unwrap_or(&0))
     }
@@ -49,6 +66,24 @@ impl RecordPinCounts {
         } else {
             self.values.insert(index, value);
         }
+    }
+    pub(super) fn set_using(
+        &mut self,
+        index: usize,
+        value: u32,
+        request: Option<&worth_execution::ExecutionRequest<'_, '_>>,
+    ) -> Result<(), crate::execution::RelationalExecutionDenialCause> {
+        if let Some(request) = request {
+            assert!(index < self.len, "pin row is absent");
+            if value == 0 {
+                self.values.remove_for_request(&index, request)?;
+            } else {
+                self.values.insert_for_request(index, value, request)?;
+            }
+        } else {
+            self.set(index, value);
+        }
+        Ok(())
     }
     pub(super) fn adjust(&mut self, index: usize, delta: i32) -> Option<()> {
         let value = self.get(index)?.saturating_add_signed(delta);

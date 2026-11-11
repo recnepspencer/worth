@@ -13,6 +13,7 @@ mod field_observation;
 mod forgery;
 mod fragment;
 mod installed_reentry;
+pub use installed_reentry::WorthQueryCommitEntryRefusal;
 pub(crate) mod model;
 mod operation_body;
 mod optional_field_authoring;
@@ -39,7 +40,7 @@ use worth_query_installation::facade::{
 use worth_relational::facade::transactions::EntityReference;
 use write_index::FieldWriteIndex;
 
-pub(in crate::domain_computation::primary_graph::application_attempt) use model::WorthQueryApplicationOptionalFieldWrite;
+pub use model::WorthQueryApplicationOptionalFieldWrite;
 pub(in crate::domain_computation::primary_graph) use model::{
     WorthQueryAdmittedApplicationEmissionBatch, WorthQueryApplicationEmission,
 };
@@ -257,3 +258,6 @@ impl<Schema, Operation, Input, Scope>
         core::field_locator(&self.layout, entity, aspect, field)
     }
 }
+#[cfg(test)]
+#[path = "effect_program_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;

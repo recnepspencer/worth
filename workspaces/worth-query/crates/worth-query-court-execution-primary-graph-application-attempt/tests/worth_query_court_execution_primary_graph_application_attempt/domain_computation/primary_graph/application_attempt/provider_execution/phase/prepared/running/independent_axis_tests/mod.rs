@@ -115,7 +115,7 @@ fn every_plan_session_and_attempt_axis_is_rejected_independently() {
                 "independent-foreign",
                 idempotency(205, 206),
             );
-            let (_basis, mut running, mutation_run, lease) = release(foreign);
+            let (_basis, mut running, mutation_run, lease, _foreign_completion) = release(foreign);
             let staged = real_terminal_session(&phase, &foreign_world, &mut running);
             let view =
                 TestAffinityView::capture(&staged.provider_session_terminal_binding_for_test());
@@ -133,8 +133,10 @@ fn every_plan_session_and_attempt_axis_is_rejected_independently() {
             let owner = start(phase, &world, "independent-owner", idempotency(201, 202));
             let peer = start(phase, &world, "independent-peer", idempotency(203, 204));
 
-            let (basis, mut owner_running, owner_run, owner_lease) = release(owner);
-            let (_peer_basis, mut peer_running, peer_run, peer_lease) = release(peer);
+            let (basis, mut owner_running, owner_run, owner_lease, _owner_completion) =
+                release(owner);
+            let (_peer_basis, mut peer_running, peer_run, peer_lease, _peer_completion) =
+                release(peer);
             let owner_staged = real_terminal_session(execution, &world, &mut owner_running);
             let peer_staged = real_terminal_session(execution, &world, &mut peer_running);
             let owner_terminal = owner_staged.provider_session_terminal_binding_for_test();
@@ -206,6 +208,7 @@ pub fn release(
     worth_query_execution::facade::domain_computation::WorthQueryRunningDirectRun,
     worth_query_execution::court_doors_for_test::domain_computation::provider_session::graph_obligation::mutation_progression::WorthQueryMutationRunBinding,
     WorthQueryApplicationSnapshotLease,
+    worth_query_execution::facade::primary_graph::ApplicationCommitCompletionStorage,
 ){
     let (
         _coupled_outputs,
@@ -220,8 +223,15 @@ pub fn release(
         mutation_run,
         attempt_basis,
         _aftermath_causality_rest,
+        _completion_storage,
     ) = running.into_parts_for_test();
-    (attempt_basis, running, mutation_run, lease)
+    (
+        attempt_basis,
+        running,
+        mutation_run,
+        lease,
+        _completion_storage,
+    )
 }
 
 pub fn real_terminal_session<'run>(
@@ -236,9 +246,8 @@ pub fn real_terminal_session<'run>(
             (*world.application.runtime_for_test()).primary_graph_authority_for_test(),
         )
         .unwrap()
-        .readmit(execution)
-        .unwrap()
-        .prepare()
+        .admit_session(execution)
+        .and_then(|(grant, receiver)| grant.prepare(receiver, execution))
         .unwrap()
         .bind_reads_and_effects()
 }

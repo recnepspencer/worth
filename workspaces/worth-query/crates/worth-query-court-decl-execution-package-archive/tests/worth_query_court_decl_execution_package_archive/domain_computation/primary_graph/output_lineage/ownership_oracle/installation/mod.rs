@@ -2,7 +2,7 @@
 use crate::domain_computation::primary_graph::output_lineage::ownership_oracle::fixture_values::positive_length::PositiveLength;
 use crate::domain_computation::primary_graph::output_lineage::ownership_oracle::*;
 use worth_query_execution::facade::application_installation::in_memory_program;
-use worth_query_execution::facade::application_installation::WorthQueryInMemoryApplicationLimits;
+use worth_query_execution::facade::application_installation::WorthQueryApplicationLimits;
 use worth_query_execution::facade::application_installation::WorthQueryProgramApplicationRuntime;
 use std::sync::atomic::AtomicUsize;
 use std::sync::Arc;
@@ -165,7 +165,7 @@ pub fn install_with_interruption(
         .with_schema(&OwnerSchema::declaration().unwrap()).validated_program().unwrap(),
         OwnerSchema::declaration().unwrap(), (interruption,),
         ApplicationBuildIdentity::parse("11111111-1111-1111-1111-111111111111").unwrap(),
-        WorthQueryInMemoryApplicationLimits::new(
+        WorthQueryApplicationLimits::new(
             worth_query_execution::court_doors_for_test::domain_computation::execution_runtime::product_world::resources::test_product_world_resources(worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system()),
             Default::default(),
             worth_signal::facade::runtime::SignalConditionalEvaluationBudget::development()),

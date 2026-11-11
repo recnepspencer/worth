@@ -49,25 +49,27 @@ impl AggregateIdentityContractDeclaration {
         ]
     }
 
-    pub(crate) fn canonical_bytes(&self) -> Vec<u8> {
-        let mut bytes = Vec::with_capacity(68);
-        bytes.extend_from_slice(self.definition.bytes());
-        self.source.write_canonical(&mut bytes);
+    pub(crate) fn try_write_canonical(
+        &self,
+        emit: &mut dyn FnMut(&[u8]) -> Result<(), crate::execution::RelationalExecutionDenialCause>,
+    ) -> Result<(), crate::execution::RelationalExecutionDenialCause> {
+        emit(self.definition.bytes())?;
+        self.source.try_write_canonical(emit)?;
         for kind in [
             self.member_kind,
             self.membership_kind,
             self.storage.aggregate_kind,
             self.storage.lineage_kind,
         ] {
-            bytes.extend_from_slice(&kind.0.to_be_bytes());
+            emit(&kind.0.to_be_bytes())?;
         }
-        bytes.extend_from_slice(&self.storage.aggregate_aspect.0.to_be_bytes());
-        bytes.extend_from_slice(&self.storage.lineage_aspect.0.to_be_bytes());
+        emit(&self.storage.aggregate_aspect.0.to_be_bytes())?;
+        emit(&self.storage.lineage_aspect.0.to_be_bytes())?;
         if let Some(projected) = self.storage.projected {
-            bytes.extend_from_slice(b"WORTH_PROJECTED_AGGREGATE_STORAGE_V1\0");
-            bytes.extend_from_slice(&projected.coordinate_aspect.0.to_be_bytes());
-            bytes.extend_from_slice(&projected.membership_aspect.0.to_be_bytes());
+            emit(b"WORTH_PROJECTED_AGGREGATE_STORAGE_V1\0")?;
+            emit(&projected.coordinate_aspect.0.to_be_bytes())?;
+            emit(&projected.membership_aspect.0.to_be_bytes())?;
         }
-        bytes
+        Ok(())
     }
 }

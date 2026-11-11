@@ -1,4 +1,5 @@
 use super::*;
+mod page_admission_tests;
 #[path = "routing_tests.rs"]
 mod routing_tests;
 use crate::durability::data::{
@@ -8,43 +9,165 @@ use crate::publication::patch::data::PatchStreamPosition;
 use crate::tests::support::*;
 use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
 
-#[test]
-fn pending_symbols_refuse_a_cold_bucket_before_issuing_an_identity() {
-    use super::super::symbol_table::SymbolReservationDenial;
-    let (table, _, source, snapshot) = dictionary();
-    let (existing, value) = snapshot.entries.last().unwrap();
-    let before = table.interner_snapshot();
-    let mut candidate = table.begin_pending_meanings();
-    assert!(matches!(
-        candidate.reserve(value.as_str()),
-        Err(SymbolReservationDenial::ColdBucket(_))
-    ));
-    assert_eq!(table.interner_snapshot(), before);
-    assert_eq!(source.reads.load(Ordering::SeqCst), 0);
-    let request = crate::test_execution_policy::serial_request();
-    let execution = worth_execution::ExecutionRequest::serial(&request);
-    table.demand_text(&execution, value.as_str()).unwrap();
-    assert_eq!(candidate.reserve(value.as_str()).unwrap(), *existing);
-    let meanings = candidate.interner().snapshot();
-    {
-        let binding = candidate.binding();
-        candidate.seal_for_publication(&meanings, &binding, [])
-    }
-    .expect("fixture meanings agree with the candidate")
-    .publish()
-    .unwrap();
-}
 mod region_admission_tests;
+
+struct SymbolDictionaryWorld<'host, 'scope> {
+    table: RuntimeSymbolTable,
+    directory: RelationalCheckpointDirectory,
+    source: Arc<PageSource>,
+    all: crate::symbols::data::SymbolTableSnapshot,
+    execution: worth_execution::ExecutionRequest<'host, 'scope>,
+}
+struct RegionPublicationWorld<'host, 'scope> {
+    runtime: crate::runtime::RelationalRuntime,
+    entity: crate::identity::data::EntityId,
+    execution: worth_execution::ExecutionRequest<'host, 'scope>,
+}
+struct SymbolPageRefusalWorld<'host, 'scope> {
+    dictionary: SymbolDictionaryWorld<'host, 'scope>,
+    refused: worth_execution::ExecutionRequest<'host, 'scope>,
+    budget: worth_execution::SerialMemoryBudget,
+}
+fn with_symbol_dictionary_world<R>(
+    observe: impl for<'host, 'scope> FnOnce(SymbolDictionaryWorld<'host, 'scope>) -> R,
+) -> R {
+    let (table, directory, source, all) = dictionary();
+    let host = crate::test_execution_policy::serial_request();
+    observe(SymbolDictionaryWorld {
+        table,
+        directory,
+        source,
+        all,
+        execution: worth_execution::ExecutionRequest::serial(&host),
+    })
+}
+fn seeded_region(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    name: &str,
+) -> (
+    crate::runtime::RelationalRuntime,
+    crate::identity::data::EntityId,
+) {
+    let runtime = runtime_with_test_schema();
+    let entity = create_entity(execution, &runtime, name);
+    (runtime, entity)
+}
+fn with_region_publication_world<R>(
+    name: &str,
+    observe: impl for<'host, 'scope> FnOnce(RegionPublicationWorld<'host, 'scope>) -> R,
+) -> R {
+    let host = crate::test_execution_policy::serial_request();
+    let execution = worth_execution::ExecutionRequest::serial(&host);
+    let (runtime, entity) = seeded_region(&execution, name);
+    observe(RegionPublicationWorld {
+        runtime,
+        entity,
+        execution,
+    })
+}
+fn with_symbol_page_refusal_world<R>(
+    observe: impl for<'host, 'scope> FnOnce(SymbolPageRefusalWorld<'host, 'scope>) -> R,
+) -> R {
+    let (table, directory, source, all) = dictionary();
+    let host = crate::test_execution_policy::serial_request();
+    let budget = worth_execution::SerialMemoryBudget::new(Some(0));
+    let refused_host = crate::test_execution_policy::serial_request_with_memory(budget.clone());
+    observe(SymbolPageRefusalWorld {
+        dictionary: SymbolDictionaryWorld {
+            table,
+            directory,
+            source,
+            all,
+            execution: worth_execution::ExecutionRequest::serial(&host),
+        },
+        refused: worth_execution::ExecutionRequest::serial(&refused_host),
+        budget,
+    })
+}
 
 #[derive(Debug)]
 struct PageSource {
-    members: BTreeMap<RelationalDurableMemberLocator, Arc<[u8]>>,
+    members: BTreeMap<RelationalDurableMemberLocator, worth_execution::ExecutionImmutableBytes>,
     reads: AtomicUsize,
     corrupt: AtomicBool,
     failed_member: Mutex<Option<RelationalDurableMemberLocator>>,
     failure: Mutex<Option<Cause>>,
 }
 impl RelationalDurableColdSource for PageSource {
+    fn checkpoint_selected_read_protection(
+        &self,
+        request: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> Result<
+        crate::durability::medium::RelationalDurableReadPayload,
+        crate::durability::medium::RelationalDurableOwnedReadRefusal,
+    > {
+        request.check_live().map_err(|cause| {
+            crate::durability::medium::RelationalDurableOwnedReadRefusal::Request(cause.into())
+        })?;
+        // This fixture's immutable member table is retained by its actual Source Arc.
+        Ok(Box::new(()))
+    }
+    fn retain_members_for_request(
+        &self,
+        request: &worth_execution::ExecutionRequest<'_, '_>,
+        _members: &[RelationalDurableMemberLocator],
+        issuer: std::sync::Weak<dyn RelationalDurableColdSource>,
+    ) -> Result<
+        crate::durability::medium::RelationalDurableMemberCustody,
+        crate::durability::medium::RelationalDurableOwnedReadRefusal,
+    > {
+        crate::durability::medium::RelationalDurableMemberCustody::try_new_from_source_for_request(
+            issuer,
+            request,
+            || Ok(()),
+        )
+    }
+    fn read_member_owned(
+        &self,
+        request: &worth_execution::ExecutionRequest<'_, '_>,
+        original: &(dyn std::any::Any + Send + Sync),
+        member: RelationalDurableMemberLocator,
+        limit: u64,
+    ) -> Result<
+        worth_execution::ExecutionImmutableBytes,
+        crate::durability::medium::RelationalDurableOwnedReadRefusal,
+    > {
+        use crate::durability::medium::RelationalDurableOwnedReadRefusal as R;
+        if !original.is::<()>() {
+            return Err(R::ForeignProtection);
+        }
+        if member.length > limit {
+            return Err(R::Storage(Cause::LimitExceeded {
+                length: member.length,
+                limit,
+            }));
+        }
+        self.reads.fetch_add(1, Ordering::SeqCst);
+        if self.failed_member.lock().unwrap().as_ref() == Some(&member)
+            || self.corrupt.load(Ordering::SeqCst)
+        {
+            return Err(R::Storage(Cause::Damaged));
+        }
+        if let Some(cause) = *self.failure.lock().unwrap() {
+            return Err(R::Storage(cause));
+        }
+        let bytes = self
+            .members
+            .get(&member)
+            .ok_or(R::Storage(Cause::MissingMember))?;
+        if bytes.len() as u64 != member.length
+            || crate::durability::log::native_checkpoint_codec::member_frame::locator(bytes.bytes())
+                != member
+        {
+            return Err(R::Storage(Cause::IntegrityMismatch));
+        }
+        let mut output =
+            worth_execution::ExecutionRequestArrayBuilder::allocate(*request, bytes.len())
+                .map_err(R::Buffer)?;
+        output.extend_from_slice(bytes.bytes()).map_err(R::Buffer)?;
+        Ok(output.seal().map_err(R::Buffer)?.into_immutable_bytes())
+    }
+
     fn retain_members(
         &self,
         _members: &[RelationalDurableMemberLocator],
@@ -154,9 +277,7 @@ fn checkpoint_dictionary(
             .members()
             .iter()
             .map(|member| match member {
-                RelationalCheckpointMember::New { locator, bytes } => {
-                    (*locator, std::sync::Arc::<[u8]>::from(bytes.bytes()))
-                }
+                RelationalCheckpointMember::New { locator, bytes } => (*locator, bytes.clone()),
                 RelationalCheckpointMember::Carried { .. } => {
                     panic!("unpublished memory source has inline member bytes")
                 }
@@ -167,7 +288,7 @@ fn checkpoint_dictionary(
         failed_member: Mutex::new(None),
         failure: Mutex::new(None),
     });
-    let directory = RelationalCheckpointDirectory {
+    let directory = crate::durability::data::PreparedCheckpointDirectory {
         history_members: input
             .manifest
             .readmit_history_members(
@@ -176,7 +297,9 @@ fn checkpoint_dictionary(
             .unwrap(),
         manifest: input.manifest,
         source: source.clone(),
-    };
+    }
+    .readmit(execution)
+    .unwrap();
     let table = RuntimeSymbolTable::default();
     table.install_cold_pages(&directory).unwrap();
     (
@@ -187,91 +310,5 @@ fn checkpoint_dictionary(
     )
 }
 
-#[test]
-fn id_and_value_demands_load_pages_and_preserve_interning_identity_and_frontier() {
-    let (table, directory, source, all) = dictionary();
-    assert!(directory.manifest.symbols.len() > 1);
-    assert!(table.snapshot().entries.is_empty());
-    assert_eq!(source.reads.load(Ordering::SeqCst), 0);
-    let request = crate::test_execution_policy::serial_request();
-    let execution = worth_execution::ExecutionRequest::serial(&request);
-    let first = all
-        .entries
-        .iter()
-        .min_by_key(|(symbol, _)| *symbol)
-        .unwrap();
-    table.demand_symbol_ids(&execution, [first.0]).unwrap();
-    assert!(table.with_read(|symbols| symbols.resolve(first.0) == Some(first.1.as_str())));
-    assert!(source.reads.load(Ordering::SeqCst) < 3);
-    assert!(table.snapshot().entries.len() < all.entries.len());
-    let last = all
-        .entries
-        .iter()
-        .max_by_key(|(symbol, _)| *symbol)
-        .unwrap();
-    assert!(table.with_read(|symbols| symbols.symbol(last.1.as_str()).is_none()));
-    let before = source.reads.load(Ordering::SeqCst);
-    table.demand_text(&execution, last.1.as_str()).unwrap();
-    assert_eq!(
-        table.with_write(|symbols| symbols.intern(last.1.as_str())),
-        Ok(last.0)
-    );
-    assert!(source.reads.load(Ordering::SeqCst) - before < 3);
-    table
-        .demand_text(&execution, "new-after-cold-directory")
-        .unwrap();
-    let issued = table.with_write(|symbols| {
-        symbols
-            .intern("new-after-cold-directory")
-            .expect("symbol fixture has identity capacity")
-    });
-    assert!(
-        issued.0 > last.0 .0,
-        "partial dictionary admission must not reissue an old id"
-    );
-}
-
-#[test]
-fn a_damaged_symbol_page_is_a_sticky_typed_refusal() {
-    let (table, _, source, all) = dictionary();
-    let request = crate::test_execution_policy::serial_request();
-    let execution = worth_execution::ExecutionRequest::serial(&request);
-    let symbol = all.entries[0].0;
-    source.corrupt.store(true, Ordering::SeqCst);
-    let first = table.demand_symbol_ids(&execution, [symbol]).unwrap_err();
-    assert!(matches!(&first, Failure::StorageUnavailable(failure)
-        if matches!(failure.subject, RelationalStorageSubject::Symbols { .. }) && failure.cause == Cause::IntegrityMismatch));
-    source.corrupt.store(false, Ordering::SeqCst);
-    let reads = source.reads.load(Ordering::SeqCst);
-    assert_eq!(
-        table.demand_symbol_ids(&execution, [symbol]).unwrap_err(),
-        first
-    );
-    assert_eq!(source.reads.load(Ordering::SeqCst), reads);
-    assert!(table.snapshot().entries.is_empty());
-}
-
-#[test]
-fn allocation_failure_in_a_symbol_page_is_retryable() {
-    retryable_page_failure(Cause::MemoryExhausted);
-}
-
-#[test]
-fn transient_source_failure_in_a_symbol_page_is_retryable() {
-    retryable_page_failure(Cause::SourceUnavailable);
-}
-
-fn retryable_page_failure(cause: Cause) {
-    let (table, _, source, all) = dictionary();
-    let request = crate::test_execution_policy::serial_request();
-    let execution = worth_execution::ExecutionRequest::serial(&request);
-    let symbol = all.entries[0].0;
-    *source.failure.lock().unwrap() = Some(cause);
-    let first = table.demand_symbol_ids(&execution, [symbol]).unwrap_err();
-    assert!(matches!(first, Failure::StorageUnavailable(f) if f.cause == cause));
-    *source.failure.lock().unwrap() = None;
-    table.demand_symbol_ids(&execution, [symbol]).unwrap();
-    assert!(table.with_read(|symbols| symbols.retained_text(symbol).is_some()));
-}
 #[path = "placement_tests.rs"]
 mod placement_tests;

@@ -1,0 +1,36 @@
+Command: ["cargo", "nextest", "run", "--cargo-metadata", "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\target\\lane-evidence\\layout-fixture-final\\build\\cargo-metadata.json", "--binaries-metadata", "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\target\\lane-evidence\\layout-fixture-final\\build\\binaries.json", "--profile", "ci", "--config-file", "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\target\\lane-evidence\\layout-fixture-final\\nextest.toml", "--ignore-default-filter", "--no-fail-fast", "--no-tests=fail", "--message-format", "libtest-json", "--success-output", "immediate", "-E", "test(=domain_computation::primary_graph::tests::application_attempt::cleanup_dispatch::failed_cleanup_keeps_the_original_first_send_after_derived_windows_are_discarded)"]
+Working directory: C:\programming\worth worktees\worktrees\m3-host-home\workspaces\worth-query
+HEAD: 29b4ecb5ce2af0b6d617bf4b35d294e1bef4273f
+Git status --short empty: True
+Start: 2026-11-07T07:29:38.350072+00:00
+
+{"type": "cargo-invocation", "command": ["cargo", "nextest", "run", "--cargo-metadata", "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\target\\lane-evidence\\layout-fixture-final\\build\\cargo-metadata.json", "--binaries-metadata", "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\target\\lane-evidence\\layout-fixture-final\\build\\binaries.json", "--profile", "ci", "--config-file", "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\target\\lane-evidence\\layout-fixture-final\\nextest.toml", "--ignore-default-filter", "--no-fail-fast", "--no-tests=fail", "--message-format", "libtest-json", "--success-output", "immediate", "-E", "test(=domain_computation::primary_graph::tests::application_attempt::cleanup_dispatch::failed_cleanup_keeps_the_original_first_send_after_derived_windows_are_discarded)"], "cwd": "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\workspaces\\worth-query", "capture": "ordered", "mode": "build", "target_dir": "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\workspaces\\worth-query\\target", "cargo_profile": "test"}
+info: experimental features enabled: wrapper-scripts
+────────────
+ Nextest run ID 1e704779-3481-4166-b755-c538a22b12fe with nextest profile: ci
+    Starting 1 test across 2 binaries (560 tests skipped)
+        PASS [   1.143s] (1/1) worth-query-court-execution-package-archive::worth_query_court_execution_package_archive domain_computation::primary_graph::tests::application_attempt::cleanup_dispatch::failed_cleanup_keeps_the_original_first_send_after_derived_windows_are_discarded
+  output ───
+
+    running 1 test
+    test domain_computation::primary_graph::tests::application_attempt::cleanup_dispatch::failed_cleanup_keeps_the_original_first_send_after_derived_windows_are_discarded ... ok
+
+    test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 175 filtered out; finished in 0.42s
+
+
+{"type":"suite","event":"started","test_count":1}
+{"type":"test","event":"started","name":"worth-query-court-execution-package-archive::worth_query_court_execution_package_archive$domain_computation::primary_graph::tests::application_attempt::cleanup_dispatch::failed_cleanup_keeps_the_original_first_send_after_derived_windows_are_discarded"}
+{"type":"test","event":"ok","name":"worth-query-court-execution-package-archive::worth_query_court_execution_package_archive$domain_computation::primary_graph::tests::application_attempt::cleanup_dispatch::failed_cleanup_keeps_the_original_first_send_after_derived_windows_are_discarded","exec_time":1.1433550000000001}
+{"type":"suite","event":"ok","passed":1,"failed":0,"ignored":0,"measured":0,"filtered_out":175,"exec_time":1.1433550000000001}
+────────────
+     Summary [   1.145s] 1 test run: 1 passed, 560 skipped
+{"type":"suite","event":"started","test_count":2}
+{"type":"test","event":"started","name":"worth-query-court-query-decl-host::worth_query_court_query_decl_host$cost::certification::runtime_world_branching::cumulative::scheduled_public_read_timings_report_cold_and_warm_distributions"}
+{"type":"test","event":"started","name":"worth-query-court-query-decl-host::worth_query_court_query_decl_host$cost::certification::runtime_world_branching::cumulative::scheduled_seeded_model_broadens_public_action_roster"}
+{"type":"suite","event":"ok","passed":0,"failed":0,"ignored":2,"measured":0,"filtered_out":381,"exec_time":0}
+
+
+{"type": "cargo-result", "exit_code": 0}
+
+End: 2026-11-07T07:29:39.779665+00:00
+Exit code: 0

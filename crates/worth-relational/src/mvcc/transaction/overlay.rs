@@ -3,22 +3,24 @@ use super::{
     staging_storage::{Author, OrderedStore},
     RelationalTransactionFootprint, RelationalTransactionStagingDenial as Denial,
 };
-use crate::symbols::data::{ClientKey, Symbol};
+use crate::symbols::data::ClientKey;
 use crate::transactions::data::{
     CreateIntent, CreatedEntityRef, CreatedRelationRef, EntityReference, MutationIntent,
     WorkerIntentBatch,
 };
-use std::collections::BTreeMap;
 use worth_execution::ExecutionAllocationPolicy;
+mod copy;
 
-#[derive(Clone, Debug, Default)]
+#[derive(Debug, Default)]
 pub(crate) struct DetachedRelationalTransactionOverlay {
     pub(super) effective_records: super::effective_records::EffectiveRecords,
     // Input batch/header storage remains System and outside the new backing claim.
     pub(super) batches: Vec<WorkerIntentBatch>,
     pub(super) index: OrderedStore<IndexRow>,
-    pub(super) normalized_client_keys: BTreeMap<String, Symbol>,
+    pub(super) normalized_client_keys: super::normalized_key_cache::NormalizedKeyCache,
     pub(super) normalization_generation: u64,
+    // Original independent input/cache data precedes its own funding owner.
+    pub(super) copied_input_memory: Option<worth_execution::ExecutionMemoryReservation>,
 }
 impl DetachedRelationalTransactionOverlay {
     pub(super) fn prepare_stage(

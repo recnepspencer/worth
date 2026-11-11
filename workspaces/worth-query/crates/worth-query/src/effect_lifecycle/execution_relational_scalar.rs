@@ -12,7 +12,7 @@ use super::execution::{lower_runtime_error, EffectExecutionDenialKind};
 use super::RelationalEffectExecutionFailure;
 
 pub(super) fn execute_lowered_mutation(
-    runtime: &mut RelationalRuntime,
+    runtime: &RelationalRuntime,
     request_execution: &worth_execution::ExecutionRequest<'_, '_>,
     declaration: &LoweredMutationIntentDeclaration,
 ) -> Result<CommitResult, RelationalEffectExecutionFailure> {
@@ -174,7 +174,7 @@ fn snapshot_identity_from_exact_basis(
 }
 
 pub(super) fn open_exact_basis_snapshot(
-    runtime: &mut RelationalRuntime,
+    runtime: &RelationalRuntime,
     branch: &BranchId,
     basis: &worth_relational::facade::branch::AdmittedRelationalBranchBasis,
 ) -> Result<SnapshotHandle, RelationalEffectExecutionFailure> {

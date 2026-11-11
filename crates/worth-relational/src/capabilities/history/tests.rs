@@ -26,10 +26,11 @@ struct FakeHistorySource {
 }
 
 impl CommitEnvelopeSource for FakeHistorySource {
-    fn resident_commit_envelope(&self, commit_id: CommitId) -> Option<CanonicalCommitEnvelope> {
-        self.envelopes
-            .get(&commit_id)
-            .map(|envelope| envelope.as_ref().clone())
+    fn resident_commit_envelope(
+        &self,
+        commit_id: CommitId,
+    ) -> Option<Arc<CanonicalCommitEnvelope>> {
+        self.envelopes.get(&commit_id).cloned()
     }
 }
 
@@ -84,8 +85,9 @@ impl HistorySource for FakeHistorySource {
 }
 
 fn commit_envelope(commit_id: u64, version_id: u64) -> CanonicalCommitEnvelope {
-    CanonicalCommitEnvelope::new(
+    let draft = crate::history::data::CanonicalCommitEnvelopeDraft::new(
         Default::default(),
+        crate::history::data::CanonicalIndexDefinitionDelta::prepared(1, 1, Vec::new(), None),
         RelationalCommitReceipt {
             commit_id: CommitId(commit_id),
             version_id: crate::identity::data::VersionId(version_id),
@@ -140,7 +142,25 @@ fn commit_envelope(commit_id: u64, version_id: u64) -> CanonicalCommitEnvelope {
         None,
         None,
         DescriptorSemanticsVersion(1),
-    )
+    );
+    // Pure predicate/inspection input: keep an actual original semantic image,
+    // then edit only this test body. No publication or readmission is claimed.
+    let host = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host);
+    let runtime = crate::tests::support::runtime_with_test_schema();
+    let produced = crate::tests::support::create_entity_outcome(
+        execution,
+        &runtime,
+        "predicate-semantic-source",
+    );
+    let envelope = produced.publication().envelope.clone().into_arc();
+    crate::tests::support::release_test_commit_snapshot(&runtime, &produced);
+    drop(produced);
+    drop(runtime);
+    let mut envelope = std::sync::Arc::try_unwrap(envelope)
+        .expect("source owner and result released their actual envelope shares");
+    *envelope.body_mut_for_test() = draft.into_body();
+    envelope
 }
 
 #[test]

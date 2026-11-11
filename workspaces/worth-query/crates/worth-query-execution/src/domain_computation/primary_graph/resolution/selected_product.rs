@@ -120,7 +120,7 @@ where
             )
         })?;
         let handle = graph.integration_handle();
-        let evidence = handle.with_runtime_mut(execution, |relational| {
+        let evidence = handle.with_runtime(execution, |relational| {
             handle
                 .carry_primary_index_basis_for_basis(
                     execution,
@@ -215,7 +215,7 @@ where
                     )
                 })?;
         let handle = graph.integration_handle();
-        handle.with_runtime_mut(execution, |relational| {
+        handle.with_runtime(execution, |relational| {
             handle
                 .carry_primary_index_basis_for_basis(
                     execution,

@@ -32,7 +32,7 @@ pub fn declare(
         .unwrap()
         .reverse(ModelMember::reference())
         .allow(Model::reference());
-    schema
+    inspection::declare(schema)
         .declared_operation::<UndeclaredRead>(
             UndeclaredRead::reference()
                 .definition()
@@ -127,7 +127,7 @@ pub fn observe<B: ApplicationMutationBinding<Schema>>(
 }
 mod control;
 mod courts;
-mod foreign;
+pub(super) mod inspection;
 pub(super) mod program;
 type Host = WorthQueryProgramApplicationRuntime<Schema, program::Program>;
 fn install(worker: bool) -> Host {

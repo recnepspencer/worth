@@ -45,11 +45,11 @@ impl RelationalRuntime {
             return false;
         }
         partition.entity_arena.extra[entity_id.local_slot.0 as usize] =
-            crate::storage::substrate::EntityExtra {
+            crate::storage::substrate::EntityExtra::from_unbudgeted_parts(
                 structural_fingerprint,
                 lineage_id,
-                authoritative_aspect_state: None,
-            };
+                None,
+            );
         true
     }
 
@@ -67,27 +67,19 @@ impl RelationalRuntime {
         let slot = entity_id.local_slot.0 as usize;
         let next_generation = arena.generations[slot] + 1;
 
-        if let Some(current) = arena.metadata_history[slot].last_mut() {
-            current.retired_at = Some(replacement_version);
-        }
-
         arena.generations[slot] = next_generation;
         arena.lifecycle[slot] = crate::storage::data::RecordLifecycleState::Live;
-        arena.metadata_history[slot].push(crate::storage::substrate::VersionedEntityMetadata {
-            effective_at: replacement_version,
-            retired_at: None,
-            generation: next_generation,
-            kind_id: arena.kind_ids[slot].expect("entity kind must exist for slot reuse test"),
-            lineage_id,
-            authoritative_aspect_state: None,
-        });
+        arena.apply_extra_update(
+            slot,
+            crate::storage::substrate::EntityExtra::from_unbudgeted_parts(
+                structural_fingerprint,
+                lineage_id,
+                None,
+            ),
+            replacement_version,
+        )?;
         arena.created_at[slot] = replacement_version;
         arena.retired_at[slot] = None;
-        arena.extra[slot] = crate::storage::substrate::EntityExtra {
-            structural_fingerprint,
-            lineage_id,
-            authoritative_aspect_state: None,
-        };
         arena.live_bitset.set(slot, true);
         arena.reclaimable_bitset.set(slot, false);
         self.history

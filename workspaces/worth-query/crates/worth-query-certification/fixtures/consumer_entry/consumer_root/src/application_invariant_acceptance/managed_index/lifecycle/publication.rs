@@ -1,6 +1,7 @@
 //! A real Native effect cannot make a successor cache visible through its old World.
 use super::super::mutation;
 use super::*;
+use crate::application_invariant_acceptance::managed_index::prefix_observation;
 use std::{num::NonZeroUsize, time::Duration};
 use worth_query_host::facade::runtime::ExecutionAllocationPolicy;
 
@@ -9,7 +10,7 @@ fn public_cache_native_ahead_of_world_keeps_selected_predecessor_then_requires_r
     run(pending_world);
 }
 fn pending_world() {
-    let calls = Arc::new(prefix::Calls::default());
+    let calls = Arc::new(prefix_observation::Calls::default());
     let world = host::install(Arc::clone(&calls));
     let scope = authentication::request_scope();
     let principal = authenticate(&world, &scope);

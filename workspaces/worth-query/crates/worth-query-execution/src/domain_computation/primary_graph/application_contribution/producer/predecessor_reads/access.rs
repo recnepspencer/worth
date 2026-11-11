@@ -21,12 +21,12 @@ use worth_relational::facade::{
 #[derive(Default)]
 pub(in crate::domain_computation::primary_graph) struct ProducerPredecessorReadState {
     selected: Mutex<Option<RelationalRequiredOutputPublication>>,
-    historical: Mutex<Vec<HistoricalProducerRead>>,
+    historical: Mutex<Vec<WorthQueryHistoricalProducerRead>>,
 }
 impl ProducerPredecessorReadState {
     pub(in crate::domain_computation::primary_graph) fn record(
         &self,
-        read: HistoricalProducerRead,
+        read: WorthQueryHistoricalProducerRead,
     ) {
         self.historical
             .lock()
@@ -35,7 +35,7 @@ impl ProducerPredecessorReadState {
     }
     pub(in crate::domain_computation::primary_graph) fn take_historical(
         &self,
-    ) -> Option<Arc<[HistoricalProducerRead]>> {
+    ) -> Option<Arc<[WorthQueryHistoricalProducerRead]>> {
         let mut reads = self
             .historical
             .lock()
@@ -130,8 +130,8 @@ impl ProducerPredecessorReadAccess {
             implementation: self.implementation,
             family: self.family.into(),
             source_scope: scope,
-            source_partition: partition,
-            source_epoch: self.epoch,
+            source_partition: worth_foundational::CanonicalDigestId::new(partition),
+            source_epoch: worth_foundational::CanonicalDigestId::new(self.epoch),
         };
         let prior = native
             .readmit_current_owned_output_successor(

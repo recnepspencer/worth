@@ -1,6 +1,16 @@
 /// Why at least one owner effect survived without a product-reference move.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ProductUnpublishedCause {
+    /// World accepted the original durable open before Native preparation.
+    OpenAttemptRetained,
+    RecoveredWithoutProductMovement,
+    WorldOccurrencePending,
+    OriginalObservationStopped(
+        worth_relational::facade::transactions::RelationalExecutionDenialCause,
+    ),
+    OriginalObservationUnavailable,
+    WorldOccurrenceRefused,
+    WorldOccurrenceReadmissionRequired,
     SiblingOwnerDenied,
     CallerAbandoned,
     SettlementPending,

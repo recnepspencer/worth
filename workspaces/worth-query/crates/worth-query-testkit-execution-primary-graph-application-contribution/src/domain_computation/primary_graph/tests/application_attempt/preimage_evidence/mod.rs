@@ -1,5 +1,6 @@
 //! Exact reusable commit evidence and demanded-work breadth proofs.
 
+use worth_query_execution::facade::primary_graph::WorthQueryApplicationIdempotencyBinding;
 use worth_query_declaration::facade::application_operation::ApplicationMutationOutputContract;
 use worth_query_declaration::facade::application_operation::ApplicationMutationOutputRoleDescriptor;
 use worth_query_declaration::facade::application_operation::WorthQueryApplicationDeclaredOutputRole;
@@ -142,6 +143,73 @@ pub fn retained_status_program(
     ExactStatusRetentionInput,
     Account,
 > {
+    build_retained_status_program(
+        phase_custody,
+        world,
+        principal,
+        account,
+        request,
+        replacement,
+        StatusProgramRetention {
+            breadth,
+            binding: None,
+        },
+    )
+}
+
+/// Capture retry meaning from the exact original admission, before publication.
+pub fn retained_narrow_status_program_with_binding(
+    phase_custody: &worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::advancement::test_host_policy::TestHostRequest<'_>,
+    world: &AuthorizationWorld,
+    principal: &WorthQueryAuthenticatedPrincipal<IdentityExecutionSchema, Principal, u64>,
+    account: &WorthQueryApplicationEntityIdentity<IdentityExecutionSchema, Account>,
+    request: &worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope,
+    replacement: &str,
+    mut binding: WorthQueryApplicationIdempotencyBinding,
+) -> (
+    WorthQueryApplicationEffectProgram<
+        IdentityExecutionSchema,
+        ExactStatusRetentionOperation,
+        ExactStatusRetentionInput,
+        Account,
+    >,
+    WorthQueryApplicationIdempotencyBinding,
+) {
+    let program = build_retained_status_program(
+        phase_custody,
+        world,
+        principal,
+        account,
+        request,
+        replacement,
+        StatusProgramRetention {
+            breadth: RetentionMutationBreadth::Narrow,
+            binding: Some(&mut binding),
+        },
+    );
+    (program, binding)
+}
+
+struct StatusProgramRetention<'a> {
+    breadth: RetentionMutationBreadth,
+    binding: Option<&'a mut WorthQueryApplicationIdempotencyBinding>,
+}
+
+fn build_retained_status_program(
+    phase_custody: &worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::advancement::test_host_policy::TestHostRequest<'_>,
+    world: &AuthorizationWorld,
+    principal: &WorthQueryAuthenticatedPrincipal<IdentityExecutionSchema, Principal, u64>,
+    account: &WorthQueryApplicationEntityIdentity<IdentityExecutionSchema, Account>,
+    request: &worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope,
+    replacement: &str,
+    retention: StatusProgramRetention<'_>,
+) -> WorthQueryApplicationEffectProgram<
+    IdentityExecutionSchema,
+    ExactStatusRetentionOperation,
+    ExactStatusRetentionInput,
+    Account,
+> {
+    let StatusProgramRetention { breadth, binding } = retention;
     let operation = world
         .application
         .installed_schema()
@@ -158,6 +226,9 @@ pub fn retained_status_program(
             request,
         )
         .unwrap();
+    if let Some(binding) = binding {
+        *binding = (*binding).bind_admission_for_test(&admission);
+    }
     let other = matches!(breadth, RetentionMutationBreadth::CrossRecordLabel).then(|| {
         resolved_account(
             &(phase_custody).test_host_request_for_test(),

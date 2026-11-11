@@ -17,15 +17,18 @@ use crate::tests::harness::scenario::runner::{
 use crate::tests::support::*;
 
 #[test]
-fn cdc_certification_durable_recovery_matches_head_and_midstream_consumers() {
+fn cdc_certification_checkpoint_reconstruction_matches_head_and_midstream_consumers() {
     let host_request = crate::test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
-    let runtime = durable_runtime_with_test_schema();
+    let runtime = runtime_with_test_schema();
     for name in ["a", "b", "c", "d", "e", "f"] {
         let _ = create_entity_outcome(execution, &runtime, name);
         if ["b", "d"].contains(&name) {
-            crate::tests::support::checkpoint_durably(execution, &runtime).unwrap();
+            runtime
+                .durability_authority()
+                .checkpoint(execution)
+                .unwrap();
         }
     }
 
@@ -59,13 +62,11 @@ fn cdc_certification_durable_recovery_matches_head_and_midstream_consumers() {
     );
     assert_eq!(durable_mid_stitched, expected_mid);
 
-    let recovery_plan = crate::tests::support::recovery_plan_for(
-        execution,
-        &runtime,
-        RecoveryMode::NormalRecoveryVerification,
-    )
-    .unwrap();
-    let mut recovered = durable_runtime_with_test_schema();
+    let recovery_plan = runtime
+        .durability()
+        .recovery_plan(execution, RecoveryMode::NormalRecoveryVerification)
+        .unwrap();
+    let mut recovered = runtime_with_test_schema();
     recovered
         .durability_recovery()
         .recover(execution, recovery_plan)
@@ -84,14 +85,14 @@ fn cdc_certification_durable_recovery_matches_head_and_midstream_consumers() {
 }
 
 #[test]
-fn cdc_certification_persisted_seeded_matrix_survives_checkpoint_compaction_and_recovery() {
+fn cdc_certification_seeded_matrix_survives_checkpoint_retention_and_reconstruction() {
     let host_request = crate::test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     for seed in 0_u64..3 {
         let world = run_seeded_scenario(
             execution,
-            SeededScenarioConfig::persisted_geometry(
+            SeededScenarioConfig::checkpointed_geometry(
                 seed,
                 CertificationPressureProfile::HistoryPressure,
             ),
@@ -100,18 +101,17 @@ fn cdc_certification_persisted_seeded_matrix_survives_checkpoint_compaction_and_
         let checkpoints = random_checkpoints_from_patches(&full_from_head, seed ^ 0x55AA55AA, 10);
         let views = collect_multi_subscriber_views(&world.runtime, &checkpoints, &[1, 2, 4, 8, 16]);
         assert_multi_subscriber_converges(
-            &format!("persisted seed {seed} pre-recovery convergence"),
+            &format!("checkpointed seed {seed} pre-recovery convergence"),
             &views,
             &full_from_head,
         );
 
-        let recovery_plan = crate::tests::support::recovery_plan_for(
-            execution,
-            &world.runtime,
-            RecoveryMode::NormalRecoveryVerification,
-        )
-        .unwrap();
-        let mut recovered = build_property_runtime(RuntimeHarnessMode::Persisted);
+        let recovery_plan = world
+            .runtime
+            .durability()
+            .recovery_plan(execution, RecoveryMode::NormalRecoveryVerification)
+            .unwrap();
+        let mut recovered = build_property_runtime(RuntimeHarnessMode::CheckpointReconstruction);
         recovered
             .durability_recovery()
             .recover(execution, recovery_plan)
@@ -119,7 +119,7 @@ fn cdc_certification_persisted_seeded_matrix_survives_checkpoint_compaction_and_
         let recovered_patch_stream = collect_patch_stream_from_head(execution, &recovered, 4096);
         assert_eq!(
             recovered_patch_stream, full_from_head,
-            "persisted seed {seed} drifted after recovery"
+            "checkpointed seed {seed} drifted after recovery"
         );
     }
 }
@@ -131,7 +131,7 @@ fn cdc_certification_retention_truncation_recovers_exact_suffix_from_old_checkpo
 
     let world = run_seeded_scenario(
         execution,
-        SeededScenarioConfig::persisted_geometry(
+        SeededScenarioConfig::checkpointed_geometry(
             0xFACE515E,
             CertificationPressureProfile::HistoryPressure,
         ),

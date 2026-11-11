@@ -19,7 +19,8 @@ impl RelationalAuthoredCoupledCandidate<'_> {
         let prefix = prefix
             .as_ref()
             .expect("the ordinary merger carried the authored prefix");
-        let plans = std::iter::once(prefix).chain(self.parts.iter().map(|part| &part.commands));
+        let plans = std::iter::once(prefix.plan())
+            .chain(self.parts.iter().map(|part| part.commands.plan()));
         execution.run_native_with_checkpoint(|context| {
             let mut count = 0usize;
             let mut bytes = 0u64;
@@ -31,7 +32,7 @@ impl RelationalAuthoredCoupledCandidate<'_> {
                 }
             }
             let _memory = worth_execution::ExecutionMemoryReservation::reserve_in_scope(crate::authority::commit::pipeline::request_lease(execution), bytes).map_err(|cause| custody::execution_stop(crate::execution::denial::lease_denial(cause)))?;
-            let mut commands = MergedCommitPlan { transaction_id: prefix.transaction_id, merged_intents: Vec::new() };
+            let mut commands = MergedCommitPlan { transaction_id: prefix.plan().transaction_id, merged_intents: Vec::new() };
             commands.merged_intents.try_reserve_exact(count).map_err(|_| custody::execution_stop(crate::execution::RelationalExecutionDenialCause::AllocationFailed))?;
             for plan in plans {
                 for intent in &plan.merged_intents {

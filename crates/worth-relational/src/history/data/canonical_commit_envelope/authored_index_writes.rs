@@ -87,6 +87,28 @@ impl<'de> Deserialize<'de> for CanonicalAuthoredIndexWrites {
 }
 
 impl CanonicalAuthoredIndexWrites {
+    /// Attach only before the freshly deserialized private backing can alias.
+    /// Alias/slot refusal returns the exact original unconsumed reservation.
+    pub(crate) fn retain_decoded_memory(
+        &mut self,
+        memory: Option<worth_execution::ExecutionMemoryReservation>,
+    ) -> Result<(), Option<worth_execution::ExecutionMemoryReservation>> {
+        let Some(backing) = self.0.as_mut() else {
+            return if memory.is_none() {
+                Ok(())
+            } else {
+                Err(memory)
+            };
+        };
+        let Some(backing) = Arc::get_mut(backing) else {
+            return Err(memory);
+        };
+        if backing.memory.is_some() {
+            return Err(memory);
+        }
+        backing.memory = memory;
+        Ok(())
+    }
     /// The canonical omitted tail means unavailable, never complete-empty.
     pub(super) fn unavailable() -> Self {
         Self(None)

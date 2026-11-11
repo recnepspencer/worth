@@ -18,7 +18,7 @@ use super::groups::InvariantCostClass;
 use super::results::{InvariantAdvisory, InvariantViolation};
 use super::rules::{InvariantRule, RecordKindTag};
 use super::InvariantVerdict;
-pub(crate) use relation_integrity_registration_plan::relation_integrity_registrations_for_plan;
+pub(crate) use relation_integrity_registration_plan::append_relation_integrity_registrations;
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct InvariantCatalog {

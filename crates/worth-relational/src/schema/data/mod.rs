@@ -26,6 +26,7 @@ pub use aspect_contracts::{
 pub use aspect_traces::{
     AspectDeclarationTrace, AspectDeclarationTraceRow, AspectLoweringTrace, AspectLoweringTraceRow,
 };
+pub(crate) use authority_snapshot::schema_authority_snapshot_digest_for_compilation;
 pub use authority_snapshot::{
     schema_authority_snapshot_digest_bytes, SchemaAuthorityKindSnapshot,
     SchemaAuthorityRelationSnapshot, SchemaAuthoritySnapshot, SchemaAuthoritySnapshotParts,
@@ -36,7 +37,7 @@ pub use continuity::{
     DescriptorSemanticsSupportPolicy, DescriptorSemanticsVersion, FreeFormSchemaDiffIntent,
     HistoricalInterpretationSensitivity, LoweredSchemaTransitionPlan, ProposedSchemaTransition,
     SchemaBoundaryFingerprint, SchemaBridgeDescriptor, SchemaBridgeabilityClassification,
-    SchemaContinuationAdmissionObservation, SchemaContinuationClassification,
+    SchemaChangeText, SchemaContinuationAdmissionObservation, SchemaContinuationClassification,
     SchemaContinuationDescriptor, SchemaDiffAtom, SchemaDiffDetail, SchemaElementKind,
     SchemaElementRef, SchemaLineageArtifact, SchemaLineageOrderingSemantics,
     SchemaPublicationImpact, SchemaReconciliationClassification, SchemaReconciliationDescriptor,
@@ -45,7 +46,10 @@ pub use continuity::{
     SchemaTransitionSummary, SubscriberBoundaryVisibility, ValidatedSchemaTransition,
 };
 pub use registry_errors::{SchemaRegistryError, SchemaRegistryErrorClass};
-pub(crate) use relation_integrity::derive_relation_integrity_plan_revision;
+pub(crate) use relation_integrity::{
+    derive_relation_integrity_plan_revision,
+    derive_relation_integrity_plan_revision_for_compilation,
+};
 pub use relation_integrity::{
     AggregateIdentityContractDeclaration, AggregateIdentitySource, AggregateIdentityStorage,
     AggregateProjectedMemberStorage, CardinalityContractDeclaration, ContractId,
@@ -339,3 +343,5 @@ impl RelationalSchemaRegistry {
         Ok(Some((schema_id.clone(), schema_version_id)))
     }
 }
+
+pub(crate) use continuity::{SchemaTextReadmissionMemory, SchemaTransitionReadmissionMemory};

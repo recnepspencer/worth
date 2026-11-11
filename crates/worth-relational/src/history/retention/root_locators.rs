@@ -20,13 +20,10 @@ pub(super) struct RetiredRootLocators {
 
 impl RetiredRootLocators {
     pub(super) fn register(&self, root: &RelationalBranchRoot, root_key: usize, generation: u64) {
-        if let Some(envelope) = root.canonical_envelope() {
+        if let Some(receipt) = root.commit_receipt() {
             self.register_locator(
-                envelope.commit.commit_id,
-                (
-                    envelope.commit.version_id,
-                    root.schema_authority().schema_version(),
-                ),
+                receipt.commit_id,
+                (receipt.version_id, root.schema_authority().schema_version()),
                 (root_key, generation),
             );
         }
@@ -62,15 +59,12 @@ impl RetiredRootLocators {
     }
 
     pub(super) fn remove(&self, root: &RelationalBranchRoot, root_key: usize, generation: u64) {
-        let Some(envelope) = root.canonical_envelope() else {
+        let Some(receipt) = root.commit_receipt() else {
             return;
         };
         self.remove_locator(
-            envelope.commit.commit_id,
-            (
-                envelope.commit.version_id,
-                root.schema_authority().schema_version(),
-            ),
+            receipt.commit_id,
+            (receipt.version_id, root.schema_authority().schema_version()),
             (root_key, generation),
         );
     }

@@ -1,6 +1,6 @@
 use worth_foundational::facade::{AspectFieldLocator, AspectKey, AspectValue};
 use worth_relational::facade::identity::{EntityId, KindId, RelationId};
-use worth_relational::facade::indexes::{DerivedIndexDefinition, DerivedIndexId};
+use worth_relational::facade::indexes::DerivedIndexId;
 
 pub(crate) mod adjacency;
 mod dependency_key;
@@ -16,15 +16,11 @@ pub(crate) mod movement;
 mod retirement_equality;
 pub(crate) mod source_currentness;
 mod source_read_authorization;
-pub(in crate::domain_computation::primary_graph) use source_read_authorization::{
-    SourceReadAuthorization, SourceReadAuthorizationKey,
-};
+
 mod source_merge;
 mod source_publication_read;
-pub(in crate::domain_computation::primary_graph) use managed_source_read::{
-    ManagedSourceRead, ManagedSourceReadKey,
-};
-pub(in crate::domain_computation::primary_graph) use source_publication_read::SourcePublicationRead;
+pub(in crate::domain_computation::primary_graph) use managed_source_read::ManagedSourceRead;
+
 mod workflow_definition_predecessor;
 pub(crate) mod workflow_history_basis;
 pub(in crate::domain_computation) use workflow_history_basis::WorkflowHistoryRequirement;
@@ -204,7 +200,7 @@ pub enum WorthQueryApplicationObservedFact {
     /// check-then-create race without exposing raw index authority.
     IndexedEntitySelection {
         index_id: DerivedIndexId,
-        definition: std::sync::Arc<DerivedIndexDefinition>,
+        definition: worth_relational::facade::indexes::RetainedDerivedIndexDefinition,
         entity_kind: KindId,
         locator: AspectFieldLocator,
         value: AspectValue,
@@ -287,4 +283,11 @@ pub mod consult_observation;
 
 mod court_doors_for_test;
 
+pub use source_publication_read::SourcePublicationRead;
+
+pub use managed_source_read::ManagedSourceReadKey;
+
+pub use source_read_authorization::SourceReadAuthorizationKey;
+
 pub(in crate::domain_computation::primary_graph) use effect_support::source_stop as candidate_support_source_stop;
+pub use source_read_authorization::SourceReadAuthorization;

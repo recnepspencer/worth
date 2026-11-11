@@ -93,7 +93,7 @@ where
         Source::Input: Clone + Send + Sync + 'static,
     {
         let phase_request =
-            match phase.execution_request_for(&self.backing.runtime.runtime.product_runtime) {
+            match phase.execution_request_for(&self.backing.runtime().runtime.product_runtime) {
                 Ok(request) => request,
                 Err(cause) => return Ok((
                     crate::domain_computation::primary_graph::WorthQueryAdvancementDenial::from(
@@ -151,7 +151,7 @@ where
         Source::Input: Clone + Send + Sync + 'static,
     {
         let phase_request =
-            match phase.execution_request_for(&self.backing.runtime.runtime.product_runtime) {
+            match phase.execution_request_for(&self.backing.runtime().runtime.product_runtime) {
                 Ok(request) => request,
                 Err(cause) => return Ok((
                     crate::domain_computation::primary_graph::WorthQueryAdvancementDenial::from(
@@ -203,7 +203,7 @@ where
         use super::super::WorthQueryProgramOwner;
 
         let source = TypeId::of::<Source>();
-        if !std::ptr::eq(owner.owned_runtime(), &self.backing.runtime)
+        if !std::ptr::eq(owner.owned_runtime(), self.backing.runtime())
             || !self.backing.initial.root_graph_types.contains(&root)
             || !owner.owns_output_root(root)
             || !owner.owns_output_source(source.into_external())
@@ -211,7 +211,7 @@ where
             return Err(WorthQueryApplicationCommitDenial::application_program_required());
         }
         self.backing
-            .runtime
+            .runtime()
             .installed_program_support()
             .ok_or_else(WorthQueryApplicationCommitDenial::application_program_required)?
             .present_for_commit(owner.owned_revision())

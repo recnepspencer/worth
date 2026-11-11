@@ -1,0 +1,111 @@
+[
+  {
+    "fixture": "cleanup_freshness_rejects_caller_source_and_policy.rs",
+    "errors": [
+      [
+        null,
+        "cannot construct `StoreRecoveryCleanupPlan` with struct literal syntax due to private fields"
+      ]
+    ]
+  },
+  {
+    "fixture": "namespace_durable_recovery_cannot_be_forged.rs",
+    "errors": [
+      [
+        null,
+        "cannot construct `NamespaceDurablePhysicalRecovery` with struct literal syntax due to private fields"
+      ]
+    ]
+  },
+  {
+    "fixture": "planned_recovery_cannot_be_forged.rs",
+    "errors": [
+      [
+        null,
+        "cannot construct `PlannedPhysicalRecovery` with struct literal syntax due to private fields"
+      ]
+    ]
+  },
+  {
+    "fixture": "recovered_handoff_cannot_be_forged.rs",
+    "errors": [
+      [
+        null,
+        "cannot construct `RecoveredPhysicalRuntimeHandoff` with struct literal syntax due to private fields"
+      ]
+    ]
+  },
+  {
+    "fixture": "recovery_construction_authority_cannot_be_forged.rs",
+    "errors": [
+      [
+        null,
+        "cannot construct `PhysicalRecoveryConstructionAuthority` with struct literal syntax due to private fields"
+      ]
+    ]
+  },
+  {
+    "fixture": "recovery_construction_port_cannot_be_forged.rs",
+    "errors": [
+      [
+        null,
+        "cannot construct `PhysicalRecoveryConstructionPort` with struct literal syntax due to private fields"
+      ]
+    ]
+  },
+  {
+    "fixture": "reopened_recovery_cannot_be_forged.rs",
+    "errors": [
+      [
+        null,
+        "cannot construct `ReopenedPhysicalRecovery` with struct literal syntax due to private fields"
+      ]
+    ]
+  },
+  {
+    "fixture": "selected_recovery_cannot_be_forged.rs",
+    "errors": [
+      [
+        {
+          "code": "E0308",
+          "explanation": "Expected type did not match the received type.\n\nErroneous code examples:\n\n```compile_fail,E0308\nfn plus_one(x: i32) -> i32 {\n    x + 1\n}\n\nplus_one(\"Not a number\");\n//       ^^^^^^^^^^^^^^ expected `i32`, found `&str`\n\nif \"Not a bool\" {\n// ^^^^^^^^^^^^ expected `bool`, found `&str`\n}\n\nlet x: f32 = \"Not a float\";\n//     ---   ^^^^^^^^^^^^^ expected `f32`, found `&str`\n//     |\n//     expected due to this\n```\n\nThis error occurs when an expression was used in a place where the compiler\nexpected an expression of a different type. It can occur in several cases, the\nmost common being when calling a function and passing an argument which has a\ndifferent type than the matching type in the function declaration.\n"
+        },
+        "mismatched types"
+      ],
+      [
+        {
+          "code": "E0308",
+          "explanation": "Expected type did not match the received type.\n\nErroneous code examples:\n\n```compile_fail,E0308\nfn plus_one(x: i32) -> i32 {\n    x + 1\n}\n\nplus_one(\"Not a number\");\n//       ^^^^^^^^^^^^^^ expected `i32`, found `&str`\n\nif \"Not a bool\" {\n// ^^^^^^^^^^^^ expected `bool`, found `&str`\n}\n\nlet x: f32 = \"Not a float\";\n//     ---   ^^^^^^^^^^^^^ expected `f32`, found `&str`\n//     |\n//     expected due to this\n```\n\nThis error occurs when an expression was used in a place where the compiler\nexpected an expression of a different type. It can occur in several cases, the\nmost common being when calling a function and passing an argument which has a\ndifferent type than the matching type in the function declaration.\n"
+        },
+        "mismatched types"
+      ],
+      [
+        {
+          "code": "E0308",
+          "explanation": "Expected type did not match the received type.\n\nErroneous code examples:\n\n```compile_fail,E0308\nfn plus_one(x: i32) -> i32 {\n    x + 1\n}\n\nplus_one(\"Not a number\");\n//       ^^^^^^^^^^^^^^ expected `i32`, found `&str`\n\nif \"Not a bool\" {\n// ^^^^^^^^^^^^ expected `bool`, found `&str`\n}\n\nlet x: f32 = \"Not a float\";\n//     ---   ^^^^^^^^^^^^^ expected `f32`, found `&str`\n//     |\n//     expected due to this\n```\n\nThis error occurs when an expression was used in a place where the compiler\nexpected an expression of a different type. It can occur in several cases, the\nmost common being when calling a function and passing an argument which has a\ndifferent type than the matching type in the function declaration.\n"
+        },
+        "mismatched types"
+      ],
+      [
+        null,
+        "cannot construct `SelectedPhysicalRecovery` with struct literal syntax due to private fields"
+      ],
+      [
+        {
+          "code": "E0308",
+          "explanation": "Expected type did not match the received type.\n\nErroneous code examples:\n\n```compile_fail,E0308\nfn plus_one(x: i32) -> i32 {\n    x + 1\n}\n\nplus_one(\"Not a number\");\n//       ^^^^^^^^^^^^^^ expected `i32`, found `&str`\n\nif \"Not a bool\" {\n// ^^^^^^^^^^^^ expected `bool`, found `&str`\n}\n\nlet x: f32 = \"Not a float\";\n//     ---   ^^^^^^^^^^^^^ expected `f32`, found `&str`\n//     |\n//     expected due to this\n```\n\nThis error occurs when an expression was used in a place where the compiler\nexpected an expression of a different type. It can occur in several cases, the\nmost common being when calling a function and passing an argument which has a\ndifferent type than the matching type in the function declaration.\n"
+        },
+        "mismatched types"
+      ]
+    ]
+  },
+  {
+    "fixture": "staged_recovery_cannot_be_forged.rs",
+    "errors": [
+      [
+        null,
+        "cannot construct `StagedPhysicalRecovery` with struct literal syntax due to private fields"
+      ]
+    ]
+  }
+]

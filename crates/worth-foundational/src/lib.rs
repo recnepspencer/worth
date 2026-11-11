@@ -28,6 +28,9 @@
 
 #![forbid(unsafe_code)]
 
+#[cfg(test)]
+mod allocation_observation;
+
 mod application_build_identity;
 mod aspects;
 mod boundary;
@@ -40,6 +43,8 @@ mod canonicalization;
 pub mod canonicalization_api;
 mod compatibility;
 mod diagnostics;
+mod durability;
+mod durable_publication;
 mod execution;
 pub mod expression_api;
 mod expressions;

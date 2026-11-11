@@ -44,6 +44,9 @@ pub(super) fn note_input(
     let receipt = match evidence {
         WorthQuerySourceCompletion::Fresh { receipt, .. }
         | WorthQuerySourceCompletion::Recovered { receipt, .. } => receipt,
+        WorthQuerySourceCompletion::Recorded { .. } => {
+            panic!("a fresh source must retain its original live correction capability")
+        }
     };
     assert!(receipt.has_retained_preimage());
     receipt
@@ -72,6 +75,9 @@ pub(super) fn move_source(
     let receipt = match evidence {
         WorthQuerySourceCompletion::Fresh { receipt, .. }
         | WorthQuerySourceCompletion::Recovered { receipt, .. } => receipt,
+        WorthQuerySourceCompletion::Recorded { .. } => {
+            panic!("a fresh source must retain its original live correction capability")
+        }
     };
     assert!(receipt.has_retained_preimage());
     receipt
@@ -102,6 +108,9 @@ pub(super) fn reverse_mover(
     match evidence {
         WorthQuerySourceCompletion::Fresh { receipt, .. }
         | WorthQuerySourceCompletion::Recovered { receipt, .. } => receipt,
+        WorthQuerySourceCompletion::Recorded { .. } => {
+            panic!("a fresh source must retain its original live correction capability")
+        }
     }
 }
 pub(super) fn reverse_note(
@@ -224,6 +233,9 @@ pub(super) fn motion_source(
     let receipt = match evidence {
         WorthQuerySourceCompletion::Fresh { receipt, .. }
         | WorthQuerySourceCompletion::Recovered { receipt, .. } => receipt,
+        WorthQuerySourceCompletion::Recorded { .. } => {
+            panic!("a fresh source must retain its original live correction capability")
+        }
     };
     assert!(receipt.has_retained_preimage());
     receipt

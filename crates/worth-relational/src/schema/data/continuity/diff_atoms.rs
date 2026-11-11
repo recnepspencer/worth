@@ -1,4 +1,10 @@
 use std::sync::Arc;
+mod readmission_memory;
+mod schema_change_text;
+pub(crate) use readmission_memory::{
+    SchemaTextReadmissionMemory, SchemaTransitionReadmissionMemory,
+};
+pub use schema_change_text::SchemaChangeText;
 
 use serde::{Deserialize, Serialize};
 
@@ -34,7 +40,7 @@ pub struct SchemaElementRef {
     pub schema_id: SchemaId,
     pub schema_version_id: SchemaVersionId,
     pub kind_id: Option<KindId>,
-    pub element_name: Arc<str>,
+    pub element_name: SchemaChangeText,
 }
 
 impl SchemaElementRef {
@@ -50,7 +56,7 @@ impl SchemaElementRef {
             schema_id,
             schema_version_id,
             kind_id,
-            element_name: element_name.into(),
+            element_name: SchemaChangeText::from(element_name.into()),
         }
     }
 }
@@ -61,31 +67,31 @@ pub enum SchemaDiffDetail {
     AddedField {
         field: FieldKey,
         required: bool,
-        default_expression: Option<Arc<str>>,
+        default_expression: Option<SchemaChangeText>,
     },
     RemovedField {
         field: FieldKey,
     },
     TypeChanged {
         field: FieldKey,
-        from_type: Arc<str>,
-        to_type: Arc<str>,
+        from_type: SchemaChangeText,
+        to_type: SchemaChangeText,
     },
     EnumDomainExpanded {
         field: FieldKey,
-        added_variants: Vec<Arc<str>>,
+        added_variants: Vec<SchemaChangeText>,
     },
     InvariantContractChanged {
-        contract_name: Arc<str>,
+        contract_name: SchemaChangeText,
     },
     ProjectionContractChanged {
-        projection_name: Arc<str>,
+        projection_name: SchemaChangeText,
     },
     SubscriberContractChanged {
-        contract_name: Arc<str>,
+        contract_name: SchemaChangeText,
     },
     FreeText {
-        detail: Arc<str>,
+        detail: SchemaChangeText,
         declared_intent: FreeFormSchemaDiffIntent,
     },
 }

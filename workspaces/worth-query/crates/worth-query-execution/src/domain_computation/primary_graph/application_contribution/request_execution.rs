@@ -22,6 +22,7 @@ use super::{WorthQueryManagedComputationInterruption, WorthQueryManagedComputati
 pub(crate) mod test_placement;
 #[cfg(test)]
 pub(in crate::domain_computation::primary_graph) use test_placement::test_policy;
+
 pub use test_placement::{
     bound_advancement_requests_on_this_thread_for_test,
     place_managed_computations_on_this_thread_for_test, test_execution_workers_for_test,
@@ -258,6 +259,8 @@ pub use advancement::{
     WorthQueryAdvancementObservationForTest,
 };
 
+#[cfg(test)]
+pub(crate) use advancement::with_test_advancement;
 pub(crate) use advancement::TestHostRequest;
 
 pub use advancement::{with_bootstrap_advancement, with_bootstrap_advancement_from_request};
@@ -275,3 +278,6 @@ pub(in crate::domain_computation::primary_graph) fn certified_wave_seed_for_test
 }
 
 mod court_doors_for_test;
+#[cfg(test)]
+#[path = "request_execution_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;

@@ -8,6 +8,8 @@ pub enum WorthQueryPublishedExternalEffectPosture {
     PendingDispatch,
     Completed,
     Acknowledged,
+    /// The external owner proved the dispatched effect did not happen.
+    ProvenNoEffect(WorthQueryPublishedExternalEffectNoEffect),
     Unresolved(WorthQueryPublishedExternalEffectFailure),
 }
 
@@ -17,7 +19,17 @@ pub enum WorthQueryPublishedExternalEffectPostureKind {
     PendingDispatch,
     Completed,
     Acknowledged,
+    ProvenNoEffect,
     Unresolved,
+}
+
+/// Why this attempt is known to have changed no external state.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum WorthQueryPublishedExternalEffectNoEffect {
+    /// The external owner decoded the payload and refused it.
+    PayloadRejected,
+    /// The attempt did not begin external contact.
+    ContactNotStarted,
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -27,7 +39,6 @@ pub enum WorthQueryPublishedExternalEffectFailure {
     Disconnect,
     LostResponse,
     DuplicatedAcknowledgement,
-    PayloadRejected,
     InitialDispatchOwnerReadDenied(
         worth_query_execution::facade::primary_graph::WorthQueryCommittedDispatchOutboxReadDenial,
     ),
@@ -78,6 +89,7 @@ impl WorthQueryPublishedExternalEffectPosture {
             Self::PendingDispatch => WorthQueryPublishedExternalEffectPostureKind::PendingDispatch,
             Self::Completed => WorthQueryPublishedExternalEffectPostureKind::Completed,
             Self::Acknowledged => WorthQueryPublishedExternalEffectPostureKind::Acknowledged,
+            Self::ProvenNoEffect(_) => WorthQueryPublishedExternalEffectPostureKind::ProvenNoEffect,
             Self::Unresolved(_) => WorthQueryPublishedExternalEffectPostureKind::Unresolved,
         }
     }
@@ -85,7 +97,22 @@ impl WorthQueryPublishedExternalEffectPosture {
     pub const fn failure(self) -> Option<WorthQueryPublishedExternalEffectFailure> {
         match self {
             Self::Unresolved(failure) => Some(failure),
-            _ => None,
+            Self::NotDeclared
+            | Self::PendingDispatch
+            | Self::Completed
+            | Self::Acknowledged
+            | Self::ProvenNoEffect(_) => None,
+        }
+    }
+
+    pub const fn proven_no_effect(self) -> Option<WorthQueryPublishedExternalEffectNoEffect> {
+        match self {
+            Self::ProvenNoEffect(cause) => Some(cause),
+            Self::NotDeclared
+            | Self::PendingDispatch
+            | Self::Completed
+            | Self::Acknowledged
+            | Self::Unresolved(_) => None,
         }
     }
 }
@@ -100,6 +127,21 @@ pub(super) fn publish_external_effect(
             }
             WorthQueryExternalDispatchPostureKind::Acknowledged => {
                 WorthQueryPublishedExternalEffectPosture::Acknowledged
+            }
+            WorthQueryExternalDispatchPostureKind::ProvenNoEffect => {
+                use worth_query_execution::facade::primary_graph::ExternalEffectNoEffectCause as Cause;
+                let proof = dispatch
+                    .posture()
+                    .proven_no_effect()
+                    .expect("a proven-no-effect posture retains its exact proof");
+                WorthQueryPublishedExternalEffectPosture::ProvenNoEffect(match proof.cause() {
+                    Cause::PayloadRejected => {
+                        WorthQueryPublishedExternalEffectNoEffect::PayloadRejected
+                    }
+                    Cause::ContactNotStarted => {
+                        WorthQueryPublishedExternalEffectNoEffect::ContactNotStarted
+                    }
+                })
             }
             WorthQueryExternalDispatchPostureKind::Unresolved => {
                 match dispatch.posture().classification() {
@@ -195,7 +237,6 @@ const fn publish_failure(
         Execution::DuplicatedAcknowledgement => {
             WorthQueryPublishedExternalEffectFailure::DuplicatedAcknowledgement
         }
-        Execution::PayloadRejected => WorthQueryPublishedExternalEffectFailure::PayloadRejected,
         Execution::UnsupportedProtocolVersion(unsupported) => {
             use worth_foundational::facade::BoundaryProtocolUnsupportedVersionPosture as Posture;
             let posture = match unsupported.posture() {
@@ -222,179 +263,4 @@ const fn publish_failure(
 }
 
 #[cfg(test)]
-mod tests {
-    use worth_foundational::facade::{
-        BoundaryProtocolCompatibilityWindow, BoundaryProtocolVersion,
-    };
-    use worth_query_execution::facade::primary_graph::ExternalRailTransportFault;
-    use worth_query_execution::facade::primary_graph::{
-        WorthQueryCommittedDispatchOutboxReadDenial, WorthQueryExternalDispatchAttemptDenial,
-        WorthQueryExternalDispatchPreparationDenial,
-    };
-
-    use super::{
-        publish_failure, publish_preparation_failure, WorthQueryPublishedExternalEffectFailure,
-        WorthQueryPublishedUnsupportedProtocolVersionPosture,
-    };
-
-    #[test]
-    fn every_non_version_transport_fault_is_preserved_exactly() {
-        let cases = [
-            (
-                ExternalRailTransportFault::Timeout,
-                WorthQueryPublishedExternalEffectFailure::Timeout,
-            ),
-            (
-                ExternalRailTransportFault::Disconnect,
-                WorthQueryPublishedExternalEffectFailure::Disconnect,
-            ),
-            (
-                ExternalRailTransportFault::LostResponse,
-                WorthQueryPublishedExternalEffectFailure::LostResponse,
-            ),
-            (
-                ExternalRailTransportFault::DuplicatedAcknowledgement,
-                WorthQueryPublishedExternalEffectFailure::DuplicatedAcknowledgement,
-            ),
-            (
-                ExternalRailTransportFault::PayloadRejected,
-                WorthQueryPublishedExternalEffectFailure::PayloadRejected,
-            ),
-            (
-                ExternalRailTransportFault::UnknownProviderOutcome,
-                WorthQueryPublishedExternalEffectFailure::UnknownProviderOutcome,
-            ),
-            (
-                ExternalRailTransportFault::ObservationDerivationDenied,
-                WorthQueryPublishedExternalEffectFailure::ObservationDerivationDenied,
-            ),
-        ];
-
-        for (owner_fault, expected) in cases {
-            assert_eq!(publish_failure(owner_fault), expected);
-        }
-    }
-
-    #[test]
-    fn every_initial_dispatch_preparation_denial_is_preserved_exactly() {
-        use worth_query_execution::facade::installed::provider_session::{
-            WorthQueryProviderSessionControlStopKind as Control,
-            WorthQueryProviderSessionDenialKind as Kind,
-        };
-        use worth_query_execution::facade::primary_graph::WorthQueryApplicationCommitDenialStage as Stage;
-        let stage = Stage::ProviderCommit;
-        let kind = Kind::ExecutionWorkerPanicked {
-            partition_identity: Some(1),
-        };
-        assert_eq!(
-            publish_preparation_failure(
-                WorthQueryExternalDispatchPreparationDenial::CompletionExecutionDenied {
-                    stage,
-                    kind
-                }
-            ),
-            WorthQueryPublishedExternalEffectFailure::CompletionExecutionDenied { stage, kind },
-        );
-        for kind in [Control::Cancelled, Control::TimedOut] {
-            assert_eq!(
-                publish_preparation_failure(WorthQueryExternalDispatchPreparationDenial::CompletionExecutionControlStopped { stage, kind }),
-                WorthQueryPublishedExternalEffectFailure::CompletionExecutionControlStopped { stage, kind },
-            );
-        }
-
-        let cases = [
-            (
-                WorthQueryExternalDispatchPreparationDenial::CompletionAllocationDenied {
-                    stage, kind: worth_query_execution::facade::runtime::ExecutionAllocationDenialClass::Physical(worth_query_execution::facade::runtime::ExecutionPhysicalAllocationDenialKind::Allocator),
-                    requested_payload_bytes: Some(17),
-                },
-                WorthQueryPublishedExternalEffectFailure::CompletionAllocationDenied {
-                    stage, kind: worth_query_execution::facade::runtime::ExecutionAllocationDenialClass::Physical(worth_query_execution::facade::runtime::ExecutionPhysicalAllocationDenialKind::Allocator),
-                    requested_payload_bytes: Some(17),
-                },
-            ),
-            (WorthQueryExternalDispatchPreparationDenial::CompletionStagingCardinalityOverflow,
-             WorthQueryPublishedExternalEffectFailure::CompletionStagingCardinalityOverflow),
-            (WorthQueryExternalDispatchPreparationDenial::CompletionInputDirectoryAllocationDenied { requested_batches: 3 },
-             WorthQueryPublishedExternalEffectFailure::CompletionInputDirectoryAllocationDenied { requested_batches: 3 }),
-            (
-                WorthQueryExternalDispatchPreparationDenial::OwnerReadDenied(
-                    WorthQueryCommittedDispatchOutboxReadDenial::RecordMismatch,
-                ),
-                WorthQueryPublishedExternalEffectFailure::InitialDispatchOwnerReadDenied(
-                    WorthQueryCommittedDispatchOutboxReadDenial::RecordMismatch,
-                ),
-            ),
-            (
-                WorthQueryExternalDispatchPreparationDenial::AttemptAdmissionDenied(
-                    WorthQueryExternalDispatchAttemptDenial::InFlightCapacityExhausted,
-                ),
-                WorthQueryPublishedExternalEffectFailure::InitialDispatchAttemptAdmissionDenied(
-                    WorthQueryExternalDispatchAttemptDenial::InFlightCapacityExhausted,
-                ),
-            ),
-            (
-                WorthQueryExternalDispatchPreparationDenial::AlreadyCompleted,
-                WorthQueryPublishedExternalEffectFailure::InitialDispatchAlreadyCompleted,
-            ),
-            (
-                WorthQueryExternalDispatchPreparationDenial::TerminalIndexUnavailable,
-                WorthQueryPublishedExternalEffectFailure::InitialDispatchTerminalIndexUnavailable,
-            ),
-            (
-                WorthQueryExternalDispatchPreparationDenial::CanonicalDerivationDenied,
-                WorthQueryPublishedExternalEffectFailure::InitialDispatchCanonicalDerivationDenied,
-            ),
-            (
-                WorthQueryExternalDispatchPreparationDenial::TimeObservationDenied,
-                WorthQueryPublishedExternalEffectFailure::InitialDispatchTimeObservationDenied,
-            ),
-        ];
-        for (denial, expected) in cases {
-            assert_eq!(publish_preparation_failure(denial), expected);
-        }
-    }
-
-    #[test]
-    fn every_unsupported_version_posture_maps_exhaustively_and_exactly() {
-        let v1 = BoundaryProtocolVersion::new(1);
-        let v2 = BoundaryProtocolVersion::new(2);
-        let v3 = BoundaryProtocolVersion::new(3);
-        let cases = [
-            (
-                BoundaryProtocolCompatibilityWindow::inclusive(v2, v2)
-                    .admit(v1)
-                    .unwrap_err(),
-                1,
-                WorthQueryPublishedUnsupportedProtocolVersionPosture::PredatesWindow,
-            ),
-            (
-                BoundaryProtocolCompatibilityWindow::inclusive(v1, v2)
-                    .admit(v3)
-                    .unwrap_err(),
-                3,
-                WorthQueryPublishedUnsupportedProtocolVersionPosture::ExceedsWindow,
-            ),
-            (
-                BoundaryProtocolCompatibilityWindow::inclusive(v1, v2)
-                    .retire_before(v2)
-                    .admit(v1)
-                    .unwrap_err(),
-                1,
-                WorthQueryPublishedUnsupportedProtocolVersionPosture::Retired,
-            ),
-        ];
-
-        for (unsupported, produced, posture) in cases {
-            assert_eq!(
-                publish_failure(ExternalRailTransportFault::UnsupportedProtocolVersion(
-                    unsupported,
-                )),
-                WorthQueryPublishedExternalEffectFailure::UnsupportedProtocolVersion {
-                    produced,
-                    posture,
-                }
-            );
-        }
-    }
-}
+mod tests;

@@ -29,8 +29,16 @@ impl<'request, 'authority, Schema, Operation, Input, Scope, Phase>
                 allocation_policy,
             )?,
         };
+        let admission_memory = self
+            .execution
+            .reserve_retained_memory(std::mem::size_of_val(&self.admission) as u64)
+            .map_err(|cause| {
+                super::super::retained_decision_facts::StoreDenial::ExecutionRequest(cause)
+                    .into_attempt_denial(self.admission.operation())
+            })?;
         Ok(WorthQueryCompleteApplicationReadSet {
-            admission: self.admission,
+            admission: Box::new(self.admission),
+            _admission_memory: admission_memory,
             lease,
             application_projection: completed.read.application_projection,
             original_read: completed.read.original_read,

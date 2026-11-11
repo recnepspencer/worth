@@ -1,6 +1,7 @@
 pub(crate) mod materialization;
 mod native_scan_stop;
 mod projection;
+pub(crate) use projection::CheckpointProjectionContext;
 pub(crate) mod read_footprint;
 pub(crate) mod read_prices;
 pub(crate) mod read_request;

@@ -99,3 +99,6 @@ impl BridgeSignalAspectTargetDeclaration {
         .collect()
     }
 }
+#[cfg(test)]
+#[path = "signal_target_declaration_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;

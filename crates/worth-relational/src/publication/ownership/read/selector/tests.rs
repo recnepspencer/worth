@@ -36,13 +36,13 @@ fn image() -> (
         partition_id: partition,
         kind_id: KindId(2),
         version_id: crate::identity::data::VersionId(1),
-        extra: RelationExtra {
-            endpoints: Some(RelationEndpoints {
+        extra: RelationExtra::from_unbudgeted_parts(
+            Some(RelationEndpoints {
                 source: entity,
                 target: entity,
             }),
-            authoritative_aspect_state: None,
-        },
+            None,
+        ),
     });
     (
         BTreeMap::from([(partition, state)]),

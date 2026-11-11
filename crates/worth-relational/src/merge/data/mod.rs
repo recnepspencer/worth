@@ -9,11 +9,17 @@ mod identity;
 mod inspection_digest;
 mod plans;
 mod policy;
+mod readmission_memory;
 mod requests;
 mod resolved_value_strategy;
+pub(crate) use readmission_memory::{
+    attach_policy_name, MergeBasisMemory, MergeIdentityMemory, MergeLeafMemory,
+    MergePolicyRowMemory, MergeReadmissionMemory, MergeStrategyMemory,
+};
 
 pub use crate::history::data::{MergeBaseSelectionRule, ResolvedMergeBase};
 pub use ancestry::{BranchDeltaSummary, MergeAncestrySummary};
+pub(crate) use artifacts::MergeWitnessRows;
 pub(crate) use artifacts::RelationalSchemaReconciliationWitnessRowInput;
 pub(crate) use artifacts::{
     correspondence_posture_for_candidate, row_for_candidate, schema_declared_correspondence_posture,
@@ -76,9 +82,10 @@ pub use execution_artifacts::{
     ExecutedMergeRecordDiagnosticRow, MergeExecutionDiagnosticsPlan,
 };
 pub use identity::{
-    CustomIdentityBasisIdentity, IdentityBasisDeclaration, IdentityBasisKind, IdentityBasisScope,
-    IdentityDiscoverySummary, IdentityMatchCandidate, IdentityMatchClass, IdentityResolutionReason,
-    MergeRecordIdentity, SchemaDeclaredCorrespondenceValidationSummary,
+    CustomIdentityBasisIdentity, DeclaredIdentityKeys, IdentityBasisDeclaration, IdentityBasisKind,
+    IdentityBasisName, IdentityBasisScope, IdentityDiscoverySummary, IdentityMatchCandidate,
+    IdentityMatchClass, IdentityResolutionReason, MergeRecordIdentity,
+    SchemaDeclaredCorrespondenceValidationSummary,
 };
 pub(crate) use inspection_digest::{
     merge_inspection_artifact_digest, merge_inspection_lowered_plan_digest,
@@ -101,11 +108,11 @@ pub use policy::{
     LoweredRecordDenialAspectIntent, LoweredRecordDenialBundle, LoweredRecordDenialKind,
     LoweredRecordExecutionAspectIntent, LoweredRecordExecutionBundle,
     LoweredRecordExecutionIntentKind, MergeExecutableClass, MergeExecutionReadiness,
-    MergeManualResolutionClass, MergePolicyDecisionBoundary, MergePolicyOwnershipClass,
-    MergePolicyOwnershipSurface, MergePolicyProofBoundary, MergePolicyRejectClass,
-    MergePolicyResolution, MergePolicyResolutionRecord, MergePolicyResolutionSummary,
-    MergeResolutionClass, ResolvedAspectMergePolicy, TopologyExecutionClass,
-    TopologyRewireAdmissionPolicy,
+    MergeManualResolutionClass, MergePolicyDecisionBoundary, MergePolicyName,
+    MergePolicyOwnershipClass, MergePolicyOwnershipSurface, MergePolicyProofBoundary,
+    MergePolicyRejectClass, MergePolicyResolution, MergePolicyResolutionRecord,
+    MergePolicyResolutionSummary, MergeResolutionClass, ResolvedAspectMergePolicy,
+    TopologyExecutionClass, TopologyRewireAdmissionPolicy,
 };
 pub use requests::{
     MergeExecutionRequest, MergeIntent, MergePlanningRequest, NormalizedRelationalMergeRequest,

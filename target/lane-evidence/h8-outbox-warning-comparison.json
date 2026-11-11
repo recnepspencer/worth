@@ -1,0 +1,9 @@
+{
+  "baseline": "deferred-geometry-native-round2-check.log",
+  "current": "h8-outbox-query-round2-check.log",
+  "normalization": "Only absolute/relative checkout path and directory separator normalization; message, code, line and column retained.",
+  "baseline_distinct": 32,
+  "current_distinct": 32,
+  "added": [],
+  "removed": []
+}

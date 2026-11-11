@@ -29,7 +29,7 @@ pub(super) fn replay_readmitted_envelope(
     restore_authoritative_envelope: bool,
     recovered_roots: &mut RecoveredRootInventory,
 ) -> Result<crate::history::data::PositionedCanonicalCommit, RelationalRecoveryStop> {
-    crate::storage::substrate::maintenance::ReconstructionLane::enter_reconstruction(|_lane| {
+    crate::storage::substrate::maintenance::ReconstructionLane::enter_reconstruction(|lane| {
         let envelope = readmitted.envelope();
         if matches!(
             envelope.authority_kind,
@@ -40,16 +40,16 @@ pub(super) fn replay_readmitted_envelope(
                 "owned graph selection cannot be reconstructed from a canonical tail without its original source custody",
             ).into());
         }
-
         if matches!(
             envelope.authority_kind,
             CanonicalCommitAuthorityKind::RetainedEntitySelection(_)
         ) {
             return Err(DurabilityError::new(
-            RecoveryFailureClass::UnsupportedRetainedEntitySelectionReplay,
-            "retained entity selection cannot be reconstructed from a canonical tail without its original source custody",
-        ).into());
+                RecoveryFailureClass::UnsupportedRetainedEntitySelectionReplay,
+                "retained entity selection cannot be reconstructed from a canonical tail without its original source custody",
+            ).into());
         }
+        let catalog = super::index_catalog::readmit(execution, restored, &readmitted)?;
         for (_, text) in &envelope.symbol_texts.entries {
             restored
                 .services
@@ -77,12 +77,12 @@ pub(super) fn replay_readmitted_envelope(
             && !is_metadata_only_merge_commit(envelope);
         if !replays_mutation_pipeline && !envelope.record_allocations().is_empty() {
             return Err(DurabilityError::new(
-            RecoveryFailureClass::ReplayFailure,
-            format!(
-                "durable commit {} carries record allocation evidence without a mutation replay path",
-                envelope.commit.commit_id.0
-            ),
-        ).into());
+                RecoveryFailureClass::ReplayFailure,
+                format!(
+                    "durable commit {} carries record allocation evidence without a mutation replay path",
+                    envelope.commit.commit_id.0
+                ),
+            ).into());
         }
         if replays_mutation_pipeline {
             restored
@@ -92,7 +92,7 @@ pub(super) fn replay_readmitted_envelope(
                     DurabilityError::new(RecoveryFailureClass::ReplayFailure, detail)
                 })?;
         }
-        let replay_result = replay_envelope_effect(execution, restored, &positioned);
+        let replay_result = replay_envelope_effect(lane, execution, restored, &positioned, catalog);
         let staged_was_not_consumed = restored.record_identity.clear_staged_replay_allocations();
         replay_result?;
         if staged_was_not_consumed && replays_mutation_pipeline {
@@ -112,7 +112,6 @@ pub(super) fn replay_readmitted_envelope(
             restore_authoritative_envelope,
             !had_checkpoint_artifact,
         )?;
-        recovered_roots.retain_current(restored, &positioned.envelope().branch_context)?;
         Ok(positioned)
     })
 }

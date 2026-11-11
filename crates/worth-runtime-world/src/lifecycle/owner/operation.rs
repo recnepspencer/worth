@@ -1,7 +1,7 @@
 use crate::branch::ProductBranchObservation;
 use crate::lifecycle::RuntimeWorldInstant;
 use crate::publication::{
-    lower_component_plans, LoweredOwnerComponentPlan, NoEffectCause, NoEffectCompositePublication,
+    LoweredOwnerComponentPlan, NoEffectCause, NoEffectCompositePublication,
     ReservedAttemptCapacities, ReservedAttemptCapacityInputs, ReservedCompositePublicationAttempt,
     ResolvedExpectedProductHead, RuntimeWorldCancellationBoundary, RuntimeWorldCancellationToken,
 };
@@ -9,8 +9,16 @@ use crate::publication::{
 use super::RuntimeWorldOwnerRoot;
 
 mod attempt;
+mod call_admission;
 #[path = "operation/creation_reservation.rs"]
 mod creation_reservation;
+mod home_transition;
+mod home_transition_effect;
+mod home_transition_resume;
+mod home_transition_unopened;
+mod open_attempt;
+#[path = "operation/preparation_service.rs"]
+mod preparation_service;
 #[cfg(test)]
 #[path = "operation/preparation_test_support.rs"]
 mod preparation_test_support;
@@ -20,9 +28,11 @@ mod preparation_tests;
 mod product_head;
 mod publication_capacity;
 mod reservation_steps;
+mod source_admission;
 
 pub(crate) use attempt::{
-    RuntimeWorldOperationLedger, RuntimeWorldOperationReservation, RuntimeWorldOperationState,
+    RuntimeWorldOperationLedger, RuntimeWorldOperationLedgerState,
+    RuntimeWorldOperationReservation, RuntimeWorldOperationState,
 };
 pub(crate) use publication_capacity::{
     ReservedPublicationAttemptCapacity, RuntimeWorldPublicationCapacityLedger,
@@ -107,6 +117,7 @@ where
             &identities.commit_identity,
             Some(&identities.attempt_identity),
             successor_observation_requested,
+            None,
         )
         .map_err(|cause| NoEffectCompositePublication::new(cause, Some(expected_head.clone())))?;
         if let Some(denied) = self.reservation_denial(&expected_head, cancellation, deadline) {
@@ -207,7 +218,7 @@ where
             .bootstrap
             .lock()
             .unwrap_or_else(|error| error.into_inner());
-        if *bootstrap != super::RuntimeWorldBootstrapState::Performed {
+        if !matches!(*bootstrap, super::RuntimeWorldBootstrapState::Performed) {
             return Err(());
         }
         let mut ledger = self
@@ -255,7 +266,7 @@ where
             .bootstrap
             .lock()
             .unwrap_or_else(|error| error.into_inner());
-        if *bootstrap != super::RuntimeWorldBootstrapState::Performed {
+        if !matches!(*bootstrap, super::RuntimeWorldBootstrapState::Performed) {
             return false;
         }
         self.state
@@ -267,118 +278,12 @@ where
     }
 }
 
-impl<D, I, E, Ctx, T> super::super::ports::RuntimeWorldPreparationService
-    for RuntimeWorldOwnerRoot<D, I, E, Ctx, T>
-where
-    D: Copy + Ord + std::fmt::Debug + Send + Sync + 'static,
-    I: Copy + Ord + Send + Sync + 'static,
-    T: Copy + Ord + Send + Sync + 'static,
-{
-    fn prepare_publication<S>(
-        &self,
-        expected: ProductBranchObservation,
-        intent: crate::publication::CompositePublicationIntent<S>,
-        cancellation: &RuntimeWorldCancellationToken,
-        deadline: Option<RuntimeWorldInstant>,
-    ) -> Result<S::Prepared, NoEffectCompositePublication>
-    where
-        S: crate::publication::CompositePublicationStage,
-    {
-        let current = self.admit_publication_source(&expected)?;
-        let (
-            component_intent,
-            prepared_candidate,
-            settled_adoption,
-            settled_signal_adoption,
-            successor_observation_requested,
-            current_read,
-        ) = intent.into_parts();
-        if let Some(current) = &current_read {
-            self.admit_current_read_requirement(current, &expected)?;
-        }
-        let resolved = match ResolvedExpectedProductHead::from_current(
-            component_intent,
-            expected.clone(),
-            &current,
-        ) {
-            Ok(resolved) => resolved,
-            Err(_) => {
-                drop(prepared_candidate);
-                drop(settled_adoption);
-                return Err(NoEffectCompositePublication::new(
-                    NoEffectCause::StaleExpectedProductHead,
-                    Some(expected),
-                ));
-            }
-        };
-        let plan = lower_component_plans(
-            resolved,
-            prepared_candidate,
-            settled_adoption,
-            settled_signal_adoption,
-            current_read,
-        )?;
-        let attempt = RuntimeWorldOwnerRoot::reserve(
-            self,
-            plan,
-            cancellation,
-            deadline,
-            successor_observation_requested,
-        )?;
-        Ok(S::seal(attempt))
-    }
-
-    fn prepare_creation(
-        &self,
-        source: ProductBranchObservation,
-        intent: crate::branch::ProductBranchCreationIntent,
-        cancellation: &RuntimeWorldCancellationToken,
-        deadline: Option<RuntimeWorldInstant>,
-    ) -> Result<
-        crate::publication::ReservedBranchCreationAttempt,
-        crate::branch::RuntimeWorldBranchAdmissionDenial,
-    > {
-        RuntimeWorldOwnerRoot::prepare_creation(self, source, intent, cancellation, deadline)
-    }
-}
-
 impl<D, I, E, Ctx, T> RuntimeWorldOwnerRoot<D, I, E, Ctx, T>
 where
     D: Copy + Ord + std::fmt::Debug + Send + Sync + 'static,
     I: Copy + Ord + Send + Sync + 'static,
     T: Copy + Ord + Send + Sync + 'static,
 {
-    /// The shared pre-lowering admission: this owner, an open world, and a
-    /// branch cell that still exists. It returns the exact current snapshot
-    /// the caller must compare its expected observation against.
-    fn admit_publication_source(
-        &self,
-        expected: &ProductBranchObservation,
-    ) -> Result<crate::branch::ProductBranchReferenceSnapshot, NoEffectCompositePublication> {
-        if expected.owner_identity() != self.owner_identity() {
-            return Err(NoEffectCompositePublication::new(
-                NoEffectCause::OwnerDeniedBeforeEffect,
-                Some(expected.clone()),
-            ));
-        }
-        if !self.is_open_and_bootstrapped() {
-            return Err(NoEffectCompositePublication::new(
-                NoEffectCause::OwnerUnavailable,
-                Some(expected.clone()),
-            ));
-        }
-        self.state
-            .branches
-            .branch_cell(expected.branch_identity())
-            .map(|cell| cell.atomic_snapshot())
-            .ok_or_else(|| {
-                NoEffectCompositePublication::new(
-                    NoEffectCause::OwnerUnavailable,
-                    Some(expected.clone()),
-                )
-            })
-    }
-
     pub(super) fn is_open_and_bootstrapped_for_creation(&self) -> bool {
         self.is_open_and_bootstrapped()
     }

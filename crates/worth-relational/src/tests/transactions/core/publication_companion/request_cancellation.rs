@@ -50,7 +50,7 @@ fn original_request_cancellation_dominates_companion_result_and_preserves_retry(
             .expect("fixture root has admitted Full custody")
             .unwrap();
         let before_record = before_partition.entity_arena.get(&anchor).unwrap();
-        let before_payload = before_record.extra().authoritative_aspect_state.clone();
+        let before_payload = before_record.extra().authoritative_aspect_state().cloned();
         let pending = runtime
             .publication_companion_port()
             .begin_required_registration()
@@ -91,7 +91,10 @@ fn original_request_cancellation_dominates_companion_result_and_preserves_retry(
             .expect("fixture root has admitted Full custody")
             .unwrap();
         let record = partition.entity_arena.get(&anchor).unwrap();
-        assert_eq!(record.extra().authoritative_aspect_state, before_payload);
+        assert_eq!(
+            record.extra().authoritative_aspect_state(),
+            before_payload.as_ref()
+        );
         assert_eq!(**cell.read_image().payload(), 7);
 
         let fresh = crate::test_execution_policy::serial_request();

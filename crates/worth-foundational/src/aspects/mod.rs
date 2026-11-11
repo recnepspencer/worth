@@ -38,8 +38,8 @@ pub use masks::{
     ProjectionMask,
 };
 pub use patches::{
-    AuthoritativePatchApplicationDenial, AuthoritativePatchConstructionDenial,
-    AuthoritativeRecordAspectPatch, FieldLevelAspectPatch,
+    AspectPatchStorageBounds, AuthoritativePatchApplicationDenial,
+    AuthoritativePatchConstructionDenial, AuthoritativeRecordAspectPatch, FieldLevelAspectPatch,
 };
 pub use portable::{
     export_portable_record_aspect_patch, export_portable_record_aspect_state,
@@ -56,7 +56,8 @@ pub use state::{
 };
 pub use structs::{
     CanonicalFieldPath, FieldDeclaration, FieldKey, FieldRequirement, StructAspectShape,
-    StructAspectValue, StructAspectValueConstructionDenial,
+    StructAspectValue, StructAspectValueConstructionDenial, StructAspectValueSortedFieldsDenied,
+    StructAspectValueStorageBounds,
 };
 pub use validation::{
     validate_aspect_value, ContractValidatedAspectArtifact, ContractValidatedAspectValue,

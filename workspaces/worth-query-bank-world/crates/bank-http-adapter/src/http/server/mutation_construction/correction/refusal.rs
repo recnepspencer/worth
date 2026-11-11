@@ -23,6 +23,11 @@ pub(in crate::http::server) fn correction_denial(
         D::SourceOperation(WorthQueryOperationConstructionDenial::OutputSource(cause)) => query(
             WorthQueryApplicationRequestQueryDenial::OutputSettlement(cause),
         ),
+        D::SourceOperation(WorthQueryOperationConstructionDenial::DurableStateAdmission(cause)) => {
+            mutation_application::request_mutation_denial(
+                WorthQueryApplicationRequestMutationDenialKind::DurableStateAdmission(cause),
+            )
+        }
         D::SourceOperation(_) => unavailable(),
         D::SourceBindingUnavailable
         | D::RecordedOutcomeUnavailable
@@ -40,6 +45,10 @@ fn query(cause: WorthQueryApplicationRequestQueryDenial) -> BankHttpDenial {
 fn selection(cause: WorthQueryCorrectionSelectionDenial) -> BankHttpDenial {
     use WorthQueryCorrectionSelectionDenial as D;
     match cause {
+        D::StaleIncarnation => stale(),
+        D::Material(_) | D::ExactHistory(_) | D::HistorySource(_) | D::HistoryLimit => {
+            unavailable()
+        }
         D::Disclosure(cause) => derivation(cause),
         D::Ancestry(cause) => ancestry(cause),
         D::SourceUnavailable
@@ -72,6 +81,9 @@ fn derivation(cause: WorthQueryCorrectionDerivationDenial) -> BankHttpDenial {
             mutation_application::pending_execution_stop(stop)
         }
         D::Workflow(cause) => match cause.kind() {
+            WorthQueryApplicationAttemptDenialKind::ContentInconsistency => {
+                BankHttpDenial::new(Kind::InternalDenied, Next::ContactOperator)
+            }
             WorthQueryApplicationAttemptDenialKind::Cancelled => cancelled(),
             WorthQueryApplicationAttemptDenialKind::DeadlineExceeded => deadline(),
             WorthQueryApplicationAttemptDenialKind::ExecutionRequest(cause) => {
@@ -92,10 +104,15 @@ fn derivation(cause: WorthQueryCorrectionDerivationDenial) -> BankHttpDenial {
         | D::SourceDiverged
         | D::ProgramMeaningChanged(_)
         | D::Domain(_) => stale(),
+        D::Material(_) | D::Idempotency(_) => unavailable(),
+        D::DurableStateAdmission(cause) => mutation_application::request_mutation_denial(
+            worth_query_host::facade::application_entry::WorthQueryApplicationRequestMutationDenialKind::DurableStateAdmission(cause),
+        ),
         D::UnsupportedSourceMeaning
         | D::ReapplicationUnavailable
         | D::MissingPreImage
         | D::SourceOutput(_)
+        | D::OriginalInputDecode(_)
         | D::SemanticMaterialUnavailable
         | D::MissingTargetParent
         | D::CommandKey(_)
@@ -117,8 +134,8 @@ fn restored_support(cause: WorthQueryCorrectionRestoredSupportDenial) -> BankHtt
         }
         D::Interrupted(stop) => advancement_denial::request(WorkCeilingDenial::Stopped(stop)),
         D::Execution(cause) => crate::http::server::relational_execution_denial::denial(cause),
+        D::ManagedProvider(cause) => query_denial::managed_index::work(&cause),
         D::Native(cause) => native_support(cause),
-        D::ManagedProvider(cause) => query_denial::managed_work(&cause),
         D::Allocation(cause) | D::Storage(Storage::Allocation(cause)) => {
             input_capture(WorthQueryOperationInputCaptureDenial::Allocation(cause))
         }

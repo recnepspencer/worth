@@ -69,7 +69,7 @@ pub(super) struct BranchReasoningEvidence {
 pub(super) fn run_merge_ready_history_shape_certification(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
 ) -> MergeReadyHistoryCertificationBundle {
-    let runtime = durable_runtime_with_test_schema();
+    let runtime = runtime_with_test_schema();
     let root = create_entity_outcome(execution, &runtime, "root");
     let linear = create_entity_outcome(execution, &runtime, "linear");
     create_branch_from_main(&runtime, "feature");
@@ -97,8 +97,22 @@ pub(super) fn run_merge_ready_history_shape_certification(
     let post_merge_main = create_entity_outcome(execution, &runtime, "main-post-merge");
     let replay = replay_merge_ready_commit(execution, &runtime, merge.commit.commit_id);
 
-    let (_recovery, recovered) =
-        checkpoint_and_recover_with(execution, &runtime, durable_runtime_with_test_schema);
+    runtime
+        .durability_authority()
+        .checkpoint(execution)
+        .unwrap();
+    let plan = runtime
+        .durability()
+        .recovery_plan(
+            execution,
+            crate::durability::data::RecoveryVerificationMode::NormalRecoveryVerification,
+        )
+        .unwrap();
+    let mut recovered = runtime_with_test_schema();
+    recovered
+        .durability_recovery()
+        .recover(execution, plan)
+        .unwrap();
     let post_merge_inspection = recovered.history().inspect_merge(
         &BranchId("feature".to_string()),
         &BranchId("main".to_string()),
@@ -195,7 +209,6 @@ fn authoritative_parent_ids(
             .replay()
             .canonical_commit_envelope(execution, commit_id)
             .unwrap()
-            .map(|envelope| envelope.as_ref().clone())
             .unwrap()
             .commit
             .ordered_parents()

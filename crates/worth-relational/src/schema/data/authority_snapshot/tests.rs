@@ -245,12 +245,13 @@ fn snapshot_with_relation(relation: SchemaAuthorityRelationSnapshot) -> SchemaAu
 
 #[test]
 fn projection_mutation_detaches_cached_digest_and_owned_storage() {
-    let mut changed = crate::schema::data::RelationalSchemaRegistry::new().authority_snapshot();
-    let original = changed.clone();
+    let original = crate::schema::data::RelationalSchemaRegistry::new().authority_snapshot();
+    let mut changed = (*original).clone();
     let digest = original.digest();
     let bytes = original.owned_allocation_capacity_bytes();
     changed.primary_schema_id = Some(SchemaId("transition".into()));
     changed.entity_kinds.push(kind(17, "new-kind"));
+    let changed: SchemaAuthoritySnapshot = changed.into();
     assert_ne!(changed.digest(), digest);
     assert_eq!(original.digest(), digest);
     assert_eq!(original.owned_allocation_capacity_bytes(), bytes);

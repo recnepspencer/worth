@@ -150,6 +150,8 @@ pub(in crate::domain_computation::primary_graph) use relational_commit::{
     PreparedRebaseDenial, PreparedSourceFactRebase,
 };
 
+pub(in crate::domain_computation) use relational_commit::QueryPreparingApplicationCommit;
+pub(in crate::domain_computation::primary_graph::provider) use relational_commit::RetainedQueryDurablePreparation;
 // Typed content/read stops precede the Native transaction. Preserve semantic
 // protocol failures through the existing abort-and-cleanup owner.
 fn preparation_stop(
@@ -173,3 +175,6 @@ fn preparation_stop(
         None => Stop::from(failure),
     }
 }
+#[cfg(test)]
+#[path = "commit_preparation_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;

@@ -1,0 +1,16 @@
+{
+  "scope": "selected-packages",
+  "selection": {
+    "packages": [
+      "worth-relational"
+    ],
+    "targets": {
+      "lib": true
+    }
+  },
+  "cargo_arguments": [
+    "--package",
+    "worth-relational",
+    "--lib"
+  ]
+}

@@ -127,5 +127,5 @@ class DriverTests(unittest.TestCase):
         self.assertIn('worth_ui_adapter="hardware"', flags)
         targets = config['target']
         self.assertEqual(targets['aarch64-apple-darwin'], {'linker': 'scripts/macos_linker'})
-        self.assertEqual(targets['x86_64-pc-windows-msvc'], {'linker': 'rust-lld'})
+        self.assertEqual(targets['x86_64-pc-windows-msvc'], {'linker': 'scripts/windows_linker.cmd'})
         self.assertNotIn('x86_64-unknown-linux-gnu', targets)

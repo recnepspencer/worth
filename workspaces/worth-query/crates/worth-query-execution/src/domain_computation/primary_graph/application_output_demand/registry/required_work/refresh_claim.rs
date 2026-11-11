@@ -47,6 +47,7 @@ pub(in crate::domain_computation::primary_graph) enum RequiredRefreshCheckpoint 
     Published,
     Delivered,
     ReadyCommitted,
+    ReadyRecovered,
     ReadyStable,
     ReadyRestored,
 }
@@ -165,14 +166,17 @@ impl WorthQueryOutputDemandRegistry {
                     RequiredRefreshCheckpoint::PublicationPending
                 }
                 None => RequiredRefreshCheckpoint::Absent,
-                Some(WorthQueryOutputCheckpoint::Published { .. }) => {
-                    RequiredRefreshCheckpoint::Published
-                }
-                Some(WorthQueryOutputCheckpoint::Delivered { .. }) => {
-                    RequiredRefreshCheckpoint::Delivered
-                }
+                Some(
+                    WorthQueryOutputCheckpoint::Published { .. }
+                    | WorthQueryOutputCheckpoint::RecoveredPublished { .. },
+                ) => RequiredRefreshCheckpoint::Published,
+                Some(
+                    WorthQueryOutputCheckpoint::Delivered { .. }
+                    | WorthQueryOutputCheckpoint::RecoveredDelivered { .. },
+                ) => RequiredRefreshCheckpoint::Delivered,
                 Some(WorthQueryOutputCheckpoint::Ready(ready)) => match &ready.authority {
                     Authority::Committed(_) => RequiredRefreshCheckpoint::ReadyCommitted,
+                    Authority::Recovered(_) => RequiredRefreshCheckpoint::ReadyRecovered,
                     Authority::Stable(_) => RequiredRefreshCheckpoint::ReadyStable,
                     Authority::Restored(_) => RequiredRefreshCheckpoint::ReadyRestored,
                 },

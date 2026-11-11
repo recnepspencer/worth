@@ -42,7 +42,7 @@ fn sample(count: usize) -> (u64, usize, usize) {
         publish(
             &world,
             &mut key,
-            authoring::Edit::Name {
+            crate::application_invariant_acceptance::managed_index::maintained::nested::edit::Edit::Name {
                 item: "x".into(),
                 value: "changed".into(),
             },

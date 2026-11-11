@@ -188,11 +188,9 @@ impl PreparedBranchPublicationPreflight {
             .record_performed_with_cutover(
                 self.publication_cell.clone(),
                 admission,
-                deadline.map(|deadline| deadline.min(self.expires_at)),
-                |positioned, roots| match &medium {
-                    Some(medium) => medium.publish(positioned, roots, execution).map(Some),
-                    None => Ok(None),
-                },
+                Some(deadline.map_or(self.expires_at, |deadline| deadline.min(self.expires_at))),
+                medium.as_deref(),
+                execution,
                 |position| {
                     symbol_meanings
                         .publish()
@@ -233,10 +231,19 @@ impl PreparedBranchPublicationPreflight {
                     "performed publication stream position capacity exhausted",
                 ));
             }
+            Err(crate::runtime::CanonicalPublicationRecordError::MemoryFrame(cause))=>{
+                return memory_frame_stop_outcome(execution, cause);
+            }
             Err(crate::runtime::CanonicalPublicationRecordError::Durable(stop)) => {
                 return durable_stop_outcome(stop);
             }
         };
+        // Actual movement succeeded. Install only prepaid Native metadata;
+        // keep owning payload cleanup parked until outside the caller's guard.
+        self.settlement_reservation
+            .as_mut()
+            .expect("the same cutover owns its reserved completion")
+            .install_prepared_indexes();
         drop(companion_cutover);
         drop(read_state);
         let _critical_section = _critical_section.into_target_guard();
@@ -316,4 +323,33 @@ fn durable_stop_outcome(
             RelationalPublicationOutcome::DurabilityUnresolved(unresolved)
         }
     }
+}
+
+fn memory_frame_stop_outcome(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    cause: crate::durability::canonical_commit_artifact::MemoryFramePreparationDenial,
+) -> RelationalPublicationOutcome {
+    use crate::durability::canonical_commit_artifact::MemoryFramePreparationDenial as Frame;
+    use crate::durability::canonical_commit_artifact::RelationalCanonicalCommitArtifactEncodeDenial as Denial;
+    let cause = match cause {
+        Frame::Request(stop) => return RelationalPublicationOutcome::RequestStopped(stop),
+        Frame::Artifact(cause) => cause,
+    };
+    if let Err(stop) = execution.consult()
+        && stop
+            != worth_execution::WorkCeilingDenial::Stopped(
+                worth_execution::MapKernelStop::NestedStopped,
+            )
+    {
+        return RelationalPublicationOutcome::RequestStopped(stop);
+    }
+    if let Denial::Allocation(allocation) = &cause
+        && let worth_execution::ExecutionAllocationDenialClass::Request(stop) =
+            allocation.classify()
+    {
+        return RelationalPublicationOutcome::RequestStopped(stop);
+    }
+    RelationalPublicationOutcome::denied(RelationalPublicationDenial::CanonicalArtifactEncoding(
+        cause,
+    ))
 }

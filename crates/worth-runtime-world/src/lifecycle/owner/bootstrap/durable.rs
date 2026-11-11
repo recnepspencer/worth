@@ -1,0 +1,296 @@
+//! The existing bootstrap phase retains one original destination across I/O.
+use super::{
+    preparation::{PreparedRoot, SelectedDurableRoot, UnselectedDurableRoot},
+    *,
+};
+use crate::branch::{
+    WorldDurableBootstrapOutcome as Outcome, WorldDurableBootstrapRefusal as Refusal,
+};
+use crate::durability::{
+    ActualWorldPublication, WorldArtifactInput, WorldDurableArtifact, WorldDurableMediumBinding,
+    WorldDurablePublicationStop, WorldHeadInput,
+};
+use std::sync::{
+    atomic::{AtomicBool, Ordering},
+    Mutex,
+};
+use worth_execution::ExecutionRequest;
+use worth_foundational::facade::*;
+use worth_proof::DurablyCommitted;
+
+pub(crate) struct WorldDurableBootstrapCustody {
+    binding: Arc<WorldDurableMediumBinding>,
+    subject: WorldDurableArtifact,
+    prepared: Mutex<Option<RetainedBootstrapRoot>>,
+    committed: Mutex<Option<DurablyCommitted<ActualWorldPublication>>>,
+    driving: AtomicBool,
+}
+enum RetainedBootstrapRoot {
+    Unselected(PreparedRoot<UnselectedDurableRoot>),
+    Selected(PreparedRoot<SelectedDurableRoot>),
+}
+impl WorldDurableBootstrapCustody {
+    fn claim(self: &Arc<Self>) -> Option<BootstrapDriver> {
+        self.driving
+            .compare_exchange(false, true, Ordering::Acquire, Ordering::Relaxed)
+            .ok()
+            .map(|_| BootstrapDriver(self.clone()))
+    }
+}
+struct BootstrapDriver(Arc<WorldDurableBootstrapCustody>);
+impl Drop for BootstrapDriver {
+    fn drop(&mut self) {
+        self.0.driving.store(false, Ordering::Release);
+    }
+}
+struct PreparedRootLoan<'a> {
+    custody: &'a WorldDurableBootstrapCustody,
+    prepared: Option<RetainedBootstrapRoot>,
+}
+impl Drop for PreparedRootLoan<'_> {
+    fn drop(&mut self) {
+        *self
+            .custody
+            .prepared
+            .lock()
+            .unwrap_or_else(|e| e.into_inner()) = self.prepared.take();
+    }
+}
+impl<D, I, E, Ctx, T> RuntimeWorldOwnerRoot<D, I, E, Ctx, T>
+where
+    D: Copy + Ord + std::fmt::Debug + Send + Sync + 'static,
+    I: Copy + Ord + Send + Sync + 'static,
+    T: Copy + Ord + Send + Sync + 'static,
+{
+    pub(crate) fn begin_durable_bootstrap(
+        &self,
+        execution: &ExecutionRequest<'_, '_>,
+        intent: RuntimeWorldBootstrapIntent,
+    ) -> Outcome {
+        let Some(binding) = self.state.durable.as_ref() else {
+            return Outcome::Refused(Refusal::NotHomeBound);
+        };
+        if intent
+            .cancellation()
+            .is_some_and(|token| token.is_cancelled())
+        {
+            return Outcome::Refused(Refusal::Preparation(
+                RuntimeWorldBootstrapNoEffectCause::Cancelled,
+            ));
+        }
+        {
+            let mut state = self
+                .state
+                .bootstrap
+                .lock()
+                .unwrap_or_else(|e| e.into_inner());
+            let close = self.state.close.lock().unwrap_or_else(|e| e.into_inner());
+            if !matches!(*state, RuntimeWorldBootstrapState::Unperformed)
+                || !self.owner_is_present()
+                || close.state() != super::super::super::close::RuntimeWorldCloseState::Open
+            {
+                return Outcome::Refused(Refusal::Preparation(
+                    RuntimeWorldBootstrapNoEffectCause::OwnerUnavailable,
+                ));
+            }
+            *state = RuntimeWorldBootstrapState::InProgress;
+        }
+        let mut rollback = BootstrapRollback {
+            owner: self,
+            completed: false,
+        };
+        let super::super::super::signal_services::RuntimeWorldSignalServices::Authored(attachment) =
+            &self.state.signal
+        else {
+            return Outcome::Refused(Refusal::AuthoredSignalRequired);
+        };
+        let point = match attachment.recorded_current_basis(intent.signal_basis()) {
+            Ok(point) => point,
+            Err(cause) => return Outcome::Refused(Refusal::SignalSource(Box::new(cause))),
+        };
+        let signal = match crate::durability::WorldSignalEvidence::from_point(point, execution) {
+            Ok(signal) => signal,
+            Err(cause) => return Outcome::Refused(Refusal::Medium(cause)),
+        };
+        let bridge = match self
+            .state
+            .bridge
+            .as_ref()
+            .expect("serving World owns correspondence")
+            .export_recorded_runtime_world_baseline_in(execution, intent.correspondence_basis())
+        {
+            Ok(recorded) => recorded,
+            Err(cause) => return Outcome::Refused(Refusal::BridgeBaseline(cause)),
+        };
+        let native = match self
+            .state
+            .relational_services()
+            .basis_port()
+            .export_recorded_current_component(execution, intent.relational_basis())
+        {
+            Ok(native) => native,
+            Err(cause) => return Outcome::Refused(Refusal::Native(cause)),
+        };
+        let origin = match crate::durability::PreparedCheckpointOccurrence::prepare(execution) {
+            Ok(origin) => origin,
+            Err(cause) => return Outcome::Refused(Refusal::Medium(cause)),
+        };
+        let prepared = match self.prepare_durable_root(intent, origin) {
+            Ok(prepared) => prepared,
+            Err(cause) => return Outcome::Refused(Refusal::Preparation(cause)),
+        };
+        let owner = binding.binding().owner();
+        let observed = &prepared.observation;
+        let head = match WorldHeadInput::from_observation(observed) {
+            Ok(head) => head,
+            Err(cause) => return Outcome::Refused(Refusal::Medium(cause)),
+        };
+        let input = WorldArtifactInput::Branch {
+            head,
+            bootstrap: DurableWorldBootstrapAttemptIdentity::from_recorded(
+                owner,
+                prepared.attempt.ordinal(),
+            ),
+            program_revision: binding.binding().program_revision(),
+            components: crate::durability::RecordedWorldInitialComponents {
+                relational: native,
+                signal,
+                bridge,
+            },
+        };
+        let subject = match WorldDurableArtifact::from_input(input, execution) {
+            Ok(subject) => subject,
+            Err(cause) => return Outcome::Refused(Refusal::Medium(cause)),
+        };
+        let pending = Arc::new(WorldDurableBootstrapCustody {
+            binding: binding.clone(),
+            subject,
+            prepared: Mutex::new(Some(RetainedBootstrapRoot::Unselected(prepared))),
+            committed: Mutex::new(None),
+            driving: AtomicBool::new(false),
+        });
+        *self
+            .state
+            .bootstrap
+            .lock()
+            .unwrap_or_else(|e| e.into_inner()) = RuntimeWorldBootstrapState::Pending(pending);
+        rollback.completed = true;
+        self.advance_durable_bootstrap(execution)
+    }
+    pub(crate) fn advance_durable_bootstrap(
+        &self,
+        execution: &ExecutionRequest<'_, '_>,
+    ) -> Outcome {
+        let driver = {
+            let state = self
+                .state
+                .bootstrap
+                .lock()
+                .unwrap_or_else(|e| e.into_inner());
+            let close = self.state.close.lock().unwrap_or_else(|e| e.into_inner());
+            if !self.owner_is_present()
+                || close.state() != super::super::super::close::RuntimeWorldCloseState::Open
+            {
+                return Outcome::RecoveryRequired(Refusal::Preparation(
+                    RuntimeWorldBootstrapNoEffectCause::OwnerUnavailable,
+                ));
+            }
+            let RuntimeWorldBootstrapState::Pending(pending) = &*state else {
+                return Outcome::Refused(Refusal::NoPendingBootstrap);
+            };
+            let Some(driver) = pending.claim() else {
+                return Outcome::Pending;
+            };
+            driver
+        };
+        let pending = &driver.0;
+        let acknowledged = pending
+            .committed
+            .lock()
+            .unwrap_or_else(|e| e.into_inner())
+            .is_some();
+        let selected = matches!(
+            pending
+                .prepared
+                .lock()
+                .unwrap_or_else(|e| e.into_inner())
+                .as_ref(),
+            Some(RetainedBootstrapRoot::Selected(_))
+        );
+        if !acknowledged && !selected {
+            match pending.binding.publish(&pending.subject, execution) {
+                Ok(witness) => {
+                    *pending.committed.lock().unwrap_or_else(|e| e.into_inner()) =
+                        Some(witness.into_witness())
+                }
+                Err(WorldDurablePublicationStop::Pending | WorldDurablePublicationStop::Busy) => {
+                    return Outcome::Pending
+                }
+                Err(WorldDurablePublicationStop::EvidenceRequired) => {
+                    return Outcome::EvidenceRequired
+                }
+                Err(WorldDurablePublicationStop::Unresolved) => return Outcome::Indeterminate,
+                Err(WorldDurablePublicationStop::Refused(cause)) => {
+                    let retired = std::mem::replace(
+                        &mut *self
+                            .state
+                            .bootstrap
+                            .lock()
+                            .unwrap_or_else(|e| e.into_inner()),
+                        RuntimeWorldBootstrapState::Unperformed,
+                    );
+                    drop(retired);
+                    return Outcome::Refused(Refusal::Medium(cause.into_cause()));
+                }
+            }
+        }
+        // The actual move-only witness is retained before history finalization
+        // or installation. This loan restores the SAME bundle on every unwind.
+        let mut loan = PreparedRootLoan {
+            custody: pending,
+            prepared: pending
+                .prepared
+                .lock()
+                .unwrap_or_else(|e| e.into_inner())
+                .take(),
+        };
+        if matches!(loan.prepared, Some(RetainedBootstrapRoot::Unselected(_))) {
+            let witness = pending
+                .committed
+                .lock()
+                .unwrap_or_else(|e| e.into_inner())
+                .take()
+                .expect("actual acknowledged original bootstrap");
+            let Some(RetainedBootstrapRoot::Unselected(prepared)) = loan.prepared.take() else {
+                unreachable!("the single driver retains the original unselected bundle");
+            };
+            loan.prepared = Some(RetainedBootstrapRoot::Selected(
+                prepared.acknowledge(witness, &pending.subject),
+            ));
+        }
+        let Some(RetainedBootstrapRoot::Selected(prepared)) = loan.prepared.as_mut() else {
+            unreachable!("only an actual consumed acknowledgement permits installation");
+        };
+        match prepared.install() {
+            Ok(performed) => {
+                pending.binding.retain_checkpoint_origin(
+                    prepared
+                        .checkpoint_origin
+                        .take()
+                        .expect("same prepared durable origin obligation"),
+                );
+                let retired = std::mem::replace(
+                    &mut *self
+                        .state
+                        .bootstrap
+                        .lock()
+                        .unwrap_or_else(|e| e.into_inner()),
+                    RuntimeWorldBootstrapState::Performed,
+                );
+                drop(retired);
+                Outcome::Performed(performed)
+            }
+            Err(cause) => Outcome::RecoveryRequired(Refusal::Preparation(cause)),
+        }
+    }
+}

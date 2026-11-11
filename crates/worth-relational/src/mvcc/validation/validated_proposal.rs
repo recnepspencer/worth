@@ -49,6 +49,14 @@ impl RelationalMutationInvariantEvidence {
 /// Construction is private to `RelationalTransaction::validate`. Committing it
 /// rechecks the exact branch-qualified validation basis before publication.
 pub struct ValidatedRelationalProposal {
+    // Native owns the accepted state across World admission and publication.
+    // Release the backing before its retained-memory charge.
+    pub(crate) state: Box<ValidatedProposalState>,
+    memory: Option<worth_execution::ExecutionMemoryReservation>,
+}
+
+pub(crate) struct ValidatedProposalState {
+    pub(crate) caller_association: Option<crate::mvcc::RelationalCallerAssociation>,
     pub(crate) required_output_publication: Option<crate::mvcc::RequiredOutputPublicationAdmission>,
     pub(crate) required_output_materialization:
         Option<std::sync::Arc<crate::history::data::CanonicalRequiredOutputMaterialization>>,
@@ -67,6 +75,9 @@ pub struct ValidatedRelationalProposal {
     pub(crate) validated_against_version: VersionId,
     pub(crate) validated_against_branch_version: RelationalBranchVersion,
     pub(crate) custom_invariant_generation: u64,
+    pub(crate) receiver_epoch: crate::runtime::RelationalRuntimeConfigurationSnapshot,
+    pub(crate) execution_contracts:
+        Option<std::sync::Arc<crate::runtime::RelationalRootExecutionContracts>>,
     pub(crate) batch_count: usize,
     pub(crate) strategy_commit_artifacts:
         Option<crate::commit_strategies::data::StrategyCommitArtifactBundle>,
@@ -79,64 +90,99 @@ impl std::fmt::Debug for ValidatedRelationalProposal {
     fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         formatter
             .debug_struct("ValidatedRelationalProposal")
-            .field("transaction_id", &self.transaction_id)
-            .field("proposal_identity", &self.proposal_identity)
-            .field("validated_against_commit", &self.validated_against_commit)
-            .field("validated_against_version", &self.validated_against_version)
+            .field("transaction_id", &self.state.transaction_id)
+            .field("proposal_identity", &self.state.proposal_identity)
+            .field(
+                "validated_against_commit",
+                &self.state.validated_against_commit,
+            )
+            .field(
+                "validated_against_version",
+                &self.state.validated_against_version,
+            )
             .field(
                 "has_strategy_decoration",
-                &self.strategy_commit_artifacts.is_some(),
+                &self.state.strategy_commit_artifacts.is_some(),
             )
             .finish_non_exhaustive()
     }
 }
 
 impl ValidatedRelationalProposal {
+    /// Layout of this owner's single boxed state allocation on the current target.
+    /// Nested backing and allocator bookkeeping are outside this layout.
+    pub const fn state_backing_layout() -> std::alloc::Layout {
+        std::alloc::Layout::new::<ValidatedProposalState>()
+    }
+
+    pub(crate) fn retain(
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        state: ValidatedProposalState,
+    ) -> Result<Self, crate::transactions::data::TransactionCommitError> {
+        let memory =
+            execution.reserve_retained_memory(Self::state_backing_layout().size() as u64)?;
+        Ok(Self {
+            state: Box::new(state),
+            memory,
+        })
+    }
+
+    pub(crate) fn into_state(self) -> ValidatedProposalState {
+        let Self { state, memory } = self;
+        let value = {
+            let backing = state;
+            *backing
+        };
+        drop(memory);
+        value
+    }
+
     /// The successful round's actual metadata. Discarded symbol/residency rounds
     /// never lend metadata through this accepted proposal.
     pub fn managed_source_preparation_metadata(
         &self,
     ) -> Option<crate::validation::candidate_source::ManagedIndexSourcePreparationMetadata<'_>>
     {
-        self.proposed_mutation
+        self.state
+            .proposed_mutation
             .source_interpretation
             .preparation_metadata()
     }
 
     pub const fn invariant_evidence(&self) -> &RelationalMutationInvariantEvidence {
-        &self.evidence
+        &self.state.evidence
     }
 
     pub fn footprint(&self) -> &crate::mvcc::RelationalTransactionFootprint {
-        &self.prepared.footprint
+        &self.state.prepared.footprint
     }
 
     pub fn strategy_commit_artifacts(
         &self,
     ) -> Option<&crate::commit_strategies::data::StrategyCommitArtifactBundle> {
-        self.strategy_commit_artifacts.as_ref()
+        self.state.strategy_commit_artifacts.as_ref()
     }
 
     pub fn proposal_identity(
         &self,
     ) -> &super::proposal_identity::RelationalMutationProposalIdentity {
-        &self.proposal_identity
+        &self.state.proposal_identity
     }
 
     pub fn validated_against_commit_id(&self) -> Option<CommitId> {
-        self.validated_against_commit
+        self.state.validated_against_commit
     }
 
     pub fn validated_against_version_id(&self) -> VersionId {
-        self.validated_against_version
+        self.state.validated_against_version
     }
 
     pub fn validation_summary(&self) -> CommitValidationSummary {
-        self.evidence.summary()
+        self.state.evidence.summary()
     }
 
     pub fn custom_invariant_execution_receipts(&self) -> &[super::CustomInvariantExecutionReceipt] {
-        self.evidence.custom_invariant_execution_receipts()
+        self.state.evidence.custom_invariant_execution_receipts()
     }
 }
 
@@ -187,7 +233,7 @@ mod tests {
             .expect("current basis belongs to the same runtime")
             .validate(execution, &runtime)
             .expect("head is current at validation");
-        let candidate_ordinal = candidate.proposal_identity.ordinal();
+        let candidate_ordinal = candidate.state.proposal_identity.ordinal();
 
         let _ = create_entity(execution, &runtime, "post-validation-advance");
         let denied = runtime
@@ -214,7 +260,7 @@ mod tests {
             .validate(execution, &runtime)
             .expect("fresh validation remains admissible");
         assert_eq!(
-            fresh.proposal_identity.ordinal(),
+            fresh.state.proposal_identity.ordinal(),
             candidate_ordinal + 2,
             "stale same-branch denial must not consume a proposal ordinal"
         );

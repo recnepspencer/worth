@@ -1,5 +1,6 @@
 //! A real Signal successor wins while Native Source suspension awaits World CAS.
 use super::*;
+use crate::application_invariant_acceptance::managed_index::prefix_observation;
 use std::{num::NonZeroUsize, time::Duration};
 use worth_query_host::facade::runtime::{CompositeComponentChangePosture, ProductUnpublishedCause};
 
@@ -27,7 +28,7 @@ fn journey() {
     let calls = Arc::new(provider::Calls::default());
     let configuration = Configuration::new(calls.clone());
     let rules = configuration.rules.clone();
-    let prefix = Arc::new(prefix::Calls::default());
+    let prefix = Arc::new(prefix_observation::Calls::default());
     let prefix_rules = Arc::new(prefix_rule::Calls::new(prefix.clone()));
     let world = host::install_geometry(prefix, prefix_rules, configuration);
     let scope = authentication::request_scope();

@@ -18,6 +18,8 @@ pub use super::schema::*;
 pub mod amendment;
 #[path = "world/combined_amendment.rs"]
 pub mod combined_amendment;
+#[path = "world/program_amendment.rs"]
+pub mod program_amendment;
 #[path = "world/resources.rs"]
 pub mod resources;
 #[path = "world/scaled_amendment.rs"]

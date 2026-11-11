@@ -21,6 +21,7 @@ pub fn authority(handle: &WorthQueryRecoveryHandle) -> WorthQueryRecoveryEffectA
     WorthQueryRecoveryEffectAuthority::mint_for_test(
         handle.runtime_authority_for_test(),
         handle.authority_identity_for_test(),
+        handle,
     )
 }
 

@@ -1,15 +1,24 @@
 //! Closed correspondence to each existing typed program's actual admission.
 use super::*;
+use crate::domain_computation::primary_graph::application_attempt::effect_program::WorthQueryCommitEntryRefusal;
 mod sealed {
     pub trait Sealed {}
 }
 
+/// A foreign committed receipt cannot become this carrier's refusal.
+/// ```compile_fail,E0308
+/// use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::provider_execution::phase::prepared::entry_custody::CommitCarrier;
+/// use worth_query_execution::facade::primary_graph::WorthQueryApplicationCommitOutcome;
+/// fn cannot_substitute<S, P: CommitCarrier<S>>(program: P, unrelated: WorthQueryApplicationCommitOutcome) {
+///     program.refuse(unrelated);
+/// }
+/// ```
 pub trait CommitCarrier<Schema>: sealed::Sealed {
     type Operation;
     type Input;
     type Scope;
     type Refusal;
-    fn refuse(self, outcome: WorthQueryApplicationCommitOutcome) -> Self::Refusal;
+    fn refuse(self, refusal: WorthQueryCommitEntryRefusal) -> Self::Refusal;
     fn admission(
         &self,
     ) -> &WorthQueryAdmittedApplicationOperation<Schema, Self::Operation, Self::Input, Self::Scope>;
@@ -21,8 +30,8 @@ impl<S, O, I, E> CommitCarrier<S> for WorthQueryApplicationEffectProgram<S, O, I
     type Input = I;
     type Scope = E;
     type Refusal = WorthQueryApplicationCommitOutcome;
-    fn refuse(self, outcome: WorthQueryApplicationCommitOutcome) -> Self::Refusal {
-        outcome
+    fn refuse(self, refusal: WorthQueryCommitEntryRefusal) -> Self::Refusal {
+        refusal.into_outcome()
     }
     fn admission(&self) -> &WorthQueryAdmittedApplicationOperation<S, O, I, E> {
         &self.read_set.admission
@@ -40,7 +49,8 @@ macro_rules! lifecycle_carrier {
             fn admission(&self) -> &WorthQueryAdmittedApplicationOperation<S, O, I, E> {
                 &self.application_program().read_set.admission
             }
-            fn refuse(self, outcome: WorthQueryApplicationCommitOutcome) -> Self::Refusal {
+            fn refuse(self, refusal: WorthQueryCommitEntryRefusal) -> Self::Refusal {
+                let outcome = refusal.into_outcome();
                 let mut program = self.into_inner();
                 let Some(binding) = program.read_set.admission.$take() else {
                     return $missing;
@@ -98,8 +108,8 @@ macro_rules! commit_carrier {
             fn admission(&self) -> &WorthQueryAdmittedApplicationOperation<S, O, I, E> {
                 &self.application_program().read_set.admission
             }
-            fn refuse(self, outcome: WorthQueryApplicationCommitOutcome) -> Self::Refusal {
-                outcome
+            fn refuse(self, refusal: WorthQueryCommitEntryRefusal) -> Self::Refusal {
+                refusal.into_outcome()
             }
         }
     };

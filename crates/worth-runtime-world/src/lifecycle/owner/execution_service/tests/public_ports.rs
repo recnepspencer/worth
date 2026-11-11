@@ -30,6 +30,52 @@ pub(super) fn public_world() -> (
 }
 
 #[test]
+fn query_home_selection_never_downgrades_an_unavailable_root_to_memory() {
+    use crate::publication::WorldOpenAttemptRefusal as Refusal;
+    let (_fixture, owner, expected) = public_world();
+    let (_other_fixture, other, foreign) = public_world();
+    let port = owner.publication_port();
+    assert_eq!(
+        port.query_publication_home_binding(&expected).unwrap(),
+        None
+    );
+    assert!(matches!(
+        port.query_publication_home_binding(&foreign),
+        Err(Refusal::IdentityScope)
+    ));
+    let before = owner.root.state.publication_capacity.active();
+    // Genuine owner close admission: ordinary service admission must not use
+    // a merely retained, partly closed root as evidence of live memory.
+    let policy = crate::test_execution_policy::serial_request();
+    let request = worth_execution::ExecutionRequest::serial(&policy);
+    owner.try_prepare_close_admission(&request).unwrap().begin();
+    assert!(matches!(
+        port.query_publication_home_binding(&expected),
+        Err(Refusal::Reservation(refused)) if refused.cause() == NoEffectCause::OwnerUnavailable
+    ));
+    assert_eq!(owner.root.state.publication_capacity.active(), before);
+    assert!(owner
+        .lifecycle_port()
+        .close(&request, &owner)
+        .unwrap()
+        .retained_records()
+        .is_empty());
+    assert!(matches!(
+        port.query_publication_home_binding(&expected),
+        Err(Refusal::Reservation(refused)) if refused.cause() == NoEffectCause::OwnerUnavailable
+    ));
+    let retained_root = other.root.clone();
+    let lost_port = other.publication_port();
+    drop(other);
+    assert!(!retained_root.owner_is_present());
+    assert!(matches!(
+        lost_port.query_publication_home_binding(&foreign),
+        Err(Refusal::Reservation(refused)) if refused.cause() == NoEffectCause::OwnerUnavailable
+    ));
+    assert_eq!(retained_root.state.publication_capacity.active(), 0);
+}
+
+#[test]
 fn public_ports_complete_publication_and_consumption_permanently_closes_delivery() {
     let (fixture, owner, expected) = public_world();
     let serial_request = worth_execution::SerialRequest::from_memory(
@@ -184,7 +230,15 @@ fn public_foreign_prepared_token_never_contacts_a_component() {
 fn public_close_denies_saved_ports_without_closing_components() {
     let (fixture, owner, expected) = public_world();
     let observation = owner.observation_port();
-    let report = owner.lifecycle_port().close().unwrap();
+    let report = owner
+        .lifecycle_port()
+        .close(
+            &worth_execution::ExecutionRequest::serial(
+                &crate::test_execution_policy::serial_request(),
+            ),
+            &owner,
+        )
+        .unwrap();
     drop(report);
     assert!(observation
         .observe_product_branch(expected.branch_identity())
@@ -234,17 +288,47 @@ fn public_partial_recovery_preserves_foreign_and_live_capability_denials() {
         RuntimeWorldPublicationOutcome::ProductUnpublished(record) => record,
         other => panic!("Relational moved before Signal cancellation: {other:?}"),
     };
+    let original_receipt = record
+        .component_results()
+        .relational_settlement()
+        .unwrap()
+        .clone();
     let handle = record.recovery_handle();
     assert!(matches!(
         foreign.recovery_port().inspect_effects(&handle),
         Err(crate::facade::RuntimeWorldRecoveryDenial::ForeignHandle)
     ));
     assert!(matches!(
-        owner.recovery_port().release_effects(&handle, 0),
+        owner.recovery_port().release_effects(
+            &execution,
+            &handle,
+            0,
+            Some(
+                fixture
+                    .relational_runtime()
+                    .durability_authority()
+                    .observe_memory_commit(&execution, &original_receipt)
+                    .unwrap()
+            )
+        ),
         Err(crate::facade::RuntimeWorldRecoveryDenial::CallerCapabilityLive)
     ));
     drop(record);
-    owner.recovery_port().release_effects(&handle, 0).unwrap();
+    owner
+        .recovery_port()
+        .release_effects(
+            &execution,
+            &handle,
+            0,
+            Some(
+                fixture
+                    .relational_runtime()
+                    .durability_authority()
+                    .observe_memory_commit(&execution, &original_receipt)
+                    .unwrap(),
+            ),
+        )
+        .unwrap();
     assert!(matches!(
         owner.recovery_port().inspect_effects(&handle),
         Err(crate::facade::RuntimeWorldRecoveryDenial::MissingRecord)

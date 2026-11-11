@@ -67,6 +67,27 @@ Its [Owner Component Port](./BRANCH_BASES.md#owner-component-port) is the only
 branch/basis surface available to later composite-owner integration; legacy
 head tuples and graph internals are not production facade contracts.
 
+## Retain an initial-empty owner during composite close
+
+Platform composition can consume an unchanged, genuinely sealed initial-empty
+`SignalRuntime` with `try_prepare_initial_empty_stop(original_request)`. Busy,
+stop, poison or an unsupported graph returns the same runtime in
+`SignalInitialEmptyStopRefused`; `into_runtime()` restores the owning value.
+Preparation checks the actual private owner state through nonwaiting gates and
+stops new admission. It retains genuine sealed definition/service custody.
+
+`PreparedInitialEmptySignalStop::resume()` reopens that same owner before the
+composite close commits. `commit(original_request)` closes retention acquisition
+and returns `StoppedInitialEmptySignalAllocation`; Busy or stop returns the same
+prepared owner for retry. Neither step runs Signal cleanup or destroys the root.
+Keep the stopped allocation until explicit, **unbudgeted** `reclaim()`. Generic
+Drop is also unbudgeted abandonment. The stopped posture remains Closing, not
+Signal cleanup Closed.
+
+This is the narrow initial-empty composition primitive. It does not stop an
+arbitrary authored graph, retire Bridge/Native capabilities or close a Home.
+See the [governing owner contract](../../plans/database-foundation/milestone-3-home-lifecycle.md#initial-empty-signal-stop-and-composite-close-preparation).
+
 ## Change And Commit Semantics
 
 `mark_changed` records source recompute intent. It says which producer-local
@@ -188,6 +209,162 @@ installed semantic correspondence and returns Signal's exact performed
 evidence; Query and Runtime World carry it without reopening graph access or
 restamping component identity. A product branch may reuse the same Signal basis
 while its Relational sibling advances independently.
+
+The attached-Home Relational-only lane records `RecordedSignalInitialEmptyRoot`.
+Only the real partition-to-owner transfer can establish its private initial
+witness: one untouched original root, no authored nodes, installed definition,
+fork, snapshot, retirement, restore or merge history. Allocation irreversibly
+invalidates graph-origin eligibility; clone and reconstruction never inherit it.
+The recipe carries the actual full schema commitment and versioned Empty
+visibility/definition meaning. `SignalBranchBasisPort` exports it from the exact
+current basis and readmits it only through a freshly composed qualifying owner,
+acquiring genuine basis retention. Decoding the recipe or matching a folded
+definition basis grants no admission. General authored graph durability remains
+outside this narrow seed contract.
+
+### Authored graph image
+
+`SignalGraph::capture_authored_image` emits the declaration section through
+`facade::durability::SignalAuthoredImage`. Capture requires an explicit
+Home-scoped branch. It records node-slot generations and allocation order, node
+configuration, full conditional definitions and
+declared static dependency edges. Evaluation-discovered edges remain separate
+from those declarations. Values, aspect and dirty versions, dependency snapshots,
+pending causes, traces, telemetry, resources and temporal runtime state are absent.
+Local conditional binding counters are also absent; fresh installation remints
+them. Authored literal thresholds remain part of their definitions.
+
+`facade::runtime::RuntimeConfig::capture_authored_image` records runtime
+registrations in a separate `WSIGCONF` frame. Tier keys use explicitly declared
+stable names, and keyed computations use semantic family/key text. Interner
+ordinals, memo-only keys and cached results are absent. Readmission resolves
+the tier names through the fresh program's vocabulary.
+
+The current-format-only binary frame uses `WSIGAUTH`, protocol version 1, the
+aspect storage profile, a payload length and SHA-256 integrity. Integer fields
+are little-endian; strings are length-prefixed UTF-8. Unknown versions, mismatched
+profiles, invalid fields, changed checksums and incorrect lengths refuse with
+typed causes. Capture and byte admission use the original execution request's
+owned byte backing. The maximum frame size is 64 MiB.
+
+`SignalAuthoredImage::readmit_bytes` admits descriptive bytes only. It grants no
+branch basis, lowering capability or publication permission. Installed condition
+and comparator roles carry no graph-instance identity. Their operational bindings
+must be reconstructed by owner admission with the installed program and Bridge's
+definition section. The Home composition below admits that complete authored
+owner before World history can become serving state.
+
+`SignalGraph::readmit_authored_image` consumes the fresh installation graph and
+returns a cold graph plus freshly installed conditional contracts. It reconstructs
+declared topology once; it does not admit an owner or mint a branch basis.
+The owner must still readmit its ordered journals and Bridge section before
+serving recovered branches.
+
+### Standalone authored owner readmission
+
+`Box<SignalRuntime>::readmit_authored_owner` consumes the fresh program runtime,
+the `SignalDurableMedium`, stable tier vocabulary, recorded identity bounds and
+a `SignalAuthoredOwnerInstallation`.
+It reads the protected journal cut, validates ordered source references, restores
+live branches and snapshots, and installs one cold canonical owner partition.
+Every definition body contributes node-incarnation bounds, including unselected
+bodies and vacant or retired slots. Home composition must also supply bounds
+from its original World opens and intents; standalone owners supply an explicit
+empty contribution.
+
+Installation observes each actual immutable recovered branch, its conditional
+contracts and its opaque Bridge section before Signal admits service.
+`SignalOnlyOwnerInstallation` accepts only an empty Bridge section. Bridge's
+own readmission factory installs its section and returns the concrete assembled
+owner. A refused branch installation releases the original exclusive claim.
+
+The returned `SignalDurableOwner` retains the runtime. Its weak source port
+readmits descriptors against actual branch cells and the current Home incarnation.
+Foreign owners, unknown frame versions and stale live handles have typed refusals.
+`take_installation_contracts` transfers freshly installed conditional contracts
+paired with their durable occurrences for Bridge installation.
+
+Each durable handle also retains a `SignalRecordedSourcePoint`: its exact
+original advance reference, physical journal position and branch descriptor.
+Its checksummed byte codec grants no admission. `readmit_source_point` verifies
+both original source members and replays the authored definition through the
+consuming owner's installation bindings before issuing a historical lease.
+The returned `SignalReadmittedSourcePoint` retains the original artifact and
+admitted observation without a derived transaction result. The branch and cell
+must still exist; the descriptor door continues to require the current head.
+
+`capture_authored_home_image` excludes new publications on the actual task table
+while capturing original definition and advance frames plus issuance bounds.
+Pending work refuses with the identities of every holding original. A failed
+capture releases that gate. `SignalAuthoredHomeImage` retains its funded byte
+region and supplies a checkpoint prefix joined to one protected journal tail;
+the source contribution preserves issued identity gaps across readmission.
+Store attachment retains the supplied image with its original serving input,
+including on refusal. Home captures this Signal section only at quiesced close
+and includes it in its selected Complete image. Reopen joins that protected
+prefix to the ordered journal tail before admitting World history.
+
+Each medium exposes one stable, funded `SignalDurableOwnerAdmissionRegistry`.
+Readmission acquires its exclusive claim before journal replay and transfers the
+non-cloneable custody into the actual canonical owner allocation. A competing
+readmission or retirement reports `OwnerAlreadyReadmitted` with the holding
+runtime's identity. Failed readmission releases its claim; retirement permanently
+stops new admission. Store attachment consumes the original boxed, unshared
+physical runtime, preventing a second adapter from inventing another registry
+while that serving share is retained. Attachment refusal retains the same input
+for `try_attach`.
+
+The standalone mutation port stages an ordinary advance with the canonical
+transaction engine exactly once. Its original task retains the candidate and
+result across pending media work without retaining the invoking request. Exact
+original definition and branch completions precede canonical movement. A demand
+that only recomputes derived values reuses its original definition reference.
+Committed, proven-no-effect and indeterminate outcomes remain distinct.
+
+Store-backed courts cover three branches, runtime-published keyed definitions,
+conditional source, graceful reopen and quiescent process termination. Values
+recompute on first demand after both same-build and changed-build readmission.
+Durable forks inherit authored state through the actual reserved source and
+publish their original Created record before installing the sibling. Authored
+Home bootstrap admits the authored source, and mixed World publication retains
+the original Native and Signal evidence in one occurrence. Signal-only
+occurrences keep the exact predecessor Native source and carry no Native effect.
+Bridge's authored section now has its own cold readmission
+entry. `begin_definition_publication` prepares a conditional successor with the
+actual lowering owner and installed contract, then retains it in the original
+definition/branch journal task. Its transition carries the fresh conditional
+occurrence and the owner's Bridge section; ordinary advances still refuse
+conditional-definition changes. A committed projection callback that unwinds
+leaves the committed completion available for exact delivery, with a typed
+projection outcome, without executing the publication again.
+`begin_composite_definition_publication` uses that same preparation and driver
+with the installed composing issuer's concrete grant. Its one callback runs
+before publication; the original task retains the result, definition and grant
+until delivery. `resume_composite_original` resumes that original without
+executing its callback again.
+
+For a genuinely empty source, `Box<SignalRuntime>::prepare_initial_authored_source`
+consumes the actual unsealed program. Signal issues the initial identities and
+conditional occurrences and captures that program's graph and configuration;
+the supplied section callback captures only Bridge's authored declarations.
+Preparation refuses memory branch or snapshot history and populated journals,
+returning the actual program before publication. The retained
+`SignalInitialSourcePublication` owns both original frames and the exclusive
+owner claim across pending or refused observations. A refusal names the journal
+step, so a refused branch step never erases its already committed definition.
+Only `SignalPublishedInitialSource`, obtained after the original branch ACK,
+can transfer that same claim into cold owner readmission. No initialization
+effect is executed by readmission. Home retains this original before driving
+it. Its `SignalReadmitted` stage precedes World reconciliation, and Query serves
+the same `BridgeReadmittedAuthoredAssembly`; a Directory Home creates no empty
+companion Signal graph.
+After a proven-no-effect step, initialization retains a concrete
+`ProvenNoEffectPublication<SignalNoEffectOriginal>` tied to the actual live
+registry, journal and frame digest. It requests an explicit physical retry of
+that unchanged frame. Store also requires its own task to have proved no effect
+before retiring prior physical custody. Ordinary terminal observations stay
+stable; pending, committed and unresolved originals cannot be cleared by retry.
+The program, authored identities and frames are retained throughout.
 
 ## One Continuous Story
 

@@ -53,7 +53,7 @@ pub struct MutationFreeWorld {
 pub fn assert_equivalent_retry_skips_rail_and_unseen_request_consumes_sentinel(
     world: &MutationFreeWorld,
     binding: BankIdempotencyKey,
-    receipt: &BankCommitReceipt,
+    receipt: &bank_server::BankClosedSourceCompletion<bank_domain::schema::EstateMutationResult>,
 ) {
     let correlation = world.transport.attempts()[0].clone();
     let completed = world
@@ -68,18 +68,22 @@ pub fn assert_equivalent_retry_skips_rail_and_unseen_request_consumes_sentinel(
     world
         .transport
         .after_next_dispatch(move || armed.store(true, Ordering::Release));
-    let (recovered, fresh) = world.retransmit(binding);
+    let recovered = world.retransmit(binding);
     assert!(
-        !fresh,
+        recovered.recorded_receipt().is_some(),
         "native recovered evidence, no original handler result"
     );
     super::external_effect_dispatch::publication_assertions::assert_recovered_commit_axes(
         receipt, &recovered,
     );
-    assert!(recovered.co_committed_dispatch_outbox());
+    assert!(recovered
+        .recorded_receipt()
+        .unwrap()
+        .dispatch_outbox()
+        .is_some());
     assert_eq!(
-        recovered.emitted_effect_count(),
-        receipt.emitted_effect_count()
+        recovered.recorded_receipt().unwrap().emitted_effect_count(),
+        receipt.live_receipt().unwrap().emitted_effect_count()
     );
     assert_eq!(
         world.transport.attempts().len(),
@@ -93,9 +97,9 @@ pub fn assert_equivalent_retry_skips_rail_and_unseen_request_consumes_sentinel(
     );
 
     world.transport.under(FaultScript::Succeed, PATIENT);
-    let (_receipt, fresh) = world.retransmit(idempotency(62));
+    let sentinel = world.retransmit(idempotency(62));
     assert!(
-        fresh,
+        sentinel.fresh_result().is_some(),
         "new retransmission completes through the native source owner"
     );
     assert!(dispatched.load(Ordering::Acquire));
@@ -107,13 +111,19 @@ pub fn assert_equivalent_retry_skips_rail_and_unseen_request_consumes_sentinel(
 }
 
 impl MutationFreeWorld {
-    pub fn commit_with(&self, binding: BankIdempotencyKey) -> BankCommitReceipt {
-        let (receipt, fresh) = self.retransmit(binding);
-        assert!(fresh, "native fresh completion");
-        receipt
+    pub fn commit_with(
+        &self,
+        binding: BankIdempotencyKey,
+    ) -> bank_server::BankClosedSourceCompletion<bank_domain::schema::EstateMutationResult> {
+        let closed = self.retransmit(binding);
+        assert!(closed.fresh_result().is_some(), "native fresh completion");
+        closed
     }
 
-    pub fn retransmit(&self, binding: BankIdempotencyKey) -> (BankCommitReceipt, bool) {
+    pub fn retransmit(
+        &self,
+        binding: BankIdempotencyKey,
+    ) -> bank_server::BankClosedSourceCompletion<bank_domain::schema::EstateMutationResult> {
         {
             let source_actor = &self.authenticate_specialist();
             let source_scope = &request_scope();
@@ -146,17 +156,10 @@ impl MutationFreeWorld {
             else {
                 panic!("native source completion required")
             };
-            let fresh = matches!(
-                source_completed.evidence(),
-                worth_query_host::facade::application_entry::WorthQuerySourceCompletion::Fresh { .. }
-            );
             let closed_source = source_completed
                 .close_with_evidence(&source_request)
                 .unwrap_or_else(|(_, cause)| panic!("lawful native source close: {cause:?}"));
-            (
-                bank_server::BankCommitReceipt::from_closed_source(closed_source),
-                fresh,
-            )
+            bank_server::BankClosedSourceCompletion::from_query(closed_source)
         }
     }
 

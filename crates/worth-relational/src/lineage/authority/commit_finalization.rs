@@ -48,23 +48,28 @@ struct AssignedLineageNode {
 impl<'runtime> LineagePreparationAuthority<'runtime> {
     pub(crate) fn ensure_lineage_for_commit(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         staged: &mut WorkingState,
         commit: &RelationalCommitReceipt,
         merged_plan: &[MutationIntent],
         changed_records: &[RecordRef],
-    ) -> Result<PreparedLineageFinalization, String> {
+    ) -> Result<PreparedLineageFinalization, crate::transactions::data::TransactionCommitError>
+    {
         let plan =
             LineageFinalizationPlan::from_staged(staged, commit, merged_plan, changed_records);
         let lineage_width = u64::try_from(plan.required_lineage_ids)
-            .map_err(|_| "lineage id batch capacity exceeded u64".to_owned())?;
+            .map_err(|_| lineage_error("lineage id batch capacity exceeded u64".to_owned()))?;
         let event_width = u64::try_from(plan.drafts.len())
-            .map_err(|_| "lineage event batch capacity exceeded u64".to_owned())?;
+            .map_err(|_| lineage_error("lineage event batch capacity exceeded u64".to_owned()))?;
         let (lineage_start, event_start) = self
             .runtime
             .lineage_identity
-            .reserve(lineage_width, event_width)?;
+            .reserve(lineage_width, event_width)
+            .map_err(lineage_error)?;
         let lineage_end = lineage_start + lineage_width;
-        let assigned = plan.assign_lineage_ids(staged, lineage_start..lineage_end)?;
+        let assigned = plan
+            .assign_lineage_ids(staged, lineage_start..lineage_end)
+            .map_err(lineage_error)?;
 
         let mut events = Vec::with_capacity(assigned.len());
         let mut decisions = Vec::with_capacity(assigned.len());
@@ -72,18 +77,19 @@ impl<'runtime> LineagePreparationAuthority<'runtime> {
         for (offset, assigned) in assigned.into_iter().enumerate() {
             if let Some(node) = assigned.node {
                 if node.install_in_staged_state {
-                    install_lineage_id(staged, node.entity_id, node.lineage_id)?;
+                    install_lineage_id(execution, staged, node.entity_id, node.lineage_id)?;
                 }
                 new_nodes.push(LineageNode {
                     lineage_id: node.lineage_id,
                     entity_id: node.entity_id,
                 });
             }
-            let offset = u64::try_from(offset)
-                .map_err(|_| "lineage event batch capacity exceeded u64".to_owned())?;
+            let offset = u64::try_from(offset).map_err(|_| {
+                lineage_error("lineage event batch capacity exceeded u64".to_owned())
+            })?;
             let event_id = event_start
                 .checked_add(offset)
-                .ok_or_else(|| "lineage event id allocator exhausted".to_owned())?;
+                .ok_or_else(|| lineage_error("lineage event id allocator exhausted".to_owned()))?;
             let event = self.prepare_authoritative_lineage_event(
                 event_id,
                 commit,
@@ -267,30 +273,32 @@ fn created_entity_lineage_slot(
     Some(arena.get(&entity_id)?.extra().lineage_id)
 }
 
+fn lineage_error(detail: String) -> crate::transactions::data::TransactionCommitError {
+    crate::transactions::data::TransactionCommitError::publication(
+        crate::publication::data::PublicationError::new(
+            crate::publication::bundle::PublicationStage::BundleAssembly,
+            detail,
+        ),
+    )
+}
 fn install_lineage_id(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     staged: &mut WorkingState,
     entity_id: EntityId,
     lineage_id: LineageId,
-) -> Result<(), String> {
-    let partition = staged.get_partition_mut(entity_id.partition_id);
-    let slot = entity_id.local_slot.0 as usize;
-    let physical = partition
+) -> Result<(), crate::transactions::data::TransactionCommitError> {
+    staged
+        .get_partition_mut(entity_id.partition_id)
         .entity_arena
-        .physical_index(slot)
-        .ok_or_else(|| "planned lineage entity slot is unavailable".to_owned())?;
-    let extra = partition
-        .entity_arena
-        .extra
-        .get_mut(physical)
-        .ok_or_else(|| "planned lineage entity metadata is unavailable".to_owned())?;
-    extra.lineage_id = Some(lineage_id);
-    let metadata = partition
-        .entity_arena
-        .metadata_history_at_mut(slot)
-        .and_then(|history| history.last_mut())
-        .ok_or_else(|| "planned lineage metadata history is unavailable".to_owned())?;
-    metadata.lineage_id = Some(lineage_id);
-    Ok(())
+        .install_lineage_id(execution, entity_id.slot_index(), lineage_id)
+        .map_err(|denial| match denial {
+            crate::storage::substrate::ExtraLineageDenial::Request(cause) => {
+                crate::transactions::data::TransactionCommitError::execution(cause.into())
+            }
+            crate::storage::substrate::ExtraLineageDenial::Missing(detail) => {
+                lineage_error(detail.to_owned())
+            }
+        })
 }
 
 fn entity_lineage(staged: &WorkingState, entity_id: EntityId) -> Option<LineageId> {

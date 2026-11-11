@@ -25,7 +25,7 @@ where
             self,
             phase,
             producer_identity,
-            receipt,
+            receipt.into(),
             delivery,
             ready_backing,
             selected,
@@ -45,7 +45,7 @@ impl<'a> PreparedSelectedDelivery<'a> {
         preserved: bool,
     ) -> Self {
         Self {
-            lowering,
+            lowering: SelectedDeliveryBinding::Memory(lowering),
             ordinal,
             preserved,
         }

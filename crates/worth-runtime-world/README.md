@@ -1,6 +1,6 @@
 # `worth-runtime-world`
 
-Runtime World owns memory-resident product branches and coordinated publication
+Runtime World owns product branches and coordinated publication
 across real Relational and Signal owners. Bridge owns their installed semantic
 correspondence; component owners retain their own mutation, settlement and basis
 authority. The public import surface is `worth_runtime_world::facade`.
@@ -53,6 +53,27 @@ close fences new work, reports outstanding observations and retained records, an
 returns any owner-created component retirement work. Drop caller observations and
 results, then the closed World state before checking final component lease release.
 World close does not close component owners.
+
+Composite owners can first call
+`owner.try_preflight_close_admission(original_request)` to observe those same
+bootstrap, operation, close, custody and durable-medium gates without allocating
+a close task or traversing history. All guards release before it returns;
+supplier preflight belongs after that return. Final preparation reacquires the
+same gates and validates its actual history frontier. It funds the original
+close-task allocation before construction, with the grant retained by that task.
+Task allocation refusal is `RuntimeWorldCloseDenial::Execution`; existing
+`Stopped` observations retain their original meaning.
+
+For a short composite-owner preparation cut,
+`owner.try_prepare_close_admission(original_request)` returns a borrowed
+`RuntimeWorldPreCloseAdmission`. It performs the same final checks used by
+ordinary close and holds the existing bootstrap, operation and close gates.
+Dropping it preserves Open; `begin()` installs the same prepared close task and
+releases the gates infallibly. Keep only narrow, try-only owner metadata work
+inside that interval. Perform no I/O, allocation or supplier callbacks there.
+After another owner's reversible stop succeeds, introduce no fallible step
+before World `begin`; later interruption retains Closing custody. This primitive
+does not implement Bridge/Store retirement or full owning Home close.
 
 See [history](COMPOSITE_HISTORY.md), [publication](COORDINATED_PUBLICATION.md),
 and [retention/recovery](RETENTION_AND_RECOVERY.md) for exact contracts.
@@ -160,9 +181,45 @@ preserves the generation charge selected by its genuine current custodian,
 including pending retries hidden by a newer same-node index entry.
 These operations do not supply Query provider storage, authorization or restart.
 
-This crate has no Query, Store, persistence, replay, codec or physical-runtime
-dependency. It does not provide durable restart, multi-parent history, rollback,
-or Query public completion. Query already consumes this crate through
+World owns the three attached-Home journal grammars through an owner-neutral
+medium; Store owns physical publication and Home lifecycle. World artifact v3
+requires Native's recorded predecessor plus Signal's owner-proven InitialEmpty
+recipe and Bridge's versioned uninstalled baseline. Older World artifacts
+refuse. The attached Relational-only publication path opens original custody
+before Native preparation, preallocates its occurrence destination, then fills
+it from the original settled Native evidence. Actual journal selection precedes
+the same product cell's live movement. Pending publication retains the original
+ready attempt and capacities; indeterminate selection requires reopen.
+
+The filesystem Home court exercises a killed Native publication before the
+World occurrence, cold readmission of the original custody and unchanged head,
+explicit release through Native's recovered-publication capability, and reopen
+after release. This lower lane supports one initial product branch with an
+InitialEmpty Signal recipe and uninstalled Bridge baseline. Recovered Released
+rows require either an explicit no-Native-effect tag or the original complete
+Native receipt, position and artifact digest. Readmission validates the complete
+Native association inventory and rejects orphan or contradictory evidence.
+
+Cold World occurrence readmission, recovered continuation, general authored
+Signal/Bridge state and World checkpoint coverage remain unfinished. This crate
+has no Query, Store or physical-runtime dependency. Query consumes it through
 `worth_runtime_world::facade` (from `worth-query-execution` and
 `worth-query-publication`) to publish application commits and report their
 product outcomes.
+
+## Attach a genuinely fresh Home
+
+Store's concrete Home composition has two distinct owner entries. Existing
+Homes use `readmit_world_home` with actual recovered Native authority.
+`admit_fresh_world_home` instead requires the same Native runtime's
+`FreshRelationalSourceAdmission`, validated before reading or constructing
+World. The real protected World source must have no selected checkpoint and
+all three journal heads must be empty. An empty source alone grants no right
+to take this route; Store selects it from private physical new-Home custody.
+
+The fresh entry shares the private execution/input/owner construction with
+recovery and performs no recovered-effect discovery or recorded-component
+reconciliation. Subsequent bootstrap selects the same live Native initial
+root through the existing owner operation. Stops and source/receipt mismatches
+retain their typed causes. This attachment contract does not establish
+physical Directory close or original Native/provider graph retirement.

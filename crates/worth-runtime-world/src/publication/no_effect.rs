@@ -4,13 +4,19 @@ use crate::branch::{ProductBranchObservation, ProductBranchReferenceSnapshot};
 /// product reference moved.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum NoEffectCause {
+    DurableOpenRequired,
     ExecutionRequest(worth_execution::WorkCeilingDenial),
     StaleExpectedProductHead,
     CancelledBeforeEffect,
     DeadlineBeforeEffect,
     OwnerDeniedBeforeEffect,
     CurrentReadDependency(super::CurrentProductReadDependencyDenial),
+    StaleIncarnation,
     CorrespondenceRebindRequired,
+    /// Bridge refused the predecessor's exact correspondence before any effect.
+    CorrespondenceAdmissionDenied(
+        worth_runtime_bridge::facade::RuntimeWorldCorrespondenceAdmissionDenial,
+    ),
     ReferenceGenerationExhausted,
     CapacityExhausted,
     OwnerUnavailable,

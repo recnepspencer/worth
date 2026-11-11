@@ -29,7 +29,7 @@ pub fn restore(
 }
 pub fn try_restore(
     checkpoint: installation::WorthQueryApplicationCheckpoint,
-) -> Result<App, installation::WorthQueryInMemoryApplicationDenial> {
+) -> Result<App, installation::WorthQueryApplicationPreparationDenial> {
     try_install_source(1, Arc::default(), Fault::None, 1, Some(checkpoint))
 }
 fn install_source(
@@ -47,7 +47,7 @@ fn try_install_source(
     fault: Fault,
     child_width: u64,
     checkpoint: Option<installation::WorthQueryApplicationCheckpoint>,
-) -> Result<App, installation::WorthQueryInMemoryApplicationDenial> {
+) -> Result<App, installation::WorthQueryApplicationPreparationDenial> {
     try_install_program::<Program>(width, selections, fault, child_width, false, checkpoint)
 }
 pub(super) fn try_install_program<
@@ -61,7 +61,7 @@ pub(super) fn try_install_program<
     checkpoint: Option<installation::WorthQueryApplicationCheckpoint>,
 ) -> Result<
     installation::WorthQueryProgramApplicationRuntime<Schema, P>,
-    installation::WorthQueryInMemoryApplicationDenial,
+    installation::WorthQueryApplicationPreparationDenial,
 >
 where
     P::Outputs: installation::WorthQueryApplicationProgramRoots<Schema>,
@@ -100,7 +100,7 @@ fn try_install_program_with_sources<
     others: &[&str],
 ) -> Result<
     installation::WorthQueryProgramApplicationRuntime<Schema, P>,
-    installation::WorthQueryInMemoryApplicationDenial,
+    installation::WorthQueryApplicationPreparationDenial,
 >
 where
     P::Outputs: installation::WorthQueryApplicationProgramRoots<Schema>,
@@ -110,7 +110,7 @@ where
         .with_schema(&schema)
         .validated_program()
         .unwrap();
-    let limits = installation::WorthQueryInMemoryApplicationLimits::new(
+    let limits = installation::WorthQueryApplicationLimits::new(
         worth_query_testkit_document_retention::facade::document_world_resources::world_resources(
             256,
             4 * 1024 * 1024,
@@ -123,7 +123,7 @@ where
         SignalConditionalEvaluationBudget::development(),
     );
     if let Some(checkpoint) = checkpoint {
-        return installation::in_memory_program_from_checkpoint(
+        return installation::WorthQueryInterimCheckpointRestore::program(
             program,
             schema,
             (Configuration {

@@ -8,10 +8,10 @@ impl OperationHandler<Catalog, Binding> for Handler {
         edit: &Edit,
         reader: &mut DecisionReader<'_, '_, '_, Catalog, Binding>,
     ) -> HandlerResult<Decision, Denial> {
-        if let Edit::Items { items, .. } = edit {
-            if items.is_empty() || items.len() > MAX_ITEMS_PER_BATCH {
-                return HandlerResult::DomainDenied(Denial::InvalidBatch);
-            }
+        if let Edit::Items { items, .. } = edit
+            && (items.is_empty() || items.len() > MAX_ITEMS_PER_BATCH)
+        {
+            return HandlerResult::DomainDenied(Denial::InvalidBatch);
         }
         let result = (|| {
             let scope = match edit {

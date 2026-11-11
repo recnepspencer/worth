@@ -7,16 +7,18 @@
 //! patch-position reservation, after every fallible preparation step and
 //! before any live effect; its fates are those of a commit (D2).
 
+mod committed_evidence;
 mod durable_step;
 mod positioned;
 mod record;
 mod sequence;
 mod stop;
 
+pub use committed_evidence::RelationalCommittedTransitionEvidence;
 pub(crate) use durable_step::{
     LiveBranchTransitionStep, RelationalBranchTransitionDenial,
-    RelationalBranchTransitionDurableStep, ReplayedBranchTransitionDivergence,
-    ReplayedBranchTransitionStep,
+    RelationalBranchTransitionDurableStep, RelationalTransitionPublication,
+    ReplayedBranchTransitionDivergence, ReplayedBranchTransitionStep,
 };
 pub use positioned::PositionedBranchTransition;
 pub use record::RelationalBranchTransition;

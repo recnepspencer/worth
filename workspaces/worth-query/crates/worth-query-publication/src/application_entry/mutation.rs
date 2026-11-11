@@ -72,3 +72,6 @@ pub use retained::WorthQueryApplicationRetainedMutationOutcome;
 pub use prepared_program::{
     WorthQueryApplicationProgramMutationPreparation, WorthQueryPreparedProgramMutation,
 };
+#[cfg(test)]
+#[path = "mutation_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;

@@ -131,3 +131,101 @@ fn canonical_subscription_head_cell_forwards_contention_without_install_or_custo
     });
     runtime.snapshots().release_snapshot(&old_handle).unwrap();
 }
+
+#[derive(Debug)]
+struct RetiringConsumer {
+    delivery: Consumer,
+    drops: Arc<std::sync::atomic::AtomicUsize>,
+}
+impl Drop for RetiringConsumer {
+    fn drop(&mut self) {
+        self.drops.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
+    }
+}
+impl RelationalPublicationCompanion for RetiringConsumer {
+    fn prepare(
+        &self,
+        context: &mut PublicationCompanionPreflight<'_>,
+    ) -> Result<PreparedPublicationCompanionEffect, CompanionPreflightStop> {
+        self.delivery.prepare(context)
+    }
+}
+
+#[test]
+fn canonical_subscription_retirement_retries_original_publication_epoch_and_defers_consumer_drop() {
+    use std::sync::atomic::{AtomicUsize, Ordering};
+    use worth_relational::facade::mvcc::PublicationCompanionRetirementDenial;
+    let host_request = crate::snapshot::test_serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+    let runtime = runtime(execution);
+    let (prepared, observe_prepared) = mpsc::channel();
+    let (release, observe_release) = mpsc::channel();
+    let drops = Arc::new(AtomicUsize::new(0));
+    let subscription = RuntimeBridgeRelationalSource::for_graph_role(
+        Arc::clone(&runtime),
+        "canonical-retirement-contention",
+    )
+    .unwrap()
+    .begin_canonical_envelope_subscription()
+    .unwrap()
+    .activate(Arc::new(RetiringConsumer {
+        delivery: Consumer {
+            gate: Some((prepared, Mutex::new(observe_release))),
+        },
+        drops: Arc::clone(&drops),
+    }))
+    .unwrap();
+    let subscription = std::thread::scope(|threads| {
+        let publisher = threads.spawn(|| {
+            create_entity_outcome(execution, &runtime, "canonical-retirement-held-epoch")
+        });
+        observe_prepared.recv().unwrap();
+        let result = subscription.try_retire_for_request(execution);
+        // Release the genuine publisher before assertions, including a wrong
+        // successful outcome, so a broken adapter cannot strand the publisher.
+        release.send(()).unwrap();
+        let committed = publisher.join().unwrap();
+        release_test_commit_snapshot(&runtime, &committed);
+        let (subscription, denial) = result.unwrap_err();
+        assert_eq!(
+            denial,
+            PublicationCompanionRetirementDenial::Registration(
+                PublicationCompanionRegistrationStop::PublicationPending,
+            )
+        );
+        assert_eq!(drops.load(Ordering::SeqCst), 0);
+        subscription
+    });
+    let retired = subscription.try_retire_for_request(execution).unwrap();
+    assert_eq!(drops.load(Ordering::SeqCst), 0);
+    drop(runtime);
+    assert_eq!(drops.load(Ordering::SeqCst), 0);
+    retired.reclaim();
+    assert_eq!(drops.load(Ordering::SeqCst), 1);
+}
+
+#[test]
+fn canonical_subscription_retirement_after_owner_stop_defers_consumer_drop() {
+    use std::sync::atomic::{AtomicUsize, Ordering};
+    let host_request = crate::snapshot::test_serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+    let runtime = runtime(execution);
+    let drops = Arc::new(AtomicUsize::new(0));
+    let subscription = RuntimeBridgeRelationalSource::for_graph_role(
+        Arc::clone(&runtime),
+        "canonical-retirement-after-owner",
+    )
+    .unwrap()
+    .begin_canonical_envelope_subscription()
+    .unwrap()
+    .activate(Arc::new(RetiringConsumer {
+        delivery: Consumer { gate: None },
+        drops: Arc::clone(&drops),
+    }))
+    .unwrap();
+    drop(runtime);
+    let retired = subscription.try_retire_for_request(execution).unwrap();
+    assert_eq!(drops.load(Ordering::SeqCst), 0);
+    retired.reclaim();
+    assert_eq!(drops.load(Ordering::SeqCst), 1);
+}

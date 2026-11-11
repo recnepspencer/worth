@@ -23,8 +23,8 @@ fn every_leaf_disagreement_refuses_with_the_selected_region_and_capture_posture(
         |leaf| leaf.entity_slots += 1,
         |leaf| leaf.relation_slots += 1,
         |leaf| leaf.unavailable_records += 1,
-        |leaf| leaf.kind_authority.head[0] ^= 1,
-        |leaf| leaf.kind_authority.history[0] ^= 1,
+        |leaf| disagree_digest(&mut leaf.kind_authority.head),
+        |leaf| disagree_digest(&mut leaf.kind_authority.history),
     ];
     for (dimension, disagree) in disagreements.into_iter().enumerate() {
         let mut captured = matching.clone();
@@ -75,8 +75,8 @@ fn leaf_values() -> (RelationalRootRegionCheckpoint, RelationalCheckpointRegion)
         partition_id,
         content_digest: [1; 32],
         kind_commitment: RelationalRegionKindCommitment {
-            head: [2; 32],
-            history: [3; 32],
+            head: worth_foundational::CanonicalDigestId::new([2; 32]),
+            history: worth_foundational::CanonicalDigestId::new([3; 32]),
         },
         directory: std::sync::Arc::new(crate::storage::residency::RegionRecordDirectory::empty(
             partition_id,
@@ -105,4 +105,10 @@ fn leaf_values() -> (RelationalRootRegionCheckpoint, RelationalCheckpointRegion)
         history: locator,
     };
     (selected, captured)
+}
+
+fn disagree_digest(digest: &mut worth_foundational::CanonicalDigestId) {
+    let mut bytes = *digest.bytes();
+    bytes[0] ^= 1;
+    *digest = worth_foundational::CanonicalDigestId::new(bytes);
 }

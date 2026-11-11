@@ -4,7 +4,7 @@ use super::{
     denial, selection, CheckpointTransition, WorthQueryCheckpointMigrationWriter,
     WorthQueryCheckpointTransitionRecovery,
 };
-use crate::domain_computation::primary_graph::application_installation::WorthQueryInMemoryApplicationDenial;
+use crate::domain_computation::primary_graph::application_installation::WorthQueryApplicationPreparationDenial;
 use crate::domain_computation::primary_graph::WorthQueryBootstrapAdvancementPhase;
 use crate::domain_computation::primary_graph::{
     application_installation::program_admission::WorthQueryAdmittedProgramSupport,
@@ -14,7 +14,6 @@ use crate::domain_computation::primary_graph::{
         map_bootstrap_staging_denial, map_bootstrap_transaction_admission_denial,
     },
     program_occurrence::{program_revision_rendering, WorthQueryProgramActivationCell},
-    WorthQueryPrimaryGraphBootstrap,
 };
 use std::collections::BTreeMap;
 use worth_foundational::facade::{AspectValue, InternedString};
@@ -34,7 +33,7 @@ pub(in crate::domain_computation::primary_graph) struct InstalledCheckpointTarge
 fn prepare_transition<Schema: ApplicationSchema + 'static>(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     _phase: &WorthQueryBootstrapAdvancementPhase<'_>,
-    graph: &mut WorthQueryPrimaryGraphBootstrap<Schema>,
+    graph: &mut super::super::prepared_native::PreparedPrimaryGraphInstallation,
     checkpoint: &mut crate::domain_computation::primary_graph::application_checkpoint::DecodedApplicationCheckpoint,
     target: &InstalledCheckpointTarget<'_, Schema>,
     cell: &WorthQueryProgramActivationCell,
@@ -44,21 +43,24 @@ fn prepare_transition<Schema: ApplicationSchema + 'static>(
         worth_relational::facade::durability::RecoveredRelationalRuntimeAuthority,
         super::preserved_outputs::PreservedOutputs,
     ),
-    WorthQueryInMemoryApplicationDenial,
+    WorthQueryApplicationPreparationDenial,
 > {
     let installed = target.schema;
     let support = target.program;
     let layout = graph.graph.layout.clone();
-    let mut recovered = graph.recovered_relational_authority.take().ok_or_else(|| {
-        WorthQueryInMemoryApplicationDenial::Graph(denial(
-            "checkpoint transition has no recovered native authority",
-        ))
-    })?;
+    let mut recovered = graph
+        .meaning
+        .recovered_relational_authority
+        .take()
+        .ok_or_else(|| {
+            WorthQueryApplicationPreparationDenial::Graph(denial(
+                "checkpoint transition has no recovered native authority",
+            ))
+        })?;
     let codec_pending = recovered.codec_transition_pending();
     let expected = AspectValue::String(InternedString::from(transition.predecessor.0.as_str()));
     let (basis, identity, records) = graph
         .graph
-        .integration_handle()
         .with_runtime(execution, |runtime| {
             let basis = runtime
                 .admit_branch_basis(&runtime.main_branch_identity())
@@ -88,7 +90,7 @@ fn prepare_transition<Schema: ApplicationSchema + 'static>(
             )?;
             Ok((basis, identity, records))
         })
-        .map_err(WorthQueryInMemoryApplicationDenial::Graph)?;
+        .map_err(WorthQueryApplicationPreparationDenial::Graph)?;
     let native_transaction = super::codec::begin(
         execution,
         graph,
@@ -101,38 +103,43 @@ fn prepare_transition<Schema: ApplicationSchema + 'static>(
             replacement: program_revision_rendering(&support.initial_revision),
         },
     )
-    .map_err(WorthQueryInMemoryApplicationDenial::Graph)?;
+    .map_err(WorthQueryApplicationPreparationDenial::Graph)?;
     let preserved_outputs = if codec_pending {
         target
             .producers
             .validate_codec_transition_output_origins(execution, &recovered, &layout)
-            .map_err(WorthQueryInMemoryApplicationDenial::Graph)?;
+            .map_err(WorthQueryApplicationPreparationDenial::Graph)?;
         super::output_disposition::classify(
             execution, graph, &recovered, &basis, target, checkpoint,
         )
-        .map_err(WorthQueryInMemoryApplicationDenial::Graph)?
+        .map_err(WorthQueryApplicationPreparationDenial::Graph)?
     } else {
         super::preserved_outputs::PreservedOutputs::retain(&checkpoint.accepted_outputs, execution)
-            .map_err(|e| WorthQueryInMemoryApplicationDenial::Graph(e.into_installation_denial()))?
+            .map_err(|e| {
+                WorthQueryApplicationPreparationDenial::Graph(e.into_installation_denial())
+            })?
     };
     let mut writer = WorthQueryCheckpointMigrationWriter::new(graph, transition.resources);
     let authored = (transition.author)(&mut writer, installed);
     execution.consult().map_err(|cause| {
-        WorthQueryInMemoryApplicationDenial::Graph(super::super::request_read_denial::read(
+        WorthQueryApplicationPreparationDenial::Graph(super::super::request_read_denial::read(
             cause.into(),
         ))
     })?;
-    authored.map_err(WorthQueryInMemoryApplicationDenial::Graph)?;
+    authored.map_err(WorthQueryApplicationPreparationDenial::Graph)?;
     writer
         .finish()
-        .map_err(WorthQueryInMemoryApplicationDenial::Graph)?;
-    if codec_pending && (!graph.entity_rows.is_empty() || !graph.relation_rows.is_empty()) {
-        return Err(WorthQueryInMemoryApplicationDenial::Graph(denial(
+        .map_err(WorthQueryApplicationPreparationDenial::Graph)?;
+    if codec_pending
+        && (!graph.meaning.typed_rows.entity_rows.is_empty()
+            || !graph.meaning.typed_rows.relation_rows.is_empty())
+    {
+        return Err(WorthQueryApplicationPreparationDenial::Graph(denial(
             "codec-only recovery cannot append unclassified authored rows",
         )));
     }
     cell.bind_checkpoint_candidate(identity).map_err(|_| {
-        WorthQueryInMemoryApplicationDenial::Graph(denial(
+        WorthQueryApplicationPreparationDenial::Graph(denial(
             "checkpoint activation candidate was already bound",
         ))
     })?;
@@ -150,8 +157,8 @@ fn prepare_transition<Schema: ApplicationSchema + 'static>(
     }
     batch = append_typed_rows(
         batch,
-        std::mem::take(&mut graph.entity_rows),
-        std::mem::take(&mut graph.relation_rows),
+        std::mem::take(&mut graph.meaning.typed_rows.entity_rows),
+        std::mem::take(&mut graph.meaning.typed_rows.relation_rows),
     );
     for entity_id in records.entities {
         if recovered.codec_transition_retires(entity_id) {
@@ -170,40 +177,38 @@ fn prepare_transition<Schema: ApplicationSchema + 'static>(
         ));
     }
     transition.capture_policy.check_live().map_err(|error| {
-        WorthQueryInMemoryApplicationDenial::CheckpointTransitionPolicyStopped(error.into())
+        WorthQueryApplicationPreparationDenial::CheckpointTransitionPolicyStopped(error.into())
     })?;
-    let successor = graph
-        .graph
-        .integration_handle()
-        .with_runtime_mut(execution, |runtime| {
-            let mut transaction = match native_transaction {
-                Some(transaction) => transaction,
-                None => runtime
-                    .begin_branch_transaction(
-                        &basis,
-                        worth_relational::facade::mvcc::RelationalTransactionIntent::ordinary(),
-                    )
-                    .map_err(map_bootstrap_transaction_admission_denial)?,
-            };
-            transaction
-                .push_batch(
-                    batch,
-                    worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+    let successor = (|| {
+        let runtime = &mut graph.graph.native;
+        let mut transaction = match native_transaction {
+            Some(transaction) => transaction,
+            None => runtime
+                .begin_branch_transaction(
+                    &basis,
+                    worth_relational::facade::mvcc::RelationalTransactionIntent::ordinary(),
                 )
-                .map_err(map_bootstrap_staging_denial)?;
-            let candidate = runtime
-                .prepare_branch_transaction(execution, transaction)
-                .map_err(map_bootstrap_commit_denial)?;
-            Ok(runtime
-                .durability_recovery()
-                .commit_checkpoint_transition(execution, recovered, candidate))
-        })
-        .map_err(WorthQueryInMemoryApplicationDenial::Graph)?;
+                .map_err(map_bootstrap_transaction_admission_denial)?,
+        };
+        transaction
+            .push_batch(
+                batch,
+                worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+            )
+            .map_err(map_bootstrap_staging_denial)?;
+        let candidate = runtime
+            .prepare_branch_transaction(execution, transaction)
+            .map_err(map_bootstrap_commit_denial)?;
+        Ok(runtime
+            .durability_recovery()
+            .commit_checkpoint_transition(execution, recovered, candidate))
+    })()
+    .map_err(WorthQueryApplicationPreparationDenial::Graph)?;
     match successor {
         Ok(acknowledged) => Ok((acknowledged.into_parts().1, preserved_outputs)),
-        Err(worth_relational::facade::durability::RecoveredCheckpointTransitionError::Refused(refusal)) => Err(WorthQueryInMemoryApplicationDenial::Graph(super::codec::map_refusal(refusal.denial()))),
-        Err(worth_relational::facade::durability::RecoveredCheckpointTransitionError::SettlementFailed(error)) => Err(WorthQueryInMemoryApplicationDenial::CheckpointTransitionSettlementFailed(error)),
-        Err(worth_relational::facade::durability::RecoveredCheckpointTransitionError::SnapshotCloseoutFailed { commit_id, denial }) => Err(WorthQueryInMemoryApplicationDenial::CheckpointTransitionSnapshotCloseoutFailed { commit_id, denial }),
+        Err(worth_relational::facade::durability::RecoveredCheckpointTransitionError::Refused(refusal)) => Err(WorthQueryApplicationPreparationDenial::Graph(super::codec::map_refusal(refusal.denial()))),
+        Err(worth_relational::facade::durability::RecoveredCheckpointTransitionError::SettlementFailed(error)) => Err(WorthQueryApplicationPreparationDenial::CheckpointTransitionSettlementFailed(error)),
+        Err(worth_relational::facade::durability::RecoveredCheckpointTransitionError::SnapshotCloseoutFailed { commit_id, denial }) => Err(WorthQueryApplicationPreparationDenial::CheckpointTransitionSnapshotCloseoutFailed { commit_id, denial }),
     }
 }
 
@@ -211,81 +216,84 @@ pub(in crate::domain_computation::primary_graph) fn transition_checkpoint<
     Schema: ApplicationSchema + 'static,
 >(
     phase: &WorthQueryBootstrapAdvancementPhase<'_>,
-    graph: &mut WorthQueryPrimaryGraphBootstrap<Schema>,
+    mut graph: super::super::prepared_native::PreparedPrimaryGraphInstallation,
     checkpoint: &mut crate::domain_computation::primary_graph::application_checkpoint::DecodedApplicationCheckpoint,
     target: InstalledCheckpointTarget<'_, Schema>,
     cell: &WorthQueryProgramActivationCell,
     transition: CheckpointTransition<'_, '_, Schema>,
-) -> Result<(), WorthQueryInMemoryApplicationDenial> {
+) -> Result<
+    (
+        super::super::prepared_native::PreparedPrimaryGraphInstallation,
+        worth_relational::facade::durability::NativeInterimBootstrapContinuation,
+    ),
+    WorthQueryApplicationPreparationDenial,
+> {
     let phase_request = phase.execution_request();
     let execution = &phase_request;
     let recovery = std::rc::Rc::clone(&transition.recovery);
     let capture_policy = transition.capture_policy;
     let codec_pending = graph
+        .meaning
         .recovered_relational_authority
         .as_ref()
         .is_some_and(|authority| authority.codec_transition_pending());
-    let publication = graph.recovered_publication.clone().ok_or_else(|| {
-        WorthQueryInMemoryApplicationDenial::Graph(denial(
+    let publication = graph.meaning.recovered_publication.clone().ok_or_else(|| {
+        WorthQueryApplicationPreparationDenial::Graph(denial(
             "checkpoint transition has no original native bootstrap publication",
         ))
     })?;
-    let (successor, preserved_outputs) = prepare_transition(
-        execution, phase, graph, checkpoint, &target, cell, transition,
+    let original = checkpoint
+        .origin
+        .clone()
+        .expect("preflight admitted the capture origin");
+    let (mut successor, preserved_outputs) = prepare_transition(
+        execution, phase, &mut graph, checkpoint, &target, cell, transition,
     )?;
 
-    if codec_pending && let Err(cause) = super::codec::finish(execution, graph) {
+    if codec_pending && let Err(cause) = super::codec::finish(execution, &mut graph) {
         return Err(
-            WorthQueryInMemoryApplicationDenial::CheckpointTransitionFinalizationStopped(Box::new(
-                WorthQueryCheckpointTransitionRecovery::finalization_stopped(
-                    graph.graph.integration_handle(),
-                    publication,
-                    successor,
-                    preserved_outputs,
-                    cause,
-                ),
-            )),
-        );
-    }
-    match capture_policy
-        .check_live()
-        .map_err(crate::domain_computation::primary_graph::WorthQueryCheckpointCaptureDenial::from)
-        .and_then(|()| {
-            graph
-                .graph
-                .integration_handle()
-                .with_runtime(execution, |runtime| runtime.durability_authority().native_checkpoint(execution, capture_policy))
-                .map_err(crate::domain_computation::primary_graph::WorthQueryCheckpointCaptureDenial::from)
-        })
-        .and_then(|native| {
-            crate::domain_computation::primary_graph::WorthQueryApplicationCheckpoint::encode(
-                native,
-                &publication,
-                preserved_outputs.rows(),
-                capture_policy,
-            )
-            .map(|(checkpoint, _)| checkpoint)
-        }) {
-        Ok(checkpoint) => *recovery.borrow_mut() = Some(checkpoint),
-        Err(error) => {
-            return Err(
-                WorthQueryInMemoryApplicationDenial::CheckpointTransitionCaptureStopped(Box::new(
-                    WorthQueryCheckpointTransitionRecovery::acknowledged(
-                        graph.graph.integration_handle(),
+            WorthQueryApplicationPreparationDenial::CheckpointTransitionFinalizationStopped(
+                Box::new(
+                    WorthQueryCheckpointTransitionRecovery::finalization_stopped(
+                        graph.graph,
                         publication,
                         successor,
                         preserved_outputs,
+                        original,
+                        cause,
+                    ),
+                ),
+            ),
+        );
+    }
+    let continuation = match crate::domain_computation::primary_graph::WorthQueryApplicationCheckpoint::capture_native_transition(
+        &mut graph.graph.native, &mut successor, &original, &publication,
+        preserved_outputs.rows(), execution, capture_policy,
+    ) {
+        Ok((checkpoint, continuation)) => {
+            *recovery.borrow_mut() = Some(checkpoint);
+            continuation
+        }
+        Err(error) => {
+            return Err(
+                WorthQueryApplicationPreparationDenial::CheckpointTransitionCaptureStopped(Box::new(
+                    WorthQueryCheckpointTransitionRecovery::acknowledged(
+                        graph.graph,
+                        publication,
+                        successor,
+                        preserved_outputs,
+                        original,
                         error,
                     ),
                 )),
             )
         }
-    }
-    graph.recovered_relational_authority = Some(successor);
+    };
+    graph.meaning.recovered_relational_authority = Some(successor);
     cell.confirm_checkpoint_candidate().map_err(|_| {
-        WorthQueryInMemoryApplicationDenial::Graph(denial(
+        WorthQueryApplicationPreparationDenial::Graph(denial(
             "checkpoint activation confirmation refused",
         ))
     })?;
-    Ok(())
+    Ok((graph, continuation))
 }

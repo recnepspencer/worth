@@ -1,5 +1,7 @@
 use super::*;
 
+mod struct_value_messagepack;
+
 #[test]
 fn scalar_set_query_ignores_field_level_patch_values_for_same_aspect() {
     let aspect_key = AspectKey::new("counter").unwrap();

@@ -2,7 +2,7 @@ pub(crate) use worth_query_bank_testkit_server::facade::estate_operations::phase
 
 #[test]
 fn safe_retry_names_a_pending_completion_publication_then_the_completion() {
-    let (world, handle, token) =
+    let (world, handle, token, _original) =
         completed_before_the_source_installs("safe-retry-publication-pending", 83);
     let handle = refused_retry(
         &world,

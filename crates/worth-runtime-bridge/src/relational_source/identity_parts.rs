@@ -374,3 +374,6 @@ fn fixture_suffix_position(label: &str) -> Option<u64> {
         _ => suffix.parse::<u64>().ok(),
     }
 }
+#[cfg(test)]
+#[path = "identity_parts_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;

@@ -18,22 +18,12 @@ fn mutation_batch_lowers_once_into_a_batch_native_relational_artifact() {
     let host_request = crate::test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
-    let mut runtime = relational_runtime_with_intent_strategy();
-    let left = create_entity(
-        execution,
-        &mut runtime,
-        "left",
-        BranchId("main".to_string()),
-    );
-    let right = create_entity(
-        execution,
-        &mut runtime,
-        "right",
-        BranchId("main".to_string()),
-    );
+    let runtime = relational_runtime_with_intent_strategy();
+    let left = create_entity(execution, &runtime, "left", BranchId("main".to_string()));
+    let right = create_entity(execution, &runtime, "right", BranchId("main".to_string()));
     crate::runtime::fork_branch_from_exact_source(
         execution,
-        &mut runtime,
+        &runtime,
         BranchId("branch-a".to_string()),
         &BranchId("main".to_string()),
     )

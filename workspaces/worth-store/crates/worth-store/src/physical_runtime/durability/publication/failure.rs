@@ -318,3 +318,6 @@ impl IndeterminatePhysicalRootPublicationPreparation {
         }
     }
 }
+#[cfg(test)]
+#[path = "failure_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;

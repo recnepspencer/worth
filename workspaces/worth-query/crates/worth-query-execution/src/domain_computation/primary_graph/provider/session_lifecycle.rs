@@ -14,6 +14,7 @@ impl WorthQueryProviderSessionLifecycle for Arc<WorthQueryPrimaryGraphProvider> 
         _plan: &WorthQueryProviderExecutionPlanView<'_>,
         admission: WorthQueryProviderSessionTokenAdmission,
     ) -> Result<WorthQueryProviderSessionToken, WorthQueryProviderSessionFailure> {
+        admission.admit_home_owner(self.session_home_owner()?)?;
         self.application_attempt_work
             .observe_provider_session_readmission();
         admission.admit("primary-application-relational-session")
@@ -21,8 +22,12 @@ impl WorthQueryProviderSessionLifecycle for Arc<WorthQueryPrimaryGraphProvider> 
 
     fn prepare_provider_session(
         &self,
-        _session: &WorthQueryProviderSessionView<'_>,
+        session: &WorthQueryProviderSessionView<'_>,
     ) -> Result<(), WorthQueryProviderSessionFailure> {
+        session.admit_home_owner(
+            self.session_home_owner()?,
+            WorthQueryProviderSessionProtocolStage::SessionPreparation,
+        )?;
         self.application_attempt_work
             .observe_provider_session_preparation();
         if self.take_rejected_session_prepare() {
@@ -38,6 +43,10 @@ impl WorthQueryProviderSessionLifecycle for Arc<WorthQueryPrimaryGraphProvider> 
         &self,
         session: &WorthQueryProviderSessionView<'_>,
     ) -> Result<(), WorthQueryProviderSessionFailure> {
+        session.admit_home_owner(
+            self.session_home_owner()?,
+            WorthQueryProviderSessionProtocolStage::StagedPreparation,
+        )?;
         self.application_attempt_work
             .observe_staged_session_preparation();
         let attempts = self
@@ -62,6 +71,10 @@ impl WorthQueryProviderSessionLifecycle for Arc<WorthQueryPrimaryGraphProvider> 
         crate::domain_computation::WorthQueryProviderTerminalDescription,
         crate::domain_computation::WorthQueryProviderSessionCommitStop,
     > {
+        session.admit_home_owner(
+            self.session_home_owner()?,
+            WorthQueryProviderSessionProtocolStage::Commit,
+        )?;
         self.application_attempt_work.observe_prepared_commit();
         super::session_commit::commit_prepared_session(self, *session, allocation_policy)
     }
@@ -73,6 +86,10 @@ impl WorthQueryProviderSessionLifecycle for Arc<WorthQueryPrimaryGraphProvider> 
         crate::domain_computation::WorthQueryProviderTerminalDescription,
         WorthQueryProviderSessionFailure,
     > {
+        session.admit_home_owner(
+            self.session_home_owner()?,
+            WorthQueryProviderSessionProtocolStage::Abort,
+        )?;
         self.application_attempt_work.observe_attempt_abort();
         let retired = self
             .attempts
@@ -90,5 +107,26 @@ impl WorthQueryProviderSessionLifecycle for Arc<WorthQueryPrimaryGraphProvider> 
                 "primary application abort description is invalid",
             )
         })
+    }
+}
+
+impl WorthQueryPrimaryGraphProvider {
+    fn session_home_owner(
+        &self,
+    ) -> Result<
+        Option<worth_runtime_world::facade::RuntimeWorldOwnerIdentity>,
+        WorthQueryProviderSessionFailure,
+    > {
+        self.world_history
+            .get()
+            .map(|world| {
+                world.owner_identity().map_err(|_| {
+                    super::session_commit::provider_failure(
+                        WorthQueryProviderSessionProtocolStage::PlanReadmission,
+                        "session World owner is unavailable",
+                    )
+                })
+            })
+            .transpose()
     }
 }

@@ -24,6 +24,12 @@ def repository_root(path):
     raise ValueError(f'no repository above {path}')
 
 
+def nextest_configuration_source(repository, manifest):
+    """Use the workspace's policy, inheriting repository policy when absent."""
+    local = Path(manifest).parent / '.config/nextest.toml'
+    return local if local.is_file() else Path(repository) / '.config/nextest.toml'
+
+
 def members(manifest):
     manifest = Path(manifest).resolve()
     data = tomllib.loads(manifest.read_text(encoding='utf-8'))

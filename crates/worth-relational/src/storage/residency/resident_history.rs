@@ -1,22 +1,25 @@
 //! Independent Full reconstruction of an owned Head and its cold row bases.
-use super::history_fold::{HistoryFolder, HistoryRowKind};
+use super::history_fold::{FundedRows, HistoryFolder, HistoryRowKind};
 use super::region_image::RegionHistoryBase;
+use super::region_load::materialization_funding as funding;
 use super::{RelationalResidencyDemandFailure as Failure, ResidentRegion};
 use crate::branch::RelationalBranchRootSchemaAuthority;
 use crate::durability::checkpoints::aspect_state_images::CheckpointAspectContractCatalog;
 use crate::durability::checkpoints::images::{
-    partition_from_image, partition_to_image_with_contracts,
+    partition_from_image_for_request, partition_to_image_with_contracts,
 };
 use crate::runtime::RuntimeSymbolTable;
 use crate::storage::data::{
     RelationalStorageSubject, RelationalStorageUnavailable,
     RelationalStorageUnavailableCause as Cause,
 };
-use crate::storage::overlay::PartitionContentCommitment;
+use crate::storage::overlay::{PartitionContentCommitment, PartitionState};
 use crate::storage::partition::AdjacencyKindBasis;
 use crate::storage::substrate::maintenance::ReconstructionLane;
 use crate::storage::substrate::{EntityRecordKind, RecordArena, RecordKind, RelationRecordKind};
 use std::sync::{Arc, OnceLock};
+use worth_execution::ExecutionRequest;
+mod projection_capture;
 
 #[derive(Debug, Clone)]
 pub(crate) struct ResidentHistoryReadmission {
@@ -50,7 +53,7 @@ impl ResidentHistoryReadmission {
     pub(super) fn load_full(
         &self,
         head: &ResidentRegion,
-        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        execution: &ExecutionRequest<'_, '_>,
         limit: u64,
     ) -> Result<Arc<ResidentRegion>, Failure> {
         ReconstructionLane::enter_reconstruction(|lane| {
@@ -61,6 +64,14 @@ impl ResidentHistoryReadmission {
                     cause,
                 })
             };
+            let (_catalog_memory, _) = funding::contracts(&self.schema, execution)?;
+            let (_projection_memory, incidences) = projection_funding(&head.partition, execution)?;
+            let current_quote = funding::current(
+                &head.partition,
+                self.schema.retained_aspect_contracts(),
+                execution,
+            )?;
+            let _current_wire = funding::Funding::reserve(current_quote.wire, execution)?;
             let contracts = CheckpointAspectContractCatalog::from_contracts(
                 self.schema.retained_aspect_contracts(),
             )
@@ -70,7 +81,13 @@ impl ResidentHistoryReadmission {
             // before reading any historical member, independently of folding.
             self.symbols.demand_symbol_ids(
                 execution,
-                super::required_symbols::collect_head(lane, &head.partition),
+                super::required_symbols::collect_for_request(
+                    lane,
+                    &head.partition,
+                    false,
+                    execution,
+                )?
+                .ids,
             )?;
             let expected = match &head.commitment {
                 Some(commitment) => commitment.clone(),
@@ -81,7 +98,7 @@ impl ResidentHistoryReadmission {
                         &head.partition,
                         &self.symbols.interner_snapshot(),
                     )
-                    .map_err(|error| super::content_capture::restore_failure(partition_id, error))?
+                    .map_err(|cause| funding::content(cause, partition_id))?
                     .0
                 }
             };
@@ -93,50 +110,52 @@ impl ResidentHistoryReadmission {
             )
             .map_err(|_| refuse(Cause::Damaged))?;
             let mut folder = HistoryFolder::new(lane, execution, partition_id, limit);
-            restore_rows::<EntityRecordKind>(
+            let _entity_rows = restore_rows::<EntityRecordKind>(
                 lane,
                 &mut folder,
                 &head.partition.entity_arena,
                 &mut image.entity_arena.metadata_history,
+                execution,
             )?;
-            restore_rows::<RelationRecordKind>(
+            let _relation_rows = restore_rows::<RelationRecordKind>(
                 lane,
                 &mut folder,
                 &head.partition.relation_arena,
                 &mut image.relation_arena.metadata_history,
+                execution,
             )?;
-            let mut partition =
-                partition_from_image(lane, image, self.schema.aspect_plans(), &contracts)
-                    .map_err(|_| refuse(Cause::Damaged))?;
+            let memory =
+                funding::Funding::reserve(funding::shared::<ResidentRegion>()?, execution)?;
+            let mut partition = partition_from_image_for_request(
+                lane,
+                image,
+                self.schema.aspect_plans(),
+                &contracts,
+                execution,
+            )
+            .map_err(|cause| funding::image(cause, partition_id))?;
             partition.adjacency = head.partition.adjacency.clone();
             partition.reverse_adjacency = head.partition.reverse_adjacency.clone();
             let projection = if head.kind_indexes.is_some() {
-                // Published Head carries authenticated kind authority. Its
-                // supplied claims must still equal independently restored rows.
-                super::kind_projection::capture(
-                    lane,
-                    &head.partition,
-                    AdjacencyKindBasis::Historical,
-                )
+                projection_capture::capture(lane, &head.partition, incidences, execution)?
             } else {
-                // The mutable mirror has no committed kind authority. Retention
-                // and slot reuse can discard owned generations while their
-                // optional adjacency cache still names them. Reconstruct local
-                // claims from restored truth; peer claims stay carried, and the
-                // independent content commitment below checks all owned bytes.
-                super::kind_projection::canonical_history(lane, &partition)
-            }
-            .map_err(refuse)?;
-            super::kind_projection::rebuild(
+                super::kind_admission::recover(lane, execution, partition_id, |checkpoint, _| {
+                    super::kind_projection::canonical_history_controlled(
+                        lane, &partition, checkpoint,
+                    )
+                })?
+            };
+            super::kind_projection::rebuild_for_request(
                 lane,
                 &mut partition,
                 &projection,
                 AdjacencyKindBasis::Historical,
-            )
-            .map_err(refuse)?;
-            let requirements = super::required_symbols::CapturedSymbolRequirements::capture(
-                lane, &partition, true,
-            );
+                execution,
+            )?;
+            let requirements =
+                super::required_symbols::CapturedSymbolRequirements::capture_for_request(
+                    lane, &partition, true, execution,
+                )?;
             self.symbols.demand_symbol_ids(
                 execution,
                 requirements.get(true).unwrap().ids.iter().copied(),
@@ -147,7 +166,7 @@ impl ResidentHistoryReadmission {
                 &partition,
                 &self.symbols.interner_snapshot(),
             )
-            .map_err(|error| super::content_capture::restore_failure(partition_id, error))?;
+            .map_err(|cause| funding::content(cause, partition_id))?;
             if commitment.digest(partition_id) != expected.digest(partition_id) {
                 return Err(refuse(Cause::IntegrityMismatch));
             }
@@ -160,6 +179,8 @@ impl ResidentHistoryReadmission {
                 )?),
                 partition,
                 commitment: Some(commitment),
+                _history_custody: None,
+                _memory: memory.into_memory(),
             }))
         })
     }
@@ -170,7 +191,9 @@ fn restore_rows<K: RecordKind + HistoryRowKind>(
     folder: &mut HistoryFolder<'_, '_, '_>,
     arena: &RecordArena<K>,
     rows: &mut [Vec<K::Metadata>],
-) -> Result<(), Failure> {
+    execution: &ExecutionRequest<'_, '_>,
+) -> Result<FundedRows<K::Metadata>, Failure> {
+    let mut custody = FundedRows::allocate(rows.len(), execution)?;
     for (physical, suffix) in rows.iter_mut().enumerate() {
         for metadata in suffix.iter() {
             folder.charge_output(metadata)?;
@@ -185,13 +208,50 @@ fn restore_rows<K: RecordKind + HistoryRowKind>(
             };
             let mut earlier = folder.fold_row::<K>(
                 lane,
-                prefix.source.as_ref(),
+                prefix
+                    .source()
+                    .map_err(|cause| {
+                        Failure::StorageUnavailable(RelationalStorageUnavailable {
+                            subject: RelationalStorageSubject::Region(prefix.partition_id),
+                            cause,
+                        })
+                    })?
+                    .as_ref(),
                 &prefix.history_members,
                 reference,
             )?;
-            earlier.append(suffix);
-            *suffix = earlier;
+            earlier.append_current(suffix, execution)?;
+            *suffix = std::mem::take(&mut earlier.values);
+            custody.rows.push(earlier);
         }
     }
-    Ok(())
+    Ok(custody)
+}
+
+pub(super) fn projection_funding(
+    partition: &PartitionState,
+    request: &ExecutionRequest<'_, '_>,
+) -> Result<(funding::Funding, usize), Failure> {
+    let _cursors = funding::Funding::reserve(
+        funding::vector::<[usize; 2]>(8 * usize::BITS as usize)?,
+        request,
+    )?;
+    let mut incidences = 0usize;
+    for (_, adjacency) in partition
+        .adjacency
+        .iter()
+        .chain(partition.reverse_adjacency.iter())
+    {
+        for _ in adjacency.kind_memberships(AdjacencyKindBasis::Historical) {
+            funding::work(request, 1)?;
+            incidences = incidences.checked_add(1).ok_or_else(funding::overflow)?;
+        }
+    }
+    let bytes = funding::sum(
+        funding::region_image::projection_storage(incidences, incidences)?.wire,
+        funding::vector::<[usize; 2]>(8 * usize::BITS as usize)?,
+    )?;
+    // This is simultaneous backing, not work. Reconstruction meters its own
+    // operations; owned-Head capture has a separate original-request preflight.
+    Ok((funding::Funding::reserve(bytes, request)?, incidences))
 }

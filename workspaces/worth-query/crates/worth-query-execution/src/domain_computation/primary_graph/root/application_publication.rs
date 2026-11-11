@@ -11,7 +11,9 @@ pub struct ApplicationPublication {
 }
 
 impl ApplicationPublication {
-    pub(super) fn installed(receipt: &RelationalInitialSchemaInstallationReceipt) -> Self {
+    pub(in crate::domain_computation::primary_graph) fn installed(
+        receipt: &RelationalInitialSchemaInstallationReceipt,
+    ) -> Self {
         let (owner, native) = receipt.issue_application_publication_owner();
         Self { owner, native }
     }
@@ -24,15 +26,6 @@ impl ApplicationPublication {
     }
 }
 
-impl super::WorthQueryPrimaryGraph {
-    pub(in crate::domain_computation::primary_graph) fn bind_application_publication(
-        &mut self,
-        receipt: &RelationalInitialSchemaInstallationReceipt,
-    ) {
-        self.application_publication = Some(std::sync::Arc::new(
-            ApplicationPublication::installed(receipt),
-        ));
-    }
-}
+impl super::WorthQueryPrimaryGraph {}
 
 mod court_doors_for_test;

@@ -4,7 +4,6 @@ use std::sync::Arc;
 
 use super::manifest_capture::corrupt;
 use super::member_frame::{self, MemberKind};
-use crate::durability::canonical_commit_artifact::RelationalCanonicalCommitArtifact;
 use crate::durability::checkpoints::aspect_state_images::CheckpointAspectContractCatalog;
 use crate::durability::checkpoints::images::partition_to_image_with_contracts;
 use crate::durability::data::*;
@@ -18,52 +17,26 @@ pub(super) fn expand(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     manifest: RelationalCheckpointManifest,
     source: Arc<dyn RelationalDurableColdSource>,
-    mut inline: Option<
-        BTreeMap<
-            crate::publication::patch::data::PatchStreamPosition,
-            crate::history::data::PositionedCanonicalCommit,
-        >,
-    >,
     history_members: Arc<RelationalHistoryMemberDirectory>,
 ) -> Result<DurableCheckpoint, RelationalRecoveryStop> {
+    let directory = Arc::new(
+        PreparedCheckpointDirectory {
+            manifest: manifest.clone(),
+            source: source.clone(),
+            history_members: history_members.clone(),
+        }
+        .readmit(execution)?,
+    );
     let mut envelopes = Vec::new();
     for entry in &manifest.commits {
-        let commit = if let Some(inline) = &mut inline {
-            inline
-                .remove(&entry.position)
-                .ok_or_else(|| corrupt("missing inline checkpoint envelope"))?
-        } else {
-            let subject = RelationalStorageSubject::Envelope(entry.position);
-            let bytes = source
-                .read_commit(entry.position, MEMBER_LIMIT)
-                .map_err(|cause| RelationalStorageUnavailable { subject, cause })?;
-            RelationalCanonicalCommitArtifact::readmit(&bytes, execution).map_err(|error| {
-                use crate::durability::canonical_commit_artifact::RelationalCanonicalCommitArtifactRefusal as Refusal;
-                match error {
-                    Refusal::Request(cause) => RelationalRecoveryStop::Request(cause),
-                    Refusal::Content(cause) => cause.into(),
-                    Refusal::FieldText(cause) => crate::symbols::data::field_text_recovery_stop(cause),
-                    other => corrupt(format!("checkpoint envelope readmission: {other:?}")).into(),
-                }
-            })?.into_positioned()
-        };
-        if RelationalCanonicalCommitArtifact::positioned_payload_digest(&commit)
-            .map_err(|error| corrupt(error.to_string()))?
-            != entry.payload_digest
-        {
-            return Err(corrupt("checkpoint commit index digest mismatch").into());
-        }
-        if commit.commit != entry.commit || commit.envelope().schema_version != entry.schema_version
-        {
-            return Err(corrupt("checkpoint commit index identity mismatch").into());
-        }
-        envelopes.push(commit);
-    }
-    if inline
-        .as_ref()
-        .is_some_and(|remaining| !remaining.is_empty())
-    {
-        return Err(corrupt("inline checkpoint has unindexed envelopes").into());
+        envelopes.push(
+            crate::history::RelationalCommitEnvelopeResidency::readmit_selected(
+                entry,
+                &directory,
+                execution,
+                MEMBER_LIMIT,
+            )?,
+        );
     }
     let mut symbol_table = crate::symbols::data::SymbolTableSnapshot::default();
     for page in &manifest.symbols {
@@ -101,14 +74,18 @@ pub(super) fn expand(
     let mut schemas = BTreeMap::new();
     for image in &manifest.schemas {
         let (registry, contracts) = image.readmit_registry().map_err(corrupt)?;
-        let expected = registry.authority_snapshot();
+        let expected = registry
+            .snapshot_for_compilation(crate::schema::SchemaCompilationControl::Request(*execution))
+            .map_err(RelationalRecoveryStop::Request)?;
         let schema = crate::branch::RelationalBranchRootSchemaAuthority::readmit_exact(
             schemas.len() as u64 + 1,
             registry,
             contracts,
             &expected,
             image.descriptor_semantics_version(),
+            crate::schema::SchemaCompilationControl::Request(*execution),
         )
+        .map_err(RelationalRecoveryStop::Request)?
         .ok_or_else(|| corrupt("checkpoint schema readmission failed"))?;
         if schemas.insert(image.carrier_digest(), schema).is_some() {
             return Err(corrupt("duplicate checkpoint schema carrier").into());
@@ -210,8 +187,20 @@ pub(super) fn expand(
         .map_err(|cause| corrupt(format!("index member frame: {cause:?}")))?;
     let (derived_index_artifacts, derived_index_checkpoint, derived_index_checkpoint_format) =
         rmp_serde::from_slice(payload).map_err(|error| corrupt(error.to_string()))?;
+    let manifest = manifest.ordinary_owned_draft();
+    let (runtime_name, branch_cells, branch_lifecycle, retired_branch_names) =
+        manifest.branch_data.ordinary_owned_parts();
     Ok(DurableCheckpoint {
+        recorded_components: manifest
+            .roots
+            .iter()
+            .map(|root| (root.commit_id, root.recorded_components.clone()))
+            .collect(),
+        retained_empty_components: manifest.retained_empty_components.clone(),
         directory: None,
+        canonical_directory: Some(crate::durability::data::NativeCheckpointDirectoryEdge::new(
+            directory,
+        )),
         root_kind_images,
         mirror_kind_images,
         coverage: manifest.coverage,
@@ -221,11 +210,11 @@ pub(super) fn expand(
             .map(|entry| (entry.commit.commit_id, entry.root.clone()))
             .collect(),
         mirror_schema_digest: manifest.mirror_schema,
-        branch_cells: manifest.branch_cells,
-        branch_lifecycle: manifest.branch_lifecycle,
-        retired_branch_names: manifest.retired_branch_names,
+        branch_cells,
+        branch_lifecycle,
+        retired_branch_names,
         branch_roots,
-        branch_root_schema_images: manifest.schemas,
+        branch_root_schema_images: manifest.schemas.ordinary_owned_copy(),
         record_identity: manifest.record_identity,
         record_generation_high_water: Vec::new(),
         reusable_record_slots: Vec::new(),
@@ -234,17 +223,18 @@ pub(super) fn expand(
         partition_images,
         aspect_contracts: manifest.aspect_contracts,
         lineage: crate::lineage::data::LineageCheckpointArtifact::new(
-            manifest.lineage_basis,
+            manifest.lineage_basis.ordinary_owned_copy(),
             lineage_nodes,
         ),
         index_generation_frontier: manifest.index_generation_frontier,
-        index_definitions: manifest.index_definitions,
+        index_definition_frontier: manifest.index_definition_frontier,
+        index_definitions: manifest.index_definitions.ordinary_owned_copy(),
         derived_index_artifacts,
         derived_index_checkpoint,
         derived_index_checkpoint_format,
         symbol_table,
         symbol_identity_frontier: manifest.symbol_identity_frontier,
-        runtime_name: manifest.runtime_name,
+        runtime_name,
     })
 }
 
@@ -268,13 +258,14 @@ fn expand_regions(
         .ok_or_else(|| corrupt("missing region schema carrier"))?;
     let contracts =
         CheckpointAspectContractCatalog::from_contracts(schema.retained_aspect_contracts())?;
-    let authority = Arc::new(crate::storage::residency::RelationalRegionKindAuthority::default());
+    let authority =
+        crate::storage::residency::RelationalRegionKindAuthority::for_request(execution)?;
     let cells = regions
         .iter()
         .map(|leaf| {
             let cell = RelationalRegionResidency::cold(RelationalColdRegion {
                 kind_authority: leaf.kind_authority,
-                source: source.clone(),
+                source: Some(source.clone()),
                 partition_id: leaf.partition_id,
                 head: leaf.head,
                 history: leaf.history,
@@ -293,9 +284,8 @@ fn expand_regions(
         })
         .collect::<Result<Vec<_>, crate::storage::data::RelationalStorageUnavailable>>()?;
     crate::storage::substrate::maintenance::ReconstructionLane::enter_reconstruction(|lane| {
-        authority.bind(lane, cells.iter().cloned())
-    })
-    .map_err(|cause| corrupt(format!("region authority: {cause:?}")))?;
+        authority.bind_for_request(lane, cells.iter().cloned(), execution)
+    })?;
     let admitted = cells
         .into_iter()
         .map(|(_, cell)| {

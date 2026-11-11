@@ -1,4 +1,8 @@
+mod allocation_batch;
+mod checkpoint_snapshot;
 mod observation;
+mod partition_frontier;
+pub(crate) use allocation_batch::MutationRecordAllocations;
 pub use observation::{
     RecordReservationObservation, RecordReservationObservationDenial, RecordReservationReport,
 };

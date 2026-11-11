@@ -1,4 +1,5 @@
 use std::collections::BTreeSet;
+mod backing;
 use worth_proof::{CapabilityMarker, CapabilityWitness, TransitionOutcome};
 
 use crate::data::{graph::SignalGraph, handle::NodeId, node::NodeContract};

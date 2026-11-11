@@ -107,3 +107,6 @@ impl<Query> WorthQueryApplicationOutputDemandSettlement<Query> {
         Arc::clone(&self.retained)
     }
 }
+#[cfg(test)]
+#[path = "settlement_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;

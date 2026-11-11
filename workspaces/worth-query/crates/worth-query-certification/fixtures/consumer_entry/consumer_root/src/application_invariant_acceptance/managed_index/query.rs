@@ -74,19 +74,6 @@ pub(super) fn authoring<
         .basis_support(basis)
         .lanes(lanes)
 }
-pub fn source_definition(
-) -> ApplicationQueryDefinitionBuilder<Catalog, SourceQuery, Parameters, ItemRow, Directory> {
-    base(
-        SourceQuery::reference(),
-        ApplicationQueryLaneEligibility::one_shot(),
-    )
-    .root_path(
-        ApplicationQueryRootPath::from(Directory::reference()).forward(Contains::reference()),
-    )
-    .order_by(name(), ApplicationQueryOrderingDirection::Descending)
-    .order_by(identity(), ApplicationQueryOrderingDirection::Descending)
-}
-
 /// A real Phase 1 Source shape outside the invariant Source compiler: its two
 /// disjoint guarded paths cover the actual complete Boolean field universe.
 pub fn guarded_source_definition(
@@ -140,10 +127,7 @@ impl<Q: ApplicationQueryMarkerIdentity<Catalog>> WorthQueryApplicationProjection
     }
 }
 
-#[derive(Clone, Debug, worth_foundational::facade::WorthValue)]
-pub struct Probe {
-    pub prefix: String,
-}
+pub use crate::application_invariant_acceptance::managed_index::prefix_probe::Probe;
 worth_query_value_binding!(pub ProbeBinding for Probe {
     identity: "managed-catalog.prefix-probe.v1", scalar: String,
     canonical: ValueDecodeBounds::new(2048, 1024, 8, 8),
@@ -166,11 +150,7 @@ pub struct FindPrefix {
     pub directory: String,
     pub prefix: String,
 }
-#[derive(Clone, Debug, worth_foundational::facade::WorthValue)]
-pub struct FindPrefixAlias {
-    pub directory: String,
-    pub prefix: String,
-}
+use crate::application_invariant_acceptance::managed_index::prefix_alias_input::FindPrefixAlias;
 worth_query_structured_value_binding!(pub PrefixAliasInputBinding for FindPrefixAlias { identity: "managed-catalog.prefix-alias-input.v1" });
 worth_query_structured_value_binding!(pub SourceInputBinding for ReadSource { identity: "managed-catalog.source-input.v1" });
 worth_query_structured_value_binding!(pub PrefixInputBinding for FindPrefix { identity: "managed-catalog.prefix-input.v1" });
@@ -178,9 +158,6 @@ fn source_scope(input: ReadSource) -> String {
     input.directory
 }
 fn prefix_scope(input: FindPrefix) -> String {
-    input.directory
-}
-fn prefix_alias_scope(input: FindPrefixAlias) -> String {
     input.directory
 }
 worth_query_query_binding!(pub SourceBinding for ReadSource, schema Catalog,
@@ -212,5 +189,5 @@ worth_query_query_binding!(pub PrefixAliasBinding for FindPrefixAlias, schema Ca
     result ResultBinding, principal CatalogPrincipal, mapping ExternalMapping, principal_entity Principal,
     principal_identity u64, identity_binding U64ApplicationValueBinding,
     scope DirectoryIdentity,
-    field DirectoryIdentity::at("DirectoryIdentity"), value prefix_alias_scope, limits results 16
+    field DirectoryIdentity::at("DirectoryIdentity"), value FindPrefixAlias::scope, limits results 16
 );

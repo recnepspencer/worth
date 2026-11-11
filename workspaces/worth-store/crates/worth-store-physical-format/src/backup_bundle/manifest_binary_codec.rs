@@ -1,4 +1,5 @@
 use std::io::Read;
+use worth_foundational::CanonicalDigestId;
 
 use super::manifest_binary_cursor::{FallibleEncoder, ManifestDecoder};
 use super::manifest_binary_tags::{family_from_tag, family_tag, format_from_tag, format_tag};
@@ -67,7 +68,7 @@ pub(super) fn decode_manifest(
     let manifest = BackupBundleManifest::from_decoded_parts(
         BackupBundleManifestDeclaration::new(
             BackupBundleManifestIdentity {
-                cut_identity,
+                cut_identity: CanonicalDigestId::new(cut_identity),
                 store_lineage,
                 root_generation,
                 manifest_generation,
@@ -178,8 +179,8 @@ fn encode_coverage(
             output.string(checkpoint_identity)?;
             output.u64(*manifest_generation)?;
             output.u64(*durable_checkpoint_lsn)?;
-            output.bytes(authority_fingerprint)?;
-            output.bytes(frontier_digest)
+            output.bytes(authority_fingerprint.bytes())?;
+            output.bytes(frontier_digest.bytes())
         }
         BackupBundleArtifactCoverage::WalSegment {
             start_lsn,
@@ -208,8 +209,8 @@ fn decode_coverage(
             checkpoint_identity: input.string()?,
             manifest_generation: input.u64()?,
             durable_checkpoint_lsn: input.u64()?,
-            authority_fingerprint: input.array()?,
-            frontier_digest: input.array()?,
+            authority_fingerprint: CanonicalDigestId::new(input.array()?),
+            frontier_digest: CanonicalDigestId::new(input.array()?),
         },
         3 => BackupBundleArtifactCoverage::WalSegment {
             start_lsn: input.u64()?,

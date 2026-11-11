@@ -1,0 +1,16 @@
+command: python target/lane-evidence/merge_ui_lock_audit.py
+HEAD: 25619ac5d1ae6092ab5a91bc4b7123be6042475c
+git_status_short_empty: false
+start_utc: 2026-11-06T18:11:29.708854+00:00
+environment: removed stale CARGO_TARGET_X86_64_PC_WINDOWS_MSVC_LINKER override
+Traceback (most recent call last):
+  File "C:\programming\worth worktees\worktrees\m3-p3-reopen\target\lane-evidence\merge_ui_lock_audit.py", line 27, in <module>
+    assert new[k] == known[k], (k, 'external resolution differs')
+           ^^^^^^^^^^^^^^^^^^
+AssertionError: (('sysinfo', '0.38.4', 'registry+https://github.com/rust-lang/crates.io-index'), 'external resolution differs')
+
+end_utc: 2026-11-06T18:11:30.734268+00:00
+exit_code: 1
+tests_passed: 0
+tests_failed: 0
+tests_ignored: 0

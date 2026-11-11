@@ -1,0 +1,70 @@
+[
+  {
+    "sha": "12db6ce1dc54727ddf3c5897c22a3025036fb27e",
+    "subject": "fix(gates): keep fixture lint policy in its test module and refresh governed text"
+  },
+  {
+    "sha": "19bc4cd5dd557a6b7439351296fc2c306540d862",
+    "subject": "docs(consumer): synchronize the compiled demand example with its typed denial contract"
+  },
+  {
+    "sha": "c8962903a7014ba338af9771a2f203e8276d79a0",
+    "subject": "test(consumer): preserve typed denial and concurrent-caller fixture contracts"
+  },
+  {
+    "sha": "73a1c4ef75ee3ea7173b43b3e0e58e4bd6d54c3e",
+    "subject": "fix(query): preserve common incarnation fencing and bind Sources after Home recovery"
+  },
+  {
+    "sha": "56468ea60d161a508f308ee648c5d35a45ffa509",
+    "subject": "fix(native): retain late admitted result state through publication handoffs"
+  },
+  {
+    "sha": "8541a1299a8e24dc4a78806798681f3e3946f489",
+    "subject": "chore(test-cost): retain owned compiler scheduling observations for merged inputs"
+  },
+  {
+    "sha": "b98704873518011c23313c4873f9639e841ff9f5",
+    "subject": "fix(tooling): identify checked mixed-library harnesses and declare denial fixture vocabulary"
+  },
+  {
+    "sha": "db9cdb540667f75410ace7d9d72bb02d23e745d5",
+    "subject": "refactor(courts): follow current immutable Native and World owner contracts"
+  },
+  {
+    "sha": "61bbfeb16be951d0167b1b04a6611198f14e0de1",
+    "subject": "fix(bank): preserve typed cold history denials and current server court contracts"
+  },
+  {
+    "sha": "9559f7172b50dd4d20f165cf7fc53c638dadf6df",
+    "subject": "test(store): compose genuine World Homes through recovery and preserve canonical artifacts"
+  },
+  {
+    "sha": "11e5896648404e7e534137d7945abf132bbb40e9",
+    "subject": "fix(query): compose recovered Source ownership and current admission with immutable owner contracts"
+  },
+  {
+    "sha": "f163fa10abedb4cef6e6c96ed0b0713962c2cc22",
+    "subject": "fix(runtime): consume funded Native phases and keep bootstrap results outside nested frames"
+  },
+  {
+    "sha": "ed14751eb7574ff3e5a37eaec1c1f28aa250ba6f",
+    "subject": "fix(native): remove live snapshot-pressure metadata from canonical validation meaning"
+  },
+  {
+    "sha": "9a35ef553b8249e504e9c0fbb0b35db68ef3af80",
+    "subject": "fix(topology): render repository protocol paths with portable separators"
+  },
+  {
+    "sha": "6ff58c377723c040c7e0eae975cdd1db36d14776",
+    "subject": "fix(native): apply Home contract requirements only to Home-bound roots"
+  },
+  {
+    "sha": "572d4a19dbacd9c884853a08c7ea0e2ca70cd34d",
+    "subject": "fix(native): admit Home writer phases without waiting for medium I/O"
+  },
+  {
+    "sha": "2e51ecf44781665a802a6326124209d99130bf99",
+    "subject": "Merge Lifecycle safe point 471fac57ff onto the current master owner shapes"
+  }
+]

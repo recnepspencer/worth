@@ -54,7 +54,10 @@ impl DemandRecord {
                         }
                     }
                     Some(WorthQueryOutputCheckpoint::Ready(_)) => KeptAnswer,
-                    Some(WorthQueryOutputCheckpoint::Published { .. }) => {
+                    Some(
+                        WorthQueryOutputCheckpoint::Published { .. }
+                        | WorthQueryOutputCheckpoint::RecoveredPublished { .. },
+                    ) => {
                         if awaited_by_stale_owner {
                             IdleRowDisposition::HeldForStaleOwner
                         } else if self.interests == 0 {
@@ -63,7 +66,10 @@ impl DemandRecord {
                             InFlight
                         }
                     }
-                    Some(WorthQueryOutputCheckpoint::Delivered { .. }) => {
+                    Some(
+                        WorthQueryOutputCheckpoint::Delivered { .. }
+                        | WorthQueryOutputCheckpoint::RecoveredDelivered { .. },
+                    ) => {
                         // Delivery precedes accepted readiness. A performed
                         // source still awaiting this output keeps the delivered
                         // checkpoint, so a fresh owner resumes readiness.

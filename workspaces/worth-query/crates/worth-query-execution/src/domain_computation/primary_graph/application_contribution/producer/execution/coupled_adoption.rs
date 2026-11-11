@@ -2,12 +2,14 @@
 use super::*;
 use crate::domain_computation::primary_graph::{
     application_query::WorthQueryObservedSource, output_lineage::RetainedInputCutoffCandidate,
-    WorthQueryAdmittedApplicationOperation, WorthQueryApplicationCommitOutcome,
+    WorthQueryAdmittedApplicationOperation, WorthQueryApplicationCommitReceipt,
+    WorthQueryApplicationIdempotencyResolution as Resolution, WorthQueryApplicationUncommitted,
     WorthQuerySelectedProductOperation,
 };
 pub(super) struct CoupledAdoption {
     candidate: RetainedInputCutoffCandidate,
     receipt: WorthQueryApplicationCommitReceipt,
+    stable: crate::domain_computation::primary_graph::output_lineage::PublishedStableLineage,
 }
 impl CoupledAdoption {
     pub(super) fn select<Schema, Binding, Op, Input, Scope>(
@@ -23,6 +25,7 @@ impl CoupledAdoption {
     where
         Schema: ApplicationSchema + 'static,
         Binding: WorthQueryApplicationProducerBinding<Schema>,
+        Input: Clone + Send + Sync + 'static,
     {
         if Binding::OWNERSHIP
             != worth_foundational::facade::ProducerPublicationOwnership::SourceScopeCascade
@@ -62,12 +65,70 @@ impl CoupledAdoption {
             return Ok(None);
         }
         match selected.require_current_output_receipts(phase, [&receipt]) {
-            Ok(()) => Ok(Some(Self { candidate, receipt })),
+            Ok(()) => {}
             Err(denial) if denial.kind() == WorthQueryOutputDemandDenialKind::Superseded => {
-                Ok(None)
+                return Ok(None);
             }
-            Err(denial) => Err(denial.into()),
+            Err(denial) => return Err(denial.into()),
         }
+        let resolution = runtime
+            .resolve_admitted_application_idempotency_with_request(execution, operation, binding)
+            .map_err(|stop| {
+                denial(
+                    WorthQueryOutputDemandDenialKind::PublicationReceipt(stop.kind()),
+                    Binding::IDENTITY,
+                )
+            })?
+            .into_resolution();
+        let original = match resolution {
+            Resolution::RecoveredCommitted(original) => original,
+            Resolution::ReleasedOriginal(_) => return Err(denial(
+                WorthQueryOutputDemandDenialKind::PublicationReceipt(
+                    crate::domain_computation::primary_graph::WorthQueryApplicationIdempotencyResolutionDenialKind::OriginalEffectReleased,
+                ), Binding::IDENTITY,
+            ).into()),
+            Resolution::ProductUnpublished(unpublished) => return Err(denial(
+                WorthQueryOutputDemandDenialKind::ProducerUnavailable, Binding::IDENTITY,
+            ).with_uncommitted(WorthQueryApplicationUncommitted::ProductUnpublished(unpublished)).into()),
+            Resolution::ProductPreparationPending(pending) => return Err(denial(
+                WorthQueryOutputDemandDenialKind::ProducerUnavailable, Binding::IDENTITY,
+            ).with_uncommitted(WorthQueryApplicationUncommitted::ProductPreparationPending(pending)).into()),
+            Resolution::Unseen | Resolution::IntentDrift => return Err(denial(
+                WorthQueryOutputDemandDenialKind::ForeignSource, Binding::IDENTITY,
+            ).into()),
+        };
+        let stable = handle
+            .output_lineage
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
+            .resolve_original_publication::<Operation<Schema, Binding>>(
+                execution,
+                operation.operation_scope_binding(),
+                selected.product().observation(),
+                binding,
+                &original,
+            )
+            .map_err(|cause| source_readmission::ready_resource_denial(Binding::IDENTITY, cause))?
+            .ok_or_else(|| {
+                denial(
+                    WorthQueryOutputDemandDenialKind::ProducerUnavailable,
+                    Binding::IDENTITY,
+                )
+                .with_recovered_publication(original.clone())
+            })?;
+        if !std::sync::Arc::ptr_eq(stable.exact_settlement(), candidate.settlement_identity()) {
+            return Err(denial(
+                WorthQueryOutputDemandDenialKind::PublicationStale,
+                Binding::IDENTITY,
+            )
+            .with_recovered_publication(original)
+            .into());
+        }
+        Ok(Some(Self {
+            candidate,
+            receipt,
+            stable,
+        }))
     }
     pub(super) fn publish<Schema: ApplicationSchema>(
         self,
@@ -104,11 +165,6 @@ impl CoupledAdoption {
         claims
             .publish(std::sync::Arc::clone(self.candidate.settlement_identity()))
             .retire(None, owner);
-        commit_receipt(
-            producer,
-            WorthQueryApplicationCommitOutcome::AlreadyCommitted(self.receipt),
-        )
-        .map(ProducerExecutionOutcome::Committed)
-        .map_err(ProducerExecutionStop::ExecutionStopped)
+        Ok(ProducerExecutionOutcome::Stable(self.stable))
     }
 }

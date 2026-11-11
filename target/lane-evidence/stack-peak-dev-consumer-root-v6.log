@@ -1,0 +1,47 @@
+COMMAND: ["python", "target/lane-evidence/stack_peak/measure.py", "dev", "worth-query-consumer-root"]
+HEAD: 7eeb6fa326b46f1924c1defe9670261245cb1d92
+CLEAN: true
+START: 2026-11-07T09:23:05.859193+00:00
+ENV: removed stale external linker override; RUST_MIN_STACK unset in parent
+EXACT ENTRY RVAS {'entry': 75866928, 'probe': 208694880} PROFILE dev SHA256 2c90ebedae72d31ab79ab8fbaee1fa992385e3b5242b9769fde73aa646ef4c6c
+DIAGNOSTIC COMMAND ["C:\\programming\\worth worktees\\worktrees\\m3-host-home\\workspaces\\worth-query\\crates\\worth-query-certification\\fixtures\\consumer_entry\\target\\debug\\worth-query-consumer-root.exe"]
+EVENT 3 65512 63684
+EVENT 2 65512 31720
+EVENT 2 65512 6280
+EVENT 2 65512 10576
+BREAK 0x7ffc68e626c9 entry 0x7ff74609a330
+BREAK 0x7ff74609a330 entry 0x7ff74609a330
+ENTRY 65512 63684 original
+CREATE_REMOTE_BEGIN
+CREATE_REMOTE_END 36308
+EVENT 2 65512 36308
+BREAK 0x7ff74609a330 entry 0x7ff74609a330
+ENTRY 65512 36308 entry
+BREAK 0x7ff74609a330 entry 0x7ff74609a330
+ENTRY 65512 36308 limits
+EVENT 2 65512 14456
+TIMEOUT_STATE body
+TIMEOUT_THREAD 63684 0x7ff74609a331 0x7d77d9fcc8 0x0
+TIMEOUT_PATH [{"pc": 140700008686385, "sp": 538881686728, "symbol_path": "worth_query_consumer_root::main", "symbol_exact": true, "function_rva": 75866928, "rva": 75866929, "static_frame": 280}]
+TIMEOUT_THREAD 31720 0x7ffc68ea5a24 0x7d780ffb68 0x0
+TIMEOUT_PATH [{"pc": 140722068675108, "sp": 538885225320, "external_symbol": "ZwWaitForWorkViaWorkerFactory", "symbol_address": 140722068675088, "live_frame_bytes": 8}, {"pc": 140722067361038, "sp": 538885225328, "external_symbol": "TpCallbackMayRunLong", "symbol_address": 140722067354368, "live_frame_bytes": 864}, {"pc": 140722044525991, "sp": 538885226192, "live_frame_bytes": 48}, {"pc": 140722067729996, "sp": 538885226240, "external_symbol": "RtlUserThreadStart", "symbol_address": 140722067729952}]
+TIMEOUT_THREAD 6280 0x7ffc68ea5a24 0x7d781ff4b8 0x0
+TIMEOUT_PATH [{"pc": 140722068675108, "sp": 538886272184, "external_symbol": "ZwWaitForWorkViaWorkerFactory", "symbol_address": 140722068675088, "live_frame_bytes": 8}, {"pc": 140722067361038, "sp": 538886272192, "external_symbol": "TpCallbackMayRunLong", "symbol_address": 140722067354368, "live_frame_bytes": 864}, {"pc": 140722044525991, "sp": 538886273056, "live_frame_bytes": 48}, {"pc": 140722067729996, "sp": 538886273104, "external_symbol": "RtlUserThreadStart", "symbol_address": 140722067729952}]
+TIMEOUT_THREAD 10576 0x7ffc68ea5a24 0x7d782ff768 0x0
+TIMEOUT_PATH [{"pc": 140722068675108, "sp": 538887321448, "external_symbol": "ZwWaitForWorkViaWorkerFactory", "symbol_address": 140722068675088, "live_frame_bytes": 8}, {"pc": 140722067361038, "sp": 538887321456, "external_symbol": "TpCallbackMayRunLong", "symbol_address": 140722067354368, "live_frame_bytes": 864}, {"pc": 140722044525991, "sp": 538887322320, "live_frame_bytes": 48}, {"pc": 140722067729996, "sp": 538887322368, "external_symbol": "RtlUserThreadStart", "symbol_address": 140722067729952}]
+TIMEOUT_THREAD 36308 0x7ffc68ea1dd4 0x7d7c2ffb28 0x414
+TIMEOUT_PATH [{"pc": 140722068659668, "sp": 538954431272, "external_symbol": "NtWaitForSingleObject", "symbol_address": 140722068659648, "live_frame_bytes": 8}, {"pc": 140722024791711, "sp": 538954431280, "external_symbol": "WaitForSingleObjectEx", "symbol_address": 140722024791536, "live_frame_bytes": 160}, {"pc": 140700078368737, "sp": 538954431440, "symbol_path": "std::sys::thread::windows::Thread::join", "symbol_exact": true, "function_rva": 145549248, "rva": 145549281, "static_frame": 88, "live_frame_bytes": 96}, {"pc": 140700097579397, "sp": 538954431536, "symbol_path": "std::thread::lifecycle::JoinInner::join", "symbol_exact": true, "function_rva": 164759904, "rva": 164759941, "static_frame": 136, "live_frame_bytes": 144}, {"pc": 140700047055215, "sp": 538954431680, "symbol_path": "std::thread::join_handle::JoinHandle::join", "symbol_exact": true, "function_rva": 114235728, "rva": 114235759, "static_frame": 56, "live_frame_bytes": 64}, {"pc": 140700008686604, "sp": 538954431744, "symbol_path": "worth_query_consumer_root::main", "symbol_exact": true, "function_rva": 75866928, "rva": 75867148, "static_frame": 280, "live_frame_bytes": 288}, {"pc": 140722044525991, "sp": 538954432032, "live_frame_bytes": 48}, {"pc": 140722067729996, "sp": 538954432080, "external_symbol": "RtlUserThreadStart", "symbol_address": 140722067729952}]
+TIMEOUT_THREAD 14456 0x7ffc68ea6070 0x7d7caca0a0 0x0
+TIMEOUT_PATH [{"pc": 140722068676720, "sp": 538962600096, "external_symbol": "RtlCompareMemoryUlong", "symbol_address": 140722068676704, "live_frame_bytes": 16}, {"pc": 140722067557443, "sp": 538962600112, "external_symbol": "LdrFindEntryForAddress", "symbol_address": 140722067553984, "live_frame_bytes": 304}, {"pc": 140722067416113, "sp": 538962600416, "external_symbol": "RtlAllocateHeap", "symbol_address": 140722067412304, "live_frame_bytes": 144}, {"pc": 140722067415051, "sp": 538962600560, "external_symbol": "RtlAllocateHeap", "symbol_address": 140722067412304, "live_frame_bytes": 352}, {"pc": 140722014370441, "sp": 538962600912, "live_frame_bytes": 192}, {"pc": 140722067630672, "sp": 538962601104, "external_symbol": "RtlNtStatusToDosErrorNoTeb", "symbol_address": 140722067629696, "live_frame_bytes": 96}, {"pc": 140722067558454, "sp": 538962601200, "external_symbol": "LdrFindEntryForAddress", "symbol_address": 140722067553984, "live_frame_bytes": 304}, {"pc": 140722067416113, "sp": 538962601504, "external_symbol": "RtlAllocateHeap", "symbol_address": 140722067412304, "live_frame_bytes": 144}, {"pc": 140722067415051, "sp": 538962601648, "external_symbol": "RtlAllocateHeap", "symbol_address": 140722067412304, "live_frame_bytes": 352}, {"pc": 140722014370525, "sp": 538962602000, "live_frame_bytes": 48}, {"pc": 140722014370390, "sp": 538962602048, "live_frame_bytes": 192}, {"pc": 140700078441553, "sp": 538962602240, "symbol_path": "alloc::string::clone", "symbol_exact": true, "function_rva": 145622048, "rva": 145622097, "static_frame": 72, "live_frame_bytes": 80}]
+Traceback (most recent call last):
+  File "C:\programming\worth worktees\worktrees\m3-host-home\target\lane-evidence\stack_peak\measure.py", line 22, in <module>
+    first=Session(a,symbols).launch();(out/(key+'-paint.json')).write_text(json.dumps(first,indent=2))
+  File "C:\programming\worth worktees\worktrees\m3-host-home\target\lane-evidence\stack_peak\debug_session.py", line 15, in launch
+    try:self.loop()
+        ~~~~~~~~~^^
+  File "C:\programming\worth worktees\worktrees\m3-host-home\target\lane-evidence\stack_peak\debug_session.py", line 58, in loop
+    raise TimeoutError('no debugger event for15seconds')
+TimeoutError: no debugger event for15seconds
+
+END: 2026-11-07T09:23:29.963538+00:00
+EXIT: 1

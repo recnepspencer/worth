@@ -198,10 +198,14 @@ fn cause(
         Decision::OperationTerminalFailure(_, Terminal::CustomInvariant(denial)) => {
             Some(Cause::CustomInvariant(denial.clone()))
         }
+        Decision::OperationProductUnpublished(_, _, cause) => {
+            Some(Cause::ProductUnpublished(*cause))
+        }
         Decision::Eligible(_)
         | Decision::Suppressed(_)
         | Decision::Deferred(_)
-        | Decision::OperationProductUnpublished(_, _)
+        | Decision::OperationPreparationPending(_, _)
+        | Decision::OperationPreparationRefused(_, _)
         | Decision::OperationCommitted(_)
         | Decision::OperationAlreadyCommitted(_) => None,
         Decision::OperationRetryable(_, cause) | Decision::OperationIndeterminate(_, cause) => {
@@ -323,7 +327,13 @@ fn terminal(
         | WorthQueryRetainedConditionalDecision::OperationIndeterminate(_, _) => {
             WorthQueryConditionalExecutionTerminal::Indeterminate
         }
-        WorthQueryRetainedConditionalDecision::OperationProductUnpublished(_, _) => {
+        WorthQueryRetainedConditionalDecision::OperationPreparationPending(_, _) => {
+            WorthQueryConditionalExecutionTerminal::Indeterminate
+        }
+        WorthQueryRetainedConditionalDecision::OperationPreparationRefused(_, _) => {
+            WorthQueryConditionalExecutionTerminal::Failed
+        }
+        WorthQueryRetainedConditionalDecision::OperationProductUnpublished(_, _, _) => {
             WorthQueryConditionalExecutionTerminal::ProductUnpublished
         }
         WorthQueryRetainedConditionalDecision::OperationProductStale(_, _) => {

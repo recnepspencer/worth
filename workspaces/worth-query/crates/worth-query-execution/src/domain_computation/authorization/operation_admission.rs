@@ -23,7 +23,9 @@ use worth_query_installation::facade::WorthQueryCanonicalWorkEvidence;
 
 #[path = "admitted_operation_core.rs"]
 mod admitted_operation_core;
-pub(in crate::domain_computation) use admitted_operation_core::WorthQueryAdmittedOperation;
+pub(in crate::domain_computation) use admitted_operation_core::{
+    WorthQueryAdmittedOperation, WorthQueryAdmittedOperationData,
+};
 pub(in crate::domain_computation) use brand_tag::BrandTag;
 
 #[path = "operation_admission/access.rs"]
@@ -59,6 +61,8 @@ mod graph_work_inspection;
 mod idempotency_binding;
 #[path = "operation_admission/identity_admitted.rs"]
 mod identity_admitted;
+#[path = "operation_admission/incarnation.rs"]
+mod incarnation;
 #[path = "operation_admission/installed_reentry.rs"]
 mod installed_reentry;
 #[path = "operation_admission/mandatory_review.rs"]
@@ -219,11 +223,12 @@ impl<Schema, Operation, Input, Scope>
 
 impl WorthQueryAdmittedOperation {
     fn retain_execution_canonical_work(&mut self, work: WorthQueryCanonicalWorkEvidence) {
-        self.canonical_work = self.canonical_work.with_execution_work(work);
+        self.data.canonical_work = self.data.canonical_work.with_execution_work(work);
     }
 
     fn record_request_identity_work(&mut self, work: ApplicationCanonicalWork) {
-        self.canonical_work = self
+        self.data.canonical_work = self
+            .data
             .canonical_work
             .with_admission_work(WorthQueryCanonicalWorkEvidence::streamed_identities(work));
     }

@@ -6,7 +6,10 @@ mod lifecycle;
 mod read_plan;
 mod retention;
 
-pub use admission::{PhysicalReadProtectionDenial, PhysicalReadProtectionPolicy};
+pub use admission::{
+    PhysicalCheckpointReadProtectionDenial, PhysicalReadProtectionDenial,
+    PhysicalReadProtectionPolicy,
+};
 pub use byte_guard::*;
 pub use lifecycle::{PhysicalReadProtectionDisposition, PhysicalReadProtectionShutdown};
 pub use read_plan::PhysicalProtectedRootObservation;
@@ -14,5 +17,6 @@ pub use retention::{PhysicalReadProtectionObservation, PhysicalReadProtectionObs
 
 pub(in crate::physical_runtime) use lifecycle::PhysicalReadProtectionOwner;
 pub(in crate::physical_runtime) use retention::{
-    PhysicalRootReadLease, RootProtectionRegistry, TerminalHeadNoReaderOrRecoveryHold,
+    PhysicalRootReadLease, PhysicalRootReadRetirementDenial, RootProtectionRegistry,
+    TerminalHeadNoReaderOrRecoveryHold,
 };

@@ -99,6 +99,7 @@ pub fn classify_denial(denial: &Denial) -> Outcome {
                     | Session::ForeignOperationAttempt
                     | Session::ForeignExecutionBasis
                     | Session::ForeignGraphAuthority
+                    | Session::StaleIncarnation
                     | Session::UndeclaredOperationScope
                     | Session::ResourceEnvelopeMismatch
                     | Session::ExecutionNestedPatternStopped { .. }
@@ -133,6 +134,7 @@ pub fn classify_denial(denial: &Denial) -> Outcome {
 
 pub fn classify_kind(kind: Kind) -> Outcome {
     match kind {
+        Kind::IdempotencyPreparationBusy => Outcome::RetryableCommitFailure(kind),
         Kind::ContentInconsistency | Kind::Content(_) | Kind::StorageUnavailable(_) => {
             Outcome::TerminalFailure(Terminal::ApplicationCommit(kind))
         }
@@ -198,8 +200,9 @@ pub fn classify_kind(kind: Kind) -> Outcome {
         | Kind::CandidateIdentityExhausted
         | Kind::IndexMaintenanceBudgetExceeded
         | Kind::IndexGenerationIdentityExhausted
+        | Kind::IdempotencyForeignAffinity
         | Kind::IdempotencyIntentDrift
-        | Kind::IdempotencyReceiptNotRetained { .. }
+        | Kind::OriginalEffectReleased
         | Kind::IdempotencyIntentUnverifiable
         | Kind::MutationBindingMismatch
         | Kind::MutationInputMismatch
@@ -224,6 +227,7 @@ pub fn classify_kind(kind: Kind) -> Outcome {
         | Kind::ProgramNotActiveOnOccurrence { .. }
         | Kind::ProgramSupportRetired
         | Kind::ProgramActivationUnresolved
+        | Kind::StaleIncarnation
         | Kind::CorrectionContextMismatch
         | Kind::CorrectionIdentityMismatch => {
             Outcome::TerminalFailure(Terminal::ApplicationCommit(kind))

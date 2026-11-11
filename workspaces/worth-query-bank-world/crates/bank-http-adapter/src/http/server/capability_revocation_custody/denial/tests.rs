@@ -96,3 +96,22 @@ fn storage_unavailability_preparation_is_unavailable_and_retryable() {
     ));
     assert_eq!(denial, BankHttpDenial::new(Kind::Unavailable, Next::Retry));
 }
+
+#[test]
+fn original_recovery_refusals_require_operator_review_without_replaying() {
+    use RuntimeWorldRecoveryDenial as D;
+    for cause in [
+        D::ContinuationAlreadyCommitted,
+        D::ContinuationAlreadyStarted,
+        D::ReleaseAlreadyStarted,
+        D::OriginalSourceUnavailable,
+        D::OriginalSourceMismatch,
+    ] {
+        assert_eq!(
+            native_denial(NativeDenial::Recovery(
+                WorthQueryManagedApplicationRecoveryDenial::World(cause)
+            )),
+            BankHttpDenial::new(Kind::InternalDenied, Next::ContactOperator)
+        );
+    }
+}

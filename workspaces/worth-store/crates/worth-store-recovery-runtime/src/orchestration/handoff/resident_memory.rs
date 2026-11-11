@@ -5,32 +5,38 @@ use crate::handoff::RecoveryCleanupPosture;
 use crate::progression::ReopenedPhysicalRecovery;
 use worth_store_recovery_physics::VerifiedOrderedRootHistory;
 
-/// Heap-only retained bytes. The enclosing inline values are reported by
-/// `inline_bytes`; Coordination counts its charged checkpoint backing once,
+/// Heap-only retained bytes. The enclosing handoff owner counts inline storage.
+/// Coordination counts its charged checkpoint backing once,
 /// while shared history is deduplicated by pointer identity.
 pub(super) fn retained_bytes(
     reopened: &ReopenedPhysicalRecovery,
     cleanup: &RecoveryCleanupPosture,
 ) -> Option<u64> {
-    let state = &reopened.state;
+    let state = &reopened.payload().state;
     let mut bytes = state
         .selection
         .owned_heap_bytes()?
+        .checked_add(reopened.backing_bytes()?)?
         .checked_add(state.integrity.owned_heap_bytes()?)?
         .checked_add(state.integrity_trace.owned_heap_bytes()?)?
         .checked_add(state.freshness.owned_heap_bytes()?)?
         .checked_add(state.fates.owned_heap_bytes()?)?
         .checked_add(state.base.owned_heap_bytes()?)?
-        .checked_add(reopened.expectation.owned_heap_bytes()?)?
+        .checked_add(reopened.payload().expectation.owned_heap_bytes()?)?
         .checked_add(state.staging_settlements.owned_heap_bytes()?)?
-        .checked_add(reopened.publication_settlement.owned_heap_bytes()?)?
+        .checked_add(
+            reopened
+                .payload()
+                .publication_settlement
+                .owned_heap_bytes()?,
+        )?
         .checked_add(cleanup.owned_heap_bytes()?)?
         .checked_add(state.coordination.owner().owned_recovery_heap_bytes()?)?
         .checked_add(vector_bytes(&state.root_protocol_denials)?)?;
     for denial in &state.root_protocol_denials {
         bytes = bytes.checked_add(denial.owned_heap_bytes()?)?;
     }
-    if let Some(fresh) = &reopened.reopened {
+    if let Some(fresh) = &reopened.payload().reopened {
         bytes = bytes.checked_add(fresh.owned_heap_bytes()?)?;
     }
     match &state.custody {
@@ -61,17 +67,6 @@ pub(super) fn retained_bytes(
     bytes.checked_add(shared_history_bytes(reopened)?)
 }
 
-/// Inline footprint is separate from the heap measure and must be added only
-/// once by the enclosing owner, not again for each nested typed field.
-pub(super) fn inline_bytes(
-    _: &ReopenedPhysicalRecovery,
-    _: &RecoveryCleanupPosture,
-) -> Option<u64> {
-    u64::try_from(std::mem::size_of::<ReopenedPhysicalRecovery>())
-        .ok()?
-        .checked_add(u64::try_from(std::mem::size_of::<RecoveryCleanupPosture>()).ok()?)
-}
-
 fn vector_bytes<T>(values: &Vec<T>) -> Option<u64> {
     u64::try_from(values.capacity())
         .ok()?
@@ -79,17 +74,23 @@ fn vector_bytes<T>(values: &Vec<T>) -> Option<u64> {
 }
 
 fn shared_history_bytes(reopened: &ReopenedPhysicalRecovery) -> Option<u64> {
-    let state = &reopened.state;
+    let state = &reopened.payload().state;
     let histories: [Option<&VerifiedOrderedRootHistory>; 2] = [
         match &state.custody {
             crate::progression::CustodyState::Pending { claim, .. } => claim.ordered_history(),
-            _ => None,
+            crate::progression::CustodyState::NoCheckpoint
+            | crate::progression::CustodyState::NoRelease(_)
+            | crate::progression::CustodyState::SourceHeads(_)
+            | crate::progression::CustodyState::OrderedCompleted { .. } => None,
         },
         match &state.custody {
             crate::progression::CustodyState::OrderedCompleted { claim, .. } => {
                 Some(claim.history())
             }
-            _ => None,
+            crate::progression::CustodyState::NoCheckpoint
+            | crate::progression::CustodyState::NoRelease(_)
+            | crate::progression::CustodyState::SourceHeads(_)
+            | crate::progression::CustodyState::Pending { .. } => None,
         },
     ];
     let mut bytes = 0_u64;

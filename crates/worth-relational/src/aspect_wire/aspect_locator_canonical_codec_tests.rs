@@ -97,3 +97,48 @@ fn aspect_value_locator_codec_rejects_malformed_bytes() {
         "unexpected locator codec error: {error}"
     );
 }
+
+#[test]
+fn owned_decode_streaming_locator_roster_preserves_old_named_and_compact_bytes() {
+    use serde::{Deserialize, Serialize};
+    use std::sync::Arc;
+    #[derive(Debug, PartialEq, Serialize, Deserialize)]
+    struct Current {
+        #[serde(with = "crate::aspect_wire::serde_canonical_aspect_field_locator_arc_slice")]
+        locators: Arc<[AspectFieldLocator]>,
+    }
+    #[derive(Serialize)]
+    struct Previous {
+        locators: Vec<Vec<u8>>,
+    }
+    for count in [0, 1, 17] {
+        let locators = (0..count)
+            .map(|ordinal| {
+                AspectFieldLocator::new(
+                    LocatorAuthority::Planned,
+                    AspectKey::new(format!("roster.aspect{ordinal}")).unwrap(),
+                    CanonicalFieldPath::single(FieldKey::new("field").unwrap()),
+                )
+            })
+            .collect::<Vec<_>>();
+        let previous = Previous {
+            locators: locators.iter().map(encode_aspect_field_locator).collect(),
+        };
+        let current = Current {
+            locators: Arc::from(locators),
+        };
+        for (old, new) in [
+            (
+                rmp_serde::to_vec_named(&previous).unwrap(),
+                rmp_serde::to_vec_named(&current).unwrap(),
+            ),
+            (
+                rmp_serde::to_vec(&previous).unwrap(),
+                rmp_serde::to_vec(&current).unwrap(),
+            ),
+        ] {
+            assert_eq!(old, new);
+            assert_eq!(rmp_serde::from_slice::<Current>(&old).unwrap(), current);
+        }
+    }
+}

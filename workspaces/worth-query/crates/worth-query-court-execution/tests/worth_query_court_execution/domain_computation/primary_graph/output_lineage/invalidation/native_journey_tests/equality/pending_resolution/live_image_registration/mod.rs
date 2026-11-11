@@ -57,7 +57,7 @@ fn retained_registration_consumes_the_equal_successor_at_the_live_image() {
             (*record.settlement_identity_for_test()).coordinate_for_test(),
             0,
         );
-        handle.with_runtime_mut_for_test(request_execution, |runtime| {
+        handle.with_runtime_for_test(request_execution, |runtime| {
             let (before_handle, before) = snapshot(runtime);
             register(
                 owner,

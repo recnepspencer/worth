@@ -125,12 +125,12 @@ impl<'state> Fields<'state, '_, '_, '_> {
         expected: Option<&WorthQueryRecordedCorrectionSource>,
     ) -> Result<bool, Denial> {
         match expected {
-            Some(source) => Ok(
-                self.number(fields[0], source.world().owner_identity().get())?
-                    && self.number(fields[1], source.world().ordinal())?
-                    && self.string(fields[2], &source.relational().branch_id.0)?
-                    && self.number(fields[3], source.relational().commit_id.0)?,
-            ),
+            Some(source) => Ok(self.number(
+                fields[0],
+                source.world_owner_coordinate().row_owner_number(),
+            )? && self.number(fields[1], source.world().ordinal())?
+                && self.string(fields[2], &source.relational().branch_id.0)?
+                && self.number(fields[3], source.relational().commit_id.0)?),
             None => {
                 for field in fields {
                     if self.value(field)?.is_some() {

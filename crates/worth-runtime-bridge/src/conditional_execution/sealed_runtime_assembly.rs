@@ -1,5 +1,6 @@
 mod causal_inspection;
 mod conditional_dispatch;
+mod home_retirement;
 mod owned_async;
 mod process_local_release;
 mod unqueued_owned_async;
@@ -34,9 +35,10 @@ pub struct BridgeSealedRuntimeAssembly {
         >,
     >,
     signal_basis: worth_signal::facade::branch::AdmittedSignalBranchBasis,
-    correspondence: RuntimeWorldCorrespondencePort,
+    correspondence: Option<RuntimeWorldCorrespondencePort>,
     correspondence_basis: crate::facade::AdmittedRuntimeWorldCorrespondenceBasis,
     affinity: BridgeSealedOwnerAffinity,
+    home_retirement: Option<home_retirement::FundedBridgeAssemblyRetirement>,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -141,8 +143,14 @@ impl BridgeSealedRuntimeAssembly {
             .take_definition_publication()?;
         let signal_basis = runtime.signal_services()?.issuance_basis();
         let correspondence = runtime.bridge.runtime_world_correspondence_port();
-        let correspondence_basis =
-            correspondence.admit_runtime_baseline(runtime.owned_signal_graph_instance_id());
+        let correspondence_basis = correspondence
+            .admit_runtime_baseline(runtime.owned_signal_graph_instance_id())
+            .map_err(|cause| {
+                BridgeConditionalDenial::new(
+                    super::BridgeConditionalDenialKind::StaleLowering,
+                    cause.to_string(),
+                )
+            })?;
         let affinity = BridgeSealedOwnerAffinity {
             signal_graph_instance_id: runtime.owned_signal_graph_instance_id(),
         };
@@ -152,9 +160,10 @@ impl BridgeSealedRuntimeAssembly {
             signal_services,
             signal_definition_publication: Some(signal_definition_publication),
             signal_basis,
-            correspondence,
+            correspondence: Some(correspondence),
             correspondence_basis,
             affinity,
+            home_retirement: None,
         })
     }
 
@@ -209,7 +218,10 @@ impl BridgeSealedRuntimeAssembly {
     }
 
     pub fn runtime_world_correspondence_port(&self) -> RuntimeWorldCorrespondencePort {
-        self.correspondence.clone()
+        self.correspondence
+            .as_ref()
+            .expect("serving assembly owns correspondence")
+            .clone()
     }
 
     pub fn admitted_runtime_world_correspondence_basis(
@@ -375,3 +387,6 @@ impl BridgeSealedRuntimeAssembly {
         self.runtime.owned_signal_active_node_count()
     }
 }
+#[cfg(test)]
+#[path = "sealed_runtime_assembly_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;

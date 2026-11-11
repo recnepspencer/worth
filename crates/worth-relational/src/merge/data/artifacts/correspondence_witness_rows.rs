@@ -151,11 +151,12 @@ impl<'de> Deserialize<'de> for RelationalMergeCorrespondenceWitnessRow {
 }
 
 pub(crate) fn identity_match_candidate_digest(candidate: &IdentityMatchCandidate) -> String {
-    let mut bytes = Vec::new();
-    bytes.extend_from_slice(b"worth.relational.merge.identity_match_candidate.v1");
-    bytes.extend_from_slice(
-        &rmp_serde::to_vec_named(candidate).expect(/* Proof: The serialized value contains only closed native scalar, sequence, map and derived-Serialize record fields; encoding uses an in-memory Vec/hash writer, with no user serializer or fallible I/O. */ "identity match candidate must encode"),
-    );
-    let digest = Sha256::digest(bytes);
-    digest.iter().map(|byte| format!("{byte:02x}")).collect()
+    let mut digest = Sha256::new();
+    digest.update(b"worth.relational.merge.identity_match_candidate.v1");
+    {
+        let mut writer = super::correspondence_witness::CorrespondenceHashWriter(&mut digest);
+        rmp_serde::encode::write_named(&mut writer, candidate)
+            .expect("closed native identity candidate must encode");
+    }
+    super::correspondence_witness::lowercase_sha256(digest.finalize().into())
 }

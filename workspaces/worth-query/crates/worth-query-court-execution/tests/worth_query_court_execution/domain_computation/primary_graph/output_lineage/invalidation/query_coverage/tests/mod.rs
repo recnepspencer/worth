@@ -50,7 +50,7 @@ fn released_query_backing_preserves_historical_truth_and_marks_only_live_readers
                 .field_locator_for_test(status_ref.entity(), status_ref.aspect(), status_ref.field())
                 .unwrap()
                 .clone();
-            handle.with_runtime_mut_for_test(&execution, |runtime| {
+            handle.with_runtime_for_test(&execution, |runtime| {
                 write_field(&execution, runtime, entity, label.clone(), "prime");
                 let (basis_handle, basis) = snapshot(runtime);
                 let facts = [

@@ -6,6 +6,9 @@ use worth_store_physical_backend::UnchargedRead;
 
 mod fixture;
 
+const SERVING_BACKING_BYTES: u64 =
+    crate::physical_runtime::record_serving::PreparedRecoveredCustodyBacking::required_bytes();
+
 #[test]
 fn shared_checkpoint_clones_hold_actual_backing_and_charge_after_owner_close() {
     let (_directory, media, mut coordination) = fixture::coordination();
@@ -28,7 +31,7 @@ fn shared_checkpoint_clones_hold_actual_backing_and_charge_after_owner_close() {
     assert_eq!(shared.owned_heap_bytes(), Some(actual));
     assert_eq!(
         ports.counters().active_operation_bytes_for(Scope::Recovery),
-        actual
+        SERVING_BACKING_BYTES + actual
     );
     assert!(shared.matches_owner(&coordination.residency));
     let retained = shared.clone();
@@ -36,7 +39,7 @@ fn shared_checkpoint_clones_hold_actual_backing_and_charge_after_owner_close() {
     drop(shared);
     assert_eq!(
         ports.counters().active_operation_bytes_for(Scope::Recovery),
-        actual
+        SERVING_BACKING_BYTES + actual
     );
     let mut discovery = media.bounded_discovery(1, 4096).unwrap();
     let absent =
@@ -44,7 +47,8 @@ fn shared_checkpoint_clones_hold_actual_backing_and_charge_after_owner_close() {
             .unwrap();
     let media = discovery.finish();
     coordination.install_absent_checkpoint(absent).unwrap();
-    let (owner, ownership) = coordination.into_quiescent_recovery_parts().unwrap();
+    let (owner, ownership, serving_backing) = coordination.into_quiescent_recovery_parts().unwrap();
+    drop(serving_backing);
     assert!(ownership.checkpoint().is_none());
     drop(ownership);
     assert!(owner.close().requires_inspection());
@@ -78,7 +82,10 @@ fn native_pressure_denies_certificate_construction_without_admission_then_retrie
         .unwrap()
         .byte_limit();
     let held = ports
-        .begin_operation(Scope::Recovery, NonZeroU64::new(limit - 1).unwrap())
+        .begin_operation(
+            Scope::Recovery,
+            NonZeroU64::new(limit - SERVING_BACKING_BYTES - 1).unwrap(),
+        )
         .unwrap();
     let before = ports.allocation_events().snapshot();
     let denial = fixture::with_assembly(media.store_identity(), |assembly| {
@@ -121,12 +128,12 @@ fn native_pressure_denies_certificate_construction_without_admission_then_retrie
     });
     assert_eq!(
         ports.counters().active_operation_bytes_for(Scope::Recovery),
-        shared.owned_heap_bytes().unwrap()
+        SERVING_BACKING_BYTES + shared.owned_heap_bytes().unwrap()
     );
     drop(shared);
     assert_eq!(
         ports.counters().active_operation_bytes_for(Scope::Recovery),
-        0
+        SERVING_BACKING_BYTES
     );
 }
 
@@ -160,7 +167,7 @@ fn shared_checkpoint_rejects_foreign_store_before_native_demand_and_distinct_poo
     drop(shared);
     assert_eq!(
         ports.counters().active_operation_bytes_for(Scope::Recovery),
-        0
+        SERVING_BACKING_BYTES
     );
 }
 
@@ -218,7 +225,8 @@ fn actual_absence_is_required_and_other_absent_locator_cannot_install_it() {
             .snapshot(),
         before
     );
-    let (owner, ownership) = coordination.into_quiescent_recovery_parts().unwrap();
+    let (owner, ownership, serving_backing) = coordination.into_quiescent_recovery_parts().unwrap();
+    drop(serving_backing);
     assert!(ownership.checkpoint().is_none());
     drop(ownership);
     assert!(!owner.close().requires_inspection());

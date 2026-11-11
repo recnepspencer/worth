@@ -4,7 +4,7 @@ pub(crate) use worth_query_testkit_host::facade::host::temporal_conditional_oper
 fn checkpoint_transition_publishes_typed_effects_and_reopens_under_target_roster() {
     let (source, predecessor) = source();
     assert!(
-        application_installation::in_memory_program_from_checkpoint(
+        application_installation::WorthQueryInterimCheckpointRestore::program(
             validated_program(),
             TemporalHostSchema::declaration().unwrap(),
             configuration(),
@@ -44,7 +44,7 @@ fn checkpoint_transition_publishes_typed_effects_and_reopens_under_target_roster
         })
         .expect("installed host call opens");
     drop(migrated);
-    let reopened = application_installation::in_memory_program_from_checkpoint(
+    let reopened = application_installation::WorthQueryInterimCheckpointRestore::program(
         validated_program(),
         TemporalHostSchema::declaration().unwrap(),
         configuration(),
@@ -164,7 +164,7 @@ fn checkpoint_transition_retains_acknowledged_checkpoint_after_later_installatio
     let (mut configuration,) = configuration();
     configuration.install_route = false;
     let denial =
-        application_installation::in_memory_rostered_program_from_checkpoint_with_transition(
+        application_installation::WorthQueryInterimCheckpointRestore::rostered_program_with_transition(
             validated_program(),
             application_installation::WorthQueryApplicationProgramRoster::new(),
             TemporalHostSchema::declaration().unwrap(),
@@ -190,12 +190,12 @@ fn checkpoint_transition_retains_acknowledged_checkpoint_after_later_installatio
         .expect(
             "incomplete conditional routes must refuse installation after native acknowledgment",
         );
-    let application_installation::WorthQueryInMemoryApplicationDenial::CheckpointTransitionAcknowledged { checkpoint: target, cause } = denial else { panic!("acknowledged target effects must retain recovery custody: {denial:?}"); };
+    let application_installation::WorthQueryApplicationPreparationDenial::CheckpointTransitionAcknowledged { checkpoint: target, cause } = denial else { panic!("acknowledged target effects must retain recovery custody: {denial:?}"); };
     assert!(matches!(
         cause.as_ref(),
-        application_installation::WorthQueryInMemoryApplicationDenial::ConditionalPublication(_)
+        application_installation::WorthQueryApplicationPreparationDenial::ConditionalPublication(_)
     ));
-    let reopened = application_installation::in_memory_program_from_checkpoint(
+    let reopened = application_installation::WorthQueryInterimCheckpointRestore::program(
         validated_program(),
         TemporalHostSchema::declaration().unwrap(),
         self::configuration(),

@@ -4,6 +4,10 @@ use worth_signal::facade::{
     HostComputedPreparedResponse, NodeEvaluationResult, NodeId, SignalError,
 };
 
+#[allow(
+    dead_code,
+    reason = "Compile-pass witness verifies external implementation without executing it"
+)]
 struct ExternalEvaluator;
 
 impl HostComputedEvaluator for ExternalEvaluator {

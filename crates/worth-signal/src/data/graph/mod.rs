@@ -1,3 +1,10 @@
+mod authored_image;
+mod authored_readmission;
+mod authored_successor;
+pub use authored_readmission::SignalAuthoredGraphReadmission;
+mod installation_bindings;
+mod node_issuance;
+pub(crate) use installation_bindings::SignalGraphInstallationBindings;
 mod compaction;
 mod construction;
 mod diagnostics_access;
@@ -48,3 +55,6 @@ pub(crate) use topology::subscription_candidates;
 pub(crate) use topology::waiter_preparation_work;
 
 pub(crate) use diagnostics_access::{EpochSemanticSeed, PreparedSemanticArtifactImage};
+#[cfg(test)]
+#[path = "mod_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;

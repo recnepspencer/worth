@@ -5,7 +5,10 @@ use super::*;
 fn owned_exact_summaries_preserve_complete_reads_across_edits_and_reopen() {
     let calls = Arc::new(provider::Calls::default());
     let config = Configuration::new(Arc::clone(&calls));
-    let prefix_calls = Arc::new(prefix::Calls::default());
+    let prefix_calls = Arc::new(
+        crate::application_invariant_acceptance::managed_index::prefix_observation::Calls::default(
+        ),
+    );
     let prefix_rules = Arc::new(prefix_rule::Calls::new(Arc::clone(&prefix_calls)));
     let world = host::install_geometry(prefix_calls, prefix_rules, config);
     let scope = authentication::request_scope();

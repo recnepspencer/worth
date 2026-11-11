@@ -44,15 +44,21 @@ pub(crate) fn execute(
     }
     #[cfg(feature = "certification-test-authority")]
     crate::certification::before_cleanup_revalidation();
-    let limits = reopened.state.authority.limits.declaration();
+    let limits = reopened.payload().state.authority.limits.declaration();
     let mut plan = build_plan(RecoveryCleanupPlanBasis {
-        selection: &reopened.state.selection,
-        base: &reopened.state.base,
-        publication: &reopened.expectation,
-        fates: &reopened.state.fates,
-        unresolved_retirement: !reopened.state.freshness.retirements().is_empty()
-            || reopened.state.freshness.extent_copy_frames().len() != 0,
-        release_intents: reopened.state.freshness.release_intents(),
+        selection: &reopened.payload().state.selection,
+        base: &reopened.payload().state.base,
+        publication: &reopened.payload().expectation,
+        fates: &reopened.payload().state.fates,
+        unresolved_retirement: !reopened.payload().state.freshness.retirements().is_empty()
+            || reopened
+                .payload()
+                .state
+                .freshness
+                .extent_copy_frames()
+                .len()
+                != 0,
+        release_intents: reopened.payload().state.freshness.release_intents(),
         limits,
     });
     let command_basis = RecoveryCleanupCommandBasis::from_reopened(
@@ -212,22 +218,19 @@ fn finish(
 ) -> crate::entry::PhysicalRecoveryOutcome {
     #[cfg(feature = "certification-test-authority")]
     if reopened
+        .payload()
         .state
         .coordination
         .owner()
         .take_certification_cleanup_media_handle_leak()
     {
         assert!(
-            reopened
-                .state
-                .authority
-                .media
-                .certification_retain_cleanup_media_handle(),
+            reopened.retain_cleanup_media_handle_for_certification(),
             "certification cleanup handle leak must reach the admitted backend owner"
         );
     }
     let live_media_handles_after_close =
-        command_basis.live_media_handle_delta(&reopened.state.authority.media);
+        command_basis.live_media_handle_delta(&reopened.payload().state.authority.media);
     let closed_cleanup = command_basis.close(live_media_handles_after_close);
     let posture = accounting.finish(plan, live_media_handles_after_close);
     crate::orchestration::finish_recovery_after_cleanup(reopened, closed_cleanup, posture)

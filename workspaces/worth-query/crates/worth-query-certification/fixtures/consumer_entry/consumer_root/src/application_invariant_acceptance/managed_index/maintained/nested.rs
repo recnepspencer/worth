@@ -3,10 +3,9 @@ mod authoring;
 pub(super) mod composition;
 #[cfg(test)]
 mod court;
+pub(in super::super) mod edit;
 mod host;
-#[path = "../mutation.rs"]
 mod mutation;
-#[path = "../prefix.rs"]
 pub(super) mod prefix;
 mod query;
 pub(super) mod rule;

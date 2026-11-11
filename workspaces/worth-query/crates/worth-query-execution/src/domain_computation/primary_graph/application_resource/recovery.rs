@@ -17,6 +17,10 @@ pub(super) fn require_authority<Schema: ApplicationSchema>(
     access: &OriginalResourceAccess,
     product: &crate::basis::WorthQueryProductBranchLease,
 ) -> Result<(), ResourceCause> {
+    match runtime.runtime.product_runtime.owner.owner_identity().admit_incarnation(handle.home_owner()) {
+        Err(worth_proof::HomeIncarnationDenial::StaleIncarnation) => return Err(ResourceCause::Recovery(crate::domain_computation::application_aftermath::WorthQueryRecoveryHandleDenial::new(crate::domain_computation::application_aftermath::WorthQueryRecoveryHandleDenialKind::StaleIncarnation))),
+        Err(worth_proof::HomeIncarnationDenial::ForeignHome) | Ok(()) => {}
+    }
     authority
         .ensure_for(handle)
         .map_err(ResourceCause::Recovery)?;

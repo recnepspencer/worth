@@ -25,6 +25,11 @@ impl WorthQueryOutputDemandSettlement {
             WorthQueryAcceptedOutputAuthority::Committed(receipt) => self
                 .application_commit_receipt()
                 .is_some_and(|actual| actual.is_same_authoritative_commit(receipt)),
+            WorthQueryAcceptedOutputAuthority::Recovered(publication) => self
+                .receipt
+                .as_ref()
+                .and_then(SettlementReceiptCustody::recovered)
+                .is_some_and(|actual| actual.same_publication(publication)),
             WorthQueryAcceptedOutputAuthority::Stable(stable) => self
                 .stable
                 .as_ref()

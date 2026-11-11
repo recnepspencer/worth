@@ -1,6 +1,7 @@
 use sha2::{Digest, Sha256};
 use std::io::Read;
 use std::path::{Path, PathBuf};
+use worth_foundational::CanonicalDigestId;
 
 const IDENTITY_RELATIVE_PATH: &str = "namespace/identity";
 const IDENTITY_RECORD_LENGTH: usize = 72;
@@ -41,7 +42,7 @@ struct IdentityObservation {
     namespace_version: u16,
     encoding_version: u16,
     identity: [u8; 16],
-    record_digest: [u8; 32],
+    record_digest: CanonicalDigestId,
 }
 
 fn observe_identity(root: &Path) -> Result<IdentityObservation, &'static str> {
@@ -91,7 +92,7 @@ fn decode_identity_record(bytes: &[u8]) -> Result<IdentityObservation, &'static 
         namespace_version,
         encoding_version,
         identity,
-        record_digest: Sha256::digest(bytes).into(),
+        record_digest: CanonicalDigestId::new(Sha256::digest(bytes).into()),
     })
 }
 
@@ -104,7 +105,7 @@ fn observe_namespace(root: &Path) -> Result<String, &'static str> {
         identity.encoding_version,
         encode_hex(&identity.identity),
         IDENTITY_RECORD_LENGTH,
-        encode_hex(&identity.record_digest),
+        encode_hex(identity.record_digest.bytes()),
         render_tree(&manifest),
     ))
 }

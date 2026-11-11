@@ -18,6 +18,7 @@ pub(super) mod failure_classification;
 mod inline;
 #[cfg(feature = "certification-test-authority")]
 mod read_call_pause;
+mod retirement;
 mod selected_class;
 mod session;
 pub use cancellation::RecordReadCancellation;
@@ -26,6 +27,7 @@ pub(in crate::physical_runtime) use failure_classification::assert_actual_lifecy
 use failure_classification::manifest_failure;
 #[cfg(feature = "certification-test-authority")]
 pub use read_call_pause::CertificationPhysicalReadCallPauseGate;
+pub use retirement::PhysicalRecordReadRetirementDenial;
 
 #[allow(
     clippy::large_enum_variant,
@@ -57,7 +59,8 @@ pub struct RecordReadSession {
     runtime: std::sync::Weak<crate::physical_runtime::instance::PhysicalStoreWorkRuntime>,
     health_permit: super::super::lifecycle::serving_health::ServingHealthPermit,
     _lifecycle: super::super::lifecycle::record_lifecycle::RecordReadSessionLease,
-    _allocation: worth_store_buffer_pool::OperationAllocationGrant,
+    _allocation: Option<worth_store_buffer_pool::OperationAllocationGrant>,
+    _retired_allocation: Option<worth_store_buffer_pool::RetiredOperationAllocation>,
 }
 
 /// Opens bounded record-read sessions through the serving Store.
@@ -83,6 +86,19 @@ pub struct PhysicalRecordReader {
 }
 
 impl PhysicalRecordReader {
+    pub(in crate::physical_runtime) fn belongs_to(
+        &self,
+        serving: &crate::physical_runtime::ServingPhysicalRuntime,
+    ) -> bool {
+        serving.owns_reader(self)
+    }
+
+    pub(in crate::physical_runtime) fn try_require_live_protection(
+        &self,
+    ) -> Result<(), crate::physical_runtime::PhysicalCheckpointReadProtectionDenial> {
+        self.protection.try_require_live()
+    }
+
     /// Retains this selected root while changing only its internal frame work
     /// to diagnostic-background admission. No raw record route escapes.
     pub(in crate::physical_runtime) fn for_diagnostic_scrub(mut self) -> Self {

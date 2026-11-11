@@ -44,7 +44,7 @@ fn payload_initialization<L: LawPolicy>() {
     }
     assert!(matches!(
         world.edit(1, &[(0, 1)]),
-        Outcome::AlreadyCommitted(_) | Outcome::PreviouslyCommitted(_)
+        Outcome::AlreadyCommitted(_) | Outcome::RecoveredCommitted(_)
     ));
     assert!(matches!(
         world.edit(1, &[(0, 2)]),

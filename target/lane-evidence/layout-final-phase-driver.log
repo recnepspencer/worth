@@ -1,0 +1,17 @@
+COMMAND: ["python", "target/lane-evidence/layout_phase_gates.py"]
+HEAD: 29b4ecb5ce2af0b6d617bf4b35d294e1bef4273f
+CLEAN: false
+START: 2026-11-07T07:30:17.862942+00:00
+ENV: removed stale external linker override; RUST_MIN_STACK unset in parent
+layout-caps-dirty: exit=0 log=C:\programming\worth worktees\worktrees\m3-host-home\target\lane-evidence\layout-caps-dirty.log
+layout-caps-slice: exit=0 log=C:\programming\worth worktees\worktrees\m3-host-home\target\lane-evidence\layout-caps-slice.log
+C_FREE_BYTES 425316528128
+layout-boundary-driver: exit=1 log=C:\programming\worth worktees\worktrees\m3-host-home\target\lane-evidence\layout-boundary-driver.log
+C_FREE_BYTES 425644781568
+layout-context-driver: exit=0 log=C:\programming\worth worktees\worktrees\m3-host-home\target\lane-evidence\layout-context-driver.log
+warning: in the working copy of 'workspaces/worth-ui/Cargo.lock', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'workspaces/worth-ui/Cargo.lock', LF will be replaced by CRLF the next time Git touches it
+PHASE RESULTS [('layout-caps-dirty', 0), ('layout-caps-slice', 0), ('layout-boundary-driver', 1), ('layout-context-driver', 0)]
+
+END: 2026-11-07T07:31:37.643189+00:00
+EXIT: 1

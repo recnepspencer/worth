@@ -7,7 +7,7 @@ use worth_foundational::facade::ApplicationBuildIdentity;
 use worth_query_declaration::facade::application_program::*;
 use worth_query_execution::facade::application_installation::WorthQueryProgramOwner;
 use worth_query_execution::facade::application_installation::{
-    in_memory_program, WorthQueryInMemoryApplicationLimits,
+    in_memory_program, WorthQueryApplicationLimits,
 };
 use worth_query_execution::facade::application_installation::{
     WorthQueryApplicationPreviewReadmissionDenial, WorthQueryApplicationPreviewRequest,
@@ -183,15 +183,15 @@ fn begin_preview_preserves_admission_stops_at_every_consult() {
     );
 }
 
-pub fn installed_preview_runtime(
-) -> WorthQueryProgramApplicationRuntime<PreviewSchema, PreviewProgram> {
+fn installed_preview_runtime() -> WorthQueryProgramApplicationRuntime<PreviewSchema, PreviewProgram>
+{
     let program = ApplicationProgramAuthoring::<PreviewSchema, PreviewProgram>::begin()
         .validated_program()
         .unwrap();
     in_memory_program(
         program, PreviewSchema::declaration().unwrap(), ((),),
         ApplicationBuildIdentity::parse("11111111-1111-1111-1111-111111111111").unwrap(),
-        WorthQueryInMemoryApplicationLimits::new(
+        WorthQueryApplicationLimits::new(
             worth_query_execution::court_doors_for_test::domain_computation::execution_runtime::product_world::resources::test_product_world_resources(worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system()),
             Default::default(),
             worth_signal::facade::runtime::SignalConditionalEvaluationBudget::development(),
@@ -253,7 +253,7 @@ fn support_retirement_keeps_read_stops_inventory_and_active_roster_at_every_cons
                 assert_eq!(inventory.current_branches(), 1);
                 Ok(())
             }
-            other @ (Err(Failure::Policy(..)) | Ok(..)) => panic!("unexpected retirement answer: {other:?}"),
+            other @ (Err(Failure::Policy(..) | Failure::Durability(..)) | Ok(..)) => panic!("unexpected retirement answer: {other:?}"),
         },
         Err(Control::Cancelled),
         Ok(Kind::ExecutionResource { denial: worth_query_execution::facade::application_contribution::WorthQueryManagedComputationResourceDenial::WorkExhausted, partition_identity: None, policy_ancestor: None }),

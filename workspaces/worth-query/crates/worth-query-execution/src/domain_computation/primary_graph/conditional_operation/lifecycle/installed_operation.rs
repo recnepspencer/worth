@@ -22,6 +22,10 @@ pub trait WorthQueryInstalledConditionalOperation<Schema>: Send {
         &self,
     ) -> Option<crate::domain_computation::WorthQueryMutationCleanupFailureKind>;
 
+    fn take_released_managed_cleanup(
+        &mut self,
+    ) -> Option<crate::domain_computation::primary_graph::WorthQueryApplicationManagedCleanupReceipt>;
+
     fn installation_canonical_work(
         &self,
     ) -> worth_query_installation::facade::WorthQueryCanonicalWorkEvidence;

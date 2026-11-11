@@ -3,7 +3,6 @@ use super::{
     BridgeConditionalCausalObservation, BridgeConditionalCondition, BridgeConditionalDenial,
     BridgeConditionalDenialKind, BridgeConditionalEvaluationAdmissionRequest,
     BridgeConditionalExecutionRequest, BridgeConditionalSignalBasisBinding,
-    BridgeOwnedSignalRuntime,
 };
 use worth_signal::facade::{SignalConditionalDecisionClass, SignalConditionalVersionComparator};
 
@@ -41,6 +40,13 @@ pub struct BridgeOutputComparisonDenial {
     cause: BridgeConditionalDenial,
 }
 impl BridgeOutputComparisonDenial {
+    pub fn admission(cause: BridgeConditionalDenial) -> Self {
+        Self {
+            stage: BridgeOutputComparisonStage::Admission,
+            cause,
+        }
+    }
+
     pub fn stage(&self) -> BridgeOutputComparisonStage {
         self.stage
     }
@@ -52,7 +58,7 @@ impl BridgeOutputComparisonDenial {
     }
 }
 
-impl BridgeOwnedSignalRuntime {
+impl super::execution_view::BridgeConditionalExecutionView<'_> {
     /// Computes an exact baseline, then candidate, in a fresh session which never escapes.
     /// The compute provider must return each supplied u64 as its output version.
     /// Partial failure drops the private slot and never returns a comparison.
@@ -166,3 +172,6 @@ fn computed(evidence: &super::BridgeConditionalDecisionEvidence) -> bool {
                 | SignalConditionalDecisionClass::ComputedRevertedClean
         )
 }
+#[cfg(test)]
+#[path = "output_comparison_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;

@@ -2,7 +2,6 @@
 use super::super::{host::Feature, schema::Catalog};
 use super::{producer, source};
 use worth_query_decl::facade::application_program::*;
-use worth_query_host::facade::primary_graph::*;
 pub struct OutputFeature;
 pub struct DirectoryOutput;
 pub struct DirectoryInput;

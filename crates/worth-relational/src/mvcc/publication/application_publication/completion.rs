@@ -7,8 +7,8 @@ pub struct RequiredOutputPublicationMeaning {
     pub implementation: super::RequiredOutputProducingImplementation,
     pub family: String,
     pub source_scope: EntityId,
-    pub source_partition: [u8; 32],
-    pub source_epoch: [u8; 32],
+    pub source_partition: worth_foundational::CanonicalDigestId,
+    pub source_epoch: worth_foundational::CanonicalDigestId,
 }
 
 impl RequiredOutputPublicationMeaning {
@@ -179,7 +179,7 @@ impl RequiredOutputPublication {
                 // Provenance of the retired lineage, not a claim that the
                 // authored mutation ran this producer again.
                 let origin = &predecessor.origin;
-                Some((&origin.producer, origin.dependency_identity))
+                Some((&origin.producer, *origin.dependency_identity.bytes()))
             }
         }
     }

@@ -14,7 +14,7 @@ fn equal_schema_digest_reuses_only_equal_descriptor_semantics() {
         RelationalBranchRoot::empty_with_schema(&registry, envelope.descriptor_semantics_version);
     let issuer = RelationalBranchRootIdentityIssuer::default();
     issuer.observe_root(&previous);
-    let same = prepare_schema(&issuer, Some(&previous), &envelope, &registry).unwrap();
+    let same = prepare_schema(&issuer, Some(&previous), &envelope, &registry, None).unwrap();
     assert!(Arc::ptr_eq(&same.authority, &previous.schema_authority));
 
     // Isolate the independent descriptor-format input to this private predicate.
@@ -26,7 +26,7 @@ fn equal_schema_digest_reuses_only_equal_descriptor_semantics() {
         envelope.schema_authority.digest(),
         previous.schema_authority.authority_digest()
     );
-    let changed = prepare_schema(&issuer, Some(&previous), &envelope, &registry).unwrap();
+    let changed = prepare_schema(&issuer, Some(&previous), &envelope, &registry, None).unwrap();
     assert_eq!(changed.schema_root, same.schema_root);
     assert_eq!(
         changed.authority.descriptor_semantics_version(),
@@ -38,7 +38,7 @@ fn equal_schema_digest_reuses_only_equal_descriptor_semantics() {
         original
     );
     assert_eq!(
-        changed.authority.snapshot().digest(),
+        changed.authority.authority_digest(),
         envelope.schema_authority.digest()
     );
 }

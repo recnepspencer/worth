@@ -75,6 +75,8 @@ fn genuine_release_recovery_moves_one_pool_through_core_seal_and_serving() {
             }
             let checkpoint_observer = core.checkpoint().expect("real selected checkpoint").clone();
             let retained_checkpoint_bytes = checkpoint_observer.owned_heap_bytes().unwrap();
+            let retained_serving_bytes = core.serving_evidence_backing_bytes().unwrap();
+            assert!(retained_serving_bytes > 0);
             let retained_fingerprint_bytes = crate::certified_release_serving::release_capacity_budget::recovery_pool_handoff::backing_census::retained_fingerprint_bytes(&core);
             let checkpoint_facts = checkpoint_observer.facts();
             assert!(retained_checkpoint_bytes > 0);
@@ -88,12 +90,12 @@ fn genuine_release_recovery_moves_one_pool_through_core_seal_and_serving() {
             );
             assert_eq!(
                 source_reads.active_units(),
-                retained_checkpoint_bytes + retained_fingerprint_bytes,
-                "temporary reads end; checkpoint, WAL and full-tree head witnesses retain native charges"
+                retained_checkpoint_bytes + retained_fingerprint_bytes + retained_serving_bytes,
+                "temporary reads end; checkpoint, WAL, head witnesses and original serving backing retain native charges"
             );
             assert_eq!(
                 source_reads.admitted_units() - source_reads.released_units(),
-                retained_checkpoint_bytes + retained_fingerprint_bytes
+                retained_checkpoint_bytes + retained_fingerprint_bytes + retained_serving_bytes
             );
             let held = core
                 .certification_begin_recovery_allocation(std::num::NonZeroU64::new(512).unwrap())
@@ -105,7 +107,7 @@ fn genuine_release_recovery_moves_one_pool_through_core_seal_and_serving() {
                 initial
                     .for_dimension(worth_store::physical_runtime::PhysicalResidencyDimension::OperationScope(worth_store::physical_runtime::PhysicalOperationAllocationScope::Recovery))
                     .active_units(),
-                held.bytes() + retained_checkpoint_bytes + retained_fingerprint_bytes
+                held.bytes() + retained_checkpoint_bytes + retained_fingerprint_bytes + retained_serving_bytes
             );
             assert!(
                 initial
@@ -142,11 +144,11 @@ fn genuine_release_recovery_moves_one_pool_through_core_seal_and_serving() {
             );
             let before = initial.for_dimension(worth_store::physical_runtime::PhysicalResidencyDimension::OperationScope(worth_store::physical_runtime::PhysicalOperationAllocationScope::Recovery));
             let after = after_serving.for_dimension(worth_store::physical_runtime::PhysicalResidencyDimension::OperationScope(worth_store::physical_runtime::PhysicalOperationAllocationScope::Recovery));
-            assert_eq!(before.active_units() + standing - after.active_units(), retained_fingerprint_bytes,
-                "successful freshness validation disposes the retained WAL fingerprint");
+            assert_eq!(before.active_units() + standing - after.active_units(), retained_fingerprint_bytes + retained_serving_bytes,
+                "successful freshness validation disposes the retained fingerprints and serving evidence backing");
             assert_eq!(after.released_units() - before.released_units(),
-                retained_fingerprint_bytes + after.admitted_units() - before.admitted_units() - standing,
-                "temporary Serving reads balance independently of fingerprint disposal");
+                retained_fingerprint_bytes + retained_serving_bytes + after.admitted_units() - before.admitted_units() - standing,
+                "temporary Serving reads balance independently of fingerprint and serving backing disposal");
             assert_eq!(
                 serving
                     .residency_observation()
@@ -265,3 +267,6 @@ pub(crate) mod serving_effect_freshness;
 pub(crate) mod serving_head_freshness;
 #[path = "serving_wal_pressure/mod.rs"]
 pub(crate) mod serving_wal_pressure;
+
+#[path = "original_custody_storage.rs"]
+mod original_custody_storage;

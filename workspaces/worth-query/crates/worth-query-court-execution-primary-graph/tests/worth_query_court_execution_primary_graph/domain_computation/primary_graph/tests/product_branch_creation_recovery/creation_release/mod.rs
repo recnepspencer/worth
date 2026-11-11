@@ -9,7 +9,7 @@ fn creation_release_retains_live_recovery_and_defers_actual_owner_cleanup() {
         let host_request = worth_query_testkit_execution_primary_graph_application_attempt_2::test_request_policy::serial_request();
         let execution = &worth_execution::ExecutionRequest::serial(&host_request);
         let world = installed_authorization_world(true, worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system());
-        let (recovery, occupied) = crate::domain_computation::primary_graph::tests::product_branch_creation_recovery::fork_failure::create(&world, execution);
+        let (recovery, occupied, relational) = crate::domain_computation::primary_graph::tests::product_branch_creation_recovery::fork_failure::create(&world, execution);
         let inspection = recovery.inspect().unwrap();
         assert_eq!(
             inspection.cause(),
@@ -30,7 +30,12 @@ fn creation_release_retains_live_recovery_and_defers_actual_owner_cleanup() {
             .branches()
             .readmit_recovery(row.handle())
             .unwrap();
-        let ReleaseFailure::Recovery(failure) = recovery.release_obligations(0).unwrap_err() else {
+        let ReleaseFailure::Recovery(failure) = world
+            .application
+            .with_host_advancement(|phase| recovery.release_obligations_in_advancement(&phase, 0))
+            .unwrap()
+            .unwrap_err()
+        else {
             panic!("the independently readmitted live capability retains recovery")
         };
         assert_eq!(
@@ -60,7 +65,7 @@ fn creation_release_retains_live_recovery_and_defers_actual_owner_cleanup() {
             integration.with_runtime(execution, |runtime| {
                 let identity = runtime
                     .branch_identity(&worth_relational::facade::history::BranchId(
-                        "query-product-1-relational".to_owned(),
+                        relational.clone(),
                     ))
                     .expect("the actual performed Relational fork");
                 let (_, basis) = runtime.observe_branch(&identity).unwrap();
@@ -73,8 +78,13 @@ fn creation_release_retains_live_recovery_and_defers_actual_owner_cleanup() {
             })
         });
         if deferred {
-            let ReleaseFailure::OwnerCleanup(failure) =
-                recovery.release_obligations(0).unwrap_err()
+            let ReleaseFailure::OwnerCleanup(failure) = world
+                .application
+                .with_host_advancement(|phase| {
+                    recovery.release_obligations_in_advancement(&phase, 0)
+                })
+                .unwrap()
+                .unwrap_err()
             else {
                 panic!("released World effects transfer their actual cleanup owner")
             };
@@ -100,7 +110,13 @@ fn creation_release_retains_live_recovery_and_defers_actual_owner_cleanup() {
             assert_eq!(receipt.retired_component_count(), 1);
             assert!(receipt.is_complete());
         } else {
-            let receipt = recovery.release_obligations(0).unwrap();
+            let receipt = world
+                .application
+                .with_host_advancement(|phase| {
+                    recovery.release_obligations_in_advancement(&phase, 0)
+                })
+                .unwrap()
+                .unwrap();
             assert_eq!(receipt.retired_component_count(), 1);
             assert!(receipt.is_complete());
             drop(active);

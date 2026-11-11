@@ -132,7 +132,12 @@ where
     Connection<S, R>: WorthQueryApplicationDiscoveredOutputConnection<S, Source = I::Binding>,
 {
     Initial,
-    Replay(WorthQueryApplicationCommitReceipt),
+    ReplayRetained(
+        worth_query_execution::facade::primary_graph::WorthQueryApplicationCommitReceipt,
+    ),
+    ReplayRecorded(
+        worth_query_execution::facade::primary_graph::WorthQueryRecoveredApplicationCommitReceipt,
+    ),
     Unpublished(WorthQueryUnpublishedDiscoveredApplicationMutation<S, I, P, R>),
     Retention(WorthQueryDiscoveredOutputRetentionFailure<S, I, P, R>),
     Performed(WorthQueryPerformedDiscoveredApplicationMutation<S, I, P, R>),

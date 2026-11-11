@@ -168,3 +168,6 @@ impl<'application, Schema: ApplicationSchema>
             .map_err(Denial::ExecutionRequest)?
     }
 }
+#[cfg(test)]
+#[path = "correction_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;

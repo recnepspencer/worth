@@ -14,3 +14,6 @@ pub use denial::{
 pub(crate) use profile::WorthQueryConsumerSupportProfile;
 pub use profile::{WorthQueryConsumerSupportDimension, WorthQueryConsumerSupportPosture};
 pub use support_export::*;
+#[cfg(test)]
+#[path = "mod_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;

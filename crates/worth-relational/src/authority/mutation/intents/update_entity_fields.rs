@@ -14,7 +14,7 @@ use super::record_aspect_patch;
 pub(super) fn apply(
     intent: &UpdateEntityFieldsIntent,
     workspace: &mut MutationWorkspace<'_>,
-) -> Result<MutationOutcome, CommitConflict> {
+) -> Result<MutationOutcome, crate::transactions::data::TransactionCommitError> {
     let version_id = workspace.version_id();
     let slot = intent.entity_id.slot_index();
     let (kind_id, authoritative_aspect_state) = workspace.with_context(|context| {
@@ -40,9 +40,9 @@ pub(super) fn apply(
                 missing: EntityFieldUpdateMissingState::KindId,
             })
         })?;
-        Ok::<_, CommitConflict>((
+        Ok::<_, crate::transactions::data::TransactionCommitError>((
             kind_id,
-            slot_view.extra().authoritative_aspect_state.clone(),
+            Some(slot_view.retained_extra()),
         ))
     })?;
     let target = RecordAspectPatchTarget::Entity {
@@ -50,40 +50,69 @@ pub(super) fn apply(
         kind_id,
     };
     let patch = record_aspect_patch::readmit_field_authoring(
+        &workspace.execution(),
         &intent.fields,
         PortablePatchReadmissionPurpose::RecordMutation,
         workspace.entity_aspect_plan(kind_id),
         target,
         FieldAuthoringDomain::Entity,
     )?;
-    let new_authoritative_aspect_state =
-        record_aspect_patch::apply(authoritative_aspect_state.as_ref(), &patch, target)?;
+    let mut new_authoritative_aspect_state = record_aspect_patch::apply_entity(
+        &workspace.execution(),
+        authoritative_aspect_state
+            .as_ref()
+            .and_then(|extra| extra.authoritative_aspect_state()),
+        &patch,
+        target,
+    )?;
     workspace.with_context(|context| {
         context
             .state
-            .mark_entity_slot_touched(intent.entity_id.partition_id, slot);
+            .mark_entity_slot_touched_for_request(
+                intent.entity_id.partition_id,
+                slot,
+                &context.execution,
+            )
+            .map_err(|cause| {
+                crate::transactions::data::TransactionCommitError::execution(cause.into())
+            })?;
         let partition = context
             .state
-            .get_partition_mut(intent.entity_id.partition_id);
-        let mut updated_extra = partition
-            .entity_arena
-            .extra_at(slot)
-            .ok_or_else(|| missing(intent, EntityFieldUpdateMissingState::Slot))?
-            .clone();
-        updated_extra.authoritative_aspect_state = new_authoritative_aspect_state.clone();
+            .get_partition_mut_for_request(intent.entity_id.partition_id, &context.execution)
+            .map_err(|cause| {
+                crate::transactions::data::TransactionCommitError::execution(cause.into())
+            })?;
+        if let Some(prior) = &authoritative_aspect_state {
+            new_authoritative_aspect_state.lineage_id = prior.lineage_id;
+            new_authoritative_aspect_state.structural_fingerprint = prior.structural_fingerprint;
+        }
         partition
             .entity_arena
-            .apply_extra_update(slot, updated_extra, version_id)
+            .apply_extra_update_for_request(
+                &context.execution,
+                slot,
+                new_authoritative_aspect_state,
+                version_id,
+            )
+            .map_err(|cause| {
+                crate::transactions::data::TransactionCommitError::execution(cause.into())
+            })?
             .ok_or_else(|| missing(intent, EntityFieldUpdateMissingState::Slot))?;
-        Ok::<_, CommitConflict>(())
+        Ok::<_, crate::transactions::data::TransactionCommitError>(())
     })?;
-    Ok(MutationOutcome::entity_updated_with_authoritative_patch(
+    let new_authoritative_aspect_state = workspace.with_context(|context| {
+        context
+            .state
+            .retained_entity_extra(intent.entity_id.partition_id, slot)
+    });
+    MutationOutcome::entity_updated_with_authoritative_patch(
+        &workspace.execution(),
         intent.entity_id,
         kind_id,
         authoritative_aspect_state,
         new_authoritative_aspect_state,
         patch,
-    ))
+    )
 }
 
 fn missing(

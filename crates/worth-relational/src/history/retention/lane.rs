@@ -1,4 +1,20 @@
-use std::collections::HashMap;
+mod acquisition;
+pub(crate) use acquisition::RelationalRetentionRequestAcquisitionDenial;
+mod record;
+mod root_counts;
+mod roots;
+use record::RelationalRetentionObligationRecord;
+use root_counts::release_root;
+use roots::{RetainedRoots, RootIds};
+use worth_execution::{ExecutionOrderedMap, ExecutionOrderedMapCell};
+mod retained_release;
+mod retirement;
+#[cfg(test)]
+pub(crate) use retained_release::assert_external_cut_and_lane_busy;
+pub(crate) use retained_release::{
+    RelationalRetentionRetirementCustody, RelationalRetentionRetirementError,
+};
+
 use std::sync::{Arc, Mutex, Weak};
 
 use crate::branch::{RelationalBranchIdentity, RelationalBranchRoot};
@@ -28,27 +44,20 @@ struct RelationalBranchRetentionLane {
 #[derive(Debug, Default)]
 struct RelationalBranchRetentionLaneState {
     next_obligation_id: u64,
-    obligations: HashMap<u64, RelationalRetentionObligationRecord>,
-    root_obligations: HashMap<u64, usize>,
+    obligations: ExecutionOrderedMap<u64, RelationalRetentionObligationRecord>,
+    root_obligations: ExecutionOrderedMap<u64, usize>,
     active_operations: u64,
     counters: RelationalRetentionCostCounters,
     interruption_counters: crate::runtime::RelationalInterruptionCostCounters,
 }
 
 #[derive(Debug)]
-struct RelationalRetentionObligationRecord {
-    kind: RelationalRetentionObligationKind,
-    root_ids: Vec<u64>,
-    active_operation: bool,
-}
-
-#[derive(Debug)]
 pub(crate) struct RelationalRetentionGuard {
-    owner: Weak<RelationalBranchRetentionOwnerInner>,
+    pub(super) owner: Weak<RelationalBranchRetentionOwnerInner>,
     lane: Arc<RelationalBranchRetentionLane>,
     owner_identity: usize,
     obligation_id: u64,
-    roots: Vec<Arc<RelationalBranchRoot>>,
+    roots: RetainedRoots,
     terminal: bool,
 }
 
@@ -81,72 +90,6 @@ impl RelationalBranchRetentionBinding {
                 state: Mutex::new(RelationalBranchRetentionLaneState::default()),
             }),
         }
-    }
-
-    #[expect(
-        clippy::disallowed_methods,
-        reason = "Addresses serve live allocation lookup and custody; canonical order uses declared identity"
-    )]
-    pub(crate) fn acquire(
-        &self,
-        kind: RelationalRetentionObligationKind,
-        roots: Vec<Arc<RelationalBranchRoot>>,
-        operation_branch: Option<RelationalBranchIdentity>,
-    ) -> Result<RelationalRetentionGuard, RelationalRetentionAcquisitionDenial> {
-        if roots.is_empty() || roots.len() > 2 {
-            return Err(RelationalRetentionAcquisitionDenial::RootSetTooLarge);
-        }
-        let owner = self
-            .owner
-            .upgrade()
-            .ok_or(RelationalRetentionAcquisitionDenial::OwnerUnavailable)?;
-        if let Some(operation_branch) = operation_branch.as_ref()
-            && self.lane.identity.as_ref() != Some(operation_branch)
-        {
-            return Err(RelationalRetentionAcquisitionDenial::OwnerUnavailable);
-        }
-        reserve_live_obligation_capacity(&owner)?;
-        let mut state = lock_lane(&self.lane);
-        let obligation_id = match state.next_obligation_id.checked_add(1) {
-            Some(id) => id,
-            None => {
-                drop(state);
-                release_live_obligation_capacity(&owner);
-                return Err(RelationalRetentionAcquisitionDenial::IdentityExhausted);
-            }
-        };
-        state.next_obligation_id = obligation_id;
-        let active_operation = operation_branch.is_some();
-        if active_operation {
-            state.active_operations = match state.active_operations.checked_add(1) {
-                Some(count) => count,
-                None => {
-                    drop(state);
-                    release_live_obligation_capacity(&owner);
-                    return Err(RelationalRetentionAcquisitionDenial::IdentityExhausted);
-                }
-            };
-        }
-        let root_ids: Vec<_> = roots.iter().map(|root| root.id()).collect();
-        state.retain_roots(&root_ids);
-        state.obligations.insert(
-            obligation_id,
-            RelationalRetentionObligationRecord {
-                kind,
-                root_ids,
-                active_operation,
-            },
-        );
-        record_acquire(&mut state.counters, kind);
-        owner.ordinary_counters.record_acquire(kind);
-        Ok(RelationalRetentionGuard {
-            owner: Arc::downgrade(&owner),
-            lane: Arc::clone(&self.lane),
-            owner_identity: Arc::as_ptr(&owner) as usize,
-            obligation_id,
-            roots,
-            terminal: false,
-        })
     }
 
     pub(crate) fn install_head(
@@ -263,23 +206,23 @@ impl RelationalRetentionGuard {
             ..
         } = &mut *state;
         let record = obligations
-            .get_mut(&self.obligation_id)
+            .get(&self.obligation_id)
             .expect(/* Proof: The private live candidate token owns this registered obligation until consuming transfer or Drop; no other token can remove its ID. */ "live candidate obligation remains registered through transfer");
         // Proof: only RelationalCandidateRetentionObligation::into_performed_settlement calls this method. Its private acquire hardcodes Candidate; into_performed_settlement consumes that non-Clone token, so it cannot transfer twice.
         assert_eq!(
             /* Proof: RelationalRetentionGuard is non-Clone and owns one private obligation id. acquire inserts the exact root ids; consuming transfer updates the record and held roots together. release removes that id once under the lane Mutex and terminal prevents a second release. */
-            record.kind,
+            record.kind(),
             RelationalRetentionObligationKind::Candidate
         );
-        let retained_position = record.root_ids.iter().position(|id| *id == current_root.id()).expect(/* Proof: Candidate acquisition holds the prepared root which consuming publication installs as the current root before settlement transfer. */ "performed root is held by the candidate");
-        for (position, root) in record.root_ids.iter().enumerate() {
+        let original_ids = record.root_ids();
+        let mut removed_counts: [Option<ExecutionOrderedMapCell<u64, usize>>; 2] = [None, None];
+        let retained_position = original_ids.iter().position(|id| *id == current_root.id()).expect(/* Proof: Candidate acquisition holds the prepared root which consuming publication installs as the current root before settlement transfer. */ "performed root is held by the candidate");
+        for (position, root) in original_ids.iter().enumerate() {
             if position != retained_position {
-                release_root(root_obligations, *root);
+                removed_counts[position] = release_root(root_obligations, *root);
             }
         }
-        record.kind = RelationalRetentionObligationKind::PerformedSettlement;
-        record.root_ids.clear();
-        record.root_ids.push(current_root.id());
+        record.transfer_settlement(current_root.id());
         record_release(
             &mut state.counters,
             RelationalRetentionObligationKind::Candidate,
@@ -295,6 +238,7 @@ impl RelationalRetentionGuard {
             .ordinary_counters
             .record_acquire(RelationalRetentionObligationKind::PerformedSettlement);
         drop(state);
+        drop(removed_counts);
         self.roots.clear();
         self.roots.push(current_root);
     }
@@ -309,49 +253,11 @@ impl RelationalRetentionGuard {
             return super::RelationalBranchRetentionTerminalOutcome::OwnerUnavailable;
         };
         let mut state = lock_lane(&self.lane);
-        if let Some(record) = state.obligations.remove(&self.obligation_id) {
-            state.release_roots(&record.root_ids);
-            debug_assert_eq!(
-                /* Proof: RelationalRetentionGuard is non-Clone and owns one private obligation id. acquire inserts the exact root ids; consuming transfer updates the record and held roots together. release removes that id once under the lane Mutex and terminal prevents a second release. */
-                record.root_ids,
-                self.roots.iter().map(|root| root.id()).collect::<Vec<_>>()
-            );
-            if record.active_operation {
-                state.active_operations = state
-                    .active_operations
-                    .checked_sub(1)
-                    .expect(/* Proof: Each operation guard increments on construction and decrements once on Drop; guards cannot be copied or released twice. */ "active branch-operation accounting remains balanced");
-            }
-            record_release(&mut state.counters, record.kind);
-            owner.ordinary_counters.record_release(record.kind);
-            release_live_obligation_capacity(&owner);
-        }
+        let retired = state.release_obligation(self.obligation_id, &self.roots, &owner);
         drop(state);
+        drop(retired);
         drop(std::mem::take(&mut self.roots));
         super::RelationalBranchRetentionTerminalOutcome::Released
-    }
-}
-
-impl RelationalBranchRetentionLaneState {
-    fn retain_roots(&mut self, roots: &[u64]) {
-        for root in roots {
-            let count = self.root_obligations.entry(*root).or_default();
-            *count = count.checked_add(1).expect(/* Proof: The owner admits at most 65,536 guards, each holding at most two roots; duplicate root identities are retained and released once per occurrence. */ "live root multiplicity fits usize");
-        }
-    }
-
-    fn release_roots(&mut self, roots: &[u64]) {
-        for root in roots {
-            release_root(&mut self.root_obligations, *root);
-        }
-    }
-}
-
-fn release_root(root_obligations: &mut HashMap<u64, usize>, root: u64) {
-    let count = root_obligations.get_mut(&root).expect(/* Proof: Acquisition adds every registered root occurrence; consuming transfer replaces the same record under this mutex and terminal release removes it exactly once. */ "released root occurrence is registered");
-    *count = count.checked_sub(1).expect(/* Proof: Every removed record occurrence owns a matching positive multiplicity until this release. */ "root multiplicity remains balanced");
-    if *count == 0 {
-        root_obligations.remove(&root);
     }
 }
 
@@ -367,4 +273,10 @@ fn lock_lane(
     lane.state
         .lock()
         .unwrap_or_else(|poisoned| poisoned.into_inner())
+}
+
+impl RelationalBranchRetentionBinding {
+    pub(in crate::history::retention) fn same_lane(&self, other: &Self) -> bool {
+        Weak::ptr_eq(&self.owner, &other.owner) && Arc::ptr_eq(&self.lane, &other.lane)
+    }
 }

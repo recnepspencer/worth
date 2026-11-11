@@ -169,7 +169,7 @@ def denied_attempt(event, context):
     unit = failed_unit(event, context['unit_plan'])
     profile = {field: unit['declared_profile'][field] for field in
                ('opt_level', 'debuginfo', 'debug_assertions', 'overflow_checks')}
-    profile['test'] = unit['mode'] == 'test'
+    profile['test'] = unit['test_harness']
     return {'package': event['package_id'], 'target': event['target']['name'],
             'kind': sorted(event['target']['kind']), 'features': unit['features'], 'profile': profile,
             'target_dir': context.get('target_dir'), 'cargo_profile': context.get('cargo_profile'),

@@ -4,7 +4,8 @@
 //! evidence would pass the ceiling is refused, warm or cold.
 
 pub use worth_query_host::facade::application_entry::{
-    WorthQueryWorkflowAssessmentAcceptanceDenial, WorthQueryWorkflowAssessmentDemandSettlement,
+    PerformedWorkflowTransition, WorthQueryWorkflowAssessmentAcceptanceDenial,
+    WorthQueryWorkflowAssessmentDemandSettlement,
 };
 pub use worth_query_host::facade::declaration::application_program::{
     ApplicationWorkflowComponentLimits, ApplicationWorkflowControlOutcome,
@@ -117,23 +118,12 @@ pub fn assessment_chain() -> ValidatedWorkflowDefinition<ReviewedDocumentWorkflo
 
 pub type Settlement = WorthQueryWorkflowAssessmentDemandSettlement<DocumentRetentionQuery>;
 
-/// Accepts `settlement` under `key` and reports whether it replayed.
-pub fn accept(
-    application: &DocumentWorkflowRuntime,
-    instance: &PublishedWorkflowInstanceRef,
-    settlement: &Settlement,
-    key: u64,
-) -> bool {
-    accept_or_evidence_refusal(application, instance, settlement, key)
-        .expect("expected an accepted assessment")
-}
-
 pub fn accept_or_evidence_refusal(
     application: &DocumentWorkflowRuntime,
     instance: &PublishedWorkflowInstanceRef,
     settlement: &Settlement,
     key: u64,
-) -> Option<bool> {
+) -> Option<PerformedWorkflowTransition> {
     let runtime = application.runtime();
     let current_commit = || {
         runtime
@@ -153,7 +143,7 @@ pub fn accept_or_evidence_refusal(
         .workflow_instance_progress_counters()
         .incremental_evidence_bytes();
     match accept_assessment(application, instance.clone(), settlement, key) {
-        Ok(WorkflowProgressOutcome::Completed(performed)) => Some(performed.replayed()),
+        Ok(WorkflowProgressOutcome::Completed(performed)) => Some(performed),
         Err(WorthQueryWorkflowAssessmentAcceptanceDenial::Attempt(denial)) => {
             assert_eq!(
                 denial.kind(),
@@ -183,7 +173,7 @@ pub fn spend_until_refused(
     instance: &PublishedWorkflowInstanceRef,
     mut key: u64,
     inherited: u64,
-) -> (u64, Option<(Settlement, u64)>) {
+) -> (u64, Option<(Settlement, u64, PerformedWorkflowTransition)>) {
     let baseline = application
         .runtime()
         .workflow_instance_progress_counters()
@@ -192,10 +182,10 @@ pub fn spend_until_refused(
     let mut last = None;
     loop {
         let settlement = settle_assessment(application, instance.clone(), key);
-        if let Some(replayed) =
+        if let Some(performed) =
             accept_or_evidence_refusal(application, instance, &settlement, key + 1)
         {
-            assert!(!replayed, "a new assessment is accepted once");
+            assert!(!performed.replayed(), "a new assessment is accepted once");
             let cumulative = inherited
                 + application
                     .runtime()
@@ -211,7 +201,7 @@ pub fn spend_until_refused(
                 "the lineage stays within its installed policy"
             );
             retained = cumulative;
-            last = Some((settlement, key + 1));
+            last = Some((settlement, key + 1, performed));
             key += 2;
         } else {
             return (retained, last);

@@ -25,4 +25,6 @@ fn construct(
         .build()
         .unwrap();
 }
-pub(crate) fn main() {}
+pub(crate) fn main() {
+    let _ = construct;
+}

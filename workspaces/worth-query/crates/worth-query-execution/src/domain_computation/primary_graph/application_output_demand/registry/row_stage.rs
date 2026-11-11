@@ -74,7 +74,9 @@ fn stage_of(record: &DemandRecord) -> OutputRowStage {
                 }
                 Some(
                     WorthQueryOutputCheckpoint::Published { .. }
-                    | WorthQueryOutputCheckpoint::Delivered { .. },
+                    | WorthQueryOutputCheckpoint::RecoveredPublished { .. }
+                    | WorthQueryOutputCheckpoint::Delivered { .. }
+                    | WorthQueryOutputCheckpoint::RecoveredDelivered { .. },
                 ) => OutputRowStage::Published,
                 None => OutputRowStage::BeforeReady,
             },

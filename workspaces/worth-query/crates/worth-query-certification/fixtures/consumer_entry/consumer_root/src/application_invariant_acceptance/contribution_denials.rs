@@ -22,7 +22,7 @@ use worth_query_host::facade::{
     },
     application_installation,
     application_installation::{
-        WorthQueryInMemoryApplicationDenial, WorthQueryInMemoryApplicationLimits,
+        WorthQueryApplicationLimits, WorthQueryApplicationPreparationDenial,
     },
     primary_graph::{
         self, WorthQueryPrimaryGraphInstallationDenial,
@@ -332,8 +332,8 @@ fn topology_configuration(calls: &Arc<AtomicUsize>) -> TopologyConfiguration {
     }
 }
 
-fn limits() -> WorthQueryInMemoryApplicationLimits {
-    WorthQueryInMemoryApplicationLimits::new(
+fn limits() -> WorthQueryApplicationLimits {
+    WorthQueryApplicationLimits::new(
         super::resources::world_resources(),
         runtime::WorthQueryApplicationQueryResourceProfile::new(
             std::num::NonZeroUsize::new(32).expect("concurrent graph work is non-zero"),
@@ -348,14 +348,14 @@ fn assert_contribution_denial<Schema>(
             Schema,
             DenialProgram<Schema>,
         >,
-        WorthQueryInMemoryApplicationDenial,
+        WorthQueryApplicationPreparationDenial,
     >,
     expected: WorthQueryPrimaryGraphInstallationDenialKind,
 ) where
     Schema: ApplicationSchemaComposition,
 {
     match result {
-        Err(WorthQueryInMemoryApplicationDenial::Contributions(denial)) => {
+        Err(WorthQueryApplicationPreparationDenial::Contributions(denial)) => {
             assert_eq!(denial.kind(), expected, "{denial:?}")
         }
         Err(other) => panic!("expected contribution denial {expected:?}, got {other:?}"),

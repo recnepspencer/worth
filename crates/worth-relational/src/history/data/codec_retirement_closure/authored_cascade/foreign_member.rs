@@ -3,7 +3,7 @@ use super::*;
 
 pub(super) fn classify(
     execution: &ExecutionRequest<'_, '_>,
-    runtime: &RelationalRuntime,
+    runtime: &crate::history::data::codec_retirement_closure::history_request::RuntimeHistoryRequest<'_, '_, '_>,
     basis: &AdmittedRelationalBranchBasis,
     id: EntityId,
     context: &mut MapKernelContext<'_, '_>,
@@ -41,7 +41,7 @@ pub(super) fn classify(
     let Some(created) = partition.entity_arena.created_at_for_slot(id.slot_index()) else {
         return Ok(Cause::ExtraEntity);
     };
-    let Some(birth) = runtime.history.canonical_envelope_for_version(created) else {
+    let Some(birth) = runtime.version(created, context).map_err(stopped)? else {
         return Ok(Cause::ExtraEntity);
     };
     for origin in birth.output_origins() {

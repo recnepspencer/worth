@@ -1,12 +1,13 @@
 //! Genuine public maintenance without a rule referencing this index.
 use super::super::super::super::super::authentication;
-use super::super::super::{host, prefix, rule as prefix_rule};
+use super::super::super::{host, rule as prefix_rule};
 use super::super::{
     authoring::Edit,
     court::{commit, expected, setup, values},
     Configuration,
 };
 use super::*;
+use crate::application_invariant_acceptance::managed_index::prefix_observation;
 use std::sync::atomic::Ordering;
 use worth_query_host::facade::{
     admission::authenticated_principal::*, application_entry::*, primary_graph::*,
@@ -55,7 +56,7 @@ fn public_requirement_prepares_distinct_source_without_invariant_and_refuses_sam
     assert!(public.refinement().is_none());
     let configuration = Configuration::default();
     let calls = Arc::clone(&configuration.public_source);
-    let prefix_calls = Arc::new(prefix::Calls::default());
+    let prefix_calls = Arc::new(prefix_observation::Calls::default());
     let prefix_rules = Arc::new(prefix_rule::Calls::new(Arc::clone(&prefix_calls)));
     let world = host::install_geometry(prefix_calls, prefix_rules, configuration);
     let scope = authentication::request_scope();

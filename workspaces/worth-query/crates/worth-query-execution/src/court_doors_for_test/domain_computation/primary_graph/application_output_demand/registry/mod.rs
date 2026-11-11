@@ -67,3 +67,7 @@ pub use crate::domain_computation::primary_graph::application_output_demand::reg
 pub use crate::domain_computation::primary_graph::application_output_demand::registry::WorthQueryOutputSchedulingResult;
 pub use crate::domain_computation::primary_graph::application_output_demand::registry::WorthQueryPerformedOutputDemandSource;
 pub use crate::domain_computation::primary_graph::application_output_demand::registry::WorthQueryReadmittedAcceptedOutput;
+
+pub use crate::domain_computation::primary_graph::application_output_demand::registry::{
+    ConsumerCustody, ConsumerHandoff,
+};

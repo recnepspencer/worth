@@ -238,7 +238,7 @@ impl<'provider> PrimaryDecisionReadSetComparison<'provider> {
             (read, product)
         };
         let facts = registration.facts().clone();
-        let snapshot = provider.graph.with_runtime_mut(execution, |runtime| {
+        let snapshot = provider.graph.with_runtime(execution, |runtime| {
             crate::domain_computation::primary_graph::exact_basis_access::open_exact_basis_snapshot(
                 runtime, product.observation().basis().relational_basis(),
             )

@@ -182,9 +182,15 @@ where
         _phase: &WorthQueryAdvancementPhase<'_>,
         _request: &WorthQueryApplicationRequest<'_, '_, '_, S>,
     ) -> Result<Option<HistoryRecordingSource<'a>>, WorthQueryHistoryEditDenial> {
-        let (WorthQuerySourceCompletion::Fresh { receipt, .. }
-        | WorthQuerySourceCompletion::Recovered { receipt, .. }) = completed.evidence();
-        Ok(Some(HistoryRecordingSource::Source(receipt)))
+        Ok(Some(match completed.evidence() {
+            WorthQuerySourceCompletion::Fresh { receipt, .. }
+            | WorthQuerySourceCompletion::Recovered { receipt, .. } => {
+                HistoryRecordingSource::Source(receipt)
+            }
+            WorthQuerySourceCompletion::Recorded { receipt, .. } => {
+                HistoryRecordingSource::RecordedSource(receipt)
+            }
+        }))
     }
     fn recording_source_at<'a>(
         completed: &'a C<S, I, P, A>,

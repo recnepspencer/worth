@@ -1,6 +1,6 @@
 //! Capability-access progression into installed operation authority.
 
-use crate::domain_computation::authorization::graph_work_session::transition_capability_to_operation_graph_work;
+use crate::domain_computation::authorization::graph_work_session::start_capability_operation_graph_work;
 use crate::domain_computation::authorization::operation_progression::WorthQueryCapabilityOperationProgression;
 use crate::domain_computation::authorization::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
 use crate::domain_computation::authorization::{
@@ -28,6 +28,7 @@ mod projection_equivalence;
 use super::super::super::super::super::{
     brand_tag::BrandTag, original_input::retain_original_scope, ErasedAuthorizationBasis,
     WorthQueryAdmittedApplicationOperation as OwnerAdmittedOperation, WorthQueryAdmittedOperation,
+    WorthQueryAdmittedOperationData,
 };
 use authority_validation::{
     validate_operation_graph_work_authority, validate_progression_authority,
@@ -206,22 +207,34 @@ where
     let request_scope = access.request_scope.clone();
     let original_scope =
         retain_original_scope(execution, access.resolved.resource(), operation.contracts())?;
+    let product = access.read_product(runtime).ok_or_else(|| {
+        denial(
+            WorthQueryOperationAuthorizationDenialKind::Refused(
+                AuthorizationRefusal::GraphWorkAdmissionUnavailable,
+            ),
+            operation.operation(),
+        )
+    })?;
+    let principal = access.principal_entity_id;
+    let installed_capability = access.authorization.installed_capability_identity();
     let super::WorthQueryAdmittedApplicationCapabilityAccess {
         input,
+        home_owner,
         governed_input_identity,
         canonical_work,
         authorization,
         operation_admission_identity,
-        graph_work,
         ..
     } = access;
-    let graph_work = transition_capability_to_operation_graph_work(
+    let graph_work = start_capability_operation_graph_work(
         execution,
         runtime,
         operation,
         &resource_binding_identity,
         resource_entity_id,
-        graph_work,
+        principal,
+        installed_capability,
+        product,
     )?;
     validate_operation_graph_work_authority(&graph_work, operation)?;
     let revalidated = revalidate_operation_authorization(
@@ -246,39 +259,43 @@ where
         operation.operation_type_id(),
         operation.input_type_id(),
     );
-    let core = WorthQueryAdmittedOperation {
-        runtime_authority: runtime.runtime.authority_identity(),
-        binding_identity: operation.binding_identity().clone(),
-        operation: operation.operation().to_string(),
-        operation_authority_identity: operation.authority_identity().into(),
-        operation_authority_identity_bytes: operation.authority_identity_bytes(),
-        operation_definition_identity: operation.definition_identity_bytes(),
-        admission_identity: operation_admission_identity,
-        resource_binding_identity,
-        operation_scope_binding,
-        canonical_work,
-        scope_entity_id: resource_entity_id,
-        scope_entity_kind,
-        scope_entity_name,
-        authentication_valid_until,
-        request_scope,
-        contracts,
-        mutation_preconditions: preconditions,
-        authorization: Some(revalidated.authorization),
-        governed_input_identity,
-        original_input: None,
-        original_inspection_disclosure: None,
-        original_scope,
-        authorization_basis: ErasedAuthorizationBasis::Capability,
-        graph_work: revalidated
-            .graph_work
-            .with_actor_authentication(authentication),
-        source_partition_identity: None,
-        source_expectation_kind: None,
-        source_facts: Vec::new(),
-        query_context: None,
-        required_output_demand: None,
-    };
+    let core = WorthQueryAdmittedOperation::retain_original(
+        execution,
+        home_owner,
+        WorthQueryAdmittedOperationData {
+            runtime_authority: runtime.runtime.authority_identity(),
+            binding_identity: operation.binding_identity().clone(),
+            operation: operation.operation().to_string(),
+            operation_authority_identity: operation.authority_identity().into(),
+            operation_authority_identity_bytes: operation.authority_identity_bytes(),
+            operation_definition_identity: operation.definition_identity_bytes(),
+            admission_identity: operation_admission_identity,
+            resource_binding_identity,
+            operation_scope_binding,
+            canonical_work,
+            scope_entity_id: resource_entity_id,
+            scope_entity_kind,
+            scope_entity_name,
+            authentication_valid_until,
+            request_scope,
+            contracts,
+            mutation_preconditions: preconditions,
+            authorization: Some(revalidated.authorization),
+            governed_input_identity,
+            original_input: None,
+            original_inspection_disclosure: None,
+            original_scope,
+            authorization_basis: ErasedAuthorizationBasis::Capability,
+            graph_work: revalidated
+                .graph_work
+                .with_actor_authentication(authentication),
+            source_partition_identity: None,
+            source_expectation_kind: None,
+            source_facts: Vec::new(),
+            query_context: None,
+            required_output_demand: None,
+        },
+    )?;
     OwnerAdmittedOperation::mint(core, tag, Some(input))
 }
 

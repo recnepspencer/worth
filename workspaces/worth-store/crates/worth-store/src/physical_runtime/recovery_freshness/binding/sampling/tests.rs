@@ -21,7 +21,9 @@ use worth_store_physical_integrity::*;
 mod generation_zero;
 mod native_owner;
 
-const ORIGINAL: u64 = 16 * 1024;
+const ORIGINAL: u64 =
+    crate::physical_runtime::PhysicalRecoveryCoordinationCapacity::serving_evidence_backing_bytes()
+        + 16 * 1024;
 
 fn with_owner(
     run: impl FnOnce(

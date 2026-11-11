@@ -41,6 +41,13 @@ fn assessment_history_settles_at_each_request_width() {
         .parse::<usize>()
         .unwrap()
         .max(1);
+    prepare_assessment_history(width)();
+}
+
+// A retained demand owns its inputs. Preparation's authoring and fixture
+// temporaries unwind before settlement enters the actual Native commit path.
+#[inline(never)]
+fn prepare_assessment_history(width: usize) -> impl FnOnce() {
     let fixture = fixture::ordinary_read_world_with_payment_amount(
         "independent-assessment-history",
         authentication::approval_configuration(),
@@ -155,68 +162,74 @@ fn assessment_history_settles_at_each_request_width() {
             )
             .unwrap()
     );
-    if std::env::var_os("WORTH_BANK_PRESENT_DEADLINE").is_some() {
-        use worth_query_host::facade::admission::authenticated_principal::{
-            WorthQueryCancellationSource, WorthQueryRequestScope,
-        };
-        let cancellation = WorthQueryCancellationSource::new();
-        let expired =
-            WorthQueryRequestScope::new(Some(std::time::Instant::now()), cancellation.token(), worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system());
-        let stopped = fixture
+    move || {
+        let workflow = fixture
             .world
             .runtime
-            .approved_business_payment(&approver, &expired);
-        super::deadline::assessment(width, || stopped.advance_payment_assessment(&mut demand));
-        return;
-    }
-    let assessment = judged!("settle", {
-        loop {
-            let fresh_scope = worth_query_bank_testkit_server::facade::support::request_scope();
-            let actor = fixture
+            .approved_business_payment(&approver, &scope);
+        if std::env::var_os("WORTH_BANK_PRESENT_DEADLINE").is_some() {
+            use worth_query_host::facade::admission::authenticated_principal::{
+                WorthQueryCancellationSource, WorthQueryRequestScope,
+            };
+            let cancellation = WorthQueryCancellationSource::new();
+            let expired =
+                WorthQueryRequestScope::new(Some(std::time::Instant::now()), cancellation.token(), worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system());
+            let stopped = fixture
                 .world
                 .runtime
-                .approved_business_payment(&approver, &fresh_scope);
-            match actor.advance_payment_assessment(&mut demand).unwrap() {
-                BankApprovedPaymentAssessmentProgress::Settled(settled) => break settled,
-                BankApprovedPaymentAssessmentProgress::Progressed => continue,
-                BankApprovedPaymentAssessmentProgress::Pending => {
-                    panic!("the synchronous history assessment awaits external progress")
+                .approved_business_payment(&approver, &expired);
+            super::deadline::assessment(width, || stopped.advance_payment_assessment(&mut demand));
+            return;
+        }
+        let assessment = judged!("settle", {
+            loop {
+                let fresh_scope = worth_query_bank_testkit_server::facade::support::request_scope();
+                let actor = fixture
+                    .world
+                    .runtime
+                    .approved_business_payment(&approver, &fresh_scope);
+                match actor.advance_payment_assessment(&mut demand).unwrap() {
+                    BankApprovedPaymentAssessmentProgress::Settled(settled) => break settled,
+                    BankApprovedPaymentAssessmentProgress::Progressed => continue,
+                    BankApprovedPaymentAssessmentProgress::Pending => {
+                        panic!("the synchronous history assessment awaits external progress")
+                    }
                 }
             }
-        }
-    });
-    assert!(
-        matches!(
-            judged!(
-                "retry",
-                workflow.advance_payment_assessment(&mut demand).unwrap()
+        });
+        assert!(
+            matches!(
+                judged!(
+                    "retry",
+                    workflow.advance_payment_assessment(&mut demand).unwrap()
+                ),
+                BankApprovedPaymentAssessmentProgress::Settled(_)
             ),
-            BankApprovedPaymentAssessmentProgress::Settled(_)
-        ),
-        "settlement retry answers the retained demand"
-    );
-    match judged!(
-        "accept",
-        workflow
-            .accept_assessment(instance, authority, &assessment, &key("history.accept"))
-            .unwrap()
-    ) {
-        WorkflowProgressOutcome::Completed(performed) => {
-            assert_eq!(performed.node_path(), "review/payment");
+            "settlement retry answers the retained demand"
+        );
+        match judged!(
+            "accept",
+            workflow
+                .accept_assessment(instance, authority, &assessment, &key("history.accept"))
+                .unwrap()
+        ) {
+            WorkflowProgressOutcome::Completed(performed) => {
+                assert_eq!(performed.node_path(), "review/payment");
+            }
+            other => panic!("{other:?}"),
         }
-        other => panic!("{other:?}"),
+        // The typed outcomes and observed application sequence are both judged.
+        assert_eq!(
+            bindings.postings(
+                &super::observation::journal_from(
+                    &fixture.world.runtime,
+                    fixture.institution,
+                    &auditor
+                )
+                .0
+            ),
+            journal.canonical_postings(),
+            "assessment settlement does not post a transfer"
+        );
     }
-    // The typed outcomes and observed application sequence are both judged.
-    assert_eq!(
-        bindings.postings(
-            &super::observation::journal_from(
-                &fixture.world.runtime,
-                fixture.institution,
-                &auditor
-            )
-            .0
-        ),
-        journal.canonical_postings(),
-        "assessment settlement does not post a transfer"
-    );
 }

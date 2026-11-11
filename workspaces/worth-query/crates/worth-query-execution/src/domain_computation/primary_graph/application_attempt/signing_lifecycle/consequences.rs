@@ -98,7 +98,7 @@ pub(super) fn collect(
                 subject: coordinates(subject),
                 actor: coordinates(actor),
                 operation: operation.into(),
-                logical_request,
+                logical_request: worth_foundational::CanonicalDigestId::new(logical_request),
                 changed_dependencies: affected,
             })
             .map_err(|_| unavailable())?;

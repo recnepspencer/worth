@@ -1,0 +1,124 @@
+use super::*;
+
+#[test]
+fn semantic_result_preserves_original_create_bindings_and_validation_meaning() {
+    let host = worth_testkit_relational::shared_relational_certification_test_execution_policy::serial_request();
+    let execution = &ExecutionRequest::serial(&host);
+    let medium = TestDurableMedium::new();
+    let runtime = durable_runtime(&medium);
+    let source = CreatedEntityRef {
+        partition_id: PartitionId::main(),
+        kind_id: KindId(1),
+        client_key: "semantic-source".into(),
+    };
+    let target = CreatedEntityRef {
+        client_key: "semantic-target".into(),
+        ..source.clone()
+    };
+    let batch = WorkerIntentBatch::new("semantic-original")
+        .push(batch_create("semantic-source").intents.pop().unwrap())
+        .push(batch_create("semantic-target").intents.pop().unwrap())
+        .push(MutationIntent::Create(CreateIntent::Relation(
+            worth_relational::facade::transactions::RelationSpec {
+                partition_id: PartitionId::main(),
+                kind_id: KindId(2),
+                client_key: "semantic-edge".into(),
+                source: EntityReference::Created(source.clone()),
+                target: EntityReference::Created(target.clone()),
+                fields: field_patch("label", "label", "semantic-edge"),
+            },
+        )));
+    let mut transaction = begin_main_transaction(&runtime);
+    transaction
+        .push_batch(batch, execution.allocation_policy())
+        .unwrap();
+    let proposal = transaction.validate(execution, &runtime).unwrap();
+    let candidate = runtime
+        .prepare_validated_proposal(execution, proposal)
+        .unwrap();
+    let RelationalPublicationOutcome::Performed(performed) = runtime
+        .publication_port()
+        .compare_and_publish(execution, candidate)
+    else {
+        panic!("real candidate performs")
+    };
+    let envelope = runtime
+        .replay()
+        .canonical_commit_envelope(execution, performed.canonical_commit().commit.commit_id)
+        .unwrap()
+        .expect("actual performed canonical owner");
+    assert!(std::ptr::eq(performed.canonical_commit(), &*envelope));
+    let committed = runtime.settle_performed_publication(performed).unwrap();
+    let original = committed.semantic_result();
+    assert!(std::ptr::eq(original, envelope.semantic_result()));
+    assert_eq!(original.receipt(), &committed.commit);
+    assert_eq!(
+        original.changed_records(),
+        committed.changed_records.as_slice()
+    );
+    assert_eq!(original.created_entities().len(), 2);
+    let assigned_source = committed.created_entity(&source).unwrap();
+    let assigned_target = committed.created_entity(&target).unwrap();
+    for (text, assigned) in [
+        ("semantic-source", assigned_source),
+        ("semantic-target", assigned_target),
+    ] {
+        let binding = original
+            .created_entities()
+            .iter()
+            .find(|entry| entry.key.client_key == text)
+            .unwrap();
+        assert_eq!(binding.key.partition, PartitionId::main());
+        assert_eq!(binding.key.kind, KindId(1));
+        assert_eq!(binding.assigned, assigned);
+    }
+    let relation = &original.created_relations()[0];
+    assert_eq!(relation.key.client_key, "semantic-edge");
+    assert_eq!(relation.key.kind, KindId(2));
+    let Endpoint::Created(source_key) = &relation.key.source else {
+        panic!("original created endpoint")
+    };
+    let Endpoint::Created(target_key) = &relation.key.target else {
+        panic!("original created endpoint")
+    };
+    assert_eq!(source_key.client_key, "semantic-source");
+    assert_eq!(target_key.client_key, "semantic-target");
+    assert!(committed
+        .changed_records
+        .as_slice()
+        .contains(&RecordRef::Relation(relation.assigned)));
+    assert_eq!(
+        original.publication().patch_record_count,
+        committed.patch().len()
+    );
+    assert_eq!(
+        original.validation_summary(),
+        committed.validation().summary()
+    );
+    let encoded = serde_json::to_value(original).unwrap();
+    for excluded in [
+        "transaction_id",
+        "proposal_identity",
+        "snapshot",
+        "phase_timing",
+        "complexity_delta",
+        "work_units",
+        "traversal",
+        "publication_status",
+        "patch_position",
+        "payload_digest",
+    ] {
+        assert!(
+            !encoded.to_string().contains(&format!("\"{excluded}\"")),
+            "live-only {excluded}"
+        );
+    }
+    let artifact = medium.offered().pop().unwrap();
+    assert_eq!(
+        u16::from_le_bytes(artifact.as_bytes()[8..10].try_into().unwrap()),
+        Artifact::FORMAT_VERSION
+    );
+    let readmitted = Artifact::readmit(artifact.as_bytes(), execution).unwrap();
+    assert_eq!(readmitted.envelope().semantic_result(), original);
+    release_test_commit_snapshot(&runtime, &committed);
+}

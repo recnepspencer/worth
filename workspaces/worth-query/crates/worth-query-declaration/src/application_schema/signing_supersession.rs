@@ -13,7 +13,7 @@ pub struct ApplicationSigningSupersessionParts {
     pub subject: ApplicationSigningEntityCoordinates,
     pub actor: ApplicationSigningEntityCoordinates,
     pub operation: String,
-    pub logical_request: [u8; 32],
+    pub logical_request: worth_foundational::CanonicalDigestId,
     pub changed_dependencies: Vec<ApplicationFieldBindingLocus>,
 }
 impl ApplicationSigningSupersessionParts {

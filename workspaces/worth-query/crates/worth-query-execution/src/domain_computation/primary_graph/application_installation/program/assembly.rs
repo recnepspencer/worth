@@ -1,6 +1,6 @@
 //! Assemble the one admitted program roster and native runtime into its installed owner.
 use super::super::program_admission::WorthQueryAdmittedProgramSupport;
-use super::super::WorthQueryInMemoryApplicationDenial;
+use super::super::WorthQueryApplicationPreparationDenial;
 use super::supported_program::WorthQuerySupportedProgramRecord;
 use super::{
     WorthQueryApplicationProgramRoots, WorthQueryApplicationProgramRoster,
@@ -16,21 +16,90 @@ use worth_query_installation::facade::{
     WorthQueryInstalledApplicationSchema, WorthQueryProgramSupportAdmission,
 };
 
-pub(super) fn assemble<Schema, Program>(
-    mut runtime: WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+pub(in crate::domain_computation::primary_graph) struct ProgramAssemblyRefused<Schema, Program> {
+    #[allow(
+        dead_code,
+        reason = "The typed diagnostic or custody payload stays owned through return and Drop; this owner does not inspect it"
+    )]
+    pub(in crate::domain_computation::primary_graph) runtime:
+        WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+    #[allow(
+        dead_code,
+        reason = "The typed diagnostic or custody payload stays owned through return and Drop; this owner does not inspect it"
+    )]
+    pub(in crate::domain_computation::primary_graph) admitted: Option<(
+        WorthQueryInstalledApplicationProgram<Schema, Program>,
+        Vec<WorthQuerySupportedProgramRecord>,
+    )>,
+    pub(in crate::domain_computation::primary_graph) cause: WorthQueryApplicationPreparationDenial,
+}
+
+pub(in crate::domain_computation::primary_graph) fn assemble<Schema, Program>(
+    runtime: WorthQueryPrimaryGraphApplicationRuntime<Schema>,
     admitted: Option<(
         WorthQueryInstalledApplicationProgram<Schema, Program>,
         Vec<WorthQuerySupportedProgramRecord>,
     )>,
-) -> Result<WorthQueryProgramApplicationRuntime<Schema, Program>, WorthQueryInMemoryApplicationDenial>
+) -> Result<
+    WorthQueryProgramApplicationRuntime<Schema, Program>,
+    WorthQueryApplicationPreparationDenial,
+>
 where
     Schema: worth_query_declaration::facade::application_schema::ApplicationSchema,
     Program: ApplicationProgramDefinition<Schema> + 'static,
     Program::Outputs:
         ApplicationProgramOutputsShape<Schema> + WorthQueryApplicationProgramRoots<Schema>,
 {
-    let (installed, supported) =
-        admitted.ok_or(WorthQueryInMemoryApplicationDenial::ProgramAdmissionIncomplete)?;
+    assemble_owning(runtime, admitted).map_err(|refused| refused.cause)
+}
+
+pub(in crate::domain_computation::primary_graph) fn assemble_owning<Schema, Program>(
+    mut runtime: WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+    admitted: Option<(
+        WorthQueryInstalledApplicationProgram<Schema, Program>,
+        Vec<WorthQuerySupportedProgramRecord>,
+    )>,
+) -> Result<
+    WorthQueryProgramApplicationRuntime<Schema, Program>,
+    ProgramAssemblyRefused<Schema, Program>,
+>
+where
+    Schema: worth_query_declaration::facade::application_schema::ApplicationSchema,
+    Program: ApplicationProgramDefinition<Schema> + 'static,
+    Program::Outputs:
+        ApplicationProgramOutputsShape<Schema> + WorthQueryApplicationProgramRoots<Schema>,
+{
+    let (installed, supported) = match admitted {
+        Some(admitted) => admitted,
+        None => {
+            return Err(ProgramAssemblyRefused {
+                runtime,
+                admitted: None,
+                cause: WorthQueryApplicationPreparationDenial::ProgramAdmissionIncomplete,
+            })
+        }
+    };
+    macro_rules! retain_on_refusal {
+        ($operation:expr) => {
+            match $operation {
+                Ok(value) => value,
+                Err(cause) => {
+                    return Err(ProgramAssemblyRefused {
+                        runtime,
+                        admitted: Some((installed, supported)),
+                        cause,
+                    })
+                }
+            }
+        };
+    }
+    if runtime.program_support.is_none() {
+        return Err(ProgramAssemblyRefused {
+            runtime,
+            admitted: Some((installed, supported)),
+            cause: WorthQueryApplicationPreparationDenial::ProgramAdmissionIncomplete,
+        });
+    }
     if let Some(support) = runtime.program_support.as_mut() {
         use crate::domain_computation::primary_graph::product_operation::program_adoption::authorization::admit_program;
         support
@@ -42,10 +111,12 @@ where
                 .insert(*record.revision(), record.adoption_admission::<Schema>());
         }
     }
-    super::conditional::validate_conditional_actions(
-        installed.actions(),
-        runtime.installed_conditionals.operation_types(),
-    )?;
+    if !runtime.runtime.product_runtime.is_directory_home() {
+        retain_on_refusal!(super::conditional::validate_conditional_actions(
+            installed.actions(),
+            runtime.installed_conditionals.operation_types()
+        ));
+    }
     let mut seen_action_bindings = std::collections::HashSet::new();
     let action_bindings = installed
         .actions()
@@ -74,7 +145,11 @@ where
         Schema,
         Program::Outputs,
     >(installed.actions());
-    require_rostered_binding_membership(&runtime, &installed, &output_source_bindings)?;
+    retain_on_refusal!(require_rostered_binding_membership(
+        &runtime,
+        &installed,
+        &output_source_bindings
+    ));
     runtime
         .program_required_bindings
         .extend(output_source_bindings.iter().copied());
@@ -91,7 +166,7 @@ where
     runtime
         .program_support
         .as_mut()
-        .ok_or(WorthQueryInMemoryApplicationDenial::ProgramAdmissionIncomplete)?
+        .expect("program support was admitted before consuming installed program meaning")
         .complete_native_installation(
             std::iter::once(std::sync::Arc::clone(&initial))
                 .chain(supported.iter().cloned())
@@ -99,7 +174,7 @@ where
         );
     Ok(WorthQueryProgramApplicationRuntime {
         backing: std::sync::Arc::new(super::program_runtime::WorthQueryProgramRuntimeBacking {
-            runtime,
+            runtime: Some(runtime),
             program: installed,
             connection_types: Program::Outputs::connection_types()
                 .into_iter()
@@ -115,7 +190,7 @@ where
 ///
 /// Admission closes before any program is installed, so nothing is ever
 /// installed against a roster that is still growing.
-pub(super) fn admit_program_roster<Schema, Program>(
+pub(in crate::domain_computation::primary_graph) fn admit_program_roster<Schema, Program>(
     program: ValidatedApplicationProgram<Schema, Program>,
     roster: WorthQueryApplicationProgramRoster<'_, Schema>,
     installed_schema: &WorthQueryInstalledApplicationSchema<Schema>,
@@ -125,7 +200,7 @@ pub(super) fn admit_program_roster<Schema, Program>(
         WorthQueryInstalledApplicationProgram<Schema, Program>,
         Vec<WorthQuerySupportedProgramRecord>,
     ),
-    WorthQueryInMemoryApplicationDenial,
+    WorthQueryApplicationPreparationDenial,
 >
 where
     Schema: worth_query_declaration::facade::application_schema::ApplicationSchema,
@@ -171,7 +246,7 @@ fn require_rostered_binding_membership<Schema, Program>(
     runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
     installed: &WorthQueryInstalledApplicationProgram<Schema, Program>,
     output_source_bindings: &[TypeId],
-) -> Result<(), WorthQueryInMemoryApplicationDenial>
+) -> Result<(), WorthQueryApplicationPreparationDenial>
 where
     Schema: worth_query_declaration::facade::application_schema::ApplicationSchema,
 {
@@ -194,11 +269,11 @@ where
         runtime.installed_schema(),
         &answered,
     )
-    .map_err(WorthQueryInMemoryApplicationDenial::Program)
+    .map_err(WorthQueryApplicationPreparationDenial::Program)
 }
 
 fn program_support_denied(
     denial: worth_query_installation::facade::WorthQueryProgramSupportDenial,
-) -> WorthQueryInMemoryApplicationDenial {
-    WorthQueryInMemoryApplicationDenial::Program(denial.into())
+) -> WorthQueryApplicationPreparationDenial {
+    WorthQueryApplicationPreparationDenial::Program(denial.into())
 }

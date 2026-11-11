@@ -1087,6 +1087,16 @@ requires its separate concrete `DefinitionMetadata` read slot; the former
 execution-only entrance is removed. Actor capability enforcement is independent of read disclosure.
 Public workflow views never serve as permission.
 
+An independently admitted audit exposes the ending actor as
+`WorkflowEndingActorProvenance`: either `Principal`, with the original admitted
+principal's partition, slot and generation, or `HomeWorldOwner`, with a durable
+Home and World owner slot. These are recorded identities, never cancellation
+grants. Start, proposal, approval and execution actors remain principal roles.
+An ended instance retains its ending provenance through checkpoint readmission;
+reading it still requires fresh audit authority. A live instance has no ending
+actor. Workflow instance schemas require the current ending-actor contract;
+there is no principal backfill for an older record.
+
 Current workflow layouts and portable definitions admit only their current
 actor and policy contracts. Unsupported predecessors are refused intact before
 old native authority is interpreted; callers cannot supply actor backfill or
@@ -1891,6 +1901,14 @@ Read with `WorthQueryApplicationAttemptDenial::kind()` and `subject()`.
 | `WorthQueryWorkflowOperationBindingDenial` | `for_workflow_operation`, `for_workflow_operation_recovery` |
 | `WorthQueryOrdinaryWorkflowPublicationDenial` | Ordinary lane publication |
 
+Advanced owner acceptance and recovery require a borrowed, genuine
+`WorthQueryApplicationCommitReceipt` in addition to the current bound request.
+The resolver checks its original operation, scope, branch and exact durable
+commit before using it. `WorthQueryRecoveredApplicationCommitReceipt` is data
+and cannot satisfy that parameter. Ordinary applications retain their
+`WorthQueryWorkflowOperation` and let its advancement lend the actual completion;
+closing a duplicate recorded wrapper releases only that wrapper's native cleanup.
+
 ## You can
 
 - Publish several definition revisions in one lineage, each naming its expected predecessor.
@@ -2131,6 +2149,7 @@ not grant authority or replace the lifecycle explanations above.
 
 | Variant | Shape |
 | --- | --- |
+| `RecoveredCommitted` | tuple (WorthQueryRecoveredApplicationCommitReceipt) |
 | `AwaitingProposal` | tuple (RequiredWorkflowProposal) |
 | `AwaitingActor` | tuple (RequiredWorkflowActor) |
 | `AwaitingAssessment` | tuple (RequiredWorkflowAssessment) |

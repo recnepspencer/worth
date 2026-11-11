@@ -35,6 +35,79 @@ pub enum AspectValue {
 }
 
 impl AspectValue {
+    /// Reachable storage retained by a cloned value's independent holder.
+    /// Stored text shares its proof cell; that lifetime remains funded even
+    /// though the physical clone invoice excludes the existing proof backing.
+    pub fn clone_retained_storage_bytes(&self) -> Option<usize> {
+        match self {
+            Self::String(InternedString::Stored(value)) => {
+                crate::facade::StoredValueText::fresh_decode_allocation_bytes(value.as_str().len())
+            }
+            Self::Null
+            | Self::Bool(_)
+            | Self::Int8(_)
+            | Self::Int16(_)
+            | Self::Int32(_)
+            | Self::Int64(_)
+            | Self::UInt8(_)
+            | Self::UInt16(_)
+            | Self::UInt32(_)
+            | Self::UInt64(_)
+            | Self::Float32(_)
+            | Self::Float64(_)
+            | Self::Decimal(_)
+            | Self::BigInt(_)
+            | Self::Rational(_)
+            | Self::String(InternedString::Raw(_))
+            | Self::String(InternedString::Symbol(_))
+            | Self::Uuid(_)
+            | Self::Date(_)
+            | Self::Time(_)
+            | Self::Timestamp(_)
+            | Self::TimestampTz(_)
+            | Self::EntityRef(_)
+            | Self::ContentRef(_)
+            | Self::InlineBytes(_) => self.clone_allocation_bytes(),
+        }
+    }
+
+    /// Checked heap allocated by this value's derived Clone, excluding inline storage.
+    /// String clones retain their length, not the source's spare capacity.
+    pub fn clone_allocation_bytes(&self) -> Option<usize> {
+        Some(match self {
+            Self::Decimal(value) => value.as_str().len(),
+            Self::BigInt(value) => value.as_str().len(),
+            Self::Rational(value) => value
+                .numerator
+                .as_str()
+                .len()
+                .checked_add(value.denominator.as_str().len())?,
+            Self::String(InternedString::Raw(value)) => value.len(),
+            Self::String(InternedString::Stored(value)) => value.clone_allocation_bytes()?,
+            Self::InlineBytes(value) => value.as_bytes().len(),
+            Self::Null
+            | Self::Bool(_)
+            | Self::Int8(_)
+            | Self::Int16(_)
+            | Self::Int32(_)
+            | Self::Int64(_)
+            | Self::UInt8(_)
+            | Self::UInt16(_)
+            | Self::UInt32(_)
+            | Self::UInt64(_)
+            | Self::Float32(_)
+            | Self::Float64(_)
+            | Self::String(InternedString::Symbol(_))
+            | Self::Uuid(_)
+            | Self::Date(_)
+            | Self::Time(_)
+            | Self::Timestamp(_)
+            | Self::TimestampTz(_)
+            | Self::EntityRef(_)
+            | Self::ContentRef(_) => 0,
+        })
+    }
+
     pub fn into_raw_text(self) -> Option<String> {
         match self {
             Self::String(text) => text.into_raw_text(),

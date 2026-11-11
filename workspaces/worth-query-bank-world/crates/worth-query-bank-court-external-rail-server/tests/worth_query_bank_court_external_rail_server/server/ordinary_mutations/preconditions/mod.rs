@@ -125,15 +125,31 @@ fn ordinary_send_money_carries_typed_preconditions_through_retry_receipts() {
     else {
         panic!("native original retained delivery")
     };
-    let worth_query_host::facade::application_entry::WorthQuerySourceCompletion::Recovered {
+    let worth_query_host::facade::application_entry::WorthQuerySourceCompletion::Recorded {
         receipt: recovered,
         ..
     } = retried.evidence()
     else {
         panic!("replay has no invented fresh result")
     };
-    assert_eq!(recovered.canonical_work(), receipt.canonical_work());
-    assert_warm_canonical_work_is_zero(recovered.canonical_work());
+    assert_eq!(recovered.commit_reference(), receipt.commit_reference());
+    assert_eq!(
+        Some(recovered.outcome_identity()),
+        receipt.outcome_identity()
+    );
+    assert_eq!(
+        recovered.idempotency_key_identity(),
+        receipt.idempotency_binding().key_identity()
+    );
+    assert_eq!(
+        recovered.changed_record_count(),
+        receipt.changed_record_count()
+    );
+    assert_eq!(
+        recovered.exact_output_settlement(),
+        receipt.recorded_output_settlement()
+    );
+    assert!(!recovered.recorded_intent().contains(":precondition=-"));
 
     assert!(retried.close(&request).is_ok());
     let after = account_summary(&fixture, &owner, fixture.personal_account);

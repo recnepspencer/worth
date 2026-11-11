@@ -1,318 +1,173 @@
-//! Proofs for the terminal close report.
-//!
-//! Close settles what it can, exposes every retained owner obligation it
-//! cannot, and denies only a critical section that is still in flight.
-
-use std::sync::Arc;
-
-use crate::lifecycle::{RuntimeWorldCloseDenial, RuntimeWorldOwnerLifecycleObservation};
+//! Original-request admission and retained partial head retirement.
+use super::product_cas_loss::resolve_one_race;
+use crate::lifecycle::{
+    RuntimeWorldCloseDenial as Denial, RuntimeWorldOwnerLifecycleObservation as Phase,
+};
 use crate::publication::CompositeLateCancellationPosture;
-use crate::recovery::{ProductUnpublishedCause, ProductUnpublishedNextAction};
+use worth_execution::{CancellationSource, ExecutionRequest};
 
-use super::admission_race::{
-    wait_until_close_holds_operation_admission, wait_until_close_is_admitting,
-};
-use super::product_cas_loss::{
-    resolve_one_race, resolve_one_race_after_a_completed_publication, ResolvedRace,
-};
-use super::publication::TestOwner;
-
-/// SPEC-P4-008. A live `ProductUnpublishedOwnerEffects` record does not refuse
-/// close; it becomes a report row naming its identity, cause, live obligation
-/// counts, and derived next actions, and it survives the close that named it.
 #[test]
-fn close_exposes_every_retained_record_in_its_terminal_report() {
-    let host_request = crate::test_execution_policy::serial_request();
-    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
-
-    let race = resolve_one_race(execution, CompositeLateCancellationPosture::NotRequested);
-    let owner = race.owner;
-    let handle = race.retained.recovery_handle();
-    let expected_actions = race.retained.next_actions().to_vec();
-    let expected_identity = race.retained.identity().clone();
-    let expected_obligations = race.retained.live_obligation_count();
-    assert_eq!(owner.recovery_record_count(), 1);
-
-    let report = owner
-        .close()
-        .expect("a retained record is exposed by close, never refused");
-
-    assert_eq!(
-        owner.lifecycle_observation(),
-        RuntimeWorldOwnerLifecycleObservation::Closed
+fn memory_close_refuses_actual_unresolved_business_custody() {
+    let policy = crate::test_execution_policy::serial_request();
+    let request = ExecutionRequest::serial(&policy);
+    let race = resolve_one_race(&request, CompositeLateCancellationPosture::NotRequested);
+    assert_eq!(race.owner.recovery_record_count(), 1);
+    let delivered = race
+        .owner
+        .recover_performed_publication(race.winner_head.selected_commit())
+        .unwrap();
+    drop(
+        delivered
+            .expect("original dropped winner delivery")
+            .consume(),
     );
-    assert_eq!(
-        report.retained_records().len(),
-        1,
-        "close names every retained record exactly once"
-    );
-    let row = &report.retained_records()[0];
-    assert_eq!(row.identity(), &expected_identity);
-    assert_eq!(row.cause(), ProductUnpublishedCause::ProductPublicationLost);
-    assert_eq!(
-        row.live_component_obligations(),
-        2,
-        "the retained record still holds its exact relational and signal pins"
-    );
-    assert_eq!(
-        row.live_component_obligations() + row.live_composite_obligations(),
-        expected_obligations,
-        "the report's split must sum to the record's own live obligation count"
-    );
-    assert_eq!(row.next_actions(), expected_actions.as_slice());
-    assert!(row
-        .next_actions()
-        .contains(&ProductUnpublishedNextAction::ReleaseObligations));
-    assert!(!expected_actions.contains(&ProductUnpublishedNextAction::SettleOwnerEffects));
-    assert_eq!(
-        report.settled_records(),
-        0,
-        "an enumerated record is exposure, never settlement: close settled none"
-    );
-
-    assert_eq!(
-        owner.recovery_record_count(),
-        1,
-        "exposure is never a discarded owner obligation"
-    );
-    assert!(
-        owner.inspect_recovery(&handle).is_some(),
-        "the named record is still inspectable after the close that named it"
-    );
+    let before = race.retained.live_obligation_count();
+    assert!(matches!(
+        race.owner.close(&request),
+        Err(Denial::UnresolvedBusinessCustody)
+    ));
+    assert_eq!(race.owner.lifecycle_observation(), Phase::Open);
+    assert_eq!(race.owner.recovery_record_count(), 1);
+    assert_eq!(race.retained.live_obligation_count(), before);
 }
 
-/// Close preserves exact pins held by retained history and partial records.
-/// A completed publication does not make its predecessor history reclaimable.
 #[test]
-fn close_preserves_history_and_retained_record_component_pins() {
-    let host_request = crate::test_execution_policy::serial_request();
-    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+fn close_stops_before_seal_and_does_not_wait_for_admission_locks() {
+    let (_fixture, owner, _head) = super::publication::setup();
+    let cancellation = CancellationSource::new();
+    let policy =
+        crate::test_execution_policy::serial_request().with_cancellation(cancellation.token());
+    let request = ExecutionRequest::serial(&policy);
+    let ledger = owner.state.operation.state.lock().unwrap();
+    assert!(matches!(owner.close(&request), Err(Denial::Busy)));
+    drop(ledger);
+    assert_eq!(owner.lifecycle_observation(), Phase::Open);
+    cancellation.cancel();
+    assert!(matches!(
+        owner.close(&request),
+        Err(Denial::Stopped(worth_execution::MapKernelStop::Cancelled))
+    ));
+    assert_eq!(owner.lifecycle_observation(), Phase::Open);
+    let retry = crate::test_execution_policy::serial_request();
+    assert!(owner.close(&ExecutionRequest::serial(&retry)).is_ok());
+    assert_eq!(owner.lifecycle_observation(), Phase::Closed);
+}
 
-    let race = resolve_one_race_after_a_completed_publication(
-        execution,
-        CompositeLateCancellationPosture::NotRequested,
-    );
-    let owner = race.owner;
-    let handle = race.retained.recovery_handle();
-    let obligations_before = owner.state.retention.active_component_obligation_count();
-    let pins_before = owner.state.retention.unique_pin_count();
+fn reused_children() -> (
+    crate::branch::reference_test_fixture::RealReferenceFixture,
+    super::publication::TestOwner,
+    crate::branch::ProductBranchObservation,
+) {
+    use crate::branch::*;
+    use crate::lifecycle::*;
+    let mut fixture = crate::branch::reference_test_fixture::real_fixture(8, 8);
+    let owner = RuntimeWorldOwnerRoot::new(fixture.owner_inputs(
+        crate::budget::RuntimeWorldBudgets::without_policy_limits(),
+        RuntimeWorldClock::from_source(super::FixedClock),
+    ))
+    .unwrap();
+    let root = match owner.bootstrap_root(fixture.bootstrap_intent()) {
+        RuntimeWorldBootstrapOutcome::Performed(value) => value.product_branch().clone(),
+        other => panic!("actual bootstrap refused: {other:?}"),
+    };
+    let mut last = None;
+    for name in ["alpha", "bravo"] {
+        let policy = crate::test_execution_policy::serial_request();
+        let request = ExecutionRequest::serial(&policy);
+        let cancel = crate::publication::RuntimeWorldCancellationSource::new();
+        let intent = ProductBranchCreationIntent::from_source(
+            name,
+            ProductBranchCreationPlans::new(
+                RelationalBranchCreationPlan::ReuseExact,
+                SignalBranchCreationPlan::ReuseExact,
+            ),
+        )
+        .unwrap();
+        match RuntimeWorldBranchService::create_product_branch(
+            &owner,
+            RuntimeWorldBranchCreationRequest::new(&request, root.clone(), intent, &cancel.token()),
+        )
+        .unwrap()
+        {
+            RuntimeWorldBranchCreationOutcome::Performed(head) => last = Some(head),
+            other => panic!("actual exact reuse refused: {other:?}"),
+        }
+    }
+    (fixture, owner, last.unwrap())
+}
 
-    let report = owner
-        .close()
-        .expect("a retained record is exposed by close, never refused");
-    let pins_after = owner.state.retention.unique_pin_count();
-
+#[test]
+fn close_retains_extracted_head_and_cursor_across_busy_stop_and_retry() {
+    let (_fixture, owner, child) = reused_children();
+    let public_owner = crate::lifecycle::RuntimeWorldOwner::from_root(owner);
+    let owner = &public_owner.root;
+    let lifecycle = public_owner.lifecycle_port();
+    let observation = public_owner.observation_port();
+    let cell = owner
+        .state
+        .branches
+        .branch_cell(child.branch_identity())
+        .unwrap();
+    let held = cell.hold_for_test();
+    let before = owner.state.retention.active_component_obligation_count();
+    let releases = owner.state.history.counters().direct_protection_releases();
+    let cancellation = CancellationSource::new();
+    let policy =
+        crate::test_execution_policy::serial_request().with_cancellation(cancellation.token());
+    let request = ExecutionRequest::serial(&policy);
+    assert!(matches!(
+        lifecycle.close(&request, &public_owner),
+        Err(crate::lifecycle::RuntimeWorldServiceDenial::Denied(
+            Denial::Busy
+        ))
+    ));
+    assert!(observation
+        .observe_product_branch(child.branch_identity())
+        .is_err());
+    assert_eq!(owner.lifecycle_observation(), Phase::Closing);
     assert_eq!(
-        report.released_unique_component_pins(),
-        0,
-        "retained predecessor history still owns the exact relational pin"
-    );
-    assert_eq!(
-        report.released_unique_component_pins(),
-        pins_before - pins_after,
-        "the report counts the pins close actually released"
+        owner.state.branches.branch_count(),
+        1,
+        "root only; bravo is retained by close"
     );
     assert_eq!(
         owner.state.retention.active_component_obligation_count(),
-        obligations_before,
-        "reclamation removes only released entries, never a pin the retained record still owes"
+        before - 2
     );
     assert_eq!(
-        report.retained_records()[0].live_component_obligations(),
-        2,
-        "the retained record still reports the exact pins it kept"
+        owner.state.history.counters().direct_protection_releases(),
+        releases + 1
     );
-    assert!(
-        owner.inspect_recovery(&handle).is_some(),
-        "the retained record survives the reclamation that skipped its pins"
-    );
-}
-
-/// CLS-001. A pre-movement CAS loser released its history slot but still
-/// occupies its recovery slot, so its row reports the exact pin pair as the
-/// component half and that slot as the composite half. Both halves are the
-/// record's own count read by scope, never a component charge subtracted from
-/// a total that counted the pins differently.
-#[test]
-fn close_reports_a_pre_movement_loser_as_its_pin_pair_plus_its_recovery_slot() {
-    let host_request = crate::test_execution_policy::serial_request();
-    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
-
-    let race = resolve_one_race(execution, CompositeLateCancellationPosture::NotRequested);
-    assert_eq!(race.retained.successor_commit(), None);
-    assert_eq!(race.retained.live_obligation_count(), 3);
-
-    let report = race
-        .owner
-        .close()
-        .expect("a retained record is exposed by close, never refused");
-
-    let row = &report.retained_records()[0];
+    cancellation.cancel();
+    assert!(matches!(
+        lifecycle.close(&request, &public_owner),
+        Err(crate::lifecycle::RuntimeWorldServiceDenial::Denied(
+            Denial::Stopped(worth_execution::MapKernelStop::Cancelled)
+        ))
+    ));
     assert_eq!(
-        row.live_component_obligations(),
-        2,
-        "the loser still holds its exact relational and signal pins"
+        owner.state.retention.active_component_obligation_count(),
+        before - 2
+    );
+    drop(held);
+    let retry = crate::test_execution_policy::serial_request();
+    let report = lifecycle
+        .close(&ExecutionRequest::serial(&retry), &public_owner)
+        .unwrap();
+    assert_eq!(report.released_product_head_pins(), 2);
+    assert_eq!(
+        owner.state.retention.active_component_obligation_count(),
+        before - 4
     );
     assert_eq!(
-        row.live_composite_obligations(),
-        1,
-        "the loser installed no successor, so the recovery slot it occupies is its one composite obligation"
+        owner.state.history.counters().direct_protection_releases(),
+        releases + 2
     );
-}
-
-/// REV-D-003. The ledger check and the Open -> Closing flip are one window: a
-/// reservation offered while close is draining must not be admitted, because no
-/// report row could name it.
-#[test]
-fn close_admits_no_operation_between_its_ledger_check_and_its_state_flip() {
-    let host_request = crate::test_execution_policy::serial_request();
-    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
-
-    let race = resolve_one_race(execution, CompositeLateCancellationPosture::NotRequested);
-    let owner = race.owner;
-
-    // Park a close inside its own window: it takes the operation ledger, drains,
-    // then blocks on the close contract this thread holds. Nothing waits on this
-    // thread, so both gates are released below without a cycle.
-    let ledger_gate = owner
-        .state
-        .operation
-        .state
-        .lock()
-        .unwrap_or_else(|error| error.into_inner());
-    let closing = spawn_close(&owner);
-    wait_until_close_is_admitting(&owner);
-    let contract_gate = owner
-        .state
-        .close
-        .lock()
-        .unwrap_or_else(|error| error.into_inner());
-    drop(ledger_gate);
-    wait_until_close_holds_operation_admission(&owner);
-
-    let reserving = spawn_recovery_reservation(&owner);
-    drop(contract_gate);
-    let report = closing
-        .join()
-        .expect("the close thread must not panic")
-        .expect("a retained record is exposed by close, never refused");
-    let admitted = reserving
-        .join()
-        .expect("the reserving thread must not panic");
-
-    assert!(
-        !admitted,
-        "no operation may be admitted between close's ledger check and its state flip"
-    );
-    assert_eq!(
-        owner.lifecycle_observation(),
-        RuntimeWorldOwnerLifecycleObservation::Closed
-    );
-    assert_eq!(
-        report.retained_records().len(),
-        1,
-        "holding admission across the drain still reports every retained record"
-    );
-}
-
-/// REV-D-006. A record in the `ReacquisitionPending` posture holds no issued
-/// pins but does hold a reserved component pin pair, so its component half is a
-/// pair and its composite half is the recovery slot it occupies plus the
-/// successor history protection it still owes. The split is read from the
-/// record, never inferred from the retained posture's shape.
-#[test]
-fn close_reports_a_pending_record_as_a_reserved_component_pair() {
-    let pending = super::publication::resolve_post_effect_retention_denial();
-    assert_eq!(
-        pending.retained.retention_posture(),
-        crate::recovery::ProductUnpublishedRetentionPosture::ReacquisitionPending
-    );
-    assert_eq!(
-        pending.owner.state.retention.reserved_unique_pin_capacity(),
-        2,
-        "the pending record holds a reserved pin pair, not issued pins"
-    );
-
-    let report = pending
-        .owner
-        .close()
-        .expect("a pending retained record is exposed by close, never refused");
-
-    let row = &report.retained_records()[0];
-    assert_eq!(
-        row.live_component_obligations(),
-        2,
-        "the reserved component pin pair is a component-scoped charge"
-    );
-    assert_eq!(
-        row.live_composite_obligations(),
-        2,
-        "the composite half is the recovery slot and the installed successor history protection"
-    );
-    assert_eq!(
-        row.live_component_obligations() + row.live_composite_obligations(),
-        pending.retained.live_obligation_count(),
-        "the report's split must sum to the record's own live obligation count"
-    );
-}
-
-/// An operation parked inside its critical section is the only thing left that
-/// close refuses. The retained record it leaves behind is enumerated instead.
-#[test]
-fn close_denies_only_an_undrainable_critical_section() {
-    let host_request = crate::test_execution_policy::serial_request();
-    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
-
-    let race = resolve_one_race(execution, CompositeLateCancellationPosture::NotRequested);
-    let ResolvedRace {
-        owner, retained, ..
-    } = race;
-
-    let parked = owner
-        .reserve_recovery_operation_if_open_and_bootstrapped()
-        .expect("an open bootstrapped owner admits a recovery critical section");
-    assert_eq!(
-        owner
-            .close()
-            .expect_err("a live critical section cannot be drained"),
-        RuntimeWorldCloseDenial::InFlightCriticalSection
-    );
-    assert_eq!(
-        owner.lifecycle_observation(),
-        RuntimeWorldOwnerLifecycleObservation::Open,
-        "a denied close must not enter Closing"
-    );
-
-    drop(parked);
-    let report = owner
-        .close()
-        .expect("close succeeds once the critical section releases");
-    assert_eq!(
-        owner.lifecycle_observation(),
-        RuntimeWorldOwnerLifecycleObservation::Closed
-    );
-    assert_eq!(
-        report.retained_records().len(),
-        1,
-        "the record that was never a denial is still a report row"
-    );
-    assert_eq!(report.retained_records()[0].identity(), retained.identity());
-}
-
-fn spawn_close(
-    owner: &Arc<TestOwner>,
-) -> std::thread::JoinHandle<
-    Result<crate::lifecycle::RuntimeWorldCloseReport, RuntimeWorldCloseDenial>,
-> {
-    let owner = Arc::clone(owner);
-    std::thread::spawn(move || owner.close())
-}
-
-fn spawn_recovery_reservation(owner: &Arc<TestOwner>) -> std::thread::JoinHandle<bool> {
-    let owner = Arc::clone(owner);
-    std::thread::spawn(move || {
-        owner
-            .reserve_recovery_operation_if_open_and_bootstrapped()
-            .is_ok()
-    })
+    assert_eq!(owner.lifecycle_observation(), Phase::Closed);
+    assert!(matches!(
+        lifecycle.close(&request, &public_owner),
+        Err(crate::lifecycle::RuntimeWorldServiceDenial::Denied(
+            Denial::AlreadyClosed
+        ))
+    ));
 }

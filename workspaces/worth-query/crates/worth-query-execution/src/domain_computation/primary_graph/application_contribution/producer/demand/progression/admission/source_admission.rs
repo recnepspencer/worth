@@ -32,6 +32,9 @@ where
     where
         Family: WorthQueryProducerOutputFamily<Schema>,
     {
+        self.runtime.product_runtime
+            .admit_directory_capability(crate::domain_computation::primary_graph::WorthQueryOperationDurableCapability::RequiredOutputDemand)
+            .map_err(|cause| denial(WorthQueryOutputDemandDenialKind::DurableStateAdmission(cause), Family::IDENTITY))?;
         let selected_product = source_selection.selected_product();
         let limits = self.output_demand_resource_profile().constrain(limits);
 

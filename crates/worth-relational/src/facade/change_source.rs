@@ -37,7 +37,14 @@ pub use crate::change_source::{
     RelationalChangeConsistencyDenial, RelationalChangeConsistencyDenialKind,
     RelationalChangeConsistencyWork, RelationalChangeReceipt, RelationalChangeReceiptDeferred,
     RelationalChangeReceiptOutcome, RelationalChangeReceiptStale, RelationalCommitSelection,
-    RelationalCommitSelectionDenial, RelationalCommitSelectionWork,
-    RelationalObservationReadDenial, RelationalRetainedObservation, RelationalRuntimeHandle,
-    RelationalRuntimeLockObservationForTest, RelationalSelectedCommit,
+    RelationalCommitSelectionDenial, RelationalCommitSelectionWork, RelationalMemoryClose,
+    RelationalMemoryCloseDenial, RelationalMemoryCloseObservation, RelationalMemoryCloseRefused,
+    RelationalObservationReadDenial, RelationalRetainedObservation,
+    RelationalRetainedObservationRetirement, RelationalRetainedObservationRetirementDenial,
+    RelationalRetainedObservationRetirementProgress, RelationalRuntimeHandle,
+    RelationalRuntimeHandleAliasRetirementDenial, RelationalRuntimeLockObservationForTest,
+    RelationalSelectedCommit, RetiredMemoryRelationalAllocation,
+    RetiredRelationalRetainedObservation, RetiredRelationalRuntimeHandleAlias,
 };
+
+pub use crate::change_source::RelationalReadCustodyHolders;

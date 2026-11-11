@@ -90,7 +90,7 @@ fn schema_transition_classification_and_lowering_are_deterministic_for_visible_b
                 SchemaDiffDetail::AddedField {
                     field: field_key("optional_tag"),
                     required: false,
-                    default_expression: Some(Arc::<str>::from("null")),
+                    default_expression: Some(Arc::<str>::from("null").into()),
                 },
             )
             .with_boundary_visibility_proof(
@@ -112,7 +112,7 @@ fn schema_transition_classification_and_lowering_are_deterministic_for_visible_b
                 SchemaSubscriberImpact::ConsumableSurfaceChanged,
                 HistoricalInterpretationSensitivity::NotSensitive,
                 SchemaDiffDetail::ProjectionContractChanged {
-                    projection_name: Arc::<str>::from("orders.list"),
+                    projection_name: Arc::<str>::from("orders.list").into(),
                 },
             )
             .with_boundary_visibility_proof(
@@ -194,7 +194,7 @@ fn consumable_surface_change_requires_explicit_visible_bridge_proof() {
             SchemaDiffDetail::AddedField {
                 field: field_key("optional_tag"),
                 required: false,
-                default_expression: Some(Arc::<str>::from("null")),
+                default_expression: Some(Arc::<str>::from("null").into()),
             },
         )
         .with_boundary_visibility_proof(
@@ -233,7 +233,7 @@ fn schema_boundary_fingerprint_is_canonical_across_diff_atom_orderings() {
         SchemaDiffDetail::AddedField {
             field: field_key("optional_tag"),
             required: false,
-            default_expression: Some(Arc::<str>::from("null")),
+            default_expression: Some(Arc::<str>::from("null").into()),
         },
     )
     .with_boundary_visibility_proof(
@@ -255,7 +255,7 @@ fn schema_boundary_fingerprint_is_canonical_across_diff_atom_orderings() {
         SchemaSubscriberImpact::ConsumableSurfaceChanged,
         HistoricalInterpretationSensitivity::NotSensitive,
         SchemaDiffDetail::ProjectionContractChanged {
-            projection_name: Arc::<str>::from("orders.list"),
+            projection_name: Arc::<str>::from("orders.list").into(),
         },
     )
     .with_boundary_visibility_proof(
@@ -325,8 +325,8 @@ fn type_continuity_denied_schema_transition_is_rejected_not_continued() {
             HistoricalInterpretationSensitivity::SensitiveToValueMeaning,
             SchemaDiffDetail::TypeChanged {
                 field: field_key("timing_domain"),
-                from_type: Arc::<str>::from("enum<previous>"),
-                to_type: Arc::<str>::from("enum<expanded>"),
+                from_type: Arc::<str>::from("enum<previous>").into(),
+                to_type: Arc::<str>::from("enum<expanded>").into(),
             },
         )],
     };

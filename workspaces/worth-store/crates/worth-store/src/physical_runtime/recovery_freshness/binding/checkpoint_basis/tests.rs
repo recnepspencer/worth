@@ -11,7 +11,9 @@ use worth_store_buffer_pool::{
 mod first_failure;
 mod fixture;
 
-const ORIGINAL: u64 = 16 * 1024;
+const ORIGINAL: u64 =
+    crate::physical_runtime::PhysicalRecoveryCoordinationCapacity::serving_evidence_backing_bytes()
+        + 16 * 1024;
 type Denial = StoreRecoveryCheckpointBindingAllocationDenial;
 
 #[test]
@@ -24,7 +26,7 @@ fn binding_basis_constructor_denies_native_pressure_before_storage_admission() {
         Some(b"negative semantic payload"),
         |assembly, _, _| {
             let shared = coordination.admit_shared_checkpoint(assembly).unwrap();
-            let retained = shared.owned_heap_bytes().unwrap();
+            let retained = crate::physical_runtime::PhysicalRecoveryCoordinationCapacity::serving_evidence_backing_bytes() + shared.owned_heap_bytes().unwrap();
             let requested = RecoveryBindingOperationsCapacity::for_records(1)
                 .unwrap()
                 .requested_bytes();
@@ -89,7 +91,7 @@ fn ignored_decode_backing_refusal_keeps_finished_binding_basis_unavailable() {
         |assembly, binding, record| {
             let shared = coordination.admit_shared_checkpoint(assembly).unwrap();
             let facts = shared.facts();
-            let retained = shared.owned_heap_bytes().unwrap();
+            let retained = crate::physical_runtime::PhysicalRecoveryCoordinationCapacity::serving_evidence_backing_bytes() + shared.owned_heap_bytes().unwrap();
             let backing = RecoveryBindingOperationsCapacity::for_records(1)
                 .unwrap()
                 .requested_bytes();

@@ -82,9 +82,12 @@ where
         self,
         phase: &AdvancementPhase<'_>,
         application: &WorthQueryProgramApplicationRuntime<Schema, Program>,
-        source_receipt: &worth_query_execution::facade::primary_graph::WorthQueryApplicationCommitReceipt,
+        source_receipt: worth_query_execution::facade::primary_graph::WorthQueryOutputSourceReplay<
+            '_,
+        >,
     ) -> Result<
         (
+            worth_query_execution::facade::primary_graph::WorthQueryApplicationCommitReceipt,
             super::WorthQueryApplicationProgramDemandHandle<Schema, Program, Demand>,
             std::sync::Arc<
                 worth_query_execution::facade::primary_graph::WorthQueryApplicationReadObservation,
@@ -102,11 +105,12 @@ where
     {
         let retained = application
             .recover_prepared_program_root_source::<Root>(
+                phase,
                 &worth_query_execution::publication_boundary::program_publication_access(),
                 source_receipt,
             )
             .map_err(WorthQueryApplicationOutputDemandDenial::Demand)?;
-        let (observation, prepared) = retained;
+        let (source_receipt, observation, prepared) = retained;
         let source_result = {
             let request = crate::application_entry::WorthQueryApplicationRequest {
                 application: self.application,
@@ -149,10 +153,11 @@ where
                 source_result,
                 current,
                 limits,
-                source_receipt,
+                &source_receipt,
             )
             .map_err(WorthQueryApplicationOutputDemandDenial::Demand)?;
         Ok((
+            source_receipt,
             super::WorthQueryApplicationProgramDemandHandle::new(admitted, self.demand, None),
             observation,
             prepared,

@@ -42,6 +42,14 @@ impl<'runtime> WorthQueryOwnedAsyncRuntimeServices<'runtime> {
         &self,
         selected: &crate::basis::WorthQueryProductBranchLease,
     ) -> Result<(), Denial> {
+        self.world
+            .owner
+            .owner_identity()
+            .admit_incarnation(selected.observation().owner_identity())
+            .map_err(|cause| match cause {
+                worth_proof::HomeIncarnationDenial::StaleIncarnation => Denial::StaleIncarnation,
+                worth_proof::HomeIncarnationDenial::ForeignHome => Denial::ProductSelectionMismatch,
+            })?;
         if self
             .world
             .integration_owns_product_branch(selected.product_branch())

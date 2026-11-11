@@ -1,6 +1,7 @@
 //! A genuine fixed refusing program with explicit public bootstrap calls.
 use super::super::super::{authentication, resources};
 use super::{directory, mutation, prefix, query, rule, schema::*};
+use crate::application_invariant_acceptance::managed_index::prefix_observation;
 use std::sync::Arc;
 use worth_query_decl::facade::{
     application_program::*, application_query::*, application_schema::*,
@@ -16,7 +17,7 @@ impl ApplicationSchemaContribution<Catalog> for Contribution {
     type Members = (CatalogRecords, ContributionContracts);
 }
 pub struct Configuration {
-    pub(super) provider: Arc<prefix::Calls>,
+    pub(super) provider: Arc<prefix_observation::Calls>,
     pub(super) rules: Arc<rule::Calls>,
 }
 impl WorthQueryApplicationContribution<Catalog> for Contribution {
@@ -124,7 +125,7 @@ pub(super) fn install(
     configuration: Configuration,
     initialize: Initialize,
     names: [&str; 3],
-) -> Result<Host, WorthQueryInMemoryApplicationDenial> {
+) -> Result<Host, WorthQueryApplicationPreparationDenial> {
     let declaration =
         <Catalog as worth_query_decl::facade::application_schema::ApplicationSchema>::declaration()
             .unwrap();
@@ -178,6 +179,27 @@ pub(super) fn install(
             Ok(())
         },
     )
+}
+
+impl
+    crate::application_invariant_acceptance::managed_index::prefix_provider::PrefixSourceIndex<
+        Catalog,
+    > for SameMeaningDifferentBinding
+{
+    fn with_name<R>(
+        row: &WorthQueryManagedIndexSourceRow<'_, Catalog, Self>,
+        visitor: impl FnOnce(&str) -> R,
+    ) -> Result<R, WorthQueryManagedIndexTextReadDenial> {
+        row.with_text(super::query::name(), visitor)
+    }
+    #[cfg(test)]
+    fn inspect_text(
+        calls: &prefix_observation::Calls,
+        row: &WorthQueryManagedIndexSourceRow<'_, Catalog, Self>,
+    ) -> Result<(), crate::application_invariant_acceptance::managed_index::prefix_provider::Stop>
+    {
+        prefix::text_read::inspect(calls, row)
+    }
 }
 
 pub struct ContributionContracts;

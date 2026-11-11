@@ -67,14 +67,7 @@ mod serial {
             for index in 0..rings.len() {
                 court.demand_ring(&mut rings, index, "publication before capture");
             }
-            application
-            .with_host_advancement(|phase| {
-                application.capture_application_checkpoint(
-                    &phase,
-                    worth_query_host::facade::application_installation::WorthQueryCheckpointCapturePolicy::SystemAllocation,
-                ).unwrap()
-            })
-            .expect("the native capture call is admitted")
+            worth_query_testkit_host::facade::host::checkpoint_capture::capture(&application)
         };
         let restored = install(Some(checkpoint), |_| {
             panic!("native reopen must preserve authored truth without reseeding")

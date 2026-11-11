@@ -15,6 +15,10 @@ fn untrusted_native_clones_share_moved_bytes_after_the_original_drops() {
         assert_eq!(clone.bytes(), b"native");
         assert_eq!(clone.bytes().as_ptr(), expected);
         assert_eq!(clone.captured_sections(), None);
+        assert!(
+            clone.publication_subject().is_none(),
+            "untrusted bytes and their clones cannot name a captured publication"
+        );
     }
     drop(clones);
 }

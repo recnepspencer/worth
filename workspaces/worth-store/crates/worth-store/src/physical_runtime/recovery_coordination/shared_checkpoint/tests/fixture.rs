@@ -44,7 +44,7 @@ pub(super) fn coordination() -> (
     );
     let capacity = PhysicalRecoveryCoordinationCapacity::admit(2, 4096, 2, 4096)
         .unwrap()
-        .with_recovery_allocation_bytes(16 << 10)
+        .with_recovery_allocation_bytes(crate::physical_runtime::record_serving::PreparedRecoveredCustodyBacking::required_bytes() + (16 << 10))
         .unwrap();
     let owner = freshness
         .register_session()

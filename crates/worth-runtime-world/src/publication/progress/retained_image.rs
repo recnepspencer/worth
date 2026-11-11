@@ -69,6 +69,12 @@ impl SignalAttemptProgress {
             Some(SignalProgressEvidence::Advanced(outcome)) => {
                 Some(SignalProgressEvidence::Advanced(Arc::clone(outcome)))
             }
+            Some(SignalProgressEvidence::Durable(outcome)) => {
+                Some(SignalProgressEvidence::Durable(Arc::clone(outcome)))
+            }
+            Some(SignalProgressEvidence::Unresolved(task)) => {
+                Some(SignalProgressEvidence::Unresolved(Arc::clone(task)))
+            }
             Some(SignalProgressEvidence::Forked(outcome)) => {
                 Some(SignalProgressEvidence::Forked(outcome.clone()))
             }

@@ -3,12 +3,15 @@ use super::*;
 pub(super) fn finish_writer(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     provider: &WorthQueryPrimaryGraphProvider,
-    runtime: &mut worth_relational::facade::runtime::RelationalRuntime,
+    runtime: &worth_relational::facade::runtime::RelationalRuntime,
     pending: &mut WorthQueryPendingApplicationPublication,
     after: &worth_relational::facade::snapshots::SnapshotHandle,
     commit_id: worth_relational::facade::history::CommitId,
     publish_causality: bool,
-) -> WorthQueryPrimaryGraphCommittedApplication {
+) -> (
+    WorthQueryPrimaryGraphCommittedApplication,
+    super::super::original_attempt_completion::OriginalCompletionPublisher,
+) {
     let committed_product_publication = pending
         .application
         .as_ref()
@@ -21,6 +24,7 @@ pub(super) fn finish_writer(
         .expect("pending application publication retains causality until final cutover");
     // The output's lineage record and its settlement row hold the consumed
     // outputs; the completed receipt evidence never does.
+    let original_completion = attempt.affinity().take_original_completion_publisher();
     let consumed_outputs = attempt.retain_consumed_outputs();
     let outstanding = attempt.take_outstanding_dispatch_reservation();
     if publish_causality {
@@ -117,5 +121,5 @@ pub(super) fn finish_writer(
         }
         (None, None) => {}
     }
-    completed
+    (completed, original_completion)
 }

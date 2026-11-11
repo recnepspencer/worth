@@ -8,31 +8,28 @@ use crate::durability::data::{RelationalCheckpointPage, RelationalCheckpointSymb
 use crate::durability::medium::{RelationalDurableColdSource, RelationalDurableMemberLocator};
 use crate::storage::data::{
     RelationalStorageSubject, RelationalStorageUnavailable,
-    RelationalStorageUnavailableCause as Cause,
+    RelationalStorageUnavailableCause as Cause, SymbolPageShape,
 };
 use crate::storage::residency::RelationalResidencyDemandFailure as Failure;
 use crate::symbols::data::Symbol;
 
 mod admission;
 mod member_export;
+mod selected_directory;
+mod source_retirement;
+use source_retirement::SymbolPageState;
 mod page_shape;
-use page_shape::{SymbolPageSelection, SymbolPageShape};
+use page_shape::SymbolPageSelection;
 
 #[cfg(test)]
 mod tests;
 
 #[derive(Debug)]
 pub(super) struct RuntimeSymbolResidency {
-    by_id: Arc<[RelationalCheckpointPage]>,
-    by_value: Arc<[RelationalCheckpointSymbolBucket]>,
-    source: Arc<dyn RelationalDurableColdSource>,
-    _placement: crate::durability::medium::RelationalDurableMemberCustody,
-    pages: Mutex<
-        crate::storage::substrate::SharedMap<
-            RelationalDurableMemberLocator,
-            Result<SymbolPageShape, RelationalStorageUnavailable>,
-        >,
-    >,
+    by_id: crate::durability::data::CheckpointPages,
+    by_value: crate::durability::data::CheckpointSymbolBuckets,
+    pages: Mutex<SymbolPageState>,
+    _memory: Option<worth_execution::ExecutionMemoryReservation>,
 }
 
 impl RuntimeSymbolResidency {
@@ -68,11 +65,15 @@ impl RuntimeSymbolResidency {
                 )
             })?;
         Ok(Self {
-            by_id: by_id.into(),
-            by_value: by_value.into(),
-            source,
-            _placement: placement,
-            pages: Mutex::new(Default::default()),
+            by_id: crate::durability::data::CheckpointPages::from_ordinary(by_id),
+            by_value: crate::durability::data::CheckpointSymbolBuckets::from_ordinary(by_value),
+            pages: Mutex::new(SymbolPageState {
+                data: Default::default(),
+                physical: crate::durability::medium::NativeSourceMemberState::new(
+                    source, placement,
+                ),
+            }),
+            _memory: None,
         })
     }
 
@@ -88,9 +89,11 @@ impl RuntimeSymbolResidency {
             Self {
                 by_id: self.by_id.clone(),
                 by_value: self.by_value.clone(),
-                source: self.source.clone(),
-                _placement: self._placement.clone(),
-                pages: Mutex::new(pages.clone()),
+                pages: Mutex::new(SymbolPageState {
+                    data: pages.data.clone(),
+                    physical: pages.physical.retain_serving(),
+                }),
+                _memory: None,
             },
             owner,
         )
@@ -220,17 +223,26 @@ impl RuntimeSymbolResidency {
             .unwrap_or_else(|poisoned| poisoned.into_inner());
         if let Some(result) = pages.get(&locator).copied() {
             return match result {
-                Ok(shape) => shape.validate(selection).map_err(|cause| {
-                    let failure = unavailable(subject, cause);
-                    pages.insert(locator, Err(failure));
-                    failure.into()
-                }),
+                Ok(shape) => {
+                    if let Err(cause) = shape.validate(selection) {
+                        let failure = unavailable(subject, cause);
+                        let mut refused = pages.data.clone();
+                        refused
+                            .insert_for_request(locator, Err(failure), execution)
+                            .map_err(Failure::Request)?;
+                        pages.data = refused;
+                        return Err(failure.into());
+                    }
+                    Ok(())
+                }
                 Err(failure) => Err(failure.into()),
             };
         }
         let result = (|| {
-            let bytes = self
-                .source
+            let bytes = pages
+                .physical
+                .source()
+                .ok_or_else(|| unavailable(subject, Cause::SourceUnavailable))?
                 .read_member(locator, 1 << 30)
                 .map_err(|cause| unavailable(subject, cause))?;
             let snapshot = crate::durability::checkpoints::symbol_pages::readmit(
@@ -241,22 +253,32 @@ impl RuntimeSymbolResidency {
             shape
                 .validate(selection)
                 .map_err(|cause| unavailable(subject, cause))?;
+            // Admit the complete map path before importing any dictionary text.
+            // A refused update drops its partial path and leaves the cache intact.
+            let mut admitted = pages.data.clone();
+            admitted
+                .insert_for_request(locator, Ok(shape), execution)
+                .map_err(Failure::Request)?;
+            crate::execution::check_request(execution).map_err(Failure::Request)?;
             owner
                 .import_canonical_snapshot(&snapshot)
                 .map_err(|_| unavailable(subject, Cause::Damaged))?;
-            Ok(shape)
+            pages.data = admitted;
+            Ok(())
         })();
         match &result {
-            Ok(shape) => {
-                pages.insert(locator, Ok(*shape));
-            }
+            Ok(()) => {}
             Err(Failure::StorageUnavailable(failure)) if failure.cause.is_proven_damage() => {
-                pages.insert(locator, Err(*failure));
+                let mut refused = pages.data.clone();
+                refused
+                    .insert_for_request(locator, Err(*failure), execution)
+                    .map_err(Failure::Request)?;
+                pages.data = refused;
             }
             Err(Failure::StorageUnavailable(_)) => {}
             Err(Failure::Request(_) | Failure::Content(_)) => {}
         }
-        result.map(|_| ())
+        result
     }
 }
 

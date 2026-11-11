@@ -106,7 +106,7 @@ fn historical_projection_is_reconstructed_from_owned_record_history() {
         history: cold.history,
         corrupt: AtomicBool::new(false),
     });
-    cold.source = source.clone();
+    cold.source = Some(source.clone());
     let cell = RelationalRegionResidency::cold(cold).unwrap();
     head_demand(&cell, 1 << 24).unwrap();
     assert_eq!(source.history_reads.load(Ordering::SeqCst), 0);
@@ -126,13 +126,13 @@ fn replaced_member(
     }
     let mut members = fixture.source.members.clone();
     members.insert(member.0, member.1);
-    cold.source = Arc::new(CountedSource {
+    cold.source = Some(Arc::new(CountedSource {
         members,
         reads: AtomicUsize::new(0),
         history_reads: AtomicUsize::new(0),
         history: cold.history,
         corrupt: AtomicBool::new(false),
-    });
+    }));
     RelationalRegionResidency::cold(cold).unwrap()
 }
 
@@ -147,7 +147,9 @@ fn assert_integrity_refusal(failure: crate::storage::data::RelationalStorageUnav
 fn tampered_carried_kind_commitment_is_refused_during_cold_restore() {
     let fixture = region_with_history();
     let mut cold = fixture.cold.clone();
-    cold.kind_authority.history[0] ^= 1;
+    let mut history = *cold.kind_authority.history.bytes();
+    history[0] ^= 1;
+    cold.kind_authority.history = worth_foundational::CanonicalDigestId::new(history);
     let cell = RelationalRegionResidency::cold(cold).unwrap();
     let failure = head_demand(&cell, 1 << 24).unwrap_err();
     assert_eq!(failure.cause, Cause::IntegrityMismatch);

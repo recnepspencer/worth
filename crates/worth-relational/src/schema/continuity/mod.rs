@@ -18,3 +18,5 @@ pub(super) use transition_canonical_fingerprint::{
     fingerprint_transition, strongest_boundary_visibility, strongest_historical_interpretation,
 };
 pub(super) use transition_classification::{is_contract_upgrade_policy, is_narrowing};
+
+pub(crate) use bundle_admission::validate_schema_continuity_body;

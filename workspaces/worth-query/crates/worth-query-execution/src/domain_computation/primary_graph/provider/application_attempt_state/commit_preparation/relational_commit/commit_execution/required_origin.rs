@@ -94,8 +94,8 @@ pub(super) fn bind(
             source_scope.local_slot(),
             source_scope.generation(),
         ),
-        source_partition: partition,
-        source_epoch,
+        source_partition: worth_foundational::CanonicalDigestId::new(partition),
+        source_epoch: worth_foundational::CanonicalDigestId::new(source_epoch),
     };
     let retired = provider
         .graph
@@ -196,7 +196,7 @@ pub(super) fn bind(
             let prior_meaning = RequiredOutputPublicationMeaning {
                 implementation: prior.implementation,
                 family: meaning.family.clone(),
-                source_epoch: prior.source_epoch,
+                source_epoch: worth_foundational::CanonicalDigestId::new(prior.source_epoch),
                 source_scope: meaning.source_scope,
                 source_partition: meaning.source_partition,
             };

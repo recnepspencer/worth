@@ -65,3 +65,6 @@ pub use step_contract::{
     BridgeManagedExecutionStepLimits,
 };
 pub use yield_authority::BridgeYieldedExecutionBasis;
+#[cfg(test)]
+#[path = "mod_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;

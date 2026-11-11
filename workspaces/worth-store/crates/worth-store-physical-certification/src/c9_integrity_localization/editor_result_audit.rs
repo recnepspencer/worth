@@ -1,6 +1,7 @@
 use std::collections::BTreeMap;
 use std::ops::Range;
 use std::path::{Path, PathBuf};
+use worth_foundational::CanonicalDigestId;
 
 use sha2::{Digest, Sha256};
 
@@ -11,9 +12,9 @@ use super::{CleanRootArtifactRecord, DeclaredRootCorruption, RootArtifactIdentit
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub(crate) struct EditorResultAudit {
     target: RootArtifactIdentity,
-    declaration_identity: [u8; 32],
-    before_sha256: [u8; 32],
-    after_sha256: Option<[u8; 32]>,
+    declaration_identity: CanonicalDigestId,
+    before_sha256: CanonicalDigestId,
+    after_sha256: Option<CanonicalDigestId>,
     changed_ranges: Vec<Range<u64>>,
     created_path: Option<PathBuf>,
     removed_path: Option<PathBuf>,
@@ -97,9 +98,9 @@ pub(super) fn audit_editor_result(
     let checksum_valid_after_edit = applied.after.as_deref().map(checksum_is_valid);
     Ok(EditorResultAudit {
         target: edit.target(),
-        declaration_identity: edit.identity(),
-        before_sha256: Sha256::digest(before).into(),
-        after_sha256,
+        declaration_identity: CanonicalDigestId::new(edit.identity()),
+        before_sha256: CanonicalDigestId::new(Sha256::digest(before).into()),
+        after_sha256: after_sha256.map(CanonicalDigestId::new),
         changed_ranges,
         created_path: applied.created_path,
         removed_path: applied.removed_path,
@@ -276,13 +277,16 @@ impl EditorResultAudit {
         self.target
     }
     pub(crate) const fn declaration_identity(&self) -> [u8; 32] {
-        self.declaration_identity
+        *self.declaration_identity.bytes()
     }
     pub(crate) const fn before_sha256(&self) -> [u8; 32] {
-        self.before_sha256
+        *self.before_sha256.bytes()
     }
     pub(crate) const fn after_sha256(&self) -> Option<[u8; 32]> {
-        self.after_sha256
+        match self.after_sha256 {
+            Some(digest) => Some(*digest.bytes()),
+            None => None,
+        }
     }
     pub(crate) fn changed_ranges(&self) -> &[Range<u64>] {
         &self.changed_ranges

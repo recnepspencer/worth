@@ -1,0 +1,13 @@
+[
+  "unknown_merge_source_refuses_while_a_valid_preparation_remains_held",
+  "topology_region_conflict_detection_preserves_neighborhood_evidence",
+  "topology_region_conflict_denial_is_stable_across_recovery",
+  "execute_prepared_merge_reports_structural_summary_and_diagnostics",
+  "verify_prepared_merge_execution_accepts_fresh_prepared_merge",
+  "verify_prepared_merge_execution_rejects_runtime_instance_mismatch",
+  "verify_prepared_merge_execution_rejects_target_head_drift",
+  "verify_prepared_merge_execution_rejects_source_head_drift",
+  "authoritative_merge_execution_certification_rejects_stale_prepared_merge_after_target_advances",
+  "authoritative_merge_execution_certification_rejects_stale_prepared_merge_after_source_advances",
+  "authoritative_merge_execution_certification_emits_machine_checkable_artifacts"
+]

@@ -1,4 +1,3 @@
-use worth_query_installation::facade::ApplicationSchemaBindingIdentity;
 use worth_query_installation::facade::{ApplicationSchema, WorthQueryInstalledApplicationSchema};
 use worth_relational::facade::replay::CanonicalCommitAuthorityKind;
 use worth_relational::facade::runtime::RelationalRuntime;
@@ -10,65 +9,23 @@ use crate::domain_computation::execution_runtime::{
 };
 
 use super::super::{
-    application_checkpoint::DecodedApplicationCheckpoint, WorthQueryApplicationInvariantFactories,
-    WorthQueryPrimaryGraph, WorthQueryPrimaryGraphBootstrap,
-    WorthQueryPrimaryGraphInstallationDenial, WorthQueryPrimaryGraphInstallationDenialKind,
+    application_checkpoint::DecodedApplicationCheckpoint, WorthQueryPrimaryGraphInstallationDenial,
+    WorthQueryPrimaryGraphInstallationDenialKind,
 };
+use super::super::{WorthQueryApplicationInvariantFactories, WorthQueryPrimaryGraphBootstrap};
 use super::WorthQueryPrimaryGraphPublication;
-
-impl<Schema> WorthQueryPrimaryGraphBootstrap<Schema> {
-    pub(in crate::domain_computation::primary_graph) fn has_pending_codec_transition(
-        &self,
-    ) -> bool {
-        self.recovered_relational_authority
-            .as_ref()
-            .is_some_and(|authority| authority.codec_transition_pending())
-    }
-}
-
-pub(super) fn primary_graph_for_installation(
-    runtime_authority: crate::domain_computation::execution_runtime::WorthQueryRuntimeAuthorityIdentity,
-    binding_identity: ApplicationSchemaBindingIdentity,
-    layout: super::super::schema_layout::WorthQueryPrimaryGraphLayout,
-    relational_runtime: RelationalRuntime,
-    invalidation_resources: crate::domain_computation::execution_runtime::WorthQueryInvalidationResources,
-    managed_sources: super::super::application_query::managed_index::ManagedSourceInstallation,
-    recovered: bool,
-) -> Result<WorthQueryPrimaryGraph, WorthQueryPrimaryGraphInstallationDenial> {
-    if !recovered {
-        return Ok(WorthQueryPrimaryGraph::new(
-            runtime_authority,
-            binding_identity,
-            layout,
-            relational_runtime,
-            invalidation_resources,
-            managed_sources,
-        ));
-    }
-    WorthQueryPrimaryGraph::from_recovered_runtime(
-        runtime_authority,
-        binding_identity,
-        layout,
-        relational_runtime,
-        invalidation_resources,
-        managed_sources,
-    )
-    .map_err(checkpoint_denial)
-}
 
 impl DecodedApplicationCheckpoint {
     pub(super) fn recover_publication(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
-        graph: &WorthQueryPrimaryGraph,
+        graph: &super::prepared_native::PreparedNativeGraph,
     ) -> Result<WorthQueryPrimaryGraphPublication, WorthQueryPrimaryGraphInstallationDenial> {
-        let envelope = graph
-            .integration_handle()
-            .with_runtime(execution, |runtime| {
-                runtime
-                    .replay()
-                    .canonical_commit_envelope(execution, self.bootstrap_commit_id)
-            });
+        let envelope = graph.with_runtime(execution, |runtime| {
+            runtime
+                .replay()
+                .canonical_commit_envelope(execution, self.bootstrap_commit_id)
+        });
         let envelope = envelope
             .map_err(super::request_read_denial::read)?
             .ok_or_else(|| checkpoint_denial("checkpoint omitted its claimed bootstrap commit"))?;
@@ -111,7 +68,7 @@ impl DecodedApplicationCheckpoint {
 }
 
 fn publication_row_counts(
-    graph: &WorthQueryPrimaryGraph,
+    graph: &super::prepared_native::PreparedNativeGraph,
     intents: &[MutationIntent],
 ) -> Result<(usize, usize, usize), WorthQueryPrimaryGraphInstallationDenial> {
     let mut entities = Vec::new();
@@ -193,32 +150,32 @@ fn created_reference_matches(
 
 pub(super) fn verify_bootstrap_indexes(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-    graph: &WorthQueryPrimaryGraph,
+    graph: &super::prepared_native::PreparedNativeGraph,
     index_ids: impl Iterator<Item = worth_relational::facade::indexes::DerivedIndexId>,
 ) -> Result<(), WorthQueryPrimaryGraphInstallationDenial> {
-    graph
-        .integration_handle()
-        .with_runtime(execution, |runtime| {
-            let indexes = runtime.index_access();
-            for index_id in index_ids {
-                let generation = indexes
-                    .read_latest_generation(
-                        execution,
-                        index_id,
-                        &super::super::primary_relational_branch_id(),
-                    )
-                    .map_err(super::request_read_denial::read)?;
-                if generation.is_none() {
-                    return Err(checkpoint_denial(
-                        "checkpoint omitted a bootstrap identity-index generation",
-                    ));
-                }
+    graph.with_runtime(execution, |runtime| {
+        let indexes = runtime.index_access();
+        for index_id in index_ids {
+            let generation = indexes
+                .read_latest_generation(
+                    execution,
+                    index_id,
+                    &super::super::primary_relational_branch_id(),
+                )
+                .map_err(super::request_read_denial::read)?;
+            if generation.is_none() {
+                return Err(checkpoint_denial(
+                    "checkpoint omitted a bootstrap identity-index generation",
+                ));
             }
-            Ok(())
-        })
+        }
+        Ok(())
+    })
 }
 
-fn checkpoint_denial(subject: impl Into<String>) -> WorthQueryPrimaryGraphInstallationDenial {
+pub(super) fn checkpoint_denial(
+    subject: impl Into<String>,
+) -> WorthQueryPrimaryGraphInstallationDenial {
     WorthQueryPrimaryGraphInstallationDenial::new(
         WorthQueryPrimaryGraphInstallationDenialKind::CheckpointRecoveryRejected,
         subject,

@@ -74,6 +74,19 @@ impl WorthQueryProductObservationLease {
 }
 
 impl WorthQueryProductBranchLease {
+    pub(crate) fn retain_selected_program_source(
+        &mut self,
+        selected: &crate::domain_computation::primary_graph::WorthQuerySelectedProgramInspection,
+    ) -> Result<(), super::WorthQueryProductBranchAdmissionDenial> {
+        self.publication
+            .retain_selected_program_source(selected)
+            .map_err(|_| {
+                super::WorthQueryProductBranchAdmissionDenial::Refused(
+                    super::WorthQueryProductBranchAdmissionRefusalKind::ObservationRejected,
+                )
+            })
+    }
+
     pub(crate) fn read_lease(&self) -> WorthQueryProductObservationLease {
         self.read.retained_clone()
     }
@@ -141,6 +154,16 @@ impl WorthQueryProductBranchLease {
         &self,
     ) -> &worth_relational::facade::branch::RelationalBranchBasisDescriptor {
         self.relational_basis().descriptor()
+    }
+
+    /// Read-only Signal generation of this selection; grants no admission.
+    pub fn signal_generation_for_test(&self) -> u64 {
+        self.signal_basis().observation().generation().get()
+    }
+
+    /// Read-only World reference generation of this selection; grants no admission.
+    pub fn world_reference_generation_for_test(&self) -> u64 {
+        self.observation().reference_generation().get()
     }
 
     #[doc(hidden)]

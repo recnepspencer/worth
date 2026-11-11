@@ -8,6 +8,13 @@ pub struct PhysicalRecoveryCoordinationCapacity {
 }
 
 impl PhysicalRecoveryCoordinationCapacity {
+    /// Fixed serving-evidence backing included in the whole recovery allowance.
+    /// This layout quote issues no allocation or serving authority. Variable
+    /// checkpoint, WAL and source-read backing must be admitted beside it.
+    pub const fn serving_evidence_backing_bytes() -> u64 {
+        crate::physical_runtime::record_serving::PreparedRecoveredCustodyBacking::required_bytes()
+    }
+
     pub fn admit(
         commands: u64,
         semantic_bytes: u64,

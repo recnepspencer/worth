@@ -1,4 +1,5 @@
 //! Branch-qualified transaction preparation and publication surface.
+pub use crate::mvcc::{RelationalCallerAssociation, RelationalCallerAssociationRefusal};
 
 pub use crate::mvcc::{
     AuthoredOwnedMemberKind, BranchBoundRelationalTransaction, CompanionBranchCell,
@@ -15,12 +16,13 @@ pub use crate::mvcc::{
     PreparedRelationalCommitCandidate, PreparedRelationalRecordChange,
     PreparedRelationalRelationEndpoints, PublicationCompanionPreflight,
     PublicationCompanionRegistration, PublicationCompanionRegistrationPort,
-    PublicationCompanionRegistrationStop, PublishRelationalCommit, RecordedMemberRestoration,
-    RecordedMemberRestorationRefusal, RelationalBranchObservation,
-    RelationalBranchTransactionAdmissionDenial, RelationalCancellationSource,
-    RelationalCancellationToken, RelationalInstalledApplicationPublicationAuthority,
-    RelationalInterruptionBoundary, RelationalInterruptionCostCounters,
-    RelationalInterruptionEvent, RelationalMutationInvariantEvidence, RelationalOperationControl,
+    PublicationCompanionRegistrationStop, PublicationCompanionRetirementDenial,
+    PublishRelationalCommit, RecordedMemberRestoration, RecordedMemberRestorationRefusal,
+    RelationalBranchObservation, RelationalBranchTransactionAdmissionDenial,
+    RelationalCancellationSource, RelationalCancellationToken,
+    RelationalInstalledApplicationPublicationAuthority, RelationalInterruptionBoundary,
+    RelationalInterruptionCostCounters, RelationalInterruptionEvent,
+    RelationalMutationInvariantEvidence, RelationalOperationControl,
     RelationalOperationInterruption, RelationalOwnedGraphSelection,
     RelationalOwnedGraphSelectionPreparationError, RelationalPreparationPort,
     RelationalPublicationCompanion, RelationalPublicationDeferred, RelationalPublicationDenial,
@@ -32,7 +34,8 @@ pub use crate::mvcc::{
     RelationalTransactionReadDenial, RelationalTransactionReadLocus,
     RelationalTransactionRelationRead, RelationalTransactionRelationValue,
     RelationalTransactionStagedMutations, RelationalTransactionStagingDenial,
-    RelationalTransactionWriteLocus, ReservedCompanionBranchCell, StaleRelationalBranchObservation,
+    RelationalTransactionWriteLocus, ReservedCompanionBranchCell,
+    RetiredPublicationCompanionRegistration, StaleRelationalBranchObservation,
     ValidatedEntityStructTouch, ValidatedMutationFootprint, ValidatedMutationFootprintNotRequested,
     ValidatedMutationFootprintProjection, ValidatedMutationFootprintWork, ValidatedMutationTouch,
     ValidatedMutationTouchProjectionError, ValidatedMutationTouchProjectionWork,

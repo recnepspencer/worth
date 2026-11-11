@@ -155,12 +155,24 @@ pub(crate) fn writeback_execution_record_digest(
     crate::diagnostics::causal_envelope::BridgeCausalDigestRefusal,
 > {
     facade
-        .writeback_execution_record_for_identity(
+        .retained_writeback_execution_reference_for_identity(
             &BridgeWritebackExecutionRecordIdentity::from_retained_evidence_reference(
                 reference_identity,
             ),
         )
-        .map(|record| writeback_execution_artifact_digest(&record))
+        .and_then(
+            |reference| match facade.writeback_execution_record_for_reference(&reference) {
+                Ok(record) => Some(writeback_execution_artifact_digest(&record)),
+                Err(worth_foundational::facade::DiagnosticRecordReadDenial::Absent(
+                    worth_foundational::facade::DiagnosticRecordAbsence::NeverRetained
+                    | worth_foundational::facade::DiagnosticRecordAbsence::ExpiredUnderCountLimit
+                    | worth_foundational::facade::DiagnosticRecordAbsence::NotRetainedAcrossReopen,
+                )) => None,
+                Err(worth_foundational::facade::DiagnosticRecordReadDenial::ForeignOwner) => {
+                    panic!("retained reference belongs to its issuing facade")
+                }
+            },
+        )
         .transpose()
 }
 
@@ -198,12 +210,24 @@ pub(crate) fn writeback_replay_record_digest(
     crate::diagnostics::causal_envelope::BridgeCausalDigestRefusal,
 > {
     facade
-        .writeback_replay_record_for_identity(
+        .retained_writeback_replay_reference_for_identity(
             &BridgeWritebackReplayRecordIdentity::from_retained_evidence_reference(
                 reference_identity,
             ),
         )
-        .map(|record| writeback_replay_artifact_digest(&record))
+        .and_then(
+            |reference| match facade.writeback_replay_record_for_reference(&reference) {
+                Ok(record) => Some(writeback_replay_artifact_digest(&record)),
+                Err(worth_foundational::facade::DiagnosticRecordReadDenial::Absent(
+                    worth_foundational::facade::DiagnosticRecordAbsence::NeverRetained
+                    | worth_foundational::facade::DiagnosticRecordAbsence::ExpiredUnderCountLimit
+                    | worth_foundational::facade::DiagnosticRecordAbsence::NotRetainedAcrossReopen,
+                )) => None,
+                Err(worth_foundational::facade::DiagnosticRecordReadDenial::ForeignOwner) => {
+                    panic!("retained reference belongs to its issuing facade")
+                }
+            },
+        )
         .transpose()
 }
 

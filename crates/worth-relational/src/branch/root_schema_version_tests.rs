@@ -80,7 +80,9 @@ fn primary_version_matches_full_projection_across_registry_shapes_and_rebinding(
             root.retained_aspect_contracts().to_vec(),
             &expected,
             semantics,
+            crate::schema::SchemaCompilationControl::Configuration,
         )
+        .expect("configuration compilation cannot refuse")
         .unwrap();
         assert_eq!(restored.schema_version(), version);
         assert_eq!(restored.authority_digest(), root.authority_digest());

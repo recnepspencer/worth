@@ -109,7 +109,11 @@ fn close_reports_observations_that_remain_live_until_their_last_clone_drops() {
         .observe_product_branch(root.branch_identity())
         .unwrap();
     let child = create_reused_branch(&owner, &root, reuse_intent("child"));
-    let report = owner.close().unwrap();
+    let report = owner
+        .close(&worth_execution::ExecutionRequest::serial(
+            &crate::test_execution_policy::serial_request(),
+        ))
+        .unwrap();
     assert_eq!(report.outstanding_observations(), 3);
     assert_eq!(report.released_observation_pins(), 0);
     assert_eq!(report.released_product_head_pins(), 1);

@@ -56,7 +56,7 @@ pub fn snapshot(runtime: &RelationalRuntime) -> (SnapshotHandle, PositionedRelat
 
 pub fn write_field(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-    runtime: &mut RelationalRuntime,
+    runtime: &RelationalRuntime,
     entity: EntityId,
     locator: AspectFieldLocator,
     value: &str,
@@ -79,7 +79,7 @@ pub fn write_field(
 
 pub fn write_batch(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-    runtime: &mut RelationalRuntime,
+    runtime: &RelationalRuntime,
     batch: WorkerIntentBatch,
 ) -> worth_relational::facade::transactions::CommitResult {
     let basis = runtime
@@ -229,7 +229,7 @@ fn ordinary_native_writer_marks_only_matched_fields_and_actual_downstream_edges(
         .with_host_advancement(|phase| {
             let host_custody = phase.test_host_request_for_test();
             let request_execution = &host_custody.borrowed_request_for_test();
-            handle.with_runtime_mut_for_test(request_execution, |runtime| {
+            handle.with_runtime_for_test(request_execution, |runtime| {
                 // Ensure the real companion has a selected cell even if fixture
                 // installation happened before its subscription became active.
                 write_field(request_execution, runtime, entity, label.clone(), "prime");

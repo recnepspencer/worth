@@ -107,12 +107,8 @@ where
     > {
         use WorthQueryCorrectionOutputProjectionDenial as D;
         self.request.check_live().map_err(D::Stopped)?;
-        let evidence = self.source.occurrence().commit_evidence();
-        let original = evidence
-            .original_authority()
-            .retained_governed_input_carrier()
-            .and_then(|input| input.correction())
-            .ok_or(D::MaterialUnavailable)?;
+        let evidence = self.source.occurrence();
+        let original = evidence.disclosure().ok_or(D::MaterialUnavailable)?;
         validate_witness(
             std::any::TypeId::of::<C::Source>(),
             original.association().declaration().source_output_fields(),
@@ -126,7 +122,7 @@ where
             .declaration()
             .map_err(|_| D::FieldMeaningMismatch)?
             .parts();
-        let correspondence = evidence.output_correspondence();
+        let correspondence = evidence.correspondence();
         correspondence
             .require_source_binding::<C::Source>()
             .map_err(D::Output)?;
@@ -148,21 +144,35 @@ where
             CanonicalFieldPath::single(FieldKey::new(&parts.field).ok_or(D::FieldMeaningMismatch)?),
         );
         let value = evidence
-            .committed_changes()
-            .committed_field_ref(&self.request, entity, &locator)
+            .field(&self.request, entity, &locator)
             .map_err(D::Stopped)?
             .ok_or(D::MaterialUnavailable)?;
-        let content = content::certify(
-            &self.request,
-            evidence.committed_changes(),
-            value,
-            entity,
-            &parts.entity,
-            &locator,
-            field
-                .content_recipe()
-                .map_err(|_| D::FieldMeaningMismatch)?,
-        )?;
+        let content = match evidence.memory() {
+            Some(original) => content::certify(
+                &self.request,
+                original.commit_evidence().committed_changes(),
+                value,
+                entity,
+                &parts.entity,
+                &locator,
+                field
+                    .content_recipe()
+                    .map_err(|_| D::FieldMeaningMismatch)?,
+            )?,
+            None => content::certify_retained(
+                &self.request,
+                self.source.ancestry().source().basis().relational_basis(),
+                &evidence
+                    .home_material()
+                    .expect("Home material backing")
+                    .ready
+                    .content,
+                value,
+                field
+                    .content_recipe()
+                    .map_err(|_| D::FieldMeaningMismatch)?,
+            )?,
+        };
         Ok((value, content))
     }
 }

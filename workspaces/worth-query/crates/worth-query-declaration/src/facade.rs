@@ -6,6 +6,7 @@
 /// `ApplicationSchemaDeclaration`.
 pub mod application_schema {
     pub use crate::application_schema::*;
+    pub use worth_foundational::CanonicalDigestId;
 }
 
 /// Aftermath declaration: what may happen to an operation's committed change

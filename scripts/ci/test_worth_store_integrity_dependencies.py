@@ -13,6 +13,15 @@ SPEC.loader.exec_module(GUARD)
 
 
 class IntegrityDependencyGuardTests(unittest.TestCase):
+    def test_canonical_certification_roles_do_not_make_products_test_authorities(self) -> None:
+        for name in ("worth-store-court-store", "worth-store-testkit", "worth-store-testkit-recovery-runtime"):
+            self.assertTrue(GUARD.certification_role(name))
+        for name in ("worth-store", "worth-store-recovery-runtime", "worth-store-courtly"):
+            self.assertFalse(GUARD.certification_role(name))
+        renamed = {"dependencies": {"fixture": {"package": "worth-store-testkit-recovery-runtime"}}}
+        self.assertEqual(GUARD.production_certification_edges(renamed), ["worth-store-testkit-recovery-runtime"])
+        self.assertEqual(GUARD.production_certification_edges({"dev-dependencies": renamed["dependencies"]}), [])
+
     def test_wire_dependencies_do_not_admit_runtime_or_owner_parsers(self) -> None:
         self.assertEqual(GUARD.OBSERVER_DEPENDENCIES, {
             "worth-foundational", "worth-store-physical-format", "serde", "serde_json",

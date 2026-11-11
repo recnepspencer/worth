@@ -288,8 +288,9 @@ occurrences, Signal definitions, programs, workflows and their obligations,
 external custody and corrections.
 
 Milestone 3 is delivered in numbered phases, specified in
-[milestone-3.md](milestone-3.md). Each certified phase may land on master on
-its own. Until the phase that supports a state family lands, operations that
+[milestone-3.md](milestone-3.md). Master receives three certified landings:
+Phases 1–2, Phases 3–4 together, then Phases 5–10 together. Until the phase that
+supports a state family lands, operations that
 would create it refuse before their first effect, and opening a home that
 holds it refuses before serving.
 

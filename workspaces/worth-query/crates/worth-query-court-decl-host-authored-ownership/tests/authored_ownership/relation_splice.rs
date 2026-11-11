@@ -1,6 +1,5 @@
 //! Mid-thread authored splice and its independently checked exact relation inverse.
 use super::{lifecycle::*, *};
-mod checkpoint;
 mod courts;
 pub mod inspection;
 #[derive(

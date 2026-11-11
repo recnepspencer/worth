@@ -36,6 +36,14 @@ impl WorthQueryInstalledConditionalOperation<TestSchema> for InstalledClock {
         &self.identity
     }
 
+    fn take_released_managed_cleanup(
+        &mut self,
+    ) -> Option<
+        worth_query_execution::facade::primary_graph::WorthQueryApplicationManagedCleanupReceipt,
+    > {
+        None
+    }
+
     fn installation_canonical_work(
         &self,
     ) -> worth_query_installation::facade::WorthQueryCanonicalWorkEvidence {

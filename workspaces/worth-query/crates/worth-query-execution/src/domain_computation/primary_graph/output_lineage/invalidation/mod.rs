@@ -36,7 +36,7 @@ pub(crate) mod mark_state;
 mod output_availability;
 pub(in crate::domain_computation::primary_graph) use output_availability::SourcePublicationReadFence;
 pub(crate) mod output_facts;
-pub(in crate::domain_computation) use output_availability::ObservedSourcePublication;
+
 pub(in crate::domain_computation::primary_graph) use output_facts::RegisteredOutputFacts;
 
 pub(crate) mod owner;
@@ -77,3 +77,5 @@ pub(in crate::domain_computation::primary_graph) use settlement::SettlementRegis
 pub(in crate::domain_computation::primary_graph) use verification::DirtyReverification;
 pub(in crate::domain_computation::primary_graph) use verification::SettlementVerificationStop;
 pub(in crate::domain_computation::primary_graph) use verified_current::VerifiedCurrentCleanup;
+
+pub use output_availability::ObservedSourcePublication;

@@ -1,5 +1,6 @@
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum RelationalBranchTransactionAdmissionDenial {
+    HomeProgramTransition(crate::durability::medium::RelationalHomeProgramWriteDenial),
     OwnerUnavailable,
     ForeignRuntime {
         expected_runtime_instance_id: u64,
@@ -41,6 +42,29 @@ impl crate::runtime::RelationalRuntime {
         control: crate::mvcc::RelationalOperationControl,
     ) -> Result<super::BranchBoundRelationalTransaction, RelationalBranchTransactionAdmissionDenial>
     {
+        self.begin_branch_transaction_with_scope(basis, intent, control, None, None)
+    }
+
+    pub(crate) fn begin_branch_transaction_with_scope(
+        &self,
+        basis: &crate::branch::AdmittedRelationalBranchBasis,
+        intent: super::RelationalTransactionIntent,
+        control: crate::mvcc::RelationalOperationControl,
+        home_step: Option<std::sync::Arc<crate::runtime::AdmittedRelationalHomeProgramStep>>,
+        codec: Option<std::sync::Arc<crate::durability::RecoveredCodecPublicationCustody>>,
+    ) -> Result<super::BranchBoundRelationalTransaction, RelationalBranchTransactionAdmissionDenial>
+    {
+        if let Some(medium) = self.durability.medium() {
+            medium
+                .admit_home_program_write(home_step.as_deref(), codec.as_deref())
+                .map_err(RelationalBranchTransactionAdmissionDenial::HomeProgramTransition)?;
+        }
+        if codec
+            .as_ref()
+            .is_some_and(|custody| !custody.admits_source(basis))
+        {
+            return Err(RelationalBranchTransactionAdmissionDenial::BasisIdentityMismatch);
+        }
         if basis.identity().runtime_instance_id() != self.runtime_instance_id() {
             return Err(RelationalBranchTransactionAdmissionDenial::ForeignRuntime {
                 expected_runtime_instance_id: self.runtime_instance_id(),
@@ -164,7 +188,10 @@ impl crate::runtime::RelationalRuntime {
             intent,
             merge_parent_bases: Vec::new(),
             schema_authority_input: None,
-            recovered_codec_publication_custody: None,
+            home_target: None,
+            home_step,
+            home_target_coverage: None,
+            recovered_codec_publication_custody: codec,
             schema_authority: basis.inner.root.retained_schema_authority(),
             overlay: super::DetachedRelationalTransactionOverlay::default(),
             maximum_savepoints,
@@ -184,8 +211,13 @@ impl crate::runtime::RelationalRuntime {
         owner_inputs: crate::mvcc::RelationalTransactionValidationInput,
     ) -> Result<super::BranchBoundRelationalTransaction, RelationalBranchTransactionAdmissionDenial>
     {
-        let mut transaction =
-            self.begin_branch_transaction(owner_inputs.basis(), owner_inputs.intent().clone())?;
+        let mut transaction = self.begin_branch_transaction_with_scope(
+            owner_inputs.basis(),
+            owner_inputs.intent().clone(),
+            owner_inputs.control().clone(),
+            owner_inputs.home_step().cloned(),
+            owner_inputs.recovered_codec_publication_custody().cloned(),
+        )?;
         owner_inputs.apply_owner_inputs_to(&mut transaction);
         Ok(transaction)
     }

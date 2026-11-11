@@ -177,7 +177,7 @@ fn cascade_refuses_tampered_carried_origin_and_membership_records() {
             tampered.members[0].id
         };
         if change_origin {
-            tampered.dependency_identity = [99; 32];
+            tampered.dependency_identity = worth_foundational::CanonicalDigestId::new([99; 32]);
         } else {
             tampered.members[0].entity_name = "invented-member-family".into();
         }

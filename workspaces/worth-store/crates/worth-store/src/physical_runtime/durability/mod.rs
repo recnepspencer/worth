@@ -257,3 +257,6 @@ pub use wal::{
 };
 
 pub(in crate::physical_runtime) use mutation::ManagedPublicationRegistration;
+#[cfg(test)]
+#[path = "mod_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;

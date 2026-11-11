@@ -7,7 +7,7 @@ fn schema_continuity_publication_rejects_incomplete_canonical_bundle() {
 
     let runtime = runtime_with_test_schema();
     let outcome = create_entity_outcome(execution, &runtime, "a");
-    let mut envelope = outcome.envelope().clone();
+    let mut envelope = outcome.envelope().copy_original_for_test(execution);
     let fingerprint = SchemaBoundaryFingerprint::new([13_u8; 32]);
     let transition = SchemaTransitionArtifact::new(
         SchemaId("test".to_string()),
@@ -61,16 +61,22 @@ fn schema_continuity_publication_rejects_incomplete_canonical_bundle() {
             ),
         ),
     );
-    envelope.schema_transition = Some(transition.clone());
-    envelope.schema_continuation_descriptor = Some(transition.continuation_descriptor.clone());
-    envelope.schema_reconciliation_descriptor = None;
+    envelope.body_mut_for_test().schema_transition = Some(transition.clone());
+    envelope.body_mut_for_test().schema_continuation_descriptor =
+        Some(transition.continuation_descriptor.clone());
+    envelope
+        .body_mut_for_test()
+        .schema_reconciliation_descriptor = None;
     let plan = SchemaContinuityPlan {
         target_schema_registry: None,
         target_schema_version: envelope.schema_version,
         target_schema_authority: envelope.schema_authority.clone(),
         descriptor_semantics_version: DescriptorSemanticsVersion::default(),
         schema_transition: Some(transition),
-        schema_continuation_descriptor: envelope.schema_continuation_descriptor.clone(),
+        schema_continuation_descriptor: envelope
+            .body_mut_for_test()
+            .schema_continuation_descriptor
+            .clone(),
         schema_reconciliation_descriptor: None,
     };
 
@@ -123,7 +129,7 @@ fn schema_continuity_publication_rejects_descriptor_semantics_mismatch() {
             SchemaDiffDetail::AddedField {
                 field: field_key("tag"),
                 required: false,
-                default_expression: Some(Arc::<str>::from("null")),
+                default_expression: Some(Arc::<str>::from("null").into()),
             },
         )],
         SchemaContinuationDescriptor::new(
@@ -155,11 +161,15 @@ fn schema_continuity_publication_rejects_descriptor_semantics_mismatch() {
             ),
         ),
     );
-    let mut envelope = outcome.envelope().clone();
-    envelope.schema_transition = Some(transition.clone());
-    envelope.schema_continuation_descriptor = Some(transition.continuation_descriptor.clone());
-    envelope.schema_reconciliation_descriptor = Some(transition.reconciliation_descriptor.clone());
-    envelope.descriptor_semantics_version = DescriptorSemanticsVersion::default();
+    let mut envelope = outcome.envelope().copy_original_for_test(execution);
+    envelope.body_mut_for_test().schema_transition = Some(transition.clone());
+    envelope.body_mut_for_test().schema_continuation_descriptor =
+        Some(transition.continuation_descriptor.clone());
+    envelope
+        .body_mut_for_test()
+        .schema_reconciliation_descriptor = Some(transition.reconciliation_descriptor.clone());
+    envelope.body_mut_for_test().descriptor_semantics_version =
+        DescriptorSemanticsVersion::default();
     let plan = SchemaContinuityPlan {
         target_schema_registry: None,
         target_schema_version: envelope.schema_version,
@@ -220,7 +230,7 @@ fn shared_continuity_bundle_validator_reports_boundary_fingerprint_mismatch() {
             SchemaDiffDetail::AddedField {
                 field: field_key("tag"),
                 required: false,
-                default_expression: Some(Arc::<str>::from("null")),
+                default_expression: Some(Arc::<str>::from("null").into()),
             },
         )],
         SchemaContinuationDescriptor::new(
@@ -252,10 +262,13 @@ fn shared_continuity_bundle_validator_reports_boundary_fingerprint_mismatch() {
             ),
         ),
     );
-    let mut envelope = outcome.envelope().clone();
-    envelope.schema_transition = Some(transition.clone());
-    envelope.schema_continuation_descriptor = Some(transition.continuation_descriptor.clone());
-    envelope.schema_reconciliation_descriptor = Some(transition.reconciliation_descriptor.clone());
+    let mut envelope = outcome.envelope().copy_original_for_test(execution);
+    envelope.body_mut_for_test().schema_transition = Some(transition.clone());
+    envelope.body_mut_for_test().schema_continuation_descriptor =
+        Some(transition.continuation_descriptor.clone());
+    envelope
+        .body_mut_for_test()
+        .schema_reconciliation_descriptor = Some(transition.reconciliation_descriptor.clone());
 
     let issue = validate_schema_continuity_bundle(&envelope).unwrap_err();
 

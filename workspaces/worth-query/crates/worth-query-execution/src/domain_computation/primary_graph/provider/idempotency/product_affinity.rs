@@ -13,6 +13,17 @@ pub struct WorthQueryProductIdempotencyAffinity {
 }
 
 impl WorthQueryProductIdempotencyAffinity {
+    pub(in crate::domain_computation::primary_graph) fn from_released(
+        original: &worth_runtime_world::facade::WorldReleasedOriginal,
+    ) -> Self {
+        Self::new(
+            original.product_branch().clone(),
+            original.product_incarnation(),
+        )
+    }
+    pub(super) fn branch(&self) -> &ProductBranchIdentity {
+        &self.branch
+    }
     pub(in crate::domain_computation::primary_graph) const fn incarnation(
         &self,
     ) -> ProductBranchIncarnation {

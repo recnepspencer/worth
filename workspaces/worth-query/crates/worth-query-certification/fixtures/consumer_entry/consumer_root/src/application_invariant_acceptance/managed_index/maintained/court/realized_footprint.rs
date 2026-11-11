@@ -1,11 +1,12 @@
 //! Genuine old expectations distinguish candidate influence from the whole Source.
 use super::super::{authoring::Edit, handler::DecisionRead, schema::Catalog};
 use super::*;
+use crate::application_invariant_acceptance::managed_index::prefix_observation;
 
 #[test]
 fn realized_footprint_preserves_irrelevant_source_edits_and_refuses_changed_projected_inputs() {
     lifecycle::run(|| {
-        let calls = Arc::new(prefix::Calls::default());
+        let calls = Arc::new(prefix_observation::Calls::default());
         let world = host::install(calls.clone(), Arc::new(rule::Calls::new(calls)));
         let scope = authentication::request_scope();
         let principal = authentication::block_on(
@@ -103,7 +104,7 @@ fn realized_footprint_preserves_irrelevant_source_edits_and_refuses_changed_proj
 #[test]
 fn realized_footprint_empty_expectation_survives_nonmatches_but_keeps_future_entrants() {
     lifecycle::run(|| {
-        let calls = Arc::new(prefix::Calls::default());
+        let calls = Arc::new(prefix_observation::Calls::default());
         let world = host::install_decision_read(
             calls.clone(),
             Arc::new(rule::Calls::new(calls)),
@@ -221,7 +222,7 @@ mod atomic;
 #[test]
 fn realized_footprint_keeps_two_distinct_probe_obligations_at_the_same_source_revision() {
     lifecycle::run(|| {
-        let calls = Arc::new(prefix::Calls::default());
+        let calls = Arc::new(prefix_observation::Calls::default());
         let world = host::install_decision_read(
             calls.clone(),
             Arc::new(rule::Calls::new(calls)),

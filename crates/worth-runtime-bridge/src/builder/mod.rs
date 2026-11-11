@@ -34,3 +34,11 @@ pub use states::{
     PresentMappingRegistrations, PresentSignalSink, PresentSnapshotReadSource,
     PresentTruthBranchHeadSource, RuntimeBridgeBuilder,
 };
+/// Authored Bridge configuration awaiting its concrete Relational source.
+pub type UnattachedRelationalBridgeBuilder = RuntimeBridgeBuilder<
+    MissingCommittedPatchSource,
+    MissingSnapshotReadSource,
+    PresentSignalSink,
+    MissingTruthBranchHeadSource,
+    PresentMappingRegistrations,
+>;

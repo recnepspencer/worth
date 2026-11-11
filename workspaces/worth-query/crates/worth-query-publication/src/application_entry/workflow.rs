@@ -94,3 +94,6 @@ pub use worth_query_execution::publication_boundary::workflow_proposal::{
     PerformedWorkflowProposal, PublishedWorkflowProposalRef, WorkflowProposalBindingDenial,
     WorkflowProposalOutcome, WorkflowProposalPreparationDenial,
 };
+#[cfg(test)]
+#[path = "workflow_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;

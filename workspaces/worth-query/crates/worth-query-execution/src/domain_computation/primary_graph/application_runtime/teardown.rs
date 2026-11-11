@@ -10,7 +10,7 @@ use crate::domain_computation::primary_graph::{
 #[derive(Default)]
 pub(super) struct ApplicationPostConditionalTeardown {
     provider: Option<std::sync::Arc<WorthQueryPrimaryGraphProvider>>,
-    authority: Option<worth_query_installation::facade::WorthQueryInstalledGraphParticipationAuthority>,
+    authority: Option<super::home_retirement::PrimaryGraphParticipationCustody>,
     meanings: Option<super::super::application_query::observed_source::source_identity::WorthQueryObservedSourceMeaningRegistry>,
     transport: Option<std::sync::Arc<dyn crate::domain_computation::application_aftermath::WorthQueryExternalEffectTransport>>,
     verifiers: std::collections::BTreeMap<String, std::sync::Arc<super::inbound_occurrence::WorthQueryInstalledInboundVerifier>>,
@@ -20,7 +20,7 @@ pub(super) struct ApplicationPostConditionalTeardown {
 }
 impl ApplicationPostConditionalTeardown {
     pub(super) fn take_from(&mut self, core: &mut WorthQueryApplicationRuntimeCore) {
-        self.provider = Some(std::sync::Arc::clone(&core.primary_provider));
+        self.provider = core.primary_provider.retained_for_teardown();
         self.authority = core.primary_graph_authority.take();
         self.meanings = core.source_meanings.take();
         self.transport = core.external_effect_transport.take();

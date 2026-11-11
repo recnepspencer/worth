@@ -4,7 +4,6 @@ use worth_relational::facade::durability::RelationalDurabilityUnresolved;
 use worth_relational::facade::history::RelationalCommitIdentity;
 use worth_relational::facade::mvcc::PerformedRelationalCommit;
 use worth_relational::facade::transactions::CommitResult;
-use worth_signal::facade::branch::{SignalBranchAdvanceOutcome, SignalBranchForkOutcome};
 
 #[path = "progress/recovery.rs"]
 mod recovery;
@@ -154,83 +153,9 @@ impl RelationalAttemptProgress {
     }
 }
 
-/// Exact Signal owner progress. Signal has no Relational settlement state.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum SignalAttemptProgressPosture {
-    Untouched,
-    PreparedForExecution,
-    Performed,
-}
-
-#[derive(Debug)]
-pub(super) enum SignalProgressEvidence {
-    #[cfg(test)]
-    Prepared,
-    Advanced(std::sync::Arc<SignalBranchAdvanceOutcome>),
-    Forked(SignalBranchForkOutcome),
-}
-
-#[derive(Debug)]
-pub struct SignalAttemptProgress {
-    posture: SignalAttemptProgressPosture,
-    evidence: Option<SignalProgressEvidence>,
-}
-
-impl SignalAttemptProgress {
-    pub(crate) fn untouched() -> Self {
-        Self {
-            posture: SignalAttemptProgressPosture::Untouched,
-            evidence: None,
-        }
-    }
-
-    #[cfg(test)]
-    pub(crate) fn prepared_for_execution() -> Self {
-        Self {
-            posture: SignalAttemptProgressPosture::PreparedForExecution,
-            evidence: Some(SignalProgressEvidence::Prepared),
-        }
-    }
-
-    pub(crate) const fn summary(posture: SignalAttemptProgressPosture) -> Self {
-        Self {
-            posture,
-            evidence: None,
-        }
-    }
-
-    pub(crate) fn advanced(outcome: SignalBranchAdvanceOutcome) -> Self {
-        Self::advanced_arc(std::sync::Arc::new(outcome))
-    }
-
-    pub(crate) fn advanced_arc(outcome: std::sync::Arc<SignalBranchAdvanceOutcome>) -> Self {
-        Self {
-            posture: SignalAttemptProgressPosture::Performed,
-            evidence: Some(SignalProgressEvidence::Advanced(outcome)),
-        }
-    }
-
-    pub(crate) fn forked(outcome: SignalBranchForkOutcome) -> Self {
-        Self {
-            posture: SignalAttemptProgressPosture::Performed,
-            evidence: Some(SignalProgressEvidence::Forked(outcome)),
-        }
-    }
-
-    pub const fn posture(&self) -> SignalAttemptProgressPosture {
-        self.posture
-    }
-
-    pub(crate) fn successor_basis(
-        &self,
-    ) -> Option<&worth_signal::facade::branch::AdmittedSignalBranchBasis> {
-        match self.evidence.as_ref() {
-            Some(SignalProgressEvidence::Advanced(outcome)) => Some(outcome.advanced_basis()),
-            Some(SignalProgressEvidence::Forked(outcome)) => Some(outcome.created_basis()),
-            _ => None,
-        }
-    }
-}
+mod signal;
+pub(super) use signal::SignalProgressEvidence;
+pub use signal::{SignalAttemptProgress, SignalAttemptProgressPosture};
 
 #[derive(Debug)]
 pub struct CompositeAttemptProgress {

@@ -12,29 +12,43 @@ use super::{
 
 pub(crate) trait RecordKind: Clone + Debug + 'static {
     type Domain: Copy + Ord + Debug + 'static;
-    type Meta: Clone + Debug;
+    type Meta: Clone + Debug + HistoricalMetadata;
     type Extra: Clone + Debug;
     type ReadRecord: Clone + Debug;
 
     fn arena(partition: &PartitionState) -> &RecordArena<Self>;
     fn arena_mut(partition: &mut PartitionState) -> &mut RecordArena<Self>;
     fn empty_extra() -> Self::Extra;
+    fn copy_extra_for_request(
+        extra: &Self::Extra,
+        request: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> Result<Self::Extra, crate::execution::RelationalExecutionDenialCause>;
+    #[cfg(test)]
     fn unavailable_extra(extra: &Self::Extra) -> Self::Extra;
     fn retire_metadata(metadata: &mut Self::Meta, version_id: VersionId);
     fn metadata_for_create(
         kind_id: KindId,
         generation: u32,
         version_id: VersionId,
-        extra: &Self::Extra,
+        extra: crate::storage::substrate::StorageAllocation<Self::Extra>,
     ) -> Option<Self::Meta>;
-    fn metadata_owned_allocation_bytes(metadata: &Self::Meta) -> u64;
-    fn extra_owned_allocation_bytes(extra: &Self::Extra) -> u64;
+    fn metadata_extra(
+        metadata: &Self::Meta,
+    ) -> &crate::storage::substrate::StorageAllocation<Self::Extra>;
+    /// Checked declared upper bound of the backing reachable from this extra
+    /// beyond its carrier layout. Each holder counts shared backing again, so
+    /// this is never an exact physical inventory. `None` is unrepresentable.
+    fn extra_reachable_bound_bytes(extra: &Self::Extra) -> Option<u64>;
 }
 
-pub(crate) trait HistoricalMetadata {
+pub(crate) trait HistoricalMetadata: Sized {
     fn effective_at(&self) -> VersionId;
     fn retired_at(&self) -> Option<VersionId>;
     fn generation(&self) -> u32;
+    fn fund_for_request(
+        self,
+        request: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> Result<Self, crate::execution::RelationalExecutionDenialCause>;
 }
 
 #[derive(Debug, Clone)]
@@ -58,12 +72,16 @@ impl RecordKind for EntityRecordKind {
         EntityExtra::default()
     }
 
+    fn copy_extra_for_request(
+        extra: &Self::Extra,
+        request: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> Result<Self::Extra, crate::execution::RelationalExecutionDenialCause> {
+        extra.copy_for_request(request)
+    }
+
+    #[cfg(test)]
     fn unavailable_extra(extra: &Self::Extra) -> Self::Extra {
-        EntityExtra {
-            structural_fingerprint: None,
-            lineage_id: extra.lineage_id,
-            authoritative_aspect_state: None,
-        }
+        EntityExtra::from_unbudgeted_parts(None, extra.lineage_id, None)
     }
 
     fn retire_metadata(metadata: &mut Self::Meta, version_id: VersionId) {
@@ -74,34 +92,36 @@ impl RecordKind for EntityRecordKind {
         kind_id: KindId,
         generation: u32,
         version_id: VersionId,
-        extra: &Self::Extra,
+        extra: crate::storage::substrate::StorageAllocation<Self::Extra>,
     ) -> Option<Self::Meta> {
-        Some(VersionedEntityMetadata {
-            effective_at: version_id,
-            retired_at: None,
+        Some(VersionedEntityMetadata::from_ordinary(
+            version_id,
+            None,
             generation,
             kind_id,
-            lineage_id: extra.lineage_id,
-            authoritative_aspect_state: extra.authoritative_aspect_state.clone(),
-        })
+            extra.lineage_id,
+            extra,
+        ))
     }
 
-    fn metadata_owned_allocation_bytes(metadata: &Self::Meta) -> u64 {
-        metadata
-            .authoritative_aspect_state
-            .as_ref()
-            .map_or(0, |state| state.owned_allocation_capacity_bytes() as u64)
+    fn metadata_extra(
+        metadata: &Self::Meta,
+    ) -> &crate::storage::substrate::StorageAllocation<Self::Extra> {
+        &metadata.extra
     }
 
-    fn extra_owned_allocation_bytes(extra: &Self::Extra) -> u64 {
-        extra
-            .authoritative_aspect_state
-            .as_ref()
-            .map_or(0, |state| state.owned_allocation_capacity_bytes() as u64)
+    fn extra_reachable_bound_bytes(extra: &Self::Extra) -> Option<u64> {
+        extra.reachable_bound_bytes()
     }
 }
 
 impl HistoricalMetadata for VersionedEntityMetadata {
+    fn fund_for_request(
+        self,
+        request: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> Result<Self, crate::execution::RelationalExecutionDenialCause> {
+        VersionedEntityMetadata::fund_for_request(self, request)
+    }
     fn effective_at(&self) -> VersionId {
         self.effective_at
     }
@@ -136,6 +156,14 @@ impl RecordKind for RelationRecordKind {
         RelationExtra::default()
     }
 
+    fn copy_extra_for_request(
+        extra: &Self::Extra,
+        request: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> Result<Self::Extra, crate::execution::RelationalExecutionDenialCause> {
+        extra.copy_for_request(request)
+    }
+
+    #[cfg(test)]
     fn unavailable_extra(_extra: &Self::Extra) -> Self::Extra {
         RelationExtra::default()
     }
@@ -148,34 +176,36 @@ impl RecordKind for RelationRecordKind {
         kind_id: KindId,
         generation: u32,
         version_id: VersionId,
-        extra: &Self::Extra,
+        extra: crate::storage::substrate::StorageAllocation<Self::Extra>,
     ) -> Option<Self::Meta> {
-        Some(VersionedRelationMetadata {
-            effective_at: version_id,
-            retired_at: None,
+        Some(VersionedRelationMetadata::from_ordinary(
+            version_id,
+            None,
             generation,
             kind_id,
-            endpoints: extra.endpoints.clone()?,
-            authoritative_aspect_state: extra.authoritative_aspect_state.clone(),
-        })
+            extra.endpoints.clone()?,
+            extra,
+        ))
     }
 
-    fn metadata_owned_allocation_bytes(metadata: &Self::Meta) -> u64 {
-        metadata
-            .authoritative_aspect_state
-            .as_ref()
-            .map_or(0, |state| state.owned_allocation_capacity_bytes() as u64)
+    fn metadata_extra(
+        metadata: &Self::Meta,
+    ) -> &crate::storage::substrate::StorageAllocation<Self::Extra> {
+        &metadata.extra
     }
 
-    fn extra_owned_allocation_bytes(extra: &Self::Extra) -> u64 {
-        extra
-            .authoritative_aspect_state
-            .as_ref()
-            .map_or(0, |state| state.owned_allocation_capacity_bytes() as u64)
+    fn extra_reachable_bound_bytes(extra: &Self::Extra) -> Option<u64> {
+        extra.reachable_bound_bytes()
     }
 }
 
 impl HistoricalMetadata for VersionedRelationMetadata {
+    fn fund_for_request(
+        self,
+        request: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> Result<Self, crate::execution::RelationalExecutionDenialCause> {
+        VersionedRelationMetadata::fund_for_request(self, request)
+    }
     fn effective_at(&self) -> VersionId {
         self.effective_at
     }

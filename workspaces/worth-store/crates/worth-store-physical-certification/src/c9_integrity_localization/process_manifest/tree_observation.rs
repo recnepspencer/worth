@@ -4,6 +4,7 @@ use std::{
     collections::{BTreeMap, BTreeSet},
     path::{Path, PathBuf},
 };
+use worth_foundational::CanonicalDigestId;
 
 pub(super) fn observe_tree(
     root: &Path,
@@ -47,7 +48,7 @@ pub(super) fn observe_tree(
                     relative.clone(),
                     ProcessStoreFile {
                         exact_length: bytes.len() as u64,
-                        content_sha256: Sha256::digest(&bytes).into(),
+                        content_sha256: CanonicalDigestId::new(Sha256::digest(&bytes).into()),
                     },
                 );
                 contents.insert(relative, bytes);

@@ -56,6 +56,7 @@ impl TouchBudget<'_, '_, '_, '_, '_> {
 
 pub(super) fn prepare(
     runtime: &crate::runtime::RelationalPreparationRuntime,
+    catalog: &crate::runtime::CapturedIndexDefinitionCatalog,
     selected: &crate::branch::SelectedRelationalBranchState,
     working: &crate::runtime::WorkingState,
     deltas: &[CanonicalRecordAspectDelta],
@@ -77,7 +78,7 @@ pub(super) fn prepare(
                 |checked| {
                     Ok((
                         maximum_touch_count(
-                            runtime,
+                            catalog,
                             deltas,
                             adjacency,
                             &mut TouchBudget::Checked(checked),
@@ -88,10 +89,11 @@ pub(super) fn prepare(
             )
             .map_err(|stop| TransactionCommitError::execution(stop.into()))?;
             let bound =
-                extent::memory_bound(runtime, selected, working, deltas, maximum, &mode, lease)?;
+                extent::memory_bound(catalog, selected, working, deltas, maximum, &mode, lease)?;
             let build = |checked: &mut PacketPreparationBudget<'_, '_, '_, '_>| {
                 build(
                     runtime,
+                    catalog,
                     selected,
                     working,
                     deltas,
@@ -119,12 +121,13 @@ pub(super) fn prepare(
         }
         None => build(
             runtime,
+            catalog,
             selected,
             working,
             deltas,
             adjacency,
             &mode,
-            maximum_touch_count(runtime, deltas, adjacency, &mut TouchBudget::Legacy).map_err(
+            maximum_touch_count(catalog, deltas, adjacency, &mut TouchBudget::Legacy).map_err(
                 |failure| {
                     TransactionCommitError::execution(
                         crate::transactions::data::CommitExecutionDenial {
@@ -152,6 +155,7 @@ pub(super) fn prepare(
 
 fn build(
     runtime: &crate::runtime::RelationalPreparationRuntime,
+    catalog: &crate::runtime::CapturedIndexDefinitionCatalog,
     selected: &crate::branch::SelectedRelationalBranchState,
     working: &crate::runtime::WorkingState,
     deltas: &[CanonicalRecordAspectDelta],
@@ -170,7 +174,15 @@ fn build(
         .try_reserve_exact(maximum)
         .map_err(|_| MapKernelFailure::ResultCapacityExceeded)?;
     for delta in deltas {
-        append_delta(runtime, selected, working, delta, &mut touches, budget)?;
+        append_delta(
+            runtime,
+            catalog,
+            selected,
+            working,
+            delta,
+            &mut touches,
+            budget,
+        )?;
     }
     for delta in adjacency {
         budget.checkpoint(3)?;
@@ -196,7 +208,15 @@ fn build(
         });
     }
     if matches!(mode, TouchPreparationMode::NativeMerge)
-        && !merge::append(runtime, selected, working, adjacency, &mut touches, budget)?
+        && !merge::append(
+            runtime,
+            catalog,
+            selected,
+            working,
+            adjacency,
+            &mut touches,
+            budget,
+        )?
     {
         return Ok((Graph::unavailable(), budget.claimed_bytes()));
     }
@@ -209,7 +229,7 @@ fn build(
 }
 
 fn maximum_touch_count(
-    runtime: &crate::runtime::RelationalPreparationRuntime,
+    catalog: &crate::runtime::CapturedIndexDefinitionCatalog,
     deltas: &[CanonicalRecordAspectDelta],
     adjacency: &[AdjacencyDelta],
     budget: &mut TouchBudget<'_, '_, '_, '_, '_>,
@@ -233,16 +253,21 @@ fn maximum_touch_count(
             }
             budget.checkpoint(possible_field_count(binding) as u64)?;
             visit_changed_fields(binding, delta.structural_change, |field, _| {
-                let definitions =
-                    runtime
-                        .index_definitions
-                        .with_field(&binding.aspect_key, field, |defs| {
-                            defs.iter()
-                                .filter(|definition| {
-                                    index::targets_field(binding, &delta.target, field, definition)
-                                })
-                                .count()
-                        });
+                let definitions = catalog
+                    .catalog
+                    .with_field(&binding.aspect_key, field, |defs| {
+                        defs.iter()
+                            .filter(|definition| {
+                                definition.index_id.0 < catalog.next_index_id
+                                    && index::targets_field(
+                                        binding,
+                                        &delta.target,
+                                        field,
+                                        definition,
+                                    )
+                            })
+                            .count()
+                    });
                 total = total
                     .checked_add(1)
                     .and_then(|count| count.checked_add(definitions))
@@ -256,6 +281,7 @@ fn maximum_touch_count(
 
 fn append_delta(
     runtime: &crate::runtime::RelationalPreparationRuntime,
+    catalog: &crate::runtime::CapturedIndexDefinitionCatalog,
     selected: &crate::branch::SelectedRelationalBranchState,
     working: &crate::runtime::WorkingState,
     delta: &CanonicalRecordAspectDelta,
@@ -317,10 +343,13 @@ fn append_delta(
                 path: CanonicalFieldPath::single(field.clone()),
                 presence,
             });
-            runtime
-                .index_definitions
+            catalog
+                .catalog
                 .with_field(&binding.aspect_key, field, |definitions| {
-                    for definition in definitions {
+                    for definition in definitions
+                        .iter()
+                        .filter(|definition| definition.index_id.0 < catalog.next_index_id)
+                    {
                         append_index(
                             runtime, selected, working, delta, binding, field, definition, touches,
                             budget,

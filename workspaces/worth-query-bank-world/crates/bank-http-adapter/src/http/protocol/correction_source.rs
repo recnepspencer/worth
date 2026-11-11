@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
 #[serde(deny_unknown_fields)]
 pub struct BankHttpCorrectionSource {
-    pub world_owner: u64,
+    pub world_owner: worth_foundational::WorldOwnerCoordinate,
     pub world_commit: u64,
     pub relational: BankHttpCorrectionCommit,
 }

@@ -1,4 +1,5 @@
 use std::path::{Path, PathBuf};
+use worth_foundational::CanonicalDigestId;
 mod artifact_manifest_row;
 mod declaration;
 
@@ -12,7 +13,7 @@ pub use declaration::{
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct BackupBundleManifest {
-    cut_identity: [u8; 32],
+    cut_identity: CanonicalDigestId,
     store_lineage: String,
     root_generation: u64,
     manifest_generation: u64,
@@ -23,7 +24,7 @@ pub struct BackupBundleManifest {
     acknowledged_frontier: u64,
     security_scope_fingerprint: u64,
     artifacts: Vec<BackupBundleArtifactManifestRow>,
-    artifact_closure_digest: [u8; 32],
+    artifact_closure_digest: CanonicalDigestId,
 }
 
 impl BackupBundleManifest {
@@ -74,12 +75,14 @@ impl BackupBundleManifest {
             wal_end_exclusive_lsn: wal_half_open_interval.1,
             acknowledged_frontier,
             security_scope_fingerprint,
-            artifact_closure_digest: super::backup_canonical_artifact_closure_digest(&artifacts),
+            artifact_closure_digest: CanonicalDigestId::new(
+                super::backup_canonical_artifact_closure_digest(&artifacts),
+            ),
             artifacts,
         })
     }
     pub const fn cut_identity(&self) -> [u8; 32] {
-        self.cut_identity
+        *self.cut_identity.bytes()
     }
     pub fn store_lineage(&self) -> &str {
         &self.store_lineage
@@ -109,7 +112,7 @@ impl BackupBundleManifest {
         &self.artifacts
     }
     pub const fn artifact_closure_digest(&self) -> [u8; 32] {
-        self.artifact_closure_digest
+        *self.artifact_closure_digest.bytes()
     }
 
     pub(crate) fn from_decoded_parts(
@@ -134,7 +137,7 @@ impl BackupBundleManifest {
             acknowledged_frontier: recovery.acknowledged_frontier,
             security_scope_fingerprint,
             artifacts,
-            artifact_closure_digest,
+            artifact_closure_digest: CanonicalDigestId::new(artifact_closure_digest),
         }
     }
 
@@ -215,7 +218,7 @@ impl BackupBundleManifest {
                         || pair[0].identity() != pair[1].identity())
             })
             && super::backup_canonical_artifact_closure_digest(&self.artifacts)
-                == self.artifact_closure_digest
+                == *self.artifact_closure_digest.bytes()
     }
 }
 
@@ -286,7 +289,7 @@ fn output_name_index(
 pub struct MaterializedBackupBundle {
     root: PathBuf,
     manifest: BackupBundleManifest,
-    manifest_digest: [u8; 32],
+    manifest_digest: CanonicalDigestId,
     manifest_read: super::BackupBundleManifestReadObservation,
 }
 
@@ -298,7 +301,7 @@ impl MaterializedBackupBundle {
         &self.manifest
     }
     pub const fn manifest_digest(&self) -> [u8; 32] {
-        self.manifest_digest
+        *self.manifest_digest.bytes()
     }
     pub const fn manifest_read_observation(&self) -> super::BackupBundleManifestReadObservation {
         self.manifest_read
@@ -312,7 +315,7 @@ impl MaterializedBackupBundle {
         Self {
             root,
             manifest,
-            manifest_digest,
+            manifest_digest: CanonicalDigestId::new(manifest_digest),
             manifest_read,
         }
     }

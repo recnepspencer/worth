@@ -1,3 +1,4 @@
+#![allow(clippy::disallowed_methods)]
 use std::num::NonZeroUsize;
 use worth_query_decl::facade::application_program::{
     ApplicationCommitBoundary, ApplicationConnectionRef, ApplicationFeatureSpec,
@@ -14,7 +15,7 @@ use worth_query_host::facade::{
         WorthQueryApplicationProgramOutputProgress, WorthQueryApplicationRequestExt,
         WorthQueryOutputCurrentnessDenial, WorthQueryOutputDemandControls,
     },
-    application_installation::{self, WorthQueryInMemoryApplicationLimits},
+    application_installation::{self, WorthQueryApplicationLimits},
     primary_graph::{self, WorthQueryOutputDemandDenialKind},
 };
 
@@ -31,6 +32,7 @@ mod demand_only;
 mod demand_policy;
 mod generated_restoration;
 mod input_cutoff;
+mod interim_origin;
 worth_execution::needs_os_threads! {
     mod late_cancellation;
 }

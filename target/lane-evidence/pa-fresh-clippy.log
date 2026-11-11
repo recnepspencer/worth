@@ -1,0 +1,20 @@
+command: cargo clippy -p worth-court-relational-certification --all-targets
+HEAD: 14b6075657193d0f74ce944beab6124b5dec7b3c
+git_status_short_empty: false
+start_utc: 2026-11-11T03:06:19.893040+00:00
+    Checking worth-court-relational-certification v0.1.0 (C:\programming\worth worktees\worktrees\m3-p3-reopen\crates\worth-court-relational-certification)
+error[E0624]: method `latest_commit` is private
+   --> crates\worth-court-relational-certification\tests\worth_court_relational_certification\relational\durable_publication\source_initial_inputs\fresh_admission.rs:45:31
+    |
+ 45 |     assert!(runtime.history().latest_commit().is_some());
+    |                               ^^^^^^^^^^^^^ private method
+    |
+   ::: crates\worth-relational\src\history\access\commit_surfaces.rs:227:5
+    |
+227 |     pub(crate) fn latest_commit(&self) -> Option<RelationalCommitReceipt> {
+    |     --------------------------------------------------------------------- private method defined here
+
+For more information about this error, try `rustc --explain E0624`.
+error: could not compile `worth-court-relational-certification` (test "worth_court_relational_certification") due to 1 previous error
+end_utc: 2026-11-11T03:06:25.290362+00:00
+exit_code: 101

@@ -11,9 +11,9 @@ pub use worth_query_host::facade::application_contribution::{
 };
 pub use worth_query_host::facade::application_installation::ApplicationBuildIdentity;
 pub use worth_query_host::facade::application_installation::{
-    in_memory_rostered_program, WorthQueryApplicationProgramRoster,
-    WorthQueryInMemoryApplicationDenial, WorthQueryInMemoryApplicationLimits,
-    WorthQueryInMemoryApplicationProfile, WorthQueryProgramApplicationRuntime,
+    in_memory_rostered_program, WorthQueryApplicationLimits,
+    WorthQueryApplicationPreparationDenial, WorthQueryApplicationProfile,
+    WorthQueryApplicationProgramRoster, WorthQueryProgramApplicationRuntime,
 };
 pub use worth_query_host::facade::declaration::application_program::{
     ApplicationProgramDefinition, ApplicationProgramOutputsShape, ValidatedApplicationProgram,
@@ -58,6 +58,10 @@ pub use super::workflow::{
 
 #[path = "host/auxiliary_programs.rs"]
 mod auxiliary_programs;
+pub use auxiliary_programs::with_lifecycle_programs;
+#[path = "host/relational_installation.rs"]
+mod relational_installation;
+pub use relational_installation::RelationalRetentionContribution;
 #[path = "host/checkpoint_restore.rs"]
 pub mod checkpoint_restore;
 #[path = "host/trusted_time.rs"]
@@ -93,60 +97,9 @@ impl WorthQueryApplicationContribution<DocumentRetentionSchema> for DocumentRete
         (): Self::Configuration,
         setup: &mut WorthQueryApplicationContributionSetup<'_, DocumentRetentionSchema>,
     ) -> Result<(), primary_graph::WorthQueryPrimaryGraphInstallationDenial> {
-        setup.handler::<super::actor_generation::ActorLifecycleBinding, _>(
-            super::actor_generation::ActorLifecycleHandler,
-        )?;
-        setup.handler::<super::model_lifecycle::ModelLifecycleBinding, _>(
-            super::model_lifecycle::ModelLifecycleHandler,
-        )?;
-        setup.handler::<super::record_history::reaffirm::Binding, _>(
-            super::record_history::reaffirm::Handler,
-        )?;
-        setup.invariant(
-            DocumentRetentionV1::reference(),
-            ApplicationInvariantExecutionPoint::CommitBoundary,
-            resolve_first_rule,
-        )?;
-        setup.invariant(
-            DocumentRetentionV2::reference(),
-            ApplicationInvariantExecutionPoint::CommitBoundary,
-            resolve_second_rule,
-        )?;
-        setup
-            .handler::<SetRetentionBinding, _>(SetRetentionHandler::default())
-            .and_then(|()| {
-                setup.handler::<super::correctable_retention::CorrectableRetentionBinding, _>(
-                    ReviewedSetRetentionHandler,
-                )
-            })
-            .and_then(|()| {
-                setup.handler::<ReviewedSetRetentionBinding, _>(ReviewedSetRetentionHandler)
-            })
-            .and_then(|()| {
-                setup.handler::<OccurrenceSetRetentionBinding, _>(ReviewedSetRetentionHandler)
-            })
-            .and_then(|()| {
-                setup.handler::<ExplicitReviewedSetRetentionBinding, _>(ReviewedSetRetentionHandler)
-            })
-            .and_then(|()| setup.handler::<ReviewRequirementBinding, _>(ReviewRequirementHandler))
-            .and_then(|()| {
-                setup.handler::<UnlinkReviewRequirementBinding, _>(UnlinkReviewRequirementHandler)
-            })
-            .and_then(|()| {
-                setup.handler::<RetentionAssessmentBinding, _>(RetentionAssessmentHandler)
-            })
-            .and_then(|()| {
-                setup.handler::<OrdinaryRetentionAssessmentBinding, _>(
-                    OrdinaryRetentionAssessmentHandler,
-                )
-            })
-            .and_then(|()| {
-                setup.producer::<RetentionAssessmentProducer>(RetentionAssessmentProvider)
-            })
-            .and_then(|()| setup.conditional::<RetentionAssessmentReadiness>(()))
-            .and_then(|()| {
-                setup.handler::<WorkflowGrantStatusBinding, _>(WorkflowGrantStatusHandler)
-            })
+        relational_installation::install(setup)?;
+        setup.producer::<RetentionAssessmentProducer>(RetentionAssessmentProvider)?;
+        setup.conditional::<RetentionAssessmentReadiness>(())
     }
 }
 
@@ -160,19 +113,19 @@ pub fn publish_on_first_program() -> DocumentRetentionRuntime<RetentionProgramP0
 pub fn publish_on_first_program_for_workflow_scale() -> DocumentRetentionRuntime<RetentionProgramP0>
 {
     publish_on_first_program_with_limits(
-        WorthQueryInMemoryApplicationLimits::new(
+        WorthQueryApplicationLimits::new(
             world_resources(1_024, 256 * 1024 * 1024, 2_048, worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system()),
             runtime::WorthQueryApplicationQueryResourceProfile::new(
                 std::num::NonZeroUsize::new(128).expect("concurrent graph work is non-zero"),
             ),
             primary_graph::SignalConditionalEvaluationBudget::development(),
         )
-        .with_profile(WorthQueryInMemoryApplicationProfile::WorkflowScale),
+        .with_profile(WorthQueryApplicationProfile::WorkflowScale),
     )
 }
 
 pub fn publish_on_first_program_with_limits(
-    limits: WorthQueryInMemoryApplicationLimits,
+    limits: WorthQueryApplicationLimits,
 ) -> DocumentRetentionRuntime<RetentionProgramP0> {
     publish_with_limits(
         validated_first_program(),
@@ -206,7 +159,7 @@ pub fn publish_on_second_program() -> DocumentRetentionRuntime<RetentionProgramP
 
 /// Attempts a host without a V2 program against the two-rule catalog.
 pub fn publish_first_program_alone(
-) -> Result<DocumentRetentionRuntime<RetentionProgramP0>, WorthQueryInMemoryApplicationDenial> {
+) -> Result<DocumentRetentionRuntime<RetentionProgramP0>, WorthQueryApplicationPreparationDenial> {
     publish(
         validated_first_program(),
         WorthQueryApplicationProgramRoster::new(),
@@ -215,7 +168,7 @@ pub fn publish_first_program_alone(
 
 /// Attempts a host that rosters a program declaring an uninstalled rule.
 pub fn publish_with_foreign_rule_rostered(
-) -> Result<DocumentRetentionRuntime<RetentionProgramP0>, WorthQueryInMemoryApplicationDenial> {
+) -> Result<DocumentRetentionRuntime<RetentionProgramP0>, WorthQueryApplicationPreparationDenial> {
     publish(
         validated_first_program(),
         WorthQueryApplicationProgramRoster::new()
@@ -230,7 +183,7 @@ pub fn publish_with_foreign_rule_rostered(
 pub fn publish<Initial>(
     initial: ValidatedApplicationProgram<DocumentRetentionSchema, Initial>,
     roster: WorthQueryApplicationProgramRoster<'_, DocumentRetentionSchema>,
-) -> Result<DocumentRetentionRuntime<Initial>, WorthQueryInMemoryApplicationDenial>
+) -> Result<DocumentRetentionRuntime<Initial>, WorthQueryApplicationPreparationDenial>
 where
     Initial: ApplicationProgramDefinition<
             DocumentRetentionSchema,
@@ -248,8 +201,8 @@ where
 pub fn publish_with_limits<Initial>(
     initial: ValidatedApplicationProgram<DocumentRetentionSchema, Initial>,
     roster: WorthQueryApplicationProgramRoster<'_, DocumentRetentionSchema>,
-    limits: WorthQueryInMemoryApplicationLimits,
-) -> Result<DocumentRetentionRuntime<Initial>, WorthQueryInMemoryApplicationDenial>
+    limits: WorthQueryApplicationLimits,
+) -> Result<DocumentRetentionRuntime<Initial>, WorthQueryApplicationPreparationDenial>
 where
     Initial: ApplicationProgramDefinition<
             DocumentRetentionSchema,
@@ -261,7 +214,7 @@ where
                 DocumentRetentionSchema,
             >,
 {
-    let roster = auxiliary_programs::include(roster, initial.identity(), initial.revision());
+    let roster = with_lifecycle_programs(roster, initial.identity(), initial.revision());
     in_memory_rostered_program(
         initial,
         roster,

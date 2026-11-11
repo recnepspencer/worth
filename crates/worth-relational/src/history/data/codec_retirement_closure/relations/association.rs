@@ -3,12 +3,11 @@ use super::{charge, CodecRetirementClosureStop as Stop};
 use crate::branch::RelationalBranchRoot;
 use crate::history::data::canonical_commit_envelope::CanonicalRequiredOutputOrigin;
 use crate::history::data::canonical_commit_envelope::OutputOriginHistory;
-use crate::runtime::RelationalRuntime;
 use std::sync::Arc;
 use worth_execution::{ExecutionResourceLease, MapKernelContext};
 
 pub(in super::super) fn validate_complete_publication(
-    runtime: &RelationalRuntime,
+    runtime: &crate::history::data::codec_retirement_closure::history_request::RuntimeHistoryRequest<'_, '_, '_>,
     root: &RelationalBranchRoot,
     origin: &Arc<CanonicalRequiredOutputOrigin>,
     validated_history: &mut OutputOriginHistory,
@@ -18,7 +17,8 @@ pub(in super::super) fn validate_complete_publication(
     let envelope = validated_history
         .by_commit(
             origin.commit.commit_id,
-            &mut |commit| runtime.history.canonical_envelope(commit),
+            &mut |commit| runtime.commit(commit),
+            &runtime.execution(),
             context,
         )?
         .ok_or("complete relation publication absent")?;
@@ -38,8 +38,9 @@ pub(in super::super) fn validate_complete_publication(
             root,
             relation.id,
             origin,
-            &mut |version| runtime.history.canonical_envelope_for_version(version),
+            &mut |version, context| runtime.version(version, context),
             validated_history,
+            &runtime.execution(),
             context,
         )?;
     }
@@ -52,11 +53,12 @@ pub(in super::super) fn validate_complete_publication(
                 envelope.as_view(),
             ),
         ),
-        &mut |commit| runtime.history.canonical_envelope(commit),
-        &mut |version| runtime.history.canonical_envelope_for_version(version),
-        runtime.history.catalog_len(),
+        &mut |commit| runtime.commit(commit),
+        &mut |version, context| runtime.version(version, context),
+        runtime.runtime.history.catalog_len(),
         lease,
         validated_history,
+        &runtime.execution(),
         context,
     )
 }

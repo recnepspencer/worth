@@ -10,11 +10,13 @@ use worth_execution::MapKernelContext;
 
 pub(crate) fn antecedent(
     runtime: &RelationalRuntime,
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     envelope: &OwnedValidatedOutputOrigins,
     origin: &crate::history::data::CanonicalRequiredOutputOrigin,
     validated_history: &mut OutputOriginHistory,
     context: &mut MapKernelContext<'_, '_>,
 ) -> Result<OwnedValidatedOutputOrigins, Stop> {
+    let runtime = super::history_request::RuntimeHistoryRequest::new(runtime, execution);
     let CanonicalOutputPublication::HistoricalSelection {
         selected,
         generation,
@@ -26,7 +28,8 @@ pub(crate) fn antecedent(
     let previous = validated_history
         .by_commit(
             selected,
-            &mut |commit| runtime.history.canonical_envelope(commit),
+            &mut |commit| runtime.commit(commit),
+            &runtime.execution(),
             context,
         )?
         .ok_or("historical producer antecedent is unavailable")?;

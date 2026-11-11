@@ -310,3 +310,30 @@ pub(crate) use relations::{
     create_relation, create_relation_in_partition, create_relation_in_partition_on_branch,
     create_relation_outcome,
 };
+
+/// An actual Memory owner, its acknowledged record, and the original execution.
+/// The fixture releases its initial result snapshot before lending the world.
+pub(crate) struct MemoryRecordPublicationWorld<'host, 'scope> {
+    pub(crate) runtime: RelationalRuntime,
+    pub(crate) entity: crate::identity::data::EntityId,
+    pub(crate) execution: worth_execution::ExecutionRequest<'host, 'scope>,
+}
+pub(crate) fn with_memory_record_publication<R>(
+    registry: RelationalSchemaRegistry,
+    name: &str,
+    observe: impl for<'host, 'scope> FnOnce(MemoryRecordPublicationWorld<'host, 'scope>) -> R,
+) -> R {
+    let original = crate::test_execution_policy::serial_request();
+    let execution = worth_execution::ExecutionRequest::serial(&original);
+    let runtime = RelationalRuntimeApi::builder()
+        .profile(RelationalRuntimeProfile::CertificationCore)
+        .schema_registry(registry)
+        .build()
+        .expect("valid Memory record publication world");
+    let entity = create_entity(&execution, &runtime, name);
+    observe(MemoryRecordPublicationWorld {
+        runtime,
+        entity,
+        execution,
+    })
+}

@@ -63,7 +63,7 @@ impl WorthQueryPrimaryGraphBackendHandle {
     pub(in crate::runtime) fn execute_mutation<T, E>(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
-        mutate: impl FnOnce(&mut RelationalRuntime) -> Result<T, E>,
+        mutate: impl FnOnce(&RelationalRuntime) -> Result<T, E>,
     ) -> Result<Result<T, E>, WorthQueryPrimaryGraphIndexRefreshDenial> {
         self.integration
             .execute_mutation_with_index_refresh(execution, mutate)
@@ -102,3 +102,6 @@ impl WorthQueryPrimaryGraphBackendHandle {
         self.integration.release_query_snapshot(snapshot);
     }
 }
+#[cfg(test)]
+#[path = "primary_graph_runtime_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;

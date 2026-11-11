@@ -1,0 +1,136 @@
+command: python target/lane-evidence/merge_funding_proofs.py root-courts
+HEAD: 25619ac5d1ae6092ab5a91bc4b7123be6042475c
+git_status_short_empty: false
+start_utc: 2026-11-06T17:20:43.102843+00:00
+environment: removed stale CARGO_TARGET_X86_64_PC_WINDOWS_MSVC_LINKER override
+prebuild: cargo metadata --offline --format-version 1 --manifest-path "C:\programming\worth worktees\worktrees\m3-p3-reopen\Cargo.toml"
+prebuild: cargo test --message-format=json --no-run --package worth-court-relational-certification --test worth_court_relational_certification --profile dev --manifest-path "C:\programming\worth worktees\worktrees\m3-p3-reopen\Cargo.toml" --unit-graph -Z unstable-options
+prebuild: cargo nextest list --cargo-message-format=json --package worth-court-relational-certification --test worth_court_relational_certification --cargo-profile dev --manifest-path "C:\programming\worth worktees\worktrees\m3-p3-reopen\Cargo.toml" --list-type binaries-only --message-format json
+   Compiling typenum v1.20.1
+   Compiling memchr v2.8.3
+   Compiling serde_core v1.0.229
+   Compiling windows-link v0.2.1
+   Compiling cfg-if v1.0.5
+   Compiling serde v1.0.229
+   Compiling serde_json v1.0.154
+   Compiling cpufeatures v0.2.17
+   Compiling itoa v1.0.18
+   Compiling worth-foundational v0.1.0 (C:\programming\worth worktees\worktrees\m3-p3-reopen\crates\worth-foundational)
+   Compiling either v1.19.0
+   Compiling scopeguard v1.2.0
+   Compiling worth-proof v0.1.0 (C:\programming\worth worktees\worktrees\m3-p3-reopen\crates\worth-proof)
+   Compiling smallvec v1.16.3
+   Compiling worth-execution v0.1.0 (C:\programming\worth worktees\worktrees\m3-p3-reopen\crates\worth-execution)
+   Compiling rand_core v0.6.4
+   Compiling once_cell v1.21.4
+   Compiling crossbeam-utils v0.8.23
+   Compiling libc v0.2.190
+   Compiling zmij v1.0.23
+   Compiling hashbrown v0.14.5
+   Compiling allocator-api2 v0.2.21
+   Compiling equivalent v1.0.3
+   Compiling hashbrown v0.17.1
+   Compiling num-traits v0.2.19
+   Compiling arc-swap v1.9.2
+   Compiling syn v3.0.9
+   Compiling worth-value-shape-derive v0.1.0 (C:\programming\worth worktees\worktrees\m3-p3-reopen\crates\worth-value-shape-derive)
+   Compiling generic-array v0.14.7
+   Compiling bitmaps v2.1.0
+   Compiling object v0.39.1
+   Compiling windows-sys v0.61.2
+   Compiling lock_api v0.4.14
+   Compiling parking_lot_core v0.9.12
+   Compiling rand_xoshiro v0.6.0
+   Compiling crossbeam-epoch v0.9.21
+   Compiling crossbeam-queue v0.3.14
+   Compiling indexmap v2.14.2
+   Compiling rmp v0.8.15
+   Compiling serde_derive v1.0.229
+   Compiling sized-chunks v0.6.5
+   Compiling crypto-common v0.1.7
+   Compiling block-buffer v0.10.4
+   Compiling ar_archive_writer v0.5.3
+   Compiling dashmap v6.2.1
+   Compiling crossbeam-deque v0.8.8
+   Compiling digest v0.10.7
+   Compiling psm v0.1.32
+   Compiling rayon-core v1.13.0
+   Compiling sha2 v0.10.9
+   Compiling rmp-serde v1.3.1
+   Compiling im v15.1.0
+   Compiling rayon v1.12.0
+   Compiling stacker v0.1.25
+   Compiling serde_stacker v0.1.14
+   Compiling worth-relational v0.1.0 (C:\programming\worth worktees\worktrees\m3-p3-reopen\crates\worth-relational)
+   Compiling worth-testkit-relational v0.1.0 (C:\programming\worth worktees\worktrees\m3-p3-reopen\crates\worth-testkit-relational)
+   Compiling worth-court-relational-certification v0.1.0 (C:\programming\worth worktees\worktrees\m3-p3-reopen\crates\worth-court-relational-certification)
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 3m 41s
+prebuild: cargo nextest list --cargo-metadata "C:\programming\worth worktees\worktrees\m3-p3-reopen\target\test-cost\funding-merge-root-courts\build\cargo-metadata.json" --binaries-metadata "C:\programming\worth worktees\worktrees\m3-p3-reopen\target\test-cost\funding-merge-root-courts\build\binaries.json" --message-format json --ignore-default-filter -E "test(cold_inline_bytes_head_refuses_after_member_read_then_retains_exact_payload_through_edit) | test(cold_inline_bytes_history_refuses_after_read_then_retries_full_with_exact_old_values) | test(shared_history_custody_refuses_unfunded_admission_then_survives_until_the_last_basis_drops) | test(retired_peer_history_keeps_its_funding_through_edits_and_returns_real_historical_neighbors) | test(cold_head_work_exhaustion_keeps_a_wide_contract_region_retryable) | test(head_materialization_budget_survives_edit_and_last_basis_drop) | test(full_materialization_budget_survives_mirror_edits_until_runtime_drop) | test(complete_source_recovery_restores_original_inputs_for_another_complete_capture) | test(cold_complete_recapture_preserves_original_index_generations_and_live_tail) | test(cloned_complete_plan_retries_after_member_read_cancellation_without_directory_contamination) | test(checkpoint_image_restores_publication_bases_and_creations_without_canonical_body_reads) | test(complete_capture_stopped_request_precedes_proven_selected_damage) | test(selected_state_recapture_work_does_not_follow_discarded_covered_update_bytes) | test(recovered_nonhead_envelope_custody_ends_with_the_last_inflight_read)"
+prebuild: cargo nextest run --cargo-metadata "C:\programming\worth worktees\worktrees\m3-p3-reopen\target\test-cost\funding-merge-root-courts\build\cargo-metadata.json" --binaries-metadata "C:\programming\worth worktees\worktrees\m3-p3-reopen\target\test-cost\funding-merge-root-courts\build\binaries.json" --profile ci --config-file "C:\programming\worth worktees\worktrees\m3-p3-reopen\target\test-cost\funding-merge-root-courts\nextest.toml" --ignore-default-filter --no-fail-fast --no-tests=fail --message-format libtest-json -E "test(=cost::relational::source_initial_inputs::checkpoint_admission::cold_materialization::byte_payloads::cold_inline_bytes_head_refuses_after_member_read_then_retains_exact_payload_through_edit) | test(=cost::relational::source_initial_inputs::checkpoint_admission::cold_materialization::byte_payloads::cold_inline_bytes_history_refuses_after_read_then_retries_full_with_exact_old_values) | test(=cost::relational::source_initial_inputs::checkpoint_admission::cold_materialization::peer_history::retired_peer_history_keeps_its_funding_through_edits_and_returns_real_historical_neighbors) | test(=cost::relational::source_initial_inputs::checkpoint_admission::selected_state_recapture_work_does_not_follow_discarded_covered_update_bytes) | test(=relational::durable_publication::cold_envelope_custody::recovered_nonhead_envelope_custody_ends_with_the_last_inflight_read) | test(=relational::durable_publication::source_initial_inputs::checkpoint_admission::cold_materialization::shared_custody::shared_history_custody_refuses_unfunded_admission_then_survives_until_the_last_basis_drops) | test(=relational::durable_publication::source_initial_inputs::checkpoint_admission::contract_work::cold_head_work_exhaustion_keeps_a_wide_contract_region_retryable) | test(=relational::durable_publication::source_initial_inputs::checkpoint_admission::operational::checkpoint_image_restores_publication_bases_and_creations_without_canonical_body_reads) | test(=relational::durable_publication::source_initial_inputs::checkpoint_admission::region_memory::full_materialization_budget_survives_mirror_edits_until_runtime_drop) | test(=relational::durable_publication::source_initial_inputs::checkpoint_admission::region_memory::head_materialization_budget_survives_edit_and_last_basis_drop) | test(=relational::durable_publication::source_initial_inputs::cold_indexes::cold_complete_recapture_preserves_original_index_generations_and_live_tail) | test(=relational::durable_publication::source_initial_inputs::complete_source_recovery_restores_original_inputs_for_another_complete_capture) | test(=relational::durable_publication::source_initial_inputs::plan_retry::cloned_complete_plan_retries_after_member_read_cancellation_without_directory_contamination) | test(=relational::durable_publication::source_initial_inputs::selected_subject::complete_capture_stopped_request_precedes_proven_selected_damage)"
+info: experimental features enabled: wrapper-scripts
+────────────
+ Nextest run ID 87619fba-2fd9-4e18-85a5-c584614c24f3 with nextest profile: ci
+    Starting 14 tests across 1 binary (301 tests skipped)
+        PASS [   2.400s] ( 1/14) worth-court-relational-certification::worth_court_relational_certification relational::durable_publication::source_initial_inputs::checkpoint_admission::region_memory::full_materialization_budget_survives_mirror_edits_until_runtime_drop
+        PASS [   3.427s] ( 2/14) worth-court-relational-certification::worth_court_relational_certification relational::durable_publication::cold_envelope_custody::recovered_nonhead_envelope_custody_ends_with_the_last_inflight_read
+        PASS [   3.792s] ( 3/14) worth-court-relational-certification::worth_court_relational_certification cost::relational::source_initial_inputs::checkpoint_admission::selected_state_recapture_work_does_not_follow_discarded_covered_update_bytes
+        PASS [   4.094s] ( 4/14) worth-court-relational-certification::worth_court_relational_certification relational::durable_publication::source_initial_inputs::checkpoint_admission::cold_materialization::shared_custody::shared_history_custody_refuses_unfunded_admission_then_survives_until_the_last_basis_drops
+        PASS [   4.867s] ( 5/14) worth-court-relational-certification::worth_court_relational_certification relational::durable_publication::source_initial_inputs::checkpoint_admission::operational::checkpoint_image_restores_publication_bases_and_creations_without_canonical_body_reads
+        PASS [   5.649s] ( 6/14) worth-court-relational-certification::worth_court_relational_certification cost::relational::source_initial_inputs::checkpoint_admission::cold_materialization::byte_payloads::cold_inline_bytes_history_refuses_after_read_then_retries_full_with_exact_old_values
+        PASS [   5.734s] ( 7/14) worth-court-relational-certification::worth_court_relational_certification relational::durable_publication::source_initial_inputs::checkpoint_admission::region_memory::head_materialization_budget_survives_edit_and_last_basis_drop
+        PASS [   6.720s] ( 8/14) worth-court-relational-certification::worth_court_relational_certification relational::durable_publication::source_initial_inputs::complete_source_recovery_restores_original_inputs_for_another_complete_capture
+        PASS [   7.545s] ( 9/14) worth-court-relational-certification::worth_court_relational_certification relational::durable_publication::source_initial_inputs::plan_retry::cloned_complete_plan_retries_after_member_read_cancellation_without_directory_contamination
+        PASS [   8.336s] (10/14) worth-court-relational-certification::worth_court_relational_certification relational::durable_publication::source_initial_inputs::selected_subject::complete_capture_stopped_request_precedes_proven_selected_damage
+        PASS [   8.880s] (11/14) worth-court-relational-certification::worth_court_relational_certification relational::durable_publication::source_initial_inputs::cold_indexes::cold_complete_recapture_preserves_original_index_generations_and_live_tail
+        PASS [   9.440s] (12/14) worth-court-relational-certification::worth_court_relational_certification cost::relational::source_initial_inputs::checkpoint_admission::cold_materialization::peer_history::retired_peer_history_keeps_its_funding_through_edits_and_returns_real_historical_neighbors
+        PASS [   9.445s] (13/14) worth-court-relational-certification::worth_court_relational_certification relational::durable_publication::source_initial_inputs::checkpoint_admission::contract_work::cold_head_work_exhaustion_keeps_a_wide_contract_region_retryable
+{"type":"suite","event":"started","test_count":15}
+{"type":"test","event":"started","name":"worth-court-relational-certification::worth_court_relational_certification$cost::relational::relational_certification::scale_invariant_admission::large_runtime_keeps_global_enforcement_and_filters_graph_planning"}
+{"type":"test","event":"started","name":"worth-court-relational-certification::worth_court_relational_certification$cost::relational::source_initial_inputs::checkpoint_admission::selected_state_recapture_work_does_not_follow_discarded_covered_update_bytes"}
+{"type":"test","event":"started","name":"worth-court-relational-certification::worth_court_relational_certification$cost::relational::source_initial_inputs::checkpoint_admission::cold_materialization::byte_payloads::cold_inline_bytes_head_refuses_after_member_read_then_retains_exact_payload_through_edit"}
+{"type":"test","event":"started","name":"worth-court-relational-certification::worth_court_relational_certification$cost::relational::source_initial_inputs::checkpoint_admission::cold_materialization::peer_history::retired_peer_history_keeps_its_funding_through_edits_and_returns_real_historical_neighbors"}
+{"type":"test","event":"started","name":"worth-court-relational-certification::worth_court_relational_certification$cost::relational::source_initial_inputs::checkpoint_admission::cold_materialization::byte_payloads::cold_inline_bytes_history_refuses_after_read_then_retries_full_with_exact_old_values"}
+{"type":"test","event":"started","name":"worth-court-relational-certification::worth_court_relational_certification$relational::durable_publication::source_initial_inputs::checkpoint_admission::cold_materialization::shared_custody::shared_history_custody_refuses_unfunded_admission_then_survives_until_the_last_basis_drops"}
+{"type":"test","event":"started","name":"worth-court-relational-certification::worth_court_relational_certification$relational::durable_publication::cold_envelope_custody::recovered_nonhead_envelope_custody_ends_with_the_last_inflight_read"}
+{"type":"test","event":"started","name":"worth-court-relational-certification::worth_court_relational_certification$relational::durable_publication::source_initial_inputs::checkpoint_admission::contract_work::cold_head_work_exhaustion_keeps_a_wide_contract_region_retryable"}
+{"type":"test","event":"started","name":"worth-court-relational-certification::worth_court_relational_certification$relational::durable_publication::source_initial_inputs::checkpoint_admission::operational::checkpoint_image_restores_publication_bases_and_creations_without_canonical_body_reads"}
+{"type":"test","event":"started","name":"worth-court-relational-certification::worth_court_relational_certification$relational::durable_publication::source_initial_inputs::checkpoint_admission::region_memory::full_materialization_budget_survives_mirror_edits_until_runtime_drop"}
+{"type":"test","event":"started","name":"worth-court-relational-certification::worth_court_relational_certification$relational::durable_publication::source_initial_inputs::checkpoint_admission::region_memory::head_materialization_budget_survives_edit_and_last_basis_drop"}
+{"type":"test","event":"started","name":"worth-court-relational-certification::worth_court_relational_certification$relational::durable_publication::source_initial_inputs::complete_source_recovery_restores_original_inputs_for_another_complete_capture"}
+{"type":"test","event":"started","name":"worth-court-relational-certification::worth_court_relational_certification$relational::durable_publication::source_initial_inputs::cold_indexes::cold_complete_recapture_preserves_original_index_generations_and_live_tail"}
+{"type":"test","event":"started","name":"worth-court-relational-certification::worth_court_relational_certification$relational::durable_publication::source_initial_inputs::selected_subject::complete_capture_stopped_request_precedes_proven_selected_damage"}
+{"type":"test","event":"started","name":"worth-court-relational-certification::worth_court_relational_certification$relational::durable_publication::source_initial_inputs::plan_retry::cloned_complete_plan_retries_after_member_read_cancellation_without_directory_contamination"}
+{"type":"test","event":"ignored","name":"worth-court-relational-certification::worth_court_relational_certification$cost::relational::relational_certification::scale_invariant_admission::large_runtime_keeps_global_enforcement_and_filters_graph_planning"}
+{"type":"test","event":"ok","name":"worth-court-relational-certification::worth_court_relational_certification$relational::durable_publication::source_initial_inputs::checkpoint_admission::region_memory::full_materialization_budget_survives_mirror_edits_until_runtime_drop","exec_time":2.4002875}
+{"type":"test","event":"ok","name":"worth-court-relational-certification::worth_court_relational_certification$relational::durable_publication::cold_envelope_custody::recovered_nonhead_envelope_custody_ends_with_the_last_inflight_read","exec_time":3.4268642}
+{"type":"test","event":"ok","name":"worth-court-relational-certification::worth_court_relational_certification$cost::relational::source_initial_inputs::checkpoint_admission::selected_state_recapture_work_does_not_follow_discarded_covered_update_bytes","exec_time":3.7923021}
+{"type":"test","event":"ok","name":"worth-court-relational-certification::worth_court_relational_certification$relational::durable_publication::source_initial_inputs::checkpoint_admission::cold_materialization::shared_custody::shared_history_custody_refuses_unfunded_admission_then_survives_until_the_last_basis_drops","exec_time":4.0938961}
+{"type":"test","event":"ok","name":"worth-court-relational-certification::worth_court_relational_certification$relational::durable_publication::source_initial_inputs::checkpoint_admission::operational::checkpoint_image_restores_publication_bases_and_creations_without_canonical_body_reads","exec_time":4.866891}
+{"type":"test","event":"ok","name":"worth-court-relational-certification::worth_court_relational_certification$cost::relational::source_initial_inputs::checkpoint_admission::cold_materialization::byte_payloads::cold_inline_bytes_history_refuses_after_read_then_retries_full_with_exact_old_values","exec_time":5.6490819}
+{"type":"test","event":"ok","name":"worth-court-relational-certification::worth_court_relational_certification$relational::durable_publication::source_initial_inputs::checkpoint_admission::region_memory::head_materialization_budget_survives_edit_and_last_basis_drop","exec_time":5.7340081000000005}
+{"type":"test","event":"ok","name":"worth-court-relational-certification::worth_court_relational_certification$relational::durable_publication::source_initial_inputs::complete_source_recovery_restores_original_inputs_for_another_complete_capture","exec_time":6.720432}
+{"type":"test","event":"ok","name":"worth-court-relational-certification::worth_court_relational_certification$relational::durable_publication::source_initial_inputs::plan_retry::cloned_complete_plan_retries_after_member_read_cancellation_without_directory_contamination","exec_time":7.5447006}
+{"type":"test","event":"ok","name":"worth-court-relational-certification::worth_court_relational_certification$relational::durable_publication::source_initial_inputs::selected_subject::complete_capture_stopped_request_precedes_proven_selected_damage","exec_time":8.3359298}
+{"type":"test","event":"ok","name":"worth-court-relational-certification::worth_court_relational_certification$relational::durable_publication::source_initial_inputs::cold_indexes::cold_complete_recapture_preserves_original_index_generations_and_live_tail","exec_time":8.8802292}
+{"type":"test","event":"ok","name":"worth-court-relational-certification::worth_court_relational_certification$cost::relational::source_initial_inputs::checkpoint_admission::cold_materialization::peer_history::retired_peer_history_keeps_its_funding_through_edits_and_returns_real_historical_neighbors","exec_time":9.4399893}
+{"type":"test","event":"ok","name":"worth-court-relational-certification::worth_court_relational_certification$relational::durable_publication::source_initial_inputs::checkpoint_admission::contract_work::cold_head_work_exhaustion_keeps_a_wide_contract_region_retryable","exec_time":9.4445375}
+{"type":"suite","event":"ok","passed":13,"failed":0,"ignored":1,"measured":0,"filtered_out":300,"exec_time":80.3291493}
+        PASS [  12.447s] (14/14) worth-court-relational-certification::worth_court_relational_certification cost::relational::source_initial_inputs::checkpoint_admission::cold_materialization::byte_payloads::cold_inline_bytes_head_refuses_after_member_read_then_retains_exact_payload_through_edit
+────────────
+     Summary [  12.450s] 14 tests run: 14 passed, 301 skipped
+{"type":"suite","event":"started","test_count":15}
+{"type":"test","event":"ok","name":"worth-court-relational-certification::worth_court_relational_certification$cost::relational::source_initial_inputs::checkpoint_admission::cold_materialization::byte_payloads::cold_inline_bytes_head_refuses_after_member_read_then_retains_exact_payload_through_edit","exec_time":12.4472214}
+{"type":"suite","event":"ok","passed":1,"failed":0,"ignored":1,"measured":0,"filtered_out":313,"exec_time":12.4472214}
+
+FULL_OWNED_LOG_PATH: C:\programming\worth worktees\worktrees\m3-p3-reopen\target\lane-evidence\test-cost-funding-merge-root-courts-build-cargo-metadata.log-25619ac5d1ae-202611061720446138230000-512fb1f9b36c.log
+FULL_OWNED_LOG_PATH: C:\programming\worth worktees\worktrees\m3-p3-reopen\target\lane-evidence\test-cost-funding-merge-root-courts-build-binaries-build-unit-pl-25619ac5d1ae-202611061720496751150000-699938b1d3fc.log
+FULL_OWNED_LOG_PATH: C:\programming\worth worktees\worktrees\m3-p3-reopen\target\lane-evidence\test-cost-funding-merge-root-courts-build-binaries-build.log-25619ac5d1ae-202611061720503768320000-d1d4e786a6cd.log
+FULL_OWNED_LOG_PATH: C:\programming\worth worktees\worktrees\m3-p3-reopen\target\lane-evidence\test-cost-funding-merge-root-courts-selection.log-25619ac5d1ae-202611061724381117430000-1118953927be.log
+FULL_OWNED_LOG_PATH: C:\programming\worth worktees\worktrees\m3-p3-reopen\target\lane-evidence\test-cost-funding-merge-root-courts-run.log-25619ac5d1ae-202611061724389905370000-d0377f44d231.log
+EVIDENCE_TEST_COUNTS: 14,0,0
+
+end_utc: 2026-11-06T17:24:51.700040+00:00
+exit_code: 0
+tests_passed: 14
+tests_failed: 0
+tests_ignored: 0

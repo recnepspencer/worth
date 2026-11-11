@@ -76,6 +76,8 @@ impl SignalGraph {
         let lowering_owner = self.aspect_lowering_owner.clone();
         let (mut successor, work) = self.fork_persistent();
         successor.aspect_lowering_owner = lowering_owner;
+        // A new branch has its own node-incarnation namespace.
+        successor.recorded_node_issuance = Default::default();
         (successor, work)
     }
 
@@ -115,8 +117,10 @@ impl SignalGraph {
         ));
         (
             Self {
+                initial_empty_origin: false,
                 lifecycle_token: Default::default(),
                 instance_id: self.instance_id,
+                recorded_node_issuance: self.recorded_node_issuance.clone(),
                 arena: self.arena.fork_persistent(),
                 topology: self.topology.fork_persistent(),
                 cause_sets: self.cause_sets.fork_persistent(),

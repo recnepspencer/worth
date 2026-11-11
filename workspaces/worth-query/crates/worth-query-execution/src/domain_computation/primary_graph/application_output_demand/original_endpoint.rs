@@ -58,7 +58,7 @@ pub(in crate::domain_computation::primary_graph) fn derive<'a>(
                         "original output occurrence",
                     ));
                 }
-                let Some(receipt) = settlement.application_commit_receipt() else {
+                let Some(receipt) = settlement.publication_view() else {
                     continue;
                 };
                 let movement = receipt

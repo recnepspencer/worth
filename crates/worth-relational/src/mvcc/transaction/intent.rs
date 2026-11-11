@@ -22,6 +22,35 @@ pub(crate) enum RelationalMaterializationTransactionMode {
 }
 
 impl RelationalTransactionIntent {
+    /// Exhaustively expose only portable authored policy to the Home commitment.
+    pub(crate) fn home_authored_policy(
+        &self,
+    ) -> Option<(
+        bool,
+        Option<&ProposedSchemaTransition>,
+        Option<&SchemaReconciliationPolicy>,
+    )> {
+        let Self {
+            allow_nested_savepoints,
+            proposed_schema_transition,
+            schema_reconciliation_policy,
+            materialization_mode,
+            restoration,
+            materialization_source,
+        } = self;
+        if materialization_mode.is_some()
+            || restoration.is_some()
+            || materialization_source.is_some()
+        {
+            return None;
+        }
+        Some((
+            *allow_nested_savepoints,
+            proposed_schema_transition.as_ref(),
+            schema_reconciliation_policy.as_ref(),
+        ))
+    }
+
     pub fn ordinary() -> Self {
         Self {
             allow_nested_savepoints: true,

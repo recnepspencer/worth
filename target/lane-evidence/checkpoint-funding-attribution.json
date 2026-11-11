@@ -1,0 +1,112 @@
+{
+  "total": 16236875,
+  "phases": {
+    "store/world_image": 107616,
+    "store/world_coordinates": 16561,
+    "native/freeze_indexes": 0,
+    "native/original_readmission": 2045743,
+    "native/dictionary": 0,
+    "native/root_replay": 818066,
+    "native/branch_history": 0,
+    "native/schemas": 0,
+    "native/initial_inputs": 0,
+    "native/normalized_originals": 1035764,
+    "native/history_metadata_indexes": 0,
+    "native/canonical_inventory": 0,
+    "native/current_regions": 0,
+    "native/manifest": 0,
+    "native/checkpoint_serialization": 0,
+    "native/selection_custody": 0,
+    "native/complete_source_serialization": 0,
+    "native/verified_custody": 0,
+    "native/admission_projection": 2463326,
+    "store/native_and_image_seal": 8994393,
+    "store/world_companion": 672133,
+    "store/package_hash_copy": 3796499,
+    "store/previous_selection": 0,
+    "store/manifest_copy_members": 1324405,
+    "store/manifest_hash": 1324405
+  },
+  "operations": {
+    "hash_serialization": 2045743,
+    "hash": 6814614,
+    "serialization": 1282268,
+    "copy": 3287266
+  },
+  "source": "target\\test-cost\\query\\checkpoint-funding-instrumented-head-forty-one\\run-selection.log",
+  "canonical_head": 41,
+  "covered_before": 0,
+  "exclusive_phases": {
+    "store/world_image": 107616,
+    "store/world_coordinates": 16561,
+    "native/freeze_indexes": 0,
+    "native/original_readmission": 2045743,
+    "native/dictionary": 0,
+    "native/root_replay": 818066,
+    "native/branch_history": 0,
+    "native/schemas": 0,
+    "native/initial_inputs": 0,
+    "native/normalized_originals": 1035764,
+    "native/history_metadata_indexes": 0,
+    "native/canonical_inventory": 0,
+    "native/current_regions": 0,
+    "native/manifest": 0,
+    "native/checkpoint_serialization": 0,
+    "native/selection_custody": 0,
+    "native/complete_source_serialization": 0,
+    "native/verified_custody": 0,
+    "native/admission_projection": 2463326,
+    "store/native_and_image_seal": 2631494,
+    "store/world_companion": 672133,
+    "store/package_hash_copy": 3796499,
+    "store/previous_selection": 0,
+    "store/manifest_copy_members": 1324405,
+    "store/manifest_hash": 1324405
+  },
+  "phase_operations": {
+    "store/world_image": {},
+    "store/world_coordinates": {},
+    "native/freeze_indexes": {},
+    "native/original_readmission": {
+      "hash_serialization": 2045743
+    },
+    "native/dictionary": {},
+    "native/root_replay": {},
+    "native/branch_history": {},
+    "native/schemas": {},
+    "native/initial_inputs": {},
+    "native/normalized_originals": {
+      "hash": 1035764
+    },
+    "native/history_metadata_indexes": {},
+    "native/canonical_inventory": {},
+    "native/current_regions": {},
+    "native/manifest": {},
+    "native/checkpoint_serialization": {},
+    "native/selection_custody": {},
+    "native/complete_source_serialization": {},
+    "native/verified_custody": {},
+    "native/admission_projection": {
+      "serialization": 1281658,
+      "hash": 1181463
+    },
+    "store/native_and_image_seal": {
+      "serialization": 610,
+      "hash": 784001,
+      "copy": 655343
+    },
+    "store/world_companion": {},
+    "store/package_hash_copy": {
+      "hash": 2488981,
+      "copy": 1307518
+    },
+    "store/previous_selection": {},
+    "store/manifest_copy_members": {
+      "copy": 1324405
+    },
+    "store/manifest_hash": {
+      "hash": 1324405
+    }
+  },
+  "residual": 863
+}

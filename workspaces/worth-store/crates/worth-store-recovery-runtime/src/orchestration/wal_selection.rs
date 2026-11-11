@@ -9,4 +9,6 @@ pub(crate) use candidate_storage::{
     CandidateClassificationDenial, RecordedWalDisposition, ResidentWalCandidates,
 };
 pub(crate) use source_selection::ResidentSourceSelection;
-pub(crate) use tail_selection::{ResidentWalTail, WalTailSelectionDenial};
+pub(crate) use tail_selection::{
+    ResidentSourceSelectionDenial, ResidentWalTail, WalTailSelectionDenial,
+};

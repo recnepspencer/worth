@@ -57,16 +57,36 @@ impl ActiveAttemptCustody {
         let record: PreparedPublicationRecord = publication
             .prepare(commit, results, late, performed_counters)
             .with_cutoff(cutoff);
-        if let Err(loss) = cell.publish_recorded(
-            expected,
-            &mut lease,
-            |lease| {
-                lease.install_successor(commit, snapshot);
-                counters.record_history_slot_installed();
-                &mut lease.resources_mut().product_head
-            },
-            record,
-        ) {
+        let permit = lease.resources_mut().durable_movement.take();
+        let movement = if let Some(permit) = permit {
+            // The installed permit protects this exact expected head. Actual
+            // history/pin work runs outside the cell's reference lock, after
+            // its durable witness and before the short prepared-head swap.
+            lease.install_successor(commit, snapshot);
+            counters.record_history_slot_installed();
+            permit
+                .validate_successor(
+                    lease
+                        .resources_mut()
+                        .product_head
+                        .as_ref()
+                        .expect("prepared exact successor"),
+                )
+                .expect("the original occurrence selects the prepared successor");
+            permit.publish_recorded(expected, &mut lease.resources_mut().product_head, record)
+        } else {
+            cell.publish_recorded(
+                expected,
+                &mut lease,
+                |lease| {
+                    lease.install_successor(commit, snapshot);
+                    counters.record_history_slot_installed();
+                    &mut lease.resources_mut().product_head
+                },
+                record,
+            )
+        };
+        if let Err(loss) = movement {
             if loss.cutoff_denial().is_none() {
                 counters.record_cas_loss();
             }

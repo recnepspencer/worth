@@ -122,6 +122,15 @@ where
                             receipt,
                         )
                     }
+                    HistoryRecordingSource::RecordedSource(receipt) => {
+                        document.owner.capture_history_group_original_member(
+                            &phase,
+                            &program_publication_access(),
+                            reservation,
+                            candidate,
+                            receipt,
+                        )
+                    }
                     HistoryRecordingSource::RequiredOutputs { source, completed } => {
                         document.owner.capture_history_group_required_outputs(
                             &phase,

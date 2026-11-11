@@ -92,6 +92,12 @@ fn classify_commit(
     outcome: WorthQueryApplicationCommitOutcome,
 ) -> WorthQueryTemporalReentryOutcome {
     match outcome {
+        WorthQueryApplicationCommitOutcome::ProductPreparationPending(pending) => {
+            WorthQueryTemporalReentryOutcome::ProductPreparationPending(pending)
+        }
+        WorthQueryApplicationCommitOutcome::ProductPreparationRefused(refused) => {
+            WorthQueryTemporalReentryOutcome::ProductPreparationRefused(refused)
+        }
         WorthQueryApplicationCommitOutcome::CleanupRequired(cleanup) => {
             WorthQueryTemporalReentryOutcome::CleanupRequired(cleanup)
         }
@@ -107,7 +113,7 @@ fn classify_commit(
         WorthQueryApplicationCommitOutcome::Committed(_) => {
             WorthQueryTemporalReentryOutcome::Committed
         }
-        WorthQueryApplicationCommitOutcome::AlreadyCommitted(_) => {
+        WorthQueryApplicationCommitOutcome::RecoveredCommitted(_) => {
             WorthQueryTemporalReentryOutcome::AlreadyCommitted
         }
         WorthQueryApplicationCommitOutcome::Stale(_) => WorthQueryTemporalReentryOutcome::Obsolete,

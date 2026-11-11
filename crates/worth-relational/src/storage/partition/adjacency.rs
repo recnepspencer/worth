@@ -3,9 +3,14 @@ use crate::identity::data::{KindId, RelationId, VersionId};
 
 use crate::storage::substrate::SharedMap;
 mod allocation;
+mod carrier;
+#[cfg(test)]
+mod carrier_tests;
 mod checkpoint;
 mod ids;
 mod kind_delta;
+mod kind_memberships;
+mod request;
 pub(crate) use ids::AdjacencyIds;
 pub(crate) type HistoricalKindCustody = crate::storage::substrate::StorageAllocation<
     std::sync::Mutex<worth_execution::ExecutionMemoryReservation>,
@@ -20,8 +25,7 @@ pub(crate) enum AdjacencySet {
 }
 
 #[derive(Debug, Clone)]
-// The kind indexes are cold until a kind-filtered traversal first needs them.
-// Keeping them indirect preserves the small ordinary adjacency value layout.
+// Optional kind indexes keep shallow root handles inline. Their nodes own all backing.
 pub(crate) struct AdjacencyEntries {
     current: RelationSet,
     current_by_kind: Option<SharedMap<KindId, RelationSet>>,
@@ -94,6 +98,7 @@ impl AdjacencySet {
         })
     }
 
+    #[cfg(test)]
     pub(crate) fn insert(&mut self, kind_id: KindId, relation_id: RelationId) {
         let entries = self.entries_mut();
         insert_sorted(&mut entries.current, relation_id);
@@ -101,6 +106,7 @@ impl AdjacencySet {
         insert_kind_relation(&mut entries.historical_by_kind, kind_id, relation_id);
     }
 
+    #[cfg(test)]
     pub(crate) fn insert_at(
         &mut self,
         kind_id: KindId,
@@ -116,11 +122,6 @@ impl AdjacencySet {
         entries.current_by_kind = None;
         entries.historical_by_kind = None;
         entries.historical_kind_custody = None;
-    }
-
-    #[cfg(test)]
-    pub(crate) fn reset_historical_kind_buckets(&mut self) {
-        self.reset_historical_kind_buckets_with_custody(None);
     }
 
     pub(crate) fn reset_historical_kind_buckets_with_custody(
@@ -174,15 +175,17 @@ impl AdjacencySet {
         );
     }
 
+    #[cfg(test)]
     pub(crate) fn index_structural_revision(&mut self, kind_id: KindId, version_id: VersionId) {
         let revisions = self
             .entries_mut()
             .structural_revision_by_kind
             .get_or_insert_with(SharedMap::new);
-        let revision = revisions.entry(kind_id).or_insert(version_id);
+        let revision = revisions.entry(kind_id).or_insert_with(|| version_id);
         *revision = (*revision).max(version_id);
     }
 
+    #[cfg(test)]
     pub(crate) fn remove(&mut self, kind_id: KindId, relation_id: &RelationId) {
         let entries = self.entries_mut();
         remove_sorted(&mut entries.current, relation_id);
@@ -195,6 +198,7 @@ impl AdjacencySet {
         }
     }
 
+    #[cfg(test)]
     pub(crate) fn remove_at(
         &mut self,
         kind_id: KindId,
@@ -203,6 +207,23 @@ impl AdjacencySet {
     ) {
         self.remove(kind_id, relation_id);
         self.index_structural_revision(kind_id, version_id);
+    }
+
+    pub(crate) fn structural_revision_count(&self) -> usize {
+        self.entries()
+            .structural_revision_by_kind
+            .as_ref()
+            .map_or(0, |map| map.len())
+    }
+
+    pub(crate) fn structural_revision_entries(
+        &self,
+    ) -> impl Iterator<Item = (KindId, VersionId)> + '_ {
+        self.entries()
+            .structural_revision_by_kind
+            .iter()
+            .flat_map(|map| map.iter())
+            .map(|(&kind, &version)| (kind, version))
     }
 
     pub(crate) fn structural_revision(&self, kind_id: KindId) -> Option<VersionId> {
@@ -236,34 +257,6 @@ impl AdjacencySet {
     }
 
     /// Borrow memberships one at a time; the receiver owns admission per item.
-    pub(crate) fn visit_kind_memberships(
-        &self,
-        basis: super::AdjacencyKindBasis,
-        visit: &mut dyn FnMut(
-            KindId,
-            Option<RelationId>,
-        ) -> Result<
-            (),
-            crate::storage::data::RelationalStorageUnavailableCause,
-        >,
-    ) -> Result<(), crate::storage::data::RelationalStorageUnavailableCause> {
-        let entries = self.entries();
-        let selected = if matches!(basis, super::AdjacencyKindBasis::Historical) {
-            &entries.historical_by_kind
-        } else {
-            &entries.current_by_kind
-        };
-        if let Some(kinds) = selected {
-            for (&kind, ids) in kinds {
-                visit(kind, None)?;
-                for &relation in ids.keys() {
-                    visit(kind, Some(relation))?;
-                }
-            }
-        }
-        Ok(())
-    }
-
     pub(crate) fn historical_kind_ids(&self, kind_id: KindId) -> AdjacencyIds<'_> {
         AdjacencyIds::new(
             self.entries()
@@ -347,32 +340,10 @@ fn insert_sorted(relations: &mut RelationSet, relation_id: RelationId) {
     }
 }
 
+#[cfg(test)]
 fn remove_sorted(relations: &mut RelationSet, relation_id: &RelationId) {
     relations.remove(relation_id);
 }
 
 #[cfg(test)]
-mod tests {
-    use super::*;
-    use crate::identity::data::PartitionId;
-
-    #[test]
-    fn kind_buckets_isolate_current_work_and_retain_historical_membership() {
-        let policy = AdjacencyPolicy {
-            backend: AdjacencyBackend::InlineSmallDegreeAdjacency,
-            small_degree_inline_capacity: 4,
-        };
-        let first = RelationId::new(PartitionId::main(), 1, 1);
-        let unrelated = RelationId::new(PartitionId::main(), 2, 1);
-        let mut adjacency = AdjacencySet::new(&policy);
-        adjacency.insert(KindId(7), first);
-        adjacency.insert(KindId(8), unrelated);
-
-        assert_eq!(adjacency.current_kind_ids(KindId(7)), [first]);
-        assert_eq!(adjacency.current_kind_ids(KindId(8)), [unrelated]);
-
-        adjacency.remove(KindId(7), &first);
-        assert!(adjacency.current_kind_ids(KindId(7)).is_empty());
-        assert_eq!(adjacency.historical_kind_ids(KindId(7)), [first]);
-    }
-}
+mod tests;

@@ -1,6 +1,8 @@
+mod caller_association;
 mod changed_records;
 mod coupled_read;
 mod current_read;
+mod index_omission;
 mod managed_source;
 mod publication_parts;
 mod read_condition;
@@ -18,7 +20,8 @@ use crate::transactions::data::TransactionId;
 /// consume it, either through publication or explicit discard.
 pub struct PreparedRelationalCommitCandidate {
     runtime_instance_id: u64,
-    custom_invariant_generation: u64,
+    configuration_invariant_generation: u64,
+    receiver_epoch: crate::runtime::RelationalRuntimeConfigurationSnapshot,
     publication_binding: crate::runtime::RelationalRuntimePublicationBinding,
     transaction_id: TransactionId,
     branch_id: BranchId,
@@ -72,7 +75,8 @@ pub(crate) enum PreparedRelationalCandidateAdmissionStop {
 impl PreparedRelationalCommitCandidate {
     pub(crate) fn new(
         runtime_instance_id: u64,
-        custom_invariant_generation: u64,
+        configuration_invariant_generation: u64,
+        receiver_epoch: crate::runtime::RelationalRuntimeConfigurationSnapshot,
         publication_binding: crate::runtime::RelationalRuntimePublicationBinding,
         transaction_id: TransactionId,
         branch_id: BranchId,
@@ -124,7 +128,8 @@ impl PreparedRelationalCommitCandidate {
             })?;
         Ok(Self {
             runtime_instance_id,
-            custom_invariant_generation,
+            configuration_invariant_generation,
+            receiver_epoch,
             publication_binding,
             transaction_id,
             branch_id,
@@ -150,8 +155,15 @@ impl PreparedRelationalCommitCandidate {
         self.runtime_instance_id
     }
 
-    pub(crate) fn custom_invariant_generation(&self) -> u64 {
-        self.custom_invariant_generation
+    pub(crate) fn belongs_to_receiver_epoch(
+        &self,
+        epoch: &crate::runtime::RelationalRuntimeConfigurationSnapshot,
+    ) -> bool {
+        self.receiver_epoch.same_epoch(epoch)
+    }
+
+    pub(crate) fn configuration_invariant_generation(&self) -> u64 {
+        self.configuration_invariant_generation
     }
 
     pub(crate) fn expected_basis(&self) -> Option<crate::branch::RelationalBranchBasisDescriptor> {
@@ -222,6 +234,44 @@ impl PreparedRelationalCommitCandidate {
                     .recovered_codec_publication_custody()
                     .cloned()
             })
+    }
+
+    pub(crate) fn home_step(
+        &self,
+    ) -> Option<std::sync::Arc<crate::runtime::AdmittedRelationalHomeProgramStep>> {
+        self._payload
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
+            .as_ref()
+            .and_then(|payload| payload.execution.home_step().cloned())
+    }
+
+    pub(crate) fn home_index_definitions(
+        &self,
+    ) -> Option<std::sync::Arc<crate::runtime::PreparedRelationalIndexDefinitions>> {
+        self._payload
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
+            .as_ref()
+            .and_then(|payload| payload.execution.home_index_definitions())
+    }
+
+    pub(crate) fn covers_home_definitions(
+        &self,
+        definitions: &crate::runtime::PreparedRelationalIndexDefinitions,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> Result<bool, worth_execution::WorkCeilingDenial> {
+        match self
+            ._payload
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
+            .as_ref()
+        {
+            Some(payload) => payload
+                .execution
+                .covers_home_definitions(definitions, execution),
+            None => Ok(false),
+        }
     }
 
     pub(crate) fn indexes_already_prepared(&self) -> bool {

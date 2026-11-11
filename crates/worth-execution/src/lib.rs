@@ -8,6 +8,9 @@
 //! Only the composition root constructs an authority. Domain runtimes receive
 //! leases and use checked patterns; they do not control the physical backend.
 
+mod execution_stack;
+pub use execution_stack::run_with_execution_stack;
+
 mod monotonic_clock;
 mod monotonic_deadline;
 pub use monotonic_clock::{
@@ -26,8 +29,9 @@ mod report;
 mod storage;
 pub use storage::{
     build_ordered_tree, build_sorted_ordered_tree, insert_ordered_tree, remove_ordered_tree,
-    ExecutionOrderedMap, ExecutionOrderedMapDenial, ExecutionOrderedTreeBounds,
-    ExecutionOrderedTreeNode, ExecutionOrderedTreeStorage,
+    ExecutionOrderedMap, ExecutionOrderedMapCell, ExecutionOrderedMapDenial,
+    ExecutionOrderedMapUniqueDenial, ExecutionOrderedTreeBounds, ExecutionOrderedTreeNode,
+    ExecutionOrderedTreeStorage,
 };
 
 pub use authority::{

@@ -2,6 +2,7 @@
 use super::super::{host, lifecycle, mutation, prefix};
 use super::{geometry, query, BoxIndex, Calls, Coordinates};
 use crate::application_invariant_acceptance::authentication;
+use crate::application_invariant_acceptance::managed_index::prefix_observation;
 use lifecycle::{authenticate, run};
 use std::sync::Arc;
 use worth_query_host::facade::{
@@ -29,7 +30,10 @@ fn registered_box_rejects_same_runtime_foreign_branch_and_retained_stale_basis()
 }
 fn branch_and_basis() {
     let calls = Arc::new(Calls::default());
-    let world = host::install_boxes(Arc::new(prefix::Calls::default()), Arc::clone(&calls));
+    let world = host::install_boxes(
+        Arc::new(prefix_observation::Calls::default()),
+        Arc::clone(&calls),
+    );
     let scope = authentication::request_scope();
     let principal = authenticate(&world, &scope);
     let branch = world

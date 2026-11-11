@@ -11,8 +11,15 @@ use super::product_unpublished::{
 mod active;
 mod slots;
 use slots::{RecoveryEntry, RecoveryRecordSlots};
+mod close;
+mod creation_reactivation;
+mod incarnation;
 mod initialization;
 mod page;
+mod reactivation;
+mod recovered_publication;
+mod released;
+pub(crate) use released::PreparedReleasedOriginal;
 #[path = "catalog/update.rs"]
 mod update;
 pub(crate) use update::ReservedProductUnpublishedRecordUpdate;
@@ -52,6 +59,10 @@ struct RecoveryCatalogState {
     reserved_metadata_bytes: usize,
     updating_slots: usize,
     metadata_bytes: usize,
+    released: worth_execution::ExecutionOrderedMap<
+        u64,
+        Arc<super::released_original::ReleasedOriginalSlot>,
+    >,
 }
 
 /// Runtime World capacity for records whose owner effects outlived product
@@ -66,6 +77,7 @@ pub(crate) struct ReservedProductUnpublishedSlot {
     catalog: ProductUnpublishedRecoveryCatalog,
     reserved_metadata_bytes: usize,
     armed: bool,
+    recovered: Option<Arc<crate::recovery::RecoveredWorldPublicationRecord>>,
 }
 
 impl ReservedProductUnpublishedSlot {
@@ -92,6 +104,9 @@ impl std::fmt::Debug for ReservedProductUnpublishedSlot {
 impl Drop for ReservedProductUnpublishedSlot {
     fn drop(&mut self) {
         if !self.armed {
+            return;
+        }
+        if self.restore_recovered() {
             return;
         }
         let mut state = self.catalog.locked_state();
@@ -174,6 +189,7 @@ impl ProductUnpublishedRecoveryCatalog {
             catalog: self.clone(),
             reserved_metadata_bytes: metadata_charge,
             armed: true,
+            recovered: None,
         })
     }
 
@@ -189,9 +205,7 @@ impl ProductUnpublishedRecoveryCatalog {
         handle: &ProductUnpublishedRecoveryHandle,
     ) -> Result<Arc<ProductUnpublishedOwnerEffectsRecord>, super::RuntimeWorldRecoveryDenial> {
         use super::RuntimeWorldRecoveryDenial;
-        if handle.catalog_affinity() != self.affinity() {
-            return Err(RuntimeWorldRecoveryDenial::ForeignHandle);
-        }
+        self.admit_handle(handle)?;
         self.materialize_abandoned(handle.identity());
         let state = self.locked_state();
         if matches!(
@@ -202,6 +216,9 @@ impl ProductUnpublishedRecoveryCatalog {
         }
         match state.slots.get(handle.identity()) {
             Some(RecoveryEntry::Retained(record)) => Ok(Arc::clone(record)),
+            Some(RecoveryEntry::Recovered(_)) => {
+                Err(RuntimeWorldRecoveryDenial::RecoveredCustodyRequired)
+            }
             _ => Err(RuntimeWorldRecoveryDenial::MissingRecord),
         }
     }
@@ -210,9 +227,7 @@ impl ProductUnpublishedRecoveryCatalog {
         &self,
         handle: &ProductUnpublishedRecoveryHandle,
     ) -> Result<ReservedProductUnpublishedRecordUpdate, super::RuntimeWorldRecoveryDenial> {
-        if handle.catalog_affinity() != self.affinity() {
-            return Err(super::RuntimeWorldRecoveryDenial::ForeignHandle);
-        }
+        self.admit_handle(handle)?;
         self.materialize_abandoned(handle.identity());
         let mut state = self.locked_state();
         if matches!(
@@ -225,6 +240,12 @@ impl ProductUnpublishedRecoveryCatalog {
             state.slots.get(handle.identity()),
             Some(RecoveryEntry::Retained(_))
         ) {
+            if matches!(
+                state.slots.get(handle.identity()),
+                Some(RecoveryEntry::Recovered(_))
+            ) {
+                return Err(super::RuntimeWorldRecoveryDenial::RecoveredCustodyRequired);
+            }
             return Err(super::RuntimeWorldRecoveryDenial::MissingRecord);
         }
         let RecoveryEntry::Retained(record) =
@@ -283,6 +304,7 @@ impl ProductUnpublishedRecoveryCatalog {
         Ok(Some(record))
     }
 
+    #[cfg(test)]
     pub(crate) fn identities(&self) -> Vec<ProductUnpublishedOwnerEffectsIdentity> {
         let state = self.locked_state();
         state
@@ -310,6 +332,7 @@ impl ProductUnpublishedRecoveryCatalog {
         self.locked_state().metadata_bytes
     }
 
+    #[cfg(test)]
     pub(crate) fn reserved_slots(&self) -> usize {
         self.locked_state().reserved_slots
     }

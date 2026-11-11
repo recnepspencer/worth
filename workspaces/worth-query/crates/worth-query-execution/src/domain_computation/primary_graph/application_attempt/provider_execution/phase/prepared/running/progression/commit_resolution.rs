@@ -22,6 +22,7 @@ use crate::domain_computation::primary_graph::application_attempt::provider_exec
 /// progression outcome, including the dispatch anchor the commit carried.
 pub(super) struct WorthQueryAuthorizedCompareContext<'a> {
     provider: &'a crate::domain_computation::primary_graph::provider::WorthQueryPrimaryGraphProvider,
+    original_completion: &'a crate::domain_computation::primary_graph::provider::OriginalCompletionReceiver,
     idempotency: WorthQueryApplicationIdempotencyBinding,
     product: crate::domain_computation::execution_runtime::product_world::WorthQueryProductPublicationBinding,
     preconditions:
@@ -31,7 +32,7 @@ pub(super) struct WorthQueryAuthorizedCompareContext<'a> {
     aftermath_causality: Option<
         crate::domain_computation::application_aftermath::WorthQueryPendingAftermathCausality,
     >,
-    authority_binding: super::super::super::WorthQueryApplicationCommitAuthorityBinding,
+    authority_binding: crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationCommitAuthorityBinding,
     provider_session:
         crate::domain_computation::provider_session::WorthQueryProviderSessionTerminalBinding,
 }
@@ -76,6 +77,7 @@ impl<'a> WorthQueryAuthorizedCompareContext<'a> {
     {
         Self::from_admission(
             authority.provider(),
+            authority.original_completion,
             authority.admission(),
             authority.idempotency(),
             authority.product.publication_binding(),
@@ -86,6 +88,7 @@ impl<'a> WorthQueryAuthorizedCompareContext<'a> {
     }
     pub(super) fn from_admission<Schema, Operation, Input, Scope>(
         provider: &'a crate::domain_computation::primary_graph::provider::WorthQueryPrimaryGraphProvider,
+        original_completion: &'a crate::domain_computation::primary_graph::provider::OriginalCompletionReceiver,
         admission: &'a crate::domain_computation::primary_graph::WorthQueryAdmittedApplicationOperation<Schema, Operation, Input, Scope>,
         idempotency: WorthQueryApplicationIdempotencyBinding,
         product: crate::domain_computation::execution_runtime::product_world::WorthQueryProductPublicationBinding,
@@ -109,6 +112,7 @@ impl<'a> WorthQueryAuthorizedCompareContext<'a> {
         );
         Self {
             provider,
+            original_completion,
             idempotency,
             product,
             preconditions: admission.mutation_preconditions(),
@@ -116,7 +120,7 @@ impl<'a> WorthQueryAuthorizedCompareContext<'a> {
             dispatch_outbox,
             aftermath_causality,
             authority_binding:
-                super::super::super::WorthQueryApplicationCommitAuthorityBinding::from_admission(
+                crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationCommitAuthorityBinding::from_admission(
                     admission,
                     idempotency,
                 ),
@@ -143,8 +147,8 @@ pub(super) fn finish_authorized_compare(
                 );
             }
             let resolved = context
-                .provider
-                .observe_completed_application_for_session(committed_session.terminal_binding())
+                .original_completion
+                .take(committed_session.terminal_binding())
                 .ok_or(WorthQueryCommittedComponentResolutionDenial::Unavailable(
                     "typed provider terminal evidence could not be resolved after commit",
                 ))
@@ -166,6 +170,8 @@ pub(super) fn finish_authorized_compare(
         WorthQueryProviderCompareAndCommitOutcome::ProductUnpublished(unpublished) => {
             WorthQueryProviderProgressionOutcome::ProductUnpublished(unpublished)
         }
+        WorthQueryProviderCompareAndCommitOutcome::ProductPreparationPending(owner) => WorthQueryProviderProgressionOutcome::ProductPreparationPending(owner),
+        WorthQueryProviderCompareAndCommitOutcome::ProductPreparationRefused(owner) => WorthQueryProviderProgressionOutcome::ProductPreparationRefused(owner),
         WorthQueryProviderCompareAndCommitOutcome::NoEffect(no_effect) => {
             world_no_effect::classify(no_effect)
         }
@@ -202,18 +208,56 @@ fn resolve_indeterminate_commit(
         WorthQueryApplicationCommitRecoveryKind::CommitRecoveryRequired,
         &failure,
     );
-    match context.provider.resolve_idempotency_binding_at_product(
+    if let Some(completed) = context.original_completion.take(&context.provider_session) {
+        return resolve_committed_components(&context, completed).map_or_else(
+            |denial| {
+                WorthQueryProviderProgressionOutcome::Indeterminate(
+                    committed_component_recovery_evidence(denial),
+                )
+            },
+            |resolved| seal_committed_outcome(context, resolved),
+        );
+    }
+    let resolution = context.provider.resolve_idempotency_binding_at_product(
         execution,
         context.idempotency,
         &context.product,
-    ) {
-        Ok(WorthQueryProviderIdempotencyResolution::Equivalent(receipt)) => {
-            match resolve_committed_components(&context, receipt) {
-                Ok(resolved) => seal_committed_outcome(context, resolved),
-                Err(denial) => WorthQueryProviderProgressionOutcome::Indeterminate(
+    );
+    if let Some(completed) = context.original_completion.take(&context.provider_session) {
+        return resolve_committed_components(&context, completed).map_or_else(
+            |denial| {
+                WorthQueryProviderProgressionOutcome::Indeterminate(
                     committed_component_recovery_evidence(denial),
+                )
+            },
+            |resolved| seal_committed_outcome(context, resolved),
+        );
+    }
+    match resolution {
+        Ok(WorthQueryProviderIdempotencyResolution::ReleasedOriginal(_)) => WorthQueryProviderProgressionOutcome::Denied(crate::domain_computation::primary_graph::WorthQueryApplicationCommitDenial::original_effect_released()),
+        Ok(WorthQueryProviderIdempotencyResolution::Readmitted(receipt)) => {
+            WorthQueryProviderProgressionOutcome::RecoveredCommitted(receipt)
+        }
+        Ok(WorthQueryProviderIdempotencyResolution::PreparationPending { handle, stage }) => {
+            WorthQueryProviderProgressionOutcome::ProductPreparationPending(
+                context
+                    .provider
+                    .preparation_pending(&context.product, handle, stage),
+            )
+        }
+        Ok(WorthQueryProviderIdempotencyResolution::RecoveredUnpublished { handle }) => {
+            match context
+                .provider
+                .recovered_unpublished_application(&context.product, handle)
+            {
+                Ok(effects) => WorthQueryProviderProgressionOutcome::ProductUnpublished(effects),
+                Err(_) => WorthQueryProviderProgressionOutcome::Indeterminate(
+                    evidence.with_preparation_busy(),
                 ),
             }
+        }
+        Ok(WorthQueryProviderIdempotencyResolution::PreparationBusy) => {
+            WorthQueryProviderProgressionOutcome::Indeterminate(evidence.with_preparation_busy())
         }
         Ok(WorthQueryProviderIdempotencyResolution::Absent) => {
             WorthQueryProviderProgressionOutcome::Aborted
@@ -232,6 +276,7 @@ fn indeterminate_read_denied(
 ) -> WorthQueryProviderProgressionOutcome {
     let evidence = match denial {
         crate::domain_computation::primary_graph::provider::WorthQueryProviderIdempotencyResolutionDenial::ExecutionDenied(stop) => evidence.with_read_stop(stop),
+        crate::domain_computation::primary_graph::provider::WorthQueryProviderIdempotencyResolutionDenial::PreparationBusy => evidence.with_preparation_busy(),
         _ => evidence,
     };
     WorthQueryProviderProgressionOutcome::Indeterminate(evidence)

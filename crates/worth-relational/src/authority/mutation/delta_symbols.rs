@@ -1,19 +1,19 @@
 //! A delta's symbol ids are admitted before its revision stamps are written.
 use super::canonical_deltas::CanonicalRecordAspectDelta;
 use super::field_versions::visit_changed_fields;
-use crate::runtime::{PendingSymbolMeanings, SymbolReservationDenial};
-use crate::symbols::data::{StringInterner, Symbol};
+use crate::runtime::{MutationSymbolMeanings, SymbolReservationDenial};
+use crate::symbols::data::Symbol;
 use worth_foundational::facade::{AspectKey, FieldKey};
 
 pub(super) struct AdmittedDeltaSymbols<'delta, 'symbols> {
     delta: &'delta CanonicalRecordAspectDelta,
-    symbols: &'symbols StringInterner,
+    symbols: &'symbols dyn MutationSymbolMeanings,
 }
 
 impl<'delta, 'symbols> AdmittedDeltaSymbols<'delta, 'symbols> {
     pub(super) fn admit(
         delta: &'delta CanonicalRecordAspectDelta,
-        symbols: &'symbols mut PendingSymbolMeanings,
+        symbols: &'symbols mut dyn MutationSymbolMeanings,
     ) -> Result<Self, SymbolReservationDenial> {
         for aspect in &delta.changed_aspects {
             symbols.reserve_revision_reference(aspect.as_str())?;
@@ -25,10 +25,7 @@ impl<'delta, 'symbols> AdmittedDeltaSymbols<'delta, 'symbols> {
                 Ok(())
             })?;
         }
-        Ok(Self {
-            delta,
-            symbols: symbols.interner(),
-        })
+        Ok(Self { delta, symbols })
     }
 
     pub(super) fn delta(&self) -> &'delta CanonicalRecordAspectDelta {

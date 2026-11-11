@@ -1,0 +1,31 @@
+COMMAND: ["python", "target/lane-evidence/layout_fixture_final.py"]
+HEAD: 29b4ecb5ce2af0b6d617bf4b35d294e1bef4273f
+CLEAN: true
+START: 2026-11-07T07:27:44.880183+00:00
+ENV: removed stale external linker override; RUST_MIN_STACK unset in parent
+C_FREE_BYTES 424395657216
+prebuild: cargo check --message-format=json --manifest-path "C:\programming\worth worktees\worktrees\m3-host-home\workspaces\worth-query\Cargo.toml" -p worth-query-testkit-execution-primary-graph-application-contribution -p worth-query-court-execution-package-archive --tests --keep-going --unit-graph -Z unstable-options
+prebuild: cargo check --message-format=json --manifest-path "C:\programming\worth worktees\worktrees\m3-host-home\workspaces\worth-query\Cargo.toml" -p worth-query-testkit-execution-primary-graph-application-contribution -p worth-query-court-execution-package-archive --tests --keep-going
+    Checking worth-harness v0.1.0 (C:\programming\worth worktees\worktrees\m3-host-home\crates\worth-harness)
+    Checking worth-query-package-archive v0.1.0 (C:\programming\worth worktees\worktrees\m3-host-home\workspaces\worth-query\crates\worth-query-package-archive)
+    Checking worth-query-testkit-execution-primary-graph-application-attempt v0.1.0 (C:\programming\worth worktees\worktrees\m3-host-home\workspaces\worth-query\crates\worth-query-testkit-execution-primary-graph-application-attempt)
+    Checking worth-query-testkit-execution-primary-graph-application-contribution v0.1.0 (C:\programming\worth worktees\worktrees\m3-host-home\workspaces\worth-query\crates\worth-query-testkit-execution-primary-graph-application-contribution)
+    Checking worth-query-testkit-execution-primary-graph-application-attempt-2 v0.1.0 (C:\programming\worth worktees\worktrees\m3-host-home\workspaces\worth-query\crates\worth-query-testkit-execution-primary-graph-application-attempt-2)
+    Checking worth-query-court-execution-package-archive v0.1.0 (C:\programming\worth worktees\worktrees\m3-host-home\workspaces\worth-query\crates\worth-query-court-execution-package-archive)
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 27.02s
+C_FREE_BYTES 423584169984
+prebuild: cargo metadata --offline --format-version 1 --manifest-path "C:\programming\worth worktees\worktrees\m3-host-home\workspaces\worth-query\Cargo.toml"
+prebuild: cargo test --message-format=json --no-run --package worth-query-court-execution-package-archive --package worth-query-court-query-decl-host --test worth_query_court_execution_package_archive --test worth_query_court_query_decl_host --profile dev --manifest-path "C:\programming\worth worktees\worktrees\m3-host-home\workspaces\worth-query\Cargo.toml" --unit-graph -Z unstable-options
+prebuild: cargo nextest list --cargo-message-format=json --package worth-query-court-execution-package-archive --package worth-query-court-query-decl-host --test worth_query_court_execution_package_archive --test worth_query_court_query_decl_host --cargo-profile dev --manifest-path "C:\programming\worth worktees\worktrees\m3-host-home\workspaces\worth-query\Cargo.toml" --list-type binaries-only --message-format json
+   Compiling worth-query-testkit-execution-primary-graph-application-contribution v0.1.0 (C:\programming\worth worktees\worktrees\m3-host-home\workspaces\worth-query\crates\worth-query-testkit-execution-primary-graph-application-contribution)
+   Compiling worth-query-testkit-certification-correction v0.1.0 (C:\programming\worth worktees\worktrees\m3-host-home\workspaces\worth-query\crates\worth-query-testkit-certification-correction)
+   Compiling worth-query-testkit-certification v0.1.0 (C:\programming\worth worktees\worktrees\m3-host-home\workspaces\worth-query\crates\worth-query-testkit-certification)
+   Compiling worth-query-testkit-execution-primary-graph-application-attempt-2 v0.1.0 (C:\programming\worth worktees\worktrees\m3-host-home\workspaces\worth-query\crates\worth-query-testkit-execution-primary-graph-application-attempt-2)
+   Compiling worth-query-court-execution-package-archive v0.1.0 (C:\programming\worth worktees\worktrees\m3-host-home\workspaces\worth-query\crates\worth-query-court-execution-package-archive)
+   Compiling worth-query-court-query-decl-host v0.1.0 (C:\programming\worth worktees\worktrees\m3-host-home\workspaces\worth-query\crates\worth-query-court-query-decl-host)
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 1m 13s
+prebuild: cargo nextest list --cargo-metadata "C:\programming\worth worktees\worktrees\m3-host-home\target\lane-evidence\layout-fixture-final\build\cargo-metadata.json" --binaries-metadata "C:\programming\worth worktees\worktrees\m3-host-home\target\lane-evidence\layout-fixture-final\build\binaries.json" --message-format json --ignore-default-filter -E test(=domain_computation::primary_graph::tests::application_attempt::cleanup_dispatch::failed_cleanup_keeps_the_original_first_send_after_derived_windows_are_discarded)
+prebuild: cargo nextest run --cargo-metadata "C:\programming\worth worktees\worktrees\m3-host-home\target\lane-evidence\layout-fixture-final\build\cargo-metadata.json" --binaries-metadata "C:\programming\worth worktees\worktrees\m3-host-home\target\lane-evidence\layout-fixture-final\build\binaries.json" --profile ci --config-file "C:\programming\worth worktees\worktrees\m3-host-home\target\lane-evidence\layout-fixture-final\nextest.toml" --ignore-default-filter --no-fail-fast --no-tests=fail --message-format libtest-json --success-output immediate -E test(=domain_computation::primary_graph::tests::application_attempt::cleanup_dispatch::failed_cleanup_keeps_the_original_first_send_after_derived_windows_are_discarded)
+
+END: 2026-11-07T07:29:39.800614+00:00
+EXIT: 0

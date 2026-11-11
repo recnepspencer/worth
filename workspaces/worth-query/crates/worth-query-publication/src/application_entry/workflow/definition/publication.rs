@@ -39,6 +39,21 @@ pub enum WorthQueryWorkflowDefinitionPublicationPreparationDenial {
 }
 
 impl WorthQueryWorkflowDefinitionPublicationPreparationDenial {
+    /// The Directory capability cause from specialized definition preparation.
+    pub fn durable_state_admission_denial(
+        &self,
+    ) -> Option<&worth_query_execution::facade::product::WorthQueryDurableStateAdmissionDenial>
+    {
+        if let Self::DefinitionPreparation(
+            WorkflowDefinitionPreparationDenial::DurableStateAdmission(cause),
+        ) = self
+        {
+            Some(cause)
+        } else {
+            None
+        }
+    }
+
     pub const fn kind(&self) -> WorthQueryWorkflowDefinitionPublicationPreparationDenialKind {
         match self {
             Self::RequestAdmission(_) => {
@@ -225,4 +240,7 @@ where
     }
 }
 
+#[cfg(test)]
+#[path = "publication_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;
 mod ordinary;

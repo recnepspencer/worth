@@ -5,7 +5,6 @@ use std::sync::Arc;
 use crate::durability::checkpoints::region_directory::{corrupt, ReadmittedRegionDirectory};
 use crate::durability::data::{CheckpointRestoreWork, DurableCheckpoint, RelationalRecoveryStop};
 use crate::history::data::VersionNode;
-use crate::history::RelationalCommitCatalog;
 use crate::runtime::RelationalRuntime;
 use crate::storage::residency::RelationalRegionRetention;
 
@@ -16,47 +15,72 @@ pub(super) fn restore(
     checkpoint: &DurableCheckpoint,
     directory: Arc<crate::durability::data::RelationalCheckpointDirectory>,
     work: &mut CheckpointRestoreWork,
-) -> Result<(), RelationalRecoveryStop> {
+) -> Result<
+    crate::durability::checkpoints::region_directory::ReadmittedSchemas,
+    RelationalRecoveryStop,
+> {
     crate::execution::check_request(execution).map_err(RelationalRecoveryStop::Request)?;
+    if directory.admission_image.is_some() {
+        let owner = crate::durability::checkpoint_admission::CheckpointAdmissionOwner::bind(
+            &directory, execution,
+        )
+        .map_err(RelationalRecoveryStop::AdmissionImage)?;
+        runtime
+            .durability
+            .checkpoint_selection()
+            .install_admission_owner(owner)
+            .map_err(RelationalRecoveryStop::AdmissionImage)?;
+    }
     let mut history = runtime
         .history
         .detached_owner_snapshot()
         .map_err(|denial| corrupt(format!("cold history snapshot denied: {denial:?}")))?;
     let mut symbols = runtime.services.symbols.interner_snapshot();
     symbols.restore_snapshot(lane, checkpoint.symbol_table.clone());
-    let paged_symbols = runtime.services.symbols.detached_owner_snapshot();
-    paged_symbols.replace(symbols);
-    paged_symbols
-        .install_cold_pages(&directory)
-        .map_err(crate::runtime::ColdSymbolDirectoryDenial::into_recovery_stop)?;
+    let paged_symbols = if directory.admission_image.is_some() {
+        runtime
+            .services
+            .symbols
+            .from_selected_directory_for_request(&directory, execution)?
+    } else {
+        let paged = runtime.services.symbols.detached_owner_snapshot();
+        paged.replace(symbols);
+        paged
+            .install_cold_pages(&directory)
+            .map_err(crate::runtime::ColdSymbolDirectoryDenial::into_recovery_stop)?;
+        paged
+    };
     let mut regions = ReadmittedRegionDirectory::new(
         directory.clone(),
         paged_symbols.clone(),
+        execution,
         &runtime.config.schema.registry.content_formats,
     )?;
-    let heads = checkpoint
-        .envelopes
-        .iter()
-        .map(|entry| (entry.commit.commit_id, Arc::clone(entry.canonical_arc())))
-        .collect::<BTreeMap<_, _>>();
+    let mut head_ids = worth_execution::ExecutionOrderedMap::default();
+    for cell in &checkpoint.branch_cells {
+        crate::durability::artifact_payload_emission::request::account_work(execution, 1)?;
+        if let worth_foundational::FoundationalBranchTarget::Basis(target) =
+            cell.observation.target()
+        {
+            let id = crate::history::data::CommitId(target.selected_commit_id());
+            if !head_ids.contains_key(&id) {
+                head_ids
+                    .insert_cloned_native_for_request(&id, &(), *execution)
+                    .map_err(crate::durability::checkpoint_history::capture::map_stop)?;
+            }
+        }
+    }
     let positioned = checkpoint
         .envelopes
         .iter()
         .map(|entry| (entry.commit.commit_id, entry.clone()))
         .collect::<BTreeMap<_, _>>();
-    let mut catalog = RelationalCommitCatalog::default();
-    for entry in &directory.manifest.commits {
-        catalog
-            .append_indexed_recovery(
-                entry.clone(),
-                directory.source.clone(),
-                positioned.get(&entry.commit.commit_id).cloned(),
-            )
-            .map_err(|denial| corrupt(format!("indexed commit admission: {denial:?}")))?;
-    }
-    let head_cells = heads
-        .keys()
-        .map(|id| {
+    let catalog = super::selected_catalog::admit(execution, &directory, |entry| {
+        positioned.get(&entry.commit.commit_id).cloned()
+    })?;
+    let head_cells = head_ids
+        .iter()
+        .map(|(id, _)| {
             catalog
                 .get(*id)
                 .map(|artifact| (*id, artifact.envelope_residency()))
@@ -95,42 +119,18 @@ pub(super) fn restore(
     history.advance_canonical_stream_floor(directory.manifest.covered_position);
     let mut roots = BTreeMap::new();
     let mut authorities = BTreeMap::new();
-    for image in &directory.manifest.roots {
-        let envelope = heads
-            .get(&image.commit_id)
-            .cloned()
-            .ok_or_else(|| corrupt("root has no admitted head envelope"))?;
+    for image in directory
+        .manifest
+        .roots
+        .iter()
+        .filter(|image| head_ids.contains_key(&image.commit_id))
+    {
         let schema = regions
             .schemas
             .get(&image.schema_carrier_digest)
             .cloned()
             .ok_or_else(|| corrupt("root has no schema carrier"))?;
-        let descriptor = checkpoint
-            .commit_descriptors
-            .get(&image.commit_id)
-            .cloned()
-            .ok_or_else(|| corrupt("root has no commit descriptor"))?;
-        let leaves = regions.regions(execution, image.schema_carrier_digest, &image.regions)?;
-        let content_records = crate::durability::checkpoints::content::read_records(
-            execution,
-            &image.content,
-            directory.source.as_ref(),
-        )?;
-        let root = history
-            .readmit_branch_region_directory(
-                execution,
-                &content_records,
-                leaves,
-                envelope,
-                descriptor,
-                schema.clone(),
-            )
-            .map_err(|denial| match denial {
-                crate::branch::RelationalBranchRootCaptureDenial::Content(cause) => {
-                    RelationalRecoveryStop::from(cause)
-                }
-                other => corrupt(format!("branch region directory readmission: {other:?}")).into(),
-            })?;
+        let root = regions.readmit_root(&history, image, execution)?;
         roots.insert(image.commit_id, root);
         authorities.insert(image.commit_id, schema);
         work.root_images_verified += 1;
@@ -160,8 +160,9 @@ pub(super) fn restore(
     work.branch_cells_readmitted += checkpoint.branch_cells.len();
     let mirror = match directory.manifest.mirror_schema {
         Some(schema) => regions
-            .regions(execution, schema, &directory.manifest.mirror)?
-            .into_iter()
+            .regions(schema, &directory.manifest.mirror, execution)?
+            .iter()
+            .cloned()
             .map(|region| {
                 (
                     region.partition_id,
@@ -179,6 +180,9 @@ pub(super) fn restore(
     runtime.partitions.install_cells(mirror);
     runtime.history = history;
     runtime.lineage.install_cold_pages(&directory)?;
-    runtime.durability.checkpoint_selection().restore(directory);
-    Ok(())
+    runtime
+        .durability
+        .checkpoint_selection()
+        .restore_selected(directory);
+    Ok(regions.schemas)
 }

@@ -46,7 +46,7 @@ fn held_snapshot_failure_resolves_original_key_without_source_reexecution() {
     let completed = fixture::completed(operation, &fresh);
     assert!(matches!(
         completed.evidence(),
-        WorthQuerySourceCompletion::Recovered {
+        WorthQuerySourceCompletion::Recorded {
             initial_posture: Some(WorthQueryApplicationUncommitted::Indeterminate(_)),
             ..
         }

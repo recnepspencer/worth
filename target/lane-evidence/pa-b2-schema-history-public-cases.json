@@ -1,0 +1,18 @@
+[
+  "branch_local_sparse_slot_create_publishes_and_recovers_exact_lineage",
+  "durability_contract_failure_schema_mismatch_is_explicit",
+  "durability_recovery_plan_preserves_explicit_verification_mode",
+  "durability_recovery_emits_authority_continuity_diagnostic_before_execution",
+  "recovery_explains_each_authority_continuity_comparison",
+  "another_label_with_identical_contracts_refuses_before_service",
+  "after_a_durable_transition_only_its_target_is_served",
+  "durability_contract_recovery_rebuilds_branch_head_root_obligations",
+  "durability_contract_recovery_preserves_inspection_truth_bundle",
+  "checkpoint_tail_preserves_replacement_and_original_record_truth",
+  "durable_recovery_and_schema_mismatch_test",
+  "durability_contract_failure_aspect_plan_mismatch_is_explicit",
+  "durability_contract_failure_relation_integrity_plan_mismatch_is_explicit",
+  "independent_runtimes_publish_byte_identical_canonical_artifacts",
+  "a_recovered_runtime_continues_with_the_reference_artifacts",
+  "native_field_text_checkpoint_then_tail_recovers_exact_json_after_original_owners_drop"
+]

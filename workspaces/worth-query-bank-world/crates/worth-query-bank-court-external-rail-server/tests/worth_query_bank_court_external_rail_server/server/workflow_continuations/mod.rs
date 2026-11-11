@@ -29,17 +29,27 @@ fn initiation_recovers_one_continuation_and_a_fresh_approver_starts_its_workflow
     let Advance::Completed(first) = initiate(input.clone()).advance(&request) else {
         panic!("fresh initiation")
     };
-    let Completion::Fresh { result, .. } = first.evidence() else {
+    let Completion::Fresh {
+        result, receipt, ..
+    } = first.evidence()
+    else {
         panic!("fresh payment result")
     };
     let payment_id = result.payment;
+    let first_receipt = receipt.clone();
     first
         .close(&request)
         .unwrap_or_else(|(_, cause)| panic!("initiation close: {cause:?}"));
     let Advance::Completed(recovered) = initiate(input).advance(&request) else {
         panic!("keyed initiation")
     };
-    assert!(matches!(recovered.evidence(), Completion::Recovered { .. }));
+    let Completion::Recorded { receipt, .. } = recovered.evidence() else {
+        panic!("keyed continuation supplies original data without a handler result");
+    };
+    worth_query_bank_testkit_server::facade::recorded_commit_axes::assert_agrees(
+        receipt,
+        &first_receipt,
+    );
     // Recovery supplies no handler result. A separately authorized read reconstructs only description.
     let result = fixture
         .world

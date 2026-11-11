@@ -8,6 +8,65 @@ pub struct RuntimeWorldObservationPort {
     owner: Weak<dyn RuntimeWorldObservationService + Send + Sync>,
 }
 impl RuntimeWorldObservationPort {
+    /// Observe actual resident owner artifacts explicitly, without claiming
+    /// Home durability or acquiring any performed/live result authority.
+    pub fn observe_memory_original_publication(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        effect: worth_relational::facade::durability::ObservedRelationalMemoryCommit,
+    ) -> Result<
+        crate::history::WorldObservedMemoryPublication,
+        super::super::RuntimeWorldServiceDenial<crate::history::WorldReadmittedPublicationDenial>,
+    > {
+        self.service()?
+            .observe_memory_original_publication(execution, effect)
+            .map_err(super::super::RuntimeWorldServiceDenial::Denied)
+    }
+    /// Read the original durable occurrence for this exact Native owner-admitted
+    /// effect. Reconstruction reads the selected World image and bounded tails;
+    /// it never executes a handler, publishes, or manufactures a live result.
+    pub fn readmitted_native_publication(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        effect: worth_relational::facade::durability::ReadmittedRelationalAssociatedEffect,
+    ) -> Result<
+        crate::history::WorldReadmittedPublication,
+        super::super::RuntimeWorldServiceDenial<crate::history::WorldReadmittedPublicationDenial>,
+    > {
+        self.service()?
+            .readmitted_native_publication(execution, effect)
+            .map_err(super::super::RuntimeWorldServiceDenial::Denied)
+    }
+    /// Lookup coordinates are durable data; an old process-issued identity is
+    /// not a current-owner capability and cannot cross this boundary.
+    ///
+    /// ```compile_fail,E0308
+    /// use worth_runtime_world::facade::{RuntimeWorldObservationPort, CompositeCommitIdentity};
+    /// fn stale(port: &RuntimeWorldObservationPort, old: &CompositeCommitIdentity) {
+    ///     let _ = port.readmitted_publication(old);
+    /// }
+    /// ```
+    pub fn readmitted_publication(
+        &self,
+        identity: &worth_foundational::facade::DurableCompositeCommitIdentity,
+    ) -> Result<
+        crate::history::WorldReadmittedPublication,
+        super::super::RuntimeWorldServiceDenial<crate::history::WorldReadmittedPublicationDenial>,
+    > {
+        self.service()?
+            .readmitted_publication(identity)
+            .map_err(super::super::RuntimeWorldServiceDenial::Denied)
+    }
+    pub fn observe_root_product_branch(
+        &self,
+    ) -> Result<
+        crate::branch::ProductBranchObservation,
+        super::super::RuntimeWorldServiceDenial<crate::branch::RuntimeWorldBranchAdmissionDenial>,
+    > {
+        self.service()?
+            .observe_root_product_branch()
+            .map_err(super::super::RuntimeWorldServiceDenial::Denied)
+    }
     /// Read-only probe of the actual occurrence's lock. It grants no mutation,
     /// source-admission or currentness authority and never waits for its writer.
     #[doc(hidden)]
@@ -138,6 +197,19 @@ impl RuntimeWorldObservationPort {
         }
         Ok(service)
     }
+    /// Enumerate actual installed World branches, never a consumer coordination map.
+    pub fn observe_installed_product_branches(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> Result<
+        crate::branch::ObservedProductBranches,
+        super::super::RuntimeWorldServiceDenial<crate::branch::ProductBranchInventoryDenial>,
+    > {
+        self.service()?
+            .observe_installed_product_branches(execution)
+            .map_err(super::super::RuntimeWorldServiceDenial::Denied)
+    }
+
     pub fn observe_product_branch(
         &self,
         branch: &crate::identity::ProductBranchIdentity,

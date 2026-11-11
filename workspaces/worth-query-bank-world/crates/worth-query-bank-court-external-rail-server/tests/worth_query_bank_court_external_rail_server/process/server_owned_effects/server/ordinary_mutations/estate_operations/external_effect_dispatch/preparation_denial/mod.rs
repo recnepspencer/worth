@@ -21,7 +21,7 @@ fn late_runtime_time_failure_preserves_the_observed_lost_response() {
         .expect("rail transport installs");
     transport.after_next_dispatch(move || time.make_unavailable());
 
-    let outcome = {
+    let outcome_closed = {
         let source_actor = &fixture.authenticate_specialist();
         let source_scope = &request_scope();
         let source_key = &idempotency(97);
@@ -54,8 +54,11 @@ fn late_runtime_time_failure_preserves_the_observed_lost_response() {
         let closed_source = source_completed
             .close_with_evidence(&source_request)
             .unwrap_or_else(|(_, cause)| panic!("lawful native source close: {cause:?}"));
-        bank_server::BankCommitReceipt::from_closed_source(closed_source)
+        bank_server::BankClosedSourceCompletion::from_query(closed_source)
     };
+    let outcome = outcome_closed
+        .live_receipt()
+        .expect("fresh completion retains its actual live receipt");
     let receipt = outcome;
 
     assert_eq!(transport.production_dispatches().len(), 1);

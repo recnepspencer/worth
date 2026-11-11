@@ -15,32 +15,40 @@ pub(crate) fn normalized_merge_request_digest(
 }
 
 struct DigestBytes {
-    bytes: Vec<u8>,
+    bytes: Sha256,
 }
 
 impl DigestBytes {
     fn new(domain: &'static str) -> Self {
-        let mut bytes = Self { bytes: Vec::new() };
+        let mut bytes = Self {
+            bytes: Sha256::new(),
+        };
         bytes.str(domain);
         bytes
     }
 
     fn finish(self) -> String {
-        let digest = Sha256::digest(self.bytes);
-        digest.iter().map(|byte| format!("{byte:02x}")).collect()
+        const HEX: &[u8; 16] = b"0123456789abcdef";
+        let digest = self.bytes.finalize();
+        let mut text = String::with_capacity(64);
+        for byte in digest {
+            text.push(char::from(HEX[usize::from(byte >> 4)]));
+            text.push(char::from(HEX[usize::from(byte & 15)]));
+        }
+        text
     }
 
     fn tag(&mut self, tag: u8) {
-        self.bytes.push(tag);
+        self.bytes.update([tag]);
     }
 
     fn usize(&mut self, value: usize) {
-        self.bytes.extend_from_slice(&(value as u64).to_be_bytes());
+        self.bytes.update((value as u64).to_be_bytes());
     }
 
     fn str(&mut self, value: &str) {
         self.usize(value.len());
-        self.bytes.extend_from_slice(value.as_bytes());
+        self.bytes.update(value.as_bytes());
     }
 
     fn normalized_request(&mut self, request: &NormalizedRelationalMergeRequest) {
@@ -91,5 +99,35 @@ impl DigestBytes {
         match scope {
             RelationalMergeScope::FullBranch => self.tag(1),
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    #[test]
+    fn owned_decode_streamed_merge_request_digest_preserves_prior_primitive_bytes() {
+        let mut actual = DigestBytes::new("worth.relational.merge.normalized-request.v1");
+        actual.tag(1);
+        actual.str("target-\u{03bb}");
+        actual.str("source");
+        for tag in [1, 2, 1, 2] {
+            actual.tag(tag);
+        }
+        let mut old = Vec::new();
+        let domain = "worth.relational.merge.normalized-request.v1";
+        old.extend_from_slice(&(domain.len() as u64).to_be_bytes());
+        old.extend_from_slice(domain.as_bytes());
+        old.push(1);
+        for value in ["target-\u{03bb}", "source"] {
+            old.extend_from_slice(&(value.len() as u64).to_be_bytes());
+            old.extend_from_slice(value.as_bytes());
+        }
+        old.extend_from_slice(&[1, 2, 1, 2]);
+        let expected = Sha256::digest(old)
+            .iter()
+            .map(|byte| format!("{byte:02x}"))
+            .collect::<String>();
+        assert_eq!(actual.finish(), expected);
     }
 }

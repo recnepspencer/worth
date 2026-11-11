@@ -61,13 +61,15 @@ pub(crate) fn select_authored_source_retirement(
     roles: &[RequiredOutputRoleTarget],
     selection: AuthoredRetirementSelection,
 ) -> Result<SelectedAuthoredRetirement, TransactionCommitError> {
+    let runtime = &crate::history::data::codec_retirement_closure::history_request::RuntimeHistoryRequest::new(runtime, execution);
     let result = execution.in_scope(|lease| {
         ExecutionWorkCeiling::new(execution.work_ceiling()).run_with_checkpoint(
             lease,
             None,
             |context| {
-                if installed.runtime_instance_id != runtime.runtime_instance_id()
-                    || basis.descriptor().runtime_instance_id() != runtime.runtime_instance_id()
+                if installed.runtime_instance_id != runtime.runtime.runtime_instance_id()
+                    || basis.descriptor().runtime_instance_id()
+                        != runtime.runtime.runtime_instance_id()
                     || !basis.is_current()
                 {
                     return Err(reject(Cause::InvalidAuthoredAnchor, anchor));
@@ -183,7 +185,7 @@ pub(crate) fn select_authored_source_retirement(
 
 fn authored_birth(
     execution: &ExecutionRequest<'_, '_>,
-    runtime: &RelationalRuntime,
+    runtime: &crate::history::data::codec_retirement_closure::history_request::RuntimeHistoryRequest<'_, '_, '_>,
     basis: &AdmittedRelationalBranchBasis,
     anchor: EntityId,
     context: &mut MapKernelContext<'_, '_>,
@@ -213,8 +215,8 @@ fn authored_birth(
         .created_at_for_slot(anchor.slot_index())
         .ok_or_else(|| reject(Cause::InvalidAuthoredAnchor, anchor))?;
     let envelope = runtime
-        .history
-        .canonical_envelope_for_version(created)
+        .version(created, context)
+        .map_err(stopped)?
         .ok_or_else(|| reject(Cause::InvalidAuthoredAnchor, anchor))?;
     if envelope.authored_source_restoration().is_some() {
         super::source_scope_closure::validate_historical_prefix(

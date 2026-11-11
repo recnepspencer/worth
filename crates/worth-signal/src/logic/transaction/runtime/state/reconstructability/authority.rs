@@ -10,7 +10,7 @@ pub(in crate::logic::transaction::runtime) struct AuthorityState<T>
 where
     T: Copy + Ord,
 {
-    pub graph: SignalGraph,
+    pub graph: Box<SignalGraph>,
     pub config: SignalRuntimeConfig<T>,
 }
 
@@ -20,14 +20,14 @@ where
 {
     pub fn capture(graph: &SignalGraph, config: &SignalRuntimeConfig<T>) -> Self {
         Self {
-            graph: graph.clone_stateful(),
+            graph: Box::new(graph.clone_stateful()),
             config: config.clone(),
         }
     }
 
     pub(in crate::logic::transaction::runtime) fn into_parts(
         self,
-    ) -> (SignalGraph, SignalRuntimeConfig<T>) {
+    ) -> (Box<SignalGraph>, SignalRuntimeConfig<T>) {
         (self.graph, self.config)
     }
 }

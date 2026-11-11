@@ -17,18 +17,20 @@ pub(crate) struct MutationApplyOutcome {
 }
 
 pub(crate) fn apply_plan_to_working_state(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     state: &mut WorkingState,
     apply_plan: &AuthoritativeApplyPlan,
     config: &MutationConfig,
     schema_registry: &RelationalSchemaRegistry,
     aspect_plans: &AspectContractPlanCatalog,
-    symbols: &mut crate::runtime::PendingSymbolMeanings,
+    symbols: &mut dyn crate::runtime::MutationSymbolMeanings,
     branch_local_delete_allowance: BranchLocalDeleteAllowance,
-    record_allocations: &mut crate::runtime::PendingRecordAllocations,
+    record_allocations: &mut dyn crate::runtime::MutationRecordAllocations,
     lease: Option<&worth_execution::ExecutionResourceLease<'_>>,
     commit_work_budget: Option<crate::execution::RequestWorkBudget>,
 ) -> Result<MutationApplyOutcome, super::MutationApplyDenial> {
     apply_plan_with_publication_edges(
+        execution,
         state,
         apply_plan,
         config,
@@ -44,14 +46,15 @@ pub(crate) fn apply_plan_to_working_state(
 }
 
 pub(crate) fn apply_plan_with_publication_edges(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     state: &mut WorkingState,
     apply_plan: &AuthoritativeApplyPlan,
     config: &MutationConfig,
     schema_registry: &RelationalSchemaRegistry,
     aspect_plans: &AspectContractPlanCatalog,
-    symbols: &mut crate::runtime::PendingSymbolMeanings,
+    symbols: &mut dyn crate::runtime::MutationSymbolMeanings,
     branch_local_delete_allowance: BranchLocalDeleteAllowance,
-    record_allocations: &mut crate::runtime::PendingRecordAllocations,
+    record_allocations: &mut dyn crate::runtime::MutationRecordAllocations,
     lease: Option<&worth_execution::ExecutionResourceLease<'_>>,
     commit_work_budget: Option<crate::execution::RequestWorkBudget>,
     deferred_publication_edges: Option<
@@ -59,6 +62,7 @@ pub(crate) fn apply_plan_with_publication_edges(
     >,
 ) -> Result<MutationApplyOutcome, super::MutationApplyDenial> {
     let mut workspace = MutationWorkspace::new(
+        *execution,
         state,
         symbols,
         config,
@@ -78,7 +82,9 @@ pub(crate) fn apply_plan_with_publication_edges(
 
     for intent in &apply_plan.merged_intents {
         let child = dispatch_intent(intent, &mut workspace, lease)?;
-        effect.accumulate(assemble_effect(child, &mut workspace)?);
+        effect.accumulate(
+            workspace.run_owned_mutation(|workspace| assemble_effect(child, workspace))?,
+        );
     }
 
     let preparation_telemetry = workspace.preparation_telemetry();

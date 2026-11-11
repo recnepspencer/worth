@@ -74,6 +74,8 @@ pub use recording_outputs::{
     WorthQueryRecordingOutputQualificationDenial, WorthQueryRetainedRecordingOutputTree,
 };
 mod selection;
+mod source_evidence;
+pub use source_evidence::WorthQueryHistorySourceEvidence;
 mod step;
 pub use candidate::WorthQueryDocumentHistoryCandidateDenial;
 #[doc(hidden)]
@@ -156,5 +158,8 @@ impl<S: ApplicationSchema, H: ApplicationHistoryBinding<S>> std::fmt::Debug
             .finish_non_exhaustive()
     }
 }
+#[cfg(test)]
+#[path = "mod_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;
 
 pub(in crate::domain_computation) use navigation::HistoryProducerInvocation;

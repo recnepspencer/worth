@@ -81,6 +81,9 @@ pub struct Handler {
     pub computation: readers::computation::Installed,
 }
 impl OperationHandler<Schema, Binding> for Handler {
+    fn declared_durable_capabilities() -> Option<&'static [WorthQueryOperationDurableCapability]> {
+        Some(&[WorthQueryOperationDurableCapability::RelationalMutation])
+    }
     fn decide(
         &self,
         input: &Edit,

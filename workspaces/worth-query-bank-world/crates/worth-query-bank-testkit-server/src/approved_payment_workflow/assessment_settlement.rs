@@ -35,7 +35,7 @@ pub fn awaiting_payment_assessment(
     workflow: &BankApprovedPaymentWorkflow<'_, '_, '_>,
     authority: &ApprovePayment,
 ) -> PublishedWorkflowInstanceRef {
-    let instance = journey::start_approved_payment_instance(workflow, authority);
+    let (_definition, instance) = journey::start_approved_payment_instance(workflow, authority);
     let proposal = workflow
         .propose(
             instance.clone(),

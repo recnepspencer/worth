@@ -1,3 +1,5 @@
+use super::correspondence_witness::{lowercase_sha256, CorrespondenceHashWriter};
+use super::MergeWitnessRows;
 use serde::de::Error as _;
 use serde::{Deserialize, Deserializer, Serialize};
 use sha2::{Digest, Sha256};
@@ -18,13 +20,27 @@ pub struct RelationalMergeAspectPolicyWitnessRow {
     record: RecordRef,
     target_record: Option<RecordRef>,
     classification: MergeConflictClass,
-    aspect_resolutions: Arc<[AspectPolicyResolutionRecord]>,
-    applied_policies: Arc<[ResolvedAspectMergePolicy]>,
+    aspect_resolutions: MergeWitnessRows<AspectPolicyResolutionRecord>,
+    applied_policies: MergeWitnessRows<ResolvedAspectMergePolicy>,
     proof_boundary: MergePolicyProofBoundary,
     row_digest: String,
 }
 
 impl RelationalMergeAspectPolicyWitnessRow {
+    pub(crate) fn retain_aspect_resolutions_memory(
+        &self,
+        memory: Option<worth_execution::ExecutionMemoryReservation>,
+    ) -> Result<(), Option<worth_execution::ExecutionMemoryReservation>> {
+        self.aspect_resolutions.retain_decoded_memory(memory)
+    }
+
+    pub(crate) fn retain_applied_policies_memory(
+        &self,
+        memory: Option<worth_execution::ExecutionMemoryReservation>,
+    ) -> Result<(), Option<worth_execution::ExecutionMemoryReservation>> {
+        self.applied_policies.retain_decoded_memory(memory)
+    }
+
     pub(crate) fn retained(
         record: RecordRef,
         target_record: Option<RecordRef>,
@@ -45,8 +61,8 @@ impl RelationalMergeAspectPolicyWitnessRow {
             record,
             target_record,
             classification,
-            aspect_resolutions,
-            applied_policies,
+            aspect_resolutions: aspect_resolutions.into(),
+            applied_policies: applied_policies.into(),
             proof_boundary,
             row_digest,
         }
@@ -103,8 +119,8 @@ struct RelationalMergeAspectPolicyWitnessRowWire {
     record: RecordRef,
     target_record: Option<RecordRef>,
     classification: MergeConflictClass,
-    aspect_resolutions: Arc<[AspectPolicyResolutionRecord]>,
-    applied_policies: Arc<[ResolvedAspectMergePolicy]>,
+    aspect_resolutions: MergeWitnessRows<AspectPolicyResolutionRecord>,
+    applied_policies: MergeWitnessRows<ResolvedAspectMergePolicy>,
     proof_boundary: MergePolicyProofBoundary,
     row_digest: String,
 }
@@ -169,8 +185,10 @@ fn aspect_policy_row_digest(
     applied_policies: &[ResolvedAspectMergePolicy],
     proof_boundary: MergePolicyProofBoundary,
 ) -> String {
-    let digest = Sha256::digest(
-        rmp_serde::to_vec_named(&(
+    let mut digest = Sha256::new();
+    rmp_serde::encode::write_named(
+        &mut CorrespondenceHashWriter(&mut digest),
+        &(
             "worth.relational.merge.strategy_witness.aspect_policy_row.v1",
             record,
             target_record,
@@ -178,8 +196,8 @@ fn aspect_policy_row_digest(
             aspect_resolutions,
             applied_policies,
             proof_boundary,
-        ))
-        .expect(/* Proof: The serialized value contains only closed native scalar, sequence, map and derived-Serialize record fields; encoding uses an in-memory Vec/hash writer, with no user serializer or fallible I/O. */ "strategy witness policy row must encode"),
-    );
-    digest.iter().map(|byte| format!("{byte:02x}")).collect()
+        ),
+    )
+    .expect("closed native strategy policy row must encode");
+    lowercase_sha256(digest.finalize().into())
 }

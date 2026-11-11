@@ -116,11 +116,11 @@ fn cold_region_union_refuses_without_demanding_any_payload() {
         length: 0,
     };
     let kind_authority = RelationalRegionKindCommitment {
-        head: [0; 32],
-        history: [0; 32],
+        head: worth_foundational::CanonicalDigestId::new([0; 32]),
+        history: worth_foundational::CanonicalDigestId::new([0; 32]),
     };
     let cell = RelationalRegionResidency::cold(RelationalColdRegion {
-        source: source.clone(),
+        source: Some(source.clone()),
         partition_id: PartitionId(7),
         head: locator,
         history: locator,
@@ -143,6 +143,7 @@ fn cold_region_union_refuses_without_demanding_any_payload() {
     .unwrap();
     let region = Arc::new(
         crate::branch::root_region::RelationalRootRegion::from_checkpoint(
+            &crate::storage::substrate::maintenance::ReconstructionLane::oracle(),
             1,
             1,
             crate::branch::RelationalRootRegionCheckpoint {

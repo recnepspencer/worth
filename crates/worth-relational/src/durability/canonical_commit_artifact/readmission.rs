@@ -1,64 +1,51 @@
-use worth_execution::ExecutionRequest;
-
-use super::frame::CanonicalCommitArtifactHeader;
+//! Current frame and owner payload admission under the invoking request.
+use super::frame::CanonicalCommitArtifactHeader as Header;
 use super::payload_wire::{ArtifactPayloadRef, ArtifactPayloadWire};
 use super::{
-    RelationalCanonicalCommitArtifact, RelationalCanonicalCommitArtifactRefusal as Refusal,
+    RelationalCanonicalCommitArtifact as Artifact,
+    RelationalCanonicalCommitArtifactRefusal as Refusal,
 };
 use crate::durability::artifact_canonical_payload::is_canonical_payload_with_original_context;
 use crate::durability::migration::ReadmittedCanonicalCommit;
+use worth_execution::{ExecutionImmutableBytes, ExecutionRequest, MapKernelContext};
 
-impl RelationalCanonicalCommitArtifact {
-    /// The only door from artifact bytes back to canonical authority.
-    ///
-    /// Phases, cheapest first, each refusing before the next runs: request
-    /// liveness; frame, version, length and digest; payload decode; header
-    /// agreement with the payload position and envelope commit id; managed
-    /// field-text readmission; positioned-commit admission; and finally a
-    /// canonical-form check that the payload is exactly the admitted
-    /// commit's encoding.
-    ///
-    /// Cost: O(payload bytes) for the digest, decode and canonical check,
-    /// plus field-text admission charged to `execution`.
+impl Artifact {
+    /// Admit current bytes only: liveness, bounded frame, funded integrity,
+    /// original allocation quotes, controlled content/schema decoding, header
+    /// agreement, actual positioned meaning, and funded canonical comparison.
     pub fn readmit(
         bytes: &[u8],
         execution: &ExecutionRequest<'_, '_>,
     ) -> Result<ReadmittedCanonicalCommit, Refusal> {
+        Self::readmit_with_input(bytes, execution, None)
+    }
+
+    pub(super) fn readmit_with_input(
+        bytes: &[u8],
+        execution: &ExecutionRequest<'_, '_>,
+        input: Option<ExecutionImmutableBytes>,
+    ) -> Result<ReadmittedCanonicalCommit, Refusal> {
         crate::execution::check_request(execution).map_err(Refusal::Request)?;
+        let (header, payload) = Header::inspect(bytes)?;
+        let mut input = input;
         let mut answer = None;
         let handoff = crate::execution::request_stage::optional_stage(
             execution,
             |context, _| {
-                answer = Some(Self::readmit_in_context(bytes, execution, context));
+                answer = Some((|| {
+                    let digest = super::payload_digest::RelationalCanonicalCommitArtifactDigest::of_payload_for_request(
+                    header.position.0, header.commit_id.0, payload, context).map_err(digest_denial)?;
+                    header.require_digest(digest)?;
+                    Self::readmit_payload(&header, payload, execution, context, input.take())
+                })());
             },
             |_| 0,
         );
-        match handoff {
-            Ok(()) => answer.expect("completed artifact readmission ran its callback"),
-            Err(cause) => match answer {
-                Some(Err(cause)) => Err(cause),
-                _ => Err(Refusal::Request(cause)),
-            },
-        }
+        complete(handoff, answer)
     }
 
-    fn readmit_in_context(
-        bytes: &[u8],
-        execution: &ExecutionRequest<'_, '_>,
-        context: &mut worth_execution::MapKernelContext<'_, '_>,
-    ) -> Result<ReadmittedCanonicalCommit, Refusal> {
-        let (header, payload) = CanonicalCommitArtifactHeader::inspect(bytes)?;
-        let digest =
-            super::payload_digest::RelationalCanonicalCommitArtifactDigest::of_payload_for_request(
-                payload, context,
-            )
-            .map_err(Refusal::Request)?;
-        header.require_digest(digest)?;
-        Self::readmit_payload(&header, payload, execution, context)
-    }
-
-    /// The skip is selected by this actual sealed immutable frame, never a
-    /// recorded digest/header supplied separately from its backing.
+    /// The actual immutable frame already proved its digest. Preserve its
+    /// original byte allocation while admitting every decoded owner field.
     pub(crate) fn readmit_framed(
         &self,
         execution: &ExecutionRequest<'_, '_>,
@@ -73,31 +60,88 @@ impl RelationalCanonicalCommitArtifact {
                     &self.as_bytes()[super::frame::HEADER_LEN..],
                     execution,
                     context,
+                    Some(self.bytes.clone()),
                 ));
             },
             |_| 0,
         );
-        match handoff {
-            Ok(()) => answer.expect("completed framed readmission ran its callback"),
-            Err(cause) => match answer {
-                Some(Err(cause)) => Err(cause),
-                _ => Err(Refusal::Request(cause)),
-            },
-        }
+        complete(handoff, answer)
     }
 
     fn readmit_payload(
-        header: &CanonicalCommitArtifactHeader,
+        header: &Header,
         payload: &[u8],
         execution: &ExecutionRequest<'_, '_>,
-        context: &mut worth_execution::MapKernelContext<'_, '_>,
+        context: &mut MapKernelContext<'_, '_>,
+        input: Option<ExecutionImmutableBytes>,
     ) -> Result<ReadmittedCanonicalCommit, Refusal> {
-        let wire = decode_payload(payload, execution)?;
+        let quote = super::decoded_quote::quote(payload, execution)?;
+        let canonical = super::decoded_quote::field(
+            super::borrowed_payload::BorrowedPayload(payload),
+            "canonical",
+            execution,
+        )?;
+        // The original admissions precede every deserialized allocation.
+        let (memory, _transient) =
+            super::decoded_quote::admit_canonical(quote, canonical, execution, input, 0)?;
+        let original_raw = super::decoded_quote::field(
+            super::borrowed_payload::BorrowedPayload(payload),
+            "original_inputs",
+            execution,
+        )?;
+        let original_image = if original_raw.is_none() {
+            None
+        } else {
+            let image = super::decoded_quote::field(original_raw, "result_image", execution)?;
+            if image.is_none() {
+                None
+            } else {
+                Some(super::prepare_schema_image_decode(image, execution)?)
+            }
+        };
+        let mut wire = super::payload_wire::decode_payload(payload, execution)?;
+        if let Some(admission) = original_image {
+            let image = wire
+                .original_inputs
+                .as_mut()
+                .and_then(|inputs| inputs.result_image.as_mut())
+                .ok_or_else(super::borrowed_payload::malformed)?;
+            admission.attach(image)?;
+        }
+        wire.canonical.retain_readmission_memory(memory);
+        wire.canonical
+            .attach_shared_readmission_memory()
+            .map_err(|detail| Refusal::PayloadDecode {
+                detail: detail.into(),
+            })?;
         check_header_agreement(header, &wire)?;
         let envelope = wire
             .canonical
             .readmit(execution)
             .map_err(Refusal::FieldText)?;
+        if let Some(original) = wire.original_inputs {
+            if (original.prestate_schema != original.result_schema)
+                != original.result_image.is_some()
+            {
+                return Err(Refusal::NonCanonicalPayload);
+            }
+            if let Some(image) = &original.result_image {
+                let (registry, _) = image
+                    .readmit_registry()
+                    .map_err(|detail| Refusal::PayloadDecode { detail })?;
+                if image.carrier_digest() != original.result_schema
+                    || registry.authority_snapshot() != envelope.schema_authority
+                    || image.descriptor_semantics_version() != envelope.descriptor_semantics_version
+                {
+                    return Err(Refusal::NonCanonicalPayload);
+                }
+            }
+            envelope
+                .retain_recorded_original_inputs(original)
+                .map_err(|detail| Refusal::PayloadDecode {
+                    detail: detail.into(),
+                })?;
+        }
         let readmitted = ReadmittedCanonicalCommit::readmit_current(header.position, envelope)
             .map_err(Refusal::PositionAdmission)?;
         let canonical = ArtifactPayloadRef::new(readmitted.position(), readmitted.envelope());
@@ -110,30 +154,24 @@ impl RelationalCanonicalCommitArtifact {
     }
 }
 
-fn decode_payload<'de>(
-    payload: &'de [u8],
-    execution: &ExecutionRequest<'_, '_>,
-) -> Result<ArtifactPayloadWire<'de>, Refusal> {
-    use serde::de::DeserializeSeed;
-    let context = crate::content::decoding::ContentDecodeContext::new(execution);
-    let mut decoder = rmp_serde::Deserializer::from_read_ref(payload);
-    let result = crate::history::data::PositionedEnvelopeSeed(&context).deserialize(&mut decoder);
-    if let Some(cause) = context.take_stop() {
-        return Err(Refusal::Content(cause));
+fn digest_denial(cause: super::payload_digest::RequestDigestDenial) -> Refusal {
+    match cause {
+        super::payload_digest::RequestDigestDenial::Frame(cause) => Refusal::Frame(cause),
+        super::payload_digest::RequestDigestDenial::Request(cause) => Refusal::Request(cause),
     }
-    let (position, canonical) = result.map_err(|error| Refusal::PayloadDecode {
-        detail: error.to_string(),
-    })?;
-    Ok(ArtifactPayloadWire {
-        position,
-        canonical,
-    })
 }
-
-fn check_header_agreement(
-    header: &CanonicalCommitArtifactHeader,
-    wire: &ArtifactPayloadWire<'_>,
-) -> Result<(), Refusal> {
+fn complete(
+    handoff: Result<(), crate::execution::RelationalExecutionDenialCause>,
+    answer: Option<Result<ReadmittedCanonicalCommit, Refusal>>,
+) -> Result<ReadmittedCanonicalCommit, Refusal> {
+    match (handoff, answer) {
+        (Ok(()), Some(answer)) => answer,
+        (Ok(()), None) => unreachable!("completed original artifact admission ran its callback"),
+        (Err(_), Some(Err(cause))) => Err(cause),
+        (Err(cause), Some(Ok(_)) | None) => Err(Refusal::Request(cause)),
+    }
+}
+fn check_header_agreement(header: &Header, wire: &ArtifactPayloadWire<'_>) -> Result<(), Refusal> {
     if header.position != wire.position {
         return Err(Refusal::PositionDisagreement {
             header: header.position,

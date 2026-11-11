@@ -12,6 +12,8 @@ pub(super) fn prepare(
     budget: Option<&crate::execution::RequestWorkBudget>,
     predecessor: &Arc<RelationalBranchRoot>,
     successor: &Arc<RelationalBranchRoot>,
+    definitions: Option<&crate::runtime::PreparedRelationalIndexDefinitions>,
+    maintenance_budget: Option<crate::indexes::data::DerivedIndexMaintenanceBudget>,
 ) -> Result<Option<PreparedCandidateIndexPublication>, TransactionCommitError> {
     let change = successor.commit_change().ok_or_else(|| {
         TransactionCommitError::publication(PublicationError::new(
@@ -21,7 +23,14 @@ pub(super) fn prepare(
     })?;
     let operation = || {
         indexes
-            .prepare_publication(execution, predecessor, successor, change)
+            .prepare_publication(
+                execution,
+                predecessor,
+                successor,
+                change,
+                definitions,
+                maintenance_budget,
+            )
             .map_err(|denial| match denial.kind {
                 DerivedIndexMaintenanceDenialKind::Execution(cause) => {
                     TransactionCommitError::execution(
@@ -33,10 +42,14 @@ pub(super) fn prepare(
                         },
                     )
                 }
-                kind => TransactionCommitError::publication(PublicationError::new(
-                    PublicationStage::BundleAssembly,
-                    format!("derived index maintenance denied: {kind:?}"),
-                )),
+                kind => {
+                    TransactionCommitError::publication(PublicationError::from_index_maintenance(
+                        crate::indexes::data::DerivedIndexMaintenanceDenial {
+                            kind,
+                            work: denial.work,
+                        },
+                    ))
+                }
             })
     };
     let budget = match (

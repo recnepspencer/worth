@@ -41,7 +41,7 @@ impl SnapshotReadSource for GatedSource {
         request: worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<Box<dyn TruthSnapshotReader>, RelationalBridgeSourceError> {
         Ok(Box::new(GatedReader(
-            self.0.open_snapshot(identity, request)?,
+            SnapshotReadSource::open_snapshot(&self.0, identity, request)?,
             self.1.clone(),
         )))
     }

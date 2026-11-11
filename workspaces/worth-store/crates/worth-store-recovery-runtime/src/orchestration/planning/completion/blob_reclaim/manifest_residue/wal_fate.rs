@@ -5,14 +5,14 @@ use sha2::{Digest, Sha256};
 use worth_store_physical_format::{BlobManifestResidueCleanup, OriginalDropProofV1};
 use worth_store_recovery_physics::{ReconciledOperationFates, RecoveryOperationFate};
 
-use crate::orchestration::planning::resolved_basis::ResolvedPlanningBasis;
+use crate::orchestration::planning::resolved_basis::ResolvedPlanningState;
 
 const DROP_MATERIAL_DOMAIN: &[u8] = b"worth.store.blob.reclaim.mutation.v1";
 const IDEMPOTENCY_DOMAIN: &[u8] = b"store.physical.mutation.idempotency-key.v1";
 
 pub(super) fn proves_descriptor_no_effect(
     intent: BlobManifestResidueCleanup,
-    basis: &ResolvedPlanningBasis,
+    basis: &ResolvedPlanningState,
 ) -> bool {
     let OriginalDropProofV1::ProvenNoEffect { idempotency, .. } = intent.proof() else {
         return false;
@@ -25,7 +25,7 @@ pub(super) fn proves_descriptor_no_effect(
             .sample
             .wal_members()
             .iter()
-            .any(|member| member.operation_identity() == idempotency),
+            .any(|member| member.operation_identity() == *idempotency.bytes()),
     )
 }
 
@@ -47,7 +47,7 @@ fn matching_original_drop_evidence(
     let mut matching = fates
         .operations()
         .iter()
-        .filter(|operation| operation.identity().idempotency() == idempotency);
+        .filter(|operation| operation.identity().idempotency() == *idempotency.bytes());
     let Some(operation) = matching.next() else {
         return false;
     };
@@ -56,20 +56,20 @@ fn matching_original_drop_evidence(
     }
     operation.identity().store() == intent.store()
         && operation.fate() == RecoveryOperationFate::ProvenNoEffect
-        && operation.request_fingerprint() == fingerprint
+        && operation.request_fingerprint() == *fingerprint.bytes()
         && expected_drop_key(
             intent.store(),
             intent.reclaim_attempt(),
             policy,
             operation.lease_issuance_generation(),
             operation.lease_expiry_generation(),
-        ) == idempotency
+        ) == *idempotency.bytes()
         && !has_wal_member
 }
 
 pub(super) fn proves_never_reserved(
     intent: BlobManifestResidueCleanup,
-    basis: &ResolvedPlanningBasis,
+    basis: &ResolvedPlanningState,
 ) -> bool {
     if !matches!(intent, BlobManifestResidueCleanup::V2(_))
         || intent.proof() != OriginalDropProofV1::NeverReserved
@@ -107,7 +107,7 @@ pub(super) fn proves_never_reserved(
 /// operation, WAL-member, and redo evidence for contradictory drop material.
 pub(super) fn proves_recovered_no_binding(
     intent: BlobManifestResidueCleanup,
-    basis: &ResolvedPlanningBasis,
+    basis: &ResolvedPlanningState,
 ) -> bool {
     let OriginalDropProofV1::RecoveredNoBinding { idempotency, .. } = intent.proof() else {
         return false;
@@ -116,16 +116,14 @@ pub(super) fn proves_recovered_no_binding(
         return false;
     }
     let policy = basis.sample.policy_identity();
-    let conflicting_operation = basis
-        .fates
-        .operations()
-        .iter()
-        .any(|operation| is_recovered_drop_material(intent, policy, idempotency, operation));
+    let conflicting_operation = basis.fates.operations().iter().any(|operation| {
+        is_recovered_drop_material(intent, policy, *idempotency.bytes(), operation)
+    });
     let conflicting_member = basis.sample.wal_members().iter().any(|member| {
-        member.operation_identity() == idempotency
+        member.operation_identity() == *idempotency.bytes()
             || basis.fates.operations().iter().any(|operation| {
                 operation.identity().idempotency() == member.operation_identity()
-                    && is_recovered_drop_material(intent, policy, idempotency, operation)
+                    && is_recovered_drop_material(intent, policy, *idempotency.bytes(), operation)
             })
     });
     let conflicting_redo = basis.redo.projections().iter().any(|projection| {
@@ -178,15 +176,15 @@ pub(super) fn recovered_reservation_key_matches(
     else {
         return false;
     };
-    reservation.request().idempotency() == idempotency
-        && reservation.request().fingerprint() == fingerprint
+    reservation.request().idempotency() == *idempotency.bytes()
+        && reservation.request().fingerprint() == *fingerprint.bytes()
         && expected_drop_key(
             intent.store(),
             intent.reclaim_attempt(),
             policy,
             reservation.request().lease_issuance_generation(),
             reservation.request().lease_expiry_generation(),
-        ) == idempotency
+        ) == *idempotency.bytes()
 }
 
 pub(in crate::orchestration::planning::completion::blob_reclaim) fn expected_drop_key(

@@ -83,14 +83,9 @@ pub(super) fn mutation_receipt_surface(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
 ) -> Result<ReceiptSurfaceEvidence, IdentityDerivationDenial> {
     let branch = "cert-phase6-branch";
-    let mut runtime = relational_runtime_with_intent_strategy();
-    let entity_id = create_entity(
-        execution,
-        &mut runtime,
-        "before",
-        BranchId("main".to_string()),
-    );
-    fork_seed_branch_from_main(execution, &mut runtime, branch);
+    let runtime = relational_runtime_with_intent_strategy();
+    let entity_id = create_entity(execution, &runtime, "before", BranchId("main".to_string()));
+    fork_seed_branch_from_main(execution, &runtime, branch);
     let basis = EffectAuthoringBasis::from(scenarios::branch_mutation_basis(branch));
     let raw = scenarios::raw_mutation_effect_with_binding(
         scenarios::runtime_workflow_binding_for_branch(
@@ -104,7 +99,7 @@ pub(super) fn mutation_receipt_surface(
         execution,
         &basis,
         raw,
-        EffectExecutionAuthority::relational(&mut runtime),
+        EffectExecutionAuthority::relational(&runtime),
     )
 }
 
@@ -133,11 +128,11 @@ pub(super) fn batch_receipt_surface(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
 ) -> Result<ReceiptSurfaceEvidence, IdentityDerivationDenial> {
     let branch = "cert-phase6-batch";
-    let mut runtime = relational_runtime_with_intent_strategy();
+    let runtime = relational_runtime_with_intent_strategy();
     let main = BranchId("main".to_string());
-    let left = create_entity(execution, &mut runtime, "left", main.clone());
-    let right = create_entity(execution, &mut runtime, "right", main);
-    fork_seed_branch_from_main(execution, &mut runtime, branch);
+    let left = create_entity(execution, &runtime, "left", main.clone());
+    let right = create_entity(execution, &runtime, "right", main);
+    fork_seed_branch_from_main(execution, &runtime, branch);
     let basis = EffectAuthoringBasis::from(scenarios::branch_mutation_basis(branch));
     let binding = scenarios::runtime_workflow_binding_for_branch(
         branch_snapshot_identity(&runtime, branch),
@@ -159,10 +154,7 @@ pub(super) fn batch_receipt_surface(
         .expect("closeout batch should admit")
         .lower()
         .expect("closeout batch should lower")
-        .execute_receipt_with(
-            execution,
-            EffectExecutionAuthority::relational(&mut runtime),
-        )
+        .execute_receipt_with(execution, EffectExecutionAuthority::relational(&runtime))
         .expect("closeout batch should execute");
     let envelope = receipt.effect_envelope()?;
     let diagnostics = receipt.materialize_diagnostics(EffectDiagnosticsRequest::forensic())?;

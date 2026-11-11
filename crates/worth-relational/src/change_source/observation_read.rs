@@ -11,7 +11,7 @@ pub enum RelationalObservationReadDenial {
     Execution(crate::execution::RelationalExecutionDenialCause),
 }
 
-pub(super) struct ForeignObservation;
+pub(crate) struct ForeignObservation;
 
 impl From<ForeignObservation> for RelationalObservationReadDenial {
     fn from(_: ForeignObservation) -> Self {
@@ -21,7 +21,7 @@ impl From<ForeignObservation> for RelationalObservationReadDenial {
 
 impl RelationalRuntime {
     /// Admit `observation` for a read only if this runtime issued it.
-    pub(super) fn admit_observation_read(
+    pub(crate) fn admit_observation_read(
         &self,
         observation: &RelationalBranchObservation,
     ) -> Result<(), ForeignObservation> {

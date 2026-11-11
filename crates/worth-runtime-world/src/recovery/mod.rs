@@ -3,6 +3,21 @@ mod cleanup;
 mod continuation;
 mod product_unpublished;
 mod progress;
+mod released_original;
+pub(crate) use catalog::PreparedReleasedOriginal;
+pub use released_original::{WorldReleasedOriginal, WorldReleasedOriginalPage};
+mod released_effects;
+pub use released_effects::WorldReleasedEffects;
+pub(crate) mod recovered_publication;
+pub(crate) use recovered_publication::{
+    ContinuationCommon, OriginalContinuationAdvance, OriginalHomeTransitionContinuation,
+    PreparedOriginalContinuation, PreparedRecoveredPublication, RecoveredNativeContinuationLoan,
+    RecoveredNativeCustody, RecoveredWorldPublicationInputs, RecoveredWorldPublicationRecord,
+};
+pub use recovered_publication::{
+    WorldRecoveredContinuationDenial, WorldRecoveredContinuationOutcome,
+    WorldRecoveredReleaseOutcome, WorldRecoveredUnpublishedEffects,
+};
 
 pub use cleanup::ProductUnpublishedCleanup;
 pub use continuation::{ProductUnpublishedNextAction, RecoveryContinuationContract};

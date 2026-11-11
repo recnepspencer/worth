@@ -23,14 +23,19 @@ where
         FamilySourceValue<Schema, Family>: 'static,
         FamilySourceQuery<Schema, Family>: 'static,
     {
-        use crate::domain_computation::primary_graph::application_output_demand::{
-            OriginalProducingPublication, WorthQueryAcceptedOutputAuthority as Authority,
-        };
+        use crate::domain_computation::primary_graph::application_output_demand::OriginalProducingPublication;
         let original = if !demand.settled
-            && matches!(&completion.authority,
-            Authority::Committed(receipt) if observed_source.selected_product_commit()
-                == Some(receipt.committed_product_publication().composite_commit()))
-        {
+            && completion
+                .authority
+                .publication_view()
+                .is_some_and(|publication| {
+                    observed_source.selected_product_commit()
+                        == Some(
+                            publication
+                                .committed_product_publication()
+                                .composite_commit(),
+                        )
+                }) {
             OriginalProducingPublication::retain(execution, completion)?
         } else {
             None

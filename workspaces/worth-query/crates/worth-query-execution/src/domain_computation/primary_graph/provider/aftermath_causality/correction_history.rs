@@ -52,6 +52,7 @@ impl WorthQueryPrimaryGraphProvider {
             layout.lineage.reversed_source_index,
             &layout.lineage.reversed_source,
             lineage_fields::selector(&source.coordinates()),
+            source.world_owner_coordinate(),
         )
         .map(|lookup| lookup.fact)
     }
@@ -63,7 +64,12 @@ impl WorthQueryPrimaryGraphProvider {
     ) -> Result<Option<WorthQueryCanonicalCorrectionFact>, WorthQueryAftermathCausalityReadDenial>
     {
         let fact = self
-            .consumption_of_native_reversal_at_basis(execution, basis, reversal.relational())?
+            .consumption_of_native_reversal_at_basis(
+                execution,
+                basis,
+                reversal.relational(),
+                reversal.world_owner_coordinate(),
+            )?
             .fact;
         if fact
             .as_ref()
@@ -78,6 +84,7 @@ impl WorthQueryPrimaryGraphProvider {
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         basis: &worth_relational::facade::branch::AdmittedRelationalBranchBasis,
         reversal: &worth_relational::facade::history::RelationalCommitReceipt,
+        owner: worth_foundational::facade::WorldOwnerCoordinate,
     ) -> Result<ExactCorrectionFactLookup, WorthQueryAftermathCausalityReadDenial> {
         let layout = self.graph.layout.provider_aftermath_causality();
         self.lookup_correction_fact(
@@ -86,6 +93,7 @@ impl WorthQueryPrimaryGraphProvider {
             layout.lineage.consumed_reversal_index,
             &layout.lineage.consumed_reversal,
             lineage_fields::consumption_selector(reversal),
+            owner,
         )
     }
     fn lookup_correction_fact(
@@ -95,6 +103,7 @@ impl WorthQueryPrimaryGraphProvider {
         index: DerivedIndexId,
         locator: &AspectFieldLocator,
         value: AspectValue,
+        owner: worth_foundational::facade::WorldOwnerCoordinate,
     ) -> Result<ExactCorrectionFactLookup, WorthQueryAftermathCausalityReadDenial> {
         self.with_correction_snapshot(execution, basis, |runtime, snapshot, layout| {
             let request = BoundedEntityFieldLookupRequest::new(
@@ -122,7 +131,9 @@ impl WorthQueryPrimaryGraphProvider {
             let fact = rows
                 .candidate_entity_ids()
                 .first()
-                .map(|entity| canonical_record::read(runtime, snapshot, layout, execution, *entity))
+                .map(|entity| {
+                    canonical_record::read(runtime, snapshot, layout, execution, *entity, owner)
+                })
                 .transpose()?;
             Ok(ExactCorrectionFactLookup {
                 fact,
@@ -169,8 +180,14 @@ impl WorthQueryPrimaryGraphProvider {
                     page.candidate_entity_ids().len(),
                 )?;
             for entity in page.candidate_entity_ids() {
-                let decoded =
-                    canonical_record::read(runtime, snapshot, layout, execution, *entity)?;
+                let decoded = canonical_record::read(
+                    runtime,
+                    snapshot,
+                    layout,
+                    execution,
+                    *entity,
+                    root.world_owner_coordinate(),
+                )?;
                 entries.push(allocation.clone_fact(&decoded)?);
             }
             let examined_entry_count = page.examined_entry_count();
@@ -208,8 +225,12 @@ impl WorthQueryPrimaryGraphProvider {
             .transpose()?;
         let mut consumption_examined_entry_count = 0usize;
         for entry in &page.entries {
-            let lookup =
-                self.consumption_of_native_reversal_at_basis(execution, basis, &entry.child)?;
+            let lookup = self.consumption_of_native_reversal_at_basis(
+                execution,
+                basis,
+                &entry.child,
+                root.world_owner_coordinate(),
+            )?;
             consumption_examined_entry_count = consumption_examined_entry_count.checked_add(lookup.examined_entry_count)
                 .ok_or_else(|| aftermath_read_stop(worth_relational::facade::transactions::RelationalExecutionDenialCause::ChargedBytesOverflow))?;
             let consumption = lookup.fact;
@@ -264,7 +285,7 @@ impl WorthQueryPrimaryGraphProvider {
             &WorthQueryAftermathCausalityLayout,
         ) -> Result<T, WorthQueryAftermathCausalityReadDenial>,
     ) -> Result<T, WorthQueryAftermathCausalityReadDenial> {
-        self.graph.with_runtime_mut(execution, |runtime| {
+        self.graph.with_runtime(execution, |runtime| {
             execution.consult().map_err(|cause| aftermath_read_stop(cause.into()))?;
             // The ordinary lane requires the existing native generation. Explicit reconstruction owns rebuilding.
             let snapshot = crate::domain_computation::primary_graph::exact_basis_access::open_exact_basis_snapshot(runtime, basis).map_err(|denial| aftermath_snapshot_denial(denial.into()))?;

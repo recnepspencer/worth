@@ -1,7 +1,12 @@
+mod component_capture;
+mod index_roots;
+mod retired_roots;
+pub(super) use component_capture::has_live_obligation_room;
+pub(crate) use component_capture::CapturedExternalCheckpointComponents;
 use crossbeam_queue::SegQueue;
-use dashmap::DashMap;
+use std::collections::BTreeMap;
 use std::sync::atomic::{AtomicU64, AtomicUsize, Ordering};
-use std::sync::{Arc, Mutex};
+use std::sync::{Arc, Mutex, RwLock};
 
 use crate::branch::{RelationalBranchIdentity, RelationalBranchRoot};
 
@@ -29,6 +34,10 @@ pub(crate) struct RelationalBranchRetentionOwner {
 #[derive(Debug)]
 pub(super) struct RelationalBranchRetentionOwnerInner {
     pub(super) runtime_instance_id: u64,
+    pub(super) external_cut: Mutex<()>,
+    #[cfg(test)]
+    pub(super) component_capture_pause:
+        Mutex<Option<Arc<super::component_cut_tests::CapturePause>>>,
     max_live_root_obligations: usize,
     max_retired_branch_roots: usize,
     pub(super) live_head_count: AtomicUsize,
@@ -39,7 +48,7 @@ pub(super) struct RelationalBranchRetentionOwnerInner {
     pub(super) next_retirement_generation: AtomicU64,
     pub(super) retirement_slot_count: AtomicUsize,
     pub(super) retired_root_count: AtomicUsize,
-    pub(super) retired_roots: DashMap<usize, RelationalRetiredBranchRoot>,
+    pub(super) retired_roots: RwLock<BTreeMap<usize, RelationalRetiredBranchRoot>>,
     pub(super) retired_root_locators: super::root_locators::RetiredRootLocators,
     pub(super) retired_root_order: SegQueue<(usize, u64)>,
     pub(super) retired_enqueue_count: AtomicU64,
@@ -61,52 +70,57 @@ pub(super) struct RelationalRetiredBranchRoot {
 }
 
 impl RelationalBranchRetentionOwner {
+    pub(crate) fn checkpoint_components(
+        &self,
+        current: impl FnOnce() -> Vec<(
+            crate::history::data::BranchId,
+            super::RelationalBranchRetentionBinding,
+        )>,
+    ) -> Vec<crate::branch::AdmittedRelationalBranchBasis> {
+        let _cut = self
+            .inner
+            .external_cut
+            .lock()
+            .unwrap_or_else(|poisoned| poisoned.into_inner());
+        // Head transfer preserves its branch lane. Owner reset replaces both
+        // the lanes and this inventory, so one declared branch selects one lane.
+        let mut lanes = self
+            .inner
+            .read_retired_roots()
+            .values()
+            .flat_map(|entry| {
+                entry
+                    .branch_bindings
+                    .iter()
+                    .map(|(branch, binding)| (branch.clone(), binding.clone()))
+                    .collect::<Vec<_>>()
+            })
+            .collect::<std::collections::BTreeMap<_, _>>();
+        #[cfg(test)]
+        {
+            let pause = self
+                .inner
+                .component_capture_pause
+                .lock()
+                .unwrap_or_else(|poisoned| poisoned.into_inner())
+                .clone();
+            if let Some(pause) = pause {
+                pause.wait();
+            }
+        }
+        // Collect current lanes inside the same external acquire/release cut.
+        lanes.extend(current());
+        lanes
+            .into_values()
+            .flat_map(|binding| binding.checkpoint_components())
+            .collect()
+    }
+
     /// Capacity retained outside the runtime's own live branch heads.
     /// These are the native admission/release counters, not diagnostic totals.
     pub(crate) fn has_detached_obligations(&self) -> bool {
         self.inner.live_retention_count.load(Ordering::Acquire)
             != self.inner.live_head_count.load(Ordering::Acquire)
-    }
-
-    /// Reader/observation obligations are the index-liveness authority. A
-    /// retired root can share its Arc with a live sibling without an active
-    /// reader of the deleted branch.
-    pub(crate) fn retained_index_roots(&self) -> super::RetainedIndexRoots {
-        let mut retained = super::RetainedIndexRoots::default();
-        for mut entry in self.inner.retired_roots.iter_mut() {
-            self.inner
-                .index_retention_roots_examined
-                .fetch_add(1, Ordering::Relaxed);
-            if !entry.retired {
-                continue;
-            }
-            let root = &entry.root;
-            let Some(envelope) = root.canonical_envelope() else {
-                continue;
-            };
-            let version = envelope.commit.version_id;
-            let schema = root.schema_authority().schema_version();
-            let root_id = root.id();
-            entry
-                .branch_bindings
-                .retain(|_, binding| binding.has_root_obligation(root_id));
-            for branch in entry.branch_bindings.keys() {
-                retained.retired.insert((branch.clone(), version, schema));
-            }
-            if entry.historical_binding.has_root_obligation(root_id) {
-                retained.historical_versions.insert((version, schema));
-            }
-        }
-        retained
-    }
-
-    #[cfg(test)]
-    pub(crate) fn retired_branch_binding_count(&self) -> usize {
-        self.inner
-            .retired_roots
-            .iter()
-            .map(|entry| entry.branch_bindings.len())
-            .sum()
     }
 
     pub(crate) fn new(runtime_instance_id: u64) -> Self {
@@ -125,6 +139,9 @@ impl RelationalBranchRetentionOwner {
         Self {
             inner: Arc::new(RelationalBranchRetentionOwnerInner {
                 runtime_instance_id,
+                external_cut: Mutex::new(()),
+                #[cfg(test)]
+                component_capture_pause: Mutex::new(None),
                 max_live_root_obligations,
                 max_retired_branch_roots,
                 live_head_count: AtomicUsize::new(0),
@@ -135,7 +152,7 @@ impl RelationalBranchRetentionOwner {
                 next_retirement_generation: AtomicU64::new(0),
                 retirement_slot_count: AtomicUsize::new(0),
                 retired_root_count: AtomicUsize::new(0),
-                retired_roots: DashMap::new(),
+                retired_roots: RwLock::new(BTreeMap::new()),
                 retired_root_locators: Default::default(),
                 retired_root_order: SegQueue::new(),
                 retired_enqueue_count: AtomicU64::new(0),
@@ -215,7 +232,7 @@ impl RelationalBranchRetentionOwner {
             .into_iter()
             .find_map(|(root_key, generation)| {
                 self.inner
-                    .retired_roots
+                    .read_retired_roots()
                     .get(&root_key)
                     .filter(|retired| retired.generation == generation)
                     .map(|retired| {
@@ -254,6 +271,10 @@ pub(super) fn reserve_live_obligation_capacity(
 
 pub(super) fn release_live_obligation_capacity(owner: &RelationalBranchRetentionOwnerInner) {
     owner.live_retention_count.fetch_sub(1, Ordering::Release);
+}
+
+pub(super) fn has_live_obligation_capacity(owner: &RelationalBranchRetentionOwnerInner) -> bool {
+    owner.live_retention_count.load(Ordering::Acquire) != 0
 }
 
 pub(super) fn release_live_head_capacity(owner: &RelationalBranchRetentionOwnerInner) {

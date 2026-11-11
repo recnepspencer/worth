@@ -1,0 +1,13 @@
+command: python scripts/quality/scrutinize_rust_functions.py --dirty .
+HEAD: f9a53a5d17e01562d503b39b4627252bb63d8639
+git_status_short_empty: false
+start_utc: 2026-11-11T02:14:46.788703+00:00
+crates/worth-relational/src/tests/transactions/core/native_durability.rs:11: native_struct_reference_and_clear_state_survive_checkpoint_readmission: 138 lines, 0 parameters [long-function]
+crates/worth-relational/src/tests/transactions/core/native_value_matrix.rs:13: ordinary_native_mutation_roundtrips_every_unbound_scalar_family: 108 lines, 0 parameters [long-function]
+crates/worth-relational/src/visibility/materialization/read_records/projection/field_revisions/restore_tests.rs:28: checkpoint_restore_preserves_exact_field_revision: 75 lines, 0 parameters [long-function]
+crates/worth-relational/src/visibility/materialization/read_records/projection/field_revisions/restore_tests.rs:105: checkpoint_restore_preserves_relation_field_revision: 66 lines, 0 parameters [long-function]
+crates/worth-relational/src/visibility/materialization/read_records/projection/field_revisions/restore_tests.rs:173: checkpoint_restore_preserves_forked_field_revisions_and_absent_aba: 130 lines, 0 parameters [long-function]
+crates/worth-relational/src/visibility/materialization/read_records/projection/field_revisions/restore_tests.rs:350: field_at: 13 lines, 5 parameters [many-parameters]
+scrutinized 6 Rust files; 6 candidate functions; 0 scan errors
+end_utc: 2026-11-11T02:14:49.605229+00:00
+exit_code: 0

@@ -29,6 +29,7 @@ fn replay_contract_reports_derived_index_drift_at_digest_layer_when_artifacts_ar
     );
 
     assert!(runtime.history_authority().tamper_commit_envelope_for_test(
+        execution,
         commit.commit.commit_id,
         |envelope| {
             if let Some(generation) = envelope
@@ -73,8 +74,10 @@ fn replay_and_recovery_preserve_aspect_bearing_truth_across_a_hostile_mixed_work
     let host_request = crate::test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
-    let runtime =
-        durable_runtime_with_declared_aspect_schema(CascadeDeletePolicy::RetainDanglingForAudit);
+    let runtime = runtime_with_declared_aspect_schema_profile(
+        crate::facade::config::RelationalRuntimeProfile::CertificationCore,
+        CascadeDeletePolicy::RetainDanglingForAudit,
+    );
     let created = create_entity_outcome(execution, &runtime, "anchor");
     let anchor = changed_entities(&created)[0];
     let _updated = update_entity(execution, &runtime, anchor, "anchor-updated");
@@ -106,7 +109,10 @@ fn replay_and_recovery_preserve_aspect_bearing_truth_across_a_hostile_mixed_work
         .expect("test staging stays within configured resource budgets");
         txn.commit(execution, &runtime).unwrap()
     };
-    crate::tests::support::checkpoint_durably(execution, &runtime).unwrap();
+    runtime
+        .durability_authority()
+        .checkpoint(execution)
+        .unwrap();
 
     let start_lineage = runtime
         .lineage_access()
@@ -146,14 +152,14 @@ fn replay_and_recovery_preserve_aspect_bearing_truth_across_a_hostile_mixed_work
     let replay_counters = runtime.performance_access().counters();
     assert!(replay_counters.replay_digest_parity_checks > 0);
 
-    let recovery_plan = crate::tests::support::recovery_plan_for(
-        execution,
-        &runtime,
-        RecoveryMode::NormalRecoveryVerification,
-    )
-    .unwrap();
-    let mut recovered =
-        durable_runtime_with_declared_aspect_schema(CascadeDeletePolicy::RetainDanglingForAudit);
+    let recovery_plan = runtime
+        .durability()
+        .recovery_plan(execution, RecoveryMode::NormalRecoveryVerification)
+        .unwrap();
+    let mut recovered = runtime_with_declared_aspect_schema_profile(
+        crate::facade::config::RelationalRuntimeProfile::CertificationCore,
+        CascadeDeletePolicy::RetainDanglingForAudit,
+    );
     recovered
         .durability_recovery()
         .recover(execution, recovery_plan)
@@ -201,8 +207,10 @@ fn hostile_commit_replay_equivalence_test() {
     let host_request = crate::test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
-    let mut runtime =
-        durable_runtime_with_declared_aspect_schema(CascadeDeletePolicy::RetainDanglingForAudit);
+    let mut runtime = runtime_with_declared_aspect_schema_profile(
+        crate::facade::config::RelationalRuntimeProfile::CertificationCore,
+        CascadeDeletePolicy::RetainDanglingForAudit,
+    );
     let created = create_entity_outcome(execution, &runtime, "anchor");
     let anchor = changed_entities(&created)[0];
     let source = create_entity(execution, &runtime, "source");
@@ -256,7 +264,10 @@ fn hostile_commit_replay_equivalence_test() {
         BranchId("main".to_string()),
         vec![BranchId("feature".to_string())],
     );
-    crate::tests::support::checkpoint_durably(execution, &runtime).unwrap();
+    runtime
+        .durability_authority()
+        .checkpoint(execution)
+        .unwrap();
 
     let anchor_lineage = runtime
         .lineage_access()
@@ -282,7 +293,6 @@ fn hostile_commit_replay_equivalence_test() {
         .replay()
         .canonical_commit_envelope(execution, merge.commit.commit_id)
         .unwrap()
-        .map(|envelope| envelope.as_ref().clone())
         .unwrap();
     let replay = runtime
         .replay_authority()
@@ -306,12 +316,10 @@ fn hostile_commit_replay_equivalence_test() {
         .history()
         .branch_head(&BranchId("feature".to_string()));
 
-    let recovery_plan = crate::tests::support::recovery_plan_for(
-        execution,
-        &runtime,
-        RecoveryMode::NormalRecoveryVerification,
-    )
-    .unwrap();
+    let recovery_plan = runtime
+        .durability()
+        .recovery_plan(execution, RecoveryMode::NormalRecoveryVerification)
+        .unwrap();
     let mut recovered = RelationalRuntimeApi::builder()
         .profile(RelationalRuntimeProfile::CertificationCore)
         .schema_registry(
@@ -321,7 +329,7 @@ fn hostile_commit_replay_equivalence_test() {
             }
             .build_registry(),
         )
-        .build_durable(crate::tests::support::attached_test_medium(&runtime).attachment())
+        .build()
         .expect("valid native runtime configuration");
     recovered
         .durability_recovery()
@@ -345,7 +353,6 @@ fn hostile_commit_replay_equivalence_test() {
         .replay()
         .canonical_commit_envelope(execution, merge.commit.commit_id)
         .unwrap()
-        .map(|envelope| envelope.as_ref().clone())
         .unwrap();
     let recovered_replay = recovered
         .replay_authority()

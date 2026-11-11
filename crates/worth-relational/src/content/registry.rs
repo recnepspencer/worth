@@ -1,5 +1,6 @@
 //! Format admission and field-binding aliases are separate schema coordinates.
 mod composition;
+mod copy_geometry;
 mod readmission;
 use super::{RelationalContentCodec as Codec, RelationalContentDenial as Denial};
 use std::{collections::BTreeMap, sync::Arc};
@@ -102,6 +103,26 @@ impl RelationalContentFormatRegistry {
         self.bindings.insert(binding, format);
         self.refresh_snapshot();
         Ok(())
+    }
+    pub(crate) fn snapshot_for_compilation(
+        &self,
+        control: crate::schema::SchemaCompilationControl<'_, '_>,
+    ) -> Result<
+        super::RelationalContentSchemaSnapshot,
+        crate::execution::RelationalExecutionDenialCause,
+    > {
+        self.snapshot.retain_for_compilation(control)
+    }
+    pub(crate) fn bind_carried_snapshot(
+        &mut self,
+        accepted: &super::RelationalContentSchemaSnapshot,
+    ) {
+        debug_assert_eq!(
+            /* Proof: the private root compiler only receives a registry whose complete descriptor was accepted against this snapshot. */
+            self.snapshot,
+            *accepted
+        );
+        self.snapshot = accepted.clone();
     }
     pub fn snapshot(&self) -> super::RelationalContentSchemaSnapshot {
         self.snapshot.clone()

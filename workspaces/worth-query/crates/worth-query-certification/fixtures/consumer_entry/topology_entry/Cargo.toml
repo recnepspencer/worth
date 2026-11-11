@@ -16,6 +16,7 @@ serde.workspace = true
 memchr = "2.8"
 
 [dev-dependencies]
+worth-query-testkit-host = { path = "../../../../worth-query-testkit-host" }
 toml = "0.8"
 pulldown-cmark = { version = "0.13", default-features = false }
 sha2 = "0.10"

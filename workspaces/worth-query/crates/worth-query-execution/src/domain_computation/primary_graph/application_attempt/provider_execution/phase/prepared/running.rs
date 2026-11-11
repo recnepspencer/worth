@@ -26,6 +26,7 @@ use crate::domain_computation::{
     WorthQueryManagedTruthReadRequest,
 };
 
+pub(crate) mod completion_storage;
 pub(crate) mod progression;
 
 pub struct WorthQueryRunningApplicationCommit<
@@ -34,6 +35,7 @@ pub struct WorthQueryRunningApplicationCommit<
     Input,
     Scope,
 > {
+    completion_storage: completion_storage::ApplicationCommitCompletionStorage,
     coupled_outputs: crate::domain_computation::primary_graph::application_attempt::coupled_outputs::DeclaredCoupledOutputDemands,
     admission: crate::domain_computation::primary_graph::WorthQueryAdmittedApplicationOperation<
         Schema,
@@ -81,19 +83,21 @@ where
         aftermath_causality,
     } = prepared;
     let snapshot = lease.snapshot();
-    let attempt_basis = WorthQueryApplicationAttemptBasis::capture(
-        application,
-        &admission,
-        snapshot,
-        lease.product(),
-    )
-    .map_err(|_| denied(DenialStage::ManagedRunAdmission))?;
     let execution = phase
         .execution_request_for(&application.runtime.product_runtime)
         .map_err(|foreign| {
             crate::domain_computation::primary_graph::WorthQueryAdvancementDenial::from(foreign)
                 .into_commit_outcome()
         })?;
+    let completion_storage =
+        completion_storage::ApplicationCommitCompletionStorage::prepare(&execution)?;
+    let attempt_basis = WorthQueryApplicationAttemptBasis::capture(
+        application,
+        &admission,
+        snapshot,
+        lease.product(),
+        execution.allocation_policy(),
+    )?;
     let operation = bind_execution_operation(
         application,
         &admission,
@@ -120,10 +124,10 @@ where
         .bridge
         .ordinary()
         .fork_managed_request_lane();
-    let run_admission = application
-        .runtime
-        .execution()
-        .managed_run_admission(&request_bridge, &application.runtime.product_runtime.source);
+    let run_admission = application.runtime.execution().managed_run_admission(
+        &request_bridge,
+        application.runtime.product_runtime.source(),
+    );
     let running = run_admission
         .admit_direct(&operation, attempt, read_request, execution)
         .map_err(|failure| {
@@ -143,6 +147,7 @@ where
         return Err(denied(DenialStage::ManagedRunAdmission));
     };
     Ok(WorthQueryRunningApplicationCommit {
+        completion_storage,
         coupled_outputs,
         admission,
         lease,
@@ -236,3 +241,7 @@ where
 }
 
 mod court_doors_for_test;
+pub use completion_storage::WorthQueryManagedPhaseStorageForTest;
+#[cfg(test)]
+#[path = "running_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;

@@ -4,7 +4,9 @@ use worth_query_host::facade::primary_graph::{
     DerivedRelationReadDenial, ManagedIndexSourcePreparationDenial, StructuralReadError,
     StructuralWalkDenialKind,
 };
-pub(super) fn source(cause: &ManagedIndexSourcePreparationDenial) -> BankHttpDenial {
+pub(in crate::http::server::query_denial) fn source(
+    cause: &ManagedIndexSourcePreparationDenial,
+) -> BankHttpDenial {
     use ManagedIndexSourcePreparationDenial as Source;
     match cause {
         Source::Content(cause) => crate::http::server::relational_execution_denial::content(*cause),
@@ -18,15 +20,18 @@ pub(super) fn source(cause: &ManagedIndexSourcePreparationDenial) -> BankHttpDen
         Source::Publication(cause) => {
             crate::http::server::relational_execution_denial::companion(cause.clone())
         }
-        Source::MissingParticipant | Source::IncompletePreparation | Source::RootUnavailable => {
-            unavailable()
-        }
+        Source::MissingParticipant
+        | Source::IncompletePreparation
+        | Source::RootUnavailable
+        | Source::PredecessorUnavailable { .. } => unavailable(),
         Source::Registration(_) | Source::ForeignSource | Source::PublicCacheIdentityExhausted => {
             internal_denied()
         }
     }
 }
-pub(super) fn walk(cause: StructuralWalkDenialKind) -> BankHttpDenial {
+pub(in crate::http::server::query_denial) fn walk(
+    cause: StructuralWalkDenialKind,
+) -> BankHttpDenial {
     use worth_query_host::facade::{
         application_invariants::CustomInvariantInterruption as Interrupted,
         runtime::{LeaseDenial, WorkCeilingDenial},

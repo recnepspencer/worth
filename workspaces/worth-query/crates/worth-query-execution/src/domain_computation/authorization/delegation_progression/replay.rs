@@ -67,6 +67,9 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             + Sync
             + 'static,
     {
+        access
+            .refuse_stale_incarnation(self)
+            .map_err(WorthQueryApplicationIdempotencyResolutionDenial::from_authorization)?;
         let execution = match phase.execution_request_for(&self.runtime.product_runtime) {
             Ok(execution) => execution,
             Err(_) => return Err(crate::domain_computation::primary_graph::WorthQueryApplicationIdempotencyResolutionDenial::from_authorization(crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenial::new(crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenialKind::Refused(AuthorizationRefusal::ForeignPhase), "phase-custody"))),
@@ -123,6 +126,9 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             + Sync
             + 'static,
     {
+        access
+            .refuse_stale_incarnation(self)
+            .map_err(WorthQueryApplicationIdempotencyResolutionDenial::from_authorization)?;
         let Some(installed) = self.runtime.authorization.capability_plan(target) else {
             return Ok(None);
         };
@@ -134,7 +140,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         };
         let resolved = match access.with_exact_observation(execution, self, |observation| {
             observation.resolve_delegation_replay_target(execution, target, &proposed)
-        }) {
+        }).map_err(WorthQueryApplicationIdempotencyResolutionDenial::from_authorization)? {
             Some(Ok(resolved)) => resolved,
             Some(Err(denial)) => match denial.kind() {
                 crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenialKind::Stopped(_) => {
@@ -180,8 +186,15 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             )?
             .into_resolution();
         Ok(match resolution {
-            WorthQueryApplicationIdempotencyResolution::AlreadyCommitted(receipt) => Some(
-                WorthQueryApplicationCommitOutcome::AlreadyCommitted(receipt),
+            WorthQueryApplicationIdempotencyResolution::ReleasedOriginal(_) => Some(WorthQueryApplicationCommitOutcome::Denied(crate::domain_computation::primary_graph::WorthQueryApplicationCommitDenial::original_effect_released())),
+            WorthQueryApplicationIdempotencyResolution::ProductUnpublished(effects) => Some(
+                WorthQueryApplicationCommitOutcome::ProductUnpublished(effects),
+            ),
+            WorthQueryApplicationIdempotencyResolution::ProductPreparationPending(pending) => {
+                Some(WorthQueryApplicationCommitOutcome::ProductPreparationPending(pending))
+            }
+            WorthQueryApplicationIdempotencyResolution::RecoveredCommitted(receipt) => Some(
+                WorthQueryApplicationCommitOutcome::RecoveredCommitted(receipt),
             ),
             WorthQueryApplicationIdempotencyResolution::IntentDrift
             | WorthQueryApplicationIdempotencyResolution::Unseen => None,

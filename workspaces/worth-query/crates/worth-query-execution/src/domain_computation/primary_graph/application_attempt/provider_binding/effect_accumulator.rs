@@ -234,6 +234,7 @@ impl WorthQueryRegisteredProviderEffects {
     pub(super) fn bind_registration_intents(
         self,
         provider: &crate::domain_computation::primary_graph::provider::WorthQueryPrimaryGraphProvider,
+        product: &worth_runtime_world::facade::ProductBranchObservation,
         emitted_effect_count: u64,
         aftermath_causality: Option<
             &crate::domain_computation::application_aftermath::WorthQueryPendingAftermathCausality,
@@ -251,12 +252,15 @@ impl WorthQueryRegisteredProviderEffects {
         let idempotency = dispatch_basis.idempotency;
         let outcome_identity = dispatch_basis.outcome_identity;
         let mutation_partition = self.mutation_partition;
+        let has_output_settlement = self.output_binding_type().is_some();
         let mut batch = provider.bind_application_idempotency_intent(
             self.batch,
             idempotency,
             outcome_identity,
             emitted_effect_count,
             mutation_partition,
+            product,
+            has_output_settlement,
         );
         if let Some(causality) = aftermath_causality {
             batch = provider.bind_application_aftermath_causality_intent(

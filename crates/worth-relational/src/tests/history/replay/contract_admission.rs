@@ -135,7 +135,6 @@ fn replay_contract_success_preserves_merge_parent_order() {
             .replay()
             .canonical_commit_envelope(execution, merge.commit.commit_id)
             .unwrap()
-            .map(|envelope| envelope.as_ref().clone())
             .unwrap()
             .commit
             .parents,
@@ -146,7 +145,6 @@ fn replay_contract_success_preserves_merge_parent_order() {
             .replay()
             .canonical_commit_envelope(execution, merge.commit.commit_id)
             .unwrap()
-            .map(|envelope| envelope.as_ref().clone())
             .unwrap()
             .merge_base_commits,
         vec![main.commit.commit_id]
@@ -164,6 +162,7 @@ fn replay_contract_reports_structured_patch_drift_when_canonical_envelope_is_tam
     let runtime = runtime_with_test_schema();
     let outcome = create_entity_outcome(execution, &runtime, "replayable");
     assert!(runtime.history_authority().tamper_commit_patch_for_test(
+        execution,
         outcome.commit.commit_id,
         |patch| {
             patch.authoritative_record_patches[0].detail = PatchDetail::DenseBitset(vec![99]);
@@ -203,6 +202,7 @@ fn replay_contract_reports_diagnostics_drift_at_digest_layer_when_envelope_is_ta
     let runtime = runtime_with_test_schema();
     let outcome = create_entity_outcome(execution, &runtime, "replayable");
     assert!(runtime.history_authority().tamper_commit_envelope_for_test(
+        execution,
         outcome.commit.commit_id,
         |envelope| {
             envelope.diagnostics_summary.entries.clear();

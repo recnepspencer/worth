@@ -19,11 +19,14 @@ pub(super) fn admit(
     RecordBootstrapDenial,
 > {
     match custody {
+        #[cfg(feature = "recovery-runtime-owner")]
         Some(seal) => {
             let (owner, evidence) = seal.into_serving_parts();
             owner.validate_recovered_policy(store, policy)?;
             Ok((owner, Some(evidence)))
         }
+        #[cfg(not(feature = "recovery-runtime-owner"))]
+        Some(seal) => seal.without_recovery_owner(),
         None => PhysicalResidencyOwner::admit(store, policy)
             .map(|owner| (owner, None))
             .map_err(RecordBootstrapDenial::from_residency),

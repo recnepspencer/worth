@@ -53,7 +53,7 @@ pub(super) fn restored_root_consumption_and_later_writes() {
         generation: product.observation().reference_generation().get(),
     };
     let fork = BranchId("full-ledger-new-branch".to_owned());
-    let (old_handle, old, root) = handle.with_runtime_mut(execution, |runtime| {
+    let (old_handle, old, root) = handle.with_runtime(execution, |runtime| {
         let (_, source) = runtime.observe_fork_source(runtime.main_branch_identity().branch_id()).unwrap();
         runtime.fork_branch(fork.clone(), source).unwrap();
         let basis = runtime.admit_branch_basis(&runtime.branch_identity(&fork).unwrap()).unwrap();
@@ -70,7 +70,7 @@ pub(super) fn restored_root_consumption_and_later_writes() {
         (old_handle, old, root)
     });
 
-    handle.with_runtime_mut(execution, |runtime| {
+    handle.with_runtime(execution, |runtime| {
         publish_on_fork(execution, runtime, &fork, unrelated, label.clone(), "first-fork-write");
 
         assert!(matches!(
@@ -85,7 +85,7 @@ pub(super) fn restored_root_consumption_and_later_writes() {
     // Its read basis is old; that basis must never select the minting head.
     root.establish_restored_before_commit(execution, &handle.source_owner)
     .unwrap();
-    handle.with_runtime_mut(execution, |runtime| {
+    handle.with_runtime(execution, |runtime| {
         let basis = runtime
             .admit_branch_basis(&runtime.branch_identity(&fork).unwrap())
             .unwrap();
@@ -127,7 +127,7 @@ pub(super) fn restored_root_consumption_and_later_writes() {
 
 fn publish_on_fork(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-    runtime: &mut RelationalRuntime,
+    runtime: &RelationalRuntime,
     fork: &BranchId,
     entity: EntityId,
     locator: AspectFieldLocator,

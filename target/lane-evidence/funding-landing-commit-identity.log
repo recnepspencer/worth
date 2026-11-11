@@ -1,0 +1,14 @@
+command: python target/lane-evidence/verify_funding_landing_commit.py
+HEAD: bd8d5b6af58d540deba439ebbbb82e6a297c258d
+git_status_short_empty: true
+start_utc: 2026-11-05T04:18:21.911376+00:00
+environment: removed stale CARGO_TARGET_X86_64_PC_WINDOWS_MSVC_LINKER override
+All61 frozen source/config hashes match committed tree at bd8d5b6af58d540deba439ebbbb82e6a297c258d
+Review manifest SHA256: 687ef7f9298fd20dd65a775fc5387af7cf3a122835a02412838d3667458ab6a8
+Commit trailer verified.
+
+end_utc: 2026-11-05T04:18:23.175442+00:00
+exit_code: 0
+tests_passed: 0
+tests_failed: 0
+tests_ignored: 0

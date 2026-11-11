@@ -1,5 +1,6 @@
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
+use worth_foundational::CanonicalDigestId;
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
 pub(crate) enum RootWireRole {
@@ -15,10 +16,10 @@ pub(crate) struct RootWireIdentity {
     protocol: String,
     version: u16,
     role: RootWireRole,
-    scenario_identity: [u8; 32],
-    run_identity: [u8; 32],
+    scenario_identity: CanonicalDigestId,
+    run_identity: CanonicalDigestId,
     store_identity: [u8; 16],
-    identity: [u8; 32],
+    identity: CanonicalDigestId,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -58,18 +59,18 @@ impl RootWireIdentity {
             ROOT_PROTOCOL,
             ROOT_PROTOCOL_VERSION,
             role,
-            scenario_identity,
-            run_identity,
+            CanonicalDigestId::new(scenario_identity),
+            CanonicalDigestId::new(run_identity),
             store_identity,
         ))?;
         Ok(Self {
             protocol: ROOT_PROTOCOL.to_owned(),
             version: ROOT_PROTOCOL_VERSION,
             role,
-            scenario_identity,
-            run_identity,
+            scenario_identity: CanonicalDigestId::new(scenario_identity),
+            run_identity: CanonicalDigestId::new(run_identity),
             store_identity,
-            identity,
+            identity: CanonicalDigestId::new(identity),
         })
     }
 
@@ -86,10 +87,10 @@ impl RootWireIdentity {
         if self.role != expected_role {
             return Err(RootWireDenial::RoleSubstitution);
         }
-        if self.scenario_identity != expected_scenario {
+        if *self.scenario_identity.bytes() != expected_scenario {
             return Err(RootWireDenial::ScenarioSubstitution);
         }
-        if self.run_identity != expected_run {
+        if *self.run_identity.bytes() != expected_run {
             return Err(RootWireDenial::RunSubstitution);
         }
         if self.store_identity != expected_store {
@@ -103,7 +104,7 @@ impl RootWireIdentity {
             self.run_identity,
             self.store_identity,
         ))?;
-        if self.identity != expected_identity {
+        if *self.identity.bytes() != expected_identity {
             return Err(RootWireDenial::IdentitySubstitution);
         }
         Ok(())
@@ -123,11 +124,11 @@ impl RootWireIdentity {
     }
     #[cfg(test)]
     pub(crate) const fn scenario_identity(&self) -> [u8; 32] {
-        self.scenario_identity
+        *self.scenario_identity.bytes()
     }
     #[cfg(test)]
     pub(crate) const fn run_identity(&self) -> [u8; 32] {
-        self.run_identity
+        *self.run_identity.bytes()
     }
     #[cfg(test)]
     pub(crate) const fn store_identity(&self) -> [u8; 16] {
@@ -135,7 +136,7 @@ impl RootWireIdentity {
     }
     #[cfg(test)]
     pub(crate) const fn identity(&self) -> [u8; 32] {
-        self.identity
+        *self.identity.bytes()
     }
 }
 

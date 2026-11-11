@@ -43,7 +43,7 @@ pub enum WorthQueryWorkflowAudit {
     Withheld,
     Visible {
         start: WorthQueryWorkflowRecordedActor,
-        end: Option<WorthQueryWorkflowRecordedActor>,
+        end: Option<worth_foundational::facade::WorkflowEndingActorProvenance>,
         transitions: ExecutionArray<WorthQueryWorkflowTransitionActors>,
     },
 }

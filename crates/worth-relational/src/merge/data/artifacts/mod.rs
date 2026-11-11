@@ -14,6 +14,8 @@ mod schema_snapshot_digest_basis;
 mod strategy_witness;
 mod strategy_witness_policy_rows;
 mod strategy_witness_posture_rows;
+mod witness_rows;
+pub(crate) use witness_rows::MergeWitnessRows;
 
 pub use aspect_digest_rows::{MergeLoweredAspectDigestRow, MergePolicyAspectDigestRow};
 pub use correspondence_witness::RelationalMergeCorrespondenceWitness;

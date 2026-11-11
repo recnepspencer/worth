@@ -1,20 +1,61 @@
-//! A projection's digest and backing travel together. Mutation detaches them.
+//! An immutable projection retains its digest and original backing together.
 use super::SchemaAuthoritySnapshotParts;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
-use std::ops::{Deref, DerefMut};
+use std::ops::Deref;
 use std::sync::{Arc, OnceLock};
 
 #[derive(Debug, Clone)]
 pub struct SchemaAuthoritySnapshot(Arc<Projection>);
 
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 struct Projection {
     parts: SchemaAuthoritySnapshotParts,
     digest: OnceLock<[u8; 32]>,
     owned_bytes: OnceLock<u64>,
+    _memory: Option<worth_execution::ExecutionMemoryReservation>,
 }
 
 impl SchemaAuthoritySnapshot {
+    pub(crate) fn shares_projection_with(&self, other: &Self) -> bool {
+        Arc::ptr_eq(&self.0, &other.0)
+    }
+
+    pub(crate) fn projection_allocation_bytes(
+    ) -> Result<u64, crate::execution::RelationalExecutionDenialCause> {
+        let layout = std::alloc::Layout::new::<[usize; 2]>()
+            .extend(std::alloc::Layout::new::<Projection>())
+            .map_err(|_| crate::execution::RelationalExecutionDenialCause::MemoryOverflow)?
+            .0
+            .pad_to_align();
+        u64::try_from(layout.size())
+            .map_err(|_| crate::execution::RelationalExecutionDenialCause::MemoryOverflow)
+    }
+
+    pub(crate) fn from_compiled_parts(
+        parts: SchemaAuthoritySnapshotParts,
+        memory: Option<worth_execution::ExecutionMemoryReservation>,
+    ) -> Self {
+        Self(Arc::new(Projection {
+            parts,
+            digest: OnceLock::new(),
+            owned_bytes: OnceLock::new(),
+            _memory: memory,
+        }))
+    }
+
+    pub(super) fn digest_for_compilation(
+        &self,
+        control: crate::schema::SchemaCompilationControl<'_, '_>,
+    ) -> Result<[u8; 32], crate::execution::RelationalExecutionDenialCause> {
+        control.checkpoint()?;
+        if let Some(digest) = self.0.digest.get() {
+            return Ok(*digest);
+        }
+        let digest = super::digest_parts_for_compilation(&self.0.parts, control)?;
+        let _same_immutable_digest = self.0.digest.set(digest);
+        Ok(digest)
+    }
+
     pub fn digest(&self) -> [u8; 32] {
         *self
             .0
@@ -32,25 +73,13 @@ impl SchemaAuthoritySnapshot {
 
 impl From<SchemaAuthoritySnapshotParts> for SchemaAuthoritySnapshot {
     fn from(parts: SchemaAuthoritySnapshotParts) -> Self {
-        Self(Arc::new(Projection {
-            parts,
-            digest: OnceLock::new(),
-            owned_bytes: OnceLock::new(),
-        }))
+        Self::from_compiled_parts(parts, None)
     }
 }
 impl Deref for SchemaAuthoritySnapshot {
     type Target = SchemaAuthoritySnapshotParts;
     fn deref(&self) -> &Self::Target {
         &self.0.parts
-    }
-}
-impl DerefMut for SchemaAuthoritySnapshot {
-    fn deref_mut(&mut self) -> &mut Self::Target {
-        let projection = Arc::make_mut(&mut self.0);
-        projection.digest.take();
-        projection.owned_bytes.take();
-        &mut projection.parts
     }
 }
 impl PartialEq for SchemaAuthoritySnapshot {

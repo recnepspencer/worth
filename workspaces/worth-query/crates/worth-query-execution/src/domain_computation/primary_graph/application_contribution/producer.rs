@@ -27,7 +27,7 @@ pub use denial_value::{
     WorthQueryUndeclaredProducerDenial,
 };
 pub(crate) mod execution;
-pub(in crate::domain_computation::primary_graph) use execution::unpublished::PendingProducerPublication;
+pub use execution::unpublished::PendingProducerPublication;
 pub(crate) mod invocation;
 pub(in crate::domain_computation::primary_graph) use execution::prepared_plan::OwnerPlan;
 use execution::{InstalledProducerExecutor, TypedInstalledProducer};
@@ -35,9 +35,10 @@ pub(in crate::domain_computation::primary_graph) use invocation::ProducerInvocat
 pub(crate) mod output_equivalence_contract;
 pub(crate) mod output_evaluation;
 pub use output_equivalence_contract::WorthQueryProducerOutputEquivalence;
+pub use output_evaluation::ProducerOutputEvaluation;
 pub use output_evaluation::WorthQueryProducerEvaluationIneligibility;
 pub(in crate::domain_computation::primary_graph) use output_evaluation::{
-    ComparedProducerOutput, ProducerOutputEvaluation, ProducerOutputEvaluationState,
+    ComparedProducerOutput, ProducerOutputEvaluationState,
 };
 pub(in crate::domain_computation::primary_graph) mod predecessor_reads;
 pub use predecessor_reads::{
@@ -69,9 +70,7 @@ pub(in crate::domain_computation::primary_graph) use scheduling::{
     schedule_output_producer, schedule_output_producer_on_selected,
     WorthQueryInstalledOutputProducerRoutes,
 };
-pub(in crate::domain_computation::primary_graph) use source_qualification::{
-    OutputSourceAddress, QualifiedOutputSource,
-};
+pub(in crate::domain_computation::primary_graph) use source_qualification::QualifiedOutputSource;
 
 pub use worth_query_declaration::facade::application_program::{
     WorthQueryApplicationOutputDemand, WorthQueryProducerApplicability,
@@ -234,3 +233,10 @@ pub(super) use registry::DeclaredProducerBinding;
 pub(in crate::domain_computation::primary_graph) use registry::InstalledProducerEdition;
 pub(in crate::domain_computation::primary_graph) use registry::PendingProducerRegistry;
 pub use registry::WorthQueryInstalledApplicationProducerRegistry;
+
+pub use source_qualification::OutputSourceAddress;
+#[cfg(test)]
+#[path = "producer_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;
+
+pub(in crate::domain_computation::primary_graph) use registry::RefusedProducerSeal;

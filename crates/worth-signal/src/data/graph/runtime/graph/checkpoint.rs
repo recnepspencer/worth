@@ -118,10 +118,13 @@ impl SignalGraph {
                 observation_sessions.shared_last_completion(),
             ));
         let mut graph = Self {
+            initial_empty_origin: false,
             lifecycle_token: Default::default(),
             instance_id,
+            recorded_node_issuance: Default::default(),
             arena: restore_node_arena(&authority.arena, free_slots),
             topology: EdgeTopology {
+                declared_dependents: Default::default(),
                 dependency_snapshots: DependencySnapshotStore::default(),
                 dependency_snapshot_shapes: DependencySnapshotShapeStore::default(),
                 dependency_snapshot_storage_custody: None,
@@ -228,6 +231,7 @@ impl SignalGraph {
         }
         self.topology.subscriber_edges = Default::default();
         self.rebuild_subscriber_index_from_dependencies()?;
+        self.rebuild_declared_dependents();
         self.rebuild_reverse_subscription_index_from_dependencies()?;
         self.rebuild_pending_revalidation_waiters()?;
         for node in repaired_nodes {

@@ -1,0 +1,37 @@
+COMMAND: ["python", "target/lane-evidence/stack_peak/measure.py", "dev", "worth-query-consumer-root"]
+HEAD: 7eeb6fa326b46f1924c1defe9670261245cb1d92
+CLEAN: true
+START: 2026-11-07T09:29:13.142653+00:00
+ENV: removed stale external linker override; RUST_MIN_STACK unset in parent
+EXACT ENTRY RVAS {'entry': 75866512, 'probe': 208694880} PROFILE dev SHA256 2c90ebedae72d31ab79ab8fbaee1fa992385e3b5242b9769fde73aa646ef4c6c
+DIAGNOSTIC COMMAND ["C:\\programming\\worth worktees\\worktrees\\m3-host-home\\workspaces\\worth-query\\crates\\worth-query-certification\\fixtures\\consumer_entry\\target\\debug\\worth-query-consumer-root.exe"]
+EVENT 3 46288 66572
+EVENT 2 46288 18688
+EVENT 2 46288 57400
+EVENT 2 46288 26616
+BREAK 0x7ffc68e626c9 entry 0x7ff74609a190
+EVENT 2 46288 57056
+BREAK 0x7ff74609a190 entry 0x7ff74609a190
+ENTRY 46288 57056 original
+CREATE_REMOTE_BEGIN
+CREATE_REMOTE_END 45536
+EVENT 2 46288 45536
+BREAK 0x7ff74609a190 entry 0x7ff74609a190
+ENTRY 46288 45536 entry
+BREAK 0x7ff74609a190 entry 0x7ff74609a190
+ENTRY 46288 45536 limits
+BREAK 0x7ffc68db9224 entry 0x7ff74609a190
+EXCEPTION 46288 45536 0xc0000374 first 1 0x7ffc68e58095 info (140722069102816, 0)
+EXCEPTION 46288 45536 0xc0000374 first 0 0x7ffc68e58095 info (140722069102816, 0)
+EVENT 5 46288 18688
+PROCESS EXIT 46288 3221226356
+Traceback (most recent call last):
+  File "C:\programming\worth worktees\worktrees\m3-host-home\target\lane-evidence\stack_peak\measure.py", line 23, in <module>
+    first=Session(a,symbols).launch();(out/(key+'-paint.json')).write_text(json.dumps(first,indent=2))
+  File "C:\programming\worth worktees\worktrees\m3-host-home\target\lane-evidence\stack_peak\debug_session.py", line 20, in launch
+    assert not self.failures,self.failures
+           ^^^^^^^^^^^^^^^^^
+AssertionError: [('exit', 46288, 3221226356)]
+
+END: 2026-11-07T09:29:30.530558+00:00
+EXIT: 1

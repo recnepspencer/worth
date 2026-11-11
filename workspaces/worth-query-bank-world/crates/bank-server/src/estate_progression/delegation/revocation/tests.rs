@@ -10,7 +10,7 @@ use super::*;
 use crate::estate_capability_admission::fixture::{
     emergency_request_world_with_alternate_bound, request_scope, GrantSpec, ESTATE, GRANT,
 };
-use crate::BankMutationCommitOutcome;
+use crate::estate_progression::delegation::command_courts::CommandCourtOutcome;
 
 #[test]
 fn generic_program_cannot_bypass_the_installed_revocation_action() {
@@ -84,7 +84,7 @@ fn target_status_drift_after_materialization_stales_provider_commit() {
         &request_scope(),
     )
     .expect("a separate public command should revoke the prepared target");
-    assert!(matches!(drift, BankMutationCommitOutcome::Committed(_)));
+    assert!(matches!(drift, CommandCourtOutcome::Committed(_)));
 
     let outcome = fixture
         .runtime
@@ -114,7 +114,7 @@ fn exact_revocation_retry_replays_after_the_grant_is_revoked() {
         &request_scope(),
     )
     .expect("the active grant should revoke");
-    assert!(matches!(first, BankMutationCommitOutcome::Committed(_)));
+    assert!(matches!(first, CommandCourtOutcome::Committed(_)));
     let replay = crate::estate_progression::delegation::command_courts::complete_revocation(
         &fixture.runtime,
         &specialist,
@@ -123,10 +123,7 @@ fn exact_revocation_retry_replays_after_the_grant_is_revoked() {
         &request_scope(),
     )
     .expect("the same request should replay after revocation");
-    assert!(matches!(
-        replay,
-        BankMutationCommitOutcome::AlreadyCommitted(_)
-    ));
+    assert!(matches!(replay, CommandCourtOutcome::RecoveredCommitted(_)));
 }
 
 /// Q8.26-C1: the retention demand attaches from the installed contract, with no
@@ -152,9 +149,12 @@ fn revocation_retains_its_declared_preimage_without_a_per_operation_opt_in() {
         &request_scope(),
     )
     .expect("the exact command should revoke the active target");
-    let BankMutationCommitOutcome::Committed(receipt) = outcome else {
+    let CommandCourtOutcome::Committed(receipt) = outcome else {
         panic!("revocation must commit: {outcome:?}");
     };
+    let receipt = receipt
+        .live_receipt()
+        .expect("fresh command owns a live receipt");
     assert!(
         receipt.retained_preimage(),
         "RevokeCapability declares RecordedInverse/ExactPriorTruth, so its commit \

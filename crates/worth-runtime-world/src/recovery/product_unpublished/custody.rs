@@ -9,6 +9,11 @@ mod lease;
 use lease::RelationalRecoveryLease;
 
 impl ProductUnpublishedOwnerEffectsRecord {
+    fn refresh_next_actions(&mut self) {
+        self.next_actions =
+            super::RetainedNextActions::from_resources(&self.retention, &self.progress, self.cause);
+    }
+
     pub(crate) fn identity(&self) -> &ProductUnpublishedOwnerEffectsIdentity {
         &self.identity
     }
@@ -64,6 +69,7 @@ impl ProductUnpublishedOwnerEffectsRecord {
         let (progress, component_results) = state.into_restored_parts();
         self.progress = progress;
         self.component_results = component_results;
+        self.refresh_next_actions();
     }
 
     pub(crate) fn settle_relational_recovery(
@@ -77,25 +83,21 @@ impl ProductUnpublishedOwnerEffectsRecord {
             state.successor_basis.clone(),
             result,
         );
-        self.next_actions = super::RetainedNextActions::from_vec(super::next_actions_for_progress(
-            &self.progress,
-            self.cause,
-        ));
+        self.refresh_next_actions();
     }
 
     pub(crate) fn retain_identity_repair(&mut self, state: RelationalRecoveryRecordState) {
         self.progress = state.identity_required_progress();
         self.component_results = state.component_results;
-        let next_actions = super::next_actions_for_progress(&self.progress, self.cause);
-        // This record owes settlement: `recovery_continuation` reaches these
-        // transitions only for a record whose Relational leg requires it, so
-        // the derived continuation names settlement first.
-        debug_assert_eq!(
-            next_actions.first(),
-            Some(&ProductUnpublishedNextAction::SettleOwnerEffects),
-            "a retained record that owes settlement names settlement first"
-        );
-        self.next_actions = super::RetainedNextActions::from_vec(next_actions);
+        self.refresh_next_actions();
+        // Only Memory continuation owes live settlement; a durable open must
+        // retain its original resources and reopen, regardless of progress.
+        if self.retention.durable_open.is_none() {
+            debug_assert_eq!(
+                self.next_actions.as_slice().first(),
+                Some(&ProductUnpublishedNextAction::SettleOwnerEffects)
+            );
+        }
     }
 
     pub(crate) fn settle_relational_recovery_with_receipt(
@@ -109,9 +111,6 @@ impl ProductUnpublishedOwnerEffectsRecord {
             state.successor_basis.clone(),
             receipt,
         );
-        self.next_actions = super::RetainedNextActions::from_vec(super::next_actions_for_progress(
-            &self.progress,
-            self.cause,
-        ));
+        self.refresh_next_actions();
     }
 }

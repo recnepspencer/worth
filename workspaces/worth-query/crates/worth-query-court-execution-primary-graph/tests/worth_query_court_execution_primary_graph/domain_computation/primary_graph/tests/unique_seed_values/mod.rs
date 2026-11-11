@@ -58,7 +58,7 @@ fn a_field_that_is_not_unique_may_repeat_across_seeds() {
         .expect("only the unique field is checked");
 }
 
-pub fn member(
+fn member(
     key: &str,
     handle: u64,
     tier: u64,

@@ -151,7 +151,7 @@ fn expected_basis_rejects_foreign_and_unsupported_comparison_data() {
         }
     ));
     let mut encoded = serde_json::to_value(&description).unwrap();
-    encoded["world"]["format_version"] = serde_json::json!(2);
+    encoded["world"]["format_version"] = serde_json::json!(3);
     let unsupported: Description = serde_json::from_value(encoded).unwrap();
     let denied = host
         .with_host_advancement(|phase| {
@@ -166,8 +166,8 @@ fn expected_basis_rejects_foreign_and_unsupported_comparison_data() {
         denied,
         Denial::Admission(WorthQueryProductBranchAdmissionDenial::Refused(
             WorthQueryProductBranchAdmissionRefusalKind::ExpectedDescriptionVersionUnsupported {
-                supported: 1,
-                actual: 2
+                supported: 2,
+                actual: 3
             }
         ))
     ));

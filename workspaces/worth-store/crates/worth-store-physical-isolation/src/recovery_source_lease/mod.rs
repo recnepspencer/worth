@@ -299,9 +299,9 @@ impl RecoverySourceLeaseRegistry {
             validate_recovered_closure(&persisted.source_root, &persisted.artifact_names)?;
             let lease = RecoverySourceReachabilityLease {
                 identity,
-                operation_identity: persisted.operation_identity,
-                source_identity: persisted.source_identity,
-                source_evidence_identity: persisted.source_evidence_identity,
+                operation_identity: *persisted.operation_identity.bytes(),
+                source_identity: *persisted.source_identity.bytes(),
+                source_evidence_identity: *persisted.source_evidence_identity.bytes(),
                 source_root: persisted.source_root,
                 artifact_names: persisted.artifact_names,
                 durable_record: entry.path(),

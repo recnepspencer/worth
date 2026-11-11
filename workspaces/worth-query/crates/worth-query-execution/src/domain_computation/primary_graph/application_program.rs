@@ -176,3 +176,6 @@ where
         discovery: &<<<Self::Discovery as ApplicationQueryIntent<Schema>>::Binding as ApplicationQueryBinding<Schema>>::ResultBinding as ApplicationStructuredValueBinding>::Value,
     ) -> Result<Vec<Self::Demand>, WorthQueryRequiredOutputConnectionDenial>;
 }
+#[cfg(test)]
+#[path = "application_program_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;

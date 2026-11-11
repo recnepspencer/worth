@@ -102,6 +102,13 @@ impl WorthQueryInvariantProjectionDenial {
         self.projection_work
     }
 
+    /// Original source-retention failure; borrowing it grants no read authority.
+    pub fn source_retention_denial(
+        &self,
+    ) -> Option<&crate::domain_computation::primary_graph::application_attempt::retained_decision_facts::StoreDenial>{
+        self.retention_denial.as_deref()
+    }
+
     pub fn allocation_denial(&self) -> Option<&worth_execution::ExecutionAllocationDenial> {
         match self.retention_denial.as_deref() {
             Some(crate::domain_computation::primary_graph::application_attempt::retained_decision_facts::StoreDenial::Allocation(denial)) => Some(denial),

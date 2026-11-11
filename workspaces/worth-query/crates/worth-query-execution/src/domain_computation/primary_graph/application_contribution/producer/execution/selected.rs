@@ -79,7 +79,10 @@ pub(in crate::domain_computation::primary_graph::application_contribution::produ
         producer_contacts: &mut usize,
     ) -> Result<super::outcome::PreparedProducerExecutionPlan<'owner>, ProducerExecutionStop>;
 
-    fn preserved_readiness_output(&self, receipt: &WorthQueryApplicationCommitReceipt) -> bool;
+    fn preserved_readiness_output(
+        &self,
+        receipt: crate::domain_computation::primary_graph::application_output_demand::OutputPublicationView<'_>,
+    ) -> bool;
 }
 
 impl<Schema, Binding> InstalledSelectedProducerExecutor<Schema>
@@ -95,7 +98,10 @@ where
             > + 'static,
     SourceQuery<Schema, Binding>: 'static,
 {
-    fn preserved_readiness_output(&self, receipt: &WorthQueryApplicationCommitReceipt) -> bool {
+    fn preserved_readiness_output(
+        &self,
+        receipt: crate::domain_computation::primary_graph::application_output_demand::OutputPublicationView<'_>,
+    ) -> bool {
         receipt
             .output_correspondence()
             .posture_for_binding_role::<Binding::Operation>(

@@ -184,3 +184,6 @@ mod tests {
         );
     }
 }
+#[cfg(test)]
+#[path = "block_cause_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;

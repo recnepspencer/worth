@@ -66,7 +66,8 @@ pub(super) fn restore_failure_with_cause(
     corruption: crate::storage::data::RelationalStorageUnavailableCause,
 ) -> super::RelationalResidencyDemandFailure {
     match error {
-        PartitionContentDigestError::Execution(cause) => {
+        PartitionContentDigestError::Execution(cause)
+        | PartitionContentDigestError::Request(cause) => {
             super::RelationalResidencyDemandFailure::Request(cause)
         }
         other => super::RelationalResidencyDemandFailure::StorageUnavailable(

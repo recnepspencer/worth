@@ -9,6 +9,9 @@ use worth_query_execution::facade::primary_graph::{
 };
 use worth_query_host::facade::{application_entry::*, primary_graph::*};
 
+#[path = "tree_reapplication/reapplication_completion.rs"]
+pub mod reapplication_completion;
+
 pub fn limits() -> WorthQueryCorrectionHistoryLimits {
     WorthQueryCorrectionHistoryLimits::new(None, NonZeroUsize::MIN)
 }
@@ -71,7 +74,15 @@ pub fn run() {
     );
     let old_alternative = alternative(&host, &source, &first_reverse, 2);
     let before_retry = super::required_output_courts::head(&host);
-    let retry = reapply(&host, &old_alternative, "tree-reapply-first");
+    let (_retry_closed, retry) = reapplication_completion::complete(
+        &host,
+        host.runtime().current_world(),
+        &old_alternative,
+        "tree-reapply-first",
+    );
+    let WorthQuerySourceCompletion::Recorded { receipt: retry, .. } = retry else {
+        panic!("same-key reapplication returns original data");
+    };
     assert_eq!(
         super::required_output_courts::head(&host),
         before_retry,
@@ -302,40 +313,16 @@ pub fn reapply_on(
     alternative: &WorthQuerySelectedCorrectionAlternative<'_, NumericSchema>,
     key: &str,
 ) -> WorthQueryApplicationCommitReceipt {
-    let scope = request_scope();
-    let principal = authenticate_operator(host.installed_schema(), &scope);
-    let request = host.runtime().request(&principal, &scope).on_branch(branch);
-    let prepared = request
-        .corrections()
-        .reapply(alternative)
-        .idempotency(key)
-        .limits(limits())
-        .prepare_operation::<RecordedEdit, Program, Action>(host)
-        .unwrap();
-    let advance = match prepared {
-        WorthQueryOperationCorrectionPreparation::Prepared(prepared) => prepared.publish().unwrap(),
-        WorthQueryOperationCorrectionPreparation::Continued(advance) => advance,
-        _ => panic!("reapplication must preserve an ordinary source owner"),
-    };
-    let completed = match advance {
-        WorthQuerySourceOnlyAdvance::Completed(completed) => completed,
-        WorthQuerySourceOnlyAdvance::Refused { denial, .. } => {
-            panic!("reapplication source refused: {denial:?}")
-        }
-        WorthQuerySourceOnlyAdvance::Terminal(terminal) => {
-            panic!("reapplication terminal: {:?}", terminal.native_outcome())
-        }
-        WorthQuerySourceOnlyAdvance::Progress(_) => {
-            panic!("numeric source has no pending delivery")
-        }
-    };
-    let (_, evidence) = completed
-        .close_with_evidence(&request)
-        .unwrap_or_else(|(_, denial)| panic!("reapplication normal close: {denial:?}"));
-    match evidence {
+    let (closed, evidence) = reapplication_completion::complete(host, branch, alternative, key);
+    let receipt = match evidence {
         WorthQuerySourceCompletion::Fresh { receipt, .. }
         | WorthQuerySourceCompletion::Recovered { receipt, .. } => receipt,
-    }
+        WorthQuerySourceCompletion::Recorded { .. } => panic!(
+            "this fixture requires an actual fresh correction source, not original receipt data"
+        ),
+    };
+    drop(closed);
+    receipt
 }
 
 pub fn assert_reapplication(

@@ -65,7 +65,7 @@ impl DurabilityRecoveryAuthority<'_> {
                 .runtime
                 .indexes
                 .definition_read_binding()
-                .prepare_publication(execution, &before, &after, change)
+                .prepare_publication(execution, &before, &after, change, None, None)
                 .map_err(Denial::CodecIndexPreparation)?
             {
                 let work = prepared.work();

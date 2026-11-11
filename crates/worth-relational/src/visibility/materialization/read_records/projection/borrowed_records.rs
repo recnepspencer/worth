@@ -130,7 +130,7 @@ impl VisibilityProjectionView {
         };
         Ok(Some(project(
             metadata,
-            slot.extra().authoritative_aspect_state.as_ref(),
+            slot.extra().authoritative_aspect_state(),
         )))
     }
 
@@ -195,7 +195,7 @@ impl VisibilityProjectionView {
         };
         Ok(Some(project(
             metadata,
-            slot.extra().authoritative_aspect_state.as_ref(),
+            slot.extra().authoritative_aspect_state(),
         )))
     }
 }

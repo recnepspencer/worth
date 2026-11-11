@@ -30,7 +30,7 @@ impl<S: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRuntime<S>
                 .expect("the installed Query graph remains live");
             Ok(graph
                 .integration_handle()
-                .with_runtime_mut(&execution, |runtime| {
+                .with_runtime(&execution, |runtime| {
                     runtime.prepare_owned_edge_retarget_for_test(
                         &execution,
                         product.relational_basis(),
@@ -77,7 +77,7 @@ impl<S: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRuntime<S>
                 .expect("the installed graph remains live");
             Ok(graph
                 .integration_handle()
-                .with_runtime_mut(&execution, |runtime| {
+                .with_runtime(&execution, |runtime| {
                     runtime.probe_current_owned_member_after_merge_for_test(
                         &execution,
                         current.relational_basis(),
@@ -114,7 +114,7 @@ impl<S: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRuntime<S>
             let graph = self.runtime.primary_graph().expect("live Query graph");
             Ok(graph
                 .integration_handle()
-                .with_runtime_mut(&execution, |runtime| {
+                .with_runtime(&execution, |runtime| {
                     runtime.probe_current_metadata_writes_for_test(
                         &execution,
                         product.relational_basis(),
@@ -149,7 +149,7 @@ impl<S: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRuntime<S>
             let graph = self.runtime.primary_graph().expect("live Query graph");
             Ok(graph
                 .integration_handle()
-                .with_runtime_mut(&execution, |runtime| {
+                .with_runtime(&execution, |runtime| {
                     runtime.probe_current_ownership_locality_for_test(
                         &execution,
                         product.relational_basis(),
@@ -182,7 +182,7 @@ impl<S: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRuntime<S>
             let graph = self.runtime.primary_graph().expect("live Query graph");
             Ok(graph
                 .integration_handle()
-                .with_runtime_mut(&execution, |runtime| {
+                .with_runtime(&execution, |runtime| {
                     runtime.current_owned_aggregate_memberships_for_test(
                         &execution,
                         product.relational_basis(),
@@ -212,7 +212,7 @@ impl<S: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRuntime<S>
             let graph = self.runtime.primary_graph().expect("live Query graph");
             Ok(graph
                 .integration_handle()
-                .with_runtime_mut(&execution, |runtime| {
+                .with_runtime(&execution, |runtime| {
                     runtime.probe_coherent_ownership_loss_for_test(
                         &execution,
                         product.relational_basis(),
@@ -259,7 +259,7 @@ impl<S: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRuntime<S>
             let graph = self.runtime.primary_graph().expect("actual Query graph");
             Ok(graph
                 .integration_handle()
-                .with_runtime_mut(&execution, |runtime| {
+                .with_runtime(&execution, |runtime| {
                     runtime.probe_cold_current_ownership_pairing_for_test(
                         &execution,
                         product.relational_basis(),

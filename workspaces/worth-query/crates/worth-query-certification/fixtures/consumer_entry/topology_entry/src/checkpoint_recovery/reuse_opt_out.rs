@@ -88,7 +88,7 @@ fn install_no_reuse_with_build(
     // Window <= history is enforced by primary_graph/bootstrap/preparation.rs:91.
     let limits = support::limits(32, support::invalidation());
     if let Some(checkpoint) = checkpoint {
-        return application_installation::in_memory_program_from_checkpoint(
+        return application_installation::WorthQueryInterimCheckpointRestore::program(
             program,
             <NoReuseSchema as worth_query_decl::facade::application_schema::ApplicationSchema>::declaration().unwrap(),
             configuration,

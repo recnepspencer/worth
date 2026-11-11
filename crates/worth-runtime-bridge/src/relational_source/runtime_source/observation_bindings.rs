@@ -1,5 +1,11 @@
 use std::collections::{BTreeSet, HashMap};
 use std::sync::{Arc, Mutex, MutexGuard};
+mod retirement;
+#[cfg(test)]
+pub(in crate::relational_source) use retirement::{
+    assert_observation_busy_and_indexes, assert_observation_index_refusals,
+};
+pub use retirement::{RelationalBridgeObservationRetirement, RetiredRelationalBridgeObservation};
 
 use crate::facade::{RelationalBridgeSourceError, TruthSnapshotIdentity};
 

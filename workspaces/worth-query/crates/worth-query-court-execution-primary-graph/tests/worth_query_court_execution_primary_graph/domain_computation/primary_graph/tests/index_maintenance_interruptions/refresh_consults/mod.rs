@@ -13,7 +13,7 @@ fn refresh_preserves_the_stop_at_every_counted_consult() {
     let setup_host = worth_query_testkit_execution_primary_graph_application_attempt_2::test_request_policy::serial_request();
     let setup = ExecutionRequest::serial(&setup_host);
     let discard = || {
-        (*handle.source_owner_for_test()).with_runtime_mut(&setup, |runtime| {
+        (*handle.source_owner_for_test()).with_runtime(&setup, |runtime| {
             for index in (*handle.primary_index_ids_for_test()).iter() {
                 runtime
                     .index_authority()

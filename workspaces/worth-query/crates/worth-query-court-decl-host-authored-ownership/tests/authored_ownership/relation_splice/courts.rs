@@ -352,7 +352,7 @@ fn relation_preimage_installation_requires_the_source_operations_relation_read()
         .err()
         .expect("source relation preimage lacks its own declared read");
     match error {
-        WorthQueryInMemoryApplicationDenial::Contributions(cause) => {
+        WorthQueryApplicationPreparationDenial::Contributions(cause) => {
             assert_eq!(
                 cause.kind(),
                 WorthQueryPrimaryGraphInstallationDenialKind::BindingNotInstalled

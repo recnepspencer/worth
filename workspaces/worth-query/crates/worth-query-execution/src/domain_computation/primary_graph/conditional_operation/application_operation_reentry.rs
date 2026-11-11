@@ -30,6 +30,8 @@ use super::reconstruction_authority::{
 use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime;
 
 pub enum WorthQueryTemporalReentryOutcome {
+    ProductPreparationPending(crate::domain_computation::WorthQueryProductPreparationPending),
+    ProductPreparationRefused(crate::domain_computation::WorthQueryProductPreparationRefused),
     CleanupRequired(Box<super::super::WorthQueryApplicationCleanupRequired>),
     ProductStale(crate::domain_computation::WorthQueryProductStaleApplication),
     ProductUnpublished(crate::domain_computation::WorthQueryProductUnpublishedApplication),
@@ -202,8 +204,18 @@ where
     LifecycleValue: Clone,
     Authorization: super::WorthQueryTemporalOperationAuthorization<Schema, Operation, Input, Scope>,
 {
+    let selected = product.observation();
+    let scope = match selected.owner_identity().durable() {
+        Some(owner) => temporal_idempotency::TemporalIdempotencyScope::Home {
+            owner,
+            branch: selected.branch_identity().name().as_str(),
+            incarnation: selected.lifecycle_incarnation().ordinal(),
+        },
+        None => temporal_idempotency::TemporalIdempotencyScope::ProcessLocal,
+    };
     let idempotency =
-        match temporal_idempotency::prepare_temporal_idempotency(runtime_binding, candidate) {
+        match temporal_idempotency::prepare_temporal_idempotency(runtime_binding, candidate, scope)
+        {
             Ok(idempotency) => idempotency,
             Err(denial) => {
                 return WorthQueryTemporalReentryAttempt {

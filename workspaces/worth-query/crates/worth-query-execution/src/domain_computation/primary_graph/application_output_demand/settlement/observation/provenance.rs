@@ -65,7 +65,7 @@ impl OriginalSettledProducerObservation {
                 ..
             } => {
                 let receipt = settled
-                    .application_commit_receipt()
+                    .publication_view()
                     .ok_or_else(|| foreign("committed provenance has no retained receipt"))?;
                 if settled.stable.is_some() || settled.restored_source.is_some() {
                     return Err(foreign(
@@ -101,9 +101,7 @@ impl OriginalSettledProducerObservation {
                 let stable = settled.stable.as_ref().ok_or_else(|| {
                     foreign("reused provenance has no retained stable publication")
                 })?;
-                if settled.application_commit_receipt().is_some()
-                    || settled.restored_source.is_some()
-                {
+                if settled.publication_view().is_some() || settled.restored_source.is_some() {
                     return Err(foreign(
                         "reused provenance has a foreign settlement posture",
                     ));
@@ -126,10 +124,12 @@ impl OriginalSettledProducerObservation {
                 };
                 pay_checkpoint(context, checkpoint)?;
                 pay_checkpoint(context, actual)?;
-                if settled.application_commit_receipt().is_some()
-                    || settled.stable.is_some()
-                    || checkpoint != actual
-                {
+                if settled.publication_view().is_some() || settled.stable.is_some() {
+                    return Err(foreign(
+                        "restored provenance has a foreign settlement posture",
+                    ));
+                }
+                if checkpoint != actual {
                     return Err(refused(
                         Reason::RestoredCheckpointMismatch,
                         "original restored checkpoint differs from its retained owner",
@@ -146,7 +146,7 @@ impl OriginalSettledProducerObservation {
                     return Err(foreign("historical provenance has a checkpoint owner"));
                 };
                 pay(context, 1)?;
-                if settled.application_commit_receipt().is_some()
+                if settled.publication_view().is_some()
                     || settled.stable.is_some()
                     || !origin.same_owner(actual)
                 {

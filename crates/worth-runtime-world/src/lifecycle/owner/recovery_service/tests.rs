@@ -7,12 +7,7 @@ use worth_relational::facade::mvcc::RelationalTransactionIntent;
 
 use crate::branch::reference_test_fixture::{self, RealReferenceFixture};
 use crate::branch::{ProductBranchObservation, RuntimeWorldBootstrapOutcome};
-use crate::budget::{
-    RuntimeWorldBranchBudgetInstallation, RuntimeWorldBudgetInstallation, RuntimeWorldBudgets,
-    RuntimeWorldCustodyBudgetInstallation, RuntimeWorldHistoryBudgetInstallation,
-    RuntimeWorldObservationBudgetInstallation, RuntimeWorldPublicationBudgetInstallation,
-    RuntimeWorldRecoveryBudgetInstallation, RuntimeWorldRetentionBudgetInstallation,
-};
+
 use crate::lifecycle::{
     RuntimeWorldClock, RuntimeWorldClockSource, RuntimeWorldPreparationService,
     RuntimeWorldRecoveryService,
@@ -21,7 +16,14 @@ use crate::publication::{
     CompositeAttemptProgress, CompositePublicationIntent, RelationalAttemptProgress,
     ReservedCompositePublicationAttempt, RuntimeWorldCancellationSource, SignalAttemptProgress,
 };
-use crate::recovery::{ProductUnpublishedCause, ProductUnpublishedNextAction};
+use crate::recovery::{
+    ProductUnpublishedCause, ProductUnpublishedNextAction, RuntimeWorldRecoveryDenial as Denial,
+    RuntimeWorldSettledRelationalAdoptionDenial as Adoption,
+};
+
+#[path = "test_budgets.rs"]
+mod test_budgets;
+use test_budgets::budgets;
 
 pub(super) type TestOwner = super::super::RuntimeWorldOwnerRoot<(), (), (), (), ()>;
 
@@ -31,37 +33,6 @@ impl RuntimeWorldClockSource for FixedClock {
     fn now(&self) -> crate::lifecycle::RuntimeWorldInstant {
         crate::lifecycle::RuntimeWorldInstant::from_ticks(7)
     }
-}
-
-fn budgets(maximum_recovery_records: u64) -> RuntimeWorldBudgets {
-    RuntimeWorldBudgets::install(RuntimeWorldBudgetInstallation {
-        branches: RuntimeWorldBranchBudgetInstallation {
-            live_product_branches: 1,
-        },
-        history: RuntimeWorldHistoryBudgetInstallation {
-            retained_composite_commits: 4,
-            history_metadata_bytes: 4096,
-        },
-        observations: RuntimeWorldObservationBudgetInstallation {
-            active_observations: 1,
-        },
-        publication: RuntimeWorldPublicationBudgetInstallation {
-            active_publication_attempts: 2,
-        },
-        recovery: RuntimeWorldRecoveryBudgetInstallation {
-            retained_product_unpublished_records: maximum_recovery_records,
-            retained_partial_metadata_bytes:
-                crate::recovery::ProductUnpublishedOwnerEffects::metadata_charge_hint() as u64,
-        },
-        retention: RuntimeWorldRetentionBudgetInstallation {
-            unique_exact_component_pins: 6,
-            in_flight_pin_acquisition_reservations: 4,
-        },
-        custody: RuntimeWorldCustodyBudgetInstallation {
-            owner_created_component_custody_records: 1,
-        },
-    })
-    .expect("recovery tests install positive owner budgets")
 }
 
 fn setup_with_recovery_limit(
@@ -116,7 +87,13 @@ pub(super) fn relational_attempt(
         &cancellation.token(),
         None,
     )
-    .expect("the owner prepares and reserves the exact relational recovery attempt")
+    .unwrap_or_else(|refused| {
+        panic!(
+            "recovery reservation {:?}; actual history {:?}",
+            refused.cause(),
+            owner.state.history.metadata_ledger()
+        )
+    })
     .into_attempt()
 }
 
@@ -132,9 +109,13 @@ pub(super) fn successor_basis(
             .identities
             .lock()
             .unwrap_or_else(|error| error.into_inner()),
-        &owner.state.relational.basis_port(),
+        &owner.state.relational_services().basis_port(),
         &owner.state.signal.basis_port(),
-        &owner.state.bridge,
+        owner
+            .state
+            .bridge
+            .as_ref()
+            .expect("serving World owns correspondence"),
         relational,
         signal.unwrap_or_else(|| expected.basis().signal_basis().clone()),
         expected.basis().correspondence_basis().clone(),
@@ -334,4 +315,79 @@ fn metadata_ceiling_rejects_second_charge_and_cleanup_releases_the_first() {
             .reserved_in_flight_acquisition_capacity(),
         0
     );
+}
+
+#[test]
+fn foreign_recovery_authority_refuses_release_continuation_and_adoption_without_effects() {
+    let host = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host);
+    let (fixture, owner, expected) = setup();
+    let (foreign_fixture, foreign, _foreign_head) = setup();
+    let relational = || {
+        let native = foreign_fixture.relational_runtime();
+        native
+            .observe_branch(&native.main_branch_identity())
+            .unwrap()
+            .1
+            .descriptor()
+            .clone()
+    };
+    let before_relational = relational();
+    let before_signal = foreign_fixture
+        .observe_signal_current_basis()
+        .descriptor()
+        .clone();
+    let before = foreign
+        .state
+        .branches
+        .root_cell()
+        .unwrap()
+        .atomic_snapshot();
+    let mut attempt = relational_attempt(execution, &fixture, &owner, expected.clone());
+    attempt.begin_owner_execution();
+    let performed = fixture.perform_relational_owner_change(execution);
+    let basis = successor_basis(&owner, &expected, performed.next_basis().clone(), None);
+    let retained = attempt
+        .settle(CompositeAttemptProgress::new(
+            RelationalAttemptProgress::performed(performed),
+            SignalAttemptProgress::untouched(),
+        ))
+        .ready(basis)
+        .expect_err("genuine unsettled owner custody");
+    let handle = retained.recovery_handle();
+    assert!(matches!(
+        RuntimeWorldRecoveryService::release_effects(foreign.as_ref(), execution, &handle, 0, None),
+        Err(Denial::ForeignHandle)
+    ));
+    assert!(matches!(
+        RuntimeWorldRecoveryService::continue_effects(
+            foreign.as_ref(),
+            owner.inspect_recovery(&handle).unwrap()
+        ),
+        Err(Denial::ForeignHandle)
+    ));
+    assert!(matches!(
+        RuntimeWorldRecoveryService::prepare_settled_relational_adoption(
+            foreign.as_ref(),
+            &retained,
+            &RuntimeWorldCancellationSource::new().token(),
+            None
+        ),
+        Err(Adoption::Recovery(Denial::ForeignHandle))
+    ));
+    assert_eq!(foreign.recovery_record_count(), 0);
+    assert_eq!(owner.recovery_record_count(), 1);
+    let actual = foreign
+        .state
+        .branches
+        .root_cell()
+        .unwrap()
+        .atomic_snapshot();
+    assert_eq!(actual, before);
+    assert_eq!(relational(), before_relational);
+    assert_eq!(
+        foreign_fixture.observe_signal_current_basis().descriptor(),
+        &before_signal
+    );
+    assert!(owner.inspect_recovery(&handle).is_some());
 }

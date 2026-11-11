@@ -32,3 +32,6 @@ pub(super) use registry::{
     insert_effect_runtime, WorthQueryEffectIndex, WorthQueryEffectRuntime, WorthQueryEffectTarget,
 };
 pub(super) use routing::{admit_effect_declaration, route_effect_deliveries};
+#[cfg(test)]
+#[path = "mod_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;

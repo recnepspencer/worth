@@ -40,7 +40,7 @@ mod evidence_join;
 mod local_actions;
 mod navigation;
 pub(crate) mod operation;
-pub(in crate::domain_computation::primary_graph::application_attempt) use operation::LocalActionSettlementProof;
+pub use operation::LocalActionSettlementProof;
 pub(in crate::domain_computation::primary_graph) use operation::ValidatedWorkflowOperationReceipt;
 pub(super) use operation::{operation_receipt_requires_recovery, receipt_identity_from_outcome};
 mod preparation;

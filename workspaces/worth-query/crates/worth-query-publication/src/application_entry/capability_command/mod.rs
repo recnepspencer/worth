@@ -89,11 +89,14 @@ pub enum WorthQueryCapabilityCommandDenial<D> {
 }
 /// A command has no domain-handler result or manufactured output.
 pub enum WorthQueryCapabilityCommandCompletion {
+    DurableRecovered(
+        worth_query_execution::facade::primary_graph::WorthQueryRecoveredApplicationCommitReceipt,
+    ),
     Fresh {
         receipt: WorthQueryApplicationCommitReceipt,
     },
     Recovered {
-        receipt: WorthQueryApplicationCommitReceipt,
+        receipt: worth_query_execution::facade::primary_graph::WorthQueryRecoveredApplicationCommitReceipt,
         publication: Option<WorthQueryManagedApplicationRecoveryPerformed>,
         initial_posture: Option<WorthQueryApplicationUncommitted>,
         initial_advancement_failure: Option<WorthQueryAdvancementDenial>,
@@ -101,9 +104,20 @@ pub enum WorthQueryCapabilityCommandCompletion {
 }
 impl WorthQueryCapabilityCommandCompletion {
     /// Original native evidence; borrowing cannot transfer its performed witness.
-    pub fn receipt(&self) -> &WorthQueryApplicationCommitReceipt {
+    pub fn receipt(&self) -> Option<&WorthQueryApplicationCommitReceipt> {
         match self {
-            Self::Fresh { receipt } | Self::Recovered { receipt, .. } => receipt,
+            Self::Fresh { receipt } => Some(receipt),
+            Self::DurableRecovered(_) | Self::Recovered { .. } => None,
+        }
+    }
+    pub fn recovered_receipt(
+        &self,
+    ) -> Option<
+        &worth_query_execution::facade::primary_graph::WorthQueryRecoveredApplicationCommitReceipt,
+    > {
+        match self {
+            Self::DurableRecovered(receipt) | Self::Recovered { receipt, .. } => Some(receipt),
+            Self::Fresh { .. } => None,
         }
     }
     fn recovered(value: NativeRecoveredPublication) -> Self {

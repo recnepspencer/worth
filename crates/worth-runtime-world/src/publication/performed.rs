@@ -1,3 +1,9 @@
+mod retirement;
+pub use retirement::{
+    ConsumedPublicationRetirement, ConsumedPublicationRetirementDenial,
+    ConsumedPublicationRetirementProgress, PreparedConsumedPublicationRetirement,
+    RetiredConsumedPublication,
+};
 use worth_proof::AuthorityWitness;
 
 use crate::branch::ProductBranchReferenceSnapshot;

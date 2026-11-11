@@ -6,7 +6,7 @@ pub(super) struct RuntimeSymbolState {
     pub(super) interner: StringInterner,
     pub(super) admissions:
         im::OrdMap<crate::storage::residency::RelationalRegionSymbolAdmissionIdentity, ()>,
-    pub(super) configuration: im::OrdMap<StoredSymbolText, Symbol>,
+    pub(super) configuration: im::OrdMap<SymbolTextLookupKey, Symbol>,
 }
 impl RuntimeSymbolTable {
     pub(super) fn read_state<T>(&self, read: impl FnOnce(&RuntimeSymbolState) -> T) -> T {
@@ -27,5 +27,26 @@ impl RuntimeSymbolTable {
         drop(state);
         drop(prior);
         result
+    }
+}
+
+impl RuntimeSymbolState {
+    /// Skip replacement only when both identity and retained custody already agree.
+    pub(super) fn retains_configuration_text(
+        &self,
+        symbol: Symbol,
+        text: &StoredSymbolText,
+    ) -> bool {
+        let Some((prior, recorded)) = self.configuration.get_key_value(text.as_str()) else {
+            return false;
+        };
+        *recorded == symbol
+            && match (prior.is_managed(), text.is_managed()) {
+                (false, false) => true,
+                (true, true) => {
+                    !text.as_str().is_empty() && std::ptr::eq(prior.as_str(), text.as_str())
+                }
+                (false, true) | (true, false) => false,
+            }
     }
 }

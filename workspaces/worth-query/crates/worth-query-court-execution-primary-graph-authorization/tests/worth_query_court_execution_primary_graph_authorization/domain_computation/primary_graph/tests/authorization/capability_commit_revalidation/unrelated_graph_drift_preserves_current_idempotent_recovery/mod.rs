@@ -28,12 +28,11 @@ fn unrelated_graph_drift_preserves_current_idempotent_recovery() {
         idempotency(55, 55),
         worth_execution::ExecutionAllocationPolicy::SystemAllocation,
     );
-    let WorthQueryApplicationCommitOutcome::AlreadyCommitted(recovered) = outcome else {
+    let WorthQueryApplicationCommitOutcome::RecoveredCommitted(recovered) = outcome else {
         panic!("unrelated drift must preserve lawful idempotent recovery: {outcome:?}");
     };
-    assert!(recovered.is_same_authoritative_commit(&committed));
-    assert_eq!(
-        recovered.terminal().kind(),
-        WorthQueryApplicationCommitTerminalKind::Recovered
+    worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::recorded_receipt::assert_original(
+        &recovered, &committed,
     );
+    assert!(recovered.new_product_head().memory().is_some());
 }

@@ -165,6 +165,12 @@ pub struct WorthQueryAdvancementPhase<'scope> {
 }
 
 impl<'scope> WorthQueryAdvancementPhase<'scope> {
+    pub(in crate::domain_computation) fn world_owner(
+        &self,
+    ) -> Option<worth_runtime_world::facade::RuntimeWorldOwnerIdentity> {
+        self.owner
+    }
+
     fn admitted_request(&self) -> ExecutionRequest<'scope, 'scope> {
         self.active
             .execution
@@ -251,3 +257,6 @@ impl<'scope> WorthQueryAdvancementPhase<'scope> {
 }
 
 mod court_doors_for_test;
+#[cfg(test)]
+#[path = "phase_custody_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;

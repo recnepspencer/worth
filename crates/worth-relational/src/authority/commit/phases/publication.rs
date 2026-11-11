@@ -3,8 +3,8 @@ use crate::capabilities::{DiagnosticArtifactSink, PublicationPolicySource};
 use crate::diagnostics::data::{
     DiagnosticCode, DiagnosticsScope, RelationalDiagnosticFields, RelationalDiagnosticValue,
 };
+use crate::history::data::CanonicalCommitAuthorityKind;
 use crate::history::data::{BranchId, CommitId, RelationalCommitReceipt};
-use crate::history::data::{CanonicalCommitAuthorityKind, CanonicalCommitEnvelope};
 use crate::indexes::data::DerivedIndexArtifacts;
 use crate::lineage::data::LineageFinalizationArtifact;
 use crate::publication::bundle::PublicationStage;
@@ -42,6 +42,7 @@ pub(crate) fn enforce_patch_budget(
 pub(crate) fn canonical_commit_envelope(
     runtime: &crate::runtime::RelationalPreparationRuntime,
     content: crate::content::ContentPublication,
+    index_definition_delta: crate::history::data::CanonicalIndexDefinitionDelta,
     commit_reference: &RelationalCommitReceipt,
     branch_id: &BranchId,
     authority_kind: CanonicalCommitAuthorityKind,
@@ -56,7 +57,7 @@ pub(crate) fn canonical_commit_envelope(
     lineage_artifact: LineageFinalizationArtifact,
     derived_index_artifacts: DerivedIndexArtifacts,
     schema_continuity: &crate::authority::commit::phases::schema_continuity::SchemaContinuityPlan,
-) -> Result<CanonicalCommitEnvelope, TransactionCommitError> {
+) -> Result<crate::history::data::CanonicalCommitEnvelopeDraft, TransactionCommitError> {
     let published_lineage = lineage_artifact.publish();
     runtime
         .performance_access()
@@ -76,8 +77,9 @@ pub(crate) fn canonical_commit_envelope(
             "lineage artifact branch scope mismatch",
         )));
     }
-    let mut envelope = CanonicalCommitEnvelope::new(
+    let mut envelope = crate::history::data::CanonicalCommitEnvelopeDraft::new(
         content,
+        index_definition_delta,
         commit_reference.clone(),
         published_lineage.branch_id().clone(),
         authority_kind,

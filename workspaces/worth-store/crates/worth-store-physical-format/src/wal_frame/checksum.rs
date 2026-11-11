@@ -1,4 +1,5 @@
 use sha2::{Digest, Sha256};
+use worth_foundational::CanonicalDigestId;
 
 use super::{WalFrameV1Denial, WalFrameV1Header, WAL_FRAME_V1_HEADER_BYTES};
 
@@ -21,8 +22,8 @@ pub struct WalFrameV1ChecksumCalculator {
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct WalFrameV1CalculatedChecksums {
-    payload: [u8; 32],
-    frame: [u8; 32],
+    payload: CanonicalDigestId,
+    frame: CanonicalDigestId,
 }
 
 impl WalFrameV1ChecksumCalculator {
@@ -52,7 +53,9 @@ impl WalFrameV1ChecksumCalculator {
         footer: &[u8; 32],
     ) -> Result<WalFrameV1CalculatedChecksums, WalFrameV1Denial> {
         let calculated = self.finish_calculation(header)?;
-        if calculated.payload != header.payload_digest() || calculated.frame != *footer {
+        if *calculated.payload.bytes() != header.payload_digest()
+            || *calculated.frame.bytes() != *footer
+        {
             return Err(WalFrameV1Denial::ChecksumMismatch);
         }
         Ok(calculated)
@@ -75,18 +78,18 @@ impl WalFrameV1ChecksumCalculator {
             return Err(WalFrameV1Denial::PayloadLengthMismatch);
         }
         Ok(WalFrameV1CalculatedChecksums {
-            payload: self.payload.finalize().into(),
-            frame: self.frame.finalize().into(),
+            payload: CanonicalDigestId::new(self.payload.finalize().into()),
+            frame: CanonicalDigestId::new(self.frame.finalize().into()),
         })
     }
 }
 
 impl WalFrameV1CalculatedChecksums {
     pub const fn payload(self) -> [u8; 32] {
-        self.payload
+        *self.payload.bytes()
     }
 
     pub const fn frame(self) -> [u8; 32] {
-        self.frame
+        *self.frame.bytes()
     }
 }

@@ -1,4 +1,5 @@
 use std::num::{NonZeroU32, NonZeroU64};
+use worth_foundational::CanonicalDigestId;
 
 use worth_store_physical_format::store_namespace::StableStoreIdentity;
 use worth_store_wal::{LogSequenceNumber, WalLsnRange};
@@ -149,7 +150,7 @@ impl PersistedPhysicalMutationAttemptBinding {
             mutation: basis.mutation,
             group,
             member: PhysicalWalMemberBasis::new(member_identity, basis.mutation, range),
-            redo_digest,
+            redo_digest: CanonicalDigestId::new(redo_digest),
             bytes: Box::default(),
         };
         let mut canonical = CanonicalBindingComparison::new(bytes);

@@ -125,7 +125,7 @@ pub fn native_prepared_records_are_admitted_before_effects_and_shared_until_last
         let candidate = world
             .application
             .with_host_advancement(|phase| {
-                graph.with_runtime_mut_for_test(&phase.borrowed_request_for_test(), |runtime| {
+                graph.with_runtime_for_test(&phase.borrowed_request_for_test(), |runtime| {
                     let mut transaction = runtime
                         .begin_branch_transaction(
                             product.relational_basis_for_test(),

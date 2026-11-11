@@ -1,4 +1,6 @@
 mod close_order;
+mod observation_inventory;
+pub(crate) use close_order::PendingProductHeadClose;
 mod installation;
 #[cfg(test)]
 pub(crate) mod installation_unwind;
@@ -135,7 +137,6 @@ impl ProductBranchRegistry {
         ))
     }
 
-    #[cfg(test)]
     pub(crate) fn root_cell(&self) -> Option<ProductBranchReferenceCell> {
         let state = self.state.lock().unwrap_or_else(|error| error.into_inner());
         state
@@ -217,7 +218,8 @@ impl ProductBranchRegistry {
             .get(branch)
             .expect("the observed incarnation was checked under the registry guard")
             .cell
-            .retire();
+            .retire()
+            .map_err(|_| ProductBranchRegistryDenial::AlreadyInstalled)?;
         let entry = release_installed_entry(&mut state, branch)
             .expect("the observed incarnation was checked under the registry guard");
         Ok((
@@ -226,31 +228,6 @@ impl ProductBranchRegistry {
             retirement,
             entry.retirement_boundary,
         ))
-    }
-
-    /// Release every installed non-root product reference and report how many
-    /// product-head references that released. Close owns this: the registry is
-    /// the only holder of an installed branch's reference cell, so the count is
-    /// what close actually let go of, not what a budget says could exist.
-    ///
-    /// The root is deliberately excluded. It is the world's own reference
-    /// rather than a branch a caller created, and the close report describes
-    /// created branches.
-    pub(crate) fn release_non_root_branches(&self) -> usize {
-        let mut state = self.state.lock().unwrap_or_else(|error| error.into_inner());
-        let branches = close_order::non_root_branches(&state.entries, state.root.as_ref());
-        let released: Vec<_> = branches
-            .iter()
-            .map(|branch| {
-                release_installed_entry(&mut state, branch)
-                    .expect("a branch just read out of the index is still installed")
-            })
-            .collect();
-        drop(state);
-        for entry in released {
-            drop(entry);
-        }
-        branches.len()
     }
 }
 

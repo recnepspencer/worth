@@ -30,7 +30,6 @@ pub(super) struct MaintenanceWork<'a, 'run, 'lease> {
     counts: DerivedIndexMaintenanceWork,
     payer: MaintenancePayer<'a, 'run, 'lease>,
     restriction: MaintenanceRestriction,
-    deferred_publication: bool,
 }
 
 impl<'a, 'run, 'lease> MaintenanceWork<'a, 'run, 'lease> {
@@ -85,12 +84,6 @@ impl<'a, 'run, 'lease> MaintenanceWork<'a, 'run, 'lease> {
     pub(super) fn restrict_to_routed_indexes(&mut self) {
         self.restriction = MaintenanceRestriction::RoutedIndexes;
     }
-    pub(super) fn defer_publication(&mut self) {
-        self.deferred_publication = true;
-    }
-    pub(super) fn publication_is_deferred(&self) -> bool {
-        self.deferred_publication
-    }
     pub(super) fn routes_installed_indexes(&self) -> bool {
         self.restriction == MaintenanceRestriction::RoutedIndexes
     }
@@ -107,7 +100,6 @@ impl<'a, 'run, 'lease> MaintenanceWork<'a, 'run, 'lease> {
             budget,
             counts: Default::default(),
             restriction: MaintenanceRestriction::Unrestricted,
-            deferred_publication: false,
             payer: MaintenancePayer::Test,
         }
     }
@@ -120,7 +112,6 @@ impl<'a, 'run, 'lease> MaintenanceWork<'a, 'run, 'lease> {
             budget,
             counts: Default::default(),
             restriction: MaintenanceRestriction::Unrestricted,
-            deferred_publication: false,
             payer: MaintenancePayer::Admission(preparation),
         }
     }
@@ -134,7 +125,6 @@ impl<'a, 'run, 'lease> MaintenanceWork<'a, 'run, 'lease> {
             budget,
             counts: Default::default(),
             restriction: MaintenanceRestriction::Unrestricted,
-            deferred_publication: false,
             payer: MaintenancePayer::Request(context, memory),
         }
     }
@@ -203,6 +193,7 @@ impl<'a, 'run, 'lease> MaintenanceWork<'a, 'run, 'lease> {
         Ok(())
     }
 
+    #[cfg(test)]
     pub(super) fn remaining(&self) -> Option<usize> {
         let native = self.native_remaining();
         let requested = match &self.payer {
@@ -220,6 +211,7 @@ impl<'a, 'run, 'lease> MaintenanceWork<'a, 'run, 'lease> {
             .map(|maximum| maximum.saturating_sub(self.counts.work_units))
     }
 
+    #[cfg(test)]
     pub(super) fn bounded_scan_denial(&mut self) -> Denial {
         let native = self.native_remaining();
         if let MaintenancePayer::Request(context, _) = &mut self.payer {

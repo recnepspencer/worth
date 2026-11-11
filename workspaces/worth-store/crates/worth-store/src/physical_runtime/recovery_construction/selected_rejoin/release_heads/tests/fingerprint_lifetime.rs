@@ -44,7 +44,7 @@ fn rejected_funded_mode_merge_disposes_donor_without_changing_destination_charge
         let donor = SelectedControlMediaFingerprint::selected_heads(second);
         assert_eq!(
             ports.counters().active_operation_bytes_for(Scope::Recovery),
-            first_bytes + second_bytes
+            SERVING_BACKING_BYTES + first_bytes + second_bytes
         );
         let result = if with_numeric {
             destination.extend_with_resident(donor, &mut numeric)
@@ -59,10 +59,13 @@ fn rejected_funded_mode_merge_disposes_donor_without_changing_destination_charge
         );
         assert_eq!(
             ports.counters().active_operation_bytes_for(Scope::Recovery),
-            first_bytes
+            SERVING_BACKING_BYTES + first_bytes
         );
         drop(destination);
-        assert_eq!(ports.counters().active_operation_bytes(), 0);
+        assert_eq!(
+            ports.counters().active_operation_bytes(),
+            SERVING_BACKING_BYTES
+        );
     }
 }
 
@@ -96,7 +99,7 @@ fn pending_mode_keeps_three_actual_owners_while_raw_merge_moves_only_the_envelop
     assert_eq!(destination.independently_funded_heap_bytes(), Some(bytes));
     assert_eq!(
         ports.counters().active_operation_bytes_for(Scope::Recovery),
-        bytes
+        SERVING_BACKING_BYTES + bytes
     );
     drop(window);
     drop(coordination);

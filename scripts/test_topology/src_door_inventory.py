@@ -39,7 +39,7 @@ def kind(name, body):
 def inventory(root):
     counts, authority, members = {}, [], 0
     for path in member_files(root):
-        rel = str(path.relative_to(root / LIBRARY))
+        rel = path.relative_to(root / LIBRARY).as_posix()
         for block in IMPL_BLOCK.finditer(path.read_text(encoding='utf-8')):
             header = re.sub(r'\s+', ' ', block.group(1)).strip()
             for name, signature, body in DOOR.findall(block.group(2)):

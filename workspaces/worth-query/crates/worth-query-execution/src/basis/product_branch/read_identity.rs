@@ -98,3 +98,6 @@ impl WorthQueryProductBranchReadIdentity {
 }
 
 mod court_doors_for_test;
+#[cfg(test)]
+#[path = "read_identity_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;

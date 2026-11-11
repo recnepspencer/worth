@@ -230,6 +230,17 @@ pub enum InvariantDecisionKind {
     Violated,
 }
 
+impl InvariantDecisionKind {
+    pub(crate) fn from_verdict(verdict: &InvariantVerdict) -> Self {
+        match verdict {
+            InvariantVerdict::Pass => Self::Passed,
+            InvariantVerdict::NotApplicable => Self::NotApplicable,
+            InvariantVerdict::Advisory { .. } => Self::Advisory,
+            InvariantVerdict::Violation(_) => Self::Violated,
+        }
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct InvariantDecisionRecord {
     pub execution_point: InvariantExecutionPoint,
@@ -283,12 +294,7 @@ impl InvariantCheckResult {
             failure_effect: self.failure_effect,
             rule: self.rule.clone(),
             witness: self.witness.clone(),
-            decision: match self.verdict {
-                InvariantVerdict::Pass => InvariantDecisionKind::Passed,
-                InvariantVerdict::NotApplicable => InvariantDecisionKind::NotApplicable,
-                InvariantVerdict::Advisory { .. } => InvariantDecisionKind::Advisory,
-                InvariantVerdict::Violation(_) => InvariantDecisionKind::Violated,
-            },
+            decision: InvariantDecisionKind::from_verdict(&self.verdict),
             groups: self.groups,
             cost: self.cost,
             custom_provenance_present: self.custom_provenance.is_some(),

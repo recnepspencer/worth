@@ -59,17 +59,28 @@ fn workflow_actor_contract_reused_principal_slot_is_not_the_original_generation(
         super::super::instance_migration::started(start_instance(&application, definition, 74_001))
             .instance()
             .clone();
-    let (proposal, required, _) =
-        super::super::journey::approval_requirement(&application, instance.clone(), 74_010);
-    let original = match propose_instance(&application, instance.clone(), 74_012).unwrap() {
-        WorkflowProposalOutcome::Published(replay) => {
-            assert!(replay.replayed());
-            replay.receipt().committed_changes().workflow_actor_fields_for_test(proposal.entity_id(),
-                worth_query_decl::facade::application_capability::ApplicationWorkflowRecordedRole::Proposer)
-                .unwrap().unwrap()
-        }
-        other => panic!("original proposal remains exact native history: {other:?}"),
+    let original_proposal = match propose_instance(&application, instance.clone(), 74_012).unwrap()
+    {
+        WorkflowProposalOutcome::Published(performed) => performed,
+        other => panic!("the first proposal must actually publish: {other:?}"),
     };
+    let proposal = original_proposal.proposal().clone();
+    let (required, _, join) = super::super::journey::approval_requirement_after_proposal(
+        &application,
+        instance.clone(),
+        74_010,
+    );
+    match propose_instance(&application, instance.clone(), 74_012).unwrap() {
+        WorkflowProposalOutcome::RecoveredCommitted(data) => {
+            crate::recorded_receipt::assert_agrees(&data, original_proposal.receipt())
+        }
+        other => panic!("the exact proposal retry returns original data: {other:?}"),
+    }
+    let original = original_proposal.receipt().committed_changes().workflow_actor_fields_for_test(proposal.entity_id(),
+        worth_query_decl::facade::application_capability::ApplicationWorkflowRecordedRole::Proposer)
+        .unwrap().unwrap();
+    drop(join);
+    drop(original_proposal); // Actual history custody cannot mask native slot reclamation.
     lifecycle(&application, false, 74_030);
     let reclaimed = application
         .with_host_advancement(|phase| {

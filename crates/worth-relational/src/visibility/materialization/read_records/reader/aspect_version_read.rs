@@ -1,7 +1,6 @@
 //! One checked aspect-version enumeration for either request backing.
 use super::{query_execution::QueryReadExecutionStop, RelationalRuntime};
-use crate::symbols::data::Symbol;
-use std::collections::BTreeMap;
+use crate::storage::substrate::AspectVersions;
 use worth_execution::{
     ChargedBytes, ExecutionRequest, ExecutionScan, MapKernelFailure, ScanOutcome,
 };
@@ -23,7 +22,7 @@ impl ChargedBytes for ReadVersions {
 pub(super) fn read_versions(
     runtime: &RelationalRuntime,
     execution: &ExecutionRequest<'_, '_>,
-    symbolic: &BTreeMap<Symbol, u64>,
+    symbolic: &AspectVersions,
     sort: bool,
 ) -> Result<Vec<(AspectKey, u64)>, QueryReadExecutionStop> {
     super::query_preparation::consult_query_preparation_request(execution)?;

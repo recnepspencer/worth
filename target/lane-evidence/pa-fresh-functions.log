@@ -1,0 +1,10 @@
+command: python scripts/quality/scrutinize_rust_functions.py --dirty .
+HEAD: 14b6075657193d0f74ce944beab6124b5dec7b3c
+git_status_short_empty: false
+start_utc: 2026-11-11T03:11:56.882689+00:00
+crates/worth-court-relational-certification/tests/worth_court_relational_certification/relational/durable_publication/source_initial_inputs/fresh_schema.rs:31: fresh_source_keeps_original_installation_receipts_and_unused_constraints_in_complete: 74 lines, 0 parameters [long-function]
+crates/worth-relational/src/durability/authority/checkpoint_complete/tests/empty_schema.rs:7: complete_empty_archive_and_initial_installation_preserve_unused_original_schema: 120 lines, 0 parameters [long-function]
+crates/worth-relational/src/durability/authority/fresh_source.rs:18: admit_fresh_home_source: 75 lines, 2 parameters [long-function]
+scrutinized 7 Rust files; 3 candidate functions; 0 scan errors
+end_utc: 2026-11-11T03:11:59.643387+00:00
+exit_code: 0

@@ -30,7 +30,7 @@ impl WorthQueryPrimaryGraphProvider {
     pub fn retained_application_commit_basis_for_test(
         &self,
         commit: &worth_relational::facade::history::RelationalCommitReceipt,
-    ) -> Option<super::super::WorthQueryRetainedApplicationCommitBasis> {
+    ) -> Option<super::super::session_commit::WorthQueryRetainedApplicationCommitBasis> {
         Self::retained_application_commit_basis(self, commit)
     }
 }

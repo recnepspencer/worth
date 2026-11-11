@@ -3,9 +3,7 @@ use super::*;
 pub(super) fn run_strategy_merge_certification(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
 ) -> StrategyCertificationBundle {
-    let medium = crate::tests::support::TestDurableMedium::new();
-    let recovered_root = medium.clone();
-    let runtime = persisted_strategy_runtime(medium);
+    let runtime = strategy_runtime();
     let entity = create_entity(execution, &runtime, "service");
     let aspect_overlap_entity = create_entity(execution, &runtime, "aspect-overlap");
     let aspect_disjoint_entity = create_entity(execution, &runtime, "aspect-disjoint");
@@ -45,7 +43,7 @@ pub(super) fn run_strategy_merge_certification(
         execution,
         replay_recovery::StrategyReplayRecoveryInput {
             runtime,
-            recovered_root,
+
             entity,
             feature_branch,
             aspect_overlap_branch,

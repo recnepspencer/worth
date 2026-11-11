@@ -18,6 +18,12 @@ impl crate::runtime::RelationalRuntime {
         ArchivedRelationalBranch,
         RelationalBranchTransitionStop<RelationalBranchArchiveDenial>,
     > {
+        if let Some(medium) = self.durability.medium() {
+            medium.admit_home_program_write(None, None).map_err(|cause|
+                RelationalBranchTransitionStop::Denied(
+                    RelationalBranchArchiveDenial::DurablePublicationRefused(
+                        crate::durability::medium::RelationalDurablePublicationRefusal::HomeProgramTransition(cause))))?;
+        }
         let step = LiveBranchTransitionStep::new(self.durability.medium(), execution);
         self.archive_branch_with(execution, &step, identity)
             .map_err(Into::into)
@@ -75,11 +81,16 @@ impl crate::runtime::RelationalRuntime {
             prior_generation: state.observation().generation(),
             prior_truth_version: state.truth_version(),
         };
+        let schema = state
+            .selected_root()
+            .ok_or(denied(RelationalBranchArchiveDenial::OwnerUnavailable))?
+            .retained_schema_authority();
         publication.record_with_cutover(
             execution,
             step,
+            schema,
             || Ok(transition),
-            |_| state.install_archive(archived.clone()),
+            |_, _| state.install_archive(archived.clone()),
         )?;
         Ok(ArchivedRelationalBranch {
             identity: identity.clone(),

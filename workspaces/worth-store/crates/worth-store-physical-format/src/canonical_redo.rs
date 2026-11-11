@@ -4,6 +4,7 @@
 //! recovery fate or authorize replay. Those remain C8 responsibilities.
 
 use std::collections::BTreeSet;
+use worth_foundational::CanonicalDigestId;
 
 use sha2::{Digest, Sha256};
 
@@ -55,7 +56,7 @@ pub struct CanonicalRedoTarget {
     artifact: RecordArtifactFile,
     artifact_offset: u64,
     artifact_length: u32,
-    resulting_digest: [u8; 32],
+    resulting_digest: CanonicalDigestId,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]

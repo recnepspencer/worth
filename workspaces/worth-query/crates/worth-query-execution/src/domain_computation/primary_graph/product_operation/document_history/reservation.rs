@@ -205,3 +205,7 @@ impl WorthQueryDocumentHistoryReservation {
             .ok_or(Denial::ForeignRecording)
     }
 }
+
+#[cfg(test)]
+#[path = "reservation_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;

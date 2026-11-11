@@ -17,14 +17,14 @@ where
         Input: Clone + Send + Sync + 'static,
     {
         let execution = match phase
-            .execution_request_for(&self.runtime.backing.runtime.runtime.product_runtime)
+            .execution_request_for(&self.runtime.backing.runtime().runtime.product_runtime)
         {
             Ok(execution) => execution,
             Err(cause) => {
                 return self
                     .runtime
                     .backing
-                    .runtime
+                    .runtime()
                     .refuse_elevation_request(program, cause.into())
             }
         };
@@ -51,7 +51,7 @@ where
     {
         self.runtime
             .backing
-            .runtime
+            .runtime()
             .compare_and_commit_elevation_request_for_program(
                 execution,
                 phase,
@@ -70,14 +70,14 @@ where
         Input: Clone + Send + Sync + 'static,
     {
         let execution = match phase
-            .execution_request_for(&self.runtime.backing.runtime.runtime.product_runtime)
+            .execution_request_for(&self.runtime.backing.runtime().runtime.product_runtime)
         {
             Ok(execution) => execution,
             Err(cause) => {
                 return self
                     .runtime
                     .backing
-                    .runtime
+                    .runtime()
                     .refuse_elevation_approval(program, cause.into())
             }
         };
@@ -104,7 +104,7 @@ where
     {
         self.runtime
             .backing
-            .runtime
+            .runtime()
             .compare_and_commit_elevation_approval_for_program(
                 execution,
                 phase,
@@ -124,14 +124,14 @@ where
         Input: Clone + Send + Sync + 'static,
     {
         let execution = match phase
-            .execution_request_for(&self.runtime.backing.runtime.runtime.product_runtime)
+            .execution_request_for(&self.runtime.backing.runtime().runtime.product_runtime)
         {
             Ok(execution) => execution,
             Err(cause) => {
                 return self
                     .runtime
                     .backing
-                    .runtime
+                    .runtime()
                     .refuse_elevation_close(program, cause.into())
             }
         };
@@ -158,7 +158,7 @@ where
     {
         self.runtime
             .backing
-            .runtime
+            .runtime()
             .compare_and_commit_elevation_close_for_program(
                 execution,
                 phase,

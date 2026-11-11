@@ -9,15 +9,13 @@ use crate::history::data::canonical_commit_envelope::{
 use crate::history::data::CanonicalCommitEnvelope;
 use crate::publication::patch::data::RecordStructuralChange;
 use crate::transactions::data::RecordRef;
-use crate::{
-    branch::AdmittedRelationalBranchBasis, identity::data::EntityId, runtime::RelationalRuntime,
-};
+use crate::{branch::AdmittedRelationalBranchBasis, identity::data::EntityId};
 use std::sync::Arc;
 use worth_execution::{ExecutionResourceLease, MapKernelContext};
 use worth_foundational::facade::AuthoritativeRecordAspectState;
 
 pub(super) fn latest(
-    runtime: &RelationalRuntime,
+    runtime: &crate::history::data::codec_retirement_closure::history_request::RuntimeHistoryRequest<'_, '_, '_>,
     basis: &AdmittedRelationalBranchBasis,
     id: EntityId,
     validated_history: &mut OutputOriginHistory,
@@ -25,14 +23,15 @@ pub(super) fn latest(
     lease: Option<&ExecutionResourceLease<'_>>,
 ) -> Result<OwnedValidatedOutputOrigins, Stop> {
     let mut next = basis.inner.root.commit_id();
-    let bound = runtime.history.catalog_len();
+    let bound = runtime.runtime.history.catalog_len();
     for _ in 0..bound {
         charge(context, bound.saturating_add(1))?;
         let commit = next.ok_or("output correspondence has no complete native publication")?;
         let envelope = validated_history
             .by_commit(
                 commit,
-                &mut |commit| runtime.history.canonical_envelope(commit),
+                &mut |commit| runtime.commit(commit),
+                &runtime.execution(),
                 context,
             )?
             .ok_or("output correspondence lost native history")?;
@@ -57,7 +56,8 @@ pub(super) fn latest(
                     let original = validated_history
                         .by_commit(
                             *publication,
-                            &mut |commit| runtime.history.canonical_envelope(commit),
+                            &mut |commit| runtime.commit(commit),
+                            &runtime.execution(),
                             context,
                         )?
                         .ok_or("maintenance producer history absent")?;
@@ -75,7 +75,7 @@ pub(super) fn latest(
 }
 
 pub(super) fn validate_member(
-    runtime: &RelationalRuntime,
+    runtime: &crate::history::data::codec_retirement_closure::history_request::RuntimeHistoryRequest<'_, '_, '_>,
     basis: &AdmittedRelationalBranchBasis,
     selected: &OwnedValidatedOutputOrigins,
     id: EntityId,
@@ -124,9 +124,10 @@ pub(super) fn validate_member(
             selected.commit.commit_id,
             member.after_write,
             write,
-            &mut |commit| runtime.history.canonical_envelope(commit),
-            &mut |version| runtime.history.canonical_envelope_for_version(version),
-            runtime.history.catalog_len(),
+            &mut |commit| runtime.commit(commit),
+            &mut |version, context| runtime.version(version, context),
+            runtime.runtime.history.catalog_len(),
+            &runtime.execution(),
             context,
         )?
     {
@@ -169,7 +170,7 @@ mod reconstruction;
 pub(super) use reconstruction::{reconstruct, reconstruct_canonical_payload};
 
 pub(super) fn writes(
-    envelope: &CanonicalCommitEnvelope,
+    envelope: &crate::history::data::canonical_commit_envelope::CanonicalCommitEnvelopeBody,
     id: EntityId,
     context: &mut MapKernelContext<'_, '_>,
 ) -> Result<bool, Stop> {

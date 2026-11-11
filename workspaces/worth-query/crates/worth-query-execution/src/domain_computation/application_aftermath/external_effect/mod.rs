@@ -13,6 +13,7 @@ pub(crate) mod inbound;
 mod observation;
 pub(crate) mod outbox;
 mod posture;
+mod proven_no_effect;
 mod transport;
 
 pub use causal_event::ExternalEffectPosture;
@@ -39,14 +40,14 @@ pub use inbound::{
     WorthQueryInboundCleanupReport, WorthQueryInboundOccurrenceClaims,
     WorthQueryInboundOccurrenceVerifier, WorthQueryInboundVerificationDenial,
 };
-#[cfg(test)]
-pub(crate) use outbox::dispatch_outbox_create_intent;
+
 pub(crate) use outbox::{
     bind_dispatch_outbox_create_intent, WorthQueryDispatchOutboxRestoredFields,
     WorthQueryPendingDispatchOutbox,
 };
 pub use outbox::{WorthQueryDispatchOutboxLayout, WorthQueryDispatchOutboxRecord};
 pub use posture::ExternalEffectPostureKind;
+pub use proven_no_effect::{ExternalEffectNoEffectCause, ExternalEffectProvenNoEffect};
 pub use transport::{
     WorthQueryExternalDispatchRequest, WorthQueryExternalEffectTransport,
     WorthQueryExternalTransportOutcome,

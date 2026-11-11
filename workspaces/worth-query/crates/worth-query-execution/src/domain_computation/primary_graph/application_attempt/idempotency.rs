@@ -4,6 +4,7 @@ mod admitted_intent;
 mod capability_workflow;
 mod correction;
 mod encoding;
+pub(in crate::domain_computation::primary_graph) mod home_readmission;
 mod host_commit;
 mod mutation_binding;
 mod producing_implementation;
@@ -12,6 +13,7 @@ mod recorded_intent;
 mod recorded_intent_tests;
 #[cfg(test)]
 mod tests;
+mod transport_intent;
 mod workflow_definition;
 mod workflow_instance;
 mod workflow_proposal_context;
@@ -83,6 +85,7 @@ pub struct WorthQueryApplicationIdempotencyBinding {
     workflow_approval_identity: Option<[u8; 32]>,
     mutation_binding_identity: Option<[u8; 32]>,
     correction_identity: Option<[u8; 32]>,
+    transport_intent_identity: Option<[u8; 32]>,
 }
 
 impl WorthQueryApplicationIdempotencyBinding {
@@ -109,6 +112,7 @@ impl WorthQueryApplicationIdempotencyBinding {
             workflow_approval_identity: None,
             mutation_binding_identity: None,
             correction_identity: None,
+            transport_intent_identity: None,
         }
     }
 
@@ -138,8 +142,11 @@ impl WorthQueryApplicationIdempotencyBinding {
         self.producer_dependency_identity
     }
 
+    pub(in crate::domain_computation::primary_graph) fn recorded_key_text(key: [u8; 32]) -> String {
+        encode_identity(key)
+    }
     pub(in crate::domain_computation::primary_graph) fn key_text(self) -> String {
-        encode_identity(self.key_identity)
+        Self::recorded_key_text(self.key_identity)
     }
 
     pub const fn bind_source(mut self, source_identity: Option<&[u8; 32]>) -> Self {
@@ -183,6 +190,7 @@ impl WorthQueryApplicationIdempotencyBinding {
             workflow_approval_identity: self.workflow_approval_identity,
             mutation_binding_identity: self.mutation_binding_identity,
             correction_identity: self.correction_identity,
+            transport_intent_identity: self.transport_intent_identity,
         }
     }
 
@@ -224,6 +232,7 @@ impl WorthQueryApplicationIdempotencyBinding {
             workflow_approval_identity: self.workflow_approval_identity,
             mutation_binding_identity: self.mutation_binding_identity,
             correction_identity: self.correction_identity,
+            transport_intent_identity: self.transport_intent_identity,
         }
     }
 
@@ -253,6 +262,7 @@ impl WorthQueryApplicationIdempotencyBinding {
             workflow_approval_identity: self.workflow_approval_identity,
             mutation_binding_identity: self.mutation_binding_identity,
             correction_identity: self.correction_identity,
+            transport_intent_identity: self.transport_intent_identity,
         }
     }
 
@@ -282,6 +292,7 @@ impl WorthQueryApplicationIdempotencyBinding {
             workflow_approval_identity: self.workflow_approval_identity,
             mutation_binding_identity: self.mutation_binding_identity,
             correction_identity: self.correction_identity,
+            transport_intent_identity: self.transport_intent_identity,
         }
     }
 
@@ -314,6 +325,7 @@ impl WorthQueryApplicationIdempotencyBinding {
             workflow_approval_identity: self.workflow_approval_identity,
             mutation_binding_identity: self.mutation_binding_identity,
             correction_identity: self.correction_identity,
+            transport_intent_identity: self.transport_intent_identity,
         }
     }
 
@@ -352,8 +364,12 @@ impl WorthQueryApplicationIdempotencyBinding {
             workflow_approval_identity: self.workflow_approval_identity,
             mutation_binding_identity: self.mutation_binding_identity,
             correction_identity: self.correction_identity,
+            transport_intent_identity: self.transport_intent_identity,
         }
     }
 }
 
 mod court_doors_for_test;
+#[cfg(test)]
+#[path = "idempotency_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;

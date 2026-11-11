@@ -18,7 +18,7 @@ pub fn index_currency_stop(cancelled: bool) {
     let handle = graph.integration_handle_for_test();
     let setup_host = worth_query_testkit_execution_primary_graph_application_attempt_2::test_request_policy::serial_request();
     let setup = ExecutionRequest::serial(&setup_host);
-    (*handle.source_owner_for_test()).with_runtime_mut(&setup, |runtime| {
+    (*handle.source_owner_for_test()).with_runtime(&setup, |runtime| {
         commit_empty(&setup, runtime, "main");
         let (_, basis) = runtime
             .observe_branch(&runtime.main_branch_identity())

@@ -1,0 +1,85 @@
+Command: ["cargo", "nextest", "run", "--cargo-metadata", "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\target\\lane-evidence\\layout-topology-reviewed\\bridge-court\\build\\cargo-metadata.json", "--binaries-metadata", "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\target\\lane-evidence\\layout-topology-reviewed\\bridge-court\\build\\binaries.json", "--profile", "ci", "--config-file", "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\target\\lane-evidence\\layout-topology-reviewed\\bridge-court\\nextest.toml", "--ignore-default-filter", "--no-fail-fast", "--no-tests=fail", "--message-format", "libtest-json", "--success-output", "immediate", "-E", "test(=runtime_bridge::original_lowering::original_lowering_charge_lives_until_the_last_shared_template_drops) + test(=runtime_bridge::original_lowering::original_budget_refuses_lowering_backing_without_retaining_a_charge) + test(=runtime_bridge::original_lowering::cancelled_original_request_refuses_lowering_backing)"]
+Working directory: C:\programming\worth worktees\worktrees\m3-host-home
+HEAD: 3c710d6f6a441ad374d50b15f1e9455d62558c7e
+Git status --short empty: False
+Start: 2026-11-07T07:55:26.831405+00:00
+
+{"type": "cargo-invocation", "command": ["cargo", "nextest", "run", "--cargo-metadata", "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\target\\lane-evidence\\layout-topology-reviewed\\bridge-court\\build\\cargo-metadata.json", "--binaries-metadata", "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\target\\lane-evidence\\layout-topology-reviewed\\bridge-court\\build\\binaries.json", "--profile", "ci", "--config-file", "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\target\\lane-evidence\\layout-topology-reviewed\\bridge-court\\nextest.toml", "--ignore-default-filter", "--no-fail-fast", "--no-tests=fail", "--message-format", "libtest-json", "--success-output", "immediate", "-E", "test(=runtime_bridge::original_lowering::original_lowering_charge_lives_until_the_last_shared_template_drops) + test(=runtime_bridge::original_lowering::original_budget_refuses_lowering_backing_without_retaining_a_charge) + test(=runtime_bridge::original_lowering::cancelled_original_request_refuses_lowering_backing)"], "cwd": "C:\\programming\\worth worktees\\worktrees\\m3-host-home", "capture": "ordered", "mode": "build", "target_dir": "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\target", "cargo_profile": "test"}
+info: experimental features enabled: wrapper-scripts
+────────────
+ Nextest run ID fe890eb7-ee62-4845-b43c-3a8c7a832472 with nextest profile: ci
+    Starting 3 tests across 1 binary (22 tests skipped)
+        FAIL [   1.524s] (1/3) worth-court-runtime-bridge::worth_court_runtime_bridge runtime_bridge::original_lowering::original_budget_refuses_lowering_backing_without_retaining_a_charge
+  output ───
+
+    running 1 test
+
+    thread 'runtime_bridge::original_lowering::original_budget_refuses_lowering_backing_without_retaining_a_charge' (36856) panicked at crates\worth-court-runtime-bridge\tests\worth_court_runtime_bridge\runtime_bridge\original_lowering\source.rs:39:10:
+    called `Result::unwrap()` on an `Err` value: BridgeTypedError { kind: MissingSourceAdapter, message: "Bridge builder registered source declarations but no source adapter.", context: None }
+    note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+    test runtime_bridge::original_lowering::original_budget_refuses_lowering_backing_without_retaining_a_charge ... FAILED
+
+    failures:
+
+    failures:
+        runtime_bridge::original_lowering::original_budget_refuses_lowering_backing_without_retaining_a_charge
+
+    test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 24 filtered out; finished in 0.00s
+
+
+        FAIL [   1.697s] (2/3) worth-court-runtime-bridge::worth_court_runtime_bridge runtime_bridge::original_lowering::cancelled_original_request_refuses_lowering_backing
+  output ───
+
+    running 1 test
+
+    thread 'runtime_bridge::original_lowering::cancelled_original_request_refuses_lowering_backing' (84932) panicked at crates\worth-court-runtime-bridge\tests\worth_court_runtime_bridge\runtime_bridge\original_lowering\source.rs:39:10:
+    called `Result::unwrap()` on an `Err` value: BridgeTypedError { kind: MissingSourceAdapter, message: "Bridge builder registered source declarations but no source adapter.", context: None }
+    note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+    test runtime_bridge::original_lowering::cancelled_original_request_refuses_lowering_backing ... FAILED
+
+    failures:
+
+    failures:
+        runtime_bridge::original_lowering::cancelled_original_request_refuses_lowering_backing
+
+    test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 24 filtered out; finished in 0.00s
+
+
+        FAIL [   1.843s] (3/3) worth-court-runtime-bridge::worth_court_runtime_bridge runtime_bridge::original_lowering::original_lowering_charge_lives_until_the_last_shared_template_drops
+  output ───
+
+    running 1 test
+
+    thread 'runtime_bridge::original_lowering::original_lowering_charge_lives_until_the_last_shared_template_drops' (20976) panicked at crates\worth-court-runtime-bridge\tests\worth_court_runtime_bridge\runtime_bridge\original_lowering\source.rs:39:10:
+    called `Result::unwrap()` on an `Err` value: BridgeTypedError { kind: MissingSourceAdapter, message: "Bridge builder registered source declarations but no source adapter.", context: None }
+    note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+    test runtime_bridge::original_lowering::original_lowering_charge_lives_until_the_last_shared_template_drops ... FAILED
+
+    failures:
+
+    failures:
+        runtime_bridge::original_lowering::original_lowering_charge_lives_until_the_last_shared_template_drops
+
+    test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 24 filtered out; finished in 0.00s
+
+
+{"type":"suite","event":"started","test_count":3}
+{"type":"test","event":"started","name":"worth-court-runtime-bridge::worth_court_runtime_bridge$runtime_bridge::original_lowering::cancelled_original_request_refuses_lowering_backing"}
+{"type":"test","event":"started","name":"worth-court-runtime-bridge::worth_court_runtime_bridge$runtime_bridge::original_lowering::original_lowering_charge_lives_until_the_last_shared_template_drops"}
+{"type":"test","event":"started","name":"worth-court-runtime-bridge::worth_court_runtime_bridge$runtime_bridge::original_lowering::original_budget_refuses_lowering_backing_without_retaining_a_charge"}
+{"type":"test","event":"failed","name":"worth-court-runtime-bridge::worth_court_runtime_bridge$runtime_bridge::original_lowering::original_budget_refuses_lowering_backing_without_retaining_a_charge","exec_time":1.5240287000000001,"stdout":"\nthread 'runtime_bridge::original_lowering::original_budget_refuses_lowering_backing_without_retaining_a_charge' (36856) panicked at crates\\worth-court-runtime-bridge\\tests\\worth_court_runtime_bridge\\runtime_bridge\\original_lowering\\source.rs:39:10:\ncalled `Result::unwrap()` on an `Err` value: BridgeTypedError { kind: MissingSourceAdapter, message: \"Bridge builder registered source declarations but no source adapter.\", context: None }\nnote: run with `RUST_BACKTRACE=1` environment variable to display a backtrace\n"}
+{"type":"test","event":"failed","name":"worth-court-runtime-bridge::worth_court_runtime_bridge$runtime_bridge::original_lowering::cancelled_original_request_refuses_lowering_backing","exec_time":1.696783,"stdout":"\nthread 'runtime_bridge::original_lowering::cancelled_original_request_refuses_lowering_backing' (84932) panicked at crates\\worth-court-runtime-bridge\\tests\\worth_court_runtime_bridge\\runtime_bridge\\original_lowering\\source.rs:39:10:\ncalled `Result::unwrap()` on an `Err` value: BridgeTypedError { kind: MissingSourceAdapter, message: \"Bridge builder registered source declarations but no source adapter.\", context: None }\nnote: run with `RUST_BACKTRACE=1` environment variable to display a backtrace\n"}
+{"type":"test","event":"failed","name":"worth-court-runtime-bridge::worth_court_runtime_bridge$runtime_bridge::original_lowering::original_lowering_charge_lives_until_the_last_shared_template_drops","exec_time":1.8430042,"stdout":"\nthread 'runtime_bridge::original_lowering::original_lowering_charge_lives_until_the_last_shared_template_drops' (20976) panicked at crates\\worth-court-runtime-bridge\\tests\\worth_court_runtime_bridge\\runtime_bridge\\original_lowering\\source.rs:39:10:\ncalled `Result::unwrap()` on an `Err` value: BridgeTypedError { kind: MissingSourceAdapter, message: \"Bridge builder registered source declarations but no source adapter.\", context: None }\nnote: run with `RUST_BACKTRACE=1` environment variable to display a backtrace\n"}
+{"type":"suite","event":"failed","passed":0,"failed":3,"ignored":0,"measured":0,"filtered_out":22,"exec_time":5.0638159}
+────────────
+     Summary [   1.844s] 3 tests run: 0 passed, 3 failed, 22 skipped
+        FAIL [   1.524s] (1/3) worth-court-runtime-bridge::worth_court_runtime_bridge runtime_bridge::original_lowering::original_budget_refuses_lowering_backing_without_retaining_a_charge
+        FAIL [   1.697s] (2/3) worth-court-runtime-bridge::worth_court_runtime_bridge runtime_bridge::original_lowering::cancelled_original_request_refuses_lowering_backing
+        FAIL [   1.843s] (3/3) worth-court-runtime-bridge::worth_court_runtime_bridge runtime_bridge::original_lowering::original_lowering_charge_lives_until_the_last_shared_template_drops
+error: test run failed
+
+
+{"type": "cargo-result", "exit_code": 100}
+
+End: 2026-11-07T07:55:28.998397+00:00
+Exit code: 100

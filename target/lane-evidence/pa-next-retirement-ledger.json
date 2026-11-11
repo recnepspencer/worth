@@ -1,0 +1,27 @@
+{
+  "base": "f9a53a5d17e01562d503b39b4627252bb63d8639",
+  "removed": [
+    "crates/worth-relational/src/tests/durability/contracts/native_checkpoint/allocation.rs",
+    "crates/worth-relational/src/tests/durability/contracts/native_checkpoint/speculative_symbols.rs",
+    "crates/worth-relational/src/tests/durability/contracts/semantic_result/custom_versions.rs",
+    "crates/worth-relational/src/tests/durability/medium/lineage_frontiers.rs",
+    "crates/worth-relational/src/tests/durability/medium/mod.rs"
+  ],
+  "partial_root": "crates/worth-relational/src/history/commit/artifact_tests.rs",
+  "partial_tests": [
+    "fresh_scalar_commit_seals_exact_native_lifecycle_and_field_touches",
+    "installed_field_index_commit_touch_carries_native_old_and_new_keys"
+  ],
+  "native_owner": "memory_checkpoint_preserves_lineage_artifact_and_original_authority",
+  "public_cases": [
+    "fresh_scalar_commit_seals_exact_native_lifecycle_and_field_touches",
+    "installed_field_index_commit_touch_carries_native_old_and_new_keys",
+    "abandoned_client_preparation_leaves_publication_unchanged_and_later_keys_recover",
+    "semantic_result_preserves_custom_enforcement_version_distinct_from_aggregate_request",
+    "original_capture_request_refusals_and_escaped_output_preserve_editable_truth",
+    "checkpoint_source_recovers_each_original_lineage_node_and_create_event",
+    "published_lineage_identities_stay_spent_after_image_embedded_and_cold_recovery",
+    "inflight_lineage_tail_recovery_keeps_every_published_identity_spent"
+  ],
+  "retained_production_frontiers": "runtime/state/subsystems/lineage.rs remains used by durability/authority/runtime_rebuild/recovered_counter_capacity.rs"
+}

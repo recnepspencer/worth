@@ -15,7 +15,13 @@ where
         request: &worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope,
     ) -> Result<WorthQueryExternalEffectDispatch, WorthQueryExternalDispatchPreparationDenial> {
         Self::perform_committed_external_dispatch(
-            self, execution, phase, transport, committed, request,
+            self,
+            execution,
+            phase,
+            transport,
+            committed,
+            request,
+            |_| {},
         )
     }
 }

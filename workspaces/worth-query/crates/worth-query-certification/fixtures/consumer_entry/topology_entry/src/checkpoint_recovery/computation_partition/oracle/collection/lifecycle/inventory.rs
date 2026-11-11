@@ -2,7 +2,7 @@
 use super::*;
 
 fn refusal<const MODE: u8>(target: &str) {
-    use worth_query_host::facade::application_installation::WorthQueryInMemoryApplicationDenial;
+    use worth_query_host::facade::application_installation::WorthQueryApplicationPreparationDenial;
     let _guard = checkpoint_recovery_test_guard();
     let initialized = std::cell::Cell::new(false);
     let result =
@@ -17,7 +17,7 @@ fn refusal<const MODE: u8>(target: &str) {
         "complete portable coverage is checked before initialization"
     );
     match *result.err().expect("a valid unbound target prevents installation") {
-        WorthQueryInMemoryApplicationDenial::Contributions(denial) => {
+        WorthQueryApplicationPreparationDenial::Contributions(denial) => {
             assert_eq!(denial.kind(), primary_graph::WorthQueryPrimaryGraphInstallationDenialKind::MissingConditionalBinding);
             assert!(denial.subject().contains("conditional target coverage"), "{denial:?}");
             assert!(denial.subject().contains(target), "full target location: {denial:?}");

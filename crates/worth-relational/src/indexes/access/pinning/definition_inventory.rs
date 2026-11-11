@@ -5,7 +5,7 @@ impl IndexAccess<'_> {
     /// Finds the installed definition with the same semantic identity.
     ///
     /// The caller-supplied numeric identity is deliberately ignored: a
-    /// recovered owner must bind the identity restored with the checkpoint,
+    /// recovered owner must bind the identity restored from its admitted checkpoint or journal,
     /// not allocate a look-alike definition after recovery.
     pub fn matching_definition(
         &self,
@@ -28,7 +28,7 @@ impl IndexAccess<'_> {
     pub fn definition_lookup_snapshot(&self) -> DerivedIndexDefinitionLookup {
         DerivedIndexDefinitionLookup::new(self.runtime.indexes.definitions())
     }
-
+    #[cfg(test)]
     pub(crate) fn definitions_snapshot(&self) -> Vec<DerivedIndexDefinition> {
         self.runtime
             .indexes

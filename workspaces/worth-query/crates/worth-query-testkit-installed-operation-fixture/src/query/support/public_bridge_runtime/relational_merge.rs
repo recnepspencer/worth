@@ -19,7 +19,7 @@ pub fn public_relational_merge_runtime() -> RelationalRuntime {
     let host_request = crate::facade::query::test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
     let descriptor = IntentReconciliationStrategy::descriptor(CommitStrategyId(913));
-    let mut runtime = RelationalRuntimeApi::builder()
+    let runtime = RelationalRuntimeApi::builder()
         .schema_registry(
             RelationalSchemaRegistry::new()
                 .register_entity_kind(EntityKindRegistration {
@@ -40,20 +40,20 @@ pub fn public_relational_merge_runtime() -> RelationalRuntime {
         ))
         .build()
         .expect("valid native runtime configuration");
-    create_empty_entity(execution, &mut runtime, "main", "main-seed");
+    create_empty_entity(execution, &runtime, "main", "main-seed");
     let (_, basis) = runtime
         .observe_fork_source(&BranchId("main".to_string()))
         .expect("main branch should expose an exact fork source");
     runtime
         .fork_branch(execution, BranchId("candidate".to_string()), basis)
         .expect("candidate branch should be created");
-    create_empty_entity(execution, &mut runtime, "candidate", "candidate-seed");
+    create_empty_entity(execution, &runtime, "candidate", "candidate-seed");
     runtime
 }
 
 pub fn create_empty_entity(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-    runtime: &mut RelationalRuntime,
+    runtime: &RelationalRuntime,
     branch: &str,
     key: &str,
 ) {

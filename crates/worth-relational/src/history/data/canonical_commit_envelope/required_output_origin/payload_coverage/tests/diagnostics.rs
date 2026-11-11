@@ -28,7 +28,7 @@ fn present_cell_refusals_identify_duplicate_binding_and_operation_form() {
         .expect("fixture root has admitted Full custody")
         .unwrap();
     let row = partition.entity_arena.get(&id).unwrap();
-    let payload = row.extra().authoritative_aspect_state.as_ref().unwrap();
+    let payload = row.extra().authoritative_aspect_state().unwrap();
     assert!(validate(execution, original, id, plan, Some(payload)).is_ok());
     let operation = original.patch.authoritative_record_patches[0]
         .authoritative_patch
@@ -37,14 +37,17 @@ fn present_cell_refusals_identify_duplicate_binding_and_operation_form() {
         .find(|op| op.aspect_key() == &aspect_key("name"))
         .unwrap()
         .clone();
-    let mut duplicate = original.as_ref().clone();
+    let mut duplicate = original.copy_original_for_test(execution);
     let mut operations = duplicate.patch.authoritative_record_patches[0]
         .authoritative_patch
         .full_grammar_operations()
         .to_vec();
     operations.push(operation.clone());
-    duplicate.patch.authoritative_record_patches[0].authoritative_patch =
-        PublishedAuthoritativePatch::new(operations);
+    duplicate
+        .body_mut_for_test()
+        .patch
+        .authoritative_record_patches[0]
+        .authoritative_patch = PublishedAuthoritativePatch::new(operations);
     let failure = validate(execution, &duplicate, id, plan, Some(payload)).unwrap_err();
     assert!(matches!(
         failure,
@@ -61,14 +64,17 @@ fn present_cell_refusals_identify_duplicate_binding_and_operation_form() {
     assert!(!detail.contains("payload-and-client-key-sentinel"));
     assert!(!detail.contains("aspect_key="));
 
-    let mut wrong_binding = original.as_ref().clone();
+    let mut wrong_binding = original.copy_original_for_test(execution);
     let mut op = operation.clone();
     let Operation::WholeAspectSet { binding, .. } = &mut op else {
         panic!("actual scalar set")
     };
     *binding = AspectBinding::StructuralFacet;
-    wrong_binding.patch.authoritative_record_patches[0].authoritative_patch =
-        PublishedAuthoritativePatch::new(vec![op]);
+    wrong_binding
+        .body_mut_for_test()
+        .patch
+        .authoritative_record_patches[0]
+        .authoritative_patch = PublishedAuthoritativePatch::new(vec![op]);
     let failure = validate(execution, &wrong_binding, id, plan, Some(payload)).unwrap_err();
     assert!(matches!(
         failure,
@@ -95,8 +101,12 @@ fn present_cell_refusals_identify_duplicate_binding_and_operation_form() {
     else {
         panic!("actual scalar set")
     };
-    let mut cleared = original.as_ref().clone();
-    cleared.patch.authoritative_record_patches[0].authoritative_patch =
+    let mut cleared = original.copy_original_for_test(execution);
+    cleared
+        .body_mut_for_test()
+        .patch
+        .authoritative_record_patches[0]
+        .authoritative_patch =
         PublishedAuthoritativePatch::new(vec![Operation::WholeAspectClear {
             aspect_key,
             aspect_identity,
@@ -176,8 +186,11 @@ fn birth_field_clear_refuses_with_the_selected_struct_operation_summary() {
         .expect("fixture root has admitted Full custody")
         .unwrap();
     let row = partition.entity_arena.get(&id).unwrap();
-    let payload = row.extra().authoritative_aspect_state.as_ref().unwrap();
-    let mut envelope = result.publication().envelope.as_ref().clone();
+    let payload = row.extra().authoritative_aspect_state().unwrap();
+    let mut envelope = result
+        .publication()
+        .envelope
+        .copy_original_for_test(execution);
     assert!(validate(execution, &envelope, id, plan, Some(payload)).is_ok());
     let Operation::WholeAspectSet {
         aspect_key,
@@ -201,15 +214,18 @@ fn birth_field_clear_refuses_with_the_selected_struct_operation_summary() {
             },
         )
         .collect();
-    envelope.patch.authoritative_record_patches[0].authoritative_patch =
-        PublishedAuthoritativePatch::new(vec![Operation::FieldLevelPatch {
-            aspect_key,
-            aspect_identity,
-            contract_revision,
-            binding,
-            field_sets: sets,
-            field_clears: vec![field_key("status")],
-        }]);
+    envelope
+        .body_mut_for_test()
+        .patch
+        .authoritative_record_patches[0]
+        .authoritative_patch = PublishedAuthoritativePatch::new(vec![Operation::FieldLevelPatch {
+        aspect_key,
+        aspect_identity,
+        contract_revision,
+        binding,
+        field_sets: sets,
+        field_clears: vec![field_key("status")],
+    }]);
     let failure = validate(execution, &envelope, id, plan, Some(payload)).unwrap_err();
     assert!(matches!(
         failure,

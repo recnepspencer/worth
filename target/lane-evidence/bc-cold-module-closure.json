@@ -1,0 +1,1167 @@
+{
+  "files": [
+    {
+      "path": "crates/worth-relational/src/tests/durability/medium/checkpoint_restart_bound.rs",
+      "lines": 179,
+      "tests": [
+        "checkpoint_restart_cycles_preserve_full_reads_and_retention"
+      ],
+      "refs": [
+        "crate::durability::data::",
+        "crate::durability::log::native_checkpoint_codec::CHECKPOINT_MAGIC",
+        "crate::runtime::RelationalRuntime",
+        "crate::storage::residency::history_capture_bound::",
+        "crate::test_execution_policy::serial_request"
+      ]
+    },
+    {
+      "path": "crates/worth-relational/src/tests/durability/medium/cold_accepted_pins.rs",
+      "lines": 121,
+      "tests": [
+        "accepted_pin_projections_survive_later_proven_member_damage"
+      ],
+      "refs": [
+        "crate::durability::data::RelationalNativeCheckpointCaptureDenial::Durability",
+        "crate::execution::RelationalExecutionDenialCause::StorageUnavailable",
+        "crate::history::data::BranchId",
+        "crate::runtime::RelationalBorrowedRecordReadDenial",
+        "crate::test_execution_policy::serial_request",
+        "crate::visibility::materialization::read_records::ProjectionAspectScope"
+      ]
+    },
+    {
+      "path": "crates/worth-relational/src/tests/durability/medium/cold_adjacency_support.rs",
+      "lines": 44,
+      "tests": [
+        "paired_adjacency_propagates_current_head_storage_failure_without_history_fallback"
+      ],
+      "refs": [
+        "crate::execution::RelationalExecutionDenialCause::StorageUnavailable",
+        "crate::history::data::BranchId",
+        "crate::runtime::",
+        "crate::storage::data::RelationalStorageSubject::Region",
+        "crate::test_execution_policy::serial_request"
+      ]
+    },
+    {
+      "path": "crates/worth-relational/src/tests/durability/medium/cold_aspect_history_matrix/exhaustive.rs",
+      "lines": 62,
+      "tests": [
+        "residency_failure_matrix_aspect_history_doors_cover_every_subject_and_class"
+      ],
+      "refs": [
+        "crate::test_execution_policy::serial_request"
+      ]
+    },
+    {
+      "path": "crates/worth-relational/src/tests/durability/medium/cold_aspect_history_matrix.rs",
+      "lines": 126,
+      "tests": [],
+      "refs": [
+        "crate::execution::RelationalExecutionDenialCause",
+        "crate::storage::data::"
+      ]
+    },
+    {
+      "path": "crates/worth-relational/src/tests/durability/medium/cold_candidates.rs",
+      "lines": 264,
+      "tests": [
+        "candidate_invariant_discovery_refuses_stickily_without_publishing_round_effects",
+        "a_region_retry_spends_the_applied_draft_identity_and_settles_one_round"
+      ],
+      "refs": [
+        "crate::durability::canonical_commit_artifact::RelationalCanonicalCommitArtifact::from_untrusted_bytes",
+        "crate::durability::data::RelationalCheckpointManifest",
+        "crate::durability::log::native_checkpoint_codec::CHECKPOINT_MAGIC",
+        "crate::durability::medium::DurablePublicationFate::Committed",
+        "crate::durability::medium::RelationalDurableMedium",
+        "crate::mvcc::BranchBoundRelationalTransaction",
+        "crate::runtime::RelationalRuntime",
+        "crate::storage::data::RelationalStorageSubject::Region",
+        "crate::storage::data::RelationalStorageUnavailable",
+        "crate::storage::overlay::PartitionAccess",
+        "crate::storage::residency::PartitionProbe::Cold",
+        "crate::symbols::data::ClientKey",
+        "crate::test_execution_policy::serial_request",
+        "crate::transactions::data::",
+        "crate::transactions::data::EntitySpec",
+        "crate::validation::data::"
+      ]
+    },
+    {
+      "path": "crates/worth-relational/src/tests/durability/medium/cold_current_door.rs",
+      "lines": 190,
+      "tests": [],
+      "refs": [
+        "crate::execution::RelationalExecutionDenialCause::StorageUnavailable",
+        "crate::mvcc::RelationalTransactionReadDenial",
+        "crate::mvcc::RelationalTransactionReadDenial::StorageUnavailable",
+        "crate::runtime::RelationalRuntime",
+        "crate::storage::data::RelationalStorageUnavailable",
+        "crate::transactions::data::"
+      ]
+    },
+    {
+      "path": "crates/worth-relational/src/tests/durability/medium/cold_current_failure_matrix/exhaustive.rs",
+      "lines": 95,
+      "tests": [
+        "residency_failure_matrix_declared_current_doors_preserve_every_failure_class"
+      ],
+      "refs": [
+        "crate::test_execution_policy::serial_request"
+      ]
+    },
+    {
+      "path": "crates/worth-relational/src/tests/durability/medium/cold_current_failure_matrix.rs",
+      "lines": 12,
+      "tests": [],
+      "refs": [
+        "crate::storage::data::RelationalStorageSubject"
+      ]
+    },
+    {
+      "path": "crates/worth-relational/src/tests/durability/medium/cold_current_fixture.rs",
+      "lines": 100,
+      "tests": [],
+      "refs": [
+        "crate::durability::canonical_commit_artifact::RelationalCanonicalCommitArtifact::from_untrusted_bytes",
+        "crate::durability::data::RelationalCheckpointManifest",
+        "crate::durability::log::native_checkpoint_codec::CHECKPOINT_MAGIC",
+        "crate::durability::medium::DurablePublicationFate::Committed",
+        "crate::identity::data::LineageId",
+        "crate::runtime::RelationalRuntime"
+      ]
+    },
+    {
+      "path": "crates/worth-relational/src/tests/durability/medium/cold_current_matrix/exhaustive.rs",
+      "lines": 61,
+      "tests": [
+        "residency_failure_matrix_current_doors_never_consult_region_history"
+      ],
+      "refs": [
+        "crate::test_execution_policy::serial_request"
+      ]
+    },
+    {
+      "path": "crates/worth-relational/src/tests/durability/medium/cold_current_matrix.rs",
+      "lines": 166,
+      "tests": [
+        "head_write_capture_and_full_promotion_preserve_current_and_retained_reference_reads"
+      ],
+      "refs": [
+        "crate::execution::RelationalExecutionDenialCause::StorageUnavailable",
+        "crate::identity::data::",
+        "crate::storage::data::RelationalStorageSubject::Region",
+        "crate::storage::data::RelationalStorageUnavailable",
+        "crate::test_execution_policy::serial_request"
+      ]
+    },
+    {
+      "path": "crates/worth-relational/src/tests/durability/medium/cold_envelope_lifetime.rs",
+      "lines": 261,
+      "tests": [
+        "settled_live_nonhead_envelopes_release_only_when_a_durable_copy_exists",
+        "cold_source_is_bound_before_a_durable_runtime_publishes_its_first_commit",
+        "released_live_history_remains_in_external_capture_and_retained_recovery",
+        "recovered_nonhead_tail_envelopes_release_their_actual_journal_backed_bodies"
+      ],
+      "refs": [
+        "crate::durability::canonical_commit_artifact::RelationalCanonicalCommitArtifact::from_untrusted_bytes",
+        "crate::durability::canonical_commit_artifact::RelationalCanonicalCommitArtifact::readmit",
+        "crate::test_execution_policy::serial_request",
+        "crate::transactions::data::RecordRef::Entity"
+      ]
+    },
+    {
+      "path": "crates/worth-relational/src/tests/durability/medium/cold_envelope_matrix/exhaustive.rs",
+      "lines": 138,
+      "tests": [
+        "residency_failure_matrix_envelope_doors_preserve_every_failure_class"
+      ],
+      "refs": [
+        "crate::durability::canonical_commit_artifact::RelationalCanonicalCommitArtifact::from_untrusted_bytes",
+        "crate::test_execution_policy::serial_request"
+      ]
+    },
+    {
+      "path": "crates/worth-relational/src/tests/durability/medium/cold_envelope_matrix.rs",
+      "lines": 115,
+      "tests": [],
+      "refs": [
+        "crate::durability::canonical_commit_artifact::RelationalCanonicalCommitArtifactEncodeDenial::StorageUnavailable",
+        "crate::durability::data::RelationalNativeCheckpointCaptureDenial::Durability",
+        "crate::execution::RelationalExecutionDenialCause",
+        "crate::history::BoundedCanonicalCommitPatchDenial",
+        "crate::history::data::RelationalCommitReceipt",
+        "crate::publication::patch::data::",
+        "crate::publication::patch::data::PatchStreamPosition",
+        "crate::replay::data::RelationalReplayRequest",
+        "crate::replay::data::ReplayExecutionMode::SerialDeterministic",
+        "crate::replay::data::ReplayVerificationMode::NormalRecoveryVerification",
+        "crate::runtime::RelationalRuntime",
+        "crate::storage::data::"
+      ]
+    },
+    {
+      "path": "crates/worth-relational/src/tests/durability/medium/cold_envelopes.rs",
+      "lines": 362,
+      "tests": [
+        "bounded_history_reads_only_the_selected_envelope_and_refuses_sticky_body_damage",
+        "patch_stream_demands_only_the_requested_batch_and_refuses_sticky_journal_damage",
+        "envelope_surfaces_keep_index_facts_readable_and_refuse_cold_body_damage"
+      ],
+      "refs": [
+        "crate::durability::canonical_commit_artifact::RelationalCanonicalCommitArtifact::from_untrusted_bytes",
+        "crate::execution::RelationalExecutionDenialCause",
+        "crate::history::BoundedCanonicalCommitPatchDenial",
+        "crate::history::data::RelationalCommitReceipt",
+        "crate::identity::data::PartitionId::main",
+        "crate::inspection::data::RecentCommitInspectionRequest",
+        "crate::publication::patch::data::",
+        "crate::runtime::RelationalRuntime",
+        "crate::simulation::data::CompiledArtifactAuthorityStatus::ReadRequest",
+        "crate::storage::data::",
+        "crate::test_execution_policy::serial_request"
+      ]
+    },
+    {
+      "path": "crates/worth-relational/src/tests/durability/medium/cold_fork_edits.rs",
+      "lines": 140,
+      "tests": [
+        "head_probes_admit_each_forks_shared_region_without_reading_history",
+        "cold_forks_edit_existing_ring_records_in_both_orders_and_checkpoint"
+      ],
+      "refs": [
+        "crate::history::data::BranchId",
+        "crate::identity::data::RelationId::new",
+        "crate::storage::residency::PartitionHeadProbe::Cold",
+        "crate::storage::residency::PartitionHeadProbe::Resident",
+        "crate::storage::residency::probe_head",
+        "crate::test_execution_policy::serial_request"
+      ]
+    },
+    {
+      "path": "crates/worth-relational/src/tests/durability/medium/cold_historical_index_matrix/exhaustive.rs",
+      "lines": 76,
+      "tests": [
+        "residency_failure_matrix_historical_index_builds_preserve_full_source_failures"
+      ],
+      "refs": [
+        "crate::storage::data::RelationalStorageUnavailable",
+        "crate::test_execution_policy::serial_request"
+      ]
+    },
+    {
+      "path": "crates/worth-relational/src/tests/durability/medium/cold_historical_index_matrix.rs",
+      "lines": 209,
+      "tests": [
+        "historical_index_reconstruction_uses_the_old_value_and_full_cold_history"
+      ],
+      "refs": [
+        "crate::execution::RelationalExecutionDenialCause",
+        "crate::indexes::data::DerivedIndexBuildRequest",
+        "crate::indexes::data::DerivedIndexExecutionDenialKind::Cause",
+        "crate::storage::data::RelationalStorageSubject",
+        "crate::symbols::data::Symbol",
+        "crate::test_execution_policy::serial_request"
+      ]
+    },
+    {
+      "path": "crates/worth-relational/src/tests/durability/medium/cold_index_build_door.rs",
+      "lines": 72,
+      "tests": [],
+      "refs": [
+        "crate::execution::RelationalExecutionDenialCause",
+        "crate::history::data::BranchId",
+        "crate::indexes::data::",
+        "crate::indexes::data::DerivedIndexExecutionDenialKind::Cause",
+        "crate::runtime::RelationalRuntime"
+      ]
+    },
+    {
+      "path": "crates/worth-relational/src/tests/durability/medium/cold_index_checkpoint_door.rs",
+      "lines": 58,
+      "tests": [],
+      "refs": [
+        "crate::durability::data::RelationalNativeCheckpointCaptureDenial::Durability",
+        "crate::execution::RelationalExecutionDenialCause",
+        "crate::indexes::data::DerivedIndexGeneration",
+        "crate::runtime::RelationalRuntime"
+      ]
+    },
+    {
+      "path": "crates/worth-relational/src/tests/durability/medium/cold_index_custody.rs",
+      "lines": 158,
+      "tests": [
+        "an_older_index_directory_retains_its_cold_frame_after_home_replacement"
+      ],
+      "refs": [
+        "crate::durability::log::native_checkpoint_codec::member_frame::",
+        "crate::durability::medium::",
+        "crate::durability::medium::RelationalDurableOwnedReadRefusal",
+        "crate::durability::medium::RelationalDurableOwnedReadRefusal::Storage",
+        "crate::durability::medium::RelationalDurableReadPayload",
+        "crate::publication::patch::data::PatchStreamPosition",
+        "crate::test_execution_policy::serial_request"
+      ]
+    },
+    {
+      "path": "crates/worth-relational/src/tests/durability/medium/cold_index_fixture.rs",
+      "lines": 163,
+      "tests": [],
+      "refs": [
+        "crate::durability::canonical_commit_artifact::RelationalCanonicalCommitArtifact::from_untrusted_bytes",
+        "crate::durability::data::RelationalCheckpointManifest",
+        "crate::durability::log::native_checkpoint_codec::CHECKPOINT_MAGIC",
+        "crate::durability::medium::DurablePublicationFate::Committed",
+        "crate::durability::medium::RelationalDurableColdSource",
+        "crate::history::data::BranchId",
+        "crate::identity::data::EntityId",
+        "crate::indexes::data::",
+        "crate::indexes::data::DerivedIndexBuildRequest",
+        "crate::runtime::RelationalRuntime",
+        "crate::symbols::data::Symbol"
+      ]
+    },
+    {
+      "path": "crates/worth-relational/src/tests/durability/medium/cold_index_frontier.rs",
+      "lines": 52,
+      "tests": [
+        "residency_cold_index_frontier_prevents_reissue_before_any_image_demand"
+      ],
+      "refs": [
+        "crate::indexes::data::DerivedIndexGenerationId",
+        "crate::test_execution_policy::serial_request"
+      ]
+    },
+    {
+      "path": "crates/worth-relational/src/tests/durability/medium/cold_index_matrix/exhaustive.rs",
+      "lines": 97,
+      "tests": [
+        "residency_failure_matrix_index_doors_preserve_every_failure_class"
+      ],
+      "refs": [
+        "crate::indexes::data::DerivedIndexGenerationResidency::Absent",
+        "crate::indexes::data::DerivedIndexGenerationResidency::DeferredImage",
+        "crate::test_execution_policy::serial_request"
+      ]
+    },
+    {
+      "path": "crates/worth-relational/src/tests/durability/medium/cold_index_matrix.rs",
+      "lines": 222,
+      "tests": [],
+      "refs": [
+        "crate::execution::RelationalExecutionDenialCause",
+        "crate::indexes::data::BoundedEntityFieldLookupDenialKind::Execution",
+        "crate::indexes::data::DerivedIndexGeneration",
+        "crate::indexes::data::DerivedIndexId",
+        "crate::runtime::RelationalPinnedReadAdmissionDenial",
+        "crate::runtime::RelationalRuntime",
+        "crate::storage::data::",
+        "crate::transactions::data::CommitPreparationReason::StorageUnavailable",
+        "crate::transactions::data::TransactionCommitError::Preparation"
+      ]
+    },
+    {
+      "path": "crates/worth-relational/src/tests/durability/medium/cold_invariants.rs",
+      "lines": 237,
+      "tests": [
+        "selected_branch_views_preserve_cold_probe_and_demand",
+        "invariant_storage_refusal_is_sticky_and_does_not_settle_provisional_counts",
+        "cold_and_warm_invariant_reads_settle_one_round_of_evidence",
+        "the_invariant_orchestrator_uses_head_while_full_history_failure_stays_typed"
+      ],
+      "refs": [
+        "crate::durability::data::RelationalCheckpointManifest",
+        "crate::durability::log::native_checkpoint_codec::CHECKPOINT_MAGIC",
+        "crate::execution::RelationalExecutionDenialCause",
+        "crate::identity::data::EntityId",
+        "crate::runtime::RelationalRuntime",
+        "crate::storage::data::RelationalStorageSubject::Region",
+        "crate::storage::data::RelationalStorageUnavailable",
+        "crate::storage::residency::probe_full_sources",
+        "crate::test_execution_policy::serial_request",
+        "crate::transactions::data::",
+        "crate::validation::data::"
+      ]
+    },
+    {
+      "path": "crates/worth-relational/src/tests/durability/medium/cold_isolation.rs",
+      "lines": 392,
+      "tests": [
+        "a_relation_bearing_cold_commit_loads_only_its_partition",
+        "missing_history_damages_only_its_own_region",
+        "fork_of_a_cold_runtime_shares_cells_and_both_copies_can_read_and_write",
+        "replay_pin_of_a_cold_partition_is_typed_and_has_no_effect"
+      ],
+      "refs": [
+        "crate::durability::data::RelationalCheckpointManifest",
+        "crate::durability::log::native_checkpoint_codec::CHECKPOINT_MAGIC",
+        "crate::durability::log::native_checkpoint_codec::member_frame::locator",
+        "crate::history::data::BranchId",
+        "crate::identity::data::",
+        "crate::runtime::RelationalRuntime",
+        "crate::snapshots::data::",
+        "crate::storage::data::RelationalStorageSubject::Region",
+        "crate::storage::overlay::SnapshotPartitionPins",
+        "crate::storage::partition::DenseSlotBitSet",
+        "crate::storage::residency::RelationalResidencyDemandFailure::StorageUnavailable",
+        "crate::symbols::data::Symbol",
+        "crate::test_execution_policy::serial_request",
+        "crate::visibility::snapshot_states::"
+      ]
+    },
+    {
+      "path": "crates/worth-relational/src/tests/durability/medium/cold_lineage_custody.rs",
+      "lines": 176,
+      "tests": [
+        "an_older_lineage_directory_retains_its_cold_pages_after_home_replacement"
+      ],
+      "refs": [
+        "crate::durability::medium::",
+        "crate::durability::medium::RelationalDurableOwnedReadRefusal",
+        "crate::durability::medium::RelationalDurableOwnedReadRefusal::Storage",
+        "crate::durability::medium::RelationalDurableReadPayload",
+        "crate::publication::patch::data::PatchStreamPosition",
+        "crate::test_execution_policy::serial_request"
+      ]
+    },
+    {
+      "path": "crates/worth-relational/src/tests/durability/medium/cold_lineage_event_fixture.rs",
+      "lines": 140,
+      "tests": [],
+      "refs": [
+        "crate::durability::medium::RelationalDurableColdSource",
+        "crate::history::data::BranchId",
+        "crate::identity::data::EntityId",
+        "crate::identity::data::LineageId",
+        "crate::lineage::data::",
+        "crate::runtime::RelationalRuntime",
+        "crate::symbols::data::ClientKey::raw",
+        "crate::transactions::data::"
+      ]
+    },
+    {
+      "path": "crates/worth-relational/src/tests/durability/medium/cold_lineage_event_integrity.rs",
+      "lines": 166,
+      "tests": [
+        "changed_event_bytes_damage_only_their_page_and_share_the_refusal_with_export"
+      ],
+      "refs": [
+        "crate::durability::medium::",
+        "crate::durability::medium::RelationalDurableOwnedReadRefusal",
+        "crate::durability::medium::RelationalDurableReadPayload",
+        "crate::execution::RelationalExecutionDenialCause",
+        "crate::identity::data::LineageId",
+        "crate::publication::patch::data::PatchStreamPosition",
+        "crate::storage::data::",
+        "crate::test_execution_policy::serial_request"
+      ]
+    },
+    {
+      "path": "crates/worth-relational/src/tests/durability/medium/cold_lineage_event_matrix/exhaustive.rs",
+      "lines": 83,
+      "tests": [
+        "residency_failure_matrix_lineage_event_doors_preserve_every_failure_class"
+      ],
+      "refs": [
+        "crate::identity::data::LineageId",
+        "crate::test_execution_policy::serial_request"
+      ]
+    },
+    {
+      "path": "crates/worth-relational/src/tests/durability/medium/cold_lineage_event_matrix.rs",
+      "lines": 122,
+      "tests": [],
+      "refs": [
+        "crate::change_source::RelationalObservationReadDenial::Execution",
+        "crate::durability::data::RelationalNativeCheckpointCaptureDenial::Durability",
+        "crate::execution::RelationalExecutionDenialCause",
+        "crate::history::data::",
+        "crate::lineage::data::",
+        "crate::storage::data::"
+      ]
+    },
+    {
+      "path": "crates/worth-relational/src/tests/durability/medium/cold_lineage_events.rs",
+      "lines": 258,
+      "tests": [
+        "a_reopened_lineage_resolution_follows_only_its_actual_event_pages",
+        "a_shared_event_page_is_admitted_once_into_each_forked_lineage_authority",
+        "concurrent_lineage_history_reads_share_one_actual_event_member_load",
+        "node_range_boundaries_keep_neighboring_event_members_cold",
+        "native_capture_from_a_fork_uses_shared_resident_event_pages_without_losing_rows"
+      ],
+      "refs": [
+        "crate::durability::data::RelationalCheckpointArtifactPolicy",
+        "crate::durability::data::RelationalCheckpointManifest",
+        "crate::durability::log::native_checkpoint_codec::CHECKPOINT_MAGIC",
+        "crate::identity::data::LineageId",
+        "crate::symbols::data::Symbol",
+        "crate::test_execution_policy::serial_request"
+      ]
+    },
+    {
+      "path": "crates/worth-relational/src/tests/durability/medium/cold_lineage_fixture.rs",
+      "lines": 135,
+      "tests": [],
+      "refs": [
+        "crate::durability::canonical_commit_artifact::RelationalCanonicalCommitArtifact::from_untrusted_bytes",
+        "crate::durability::data::RelationalCheckpointManifest",
+        "crate::durability::data::RelationalCheckpointPage",
+        "crate::durability::log::native_checkpoint_codec::CHECKPOINT_MAGIC",
+        "crate::durability::medium::DurablePublicationFate::Committed",
+        "crate::durability::medium::RelationalDurableMemberLocator",
+        "crate::history::data::BranchId",
+        "crate::lineage::data::LineageNode",
+        "crate::runtime::RelationalRuntime",
+        "crate::symbols::data::ClientKey::raw",
+        "crate::transactions::data::BulkEntityCreateIntent"
+      ]
+    },
+    {
+      "path": "crates/worth-relational/src/tests/durability/medium/cold_lineage_matrix/exhaustive.rs",
+      "lines": 85,
+      "tests": [
+        "residency_failure_matrix_lineage_doors_preserve_every_failure_class"
+      ],
+      "refs": [
+        "crate::identity::data::LineageId",
+        "crate::test_execution_policy::serial_request"
+      ]
+    },
+    {
+      "path": "crates/worth-relational/src/tests/durability/medium/cold_lineage_matrix.rs",
+      "lines": 12,
+      "tests": [],
+      "refs": [
+        "crate::execution::RelationalExecutionDenialCause",
+        "crate::storage::data::"
+      ]
+    },
+    {
+      "path": "crates/worth-relational/src/tests/durability/medium/cold_lineage_nodes.rs",
+      "lines": 248,
+      "tests": [
+        "a_cold_lineage_point_read_loads_one_node_page_and_no_region_history",
+        "every_node_guard_preserves_a_sticky_typed_page_failure_without_publication",
+        "simultaneous_lineage_point_reads_share_one_page_load"
+      ],
+      "refs": [
+        "crate::change_source::RelationalObservationReadDenial::Execution",
+        "crate::change_source::RelationalObservationReadDenial::ForeignObservation",
+        "crate::execution::RelationalExecutionDenialCause",
+        "crate::history::data::BranchId",
+        "crate::identity::data::LineageId",
+        "crate::lineage::data::",
+        "crate::lineage::data::LineageDivergenceRequest",
+        "crate::lineage::data::LineageDivergenceTraversalBasis::FullBranchGraphComparison",
+        "crate::lineage::data::LineageGraphRequest",
+        "crate::lineage::data::LineageGraphTraversalBasis::FullBranchGraphMaterialization",
+        "crate::storage::data::RelationalStorageSubject::Lineage",
+        "crate::storage::data::RelationalStorageUnavailable",
+        "crate::test_execution_policy::serial_request"
+      ]
+    },
+    {
+      "path": "crates/worth-relational/src/tests/durability/medium/cold_materialization_doors.rs",
+      "lines": 204,
+      "tests": [
+        "residency_materialization_source_manifest_demands_before_reading_or_refusing_damage",
+        "residency_retained_kind_demands_only_its_cold_head_and_preserves_damage",
+        "residency_load_free_sharing_and_ledger_refuse_cold_payloads_without_inventing_absence"
+      ],
+      "refs": [
+        "crate::branch::",
+        "crate::durability::canonical_commit_artifact::RelationalCanonicalCommitArtifact",
+        "crate::durability::medium::DurablePublicationFate::Committed",
+        "crate::execution::RelationalExecutionDenialCause",
+        "crate::identity::data::",
+        "crate::inspection::mvcc::retained_storage::RelationalRetainedStorageInspectionDenial::OwnerInventory",
+        "crate::inspection::mvcc::sharing::RelationalBranchSharingInspectionDenial::StorageUnavailable",
+        "crate::storage::data::RelationalStorageSubject::Region",
+        "crate::storage::residency::",
+        "crate::symbols::data::ClientKey::raw",
+        "crate::test_execution_policy::serial_request",
+        "crate::tests::support::create_group_with_external_endpoint",
+        "crate::tests::support::name_field_patch",
+        "crate::transactions::data::",
+        "crate::transactions::data::EntitySpec"
+      ]
+    },
+    {
+      "path": "crates/worth-relational/src/tests/durability/medium/cold_members.rs",
+      "lines": 340,
+      "tests": [
+        "a_damaged_cold_member_is_a_sticky_typed_transaction_read_refusal",
+        "tail_replay_refuses_a_damaged_touched_member_as_cold_storage_unavailable",
+        "a_cold_point_read_keeps_cross_partition_kind_authority_after_an_unrelated_write"
+      ],
+      "refs": [
+        "crate::durability::data::",
+        "crate::durability::log::native_checkpoint_codec::member_frame::locator",
+        "crate::durability::medium::",
+        "crate::history::data::BranchId",
+        "crate::identity::data::PartitionId",
+        "crate::mvcc::RelationalTransactionReadDenial::StorageUnavailable",
+        "crate::storage::data::RelationalStorageSubject::Region",
+        "crate::storage::data::RelationalStorageUnavailableCause",
+        "crate::test_execution_policy::serial_request",
+        "crate::tests::support::",
+        "crate::transactions::data::CommitPreparationReason::StorageUnavailable",
+        "crate::transactions::data::DeleteEntityIntent",
+        "crate::transactions::data::EntityMutationIntent::Delete",
+        "crate::transactions::data::MutationIntent::Entity",
+        "crate::transactions::data::TransactionCommitError::Preparation"
+      ]
+    },
+    {
+      "path": "crates/worth-relational/src/tests/durability/medium/cold_merge_history_fixture.rs",
+      "lines": 81,
+      "tests": [],
+      "refs": [
+        "crate::durability::canonical_commit_artifact::RelationalCanonicalCommitArtifact::from_untrusted_bytes",
+        "crate::durability::medium::DurablePublicationFate::Committed",
+        "crate::history::data::RelationalCommitReceipt",
+        "crate::identity::data::EntityId",
+        "crate::publication::patch::data::PatchStreamPosition",
+        "crate::runtime::RelationalRuntime"
+      ]
+    },
+    {
+      "path": "crates/worth-relational/src/tests/durability/medium/cold_merge_history_matrix/exhaustive.rs",
+      "lines": 71,
+      "tests": [
+        "residency_failure_matrix_nonhead_merge_history_covers_every_door_and_class"
+      ],
+      "refs": [
+        "crate::test_execution_policy::serial_request"
+      ]
+    },
+    {
+      "path": "crates/worth-relational/src/tests/durability/medium/cold_merge_history_matrix.rs",
+      "lines": 123,
+      "tests": [
+        "a_cold_intermediate_source_commit_cannot_disappear_from_merge_parent_conflicts"
+      ],
+      "refs": [
+        "crate::diagnostics::data::DiagnosticCode::MergeConflictOverlap",
+        "crate::execution::RelationalExecutionDenialCause",
+        "crate::merge::data::",
+        "crate::storage::data::",
+        "crate::test_execution_policy::serial_request",
+        "crate::transactions::data::"
+      ]
+    },
+    {
+      "path": "crates/worth-relational/src/tests/durability/medium/cold_merge_index_matrix/exhaustive.rs",
+      "lines": 103,
+      "tests": [
+        "residency_failure_matrix_merge_planning_and_commit_leave_unconsulted_generations_cold"
+      ],
+      "refs": [
+        "crate::test_execution_policy::serial_request"
+      ]
+    },
+    {
+      "path": "crates/worth-relational/src/tests/durability/medium/cold_merge_index_matrix.rs",
+      "lines": 8,
+      "tests": [],
+      "refs": []
+    },
+    {
+      "path": "crates/worth-relational/src/tests/durability/medium/cold_merge_member_matrix/exhaustive.rs",
+      "lines": 118,
+      "tests": [
+        "residency_failure_matrix_merge_planning_preserves_versioned_footprints"
+      ],
+      "refs": [
+        "crate::test_execution_policy::serial_request"
+      ]
+    },
+    {
+      "path": "crates/worth-relational/src/tests/durability/medium/cold_merge_member_matrix.rs",
+      "lines": 97,
+      "tests": [],
+      "refs": [
+        "crate::storage::data::",
+        "crate::symbols::data::Symbol"
+      ]
+    },
+    {
+      "path": "crates/worth-relational/src/tests/durability/medium/cold_merges.rs",
+      "lines": 312,
+      "tests": [
+        "cold_merge_preparation_refuses_region_damage_without_journal_effects",
+        "independent_merge_executes_from_a_real_cold_checkpoint"
+      ],
+      "refs": [
+        "crate::durability::canonical_commit_artifact::RelationalCanonicalCommitArtifact::from_untrusted_bytes",
+        "crate::durability::data::RelationalCheckpointManifest",
+        "crate::durability::log::native_checkpoint_codec::CHECKPOINT_MAGIC",
+        "crate::durability::medium::DurablePublicationFate::Committed",
+        "crate::execution::RelationalExecutionDenialCause",
+        "crate::history::data::BranchId",
+        "crate::identity::data::EntityId",
+        "crate::indexes::data::",
+        "crate::merge::data::",
+        "crate::runtime::RelationalRuntime",
+        "crate::storage::data::AuthoritativeFieldComparisonKey",
+        "crate::storage::data::EntityReadRecord",
+        "crate::storage::data::RelationalStorageSubject::Region",
+        "crate::storage::data::RelationalStorageUnavailable",
+        "crate::symbols::data::Symbol",
+        "crate::test_execution_policy::serial_request"
+      ]
+    },
+    {
+      "path": "crates/worth-relational/src/tests/durability/medium/cold_metadata_matrix.rs",
+      "lines": 64,
+      "tests": [
+        "head_resident_metadata_refuses_to_open_unavailable_history"
+      ],
+      "refs": [
+        "crate::runtime::RelationalAdjacencyDirection::Outgoing",
+        "crate::test_execution_policy::serial_request"
+      ]
+    },
+    {
+      "path": "crates/worth-relational/src/tests/durability/medium/cold_metadata_pins.rs",
+      "lines": 214,
+      "tests": [
+        "metadata_pin_requires_resident_head_and_never_opens_history",
+        "metadata_pin_refuses_shared_head_until_its_runtime_has_the_aspect_meanings",
+        "an_admitted_head_read_never_becomes_absence_after_transport_damage"
+      ],
+      "refs": [
+        "crate::durability::data::RelationalNativeCheckpointCaptureDenial::Durability",
+        "crate::execution::RelationalExecutionDenialCause::StorageUnavailable",
+        "crate::history::data::BranchId",
+        "crate::runtime::RelationalEntityMetadataPinDenial",
+        "crate::test_execution_policy::serial_request"
+      ]
+    },
+    {
+      "path": "crates/worth-relational/src/tests/durability/medium/cold_observation_reads.rs",
+      "lines": 124,
+      "tests": [
+        "retained_observation_region_guards_preserve_sticky_storage_failure",
+        "lineage_point_guard_preserves_a_cold_mirror_head_failure"
+      ],
+      "refs": [
+        "crate::change_source::RelationalObservationReadDenial",
+        "crate::execution::RelationalExecutionDenialCause",
+        "crate::identity::data::RelationId::new",
+        "crate::storage::data::RelationalStorageSubject::Region",
+        "crate::storage::data::RelationalStorageUnavailable",
+        "crate::test_execution_policy::serial_request"
+      ]
+    },
+    {
+      "path": "crates/worth-relational/src/tests/durability/medium/cold_pins.rs",
+      "lines": 303,
+      "tests": [
+        "replay_pinning_refuses_a_damaged_mirror_without_installing_retention",
+        "resident_pin_custody_refuses_unread_mirror_frames_after_exact_source_admission",
+        "replay_retention_releases_from_owned_resident_custody_after_cache_clear"
+      ],
+      "refs": [
+        "crate::durability::canonical_commit_artifact::RelationalCanonicalCommitArtifact::from_untrusted_bytes",
+        "crate::durability::data::RelationalCheckpointManifest",
+        "crate::durability::log::native_checkpoint_codec::CHECKPOINT_MAGIC",
+        "crate::durability::medium::DurablePublicationFate::Committed",
+        "crate::execution::RelationalExecutionDenialCause",
+        "crate::history::data::BranchId",
+        "crate::identity::data::",
+        "crate::runtime::RelationalRuntime",
+        "crate::snapshots::data::SnapshotId",
+        "crate::snapshots::data::SnapshotReadPolicy::ImmutablePinnedNoLazyMutation",
+        "crate::storage::data::",
+        "crate::storage::overlay::PartitionAccess::probe_full_partition",
+        "crate::storage::residency::PartitionProbe::Cold",
+        "crate::test_execution_policy::serial_request",
+        "crate::visibility::cache_state::cached_historical_state_for_version",
+        "crate::visibility::snapshot_states::SnapshotState",
+        "crate::visibility::snapshot_states::VisibilitySnapshotBasis::capture_current",
+        "crate::visibility::snapshot_states::build_visibility_state"
+      ]
+    },
+    {
+      "path": "crates/worth-relational/src/tests/durability/medium/cold_preparation_failure_matrix/exhaustive.rs",
+      "lines": 95,
+      "tests": [
+        "residency_failure_matrix_remote_invariant_heads_cover_every_preparation_door_and_class",
+        "residency_failure_matrix_remote_current_invariants_never_consult_history"
+      ],
+      "refs": [
+        "crate::test_execution_policy::serial_request"
+      ]
+    },
+    {
+      "path": "crates/worth-relational/src/tests/durability/medium/cold_preparation_failure_matrix.rs",
+      "lines": 28,
+      "tests": [],
+      "refs": [
+        "crate::runtime::RelationalRuntime",
+        "crate::storage::data::"
+      ]
+    },
+    {
+      "path": "crates/worth-relational/src/tests/durability/medium/cold_projection_adjacency_matrix/exhaustive.rs",
+      "lines": 161,
+      "tests": [
+        "residency_failure_matrix_projection_adjacency_guards_selected_heads"
+      ],
+      "refs": [
+        "crate::storage::data::RelationalStorageSubject::Region",
+        "crate::storage::data::RelationalStorageSubject::Symbols",
+        "crate::storage::data::RelationalStorageUnavailable",
+        "crate::symbols::data::Symbol",
+        "crate::test_execution_policy::serial_request"
+      ]
+    },
+    {
+      "path": "crates/worth-relational/src/tests/durability/medium/cold_projection_adjacency_matrix.rs",
+      "lines": 236,
+      "tests": [
+        "projection_adjacency_discovery_settles_only_one_accepted_round",
+        "an_exhausted_frontier_never_demands_an_unvisited_anchor"
+      ],
+      "refs": [
+        "crate::execution::RelationalExecutionDenialCause",
+        "crate::test_execution_policy::serial_request",
+        "crate::visibility::materialization::read_records::relation_query_locus_value"
+      ]
+    },
+    {
+      "path": "crates/worth-relational/src/tests/durability/medium/cold_projection_point_door.rs",
+      "lines": 176,
+      "tests": [],
+      "refs": [
+        "crate::execution::RelationalExecutionDenialCause",
+        "crate::runtime::AdjacencyStructuralRevisionDenial::Execution",
+        "crate::runtime::RelationalBorrowedRecordReadDenial",
+        "crate::runtime::RelationalBorrowedRecordReadDenial::Execution",
+        "crate::runtime::RelationalRuntime",
+        "crate::visibility::materialization::read_records::"
+      ]
+    },
+    {
+      "path": "crates/worth-relational/src/tests/durability/medium/cold_projection_scan_door.rs",
+      "lines": 70,
+      "tests": [],
+      "refs": [
+        "crate::execution::RelationalExecutionDenialCause",
+        "crate::runtime::RelationalRuntime",
+        "crate::visibility::materialization::read_records::ProjectionAspectScope"
+      ]
+    },
+    {
+      "path": "crates/worth-relational/src/tests/durability/medium/cold_read_door.rs",
+      "lines": 389,
+      "tests": [],
+      "refs": [
+        "crate::durability::data::RelationalNativeCheckpointCaptureDenial::Durability",
+        "crate::execution::RelationalExecutionDenialCause",
+        "crate::identity::data::EntityId",
+        "crate::identity::data::KindId",
+        "crate::inspection::data::ConnectivityInspectionRequest",
+        "crate::inspection::data::GraphInspectionRequest",
+        "crate::inspection::data::InspectionScope::Current",
+        "crate::runtime::RelationalPinnedReadAdmissionDenial",
+        "crate::runtime::RelationalPinnedReadAdmissionDenial::Request",
+        "crate::runtime::RelationalRuntime",
+        "crate::tests::support::default_connectivity_budget",
+        "crate::tests::support::default_graph_budget",
+        "crate::tests::support::default_retention_request",
+        "crate::transactions::data::RecordRef::Entity"
+      ]
+    },
+    {
+      "path": "crates/worth-relational/src/tests/durability/medium/cold_read_matrix/exhaustive.rs",
+      "lines": 109,
+      "tests": [
+        "residency_failure_matrix_full_read_subjects_cover_every_door_and_class"
+      ],
+      "refs": [
+        "crate::test_execution_policy::serial_request"
+      ]
+    },
+    {
+      "path": "crates/worth-relational/src/tests/durability/medium/cold_read_matrix.rs",
+      "lines": 141,
+      "tests": [],
+      "refs": [
+        "crate::durability::data::RelationalCheckpointManifest",
+        "crate::durability::log::native_checkpoint_codec::CHECKPOINT_MAGIC",
+        "crate::execution::RelationalExecutionDenialCause",
+        "crate::identity::data::EntityId",
+        "crate::runtime::RelationalRuntime",
+        "crate::storage::data::",
+        "crate::symbols::data::Symbol"
+      ]
+    },
+    {
+      "path": "crates/worth-relational/src/tests/durability/medium/cold_recovery_fixture.rs",
+      "lines": 133,
+      "tests": [],
+      "refs": [
+        "crate::durability::log::native_checkpoint_codec::member_frame::locator",
+        "crate::identity::data::EntityId",
+        "crate::runtime::RelationalRuntime"
+      ]
+    },
+    {
+      "path": "crates/worth-relational/src/tests/durability/medium/cold_reserved_checkpoint.rs",
+      "lines": 136,
+      "tests": [
+        "a_reserved_candidate_published_after_another_branch_checkpoint_keeps_its_pages"
+      ],
+      "refs": [
+        "crate::durability::data::RelationalCheckpointManifest",
+        "crate::durability::data::RelationalNativeCheckpoint",
+        "crate::durability::log::native_checkpoint_codec::CHECKPOINT_MAGIC",
+        "crate::runtime::RelationalRuntime",
+        "crate::test_execution_policy::serial_request"
+      ]
+    },
+    {
+      "path": "crates/worth-relational/src/tests/durability/medium/cold_retirement_metadata.rs",
+      "lines": 91,
+      "tests": [
+        "cold_retirement_metadata_carries_original_creation_and_deletion_in_head"
+      ],
+      "refs": [
+        "crate::durability::canonical_commit_artifact::RelationalCanonicalCommitArtifact::from_untrusted_bytes",
+        "crate::durability::data::RelationalCheckpointManifest",
+        "crate::durability::log::native_checkpoint_codec::CHECKPOINT_MAGIC",
+        "crate::durability::medium::DurablePublicationFate::Committed",
+        "crate::history::data::BranchId",
+        "crate::test_execution_policy::serial_request"
+      ]
+    },
+    {
+      "path": "crates/worth-relational/src/tests/durability/medium/cold_ring_dictionary.rs",
+      "lines": 141,
+      "tests": [
+        "the_remote_ring_label_stays_cold_until_its_incoming_edge_is_read"
+      ],
+      "refs": [
+        "crate::execution::RelationalExecutionDenialCause::StorageUnavailable",
+        "crate::mvcc::RelationalTransactionIntent::ordinary",
+        "crate::runtime::RelationalRuntime",
+        "crate::symbols::data::ClientKey::raw",
+        "crate::symbols::data::Symbol",
+        "crate::test_execution_policy::serial_request",
+        "crate::transactions::data::",
+        "crate::transactions::data::planned_single_field_locator",
+        "crate::visibility::materialization::read_records::relation_query_locus_value"
+      ]
+    },
+    {
+      "path": "crates/worth-relational/src/tests/durability/medium/cold_snapshot_point_door.rs",
+      "lines": 44,
+      "tests": [],
+      "refs": [
+        "crate::execution::RelationalExecutionDenialCause",
+        "crate::history::data::BranchId",
+        "crate::runtime::RelationalRuntime"
+      ]
+    },
+    {
+      "path": "crates/worth-relational/src/tests/durability/medium/cold_source/protected_reads.rs",
+      "lines": 48,
+      "tests": [],
+      "refs": [
+        "crate::durability::medium::RelationalDurableMemberRetirementRefusal",
+        "crate::durability::medium::RelationalDurableMemberRetirementRefusal::ForeignCustody",
+        "crate::durability::medium::RelationalDurableOwnedReadRefusal"
+      ]
+    },
+    {
+      "path": "crates/worth-relational/src/tests/durability/medium/cold_source.rs",
+      "lines": 228,
+      "tests": [],
+      "refs": [
+        "crate::branch::RelationalBranchTransitionSequence",
+        "crate::durability::medium::",
+        "crate::durability::medium::RelationalDurableMemberCustody",
+        "crate::durability::medium::RelationalDurableMemberCustody::new",
+        "crate::durability::medium::RelationalDurableMemberCustody::try_new_from_source_for_request",
+        "crate::durability::medium::RelationalDurableMemberRetirementObservation",
+        "crate::durability::medium::RelationalDurableMemberRetirementObservation::Complete",
+        "crate::durability::medium::RelationalDurableMemberRetirementObservation::Refused",
+        "crate::durability::medium::RelationalDurableMemberRetirementRefusal",
+        "crate::durability::medium::RelationalDurableReadBounds",
+        "crate::durability::medium::RelationalDurableReadPayload",
+        "crate::publication::patch::data::PatchStreamPosition",
+        "crate::storage::data::RelationalStorageUnavailableCause"
+      ]
+    },
+    {
+      "path": "crates/worth-relational/src/tests/durability/medium/cold_storage_adjacency.rs",
+      "lines": 70,
+      "tests": [
+        "residency_storage_adjacency_doors_demand_before_reading_and_preserve_cold_warm_answers"
+      ],
+      "refs": [
+        "crate::execution::RelationalExecutionDenialCause",
+        "crate::identity::data::",
+        "crate::runtime::RelationalRuntime",
+        "crate::test_execution_policy::serial_request"
+      ]
+    },
+    {
+      "path": "crates/worth-relational/src/tests/durability/medium/cold_symbol_failure_matrix/exhaustive.rs",
+      "lines": 85,
+      "tests": [
+        "residency_failure_matrix_symbol_buckets_cover_every_preparation_door_and_class"
+      ],
+      "refs": [
+        "crate::test_execution_policy::serial_request"
+      ]
+    },
+    {
+      "path": "crates/worth-relational/src/tests/durability/medium/cold_symbol_failure_matrix.rs",
+      "lines": 8,
+      "tests": [],
+      "refs": []
+    },
+    {
+      "path": "crates/worth-relational/src/tests/durability/medium/cold_symbol_read_doors.rs",
+      "lines": 111,
+      "tests": [
+        "every_full_read_door_admits_its_runtime_dictionary_or_preserves_page_damage"
+      ],
+      "refs": [
+        "crate::execution::RelationalExecutionDenialCause",
+        "crate::test_execution_policy::serial_request"
+      ]
+    },
+    {
+      "path": "crates/worth-relational/src/tests/durability/medium/cold_symbol_view_levels.rs",
+      "lines": 316,
+      "tests": [
+        "head_symbols_never_cover_full_history_or_inherit_its_page_damage"
+      ],
+      "refs": [
+        "crate::durability::data::RelationalCheckpointManifest",
+        "crate::durability::log::native_checkpoint_codec::CHECKPOINT_MAGIC",
+        "crate::identity::data::EntityId",
+        "crate::mvcc::RelationalTransactionIntent::ordinary",
+        "crate::runtime::RelationalRuntime",
+        "crate::snapshots::data::SnapshotHandle",
+        "crate::storage::residency::",
+        "crate::storage::residency::PartitionHeadProbe::Resident",
+        "crate::symbols::data::Symbol",
+        "crate::test_execution_policy::serial_request",
+        "crate::transactions::data::",
+        "crate::transactions::data::planned_single_field_locator",
+        "crate::visibility::materialization::read_records::entity_query_locus_value"
+      ]
+    },
+    {
+      "path": "crates/worth-relational/src/tests/durability/medium/cold_symbols.rs",
+      "lines": 296,
+      "tests": [
+        "cold_symbol_buckets_refuse_each_preparation_door_without_journal_effects_and_stay_damaged",
+        "a_cold_symbol_probe_spends_the_abandoned_record_identity_and_reads_only_touched_buckets"
+      ],
+      "refs": [
+        "crate::durability::canonical_commit_artifact::RelationalCanonicalCommitArtifact::from_untrusted_bytes",
+        "crate::durability::data::RelationalCheckpointManifest",
+        "crate::durability::log::native_checkpoint_codec::CHECKPOINT_MAGIC",
+        "crate::durability::medium::DurablePublicationFate::Committed",
+        "crate::identity::data::EntityId",
+        "crate::mvcc::BranchBoundRelationalTransaction",
+        "crate::runtime::RelationalRuntime",
+        "crate::storage::data::",
+        "crate::symbols::data::ClientKey::raw",
+        "crate::symbols::data::RelationalFieldTextAdmissionDenial::StorageUnavailable",
+        "crate::test_execution_policy::serial_request",
+        "crate::transactions::data::"
+      ]
+    },
+    {
+      "path": "crates/worth-relational/src/tests/durability/medium/cold_tail_matrix/exhaustive.rs",
+      "lines": 183,
+      "tests": [
+        "residency_failure_matrix_tail_recovery_stages_every_consumed_subject_before_effects"
+      ],
+      "refs": [
+        "crate::history::data::BranchId",
+        "crate::symbols::data::Symbol",
+        "crate::test_execution_policy::serial_request",
+        "crate::visibility::materialization::read_records::entity_query_locus_value"
+      ]
+    },
+    {
+      "path": "crates/worth-relational/src/tests/durability/medium/cold_tail_matrix.rs",
+      "lines": 133,
+      "tests": [],
+      "refs": [
+        "crate::durability::data::RelationalCheckpointManifest",
+        "crate::durability::log::native_checkpoint_codec::CHECKPOINT_MAGIC",
+        "crate::history::data::BranchId",
+        "crate::identity::data::EntityId",
+        "crate::indexes::data::",
+        "crate::runtime::RelationalRuntime",
+        "crate::storage::data::",
+        "crate::symbols::data::Symbol"
+      ]
+    },
+    {
+      "path": "crates/worth-relational/src/tests/durability/medium/cold_unique_symbols.rs",
+      "lines": 139,
+      "tests": [
+        "cold_head_warm_and_full_warm_uniqueness_reuse_the_original_paged_field_identity"
+      ],
+      "refs": [
+        "crate::durability::canonical_commit_artifact::RelationalCanonicalCommitArtifact::from_untrusted_bytes",
+        "crate::durability::medium::DurablePublicationFate::Committed",
+        "crate::test_execution_policy::serial_request",
+        "crate::transactions::data::",
+        "crate::validation::data::InvariantViolationFields"
+      ]
+    },
+    {
+      "path": "crates/worth-relational/src/tests/durability/medium/cold_visibility.rs",
+      "lines": 115,
+      "tests": [
+        "cold_visibility_doors_preserve_storage_failure_and_never_advance_publication",
+        "cold_and_warm_visibility_preserve_an_observation_across_a_later_commit"
+      ],
+      "refs": [
+        "crate::durability::canonical_commit_artifact::RelationalCanonicalCommitArtifact::from_untrusted_bytes",
+        "crate::durability::medium::DurablePublicationFate::Committed",
+        "crate::execution::RelationalExecutionDenialCause",
+        "crate::storage::data::RelationalStorageSubject::Region",
+        "crate::storage::data::RelationalStorageUnavailable",
+        "crate::test_execution_policy::serial_request"
+      ]
+    },
+    {
+      "path": "crates/worth-relational/src/tests/durability/medium/cold_visibility_round_counters.rs",
+      "lines": 71,
+      "tests": [
+        "discarded_visibility_rounds_settle_only_accepted_materialization_and_leases"
+      ],
+      "refs": [
+        "crate::test_execution_policy::serial_request"
+      ]
+    },
+    {
+      "path": "crates/worth-relational/src/tests/durability/medium/replay_pin_concurrency.rs",
+      "lines": 84,
+      "tests": [
+        "concurrent_replay_references_share_one_physical_pin_set"
+      ],
+      "refs": [
+        "crate::symbols::data::ClientKey::raw",
+        "crate::test_execution_policy::serial_request",
+        "crate::transactions::data::BulkEntityCreateIntent"
+      ]
+    }
+  ],
+  "missing": []
+}

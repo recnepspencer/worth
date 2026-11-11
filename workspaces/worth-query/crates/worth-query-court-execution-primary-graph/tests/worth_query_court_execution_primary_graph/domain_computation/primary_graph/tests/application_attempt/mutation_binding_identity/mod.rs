@@ -141,7 +141,7 @@ fn two_bindings_sharing_key_namespace_operation_and_input_type_never_replay_each
                 original,
                 worth_execution::ExecutionAllocationPolicy::SystemAllocation
             ),
-            WorthQueryApplicationCommitOutcome::AlreadyCommitted(_)
+            WorthQueryApplicationCommitOutcome::RecoveredCommitted(_)
         ),
         "the same binding replays its own commit"
     );

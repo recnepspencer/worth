@@ -271,3 +271,6 @@ where
         })
     }
 }
+#[cfg(test)]
+#[path = "retained_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;

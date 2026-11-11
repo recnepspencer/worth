@@ -1,0 +1,9 @@
+{
+  "path": "workspaces\\worth-store\\crates\\worth-store-court-application\\tests\\worth_store_court_application\\process\\application\\native_components\\checkpoint.rs",
+  "original_sha256": "0eae228ca29aba7b2dceba8a205a962e14c302395ea58aa088116bd3029940d5",
+  "diagnostic_sha256": "40ddbfb764f40f61af4c4b8a9c564978ab379946f1f488020cd68b1786144036",
+  "change": "append Result::inspect_err only; no assertion or wait changed",
+  "failed_probe_sha256": "604a4cfbb3c1e508e12c576cefe359f2270df983f6f060a709183450583c1825",
+  "restored_sha256": "0eae228ca29aba7b2dceba8a205a962e14c302395ea58aa088116bd3029940d5",
+  "restored": true
+}

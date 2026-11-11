@@ -28,6 +28,19 @@ impl ProductUnpublishedRecoveryCatalog {
         now: RuntimeWorldInstant,
     ) -> Result<RuntimeWorldRecoveryPage, RuntimeWorldRecoveryDenial> {
         let state = self.locked_state();
+        if let Some(cursor) = after {
+            state
+                .owner
+                .admit_incarnation(cursor.owner)
+                .map_err(|cause| match cause {
+                    worth_proof::HomeIncarnationDenial::ForeignHome => {
+                        RuntimeWorldRecoveryDenial::ForeignHandle
+                    }
+                    worth_proof::HomeIncarnationDenial::StaleIncarnation => {
+                        RuntimeWorldRecoveryDenial::StaleIncarnation
+                    }
+                })?;
+        }
         if after.is_some_and(|cursor| {
             cursor.owner != state.owner || cursor.catalog_affinity != self.affinity()
         }) {
@@ -47,6 +60,7 @@ impl ProductUnpublishedRecoveryCatalog {
                     RuntimeWorldRecoveryRecordState::Retained,
                     Some((record.admitted_at(), record.deadline())),
                 ),
+                RecoveryEntry::Recovered(_) => (RuntimeWorldRecoveryRecordState::Recovered, None),
                 RecoveryEntry::Active(record) => (
                     if record.is_abandoned() {
                         RuntimeWorldRecoveryRecordState::Abandoned

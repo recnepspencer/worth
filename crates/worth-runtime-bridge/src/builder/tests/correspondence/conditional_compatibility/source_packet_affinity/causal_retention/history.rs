@@ -1,8 +1,6 @@
 //! Real execution histories can be lost without destroying original Native evidence.
 use super::*;
-use crate::facade::{
-    BridgeConditionalCausalObservation, BridgeConditionalHistoryAvailability as Availability,
-};
+use crate::facade::BridgeConditionalHistoryAvailability as Availability;
 use worth_execution::*;
 
 fn policy(bytes: u64) -> worth_foundational::ExecutionRequestPolicy {

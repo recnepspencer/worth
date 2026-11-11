@@ -14,12 +14,12 @@ use std::sync::Arc;
 use worth_execution::MapKernelContext;
 mod coupled;
 
-/// O(H² + P²M), catalog-bounded and charged under the original request.
+/// O(H^2 + P^2 M), catalog-bounded and charged under the original request.
 pub(crate) fn historical_positions(
     mut next: Option<CommitId>,
     bound: usize,
     installed: Option<&RelationalInstalledApplicationPublicationAuthority>,
-    load: &mut dyn FnMut(CommitId) -> Option<Arc<CanonicalCommitEnvelope>>,
+    load: &mut dyn FnMut(CommitId) -> Result<Option<Arc<CanonicalCommitEnvelope>>, Stop>,
     validate: &mut dyn FnMut(
         &CanonicalCommitEnvelope,
         &mut MapKernelContext<'_, '_>,
@@ -31,7 +31,7 @@ pub(crate) fn historical_positions(
     for _ in 0..bound {
         let Some(commit) = next else { break };
         charge(context, bound.saturating_add(1))?;
-        let envelope = load(commit).ok_or("source-scope closure lost canonical history")?;
+        let envelope = load(commit)?.ok_or("source-scope closure lost canonical history")?;
         require_linear_history(&envelope)?;
         if envelope.coupled_authored_publication.is_some() || !coupled_ancestry.is_empty() {
             coupled_ancestry.push(Arc::clone(&envelope));
@@ -241,9 +241,9 @@ pub(crate) fn select(
 
 /// A genuinely historical source birth or inverse selects its recorded prefix.
 /// This is never called to enforce current ownership or to rebuild its roster.
-pub(crate) fn validate_historical_prefix(
+pub(super) fn validate_historical_prefix(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-    runtime: &crate::runtime::RelationalRuntime,
+    runtime: &crate::history::data::codec_retirement_closure::history_request::RuntimeHistoryRequest<'_, '_, '_>,
     basis: &crate::branch::AdmittedRelationalBranchBasis,
     envelope: &CanonicalCommitEnvelope,
     source: EntityId,
@@ -252,36 +252,40 @@ pub(crate) fn validate_historical_prefix(
     execution
         .consult()
         .map_err(crate::publication::ownership::request)?;
-    historical_positions(
-        Some(envelope.commit.commit_id),
-        runtime.history.catalog_len(),
-        None,
-        &mut |commit| runtime.history.canonical_envelope(commit),
-        &mut |envelope, context| {
-            if envelope.required_output_materialization.is_some() {
-                super::materialization::validate_semantics(
-                    runtime,
-                    envelope,
-                    context,
-                    None,
-                    basis.inner.root.schema_authority(),
-                )?;
+    execution
+        .in_scope(|lease| {
+            historical_positions(
+                Some(envelope.commit.commit_id),
+                runtime.runtime.history.catalog_len(),
+                None,
+                &mut |commit| runtime.commit(commit),
+                &mut |envelope, context| {
+                    if envelope.required_output_materialization.is_some() {
+                        super::materialization::validate_semantics(
+                            runtime,
+                            envelope,
+                            context,
+                            lease,
+                            basis.inner.root.schema_authority(),
+                        )?;
+                    }
+                    Ok(())
+                },
+                context,
+            )
+            .map(|_| ())
+        })
+        .map_err(crate::publication::ownership::request)?
+        .map_err(|failure| match failure.stop {
+            Stop::Request(cause) => crate::publication::ownership::request(cause),
+            Stop::Payload(detail) => {
+                let mut error = crate::publication::data::PublicationError::authored_retirement(
+                    crate::publication::data::AuthoredRetirementRefusal::CorruptPublication,
+                    crate::transactions::data::RecordRef::Entity(failure.source.unwrap_or(source)),
+                );
+                error.detail.push_str(": ");
+                error.detail.push_str(&detail);
+                crate::transactions::data::TransactionCommitError::publication(error)
             }
-            Ok(())
-        },
-        context,
-    )
-    .map(|_| ())
-    .map_err(|failure| match failure.stop {
-        Stop::Request(cause) => crate::publication::ownership::request(cause),
-        Stop::Payload(detail) => {
-            let mut error = crate::publication::data::PublicationError::authored_retirement(
-                crate::publication::data::AuthoredRetirementRefusal::CorruptPublication,
-                crate::transactions::data::RecordRef::Entity(failure.source.unwrap_or(source)),
-            );
-            error.detail.push_str(": ");
-            error.detail.push_str(&detail);
-            crate::transactions::data::TransactionCommitError::publication(error)
-        }
-    })
+        })
 }

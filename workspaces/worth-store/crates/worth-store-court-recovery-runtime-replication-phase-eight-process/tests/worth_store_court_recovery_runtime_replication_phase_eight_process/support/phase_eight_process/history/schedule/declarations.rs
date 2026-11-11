@@ -14,8 +14,12 @@ pub(crate) use {
 };
 
 pub(crate) const OPERATION_PROGRAM_MAGIC: &[u8] = b"WORTH-C8-SUBMITTED-OPERATIONS-V1\n";
-pub(crate) const OPERATION_COUNT: usize = 96;
 pub(crate) const OPERATION_PAYLOAD_BYTES: usize = 8 * 1024;
+// Keep the submitted semantic payload larger than the ordinary recovery
+// allowance, including when its declared finite envelope changes.
+pub(crate) const OPERATION_COUNT: usize =
+    crate::phase_eight_process::history::writer_history::expected_history::RECOVERY_MEMORY_BUDGET_BYTES / OPERATION_PAYLOAD_BYTES
+        + 1;
 
 pub(crate) fn payload(seed: u64, ordinal: u64) -> Vec<u8> {
     let mut bytes = Vec::with_capacity(OPERATION_PAYLOAD_BYTES);

@@ -85,14 +85,6 @@ impl RelationalBranchRoot {
             .and_then(|region| region.partition.accepted_head_view())
     }
 
-    pub(crate) fn admitted_head_region(
-        &self,
-        id: PartitionId,
-    ) -> Option<crate::storage::residency::RelationalRegionHeadView<'_>> {
-        self.regions
-            .get(id)
-            .and_then(|region| region.partition.admitted_head_view())
-    }
     pub(crate) fn probe_head_region(
         &self,
         id: PartitionId,
@@ -313,5 +305,46 @@ impl RelationalBranchRoot {
                 },
             )
             .collect()
+    }
+
+    pub(crate) fn checkpoint_region_count(&self) -> usize {
+        self.regions.len()
+    }
+
+    /// The caller admits its destination before retaining these fixed rows.
+    /// Traversal borrows the immutable radix and allocates no roster or map.
+    pub(crate) fn try_visit_checkpoint_regions<E>(
+        &self,
+        mut visit: impl FnMut(
+            super::super::root_checkpoint::RelationalRootRegionCheckpoint,
+        ) -> Result<(), E>,
+    ) -> Result<(), E> {
+        for id in self.regions.partition_ids_iter() {
+            let region = self.regions.get(id)
+                .expect(/* Proof: The borrowed iterator and lookup address the same immutable radix; each yielded ID has a present leaf. */ "selected region exists");
+            visit(
+                super::super::root_checkpoint::RelationalRootRegionCheckpoint {
+                    partition_id: region.partition_id,
+                    content_digest: region.content_digest,
+                    kind_commitment: region.kind_commitment,
+                    directory: region.directory.clone(),
+                    live_counts: region.live_counts,
+                    entity_slots: region.entity_slots,
+                    relation_slots: region.relation_slots,
+                    unavailable_records: region.materialization_unavailable_records(),
+                    cell: region.partition.cell().clone(),
+                    kind_authority: region.partition.kind_authority(),
+                },
+            )?;
+        }
+        Ok(())
+    }
+}
+
+impl super::RelationalBranchRoot {
+    pub(crate) fn source_retirement_regions(
+        &self,
+    ) -> super::super::root_regions::RelationalRegionSourceWalk {
+        super::super::root_regions::RelationalRegionSourceWalk::new(self.regions.clone())
     }
 }

@@ -8,7 +8,7 @@ impl fragment::Relation for MappingTarget {
 }
 pub(super) struct IdentityBinding;
 
-pub fn target() -> ApplicationRelationRef<Schema, MappingTarget, Mapping, Principal> {
+fn target() -> ApplicationRelationRef<Schema, MappingTarget, Mapping, Principal> {
     ApplicationRelationRef::from_schema_identifiers(
         "MappingTarget",
         "Mapping",
@@ -16,7 +16,7 @@ pub fn target() -> ApplicationRelationRef<Schema, MappingTarget, Mapping, Princi
         ApplicationRelationIntegrity::same_context_unbounded_retain_dangling(),
     )
 }
-pub fn reference() -> ApplicationPrincipalBindingRef<
+fn reference() -> ApplicationPrincipalBindingRef<
     Schema,
     IdentityBinding,
     Mapping,

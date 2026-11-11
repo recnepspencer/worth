@@ -224,7 +224,13 @@ fn native_normalization_and_validation_footprint_retain_selected_policy() {
             crate::execution::RelationalExecutionDenialCause::Cancelled
         )
     );
-    assert_eq!(transaction.last_merged_plan.as_ref(), Some(&plan));
+    assert_eq!(
+        transaction
+            .last_merged_plan
+            .as_ref()
+            .map(|plan| plan.plan()),
+        Some(&plan)
+    );
     drop(stopped);
     let committed = transaction
         .commit(

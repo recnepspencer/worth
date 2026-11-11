@@ -87,17 +87,14 @@ where
                 if !self.source_completed {
                     return Err(Denial::SourceEvidenceUnavailable);
                 }
-                let receipt = match self.source.completion() {
-                    WorthQuerySourceCompletion::Fresh { receipt, .. }
-                    | WorthQuerySourceCompletion::Recovered { receipt, .. } => receipt,
-                };
+                let receipt = self.source.completion().live_receipt();
                 let custody = WorthQueryWorkflowAdvanceAdapter::resolve_guarded_operation_custody(
                     &phase,
                     source.runtime.runtime(),
                     &prepared.admission,
                     prepared.idempotency,
                     self.required.transition_identity_bytes(),
-                    Some(receipt),
+                    receipt,
                 )
                 .map_err(Denial::Inspection)?;
                 match custody {

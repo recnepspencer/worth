@@ -47,7 +47,7 @@ impl<'run> ApprovedCoupledWriter<'run> {
                     .downcast_ref::<CoupledWriterAdmission<S, B>>()
                     .expect("installed executor retains its own nominal writer");
                 let context = super::super::super::commit_resolution::WorthQueryAuthorizedCompareContext::from_admission(
-                    &application.runtime.primary_provider, &typed.admission, typed.idempotency,
+                    &application.runtime.primary_provider, &custody.original_completion, &typed.admission, typed.idempotency,
                     custody.lease.product().publication_binding(), custody.dispatch_outbox.take(), None, terminal,
                 );
                 let outcome = super::super::super::commit_resolution::finish_authorized_compare(
@@ -68,6 +68,11 @@ impl CommitPreparedCoupledWriter<'_> {
         &self,
     ) -> crate::domain_computation::provider_session::WorthQueryProviderSessionTerminalBinding {
         self.prepared.terminal_binding()
+    }
+    pub(in crate::domain_computation::primary_graph) fn has_original_completion(&self) -> bool {
+        self.custody
+            .original_completion
+            .has_completion(&self.terminal_binding())
     }
     pub(in crate::domain_computation::primary_graph) fn member(
         &self,
@@ -100,6 +105,7 @@ impl CommitPreparedCoupledWriter<'_> {
                 provider.complete_coupled_session(
                     execution,
                     &terminal,
+                    &custody.original_completion,
                     session,
                     &product,
                     unpublished,
@@ -111,7 +117,7 @@ impl CommitPreparedCoupledWriter<'_> {
             .downcast_ref::<CoupledWriterAdmission<S, B>>()
             .expect("installed participant retains its nominal admission");
         let context = super::super::super::commit_resolution::WorthQueryAuthorizedCompareContext::from_admission(
-            provider, &typed.admission, typed.idempotency, product, custody.dispatch_outbox.take(), None, terminal,
+            provider, &custody.original_completion, &typed.admission, typed.idempotency, product, custody.dispatch_outbox.take(), None, terminal,
         );
         let outcome = super::super::super::commit_resolution::finish_authorized_compare(
             execution, compared, context,

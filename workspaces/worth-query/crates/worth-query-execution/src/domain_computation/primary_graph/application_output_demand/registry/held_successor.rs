@@ -18,7 +18,7 @@ use super::WorthQueryOutputDemandRegistry;
 use crate::domain_computation::primary_graph::WorthQueryOutputDemandDenial;
 
 /// The typed successor, erased so the registry stays independent of schema.
-pub type HeldRequiredSuccessor = Box<dyn Any + Send + Sync>;
+pub type HeldRequiredSuccessor = Box<dyn Any + Send>;
 
 impl WorthQueryOutputDemandRegistry {
     /// Keep `successor` on the row `key_of` names. Returns what the caller
@@ -62,7 +62,7 @@ impl WorthQueryOutputDemandRegistry {
             .and_then(|mut record| {
                 let published = matches!(&record.state, DemandState::Output(output)
                     if matches!(output.advancement(), super::WorthQueryOutputAdvancement::Idle)
-                    && matches!(output.checkpoint, Some(super::WorthQueryOutputCheckpoint::Published { .. } | super::WorthQueryOutputCheckpoint::Delivered { .. })));
+                    && matches!(output.checkpoint, Some(super::WorthQueryOutputCheckpoint::Published { .. } | super::WorthQueryOutputCheckpoint::RecoveredPublished { .. } | super::WorthQueryOutputCheckpoint::Delivered { .. } | super::WorthQueryOutputCheckpoint::RecoveredDelivered { .. })));
                 published.then(|| record.held_successor.take()).flatten()
             }))
     }

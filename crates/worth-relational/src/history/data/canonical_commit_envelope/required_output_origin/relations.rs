@@ -1,7 +1,7 @@
 //! Actual producer-created relations touch at least one complete output member.
 //! Owning an edge never adopts its external endpoint entity.
 use super::payload_coverage::{validate_created_relation_payload, OutputPayloadCoverageFailure};
-use super::{origin_request, CanonicalCommitEnvelope};
+use super::{origin_request, CanonicalCommitEnvelopeBody};
 use crate::identity::data::{EntityId, KindId, RelationId};
 use crate::storage::overlay::CurrentPartitionAccess;
 use crate::transactions::data::{
@@ -22,7 +22,7 @@ pub(crate) struct CanonicalRequiredOutputRelation {
 }
 
 pub(super) fn capture_created_relations(
-    envelope: &CanonicalCommitEnvelope,
+    envelope: &CanonicalCommitEnvelopeBody,
     entities: &CommitCreatedEntityBindings,
     relations: &CommitCreatedRelationBindings,
     state: &crate::storage::overlay::WorkingState,
@@ -117,7 +117,7 @@ pub(super) fn capture_created_relations(
         match validate_created_relation_payload(
             envelope,
             *id,
-            record.extra().authoritative_aspect_state.as_ref(),
+            record.extra().authoritative_aspect_state(),
             context,
         ) {
             Ok(()) => captured.push(CanonicalRequiredOutputRelation {
@@ -166,8 +166,8 @@ fn work_overflow() -> TransactionCommitError {
 /// Prior edges retain native before-write fences; only actual candidate changes
 /// can update or retire them. New edges were captured from real allocations.
 pub(super) fn continue_relations(
-    envelope: &CanonicalCommitEnvelope,
-    history: &crate::runtime::RelationalPreparationHistory,
+    envelope: &CanonicalCommitEnvelopeBody,
+    history: &crate::history::data::canonical_commit_envelope::required_output_origin::history_request::PreparationHistoryRequest<'_, '_, '_>,
     prior: &super::CanonicalRequiredOutputOrigin,
     basis: &crate::branch::AdmittedRelationalBranchBasis,
     state: &crate::storage::overlay::WorkingState,
@@ -206,8 +206,9 @@ pub(super) fn continue_relations(
                 relation.after_write,
                 write,
                 &mut |commit| history.canonical_envelope(commit),
-                &mut |version| history.canonical_envelope_for_version(version),
+                &mut |version, context| history.canonical_envelope_for_version(version, context),
                 history.canonical_catalog_len(),
+                &history.execution(),
                 context,
             )
             .map_err(super::installation::relation_stop)?)

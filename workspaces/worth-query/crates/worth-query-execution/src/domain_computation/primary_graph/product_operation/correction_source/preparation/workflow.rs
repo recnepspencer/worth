@@ -17,7 +17,11 @@ where
     C: ApplicationCorrectionBinding<S>,
 {
     use WorthQueryCorrectionDerivationDenial as Denial;
-    let Some(origin) = source.occurrence().commit_evidence().workflow_origin() else {
+    let Some(origin) = source
+        .occurrence()
+        .memory()
+        .and_then(|value| value.commit_evidence().workflow_origin())
+    else {
         return if C::Source::REQUIRES_WORKFLOW_AUTHORITY {
             Err(Denial::Workflow(unavailable(
                 "performed source has no workflow origin",
@@ -30,7 +34,7 @@ where
     let execution = phase
         .execution_request_for(&application.runtime.product_runtime)
         .map_err(|_| Denial::ForeignPhase)?;
-    application.runtime.primary_provider.graph.with_runtime_mut(&execution, |runtime| {
+    application.runtime.primary_provider.graph.with_runtime(&execution, |runtime| {
         let snapshot = crate::domain_computation::primary_graph::exact_basis_access::open_exact_basis_snapshot(
             runtime, target.product().relational_basis(),
         ).map_err(Denial::Basis)?;

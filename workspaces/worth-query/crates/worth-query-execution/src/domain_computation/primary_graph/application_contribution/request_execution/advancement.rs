@@ -83,6 +83,7 @@ mod bootstrap_opening;
 pub use bootstrap_opening::with_bootstrap_advancement_from_request;
 mod bootstrap_custody;
 pub use bootstrap_custody::WorthQueryBootstrapAdvancementPhase;
+mod directory_completion;
 pub(crate) mod opening_custody;
 use opening_custody::OpeningCustody;
 
@@ -102,12 +103,23 @@ impl QueryRequestExecution<'_> {
         source_instance: Option<u64>,
         body: impl for<'scope> FnOnce(WorthQueryAdvancementPhase<'scope>) -> R,
     ) -> Result<R, WorthQueryAdvancementDenial> {
+        self.run_advancement_with_maintenance(owner, source_instance, None, body)
+    }
+
+    fn run_advancement_with_maintenance<R>(
+        &self,
+        owner: Option<worth_runtime_world::facade::RuntimeWorldOwnerIdentity>,
+        source_instance: Option<u64>,
+        maintenance: Option<&dyn crate::domain_computation::execution_runtime::product_world::WorthQueryHomeMaintenance>,
+        body: impl for<'scope> FnOnce(WorthQueryAdvancementPhase<'scope>) -> R,
+    ) -> Result<R, WorthQueryAdvancementDenial> {
         let pending = std::cell::RefCell::new(Some(body));
         let result = std::cell::RefCell::new(None);
         runner::run_advancement(
             self,
             owner,
             source_instance,
+            maintenance,
             &mut |phase| {
                 let body = pending
                     .borrow_mut()
@@ -160,6 +172,16 @@ mod installed_opening;
 /// Installation's serial placement reports zero memory as `PolicyMemoryLimit`;
 /// an installed leased opener instead reports a policy `MemoryLimit`.
 pub fn with_bootstrap_advancement<R>(
+    policy: worth_foundational::ExecutionRequestPolicy,
+    body: impl for<'scope> FnOnce(WorthQueryBootstrapAdvancementPhase<'scope>) -> R,
+) -> Result<R, WorthQueryAdvancementDenial> {
+    worth_execution::run_with_execution_stack(move || {
+        with_bootstrap_advancement_on_execution_stack(policy, body)
+    })
+}
+
+#[inline(never)]
+fn with_bootstrap_advancement_on_execution_stack<R>(
     policy: worth_foundational::ExecutionRequestPolicy,
     body: impl for<'scope> FnOnce(WorthQueryBootstrapAdvancementPhase<'scope>) -> R,
 ) -> Result<R, WorthQueryAdvancementDenial> {
@@ -271,3 +293,6 @@ pub(crate) mod test_host_policy;
 pub(crate) use test_host_policy::TestHostRequest;
 
 mod court_doors_for_test;
+#[cfg(test)]
+#[path = "advancement_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;

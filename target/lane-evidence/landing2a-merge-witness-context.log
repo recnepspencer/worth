@@ -1,0 +1,13 @@
+command: python scripts/application_build.py cargo run --manifest-path tools/agent-context/Cargo.toml -- check
+HEAD: 26cc5a58f28f3dca4ec01874eb55f68050484610
+git_status_short_empty: false
+start_utc: 2026-11-10T00:55:58.881762+00:00
+environment: removed stale CARGO_TARGET_X86_64_PC_WINDOWS_MSVC_LINKER override
+    Finished `dev` profile [optimized + debuginfo] target(s) in 0.06s
+     Running `tools\agent-context\target\debug\agent-context.exe check`
+
+end_utc: 2026-11-10T00:56:05.636569+00:00
+exit_code: 0
+tests_passed: 0
+tests_failed: 0
+tests_ignored: 0

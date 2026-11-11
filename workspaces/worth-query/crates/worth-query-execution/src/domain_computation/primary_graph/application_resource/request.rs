@@ -61,7 +61,8 @@ impl<Schema: ApplicationSchema> WorthQueryApplicationResourcesRequest<'_, '_, '_
         &self,
     ) -> Result<Arc<InstalledResourceBinding<Schema, Binding>>, ResourceCause> {
         self.runtime
-            .installed_resources
+            .conditional_cleanup
+            .resources
             .binding::<Binding>()
             .ok_or(ResourceCause::Unavailable)
     }
@@ -83,9 +84,6 @@ impl<Schema: ApplicationSchema> WorthQueryApplicationResourcesRequest<'_, '_, '_
         Input:
             ApplicationCapabilityRequest<Schema, Capability, Scope = AccessScope<Schema, Binding>>,
     {
-        if let Some(cause) = capability.request_scope().interruption() {
-            return Err(ResourceCause::Control(cause));
-        }
         prepare_pending_disclosure(
             self.runtime,
             installed
@@ -96,6 +94,11 @@ impl<Schema: ApplicationSchema> WorthQueryApplicationResourcesRequest<'_, '_, '_
             principal,
             scope,
             capability,
+            |original| {
+                original
+                    .interruption()
+                    .map_or(Ok(()), |cause| Err(ResourceCause::Control(cause)))
+            },
             || {
                 self.request
                     .interruption()
@@ -104,6 +107,11 @@ impl<Schema: ApplicationSchema> WorthQueryApplicationResourcesRequest<'_, '_, '_
             || {
                 ResourceCause::Admission(
                     super::admission::ResourceAdmissionDenial::ForeignIssuedAccess,
+                )
+            },
+            |denial| {
+                ResourceCause::Admission(
+                    super::admission::ResourceAdmissionDenial::DisclosureAuthorization(denial),
                 )
             },
         )

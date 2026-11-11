@@ -9,6 +9,7 @@ use super::super::authority_continuity::validate_checkpoint_lineage_artifact;
 mod branch_root_images;
 mod cold_directory;
 mod history_readmission;
+mod selected_catalog;
 use history_readmission::prepare_history;
 mod partition_images;
 mod record_identity;
@@ -35,6 +36,7 @@ struct PreparedCheckpointState {
     history: HistorySubsystem,
     lineage: LineageState,
     indexes: IndexingState,
+    index_roots: root_readmission::ReadmittedRootImages,
 }
 
 pub(super) fn restore_checkpoint_state(
@@ -42,22 +44,30 @@ pub(super) fn restore_checkpoint_state(
     restored: &mut RelationalRuntime,
     checkpoint: DurableCheckpoint,
     work: &mut CheckpointRestoreWork,
+    original_schemas: Option<&super::original_schemas::OriginalSchemaGraph>,
 ) -> Result<(), RelationalRecoveryStop> {
-    if let Some(directory) = checkpoint.directory.clone() {
-        crate::storage::substrate::maintenance::ReconstructionLane::enter_reconstruction(|lane| {
-            cold_directory::restore(
-                lane,
-                execution,
-                restored,
-                &checkpoint,
-                directory.clone(),
-                work,
-            )
-        })?;
+    if let Some(directory) = checkpoint
+        .directory
+        .clone()
+        .map(|edge| edge.into_original())
+    {
+        let schemas =
+            crate::storage::substrate::maintenance::ReconstructionLane::enter_reconstruction(
+                |lane| {
+                    cold_directory::restore(
+                        lane,
+                        execution,
+                        restored,
+                        &checkpoint,
+                        directory.clone(),
+                        work,
+                    )
+                },
+            )?;
         crate::storage::substrate::maintenance::ReconstructionLane::enter_reconstruction(|lane| {
             restored
                 .indexes
-                .install_cold_checkpoint(lane, directory, restored)
+                .install_cold_checkpoint(lane, directory, restored, schemas)
         })?;
         restored
             .index_authority()
@@ -67,8 +77,9 @@ pub(super) fn restore_checkpoint_state(
             .push_checkpoint(checkpoint);
         return Ok(());
     }
-    let prepared = prepare_checkpoint_state(execution, restored, &checkpoint, work)?;
-    install_checkpoint_state(super::unshared_state(restored)?, prepared);
+    let prepared =
+        prepare_checkpoint_state(execution, restored, &checkpoint, work, original_schemas)?;
+    let index_roots = install_checkpoint_state(super::unshared_state(restored)?, prepared);
     restored
         .index_authority()
         .recover_installed_index_routing(execution)?;
@@ -80,11 +91,21 @@ pub(super) fn restore_checkpoint_state(
             &crate::storage::substrate::maintenance::ReconstructionLane::enter_reconstruction(
                 |lane| crate::indexes::checkpoint_index_projections(lane, restored),
             ),
+            &index_roots.roots,
         )?;
     }
-    super::unshared_state(restored)?
-        .durability
-        .push_checkpoint(checkpoint);
+    let restored = super::unshared_state(restored)?;
+    if let Some(directory) = checkpoint
+        .canonical_directory
+        .clone()
+        .map(|edge| edge.into_original())
+    {
+        restored
+            .durability
+            .checkpoint_selection()
+            .restore_data(directory);
+    }
+    restored.durability.push_checkpoint(checkpoint);
     Ok(())
 }
 
@@ -93,6 +114,7 @@ fn prepare_checkpoint_state(
     restored: &mut RelationalRuntime,
     checkpoint: &DurableCheckpoint,
     work: &mut CheckpointRestoreWork,
+    original_schemas: Option<&super::original_schemas::OriginalSchemaGraph>,
 ) -> Result<PreparedCheckpointState, RelationalRecoveryStop> {
     validate_checkpoint_lineage_artifact(checkpoint)?;
     let symbols =
@@ -102,7 +124,14 @@ fn prepare_checkpoint_state(
     let record_identity = prepare_record_identity(checkpoint)?;
     let branch_root_images =
         crate::storage::substrate::maintenance::ReconstructionLane::enter_reconstruction(|lane| {
-            restore_branch_root_images(lane, execution, restored, checkpoint, work)
+            restore_branch_root_images(
+                lane,
+                execution,
+                restored,
+                checkpoint,
+                work,
+                original_schemas,
+            )
         })?;
     recovered_schema_meaning::check_current_schema_meaning(
         execution,
@@ -112,31 +141,33 @@ fn prepare_checkpoint_state(
     )?;
     let partitions =
         prepare_partitions(execution, restored, checkpoint, &branch_root_images, work)?;
-    let history = crate::storage::substrate::maintenance::ReconstructionLane::enter_reconstruction(
-        |_lane| {
-            prepare_history(
-                execution,
-                restored,
-                checkpoint,
-                branch_root_images,
-                &symbols,
-                work,
-            )
-        },
-    )?;
+    let prepared_history =
+        crate::storage::substrate::maintenance::ReconstructionLane::enter_reconstruction(
+            |_lane| {
+                prepare_history(
+                    execution,
+                    restored,
+                    checkpoint,
+                    branch_root_images,
+                    &symbols,
+                    work,
+                )
+            },
+        )?;
     let lineage =
         crate::storage::substrate::maintenance::ReconstructionLane::enter_reconstruction(|lane| {
             prepare_lineage(lane, restored, checkpoint)
         });
     let indexes =
         crate::storage::substrate::maintenance::ReconstructionLane::enter_reconstruction(|lane| {
-            prepare_indexes(lane, checkpoint, &history, work)
+            prepare_indexes(lane, checkpoint, &prepared_history.history, work)
         })?;
     Ok(PreparedCheckpointState {
         symbols,
         record_identity,
         partitions,
-        history,
+        history: prepared_history.history,
+        index_roots: prepared_history.roots,
         lineage,
         indexes,
     })
@@ -236,10 +267,18 @@ fn prepare_indexes(
     }
     let mut indexes = IndexingState::default();
     indexes.restore_generation_frontier(checkpoint.index_generation_frontier);
-    for definition in &checkpoint.index_definitions {
-        indexes.insert_definition(definition.clone());
-        work.index_definitions_readmitted += 1;
-    }
+    indexes
+        .readmit_checkpoint_catalog(
+            &checkpoint.index_definitions,
+            checkpoint.index_definition_frontier,
+        )
+        .map_err(|detail| {
+            DurabilityError::new(
+                crate::durability::data::RecoveryFailureClass::CorruptCheckpoint,
+                detail,
+            )
+        })?;
+    work.index_definitions_readmitted += checkpoint.index_definitions.len();
     restore_checkpoint_derived_index_artifacts(
         lane,
         &mut indexes,
@@ -255,13 +294,14 @@ fn prepare_indexes(
 fn install_checkpoint_state(
     restored: &mut crate::runtime::RelationalRuntimeState,
     prepared: PreparedCheckpointState,
-) {
+) -> root_readmission::ReadmittedRootImages {
     restored.services.symbols.replace(prepared.symbols);
     restored.record_identity = prepared.record_identity;
     restored.install_rebuilt_partitions(prepared.partitions);
     restored.history = prepared.history;
     restored.lineage.install(prepared.lineage);
     restored.indexes.install(prepared.indexes);
+    prepared.index_roots
 }
 
 pub(super) fn clear_recovery_partition_pins(restored: &mut RelationalRuntime) {
@@ -269,9 +309,8 @@ pub(super) fn clear_recovery_partition_pins(restored: &mut RelationalRuntime) {
     // no region yet; clearing it must not materialize or mutate its leaves.
     if restored
         .durability
-        .checkpoint_selection()
-        .snapshot()
-        .is_some()
+        .latest_checkpoint()
+        .is_some_and(|checkpoint| checkpoint.directory.is_some())
     {
         return;
     }

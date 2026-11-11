@@ -134,6 +134,8 @@ fn partial_creation_under_the_shared_name(
     let held = owner
         .state
         .signal
+        .memory_services()
+        .expect("memory-only retirement fixture")
         .mutation_port()
         .reserve_fork_exact(
             validate_signal_branch_name("signal-branch-aba-partial").expect("valid Signal name"),
@@ -158,6 +160,10 @@ fn partial_creation_under_the_shared_name(
     drop(held);
     match outcome {
         RuntimeWorldBranchCreationOutcome::ProductUnpublished(effects) => effects,
+        RuntimeWorldBranchCreationOutcome::NoEffect(_)
+        | RuntimeWorldBranchCreationOutcome::ReleasedOriginal(_) => {
+            panic!("memory creation cannot return a Home publication fate")
+        }
         RuntimeWorldBranchCreationOutcome::Performed(_) => {
             panic!("a held Signal destination must deny the Signal fork")
         }

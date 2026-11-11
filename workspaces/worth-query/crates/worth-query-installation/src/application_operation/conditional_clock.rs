@@ -122,6 +122,22 @@ where
         &self.provider
     }
 
+    /// Consume declaration material without observing or installing its clock.
+    pub fn into_definition_provider(
+        self,
+    ) -> WorthQueryInstalledHostConditionalProvider<
+        Schema,
+        ApplicationOperation,
+        Input,
+        D,
+        O,
+        F,
+        N,
+        Provider,
+    > {
+        self.provider
+    }
+
     pub fn clock_identity(&self) -> &'static str {
         Clock::PORTABLE_IDENTITY
     }

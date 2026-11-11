@@ -37,14 +37,21 @@ impl RecoveryCleanupCommandBasis {
         descriptive_plan_identity: [u8; 32],
         candidates: &[RecoveryCleanupEligibility],
     ) -> Self {
-        let checkpoint = reopened.state.coordination.owner().checkpoint().cloned();
+        let checkpoint = reopened
+            .payload()
+            .state
+            .coordination
+            .owner()
+            .checkpoint()
+            .cloned();
         let fresh_reopen = reopened.take_fresh_reopen();
         let admitted_wal = reopened
+            .payload()
             .state
             .integrity
             .admitted_wal()
             .cleanup_segments(candidates.iter().map(RecoveryCleanupEligibility::artifact));
-        let coordination = reopened.state.coordination.owner();
+        let coordination = reopened.payload().state.coordination.owner();
         let state = match (checkpoint, candidates.is_empty()) {
             (_, true) => RecoveryCleanupCommandState::Deferred(coordination.defer_cleanup(
                 fresh_reopen,
@@ -52,7 +59,7 @@ impl RecoveryCleanupCommandBasis {
                 0,
             )),
             (Some(checkpoint), false) => match coordination.admit_cleanup_plan(
-                &reopened.state.authority.media,
+                &reopened.payload().state.authority.media,
                 fresh_reopen,
                 checkpoint,
                 descriptive_plan_identity,

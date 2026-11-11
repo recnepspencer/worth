@@ -9,6 +9,26 @@ pub struct DurabilityAccess<'runtime> {
 }
 
 impl<'runtime> DurabilityAccess<'runtime> {
+    /// Prepare exact source schema DATA before installing this Home receiver's
+    /// executable meaning. The returned plan and graph cannot be mutated.
+    pub fn prepare_home_recovery_source(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        source: crate::durability::medium::RelationalDurableRecoverySource,
+        verification_mode: RecoveryVerificationMode,
+    ) -> Result<
+        crate::durability::authority::PreparedRelationalHomeRecovery,
+        crate::durability::authority::RelationalHomeRecoveryPreparationDenial,
+    > {
+        use crate::durability::authority::{
+            PreparedRelationalHomeRecovery, RelationalHomeRecoveryPreparationDenial as Denial,
+        };
+        let plan = self
+            .recovery_plan_from_source(execution, source, verification_mode)
+            .map_err(Denial::Recovery)?;
+        PreparedRelationalHomeRecovery::prepare(self.runtime, plan, execution)
+    }
+
     pub(crate) fn new(runtime: &'runtime RelationalRuntime) -> Self {
         Self { runtime }
     }
@@ -51,6 +71,13 @@ impl<'runtime> DurabilityAccess<'runtime> {
 
     pub fn durable_commit_count(&self) -> usize {
         self.runtime.durability.log_len()
+    }
+
+    /// Whether this runtime currently owns a publication medium binding.
+    /// Forks can retain cold readers and transition history while returning
+    /// false. Operation admission remains with the owning ports.
+    pub fn has_bound_durable_medium(&self) -> bool {
+        self.runtime.durability.medium().is_some()
     }
 
     #[cfg(test)]

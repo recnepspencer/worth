@@ -1,0 +1,13 @@
+command: git -c core.whitespace=cr-at-eol diff --cached --check -- . :(exclude)target/lane-evidence/*.patch
+HEAD: 25619ac5d1ae6092ab5a91bc4b7123be6042475c
+git_status_short_empty: false
+start_utc: 2026-11-06T17:46:21.538075+00:00
+environment: removed stale CARGO_TARGET_X86_64_PC_WINDOWS_MSVC_LINKER override
+warning: exhaustive rename detection was skipped due to too many files.
+warning: you may want to set your diff.renameLimit variable to at least 5095 and retry the command.
+
+end_utc: 2026-11-06T17:46:22.663020+00:00
+exit_code: 0
+tests_passed: 0
+tests_failed: 0
+tests_ignored: 0

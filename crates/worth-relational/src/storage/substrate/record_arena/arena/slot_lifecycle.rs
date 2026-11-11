@@ -1,91 +1,132 @@
+mod birth;
+mod current_slot_data;
+mod metadata;
+use crate::execution::RelationalExecutionDenialCause as Cause;
 use crate::identity::data::VersionId;
 use crate::storage::data::RecordLifecycleState;
+pub(crate) use metadata::MetadataWriteDenial;
 
 use super::{RecordArena, RecordKind, SlotInit};
 
 impl<K: RecordKind> RecordArena<K> {
+    #[cfg(test)]
     pub(crate) fn suspend_materialization(&mut self, slot: usize) -> Result<(), &'static str> {
         let physical = self
             .physical_index(slot)
             .ok_or("materialization suspension requires an existing slot")?;
+        let extra = K::unavailable_extra(&self.extra[physical]);
+        self.suspend_materialization_with_extra(slot, extra)
+    }
+
+    pub(crate) fn suspend_materialization_with_extra_for_request(
+        &mut self,
+        request: &worth_execution::ExecutionRequest<'_, '_>,
+        slot: usize,
+        extra: K::Extra,
+    ) -> Result<(), MetadataWriteDenial> {
+        self.suspend_using(slot, extra, Some(request))
+    }
+    /// Existing ordinary fixture/maintenance construction is unqualified.
+    #[cfg(test)]
+    pub(crate) fn suspend_materialization_with_extra(
+        &mut self,
+        slot: usize,
+        extra: K::Extra,
+    ) -> Result<(), &'static str> {
+        self.suspend_using(slot, extra, None)
+            .map_err(metadata::ordinary_denial)
+    }
+    fn suspend_using(
+        &mut self,
+        slot: usize,
+        extra: K::Extra,
+        request: Option<&worth_execution::ExecutionRequest<'_, '_>>,
+    ) -> Result<(), MetadataWriteDenial> {
+        let physical = self
+            .physical_index(slot)
+            .ok_or("materialization suspension requires an existing slot")?;
         if self.lifecycle[physical] != RecordLifecycleState::Live {
-            return Err("materialization suspension requires a live record");
+            return Err(MetadataWriteDenial::Invalid(
+                "materialization suspension requires a live record",
+            ));
         }
-        self.lifecycle[physical] = RecordLifecycleState::MaterializationUnavailable;
-        self.extra
-            .set(physical, K::unavailable_extra(&self.extra[physical]));
-        self.metadata_history.set(physical, Default::default());
-        self.history_prefixes.set(physical, None);
-        self.aspect_versions.set(physical, Default::default());
-        self.field_revisions.set(physical, None);
+        self.lifecycle.set_value_using(
+            physical,
+            RecordLifecycleState::MaterializationUnavailable,
+            request,
+        )?;
+        self.extra.set_value_using(physical, extra, request)?;
+        self.metadata_history
+            .set_value_using(physical, Default::default(), request)?;
+        self.history_prefixes
+            .set_value_using(physical, None, request)?;
+        self.aspect_versions
+            .set_value_using(physical, Default::default(), request)?;
+        self.field_revisions
+            .set_value_using(physical, None, request)?;
         self.diagnostics_enrichment
-            .set(physical, Default::default());
-        self.live_bitset.set(slot, false);
-        self.reclaimable_bitset.set(slot, false);
+            .set_value_using(physical, Default::default(), request)?;
+        self.set_presence_bits_using(slot, false, false, request)?;
         Ok(())
     }
 
-    pub(crate) fn rematerialize(
+    pub(super) fn rematerialize_using(
         &mut self,
         id: &crate::identity::data::RecordId<K::Domain>,
         kind_id: crate::identity::data::KindId,
         version_id: VersionId,
         extra: K::Extra,
-    ) -> Result<(), &'static str> {
+        request: Option<&worth_execution::ExecutionRequest<'_, '_>>,
+        prepare: &mut impl FnMut(K::Meta) -> Result<K::Meta, Cause>,
+    ) -> Result<(), MetadataWriteDenial> {
         let slot = crate::storage::substrate::slot_of::<K>(id);
-        let physical = self
-            .physical_index(slot)
-            .ok_or("rematerialization requires an existing slot")?;
-        if self.lifecycle[physical] != RecordLifecycleState::MaterializationUnavailable {
-            return Err("rematerialization requires an unavailable record");
-        }
-        if self.generations[physical] != crate::storage::substrate::generation_of::<K>(id)
-            || self.partition_ids[physical] != crate::storage::substrate::partition_of::<K>(id)
-            || self.kind_ids[physical] != Some(kind_id)
-        {
-            return Err("rematerialization identity or kind does not match retained metadata");
-        }
-        let metadata =
-            K::metadata_for_create(kind_id, self.generations[physical], version_id, &extra)
-                .ok_or("record extra cannot construct its native metadata")?;
-        self.metadata_history[physical].push(metadata);
-        self.extra.set(physical, extra);
-        self.field_revisions.set(physical, Some(Default::default()));
-        self.lifecycle[physical] = RecordLifecycleState::Live;
-        self.retired_at[physical] = None;
-        self.live_bitset.set(slot, true);
-        self.reclaimable_bitset.set(slot, false);
-        Ok(())
+        self.current_slot_data(slot)
+            .ok_or("rematerialization requires an existing slot")?
+            .rematerialize_using(id, kind_id, version_id, extra, request, prepare)
     }
 
-    pub(crate) fn apply_extra_update(
+    pub(super) fn apply_extra_update_using(
         &mut self,
         slot: usize,
         extra: K::Extra,
         version_id: VersionId,
-    ) -> Option<()> {
-        let physical = self.physical_index(slot)?;
-        let kind_id = self.kind_ids[physical]?;
-        let metadata =
-            K::metadata_for_create(kind_id, self.generations[physical], version_id, &extra)?;
-        if let Some(current) = self.metadata_history[physical].last_mut() {
-            K::retire_metadata(current, version_id);
-        }
-        self.metadata_history[physical].push(metadata);
-        self.extra.set(physical, extra);
-        Some(())
+        request: Option<&worth_execution::ExecutionRequest<'_, '_>>,
+        prepare: &mut impl FnMut(K::Meta) -> Result<K::Meta, Cause>,
+    ) -> Result<Option<()>, Cause> {
+        let Some(mut data) = self.current_slot_data(slot) else {
+            return Ok(None);
+        };
+        data.apply_extra_update_using(extra, version_id, request, prepare)
     }
 
-    pub(crate) fn retire(&mut self, slot: usize, version_id: VersionId) -> Option<()> {
-        let physical = self.physical_index(slot)?;
-        self.retired_at[physical] = Some(version_id);
-        self.lifecycle[physical] = RecordLifecycleState::DeletedRetained;
-        self.live_bitset.set(slot, false);
-        self.reclaimable_bitset.set(slot, true);
-        if let Some(current) = self.metadata_history[physical].last_mut() {
-            K::retire_metadata(current, version_id);
-        }
-        Some(())
+    pub(super) fn retire_using(
+        &mut self,
+        slot: usize,
+        version_id: VersionId,
+        request: Option<&worth_execution::ExecutionRequest<'_, '_>>,
+        prepare: &mut impl FnMut(K::Meta) -> Result<K::Meta, Cause>,
+    ) -> Result<Option<()>, Cause> {
+        let Some(mut data) = self.current_slot_data(slot) else {
+            return Ok(None);
+        };
+        data.retire_using(version_id, request, prepare)
+    }
+
+    fn set_presence_bits_using(
+        &mut self,
+        slot: usize,
+        live: bool,
+        reclaimable: bool,
+        request: Option<&worth_execution::ExecutionRequest<'_, '_>>,
+    ) -> Result<(), Cause> {
+        set_slot_presence(
+            &mut self.live_bitset,
+            &mut self.reclaimable_bitset,
+            slot,
+            live,
+            reclaimable,
+            request,
+        )
     }
 
     #[cfg(test)]
@@ -121,107 +162,8 @@ impl<K: RecordKind> RecordArena<K> {
         (slot, generation, reused)
     }
 
-    pub(crate) fn write_reserved_slot(
-        &mut self,
-        init: SlotInit<K>,
-        slot: usize,
-        generation: u32,
-    ) -> Result<bool, &'static str> {
-        if let Some(physical) = self.physical_index(slot) {
-            self.install_reused_slot(init, physical, generation)?;
-            return Ok(true);
-        }
-        self.append_reserved_slot(init, slot, generation)?;
-        Ok(false)
-    }
-
-    fn install_reused_slot(
-        &mut self,
-        init: SlotInit<K>,
-        physical: usize,
-        generation: u32,
-    ) -> Result<(), &'static str> {
-        let SlotInit {
-            partition_id,
-            kind_id,
-            version_id,
-            extra,
-        } = init;
-        let metadata = K::metadata_for_create(kind_id, generation, version_id, &extra)
-            .ok_or("record extra cannot construct its native metadata")?;
-        if let Some(current) = self.metadata_history[physical].last_mut() {
-            K::retire_metadata(current, version_id);
-        }
-        self.partition_ids[physical] = partition_id;
-        self.generations[physical] = generation;
-        self.lifecycle[physical] = RecordLifecycleState::Live;
-        self.kind_ids[physical] = Some(kind_id);
-        self.metadata_history[physical].push(metadata);
-        self.created_at[physical] = version_id;
-        self.retired_at[physical] = None;
-        self.extra.set(physical, extra);
-        self.aspect_versions.set(physical, Default::default());
-        self.field_revisions.set(physical, Some(Default::default()));
-        self.diagnostics_enrichment
-            .set(physical, Default::default());
-        self.branch_pins.set(physical, 0);
-        self.replay_pins.set(physical, 0);
-        self.snapshot_pins.set(physical, 0);
-        let logical = self.slots.slots()[physical] as usize;
-        self.live_bitset.set(logical, true);
-        self.reclaimable_bitset.set(logical, false);
-        Ok(())
-    }
-
-    fn append_reserved_slot(
-        &mut self,
-        init: SlotInit<K>,
-        logical_slot: usize,
-        generation: u32,
-    ) -> Result<(), &'static str> {
-        let SlotInit {
-            partition_id,
-            kind_id,
-            version_id,
-            extra,
-        } = init;
-        let metadata = K::metadata_for_create(kind_id, generation, version_id, &extra)
-            .ok_or("record extra cannot construct its native metadata")?;
-        self.slots.insert(logical_slot as u64)?;
-        self.partition_ids.push(partition_id);
-        self.generations.push(generation);
-        self.lifecycle.push(RecordLifecycleState::Live);
-        self.kind_ids.push(Some(kind_id));
-        self.metadata_history.push(vec![metadata].into());
-        self.history_prefixes.push(None);
-        self.created_at.push(version_id);
-        self.retired_at.push(None);
-        self.extra.push(extra);
-        self.aspect_versions.push(std::collections::BTreeMap::new());
-        self.field_revisions
-            .push(Some(std::collections::BTreeMap::new()));
-        self.diagnostics_enrichment
-            .push(std::collections::BTreeMap::new());
-        self.branch_pins.push(0);
-        self.replay_pins.push(0);
-        self.snapshot_pins.push(0);
-        self.live_bitset.set(logical_slot, true);
-        self.reclaimable_bitset.set(logical_slot, false);
-        Ok(())
-    }
-
     pub(crate) fn reset_slot(&mut self, slot: usize) -> Option<()> {
-        let physical = self.physical_index(slot)?;
-        self.kind_ids[physical] = None;
-        self.extra.set(physical, K::empty_extra());
-        self.aspect_versions.set(physical, Default::default());
-        self.field_revisions.set(physical, None);
-        self.diagnostics_enrichment
-            .set(physical, Default::default());
-        self.branch_pins.set(physical, 0);
-        self.replay_pins.set(physical, 0);
-        self.snapshot_pins.set(physical, 0);
-        self.retired_at[physical] = None;
+        self.current_slot_data(slot)?.reset_slot();
         Some(())
     }
 
@@ -236,4 +178,35 @@ impl<K: RecordKind> RecordArena<K> {
         self.lifecycle.set(physical, lifecycle);
         true
     }
+    pub(crate) fn set_lifecycle_for_slot_for_request(
+        &mut self,
+        request: &worth_execution::ExecutionRequest<'_, '_>,
+        slot: usize,
+        lifecycle: RecordLifecycleState,
+    ) -> Result<bool, Cause> {
+        let Some(physical) = self.physical_index(slot) else {
+            return Ok(false);
+        };
+        self.lifecycle
+            .set_for_request(physical, lifecycle, request)?;
+        Ok(true)
+    }
+}
+
+pub(super) fn set_slot_presence(
+    live_bitset: &mut crate::storage::partition::DenseSlotBitSet,
+    reclaimable_bitset: &mut crate::storage::partition::DenseSlotBitSet,
+    slot: usize,
+    live: bool,
+    reclaimable: bool,
+    request: Option<&worth_execution::ExecutionRequest<'_, '_>>,
+) -> Result<(), Cause> {
+    if let Some(request) = request {
+        live_bitset.set_for_request(slot, live, request)?;
+        reclaimable_bitset.set_for_request(slot, reclaimable, request)?;
+    } else {
+        live_bitset.set(slot, live);
+        reclaimable_bitset.set(slot, reclaimable);
+    }
+    Ok(())
 }

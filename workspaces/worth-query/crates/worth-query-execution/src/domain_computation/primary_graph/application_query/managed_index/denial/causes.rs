@@ -173,10 +173,26 @@ pub(super) fn provider(cause: &ProviderExecutionDenial) -> Cause<'_> {
 fn native_source(
     cause: &worth_relational::facade::runtime::ManagedIndexSourcePreparationDenial,
 ) -> Cause<'_> {
+    use worth_query_admission::facade::authenticated_principal::WorthQueryRequestInterruption as Interruption;
+    use worth_relational::facade::runtime::{
+        CustomInvariantInterruption as Stop, DerivedRelationReadDenial as Read,
+        ManagedIndexSourcePreparationDenial as Native, StructuralWalkDenialKind as Structural,
+    };
     match cause {
-        worth_relational::facade::runtime::ManagedIndexSourcePreparationDenial::RootUnavailable => {
-            Cause::Refused(Refusal::RootUnavailable)
+        Native::Source(Read::Request(cause)) => Cause::Execution(cause),
+        Native::Source(Read::Structural(Structural::Interrupted(stop))) => {
+            Cause::Interrupted(match stop {
+                Stop::Cancelled => Interruption::Cancelled,
+                Stop::DeadlineElapsed => Interruption::DeadlineExceeded,
+            })
         }
+        Native::Source(Read::Structural(Structural::MemoryAdmission(cause))) => {
+            Cause::Request(worth_execution::WorkCeilingDenial::Admission(
+                worth_execution::LeaseDenial::MemoryExhausted(*cause),
+            ))
+        }
+        Native::Publication(cause) => Cause::NativeAdmission(cause),
+        Native::RootUnavailable => Cause::Refused(Refusal::RootUnavailable),
         cause => Cause::NativeSource(cause),
     }
 }
@@ -243,3 +259,6 @@ fn graph_read(cause: &WorthQueryManagedGraphReadDenial) -> Cause<'_> {
         }
     }
 }
+
+#[cfg(test)]
+mod native_source_tests;

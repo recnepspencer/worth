@@ -104,3 +104,21 @@ fn row_payload_bytes<Value>(values: &DerivedIndexRows<Value>) -> u64 {
         .saturating_add(2 * std::mem::size_of::<usize>());
     (values.len() as u64).saturating_mul(per_row as u64)
 }
+
+impl DerivedIndexArtifacts {
+    /// Actual allocations made by Clone; persistent map/vector nodes and row
+    /// payloads are shared by pinned im 15.1 rather than newly allocated.
+    #[cfg(test)]
+    pub(crate) fn clone_header_storage_bytes(&self) -> Option<u64> {
+        let roster = std::alloc::Layout::array::<DerivedIndexGeneration>(self.generations.len())
+            .ok()?
+            .size();
+        self.generations
+            .iter()
+            .try_fold(u64::try_from(roster).ok()?, |total, generation| {
+                total
+                    .checked_add(u64::try_from(generation.source_branch_id.0.len()).ok()?)?
+                    .checked_add(u64::try_from(generation.applicability.branch_id.0.len()).ok()?)
+            })
+    }
+}

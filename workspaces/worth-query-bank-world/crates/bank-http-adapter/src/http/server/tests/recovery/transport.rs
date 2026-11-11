@@ -108,7 +108,7 @@ async fn unresolved_http_retry_keeps_the_same_token_until_completion() {
     let replay = close_notification(&client, server.local_address(), replay).await;
     assert!(matches!(
         replay,
-        crate::http::protocol::BankHttpMutationOutcome::RailRecoveryReady {
+        crate::http::protocol::BankHttpMutationOutcome::RecordedRailRecoveryReady {
             recovery: Some(ref replay_token),
             recovery_status: BankHttpRecoveryStatus::TokenIssued,
             ..
@@ -166,7 +166,7 @@ async fn expired_query_recovery_replay_reports_operator_required() {
     let replay = close_notification(&client, server.local_address(), replay).await;
     assert!(matches!(
         replay,
-        crate::http::protocol::BankHttpMutationOutcome::RailRecoveryReady {
+        crate::http::protocol::BankHttpMutationOutcome::RecordedRailRecoveryReady {
             recovery: None,
             recovery_status: BankHttpRecoveryStatus::OperatorRequired,
             ..
@@ -179,4 +179,45 @@ async fn expired_query_recovery_replay_reports_operator_required() {
     ));
     server.shutdown().await.expect("server should shut down");
     assert!(_mutation_continuation.finish().await.is_ok());
+}
+
+#[tokio::test]
+async fn an_expired_capability_cannot_disclose_a_retained_retry_token_on_close() {
+    let time = ControlledTime::at(2_000);
+    let application =
+        super::super::fixture::expiring_notification::application_with_expiring_notification(
+            AccountId::new(100).unwrap(),
+            time.clone(),
+            2_100,
+        );
+    let (server, mutations) = bind_application(
+        Arc::new(application),
+        BankHttpServerConfiguration::local_ephemeral(),
+    )
+    .await
+    .unwrap()
+    .into_parts();
+    let server = server.activate();
+    let client = reqwest::Client::new();
+    let address = server.local_address();
+    let action = recovery_action();
+    let original = notify(&client, address, &action, "original-before-expiry").await;
+    let (_, token) = rail_notification_parts(close_notification(&client, address, original).await);
+    assert!(!token.is_empty());
+    let retry = notify(&client, address, &action, "retry-before-expiry").await;
+    assert!(matches!(
+        &retry,
+        BankHttpEstateNotificationOutcome::Owning {
+            outcome: crate::http::protocol::BankHttpMutationOutcome::Recorded { .. }
+        }
+    ));
+    time.advance_to(2_101);
+    let refused = close_notification(&client, address, retry).await;
+    assert!(
+        matches!(refused, crate::http::protocol::BankHttpMutationOutcome::Refused { denial, .. }
+        if denial.kind == BankHttpDenialKind::PermissionDenied),
+        "expiry must deny token and receipt disclosure: {refused:?}"
+    );
+    server.shutdown().await.unwrap();
+    assert!(mutations.finish().await.is_ok());
 }

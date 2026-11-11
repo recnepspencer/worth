@@ -23,7 +23,7 @@ impl WorthQueryApplicationOutputLineage {
             .map(|(binding, _)| *binding)
             .collect::<Vec<_>>();
         let candidates = self.retained_output_candidates_metered(runtime_authority, schema, original_scope,
-            observation.lifecycle_incarnation(), observation.reference_generation().get(), &bindings, meaning.source_partition, execution)
+            observation.lifecycle_incarnation(), observation.reference_generation().get(), &bindings, *meaning.source_partition.bytes(), execution)
             .map_err(|stop| match stop {
                 worth_relational::facade::mvcc::CompanionPreflightStop::Execution(cause) => CheckpointDecodeDenial::from_fact(
                     crate::domain_computation::primary_graph::application_checkpoint::facts::FactDecodeDenial::Execution(cause)),
@@ -53,7 +53,7 @@ impl WorthQueryApplicationOutputLineage {
                     .as_ref()
                     .is_some_and(|prior| {
                         prior.producer() == publication.producer()
-                            && prior.source() == meaning.source_epoch
+                            && prior.source() == *meaning.source_epoch.bytes()
                     });
             if matches {
                 if antecedent.is_some() {
@@ -78,7 +78,7 @@ impl WorthQueryApplicationOutputLineage {
             CheckpointDecodeDenial::from("restored producer antecedent has no binding".to_owned())
         })?;
         let scope = crate::domain_computation::authorization::WorthQueryOperationScopeEntityBinding::from_entity(meaning.source_scope);
-        let partition = meaning.source_partition;
+        let partition = *meaning.source_partition.bytes();
         self.record_prior_output(
             binding,
             runtime_authority,

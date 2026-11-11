@@ -29,19 +29,27 @@ use super::{
 
 mod advancement_publication;
 mod binding_denial;
+pub(in crate::domain_computation::primary_graph) mod branch_activation_history;
 mod checkpoint;
 pub(in crate::domain_computation::primary_graph) mod checkpoint_transition;
+mod home_activation;
+pub(super) mod home_publication;
 mod initial_installation;
 mod managed_source_initialization;
+pub(super) mod native_meaning;
 mod preparation;
+pub(in crate::domain_computation::primary_graph) use preparation::map_checkpoint_recovery_stop;
+pub(super) mod prepared_native;
 mod program_activation_recovery;
+pub(in crate::domain_computation::primary_graph) use program_activation_recovery::read_activation;
 mod program_activation_seeding;
 mod publication;
 mod publication_target;
 mod seed_batches;
-mod unique_seed_values;
+pub(super) mod unique_seed_values;
 use binding_denial::map_binding_denial_kind;
 mod truth_partition;
+mod typed_seed_binding;
 pub(super) use program_activation_recovery::recover_program_activation;
 use program_activation_seeding::commit_initial_program_activation;
 pub(super) use program_activation_seeding::WorthQueryProgramActivationSeed;
@@ -72,13 +80,8 @@ pub struct WorthQueryPrimaryGraphBootstrap<Schema> {
     rows: Vec<WorthQueryPrincipalBootstrapRow>,
     external_identities: BTreeSet<(String, WorthQueryExternalPrincipalIdentity)>,
     principal_identities: BTreeSet<(String, AuthoritativeFieldComparisonKey)>,
-    unique_seed_values: BTreeSet<unique_seed_values::WorthQueryUniqueSeedValue>,
+    pub(super) typed_rows: super::typed_bootstrap::TypedBootstrapRows,
     principal_keys: BTreeSet<(KindId, String)>,
-    pub(super) entity_keys: BTreeSet<(KindId, String)>,
-    pub(super) pending_entity_keys: BTreeSet<(KindId, String)>,
-    pub(super) relation_keys: BTreeSet<(KindId, String)>,
-    pub(super) entity_rows: Vec<super::typed_bootstrap::WorthQueryTypedEntityBootstrapRow>,
-    pub(super) relation_rows: Vec<super::typed_bootstrap::WorthQueryTypedRelationBootstrapRow>,
     committed_principal_count: usize,
     committed_entity_count: usize,
     committed_relation_count: usize,
@@ -108,11 +111,6 @@ impl<Schema> WorthQueryPrimaryGraphBootstrap<Schema>
 where
     Schema: ApplicationSchema,
 {
-    pub(in crate::domain_computation::primary_graph) fn resource_support_ref(
-        &self,
-    ) -> &worth_query_admission::facade::resource_admission::WorthQueryExecutionResourceSupportSnapshot{
-        self.resource_support.snapshot_ref()
-    }
     pub(super) fn take_recovered_relational_authority(
         &mut self,
     ) -> Option<worth_relational::facade::durability::RecoveredRelationalRuntimeAuthority> {
@@ -214,7 +212,8 @@ where
                 &row.binding,
             ));
         }
-        if self.principal_keys.contains(&principal_key) || self.entity_keys.contains(&principal_key)
+        if self.principal_keys.contains(&principal_key)
+            || self.typed_rows.entity_keys.contains(&principal_key)
         {
             return Err(primary_graph_denial(
                 WorthQueryPrimaryGraphInstallationDenialKind::DuplicatePrincipalKey,
@@ -230,8 +229,8 @@ where
         self.admit_principal_unique_values(&row)?;
         self.external_identities.insert(external_identity_key);
         self.principal_keys.insert(principal_key.clone());
-        self.entity_keys.insert(principal_key.clone());
-        self.pending_entity_keys.insert(principal_key);
+        self.typed_rows.entity_keys.insert(principal_key.clone());
+        self.typed_rows.pending_entity_keys.insert(principal_key);
         self.principal_identities.insert(principal_identity_key);
         self.rows.push(row);
         Ok(())
@@ -265,6 +264,11 @@ pub(super) fn request_denial(
     primary_graph_denial(kind, "bootstrap request admission")
 }
 
-mod request_read_denial;
+pub(super) mod request_read_denial;
 
 mod court_doors_for_test;
+
+mod publication_storage;
+pub(in crate::domain_computation::primary_graph) use publication_storage::{
+    BootstrapPublicationReservation, BootstrapPublicationStorage,
+};

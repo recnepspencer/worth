@@ -90,7 +90,7 @@ impl schema::ApplicationSchema for Missing {
     }
 }
 
-pub fn installed() -> domain::WorthQueryInstalledApplicationSchema<Actual> {
+fn installed() -> domain::WorthQueryInstalledApplicationSchema<Actual> {
     let declaration = Actual::declaration().unwrap();
     let package = domain::WorthQueryPortableDomainPackage::new(
         domain::WorthQueryPortableDomainIdentity::new(Actual::OWNER, Actual::MAJOR, Actual::MINOR),

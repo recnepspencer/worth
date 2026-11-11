@@ -84,14 +84,13 @@ fn equivalent_retry_prepared_at_the_original_product_recovers_exact_owner_eviden
         binding,
         ExecutionAllocationPolicy::SystemAllocation,
     );
-    let WorthQueryApplicationCommitOutcome::AlreadyCommitted(recovered) = outcome else {
+    let WorthQueryApplicationCommitOutcome::RecoveredCommitted(recovered) = outcome else {
         panic!("an equivalent retry must recover the exact completed owner evidence: {outcome:?}");
     };
-    assert!(recovered.is_same_authoritative_commit(&committed));
-    assert_eq!(
-        recovered.terminal().kind(),
-        WorthQueryApplicationCommitTerminalKind::Recovered
+    worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::recorded_receipt::assert_original(
+        &recovered, &committed,
     );
+    assert!(recovered.new_product_head().memory().is_some());
     assert_ne!(selected_commit, current_commit);
 }
 
@@ -176,10 +175,10 @@ fn same_caller_intent_cannot_cross_installed_operation_identity() {
                 .into_resolution()
         })
         .expect("the fixture read owns its installed host call");
-    assert_eq!(
+    assert!(matches!(
         resolution,
         WorthQueryApplicationIdempotencyResolution::IntentDrift
-    );
+    ));
 }
 
 #[test]

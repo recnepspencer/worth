@@ -67,6 +67,8 @@ impl domain::WorthQueryNamedClockSource<Clock> for ClockSource {
     }
 }
 pub struct Predicate(pub u64);
+#[path = "composite_definition_runtime/authored_predicate.rs"]
+mod authored_predicate;
 impl domain::WorthQueryHostConditionalPredicateProvider<ReadyNode> for Predicate {
     const SEMANTIC_IDENTITY: &'static str = "numeric-definition.predicate.v1";
     fn retained_heap_bytes(

@@ -60,3 +60,13 @@ where
         Self { handler }
     }
 }
+
+impl<Schema: ApplicationSchema> InstalledMutationHandlerRegistry<Schema> {
+    #[doc(hidden)]
+    pub fn preflight_home_retirement_for_test(
+        &mut self,
+        request: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> Result<(), crate::domain_computation::primary_graph::WorthQueryHomeRetirementDenial> {
+        Self::preflight_home_retirement(self, request)
+    }
+}

@@ -71,7 +71,7 @@ fn closed_source_correction_and_replay_keep_the_exact_retained_commit() {
     let WorthQuerySourceOnlyAdvance::Completed(replayed) = replay.advance(&request, None) else {
         panic!("original correction observation is still retained");
     };
-    let WorthQuerySourceCompletion::Recovered {
+    let WorthQuerySourceCompletion::Recorded {
         receipt,
         retained: Some(retained),
         ..
@@ -79,7 +79,7 @@ fn closed_source_correction_and_replay_keep_the_exact_retained_commit() {
     else {
         panic!("retry delivers original evidence rather than a new result");
     };
-    assert_eq!(receipt.correction_source(), commit.correction_source());
+    worth_query_bank_testkit_server::facade::recorded_commit_axes::assert_agrees(receipt, &commit);
     assert_eq!(
         retained.selected_commit(),
         commit.committed_product_publication().composite_commit()

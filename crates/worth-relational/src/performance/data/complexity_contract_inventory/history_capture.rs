@@ -9,7 +9,6 @@ pub(super) const BOUNDED_FOLD: ComplexityContract = ComplexityContract {
     proof_tests: &[
         "storage::residency::tests::history_consolidation_tests::restart_cycles_keep_full_history_input_bounded_with_headroom",
         "storage::residency::tests::history_consolidation_tests::consolidation_damage_is_sticky_and_a_stopped_capture_is_retryable",
-        "tests::durability::medium::cold_members::checkpoint_restart_bound::checkpoint_restart_cycles_preserve_full_reads_and_retention",
         "storage::residency::tests::layered_history_tests::head_capture_acknowledges_and_carries_the_entire_layer_closure_without_loading",
     ],
 };

@@ -1,5 +1,6 @@
 //! Each call enters one native phase and delegates one genuine source handoff.
 use super::*;
+mod outcome;
 use worth_query_declaration::facade::application_operation::ApplicationMutationAdmissionBinding;
 use worth_query_execution::facade::primary_graph::WorthQueryApplicationIdempotencyResolution as Resolution;
 
@@ -32,7 +33,7 @@ where
     ) -> Advance<S, I, P, A, M> {
         let phase_keepalive = self.admission.runtime.clone();
         let runtime = phase_keepalive.runtime();
-        match runtime.with_application_advancement(request.scope, |phase| {
+        let outcome = runtime.with_application_advancement(request.scope, |phase| {
             let result = self.step(&phase, request, maximum_history_work);
             if matches!(&result, Ok(Step::Completed))
                 && let Some(control) = &self.completion_handoff
@@ -40,30 +41,15 @@ where
                 control.pause();
             }
             result
-        }) {
-            Ok(Ok(Step::Progress)) => WorthQuerySourceOnlyAdvance::Progress(self),
-            Ok(Ok(Step::Completed)) => {
-                WorthQuerySourceOnlyAdvance::Completed(WorthQueryCompletedSourceOperation {
-                    operation: self,
-                })
-            }
-            Ok(Ok(Step::Terminal)) => {
-                WorthQuerySourceOnlyAdvance::Terminal(WorthQueryTerminalSourceOperation {
-                    operation: self,
-                })
-            }
-            Ok(Err(denial)) => WorthQuerySourceOnlyAdvance::Refused {
-                operation: self,
-                denial,
-            },
+        });
+        let outcome = match outcome {
+            Ok(outcome) => outcome,
             Err(denial) => {
                 self.record_unresolved_advancement(denial);
-                WorthQuerySourceOnlyAdvance::Refused {
-                    operation: self,
-                    denial: WorthQuerySourceOnlyDenial::Execution(denial),
-                }
+                Err(WorthQuerySourceOnlyDenial::Execution(denial))
             }
-        }
+        };
+        self.into_advance(outcome)
     }
 
     pub(in crate::application_entry::operation) fn step(
@@ -116,21 +102,20 @@ where
                 let resolution = self
                     .admission
                     .resolve_keyed_in_advancement(phase, request, Some(performed))
-                    .map_err(WorthQuerySourceOnlyDenial::Recovery)?
-                    .into_resolution();
+                    .map_err(WorthQuerySourceOnlyDenial::Recovery)?;
                 self.accept_keyed(resolution)
             }
             SourceState::<S, I>::Keyed(_) | SourceState::<S, I>::UnresolvedAdvancement(_) => {
                 let resolution = self
                     .admission
                     .resolve_keyed_in_advancement(phase, request, None)
-                    .map_err(WorthQuerySourceOnlyDenial::Recovery)?
-                    .into_resolution();
+                    .map_err(WorthQuerySourceOnlyDenial::Recovery)?;
                 self.accept_keyed(resolution)
             }
             SourceState::<S, I>::RetainedPending(evidence) => {
                 let performed = match evidence {
-                    WorthQuerySourceCompletion::Recovered { publication, .. } => {
+                    WorthQuerySourceCompletion::Recovered { publication, .. }
+                    | WorthQuerySourceCompletion::Recorded { publication, .. } => {
                         publication.as_ref()
                     }
                     WorthQuerySourceCompletion::Fresh { .. } => None,
@@ -141,9 +126,30 @@ where
                     .map_err(WorthQuerySourceOnlyDenial::Recovery)?
                     .into_resolution()
                 {
-                    Resolution::AlreadyCommitted(_) => {}
+                    Resolution::RecoveredCommitted(original) => {
+                        let same = match evidence {
+                            WorthQuerySourceCompletion::Fresh { receipt, .. }
+                            | WorthQuerySourceCompletion::Recovered { receipt, .. } => {
+                                super::super::receipt_correspondence::matches_retained_original(
+                                    receipt, &original,
+                                )
+                            }
+                            WorthQuerySourceCompletion::Recorded { receipt, .. } => {
+                                super::super::receipt_correspondence::same_recorded_subject(
+                                    receipt, &original,
+                                )
+                            }
+                        };
+                        if !same {
+                            self.keyed_terminal = Some(Resolution::IntentDrift);
+                            return Ok(Step::Terminal);
+                        }
+                    }
                     Resolution::Unseen => return Ok(Step::Progress),
-                    resolution @ Resolution::IntentDrift => {
+                    resolution @ (Resolution::ReleasedOriginal(_)
+                    | Resolution::IntentDrift
+                    | Resolution::ProductPreparationPending(_)
+                    | Resolution::ProductUnpublished(_)) => {
                         self.keyed_terminal = Some(resolution);
                         return Ok(Step::Terminal);
                     }
@@ -177,6 +183,21 @@ where
                     result,
                     retained: None,
                 }))
+            }
+            O::RecoveredCommitted(receipt) => {
+                let evidence = WorthQuerySourceCompletion::Recorded {
+                    retained: None,
+                    receipt,
+                    publication: None,
+                    initial_posture: None,
+                    initial_advancement_failure: None,
+                };
+                if M::RETAIN_COMMIT {
+                    self.state = SourceState::<S, I>::RetainedPending(evidence);
+                    Ok(Step::Progress)
+                } else {
+                    Ok(self.complete(evidence))
+                }
             }
             O::AlreadyCommitted(receipt) if M::RETAIN_COMMIT => {
                 self.state =
@@ -226,7 +247,10 @@ where
         }
     }
 
-    fn accept_keyed(&mut self, resolution: Resolution) -> Result<Step, WorthQuerySourceOnlyDenial> {
+    fn accept_keyed(
+        &mut self,
+        resolution: worth_query_execution::facade::primary_graph::WorthQueryAdmittedIdempotencyRead,
+    ) -> Result<Step, WorthQuerySourceOnlyDenial> {
         use super::super::native_publication::NativeKeyedProgress;
         match self
             .state
@@ -234,7 +258,7 @@ where
             .map_err(WorthQuerySourceOnlyDenial::Cleanup)?
         {
             NativeKeyedProgress::Completed(recovered) => {
-                let evidence = WorthQuerySourceCompletion::Recovered {
+                let evidence = WorthQuerySourceCompletion::Recorded {
                     retained: None,
                     receipt: recovered.receipt,
                     publication: recovered.publication,

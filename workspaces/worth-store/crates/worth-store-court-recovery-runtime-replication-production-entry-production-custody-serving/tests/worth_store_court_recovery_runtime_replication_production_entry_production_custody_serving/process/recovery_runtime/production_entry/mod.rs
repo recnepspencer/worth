@@ -202,7 +202,7 @@ fn production_entry_rejects_a_report_path_inside_the_store_root() {
     let output =
         std::process::Command::new(worth_store_testkit_executables::physical_store_recover())
             .arg(&root)
-            .arg("--bounded-profile=c8-phase2-admission-v1")
+            .arg("--bounded-profile=c8-phase2-admission-v2")
             .arg(format!("--report={}", report.display()))
             .output()
             .expect("run report safety entry");

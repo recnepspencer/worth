@@ -12,8 +12,8 @@ pub use boundary_evidence::{
     WorthQueryPublishedCanonicalWork, WorthQueryPublishedMutationWork,
 };
 pub use external_effect::{
-    WorthQueryPublishedExternalEffectFailure, WorthQueryPublishedExternalEffectPosture,
-    WorthQueryPublishedExternalEffectPostureKind,
+    WorthQueryPublishedExternalEffectFailure, WorthQueryPublishedExternalEffectNoEffect,
+    WorthQueryPublishedExternalEffectPosture, WorthQueryPublishedExternalEffectPostureKind,
     WorthQueryPublishedUnsupportedProtocolVersionPosture,
 };
 pub use outcome::{WorthQueryPublishedAftermathPosture, WorthQueryPublishedApplicationAftermath};

@@ -268,15 +268,18 @@ fn root_partition_and_named_storage_match_independent_full_key_operations() {
     use crate::projected_member_domain::ProjectedMemberDomainIdentity;
     let registry = registry();
     let projected = |case: &str| {
-        Member::Projected(std::sync::Arc::new(ProjectedMemberCoordinate {
-            domain: ProjectedMemberDomainIdentity {
-                schema: SchemaId("memo-coordinate".into()),
-                version: SchemaVersionId(1),
-                name: "choice".into(),
-            },
-            carrier: id(1),
-            case: case.into(),
-        }))
+        Member::Projected(
+            std::sync::Arc::new(ProjectedMemberCoordinate {
+                domain: ProjectedMemberDomainIdentity {
+                    schema: SchemaId("memo-coordinate".into()),
+                    version: SchemaVersionId(1),
+                    name: "choice".into(),
+                },
+                carrier: id(1),
+                case: case.into(),
+            })
+            .into(),
+        )
     };
     let anchors = [
         id(1).into(),
@@ -306,10 +309,6 @@ fn root_partition_and_named_storage_match_independent_full_key_operations() {
         }
     }
     let mut actual = MemoValues::default();
-    #[expect(
-        clippy::mutable_key_type,
-        reason = "Key orders immutable declared identity, node, member and direction; its retained binding cache is excluded"
-    )]
     let mut reference = BTreeMap::new();
     let mut source = Source::default();
     let mut seed = 919u32;

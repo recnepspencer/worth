@@ -130,26 +130,19 @@ where
     .map_err(|cause| graph_work_denial_with_cause(operation.operation(), cause))
 }
 
-pub(super) fn transition_capability_to_operation_graph_work<Schema, Operation, Input>(
+pub(super) fn start_capability_operation_graph_work<Schema, Operation, Input>(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
     operation: &WorthQueryInstalledApplicationOperation<Schema, Operation, Input>,
     resource_binding_identity: &str,
     resource: EntityId,
-    capability_graph_work: WorthQueryManagedGraphWorkSession,
+    principal: EntityId,
+    installed_capability: [u8; 32],
+    product: crate::basis::WorthQueryProductBranchLease,
 ) -> Result<WorthQueryManagedGraphWorkSession, WorthQueryOperationAuthorizationDenial>
 where
     Schema: ApplicationSchema,
 {
-    let principal = capability_graph_work.principal();
-    let installed_capability = capability_graph_work
-        .capability_access_context()
-        .ok_or_else(|| graph_work_denial(operation.operation()))?;
-    let product = capability_graph_work
-        .mutation_product()
-        .map(crate::basis::WorthQueryProductBranchLease::retained_clone)
-        .ok_or_else(|| graph_work_denial(operation.operation()))?;
-    drop(capability_graph_work);
     start_operation_graph_work(
         execution,
         runtime,

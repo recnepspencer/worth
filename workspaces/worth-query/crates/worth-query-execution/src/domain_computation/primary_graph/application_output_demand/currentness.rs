@@ -76,6 +76,7 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
                     {
                         return Err(denial(WorthQueryOutputDemandDenialKind::ForeignSettlement));
                     }
+                    let receipt: super::OutputPublicationView<'_> = receipt.into();
                     let lineage = runtime
                         .runtime
                         .primary_provider
@@ -84,7 +85,7 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
                         .lock()
                         .unwrap_or_else(std::sync::PoisonError::into_inner);
                     let read = lineage_read(|| {
-                        lineage.source_facts_for_receipt(
+                        lineage.source_facts_for_publication(
                             runtime.runtime.authority_identity().as_u64(),
                             &runtime.installed_schema.binding_identity(),
                             self.product().observation(),
@@ -111,7 +112,7 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         relational: &worth_relational::facade::runtime::RelationalRuntime,
         read: &RetainedOutputCurrentnessRead,
-        receipt: Option<&WorthQueryApplicationCommitReceipt>,
+        receipt: Option<super::OutputPublicationView<'_>>,
     ) -> Result<(), WorthQueryOutputDemandDenial> {
         let mut verification =
             crate::domain_computation::primary_graph::output_reuse::RetainedFactVerification::new(
@@ -128,7 +129,7 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         relational: &worth_relational::facade::runtime::RelationalRuntime,
         read: &RetainedOutputCurrentnessRead,
-        receipt: Option<&WorthQueryApplicationCommitReceipt>,
+        receipt: Option<super::OutputPublicationView<'_>>,
         verification: &mut crate::domain_computation::primary_graph::output_reuse::RetainedFactVerification<'_, '_, '_>,
     ) -> Result<(), WorthQueryOutputDemandDenial> {
         if let Some(historical) = crate::domain_computation::primary_graph::output_reuse::HistoricalOutputRead::from_current_read(read) {
@@ -221,7 +222,7 @@ fn lineage_read(
 /// left as moved, so that commit is superseded and refreshes. A settlement
 /// with neither facts nor such a commit is superseded.
 fn require_own_publication(
-    receipt: Option<&WorthQueryApplicationCommitReceipt>,
+    receipt: Option<super::OutputPublicationView<'_>>,
     observation: &worth_runtime_world::facade::ProductBranchObservation,
 ) -> Result<(), WorthQueryOutputDemandDenial> {
     match receipt.and_then(|receipt| receipt.currentness_without_facts_at(observation)) {

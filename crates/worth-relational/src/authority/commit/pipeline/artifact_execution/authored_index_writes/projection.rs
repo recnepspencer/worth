@@ -9,7 +9,7 @@ use worth_foundational::facade::{PortableAspectPatchOperation, PortableRecordAsp
 pub(super) struct Projection<'a, 'kernel, 'controls, 'request, 'authority> {
     pub(super) execution: ExecutionRequest<'request, 'authority>,
     pub(super) runtime: &'a RelationalPreparationRuntime,
-    pub(super) catalog: &'a crate::runtime::IndexDefinitionCatalog,
+    pub(super) catalog: &'a crate::runtime::CapturedIndexDefinitionCatalog,
     pub(super) unavailable: bool,
     pub(super) selected: &'a SelectedRelationalBranchState,
     pub(super) working: &'a WorkingState,
@@ -111,7 +111,7 @@ impl Projection<'_, '_, '_, '_, '_> {
         let before = values::live(&self.execution, self.selected, entity)?;
         let after = values::live(&self.execution, self.working, entity)?;
         let schema = self.runtime.schema_contract_runtime.schema_authority_digest;
-        let Some(routing) = self.catalog.routing(schema) else {
+        let Some(routing) = self.catalog.catalog.routing(schema) else {
             self.unavailable = true;
             return Ok(());
         };
@@ -160,13 +160,17 @@ impl Projection<'_, '_, '_, '_, '_> {
         let after = values::live(&self.execution, self.working, entity)?;
         let context = &mut *self.context;
         let output = &mut self.output;
-        self.catalog.with_field_admitted(
+        let frontier = self.catalog.next_index_id;
+        self.catalog.catalog.with_field_admitted(
             locus.aspect,
             locus.field,
             context,
             |definitions, context| {
                 for definition in definitions {
                     work(context, 1)?;
+                    if definition.index_id.0 >= frontier {
+                        continue;
+                    }
                     let DerivedIndexKind::EntityField { field_locator } = &definition.kind else {
                         continue;
                     };
@@ -176,14 +180,14 @@ impl Projection<'_, '_, '_, '_, '_> {
                     let old = values::field(
                         before
                             .as_ref()
-                            .and_then(|(_, slot)| slot.extra().authoritative_aspect_state.as_ref()),
+                            .and_then(|(_, slot)| slot.extra().authoritative_aspect_state()),
                         field_locator,
                         context,
                     )?;
                     let new = values::field(
                         after
                             .as_ref()
-                            .and_then(|(_, slot)| slot.extra().authoritative_aspect_state.as_ref()),
+                            .and_then(|(_, slot)| slot.extra().authoritative_aspect_state()),
                         field_locator,
                         context,
                     )?;

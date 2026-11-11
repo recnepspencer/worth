@@ -2,6 +2,7 @@ use super::*;
 use crate::equality_type_id::EqualityTypeId as TypeId;
 
 pub enum AcceptedCheckpointFactSource {
+    Recovered(super::super::WorthQueryRecoveredProducerPublication),
     Committed(crate::domain_computation::primary_graph::WorthQueryApplicationCommitReceipt),
     Stable(crate::domain_computation::primary_graph::output_lineage::PublishedStableLineage),
 }
@@ -49,6 +50,30 @@ impl WorthQueryOutputDemandRegistry {
  metadata: None,
 },
                             exact_source.then(|| AcceptedCheckpointFactSource::Committed(receipt.clone())),
+                            receipt.output_correspondence().binding_type(),
+                        ))
+                    }
+                    WorthQueryAcceptedOutputAuthority::Recovered(publication) => {
+                        let receipt = publication.view();
+                        let idempotency = receipt.idempotency_binding();
+                        let exact_source = idempotency.source_identity()
+                            == Some(key.source.runtime_idempotency_identity());
+                        Some((
+                            WorthQueryAcceptedOutputCheckpointIdentity {
+                                implementation: idempotency.producing_implementation()?,
+                                producer: (key.producer.clone()).into(),
+                                posture: WorthQueryAcceptedOutputCheckpointPosture::Performed,
+                                source: key.source.checkpoint_identity().bytes(),
+                                scope: receipt.principal_scope().scope(),
+                                source_partition: idempotency.source_partition_identity()?,
+                                producer_dependency: idempotency.producer_dependency_identity(),
+                                idempotency_key: *idempotency.key_identity(),
+                                roles: (receipt.output_correspondence().checkpoint_roles()).into(),
+                                producer_facts: None,
+                                producer_fact_wire_version: 0,
+ metadata: None,
+},
+                            exact_source.then(|| AcceptedCheckpointFactSource::Recovered(publication.clone())),
                             receipt.output_correspondence().binding_type(),
                         ))
                     }

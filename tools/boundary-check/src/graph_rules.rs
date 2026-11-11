@@ -266,7 +266,10 @@ fn selected(rule: &toml::Value, package: &str, names: &str, prefixes: &str) -> b
 fn dependencies(key: &str, rule: &toml::Value, p: &Package) -> Vec<Diagnostic> {
     let mut out = Vec::new();
     let governs_source = match key {
-        "dependency_denials" => selected(rule, &p.name, "sources", "source_prefixes"),
+        "dependency_denials" => {
+            selected(rule, &p.name, "sources", "source_prefixes")
+                && !strings(rule, "exclude_sources").contains(&p.name)
+        }
         "source_dependency_allowlists" => strings(rule, "sources").contains(&p.name),
         "dependency_target_allowlists" => strings(rule, "governed_source_prefixes")
             .iter()

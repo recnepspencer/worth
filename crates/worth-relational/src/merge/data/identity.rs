@@ -6,6 +6,11 @@ use crate::identity::data::{KindId, LineageId, StructuralFingerprint};
 use crate::transactions::data::RecordRef;
 use worth_foundational::facade::AspectKey;
 
+mod custom_name;
+mod declared_keys;
+pub use custom_name::IdentityBasisName;
+pub use declared_keys::DeclaredIdentityKeys;
+
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub enum MergeRecordIdentity {
     StorageRecord(RecordRef),
@@ -15,7 +20,7 @@ pub enum MergeRecordIdentity {
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
 pub struct CustomIdentityBasisIdentity {
-    pub name: Arc<str>,
+    pub name: IdentityBasisName,
     pub semantic_version: u32,
 }
 
@@ -31,7 +36,7 @@ pub enum IdentityBasisKind {
     StorageIdentity,
     LineageIdentity,
     StructuralFingerprint,
-    DeclaredKeySet(Arc<[AspectKey]>),
+    DeclaredKeySet(DeclaredIdentityKeys),
     Custom(CustomIdentityBasisIdentity),
 }
 

@@ -8,6 +8,7 @@ impl IndexingSubsystem {
     pub(crate) fn maintenance_inputs_admitted<Stop>(
         &self,
         index: DerivedIndexId,
+        prepared_catalog: Option<&super::IndexDefinitionCatalog>,
         branch: &crate::history::data::BranchId,
         commit: crate::history::data::CommitId,
         version: crate::identity::data::VersionId,
@@ -19,16 +20,17 @@ impl IndexingSubsystem {
         mut prepare: impl FnMut(u64, u64) -> Result<(), Stop>,
     ) -> Result<
         Option<(
-            std::sync::Arc<crate::indexes::data::DerivedIndexDefinition>,
+            crate::indexes::RetainedDerivedIndexDefinition,
             Option<std::sync::Arc<crate::indexes::data::DerivedIndexGeneration>>,
             Option<std::sync::Arc<crate::indexes::data::DerivedIndexGeneration>>,
         )>,
         SelectedIndexGenerationAdmissionStop<Stop>,
     > {
         let state = self.state.read();
-        let visits = navigation_work(state.catalog.definitions.len(), 1)?;
+        let catalog = prepared_catalog.unwrap_or(&state.catalog);
+        let visits = navigation_work(catalog.definitions.len(), 1)?;
         prepare(visits, 0).map_err(SelectedIndexGenerationAdmissionStop::Admission)?;
-        let Some(definition) = state.catalog.definitions.get(&index) else {
+        let Some(definition) = catalog.definitions.get(&index) else {
             return Ok(None);
         };
         let scope = definition.branch_scoped.then_some(branch);
@@ -79,7 +81,7 @@ impl IndexingSubsystem {
         } else {
             None
         };
-        Ok(Some((std::sync::Arc::clone(definition), generation, prior)))
+        Ok(Some((definition.clone(), generation, prior)))
     }
     /// Check one selected published index under a single owner read lock.
     /// Each actual catalog descent and the branch-key copy is admitted before

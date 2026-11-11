@@ -3,6 +3,8 @@ use super::owner::RelationalBranchRetentionOwnerInner;
 use super::{RelationalHeadRetentionObligation, RelationalRetentionAcquisitionDenial};
 use crate::branch::{RelationalBranchIdentity, RelationalBranchRoot};
 use std::sync::{Arc, Mutex};
+#[cfg(test)]
+mod memory_close_tests;
 
 #[derive(Debug)]
 pub(crate) struct RelationalBranchHeadRetentionCell {
@@ -15,6 +17,24 @@ pub(super) struct CheckedHeadObligation {
     owner: Arc<RelationalBranchRetentionOwnerInner>,
 }
 impl RelationalBranchHeadRetentionCell {
+    /// Retire this exact live-head obligation without releasing its root data.
+    /// The stopped authentic owner keeps the branch cell and root inventory.
+    pub(crate) fn try_retire_stopped_head(&self) -> Result<(), ()> {
+        let slot = match self.obligation.try_lock() {
+            Ok(value) => value,
+            Err(std::sync::TryLockError::Poisoned(error)) => error.into_inner(),
+            Err(std::sync::TryLockError::WouldBlock) => return Err(()),
+        };
+        if let Some(obligation) = slot.as_ref() {
+            let mut obligation = match obligation.try_lock() {
+                Ok(value) => value,
+                Err(std::sync::TryLockError::Poisoned(error)) => error.into_inner(),
+                Err(std::sync::TryLockError::WouldBlock) => return Err(()),
+            };
+            obligation.consume();
+        }
+        Ok(())
+    }
     pub(crate) fn fresh() -> Arc<Self> {
         Arc::new(Self {
             obligation: Mutex::new(None),

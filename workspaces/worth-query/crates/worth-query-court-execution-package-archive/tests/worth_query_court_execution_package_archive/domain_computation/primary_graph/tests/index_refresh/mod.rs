@@ -26,7 +26,7 @@ fn bootstrap_seeds_exact_workflow_transition_lookup_before_any_settlement() {
     let transition = (*graph.layout_for_test()).workflow().transition_for_test();
     let host_request = worth_query_testkit_execution_primary_graph_application_attempt_2::test_request_policy::serial_request();
     let execution = worth_execution::ExecutionRequest::serial(&host_request);
-    handle.with_runtime_mut_for_test(&execution, |runtime| {
+    handle.with_runtime_for_test(&execution, |runtime| {
         let basis = runtime.admit_branch_basis(&runtime.main_branch_identity()).unwrap();
         assert!(runtime.index_access().read_published_generation_for_observation(&execution,
             *transition.identity_index_id_for_test(), &basis.observation(),
@@ -153,7 +153,7 @@ fn missing_selected_predecessor_refuses_until_explicit_recovery() {
         .primary_graph_for_test()
         .expect("published graph");
     let handle = graph.integration_handle_for_test();
-    (*handle.source_owner_for_test()).with_runtime_mut(execution, |runtime| {
+    (*handle.source_owner_for_test()).with_runtime(execution, |runtime| {
         let identity = runtime.main_branch_identity();
         let (_, before_basis) = runtime.observe_branch(&identity).unwrap();
         let before = runtime

@@ -1,6 +1,13 @@
 //! One envelope cell owns memory history or a journal-backed publication flight.
 mod artifact_export;
 mod authored_writes;
+mod selected_checkpoint;
+pub(crate) use selected_checkpoint::RetiredCanonicalPlacement;
+mod demand;
+mod interim_original;
+mod recovered_position;
+mod source_readmission;
+mod source_retirement;
 use super::RelationalCommitIndexEntry;
 use crate::durability::canonical_commit_artifact::RelationalCanonicalCommitArtifact;
 use crate::durability::data::RelationalRecoveryStop;
@@ -20,10 +27,17 @@ pub(crate) struct RelationalCommitEnvelopeResidency {
 }
 #[derive(Debug)]
 enum EnvelopeBacking {
-    Memory(Arc<CanonicalCommitEnvelope>),
+    Memory {
+        canonical: Arc<crate::branch::RelationalOriginalRootCommitEvidence>,
+        original: Option<worth_execution::ExecutionImmutableBytes>,
+    },
+    SelectedCheckpoint {
+        entry: super::RetainedCanonicalIndex,
+        directory: crate::durability::data::NativeCheckpointDirectoryEdge,
+    },
     Journal {
-        entry: Arc<RelationalCommitIndexEntry>,
-        source: Arc<dyn RelationalDurableColdSource>,
+        entry: super::RetainedCanonicalIndex,
+        source: crate::durability::medium::NativeJournalSourceEdge,
         unsettled: Option<Arc<CanonicalCommitEnvelope>>,
     },
 }
@@ -34,18 +48,18 @@ struct EnvelopeState {
     position: Option<RetainedCanonicalPosition>,
     damage: Option<RelationalStorageUnavailable>,
     payload_digest: Option<[u8; 32]>,
-    canonical_payload: Option<Arc<[u8]>>,
+    canonical_payload_bytes: Option<u64>,
     lineage: Option<crate::lineage::data::LineageCheckpointDigestBasis>,
 }
 impl EnvelopeState {
     fn resident_envelope(&self) -> Option<Arc<CanonicalCommitEnvelope>> {
         match &self.backing {
-            EnvelopeBacking::Memory(envelope) => Some(envelope.clone()),
+            EnvelopeBacking::Memory { canonical, .. } => Some(Arc::clone(canonical.envelope())),
             EnvelopeBacking::Journal {
                 unsettled: Some(envelope),
                 ..
             } => Some(envelope.clone()),
-            EnvelopeBacking::Journal { .. } => self
+            EnvelopeBacking::Journal { .. } | EnvelopeBacking::SelectedCheckpoint { .. } => self
                 .position
                 .as_ref()
                 .and_then(|retained| retained.resident())
@@ -55,29 +69,29 @@ impl EnvelopeState {
 }
 impl RelationalCommitEnvelopeResidency {
     pub(crate) fn resident(
-        envelope: Arc<CanonicalCommitEnvelope>,
-        canonical_payload: Arc<[u8]>,
+        canonical: Arc<crate::branch::RelationalOriginalRootCommitEvidence>,
     ) -> Self {
-        use sha2::{Digest, Sha256};
-        crate::execution::phase_observation::hash_bytes(
-            crate::execution::phase_observation::HashPurpose::CommitPayload,
-            canonical_payload.len(),
-        );
-        let payload_digest = Sha256::digest(canonical_payload.as_ref()).into();
+        let payload_digest = canonical.payload_digest();
+        let canonical_payload_bytes = canonical.payload().len() as u64;
+        let lineage = lineage_delta(canonical.envelope());
         Self {
             state: Mutex::new(EnvelopeState {
                 authored_writes: None,
-                lineage: Some(lineage_delta(&envelope)),
-                backing: EnvelopeBacking::Memory(envelope),
+                lineage: Some(lineage),
+                backing: EnvelopeBacking::Memory {
+                    canonical,
+                    // This is the separately admitted original artifact FRAME.
+                    original: None,
+                },
                 position: None,
                 damage: None,
                 payload_digest: Some(payload_digest),
-                canonical_payload: Some(canonical_payload),
+                canonical_payload_bytes: Some(canonical_payload_bytes),
             }),
         }
     }
     pub(crate) fn cold(
-        entry: RelationalCommitIndexEntry,
+        entry: super::RetainedCanonicalIndex,
         source: Arc<dyn RelationalDurableColdSource>,
         admitted: Option<PositionedCanonicalCommit>,
         payload_digest: Option<[u8; 32]>,
@@ -86,8 +100,8 @@ impl RelationalCommitEnvelopeResidency {
             state: Mutex::new(EnvelopeState {
                 authored_writes: None,
                 backing: EnvelopeBacking::Journal {
-                    entry: Arc::new(entry),
-                    source,
+                    entry,
+                    source: crate::durability::medium::NativeJournalSourceEdge::new(source),
                     unsettled: None,
                 },
                 position: admitted
@@ -98,17 +112,43 @@ impl RelationalCommitEnvelopeResidency {
                     .map(|commit| lineage_delta(commit.envelope())),
                 damage: None,
                 payload_digest,
-                canonical_payload: None,
+                canonical_payload_bytes: None,
             }),
         }
     }
-    pub(crate) fn resident_payload(&self) -> Option<Arc<[u8]>> {
+    #[cfg(test)]
+    pub(crate) fn resident_payload_bytes(&self) -> Option<u64> {
         self.state
             .lock()
             .unwrap_or_else(|error| error.into_inner())
-            .canonical_payload
-            .clone()
+            .canonical_payload_bytes
     }
+    pub(crate) fn payload_storage_bytes(&self) -> u64 {
+        match &self
+            .state
+            .lock()
+            .unwrap_or_else(|error| error.into_inner())
+            .backing
+        {
+            EnvelopeBacking::Memory {
+                canonical,
+                original,
+            } => canonical
+                .payload_storage_bytes()
+                .saturating_add(original.as_ref().map_or(0, |bytes| bytes.len() as u64)),
+            _ => 0,
+        }
+    }
+    pub(crate) fn original_owner(
+        &self,
+    ) -> Option<Arc<crate::branch::RelationalOriginalRootCommitEvidence>> {
+        let state = self.state.lock().unwrap_or_else(|error| error.into_inner());
+        match &state.backing {
+            EnvelopeBacking::Memory { canonical, .. } => Some(Arc::clone(canonical)),
+            EnvelopeBacking::Journal { .. } | EnvelopeBacking::SelectedCheckpoint { .. } => None,
+        }
+    }
+
     pub(crate) fn payload_digest(&self) -> Option<[u8; 32]> {
         self.state
             .lock()
@@ -138,18 +178,31 @@ impl RelationalCommitEnvelopeResidency {
     )> {
         let state = self.state.lock().unwrap_or_else(|error| error.into_inner());
         let position = match &state.backing {
-            EnvelopeBacking::Journal { entry, .. } => entry.position,
-            EnvelopeBacking::Memory(_) => state.position.as_ref()?.position(),
+            EnvelopeBacking::Journal { entry, .. }
+            | EnvelopeBacking::SelectedCheckpoint { entry, .. } => entry.position,
+            EnvelopeBacking::Memory { .. } => state.position.as_ref()?.position(),
         };
         Some((position, state.lineage.clone()?))
     }
-    pub(crate) fn journal_index(&self) -> Option<Arc<RelationalCommitIndexEntry>> {
-        self.journal_placement().map(|(entry, _)| entry)
+    pub(crate) fn captured_position(
+        &self,
+    ) -> Option<crate::publication::patch::data::PatchStreamPosition> {
+        let state = self.state.lock().unwrap_or_else(|error| error.into_inner());
+        match &state.backing {
+            EnvelopeBacking::Journal { entry, .. }
+            | EnvelopeBacking::SelectedCheckpoint { entry, .. } => Some(entry.position),
+            EnvelopeBacking::Memory { .. } => {
+                state.position.as_ref().map(|position| position.position())
+            }
+        }
+    }
+    pub(crate) fn journal_index(&self) -> Option<super::RetainedCanonicalIndex> {
+        self.source_placement().map(|(entry, _)| entry)
     }
     pub(crate) fn journal_placement(
         &self,
     ) -> Option<(
-        Arc<RelationalCommitIndexEntry>,
+        super::RetainedCanonicalIndex,
         Arc<dyn RelationalDurableColdSource>,
     )> {
         match &self
@@ -158,8 +211,27 @@ impl RelationalCommitEnvelopeResidency {
             .unwrap_or_else(|error| error.into_inner())
             .backing
         {
-            EnvelopeBacking::Journal { entry, source, .. } => Some((entry.clone(), source.clone())),
-            EnvelopeBacking::Memory(_) => None,
+            EnvelopeBacking::Journal { entry, source, .. } => {
+                Some((entry.clone(), Arc::clone(source)))
+            }
+            EnvelopeBacking::Memory { .. } | EnvelopeBacking::SelectedCheckpoint { .. } => None,
+        }
+    }
+    pub(crate) fn source_placement(
+        &self,
+    ) -> Option<(
+        super::RetainedCanonicalIndex,
+        Arc<dyn RelationalDurableColdSource>,
+    )> {
+        let state = self.state.lock().unwrap_or_else(|error| error.into_inner());
+        match &state.backing {
+            EnvelopeBacking::Journal { entry, source, .. } => {
+                Some((entry.clone(), Arc::clone(source)))
+            }
+            EnvelopeBacking::SelectedCheckpoint { entry, directory } => {
+                Some((entry.clone(), directory.source.clone()))
+            }
+            EnvelopeBacking::Memory { .. } => None,
         }
     }
     /// Called with the actual performed value, before its route becomes visible.
@@ -168,19 +240,28 @@ impl RelationalCommitEnvelopeResidency {
         &self,
         positioned: &PositionedCanonicalCommit,
         journal: Option<(
-            RelationalCommitIndexEntry,
+            super::RetainedCanonicalIndex,
             Arc<dyn RelationalDurableColdSource>,
         )>,
+        original: Option<worth_execution::ExecutionImmutableBytes>,
     ) {
         let mut state = self.state.lock().unwrap_or_else(|error| error.into_inner());
         state.position = Some(RetainedCanonicalPosition::from_positioned(positioned));
         if let Some((entry, source)) = journal {
-            state.canonical_payload = None;
+            state.canonical_payload_bytes = None;
             state.backing = EnvelopeBacking::Journal {
-                entry: Arc::new(entry),
-                source,
+                entry,
+                source: crate::durability::medium::NativeJournalSourceEdge::new(source),
                 unsettled: Some(positioned.canonical_arc().clone()),
             };
+        } else if let Some(original) = original {
+            let EnvelopeBacking::Memory {
+                original: stored, ..
+            } = &mut state.backing
+            else {
+                unreachable!("only a real Memory publication installs an original Memory frame")
+            };
+            *stored = Some(original);
         }
     }
     pub(crate) fn settle(&self) {
@@ -188,162 +269,6 @@ impl RelationalCommitEnvelopeResidency {
         if let EnvelopeBacking::Journal { unsettled, .. } = &mut state.backing {
             unsettled.take();
         }
-    }
-    pub(crate) fn demand_positioned(
-        &self,
-        execution: &worth_execution::ExecutionRequest<'_, '_>,
-        limit: u64,
-    ) -> Result<PositionedCanonicalCommit, RelationalRecoveryStop> {
-        self.demand_read(execution, limit)?
-            .positioned
-            .ok_or_else(|| {
-                crate::durability::data::DurabilityError::new(
-                    crate::durability::data::RecoveryFailureClass::CorruptCheckpoint,
-                    "checkpoint envelope has no performed position",
-                )
-                .into()
-            })
-    }
-    pub(crate) fn demand(
-        &self,
-        execution: &worth_execution::ExecutionRequest<'_, '_>,
-        limit: u64,
-    ) -> Result<Arc<CanonicalCommitEnvelope>, Failure> {
-        self.demand_read(execution, limit).map(|read| read.envelope)
-    }
-    fn demand_read(
-        &self,
-        execution: &worth_execution::ExecutionRequest<'_, '_>,
-        limit: u64,
-    ) -> Result<ResidentEnvelopeRead, Failure> {
-        crate::execution::check_request(execution).map_err(Failure::Request)?;
-        let mut state = self.state.lock().unwrap_or_else(|error| error.into_inner());
-        if let Some(failure) = state.damage {
-            return Err(failure.into());
-        }
-        if let Some(envelope) = state.resident_envelope() {
-            let positioned = state
-                .position
-                .as_ref()
-                .and_then(RetainedCanonicalPosition::resident);
-            return Ok(ResidentEnvelopeRead {
-                envelope,
-                positioned,
-            });
-        }
-        let (entry, source) = match &state.backing {
-            EnvelopeBacking::Memory(envelope) => {
-                return Ok(ResidentEnvelopeRead {
-                    envelope: envelope.clone(),
-                    positioned: state
-                        .position
-                        .as_ref()
-                        .and_then(RetainedCanonicalPosition::resident),
-                })
-            }
-            EnvelopeBacking::Journal { entry, source, .. } => (entry, source),
-        };
-        let result =
-            Self::readmit_positioned(entry, source.as_ref(), execution, limit).map_err(|stop| {
-                match stop {
-                    RelationalRecoveryStop::Request(cause) => Failure::Request(cause),
-                    RelationalRecoveryStop::Allocation(_) => RelationalStorageUnavailable {
-                        subject: RelationalStorageSubject::Envelope(entry.position),
-                        cause: Cause::MemoryExhausted,
-                    }
-                    .into(),
-                    RelationalRecoveryStop::Content(cause) => Failure::Content(cause),
-                    RelationalRecoveryStop::Durability(error) => error
-                        .storage_unavailable
-                        .unwrap_or(RelationalStorageUnavailable {
-                            subject: RelationalStorageSubject::Envelope(entry.position),
-                            cause: Cause::Damaged,
-                        })
-                        .into(),
-                }
-            });
-        match result {
-            Ok(commit) => {
-                let digest = commit.authoritative_payload_digest().map_err(|_| {
-                    let failure = RelationalStorageUnavailable {
-                        subject: RelationalStorageSubject::Envelope(commit.position()),
-                        cause: Cause::Damaged,
-                    };
-                    state.damage = Some(failure);
-                    Failure::StorageUnavailable(failure)
-                })?;
-                state.payload_digest = Some(digest);
-                let envelope = commit.canonical_arc().clone();
-                state.position = Some(RetainedCanonicalPosition::from_positioned(&commit));
-                state.lineage = Some(lineage_delta(commit.envelope()));
-                Ok(ResidentEnvelopeRead {
-                    envelope,
-                    positioned: Some(commit),
-                })
-            }
-            Err(stop) => {
-                if let Failure::StorageUnavailable(failure) = &stop
-                    && failure.cause.is_proven_damage()
-                {
-                    state.damage = Some(*failure);
-                }
-                Err(stop)
-            }
-        }
-    }
-    pub(super) fn readmit_positioned(
-        entry: &RelationalCommitIndexEntry,
-        source: &dyn RelationalDurableColdSource,
-        execution: &worth_execution::ExecutionRequest<'_, '_>,
-        limit: u64,
-    ) -> Result<PositionedCanonicalCommit, RelationalRecoveryStop> {
-        let failure = |cause| RelationalStorageUnavailable {
-            subject: RelationalStorageSubject::Envelope(entry.position),
-            cause,
-        };
-        let read_limit =
-            limit.min(crate::durability::canonical_commit_artifact::MAXIMUM_ARTIFACT_BYTES as u64);
-        let _read = execution
-            .reserve_retained_memory(read_limit)
-            .map_err(|cause| RelationalRecoveryStop::Request(cause.into()))?;
-        let bytes = source
-            .read_commit(entry.position, read_limit)
-            .map_err(failure)?;
-        let artifact = RelationalCanonicalCommitArtifact::copy_frame_original(&bytes, execution)
-            .map_err(|cause| {
-                use crate::durability::canonical_commit_artifact::ControlledFrameCopyDenial as Copy;
-                match cause {
-                    Copy::Request(cause) => RelationalRecoveryStop::Request(cause),
-                    Copy::Allocation(cause) => RelationalRecoveryStop::Allocation(cause),
-                    Copy::Frame(cause) => crate::durability::data::RelationalNativeCheckpointCaptureDenial::ArtifactFrame(cause).into(),
-                }
-            })?;
-        drop(bytes);
-        drop(_read);
-        if artifact.position() != entry.position
-            || artifact.commit_id() != entry.commit.commit_id
-            || artifact.payload_digest().as_bytes() != &entry.payload_digest
-        {
-            return Err(failure(Cause::IntegrityMismatch).into());
-        }
-        let admitted = artifact.readmit_framed(execution)
-            .map_err(|error| match error {
-                crate::durability::canonical_commit_artifact::RelationalCanonicalCommitArtifactRefusal::Request(cause) => RelationalRecoveryStop::Request(cause),
-                crate::durability::canonical_commit_artifact::RelationalCanonicalCommitArtifactRefusal::Content(cause) => cause.into(),
-                crate::durability::canonical_commit_artifact::RelationalCanonicalCommitArtifactRefusal::FieldText(cause) => crate::symbols::data::field_text_recovery_stop(cause),
-                _ => failure(Cause::Damaged).into(),
-            })?.into_positioned();
-        if admitted.commit != entry.commit
-            || admitted.schema_version != entry.schema_version
-            || entry.root.schema_root()
-                != &crate::schema::data::schema_authority_snapshot_digest_bytes(
-                    &admitted.schema_authority,
-                )
-        {
-            return Err(failure(Cause::IntegrityMismatch).into());
-        }
-        crate::execution::check_request(execution).map_err(RelationalRecoveryStop::Request)?;
-        Ok(admitted)
     }
 }
 
@@ -364,3 +289,6 @@ struct ResidentEnvelopeRead {
     envelope: Arc<CanonicalCommitEnvelope>,
     positioned: Option<PositionedCanonicalCommit>,
 }
+
+#[cfg(test)]
+mod memory_publication_tests;

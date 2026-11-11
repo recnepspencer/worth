@@ -4,7 +4,7 @@ use crate::branch::RelationalBranchRoot;
 use crate::indexes::data::{
     DerivedIndexMaintenanceDenial, DerivedIndexMaintenanceDenialKind as Denial,
 };
-use crate::runtime::IndexDefinitionReadBinding;
+use crate::runtime::{IndexDefinitionReadBinding, PreparedRelationalIndexDefinitions};
 use crate::storage::substrate::maintenance::{CommitChange, ReconstructionLane};
 use std::sync::Arc;
 
@@ -15,6 +15,8 @@ impl IndexDefinitionReadBinding {
         predecessor: &Arc<RelationalBranchRoot>,
         successor: &Arc<RelationalBranchRoot>,
         change: &Arc<CommitChange>,
+        definitions: Option<&PreparedRelationalIndexDefinitions>,
+        maintenance_budget: Option<crate::indexes::data::DerivedIndexMaintenanceBudget>,
     ) -> Result<Option<PreparedCandidateIndexPublication>, DerivedIndexMaintenanceDenial> {
         if !change.schema_changed()
             || predecessor.commit_id().is_none()
@@ -51,6 +53,8 @@ impl IndexDefinitionReadBinding {
                     successor,
                     change,
                     Some((lane, work)),
+                    definitions,
+                    maintenance_budget,
                 )
             })
         })

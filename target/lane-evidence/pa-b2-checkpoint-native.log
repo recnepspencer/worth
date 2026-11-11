@@ -1,0 +1,6 @@
+command: python target/lane-evidence/claude_lane_tests.py native pa-b2-checkpoint-native target/lane-evidence/pa-b2-checkpoint-native-cases.json
+HEAD: e4d3b01c8d32ae3135a4dc40aadd322f8e3906e1
+git_status_short_empty: false
+start_utc: 2026-11-10T22:23:34.286954+00:00
+prebuild: cargo metadata --offline --format-version 1 --manifest-path "C:\programming\worth worktees\worktrees\m3-p3-reopen\Cargo.toml"
+prebuild: cargo test --message-format=json --no-run --package worth-relational --lib --profile dev --manifest-path "C:\programming\worth worktees\worktrees\m3-p3-reopen\Cargo.toml" --unit-graph -Z unstable-options

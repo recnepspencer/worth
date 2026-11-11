@@ -5,7 +5,7 @@ use crate::publication::CompositeComponentIntent;
 
 /// Product-head observation admitted for the next phase. The observation is
 /// carried unchanged; a caller cannot swap a basis between planning steps.
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct ResolvedExpectedProductHead {
     intent: CompositeComponentIntent,
     expected: ProductBranchObservation,

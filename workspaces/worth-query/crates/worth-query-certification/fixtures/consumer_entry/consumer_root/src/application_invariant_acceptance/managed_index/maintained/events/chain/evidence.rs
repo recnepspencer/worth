@@ -8,7 +8,7 @@ pub(in super::super::super) fn run() {
         publish(
             &world,
             &mut key,
-            authoring::Edit::Item {
+            crate::application_invariant_acceptance::managed_index::maintained::nested::edit::Edit::Item {
                 directory: "A".into(),
                 identity: format!("seed-{i:04}"),
                 name: format!("match-{i:04}"),

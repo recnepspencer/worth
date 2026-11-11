@@ -11,6 +11,7 @@ use crate::identity::data::EntityId;
 use crate::validation::data::{StructuralAspectStateView, StructuralRelationView};
 use std::{any::Any, sync::Arc};
 
+mod home_catalog;
 mod ordered_predecessor;
 mod projection_rows;
 mod row_read;
@@ -229,6 +230,10 @@ pub struct PreparedManagedIndexSourceRoot {
 pub(crate) struct PreparedSourceProgram {
     pub(crate) program: ManagedIndexSourceProgram,
     pub(crate) affected_scopes: std::collections::BTreeSet<EntityId>,
+    #[allow(
+        dead_code,
+        reason = "Original diagnostic, proof and funding custody remains owned through retirement"
+    )]
     pub(crate) closure: PreparedManagedIndexScopeClosure,
     pub(crate) roots: Vec<PreparedManagedIndexSourceRoot>,
     pub(crate) _work: crate::validation::CustomInvariantWorkMeter,

@@ -1,35 +1,35 @@
-//! Exact application entity-kind lookup at the installed layout owner.
+//! Exact application kind lookup at the installed layout owner.
 use worth_relational::facade::identity::KindId;
 impl super::WorthQueryPrimaryGraphLayout {
     pub(in crate::domain_computation::primary_graph) fn application_relation_kinds(
         &self,
     ) -> impl Iterator<Item = KindId> + '_ {
-        self.application_relation_kinds.iter().copied()
+        self.physical_roles.relation_ids.iter().copied()
     }
 
     pub(in crate::domain_computation::primary_graph) fn application_entity_kinds(
         &self,
     ) -> impl Iterator<Item = KindId> + '_ {
-        self.application_entity_kinds.iter().copied()
+        self.physical_roles.entity_ids.iter().copied()
     }
 
     pub(in crate::domain_computation) fn is_application_entity_kind(&self, kind: KindId) -> bool {
-        self.application_entity_kinds.contains(&kind)
+        self.physical_roles.entity_ids.contains(&kind)
     }
 
     pub(in crate::domain_computation) fn is_application_relation_kind(&self, kind: KindId) -> bool {
-        self.application_relation_kinds.contains(&kind)
+        self.physical_roles.relation_ids.contains(&kind)
     }
 
     pub(in crate::domain_computation) fn entity_kind(&self, entity: &str) -> Option<KindId> {
-        self.entity_kinds.get(entity).copied()
+        self.physical_roles.entities.get(entity).copied()
     }
 
     pub(in crate::domain_computation::primary_graph) fn entity_kind_lookup_work(
         &self,
         entity: &str,
     ) -> Option<u64> {
-        let entries = self.entity_kinds.len();
+        let entries = self.physical_roles.entities.len();
         let levels = usize::BITS as usize - entries.max(1).leading_zeros() as usize;
         let comparisons = entries.min(11).checked_mul(levels)?.checked_add(1)?;
         let bytes_per_comparison = entity.len().checked_add(1)?;
@@ -37,7 +37,8 @@ impl super::WorthQueryPrimaryGraphLayout {
     }
 
     pub fn entity_name(&self, kind: KindId) -> Option<&str> {
-        self.entity_kinds
+        self.physical_roles
+            .entities
             .iter()
             .find_map(|(name, candidate)| (*candidate == kind).then_some(name.as_str()))
     }
@@ -55,7 +56,7 @@ impl super::WorthQueryPrimaryGraphLayout {
         use worth_query_installation::facade::ApplicationFieldBindingOwnerKind as Owner;
         match owner {
             Owner::Entity => {
-                for (name, candidate) in &self.entity_kinds {
+                for (name, candidate) in &self.physical_roles.entities {
                     admit(1)?;
                     if *candidate == kind {
                         return Ok(Some(name));

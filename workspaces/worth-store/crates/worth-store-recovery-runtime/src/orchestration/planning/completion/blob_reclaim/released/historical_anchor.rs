@@ -10,7 +10,7 @@ use worth_store_physical_format::{
     PersistedRecordIdentity, ReleaseCustodyHeadEntryV1, ReleasedGenerationReclaimBasisV1,
 };
 
-use super::super::super::super::{context::PlanningContext, resolved_basis::ResolvedPlanningBasis};
+use super::super::super::super::{context::PlanningContext, resolved_basis::ResolvedPlanningState};
 use super::super::super::historical_publication;
 use super::super::selected_release_gate::admit_source_heads;
 use super::closure_evidence::ReleasedClosureEvidence;
@@ -42,7 +42,7 @@ impl PredecessorCustody {
 /// effect the ordered history replayed.
 pub(super) fn authenticate_completed_chain(
     context: PlanningContext,
-    basis: &mut ResolvedPlanningBasis,
+    basis: &mut ResolvedPlanningState,
     current: BlobReclaimDescriptorV2,
     source: ReleasedGenerationReclaimBasisV1,
     current_count: u16,
@@ -67,7 +67,7 @@ pub(super) fn authenticate_completed_chain(
 /// admitted, and blocks when the head tree disagrees with the prior.
 pub(super) fn authenticate_pending_chain(
     context: PlanningContext,
-    basis: &mut ResolvedPlanningBasis,
+    basis: &mut ResolvedPlanningState,
     current: BlobReclaimDescriptorV2,
     source: ReleasedGenerationReclaimBasisV1,
     current_count: u16,
@@ -99,7 +99,7 @@ pub(super) fn authenticate_pending_chain(
 
 fn authenticate_chain(
     context: PlanningContext,
-    basis: &mut ResolvedPlanningBasis,
+    basis: &mut ResolvedPlanningState,
     current: BlobReclaimDescriptorV2,
     source: ReleasedGenerationReclaimBasisV1,
     current_count: u16,
@@ -137,7 +137,7 @@ fn authenticate_chain(
 /// record-sorted inventory of the root the release was built on.
 pub(super) fn observe(
     context: PlanningContext,
-    basis: &mut ResolvedPlanningBasis,
+    basis: &mut ResolvedPlanningState,
     source: ReleasedGenerationReclaimBasisV1,
     predecessors: AuthenticatedPredecessors,
     release_routes: &[CurrentPhysicalRecordPlacement],

@@ -80,7 +80,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         let entity_resolution = graph.retain_entity_resolution_context();
         let policy = graph
             .integration_handle()
-            .with_runtime_mut(execution, |runtime| {
+            .with_runtime(execution, |runtime| {
                 let snapshot = security.snapshot_handle();
                 if !graph_work.admits_authorization_snapshot(snapshot) {
                     Err(denial(

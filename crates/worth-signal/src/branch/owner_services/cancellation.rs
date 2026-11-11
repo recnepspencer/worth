@@ -66,3 +66,6 @@ impl SignalOwnerCancellationToken {
         self.requested.load(Ordering::Acquire)
     }
 }
+#[cfg(test)]
+#[path = "cancellation_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;

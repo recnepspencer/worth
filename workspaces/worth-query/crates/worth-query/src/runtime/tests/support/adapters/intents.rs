@@ -15,7 +15,7 @@ impl WorthQueryIntentAuthorityAdapter for TestIntentAuthority {
     fn execute_intent(
         &mut self,
         bridge: &RuntimeBridge,
-        _relational_runtime: Option<&mut RelationalRuntime>,
+        _relational_runtime: Option<&RelationalRuntime>,
         declaration: &WorthQueryIntentDeclaration,
     ) -> Result<WorthQueryIntentExecution, WorthQueryWorkspaceError> {
         let version = self.next_version;
@@ -53,7 +53,7 @@ impl WorthQueryIntentAuthorityAdapter for CountingIntentAuthority {
     fn execute_intent(
         &mut self,
         _bridge: &RuntimeBridge,
-        _relational_runtime: Option<&mut RelationalRuntime>,
+        _relational_runtime: Option<&RelationalRuntime>,
         declaration: &WorthQueryIntentDeclaration,
     ) -> Result<WorthQueryIntentExecution, WorthQueryWorkspaceError> {
         self.attempted.set(self.attempted.get().saturating_add(1));
@@ -68,7 +68,7 @@ impl WorthQueryIntentAuthorityAdapter for NoopIntentAuthority {
     fn execute_intent(
         &mut self,
         _bridge: &RuntimeBridge,
-        _relational_runtime: Option<&mut RelationalRuntime>,
+        _relational_runtime: Option<&RelationalRuntime>,
         declaration: &WorthQueryIntentDeclaration,
     ) -> Result<WorthQueryIntentExecution, WorthQueryWorkspaceError> {
         Ok(WorthQueryIntentExecution::idempotent_noop(
@@ -95,7 +95,7 @@ impl WorthQueryIntentAuthorityAdapter for EmptyMutatingIntentAuthority {
     fn execute_intent(
         &mut self,
         bridge: &RuntimeBridge,
-        _relational_runtime: Option<&mut RelationalRuntime>,
+        _relational_runtime: Option<&RelationalRuntime>,
         declaration: &WorthQueryIntentDeclaration,
     ) -> Result<WorthQueryIntentExecution, WorthQueryWorkspaceError> {
         let mutation_receipt = bridge_authoritative_intent_receipt(bridge, 2, false)?;
@@ -129,7 +129,7 @@ impl WorthQueryIntentAuthorityAdapter for InvariantViolationIntentAuthority {
     fn execute_intent(
         &mut self,
         _bridge: &RuntimeBridge,
-        _relational_runtime: Option<&mut RelationalRuntime>,
+        _relational_runtime: Option<&RelationalRuntime>,
         declaration: &WorthQueryIntentDeclaration,
     ) -> Result<WorthQueryIntentExecution, WorthQueryWorkspaceError> {
         Ok(WorthQueryIntentExecution::invariant_violation(
@@ -159,7 +159,7 @@ impl WorthQueryIntentAuthorityAdapter for DriftingIntentAuthority {
     fn execute_intent(
         &mut self,
         bridge: &RuntimeBridge,
-        _relational_runtime: Option<&mut RelationalRuntime>,
+        _relational_runtime: Option<&RelationalRuntime>,
         declaration: &WorthQueryIntentDeclaration,
     ) -> Result<WorthQueryIntentExecution, WorthQueryWorkspaceError> {
         let mutation_receipt = bridge_authoritative_intent_receipt(bridge, 2, true)?;
@@ -193,7 +193,7 @@ impl WorthQueryIntentAuthorityAdapter for AuthoritylessIntentAuthority {
     fn execute_intent(
         &mut self,
         _bridge: &RuntimeBridge,
-        _relational_runtime: Option<&mut RelationalRuntime>,
+        _relational_runtime: Option<&RelationalRuntime>,
         declaration: &WorthQueryIntentDeclaration,
     ) -> Result<WorthQueryIntentExecution, WorthQueryWorkspaceError> {
         let mutation_receipt = test_mutation_receipt(

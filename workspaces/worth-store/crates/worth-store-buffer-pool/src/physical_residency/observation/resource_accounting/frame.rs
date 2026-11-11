@@ -229,11 +229,10 @@ impl PhysicalResidencyAccounting {
     }
 
     pub(crate) fn unpin(&mut self, became_unpinned: bool) {
-        self.counters.pin_leases -= 1;
+        self.release_pin_counters(became_unpinned);
         self.events
             .release(PhysicalResidencyDimension::PinLeases, 1);
         if became_unpinned {
-            self.counters.pinned_frames -= 1;
             self.events
                 .release(PhysicalResidencyDimension::PinnedFrames, 1);
         }

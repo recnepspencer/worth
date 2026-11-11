@@ -1,4 +1,4 @@
-use serde::{Deserialize, Deserializer, Serializer};
+use serde::{Deserializer, Serializer};
 use worth_foundational::facade::AspectValue;
 
 use super::reading::LengthPrefixedAspectValueReader;
@@ -17,7 +17,7 @@ pub(crate) fn deserialize<'de, D>(deserializer: D) -> Result<AspectValue, D::Err
 where
     D: Deserializer<'de>,
 {
-    let bytes = Vec::<u8>::deserialize(deserializer)?;
+    let bytes = crate::aspect_wire::read_canonical_bytes(deserializer)?;
     let mut reader = LengthPrefixedAspectValueReader::new(&bytes);
     let value = reader
         .read_length_prefixed_aspect_value()

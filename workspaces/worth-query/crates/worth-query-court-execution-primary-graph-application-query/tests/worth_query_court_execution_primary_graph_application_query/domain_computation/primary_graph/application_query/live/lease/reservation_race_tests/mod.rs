@@ -168,8 +168,10 @@ fn publication_without_a_joining_subscriber_releases_marker_and_observation() {
                 .unwrap()
         })
         .expect("the fixture read owns its installed host call");
-    let retention_before = (*world.application.product_runtime().owner_for_test())
-        .inspection_port()
+    let retention_before = world
+        .application
+        .product_runtime()
+        .inspection_port_for_test()
         .retention_snapshot()
         .unwrap();
     let program = world
@@ -208,8 +210,10 @@ fn publication_without_a_joining_subscriber_releases_marker_and_observation() {
     );
     // Compare before preparing the live attempt and after it finishes, with
     // the descriptive receipt still retained. Neither receipt owner pins it.
-    let retention_after_publication = (*world.application.product_runtime().owner_for_test())
-        .inspection_port()
+    let retention_after_publication = world
+        .application
+        .product_runtime()
+        .inspection_port_for_test()
         .retention_snapshot()
         .unwrap();
     assert_eq!(

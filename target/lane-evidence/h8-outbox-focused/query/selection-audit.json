@@ -1,0 +1,116 @@
+[
+  {
+    "binary": "worth-query-execution",
+    "test": "domain_computation::primary_graph::application_attempt::idempotency::recorded_intent::shape::tests::durable_and_legacy_scopes_and_complete_optional_suffix_are_exact",
+    "ignored": false,
+    "selected": true
+  },
+  {
+    "binary": "worth-query-execution",
+    "test": "domain_computation::primary_graph::application_attempt::idempotency::recorded_intent::shape::tests::durable_intent_shape_refuses_unknown_reordered_and_nullable_optional_slots",
+    "ignored": false,
+    "selected": true
+  },
+  {
+    "binary": "worth-query-execution",
+    "test": "domain_computation::primary_graph::application_attempt::idempotency::recorded_intent_tests::a_first_encoding_operation_without_a_mutation_binding_is_unverifiable",
+    "ignored": false,
+    "selected": true
+  },
+  {
+    "binary": "worth-query-execution",
+    "test": "domain_computation::primary_graph::application_attempt::idempotency::recorded_intent_tests::a_first_encoding_record_resolves_by_its_durable_parts",
+    "ignored": false,
+    "selected": true
+  },
+  {
+    "binary": "worth-query-execution",
+    "test": "domain_computation::primary_graph::application_attempt::idempotency::recorded_intent_tests::a_first_encoding_record_with_another_durable_part_is_drift",
+    "ignored": false,
+    "selected": true
+  },
+  {
+    "binary": "worth-query-execution",
+    "test": "domain_computation::primary_graph::application_attempt::idempotency::recorded_intent_tests::a_first_encoding_record_without_operation_or_scope_matches_exactly",
+    "ignored": false,
+    "selected": true
+  },
+  {
+    "binary": "worth-query-execution",
+    "test": "domain_computation::primary_graph::application_attempt::idempotency::recorded_intent_tests::a_record_in_neither_encoding_is_malformed_not_drift",
+    "ignored": false,
+    "selected": true
+  },
+  {
+    "binary": "worth-query-execution",
+    "test": "domain_computation::primary_graph::application_attempt::idempotency::recorded_intent_tests::current_recorded_operation_definition_is_stable_descriptive_meaning",
+    "ignored": false,
+    "selected": true
+  },
+  {
+    "binary": "worth-query-execution",
+    "test": "domain_computation::primary_graph::application_attempt::idempotency::recorded_intent_tests::installation_seals_and_absent_operations_do_not_readmit_a_definition",
+    "ignored": false,
+    "selected": true
+  },
+  {
+    "binary": "worth-query-execution",
+    "test": "domain_computation::primary_graph::application_attempt::idempotency::recorded_intent_tests::original_lookup_scope_uses_only_the_validated_correction_slot",
+    "ignored": false,
+    "selected": true
+  },
+  {
+    "binary": "worth-query-execution",
+    "test": "domain_computation::primary_graph::application_attempt::idempotency::recorded_intent_tests::recorded_operation_readmission_validates_the_complete_intent_grammar",
+    "ignored": false,
+    "selected": true
+  },
+  {
+    "binary": "worth-query-execution",
+    "test": "domain_computation::primary_graph::application_attempt::idempotency::recorded_intent_tests::the_recorded_intent_names_its_encoding_and_no_runtime",
+    "ignored": false,
+    "selected": true
+  },
+  {
+    "binary": "worth-query-execution",
+    "test": "domain_computation::primary_graph::provider::committed_dispatch_outbox::restoration_tests::durable_field_restore_accepts_the_exact_committed_shape",
+    "ignored": false,
+    "selected": true
+  },
+  {
+    "binary": "worth-query-execution",
+    "test": "domain_computation::primary_graph::provider::committed_dispatch_outbox::restoration_tests::durable_field_restore_rejects_every_omission_and_wrong_storage_type",
+    "ignored": false,
+    "selected": true
+  },
+  {
+    "binary": "worth-query-execution",
+    "test": "domain_computation::primary_graph::provider::committed_dispatch_outbox::restoration_tests::durable_field_restore_rejects_malformed_protocol_and_encoded_bytes",
+    "ignored": false,
+    "selected": true
+  },
+  {
+    "binary": "worth-query-execution",
+    "test": "domain_computation::primary_graph::provider::idempotency::snapshot_resolution::original_receipt::outbox::tests::equal_outbound_fields_cannot_rebind_changed_inbound_source_or_limits",
+    "ignored": false,
+    "selected": true
+  },
+  {
+    "binary": "worth-query-execution",
+    "test": "domain_computation::primary_graph::provider::idempotency::snapshot_resolution::original_receipt::outbox::tests::missing_or_unverifiable_binding_never_claims_no_inbound",
+    "ignored": false,
+    "selected": true
+  },
+  {
+    "binary": "worth-query-execution",
+    "test": "domain_computation::primary_graph::provider::idempotency::snapshot_resolution::original_receipt::outbox::tests::only_a_matching_installed_absence_is_no_inbound",
+    "ignored": false,
+    "selected": true
+  },
+  {
+    "binary": "worth-query-execution",
+    "test": "domain_computation::primary_graph::provider::idempotency::snapshot_resolution::original_receipt::outbox::tests::original_definition_rebinds_across_independent_real_installations",
+    "ignored": false,
+    "selected": true
+  }
+]

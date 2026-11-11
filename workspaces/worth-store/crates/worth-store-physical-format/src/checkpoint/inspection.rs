@@ -1,4 +1,5 @@
 use sha2::{Digest, Sha256};
+use worth_foundational::CanonicalDigestId;
 
 use super::{
     CheckpointBindingRecordFrameLength, CheckpointStreamDecodeDenial, CheckpointStreamDecoder,
@@ -15,7 +16,7 @@ pub(crate) struct VerifiedCheckpointStream {
     source: PhysicalCheckpointSource,
     footer: CheckpointStreamFooter,
     encoded_bytes: u64,
-    encoded_digest: [u8; 32],
+    encoded_digest: CanonicalDigestId,
     compaction_cutover: PersistedCompactionCutoverRecord,
     binding_records: Box<[Box<[u8]>]>,
     certificate_records: Box<[Box<[u8]>]>,
@@ -46,7 +47,7 @@ impl VerifiedCheckpointStream {
             source,
             footer,
             encoded_bytes,
-            encoded_digest,
+            encoded_digest: CanonicalDigestId::new(encoded_digest),
             compaction_cutover,
             binding_records,
             certificate_records,
@@ -69,7 +70,7 @@ impl VerifiedCheckpointStream {
     /// inspection. Cleanup revalidation uses this physical identity without
     /// moving checkpoint grammar or policy into the media backend.
     pub const fn encoded_digest(&self) -> [u8; 32] {
-        self.encoded_digest
+        *self.encoded_digest.bytes()
     }
 
     pub const fn compaction_cutover(&self) -> PersistedCompactionCutoverRecord {

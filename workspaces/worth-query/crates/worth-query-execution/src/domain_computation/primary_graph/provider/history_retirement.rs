@@ -16,7 +16,7 @@ impl WorthQueryPrimaryGraphProvider {
     ) {
         assert!(
             self.world_history
-                .set(product.owner.lifecycle_port())
+                .set(product.owner.recovery_port())
                 .is_ok(),
             "one product World owns the provider's history"
         );
@@ -33,7 +33,7 @@ impl WorthQueryPrimaryGraphProvider {
     /// cannot retire keeps its history; nothing is lost but capacity.
     pub(super) fn retire_changed_history(
         &self,
-        runtime: &mut RelationalRuntime,
+        runtime: &RelationalRuntime,
         committed: &worth_relational::facade::transactions::CommitResult,
     ) {
         let retired = self

@@ -2,12 +2,8 @@ use std::collections::HashMap;
 use std::fmt;
 use std::sync::{Arc, Condvar, Mutex};
 
-use worth_relational::facade::branch::{
-    RelationalBranchBasisPort, RelationalBranchRetentionLease, RelationalOwnerServicePorts,
-};
-use worth_signal::facade::branch::{
-    SignalBranchBasisPort, SignalBranchRetentionLease, SignalOwnerServicePorts,
-};
+use worth_relational::facade::branch::{RelationalBranchBasisPort, RelationalBranchRetentionLease};
+use worth_signal::facade::branch::{SignalBranchBasisPort, SignalBranchRetentionLease};
 
 use crate::basis::AdmittedCompositeRuntimeWorldBasis;
 use crate::budget::RuntimeWorldBudgetLimit;
@@ -28,8 +24,10 @@ use super::{RetentionCostSnapshot, RetentionObligationDenial};
 
 mod acquisition;
 mod batch_acquisition;
+#[cfg(test)]
 mod canonical_reclamation;
 mod capacity_reservation;
+mod checkpoint_retirement;
 mod claim_lifecycle;
 mod component_basis_order;
 mod history_claims;
@@ -194,24 +192,6 @@ where
         }
     }
 
-    pub(crate) fn from_component_services<E, Ctx>(
-        owner_identity: RuntimeWorldOwnerIdentity,
-        relational: &RelationalOwnerServicePorts,
-        signal: &SignalOwnerServicePorts<D, I, E, Ctx, T>,
-        unique_pin_limit: RuntimeWorldBudgetLimit,
-        reservation_limit: RuntimeWorldBudgetLimit,
-        observation_limit: RuntimeWorldBudgetLimit,
-    ) -> Self {
-        Self::new(
-            owner_identity,
-            relational.basis_port(),
-            signal.basis_port(),
-            unique_pin_limit,
-            reservation_limit,
-            observation_limit,
-        )
-    }
-
     fn lock(&self) -> std::sync::MutexGuard<'_, RegistryState<D, I, T>> {
         self.state.lock().unwrap_or_else(|error| error.into_inner())
     }
@@ -239,12 +219,32 @@ where
         commit: &CompositeRuntimeWorldCommit,
         capacity: super::super::ReservedObservationCapacity,
     ) -> Result<ObservationRetentionObligation, RetentionObligationDenial> {
-        assert_eq!(capacity.owner_identity(), self.lock().owner_identity);
-        self.issue_pair(
+        self.issue_retained_observation(commit, &mut Some(capacity))
+    }
+
+    /// Keep the original reservation in its custody until both component pins
+    /// have been acquired. A failed preparation can retry without readmission.
+    pub(crate) fn issue_retained_observation(
+        &self,
+        commit: &CompositeRuntimeWorldCommit,
+        capacity: &mut Option<super::super::ReservedObservationCapacity>,
+    ) -> Result<ObservationRetentionObligation, RetentionObligationDenial> {
+        assert_eq!(
+            capacity
+                .as_ref()
+                .expect("reserved observation")
+                .owner_identity(),
+            self.lock().owner_identity
+        );
+        let pair = self.issue_pair(
             commit.basis(),
             ComponentBasisDependencyClass::AdmittedObservation,
-        )
-        .map(|pair| ObservationRetentionObligation::owner_issued(commit, pair, capacity))
+        )?;
+        Ok(ObservationRetentionObligation::owner_issued(
+            commit,
+            pair,
+            capacity.take().expect("the original reservation"),
+        ))
     }
 
     #[cfg(test)]
@@ -284,6 +284,7 @@ where
         self.lock().active_obligations
     }
 
+    #[cfg(test)]
     pub(crate) fn unique_pin_count(&self) -> usize {
         self.lock().unique_slots
     }

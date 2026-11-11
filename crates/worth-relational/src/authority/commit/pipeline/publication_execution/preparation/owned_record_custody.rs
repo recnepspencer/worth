@@ -1,6 +1,6 @@
 //! Current ownership alone fences destruction, including relation endpoint changes.
 use crate::{
-    history::data::{CanonicalCommitEnvelope, CodecRetirementClosureStop as Stop},
+    history::data::{CanonicalCommitEnvelopeBody, CodecRetirementClosureStop as Stop},
     publication::data::{AuthoredRetirementRefusal as Cause, PublicationError},
     publication::patch::data::RecordStructuralChange as Change,
     runtime::RelationalPreparationRuntime,
@@ -12,7 +12,7 @@ mod candidate;
 pub(super) fn require(
     execution: &ExecutionRequest<'_, '_>,
     runtime: &RelationalPreparationRuntime,
-    candidate: &CanonicalCommitEnvelope,
+    candidate: &CanonicalCommitEnvelopeBody,
     adjacency: &[crate::authority::mutation::AdjacencyDelta],
 ) -> Result<(), TransactionCommitError> {
     let Some(current) = runtime.current_ownership.as_deref() else {

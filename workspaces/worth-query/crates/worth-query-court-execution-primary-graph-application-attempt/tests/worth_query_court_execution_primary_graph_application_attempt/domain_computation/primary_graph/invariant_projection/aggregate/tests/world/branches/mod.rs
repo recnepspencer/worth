@@ -44,7 +44,7 @@ impl AggregateWorld {
     ) -> Result<(i64, u64), WorthQueryInvariantAggregateDenialKind> {
         let observed = Cell::new(None);
         let identity = self.relational_identity(phase_custody, branch);
-        let (_, basis) = (*self.authority.graph_for_test()).with_runtime_mut_for_test(
+        let (_, basis) = (*self.authority.graph_for_test()).with_runtime_for_test(
             &phase_custody.borrowed_request_for_test(),
             |runtime| {
                 runtime
@@ -147,7 +147,7 @@ impl AggregateWorld {
         let execution = phase_custody.borrowed_request_for_test();
         (*self.authority
             .graph_for_test())
-            .with_runtime_mut_for_test(&execution, |runtime| {
+            .with_runtime_for_test(&execution, |runtime| {
                 let admitted = runtime
                     .admit_branch_basis(&identity)
                     .expect("the branch binding admits");

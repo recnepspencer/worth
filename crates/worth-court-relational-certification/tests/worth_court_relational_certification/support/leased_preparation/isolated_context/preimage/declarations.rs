@@ -120,17 +120,22 @@ pub(crate) fn journey(partitions: u32, slots: usize, dependencies: Dependencies)
         partitions,
         slots,
     );
+    // This court asserts preimage/COW boundaries, not the generic fixture's
+    // one-million-unit work policy. Native's original envelope and input
+    // capture also belong to this request (milestone-3 D17). Fund the repeated
+    // validation/commit journey from its actual finite fixture population.
+    // Master's positive 1023-relation journey retains a32M floor; no owner
+    // exposes a composite quote here. Keep that exact bounded floor as well as
+    // this fixture's population-dependent original-request derivation.
+    let work = (1_000_000 + (source.entities.len() as u64 + 3) * 32 * 1024).max(32_000_000);
     let lease = authority()
-        .request_lease(lease_request_with_work(
-            // Fixture funding includes admitted reconstruction scratch and the
-            // retained historical-kind paths for 1023 new relations. This is
-            // a bounded positive grant, not a claim of the minimal peak.
-            64 * 1024 * 1024,
-            worth_execution::CancellationToken::new(),
-            // Fund persistent path hashing for this actual 1023-relation
-            // change; the positive fixture does not pin a minimal invoice.
-            32_000_000,
-        ))
+        .request_lease(
+            crate::leased_preparation::ordinary_context::lease_request_with_work(
+                64 * 1024 * 1024,
+                worth_execution::CancellationToken::new(),
+                work,
+            ),
+        )
         .unwrap();
     let execution = worth_execution::ExecutionRequest::leased(&lease);
     check_snapshot(

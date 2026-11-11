@@ -26,7 +26,7 @@ pub(super) fn select(
         .as_ref()
         .ok_or_else(|| stale(record.clone(), "selected endpoints unavailable"))?
         .clone();
-    let payload = selected.extra().authoritative_aspect_state.clone();
+    let payload = selected.extra().authoritative_aspect_state();
     crate::execution::request_stage::checkpoint(
         context,
         payload
@@ -35,52 +35,66 @@ pub(super) fn select(
     )
     .map_err(request)?;
     let before = workspace.with_context(|context| {
-        let partition = context.state.get_partition_mut(id.partition_id);
+        let partition = context
+            .state
+            .get_partition_mut_for_request(id.partition_id, &context.execution)
+            .map_err(request)?;
         let before = partition
             .relation_arena
             .get(&id)
             .filter(|slot| slot.is_live())
-            .map(|slot| {
-                (
-                    slot.extra().endpoints.clone(),
-                    slot.extra().authoritative_aspect_state.clone(),
-                )
-            });
+            .map(|slot| (slot.extra().endpoints.clone(), Some(slot.retained_extra())));
         partition
             .relation_arena
-            .select_retained_version(&id, selected, version)
-            .map_err(|detail| stale(record.clone(), detail))?;
+            .select_retained_version(&context.execution, &id, selected, version)
+            .map_err(|cause| selection_denial(record.clone(), cause))?;
         context
             .state
-            .mark_relation_slot_touched(id.partition_id, id.slot_index());
-        Ok::<_, CommitConflict>(before)
+            .mark_relation_slot_touched_for_request(
+                id.partition_id,
+                id.slot_index(),
+                &context.execution,
+            )
+            .map_err(request)?;
+        Ok::<_, MutationApplyDenial>(before)
     })?;
-    outcome.record_change(match before {
-        Some((old_endpoints, old_authoritative_aspect_state)) => {
-            let old = old_endpoints
-                .ok_or_else(|| stale(record, "current relation endpoints unavailable"))?;
-            RecordMutation::RelationUpdated {
+    let after = workspace.with_context(|context| {
+        context
+            .state
+            .retained_relation_extra(id.partition_id, id.slot_index())
+    });
+    outcome.record_change(
+        &workspace.execution(),
+        match before {
+            Some((old_endpoints, old_authoritative_aspect_state)) => {
+                let old = old_endpoints
+                    .ok_or_else(|| stale(record, "current relation endpoints unavailable"))?;
+                RecordMutation::RelationUpdated {
+                    relation_id: id,
+                    kind_id: kind,
+                    old_source: old.source,
+                    old_target: old.target,
+                    new_source: endpoints.source,
+                    new_target: endpoints.target,
+                    old_authoritative_aspect_state,
+                    new_authoritative_aspect_state: after,
+                    authoritative_patch: None,
+                }
+            }
+            None => RecordMutation::RelationRematerialized {
                 relation_id: id,
                 kind_id: kind,
-                old_source: old.source,
-                old_target: old.target,
-                new_source: endpoints.source,
-                new_target: endpoints.target,
-                old_authoritative_aspect_state,
-                new_authoritative_aspect_state: payload,
+                source: endpoints.source,
+                target: endpoints.target,
+                new_authoritative_aspect_state: after,
                 authoritative_patch: None,
-            }
-        }
-        None => RecordMutation::RelationRematerialized {
-            relation_id: id,
-            kind_id: kind,
-            source: endpoints.source,
-            target: endpoints.target,
-            new_authoritative_aspect_state: payload,
-            authoritative_patch: None,
+            },
         },
-    });
-    outcome.record_event(MutationEvent::RelationUpdated { relation_id: id });
+    )?;
+    outcome.record_event(
+        &workspace.execution(),
+        MutationEvent::RelationUpdated { relation_id: id },
+    )?;
     Ok(())
 }
 pub(super) fn retire(
@@ -91,7 +105,10 @@ pub(super) fn retire(
 ) -> Result<(), MutationApplyDenial> {
     let (kind, endpoints, payload) = workspace.with_context(|context| {
         let record = RecordRef::Relation(id);
-        let partition = context.state.get_partition_mut(id.partition_id);
+        let partition = context
+            .state
+            .get_partition_mut_for_request(id.partition_id, &context.execution)
+            .map_err(request)?;
         let old = partition
             .relation_arena
             .get(&id)
@@ -105,23 +122,35 @@ pub(super) fn retire(
             .endpoints
             .clone()
             .ok_or_else(|| stale(record.clone(), "current relation endpoints unavailable"))?;
-        let payload = old.extra().authoritative_aspect_state.clone();
+        let payload = Some(old.retained_extra());
         partition
             .relation_arena
-            .retire(id.slot_index(), version)
+            .retire_for_request(&context.execution, id.slot_index(), version)
+            .map_err(request)?
             .ok_or_else(|| stale(record, "current relation cannot retire"))?;
         context
             .state
-            .mark_relation_slot_touched(id.partition_id, id.slot_index());
-        Ok::<_, CommitConflict>((kind, endpoints, payload))
+            .mark_relation_slot_touched_for_request(
+                id.partition_id,
+                id.slot_index(),
+                &context.execution,
+            )
+            .map_err(request)?;
+        Ok::<_, MutationApplyDenial>((kind, endpoints, payload))
     })?;
-    outcome.record_change(RecordMutation::RelationDeleted {
-        relation_id: id,
-        kind_id: kind,
-        source: endpoints.source,
-        target: endpoints.target,
-        authoritative_aspect_state: payload,
-    });
-    outcome.record_event(MutationEvent::RelationDeleted { relation_id: id });
+    outcome.record_change(
+        &workspace.execution(),
+        RecordMutation::RelationDeleted {
+            relation_id: id,
+            kind_id: kind,
+            source: endpoints.source,
+            target: endpoints.target,
+            authoritative_aspect_state: payload,
+        },
+    )?;
+    outcome.record_event(
+        &workspace.execution(),
+        MutationEvent::RelationDeleted { relation_id: id },
+    )?;
     Ok(())
 }

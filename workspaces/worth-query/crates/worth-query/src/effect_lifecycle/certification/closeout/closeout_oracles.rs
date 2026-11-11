@@ -65,16 +65,11 @@ fn scalar_mutation_oracle_digest(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
 ) -> Result<String, IdentityDerivationDenial> {
     let branch = "closeout-oracle-branch";
-    let mut runtime = relational_runtime_with_intent_strategy();
-    let entity_id = create_entity(
-        execution,
-        &mut runtime,
-        "before",
-        BranchId("main".to_string()),
-    );
+    let runtime = relational_runtime_with_intent_strategy();
+    let entity_id = create_entity(execution, &runtime, "before", BranchId("main".to_string()));
     crate::runtime::fork_branch_from_exact_source(
         execution,
-        &mut runtime,
+        &runtime,
         BranchId(branch.to_string()),
         &BranchId("main".to_string()),
     )
@@ -98,10 +93,7 @@ fn scalar_mutation_oracle_digest(
         .expect("closeout oracle mutation should lower");
 
     Ok(lowered
-        .execute_with(
-            execution,
-            EffectExecutionAuthority::relational(&mut runtime),
-        )
+        .execute_with(execution, EffectExecutionAuthority::relational(&runtime))
         .expect("closeout oracle mutation should execute")
         .verify_against_relational_runtime(&runtime)
         .expect("closeout oracle mutation should verify")
@@ -114,22 +106,12 @@ fn batch_mutation_oracle_digest(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
 ) -> Result<String, IdentityDerivationDenial> {
     let branch = "closeout-oracle-batch";
-    let mut runtime = relational_runtime_with_intent_strategy();
-    let left = create_entity(
-        execution,
-        &mut runtime,
-        "left",
-        BranchId("main".to_string()),
-    );
-    let right = create_entity(
-        execution,
-        &mut runtime,
-        "right",
-        BranchId("main".to_string()),
-    );
+    let runtime = relational_runtime_with_intent_strategy();
+    let left = create_entity(execution, &runtime, "left", BranchId("main".to_string()));
+    let right = create_entity(execution, &runtime, "right", BranchId("main".to_string()));
     crate::runtime::fork_branch_from_exact_source(
         execution,
-        &mut runtime,
+        &runtime,
         BranchId(branch.to_string()),
         &BranchId("main".to_string()),
     )
@@ -152,10 +134,7 @@ fn batch_mutation_oracle_digest(
         .expect("closeout oracle batch should admit")
         .lower()
         .expect("closeout oracle batch should lower")
-        .execute_with(
-            execution,
-            EffectExecutionAuthority::relational(&mut runtime),
-        )
+        .execute_with(execution, EffectExecutionAuthority::relational(&runtime))
         .expect("closeout oracle batch should execute");
 
     Ok(executed

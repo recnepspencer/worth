@@ -1,4 +1,9 @@
 //! Shared region residency. Only an accepted, counted lease lends read views.
+mod source_retirement;
+pub(crate) use source_retirement::{
+    NativeRegionSourceRetirement, NativeRegionSourceRetirementDenial,
+    NativeRegionSourceRetirementProgress, NativeSourcePass,
+};
 mod record_directory;
 pub(crate) use record_directory::{
     DirectoryError as RecordDirectoryError, KindRegionDirectory, PortableRecordDirectory,
@@ -58,8 +63,10 @@ pub(crate) use retention::RelationalRegionRetention;
 
 mod checkpoint_capture;
 mod checkpoint_kind_images;
-use checkpoint_capture::RecordedRegionCheckpoint;
-pub(crate) use checkpoint_capture::RelationalCheckpointRegionPublication;
+pub(crate) use checkpoint_capture::{
+    RecordedRegionCheckpoint, RegionCheckpointAcknowledgementDenial,
+    RelationalCheckpointRegionPublication, RetiredRegionCheckpointBindings,
+};
 pub(crate) use checkpoint_kind_images::CheckpointRegionKindImages;
 
 mod demand_failure;

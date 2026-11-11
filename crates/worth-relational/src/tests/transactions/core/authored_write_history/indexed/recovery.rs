@@ -5,7 +5,7 @@ use super::*;
 fn index_rebuild_requires_live_verified_canonical_evidence() {
     let host = crate::test_execution_policy::serial_request();
     let execution = ExecutionRequest::serial(&host);
-    let runtime = durable_runtime_with_test_schema();
+    let runtime = runtime_with_test_schema();
     let created = create_entity_outcome(&execution, &runtime, "before");
     let entity = changed_entities(&created)[0];
     let pre_install_source = test_owner_main_basis(&runtime).unwrap();
@@ -108,13 +108,58 @@ fn index_rebuild_requires_live_verified_canonical_evidence() {
     // optional-field-absent legacy wire without JSON's bounded Value numbers;
     // it is a codec fixture, not newly admitted historical evidence.
     let mut old_shape = decoded;
-    old_shape.authored_index_writes = Default::default();
+    old_shape.body_mut_for_test().authored_index_writes = Default::default();
     let legacy_bytes = rmp_serde::to_vec_named(&old_shape).unwrap();
     let legacy: crate::history::data::CanonicalCommitEnvelope =
         rmp_serde::from_slice(&legacy_bytes).unwrap();
     assert!(legacy.authored_index_writes.is_unavailable());
-    let (_, recovered) =
-        checkpoint_and_recover_with(&execution, &runtime, durable_runtime_with_test_schema);
+    runtime
+        .durability_authority()
+        .checkpoint(&execution)
+        .unwrap();
+    let complete = runtime
+        .complete_checkpoint_service()
+        .prepare(
+            &execution,
+            crate::durability::data::RelationalCheckpointArtifactPolicy::Embedded,
+        )
+        .unwrap();
+    let decoded = crate::durability::log::native_checkpoint_codec::decode_checkpoint(
+        &execution,
+        complete.checkpoint().bytes(),
+    )
+    .unwrap()
+    .checkpoint;
+    let decoded_equal = decoded
+        .envelopes
+        .iter()
+        .find(|entry| entry.envelope().commit.commit_id == equal.commit.commit_id)
+        .expect("actual emitted checkpoint contains the authored equal-value occurrence");
+    assert!(decoded_equal
+        .envelope()
+        .authored_index_writes
+        .verified_entries()
+        .is_none());
+    let mut plan = runtime
+        .durability()
+        .recovery_plan(
+            &execution,
+            crate::durability::data::RecoveryVerificationMode::NormalRecoveryVerification,
+        )
+        .unwrap();
+    plan.checkpoint = Some(decoded);
+    let mut recovered = runtime_with_test_schema();
+    recovered
+        .durability_recovery()
+        .recover(&execution, plan)
+        .unwrap();
+    assert!(recovered
+        .history
+        .canonical_envelope(equal.commit.commit_id)
+        .unwrap()
+        .authored_index_writes
+        .verified_entries()
+        .is_none());
     let recovered_source = recovered
         .admit_branch_basis(
             &recovered

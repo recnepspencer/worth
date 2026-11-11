@@ -5,7 +5,7 @@ use crate::{
     publication::patch::data::RecordStructuralChange as Change, transactions::data::RecordRef,
 };
 use worth_execution::MapKernelContext;
-impl CanonicalCommitEnvelope {
+impl CanonicalCommitEnvelopeBody {
     pub(super) fn validate_producer_retirement_header(
         &self,
         context: &mut MapKernelContext<'_, '_>,

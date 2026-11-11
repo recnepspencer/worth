@@ -62,7 +62,7 @@ where
         let graph = self.runtime.primary_graph().ok_or_else(foreign_runtime)?;
         graph
             .integration_handle()
-            .with_runtime_mut(execution, |runtime| {
+            .with_runtime(execution, |runtime| {
                 let snapshot = security.snapshot_handle();
 
                 validate_retained_currentness(
@@ -102,6 +102,7 @@ where
         >,
         WorthQueryOperationAuthorizationDenial,
     > {
+        let _read = self.runtime.product_runtime.enter_authority_revalidation();
         if !self.refresh_admitted_capability_authorization(execution, admission)? {
             self.readmit_admitted_non_capability_authorization(execution, admission)?;
         }
@@ -146,6 +147,7 @@ where
         >,
         WorthQueryOperationAuthorizationDenial,
     > {
+        let _read = self.runtime.product_runtime.enter_authority_revalidation();
         self.validate_admitted_authorization(execution, admission)?;
         let product = admission.graph_work().mutation_product().ok_or_else(|| {
             WorthQueryOperationAuthorizationDenial::inconsistent(admission.operation())
@@ -189,6 +191,7 @@ where
         >,
         WorthQueryOperationAuthorizationDenial,
     > {
+        let _read = self.runtime.product_runtime.enter_authority_revalidation();
         if self.runtime.authority_identity() != admission.runtime_authority() {
             return Err(foreign_runtime());
         }
@@ -256,7 +259,7 @@ where
         let graph = self.runtime.primary_graph().ok_or_else(foreign_runtime)?;
         graph
             .integration_handle()
-            .with_runtime_mut(execution, |runtime| {
+            .with_runtime(execution, |runtime| {
                 let snapshot = security.snapshot_handle();
 
                 validate_observed_currentness(
@@ -293,7 +296,7 @@ where
         let graph = self.runtime.primary_graph().ok_or_else(foreign_runtime)?;
         graph
             .integration_handle()
-            .with_runtime_mut(execution, |runtime| {
+            .with_runtime(execution, |runtime| {
                 let snapshot = security.snapshot_handle();
                 let principal_current = capability
                     .principal()

@@ -8,6 +8,7 @@
 //! bounded header reads.
 
 use sha2::{Digest, Sha256};
+use worth_foundational::CanonicalDigestId;
 use worth_store_physical_format::{PersistedRecordIdentity, RecordAnchorName};
 
 use super::OrderedJournalName;
@@ -27,15 +28,28 @@ pub(super) struct SpineEntry {
 }
 
 /// The decoded header of one journal record.
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug)]
 pub(super) struct JournalRecordHeader {
     pub(super) journal: OrderedJournalName,
     pub(super) position: u64,
-    pub(super) payload_sha256: [u8; 32],
+    pub(super) payload_sha256: CanonicalDigestId,
     pub(super) payload_bytes: u64,
     /// Strictly descending positions, each below `position`.
     pub(super) spine: Vec<SpineEntry>,
+    // Last: the actual spine storage retires before its original reservation.
+    _memory: Option<worth_execution::ExecutionMemoryReservation>,
 }
+
+impl PartialEq for JournalRecordHeader {
+    fn eq(&self, other: &Self) -> bool {
+        self.journal == other.journal
+            && self.position == other.position
+            && self.payload_sha256 == other.payload_sha256
+            && self.payload_bytes == other.payload_bytes
+            && self.spine == other.spine
+    }
+}
+impl Eq for JournalRecordHeader {}
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(super) enum JournalFrameDenial {
@@ -58,7 +72,7 @@ impl JournalRecordHeader {
         bytes.extend_from_slice(self.journal.as_str().as_bytes());
         bytes.resize(8 + 32, 0);
         bytes.extend_from_slice(&self.position.to_le_bytes());
-        bytes.extend_from_slice(&self.payload_sha256);
+        bytes.extend_from_slice(self.payload_sha256.bytes());
         bytes.extend_from_slice(&self.payload_bytes.to_le_bytes());
         bytes.push(self.spine.len() as u8);
         bytes.extend_from_slice(&[0; 7]);
@@ -77,6 +91,38 @@ impl JournalRecordHeader {
         bytes: &[u8],
         journal: OrderedJournalName,
         record_bytes: Option<u64>,
+    ) -> Result<Self, JournalFrameDenial> {
+        Self::decode_reserved(bytes, journal, record_bytes, None)
+    }
+
+    pub(super) fn decode_funded(
+        bytes: &[u8],
+        journal: OrderedJournalName,
+        record_bytes: u64,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> Result<Self, super::OrderedJournalReadFailure> {
+        let count = bytes
+            .get(88)
+            .copied()
+            .map(usize::from)
+            .filter(|count| *count <= MAXIMUM_SPINE_ENTRIES)
+            .ok_or(super::OrderedJournalReadFailure::Damaged)?;
+        if bytes.len() < FIXED_HEADER_BYTES + count * SPINE_ENTRY_BYTES {
+            return Err(super::OrderedJournalReadFailure::Damaged);
+        }
+        let bytes_needed = (count * std::mem::size_of::<SpineEntry>()) as u64;
+        let memory = execution
+            .reserve_retained_memory(bytes_needed)
+            .map_err(super::OrderedJournalReadFailure::Execution)?;
+        Self::decode_reserved(bytes, journal, Some(record_bytes), memory)
+            .map_err(|_| super::OrderedJournalReadFailure::Damaged)
+    }
+
+    fn decode_reserved(
+        bytes: &[u8],
+        journal: OrderedJournalName,
+        record_bytes: Option<u64>,
+        memory: Option<worth_execution::ExecutionMemoryReservation>,
     ) -> Result<Self, JournalFrameDenial> {
         if bytes.len() < FIXED_HEADER_BYTES {
             return Err(JournalFrameDenial::Truncated);
@@ -127,13 +173,18 @@ impl JournalRecordHeader {
                 record,
             });
         }
-        if spine != required_spine(position, &spine).ok_or(JournalFrameDenial::Malformed)? {
+        if !spine
+            .iter()
+            .map(|entry| entry.position)
+            .eq(required_positions(position))
+        {
             return Err(JournalFrameDenial::Malformed);
         }
         Ok(Self {
+            _memory: memory,
             journal,
             position,
-            payload_sha256,
+            payload_sha256: CanonicalDigestId::new(payload_sha256),
             payload_bytes,
             spine,
         })
@@ -158,9 +209,10 @@ impl JournalRecordHeader {
             }
         };
         Some(Self {
+            _memory: None,
             journal,
             position,
-            payload_sha256: Sha256::digest(payload).into(),
+            payload_sha256: CanonicalDigestId::new(Sha256::digest(payload).into()),
             payload_bytes: payload.len() as u64,
             spine,
         })
@@ -178,7 +230,7 @@ impl JournalRecordHeader {
 
     pub(super) fn verify_payload(&self, payload: &[u8]) -> Result<(), JournalFrameDenial> {
         if payload.len() as u64 != self.payload_bytes
-            || <[u8; 32]>::from(Sha256::digest(payload)) != self.payload_sha256
+            || <[u8; 32]>::from(Sha256::digest(payload)) != *self.payload_sha256.bytes()
         {
             return Err(JournalFrameDenial::PayloadDigestMismatch);
         }
@@ -189,20 +241,25 @@ impl JournalRecordHeader {
 /// The spine a record at `position` must carry, drawn from `candidates`.
 /// `None` when a required earlier record is not among them.
 fn required_spine(position: u64, candidates: &[SpineEntry]) -> Option<Vec<SpineEntry>> {
-    let below = position.checked_sub(1)?;
     let mut spine: Vec<SpineEntry> = Vec::new();
-    for shift in 0..64 {
-        let target = (below >> shift) << shift;
-        if target == 0 {
-            break;
-        }
-        if spine.last().is_some_and(|entry| entry.position == target) {
-            continue;
-        }
+    for target in required_positions(position) {
         let entry = candidates.iter().find(|entry| entry.position == target)?;
         spine.push(*entry);
     }
     Some(spine)
+}
+
+fn required_positions(position: u64) -> impl Iterator<Item = u64> {
+    let below = position.saturating_sub(1);
+    let mut previous = None;
+    (0..64)
+        .map(move |shift| (below >> shift) << shift)
+        .take_while(|position| *position != 0)
+        .filter(move |position| {
+            let distinct = previous != Some(*position);
+            previous = Some(*position);
+            distinct
+        })
 }
 
 fn trimmed(name: &[u8; 32]) -> Result<&str, JournalFrameDenial> {

@@ -58,8 +58,8 @@ where
         self.retired_owner = Some(owner);
         self.observation = Some(observation);
         self.retired_carrier = Some(retired_carrier);
-        self.checkpoint = Some(Checkpoint::Published {
-            receipt,
+        self.checkpoint = Some(Checkpoint::RecoveredPublished {
+            publication: receipt,
             delivery: Delivery::Change(change),
             ready_backing: ready_backing.bind_original_producing_publication(original),
         });

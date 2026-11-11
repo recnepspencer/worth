@@ -5,6 +5,11 @@ use crate::history::retention::{
 use crate::mvcc::RelationalBranchObservation;
 use crate::runtime::RelationalRuntime;
 use crate::snapshots::data::SnapshotId;
+mod retirement;
+pub use retirement::{
+    RelationalRetainedObservationRetirement, RelationalRetainedObservationRetirementDenial,
+    RelationalRetainedObservationRetirementProgress, RetiredRelationalRetainedObservation,
+};
 
 /// One admitted basis, retained and given its own snapshot id.
 ///

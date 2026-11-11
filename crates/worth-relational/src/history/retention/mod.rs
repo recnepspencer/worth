@@ -2,8 +2,12 @@ mod cost_counters;
 mod head_cell;
 mod head_obligation;
 mod head_retirement;
+mod historical_retirement;
+pub(crate) use historical_retirement::RelationalHistoricalObservationRetirement;
 mod index_liveness;
 mod lane;
+#[cfg(test)]
+pub(crate) use lane::assert_external_cut_and_lane_busy;
 mod lease;
 mod obligation;
 mod owner;
@@ -24,8 +28,10 @@ pub(crate) use head_retirement::{
 };
 pub(crate) use lane::{
     RelationalBranchRetentionBinding, RelationalRetentionGuard,
-    RelationalRetentionOwnerRelationship,
+    RelationalRetentionOwnerRelationship, RelationalRetentionRequestAcquisitionDenial,
+    RelationalRetentionRetirementCustody, RelationalRetentionRetirementError,
 };
+pub(crate) use lease::RelationalExternalLeaseRetirement;
 pub use lease::{
     RelationalBranchRetentionLease, RelationalBranchRetentionReleaseDenial,
     RelationalBranchRetentionReleaseReceipt, RelationalBranchRetentionTerminalOutcome,
@@ -37,8 +43,17 @@ pub(crate) use obligation::{
     RelationalRetainedHistoricalRoot, RelationalRetentionObligationKind,
     RelationalTransactionRetentionObligation,
 };
-pub(crate) use owner::{RelationalBranchRetentionOwner, RelationalRetentionAcquisitionDenial};
+pub(crate) use owner::{
+    CapturedExternalCheckpointComponents, RelationalBranchRetentionOwner,
+    RelationalRetentionAcquisitionDenial,
+};
 pub use reclamation::RelationalBranchRootReclamationOutcome;
 pub(crate) use reclamation::RetainedIndexRoots;
 pub(crate) use storage_inventory::RelationalRetiredRootStorageSnapshot;
 pub(crate) use terminal_accounting::RelationalExternalRetentionTerminalAccounting;
+
+#[cfg(test)]
+mod component_cut_tests;
+
+#[cfg(test)]
+pub(crate) use component_cut_tests::assert_controlled_component_capture_winner;

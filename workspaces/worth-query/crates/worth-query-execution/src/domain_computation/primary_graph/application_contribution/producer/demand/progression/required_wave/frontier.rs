@@ -67,12 +67,6 @@ pub struct RequiredFrontier<Ready = SelectedReadyReadmission> {
     pub members: Vec<RequiredMember<Ready>>,
 }
 
-impl Default for RequiredFrontier {
-    fn default() -> Self {
-        Self::new()
-    }
-}
-
 impl RequiredFrontier {
     pub fn new() -> Self {
         Self {
@@ -173,6 +167,12 @@ impl RequiredFrontier {
             self.members[index].state = MemberState::Inspect;
         }
         Ok(RequiredUpstream::Member(index))
+    }
+}
+
+impl Default for RequiredFrontier {
+    fn default() -> Self {
+        Self::new()
     }
 }
 

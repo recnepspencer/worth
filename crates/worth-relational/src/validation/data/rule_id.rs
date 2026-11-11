@@ -1,5 +1,6 @@
 use serde::{Deserialize, Serialize};
-use std::sync::Arc;
+use std::sync::{Arc, OnceLock};
+mod custom_rule_name;
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
 pub enum InvariantRuleId {
@@ -25,16 +26,30 @@ pub enum NativeInvariantRuleId {
     ConnectivityMinimumContract,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
-pub struct CustomInvariantRuleId(Arc<str>);
+/// Shared rule text has an intrinsic cold-read admission through every clone.
+/// Ordinary construction retains the existing explicitly unbudgeted contract.
+pub struct CustomInvariantRuleId(Arc<custom_rule_name::Backing>);
+
+// Public meaning is immutable shared text. The private one-shot grant slot
+// retains lifetime bookkeeping and exposes no mutable identifier semantics.
+impl std::panic::RefUnwindSafe for CustomInvariantRuleId {}
+impl std::panic::UnwindSafe for CustomInvariantRuleId {}
 
 impl CustomInvariantRuleId {
     pub fn new(id: impl Into<Arc<str>>) -> Self {
-        Self(id.into())
+        Self(Arc::new(custom_rule_name::Backing::new(id.into())))
     }
-
     pub fn as_str(&self) -> &str {
-        &self.0
+        self.0.text()
+    }
+    pub(crate) fn retain_decoded_memory(
+        &self,
+        memory: Option<worth_execution::ExecutionMemoryReservation>,
+    ) -> Result<(), Option<worth_execution::ExecutionMemoryReservation>> {
+        self.0.retain_decoded_memory(memory)
+    }
+    pub(crate) fn control_bytes() -> Option<u64> {
+        custom_rule_name::Backing::control_bytes()
     }
 }
 

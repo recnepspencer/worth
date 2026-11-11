@@ -98,7 +98,7 @@ async fn terminal_retry_replay_survives_until_eviction_then_commit_replay_report
         close_notification(&client, server.local_address(), completed_commit_replay).await;
     assert!(matches!(
         completed_commit_replay,
-        crate::http::protocol::BankHttpMutationOutcome::RailRecoveryReady {
+        crate::http::protocol::BankHttpMutationOutcome::RecordedRailRecoveryReady {
             recovery_status: BankHttpRecoveryStatus::Completed,
             recovery: Some(_),
             ..
@@ -132,10 +132,7 @@ async fn terminal_retry_replay_survives_until_eviction_then_commit_replay_report
         matches!(
             &old_replay,
             crate::http::protocol::BankHttpEstateNotificationOutcome::Owning {
-                outcome: crate::http::protocol::BankHttpMutationOutcome::Completed {
-                    recovered: true,
-                    ..
-                }
+                outcome: crate::http::protocol::BankHttpMutationOutcome::Recorded { .. }
             }
         ),
         "the original key must return recovered native evidence: {old_replay:?}"
@@ -144,7 +141,7 @@ async fn terminal_retry_replay_survives_until_eviction_then_commit_replay_report
     assert!(
         matches!(
             &old_replay,
-            crate::http::protocol::BankHttpMutationOutcome::RailRecoveryReady {
+            crate::http::protocol::BankHttpMutationOutcome::RecordedRailRecoveryReady {
                 recovery: None,
                 recovery_status: BankHttpRecoveryStatus::Completed,
                 ..

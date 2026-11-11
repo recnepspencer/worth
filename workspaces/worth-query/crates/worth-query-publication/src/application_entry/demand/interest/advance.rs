@@ -112,7 +112,8 @@ where
             {
                 WorthQueryApplicationOutputDemandDenial::Superseded
             }
-            worth_query_execution::facade::primary_graph::WorthQueryOutputDemandDenialKind::ExecutionRequest(_)
+            worth_query_execution::facade::primary_graph::WorthQueryOutputDemandDenialKind::DurableStateAdmission(_)
+                | worth_query_execution::facade::primary_graph::WorthQueryOutputDemandDenialKind::ExecutionRequest(_)
                 | worth_query_execution::facade::primary_graph::WorthQueryOutputDemandDenialKind::UnobservedWrite(_)
                 | worth_query_execution::facade::primary_graph::WorthQueryOutputDemandDenialKind::SourceQueryInstallation(_)
                 | worth_query_execution::facade::primary_graph::WorthQueryOutputDemandDenialKind::ManagedIndexSourceDenied
@@ -205,10 +206,10 @@ where
         request: &crate::application_entry::WorthQueryApplicationRequest<'_, '_, '_, Schema>,
     ) -> Result<
         Option<
-            worth_query_execution::facade::domain_computation::WorthQueryDirectRunCleanupReceipt,
+            worth_query_execution::facade::primary_graph::WorthQueryApplicationManagedCleanupReceipt,
         >,
         WorthQueryApplicationOutputDemandDenial,
-    > {
+    >{
         self.continuation
             .release_managed_cleanup(self.application, request)
     }

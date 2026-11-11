@@ -1,5 +1,6 @@
 //! Actual interrupted matching cannot return its already-started complete selection.
 use super::*;
+use crate::application_invariant_acceptance::managed_index::prefix_observation;
 use std::sync::atomic::Ordering;
 
 #[test]
@@ -7,7 +8,7 @@ fn complete_membership_visits_nonmatches_and_refuses_interrupted_partial_selecti
     run(journey);
 }
 fn journey() {
-    let calls = Arc::new(prefix::Calls::default());
+    let calls = Arc::new(prefix_observation::Calls::default());
     let world = host::install(calls.clone());
     let cancellation = WorthQueryCancellationSource::new();
     let scope = WorthQueryRequestScope::new(None, cancellation.token(), worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system());

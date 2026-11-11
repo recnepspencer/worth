@@ -12,8 +12,11 @@ use super::super::super::merge::{BranchMergeKind, BranchMergeStrategy, BranchMut
 use super::super::super::reconstructability::{AuthorityState, DerivedState};
 use super::super::super::temporal::TemporalRuntimeState;
 
+mod authored_readmission;
 #[path = "authority/conditional_owned_async.rs"]
 mod conditional_owned_async;
+mod durable_successor;
+mod initial_empty;
 #[cfg(test)]
 #[path = "authority/replacement_test_observation.rs"]
 mod replacement_test_observation;
@@ -145,7 +148,7 @@ where
     T: Copy + Ord,
 {
     pub(super) authority: AuthorityState<T>,
-    pub(super) derived: DerivedState<D, I>,
+    pub(super) derived: Box<DerivedState<D, I>>,
     ancestry: BranchAncestryState,
     pub(super) mutation_ledger: BranchMutationLedger,
     pub(super) installed_definition: Option<
@@ -159,6 +162,15 @@ where
     I: Copy + Ord,
     T: Copy + Ord,
 {
+    pub(crate) fn forked_framework_charge() -> Result<
+        crate::data::retained_storage::RetainedStorageCharge,
+        crate::data::retained_storage::RetainedStoragePreparationDenial,
+    > {
+        use crate::data::retained_storage::RetainedStorageCharge as Charge;
+        Charge::capacity::<crate::data::graph::SignalGraph>(1)?
+            .checked_add(Charge::capacity::<DerivedState<D, I>>(1)?)
+    }
+
     pub(crate) fn fork_for_owner_cell(
         &mut self,
         parent: &crate::state::SignalBranchHandle,
@@ -167,8 +179,11 @@ where
         let (graph, work) = self.authority.graph.fork_owner_branch();
         let config = self.authority.config.fork_persistent();
         let mut fork = Self::new(
-            AuthorityState { graph, config },
-            self.derived.fork_persistent(),
+            AuthorityState {
+                graph: Box::new(graph),
+                config,
+            },
+            Box::new(self.derived.fork_persistent()),
             BranchAncestryState::new(
                 destination.id,
                 Some(parent.id),
@@ -205,7 +220,7 @@ where
 
     pub(in crate::logic::transaction::runtime) fn new(
         authority: AuthorityState<T>,
-        derived: DerivedState<D, I>,
+        derived: Box<DerivedState<D, I>>,
         ancestry: BranchAncestryState,
         mutation_ledger: BranchMutationLedger,
     ) -> Self {
@@ -296,7 +311,7 @@ where
         self,
     ) -> (
         AuthorityState<T>,
-        DerivedState<D, I>,
+        Box<DerivedState<D, I>>,
         BranchAncestryState,
         BranchMutationLedger,
     ) {
@@ -342,3 +357,6 @@ where
         )
     }
 }
+#[cfg(test)]
+#[path = "authority_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;

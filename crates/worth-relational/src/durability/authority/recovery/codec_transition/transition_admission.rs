@@ -124,7 +124,7 @@ impl DurabilityRecoveryAuthority<'_> {
                         .runtime
                         .schema_contract_runtime
                         .custom_invariant_registries,
-                    indexes.values().map(std::sync::Arc::as_ref),
+                    indexes.values().map(AsRef::as_ref),
                     &changes,
                 )
             })
@@ -151,20 +151,52 @@ impl DurabilityRecoveryAuthority<'_> {
         )?;
         let intent =
             RelationalTransactionIntent::ordinary().with_schema_transition(transition, None);
+        let custody = super::RecoveredCodecPublicationCustody::new(
+            execution,
+            basis,
+            target,
+            &retirement,
+            &activation,
+            transition_memory,
+        )?;
         let mut transaction = self
             .runtime
-            .begin_branch_transaction_with_control(basis, intent, control)
+            .begin_branch_transaction_with_scope(
+                basis,
+                intent,
+                control,
+                None,
+                Some(std::sync::Arc::clone(&custody)),
+            )
             .map_err(|error| deny(Kind::TransactionAdmission, format!("{error:?}")))?;
         transaction.schema_authority_input = Some(
-            crate::schema::SchemaContinuityAuthorityInput::from_registry(
-                target.clone(),
+            crate::schema::SchemaContinuityAuthorityInput::copy_registry_for_request(
+                target,
                 source_authority.descriptor_semantics_version(),
                 self.runtime
                     .config()
                     .schema
                     .descriptor_canonical_basis_policy
                     .current_write_version(),
-            ),
+                execution,
+            )
+            .map_err(|cause| {
+                use crate::mvcc::PublicationPreparationDenial as Stop;
+                if cause
+                    == crate::branch::RelationalBranchRootCaptureDenial::AllocationLayoutOverflow
+                {
+                    return Denial::request(
+                        crate::execution::RelationalExecutionDenialCause::MemoryOverflow,
+                    );
+                }
+                match Stop::from(cause) {
+                    Stop::Execution(cause) => Denial::request(cause),
+                    Stop::StorageUnavailable(cause) => {
+                        deny(Kind::InvalidTargetRegistry, format!("{cause:?}"))
+                    }
+                    Stop::Invalid(detail) => deny(Kind::InvalidTargetRegistry, detail),
+                }
+            })?,
         );
         let mut batch = WorkerIntentBatch::new("recovered-derived-codec-retirement");
         for relation_id in &retirement.relations {
@@ -194,15 +226,6 @@ impl DurabilityRecoveryAuthority<'_> {
             .push_batch(batch, execution.allocation_policy())
             .map_err(Denial::staging)?;
         crate::execution::check_request(execution).map_err(Denial::request)?;
-        let custody = super::RecoveredCodecPublicationCustody::new(
-            execution,
-            basis,
-            target,
-            &retirement,
-            &activation,
-            transition_memory,
-        )?;
-        transaction.recovered_codec_publication_custody = Some(std::sync::Arc::clone(&custody));
         state.publication_custody = Some(custody);
         state.activation = Some(activation);
         state.retirement = Some(retirement);

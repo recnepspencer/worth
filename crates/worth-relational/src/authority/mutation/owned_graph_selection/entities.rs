@@ -20,7 +20,7 @@ pub(super) fn select(
     let kind = selected
         .kind_id()
         .ok_or_else(|| stale(record.clone(), "selected entity kind unavailable"))?;
-    let payload = selected.extra().authoritative_aspect_state.clone();
+    let payload = selected.extra().authoritative_aspect_state();
     crate::execution::request_stage::checkpoint(
         context,
         payload
@@ -29,37 +29,56 @@ pub(super) fn select(
     )
     .map_err(request)?;
     let before = workspace.with_context(|context| {
-        let partition = context.state.get_partition_mut(id.partition_id);
+        let partition = context
+            .state
+            .get_partition_mut_for_request(id.partition_id, &context.execution)
+            .map_err(request)?;
         let before = partition
             .entity_arena
             .get(&id)
             .filter(|slot| slot.is_live())
-            .map(|slot| slot.extra().authoritative_aspect_state.clone());
+            .map(|slot| Some(slot.retained_extra()));
         partition
             .entity_arena
-            .select_retained_version(&id, selected, version)
-            .map_err(|detail| stale(record, detail))?;
+            .select_retained_version(&context.execution, &id, selected, version)
+            .map_err(|cause| selection_denial(record, cause))?;
         context
             .state
-            .mark_entity_slot_touched(id.partition_id, id.slot_index());
-        Ok::<_, CommitConflict>(before)
+            .mark_entity_slot_touched_for_request(
+                id.partition_id,
+                id.slot_index(),
+                &context.execution,
+            )
+            .map_err(request)?;
+        Ok::<_, MutationApplyDenial>(before)
     })?;
-    outcome.record_change(match before {
-        Some(old_authoritative_aspect_state) => RecordMutation::EntityUpdated {
-            entity_id: id,
-            kind_id: kind,
-            old_authoritative_aspect_state,
-            new_authoritative_aspect_state: payload,
-            authoritative_patch: None,
-        },
-        None => RecordMutation::EntityRematerialized {
-            entity_id: id,
-            kind_id: kind,
-            new_authoritative_aspect_state: payload,
-            authoritative_patch: None,
-        },
+    let after = workspace.with_context(|context| {
+        context
+            .state
+            .retained_entity_extra(id.partition_id, id.slot_index())
     });
-    outcome.record_event(MutationEvent::EntityUpdated { entity_id: id });
+    outcome.record_change(
+        &workspace.execution(),
+        match before {
+            Some(old_authoritative_aspect_state) => RecordMutation::EntityUpdated {
+                entity_id: id,
+                kind_id: kind,
+                old_authoritative_aspect_state,
+                new_authoritative_aspect_state: after,
+                authoritative_patch: None,
+            },
+            None => RecordMutation::EntityRematerialized {
+                entity_id: id,
+                kind_id: kind,
+                new_authoritative_aspect_state: after,
+                authoritative_patch: None,
+            },
+        },
+    )?;
+    outcome.record_event(
+        &workspace.execution(),
+        MutationEvent::EntityUpdated { entity_id: id },
+    )?;
     Ok(())
 }
 pub(super) fn retire(
@@ -68,8 +87,16 @@ pub(super) fn retire(
     version: VersionId,
     outcome: &mut MutationOutcome,
 ) -> Result<(), MutationApplyDenial> {
+    let before = workspace.with_context(|context| {
+        context
+            .state
+            .retained_entity_extra(id.partition_id, id.slot_index())
+    });
     let kind = workspace.with_context(|context| {
-        let partition = context.state.get_partition_mut(id.partition_id);
+        let partition = context
+            .state
+            .get_partition_mut_for_request(id.partition_id, &context.execution)
+            .map_err(request)?;
         let kind = partition
             .entity_arena
             .get(&id)
@@ -78,18 +105,31 @@ pub(super) fn retire(
             .ok_or_else(|| stale(RecordRef::Entity(id), "current owned entity unavailable"))?;
         partition
             .entity_arena
-            .retire(id.slot_index(), version)
+            .retire_for_request(&context.execution, id.slot_index(), version)
+            .map_err(request)?
             .ok_or_else(|| stale(RecordRef::Entity(id), "current entity cannot retire"))?;
         context
             .state
-            .mark_entity_slot_touched(id.partition_id, id.slot_index());
-        Ok::<_, CommitConflict>(kind)
+            .mark_entity_slot_touched_for_request(
+                id.partition_id,
+                id.slot_index(),
+                &context.execution,
+            )
+            .map_err(request)?;
+        Ok::<_, MutationApplyDenial>(kind)
     })?;
-    outcome.record_change(RecordMutation::EntityDeleted {
-        entity_id: id,
-        kind_id: kind,
-        authoritative_patch: None,
-    });
-    outcome.record_event(MutationEvent::EntityDeleted { entity_id: id });
+    outcome.record_change(
+        &workspace.execution(),
+        RecordMutation::EntityDeleted {
+            entity_id: id,
+            kind_id: kind,
+            old_authoritative_aspect_state: before,
+            authoritative_patch: None,
+        },
+    )?;
+    outcome.record_event(
+        &workspace.execution(),
+        MutationEvent::EntityDeleted { entity_id: id },
+    )?;
     Ok(())
 }

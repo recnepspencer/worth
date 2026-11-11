@@ -84,14 +84,21 @@ fn a_causal_replay_after_its_history_retires_answers_with_its_sealed_causality()
             );
         })
         .unwrap();
-    let WorthQueryApplicationIdempotencyResolution::AlreadyCommitted(recovered) =
+    let WorthQueryApplicationIdempotencyResolution::RecoveredCommitted(recovered) =
         worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::correction_source::replay(&world, binding)
     else {
         panic!("fresh admitted idempotency resolution recovers the original causal receipt");
     };
-    assert_eq!(recovered.aftermath_causality(), Some(&causality));
+    worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::recorded_receipt::assert_causality(
+        recovered.aftermath_causality().unwrap(),
+        &causality,
+    );
     assert_eq!(
-        recovered.committed_product_publication().composite_commit(),
-        &causal_commit
+        recovered
+            .new_product_head()
+            .memory()
+            .unwrap()
+            .selected_commit(),
+        causal_commit.ordinal()
     );
 }

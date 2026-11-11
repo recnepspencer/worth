@@ -12,7 +12,7 @@ fn related_acknowledged_successor_repairs_capture_without_reauthoring_or_old_dec
     successor::output::reset_decodes();
     let pending = worth_query_testkit_host::facade::host::checkpoint_capture::stopped(|phase| {
         callbacks = 0;
-        installation::in_memory_rostered_program_from_checkpoint_with_transition_in_advancement(
+        installation::WorthQueryInterimCheckpointRestore::rostered_program_with_transition_in_advancement(
             phase,
             successor::host::program(),
             installation::WorthQueryApplicationProgramRoster::new()
@@ -38,25 +38,23 @@ fn related_acknowledged_successor_repairs_capture_without_reauthoring_or_old_dec
             },
         )
     });
-    let Some(installation::WorthQueryCheckpointCaptureDenial::Allocation(cause)) =
+    let Some(installation::WorthQueryCheckpointCaptureDenial::Execution(cause)) =
         pending.capture_denial()
     else {
-        panic!("capture refusal remains precise")
+        panic!(
+            "complete capture keeps the original typed stop: {:?}",
+            pending.capture_denial()
+        );
     };
-    let requested = cause.requested_payload_bytes().unwrap();
+    let worth_query_execution::facade::primary_graph::WorthQueryPrimaryGraphInstallationDenialKind::ExecutionDenied {
+        kind: worth_query_execution::facade::primary_graph::WorthQueryProviderSessionDenialKind::ExecutionResource {
+            denial: worth_query_execution::facade::application_contribution::WorthQueryManagedComputationResourceDenial::MemoryLimit {
+                requested, admitted: 0,
+                level: worth_query_execution::facade::application_contribution::WorthQueryMemoryLimitLevel::Policy,
+            }, partition_identity: None, policy_ancestor: Some(0),
+        }
+    } = cause.kind() else { panic!("exact zero-memory capture cause: {cause:?}"); };
     assert!(requested > 0);
-    assert_eq!(
-        cause.classify(),
-        ExecutionAllocationDenialClass::Request(worth_execution::WorkCeilingDenial::Admission(
-            worth_execution::LeaseDenial::MemoryExhausted(
-                worth_execution::MemoryLimitDenial::Capacity {
-                    requested,
-                    admitted: 0,
-                    level: worth_execution::MemoryLimitLevel::Policy { ancestor: 0 },
-                }
-            )
-        ))
-    );
     let repaired = worth_query_host::facade::application_contribution::with_bootstrap_advancement(
         ExecutionRequestPolicy::new(
             worth_foundational::ExecutionPosture::Serial,

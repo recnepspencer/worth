@@ -17,6 +17,7 @@ pub(crate) use canonical_transaction::SignalCanonicalCallerUnwind;
 pub(in crate::logic::transaction::runtime) use catalog::BranchManager;
 pub(in crate::logic::transaction::runtime::state) use catalog::DEFAULT_MAXIMUM_STORED_SIGNAL_BRANCH_SNAPSHOTS;
 pub(in crate::logic::transaction::runtime) use owner_partition::SignalOwnerPartitionDenial;
+pub(crate) use owner_partition::SignalReadmittedCellSeed;
 pub(crate) use owner_partition::{
     SignalOwnerMetadataCloseBatch, SignalOwnerMetadataState, SignalOwnerPartition,
     SignalOwnerRetirementCleanup, SignalOwnerSnapshotReservationDenial,
@@ -39,7 +40,7 @@ where
     T: Copy + Ord,
 {
     config: SignalRuntimeConfig<T>,
-    derived: DerivedState<D, I>,
+    derived: Box<DerivedState<D, I>>,
     ancestry: BranchAncestryState,
     mutation_ledger: BranchMutationLedger,
     installed_definition: Option<
@@ -95,15 +96,15 @@ where
         };
         let mut state = BranchState::new(
             AuthorityState {
-                graph,
+                graph: Box::new(graph),
                 config: self.config,
             },
-            DerivedState {
+            Box::new(DerivedState {
                 checkpoint: self.derived.checkpoint,
                 resource: self.derived.resource,
                 temporal: self.derived.temporal,
                 telemetry,
-            },
+            }),
             self.ancestry,
             self.mutation_ledger,
         );
@@ -148,3 +149,6 @@ where
         (self.branch_id, self.snapshot_id, self.state)
     }
 }
+#[cfg(test)]
+#[path = "branches_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;

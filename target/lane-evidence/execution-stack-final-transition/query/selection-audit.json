@@ -1,0 +1,8 @@
+[
+  {
+    "binary": "worth-query-court-query-decl-host::worth_query_court_query_decl_host",
+    "test": "host::application_home::program_transition::host_transition_plans_on_nonempty_a_then_serves_writes_closes_and_reopens_b",
+    "ignored": false,
+    "selected": true
+  }
+]

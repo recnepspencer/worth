@@ -69,13 +69,13 @@ impl ExampleApplication {
 
 pub fn example_limits(
     execution_policy: Option<worth_foundational::ExecutionRequestPolicy>,
-) -> application_installation::WorthQueryInMemoryApplicationLimits {
+) -> application_installation::WorthQueryApplicationLimits {
     let world = product_world_resources();
     let world = match execution_policy {
         Some(policy) => world.with_execution_policy(policy),
         None => world,
     };
-    application_installation::WorthQueryInMemoryApplicationLimits::new(
+    application_installation::WorthQueryApplicationLimits::new(
         world,
         runtime::WorthQueryApplicationQueryResourceProfile::new(
             std::num::NonZeroUsize::new(128).expect("concurrent graph work is non-zero"),

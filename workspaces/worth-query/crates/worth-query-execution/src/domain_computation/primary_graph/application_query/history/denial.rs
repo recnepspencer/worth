@@ -51,3 +51,6 @@ impl From<worth_execution::ExecutionRequestArrayDenial> for WorthQueryApplicatio
         }
     }
 }
+#[cfg(test)]
+#[path = "denial_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;

@@ -15,6 +15,7 @@ use worth_query_execution::{
 
 pub enum HistoryRecordingSource<'a> {
     Source(&'a WorthQueryApplicationCommitReceipt),
+    RecordedSource(&'a worth_query_execution::facade::primary_graph::WorthQueryRecoveredApplicationCommitReceipt),
     RequiredOutputs {
         source: &'a WorthQueryApplicationCommitReceipt,
         completed: WorthQueryCompletedRequiredOutputs,
@@ -24,12 +25,13 @@ impl HistoryRecordingSource<'_> {
     pub(in crate::application_entry) fn parts(
         &self,
     ) -> (
-        &WorthQueryApplicationCommitReceipt,
+        worth_query_execution::publication_boundary::document_history::WorthQueryHistorySourceEvidence<'_>,
         Option<&WorthQueryCompletedRequiredOutputs>,
-    ) {
+    ){
         match self {
-            Self::Source(source) => (source, None),
-            Self::RequiredOutputs { source, completed } => (source, Some(completed)),
+            Self::Source(source) => (worth_query_execution::publication_boundary::document_history::WorthQueryHistorySourceEvidence::Live(source), None),
+            Self::RecordedSource(source) => (worth_query_execution::publication_boundary::document_history::WorthQueryHistorySourceEvidence::Recorded(source), None),
+            Self::RequiredOutputs { source, completed } => (worth_query_execution::publication_boundary::document_history::WorthQueryHistorySourceEvidence::Live(source), Some(completed)),
         }
     }
 }

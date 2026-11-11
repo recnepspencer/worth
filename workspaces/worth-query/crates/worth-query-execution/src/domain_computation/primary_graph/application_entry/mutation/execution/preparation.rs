@@ -23,10 +23,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         allocation_policy: worth_execution::ExecutionAllocationPolicy<'_, 'authority>,
     ) -> Result<
         PreparedMutationHandler<'advance, 'authority, Schema, Binding>,
-        WorthQueryMutationHandlerExecutionReport<
-            WorthQueryCompletedMutationCandidate<Schema, Binding>,
-            Binding::Denial,
-        >,
+        WorthQueryMutationHandlerExecutionReport<std::convert::Infallible, Binding::Denial>,
     >
     where
         Binding: ApplicationMutationBinding<Schema>,
@@ -68,10 +65,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         allocation_policy: worth_execution::ExecutionAllocationPolicy<'_, 'authority>,
     ) -> Result<
         PreparedMutationHandler<'advance, 'authority, Schema, Binding>,
-        WorthQueryMutationHandlerExecutionReport<
-            WorthQueryCompletedMutationCandidate<Schema, Binding>,
-            Binding::Denial,
-        >,
+        WorthQueryMutationHandlerExecutionReport<std::convert::Infallible, Binding::Denial>,
     >
     where
         Binding: ApplicationMutationBinding<Schema>,
@@ -120,10 +114,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         allocation_policy: worth_execution::ExecutionAllocationPolicy<'_, 'authority>,
     ) -> Result<
         PreparedMutationHandler<'advance, 'authority, Schema, Binding>,
-        WorthQueryMutationHandlerExecutionReport<
-            WorthQueryCompletedMutationCandidate<Schema, Binding>,
-            Binding::Denial,
-        >,
+        WorthQueryMutationHandlerExecutionReport<std::convert::Infallible, Binding::Denial>,
     >
     where
         Binding: ApplicationMutationBinding<Schema>,
@@ -155,6 +146,12 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         {
             return Err(WorthQueryMutationHandlerExecutionReport::new(
                 Err(MutationHandlerExecutionDenial::InputNotAdmitted),
+                WorthQueryMutationHandlerWork::NotStarted,
+            ));
+        }
+        if let Err(denial) = self.admit_directory_mutation::<Binding>() {
+            return Err(WorthQueryMutationHandlerExecutionReport::new(
+                Err(denial),
                 WorthQueryMutationHandlerWork::NotStarted,
             ));
         }

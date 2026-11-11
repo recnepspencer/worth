@@ -20,7 +20,104 @@ pub(crate) struct RelationalBranchCellCheckpoint {
     pub(crate) fork_source_branch_id: Option<BranchId>,
 }
 
+/// Temporary source custody for a capture already holding the original
+/// configuration/publication epochs. No name-bearing handle is cloned.
+pub(in crate::branch) struct CheckpointCellSource {
+    runtime_instance_id: u64,
+    state: std::sync::Arc<std::sync::Mutex<super::RelationalBranchReferenceMutableState>>,
+}
+
+impl CheckpointCellSource {
+    pub(in crate::branch) fn matches(&self, cell: &RelationalBranchReferenceCell) -> bool {
+        self.runtime_instance_id == cell.identity().runtime_instance_id()
+            && std::sync::Arc::ptr_eq(&self.state, &cell.state)
+    }
+
+    pub(in crate::branch) fn nested_allocation_bytes(&self) -> Option<usize> {
+        let state = self
+            .state
+            .lock()
+            .unwrap_or_else(|poisoned| poisoned.into_inner());
+        let mut bytes = observation_bytes(&state.observation)?;
+        if let Some(provenance) = &state.fork_provenance {
+            bytes = bytes.checked_add(observation_bytes(provenance)?)?;
+        }
+        if let Some(source) = &state.fork_source_branch_id {
+            bytes = bytes.checked_add(source.0.len())?;
+        }
+        Some(bytes)
+    }
+
+    pub(in crate::branch) fn copy(
+        &self,
+        branch_id: BranchId,
+    ) -> (
+        RelationalBranchCellCheckpoint,
+        crate::durability::data::DurableBranchLifecycleImage,
+    ) {
+        let state = self
+            .state
+            .lock()
+            .unwrap_or_else(|poisoned| poisoned.into_inner());
+        let lifecycle = crate::durability::data::DurableBranchLifecycleImage {
+            branch_id: branch_id.clone(),
+            posture: state.lifecycle,
+        };
+        (
+            RelationalBranchCellCheckpoint {
+                runtime_instance_id: self.runtime_instance_id,
+                branch_id,
+                observation: state.observation.clone(),
+                truth_version: state.truth_version,
+                fork_provenance: state.fork_provenance.clone(),
+                fork_source_branch_id: state.fork_source_branch_id.clone(),
+            },
+            lifecycle,
+        )
+    }
+}
+
+fn observation_bytes(observation: &RelationalBranchReferenceObservation) -> Option<usize> {
+    let parents = match observation.target() {
+        FoundationalBranchTarget::Empty => 0,
+        FoundationalBranchTarget::Basis(target) => {
+            std::alloc::Layout::array::<u64>(target.parent_commit_ids().len())
+                .ok()?
+                .size()
+        }
+    };
+    observation.branch_id().as_str().len().checked_add(parents)
+}
+
 impl RelationalBranchReferenceCell {
+    pub(in crate::branch) fn checkpoint_source(&self) -> CheckpointCellSource {
+        CheckpointCellSource {
+            runtime_instance_id: self.identity().runtime_instance_id(),
+            state: std::sync::Arc::clone(&self.state),
+        }
+    }
+    /// Original Empty schema DATA and axes under one actual state borrow.
+    /// This does not clone the name-bearing publication handle or retain a root.
+    pub(crate) fn retained_empty_schema_data(
+        &self,
+    ) -> Option<(
+        worth_foundational::FoundationalBranchReferenceGeneration,
+        RelationalBranchVersion,
+        crate::branch::RelationalBranchLifecyclePosture,
+        std::sync::Arc<crate::branch::RelationalBranchRootSchemaAuthority>,
+    )> {
+        let state = self.state();
+        if !matches!(state.observation.target(), FoundationalBranchTarget::Empty) {
+            return None;
+        }
+        Some((
+            state.observation.generation(),
+            state.truth_version,
+            state.lifecycle,
+            state.root.as_ref()?.retained_schema_authority(),
+        ))
+    }
+
     /// Replace the descriptive target prepared during preflight with the
     /// storage owner's content-backed target. Generation/truth progression
     /// was already checked and advanced by `advance_truth`.

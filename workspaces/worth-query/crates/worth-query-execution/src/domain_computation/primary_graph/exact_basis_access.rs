@@ -6,7 +6,7 @@ use worth_relational::facade::{
 use worth_relational::facade::{branch::RelationalBranchBasisDenial, history::BranchId};
 
 pub fn open_exact_basis_snapshot(
-    runtime: &mut RelationalRuntime,
+    runtime: &RelationalRuntime,
     basis: &AdmittedRelationalBranchBasis,
 ) -> Result<SnapshotHandle, RelationalSnapshotAdmissionDenial> {
     runtime
@@ -72,7 +72,7 @@ impl From<RelationalSnapshotAdmissionDenial> for WorthQueryExactBasisSnapshotDen
 /// branch observation. The descriptive branch name never selects storage on
 /// its own.
 pub fn open_current_branch_snapshot(
-    runtime: &mut RelationalRuntime,
+    runtime: &RelationalRuntime,
     branch: &BranchId,
 ) -> Result<SnapshotHandle, WorthQueryExactBasisSnapshotDenial> {
     let identity = runtime

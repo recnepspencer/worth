@@ -4,20 +4,12 @@ use worth_query_installation::facade::WorthQueryInstalledGraphParticipationAutho
 
 use super::{
     WorthQueryProviderExecutionPlanContract, WorthQueryProviderExecutionPlanView,
-    WorthQueryProviderPlanReadmission, WorthQueryProviderProductAffinity,
-    WorthQueryProviderSessionAffinity, WorthQueryProviderSessionDenialKind,
-    WorthQueryProviderSessionFailure, WorthQueryProviderSessionProtocolCounters,
-    WorthQueryProviderSessionProtocolStage, WorthQueryProviderSessionRecoveryPosture,
-    WorthQueryProviderSessionTokenAdmission,
+    WorthQueryProviderProductAffinity, WorthQueryProviderSessionAffinity,
+    WorthQueryProviderSessionDenialKind, WorthQueryProviderSessionFailure,
+    WorthQueryProviderSessionProtocolCounters, WorthQueryProviderSessionProtocolStage,
+    WorthQueryProviderSessionRecoveryPosture, WorthQueryProviderSessionTokenAdmission,
 };
 
-pub(super) struct WorthQueryProviderPlanReadmissionSeal(());
-
-impl WorthQueryProviderPlanReadmissionSeal {
-    fn new() -> Self {
-        Self(())
-    }
-}
 use crate::domain_computation::managed_run::{
     WorthQueryRunningDirectRun, WorthQueryRunningWorkflowRun,
 };
@@ -117,10 +109,10 @@ impl WorthQueryProviderRunCustody<'_> {
 
 pub struct WorthQueryAdmittedProviderExecutionPlan<'run> {
     run: WorthQueryProviderRunCustody<'run>,
-    contract: WorthQueryProviderExecutionPlanContract,
+    pub(super) contract: WorthQueryProviderExecutionPlanContract,
     provider: Arc<WorthQueryGraphProviderAnchor>,
     product: WorthQueryProviderProductAffinity,
-    counters: WorthQueryProviderSessionProtocolCounters,
+    pub(super) counters: WorthQueryProviderSessionProtocolCounters,
 }
 
 impl std::fmt::Debug for WorthQueryAdmittedProviderExecutionPlan<'_> {
@@ -228,6 +220,18 @@ impl<'run> WorthQueryAdmittedProviderExecutionPlan<'run> {
         })
     }
 
+    pub(in crate::domain_computation::provider_session::protocol) fn provider_grant_control(
+        &self,
+    ) -> &Arc<super::ProviderSessionGrantControl> {
+        &self.provider.session_grant_control
+    }
+
+    pub(in crate::domain_computation::provider_session::protocol) fn preparation_provider(
+        &self,
+    ) -> Arc<WorthQueryGraphProviderAnchor> {
+        Arc::clone(&self.provider)
+    }
+
     pub fn identity(&self) -> &str {
         self.contract.identity()
     }
@@ -244,6 +248,7 @@ impl<'run> WorthQueryAdmittedProviderExecutionPlan<'run> {
         mut self,
         product: crate::basis::WorthQueryProductBranchLease,
     ) -> Result<Self, WorthQueryProviderSessionFailure> {
+        self.require_current_home(Some(product.observation().owner_identity()))?;
         let Some(expected_product) = self.contract.application_product_identity() else {
             return Err(failure(
                 WorthQueryProviderSessionDenialKind::ForeignExecutionBasis,
@@ -265,95 +270,39 @@ impl<'run> WorthQueryAdmittedProviderExecutionPlan<'run> {
         Ok(self)
     }
 
-    pub fn readmit(
-        mut self,
+    /// Issue a portable, one-use grant without opening a physical session.
+    /// The separate receiver owns the run, product and provider ports.
+    pub fn admit_session(
+        self,
         phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'run>,
-    ) -> Result<WorthQueryProviderPlanReadmission<'run>, WorthQueryProviderSessionFailure> {
-        let (source_instance, owner_identity) = match &self.run {
-            WorthQueryProviderRunCustody::Direct(run) => (
-                run.execution_source_instance_id(),
-                run.execution_owner_identity(),
-            ),
-            WorthQueryProviderRunCustody::CoupledDirect(owned) => (
-                owned.run().execution_source_instance_id(),
-                owned.run().execution_owner_identity(),
-            ),
-            WorthQueryProviderRunCustody::Workflow(run) => (
-                run.execution_source_instance_id(),
-                run.execution_owner_identity(),
-            ),
-        };
-        let request = match &self.product {
-            WorthQueryProviderProductAffinity::Standalone => match owner_identity {
-                Some(owner) => phase.request_for_owner(owner),
-                None => phase.request_for_source(source_instance),
+    ) -> Result<
+        (
+            super::WorthQueryProviderSessionGrant,
+            super::WorthQueryProviderSessionReceiver<'run>,
+        ),
+        WorthQueryProviderSessionFailure,
+    > {
+        self.require_current_home(phase.world_owner())?;
+        self.request_for_session(phase)?;
+        let home_owner = match &self.product {
+            WorthQueryProviderProductAffinity::Standalone => match &self.run {
+                WorthQueryProviderRunCustody::Direct(run) => run.execution_owner_identity(),
+                WorthQueryProviderRunCustody::CoupledDirect(owned) => {
+                    owned.run().execution_owner_identity()
+                }
+                WorthQueryProviderRunCustody::Workflow(run) => run.execution_owner_identity(),
             },
             WorthQueryProviderProductAffinity::Application(product) => {
-                phase.request_for_owner(product.observation().branch_identity().owner_identity())
-            }
-        }
-        .map_err(|cause| {
-            failure(
-                crate::domain_computation::primary_graph::WorthQueryAdvancementDenial::from(cause)
-                    .provider_denial_cause()
-                    .expect("foreign custody is a resource refusal"),
-                "provider plan belongs to another advancement runtime",
-                &self.counters,
-            )
-        })?;
-        self.counters.called_provider();
-        let admission = WorthQueryProviderSessionTokenAdmission::new(&self.contract);
-        let invocation = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
-            self.provider.readmit_session(
-                &WorthQueryProviderExecutionPlanView::new(request, &self.contract),
-                admission,
-            )
-        }));
-        let token = match invocation {
-            Ok(Ok(token)) => token,
-            Ok(Err(failure)) => {
-                return Err(failure.at_stage(
-                    WorthQueryProviderSessionProtocolStage::PlanReadmission,
-                    self.counters,
-                ));
-            }
-            Err(_) => {
-                return Err(WorthQueryProviderSessionFailure::new(
-                    WorthQueryProviderSessionDenialKind::ProviderPanicked,
-                    WorthQueryProviderSessionProtocolStage::PlanReadmission,
-                    "provider panicked while readmitting the sealed execution plan",
-                    self.counters,
-                )
-                .with_recovery_posture(
-                    WorthQueryProviderSessionRecoveryPosture::RecoveryRequired,
-                ));
+                Some(product.observation().owner_identity())
             }
         };
-        if !token.belongs_to(&self.contract) {
-            return Err(WorthQueryProviderSessionFailure::new(
-                WorthQueryProviderSessionDenialKind::TokenNotMintedForPlan,
-                WorthQueryProviderSessionProtocolStage::PlanReadmission,
-                "provider returned a token minted for another plan or generation",
-                self.counters,
-            )
-            .with_recovery_posture(WorthQueryProviderSessionRecoveryPosture::RecoveryRequired));
-        }
-        self.counters.minted_token();
-        Ok(WorthQueryProviderPlanReadmission::from_admitted(
-            WorthQueryProviderSessionAffinity::mint(
-                request,
-                self.run,
-                self.contract,
-                self.product,
-                self.provider,
-                token,
-            ),
-            self.counters,
-            WorthQueryProviderPlanReadmissionSeal::new(),
-        ))
+        let admission = WorthQueryProviderSessionTokenAdmission::new(&self.contract, home_owner)?;
+        Ok(super::readmission::issue(self, admission))
     }
 }
 
+mod incarnation;
+mod readmission;
 mod validation;
 use validation::{failure, retain_session_provider, undeclared_scope, validate_common_authority};
 

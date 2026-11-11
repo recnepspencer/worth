@@ -28,7 +28,8 @@ pub(crate) use execution::{
     apply_plan_to_working_state, apply_plan_with_publication_edges, MutationApplyOutcome,
 };
 pub(crate) use field_versions::visit_changed_fields;
-pub(crate) use record_changes::apply_adjacency_deltas;
+pub(crate) use outcomes::RecordMutation;
+pub(crate) use record_changes::apply_adjacency_deltas_for_request;
 pub(crate) use round_denial::MutationApplyDenial;
 pub(crate) use workspace::{
     BranchLocalDeleteAllowance, MutationPreparationTelemetry, MutationWorkspace,

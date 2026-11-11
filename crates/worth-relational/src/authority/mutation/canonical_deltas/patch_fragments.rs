@@ -81,10 +81,10 @@ impl CanonicalRecordAspectDelta {
 
 pub(crate) fn authoritative_patch_with_delta_supplements(
     delta: &CanonicalRecordAspectDelta,
-    authoritative_patch: AuthoritativeRecordAspectPatch,
+    authoritative_patch: super::super::outcomes::MutationAspectPatch,
 ) -> Result<AuthoritativeRecordAspectPatch, CanonicalDeltaError> {
     let changed_authoritative_patch =
-        authoritative_patch_filtered_to_changed_bindings(delta, &authoritative_patch)?;
+        authoritative_patch_filtered_to_changed_bindings(delta, authoritative_patch.as_patch())?;
     let supplemental_patch = non_authoritative_delta_patch(delta)?;
     if changed_authoritative_patch.is_empty() && supplemental_patch.is_empty() {
         return Ok(AuthoritativeRecordAspectPatch::empty());

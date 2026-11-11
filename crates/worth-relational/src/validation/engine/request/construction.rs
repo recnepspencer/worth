@@ -106,6 +106,7 @@ impl<'state> InvariantExecutionRequest<'state> {
         let relation_integrity_scopes = super::scope_admission::prepare(execution, |admit| {
             prepare_relation_integrity_scopes(
                 semantic_plan,
+                runtime.home_target.is_some(),
                 super::relation_integrity_scopes::RelationScopeState {
                     current: super::super::state_view::InvariantStateView::new(
                         scope_state,

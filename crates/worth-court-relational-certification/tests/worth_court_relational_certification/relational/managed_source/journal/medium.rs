@@ -17,10 +17,10 @@ fn store(
     stream: &Mutex<BTreeMap<u64, Vec<u8>>>,
     position: u64,
     bytes: &[u8],
-) -> RelationalDurablePublication {
+) -> DurablePublicationFate<String> {
     let mut stream = stream.lock().unwrap();
     if stream.get(&position).is_some_and(|old| old == bytes) {
-        return RelationalDurablePublication::Committed;
+        return DurablePublicationFate::Committed;
     }
     if stream
         .keys()
@@ -30,12 +30,12 @@ fn store(
         .checked_add(1)
         != Some(position)
     {
-        return RelationalDurablePublication::ProvenNoEffect {
+        return DurablePublicationFate::ProvenNoEffect {
             detail: "journal requires the next position or identical retry".into(),
         };
     }
     stream.insert(position, bytes.to_vec());
-    RelationalDurablePublication::Committed
+    DurablePublicationFate::Committed
 }
 impl RelationalDurableMedium for Attachment {
     fn cold_source(&self) -> Arc<dyn RelationalDurableColdSource> {
@@ -55,13 +55,13 @@ impl RelationalDurableMedium for Attachment {
     fn publish(
         &self,
         artifact: &RelationalCanonicalCommitArtifact,
-    ) -> RelationalDurablePublication {
+    ) -> DurablePublicationFate<String> {
         store(&self.0.commits, artifact.position().0, artifact.as_bytes())
     }
     fn publish_transition(
         &self,
         artifact: &RelationalBranchTransitionArtifact,
-    ) -> RelationalDurablePublication {
+    ) -> DurablePublicationFate<String> {
         store(
             &self.0.transitions,
             artifact.sequence().0,

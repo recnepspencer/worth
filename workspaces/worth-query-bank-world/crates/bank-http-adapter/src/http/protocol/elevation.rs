@@ -86,6 +86,10 @@ pub struct BankHttpMandatoryReviewRequest {
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
 #[serde(tag = "outcome", rename_all = "snake_case")]
 pub enum BankHttpElevationRequestOutcome {
+    Recorded {
+        request_id: String,
+        commit: super::BankHttpRecordedCommitDescription,
+    },
     CleanupRequired {
         request_id: String,
         custody_id: String,
@@ -111,6 +115,10 @@ pub enum BankHttpElevationRequestOutcome {
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
 #[serde(tag = "outcome", rename_all = "snake_case")]
 pub enum BankHttpElevationApprovalOutcome {
+    Recorded {
+        request_id: String,
+        commit: super::BankHttpRecordedCommitDescription,
+    },
     CleanupRequired {
         request_id: String,
         custody_id: String,
@@ -136,6 +144,10 @@ pub enum BankHttpElevationApprovalOutcome {
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
 #[serde(tag = "outcome", rename_all = "snake_case")]
 pub enum BankHttpElevationRevocationOutcome {
+    Recorded {
+        request_id: String,
+        commit: super::BankHttpRecordedCommitDescription,
+    },
     CleanupRequired {
         request_id: String,
         custody_id: String,
@@ -161,6 +173,10 @@ pub enum BankHttpElevationRevocationOutcome {
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
 #[serde(tag = "outcome", rename_all = "snake_case")]
 pub enum BankHttpMandatoryReviewOutcome {
+    Recorded {
+        request_id: String,
+        commit: super::BankHttpRecordedCommitDescription,
+    },
     CleanupRequired {
         request_id: String,
         custody_id: String,

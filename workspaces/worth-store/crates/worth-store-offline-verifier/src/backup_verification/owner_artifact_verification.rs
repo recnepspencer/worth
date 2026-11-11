@@ -189,8 +189,8 @@ pub(super) fn verify_owner_artifact(
                     checkpoint_identity,
                     manifest_generation: *manifest_generation,
                     durable_checkpoint_lsn: *durable_checkpoint_lsn,
-                    expected_authority_fingerprint: *authority_fingerprint,
-                    expected_frontier_digest: *frontier_digest,
+                    expected_authority_fingerprint: *authority_fingerprint.bytes(),
+                    expected_frontier_digest: *frontier_digest.bytes(),
                     expected_root: expected_root
                         .ok_or(BackupArtifactSemanticDefectKind::OwnerBindingMismatch)?,
                     expected_bytes: row.bytes(),

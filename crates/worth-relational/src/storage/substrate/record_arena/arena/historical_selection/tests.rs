@@ -10,15 +10,14 @@ fn source() -> (RecordArena<EntityRecordKind>, EntityId) {
                 partition_id: id.partition_id,
                 kind_id: KindId(8),
                 version_id: VersionId(11),
-                extra: EntityExtra {
-                    structural_fingerprint: Some(
-                        crate::identity::data::StructuralFingerprint::new(
-                            crate::symbols::data::Symbol(1),
-                            717,
-                        ),
-                    ),
-                    ..EntityExtra::default()
-                },
+                extra: EntityExtra::from_unbudgeted_parts(
+                    Some(crate::identity::data::StructuralFingerprint::new(
+                        crate::symbols::data::Symbol(1),
+                        717,
+                    )),
+                    None,
+                    None,
+                ),
             },
             id.slot_index(),
             id.generation_value(),
@@ -49,7 +48,7 @@ fn historical_slot_selection_keeps_the_issued_identity_and_birth_with_fresh_prov
             }
         }
         current
-            .select_retained_version(&id, original.get(&id).unwrap(), VersionId(19))
+            .select_retained_version_using(None, &id, original.get(&id).unwrap(), VersionId(19))
             .unwrap();
         let row = current.get(&id).unwrap();
         assert!(row.is_live());
@@ -86,13 +85,23 @@ fn historical_slot_selection_refuses_a_reused_generation_or_a_nonlive_source() {
     let physical = current.physical_index(id.slot_index()).unwrap();
     current.generations.set(physical, 4);
     assert!(current
-        .select_retained_version(&id, original.get(&id).unwrap(), VersionId(19))
+        .select_retained_version_using(None, &id, original.get(&id).unwrap(), VersionId(19))
         .is_err());
     assert_eq!(current.generations[physical], 4);
+    assert_eq!(
+        current
+            .metadata_history_at(id.slot_index())
+            .unwrap()
+            .get(0)
+            .unwrap()
+            .effective_at,
+        VersionId(11),
+    );
+    let mut current = original.clone();
     let mut retired = original.clone();
     retired.retire(id.slot_index(), VersionId(12)).unwrap();
     assert!(current
-        .select_retained_version(&id, retired.get(&id).unwrap(), VersionId(19))
+        .select_retained_version_using(None, &id, retired.get(&id).unwrap(), VersionId(19))
         .is_err());
     assert_eq!(
         current
@@ -123,7 +132,7 @@ fn selecting_another_record_with_equal_generation_and_kind_cannot_copy_its_paylo
         .unwrap();
     let mut current = original.clone();
     assert!(current
-        .select_retained_version(&id, original.get(&foreign).unwrap(), VersionId(19))
+        .select_retained_version_using(None, &id, original.get(&foreign).unwrap(), VersionId(19))
         .is_err());
     assert_eq!(
         current.get(&id).unwrap().extra().structural_fingerprint,
@@ -142,7 +151,7 @@ fn selecting_a_version_refuses_a_conflicting_record_birth() {
     let physical = current.physical_index(id.slot_index()).unwrap();
     current.created_at.set(physical, VersionId(12));
     assert!(current
-        .select_retained_version(&id, original.get(&id).unwrap(), VersionId(19))
+        .select_retained_version_using(None, &id, original.get(&id).unwrap(), VersionId(19))
         .is_err());
     assert_eq!(
         current.metadata_history_at(id.slot_index()).unwrap().len(),

@@ -5,7 +5,7 @@ use super::{
 };
 use crate::domain_computation::primary_graph::{
     application_installation::{
-        WorthQueryInMemoryApplicationDenial, WorthQueryInMemoryApplicationLimits,
+        WorthQueryApplicationLimits, WorthQueryApplicationPreparationDenial,
     },
     WorthQueryApplicationContributionTuple, WorthQueryBootstrapAdvancementPhase,
     WorthQueryPrimaryGraphBootstrap, WorthQueryPrimaryGraphInstallationDenial,
@@ -30,13 +30,16 @@ pub fn in_memory_rostered_program_in_advancement<Schema, Program>(
     declaration: ApplicationSchemaDeclaration<Schema>,
     configuration: <Program::Contributions as WorthQueryApplicationContributionTuple<Schema>>::Configuration,
     build_identity: worth_foundational::facade::ApplicationBuildIdentity,
-    limits: WorthQueryInMemoryApplicationLimits,
+    limits: WorthQueryApplicationLimits,
     initial_state: impl FnOnce(
         &WorthQueryBootstrapAdvancementPhase<'_>,
         &mut WorthQueryPrimaryGraphBootstrap<Schema>,
         &WorthQueryInstalledApplicationSchema<Schema>,
     ) -> Result<(), WorthQueryPrimaryGraphInstallationDenial>,
-) -> Result<WorthQueryProgramApplicationRuntime<Schema, Program>, WorthQueryInMemoryApplicationDenial>
+) -> Result<
+    WorthQueryProgramApplicationRuntime<Schema, Program>,
+    WorthQueryApplicationPreparationDenial,
+>
 where
     Schema: ApplicationSchemaComposition,
     Program: ApplicationProgramDefinition<Schema>,
@@ -45,11 +48,13 @@ where
     Program::Contributions: WorthQueryApplicationContributionTuple<Schema>,
 {
     phase.execution_request().consult().map_err(|cause| {
-        WorthQueryInMemoryApplicationDenial::Graph(super::super::super::bootstrap::request_denial(
-            super::super::super::application_contribution::advancement_denial(cause),
-        ))
+        WorthQueryApplicationPreparationDenial::Graph(
+            super::super::super::bootstrap::request_denial(
+                super::super::super::application_contribution::advancement_denial(cause),
+            ),
+        )
     })?;
-    super::construction::in_memory_program_in_advancement(
+    super::construction::construct_program_in_advancement(
         phase,
         program,
         roster,
@@ -59,6 +64,54 @@ where
         limits,
         initial_state,
         None,
+        None,
+        None,
+    )
+}
+
+/// Install under the supplied original bootstrap with a host-owned trusted clock.
+pub fn in_memory_rostered_program_with_authorization_time_source_in_advancement<Schema, Program>(
+    phase: &WorthQueryBootstrapAdvancementPhase<'_>,
+    program: ValidatedApplicationProgram<Schema, Program>,
+    roster: WorthQueryApplicationProgramRoster<'_, Schema>,
+    declaration: ApplicationSchemaDeclaration<Schema>,
+    configuration: <Program::Contributions as WorthQueryApplicationContributionTuple<Schema>>::Configuration,
+    build_identity: worth_foundational::facade::ApplicationBuildIdentity,
+    limits: WorthQueryApplicationLimits,
+    initial_state: impl FnOnce(
+        &WorthQueryBootstrapAdvancementPhase<'_>,
+        &mut WorthQueryPrimaryGraphBootstrap<Schema>,
+        &WorthQueryInstalledApplicationSchema<Schema>,
+    ) -> Result<(), WorthQueryPrimaryGraphInstallationDenial>,
+    source: impl crate::domain_computation::runtime_time::WorthQueryRuntimeTimeSource,
+) -> Result<
+    WorthQueryProgramApplicationRuntime<Schema, Program>,
+    WorthQueryApplicationPreparationDenial,
+>
+where
+    Schema: ApplicationSchemaComposition,
+    Program: ApplicationProgramDefinition<Schema>,
+    Program::Outputs:
+        ApplicationProgramOutputsShape<Schema> + WorthQueryApplicationProgramRoots<Schema>,
+    Program::Contributions: WorthQueryApplicationContributionTuple<Schema>,
+{
+    phase.execution_request().consult().map_err(|cause| {
+        WorthQueryApplicationPreparationDenial::Graph(
+            super::super::super::bootstrap::request_denial(
+                super::super::super::application_contribution::advancement_denial(cause),
+            ),
+        )
+    })?;
+    super::construction::construct_program_in_advancement(
+        phase,
+        program,
+        roster,
+        declaration,
+        configuration,
+        build_identity,
+        limits,
+        initial_state,
+        Some(Box::new(source)),
         None,
         None,
     )

@@ -1,6 +1,20 @@
 pub(crate) use recovery::{AdmittedRecoveredCodecPublication, RecoveredCodecPublicationCustody};
+pub(crate) use runtime_rebuild::RecoveredRootInventory;
+mod associated_effects;
 mod authority_continuity;
+pub use associated_effects::{
+    ObservedRelationalMemoryCommit, ReadmittedRelationalAssociatedEffect,
+    ReadmittedRelationalCreatedEntity, RelationalAssociatedEffectRefusal,
+    RelationalAssociatedEffectSettlement, RelationalAssociatedEffectSubject,
+};
 mod checkpoint_capture;
+pub(in crate::durability) mod checkpoint_complete;
+pub use checkpoint_complete::{
+    AdmittedNativeInterimReceiver, CapturedNativeInterimAdmission, CapturedNativeInterimComponent,
+    CapturedNativeInterimOrigin, CapturedRelationalCheckpointAdmissionImage,
+    CompleteRelationalNativeCheckpoint, NativeInterimBootstrapContinuation,
+};
+pub(in crate::durability) mod checkpoint_components;
 mod checkpoint_image;
 mod checkpoint_lineage_basis;
 mod checkpoint_member_carry;
@@ -10,9 +24,31 @@ mod checkpoint_region_consistency;
 mod checkpoint_transition;
 mod checkpointing;
 mod diagnostics;
+mod recorded_component_readmission;
+mod recovered_associated_effects;
+mod recovered_publication;
+pub use recovered_publication::{
+    RefusedRelationalPublicationReadmission, RelationalRecordedSuccessorRefusal,
+    RelationalRecoveredPublicationAdmissionCause, RelationalRecoveredPublicationCustody,
+    RelationalRecoveredPublicationRetirement, RetiredRelationalRecoveredPublication,
+};
+mod fresh_source;
 mod recovery;
+pub use fresh_source::{FreshRelationalSourceAdmission, RelationalFreshSourceAdmissionStop};
+pub use recorded_component_readmission::{
+    RefusedRelationalRecordedComponent, RelationalRecordedComponentAdmissionCause,
+};
+pub use recovery::{
+    PreparedRelationalHomeRecovery, ReadmittedRelationalAssociatedFork,
+    ReadmittedRelationalHomeProgramCatalogs, RefusedPreparedRelationalHomeRecovery,
+    RefusedRelationalForkReadmission, RefusedRelationalHomeProgramCatalogReadmission,
+    RelationalForkReadmissionCause, RelationalHomeProgramCatalogReadmissionDenial,
+    RelationalHomeProgramTransitionSource, RelationalHomeProgramTransitionSourceRefusal,
+    RelationalHomeRecoveryPreparationDenial,
+};
 mod runtime_rebuild;
 pub(crate) use runtime_rebuild::replay_commit_stop;
+pub(crate) use runtime_rebuild::RecoveredIndexCatalog;
 
 use crate::branch::AdmittedRelationalBranchBasis;
 use crate::history::data::BranchId;
@@ -45,12 +81,18 @@ pub struct DurabilityRecoveryAuthority<'runtime> {
 }
 
 /// Linear evidence that this exact Relational runtime and its captured branch
-/// images were rebuilt from a verified native checkpoint. The value is
+/// images were reconstructed through an admitted Native recovery plan. Durable
+/// backing of each canonical effect is qualified separately from that plan's
+/// Memory or Journal residency. The value is
 /// owner-issued and deliberately non-serializable, so descriptive checkpoint
 /// presence or later branch movement cannot impersonate successful recovery.
 #[derive(Debug)]
 pub struct RecoveredRelationalRuntimeAuthority {
+    interim_bootstrap_phase: Option<checkpoint_complete::interim::bootstrap::BootstrapPhaseOwner>,
+    home_catalog_readmission: std::sync::Mutex<()>,
+    home_program_predecessor: Option<crate::runtime::RelationalHomeProgramPredecessorCatalog>,
     runtime_instance_id: u64,
+    recovered_roots: std::sync::Arc<runtime_rebuild::RecoveredRootInventory>,
     recovered_branch_images: std::collections::BTreeMap<
         BranchId,
         (
@@ -63,6 +105,16 @@ pub struct RecoveredRelationalRuntimeAuthority {
 }
 
 impl RecoveredRelationalRuntimeAuthority {
+    /// The original Home acknowledges actual World reconciliation, releasing
+    /// preparation pins only. A foreign or stale completion changes nothing.
+    pub fn complete_home_world_selection(
+        &self,
+        completed: worth_proof::CompletedHomeWorldSelection,
+    ) -> Result<(), worth_proof::HomeWorldSelectionAdmissionDenial> {
+        self.recovered_roots
+            .complete_world_selection_handoff(completed)
+    }
+
     /// Whether native recovery retained a distinct codec target for adoption.
     pub fn codec_transition_pending(&self) -> bool {
         self.codec_transition.is_some()
@@ -138,7 +190,11 @@ impl RecoveredRelationalRuntimeAuthority {
         self,
         basis: AdmittedRelationalBranchBasis,
     ) -> Result<RecoveredRelationalBranchBasis, AdmittedRelationalBranchBasis> {
-        if self.owns_image(basis.descriptor()) {
+        let matches = self.owns_image(basis.descriptor());
+        if let Some(phase) = &self.interim_bootstrap_phase {
+            phase.finish_capture(matches);
+        }
+        if matches {
             Ok(RecoveredRelationalBranchBasis { basis })
         } else {
             Err(basis)

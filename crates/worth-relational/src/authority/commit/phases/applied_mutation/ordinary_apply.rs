@@ -48,6 +48,7 @@ pub(crate) fn apply(
     let allowance = branch_local_delete_allowance_for_plan(selected_state, &state, merged_plan);
     let mut records = runtime.record_identity.begin_allocations();
     let outcome = apply_plan_with_publication_edges(
+        execution,
         &mut state,
         apply_plan,
         config,
@@ -63,11 +64,12 @@ pub(crate) fn apply(
             .as_ref()
             .map(|binding| &binding.owners.deferred_edges),
     )?;
-    crate::authority::mutation::apply_adjacency_deltas(
+    crate::authority::mutation::apply_adjacency_deltas_for_request(
+        execution,
         &mut state,
         &outcome.effect.adjacency.deltas,
         version_id,
-    );
+    )?;
     let aggregate = crate::aggregate_identity::AggregateProposal::capture(
         schema,
         selected_state.selected(),
@@ -96,6 +98,12 @@ pub(crate) fn apply_authored_prefix(
     symbols: PendingSymbolMeanings,
     content: &crate::content::RelationalContentAttachments,
 ) -> Result<AppliedMutationCore, MutationApplyDenial> {
+    // This apply owner needs its own copied intent storage. The authored plan
+    // retains its original reservation independently until coupled completion.
+    let _plan_memory = crate::mvcc::plan_copy_admission::reserve_copy(
+        execution,
+        crate::mvcc::plan_copy_admission::intent_bytes(&commands.merged_intents),
+    )?;
     let plan = AuthoritativeApplyPlan {
         transaction_id: commands.transaction_id,
         version_id: identity.proposed_version_id(),

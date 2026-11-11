@@ -19,7 +19,7 @@ mod rebound;
 mod requested_read;
 mod test_support;
 pub(crate) mod verification;
-pub(in crate::domain_computation::primary_graph) use pending_dependency::SelectedPendingConsumedOutput;
+
 pub(in crate::domain_computation::primary_graph) use verification::map_admission_stop;
 pub(in crate::domain_computation::primary_graph) use verification::map_verification_stop;
 pub(in crate::domain_computation::primary_graph) use verification::reserve_pending;
@@ -188,3 +188,5 @@ impl ConsumedOutputEvidence {
 }
 
 mod court_doors_for_test;
+
+pub use pending_dependency::SelectedPendingConsumedOutput;

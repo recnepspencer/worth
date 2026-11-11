@@ -1,78 +1,86 @@
+//! Actual column node/page backing; element carriers have independent ownership.
 use super::PAGE_LEN;
-use crate::storage::substrate::StorageAllocation as Arc;
-
-#[derive(Debug)]
-pub(super) enum ColumnStorage<T: Clone> {
-    Page(Vec<Option<Arc<T>>>),
-    Branch([Option<Arc<ColumnNode<T>>>; 2]),
-}
-
-impl<T: Clone> Clone for ColumnStorage<T> {
-    fn clone(&self) -> Self {
-        match self {
-            Self::Page(values) => {
-                let mut copied = Vec::with_capacity(PAGE_LEN);
-                copied.extend(values.iter().cloned());
-                Self::Page(copied)
-            }
-            Self::Branch(children) => Self::Branch(children.clone()),
-        }
-    }
-}
+use crate::execution::RelationalExecutionDenialCause as Cause;
+use crate::storage::substrate::{StorageAllocation as Arc, StoredValue};
+use worth_execution::{ExecutionMemoryReservation, ExecutionRequest};
 
 #[derive(Debug, Clone)]
-pub(super) struct ColumnNode<T: Clone> {
+pub(super) enum ColumnStorage<T: StoredValue> {
+    Page(Vec<Option<T>>),
+    Branch([Option<Arc<ColumnNode<T>>>; 2]),
+}
+#[derive(Debug)]
+pub(super) struct ColumnNode<T: StoredValue> {
     pub(super) storage: ColumnStorage<T>,
     pub(super) node_count: usize,
     pub(super) page_count: usize,
     pub(super) value_count: usize,
+    pub(super) memory: Option<ExecutionMemoryReservation>,
 }
-
-impl<T: Clone> ColumnNode<T> {
-    pub(super) fn into_values(node: Arc<Self>, output: &mut Vec<T>) {
-        match Arc::unwrap_or_clone(node).storage {
-            ColumnStorage::Page(values) => {
-                output.extend(values.into_iter().flatten().map(Arc::unwrap_or_clone))
-            }
-            ColumnStorage::Branch(children) => {
-                for child in children.into_iter().flatten() {
-                    Self::into_values(child, output);
-                }
-            }
+impl<T: StoredValue> Clone for ColumnNode<T> {
+    fn clone(&self) -> Self {
+        // Ordinary image/maintenance COW makes an independent unqualified node.
+        Self {
+            storage: self.storage.clone(),
+            node_count: self.node_count,
+            page_count: self.page_count,
+            value_count: self.value_count,
+            memory: None,
         }
     }
-
-    pub(super) fn empty(height: usize) -> Self {
-        if height == 0 {
+}
+impl<T: StoredValue> ColumnNode<T> {
+    fn bytes(page: bool) -> Option<u64> {
+        Arc::<Self>::layout_bytes().checked_add(if page {
+            crate::storage::substrate::node_memory::array::<Option<T>>(PAGE_LEN)?
+        } else {
+            0
+        })
+    }
+    pub(super) fn allocate(
+        height: usize,
+        request: Option<&ExecutionRequest<'_, '_>>,
+    ) -> Result<Arc<Self>, Cause> {
+        let memory =
+            crate::storage::substrate::node_memory::reserve(request, Self::bytes(height == 0))?;
+        let mut node = if height == 0 {
             Self {
                 storage: ColumnStorage::Page(vec![None; PAGE_LEN]),
                 node_count: 1,
                 page_count: 1,
                 value_count: 0,
+                memory: None,
             }
         } else {
             Self::branch(None, None)
-        }
+        };
+        node.memory = memory;
+        Ok(Arc::new(node))
     }
-
+    pub(super) fn allocated_branch(
+        left: Option<Arc<Self>>,
+        request: Option<&ExecutionRequest<'_, '_>>,
+    ) -> Result<Arc<Self>, Cause> {
+        let memory = crate::storage::substrate::node_memory::reserve(request, Self::bytes(false))?;
+        let mut node = Self::branch(left, None);
+        node.memory = memory;
+        Ok(Arc::new(node))
+    }
     pub(super) fn branch(left: Option<Arc<Self>>, right: Option<Arc<Self>>) -> Self {
         let children = [left, right];
-        let node_count = 1 + children
-            .iter()
-            .flatten()
-            .map(|node| node.node_count)
-            .sum::<usize>();
-        let page_count = children.iter().flatten().map(|node| node.page_count).sum();
-        let value_count = children.iter().flatten().map(|node| node.value_count).sum();
         Self {
+            node_count: 1 + children
+                .iter()
+                .flatten()
+                .map(|node| node.node_count)
+                .sum::<usize>(),
+            page_count: children.iter().flatten().map(|node| node.page_count).sum(),
+            value_count: children.iter().flatten().map(|node| node.value_count).sum(),
             storage: ColumnStorage::Branch(children),
-            node_count,
-            page_count,
-            value_count,
+            memory: None,
         }
     }
-
-    pub(super) fn get(&self, index: usize, height: usize) -> Option<&Arc<T>> {
+    pub(super) fn get(&self, index: usize, height: usize) -> Option<&T> {
         match &self.storage {
             ColumnStorage::Page(values) => values[index % PAGE_LEN].as_ref(),
             ColumnStorage::Branch(children) => children[branch_index(index, height)]
@@ -80,40 +88,69 @@ impl<T: Clone> ColumnNode<T> {
                 .get(index, height - 1),
         }
     }
-
-    pub(super) fn get_mut(&mut self, index: usize, height: usize) -> &mut T {
-        match &mut self.storage {
-            ColumnStorage::Page(values) => {
-                Arc::make_mut(
-                    values[index % PAGE_LEN].as_mut().unwrap(/* Proof: Column construction either materializes every in-range value or installs a shared default; path materialization installs each child and leaf before mutable access. */ ),
-                )
-            }
-            ColumnStorage::Branch(children) => {
-                Arc::make_mut(children[branch_index(index, height)].as_mut().unwrap(/* Proof: Column construction either materializes every in-range value or installs a shared default; path materialization installs each child and leaf before mutable access. */ ))
-                    .get_mut(index, height - 1)
-            }
+    pub(super) fn detach<'a>(
+        this: &'a mut Arc<Self>,
+        copied_bytes: &mut u64,
+        request: Option<&ExecutionRequest<'_, '_>>,
+    ) -> Result<&'a mut Self, Cause> {
+        if let Some(request) = request {
+            request.consult()?;
         }
-    }
-
-    pub(super) fn detach<'a>(this: &'a mut Arc<Self>, copied_bytes: &mut u64) -> &'a mut Self {
-        if !this.is_unique() {
-            let page_bytes = match &this.storage {
-                ColumnStorage::Page(values) => values.len() * std::mem::size_of::<Option<Arc<T>>>(),
-                ColumnStorage::Branch(_) => 0,
+        if Arc::get_mut(this).is_none() {
+            let page = matches!(this.storage, ColumnStorage::Page(_));
+            let memory =
+                crate::storage::substrate::node_memory::reserve(request, Self::bytes(page))?;
+            let page_bytes = if page {
+                crate::storage::substrate::node_memory::array::<Option<T>>(PAGE_LEN)
+                    .ok_or(Cause::ChargedBytesOverflow)?
+            } else {
+                0
+            };
+            let node = Self {
+                storage: this.storage.clone(),
+                node_count: this.node_count,
+                page_count: this.page_count,
+                value_count: this.value_count,
+                memory,
             };
             *copied_bytes =
-                copied_bytes.saturating_add((std::mem::size_of::<Self>() + page_bytes) as u64);
+                copied_bytes.saturating_add(std::mem::size_of::<Self>() as u64 + page_bytes);
+            *this = Arc::new(node);
         }
-        Arc::make_mut(this)
+        Ok(Arc::get_mut(this)
+            .expect("the actual unique node or newly allocated node remains exclusive"))
     }
-
+    pub(super) fn carrier_mut<'a>(
+        this: &'a mut Arc<Self>,
+        index: usize,
+        height: usize,
+        copied: &mut u64,
+        request: Option<&ExecutionRequest<'_, '_>>,
+    ) -> Result<&'a mut T, Cause> {
+        let node = Self::detach(this, copied, request)?;
+        match &mut node.storage {
+            ColumnStorage::Page(values) => Ok(values[index % PAGE_LEN]
+                .as_mut()
+                .expect("the selected carrier was materialized")),
+            ColumnStorage::Branch(children) => Self::carrier_mut(
+                children[branch_index(index, height)]
+                    .as_mut()
+                    .expect("the selected child was materialized"),
+                index,
+                height - 1,
+                copied,
+                request,
+            ),
+        }
+    }
     pub(super) fn set(
         &mut self,
         index: usize,
         height: usize,
-        value: Arc<T>,
-        copied_bytes: &mut u64,
-    ) {
+        value: T,
+        copied: &mut u64,
+        request: Option<&ExecutionRequest<'_, '_>>,
+    ) -> Result<(), Cause> {
         match &mut self.storage {
             ColumnStorage::Page(values) => {
                 if values[index % PAGE_LEN].is_none() {
@@ -122,9 +159,17 @@ impl<T: Clone> ColumnNode<T> {
                 values[index % PAGE_LEN] = Some(value);
             }
             ColumnStorage::Branch(children) => {
-                let child = children[branch_index(index, height)]
-                    .get_or_insert_with(|| Arc::new(Self::empty(height - 1)));
-                Self::detach(child, copied_bytes).set(index, height - 1, value, copied_bytes);
+                let selected = &mut children[branch_index(index, height)];
+                if selected.is_none() {
+                    *selected = Some(Self::allocate(height - 1, request)?);
+                }
+                Self::detach(selected.as_mut().expect("installed child"), copied, request)?.set(
+                    index,
+                    height - 1,
+                    value,
+                    copied,
+                    request,
+                )?;
                 self.node_count = 1 + children
                     .iter()
                     .flatten()
@@ -134,9 +179,22 @@ impl<T: Clone> ColumnNode<T> {
                 self.value_count = children.iter().flatten().map(|node| node.value_count).sum();
             }
         }
+        Ok(())
+    }
+    pub(super) fn into_values(node: Arc<Self>, output: &mut Vec<T::Value>) {
+        let node = Arc::unwrap_or_clone(node);
+        match node.storage {
+            ColumnStorage::Page(values) => {
+                output.extend(values.into_iter().flatten().map(T::into_value))
+            }
+            ColumnStorage::Branch(children) => {
+                for child in children.into_iter().flatten() {
+                    Self::into_values(child, output);
+                }
+            }
+        }
     }
 }
-
 fn branch_index(index: usize, height: usize) -> usize {
     ((index / PAGE_LEN) >> (height - 1)) & 1
 }

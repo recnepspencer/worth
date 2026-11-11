@@ -55,7 +55,7 @@ pub(crate) fn relational_runtime_with_intent_strategy() -> RelationalRuntime {
 
 pub(crate) fn create_entity(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-    runtime: &mut RelationalRuntime,
+    runtime: &RelationalRuntime,
     name: &str,
     branch: BranchId,
 ) -> worth_relational::facade::identity::EntityId {
@@ -104,7 +104,7 @@ pub(crate) fn create_entity(
 
 pub(crate) fn update_entity_name(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-    runtime: &mut RelationalRuntime,
+    runtime: &RelationalRuntime,
     entity_id: worth_relational::facade::identity::EntityId,
     name: &str,
     branch: BranchId,
@@ -230,7 +230,7 @@ pub(crate) fn exact_branch_head_commit_id(
 }
 
 pub(crate) fn exact_branch_snapshot(
-    runtime: &mut RelationalRuntime,
+    runtime: &RelationalRuntime,
     branch: &str,
 ) -> worth_relational::facade::snapshots::SnapshotHandle {
     let branch_id = BranchId(branch.to_string());

@@ -1,7 +1,13 @@
 use super::*;
 use crate::input::envelope::{TruthBranchIdentity, TruthCommitIdentity};
 
-pub trait CommittedPatchSource: Send + Sync + 'static {
+pub trait CommittedPatchSource: std::any::Any + Send + Sync + 'static {
+    /// Descriptive meaning of the registered, unpartitioned baseline source.
+    /// This is correlation data, never source or restoration authority.
+    fn runtime_world_baseline_graph_role(&self) -> Option<&str> {
+        None
+    }
+
     fn authoritative_source_profile(
         &self,
     ) -> Option<crate::input::envelope::BridgeAuthoritativeSourceProfile> {
@@ -15,7 +21,7 @@ pub trait CommittedPatchSource: Send + Sync + 'static {
     ) -> Result<crate::input::envelope::BridgeCommittedPatchEnvelope, RelationalBridgeSourceError>;
 }
 
-pub trait SnapshotReadSource: Send + Sync + 'static {
+pub trait SnapshotReadSource: std::any::Any + Send + Sync + 'static {
     fn open_snapshot(
         &self,
         identity: &TruthSnapshotIdentity,
@@ -33,7 +39,7 @@ pub trait SnapshotReaderPool: Send + Sync + 'static {
     fn release(&self, reader: Box<dyn TruthSnapshotReader>);
 }
 
-pub trait TruthBranchHeadSource: Send + Sync + 'static {
+pub trait TruthBranchHeadSource: std::any::Any + Send + Sync + 'static {
     fn load_branch_head_patch(
         &self,
         branch_identity: &TruthBranchIdentity,

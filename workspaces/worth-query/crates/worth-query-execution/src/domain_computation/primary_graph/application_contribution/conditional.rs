@@ -20,7 +20,10 @@ use super::super::{
 };
 use super::producer::WorthQueryInstalledApplicationProducerRegistry;
 
+mod batch_installation;
 mod producer_access;
+pub(in crate::domain_computation::primary_graph) use batch_installation::RefusedConditionalBatch;
+use batch_installation::RefusedConditionalConfiguration;
 pub use producer_access::WorthQueryApplicationConditionalProducerAccess;
 mod dependency;
 mod target_coverage;
@@ -90,6 +93,29 @@ impl<Schema> Default for WorthQueryInstalledApplicationConditionalRegistry<Schem
     }
 }
 
+impl<Schema> WorthQueryInstalledApplicationConditionalRegistry<Schema> {
+    /// Nonempty definitions retire only through their actual readmitted owner.
+    /// Its installation admitted authored definitions without temporal bindings.
+    pub(in crate::domain_computation::primary_graph) fn preflight_home_retirement(
+        &self,
+        owner: Option<&super::super::managed_bridge::conditional_owner::ConditionalOwner>,
+    ) -> Result<(), super::super::WorthQueryHomeRetirementDenial> {
+        use super::super::managed_bridge::conditional_owner::ConditionalOwner;
+        use super::super::{
+            WorthQueryHomeRetirementDenial as Denial, WorthQueryHomeRetirementOwner as Owner,
+        };
+        if self.entries.is_empty() {
+            return Ok(());
+        }
+        match owner {
+            Some(ConditionalOwner::Authored(_)) => Ok(()),
+            Some(ConditionalOwner::Memory(_)) | Some(ConditionalOwner::Stopped) | None => {
+                Err(Denial::Unsupported(Owner::InstalledConditionals))
+            }
+        }
+    }
+}
+
 impl<Schema> WorthQueryInstalledApplicationConditionalRegistry<Schema>
 where
     Schema: ApplicationSchema + 'static,
@@ -138,7 +164,7 @@ where
         producers: &WorthQueryInstalledApplicationProducerRegistry<Schema>,
         declaration: &DeclaredConditionalBinding,
         installation: &mut WorthQueryConditionalApplicationRuntimeInstallation<Schema>,
-    ) -> Result<InstalledConditionalBinding, WorthQueryConditionalRuntimeInstallationDenial>;
+    ) -> Result<InstalledConditionalBinding, RefusedConditionalConfiguration>;
 }
 
 struct TypedConditionalConfiguration<Schema, Binding>
@@ -161,7 +187,7 @@ where
         producers: &WorthQueryInstalledApplicationProducerRegistry<Schema>,
         declaration: &DeclaredConditionalBinding,
         installation: &mut WorthQueryConditionalApplicationRuntimeInstallation<Schema>,
-    ) -> Result<InstalledConditionalBinding, WorthQueryConditionalRuntimeInstallationDenial> {
+    ) -> Result<InstalledConditionalBinding, RefusedConditionalConfiguration> {
         let access = WorthQueryApplicationConditionalProducerAccess::new(
             producers,
             &declaration.required_producers,
@@ -176,16 +202,25 @@ where
             Ok(installed) => installed,
             Err(denial) => {
                 installation.abandon_application_binding_scope();
-                return Err(denial);
+                return Err(RefusedConditionalConfiguration {
+                    cause: denial,
+                    installed: None,
+                });
             }
         };
-        installation.finish_application_binding_scope()?;
-        Ok(InstalledConditionalBinding {
+        let installed = InstalledConditionalBinding {
             binding_type: TypeId::of::<Binding>(),
             installed_type: TypeId::of::<Binding::Installed>(),
             operation_type: TypeId::of::<Binding::Operation>(),
             value: Arc::new(installed),
-        })
+        };
+        match installation.finish_application_binding_scope() {
+            Ok(()) => Ok(installed),
+            Err(cause) => Err(RefusedConditionalConfiguration {
+                cause,
+                installed: Some(installed),
+            }),
+        }
     }
 }
 
@@ -294,31 +329,6 @@ where
         schema: &str,
     ) -> Result<(), WorthQueryPrimaryGraphInstallationDenial> {
         target_coverage::validate(&self.declared, index, owner, schema)
-    }
-
-    pub(in crate::domain_computation::primary_graph) fn install_all(
-        self,
-        producers: &WorthQueryInstalledApplicationProducerRegistry<Schema>,
-        installation: &mut WorthQueryConditionalApplicationRuntimeInstallation<Schema>,
-    ) -> Result<
-        WorthQueryInstalledApplicationConditionalRegistry<Schema>,
-        WorthQueryConditionalRuntimeInstallationDenial,
-    > {
-        let mut installed = BTreeMap::new();
-        for (identity, configuration) in self.configured {
-            let declaration = self
-                .declared
-                .get(&identity)
-                .expect("configured conditional was resolved from the declaration");
-            installed.insert(
-                identity,
-                configuration.install(producers, declaration, installation)?,
-            );
-        }
-        Ok(WorthQueryInstalledApplicationConditionalRegistry {
-            entries: Arc::new(installed),
-            marker: PhantomData,
-        })
     }
 }
 
