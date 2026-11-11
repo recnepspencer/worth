@@ -1,0 +1,14 @@
+{
+  "base": "5d37a209ee227fdef639cbec2c438d82396a7209",
+  "removed_leaf": "crates/worth-relational/src/durability/authority/fresh_source/tests.rs",
+  "removed_partial_test": "complete_refuses_recovered_empty_without_original_birth_authority",
+  "public_cases": [
+    "complete_refuses_recovered_empty_without_original_birth_authority",
+    "fresh_source_refuses_foreign_and_nonempty_actual_sources_without_rebuild",
+    "fresh_receipt_refuses_actual_movement_and_preserves_original_cancellation",
+    "fresh_source_refuses_real_selected_empty_checkpoint",
+    "fresh_source_keeps_original_installation_receipts_and_unused_constraints_in_complete"
+  ],
+  "C2_full_root": "fresh_source_keeps_actual_runtime_root_and_installed_schema_for_complete",
+  "baseline": "one deleted leaf row only"
+}

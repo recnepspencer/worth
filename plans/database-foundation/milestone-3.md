@@ -278,6 +278,10 @@ Remaining pure cleanup roots (per-claim Landing 2a disposition):
 
 ### C2 - Cost and bounds: backing and work budgets
 
+Fresh admission private source/root/schema custody remainder:
+Full original fresh_source_keeps_actual_runtime_root_and_installed_schema_for_complete including source_plan, all root/schema/source Arc identities, retained-empty/schema registry assertions, unused constraints and wrong receipts at `5d37a209ee227fdef639cbec2c438d82396a7209:crates/worth-relational/src/durability/authority/fresh_source/tests.rs`; restore same-SHA fresh_source.rs/directory, tests/support.rs and complete tests/support tree, direct durability/runtime/schema control/source ancestors. Preserve original arming/observations; never restore runtime_attachment discovery. This is a C2 split under the coordinator per-claim ruling.
+
+
 Pinned-reader restoration private remainders:
 
 Full original native_restore_work_counts_revised_history_sibling_roots_and_partition_images and divergent_sibling_is_not_reused_as_the_storage_mirror including shares_first_generation/shares_partition_generation: `5b18804fbd34c814d69aefd527653b11e3d2da59:crates/worth-relational/src/durability/authority/runtime_rebuild/checkpoint_restore_tests.rs`. Restore the same-SHA runtime_rebuild.rs and runtime_rebuild directory, `crates/worth-relational/src/tests/support.rs`, complete tests/support tree, and direct durability/history/runtime source/control ancestors. Preserve every section/work/directory/partition and pointer comparison, complete original arming/observations. Restore through genuinely source-owned infrastructure; never resurrect runtime_attachment discovery.

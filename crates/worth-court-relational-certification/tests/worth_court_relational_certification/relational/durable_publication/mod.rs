@@ -183,3 +183,5 @@ mod checkpoint_recovered_readers;
 mod checkpoint_root_publications;
 
 mod checkpoint_shared_partition;
+
+mod checkpoint_birth_refusal;

@@ -2454,7 +2454,6 @@
 {"source":"crates/worth-relational/src/durability/authority/checkpoint_complete/tests/pinned_delete.rs","module":"file","roots":["ExecutionRequest","SerialRequest","RelationalRuntime"]},
 {"source":"crates/worth-relational/src/durability/authority/checkpoint_complete/tests/request_control.rs","module":"file","roots":["ExecutionRequest","SerialRequest","RelationalRuntime"]},
 {"source":"crates/worth-relational/src/durability/authority/checkpoint_components/complete/tests.rs","module":"file","roots":["ExecutionRequest","SerialRequest","RelationalRuntime"]},
-{"source":"crates/worth-relational/src/durability/authority/fresh_source/tests.rs","module":"file","roots":["ExecutionRequest","RelationalRuntime","SerialRequest"]},
 {"source":"crates/worth-relational/src/durability/canonical_commit_artifact/checkpoint_body.rs","module":"file","roots":["ExecutionRequest"]},
 {"source":"crates/worth-relational/src/durability/canonical_commit_artifact/decoded_quote/indexes/tests.rs","module":"file","roots":["ExecutionRequest","SerialRequest"]},
 {"source":"crates/worth-relational/src/durability/canonical_commit_artifact/decoded_quote/merge/admission/tests.rs","module":"file","roots":["ExecutionRequest","SerialRequest"]},

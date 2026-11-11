@@ -1,0 +1,20 @@
+command: cargo clippy -p worth-court-relational-certification --all-targets
+HEAD: 14b6075657193d0f74ce944beab6124b5dec7b3c
+git_status_short_empty: false
+start_utc: 2026-11-11T03:07:29.053082+00:00
+    Checking worth-court-relational-certification v0.1.0 (C:\programming\worth worktees\worktrees\m3-p3-reopen\crates\worth-court-relational-certification)
+error[E0507]: cannot move out of dereference of `worth_relational::facade::transactions::CommitResult`
+  --> crates\worth-court-relational-certification\tests\worth_court_relational_certification\relational\durable_publication\source_initial_inputs\fresh_admission.rs:53:14
+   |
+53 |         Some(written.commit)
+   |              ^^^^^^^^^^^^^^ move occurs because value has type `worth_relational::facade::history::RelationalCommitReceipt`, which does not implement the `Copy` trait
+   |
+help: consider cloning the value if the performance cost is acceptable
+   |
+53 |         Some(written.commit.clone())
+   |                            ++++++++
+
+For more information about this error, try `rustc --explain E0507`.
+error: could not compile `worth-court-relational-certification` (test "worth_court_relational_certification") due to 1 previous error
+end_utc: 2026-11-11T03:07:33.204250+00:00
+exit_code: 101

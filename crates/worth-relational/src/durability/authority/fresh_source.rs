@@ -11,8 +11,6 @@ mod receipt;
 mod stop;
 pub use receipt::FreshRelationalSourceAdmission;
 pub use stop::RelationalFreshSourceAdmissionStop;
-#[cfg(test)]
-mod tests;
 
 impl DurabilityRecoveryAuthority<'_> {
     /// Closed Store ingress: physical ProvenAbsent custody selects this door.
