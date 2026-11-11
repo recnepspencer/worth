@@ -66,6 +66,7 @@ impl<Schema: worth_query_installation::facade::ApplicationSchema + 'static>
             generations,
             live_records,
             current_publication_records,
+            ..
         } = worth_relational::facade::durability::RelationalNativeCheckpoint::inspect_bytes(
             &execution, native,
         )
