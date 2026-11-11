@@ -95,8 +95,13 @@ pub fn restored_world(
     IdentityWorld,
     worth_query_execution::facade::domain_computation::WorthQueryPrimaryGraphInstallationDenial,
 > {
-    worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::advancement::with_test_advancement(|active_phase| {
-        let phase = &active_phase;
+    let opening = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::new(None),
+        worth_execution::CancellationSource::new().token(),
+        None,
+    );
+    let execution = worth_execution::ExecutionRequest::serial(&opening);
+    worth_query_execution::facade::application_contribution::with_bootstrap_advancement_from_request(execution, |phase| {
 
         let declaration = IdentityExecutionSchema::declaration().unwrap();
         let admitted = WorthQueryInstallationAdmissionProfile::new("support", "configuration")
@@ -114,9 +119,9 @@ pub fn restored_world(
             .principal_binding(IdentityBinding::reference())
             .unwrap();
         let decoded = checkpoint
-            .decode_with_execution_for_test(&phase.borrowed_request_for_test())
+            .decode_with_execution_for_test(&execution)
             .expect("the Query-issued checkpoint decodes under the original host request");
-        let mut bootstrap = authority.prepare_primary_graph_from_native_checkpoint_with_invariants(&phase.bootstrap_for_test(),
+        let mut bootstrap = authority.prepare_primary_graph_from_native_checkpoint_with_invariants(&phase,
         &runtime,
         &schema,
         worth_relational::facade::runtime::RelationalRuntimeApi::builder().build().expect("valid native runtime configuration"),
@@ -128,7 +133,7 @@ pub fn restored_world(
         crate::domain_computation::primary_graph::tests::fixture::handler_installation::install_fixture_handlers(&schema, &mut bootstrap);
         let application = bootstrap
             .publish_application_runtime(
-                &phase.bootstrap_for_test(),
+                &phase,
                 runtime,
                 authority,
                 schema,
@@ -139,7 +144,7 @@ pub fn restored_world(
             application,
             binding,
         })
-    })
+    }).expect("the explicit fixture reconstruction request admits its bootstrap")
 }
 
 pub fn installed_authorization_world(

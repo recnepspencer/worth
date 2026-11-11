@@ -154,7 +154,7 @@ fn an_unpublished_first_member_resumes_once_then_completes_the_one_group_step() 
         );
         assert!(matches!(
             execution.completed_source(0).unwrap().evidence(),
-            WorthQuerySourceCompletion::Recovered {
+            WorthQuerySourceCompletion::Recorded {
                 publication: Some(_),
                 ..
             }

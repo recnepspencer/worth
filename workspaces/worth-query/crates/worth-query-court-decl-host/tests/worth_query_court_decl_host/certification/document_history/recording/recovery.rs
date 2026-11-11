@@ -110,7 +110,7 @@ fn unpublished_candidate_keeps_its_original_recovery_until_one_recorded_selectio
     let original = edit.completed_source().unwrap();
     assert_eq!(original.original_input().identity, DOCUMENT_IDENTITY);
     assert_eq!(original.original_input().retention_days, 3);
-    let WorthQuerySourceCompletion::Recovered {
+    let WorthQuerySourceCompletion::Recorded {
         receipt,
         publication: Some(_),
         ..
@@ -120,12 +120,13 @@ fn unpublished_candidate_keeps_its_original_recovery_until_one_recorded_selectio
             "keep the original owner-issued recovered publication, without replaying the handler"
         )
     };
-    assert_eq!(
-        receipt
-            .committed_product_publication()
-            .product_incarnation(),
-        candidate
-    );
+    let worth_foundational::facade::RecordedProductBranchReference::Memory(head) =
+        receipt.new_product_head()
+    else {
+        panic!("the Memory original retains Memory receipt data")
+    };
+    assert_eq!(head.incarnation(), candidate.ordinal());
+    assert!(original.evidence().live_receipt().is_none());
     assert_eq!(edit.read(&request).unwrap().rows()[0].retention_days, 3);
     let finished = edit.finish(&request).unwrap();
     let Outcome::Recorded {
@@ -134,7 +135,7 @@ fn unpublished_candidate_keeps_its_original_recovery_until_one_recorded_selectio
     else {
         panic!("one recovered user step")
     };
-    let WorthQuerySourceCompletion::Recovered {
+    let WorthQuerySourceCompletion::Recorded {
         receipt,
         publication: Some(_),
         ..
@@ -143,10 +144,28 @@ fn unpublished_candidate_keeps_its_original_recovery_until_one_recorded_selectio
         panic!("finish transfers the same recovered business evidence")
     };
     assert_eq!(step.parent(), Some(root.id()));
+    let worth_foundational::facade::RecordedProductBranchReference::Memory(head) =
+        receipt.new_product_head()
+    else {
+        panic!("the completed Memory original retains Memory receipt data")
+    };
+    let endpoint = step.endpoint();
+    assert!(endpoint
+        .branch_identity()
+        .owner_identity()
+        .durable()
+        .is_none());
     assert_eq!(
-        step.endpoint().selected_commit(),
-        receipt.committed_product_publication().composite_commit()
+        endpoint.branch_identity().owner_identity().get(),
+        head.owner()
     );
+    assert_eq!(endpoint.branch_identity().name().as_str(), head.branch());
+    assert_eq!(
+        endpoint.lifecycle_incarnation().ordinal(),
+        head.incarnation()
+    );
+    assert_eq!(endpoint.reference_generation().get(), head.generation());
+    assert_eq!(endpoint.selected_commit().ordinal(), head.selected_commit());
     assert_eq!(
         finished.document.current_step(&request).unwrap().id(),
         step.id()

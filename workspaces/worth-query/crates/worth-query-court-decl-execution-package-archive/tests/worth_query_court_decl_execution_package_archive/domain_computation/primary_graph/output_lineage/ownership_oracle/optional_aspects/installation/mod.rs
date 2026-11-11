@@ -281,7 +281,12 @@ pub fn install<Schema: BirthSchema + ApplicationSchemaComposition<Contributions 
 
 pub fn limits<Schema: BirthSchema>() -> WorthQueryApplicationLimits {
     WorthQueryApplicationLimits::new(
-        worth_query_execution::court_doors_for_test::domain_computation::execution_runtime::product_world::resources::test_product_world_resources(worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system()),
+        worth_query_execution::court_doors_for_test::domain_computation::execution_runtime::product_world::resources::test_product_world_resources(worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system())
+            .with_execution_policy(worth_foundational::ExecutionRequestPolicy::new(
+                worth_foundational::ExecutionPosture::Serial,
+                worth_foundational::DeterminismContract::CanonicalBitwise,
+                worth_foundational::ExecutionBudget::new(std::num::NonZeroUsize::MIN, None, None),
+            )),
         Default::default(),
         worth_signal::facade::runtime::SignalConditionalEvaluationBudget::development(),
     )

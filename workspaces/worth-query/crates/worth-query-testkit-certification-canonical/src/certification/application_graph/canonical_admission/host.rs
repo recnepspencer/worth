@@ -131,16 +131,27 @@ pub fn key(identity: &str) -> WorthQueryApplicationEntityKey<AdmissionSchema, Do
     WorthQueryApplicationEntityKey::new(identity).unwrap()
 }
 pub fn restore(checkpoint: WorthQueryApplicationCheckpoint, work: u64) -> Host {
-    let program = WorthQueryInterimCheckpointRestore::program(
-        ApplicationProgramAuthoring::<AdmissionSchema, Program>::begin()
-            .validated_program()
-            .unwrap(),
-        AdmissionSchema::declaration().unwrap(),
-        ((),),
-        ApplicationBuildIdentity::parse("11111111-1111-1111-1111-111111111111").unwrap(),
-        super::limits::limits(work.max(super::FUNDED_WORK)),
-        checkpoint,
-    )
+    let opening = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::new(None),
+        worth_execution::CancellationSource::new().token(),
+        None,
+    );
+    let execution = worth_execution::ExecutionRequest::serial(&opening);
+    let program = with_bootstrap_advancement_from_request(execution, |phase| {
+        WorthQueryInterimCheckpointRestore::rostered_program_in_advancement(
+            &phase,
+            ApplicationProgramAuthoring::<AdmissionSchema, Program>::begin()
+                .validated_program()
+                .unwrap(),
+            WorthQueryApplicationProgramRoster::new(),
+            AdmissionSchema::declaration().unwrap(),
+            ((),),
+            ApplicationBuildIdentity::parse("11111111-1111-1111-1111-111111111111").unwrap(),
+            super::limits::limits(work.max(super::FUNDED_WORK)),
+            checkpoint,
+        )
+    })
+    .expect("the explicit fixture reconstruction request admits its bootstrap")
     .expect("current source restores without authored conversion");
     Host {
         program,
