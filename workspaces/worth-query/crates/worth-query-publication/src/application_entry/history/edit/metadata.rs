@@ -36,6 +36,24 @@ where
         O::InputBinding: ApplicationStructuredValueBinding<Value = Input>,
         Input: ApplicationCapabilityRequest<S, C, Scope = ApplicationHistoryModel<S, H>> + 'static,
     {
+        worth_execution::run_with_execution_stack(move || {
+            self.advance_with_metadata_on_execution_stack(request, capability, operation, input)
+        })
+    }
+
+    #[inline(never)]
+    fn advance_with_metadata_on_execution_stack<C, O, Input>(
+        self,
+        request: &WorthQueryApplicationRequest<'_, '_, '_, S>,
+        capability: ApplicationCapabilityRef<S, C>,
+        operation: ApplicationOperationRef<S, O, Input>,
+        input: Input,
+    ) -> WorthQueryHistoryEditAdvance<Self>
+    where
+        O: ApplicationOperationMarkerIdentity<S> + 'static,
+        O::InputBinding: ApplicationStructuredValueBinding<Value = Input>,
+        Input: ApplicationCapabilityRequest<S, C, Scope = ApplicationHistoryModel<S, H>> + 'static,
+    {
         if !std::ptr::eq(self.document.owner.application(), request.application) {
             return WorthQueryHistoryEditAdvance::Refused {
                 edit: self,
