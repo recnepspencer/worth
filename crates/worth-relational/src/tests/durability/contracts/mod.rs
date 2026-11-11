@@ -3,26 +3,19 @@ mod branch_transition;
 mod caller_association;
 mod canonical_commit_artifact;
 mod checkpoint_recovery;
-mod derived_index_checkpoint;
 mod descriptor_continuity;
 mod managed_field_text;
-mod merge_replay_continuity;
 mod native_checkpoint;
 mod rejected_and_parent_closure;
 mod semantic_result;
 
 use crate::facade::diagnostics::DiagnosticCode;
 use crate::facade::durability::{
-    RecoveryAuthorityContinuityMismatch, RecoveryFailureClass, RecoveryPlan,
-    RecoveryVerificationMode,
+    RecoveryAuthorityContinuityMismatch, RecoveryFailureClass, RecoveryVerificationMode,
 };
 use crate::facade::history::BranchId;
 use crate::facade::identity::KindId;
-use crate::facade::indexes::{
-    DerivedIndexBuildRequest, DerivedIndexDefinition, DerivedIndexId, DerivedIndexKind,
-};
 use crate::facade::lineage::LineageEventKind;
-use crate::facade::merge::{MergeExecutionRequest, MergeIntent};
 use crate::facade::runtime::RelationalRuntimeApi;
 use crate::facade::schema::DescriptorSemanticsVersion;
 use crate::facade::schema::{

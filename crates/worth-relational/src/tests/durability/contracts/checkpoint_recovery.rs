@@ -109,6 +109,3 @@ fn durability_contract_checkpoint_recovers_lineage_authority() {
         second_lineage
     );
 }
-
-#[path = "checkpoint_recovery/empty_head.rs"]
-mod empty_head;

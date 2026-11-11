@@ -65,16 +65,6 @@ impl TestDurableMedium {
         Box::new(TestDurableMediumAttachment::new(Arc::clone(self)))
     }
 
-    /// Every position this medium holds, ascending.
-    pub(crate) fn positions(&self) -> Vec<PatchStreamPosition> {
-        self.journal().positions()
-    }
-
-    /// The exact bytes held at `position`.
-    pub(crate) fn artifact_bytes(&self, position: PatchStreamPosition) -> Option<Box<[u8]>> {
-        self.journal().bytes_at(position).map(Box::from)
-    }
-
     /// Every artifact a publication offered, in the order offered, whatever
     /// the answer was.
     pub(crate) fn offered(&self) -> Vec<RelationalCanonicalCommitArtifact> {

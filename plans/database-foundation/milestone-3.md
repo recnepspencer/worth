@@ -21,6 +21,17 @@ each invariant is enforced and where each new type lives.
 
 ### C4 - Injected faults
 
+The original rewrite/reseal setup in
+`durability_contract_replays_merge_from_typed_authority_when_diagnostics_are_absent`
+retains its complete callback and all original guards: restore from
+`622f101e99a3bda26132bebf19c2f3c318a7b6f3:crates/worth-relational/src/tests/durability/contracts/merge_replay_continuity.rs`,
+with the same-SHA `tests/support.rs`, complete `tests/support` tree and exact
+`history/data/canonical_commit_envelope` owner/control closure recorded in C2.
+Its actual ordinary source readmission/typed-authority/whole-DATA counterpart is
+`durable_publication/checkpoint_merge_continuity.rs`. Never revive the retired
+runtime-discovery adapter to restore the original rewritten source campaign.
+
+
 Additional orphan control closure for the moved transition/publication campaigns:
 restore `86e84dc5cd:crates/worth-relational/src/branch/transition/publication_pause_for_test.rs`
 with its fields, initialization, arming door and pause call in same-SHA
@@ -260,6 +271,18 @@ Remaining pure cleanup roots (per-claim Landing 2a disposition):
   weakened fault assertions.
 
 ### C2 - Cost and bounds: backing and work budgets
+
+Index, merge, bulk and empty-head private remainders:
+
+All original nine roots are unchanged at622f101e99a3bda26132bebf19c2f3c318a7b6f3. Use that immutable revision for every referenced tree; no moving HEAD is a restore authority.
+
+- C2, `checkpoint_index_artifact_survives_tail_replay_without_envelope_caches`: exact `derived_index_artifacts.is_empty()` and `derived_index_checkpoint_format == 2`, restore from `622f101e99a3bda26132bebf19c2f3c318a7b6f3:crates/worth-relational/src/tests/durability/contracts/derived_index_checkpoint.rs`. Fixture closure is its original name_index/build/build_on_branch definitions in that same file, its original `contracts/mod.rs` parent, and the immutable support tree below.
+- C2/C4, `durability_contract_replays_merge_from_typed_authority_when_diagnostics_are_absent`: exact populated-versus-omitted authoritative_nested_bytes comparison and original rewrite_commit_envelope callback/resealed frame, restore from `622f101e99a3bda26132bebf19c2f3c318a7b6f3:crates/worth-relational/src/tests/durability/contracts/merge_replay_continuity.rs`. Fixture closure is the original `contracts/mod.rs` parent, support tree below (especially durable_medium/tamper.rs), and `622f101e99a3bda26132bebf19c2f3c318a7b6f3:crates/worth-relational/src/history/data/canonical_commit_envelope/control_allocation.rs` with its same-SHA parent module. Restore the complete callback, including authority take/restore and empty-diagnostic assertion, rather than a no-op or count proxy.
+- C2, `semantic_result_bulk_entities_and_relations_seal_and_readmit_original_bindings`: actual readmitted envelope symbol_texts dictionary contains bulk-input-00 under original PreferInterned producer, restore from `622f101e99a3bda26132bebf19c2f3c318a7b6f3:crates/worth-relational/src/tests/durability/contracts/semantic_result/bulk.rs`. Fixture closure includes publication() in that file, `622f101e99a3bda26132bebf19c2f3c318a7b6f3:crates/worth-relational/src/tests/durability/contracts/semantic_result.rs`, its original parent and immutable support tree below.
+- C2, `durability_contract_empty_checkpoint_restores_a_live_retained_head`: exact head_installs == 1, restore from `622f101e99a3bda26132bebf19c2f3c318a7b6f3:crates/worth-relational/src/tests/durability/contracts/checkpoint_recovery/empty_head.rs`. Fixture closure is `622f101e99a3bda26132bebf19c2f3c318a7b6f3:crates/worth-relational/src/tests/durability/contracts/checkpoint_recovery.rs`, its original parent and immutable support tree below.
+
+Shared exact fixture/control trees: `622f101e99a3bda26132bebf19c2f3c318a7b6f3:crates/worth-relational/src/tests/durability/contracts/mod.rs`, `622f101e99a3bda26132bebf19c2f3c318a7b6f3:crates/worth-relational/src/tests/support.rs`, and `622f101e99a3bda26132bebf19c2f3c318a7b6f3:crates/worth-relational/src/tests/support` (complete runtime/schema/records/aspect/history/owner-input/durability/local-medium descendants). All production owner controls and direct parents come from the same immutable `622f101e99a3bda26132bebf19c2f3c318a7b6f3:crates/worth-relational/src` tree. On restoration migrate source boundaries through genuine owned media, preserving every original assertion and arming/observation/control closure; never revive runtime-discovery adapter authority. These original private claims remain required at their restoration courts; their nine public functional counterparts stay mounted.
+
 
 - Exact old-layout portion of `memory_frame_preserves_original_payload_and_scalar_tuple_observations`:
   `restore from 86e84dc5cd:crates/worth-relational/src/history/commit/envelope_residency/memory_publication_tests.rs`.

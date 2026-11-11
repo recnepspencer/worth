@@ -55,21 +55,8 @@ impl TestDurableJournal {
         )
     }
 
-    pub(super) fn positions(&self) -> Vec<PatchStreamPosition> {
-        self.artifacts
-            .entries
-            .keys()
-            .copied()
-            .map(PatchStreamPosition)
-            .collect()
-    }
-
     pub(super) fn bytes_at(&self, position: PatchStreamPosition) -> Option<&[u8]> {
         self.artifacts.entries.get(&position.0).map(AsRef::as_ref)
-    }
-
-    pub(super) fn replace(&mut self, position: PatchStreamPosition, bytes: Box<[u8]>) {
-        self.artifacts.entries.insert(position.0, bytes);
     }
 
     pub(super) fn artifacts_after(

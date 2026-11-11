@@ -1,24 +1,43 @@
-//! Real checkpoint affinity: an inherited fork is legal; an unissued scope is not.
-use super::*;
-use crate::facade::indexes::{BoundedEntityFieldLookupRequest, BoundedIndexParityMode};
-use crate::identity::data::EntityId;
-use crate::runtime::RelationalRuntime;
-
+use super::checkpoint_index_generations::{fork_branch, scoped_name_index};
+use super::checkpoint_recovery_observation::snapshot_for_branch;
+use super::checkpoint_source_capture::capture_durably;
+use super::merge_execution_observation::entity_field_display;
+use std::sync::Arc;
+use worth_relational::facade::{
+    durability::{RecoveryPlan, RecoveryVerificationMode},
+    history::BranchId,
+    identity::{EntityId, KindId},
+    indexes::{
+        BoundedEntityFieldLookupRequest, BoundedIndexParityMode, DerivedIndexBuildRequest,
+        DerivedIndexGenerationId, DerivedIndexId,
+    },
+    mvcc::RelationalTransactionIntent,
+    runtime::RelationalRuntime,
+};
+use worth_testkit_relational::{
+    aspect_storage::{
+        definition::{aspect_field_locator, aspect_key, field_key},
+        publications::{changed_entities, release_test_commit_snapshot},
+    },
+    durable_medium::TestDurableMedium,
+    durable_publication::{create_entity_outcome, durable_runtime},
+};
 const NAME: &str = "scoped-checkpoint-shared-root";
 const FORK: &str = "scoped-checkpoint-real-fork";
 
 fn fork_checkpoint(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
+    medium: &Arc<TestDurableMedium>,
 ) -> (
     RecoveryPlan,
     EntityId,
     DerivedIndexId,
-    crate::indexes::data::DerivedIndexGenerationId,
+    DerivedIndexGenerationId,
 ) {
-    let runtime = durable_runtime_with_test_schema();
+    let runtime = durable_runtime(medium);
     let anchor = create_entity_outcome(execution, &runtime, NAME);
     let entity = changed_entities(&anchor)[0];
-    let branch = create_branch_from_main(&runtime, FORK);
+    let branch = fork_branch(execution, &runtime, FORK);
     assert_ne!(anchor.commit.branch_id, branch);
     let identity = runtime.branch_identity(&branch).unwrap();
     let (_, basis) = runtime.observe_branch(&identity).unwrap();
@@ -41,13 +60,15 @@ fn fork_checkpoint(
     let generation = built.generations[0].generation_id;
     drop(basis);
     release_test_commit_snapshot(&runtime, &anchor);
-    crate::tests::support::checkpoint_durably(execution, &runtime).unwrap();
-    let plan = crate::tests::support::recovery_plan_for(
-        execution,
-        &runtime,
-        RecoveryVerificationMode::NormalRecoveryVerification,
-    )
-    .unwrap();
+    capture_durably(execution, &runtime, medium).unwrap();
+    let plan = runtime
+        .durability()
+        .recovery_plan_from_source(
+            execution,
+            medium.recovery_source(),
+            RecoveryVerificationMode::NormalRecoveryVerification,
+        )
+        .unwrap();
     (plan, entity, index.index_id, generation)
 }
 
@@ -60,20 +81,22 @@ fn name_on_branch(
     let identity = runtime.branch_identity(branch).unwrap();
     let (_, basis) = runtime.observe_branch(&identity).unwrap();
     let read = runtime
-        .begin_branch_transaction(&basis, crate::mvcc::RelationalTransactionIntent::ordinary())
+        .begin_branch_transaction(&basis, RelationalTransactionIntent::ordinary())
         .unwrap()
         .read_entity(execution, entity)
         .unwrap();
-    read.base().and_then(read_entity_name)
+    read.base()
+        .and_then(|record| entity_field_display(record, &aspect_key("name"), &field_key("name")))
 }
 
 #[test]
 fn real_shared_parent_root_scoped_checkpoint_restores_lookup_and_content() {
-    let host_request = crate::test_execution_policy::serial_request();
+    let host_request = worth_testkit_relational::shared_relational_certification_test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
-    let (plan, entity, index, generation) = fork_checkpoint(execution);
-    let mut restored = durable_runtime_with_test_schema();
+    let medium = TestDurableMedium::new();
+    let (plan, entity, index, generation) = fork_checkpoint(execution, &medium);
+    let mut restored = durable_runtime(&medium);
     restored
         .durability_recovery()
         .recover(execution, plan)
@@ -81,11 +104,12 @@ fn real_shared_parent_root_scoped_checkpoint_restores_lookup_and_content() {
     let branch = BranchId(FORK.into());
     let identity = restored.branch_identity(&branch).unwrap();
     let (_, basis) = restored.observe_branch(&identity).unwrap();
-    let artifact = restored
-        .history
-        .commit_artifact(basis.observation().commit_id().unwrap())
+    let envelope = restored
+        .replay()
+        .canonical_commit_envelope(execution, basis.observation().commit_id().unwrap())
+        .unwrap()
         .unwrap();
-    assert_ne!(artifact.identity().authoring_branch(), &branch);
+    assert_ne!(&envelope.commit.branch_id, &branch);
     let admitted = restored
         .index_access()
         .read_published_generation_for_observation(execution, index, &basis.observation())
@@ -93,14 +117,14 @@ fn real_shared_parent_root_scoped_checkpoint_restores_lookup_and_content() {
         .unwrap();
     assert_eq!(admitted.generation_id, generation);
     assert_eq!(admitted.source_branch_id, branch);
-    let snapshot = snapshot_for_owner_branch(&restored, &branch);
+    let snapshot = snapshot_for_branch(&restored, &branch);
     let request = || {
         BoundedEntityFieldLookupRequest::new(
             snapshot.clone(),
             index,
             KindId(1),
             aspect_field_locator(aspect_key("name"), field_key("name")),
-            string_aspect_value(NAME),
+            worth_foundational::facade::AspectValue::String(NAME.into()),
             2,
         )
         .unwrap()

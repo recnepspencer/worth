@@ -1,0 +1,103 @@
+command: cargo clippy -p worth-relational -p worth-court-relational-certification --all-targets
+HEAD: 622f101e99a3bda26132bebf19c2f3c318a7b6f3
+git_status_short_empty: false
+start_utc: 2026-11-11T01:49:09.019493+00:00
+    Checking worth-court-relational-certification v0.1.0 (C:\programming\worth worktees\worktrees\m3-p3-reopen\crates\worth-court-relational-certification)
+    Checking worth-relational v0.1.0 (C:\programming\worth worktees\worktrees\m3-p3-reopen\crates\worth-relational)
+warning: unused imports: `CreatedEntityRef`, `EntityReference`, and `RelationalCreatedEndpoint as Endpoint`
+ --> crates\worth-relational\src\tests\durability\contracts\semantic_result.rs:5:5
+  |
+5 |     CreatedEntityRef, EntityReference, RelationalCreatedEndpoint as Endpoint,
+  |     ^^^^^^^^^^^^^^^^  ^^^^^^^^^^^^^^^  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  |
+  = note: `#[warn(unused_imports)]` (part of `#[warn(unused)]`) on by default
+
+warning: unused import: `RecoveryPlan`
+  --> crates\worth-relational\src\tests\durability\contracts\mod.rs:14:64
+   |
+14 |     RecoveryAuthorityContinuityMismatch, RecoveryFailureClass, RecoveryPlan,
+   |                                                                ^^^^^^^^^^^^
+
+warning: unused imports: `DerivedIndexBuildRequest`, `DerivedIndexDefinition`, `DerivedIndexId`, and `DerivedIndexKind`
+  --> crates\worth-relational\src\tests\durability\contracts\mod.rs:20:5
+   |
+20 |     DerivedIndexBuildRequest, DerivedIndexDefinition, DerivedIndexId, DerivedIndexKind,
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^  ^^^^^^^^^^^^^^^^^^^^^^  ^^^^^^^^^^^^^^  ^^^^^^^^^^^^^^^^
+
+warning: unused imports: `MergeExecutionRequest` and `MergeIntent`
+  --> crates\worth-relational\src\tests\durability\contracts\mod.rs:23:28
+   |
+23 | use crate::facade::merge::{MergeExecutionRequest, MergeIntent};
+   |                            ^^^^^^^^^^^^^^^^^^^^^  ^^^^^^^^^^^
+
+warning: field `0` is never read
+  --> crates\worth-relational\src\tests\support\durable_medium.rs:54:12
+   |
+54 |     Commit(RelationalCanonicalCommitArtifactFrameRefusal),
+   |     ------ ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |     |
+   |     field in this variant
+   |
+   = note: `TestRecoverySourceRefusal` has a derived impl for the trait `Debug`, but this is intentionally ignored during dead code analysis
+   = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+help: consider changing the field to be of unit type to suppress this warning while preserving the field numbering, or remove the field
+   |
+54 -     Commit(RelationalCanonicalCommitArtifactFrameRefusal),
+54 +     Commit(()),
+   |
+
+warning: field `0` is never read
+  --> crates\worth-relational\src\tests\support\durable_medium.rs:55:16
+   |
+55 |     Transition(RelationalBranchTransitionArtifactFrameRefusal),
+   |     ---------- ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |     |
+   |     field in this variant
+   |
+   = note: `TestRecoverySourceRefusal` has a derived impl for the trait `Debug`, but this is intentionally ignored during dead code analysis
+help: consider changing the field to be of unit type to suppress this warning while preserving the field numbering, or remove the field
+   |
+55 -     Transition(RelationalBranchTransitionArtifactFrameRefusal),
+55 +     Transition(()),
+   |
+
+warning: methods `positions` and `artifact_bytes` are never used
+  --> crates\worth-relational\src\tests\support\durable_medium.rs:69:19
+   |
+58 | impl TestDurableMedium {
+   | ---------------------- methods in this implementation
+...
+69 |     pub(crate) fn positions(&self) -> Vec<PatchStreamPosition> {
+   |                   ^^^^^^^^^
+...
+74 |     pub(crate) fn artifact_bytes(&self, position: PatchStreamPosition) -> Option<Box<[u8]>> {
+   |                   ^^^^^^^^^^^^^^
+
+warning: methods `positions` and `replace` are never used
+  --> crates\worth-relational\src\tests\support\durable_medium\journal.rs:58:19
+   |
+20 | impl TestDurableJournal {
+   | ----------------------- methods in this implementation
+...
+58 |     pub(super) fn positions(&self) -> Vec<PatchStreamPosition> {
+   |                   ^^^^^^^^^
+...
+71 |     pub(super) fn replace(&mut self, position: PatchStreamPosition, bytes: Box<[u8]>) {
+   |                   ^^^^^^^
+
+warning: methods `rewrite_commit_envelope` and `rewrite_artifact_envelope` are never used
+  --> crates\worth-relational\src\tests\support\durable_medium\tamper.rs:42:19
+   |
+12 | impl TestDurableMedium {
+   | ---------------------- methods in this implementation
+...
+42 |     pub(crate) fn rewrite_commit_envelope(
+   |                   ^^^^^^^^^^^^^^^^^^^^^^^
+...
+63 |     pub(crate) fn rewrite_artifact_envelope(
+   |                   ^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: `worth-relational` (lib test) generated 9 warnings (run `cargo clippy --fix --lib -p worth-relational --tests -- ` to apply 4 suggestions)
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 55.50s
+end_utc: 2026-11-11T01:50:05.320299+00:00
+exit_code: 0

@@ -158,4 +158,11 @@ mod checkpoint_canonical_neutrality;
 
 mod checkpoint_managed_text;
 
+mod checkpoint_bulk_bindings;
+mod checkpoint_empty_head;
+mod checkpoint_index_affinity;
+mod checkpoint_index_generations;
+mod checkpoint_index_lagging;
+mod checkpoint_index_recovery;
+mod checkpoint_merge_continuity;
 mod merge_source_copy_identity;
