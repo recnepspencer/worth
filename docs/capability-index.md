@@ -1551,10 +1551,6 @@ before reconciling every World branch. The selected Complete image retains
 definitions, topology, branch generations and issuance bounds. Query serves
 the actual durable owner and per-branch fresh Bridge projections. Derived
 values start cold under both the same and a changed build.
-Known gap (H5 open): graceful close after a program-lane mixed operation that
-advances an authored conditional definition refuses with
-`PublicationCustodyRetained`.
-
 Conditional definitions retain complete provider protocols, versions and
 parameters in Signal transitions. Fresh `BridgeAuthoredInstallationBindings`
 rebuild executable providers, branch-local indexes, lowering registry and

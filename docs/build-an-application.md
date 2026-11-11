@@ -7442,11 +7442,6 @@ from authored source and genuine fresh installation bindings; a cached value
 cannot replace a missing definition. Resource and temporal runtime state still
 require their later recovery phases.
 
-Known gap (H5 open): after a program-lane operation that advances an authored
-conditional definition on a Directory Home, graceful close currently refuses at
-physical close with `PublicationCustodyRetained`. Definition-only and derived
-Signal journeys close and reopen; mixed definition advances do not yet.
-
 Ordinary Signal-only and mixed Native/Signal publications use the original
 durable `WithSignal` preparation. A Signal-only occurrence contains no Native
 effect and inherits its predecessor's exact Native source. Mixed publication
