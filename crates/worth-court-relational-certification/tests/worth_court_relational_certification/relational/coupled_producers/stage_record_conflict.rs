@@ -28,10 +28,10 @@ impl RelationalAuthoredCoupledProducerAssembly for WriteStatus<'_> {
                 )),
             ],
         );
-        if let Err(cause) = &outcome {
-            if let Some((record, earlier, later)) = cause.authored_stage_conflict() {
-                *self.conflict.borrow_mut() = Some((record.clone(), earlier, later));
-            }
+        if let Err(cause) = &outcome
+            && let Some((record, earlier, later)) = cause.authored_stage_conflict()
+        {
+            *self.conflict.borrow_mut() = Some((record.clone(), earlier, later));
         }
         outcome.map(|()| ControlFlow::Continue(()))
     }

@@ -220,6 +220,12 @@ where
                 .is_some(),
         )
         .map_err(|cause| denial::identity_failed(Binding::IDENTITY, cause))?;
+    contact_observation::record_coupled_key(
+        runtime.runtime.authority_identity().as_u64(),
+        Binding::IDENTITY,
+        source.root(),
+        key,
+    );
     let idempotency = bound
         .bind_idempotency(
             WorthQueryApplicationIdempotencyBinding::new(key, *identities.input_identity())

@@ -150,6 +150,8 @@ fn exercise(worker: bool) {
     );
     let contacts = host.producer_contacts_on_this_thread_for_test();
     let head = courts::native_head(&host);
+    let canonical_keys = host.coupled_producer_keys_on_this_thread_for_test();
+    assert_eq!(canonical_keys.len(), 2);
     let (_, published) = observe_maintenance_work(8, || {
         macro_rules! settle {
             ($family:ident, $root:ty) => {{
@@ -162,6 +164,13 @@ fn exercise(worker: bool) {
                         WorthQueryProgramOutputOperationAdvance::Pending(next) => operation = next,
                         WorthQueryProgramOutputOperationAdvance::Settled(settled) => {
                             settled.deliver_current(&request).unwrap();
+                            let expected = canonical_keys.iter().find(|(producer, _, _)|
+                                *producer == $family::initial::Producer::IDENTITY
+                            ).expect("the real canonical owner observed this producer");
+                            let receipt = settled.settlement().root_receipt()
+                                .expect("the actual completed coupled producer receipt");
+                            assert_eq!(receipt.idempotency_binding().key_identity(), &expected.2,
+                                "the committed producer key equals its input-derived canonical owner output");
                             settled
                                 .close(&request)
                                 .unwrap_or_else(|e| panic!("{:?}", e.denial()));
