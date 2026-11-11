@@ -1,8 +1,0 @@
-command: cargo run --manifest-path tools/agent-context/Cargo.toml -- check
-HEAD: 67355cc7bf317af07c603cb41b0898a372be2788
-git_status_short_empty: false
-start_utc: 2026-11-11T03:48:28.781904+00:00
-    Finished `dev` profile [optimized + debuginfo] target(s) in 0.64s
-     Running `tools\agent-context\target\debug\agent-context.exe check`
-end_utc: 2026-11-11T03:48:29.870971+00:00
-exit_code: 0

@@ -1,7 +1,0 @@
-[
-  "recovered_main_and_sibling_reexport_the_original_canonical_subjects_and_envelopes",
-  "native_checkpoint_keeps_the_original_pinned_reader_after_revisions_and_sibling_writes",
-  "shared_restored_substrate_keeps_a_pinned_reader_exact_after_next_write",
-  "divergent_main_and_sibling_keep_their_original_truth_after_source_recovery",
-  "divergent_sibling_and_main_restore_the_shared_partition_and_keep_the_original_pinned_reader"
-]

@@ -1,8 +1,0 @@
---- a/tools/boundary-check/config/certification-construction-callers.txt
-+++ b/tools/boundary-check/config/certification-construction-callers.txt
-@@ -188,3 +188,5 @@
- 
- application-home-checkpoint-maintenance workspaces/worth-query/crates/worth-query-host/src/application_home/maintenance.rs
- native-home-complete-checkpoint crates/worth-court-relational-certification/tests/worth_court_relational_certification/relational/durable_publication/source_initial_inputs/checkpoint_admission/capture_cost.rs
-+native-fresh-initialization crates/worth-court-relational-certification/tests/worth_court_relational_certification/relational/durable_publication/source_initial_inputs/checkpoint_admission/contract_work.rs
-+native-durable-initial-installation crates/worth-court-relational-certification/tests/worth_court_relational_certification/relational/durable_publication/source_initial_inputs/checkpoint_admission/contract_work.rs

@@ -1,5 +1,0 @@
-chore(m3): retain H8 rebinding evidence and journal boundary
-
-Retain exact checks, failed setup and corrected reruns, frozen source/blob identities, genuine fixture ownership correction, peer probes and the fresh prerequisite-only approving review. Record the remaining dispatch/custody seams and H8 IN PROGRESS status without claiming graceful dispatch recovery.
-
-Co-Authored-By: GPT-6.1 Sol <noreply@openai.com>

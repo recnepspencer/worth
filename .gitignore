@@ -1,4 +1,5 @@
 # Rust build artifacts
+# Root target output is also rejected by scripts/ci/check_root_build_artifacts.py.
 /target/
 **/target/
 /target-*/

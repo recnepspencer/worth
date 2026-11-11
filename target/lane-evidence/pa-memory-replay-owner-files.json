@@ -1,5 +1,0 @@
-[
-  "authorization/tests/durable_dependencies/recovery.rs",
-  "tests/history/replay/lineage_authority_basis.rs",
-  "durability/authority/runtime_rebuild/envelope_replay/interruption_tests.rs"
-]

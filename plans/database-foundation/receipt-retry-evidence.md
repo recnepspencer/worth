@@ -2,6 +2,8 @@
 
 This is a scoped implementation handoff, not Phase 4 certification. Enabled courts still expose the excluded owner boundaries listed below. Independent review is recorded separately after the source and gates are qualified.
 
+Raw captures under `target/lane-evidence/` and `target/test-cost/` are local-only outputs, not checkout inputs. The artifact cleanup following PR #143 removes the accidentally tracked copies from the current tree without rewriting history or deleting active worktree evidence. Paths below identify historical captures; a fresh checkout does not contain them. Keep durable conclusions in these plans and future raw CI logs in CI artifacts. Intentional provenance under `scripts/test_cost/slots/` remains versioned. This cleanup does not certify the known-red M3 landing.
+
 The reviewed source starts at `c068abc047`. Every log records its actual command, source HEAD, dirty state, start/end and exit code. A dirty run qualifies only the reviewed source delta that was present then; subsequent corrections require their targeted successor logs. `ignored` counts below use the nextest selected-binary inventory when present; otherwise they count unique unexecuted libtest ignored events. They include ignored tests independently of the expression and never mean executed tests. No ignored test was requested.
 
 Build/check/format rows have 0/0/0 because they execute no tests. Metadata, unit-graph declarations and prebuild selection are auxiliary captures in `target/lane-evidence/receipt-lane-ledger.json`; that ledger also records content SHA-256 and compiler diagnostics. Superseded failures remain visible. A green successor is required before calling any failed behavior fixed.

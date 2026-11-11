@@ -1,8 +1,0 @@
-COMMAND: ["python", "target/lane-evidence/stack_peak/measure.py", "dev", "worth-query-consumer-root"]
-HEAD: 7eeb6fa326b46f1924c1defe9670261245cb1d92
-CLEAN: true
-START: 2026-11-07T09:09:30.677642+00:00
-ENV: removed stale external linker override; RUST_MIN_STACK unset in parent
-
-END: 2026-11-07T09:12:19.369068+00:00
-EXIT: 4294967295

@@ -1,7 +1,0 @@
-fix(relational): separate cold export work from backing capacity
-
-Price current-image exports from actual values and selected contracts while preserving conservative memory custody and Full validation. Fund projection capture and reconstruction copies and ordered operations through the original request.
-
-The unchanged Topology absence court now passes principal binding but remains red later in Native index-generation publication, outside the residency grant. No serving allowance or court changed.
-
-Co-Authored-By: GPT-6.1 Sol <noreply@openai.com>
