@@ -311,7 +311,7 @@ pub fn assert_predecessor(successor: &ExternalEffectPosture, predecessor: &Exter
 
 pub fn admitted_from_fresh_runtime(
     outcome_identity: u64,
-) -> worth_query_execution::court_doors_for_test::domain_computation::application_aftermath::external_effect::causal_event::WorthQueryAdmittedExternalDispatchAttempt{
+) -> worth_query_execution::court_doors_for_test::domain_computation::application_aftermath::external_effect::causal_event::WorthQueryAdmittedExternalDispatchAttempt<'static>{
     commit_observe_and_admit_fixture(outcome_identity as u8).0
 }
 

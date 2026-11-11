@@ -2280,3 +2280,5 @@ workspaces/worth-store/crates/worth-store/ workspaces/worth-store/crates/worth-s
 workspaces/worth-store/crates/worth-store/ workspaces/worth-store/crates/worth-store-court-application/tests/worth_store_court_application/process/application/world_durable_release/child.rs
 workspaces/worth-store/crates/worth-store/ workspaces/worth-store/crates/worth-store-court-recovery-runtime-replication-production-entry-production-custody-serving/tests/worth_store_court_recovery_runtime_replication_production_entry_production_custody_serving/process/recovery_runtime/production_entry/anchored_records/owned_publication/fixture.rs
 workspaces/worth-store/crates/worth-store/ workspaces/worth-store/crates/worth-store-court-store-replication-physical-record-journeys-physical-work/tests/worth_store_court_store_replication_physical_record_journeys_physical_work/process/store/physical_record_journeys/physical_work/close_plan/task.rs
+
+workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-court-query-decl-host/tests/worth_query_court_query_decl_host/host/application_home/dispatch_custody/portable_causality.rs
