@@ -2,6 +2,7 @@
 use super::envelope_fixture as fixture;
 use super::*;
 mod row_correspondence;
+mod termination;
 use std::collections::{BTreeMap, BTreeSet};
 use worth_query_host::facade::{
     application_entry::WorthQueryEditEnvelopeOutcome as Outcome, runtime::ExecutionAllocationPolicy,
@@ -199,7 +200,6 @@ fn exercise(worker: bool) {
         ));
         drop(replayed);
         drop(receipt);
-        drop(request);
         drop(principal);
         drop(scope);
         drop(host);
@@ -353,7 +353,7 @@ fn first_cold_refusal(worker: bool) {
         })
         .idempotency("first-cold-refusal".to_owned());
     let token = envelope.stage_token::<fixture::member::Binding>(1).unwrap();
-    let (outcome, writes) = observe_maintenance_work(8, || {
+    let (outcome, writes) = observe_maintenance_work(2048, || {
         envelope
             .execute_performed::<fixture::Program>(
                 &host,
@@ -364,6 +364,7 @@ fn first_cold_refusal(worker: bool) {
     let Outcome::DomainDenied(denial) = outcome else {
         panic!("the first cold-attempt refusal was replaced")
     };
+    termination::assert_refusal_stops(&writes);
     assert_eq!(denial.binding(), fixture::member::Binding::IDENTITY);
     assert_eq!(denial.identity().ordinal(), 1);
     assert_eq!(denial.denial(&token).unwrap(), &Denial::ValueOutOfRange);

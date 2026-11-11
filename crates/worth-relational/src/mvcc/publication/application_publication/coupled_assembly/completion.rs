@@ -127,11 +127,17 @@ pub(crate) fn prepare_coupled_candidate(
         authored_writes,
         read: std::cell::RefCell::new(None),
     };
+    crate::execution::phase_observation::symbol_preparation_event(
+        crate::execution::phase_observation::SymbolPreparationEvent::AssemblerCallback,
+    );
     if assembly
         .assemble(execution, &mut candidate)
         .map_err(|failure| failure.cause)?
         .is_break()
     {
+        crate::execution::phase_observation::symbol_preparation_event(
+            crate::execution::phase_observation::SymbolPreparationEvent::AssemblerBreak,
+        );
         return Ok(false);
     }
     let RelationalAuthoredCoupledCandidate {

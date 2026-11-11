@@ -93,6 +93,9 @@ impl RelationalPreparationPort {
                                 &mut symbols,
                                 assembly,
                             )?;
+                            crate::execution::phase_observation::symbol_preparation_event(
+                                crate::execution::phase_observation::SymbolPreparationEvent::CoupledCompleted(complete),
+                            );
                             if !complete {
                                 return Ok(false);
                             }
