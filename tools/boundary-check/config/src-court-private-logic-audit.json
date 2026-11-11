@@ -117,16 +117,6 @@
         "ExecutionRequest",
         "SerialRequest"
       ],
-      "source": "crates/worth-relational/src/branch/coordination/managed_fork_cleanup.rs",
-      "test": "managed_fork_refusal_and_success_drop_lookup_outside_native_coordination",
-      "audit": "Query 9.19 master alignment private-owner placement ruling, 2026-10-30; plans/WORTH-query/milestone-9.19-master-alignment-plan.md.",
-      "private_subject": "Private Native coordination guard exclusion and actual fork lookup destruction on refusal/success."
-    },
-    {
-      "constructors": [
-        "ExecutionRequest",
-        "SerialRequest"
-      ],
       "source": "crates/worth-relational/src/mvcc/publication/companion/cell/managed_source/cache_retirement.rs",
       "test": "managed_cache_retirement_defers_last_opaque_drop_beyond_native_guards",
       "audit": "Query 9.19 master alignment private-owner placement ruling, 2026-10-30; plans/WORTH-query/milestone-9.19-master-alignment-plan.md.",

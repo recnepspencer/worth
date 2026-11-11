@@ -53,24 +53,6 @@ fn map(bytes: &[u8], edit: impl FnOnce(&mut BTreeMap<String, Vec<u8>>)) -> Vec<u
     edit(&mut value);
     map_bytes(value)
 }
-/// Edit just one row while preserving every unrelated value's raw encoding.
-fn first_row(bytes: &[u8], edit: impl FnOnce(&mut BTreeMap<String, Vec<u8>>)) -> Vec<u8> {
-    let start = match bytes[0] {
-        0x91..=0x9f => 1,
-        0xdc => 3,
-        0xdd => 5,
-        marker => panic!("expected a nonempty array, got {marker}"),
-    };
-    let mut cursor = Cursor::new(&bytes[start..]);
-    let _: serde::de::IgnoredAny = rmp_serde::from_read(&mut cursor).unwrap();
-    let end = start + usize::try_from(cursor.position()).unwrap();
-    [
-        bytes[..start].to_vec(),
-        map(&bytes[start..end], edit),
-        bytes[end..].to_vec(),
-    ]
-    .concat()
-}
 fn rewritten(
     bytes: &[u8],
     allocator: bool,
@@ -196,73 +178,6 @@ fn inspection_refuses_unknown_root_allocator_and_row_fields() {
         assert!(
             RelationalNativeCheckpoint::inspect_bytes(&execution, &after).is_err(),
             "unknown field in {key} row"
-        );
-    }
-}
-
-#[test]
-fn restore_refuses_unknown_fields_before_publishing_any_model_state() {
-    let host = crate::test_execution_policy::serial_request();
-    let execution = worth_execution::ExecutionRequest::serial(&host);
-    let (original, _) = original(&execution);
-    let mut control = durable_runtime_with_test_schema();
-    control
-        .durability_recovery()
-        .restore_native_checkpoint(&execution, &original)
-        .unwrap();
-    assert!(control.history().immutable_commit_count() > 0);
-    for owner in [
-        "manifest",
-        "record_identity",
-        "append_frontiers",
-        "generation_high_water",
-        "roots",
-        "mirror",
-    ] {
-        let allocator = matches!(
-            owner,
-            "record_identity" | "append_frontiers" | "generation_high_water"
-        );
-        let bytes = rewritten(original.bytes(), allocator, |fields| {
-            if matches!(owner, "manifest" | "record_identity") {
-                fields.insert("future_field".into(), vec![0xc0]);
-            } else {
-                let rows = first_row(&fields[owner], |row| {
-                    row.insert("future_field".into(), vec![0xc0]);
-                });
-                fields.insert(owner.into(), rows);
-            }
-        });
-        let checkpoint = RelationalNativeCheckpoint::from_untrusted_bytes(bytes);
-        let mut target = durable_runtime_with_test_schema();
-        let before = target
-            .durability_authority()
-            .native_checkpoint(&execution, execution.allocation_policy())
-            .unwrap();
-        let denied = target
-            .durability_recovery()
-            .restore_native_checkpoint(&execution, &checkpoint)
-            .unwrap_err();
-        let RelationalRecoveryStop::Durability(error) = denied else {
-            panic!("wrong restore refusal: {denied:?}")
-        };
-        assert_eq!(
-            error.class,
-            RecoveryFailureClass::CorruptCheckpoint,
-            "{owner}"
-        );
-        assert!(
-            error.detail.contains("unknown field") && error.detail.contains("future_field"),
-            "{owner}: {error:?}"
-        );
-        let after = target
-            .durability_authority()
-            .native_checkpoint(&execution, execution.allocation_policy())
-            .unwrap();
-        assert_eq!(
-            before.bytes(),
-            after.bytes(),
-            "restore changed state for {owner}"
         );
     }
 }

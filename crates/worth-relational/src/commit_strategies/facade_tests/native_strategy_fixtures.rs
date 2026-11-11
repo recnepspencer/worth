@@ -20,8 +20,7 @@ pub(super) use crate::commit_strategies::strategies::{
 pub(super) use crate::facade::history::BranchId;
 pub(super) use crate::facade::merge::{MergeIntent, MergePlanningRequest};
 pub(super) use crate::facade::replay::{
-    RelationalReplayRequest, ReplayExecutionMode, ReplayFailureClass, ReplayMismatchClass,
-    ReplayObservableSurface, ReplayVerificationMode,
+    RelationalReplayRequest, ReplayExecutionMode, ReplayObservableSurface, ReplayVerificationMode,
 };
 pub(super) use crate::facade::transactions::{
     CreateIntent, EntityMutationIntent, MutationIntent, UpdateEntityFieldsIntent, WorkerIntentBatch,
@@ -142,23 +141,6 @@ impl CommitStrategyExecutor for PlanningExecutor {
     }
 }
 
-#[derive(Clone, Copy)]
-pub(super) struct DeterministicFailureExecutor;
-
-impl CommitStrategyExecutor for DeterministicFailureExecutor {
-    fn execute(
-        &self,
-        _execution: &worth_execution::ExecutionRequest<'_, '_>,
-        _request: &CanonicalStrategyCommitRequest,
-        _observation: &crate::commit_strategies::data::StrategyObservationContext<'_>,
-    ) -> Result<StrategyExecutionResult, StrategyExecutorFailure> {
-        Err(StrategyExecutorFailure::new(
-            crate::commit_strategies::data::StrategyExecutorFailureClass::DomainRejection,
-            "deterministic hostile replay failure",
-        ))
-    }
-}
-
 pub(crate) fn persisted_intent_runtime(
     medium: std::sync::Arc<crate::tests::support::TestDurableMedium>,
     include_executor: bool,
@@ -176,24 +158,6 @@ pub(crate) fn persisted_intent_runtime(
         );
     }
     builder
-        .build_durable(medium.attachment())
-        .expect("valid native runtime configuration")
-}
-
-pub(super) fn persisted_intent_runtime_with_failing_executor(
-    medium: std::sync::Arc<crate::tests::support::TestDurableMedium>,
-) -> crate::facade::runtime::RelationalRuntime {
-    let descriptor = IntentReconciliationStrategy::descriptor(CommitStrategyId(161));
-    RelationalRuntimeBuilder::new()
-        .schema_registry(strategy_schema_registry())
-        .commit_strategy(
-            CommitStrategyRegistration::new(descriptor.clone())
-                .expect("intent strategy registration"),
-        )
-        .commit_strategy_executor(CommitStrategyExecutionRegistration::new(
-            &descriptor,
-            DeterministicFailureExecutor,
-        ))
         .build_durable(medium.attachment())
         .expect("valid native runtime configuration")
 }

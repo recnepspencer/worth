@@ -13,8 +13,8 @@ mod semantic_result;
 
 use crate::facade::diagnostics::DiagnosticCode;
 use crate::facade::durability::{
-    RecoveryAuthorityContinuityCheck, RecoveryAuthorityContinuityMismatch, RecoveryFailureClass,
-    RecoveryPlan, RecoveryVerificationMode,
+    RecoveryAuthorityContinuityMismatch, RecoveryFailureClass, RecoveryPlan,
+    RecoveryVerificationMode,
 };
 use crate::facade::history::BranchId;
 use crate::facade::identity::KindId;
@@ -23,7 +23,6 @@ use crate::facade::indexes::{
 };
 use crate::facade::lineage::LineageEventKind;
 use crate::facade::merge::{MergeExecutionRequest, MergeIntent};
-use crate::facade::replay::ReplayVerificationLayer;
 use crate::facade::runtime::RelationalRuntimeApi;
 use crate::facade::schema::DescriptorSemanticsVersion;
 use crate::facade::schema::{

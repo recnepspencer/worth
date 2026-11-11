@@ -1,11 +1,9 @@
 //! The test medium's branch transition journal: transition artifacts by
 //! sequence, with the same rule as the commit journal (the next sequence, or
-//! an identical retry) and its own scripted answers.
+//! an identical retry).
 
-use std::collections::VecDeque;
 use worth_testkit_relational::durable_medium::bytes::ByteJournal;
 
-use super::ScriptedPublication;
 use crate::branch::RelationalBranchTransitionSequence;
 use crate::durability::branch_transition_artifact::RelationalBranchTransitionArtifact;
 use crate::durability::medium::DurablePublicationFate;
@@ -13,8 +11,6 @@ use crate::durability::medium::DurablePublicationFate;
 #[derive(Debug, Default)]
 pub(super) struct TestTransitionJournal {
     pub(super) artifacts: ByteJournal,
-    pub(super) scripted: VecDeque<ScriptedPublication>,
-    pub(super) offered: Vec<RelationalBranchTransitionArtifact>,
 }
 
 impl TestTransitionJournal {
@@ -27,15 +23,6 @@ impl TestTransitionJournal {
                 .copied()
                 .unwrap_or(0),
         )
-    }
-
-    pub(super) fn sequences(&self) -> Vec<RelationalBranchTransitionSequence> {
-        self.artifacts
-            .entries
-            .keys()
-            .copied()
-            .map(RelationalBranchTransitionSequence)
-            .collect()
     }
 
     pub(super) fn bytes_at(&self, sequence: RelationalBranchTransitionSequence) -> Option<&[u8]> {
@@ -52,16 +39,12 @@ impl TestTransitionJournal {
             .map(|(_, bytes)| bytes.as_ref())
     }
 
-    /// Answer one transition publication: as scripted, otherwise by sequence.
+    /// Answer one transition publication by the ordinary sequence rule.
     pub(super) fn publish(
         &mut self,
         artifact: &RelationalBranchTransitionArtifact,
     ) -> DurablePublicationFate<String> {
-        self.offered.push(artifact.clone());
-        match self.scripted.pop_front() {
-            Some(answer) => answer.answer_transition(self, artifact),
-            None => self.publish_at_head(artifact),
-        }
+        self.publish_at_head(artifact)
     }
 
     fn publish_at_head(
@@ -79,15 +62,5 @@ impl TestTransitionJournal {
                 self.head().0 + 1
             ),
         }
-    }
-
-    pub(super) fn is_next(&self, sequence: RelationalBranchTransitionSequence) -> bool {
-        sequence.0 == self.head().0 + 1
-    }
-
-    pub(super) fn store(&mut self, artifact: &RelationalBranchTransitionArtifact) {
-        self.artifacts
-            .entries
-            .insert(artifact.sequence().0, Box::from(artifact.as_bytes()));
     }
 }

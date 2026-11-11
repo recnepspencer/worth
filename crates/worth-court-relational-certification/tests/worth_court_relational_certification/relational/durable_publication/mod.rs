@@ -157,3 +157,5 @@ mod checkpoint_schema_plan_refusals;
 mod checkpoint_canonical_neutrality;
 
 mod checkpoint_managed_text;
+
+mod merge_source_copy_identity;

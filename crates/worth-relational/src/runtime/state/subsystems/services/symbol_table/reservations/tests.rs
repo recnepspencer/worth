@@ -144,50 +144,6 @@ fn parallel_candidates_share_pending_meaning_without_publishing_it() {
 }
 
 #[test]
-fn checkpoint_recovery_preserves_abandoned_symbol_identity_frontiers() {
-    use crate::tests::support::*;
-    let request = crate::test_execution_policy::serial_request();
-    let execution = worth_execution::ExecutionRequest::serial(&request);
-    let runtime = durable_runtime_with_test_schema();
-    create_entity(&execution, &runtime, "symbol-frontier-seed");
-    let mut abandoned = runtime.services.symbols.begin_pending_meanings();
-    let symbol = abandoned.reserve("abandoned-before-checkpoint").unwrap();
-    drop(abandoned);
-    let (_, recovered) =
-        checkpoint_and_recover_with(&execution, &runtime, durable_runtime_with_test_schema);
-    let mut candidate = recovered.services.symbols.begin_pending_meanings();
-    let fresh = loop {
-        match candidate.reserve("abandoned-before-checkpoint") {
-            Ok(symbol) => break symbol,
-            Err(SymbolReservationDenial::ColdBucket(text)) => {
-                drop(candidate);
-                recovered
-                    .services
-                    .symbols
-                    .demand_text(&execution, text.as_str())
-                    .unwrap();
-                candidate = recovered.services.symbols.begin_pending_meanings();
-            }
-            other => panic!("recovered symbol reservation failed: {other:?}"),
-        }
-    };
-    assert!(fresh.0 > symbol.0);
-    assert_eq!(
-        recovered
-            .services
-            .symbols
-            .with_read(|symbols| symbols.resolve(symbol).map(str::to_owned)),
-        None
-    );
-    let meanings = candidate.interner().snapshot();
-    candidate
-        .seal_for_publication(&meanings)
-        .expect("fixture meanings agree with the candidate")
-        .publish()
-        .unwrap();
-}
-
-#[test]
 fn canonical_symbol_sealing_and_cross_owner_adoption_refuse_before_publication() {
     let owner = super::RuntimeSymbolTable::default();
     let mut candidate = owner.begin_pending_meanings();

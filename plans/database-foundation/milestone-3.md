@@ -21,6 +21,47 @@ each invariant is enforced and where each new type lives.
 
 ### C4 - Injected faults
 
+Additional orphan control closure for the moved transition/publication campaigns:
+restore `86e84dc5cd:crates/worth-relational/src/branch/transition/publication_pause_for_test.rs`
+with its fields, initialization, arming door and pause call in same-SHA
+`branch/transition/durable_step.rs`. Restore the complete local scripted-answer
+fixture from same-SHA `tests/support/durable_medium.rs` and
+`tests/support/durable_medium/{scripted_publication,journal,transition_journal,transition_contents}.rs`.
+These controls lost every arming caller with the moved C4 roots. Their complete
+original behavior remains required on restoration through genuine owned media;
+the ordinary next-position/sequence and identical-retry rules stay live unchanged.
+
+
+Remaining pure cleanup roots (per-claim Landing 2a disposition):
+
+- `durability_contract_failure_missing_authoritative_parent_closure_is_explicit`: `restore from 86e84dc5cd738882bf50fced389fc7deaa31567f:crates/worth-relational/src/tests/durability/contracts/rejected_and_parent_closure.rs`.
+- `durable_fork_and_source_commit_complete_without_deferral` (also retains its original C2 cost/custody guards): `restore from 86e84dc5cd738882bf50fced389fc7deaa31567f:crates/worth-relational/src/tests/durability/medium/branch_transition_races.rs`.
+- `durable_fork_and_source_archive_complete_in_lock_order` (also retains its original C2 cost/custody guards): `restore from 86e84dc5cd738882bf50fced389fc7deaa31567f:crates/worth-relational/src/tests/durability/medium/branch_transition_races.rs`.
+- `durable_fork_waits_for_another_branch_commit` (also retains its original C2 cost/custody guards): `restore from 86e84dc5cd738882bf50fced389fc7deaa31567f:crates/worth-relational/src/tests/durability/medium/branch_transition_races.rs`.
+- `memory_commit_waits_behind_a_transition_without_consuming_its_candidate` (also retains its original C2 cost/custody guards): `restore from 86e84dc5cd738882bf50fced389fc7deaa31567f:crates/worth-relational/src/tests/durability/medium/branch_transition_races.rs`.
+- `divergent_mirror_partition_rebuilds_cross_partition_adjacency_after_reuse` (also retains its original C2 cost/custody guards): `restore from 86e84dc5cd738882bf50fced389fc7deaa31567f:crates/worth-relational/src/durability/authority/runtime_rebuild/checkpoint_restore_tests.rs`.
+- `equal_image_cannot_bypass_global_contract_readmission`: `restore from 86e84dc5cd738882bf50fced389fc7deaa31567f:crates/worth-relational/src/durability/authority/runtime_rebuild/checkpoint_restore_tests.rs`.
+- `forged_cross_region_kind_commitment_is_refused_before_member_reads`: `restore from 86e84dc5cd738882bf50fced389fc7deaa31567f:crates/worth-relational/src/durability/log/native_checkpoint_codec/kind_authentication_tests.rs`.
+- `an_indexed_envelope_storage_failure_is_typed_and_sticky`: `restore from 86e84dc5cd738882bf50fced389fc7deaa31567f:crates/worth-relational/src/history/commit/envelope_residency_tests.rs`.
+- `replay_commit_reports_strategy_executor_unavailable_when_recovered_runtime_lacks_executor`: `restore from 86e84dc5cd738882bf50fced389fc7deaa31567f:crates/worth-relational/src/commit_strategies/facade_tests/replay_recovery_failures.rs`.
+- `replay_commit_reports_strategy_execution_failure_when_recovered_executor_rejects`: `restore from 86e84dc5cd738882bf50fced389fc7deaa31567f:crates/worth-relational/src/commit_strategies/facade_tests/replay_recovery_failures.rs`.
+- `restore_refuses_unknown_fields_before_publishing_any_model_state`: `restore from 86e84dc5cd738882bf50fced389fc7deaa31567f:crates/worth-relational/src/durability/log/native_checkpoint_codec/inspection/tests.rs`.
+- `rehashed_cross_region_kind_forgery_is_refused_by_the_canonical_root`: `restore from 86e84dc5cd738882bf50fced389fc7deaa31567f:crates/worth-relational/src/storage/residency/cross_region_forgery_tests.rs`.
+- `refused_durable_publication_leaves_no_replacement_lineage_behind`: `restore from 86e84dc5cd738882bf50fced389fc7deaa31567f:crates/worth-relational/src/tests/lineage/resolution.rs`.
+- `managed_fork_refusal_and_success_drop_lookup_outside_native_coordination` (also retains its original C2 cost/custody guards): `restore from 86e84dc5cd738882bf50fced389fc7deaa31567f:crates/worth-relational/src/branch/coordination/managed_fork_cleanup.rs`.
+- `fintech_recovery_refuses_a_damaged_checkpoint_instead_of_losing_truth`: `restore from 86e84dc5cd738882bf50fced389fc7deaa31567f:crates/worth-relational/src/tests/domains/fintech/workflows/persistence/checkpoint_fallback.rs`.
+  Restore each root's complete same-SHA parent/descendant fixture and control
+  closure, including its original local medium script and owner units; migrate
+  the source boundary through genuine owned media without reviving the retired
+  runtime-discovery adapter. All original guards remain required.
+
+  The inert lock-order control is deleted completely. Restore its full arming,
+  observations, fields and call sites from `f9f15bf8c8:crates/worth-relational/src/runtime/state/subsystems/canonical_publication_routes/lifecycle_order_control.rs`,
+  with the same-SHA `canonical_publication_routes.rs` owner and its
+  `canonical_publication_routes/{branch_transition_stream,checkpoint_admission}.rs`
+  call sites when restoring the original lock-order campaigns.
+
+
 - Associated-original missing-route and dropped-unrelated-body campaign parts:
   `associated_effects_refuse_memory_and_absent_settlement_evidence` and
   `associated_effects_discover_cold_subject_without_reading_unrelated_history`:
@@ -219,6 +260,54 @@ each invariant is enforced and where each new type lives.
   weakened fault assertions.
 
 ### C2 - Cost and bounds: backing and work budgets
+
+- Exact old-layout portion of `memory_frame_preserves_original_payload_and_scalar_tuple_observations`:
+  `restore from 86e84dc5cd:crates/worth-relational/src/history/commit/envelope_residency/memory_publication_tests.rs`.
+  Restore the original complete OldBacking (both variants and order), OldState,
+  OldCell, original Memory construction/drop diagnostic and both exact size
+  assertions with the same-SHA parent type imports. The functional original
+  Memory payload length, digest, real backing and full-frame/payload distinction
+  remain in the mounted genuine owner unit. Never delete the Journal variant
+  to fit a smaller layout oracle; this physical comparison belongs to C2.
+
+
+Remaining pure cleanup roots (per-claim Landing 2a disposition):
+
+- `positioned_agreement_uses_original_work_budget_and_preserves_authoritative_digest`: `restore from 86e84dc5cd738882bf50fced389fc7deaa31567f:crates/worth-relational/src/tests/durability/contracts/canonical_commit_artifact.rs`.
+- `native_custody_correction_last_actual_capture_abandonment_releases_shared_root_custody`: `restore from 86e84dc5cd738882bf50fced389fc7deaa31567f:crates/worth-relational/src/durability/data/native_checkpoint/component_custody/tests.rs`.
+- `equal_exact_root_reuses_the_readmitted_partition_substrate`: `restore from 86e84dc5cd738882bf50fced389fc7deaa31567f:crates/worth-relational/src/durability/authority/runtime_rebuild/checkpoint_restore_tests.rs`.
+- `native_custody_correction_cross_lane_acquire_release_has_one_actual_capture_cut`: `restore from 86e84dc5cd738882bf50fced389fc7deaa31567f:crates/worth-relational/src/history/retention/component_cut_tests.rs`.
+- `native_custody_correction_current_lane_inventory_is_collected_inside_actual_cut`: `restore from 86e84dc5cd738882bf50fced389fc7deaa31567f:crates/worth-relational/src/history/retention/component_cut_tests.rs`.
+- `an_indexed_envelope_remains_cold_until_explicit_readmission_and_loads_once`: `restore from 86e84dc5cd738882bf50fced389fc7deaa31567f:crates/worth-relational/src/history/commit/envelope_residency_tests.rs`.
+- `relinking_other_envelopes_preserves_an_index_even_while_its_body_is_in_flight`: `restore from 86e84dc5cd738882bf50fced389fc7deaa31567f:crates/worth-relational/src/history/commit/envelope_residency_tests.rs`.
+- `settlement_releases_a_journal_flight_but_preserves_memory_history_and_position`: `restore from 86e84dc5cd738882bf50fced389fc7deaa31567f:crates/worth-relational/src/history/commit/envelope_residency_tests.rs`.
+- `positioned_demand_owns_its_result_across_journal_settlement`: `restore from 86e84dc5cd738882bf50fced389fc7deaa31567f:crates/worth-relational/src/history/commit/envelope_residency_tests.rs`.
+- `journal_publication_keeps_journal_placement_without_memory_frame`: `restore from 86e84dc5cd738882bf50fced389fc7deaa31567f:crates/worth-relational/src/history/commit/envelope_residency/memory_publication_tests.rs`.
+- `canonical_artifact_accounting_excludes_nested_diagnostic_perturbation`: `restore from 86e84dc5cd738882bf50fced389fc7deaa31567f:crates/worth-relational/src/history/commit/artifact_tests.rs`.
+- `populated_derived_index_artifacts_only_change_the_optional_cache_lane`: `restore from 86e84dc5cd738882bf50fced389fc7deaa31567f:crates/worth-relational/src/history/commit/artifact_tests.rs`.
+- `strategy_input_clone_retains_only_its_original_decoded_bytes_grant`: `restore from 86e84dc5cd738882bf50fced389fc7deaa31567f:crates/worth-relational/src/history/commit/artifact_tests/strategy_readmission.rs`.
+- `strategy_descriptor_clone_retains_only_its_original_decoded_locator_grant`: `restore from 86e84dc5cd738882bf50fced389fc7deaa31567f:crates/worth-relational/src/history/commit/artifact_tests/strategy_readmission.rs`.
+- `shared_readmitted_envelope_clones_keep_the_original_allocation_and_grant_until_last_drop`: `restore from 86e84dc5cd738882bf50fced389fc7deaa31567f:crates/worth-relational/src/history/commit/artifact_tests/shared_readmission.rs`.
+- `actual_weak_position_retains_only_the_fixed_original_control_bill_until_last_drop`: `restore from 86e84dc5cd738882bf50fced389fc7deaa31567f:crates/worth-relational/src/history/commit/artifact_tests/shared_readmission.rs`.
+- `embedded_checkpoint_preserves_ignored_unknown_nested_fields_without_retaining_their_heaps`: `restore from 86e84dc5cd738882bf50fced389fc7deaa31567f:crates/worth-relational/src/history/commit/artifact_tests/shared_readmission.rs`.
+- `result_snapshot_cleanup_registry_contention_preserves_exact_cell_and_competing_task`: `restore from 86e84dc5cd738882bf50fced389fc7deaa31567f:crates/worth-relational/src/runtime/state/subsystems/visibility/snapshot_handles/published_registry/original_cleanup/tests.rs`.
+- `checkpoint_recovery_preserves_abandoned_symbol_identity_frontiers`: `restore from 86e84dc5cd738882bf50fced389fc7deaa31567f:crates/worth-relational/src/runtime/state/subsystems/services/symbol_table/reservations/tests.rs`.
+- `seeking_past_an_acknowledged_index_prefix_never_demands_its_journal_bodies`: `restore from 86e84dc5cd738882bf50fced389fc7deaa31567f:crates/worth-relational/src/durability/canonical_commit_artifact/retained_export/skip_tests.rs`.
+- `structural_identity_recovery_preserves_current_evidence_and_queries`: `restore from 86e84dc5cd738882bf50fced389fc7deaa31567f:crates/worth-relational/src/tests/inspection/structural_identity.rs`.
+- `complexity_budget_schema_transition_classification_is_changed_atom_bounded`: `restore from 86e84dc5cd738882bf50fced389fc7deaa31567f:crates/worth-relational/src/tests/complexity/contracts/commit_budgets/schema_continuity_boundaries.rs`.
+- `complexity_budget_subscriber_resume_continuity_is_boundary_local`: `restore from 86e84dc5cd738882bf50fced389fc7deaa31567f:crates/worth-relational/src/tests/complexity/contracts/commit_budgets/schema_continuity_boundaries.rs`.
+- `complexity_budget_milestone5_closeout_keeps_schema_cdc_and_recovery_boundary_local`: `restore from 86e84dc5cd738882bf50fced389fc7deaa31567f:crates/worth-relational/src/tests/complexity/contracts/commit_budgets/schema_continuity_boundaries.rs`.
+- `complexity_budget_merge_planning_reports_request_shaped_work`: `restore from 86e84dc5cd738882bf50fced389fc7deaa31567f:crates/worth-relational/src/tests/complexity/contracts/merge_budgets.rs`.
+- `complexity_budget_merge_execution_reports_admitted_records_and_emitted_mutations`: `restore from 86e84dc5cd738882bf50fced389fc7deaa31567f:crates/worth-relational/src/tests/complexity/contracts/merge_budgets.rs`.
+  Restore each root's complete same-SHA parent/descendant fixture and control
+  closure, including its original local medium script and owner units; migrate
+  the source boundary through genuine owned media without reviving the retired
+  runtime-discovery adapter. All original guards remain required.
+
+  The merge execution root's four public semantic assertions remain in
+  `merge_source_copy_identity.rs::source_only_merge_emits_one_new_entity_with_an_independent_identity`.
+  C2 restores its full original cost/contract campaign and fixture closure.
+
 
 B2 schema/history consumer split (coordinator per-claim Landing 2a ruling):
 

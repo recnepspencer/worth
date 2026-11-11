@@ -344,6 +344,3 @@ fn fintech_observability_surfaces_agree_for_hostile_correction_workflow() {
 
     assert_observability_surfaces_agree(&world);
 }
-
-#[path = "persistence/checkpoint_fallback.rs"]
-mod checkpoint_fallback;

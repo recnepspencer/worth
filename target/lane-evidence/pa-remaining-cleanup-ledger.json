@@ -1,0 +1,428 @@
+{
+  "base": "86e84dc5cd738882bf50fced389fc7deaa31567f",
+  "moved": [
+    {
+      "source": "crates/worth-relational/src/tests/durability/contracts/canonical_commit_artifact.rs",
+      "test": "positioned_agreement_uses_original_work_budget_and_preserves_authoritative_digest",
+      "classification": "C2 (Memory)",
+      "phase": "C2",
+      "disposition": [
+        "Large >64KiB payload, two-pass work ceiling, zero residual charged memory, request cancellation/deadline and unchanged original bytes. Exact Arc distinctness and authoritative digest agreement are guards in this measured work campaign."
+      ]
+    },
+    {
+      "source": "crates/worth-relational/src/tests/durability/contracts/rejected_and_parent_closure.rs",
+      "test": "durability_contract_failure_missing_authoritative_parent_closure_is_explicit",
+      "classification": "C4",
+      "phase": "C4",
+      "disposition": [
+        "Constructs RecoveryPlan with only child via PositionedCanonicalCommit::for_test and missing authoritative parent; exact MissingAuthoritativeParentClosure/CanonicalHistoryDrift."
+      ]
+    },
+    {
+      "source": "crates/worth-relational/src/tests/durability/medium/branch_transition_races.rs",
+      "test": "durable_fork_and_source_commit_complete_without_deferral",
+      "classification": "C4 + C2",
+      "phase": "C4",
+      "disposition": [
+        "Real slow publication plus publication_cell_for_test rendezvous forces fork/source-commit lock schedule; exact contiguous commit/transition streams and no deferrals. Preserve gate/contact/control refs; C2 exact deferral work counter."
+      ]
+    },
+    {
+      "source": "crates/worth-relational/src/tests/durability/medium/branch_transition_races.rs",
+      "test": "durable_fork_and_source_archive_complete_in_lock_order",
+      "classification": "C4 + C2",
+      "phase": "C4",
+      "disposition": [
+        "Forced slow publication races fork/source archive and waits deterministic gate; exact stream sequence, no deferrals. Existing private/gated schedule campaign."
+      ]
+    },
+    {
+      "source": "crates/worth-relational/src/tests/durability/medium/branch_transition_races.rs",
+      "test": "durable_fork_waits_for_another_branch_commit",
+      "classification": "C4 + C2",
+      "phase": "C4",
+      "disposition": [
+        "Blocks another branch commit at medium gate while fork waits; afterwards exact follows=2/contiguous streams, no deferrals."
+      ]
+    },
+    {
+      "source": "crates/worth-relational/src/tests/durability/medium/branch_transition_races.rs",
+      "test": "memory_commit_waits_behind_a_transition_without_consuming_its_candidate",
+      "classification": "C4 + C2 (Memory)",
+      "phase": "C4",
+      "disposition": [
+        "pause_publication_for_test on LiveBranchTransitionStep forces Memory reservation schedule; candidate later publishes position2, counter deferrals0. Already Memory, no provider needed for this root."
+      ]
+    },
+    {
+      "source": "crates/worth-relational/src/durability/data/native_checkpoint/component_custody/tests.rs",
+      "test": "native_custody_correction_last_actual_capture_abandonment_releases_shared_root_custody",
+      "classification": "C2 / C2",
+      "phase": "C2",
+      "disposition": [
+        "Two real aliases of unselected capture keep actual original basis alive; dropping last actual capture releases it, no explicit ACK. Exact Weak owner lifecycle.",
+        "Same original captured basis Weak lifetime after lease release, movement and abandonment."
+      ]
+    },
+    {
+      "source": "crates/worth-relational/src/durability/authority/runtime_rebuild/checkpoint_restore_tests.rs",
+      "test": "equal_exact_root_reuses_the_readmitted_partition_substrate",
+      "classification": "C2 / C2",
+      "phase": "C2",
+      "disposition": [
+        "Calls owner restore_branch_root_images/prepare_partitions and pointer-compares readmitted first generation: equal exact Root reuses physical substrate. Actual durable/codec fixture, not public identity parity.",
+        "Exact private first-generation substrate Arc reuse."
+      ]
+    },
+    {
+      "source": "crates/worth-relational/src/durability/authority/runtime_rebuild/checkpoint_restore_tests.rs",
+      "test": "divergent_mirror_partition_rebuilds_cross_partition_adjacency_after_reuse",
+      "classification": "C4 + C2 / C2",
+      "phase": "C4",
+      "disposition": [
+        "Directly increments main-image snapshot_pins[0] to force divergent mirror; private perpartition generation/pointer reuse assertions. Keep mutation and physical reuse oracle together.",
+        "Exact partition generation/relation arena pointer reuse after divergent mirror rebuild."
+      ]
+    },
+    {
+      "source": "crates/worth-relational/src/durability/authority/runtime_rebuild/checkpoint_restore_tests.rs",
+      "test": "equal_image_cannot_bypass_global_contract_readmission",
+      "classification": "C4 / C4",
+      "phase": "C4",
+      "disposition": [
+        "Clears global aspect contracts while exact root/mirror images equal; prepare_partitions must refuse aspect readmission, never bypass due to reuse.",
+        "Privately altered checkpoint contract then exact aspect-readmission CorruptCheckpoint refusal."
+      ]
+    },
+    {
+      "source": "crates/worth-relational/src/durability/log/native_checkpoint_codec/kind_authentication_tests.rs",
+      "test": "forged_cross_region_kind_commitment_is_refused_before_member_reads",
+      "classification": "C4 / C4",
+      "phase": "C4",
+      "disposition": [
+        "Rehashes all copies of forged cross-region kind commitment; owner canonical root refuses StorageContentMismatch before zero member reads. Existing ForgedKindSource is a fault source, not license for a replacement happy publisher.",
+        "Resealed forged kind manifest in actual cold source; runtime StorageContentMismatch and zero member reads."
+      ]
+    },
+    {
+      "source": "crates/worth-relational/src/history/retention/component_cut_tests.rs",
+      "test": "native_custody_correction_cross_lane_acquire_release_has_one_actual_capture_cut",
+      "classification": "C2",
+      "phase": "C2",
+      "disposition": [
+        "Exact capture-cut mutex, lane inventory and original-root custody; public reads perturb custody."
+      ]
+    },
+    {
+      "source": "crates/worth-relational/src/history/retention/component_cut_tests.rs",
+      "test": "native_custody_correction_current_lane_inventory_is_collected_inside_actual_cut",
+      "classification": "C2",
+      "phase": "C2",
+      "disposition": [
+        "Exact capture-cut mutex, lane inventory and original-root custody; public reads perturb custody."
+      ]
+    },
+    {
+      "source": "crates/worth-relational/src/history/commit/envelope_residency_tests.rs",
+      "test": "an_indexed_envelope_remains_cold_until_explicit_readmission_and_loads_once",
+      "classification": "C2",
+      "phase": "C2",
+      "disposition": [
+        "Exact private cell residency/read count/pointer/backing lifetime."
+      ]
+    },
+    {
+      "source": "crates/worth-relational/src/history/commit/envelope_residency_tests.rs",
+      "test": "an_indexed_envelope_storage_failure_is_typed_and_sticky",
+      "classification": "C4",
+      "phase": "C4",
+      "disposition": [
+        "Damaged cold source and exact sticky refusal/read count."
+      ]
+    },
+    {
+      "source": "crates/worth-relational/src/history/commit/envelope_residency_tests.rs",
+      "test": "relinking_other_envelopes_preserves_an_index_even_while_its_body_is_in_flight",
+      "classification": "C2",
+      "phase": "C2",
+      "disposition": [
+        "Exact private cell residency/read count/pointer/backing lifetime."
+      ]
+    },
+    {
+      "source": "crates/worth-relational/src/history/commit/envelope_residency_tests.rs",
+      "test": "settlement_releases_a_journal_flight_but_preserves_memory_history_and_position",
+      "classification": "C2",
+      "phase": "C2",
+      "disposition": [
+        "Exact private cell residency/read count/pointer/backing lifetime."
+      ]
+    },
+    {
+      "source": "crates/worth-relational/src/history/commit/envelope_residency_tests.rs",
+      "test": "positioned_demand_owns_its_result_across_journal_settlement",
+      "classification": "C2",
+      "phase": "C2",
+      "disposition": [
+        "Exact private cell residency/read count/pointer/backing lifetime."
+      ]
+    },
+    {
+      "source": "crates/worth-relational/src/history/commit/envelope_residency/memory_publication_tests.rs",
+      "test": "journal_publication_keeps_journal_placement_without_memory_frame",
+      "classification": "C2",
+      "phase": "C2",
+      "disposition": [
+        "Exact private journal placement, zero payload bytes, same source owner/pointer; exported bytes alone do not prove placement."
+      ]
+    },
+    {
+      "source": "crates/worth-relational/src/commit_strategies/facade_tests/replay_recovery_failures.rs",
+      "test": "replay_commit_reports_strategy_executor_unavailable_when_recovered_runtime_lacks_executor",
+      "classification": "C4",
+      "phase": "C4",
+      "disposition": [
+        "Recovery plan executor registry deliberately removed/replaced with rejecting executor; exact strategy mismatch and unchanged head."
+      ]
+    },
+    {
+      "source": "crates/worth-relational/src/commit_strategies/facade_tests/replay_recovery_failures.rs",
+      "test": "replay_commit_reports_strategy_execution_failure_when_recovered_executor_rejects",
+      "classification": "C4",
+      "phase": "C4",
+      "disposition": [
+        "Recovery plan executor registry deliberately removed/replaced with rejecting executor; exact strategy mismatch and unchanged head."
+      ]
+    },
+    {
+      "source": "crates/worth-relational/src/history/commit/artifact_tests.rs",
+      "test": "canonical_artifact_accounting_excludes_nested_diagnostic_perturbation",
+      "classification": "C2",
+      "phase": "C2",
+      "disposition": [
+        "Exact allocation inventories and nested diagnostics/cache perturbation; preserve payload independence negative twin."
+      ]
+    },
+    {
+      "source": "crates/worth-relational/src/history/commit/artifact_tests.rs",
+      "test": "populated_derived_index_artifacts_only_change_the_optional_cache_lane",
+      "classification": "C2",
+      "phase": "C2",
+      "disposition": [
+        "Exact allocation inventories and nested diagnostics/cache perturbation; preserve payload independence negative twin."
+      ]
+    },
+    {
+      "source": "crates/worth-relational/src/history/commit/artifact_tests/strategy_readmission.rs",
+      "test": "strategy_input_clone_retains_only_its_original_decoded_bytes_grant",
+      "classification": "C2",
+      "phase": "C2",
+      "disposition": [
+        "Exact retained grant, pointer sharing, quote and last-drop refund; not equivalent to public byte read."
+      ]
+    },
+    {
+      "source": "crates/worth-relational/src/history/commit/artifact_tests/strategy_readmission.rs",
+      "test": "strategy_descriptor_clone_retains_only_its_original_decoded_locator_grant",
+      "classification": "C2",
+      "phase": "C2",
+      "disposition": [
+        "Exact retained grant, pointer sharing, quote and last-drop refund; not equivalent to public byte read."
+      ]
+    },
+    {
+      "source": "crates/worth-relational/src/history/commit/artifact_tests/shared_readmission.rs",
+      "test": "shared_readmitted_envelope_clones_keep_the_original_allocation_and_grant_until_last_drop",
+      "classification": "C2",
+      "phase": "C2",
+      "disposition": [
+        "Exact retained grant, pointer sharing, quote and last-drop refund; not equivalent to public byte read."
+      ]
+    },
+    {
+      "source": "crates/worth-relational/src/history/commit/artifact_tests/shared_readmission.rs",
+      "test": "actual_weak_position_retains_only_the_fixed_original_control_bill_until_last_drop",
+      "classification": "C2",
+      "phase": "C2",
+      "disposition": [
+        "Exact retained grant, pointer sharing, quote and last-drop refund; not equivalent to public byte read."
+      ]
+    },
+    {
+      "source": "crates/worth-relational/src/history/commit/artifact_tests/shared_readmission.rs",
+      "test": "embedded_checkpoint_preserves_ignored_unknown_nested_fields_without_retaining_their_heaps",
+      "classification": "C2",
+      "phase": "C2",
+      "disposition": [
+        "Exact retained grant, pointer sharing, quote and last-drop refund; not equivalent to public byte read."
+      ]
+    },
+    {
+      "source": "crates/worth-relational/src/durability/log/native_checkpoint_codec/inspection/tests.rs",
+      "test": "restore_refuses_unknown_fields_before_publishing_any_model_state",
+      "classification": "C4",
+      "phase": "C4",
+      "disposition": [
+        "Mutated fields applied to runtime restore; exact CorruptCheckpoint and unchanged model bytes for every owner."
+      ]
+    },
+    {
+      "source": "crates/worth-relational/src/runtime/state/subsystems/visibility/snapshot_handles/published_registry/original_cleanup/tests.rs",
+      "test": "result_snapshot_cleanup_registry_contention_preserves_exact_cell_and_competing_task",
+      "classification": "C2",
+      "phase": "C2",
+      "disposition": [
+        "Held private registry lock, exact occupied/count/tombstone and original-root Weak survival/reclamation."
+      ]
+    },
+    {
+      "source": "crates/worth-relational/src/storage/residency/cross_region_forgery_tests.rs",
+      "test": "rehashed_cross_region_kind_forgery_is_refused_by_the_canonical_root",
+      "classification": "C4",
+      "phase": "C4",
+      "disposition": [
+        "Resealed cross-region kind forgery through actual cold source/runtime recovery; exact StorageContentMismatch."
+      ]
+    },
+    {
+      "source": "crates/worth-relational/src/runtime/state/subsystems/services/symbol_table/reservations/tests.rs",
+      "test": "checkpoint_recovery_preserves_abandoned_symbol_identity_frontiers",
+      "classification": "C2",
+      "phase": "C2",
+      "disposition": [
+        "Private pending symbol burns identity; actual recovery/private next admission and abandoned text absence. Public write perturbs frontier."
+      ]
+    },
+    {
+      "source": "crates/worth-relational/src/tests/lineage/resolution.rs",
+      "test": "refused_durable_publication_leaves_no_replacement_lineage_behind",
+      "classification": "C4",
+      "phase": "C4",
+      "disposition": [
+        "Actual ProvenNoEffect provider script and exact typed refused replacement leaves graph/head/resolution unchanged."
+      ]
+    },
+    {
+      "source": "crates/worth-relational/src/durability/canonical_commit_artifact/retained_export/skip_tests.rs",
+      "test": "seeking_past_an_acknowledged_index_prefix_never_demands_its_journal_bodies",
+      "classification": "C2",
+      "phase": "C2",
+      "disposition": [
+        "Exact skipped prefix body demand bound/read count1; public export bytes are companion, not equivalent cost proof."
+      ]
+    },
+    {
+      "source": "crates/worth-relational/src/tests/inspection/structural_identity.rs",
+      "test": "structural_identity_recovery_preserves_current_evidence_and_queries",
+      "classification": "C2",
+      "phase": "C2",
+      "disposition": [
+        "Exact privately authored resident-only sidecars: setter directly writes from_unbudgeted_parts into arena.extra outside publication/original authority. Coordinator class2 applies. Restore exact evidence/query/recovery assertions with setter helper; do not invent public fingerprint writer or substitute default empty data."
+      ]
+    },
+    {
+      "source": "crates/worth-relational/src/branch/coordination/managed_fork_cleanup.rs",
+      "test": "managed_fork_refusal_and_success_drop_lookup_outside_native_coordination",
+      "classification": "C4+C2",
+      "phase": "C4",
+      "disposition": [
+        "Provider transition refusal then success, exact lookup-drop under coordination lock and charged backing; actual refusal campaign C4 and private destructor/lock/funding observations C2."
+      ]
+    },
+    {
+      "source": "crates/worth-relational/src/tests/complexity/contracts/commit_budgets/schema_continuity_boundaries.rs",
+      "test": "complexity_budget_schema_transition_classification_is_changed_atom_bounded",
+      "classification": "C2",
+      "phase": "C2",
+      "disposition": [
+        "Exact atom/subtree/descriptor/continuation/replay-layer counters and bounds; companion semantic parity does not prove these counters."
+      ]
+    },
+    {
+      "source": "crates/worth-relational/src/tests/complexity/contracts/commit_budgets/schema_continuity_boundaries.rs",
+      "test": "complexity_budget_subscriber_resume_continuity_is_boundary_local",
+      "classification": "C2",
+      "phase": "C2",
+      "disposition": [
+        "Exact atom/subtree/descriptor/continuation/replay-layer counters and bounds; companion semantic parity does not prove these counters."
+      ]
+    },
+    {
+      "source": "crates/worth-relational/src/tests/complexity/contracts/commit_budgets/schema_continuity_boundaries.rs",
+      "test": "complexity_budget_milestone5_closeout_keeps_schema_cdc_and_recovery_boundary_local",
+      "classification": "C2",
+      "phase": "C2",
+      "disposition": [
+        "Exact atom/subtree/descriptor/continuation/replay-layer counters and bounds; companion semantic parity does not prove these counters."
+      ]
+    },
+    {
+      "source": "crates/worth-relational/src/tests/complexity/contracts/merge_budgets.rs",
+      "test": "complexity_budget_merge_planning_reports_request_shaped_work",
+      "classification": "C2",
+      "phase": "C2",
+      "disposition": [
+        "Exact planning/execution/elapsed/scanned/admitted work counters. Public emitted entities/mutations are companion HAPPY claims; split exact accounting."
+      ]
+    },
+    {
+      "source": "crates/worth-relational/src/tests/complexity/contracts/merge_budgets.rs",
+      "test": "complexity_budget_merge_execution_reports_admitted_records_and_emitted_mutations",
+      "classification": "C2",
+      "phase": "C2",
+      "disposition": [
+        "Exact planning/execution/elapsed/scanned/admitted work counters. Public emitted entities/mutations are companion HAPPY claims; split exact accounting."
+      ],
+      "public_counterpart": "crates/worth-court-relational-certification/tests/worth_court_relational_certification/relational/durable_publication/merge_source_copy_identity.rs::source_only_merge_emits_one_new_entity_with_an_independent_identity"
+    },
+    {
+      "source": "crates/worth-relational/src/tests/domains/fintech/workflows/persistence/checkpoint_fallback.rs",
+      "test": "fintech_recovery_refuses_a_damaged_checkpoint_instead_of_losing_truth",
+      "classification": "C4",
+      "phase": "C4",
+      "disposition": [
+        "Actual filed checkpoint deliberately damaged; exact CorruptCheckpoint without lost truth."
+      ]
+    }
+  ],
+  "emptied": [
+    "crates/worth-relational/src/commit_strategies/facade_tests/replay_recovery_failures.rs",
+    "crates/worth-relational/src/runtime/state/subsystems/visibility/snapshot_handles/published_registry/original_cleanup/tests.rs",
+    "crates/worth-relational/src/tests/complexity/contracts/commit_budgets/schema_continuity_boundaries.rs",
+    "crates/worth-relational/src/tests/complexity/contracts/merge_budgets.rs",
+    "crates/worth-relational/src/tests/domains/fintech/workflows/persistence/checkpoint_fallback.rs",
+    "crates/worth-relational/src/tests/durability/medium/branch_transition_races.rs",
+    "crates/worth-relational/src/tests/durability/medium/slow_publication.rs",
+    "crates/worth-relational/src/history/commit/artifact_tests/strategy_readmission.rs",
+    "crates/worth-relational/src/history/commit/artifact_tests/shared_readmission.rs",
+    "crates/worth-relational/src/storage/residency/cross_region_forgery_tests.rs",
+    "crates/worth-relational/src/durability/canonical_commit_artifact/retained_export/skip_tests.rs",
+    "crates/worth-relational/src/branch/coordination/managed_fork_cleanup.rs"
+  ],
+  "mount_owners": [
+    "crates/worth-relational/src/commit_strategies/facade_tests/mod.rs",
+    "crates/worth-relational/src/runtime/state/subsystems/visibility/snapshot_handles/published_registry/original_cleanup.rs",
+    "crates/worth-relational/src/tests/complexity/contracts/commit_budgets/mod.rs",
+    "crates/worth-relational/src/tests/complexity/contracts/mod.rs",
+    "crates/worth-relational/src/tests/domains/fintech/workflows/persistence.rs",
+    "crates/worth-relational/src/tests/durability/medium/mod.rs",
+    "crates/worth-relational/src/tests/durability/medium/mod.rs",
+    "crates/worth-relational/src/history/commit/artifact_tests.rs",
+    "crates/worth-relational/src/history/commit/artifact_tests.rs",
+    "crates/worth-relational/src/storage/residency/tests.rs",
+    "crates/worth-relational/src/durability/canonical_commit_artifact/retained_export.rs",
+    "crates/worth-relational/src/branch/coordination.rs"
+  ],
+  "mixed_c2": [
+    {
+      "source": "crates/worth-relational/src/history/commit/envelope_residency/memory_publication_tests.rs",
+      "test": "memory_frame_preserves_original_payload_and_scalar_tuple_observations",
+      "claim": "OldBacking/OldState/OldCell and both exact size assertions; functional Memory payload assertions remain"
+    }
+  ],
+  "orphan_controls": [
+    "branch/transition/publication_pause_for_test.rs",
+    "tests/support/durable_medium/scripted_publication.rs"
+  ]
+}

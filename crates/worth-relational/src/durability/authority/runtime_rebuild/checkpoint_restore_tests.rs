@@ -1,35 +1,8 @@
 use super::*;
-use crate::durability::data::RecoveryFailureClass;
 use crate::durability::data::RecoveryVerificationMode as RecoveryMode;
-use crate::facade::mvcc::WorkerIntentBatch;
-use crate::facade::transactions::{BulkEntityCreateIntent, CreateIntent, MutationIntent};
 use crate::history::data::BranchId;
-use crate::identity::data::KindId;
 use crate::identity::data::PartitionId;
 use crate::tests::support::*;
-
-#[test]
-fn equal_exact_root_reuses_the_readmitted_partition_substrate() {
-    let host_request = crate::test_execution_policy::serial_request();
-    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
-
-    let source = durable_runtime_with_test_schema();
-    let committed = create_entity_outcome(execution, &source, "reuse-root-mirror");
-    release_test_commit_snapshot(&source, &committed);
-    let checkpoint = crate::tests::support::checkpoint_durably(execution, &source).unwrap();
-    assert_eq!(checkpoint.branch_roots.len(), 1);
-    assert_eq!(
-        checkpoint.branch_roots[0].partition_images,
-        checkpoint.partition_images
-    );
-
-    let mut restored = durable_runtime_with_test_schema();
-    let mut work = crate::durability::data::CheckpointRestoreWork::default();
-    let roots = restore_branch_root_images(&mut restored, &checkpoint, &mut work, None).unwrap();
-    let mirror = prepare_partitions(&mut restored, &checkpoint, &roots, &mut work).unwrap();
-    let root = roots.partitions.get(&committed.commit.commit_id).unwrap();
-    assert!(shares_first_generation(&mirror, root));
-}
 
 #[test]
 fn native_restore_work_counts_revised_history_sibling_roots_and_partition_images() {
@@ -232,70 +205,6 @@ fn divergent_sibling_is_not_reused_as_the_storage_mirror() {
 }
 
 #[test]
-fn divergent_mirror_partition_rebuilds_cross_partition_adjacency_after_reuse() {
-    let host_request = crate::test_execution_policy::serial_request();
-    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
-
-    let source = durable_runtime_with_test_schema();
-    let main_entity = create_entity(execution, &source, "partial-mirror-main");
-    let mut transaction = test_owner_begin_transaction_for_main(&source);
-    transaction
-        .push_batch(
-            WorkerIntentBatch::new("partial-mirror-secondary").push(MutationIntent::Create(
-                CreateIntent::BulkEntities(BulkEntityCreateIntent {
-                    partition_id: PartitionId(41),
-                    kind_id: KindId(1),
-                    client_keys: vec![crate::symbols::data::ClientKey::raw("secondary")],
-                    field_patches: vec![single_string_aspect_field_patch(
-                        aspect_key("name"),
-                        field_key("name"),
-                        "secondary",
-                    )],
-                }),
-            )),
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
-        .unwrap();
-    let committed = transaction.commit(execution, &source).unwrap();
-    let secondary = changed_entities(&committed)[0];
-    release_test_commit_snapshot(&source, &committed);
-    create_relation_in_partition(
-        execution,
-        &source,
-        main_entity,
-        secondary,
-        "cross-partition",
-        PartitionId(31),
-    );
-    let mut checkpoint = crate::tests::support::checkpoint_durably(execution, &source).unwrap();
-    let main_image = checkpoint
-        .partition_images
-        .iter_mut()
-        .find(|image| image.partition_id == PartitionId::main())
-        .unwrap();
-    main_image.entity_arena.snapshot_pins[0] += 1;
-
-    let mut restored = durable_runtime_with_test_schema();
-    let mut work = crate::durability::data::CheckpointRestoreWork::default();
-    let roots = restore_branch_root_images(&mut restored, &checkpoint, &mut work, None).unwrap();
-    let mirror = prepare_partitions(&mut restored, &checkpoint, &roots, &mut work).unwrap();
-    let root_commit = checkpoint.branch_roots[0].commit_id;
-    let root = roots.partitions.get(&root_commit).unwrap();
-    assert!(!shares_partition_generation(
-        &mirror,
-        root,
-        PartitionId::main()
-    ));
-    assert!(shares_partition_generation(&mirror, root, PartitionId(41)));
-    let mirror_relation = mirror.get(&PartitionId(31)).unwrap();
-    let root_relation = root.get(&PartitionId(31)).unwrap();
-    assert!(std::ptr::eq(
-        mirror_relation.relation_arena.generations.get(0).unwrap(),
-        root_relation.relation_arena.generations.get(0).unwrap(),
-    ));
-}
-
-#[test]
 fn recovered_main_and_sibling_catalogs_reuse_exact_canonical_payloads() {
     let host_request = crate::test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
@@ -342,28 +251,6 @@ fn recovered_main_and_sibling_catalogs_reuse_exact_canonical_payloads() {
                 .expect("resident fixture has a canonical digest")
         );
     }
-}
-
-#[test]
-fn equal_image_cannot_bypass_global_contract_readmission() {
-    let host_request = crate::test_execution_policy::serial_request();
-    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
-
-    let source = durable_runtime_with_test_schema();
-    create_entity(execution, &source, "reuse-contract-corruption");
-    let mut checkpoint = crate::tests::support::checkpoint_durably(execution, &source).unwrap();
-    assert_eq!(
-        checkpoint.branch_roots[0].partition_images,
-        checkpoint.partition_images
-    );
-    checkpoint.aspect_contracts.clear();
-
-    let mut restored = durable_runtime_with_test_schema();
-    let mut work = crate::durability::data::CheckpointRestoreWork::default();
-    let roots = restore_branch_root_images(&mut restored, &checkpoint, &mut work, None).unwrap();
-    let error = prepare_partitions(&mut restored, &checkpoint, &roots, &mut work).unwrap_err();
-    assert_eq!(error.class, RecoveryFailureClass::CorruptCheckpoint);
-    assert!(error.detail.contains("aspect readmission denied"));
 }
 
 fn shares_first_generation(

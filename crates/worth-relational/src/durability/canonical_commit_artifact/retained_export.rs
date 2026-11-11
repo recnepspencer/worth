@@ -120,7 +120,3 @@ impl std::fmt::Debug for RelationalCanonicalCommitArtifacts<'_, '_> {
             .finish_non_exhaustive()
     }
 }
-
-#[cfg(test)]
-#[path = "retained_export/skip_tests.rs"]
-mod skip_tests;

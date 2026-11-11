@@ -169,3 +169,26 @@ never merge integration until coordinator supplies it. New executable schema
 contract journeys still need the real Home final-binding completion caller;
 Native exposes complete_home_program_transition but Store/Query scoped rg finds
 no caller in this checkout. Do not fabricate that proof or substitute a refusal.
+
+Active next slice (after clean86e84dc5cd): approved42-root C2/C4 cleanup applied.
+Plan reviews1/2 REJECT fixed public four-assertion merge identity preservation and
+exact batch-main-anchor input; plan3 APPROVE. Source additions:
+merge_source_copy_identity.rs ordinary public counterpart, existing court mount;
+42exact restore refs at86e84dc5cd added to Moved courts; LifecycleOrderControl
+whole module/field/initializer/calls deleted. Five empty leaves plus seven
+now-orphan fixture leaves/mounts deleted (ledger pa-remaining-cleanup-ledger.json),
+baseline shrinks11 rows. Live component_cut_tests.rs helper remains because
+checkpoint_components/complete/tests.rs still calls it; do not delete it.
+
+First coherent cleanup validation now running via exec session4625:
+pa-cleanup-format.log PASS; pa-cleanup-clippy.log running on Native+court,
+all-targets. Read its full diagnostics and fix all orphans together before the
+single correction recheck. No public test build/run for this slice yet. Planned
+single case list pa-remaining-cleanup-public-cases.json. No removed campaign body
+is to run. Then phase static gates and fresh final CLI review before commit.
+Global continuation so far:0check,5Clippy (5th running),6focused builds,5selected
+runs. Cleanup's own budget starts0build/0run/1Clippy running. Disk last27.49GB;
+check before build, no cleanup has been done and no extra target dir created.
+No integration SHA supplied; no merge/push or native subagents.
+Cleanup continuation 2026-11-11: complete first33-warning family removed the orphan controls and exact old-layout subclaim (C2), then fixed the two remaining implied import groups from corrected Clippy. Focused public1/0/0 and surviving Memory owner1/0/0 pass. Cleanup budget exception: two separately owned binary builds plus three Clippy inventories/final verification exceed four blocking rounds; the last cached pass verifies the final complete import correction, with no repeated green test. Caps36pass/function16advisories0errors; advisory bodies inspected as unchanged existing fixture/scenario orchestration except the shortened Memory tuple case. No new implementation advisory. Final boundary/context and independent CLI review precede commit. Overall continuation0check,7Clippy,8focused builds,7selected runs (including inherited earlier continuation totals). No integration SHA, no merge/push/native subagents/ignored/scale/oracle/scenario.
+Cleanup final review review-cleanup-final-verdict.md APPROVE, no findings. Final Native/court Clippy exit0 with only2queued adapter warnings, context exit0, boundary unchanged12 (none cleanup paths), caps36pass. Both focused cases1/0/0 each; removed campaigns unrun. Ready reviewed cleanup commit. Next exact owner plan pa-owner-consumer-plan.md and prepared apply_pa_owner_consumers.py (NOT yet applied) remove only the adapter from genuine private codec/root producers, retaining all assertions. No integration SHA.
