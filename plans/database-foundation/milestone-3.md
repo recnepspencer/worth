@@ -173,6 +173,29 @@ Cleanup courts moved out of the tree are listed under their C item, with `restor
 - **C1:** the recovered Signal-only and mixed original continuation after an unclean reopen (`recovered_owners` court). It never landed: D18 refuses that reopen (proven by `owner_evidence/unclean_signal.rs`). Preserved without activation; restore the source from `a3e8d0fd340aedddaa6398d3ec874d198692799f:plans/database-foundation/moved-courts/c1/recovered_owners.rs.txt` into its original court path when C1 supports that continuation.
 - **C1:** `process::host::durable_retry::fate_reopening::cancellation_after_native_effect_retains_key_across_kill_and_reopen` and its retained-writer/reader helpers. D18 (`d27064d826`) deliberately refuses this unresolved owner-effect reopen before service; the court expects service and original continuation. Restore the named court and helpers from `f15ff306ecec9ca4a67be1091269d8d10898ab81:workspaces/worth-query/crates/worth-query-court-query-decl-host/tests/worth_query_court_query_decl_host/process/host/durable_retry/fate_reopening.rs`. The independent proven-no-effect quiescent-reopen court remains active.
 
+- **C1: Native effect before World disposition (D18).** The following complete
+  `process::application::world_durable_release` originals require unclean
+  recovery before their later graceful assertions. D18 refuses that first open;
+  no kill is substituted by close and no successful recovery is claimed here.
+  Restore each complete original and its unchanged prefix-capable child at C1:
+  - `killed_native_effect_reopens_original_world_custody_releases_and_reopens_again`:
+    restore `22e638d638:workspaces/worth-store/crates/worth-store-court-application/tests/worth_store_court_application/process/application/world_durable_release/mod.rs`.
+  - `a_native_fork_from_a_released_predecessor_reopens_before_another_checkpoint`:
+    restore `22e638d638:workspaces/worth-store/crates/worth-store-court-application/tests/worth_store_court_application/process/application/world_durable_release/native_transitions.rs`.
+  - `killed_native_after_two_publications_recovers_exact_unpublished_predecessor`:
+    restore `22e638d638:workspaces/worth-store/crates/worth-store-court-application/tests/worth_store_court_application/process/application/world_durable_release/published_predecessor.rs`.
+  - `released_native_effect_preserves_history_and_allows_a_fresh_edit_after_graceful_reopen`:
+    restore `22e638d638:workspaces/worth-store/crates/worth-store-court-application/tests/worth_store_court_application/process/application/world_durable_release/graceful_source.rs`.
+  Their Native receipt/source, unchanged predecessor, subsequent fork/tail and
+  checkpoint, incarnation fencing and released-original assertions all remain
+  obligations in those preserved originals. Live durable release currently
+  refuses `ReopenRequired`, and D18 refuses the unclean Native-effect receiver;
+  no no-effect court claims to prove that Native receipt continuation.
+  The active `unclean` and `unclean/quiescent` controls retain typed before-service
+  refusal, the prefix-capable child, quiescent kill, graceful close and a fresh
+  publication. `world_original_state` separately protects acknowledged published
+  state and no-effect released state across graceful reopen and further editing.
+
 Courts held out under D13 are listed the same way, under the H item whose Home capability they need. The second master merge (`171d380829`) brought in Query cold journeys that reach `WorthQueryInterimCheckpointRestore` from outside the frozen caller list, directly or through a shared reopen fixture. D13's list only shrinks, and Directory Home refuses their producers until the phases below land, so each court is deleted from the tree and returns through the Directory Home open, never through the interim door. The assertions move intact.
 
 - **Phase 6 / H6** (also needs H5 producer admission). All `restore from 171d380829:`.
