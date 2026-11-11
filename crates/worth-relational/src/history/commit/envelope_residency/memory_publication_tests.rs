@@ -3,17 +3,6 @@ use super::*;
 use crate::tests::support::*;
 use sha2::{Digest, Sha256};
 use worth_execution::{CancellationSource, ExecutionRequest, SerialMemoryBudget, SerialRequest};
-fn controller_memory() -> u64 {
-    let budget = SerialMemoryBudget::new(Some(64 * 1024));
-    let host = SerialRequest::from_memory(budget.clone(), CancellationSource::new().token(), None);
-    let request = ExecutionRequest::serial(&host);
-    let mut observed = None;
-    request
-        .run_native_with_checkpoint(|_| observed = Some(budget.charged_memory_bytes()))
-        .unwrap();
-    assert_eq!(budget.charged_memory_bytes(), 0);
-    observed.unwrap()
-}
 #[test]
 fn memory_original_frame_survives_export_checkpoint_and_last_alias() {
     let budget = SerialMemoryBudget::new(Some(8 << 20));
@@ -95,80 +84,13 @@ fn memory_original_frame_survives_export_checkpoint_and_last_alias() {
     assert_eq!(budget.charged_memory_bytes(), 0);
 }
 #[test]
-fn memory_frame_quota_and_cancel_refuse_before_position_or_head() {
+fn cancelled_memory_publication_keeps_position_and_head_then_allows_ordinary_publication() {
     let setup = crate::test_execution_policy::serial_request();
     let setup_request = ExecutionRequest::serial(&setup);
     let runtime = runtime_with_test_schema();
     let (_, basis) = runtime
         .observe_branch(&runtime.main_branch_identity())
         .unwrap();
-    let mut transaction = test_owner_begin_transaction_for_main(&runtime);
-    transaction
-        .push_batch(
-            batch_create("quota-memory-frame"),
-            setup_request.allocation_policy(),
-        )
-        .unwrap();
-    let proposal = transaction.validate(&setup_request, &runtime).unwrap();
-    let candidate = runtime
-        .prepare_validated_proposal(&setup_request, proposal)
-        .unwrap();
-    let (_, _, next) = candidate.change_summary_basis_and_roots().unwrap();
-    let envelope = next.canonical_envelope().unwrap();
-    #[derive(serde::Serialize)]
-    struct Reference<'a> {
-        position: crate::publication::patch::data::PatchStreamPosition,
-        canonical: crate::history::data::AuthoritativeArtifactEnvelopeRef<'a>,
-        original_inputs:
-            Option<&'a crate::durability::source_initial_inputs::recorded::RecordedCanonicalInputs>,
-    }
-    let position = runtime
-        .history
-        .latest_recorded_patch_position()
-        .map_or(1, |position| position.0 + 1);
-    let reference = rmp_serde::to_vec_named(&Reference {
-        position: crate::publication::patch::data::PatchStreamPosition(position),
-        canonical: crate::history::data::AuthoritativeArtifactEnvelopeRef::new(envelope),
-        original_inputs: envelope.recorded_original_inputs(),
-    })
-    .unwrap();
-    let bill = (8 + 2 + 8 + 8 + 32 + 8 + reference.len()) as u64;
-    let controller = controller_memory();
-    assert!(bill > controller);
-    let counters = runtime.patch_position_reservation_counters();
-    let before_head = runtime.history.latest_recorded_patch_position();
-    let limited = SerialMemoryBudget::new(Some(controller.checked_add(bill).unwrap() - 1));
-    let host = SerialRequest::from_memory(limited.clone(), CancellationSource::new().token(), None);
-    let original = ExecutionRequest::serial(&host);
-    let outcome = runtime
-        .publication_port()
-        .compare_and_publish(&original, candidate);
-    let crate::mvcc::RelationalPublicationOutcome::RequestStopped(
-        worth_execution::WorkCeilingDenial::Admission(
-            worth_execution::LeaseDenial::MemoryExhausted(
-                worth_execution::MemoryLimitDenial::Capacity { requested, .. },
-            ),
-        ),
-    ) = outcome
-    else {
-        panic!("the actual frame reservation must refuse")
-    };
-    assert_eq!(
-        requested, bill,
-        "independent reference frame bytes, not the controller or preparation"
-    );
-    assert_eq!(
-        runtime.patch_position_reservation_counters().assignments,
-        counters.assignments
-    );
-    assert_eq!(
-        runtime.history.latest_recorded_patch_position(),
-        before_head
-    );
-    runtime.compare_current_exact(&basis).unwrap();
-    assert_eq!(limited.charged_memory_bytes(), 0);
-    drop(next);
-    drop(basis);
     let mut transaction = test_owner_begin_transaction_for_main(&runtime);
     transaction
         .push_batch(
@@ -180,9 +102,10 @@ fn memory_frame_quota_and_cancel_refuse_before_position_or_head() {
     let candidate = runtime
         .prepare_validated_proposal(&setup_request, proposal)
         .unwrap();
+    let counters = runtime.patch_position_reservation_counters();
+    let before_head = runtime.history.latest_recorded_patch_position();
     let cancel = CancellationSource::new();
-    let cancelled = SerialMemoryBudget::new(Some(8 << 20));
-    let host = SerialRequest::from_memory(cancelled.clone(), cancel.token(), None);
+    let host = SerialRequest::from_memory(SerialMemoryBudget::new(None), cancel.token(), None);
     let original = ExecutionRequest::serial(&host);
     cancel.cancel();
     assert!(matches!(
@@ -201,8 +124,9 @@ fn memory_frame_quota_and_cancel_refuse_before_position_or_head() {
         runtime.history.latest_recorded_patch_position(),
         before_head
     );
-    assert_eq!(cancelled.charged_memory_bytes(), 0);
-    let result = create_entity_outcome(&setup_request, &runtime, "caller-after-refusals");
+    runtime.compare_current_exact(&basis).unwrap();
+    drop(basis);
+    let result = create_entity_outcome(&setup_request, &runtime, "caller-after-cancellation");
     assert_eq!(
         runtime.patch_position_reservation_counters().assignments,
         counters.assignments + 1

@@ -107,6 +107,11 @@ impl super::owner::IndexMaintenanceOwner<'_> {
                     .ok_or(DerivedIndexMaintenanceDenialKind::WorkBudgetExceeded)?;
                 work.prepare(initialized as u64 + 1, backing as u64)?;
                 reused.push(generation.as_ref().clone());
+                if let Some(basis) = &mut basis {
+                    basis.replace_admitted(generation, &mut |units, bytes| {
+                        work.prepare(units, bytes)
+                    })?;
+                }
                 work.note_reused_generations(1);
                 continue;
             }
@@ -124,6 +129,9 @@ impl super::owner::IndexMaintenanceOwner<'_> {
                     (seed.source_branch_id.0.len() + seed.applicability.branch_id.0.len()) as u64,
                 )?;
                 reused.push(seed.as_ref().clone());
+                if let Some(basis) = &mut basis {
+                    basis.replace_admitted(seed, &mut |units, bytes| work.prepare(units, bytes))?;
+                }
                 work.note_seeded_generations(1);
                 continue;
             }

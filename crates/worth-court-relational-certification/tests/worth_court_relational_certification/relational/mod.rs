@@ -1,5 +1,4 @@
 mod authored_retirement;
-mod cold_index_refresh;
 pub(crate) mod durable_publication;
 #[path = "leased_preparation/mod.rs"]
 pub(crate) mod leased_preparation;

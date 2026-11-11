@@ -137,10 +137,10 @@ pub mod identity_authority {
     pub use crate::identity_authority::*;
 }
 
-#[path = "facade/inspection.rs"]
-pub mod inspection;
 #[path = "facade/indexes.rs"]
 pub mod indexes;
+#[path = "facade/inspection.rs"]
+pub mod inspection;
 
 pub mod lineage {
     pub use crate::lineage::access::{RelationalLineageDiscoveryDenial, RelationalLineageNodeRead};

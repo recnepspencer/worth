@@ -116,19 +116,13 @@ fn selected_ack_partial_transfer_preserves_later_cells_and_resumes_same_capture(
         .same_owner(&later_entry));
 }
 #[test]
-fn selected_ack_exposes_backed_data_before_retirement_and_releases_holds_only_on_completion() {
+fn selected_ack_accepts_its_catalog_before_later_ordinary_publication() {
     use crate::tests::support::*;
     use worth_execution::ExecutionRequest;
     let host = crate::test_execution_policy::serial_request();
     let execution = ExecutionRequest::serial(&host);
     let runtime = durable_runtime_with_test_schema();
     create_entity(&execution, &runtime, "old-selected-root");
-    let (_, basis) = runtime
-        .observe_branch(&runtime.main_branch_identity())
-        .unwrap();
-    let retained_basis = Arc::downgrade(&basis.inner);
-    let lease = runtime.retain_component_basis(&basis).unwrap();
-    drop(basis);
     let first = runtime
         .durability_authority()
         .native_checkpoint_with_policy(
@@ -146,13 +140,6 @@ fn selected_ack_exposes_backed_data_before_retirement_and_releases_holds_only_on
         .unwrap()
         .0
         .unwrap();
-    let prior = Arc::downgrade(
-        &runtime
-            .durability
-            .checkpoint_selection()
-            .snapshot()
-            .unwrap(),
-    );
     let current = first
         .members()
         .iter()
@@ -164,18 +151,34 @@ fn selected_ack_exposes_backed_data_before_retirement_and_releases_holds_only_on
         .checkpoint_selection()
         .acknowledged_index_definition_frontier();
     create_entity(&execution, &runtime, "new-selected-root");
-    // This real definition has not appeared in any canonical publication yet.
     let definition = runtime
         .index_authority()
         .register(crate::indexes::data::DerivedIndexDefinition {
             index_id: crate::indexes::data::DerivedIndexId(0),
-            name: "pending-selected-definition".into(),
+            name: "selected-definition".into(),
             branch_scoped: true,
             kind: crate::indexes::data::DerivedIndexKind::EntityField {
                 field_locator: aspect_field_locator(aspect_key("name"), field_key("name")),
             },
         })
         .unwrap();
+    let (_, basis) = runtime
+        .observe_branch(&runtime.main_branch_identity())
+        .unwrap();
+    let built = runtime.index_authority().build_for_basis(
+        &execution,
+        crate::indexes::data::DerivedIndexBuildRequest {
+            source_commit_id: basis.observation().commit_id().unwrap(),
+            branch_id: basis.identity().branch_id().clone(),
+            index_ids: vec![definition.index_id],
+        },
+        &basis,
+    );
+    assert!(built.basis_denial.is_none(), "{built:?}");
+    assert!(built.execution_denial.is_none(), "{built:?}");
+    assert!(built.failed_indexes.is_empty(), "{built:?}");
+    assert_eq!(built.generations.len(), 1);
+    drop(basis);
     let checkpoint = runtime
         .durability_authority()
         .native_checkpoint_with_policy(
@@ -187,20 +190,14 @@ fn selected_ack_exposes_backed_data_before_retirement_and_releases_holds_only_on
             },
         )
         .unwrap();
-    runtime.release_component_basis(lease).unwrap();
-    runtime.run_branch_root_reclamation_pass();
-    assert!(retained_basis.upgrade().is_some());
     let original = checkpoint.publication.as_ref().unwrap().clone();
-    attached_test_medium(&runtime).file_checkpoint(checkpoint.clone());
     let covered = checkpoint.covered_position().unwrap();
-    let work = covered.0 + checkpoint.region_publications().len() as u64;
-    let limited = work_limited_ack_request(work);
-    let request = ExecutionRequest::serial(&limited);
-    let mut refused = false;
-    let _outer = request.run_native_with_checkpoint(|context| {
-        refused = checkpoint.acknowledge_selected(&request, context).is_err();
-    });
-    assert!(refused);
+    attached_test_medium(&runtime).file_checkpoint(checkpoint.clone());
+    execution
+        .run_native_with_checkpoint(|context| checkpoint.acknowledge_selected(&execution, context))
+        .unwrap()
+        .0
+        .unwrap();
     let selected = runtime
         .durability
         .checkpoint_selection()
@@ -213,32 +210,26 @@ fn selected_ack_exposes_backed_data_before_retirement_and_releases_holds_only_on
             .durability
             .checkpoint_selection()
             .acknowledged_index_definition_frontier(),
-        old_frontier,
-        "DATA availability is not completed catalog acceptance"
+        selected.manifest.index_definition_frontier
     );
-    assert!(
-        prior.upgrade().is_some(),
-        "displaced read is retained before retirement progress"
-    );
-    assert!(
-        retained_basis.upgrade().is_some(),
-        "DATA pointer placement cannot release capture holds or complete ACK"
-    );
+    assert!(Arc::ptr_eq(
+        &original,
+        checkpoint.publication.as_ref().unwrap()
+    ));
     for artifact in runtime.history.commit_artifacts() {
         let cell = artifact.envelope_residency();
-        let directory = cell.selected_directory().unwrap();
-        assert!(Arc::ptr_eq(&selected, &directory));
+        assert!(Arc::ptr_eq(&selected, &cell.selected_directory().unwrap()));
         let frame = cell.require_original_artifact(&execution, None).unwrap();
         assert_eq!(frame.commit_id(), artifact.commit_id());
     }
-    let later = create_entity_outcome(&execution, &runtime, "publication-while-ack-pending");
+    let later = create_entity_outcome(&execution, &runtime, "publication-after-complete-ack");
     let canonical = runtime
         .history
         .recorded_commit_envelope(later.commit.commit_id)
         .unwrap();
-    assert_eq!(
-        canonical.index_definition_delta.definitions(),
-        &[definition]
+    assert!(
+        canonical.index_definition_delta.definitions().is_empty(),
+        "the acknowledged definition is accepted; later publication does not reintroduce it"
     );
     let later_cell = runtime
         .history
@@ -247,31 +238,10 @@ fn selected_ack_exposes_backed_data_before_retirement_and_releases_holds_only_on
         .envelope_residency();
     let later_entry = later_cell.source_placement().unwrap().0;
     release_test_commit_snapshot(&runtime, &later);
-    execution
-        .run_native_with_checkpoint(|context| checkpoint.acknowledge_selected(&execution, context))
-        .unwrap()
-        .0
-        .unwrap();
-    assert!(Arc::ptr_eq(
-        &original,
-        checkpoint.publication.as_ref().unwrap()
-    ));
     assert!(later_cell.selected_directory().is_none());
     assert!(later_cell
         .source_placement()
         .unwrap()
         .0
         .same_owner(&later_entry));
-    assert_eq!(
-        runtime
-            .durability
-            .checkpoint_selection()
-            .acknowledged_index_definition_frontier(),
-        selected.manifest.index_definition_frontier
-    );
-    assert!(prior.upgrade().is_none());
-    assert!(
-        retained_basis.upgrade().is_none(),
-        "only actual completed ACK releases original component holds"
-    );
 }

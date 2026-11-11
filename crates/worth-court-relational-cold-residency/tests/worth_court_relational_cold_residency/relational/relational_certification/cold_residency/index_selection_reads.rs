@@ -65,7 +65,11 @@ fn cold_checkpoint_preserves_carried_index_selection_and_reads_postings_without_
     let execution = &worth_execution::ExecutionRequest::serial(&host);
     let fixture = IndexRecipe::carried(execution).reopen(execution);
     let carried = fixture.carried.as_ref().unwrap();
-    assert_selected(execution, &fixture.runtime, &[&*fixture.generation, &**carried]);
+    assert_selected(
+        execution,
+        &fixture.runtime,
+        &[&*fixture.generation, &**carried],
+    );
     let (_, basis) = fixture
         .runtime
         .observe_branch(&fixture.runtime.main_branch_identity())

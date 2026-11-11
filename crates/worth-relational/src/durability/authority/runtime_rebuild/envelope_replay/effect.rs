@@ -89,6 +89,12 @@ pub(super) fn replay_envelope_effect(
         }
         return Ok(());
     }
+    super::super::index_catalog::reconstruct_predecessor(
+        execution,
+        restored,
+        &envelope.branch_context,
+        &catalog,
+    )?;
     if envelope.merge_parent_branches.is_empty() {
         replay_ordinary_commit(
             execution,

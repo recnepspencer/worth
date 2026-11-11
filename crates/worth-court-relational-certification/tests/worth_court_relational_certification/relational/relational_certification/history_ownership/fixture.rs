@@ -16,7 +16,7 @@ pub(super) use worth_relational::facade::{
     mvcc::{BranchBoundRelationalTransaction, RelationalTransactionIntent},
     runtime::{RelationalRuntime, RelationalRuntimeApi},
     schema::*,
-    storage::{RelationalStorageSubject, RelationalStorageUnavailableCause as Cause},
+    storage::RelationalStorageUnavailableCause as Cause,
     symbols::ClientKey,
     transactions::*,
 };
@@ -248,7 +248,7 @@ pub(super) fn graph(execution: &ExecutionRequest<'_, '_>) -> Graph {
     create_relation(execution, &producer, model, direct, "owns");
     create_relation(execution, &producer, direct, nested, "child");
     let (runtime, source) = reopen(execution, &producer, registry());
-    assert_eq!(source.reads.load(Ordering::Relaxed), 0);
+    assert_eq!(source.region_read_count(), 0);
     Graph {
         runtime,
         source,

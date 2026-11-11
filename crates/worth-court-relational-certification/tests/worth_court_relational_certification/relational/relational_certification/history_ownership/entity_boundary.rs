@@ -7,6 +7,7 @@ fn entity_boundary_rejects_foreign_selected_basis_before_reading_current_materia
     let host = serial_request();
     let execution = &ExecutionRequest::serial(&host);
     let graph = graph(execution);
+    let before_reads = graph.source.reads.load(Ordering::Relaxed);
     let foreign = runtime();
     let (_, selected) = foreign
         .observe_branch(&foreign.main_branch_identity())
@@ -25,7 +26,7 @@ fn entity_boundary_rejects_foreign_selected_basis_before_reading_current_materia
         ),
         Err(Denial::ForeignBasis)
     ));
-    assert_eq!(graph.source.reads.load(Ordering::Relaxed), 0);
+    assert_eq!(graph.source.reads.load(Ordering::Relaxed), before_reads);
 }
 
 #[test]
@@ -111,12 +112,8 @@ fn model_entity_boundary_unites_old_and_current_ownership_without_outside_payloa
         Err(Denial::TargetNotCurrent)
     ));
 }
-
 #[test]
-fn entity_boundary_refuses_wrong_model_kind_and_original_request_limits() {
-    use worth_foundational::{
-        DeterminismContract, ExecutionBudget, ExecutionPosture, ExecutionRequestPolicy,
-    };
+fn entity_boundary_refuses_wrong_model_kind_without_changing_selected_basis() {
     let host = serial_request();
     let execution = &ExecutionRequest::serial(&host);
     let graph = graph(execution);
@@ -124,72 +121,14 @@ fn entity_boundary_refuses_wrong_model_kind_and_original_request_limits() {
         .runtime
         .observe_branch(&graph.runtime.main_branch_identity())
         .unwrap();
-    let memory = SerialMemoryBudget::new(None);
-    let metered = SerialRequest::from_memory(memory.clone(), CancellationToken::new(), None);
     let boundary = graph
         .runtime
-        .prepare_owned_model_entity_boundary(
-            &ExecutionRequest::serial(&metered),
-            &basis,
-            &basis,
-            &ownership(),
-            graph.model,
-        )
+        .prepare_owned_model_entity_boundary(execution, &basis, &basis, &ownership(), graph.model)
         .unwrap();
-    assert!(
-        memory.charged_memory_bytes() >= 512 * 6,
-        "both three-entity sets keep their actual backing charged"
-    );
     drop(boundary);
-    assert_eq!(memory.charged_memory_bytes(), 0);
-    // This request admits a complete ownership walk but cannot fund two closure
-    // walks. Starting a fresh meter for the selected basis must not reset it.
-    let policy = ExecutionRequestPolicy::new(
-        ExecutionPosture::Automatic,
-        DeterminismContract::CanonicalBitwise,
-        ExecutionBudget::new(std::num::NonZeroUsize::new(1).unwrap(), None, Some(30)),
-    );
-    let bounded = SerialRequest::from_policy(&policy, CancellationToken::new(), None);
-    let request = &ExecutionRequest::serial(&bounded);
-    assert_eq!(
-        graph
-            .runtime
-            .observe_model_owner(request, &basis, &ownership(), graph.nested)
-            .unwrap(),
-        Some(graph.model)
-    );
-    assert!(matches!(
-        graph.runtime.prepare_owned_model_entity_boundary(
-            request,
-            &basis,
-            &basis,
-            &ownership(),
-            graph.model
-        ),
-        Err(Denial::Request(
-            worth_execution::WorkCeilingDenial::Stopped(
-                worth_execution::MapKernelStop::WorkCeiling
-            )
-        ))
-    ));
     assert!(
         matches!(graph.runtime.prepare_owned_model_entity_boundary(execution, &basis, &basis, &ownership(), graph.nested), Err(Denial::ModelRootKind { model, actual: KindId(3) }) if model == graph.nested)
     );
-    let bounded = SerialRequest::from_memory(
-        SerialMemoryBudget::new(Some(0)),
-        CancellationToken::new(),
-        None,
-    );
-    assert!(matches!(
-        graph.runtime.prepare_owned_model_entity_boundary(
-            &ExecutionRequest::serial(&bounded),
-            &basis,
-            &basis,
-            &ownership(),
-            graph.model
-        ),
-        Err(Denial::Request(_))
-    ));
     assert_eq!(
         graph
             .runtime

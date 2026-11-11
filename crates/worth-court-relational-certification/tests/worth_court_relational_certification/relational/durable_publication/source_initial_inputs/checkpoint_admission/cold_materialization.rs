@@ -1,5 +1,5 @@
 //! Public cold DATA admission, value and provider-custody controls.
-use super::super::selected_source::{CustodyControl, SelectedSource};
+use super::super::selected_source::SelectedSource;
 use super::*;
 use worth_execution::{CancellationSource, SerialMemoryBudget, SerialRequest};
 use worth_relational::facade::{
@@ -14,7 +14,6 @@ pub(crate) mod byte_fixture;
 mod owned_history;
 mod readmission_stop;
 mod selected_image;
-mod shared_custody;
 pub(crate) use selected_image::{member, recover};
 
 pub(crate) fn update(

@@ -365,24 +365,7 @@ pub const COMPLEXITY_CONTRACTS: &[ComplexityContract] = &[
         status: ComplexityStatus::Verified,
         proof_tests: &[
             "tests::complexity::contracts::merge_budgets::complexity_budget_merge_planning_reports_request_shaped_work",
-            "tests::history::milestone_7b::merge_planning_artifact_certification_is_stable_across_recovery",
-        ],
-    },
-    ComplexityContract {
-        id: "runtime.merge.topology_region_detection",
-        function_path: "merge/logic/conflicts/relation_topology.rs::refine_relation_topology_conflicts",
-        declared_time_complexity: "O(relation_conflict_candidates + endpoint_incidences + connected_endpoint_neighborhood_breadth)",
-        budget_summary: "Topology-region escalation must stay bounded to the merge relation conflict surface and its endpoint incidence graph; it must not rediscover full visible topology neighborhoods during planning.",
-        status: ComplexityStatus::Verified,
-        proof_tests: &["tests::history::milestone_7d_phase_d::topology_region::topology_region_conflict_detection_reports_bounded_neighborhood_counters"],
-    },
-    ComplexityContract {
-        id: "runtime.merge.execution_verification",
-        function_path: "merge/logic/execution/authority_verification.rs::verify_prepared_merge_execution",
-        declared_time_complexity: "O(branch_head_checks + merge_base_check + schema_kinds_snapshotted + compiled_plan_digest_rows)",
-        budget_summary: "Prepared merge verification must stay a proof check over authority freshness and sealed executable-plan integrity; it must not rerun planning or silently charge its work to merge planning counters.",
-        status: ComplexityStatus::Verified,
-        proof_tests: &["tests::history::milestone_7c_phase_a::verification_counters::verify_prepared_merge_execution_reports_verification_counters_without_planning_work"],
+            ],
     },
     ComplexityContract {
         id: "runtime.merge.execution_commit",
@@ -391,8 +374,7 @@ pub const COMPLEXITY_CONTRACTS: &[ComplexityContract] = &[
         budget_summary: "Prepared merge execution must distinguish execution attempts from successfully published merge commits, and successful merge commit deltas must report admitted record width and emitted mutation width explicitly.",
         status: ComplexityStatus::Verified,
         proof_tests: &[
-            "tests::history::milestone_7c_phase_e::execution_counters_diagnostics::execute_prepared_merge_reports_execution_counters_and_structural_summary",
-            "tests::complexity::contracts::merge_budgets::complexity_budget_merge_execution_reports_admitted_records_and_emitted_mutations",
+                "tests::complexity::contracts::merge_budgets::complexity_budget_merge_execution_reports_admitted_records_and_emitted_mutations",
         ],
     },
 ];

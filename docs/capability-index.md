@@ -1370,6 +1370,16 @@ reconstructive diagnostic inspection, not recovery admission or mutation
 permission. Unknown fields fail closed; codec projections exhaustively classify
 their actual decoded types. Ordinary reads should use query/projection APIs.
 
+Native-owner diagnostic consumers use `RelationalNativeCheckpoint::inspect`.
+`NativeCheckpointModelBytes` keeps exact byte equality for no-effect and
+atomicity comparisons within one runtime. Across known source and recovered
+owners, `RelationalCheckpointInspection::model_matches_rebound_runtime` takes
+their actual `RelationalBranchIdentity` values. It validates original branch
+observations and fork provenance, compares every non-cell byte slot exactly,
+and compares the complete typed branch-cell roster in its canonical runtime
+frame. Malformed cells return existing typed checkpoint-mismatch denials.
+This reconstructive comparison grants no basis, custody or service authority.
+
 `observe_record_reservations` on that runtime starts an owned, bounded observer
 for actual Native reservations in this runtime on the current thread. Drop ends
 it, including on unwind. Its explicit diagnostic allocation policy funds fixed

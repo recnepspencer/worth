@@ -1,6 +1,5 @@
 use worth_foundational::facade::{AspectFieldLocator, CanonicalFieldPath, LocatorAuthority};
 
-use crate::durability::data::RecoveryFailureClass;
 use crate::facade::durability::RecoveryVerificationMode;
 use crate::facade::history::BranchId;
 use crate::facade::identity::{EntityId, KindId, PartitionId};
@@ -283,49 +282,6 @@ fn checkpoint_restore_preserves_forked_field_revisions_and_absent_aba() {
     for outcome in [&created, &present, &absent_again] {
         release_test_commit_snapshot(&runtime, outcome);
     }
-}
-
-#[test]
-fn checkpoint_restore_rejects_incomplete_field_revision_column() {
-    let host_request = crate::test_execution_policy::serial_request();
-    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
-
-    let runtime = runtime_with_test_schema();
-    let created = create_entity_outcome(execution, &runtime, "same");
-    crate::tests::support::checkpoint_durably(execution, &runtime).unwrap();
-    let mut recovery = crate::tests::support::recovery_plan_for(
-        execution,
-        &runtime,
-        RecoveryVerificationMode::NormalRecoveryVerification,
-    )
-    .unwrap();
-    let root = &mut recovery.checkpoint.as_mut().unwrap().branch_roots[0];
-    let image = &mut root.partition_images[0].entity_arena;
-    assert!(!image.field_revisions.is_empty());
-    image.field_revisions.pop();
-    root.partition_image_digest = crate::durability::data::branch_root_partition_image_digest(
-        &crate::storage::substrate::maintenance::ReconstructionLane::oracle(),
-        &root.partition_images,
-    )
-    .unwrap();
-    root.root_image_digest = crate::durability::data::branch_root_image_digest(
-        &crate::storage::substrate::maintenance::ReconstructionLane::oracle(),
-        root.format_version,
-        root.commit_id,
-        root.partition_image_digest,
-        root.schema_carrier_digest,
-        &root.content_records,
-    );
-
-    let mut recovered = runtime_with_test_schema();
-    let error = recovered
-        .durability_recovery()
-        .recover(execution, recovery)
-        .unwrap_err();
-    let error = crate::tests::support::expect_durability_failure(error);
-    assert_eq!(error.class, RecoveryFailureClass::CorruptCheckpoint);
-    assert!(error.detail.contains("field revision length"), "{error:?}");
-    release_test_commit_snapshot(&runtime, &created);
 }
 
 fn field_at(

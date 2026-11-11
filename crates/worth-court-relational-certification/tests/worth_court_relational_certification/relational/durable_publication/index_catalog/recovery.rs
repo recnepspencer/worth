@@ -28,6 +28,18 @@ fn checkpoint_catalog_ahead_of_frozen_tail_preserves_original_body_and_refuses_f
             .index_authority()
             .register(definition("original-prefix"))
             .unwrap();
+        populate(
+            execution,
+            &runtime,
+            &BranchId("main".into()),
+            &[original.index_id],
+        );
+        populate(
+            execution,
+            &runtime,
+            &predecessor_branch,
+            &[original.index_id],
+        );
         let frozen = prepare(
             execution,
             &runtime,
@@ -207,6 +219,12 @@ fn same_position_checkpoint_catalog_cannot_regress_selection_or_ack_later_regist
         .index_authority()
         .register(definition("selected-only-catalog"))
         .unwrap();
+    populate(
+        execution,
+        &runtime,
+        &BranchId("main".into()),
+        &[installed.index_id],
+    );
     let selected = capture();
     assert_eq!(earlier.covered_position(), selected.covered_position());
     medium.file_checkpoint(selected.clone());
@@ -222,6 +240,12 @@ fn same_position_checkpoint_catalog_cannot_regress_selection_or_ack_later_regist
         .index_authority()
         .register(definition("after-selected-capture"))
         .unwrap();
+    populate(
+        execution,
+        &runtime,
+        &BranchId("main".into()),
+        &[later.index_id],
+    );
     let result = create_entity_outcome(execution, &runtime, "tail-after-selection");
     assert_eq!(
         delta(&result)["base_next_index_id"],
@@ -270,6 +294,14 @@ fn expanded_restore_reemits_checkpoint_only_definitions_without_fabricating_sele
             .durability_recovery()
             .restore_native_checkpoint(execution, &checkpoint)
             .unwrap();
+        if seeded {
+            populate(
+                execution,
+                &reconstructed,
+                &BranchId("main".into()),
+                &[installed.index_id],
+            );
+        }
         let result = create_entity_outcome(execution, &reconstructed, "expanded-next");
         assert_eq!(delta(&result)["base_next_index_id"], 1);
         assert_eq!(
@@ -295,6 +327,12 @@ fn unselected_original_capture_cannot_acknowledge_definition_introduction() {
         .index_authority()
         .register(definition("unselected-pending-definition"))
         .unwrap();
+    populate(
+        execution,
+        &runtime,
+        &BranchId("main".into()),
+        &[installed.index_id],
+    );
     let source: Arc<dyn RelationalDurableColdSource> = medium.clone();
     let capture = runtime
         .durability_authority()

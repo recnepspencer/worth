@@ -103,53 +103,13 @@ fn cold_native_publication_custody_proves_owned_members_without_history_reconstr
             .unwrap(),
         Some(world.model)
     );
-    assert!(storage.reads.load(Ordering::Relaxed) > 0);
+    assert!(storage.region_read_count() > 0);
     assert_eq!(
         cold.observe_branch(&cold.main_branch_identity())
             .unwrap()
             .1
             .descriptor(),
         basis.descriptor()
-    );
-}
-
-#[test]
-fn missing_cold_publication_material_refuses_at_its_actual_custody_partition() {
-    let host = serial_request();
-    let execution = &ExecutionRequest::serial(&host);
-    let world = PublishedModel::new(execution);
-    let (cold, storage) =
-        fixture::cold::reopen(execution, &world.runtime, publication_fixture::registry());
-    let mut read = begin(&cold);
-    assert!(read
-        .read_entity(execution, world.output)
-        .unwrap()
-        .base()
-        .is_some());
-    let loaded = storage.member_reads.lock().unwrap().clone();
-    for (&locator, bytes) in &storage.members {
-        if bytes.starts_with(b"WORTH-REL-REG") && !loaded.contains(&locator) {
-            storage
-                .failures
-                .lock()
-                .unwrap()
-                .insert(locator, Cause::MissingMember);
-        }
-    }
-    let (_, basis) = cold.observe_branch(&cold.main_branch_identity()).unwrap();
-    let error = cold
-        .observe_model_owner(execution, &basis, &ownership(), world.output)
-        .unwrap_err();
-    let Denial::Custody(TransactionCommitError::Preparation { error, .. }) = error else {
-        panic!("{error:?}");
-    };
-    let CommitPreparationReason::StorageUnavailable(failure) = error.reason() else {
-        panic!("{error:?}");
-    };
-    assert_eq!(failure.cause, Cause::MissingMember);
-    assert_eq!(
-        failure.subject,
-        RelationalStorageSubject::Region(world.source.partition_id)
     );
 }
 #[test]

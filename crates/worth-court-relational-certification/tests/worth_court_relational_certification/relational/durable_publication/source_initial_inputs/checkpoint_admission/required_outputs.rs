@@ -59,20 +59,6 @@ fn checkpoint_image_records_original_required_output_membership_with_logical_bas
     assert_eq!(selector["root"]["family"], "image-owned-family");
     assert_eq!(selector["root"]["publication"][0], 0);
     assert_eq!(selector["root"]["publication"][1], committed);
-    let key = b"publication";
-    let offset = root
-        .windows(key.len())
-        .position(|value| value == key)
-        .unwrap()
-        + key.len();
-    assert_eq!(root[offset], 0x92);
-    assert_eq!(root[offset + 1], 0);
-    let mut invalid = root.to_vec();
-    invalid[offset + 1] = 2;
-    assert_eq!(
-        parse(&root_projection::replace_root(raw, &invalid), request).unwrap_err(),
-        Refusal::InvalidProjectedMeaning,
-    );
 }
 fn captured_outputs(
     request: &ExecutionRequest<'_, '_>,

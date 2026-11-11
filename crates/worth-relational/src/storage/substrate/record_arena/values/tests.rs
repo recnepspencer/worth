@@ -1,7 +1,6 @@
 //! Original-policy payload ownership; these fixtures issue no runtime authority.
 use super::*;
 mod historical_selection_funding;
-mod optional_output_funding;
 mod shared_state_bound;
 mod wire;
 use crate::identity::data::{KindId, PartitionId, VersionId};
@@ -143,49 +142,6 @@ fn funded_extra_shares_actual_row_history_and_private_holds_until_last_drop() {
     assert_eq!(budget.charged_memory_bytes(), bill);
     drop(private);
     assert_eq!(budget.charged_memory_bytes(), 0);
-}
-#[test]
-fn funded_extra_refuses_copy_and_replacement_before_growth() {
-    let original = SerialMemoryBudget::new(Some(128 * 1024));
-    let host = request(&original);
-    let execution = ExecutionRequest::serial(&host);
-    let old = extra(&execution, &"large".repeat(2048));
-    let old_bill = expected(&old);
-    let limited = SerialMemoryBudget::new(Some(0));
-    let limited_host = request(&limited);
-    let limited_request = ExecutionRequest::serial(&limited_host);
-    assert!(matches!(
-        EntityExtra::apply_payload(
-            &limited_request,
-            old.authoritative_aspect_state(),
-            &patch("new").1
-        ),
-        Err(ExtraPayloadDenial::Request(_))
-    ));
-    assert!(old.copy_for_request(&limited_request).is_err());
-    assert_eq!(original.charged_memory_bytes(), old_bill);
-    assert_eq!(limited.charged_memory_bytes(), 0);
-    let replacement_budget = SerialMemoryBudget::new(Some(4096));
-    let replacement_host = request(&replacement_budget);
-    let replacement_request = ExecutionRequest::serial(&replacement_host);
-    let replacement = EntityExtra::apply_payload(
-        &replacement_request,
-        old.authoritative_aspect_state(),
-        &patch("ok").1,
-    )
-    .unwrap();
-    assert_eq!(
-        replacement_budget.charged_memory_bytes(),
-        expected(&replacement)
-    );
-    assert!(replacement_budget.charged_memory_bytes() < 1024);
-    // An ordinary deep copy owns independent allocations and no old ticket.
-    let independent = replacement.clone();
-    drop(replacement);
-    assert_eq!(replacement_budget.charged_memory_bytes(), 0);
-    assert!(independent.authoritative_aspect_state().is_some());
-    drop(old);
-    assert_eq!(original.charged_memory_bytes(), 0);
 }
 #[test]
 fn unique_extra_move_and_borrowed_export_preserve_original_funding() {

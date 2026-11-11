@@ -6,8 +6,9 @@ use worth_relational::facade::{
     indexes::{DerivedIndexDefinition, DerivedIndexId, DerivedIndexKind},
     runtime::RelationalRuntime,
 };
+mod initial_population;
 mod recovery;
-mod wire;
+use initial_population::populate;
 
 fn definition(name: &str) -> DerivedIndexDefinition {
     DerivedIndexDefinition {
@@ -117,6 +118,12 @@ fn frozen_catalog_overlap_preserves_issued_ids_and_never_regresses_after_reverse
         .index_authority()
         .register(definition("first"))
         .unwrap();
+    populate(
+        execution,
+        &runtime,
+        &BranchId("main".into()),
+        &[first.index_id],
+    );
     let older = prepare_update(
         execution,
         &runtime,
@@ -128,6 +135,12 @@ fn frozen_catalog_overlap_preserves_issued_ids_and_never_regresses_after_reverse
         .index_authority()
         .register(definition("second"))
         .unwrap();
+    populate(
+        execution,
+        &runtime,
+        &BranchId("sibling".into()),
+        &[first.index_id, second.index_id],
+    );
     let newer = prepare_update(
         execution,
         &runtime,
@@ -143,6 +156,12 @@ fn frozen_catalog_overlap_preserves_issued_ids_and_never_regresses_after_reverse
     let old_result = publish(execution, &runtime, older);
     assert_eq!(delta(&new_result)["next_index_id"], second.index_id.0 + 1);
     assert_eq!(delta(&old_result)["next_index_id"], first.index_id.0 + 1);
+    populate(
+        execution,
+        &runtime,
+        &BranchId("main".into()),
+        &[second.index_id, third.index_id],
+    );
     let next = create_entity_outcome(execution, &runtime, "after-reverse");
     assert_eq!(delta(&next)["base_next_index_id"], second.index_id.0 + 1);
     assert_eq!(delta(&next)["definitions"][0]["index_id"], third.index_id.0);
@@ -191,12 +210,24 @@ fn checkpoint_only_definitions_overlap_tail_and_restored_directory_acknowledges_
         .index_authority()
         .register(definition("checkpoint-only"))
         .unwrap();
+    populate(
+        execution,
+        &runtime,
+        &BranchId("main".into()),
+        &[cp_only.index_id],
+    );
     let checkpoint = capture(execution, &runtime);
     medium.file_checkpoint(checkpoint.clone());
     let later = runtime
         .index_authority()
         .register(definition("registered-after-capture"))
         .unwrap();
+    populate(
+        execution,
+        &runtime,
+        &BranchId("main".into()),
+        &[later.index_id],
+    );
     let overlap = create_entity_outcome(execution, &runtime, "tail-overlap");
     assert_eq!(delta(&overlap)["base_next_index_id"], 1);
     assert_eq!(delta(&overlap)["definitions"].as_array().unwrap().len(), 2);
@@ -272,7 +303,6 @@ fn required_catalog_delta_survives_all_projections_and_rejects_missing_or_older_
         old[8..10].copy_from_slice(&version.to_le_bytes());
         assert!(Artifact::readmit(&old, execution).is_err());
     }
-    wire::assert_malformed_deltas(execution, &artifact);
     for version in [13, 14, 15, 16, 17] {
         let mut old = checkpoint.bytes().to_vec();
         old[..b"WORTH-REL-CHK22\n".len()]

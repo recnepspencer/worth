@@ -91,12 +91,18 @@ fn transition_payload_round_trips_schema_material_and_transition_identity() {
     )
     .unwrap();
     let semantics = crate::schema::data::runtime_descriptor_semantics_policy();
-    let lowered = crate::schema::lower_schema_transition(
+    let mut lowered = crate::schema::lower_schema_transition(
         validated,
         policy,
         semantics.current_write_version(),
         crate::schema::data::runtime_descriptor_canonical_basis_policy().current_write_version(),
     );
+    // Native's schema-continuity phase binds the lowered lineage to the
+    // publishing branch; the standalone lowering deliberately leaves it open.
+    lowered
+        .reconciliation_descriptor
+        .resulting_lineage
+        .branch_context = Some(BranchId("main".into()));
     let proposed = lowered.validated.proposed.clone();
     let input = canonical_schema_envelope_input(&registry, Some(lowered));
     assert!(input.authored_index_writes.is_unavailable());

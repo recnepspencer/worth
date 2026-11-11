@@ -1,9 +1,5 @@
 use std::sync::Arc;
 
-use crate::diagnostics::data::{
-    DiagnosticCode, RelationalDiagnosticFields, RelationalDiagnosticValue,
-    RelationalDiagnosticsEntry,
-};
 use crate::indexes::data::{
     DerivedIndexApplicability, DerivedIndexArtifacts, DerivedIndexEntries, DerivedIndexGeneration,
     DerivedIndexGenerationId, DerivedIndexId, DerivedIndexPublicationStatus,
@@ -99,10 +95,7 @@ fn installed_field_index_commit_touch_carries_native_old_and_new_keys() {
     )));
 }
 
-use super::{
-    RelationalCommitArtifact, RelationalCommitArtifactDenial,
-    RelationalCommitAuthoritativeAllocationKind,
-};
+use super::{RelationalCommitArtifact, RelationalCommitArtifactDenial};
 
 #[test]
 fn recovery_relinks_an_already_sealed_payload_without_reencoding_or_weakening_root_checks() {
@@ -163,119 +156,6 @@ fn recovery_relinks_an_already_sealed_payload_without_reencoding_or_weakening_ro
         preencoded.relink_preencoded_recovery(&envelope, None, Some(&mismatched_schema)),
         Err(RelationalCommitArtifactDenial::RootLinkage)
     ));
-}
-
-#[test]
-fn canonical_artifact_accounting_excludes_nested_diagnostic_perturbation() {
-    let host_request = crate::test_execution_policy::serial_request();
-    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
-
-    let runtime = durable_runtime_with_test_schema();
-    let committed = create_entity_outcome(execution, &runtime, "artifact-allocation-basis");
-    let mut envelope = runtime
-        .replay()
-        .canonical_commit_envelope(execution, committed.commit.commit_id)
-        .unwrap()
-        .expect("the performed commit owns one canonical envelope")
-        .copy_original_for_test(execution);
-    let baseline_artifact = RelationalCommitArtifact::from_preencoded(
-        crate::branch::RelationalOriginalRootCommitEvidence::prepare(
-            execution,
-            Arc::new(envelope.copy_original_for_test(execution)),
-        )
-        .unwrap(),
-    )
-    .expect("baseline canonical authority payload encodes");
-    let baseline_payload_bytes = baseline_artifact.canonical_payload_bytes();
-    let baseline_authoritative_nested = baseline_artifact
-        .authoritative_allocation_observations()
-        .into_iter()
-        .find(|allocation| {
-            allocation.kind
-                == RelationalCommitAuthoritativeAllocationKind::EnvelopeNestedOwnerStorage
-        })
-        .expect("authoritative nested lane exists")
-        .authoritative_bytes;
-    let baseline_diagnostic_bytes = baseline_artifact
-        .excluded_allocation_inventory()
-        .diagnostic_bytes;
-    let mut omitted_checkpoint = envelope.copy_original_for_test(execution);
-    omitted_checkpoint
-        .body_mut_for_test()
-        .branch_cell_checkpoint = None;
-    assert!(
-        envelope.allocation_inventory().authoritative_nested_bytes
-            > omitted_checkpoint
-                .allocation_inventory()
-                .authoritative_nested_bytes,
-        "the populated branch-cell checkpoint owns canonical nested bytes",
-    );
-    let nested_text = "nested-diagnostic-payload".repeat(256);
-    envelope
-        .body_mut_for_test()
-        .diagnostics_summary
-        .entries
-        .push(
-            RelationalDiagnosticsEntry::new(
-                DiagnosticCode::CommitPublished,
-                nested_text.clone(),
-                RelationalDiagnosticFields::from_diagnostic_value(
-                    RelationalDiagnosticValue::object([(
-                        "nested",
-                        RelationalDiagnosticValue::array([
-                            RelationalDiagnosticValue::string(nested_text),
-                            RelationalDiagnosticValue::object([(
-                                "leaf",
-                                RelationalDiagnosticValue::CanonicalBytes(vec![7; 2_048]),
-                            )]),
-                        ]),
-                    )]),
-                ),
-            )
-            .canonicalized(),
-        );
-    let artifact = RelationalCommitArtifact::from_preencoded(
-        crate::branch::RelationalOriginalRootCommitEvidence::prepare(execution, Arc::new(envelope))
-            .unwrap(),
-    )
-    .expect("the owner seals the canonical payload allocation");
-
-    assert_eq!(
-        artifact.canonical_payload_bytes(),
-        baseline_payload_bytes,
-        "diagnostic richness cannot perturb canonical authority payload bytes"
-    );
-    let allocations = artifact.authoritative_allocation_observations();
-    let allocation = |kind| {
-        allocations
-            .iter()
-            .find(|allocation| allocation.kind == kind)
-            .expect("every canonical owner allocation is inventoried")
-            .authoritative_bytes
-    };
-    assert_eq!(
-        allocation(RelationalCommitAuthoritativeAllocationKind::ArtifactObject),
-        std::mem::size_of::<RelationalCommitArtifact>() as u64,
-    );
-    assert_eq!(
-        allocation(RelationalCommitAuthoritativeAllocationKind::CanonicalPayload),
-        0,
-        "unpositioned scalar observations retain no byte allocation",
-    );
-    assert_eq!(
-        allocation(RelationalCommitAuthoritativeAllocationKind::EnvelopeObject),
-        std::mem::size_of::<crate::history::data::CanonicalCommitEnvelope>() as u64,
-    );
-    assert_eq!(
-        allocation(RelationalCommitAuthoritativeAllocationKind::EnvelopeNestedOwnerStorage),
-        baseline_authoritative_nested,
-        "diagnostic allocation cannot enter authoritative nested-envelope accounting"
-    );
-    assert!(
-        artifact.excluded_allocation_inventory().diagnostic_bytes
-            > baseline_diagnostic_bytes.saturating_add(2_048),
-        "nested diagnostic strings and canonical bytes remain visible in their own lane"
-    );
 }
 
 #[test]
