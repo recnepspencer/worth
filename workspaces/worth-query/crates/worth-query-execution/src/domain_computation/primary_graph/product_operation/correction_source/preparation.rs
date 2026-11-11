@@ -52,10 +52,6 @@ pub struct WorthQueryPreparedCorrectionSource {
 }
 
 impl WorthQueryPreparedCorrectionSource {
-    #[expect(
-        clippy::disallowed_methods,
-        reason = "Type identity and names serve point lookup or diagnostics; canonical order uses declared identity"
-    )]
     pub(super) fn retain<
         Schema: ApplicationSchema,
         C: ApplicationCorrectionBinding<Schema>,

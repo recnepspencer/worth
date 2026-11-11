@@ -17,10 +17,6 @@ impl<Schema> WorthQueryConditionalOperationRegistry<Schema> {
 
 impl<Schema> WorthQueryConditionalOperationRegistry<Schema> {
     #[doc(hidden)]
-    #[expect(
-        clippy::result_unit_err,
-        reason = "The closed court mirrors the private installation refusal exactly; it introduces no production error contract"
-    )]
     pub fn install_for_test(
         &mut self,
         operation: Box<dyn WorthQueryInstalledConditionalOperation<Schema>>,

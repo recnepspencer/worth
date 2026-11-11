@@ -160,19 +160,18 @@ impl<Schema: worth_query_installation::facade::ApplicationSchema + 'static, Prog
                 cause: QueryHomeCustodyReadmissionDenial::ProgramSupport(cause),
             });
         }
-        if let Some(existing) = self.program_support_admission.get() {
-            if admission.position() < existing.position()
+        if let Some(existing) = self.program_support_admission.get()
+            && (admission.position() < existing.position()
                 || (admission.position() == existing.position()
                     && (existing.digest() != admission.digest()
-                        || existing.payload_digest() != admission.payload_digest()))
-            {
-                return Err(QueryHomeCustodyReadmissionRefused {
-                    query: self,
-                    cause: QueryHomeCustodyReadmissionDenial::ProgramSupport(
-                        crate::facade::program_support::QueryProgramSupportDenial::PrefixMismatch,
-                    ),
-                });
-            }
+                        || existing.payload_digest() != admission.payload_digest())))
+        {
+            return Err(QueryHomeCustodyReadmissionRefused {
+                query: self,
+                cause: QueryHomeCustodyReadmissionDenial::ProgramSupport(
+                    crate::facade::program_support::QueryProgramSupportDenial::PrefixMismatch,
+                ),
+            });
         }
         // The lifecycle has folded this same issuer's prefix and acknowledged
         // every release before returning. A repeated opening may advance it

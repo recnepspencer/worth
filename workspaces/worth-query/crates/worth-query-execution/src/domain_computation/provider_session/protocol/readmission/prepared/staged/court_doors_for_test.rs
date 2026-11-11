@@ -41,10 +41,6 @@ impl WorthQuerySessionReadAuthority<'_> {
 
 impl<'run> WorthQuerySessionBoundReadsAndEffects<'run> {
     #[doc(hidden)]
-    #[expect(
-        clippy::result_unit_err,
-        reason = "The closed court preserves the private affinity refusal and its exact result type"
-    )]
     pub fn bind_application_attempt_for_test(
         &self,
         basis: crate::domain_computation::primary_graph::WorthQueryApplicationAttemptBasis,

@@ -54,13 +54,12 @@ impl<Schema: ApplicationSchema + 'static>
             .installed_packages()
             .validate_conditional_application_node(node)
             .map_err(|cause| foreign_binding_denial(cause.subject()))?;
-        if let Some(scope) = &self.application_binding_scope {
-            if scope.binding != *node.operation().binding()
+        if let Some(scope) = &self.application_binding_scope
+            && (scope.binding != *node.operation().binding()
                 || scope.target != *node.location()
-                || scope.operation_type != TypeId::of::<ApplicationOperation>()
-            {
-                return Err(foreign_binding_denial(node.declaration().identity()));
-            }
+                || scope.operation_type != TypeId::of::<ApplicationOperation>())
+        {
+            return Err(foreign_binding_denial(node.declaration().identity()));
         }
         if clocked
             .provider()

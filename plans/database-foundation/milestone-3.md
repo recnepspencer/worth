@@ -1310,6 +1310,22 @@ these splits do not claim equivalent funding coverage from a related public cour
   currently executed or verified; every remaining named proof must still name
   a registered test and every Verified declaration must have proof.
 
+### Landing 2a historical handler-key custody split
+
+- **C2:** restore the complete original
+  `historical_key_aliases_retain_and_refund_the_original_authoring_payment`,
+  `refused_normalization_never_yields_historical_keys_or_a_retained_bill`, and
+  their two-allowance `reads` fixture from
+  `669ac9fcd4:workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/invariant_projection/operation_reader/decision_reads/expected_keys/historical_retention_tests.rs`.
+  Preserve normalization charging, historical conversion/alias custody, exact
+  zero-memory error category and every refund observation. Active H evidence
+  separately exercises the exact handler-only 1/2 allowance contrast through
+  the already permitted public normalizer court
+  `conflicting_handler_adjacencies_keep_the_strongest_allowance`; the private
+  value court `historical_conversion_and_aliases_preserve_exact_handler_keys`
+  exercises actual conversion and aliases with the complete expected key.
+  Neither H court claims funding coverage or a public historical-conversion door.
+
 ### Parallel work
 
 H items whose dependencies have merged may be built in parallel where their write scopes do not overlap. Each one merges into the integration branch when its reviewer approves and its Tier-2 run there is green. A C item may start before landing 2 only where the coordinator assigns it and it does not slow an H item.

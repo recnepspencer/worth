@@ -41,7 +41,7 @@ fn directory_operation_custody_refuses_before_handler_contact_and_keeps_the_home
                 Duration::from_secs(120),
                 &request,
             );
-            let denial = home
+            let Err(denial) = home
                 .runtime()
                 .request(&principal, &request)
                 .advanced()
@@ -55,8 +55,9 @@ fn directory_operation_custody_refuses_before_handler_contact_and_keeps_the_home
                     home.runtime(),
                     worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
                 )
-                .err()
-                .expect("unsupported durable custody");
+            else {
+                panic!("unsupported durable custody");
+            };
             assert!(
                 matches!(denial.kind(), Kind::DurableStateAdmission(Durable::Unsupported {family: found, supported_from_phase}) if found == family && supported_from_phase == phase)
             );

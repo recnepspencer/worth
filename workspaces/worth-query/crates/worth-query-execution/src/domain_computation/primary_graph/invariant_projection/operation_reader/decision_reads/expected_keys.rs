@@ -1,6 +1,6 @@
 //! Exact sorted view of existing projected keys, without another key copy.
 #[cfg(test)]
-mod historical_retention_tests;
+mod historical_keys_tests;
 use crate::domain_computation::primary_graph::application_attempt::{
     ComputationFactAttribution, WorthQueryApplicationFactKey as Key,
 };

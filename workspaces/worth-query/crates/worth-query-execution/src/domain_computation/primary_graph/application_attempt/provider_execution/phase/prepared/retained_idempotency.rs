@@ -119,7 +119,7 @@ where
                     application
                         .runtime
                         .primary_provider
-                        .preparation_pending(&product, handle, stage),
+                        .preparation_pending(product, handle, stage),
                 ),
             )
         }
@@ -127,7 +127,7 @@ where
             match application
                 .runtime
                 .primary_provider
-                .recovered_unpublished_application(&product, handle)
+                .recovered_unpublished_application(product, handle)
             {
                 Ok(effects) => WorthQueryApplicationCommitOutcome::ProductUnpublished(effects),
                 Err(_) => WorthQueryApplicationCommitOutcome::Denied(

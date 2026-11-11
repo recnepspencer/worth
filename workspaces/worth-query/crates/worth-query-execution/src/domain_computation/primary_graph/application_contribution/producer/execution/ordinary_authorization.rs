@@ -18,6 +18,21 @@ type Admission<S, B> = WorthQueryAdmittedApplicationOperation<S,
     <Operation<S, B> as ApplicationMutationBinding<S>>::Input,
     <<Operation<S, B> as ApplicationMutationBinding<S>>::ScopeBinding as ApplicationMutationScopeBinding<S>>::Scope>;
 
+/// The actual selected operation and its freshly admitted request authority.
+pub(super) struct OrdinaryProducerAuthorization<'runtime, Schema, Binding>
+where
+    Schema: ApplicationSchema + 'static,
+    Binding: WorthQueryApplicationProducerBinding<Schema>,
+{
+    pub(super) shared: SharedSelectedProductOperation<'runtime, Schema>,
+    pub(super) principal: Principal<Schema, Binding>,
+    pub(super) admission: Admission<Schema, Binding>,
+    pub(super) scope: WorthQueryApplicationEntityIdentity<
+        Schema,
+        <<Operation<Schema, Binding> as ApplicationMutationBinding<Schema>>::ScopeBinding as ApplicationMutationScopeBinding<Schema>>::Scope,
+    >,
+}
+
 #[inline(never)]
 pub(super) fn prepare<'runtime, Schema, Binding>(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
@@ -26,18 +41,7 @@ pub(super) fn prepare<'runtime, Schema, Binding>(
     external_principal: &WorthQueryAuthenticatedExternalPrincipal<Schema>,
     request_scope: &WorthQueryRequestScope,
     input: &<Operation<Schema, Binding> as ApplicationMutationBinding<Schema>>::Input,
-) -> Result<
-    (
-        SharedSelectedProductOperation<'runtime, Schema>,
-        Principal<Schema, Binding>,
-        Admission<Schema, Binding>,
-        WorthQueryApplicationEntityIdentity<
-            Schema,
-            <<Operation<Schema, Binding> as ApplicationMutationBinding<Schema>>::ScopeBinding as ApplicationMutationScopeBinding<Schema>>::Scope,
-        >,
-    ),
-    ProducerExecutionStop,
->
+) -> Result<OrdinaryProducerAuthorization<'runtime, Schema, Binding>, ProducerExecutionStop>
 where
     Schema: ApplicationSchema + 'static,
     Binding: WorthQueryApplicationProducerBinding<Schema>,
@@ -88,5 +92,10 @@ where
     let shared = selected
         .prepare_shared_query_basis()
         .map_err(|(_, stop)| source_readmission::ready_resource_denial(Binding::IDENTITY, stop))?;
-    Ok((shared, principal, admission, scope))
+    Ok(OrdinaryProducerAuthorization {
+        shared,
+        principal,
+        admission,
+        scope,
+    })
 }

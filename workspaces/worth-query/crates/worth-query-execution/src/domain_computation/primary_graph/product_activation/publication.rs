@@ -91,7 +91,7 @@ Err(PublicationDenial::Stopped(stop)) => return Err(WorthQueryProductConditional
                     )
                 }
             };
-            match publish_conditional_definition(&publication, phase.execution_request_for(&self.runtime.product_runtime).map_err(|cause| WorthQueryProductConditionalPublicationDenial::ExecutionRequest(cause.into()))?, prepared_world, prepared_bridge, &bridge, cancellation) {
+            match publish_conditional_definition(&publication, phase.execution_request_for(&self.runtime.product_runtime).map_err(|cause| WorthQueryProductConditionalPublicationDenial::ExecutionRequest(cause.into()))?, prepared_world, prepared_bridge, bridge, cancellation) {
                 Ok(PublicationOutcome::Performed((publication, lowering))) => Ok(RuntimeWorldConditionalDefinitionPublicationOutcome::Performed { publication, lowering }),
                 Ok(PublicationOutcome::ProductUnpublished(effects)) => Ok(RuntimeWorldConditionalDefinitionPublicationOutcome::ProductUnpublished(effects)),
                 Err(PublicationDenial::ClockMismatch) => Err(WorthQueryProductConditionalPublicationDenial::ExecutionRequest(crate::domain_computation::primary_graph::WorthQueryAdvancementDenial::Resource(crate::domain_computation::primary_graph::WorthQueryManagedComputationResourceDenial::ForeignAdmissionClock))),

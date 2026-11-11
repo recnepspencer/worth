@@ -23,7 +23,7 @@ fn directory_compensation_refuses_before_original_publication_and_survives_reope
     {
         let scope = request_scope();
         let principal = authenticate_operator(home.runtime().installed_schema(), &scope);
-        let denied = home
+        let Err(denied) = home
             .runtime()
             .request(&principal, &scope)
             .advanced()
@@ -37,8 +37,9 @@ fn directory_compensation_refuses_before_original_publication_and_survives_reope
                 home.runtime(),
                 worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
             )
-            .err()
-            .expect("compensation material has no graceful continuation");
+        else {
+            panic!("compensation material has no graceful continuation");
+        };
         assert!(matches!(
             denied.kind(),
             Kind::DurableStateAdmission(Durable::UnsupportedCorrectionCompensation)

@@ -56,29 +56,28 @@ where
         ancestry,
         required_root,
     )?;
-    if let Some(material) = source.occurrence().home_material() {
-        if target
+    if let Some(material) = source.occurrence().home_material()
+        && target
             .application()
             .runtime
             .primary_provider
             .recover_correction_command(material.capture.original, key.identity())
             .map_err(Denial::Material)?
             .is_some()
-        {
-            return super::WorthQueryPreparedCorrectionSource::recover::<
-                Schema,
-                C,
-                ApplicationInverseBinding<Schema, C>,
-            >(
-                checked,
-                phase,
-                principal,
-                request,
-                lineage,
-                key,
-                C::recover_inverse_input,
-            );
-        }
+    {
+        return super::WorthQueryPreparedCorrectionSource::recover::<
+            Schema,
+            C,
+            ApplicationInverseBinding<Schema, C>,
+        >(
+            checked,
+            phase,
+            principal,
+            request,
+            lineage,
+            key,
+            C::recover_inverse_input,
+        );
     }
     let workflow = super::preparation::prepare_workflow::<Schema, C>(target, phase, source)?;
     let (bytes, identity) = source

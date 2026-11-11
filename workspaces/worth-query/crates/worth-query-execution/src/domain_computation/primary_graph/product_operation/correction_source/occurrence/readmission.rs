@@ -11,10 +11,6 @@ use worth_query_declaration::facade::{
 };
 
 impl HomeCorrectionOccurrence {
-    #[expect(
-        clippy::disallowed_methods,
-        reason = "Exact installed type lookup never persists TypeId"
-    )]
     pub(in crate::domain_computation::primary_graph::product_operation::correction_source) fn readmit<
         S,
         C,

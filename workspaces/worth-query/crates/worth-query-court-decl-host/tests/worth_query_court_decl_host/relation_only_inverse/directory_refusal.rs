@@ -35,7 +35,7 @@ fn directory_relation_inverse_refuses_before_original_publication_and_survives_r
         let scope = request_scope();
         let principal = authenticate_operator(home.runtime().installed_schema(), &scope);
         let request = home.runtime().runtime().request(&principal, &scope);
-        let denial = request
+        let Err(denial) = request
             .advanced()
             .mutate(Spawn {
                 id: 10,
@@ -49,8 +49,9 @@ fn directory_relation_inverse_refuses_before_original_publication_and_survives_r
                 home.runtime(),
                 worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
             )
-            .err()
-            .expect("relation carrier is not admitted");
+        else {
+            panic!("relation carrier is not admitted");
+        };
         assert!(matches!(
             denial.kind(),
             Kind::DurableStateAdmission(Durable::UnsupportedCorrectionRelationPreimage)

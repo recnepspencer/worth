@@ -17,16 +17,14 @@ fn memory_home_workflow_configuration_survives_close_refusal_and_resumes_the_ori
     ));
     let lease = checkpoint_capture::lease(256 << 20);
     let execution = worth_execution::ExecutionRequest::leased(&lease);
-    let refused = home
-        .close(&execution)
-        .err()
-        .expect("Memory has no Directory close lifecycle");
+    let Err(refused) = home.close(&execution) else {
+        panic!("Memory has no Directory close lifecycle");
+    };
     assert!(refused.reason().directory_denial().is_none());
     assert!(refused.reason().query_denial().is_none());
-    let refused = refused
-        .try_close(&execution)
-        .err()
-        .expect("retry must preserve the same Memory close refusal");
+    let Err(refused) = refused.try_close(&execution) else {
+        panic!("retry must preserve the same Memory close refusal");
+    };
     let home = refused.resume().unwrap();
     assert_eq!(home.runtime().runtime().current_world(), branch);
     assert!(

@@ -90,15 +90,19 @@ where
             producer_contacts,
         );
     }
-    let (shared, principal, admission, scope) =
-        super::ordinary_authorization::prepare::<Schema, Binding>(
-            execution,
-            selected,
-            installed,
-            external_principal,
-            request_scope,
-            &input,
-        )?;
+    let super::ordinary_authorization::OrdinaryProducerAuthorization {
+        shared,
+        principal,
+        admission,
+        scope,
+    } = super::ordinary_authorization::prepare::<Schema, Binding>(
+        execution,
+        selected,
+        installed,
+        external_principal,
+        request_scope,
+        &input,
+    )?;
     post_authorization::execute_authorized::<Schema, Binding>(
         phase,
         runtime,

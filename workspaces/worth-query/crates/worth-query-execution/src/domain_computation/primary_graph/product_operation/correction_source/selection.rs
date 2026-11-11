@@ -20,15 +20,14 @@ impl<'runtime, Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'ru
             .committed_product_publication()
             .composite_commit()
             .owner_identity();
-        if let (Some(prior_home), Some(current_home)) = (prior.durable(), current.durable()) {
-            if prior_home.home() == current_home.home()
-                && prior
-                    .home_incarnation_fence()
-                    .zip(current.home_incarnation_fence())
-                    .is_some_and(|(prior, current)| prior.admit(current).is_err())
-            {
-                return Err(WorthQueryCorrectionSelectionDenial::StaleIncarnation);
-            }
+        if let (Some(prior_home), Some(current_home)) = (prior.durable(), current.durable())
+            && prior_home.home() == current_home.home()
+            && prior
+                .home_incarnation_fence()
+                .zip(current.home_incarnation_fence())
+                .is_some_and(|(prior, current)| prior.admit(current).is_err())
+        {
+            return Err(WorthQueryCorrectionSelectionDenial::StaleIncarnation);
         }
         if receipt.runtime_authority() != application.runtime.authority_identity() {
             return Err(WorthQueryCorrectionSelectionDenial::ForeignRuntime);

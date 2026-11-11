@@ -51,7 +51,7 @@ fn refuses<const MODE: u8>(
     {
         let scope = request_scope();
         let principal = authenticate_operator(home.runtime().installed_schema(), &scope);
-        let denied = home
+        let Err(denied) = home
             .runtime()
             .request(&principal, &scope)
             .advanced()
@@ -68,8 +68,9 @@ fn refuses<const MODE: u8>(
                 home.runtime(),
                 worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
             )
-            .err()
-            .expect("coupled outputs have no durable continuation yet");
+        else {
+            panic!("coupled outputs have no durable continuation yet");
+        };
         assert!(matches!(denied.kind(), Kind::DurableStateAdmission(cause) if cause == expected));
         assert_eq!(home.runtime().runtime().current_world(), before);
     }
