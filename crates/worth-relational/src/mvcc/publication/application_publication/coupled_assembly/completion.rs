@@ -108,6 +108,10 @@ pub(crate) fn prepare_coupled_candidate(
         binding.owners.source.subject(),
         &mutation.outcome,
     )?;
+    let mut authored_writes = authored_writes::AuthoredWrites::default();
+    authored_writes
+        .retain(execution, 0, &authored_commands, &authored_records)
+        .map_err(|failure| failure.cause)?;
     let mut candidate = RelationalAuthoredCoupledCandidate {
         runtime: &runtime,
         transaction,
@@ -120,6 +124,7 @@ pub(crate) fn prepare_coupled_candidate(
         authored_fragments,
         continuation: continuation::ContinuationState::default(),
         fresh_records,
+        authored_writes,
         read: std::cell::RefCell::new(None),
     };
     if assembly

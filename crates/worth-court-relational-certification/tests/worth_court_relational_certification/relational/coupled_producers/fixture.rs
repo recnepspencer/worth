@@ -12,9 +12,30 @@ pub struct World {
 }
 impl World {
     pub fn new(execution: &ExecutionRequest<'_, '_>, storage: bool, owns_source: bool) -> Self {
-        let fixture = AspectSchemaFixture::with_default_declared_aspects(
+        Self::with_status_field(execution, storage, owns_source, false)
+    }
+    pub fn new_with_status(execution: &ExecutionRequest<'_, '_>) -> Self {
+        Self::with_status_field(execution, true, true, true)
+    }
+    fn with_status_field(
+        execution: &ExecutionRequest<'_, '_>,
+        storage: bool,
+        owns_source: bool,
+        with_status: bool,
+    ) -> Self {
+        let mut fixture = AspectSchemaFixture::with_default_declared_aspects(
             worth_relational::facade::config::CascadeDeletePolicy::RetainDanglingForAudit,
         );
+        if with_status {
+            let (binding, contract) =
+                worth_testkit_relational::aspect_storage::definition::entity_field_aspect(
+                    aspect_key("status"),
+                    field_key("status"),
+                );
+            fixture
+                .entity_aspects
+                .push(DeclaredAspectContractBinding { binding, contract });
+        }
         let registry = if storage {
             register_current_publication_storage(
                 fixture.build_registry(),
@@ -42,7 +63,13 @@ impl World {
         };
         let mut tx = begin_main_transaction(&runtime);
         tx.push_batch(
-            create("source").push(create_intent("carrier")),
+            if with_status {
+                WorkerIntentBatch::new("two-field-sources")
+                    .push(create_with_status("source"))
+                    .push(create_with_status("carrier"))
+            } else {
+                create("source").push(create_intent("carrier"))
+            },
             execution.allocation_policy(),
         )
         .unwrap();
@@ -236,4 +263,16 @@ pub fn created(key: &str) -> RequiredOutputRoleTarget {
         posture: RequiredOutputRolePosture::Create,
         target: EntityReference::Created(target(key)),
     }
+}
+
+fn create_with_status(key: &str) -> MutationIntent {
+    MutationIntent::Create(CreateIntent::Entity(EntitySpec {
+        partition_id: PartitionId::main(),
+        kind_id: KindId(1),
+        client_key: ClientKey::raw(key),
+        fields: string_aspect_field_patch([
+            (aspect_key("name"), field_key("name"), key),
+            (aspect_key("status"), field_key("status"), "initial"),
+        ]),
+    }))
 }

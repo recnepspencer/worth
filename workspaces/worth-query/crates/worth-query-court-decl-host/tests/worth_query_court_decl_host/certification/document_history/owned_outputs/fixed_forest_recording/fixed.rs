@@ -56,27 +56,30 @@ impl ApplicationProgramDefinition<Schema> for Program {
         ApplicationProgramIdentity::new("owned-outputs.fixed-forest.program.v1");
     fn feature_specs() -> Vec<ApplicationFeatureSpec> {
         let mut specs = program::Program::feature_specs();
-        specs[0] = ApplicationFeatureSpec::root::<Schema, program::Entry>()
-            .provides::<program::EntryOutput>()
-            .action::<synchronous_edit::new_source::Binding, Completion>()
-            .finish_action()
-            .action::<synchronous_edit::new_source::restricted::Binding, Completion>()
-            .finish_action()
-            .action::<synchronous_edit::Binding, Completion>()
-            .finish_action()
-            .action::<predecessor::synchronous::Binding, Completion>()
-            .finish_action()
-            .action::<edit::Binding, Delivery>()
-            .finish_action()
-            .action::<member_edit::Binding, Completion>()
-            .finish_action()
-            .action::<authored_member::retire::Binding, Completion>()
-            .finish_action()
-            .action::<authored_member::restore::Binding, Completion>()
-            .finish_action()
-            .action::<member_delete::Binding, Completion>()
-            .finish_action()
-            .finish();
+        specs[0] = program::with_envelope_completion_actions(ApplicationFeatureSpec::root::<
+            Schema,
+            program::Entry,
+        >())
+        .provides::<program::EntryOutput>()
+        .action::<synchronous_edit::new_source::Binding, Completion>()
+        .finish_action()
+        .action::<synchronous_edit::new_source::restricted::Binding, Completion>()
+        .finish_action()
+        .action::<synchronous_edit::Binding, Completion>()
+        .finish_action()
+        .action::<predecessor::synchronous::Binding, Completion>()
+        .finish_action()
+        .action::<edit::Binding, Delivery>()
+        .finish_action()
+        .action::<member_edit::Binding, Completion>()
+        .finish_action()
+        .action::<authored_member::retire::Binding, Completion>()
+        .finish_action()
+        .action::<authored_member::restore::Binding, Completion>()
+        .finish_action()
+        .action::<member_delete::Binding, Completion>()
+        .finish_action()
+        .finish();
         specs
     }
 }

@@ -34,12 +34,13 @@ pub(super) fn admit(
                 // ordinary part before candidate preparation, with no origin.
                 continue;
             }
+            let crate::domain_computation::primary_graph::provider::CoupledApplicationMemberKind::Producer { producer, meaning } = &member.kind else { continue };
             member
                 .owned
                 .as_mut()
                 .expect("actual prepared coupled writer")
                 .attempt
-                .admit_owned_output_correspondence(prepared, &member.producer, &member.meaning)
+                .admit_owned_output_correspondence(prepared, producer, meaning)
                 .map_err(correspondence_denial)?;
         }
     } else if let Some(publisher) = &provider.graph.application_publication {

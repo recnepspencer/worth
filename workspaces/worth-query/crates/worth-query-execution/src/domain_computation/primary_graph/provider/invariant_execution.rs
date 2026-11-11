@@ -199,9 +199,8 @@ impl WorthQueryPrimaryGraphProvider {
     ) -> Result<(), WorthQueryInvariantExecutionFailure> {
         let mut material = self.prepare_authored_restoration(execution, material)?;
 
-        let native_assembly = assembly.map(|assembly| assembly as &dyn worth_relational::facade::mvcc::RelationalAuthoredCoupledProducerAssembly);
         let coupling =
-            self.native_authored_coupling(execution, session, &mut material, native_assembly)?;
+            self.native_authored_coupling(execution, session, &mut material, assembly)?;
         self.bind_independent_restoration(&mut material)?;
         let appendix = if assembly.is_none()
             && coupling.is_none()

@@ -80,6 +80,7 @@ where
         idempotency,
         aftermath_causality,
     } = prepared;
+    let idempotency = *idempotency;
     let snapshot = lease.snapshot();
     let attempt_basis = WorthQueryApplicationAttemptBasis::capture(
         application,

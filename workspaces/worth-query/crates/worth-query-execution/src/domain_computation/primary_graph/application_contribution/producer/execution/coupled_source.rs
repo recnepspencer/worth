@@ -9,13 +9,13 @@ use worth_query_declaration::facade::application_query::{
 use worth_relational::facade::runtime::RelationalPinnedRead;
 mod created;
 
-pub(in crate::domain_computation::primary_graph::application_contribution::producer) enum CoupledSourceReadStop
+pub(in crate::domain_computation::primary_graph::application_contribution) enum CoupledSourceReadStop
 {
     Native(worth_relational::facade::mvcc::RelationalCoupledAssemblyFailure),
     Query(ProducerExecutionStop),
 }
 impl CoupledSourceReadStop {
-    pub(in crate::domain_computation::primary_graph::application_contribution::producer) fn capture(
+    pub(in crate::domain_computation::primary_graph::application_contribution) fn capture(
         cause: crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenial,
     ) -> Self {
         execution_failed(
@@ -50,24 +50,22 @@ impl From<WorthQueryOutputDemandDenial> for CoupledSourceReadStop {
     }
 }
 
-pub(in crate::domain_computation::primary_graph::application_contribution::producer) struct ErasedAppliedProducerSource
+pub(in crate::domain_computation::primary_graph::application_contribution) struct ErasedAppliedProducerSource
 {
-    pub(in crate::domain_computation::primary_graph::application_contribution::producer) scope:
+    pub(in crate::domain_computation::primary_graph::application_contribution) scope:
         worth_relational::facade::identity::EntityId,
-    pub(in crate::domain_computation::primary_graph::application_contribution::producer) partition:
-        [u8; 32],
-    pub(in crate::domain_computation::primary_graph::application_contribution::producer) predecessor:
+    pub(in crate::domain_computation::primary_graph::application_contribution) partition: [u8; 32],
+    pub(in crate::domain_computation::primary_graph::application_contribution) predecessor:
         Option<worth_relational::facade::mvcc::RelationalRequiredOutputPublication>,
-    pub(in crate::domain_computation::primary_graph::application_contribution::producer) profile:
+    pub(in crate::domain_computation::primary_graph::application_contribution) profile:
         &'static str,
-    pub(in crate::domain_computation::primary_graph::application_contribution::producer) lifecycle:
+    pub(in crate::domain_computation::primary_graph::application_contribution) lifecycle:
         super::super::WorthQueryProducerLifecyclePosture,
-    pub(in crate::domain_computation::primary_graph::application_contribution::producer) source:
+    pub(in crate::domain_computation::primary_graph::application_contribution) source:
         Box<dyn std::any::Any>,
 }
 
-pub(in crate::domain_computation::primary_graph::application_contribution::producer) enum CoupledSourceRead
-{
+pub(in crate::domain_computation::primary_graph::application_contribution) enum CoupledSourceRead {
     Retiring,
     Prepared(usize),
     Verified(super::super::VerifiedAppliedParent),
@@ -178,12 +176,11 @@ where
         .map_err(|cause| query_admission_denied(Binding::IDENTITY, cause))?;
     let partition = *plan.parameter_binding_identity().bytes();
     let root = scope.entity_id();
-    if demand.reuse_prepared {
-        if let Some(index) =
+    if demand.reuse_prepared
+        && let Some(index) =
             assembly.prepared_route_index(execution, demand.family, root, &partition)?
-        {
-            return Ok(CoupledSourceRead::Prepared(index));
-        }
+    {
+        return Ok(CoupledSourceRead::Prepared(index));
     }
     let predecessor = match assembly.declared_owner(execution, demand.family, root, &partition)? {
         Some(worth_relational::facade::mvcc::RelationalDeclaredCoupledOwner::Retiring) => {
@@ -244,17 +241,18 @@ where
                 ),
         })?
     };
-    if demand.reuse_prepared && assembly.permits_unchanged_output_selection() {
-        if let Some(parent) = runtime.verify_applied_output_parent::<Binding::OutputFamily>(
+    if demand.reuse_prepared
+        && assembly.permits_unchanged_output_selection()
+        && let Some(parent) = runtime.verify_applied_output_parent::<Binding::OutputFamily>(
             execution,
             request,
             before,
             &candidate,
             &source,
             predecessor.as_ref(),
-        )? {
-            return Ok(CoupledSourceRead::Verified(parent));
-        }
+        )?
+    {
+        return Ok(CoupledSourceRead::Verified(parent));
     }
     let profile = <Binding::OutputFamily as super::super::WorthQueryProducerOutputFamily<Schema>>::profile_kind(&source.value);
     let lifecycle = super::super::demand::selection::retained_liveness::applied_lifecycle::<

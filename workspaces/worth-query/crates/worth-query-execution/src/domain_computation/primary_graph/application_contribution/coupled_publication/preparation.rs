@@ -1,6 +1,6 @@
 //! Read proposed sources and retain actual writers before final group validation.
 use super::*;
-impl<'a, 'run, 'phase, S: ApplicationSchema> DeclaredProducerAssembly<'a, 'run, 'phase, S> {
+impl<'a, 'run, 'phase, S: ApplicationSchema> CoupledApplicationAssembly<'a, 'run, 'phase, S> {
     pub(super) fn prepare(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
@@ -19,22 +19,38 @@ impl<'a, 'run, 'phase, S: ApplicationSchema> DeclaredProducerAssembly<'a, 'run, 
             crate::relational_snapshot_release::release_query_snapshot(runtime, &snapshot);
             pin.map_err(|cause| WorthQueryOutputDemandDenial::new(WorthQueryOutputDemandDenialKind::ForeignSource, format!("coupled before pin: {cause:?}")))
         })?;
+        let stage_demands = self.prepare_authored(execution, &before_pin, candidate)?;
+        for demands in &stage_demands {
+            if let Some(cause) = demands.take_failure() {
+                return Err(CoupledSourceReadStop::capture(cause));
+            }
+            for demand in &demands.values {
+                self.prepare_one(execution, &before_pin, demand, candidate)?;
+            }
+        }
         for demand in &self.demands.values {
             self.prepare_one(execution, &before_pin, demand, candidate)?;
         }
-        if let Some(tree) = &self.demands.synchronous {
-            tree.assemble(self, execution, &before_pin, candidate)?;
-        }
+        let roots = std::iter::once(&self.demands.synchronous)
+            .chain(stage_demands.iter().map(|demands| &demands.synchronous))
+            .flat_map(|roots| roots.iter())
+            .collect::<Vec<_>>();
+        synchronous_outputs::CapturedSynchronousOutputs::assemble(
+            &roots,
+            self,
+            execution,
+            &before_pin,
+            candidate,
+        )?;
         Ok(())
     }
-    pub(in crate::domain_computation::primary_graph::application_contribution::producer) fn prepare_one(
+    pub(in crate::domain_computation::primary_graph::application_contribution) fn prepare_one(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         before_pin: &worth_relational::facade::runtime::RelationalPinnedRead,
         demand: &crate::domain_computation::primary_graph::application_attempt::coupled_outputs::DeclaredCoupledOutputDemand,
         candidate: &mut RelationalAuthoredCoupledCandidate<'_>,
-    ) -> Result<Option<super::synchronous_outputs::AppliedOutputParent>, CoupledSourceReadStop>
-    {
+    ) -> Result<Option<synchronous_outputs::AppliedOutputParent>, CoupledSourceReadStop> {
         let principal = self.principal.ok_or_else(|| {
             WorthQueryOutputDemandDenial::new(
                 WorthQueryOutputDemandDenialKind::ForeignSource,
@@ -43,7 +59,7 @@ impl<'a, 'run, 'phase, S: ApplicationSchema> DeclaredProducerAssembly<'a, 'run, 
         })?;
         let registry = &self.application.installed_producers;
         let source_entry = registry.declared_coupled_source(demand)?;
-        let source = source_entry.executor.read_coupled_source(
+        let source = source_entry.coupled_executor().read_coupled_source(
             execution,
             self.application,
             principal,
@@ -54,8 +70,8 @@ impl<'a, 'run, 'phase, S: ApplicationSchema> DeclaredProducerAssembly<'a, 'run, 
             candidate,
         )?;
         let source = match source {
-            super::super::execution::CoupledSourceRead::Retiring => return Ok(None),
-            super::super::execution::CoupledSourceRead::Prepared(index) => {
+            execution::CoupledSourceRead::Retiring => return Ok(None),
+            execution::CoupledSourceRead::Prepared(index) => {
                 let writers = self.writers.borrow();
                 let writer = writers.get(index).ok_or_else(|| {
                     WorthQueryOutputDemandDenial::new(
@@ -72,20 +88,18 @@ impl<'a, 'run, 'phase, S: ApplicationSchema> DeclaredProducerAssembly<'a, 'run, 
                     )
                     .into());
                 }
-                return Ok(Some(
-                    super::super::synchronous_outputs::AppliedOutputParent::new(
-                        candidate.pin_source(execution)?,
-                        writer.meaning.source_scope,
-                    ),
-                ));
+                return Ok(Some(synchronous_outputs::AppliedOutputParent::new(
+                    candidate.pin_source(execution)?,
+                    writer.meaning.source_scope,
+                )));
             }
-            super::super::execution::CoupledSourceRead::Verified(parent) => {
+            execution::CoupledSourceRead::Verified(parent) => {
                 return self
                     .retain_verified_parent(execution, parent)
                     .map(Some)
                     .map_err(Into::into);
             }
-            super::super::execution::CoupledSourceRead::Source(source) => source,
+            execution::CoupledSourceRead::Source(source) => source,
         };
         let lifecycle = source.lifecycle;
         let producer = registry.declared_coupled_producer(demand, source.profile, lifecycle)?;
@@ -97,7 +111,7 @@ impl<'a, 'run, 'phase, S: ApplicationSchema> DeclaredProducerAssembly<'a, 'run, 
             &producer.declaration.identity,
         )?;
         let pin = candidate.pin_source(execution)?;
-        let prepared = producer.executor.prepare_coupled_writer(
+        let prepared = producer.coupled_executor().prepare_coupled_writer(
             self.phase,
             self.coordination,
             self.application,
@@ -153,7 +167,7 @@ impl<'a, 'run, 'phase, S: ApplicationSchema> DeclaredProducerAssembly<'a, 'run, 
             .runtime
             .primary_provider
             .retain_coupled_after_own(writer.session(), after_own.clone());
-        Ok(Some(super::synchronous_outputs::AppliedOutputParent::new(
+        Ok(Some(synchronous_outputs::AppliedOutputParent::new(
             after_own,
             source_scope,
         )))

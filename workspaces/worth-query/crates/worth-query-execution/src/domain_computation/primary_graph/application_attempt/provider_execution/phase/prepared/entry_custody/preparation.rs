@@ -38,6 +38,7 @@ where
     } = entry;
     let WorthQueryApplicationEffectProgram {
         synchronous_outputs,
+        authored_stages,
         producer_round_limits,
         read_set,
         mut effects,
@@ -69,6 +70,9 @@ where
                 .map(|proof| std::mem::take(&mut proof.coupled_outputs))
                 .unwrap_or_default()
         });
+    if !authored_stages.is_empty() {
+        coupled_outputs.authored_stages = Some(Box::new(authored_stages));
+    }
     coupled_outputs.synchronous = synchronous_outputs;
     coupled_outputs.round_limits = producer_round_limits;
     let workflow_approval_authority = workflow_settlement
@@ -112,15 +116,17 @@ where
         Ok(product) => product,
         Err(outcome) => return terminal(outcome),
     };
-    if let Some(outcome) = resolve_retained_idempotency(
-        execution,
-        application,
-        &mut admission,
-        &current_product,
-        idempotency,
-        aftermath_causality.as_ref(),
-        coordination,
-    ) {
+    if idempotency.authored_stage_identity().is_none()
+        && let Some(outcome) = resolve_retained_idempotency(
+            execution,
+            application,
+            &mut admission,
+            &current_product,
+            idempotency,
+            aftermath_causality.as_ref(),
+            coordination,
+        )
+    {
         return terminal(outcome);
     }
     if let Some(denial) = new_commit_refusal {

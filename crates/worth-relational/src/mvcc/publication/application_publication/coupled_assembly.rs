@@ -14,6 +14,7 @@ use std::sync::Arc;
 use worth_execution::ExecutionRequest;
 mod adoption;
 mod aggregate_read;
+mod authored_writes;
 mod completion;
 mod continuation;
 pub use continuation::RelationalCoupledProducerContinuation;
@@ -53,17 +54,31 @@ pub trait RelationalAuthoredCoupledProducerAssembly {
 #[derive(Debug)]
 pub struct RelationalCoupledAssemblyFailure {
     pub(crate) cause: crate::authority::mutation::MutationApplyDenial,
+    stage_conflict: Option<(crate::transactions::data::RecordRef, usize, usize)>,
 }
 impl From<TransactionCommitError> for RelationalCoupledAssemblyFailure {
     fn from(error: TransactionCommitError) -> Self {
         Self {
             cause: error.into(),
+            stage_conflict: None,
         }
     }
 }
 impl RelationalCoupledAssemblyFailure {
+    /// Exact conflicting record and physical authored-stage positions (prefix
+    /// is zero). Descriptive evidence for Query's typed stage refusal only.
+    pub fn authored_stage_conflict(
+        &self,
+    ) -> Option<(&crate::transactions::data::RecordRef, usize, usize)> {
+        self.stage_conflict
+            .as_ref()
+            .map(|(record, earlier, later)| (record, *earlier, *later))
+    }
     pub(crate) fn from_apply(cause: crate::authority::mutation::MutationApplyDenial) -> Self {
-        Self { cause }
+        Self {
+            cause,
+            stage_conflict: None,
+        }
     }
 }
 
@@ -104,6 +119,7 @@ pub struct RelationalAuthoredCoupledCandidate<'a> {
     authored_fragments: usize,
     continuation: continuation::ContinuationState,
     fresh_records: net_plan::CreatorCustody,
+    authored_writes: authored_writes::AuthoredWrites,
     read: std::cell::RefCell<Option<RelationalPinnedRead<RelationalAppliedCandidateReadIdentity>>>,
 }
 
@@ -119,6 +135,8 @@ pub(crate) struct CoupledPublicationPart {
 /// One later authored stage applied over the candidate pin under the authored
 /// writer's custody. It is never a producer posture and owns no output route.
 pub(crate) struct CoupledAuthoredStagePart {
+    pub(crate) roles: Vec<RequiredOutputRoleTarget>,
+    pub(crate) output_ids: worth_execution::ExecutionArray<crate::identity::data::EntityId>,
     pub(crate) source: crate::identity::data::EntityId,
     pub(crate) input: RelationalPinnedRead<RelationalAppliedCandidateReadIdentity>,
     pub(crate) commands: crate::transactions::data::MergedCommitPlan,

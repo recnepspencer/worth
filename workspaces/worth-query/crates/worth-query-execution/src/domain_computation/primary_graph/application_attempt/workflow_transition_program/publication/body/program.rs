@@ -44,6 +44,7 @@ where
         })?;
     let WorthQueryApplicationEffectProgram {
         synchronous_outputs,
+        authored_stages,
         producer_round_limits: _,
         mut read_set,
         effects,
@@ -58,7 +59,7 @@ where
     } = program;
     // Native approval has no application outputs/emissions/conditional definition.
     // Refuse an unimplemented future profile rather than erase its carried state.
-    if synchronous_outputs.is_some() || !content_attachments.is_empty() || conditional_definition.is_some() || !output_correspondence.is_empty()
+    if !authored_stages.is_empty() || !synchronous_outputs.is_empty() || !content_attachments.is_empty() || conditional_definition.is_some() || !output_correspondence.is_empty()
         || !producer_required_invariants.is_empty()
         || effect_posture != crate::domain_computation::provider_session::WorthQueryApplicationEffectPosture::Platform {
         return Err(WorkflowApprovalBodyDenial::UnsupportedProfile);

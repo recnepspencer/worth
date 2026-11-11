@@ -36,7 +36,8 @@ where
     let progress_update = admitted.prepare_progress_update(meaning.decision.outcome(), None)?;
     Ok(PreparedWorkflowAdvance::Transition {
         program: WorthQueryApplicationEffectProgram {
-            synchronous_outputs: None,
+            synchronous_outputs: Vec::new(),
+            authored_stages: Vec::new(),
             producer_round_limits: crate::domain_computation::primary_graph::application_contribution::producer::synchronous_outputs::default_producer_round_bounds(),
             content_attachments: Default::default(),
             read_set: admitted.into_read_set(),

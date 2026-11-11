@@ -140,21 +140,23 @@ where
         recipe: std::sync::Arc<Recipe<S, C>>,
         order: &ApplicationProgramConnectionOrder,
     ) -> WorthQueryApplicationEffectProgram<S, O, I, Scope> {
-        program.synchronous_outputs = Some(CapturedSynchronousOutputs::capture(
-            execution,
-            Binding::<S, C>::IDENTITY,
-            std::mem::size_of::<Discovered<C, E, Recipe<S, C>>>()
-                + std::mem::size_of::<root::Root<S>>(),
-            || {
-                let root: root::Root<S> =
-                    root::Root::Discovered(Box::new(Discovered::<C, E, Recipe<S, C>> {
-                        recipe,
-                        order: order.clone(),
-                        marker: PhantomData,
-                    }));
-                Box::new(root)
-            },
-        ));
+        program
+            .synchronous_outputs
+            .push(CapturedSynchronousOutputs::capture(
+                execution,
+                Binding::<S, C>::IDENTITY,
+                std::mem::size_of::<Discovered<C, E, Recipe<S, C>>>()
+                    + std::mem::size_of::<root::Root<S>>(),
+                || {
+                    let root: root::Root<S> =
+                        root::Root::Discovered(Box::new(Discovered::<C, E, Recipe<S, C>> {
+                            recipe,
+                            order: order.clone(),
+                            marker: PhantomData,
+                        }));
+                    Box::new(root)
+                },
+            ));
         program
     }
 }

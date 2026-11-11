@@ -61,7 +61,8 @@ pub struct WorthQueryPreparedApplicationCommit<
     native_reference_invariants:
         worth_query_installation::facade::WorthQueryInvariantExecutionContract,
     authorization: WorthQueryProviderCommitAuthorization,
-    idempotency: WorthQueryApplicationIdempotencyBinding,
+    // Own the expanded envelope proof without inflating the prepared phase frame.
+    idempotency: Box<WorthQueryApplicationIdempotencyBinding>,
     aftermath_causality: Option<
         crate::domain_computation::application_aftermath::WorthQueryPendingAftermathCausality,
     >,
@@ -257,7 +258,7 @@ where
         effect_posture,
         native_reference_invariants,
         authorization,
-        idempotency,
+        idempotency: Box::new(idempotency),
         aftermath_causality,
     })
 }
@@ -300,8 +301,9 @@ const fn terminal<Schema, Operation, Input, Scope>(
 }
 
 pub(in crate::domain_computation::primary_graph) use running::progression::coupled::{
-    inspect_coupled_application, prepare_coupled_application, register_coupled_application,
-    ApprovedCoupledWriter, CommitPreparedCoupledWriter, InspectedCoupledWriter,
+    inspect_authored_application, inspect_coupled_application, prepare_coupled_application,
+    register_coupled_application, ApprovedCoupledWriter, CommitPreparedCoupledWriter,
+    InspectedAuthoredApplication, InspectedCoupledWriter,
 };
 
 mod court_doors_for_test;

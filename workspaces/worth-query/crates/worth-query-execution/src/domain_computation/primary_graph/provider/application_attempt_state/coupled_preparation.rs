@@ -3,10 +3,18 @@ use super::*;
 use crate::domain_computation::primary_graph::{
     application_query::AppliedSourcePublication, output_lineage::ProducerHandlerPreparation,
 };
+pub(in crate::domain_computation::primary_graph) enum CoupledAttemptPreparation {
+    Producer(CoupledProducerPreparation),
+    AuthoredStage(
+        worth_relational::facade::runtime::RelationalPinnedRead<
+            worth_relational::facade::runtime::RelationalAppliedCandidateReadIdentity,
+        >,
+    ),
+}
 pub(in crate::domain_computation::primary_graph) struct CoupledProducerPreparation {
     pub(in crate::domain_computation::primary_graph::provider) completion:
         crate::domain_computation::primary_graph::output_lineage::CoupledOutputCompletion,
-    pub(in crate::domain_computation::primary_graph::provider) after_own: Option<
+    pub(in crate::domain_computation::primary_graph) after_own: Option<
         worth_relational::facade::runtime::RelationalPinnedRead<
             worth_relational::facade::runtime::RelationalAppliedCandidateReadIdentity,
         >,
@@ -24,6 +32,23 @@ impl CoupledProducerPreparation {
     }
 }
 impl super::super::WorthQueryPrimaryGraphProvider {
+    pub(in crate::domain_computation::primary_graph) fn retain_authored_stage_after_own(
+        &self,
+        session: WorthQueryProviderSessionView<'_>,
+        pin: worth_relational::facade::runtime::RelationalPinnedRead<
+            worth_relational::facade::runtime::RelationalAppliedCandidateReadIdentity,
+        >,
+    ) {
+        let mut attempts = self
+            .attempts
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
+        attempts
+            .attempt_state_mut(session)
+            .expect("actual registered authored stage")
+            .attempt_mut()
+            .retain_authored_stage_after_own(pin);
+    }
     pub(in crate::domain_computation::primary_graph) fn retain_coupled_after_own(
         &self,
         session: WorthQueryProviderSessionView<'_>,
@@ -77,11 +102,62 @@ pub(in crate::domain_computation::primary_graph) struct CoupledApplicationMember
     >,
     pub(in crate::domain_computation::primary_graph::provider) owned:
         Option<OwnedCoupledContribution>,
-    pub(in crate::domain_computation::primary_graph::provider) producer: String,
-    pub(in crate::domain_computation::primary_graph::provider) meaning:
-        worth_relational::facade::mvcc::RequiredOutputPublicationMeaning,
+    pub(in crate::domain_computation::primary_graph::provider) kind: CoupledApplicationMemberKind,
+}
+pub(in crate::domain_computation::primary_graph) enum CoupledApplicationMemberKind {
+    Producer {
+        producer: String,
+        meaning: worth_relational::facade::mvcc::RequiredOutputPublicationMeaning,
+    },
+    AuthoredStage {
+        stage: usize,
+        identity:
+            worth_query_declaration::facade::application_operation::ApplicationEditStageIdentity,
+        source: worth_relational::facade::identity::EntityId,
+        binding: &'static str,
+    },
 }
 impl CoupledApplicationMember {
+    pub(in crate::domain_computation::primary_graph) fn producer_route(
+        &self,
+    ) -> Option<(
+        &str,
+        &worth_relational::facade::mvcc::RequiredOutputPublicationMeaning,
+    )> {
+        match &self.kind {
+            CoupledApplicationMemberKind::Producer { producer, meaning } => {
+                Some((producer, meaning))
+            }
+            CoupledApplicationMemberKind::AuthoredStage { .. } => None,
+        }
+    }
+    pub(in crate::domain_computation::primary_graph) fn source(
+        &self,
+    ) -> worth_relational::facade::identity::EntityId {
+        match &self.kind {
+            CoupledApplicationMemberKind::Producer { meaning, .. } => meaning.source_scope,
+            CoupledApplicationMemberKind::AuthoredStage { source, .. } => *source,
+        }
+    }
+    pub(in crate::domain_computation::primary_graph) fn from_authored_stage_session(
+        terminal: crate::domain_computation::provider_session::WorthQueryProviderSessionTerminalBinding,
+        stage: usize,
+        identity: worth_query_declaration::facade::application_operation::ApplicationEditStageIdentity,
+        source: worth_relational::facade::identity::EntityId,
+        binding: &'static str,
+    ) -> Self {
+        Self {
+            terminal,
+            owned: None,
+            pending: None,
+            kind: CoupledApplicationMemberKind::AuthoredStage {
+                stage,
+                identity,
+                source,
+                binding,
+            },
+        }
+    }
     pub(in crate::domain_computation::primary_graph) fn from_prepared_session(
         terminal: crate::domain_computation::provider_session::WorthQueryProviderSessionTerminalBinding,
         producer: &str,
@@ -91,8 +167,10 @@ impl CoupledApplicationMember {
             terminal,
             owned: None,
             pending: None,
-            producer: producer.to_owned(),
-            meaning,
+            kind: CoupledApplicationMemberKind::Producer {
+                producer: producer.to_owned(),
+                meaning,
+            },
         }
     }
 }

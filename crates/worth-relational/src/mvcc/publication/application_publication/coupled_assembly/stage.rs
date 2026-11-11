@@ -20,16 +20,45 @@ impl RelationalAuthoredCoupledCandidate<'_> {
         content: &crate::content::RelationalContentAttachments,
         batches: Vec<WorkerIntentBatch>,
     ) -> Result<(), RelationalCoupledAssemblyFailure> {
+        self.append_authored_stage_outputs(execution, source, content, batches, Vec::new())
+    }
+
+    /// Plain authored correspondence is resolved from the same actual suffix
+    /// allocation as its commands. It grants no producer or lifetime custody.
+    pub fn append_authored_stage_outputs(
+        &mut self,
+        execution: &ExecutionRequest<'_, '_>,
+        source: crate::identity::data::EntityId,
+        content: &crate::content::RelationalContentAttachments,
+        batches: Vec<WorkerIntentBatch>,
+        mut roles: Vec<RequiredOutputRoleTarget>,
+    ) -> Result<(), RelationalCoupledAssemblyFailure> {
         if self.next_authored_stage() != Some(source) || !self.parts.is_empty() {
             return Err(part::reject(Cause::UnadmittedAuthoredStage, source).into());
         }
         let applied = self.apply_suffix(
             execution,
-            part::SuffixWriter::Authored { source },
+            part::SuffixWriter::Authored {
+                source,
+                roles: &mut roles,
+            },
             content,
             batches,
         )?;
+        self.authored_writes.retain(
+            execution,
+            self.stages.len() + 1,
+            &applied.plan,
+            &applied.records,
+        )?;
+        let output_ids = ordinary_roles::resolve_applied_roles(
+            execution,
+            &roles,
+            &self.mutation.outcome.created_entities,
+        )?;
         self.stages.push(CoupledAuthoredStagePart {
+            roles,
+            output_ids,
             source,
             input: applied.read,
             commands: applied.plan,

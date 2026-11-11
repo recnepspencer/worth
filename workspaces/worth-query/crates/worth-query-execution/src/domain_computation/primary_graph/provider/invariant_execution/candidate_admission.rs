@@ -1,5 +1,9 @@
 //! Each writer admits its own contract under one genuine Native invariant judgment.
 use super::*;
+enum CoupledContribution<'a> {
+    Producer(&'a worth_relational::facade::mvcc::RequiredOutputPublicationMeaning),
+    AuthoredStage(usize),
+}
 pub(super) enum CandidateInvariantJudgment<'borrow, 'candidate> {
     Standalone(&'candidate worth_relational::facade::mvcc::ValidatedRelationalProposal),
     GroupOwner(&'borrow ClosedCoupledInvariantReceipts<'candidate>),
@@ -104,11 +108,44 @@ impl WorthQueryPrimaryGraphProvider {
         receipts: &ClosedCoupledInvariantReceipts<'_>,
         meaning: &worth_relational::facade::mvcc::RequiredOutputPublicationMeaning,
     ) -> Result<(), WorthQueryInvariantExecutionFailure> {
+        self.admit_coupled_part(
+            execution,
+            session,
+            receipts,
+            CoupledContribution::Producer(meaning),
+        )
+    }
+
+    pub(in crate::domain_computation::primary_graph) fn admit_authored_stage_candidate(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        session: WorthQueryProviderSessionView<'_>,
+        receipts: &ClosedCoupledInvariantReceipts<'_>,
+        stage: usize,
+    ) -> Result<(), WorthQueryInvariantExecutionFailure> {
+        self.admit_coupled_part(
+            execution,
+            session,
+            receipts,
+            CoupledContribution::AuthoredStage(stage),
+        )
+    }
+
+    fn admit_coupled_part(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        session: WorthQueryProviderSessionView<'_>,
+        receipts: &ClosedCoupledInvariantReceipts<'_>,
+        contribution: CoupledContribution<'_>,
+    ) -> Result<(), WorthQueryInvariantExecutionFailure> {
         let material = self.invariant_candidate_material(session, None)?;
         let candidate = receipts.candidate();
         let work = self.admit_candidate_material(CandidateInvariantJudgment::GroupMember(receipts), &material, || {
             // Native projects this writer's own part only; the other parts are theirs.
-            let touches = candidate.coupled_producer_mutation_touches(execution, meaning)
+            let touches = match contribution {
+                CoupledContribution::Producer(meaning) => candidate.coupled_producer_mutation_touches(execution, meaning),
+                CoupledContribution::AuthoredStage(stage) => candidate.authored_stage_mutation_touches(execution, stage),
+            }
                 .ok_or_else(missing_candidate_failure)?
                 .map_err(super::super::application_touch_admission::TouchAdmissionFailure::Projection)
                 .map_err(super::super::application_touch_admission::TouchAdmissionFailure::into_invariant_failure)?;

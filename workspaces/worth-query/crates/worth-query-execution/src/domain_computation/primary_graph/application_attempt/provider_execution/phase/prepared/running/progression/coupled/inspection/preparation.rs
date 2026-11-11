@@ -14,7 +14,8 @@ impl<'run> ApprovedCoupledWriter<'run> {
     ) -> Result<CommitPreparedCoupledWriter<'run>, WorthQueryApplicationCommitOutcome>
     where
         S: ApplicationSchema,
-        B: WorthQueryApplicationProducerBinding<S>,
+        B: ApplicationMutationBinding<S>,
+        B::Input: Clone + Send + Sync,
     {
         let Self {
             mut custody,
@@ -62,12 +63,27 @@ impl CommitPreparedCoupledWriter<'_> {
     pub(in crate::domain_computation::primary_graph) fn completion(
         &self,
     ) -> crate::domain_computation::primary_graph::output_lineage::CoupledOutputCompletion {
-        self.custody.completion.clone()
+        self.custody
+            .completion
+            .as_ref()
+            .expect("producer completion belongs to a producer member")
+            .clone()
     }
     pub(in crate::domain_computation::primary_graph) fn terminal_binding(
         &self,
     ) -> crate::domain_computation::provider_session::WorthQueryProviderSessionTerminalBinding {
         self.prepared.terminal_binding()
+    }
+    pub(in crate::domain_computation::primary_graph) fn authored_member(
+        &self,
+        stage: usize,
+        identity: worth_query_declaration::facade::application_operation::ApplicationEditStageIdentity,
+        source: worth_relational::facade::identity::EntityId,
+        binding: &'static str,
+    ) -> crate::domain_computation::primary_graph::provider::CoupledApplicationMember {
+        crate::domain_computation::primary_graph::provider::CoupledApplicationMember::from_authored_stage_session(
+            self.prepared.terminal_binding(), stage, identity, source, binding,
+        )
     }
     pub(in crate::domain_computation::primary_graph) fn member(
         &self,
@@ -86,7 +102,8 @@ impl CommitPreparedCoupledWriter<'_> {
     ) -> WorthQueryApplicationCommitOutcome
     where
         S: ApplicationSchema,
-        B: WorthQueryApplicationProducerBinding<S>,
+        B: ApplicationMutationBinding<S>,
+        B::Input: Clone + Send + Sync,
     {
         let Self {
             mut custody,

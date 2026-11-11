@@ -1,3 +1,10 @@
+mod envelope;
+pub use envelope::{
+    AuthoredStageExecutionCause, WorthQueryEditEnvelope, WorthQueryEditEnvelopeExecutionDenial,
+    WorthQueryEditEnvelopeOutcome, WorthQueryEditEnvelopeReceipt, WorthQueryEditEnvelopeSubject,
+    WorthQueryEditStageDomainDenial, WorthQueryEditStageExecutionDenial,
+    WorthQueryEditStageResultDenial, WorthQueryEditStageToken, WorthQueryKeyedEditEnvelope,
+};
 mod attempt;
 mod producer_round_limits;
 pub use producer_round_limits::ApplicationProducerRoundLimits;

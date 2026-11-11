@@ -1,8 +1,14 @@
-//! Declared roots select installed producers; Native decides their exact roster.
-use super::execution::{CoupledSourceReadStop, PreparedCoupledWriter};
-use super::*;
+//! One Native candidate owns the declared authored stages and required producer wave.
+use super::producer::execution::{CoupledSourceReadStop, PreparedCoupledWriter};
+use super::producer::{
+    execution, registry, synchronous_outputs, WorthQueryOutputDemandDenial,
+    WorthQueryOutputDemandDenialKind,
+};
+use worth_query_installation::facade::ApplicationSchema;
+mod authored_stages;
 mod disposal;
 mod preparation;
+mod validation;
 use crate::domain_computation::primary_graph::{
     application_attempt::coupled_outputs::DeclaredCoupledOutputDemands, WorthQueryAdvancementPhase,
     WorthQueryPrimaryGraphApplicationRuntime,
@@ -17,7 +23,7 @@ use worth_relational::facade::mvcc::{
     RelationalCoupledAssemblyFailure,
 };
 
-pub(in crate::domain_computation::primary_graph) struct DeclaredProducerAssembly<
+pub(in crate::domain_computation::primary_graph) struct CoupledApplicationAssembly<
     'a,
     'run,
     'phase,
@@ -25,18 +31,24 @@ pub(in crate::domain_computation::primary_graph) struct DeclaredProducerAssembly
 > {
     phase: &'run WorthQueryAdvancementPhase<'phase>,
     coordination: &'a crate::domain_computation::primary_graph::provider::WorthQueryApplicationBranchCommitCoordination<'a>,
-    pub(super) application: &'a WorthQueryPrimaryGraphApplicationRuntime<S>,
-    pub(super) principal: Option<&'a WorthQueryAuthenticatedExternalPrincipal<S>>,
-    pub(super) before: &'a crate::basis::WorthQueryProductBranchLease,
-    pub(super) request: &'a WorthQueryRequestScope,
+    pub(in crate::domain_computation::primary_graph::application_contribution) application: &'a WorthQueryPrimaryGraphApplicationRuntime<S>,
+    pub(in crate::domain_computation::primary_graph::application_contribution) principal: Option<&'a WorthQueryAuthenticatedExternalPrincipal<S>>,
+    pub(in crate::domain_computation::primary_graph::application_contribution) before: &'a crate::basis::WorthQueryProductBranchLease,
+    pub(in crate::domain_computation::primary_graph::application_contribution) request: &'a WorthQueryRequestScope,
     demands: &'a DeclaredCoupledOutputDemands,
     root_session: crate::domain_computation::provider_session::WorthQueryProviderSessionTerminalBinding,
-    rounds: RefCell<super::synchronous_outputs::rounds::limits::ProducerRoundBudget>,
+    rounds: RefCell<synchronous_outputs::rounds::limits::ProducerRoundBudget>,
     writers: RefCell<Vec<CoupledWriter<'run, S>>>,
+    authored: RefCell<Vec<AuthoredWriter<'run, S>>>,
     denial: RefCell<Option<WorthQueryOutputDemandDenial>>,
     abort_failures: RefCell<Vec<crate::domain_computation::primary_graph::WorthQueryApplicationUncommitted>>,
     /// The last assembly round ended the edit (`Break`).
     broke: std::cell::Cell<bool>,
+}
+struct AuthoredWriter<'run, S> {
+    capture: crate::domain_computation::primary_graph::application_contribution::authored_edit::CapturedAuthoredEditStage<S>,
+    physical: usize,
+    stage: Option<CoupledWriterStage<'run>>,
 }
 struct CoupledWriter<'run, S> {
     producer: std::sync::Arc<registry::InstalledProducerProvider<S>>,
@@ -53,7 +65,7 @@ enum CoupledWriterStage<'run> {
         >,
     ),
 }
-impl<'a, 'run, 'phase, S: ApplicationSchema> DeclaredProducerAssembly<'a, 'run, 'phase, S> {
+impl<'a, 'run, 'phase, S: ApplicationSchema> CoupledApplicationAssembly<'a, 'run, 'phase, S> {
     pub(in crate::domain_computation::primary_graph) fn new(
         phase: &'run WorthQueryAdvancementPhase<'phase>,
         coordination: &'a crate::domain_computation::primary_graph::provider::WorthQueryApplicationBranchCommitCoordination<'a>,
@@ -74,17 +86,16 @@ impl<'a, 'run, 'phase, S: ApplicationSchema> DeclaredProducerAssembly<'a, 'run, 
             demands,
             root_session,
             rounds: RefCell::new(
-                super::synchronous_outputs::rounds::limits::ProducerRoundBudget::new(
-                    demands.round_limits,
-                ),
+                synchronous_outputs::rounds::limits::ProducerRoundBudget::new(demands.round_limits),
             ),
             writers: RefCell::new(Vec::new()),
+            authored: RefCell::new(Vec::new()),
             denial: RefCell::new(None),
             abort_failures: RefCell::new(Vec::new()),
             broke: std::cell::Cell::new(false),
         }
     }
-    pub(super) fn retain_discovery_support(
+    pub(in crate::domain_computation::primary_graph::application_contribution) fn retain_discovery_support(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         source: worth_relational::facade::identity::EntityId,
@@ -101,17 +112,15 @@ impl<'a, 'run, 'phase, S: ApplicationSchema> DeclaredProducerAssembly<'a, 'run, 
                     support,
                 ),
             )
-            .map_err(super::execution::denial::candidate_support_denied)
+            .map_err(execution::denial::candidate_support_denied)
     }
-    pub(super) fn retain_verified_parent(
+    pub(in crate::domain_computation::primary_graph::application_contribution) fn retain_verified_parent(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
-        parent: super::VerifiedAppliedParent,
-    ) -> Result<super::synchronous_outputs::AppliedOutputParent, WorthQueryOutputDemandDenial> {
-        let applied = super::synchronous_outputs::AppliedOutputParent::new(
-            parent.pin().clone(),
-            parent.source(),
-        );
+        parent: super::producer::VerifiedAppliedParent,
+    ) -> Result<synchronous_outputs::AppliedOutputParent, WorthQueryOutputDemandDenial> {
+        let applied =
+            synchronous_outputs::AppliedOutputParent::new(parent.pin().clone(), parent.source());
         self.application
             .runtime
             .primary_provider
@@ -123,7 +132,7 @@ impl<'a, 'run, 'phase, S: ApplicationSchema> DeclaredProducerAssembly<'a, 'run, 
                     parent,
                 ),
             )
-            .map_err(super::execution::denial::candidate_support_denied)?;
+            .map_err(execution::denial::candidate_support_denied)?;
         Ok(applied)
     }
     pub(in crate::domain_computation::primary_graph) fn take_denial(
@@ -151,7 +160,7 @@ impl<'a, 'run, 'phase, S: ApplicationSchema> DeclaredProducerAssembly<'a, 'run, 
             Progression::ProductUnpublished(value) => Some(value),
             _ => None,
         };
-        let mut failure = None;
+        let mut failure = self.settle_authored(execution, unpublished);
         for writer in self.writers.borrow_mut().drain(..) {
             let Some(CoupledWriterStage::Prepared(prepared)) = writer.stage else {
                 unreachable!("whole candidate prepares each writer before World")
@@ -169,7 +178,7 @@ impl<'a, 'run, 'phase, S: ApplicationSchema> DeclaredProducerAssembly<'a, 'run, 
                     )
                     .is_some();
             let outcome = if effected {
-                writer.producer.executor.complete_coupled_writer(
+                writer.producer.coupled_executor().complete_coupled_writer(
                     execution,
                     self.phase,
                     self.application,
@@ -208,34 +217,49 @@ impl<'a, 'run, 'phase, S: ApplicationSchema> DeclaredProducerAssembly<'a, 'run, 
         coordination: &crate::domain_computation::primary_graph::provider::WorthQueryApplicationBranchCommitCoordination<'_>,
     ) -> Result<(), crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenial>
     {
+        for writer in self.authored.borrow().iter() {
+            let Some(CoupledWriterStage::Prepared(prepared)) = writer.stage.as_ref() else {
+                unreachable!("validated authored stage")
+            };
+            writer.capture.executor.authorize(
+                prepared,
+                execution,
+                self.application,
+                coordination,
+            )?;
+        }
         for writer in self.writers.borrow().iter() {
             let Some(CoupledWriterStage::Prepared(approved)) = writer.stage.as_ref() else {
                 unreachable!("validated group contains approved writers")
             };
-            writer.producer.executor.authorize_coupled_writer(
-                execution,
-                self.application,
-                approved,
-                coordination,
-            )?;
+            writer
+                .producer
+                .coupled_executor()
+                .authorize_coupled_writer(execution, self.application, approved, coordination)?;
         }
         Ok(())
     }
 }
 impl<S: ApplicationSchema> RelationalAuthoredCoupledProducerAssembly
-    for DeclaredProducerAssembly<'_, '_, '_, S>
+    for CoupledApplicationAssembly<'_, '_, '_, S>
 {
     fn assemble(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         candidate: &mut RelationalAuthoredCoupledCandidate<'_>,
     ) -> Result<ControlFlow<()>, RelationalCoupledAssemblyFailure> {
+        // Native may abandon a candidate to load one of its 256 symbol buckets
+        // and call this logical envelope again (at most 257 attempts). A real
+        // refusal belongs to the envelope, so no later callback may erase it.
+        if self.denial.borrow().is_some() {
+            self.broke.set(true);
+            return Ok(ControlFlow::Break(()));
+        }
         self.broke.set(false);
         if !self.abort_writers(execution) {
             self.broke.set(true);
             return Ok(ControlFlow::Break(()));
         }
-        self.denial.borrow_mut().take();
         if self
             .application
             .runtime
@@ -246,6 +270,13 @@ impl<S: ApplicationSchema> RelationalAuthoredCoupledProducerAssembly
             self.broke.set(true);
             return Ok(ControlFlow::Break(()));
         }
+        // A cold-symbol retry abandoned the complete candidate without an
+        // effect (G4/D1619). Route rounds are per candidate, while the original
+        // execution request still pays all work and Native bounds retries by
+        // its 256 buckets. Cold placement cannot consume a logical route round.
+        *self.rounds.borrow_mut() = synchronous_outputs::rounds::limits::ProducerRoundBudget::new(
+            self.demands.round_limits,
+        );
         let prepared = self
             .application
             .runtime
@@ -253,7 +284,7 @@ impl<S: ApplicationSchema> RelationalAuthoredCoupledProducerAssembly
             .reset_candidate_read_support(&self.root_session)
             .map_err(|cause| {
                 CoupledSourceReadStop::Query(
-                    super::execution::denial::candidate_support_denied(cause).into(),
+                    execution::denial::candidate_support_denied(cause).into(),
                 )
             })
             .and_then(|()| self.prepare(execution, candidate));
@@ -261,110 +292,12 @@ impl<S: ApplicationSchema> RelationalAuthoredCoupledProducerAssembly
             Ok(()) => Ok(ControlFlow::Continue(())),
             Err(CoupledSourceReadStop::Native(cause)) => Err(cause),
             Err(CoupledSourceReadStop::Query(cause)) => {
-                *self.denial.borrow_mut() = Some(cause.into_output_denial());
+                self.denial
+                    .borrow_mut()
+                    .get_or_insert_with(|| cause.into_output_denial());
                 self.broke.set(true);
                 Ok(ControlFlow::Break(()))
             }
         }
-    }
-}
-
-impl<S: ApplicationSchema>
-    crate::domain_computation::primary_graph::provider::CoupledProducerAssembly
-    for DeclaredProducerAssembly<'_, '_, '_, S>
-{
-    fn prepared_members(
-        &self,
-    ) -> Vec<crate::domain_computation::primary_graph::provider::CoupledApplicationMember> {
-        self.writers
-            .borrow()
-            .iter()
-            .map(|writer| {
-                let Some(CoupledWriterStage::Prepared(prepared)) = writer.stage.as_ref() else {
-                    unreachable!("validated group prepares every actual participant")
-                };
-                prepared.member(
-                    &writer.producer.declaration.identity,
-                    writer.meaning.clone(),
-                )
-            })
-            .collect()
-    }
-    fn invariant_requirements(
-        &self,
-        execution: &worth_execution::ExecutionRequest<'_, '_>,
-        provider: &crate::domain_computation::primary_graph::provider::WorthQueryPrimaryGraphProvider,
-        candidate: &worth_relational::facade::mvcc::ValidatedRelationalProposal,
-    ) -> Result<
-        Vec<worth_query_installation::facade::WorthQueryInstalledInvariantExecutionRequirement>,
-        crate::domain_computation::WorthQueryInvariantExecutionFailure,
-    > {
-        let writers = self.writers.borrow();
-        let mut actual = candidate.coupled_participants();
-        let mut requirements = Vec::new();
-        for writer in writers.iter() {
-            let matches = actual.next().is_some_and(|(producer, meaning)| {
-                producer == writer.producer.declaration.identity && meaning == &writer.meaning
-            });
-            if !matches {
-                return Err(crate::domain_computation::WorthQueryInvariantExecutionFailure::missing_coupled_settlement(writer.meaning.source_scope));
-            }
-            let Some(CoupledWriterStage::Inspected(inspected)) = writer.stage.as_ref() else {
-                unreachable!("Native completed each writer before group judgment")
-            };
-            requirements
-                .extend(provider.coupled_invariant_requirements(execution, inspected.session())?);
-        }
-        if let Some((_, meaning)) = actual.next() {
-            return Err(crate::domain_computation::WorthQueryInvariantExecutionFailure::missing_coupled_settlement(meaning.source_scope));
-        }
-        Ok(requirements)
-    }
-    fn admit_validated(
-        &self,
-        execution: &worth_execution::ExecutionRequest<'_, '_>,
-        provider: &crate::domain_computation::primary_graph::provider::WorthQueryPrimaryGraphProvider,
-        receipts: &crate::domain_computation::primary_graph::provider::ClosedCoupledInvariantReceipts<'_>,
-    ) -> Result<(), crate::domain_computation::WorthQueryInvariantExecutionFailure> {
-        for writer in self.writers.borrow_mut().iter_mut() {
-            let Some(CoupledWriterStage::Inspected(inspected)) = writer.stage.as_ref() else {
-                unreachable!("each actual assembly is approved once")
-            };
-            provider.admit_coupled_candidate(
-                execution,
-                inspected.session(),
-                receipts,
-                &writer.meaning,
-            )?;
-            let Some(CoupledWriterStage::Inspected(inspected)) = writer.stage.take() else {
-                unreachable!("retained actual inspection")
-            };
-            let prepared = inspected
-                .approve(execution, self.phase, self.application)
-                .and_then(|approved| {
-                    writer.producer.executor.prepare_coupled_commit(
-                        execution,
-                        self.phase,
-                        self.application,
-                        approved,
-                    )
-                });
-            match prepared {
-                Ok(approved) => writer.stage = Some(CoupledWriterStage::Prepared(approved)),
-                Err(outcome) => {
-                    let denial = super::execution::coupled_preparation_denial(
-                        &writer.meaning.family,
-                        outcome,
-                    )
-                    .into_output_denial();
-                    let detail = denial.subject().to_owned();
-                    *self.denial.borrow_mut() = Some(denial);
-                    return Err(crate::domain_computation::WorthQueryInvariantExecutionFailure::new(
-                        crate::domain_computation::WorthQueryInvariantExecutionDenialKind::ProviderRejected, detail,
-                    ));
-                }
-            }
-        }
-        Ok(())
     }
 }

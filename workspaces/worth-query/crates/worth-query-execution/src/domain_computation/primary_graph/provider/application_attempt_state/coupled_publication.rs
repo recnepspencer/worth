@@ -19,6 +19,56 @@ pub(in crate::domain_computation::primary_graph) struct CoupledWriterCommands {
         worth_relational::facade::content::RelationalContentAttachments,
 }
 impl WorthQueryPrimaryGraphProvider {
+    pub(in crate::domain_computation::primary_graph) fn authored_stage_commands(
+        &self,
+        session: WorthQueryProviderSessionView<'_>,
+    ) -> Result<
+        (
+            WorkerIntentBatch,
+            worth_relational::facade::content::RelationalContentAttachments,
+            Vec<worth_relational::facade::mvcc::RequiredOutputRoleTarget>,
+        ),
+        Failure,
+    > {
+        let attempts = self
+            .attempts
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
+        let staged = attempts.staged_attempt(session).ok_or_else(|| {
+            Failure::new(
+                Cause::StateLoadClosureMismatch,
+                "authored stage lost its exact registered session",
+            )
+        })?;
+        if staged
+            .attempt
+            .idempotency()
+            .authored_stage_identity()
+            .is_none()
+            || staged.attempt.receipt_appendix().is_some()
+        {
+            return Err(Failure::new(
+                Cause::StateLoadClosureMismatch,
+                "authored stage is not owned by an envelope receipt",
+            ));
+        }
+        let (roles, _) = super::super::native_publication_roles::collect(
+            &self.graph.layout,
+            staged.attempt.native_publication_roles(),
+        )
+        .ok_or_else(|| {
+            Failure::new(
+                Cause::StateLoadClosureMismatch,
+                "authored stage lost its installed output roles",
+            )
+        })?;
+        Ok((
+            staged.batch().clone(),
+            staged.content_attachments().clone(),
+            roles,
+        ))
+    }
+
     pub(in crate::domain_computation::primary_graph) fn coupled_writer_commands(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,

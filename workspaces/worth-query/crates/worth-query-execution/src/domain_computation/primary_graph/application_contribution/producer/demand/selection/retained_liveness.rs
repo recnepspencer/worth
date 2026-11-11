@@ -110,10 +110,10 @@ where
         let role = application
             .installed_producers
             .family_output_role::<F>(candidate.binding)?;
-        if let Some(entity) = candidate.correspondence.active_entity_for_role(role) {
-            if read(execution, &view, entity)? {
-                return Ok(Posture::Preserve);
-            }
+        if let Some(entity) = candidate.correspondence.active_entity_for_role(role)
+            && read(execution, &view, entity)?
+        {
+            return Ok(Posture::Preserve);
         }
     }
     Ok(Posture::Initial)

@@ -264,6 +264,14 @@ pub(super) fn entry_spec_with_member_delivery<
     Delivery: ApplicationActionDelivery<Schema, edit::Binding>,
     MemberDelivery: ApplicationActionDelivery<Schema, member_edit::Binding>,
 >() -> ApplicationFeatureSpec {
+    with_envelope_completion_actions(entry_builder::<Delivery, MemberDelivery, Completion>())
+        .finish()
+}
+fn entry_builder<
+    Delivery: ApplicationActionDelivery<Schema, edit::Binding>,
+    MemberDelivery: ApplicationActionDelivery<Schema, member_edit::Binding>,
+    RestoreDelivery: ApplicationActionDelivery<Schema, authored_member::restore::Binding>,
+>() -> ApplicationFeatureSpecBuilder<Schema, ApplicationRootComposition, Entry> {
     ApplicationFeatureSpec::root::<Schema, Entry>()
         .provides::<EntryOutput>()
         .action::<predecessor::synchronous::Binding, Completion>()
@@ -280,9 +288,58 @@ pub(super) fn entry_spec_with_member_delivery<
         .finish_action()
         .action::<authored_member::retire::Binding, Completion>()
         .finish_action()
-        .action::<authored_member::restore::Binding, Completion>()
+        .action::<authored_member::restore::Binding, RestoreDelivery>()
         .finish_action()
         .action::<member_delete::Binding, Completion>()
         .finish_action()
-        .finish()
+}
+
+pub(super) fn entry_spec_with_envelope_deliveries<
+    Delivery: ApplicationActionDelivery<Schema, edit::Binding>,
+    MemberDelivery: ApplicationActionDelivery<Schema, member_edit::Binding>,
+    ModelPart: ApplicationActionDelivery<Schema, synchronous_edit::envelope_fixture::model::Binding>,
+    MemberPart: ApplicationActionDelivery<Schema, synchronous_edit::envelope_fixture::member::Binding>,
+    CapPart: ApplicationActionDelivery<Schema, synchronous_edit::envelope_fixture::cap::Binding>,
+    CalibrationPart: ApplicationActionDelivery<Schema, synchronous_edit::envelope_fixture::calibration::Binding>,
+    DependentPart: ApplicationActionDelivery<Schema, synchronous_edit::envelope_fixture::dependent::Binding>,
+    CyclicPart: ApplicationActionDelivery<Schema, synchronous_edit::envelope_fixture::cyclic::Binding>,
+    RestorePart: ApplicationActionDelivery<Schema, authored_member::restore::Binding>,
+>() -> ApplicationFeatureSpec {
+    envelope_actions::<ModelPart, MemberPart, CapPart, CalibrationPart, DependentPart, CyclicPart>(
+        entry_builder::<Delivery, MemberDelivery, RestorePart>(),
+    )
+    .finish()
+}
+// Every program in this fixture installs one complete schema and handler
+// inventory. Its custom entries share these extra completion declarations.
+pub(super) fn with_envelope_completion_actions(
+    entry: ApplicationFeatureSpecBuilder<Schema, ApplicationRootComposition, Entry>,
+) -> ApplicationFeatureSpecBuilder<Schema, ApplicationRootComposition, Entry> {
+    envelope_actions::<Completion, Completion, Completion, Completion, Completion, Completion>(
+        entry,
+    )
+}
+fn envelope_actions<
+    ModelPart: ApplicationActionDelivery<Schema, synchronous_edit::envelope_fixture::model::Binding>,
+    MemberPart: ApplicationActionDelivery<Schema, synchronous_edit::envelope_fixture::member::Binding>,
+    CapPart: ApplicationActionDelivery<Schema, synchronous_edit::envelope_fixture::cap::Binding>,
+    CalibrationPart: ApplicationActionDelivery<Schema, synchronous_edit::envelope_fixture::calibration::Binding>,
+    DependentPart: ApplicationActionDelivery<Schema, synchronous_edit::envelope_fixture::dependent::Binding>,
+    CyclicPart: ApplicationActionDelivery<Schema, synchronous_edit::envelope_fixture::cyclic::Binding>,
+>(
+    entry: ApplicationFeatureSpecBuilder<Schema, ApplicationRootComposition, Entry>,
+) -> ApplicationFeatureSpecBuilder<Schema, ApplicationRootComposition, Entry> {
+    entry
+        .action::<synchronous_edit::envelope_fixture::model::Binding, ModelPart>()
+        .finish_action()
+        .action::<synchronous_edit::envelope_fixture::member::Binding, MemberPart>()
+        .finish_action()
+        .action::<synchronous_edit::envelope_fixture::cap::Binding, CapPart>()
+        .finish_action()
+        .action::<synchronous_edit::envelope_fixture::calibration::Binding, CalibrationPart>()
+        .finish_action()
+        .action::<synchronous_edit::envelope_fixture::dependent::Binding, DependentPart>()
+        .finish_action()
+        .action::<synchronous_edit::envelope_fixture::cyclic::Binding, CyclicPart>()
+        .finish_action()
 }

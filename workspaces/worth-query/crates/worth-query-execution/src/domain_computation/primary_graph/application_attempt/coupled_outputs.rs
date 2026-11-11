@@ -35,7 +35,8 @@ pub struct DeclaredCoupledOutputDemands {
     _memory: Vec<worth_execution::ExecutionMemoryReservation>,
     failure: std::cell::RefCell<Option<Denial>>,
     declared: bool,
-    pub(in crate::domain_computation::primary_graph) synchronous: Option<crate::domain_computation::primary_graph::application_contribution::producer::synchronous_outputs::CapturedSynchronousOutputs>,
+    pub(in crate::domain_computation::primary_graph) authored_stages: Option<Box<dyn Any + Send>>,
+    pub(in crate::domain_computation::primary_graph) synchronous: Vec<crate::domain_computation::primary_graph::application_contribution::producer::synchronous_outputs::CapturedSynchronousOutputs>,
 }
 
 impl Default for DeclaredCoupledOutputDemands {
@@ -43,7 +44,7 @@ impl Default for DeclaredCoupledOutputDemands {
         Self {
             round_limits: crate::domain_computation::primary_graph::application_contribution::producer::synchronous_outputs::default_producer_round_bounds(),
             values: Vec::new(), _memory: Vec::new(), failure: std::cell::RefCell::new(None),
-            declared: false, synchronous: None,
+            declared: false, synchronous: Vec::new(), authored_stages: None,
         }
     }
 }
@@ -57,7 +58,7 @@ impl DeclaredCoupledOutputDemands {
         }
     }
     pub(in crate::domain_computation::primary_graph) fn is_declared(&self) -> bool {
-        self.declared || self.synchronous.is_some()
+        self.declared || !self.synchronous.is_empty() || self.authored_stages.is_some()
     }
     pub(in crate::domain_computation::primary_graph) fn take_failure(&self) -> Option<Denial> {
         self.failure.borrow_mut().take()

@@ -1,3 +1,9 @@
+pub use mutation::{
+    AuthoredStageExecutionCause, WorthQueryEditEnvelope, WorthQueryEditEnvelopeExecutionDenial,
+    WorthQueryEditEnvelopeOutcome, WorthQueryEditEnvelopeReceipt, WorthQueryEditEnvelopeSubject,
+    WorthQueryEditStageDomainDenial, WorthQueryEditStageExecutionDenial,
+    WorthQueryEditStageResultDenial, WorthQueryEditStageToken, WorthQueryKeyedEditEnvelope,
+};
 #[path = "advanced/request.rs"]
 mod advanced_request;
 /// Deliberate current native control; ordinary actions use the owning builder.

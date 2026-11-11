@@ -227,7 +227,7 @@ where
                             .compare_and_commit_selected_required_output_source::<Root, Intent::Binding>(phase,
                                 &worth_query_execution::publication_boundary::program_publication_access(),
                                 &owner,
-                                program.with_synchronous_required_outputs::<RootConnection<Schema,Root>,Root::Dependents>(&worth_query_execution::publication_boundary::program_publication_access(), &execution, demand.clone(), owner.connection_order()),
+                                program.with_synchronous_required_outputs::<RootConnection<Schema,Root>,Root::Dependents>(&worth_query_execution::publication_boundary::program_publication_access(), &execution, demand.clone(), <Root::RootConnection as worth_query_declaration::facade::application_program::ApplicationConnectionShape<Schema>>::declaration(), owner.connection_order()),
                                 binding.idempotency(),
                                 allocation_policy,
                             ),

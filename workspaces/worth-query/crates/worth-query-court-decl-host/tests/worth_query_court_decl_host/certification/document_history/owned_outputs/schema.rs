@@ -115,6 +115,7 @@ fn declare(
     let schema = family::diamond::declare(predecessor::declare(
         family::predecessor_family::declare(schema),
     ));
+    let schema = synchronous_edit::envelope_fixture::declare(schema);
     let schema = synchronous_edit::new_source::declare(synchronous_edit::declare(
         authored_member::declare(schema),
     ));

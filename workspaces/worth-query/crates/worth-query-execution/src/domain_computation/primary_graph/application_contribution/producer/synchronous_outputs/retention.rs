@@ -7,13 +7,13 @@ use crate::domain_computation::primary_graph::{
 use worth_execution::{LeaseDenial, MapKernelFailure, ScopeStop, WorkCeilingDenial};
 use worth_relational::facade::transactions::RelationalExecutionDenialCause as Cause;
 
-pub(super) struct CaptureRefusal {
+pub(in crate::domain_computation::primary_graph) struct CaptureRefusal {
     subject: &'static str,
     cause: Cause,
 }
 impl CaptureRefusal {
     pub(super) fn denial(&self) -> Denial {
-        Denial::relational_read_stopped(self.cause.clone(), self.subject)
+        Denial::relational_read_stopped(self.cause, self.subject)
     }
 }
 impl CapturedSynchronousOutputs {

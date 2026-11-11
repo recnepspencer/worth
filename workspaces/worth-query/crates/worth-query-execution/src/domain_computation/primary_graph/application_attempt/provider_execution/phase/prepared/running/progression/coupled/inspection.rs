@@ -1,11 +1,18 @@
 //! A registered writer materializes its own real effect overlay.
 use super::*;
+use crate::domain_computation::primary_graph::WorthQueryApplicationProducerBinding;
+mod authored;
 mod authorization;
 mod preparation;
+mod registration;
+pub(in crate::domain_computation::primary_graph) use authored::{
+    inspect_authored_application, InspectedAuthoredApplication,
+};
 pub(in crate::domain_computation::primary_graph) use preparation::CommitPreparedCoupledWriter;
 
 struct CoupledWriterCustody {
-    completion: crate::domain_computation::primary_graph::output_lineage::CoupledOutputCompletion,
+    completion:
+        Option<crate::domain_computation::primary_graph::output_lineage::CoupledOutputCompletion>,
     typed: Box<dyn Any>,
     dispatch_outbox:
         Option<crate::domain_computation::application_aftermath::WorthQueryDispatchOutboxRecord>,
@@ -46,48 +53,30 @@ where
     B: WorthQueryApplicationProducerBinding<S>,
 {
     use crate::domain_computation::primary_graph::WorthQueryProducerOutputFamily;
-    let RegisteredCoupledWriter {
+    let registration::InspectedRegistration {
         source,
-        mut typed,
-        registered,
-        returned,
-        cleanup,
-        lease,
-    } = registered;
-    let authority = typed
-        .downcast_ref::<CoupledWriterAdmission<S, B>>()
-        .expect("installed executor retains its own registered admission");
-    let request = authority.admission.publication_request().clone();
-    let inspected = registered.inspect_coupled(
+        coupled_outputs: _,
+        inspection,
+        custody:
+            CoupledWriterCustody {
+                completion: _,
+                mut typed,
+                dispatch_outbox,
+                returned,
+                cleanup,
+                lease,
+                request,
+            },
+    } = registration::inspect_registered::<S, B::Operation>(
         execution,
-        &application.runtime.primary_provider,
-        &request,
+        phase,
+        application,
+        registered,
         candidate,
-        execution.allocation_policy(),
-    );
-    let (inspection, dispatch_outbox) = match inspected {
-        Ok(inspected) => inspected,
-        Err(outcome) => {
-            drop(typed);
-            return Err(progressed::finish_application_commit(
-                execution,
-                phase,
-                application,
-                WorthQueryProgressedApplicationCommit {
-                    outcome,
-                    workflow_settlement_publication: None,
-                    lease,
-                    running: returned
-                        .take()
-                        .expect("closed inspection returned its actual run"),
-                    cleanup,
-                    request,
-                },
-            ));
-        }
-    };
+    )?;
+    let source = source.expect("installed producer retains its source publication");
     let handler = typed
-        .downcast_mut::<CoupledWriterAdmission<S, B>>()
+        .downcast_mut::<CoupledWriterAdmission<S, B::Operation>>()
         .expect("installed writer keeps its nominal admission")
         .admission
         .graph_work_mut()
@@ -143,7 +132,7 @@ where
     Ok((
         InspectedCoupledWriter {
             custody: CoupledWriterCustody {
-                completion,
+                completion: Some(completion),
                 typed,
                 dispatch_outbox,
                 returned,

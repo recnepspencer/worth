@@ -15,6 +15,11 @@ pub(super) trait RequiredTree<S: ApplicationSchema>: Send + 'static {
     fn order(
         &self,
     ) -> &worth_query_declaration::facade::application_program::ApplicationProgramConnectionOrder;
+    fn seed(
+        &self,
+        context: &SynchronousOutputAssembly<'_, '_, '_, '_, S>,
+        wave: &mut SynchronousOutputWave<S>,
+    ) -> Result<(), SynchronousOutputFailure>;
     fn prepare(
         &self,
         context: &SynchronousOutputAssembly<'_, '_, '_, '_, S>,
@@ -29,6 +34,8 @@ pub(super) trait RequiredTree<S: ApplicationSchema>: Send + 'static {
 }
 struct Tree<D, E> {
     connection: &'static str,
+    position:
+        worth_query_declaration::facade::application_program::ApplicationConnectionDeclaration,
     order: worth_query_declaration::facade::application_program::ApplicationProgramConnectionOrder,
     demand: D,
     marker: PhantomData<fn() -> E>,
@@ -46,6 +53,27 @@ where
     ) -> &worth_query_declaration::facade::application_program::ApplicationProgramConnectionOrder
     {
         &self.order
+    }
+    fn seed(
+        &self,
+        context: &SynchronousOutputAssembly<'_, '_, '_, '_, S>,
+        wave: &mut SynchronousOutputWave<S>,
+    ) -> Result<(), SynchronousOutputFailure> {
+        wave.push(
+            context,
+            self.connection,
+            &self.position,
+            size_of::<Self>(),
+            || {
+                Box::new(Self {
+                    connection: self.connection,
+                    position: self.position.clone(),
+                    order: self.order.clone(),
+                    demand: self.demand.clone(),
+                    marker: PhantomData,
+                })
+            },
+        )
     }
     fn prepare(
         &self,
@@ -89,6 +117,7 @@ where
         || {
             Box::new(Tree::<D, E> {
                 connection,
+                position: position.clone(),
                 order: context.order.clone(),
                 demand,
                 marker: PhantomData,
@@ -97,44 +126,54 @@ where
     )
 }
 impl CapturedSynchronousOutputs {
-    pub(in crate::domain_computation::primary_graph::application_contribution::producer) fn assemble<
+    pub(in crate::domain_computation::primary_graph::application_contribution) fn assemble<
         S: ApplicationSchema,
     >(
-        &self,
-        owner: &DeclaredProducerAssembly<'_, '_, '_, S>,
+        roots: &[&Self],
+        owner: &CoupledApplicationAssembly<'_, '_, '_, S>,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         before: &RelationalPinnedRead,
         candidate: &mut RelationalAuthoredCoupledCandidate<'_>,
     ) -> Result<(), CoupledSourceReadStop> {
-        let Self::Prepared { root, _memory } = self else {
-            let Self::Refused(cause) = self else {
-                unreachable!()
+        let mut wave = SynchronousOutputWave::new();
+        let mut order = None;
+        for captured in roots {
+            let Self::Prepared { root, _memory } = captured else {
+                let Self::Refused(cause) = captured else {
+                    unreachable!()
+                };
+                return Err(CoupledSourceReadStop::capture(cause.denial()));
             };
-            return Err(CoupledSourceReadStop::capture(cause.denial()));
-        };
-        let tree = root.downcast_ref::<root::Root<S>>().ok_or_else(|| {
-            super::super::WorthQueryOutputDemandDenial::new(
-                super::super::WorthQueryOutputDemandDenialKind::ForeignDemand,
-                "required graph schema",
-            )
-        })?;
-        retention_observation::record(
-            execution.has_accounting(),
-            tree.container_bytes(),
-            _memory
-                .as_ref()
-                .map(worth_execution::ExecutionMemoryReservation::bytes),
-        );
-        let order = tree.order();
+            let tree = root.downcast_ref::<root::Root<S>>().ok_or_else(|| {
+                super::super::WorthQueryOutputDemandDenial::new(
+                    super::super::WorthQueryOutputDemandDenialKind::ForeignDemand,
+                    "required graph schema",
+                )
+            })?;
+            retention_observation::record(
+                execution.has_accounting(),
+                tree.container_bytes(),
+                _memory
+                    .as_ref()
+                    .map(worth_execution::ExecutionMemoryReservation::bytes),
+            );
+            let context = SynchronousOutputAssembly {
+                owner,
+                execution,
+                before,
+                order: tree.order(),
+            };
+            order = Some(tree.order());
+            tree.seed(&context, candidate, &mut wave)
+                .map_err(|cause| cause.0)?;
+        }
+        let Some(order) = order else { return Ok(()) };
         let context = SynchronousOutputAssembly {
             owner,
             execution,
             before,
             order,
         };
-        let mut wave = SynchronousOutputWave::new();
-        tree.seed(&context, candidate, &mut wave)
-            .map_err(|cause| cause.0)?;
         wave.drive(&context, candidate).map_err(|cause| cause.0)
     }
 }
@@ -146,6 +185,7 @@ impl<S: ApplicationSchema, O, I, Scope>
         _: &crate::publication_boundary::WorthQueryProgramPublicationAccess,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         demand: C::Demand,
+        position: worth_query_declaration::facade::application_program::ApplicationConnectionDeclaration,
         order: &worth_query_declaration::facade::application_program::ApplicationProgramConnectionOrder,
     ) -> Self
     where
@@ -159,20 +199,22 @@ impl<S: ApplicationSchema, O, I, Scope>
                 <Source<S, C::Demand> as ApplicationQueryBinding<S>>::PrincipalIdentity,
             >,
     {
-        self.synchronous_outputs = Some(CapturedSynchronousOutputs::capture(
-            execution,
-            C::IDENTITY,
-            std::mem::size_of::<Tree<C::Demand, E>>() + std::mem::size_of::<root::Root<S>>(),
-            || {
-                let tree: Box<dyn RequiredTree<S>> = Box::new(Tree::<C::Demand, E> {
-                    connection: C::IDENTITY,
-                    order: order.clone(),
-                    demand,
-                    marker: PhantomData,
-                });
-                Box::new(root::Root::Fixed(tree))
-            },
-        ));
+        self.synchronous_outputs
+            .push(CapturedSynchronousOutputs::capture(
+                execution,
+                C::IDENTITY,
+                std::mem::size_of::<Tree<C::Demand, E>>() + std::mem::size_of::<root::Root<S>>(),
+                || {
+                    let tree: Box<dyn RequiredTree<S>> = Box::new(Tree::<C::Demand, E> {
+                        connection: C::IDENTITY,
+                        position,
+                        order: order.clone(),
+                        demand,
+                        marker: PhantomData,
+                    });
+                    Box::new(root::Root::Fixed(tree))
+                },
+            ));
         self
     }
 }

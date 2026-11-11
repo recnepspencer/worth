@@ -1,6 +1,32 @@
 //! Exact registered preparation transfers once into its publication owner.
 use super::*;
+use crate::domain_computation::primary_graph::provider::CoupledAttemptPreparation;
 impl WorthQueryPrimaryGraphApplicationAttempt {
+    pub(in crate::domain_computation::primary_graph) fn coupled_after_own(
+        &self,
+    ) -> Option<
+        &worth_relational::facade::runtime::RelationalPinnedRead<
+            worth_relational::facade::runtime::RelationalAppliedCandidateReadIdentity,
+        >,
+    > {
+        match self.coupled_preparation.as_ref()? {
+            CoupledAttemptPreparation::Producer(preparation) => preparation.after_own.as_ref(),
+            CoupledAttemptPreparation::AuthoredStage(pin) => Some(pin),
+        }
+    }
+    pub(in crate::domain_computation::primary_graph) fn retain_authored_stage_after_own(
+        &mut self,
+        pin: worth_relational::facade::runtime::RelationalPinnedRead<
+            worth_relational::facade::runtime::RelationalAppliedCandidateReadIdentity,
+        >,
+    ) {
+        assert!(
+            self.coupled_preparation
+                .replace(CoupledAttemptPreparation::AuthoredStage(pin))
+                .is_none(),
+            "a stage retains its own completed candidate exactly once"
+        );
+    }
     pub(in crate::domain_computation::primary_graph) fn retain_coupled_after_own(
         &mut self,
         pin: worth_relational::facade::runtime::RelationalPinnedRead<
@@ -11,14 +37,21 @@ impl WorthQueryPrimaryGraphApplicationAttempt {
             .coupled_preparation
             .as_mut()
             .expect("actual writer preparation");
-        preparation.retain_after_own(pin);
+        match preparation {
+            CoupledAttemptPreparation::Producer(preparation) => preparation.retain_after_own(pin),
+            CoupledAttemptPreparation::AuthoredStage(_) => {
+                unreachable!("producer dispatch owns its producer preparation")
+            }
+        }
     }
     pub(in crate::domain_computation::primary_graph) fn retain_coupled_preparation(
         &mut self,
         preparation: crate::domain_computation::primary_graph::provider::CoupledProducerPreparation,
     ) {
         assert!(
-            self.coupled_preparation.replace(preparation).is_none(),
+            self.coupled_preparation
+                .replace(CoupledAttemptPreparation::Producer(preparation))
+                .is_none(),
             "each actual writer transfers its preparation once"
         );
     }
@@ -26,13 +59,19 @@ impl WorthQueryPrimaryGraphApplicationAttempt {
         &self,
     ) -> Option<&crate::domain_computation::primary_graph::provider::CoupledProducerPreparation>
     {
-        self.coupled_preparation.as_ref()
+        match self.coupled_preparation.as_ref()? {
+            CoupledAttemptPreparation::Producer(preparation) => Some(preparation),
+            CoupledAttemptPreparation::AuthoredStage(_) => None,
+        }
     }
     pub(in crate::domain_computation::primary_graph) fn take_coupled_preparation(
         &mut self,
     ) -> Option<crate::domain_computation::primary_graph::provider::CoupledProducerPreparation>
     {
-        self.coupled_preparation.take()
+        match self.coupled_preparation.take()? {
+            CoupledAttemptPreparation::Producer(preparation) => Some(preparation),
+            CoupledAttemptPreparation::AuthoredStage(_) => None,
+        }
     }
 }
 

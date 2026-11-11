@@ -86,6 +86,7 @@ where
     }
     let WorthQueryApplicationEffectProgram {
         synchronous_outputs,
+        authored_stages,
         producer_round_limits: _,
         read_set,
         effects,
@@ -99,7 +100,7 @@ where
         content_attachments,
     } = program;
 
-    if synchronous_outputs.is_some() {
+    if !authored_stages.is_empty() || !synchronous_outputs.is_empty() {
         return Err(
             WorthQueryProgramMigrationPreparationDenial::UnsupportedPosture(
                 "program migration cannot transfer a pending synchronous graph",

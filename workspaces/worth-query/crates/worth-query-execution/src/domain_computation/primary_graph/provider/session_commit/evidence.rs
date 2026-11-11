@@ -33,7 +33,7 @@ pub(in crate::domain_computation::primary_graph) struct WorthQueryCompletedCommi
 /// The selectors one evidence entry is indexed under besides its commit.
 struct EvidenceKeys {
     affinity: crate::domain_computation::WorthQueryProviderSessionAffinityIdentity,
-    idempotency: WorthQueryIdempotencyLookupKey,
+    idempotency: Option<WorthQueryIdempotencyLookupKey>,
     dispatch_correlation:
         Option<crate::domain_computation::application_aftermath::ExternalEffectCorrelationIdentity>,
 }
@@ -45,12 +45,19 @@ impl EvidenceKeys {
                 .commit_evidence()
                 .provider_session_binding()
                 .affinity_identity(),
-            idempotency: WorthQueryIdempotencyLookupKey::for_binding(
-                &super::super::WorthQueryProductIdempotencyAffinity::from_publication(
-                    evidence.committed_product_publication(),
-                ),
-                &evidence.commit_evidence().idempotency(),
-            ),
+            idempotency: evidence
+                .commit_evidence()
+                .idempotency()
+                .authored_stage_identity()
+                .is_none()
+                .then(|| {
+                    WorthQueryIdempotencyLookupKey::for_binding(
+                        &super::super::WorthQueryProductIdempotencyAffinity::from_publication(
+                            evidence.committed_product_publication(),
+                        ),
+                        &evidence.commit_evidence().idempotency(),
+                    )
+                }),
             dispatch_correlation: evidence
                 .commit_evidence()
                 .committed_dispatch_outbox()
@@ -128,8 +135,10 @@ impl WorthQueryCompletedCommitEvidenceStore {
             if self.by_session.get(&keys.affinity) == Some(&commit) {
                 self.by_session.remove(&keys.affinity);
             }
-            if self.by_idempotency.get(&keys.idempotency) == Some(&commit) {
-                self.by_idempotency.remove(&keys.idempotency);
+            if let Some(key) = keys.idempotency
+                && self.by_idempotency.get(&key) == Some(&commit)
+            {
+                self.by_idempotency.remove(&key);
             }
             if let Some(correlation) = keys.dispatch_correlation
                 && let Some(indexed) = self.by_dispatch_correlation.get_mut(&correlation)
@@ -221,12 +230,14 @@ impl WorthQueryCompletedCommitEvidenceStore {
                 !self.by_session.contains_key(&affinity),
                 "one provider session records completed evidence once"
             );
-            assert!(
-                !self.by_idempotency.contains_key(&key),
-                "one product-qualified idempotency key records evidence once"
-            );
             self.by_session.insert(affinity, commit);
-            self.by_idempotency.insert(key, commit);
+            if let Some(key) = key {
+                assert!(
+                    !self.by_idempotency.contains_key(&key),
+                    "one product-qualified idempotency key records evidence once"
+                );
+                self.by_idempotency.insert(key, commit);
+            }
             if let Some(correlation) = dispatch_correlation {
                 self.by_dispatch_correlation
                     .entry(correlation)
@@ -316,7 +327,7 @@ impl WorthQueryCompletedCommitEvidenceStore {
             .by_commit
             .get(commit)?
             .publication_members()
-            .find(|evidence| &EvidenceKeys::of(evidence).idempotency == key)?;
+            .find(|evidence| EvidenceKeys::of(evidence).idempotency.as_ref() == Some(key))?;
         Some((evidence.commit_evidence().idempotency(), evidence.clone()))
     }
 }

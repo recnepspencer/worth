@@ -18,6 +18,10 @@ pub(crate) fn probe_symbol_rounds<T>(
         &RelationalPreparationRuntime,
     ) -> Result<T, MutationApplyDenial>,
 ) -> Result<T, TransactionCommitError> {
+    // There are exactly 256 symbol buckets. Each cold miss admits a previously
+    // unseen bucket, so at most 256 retries (257 attempts) are possible. A
+    // repeated miss returns typed StorageUnavailable(Damaged) below, rather
+    // than permitting another retry with no progress (D1619).
     let mut admitted_buckets = [false; 256];
     loop {
         crate::authority::commit::pipeline::consult_stage(

@@ -18,10 +18,7 @@ pub(super) fn require(
     >,
 ) -> Result<(), Stop> {
     let after_own = attempt
-        .coupled_preparation()
-        .expect("actual registered writer")
-        .after_own
-        .as_ref()
+        .coupled_after_own()
         .expect("Native completed this writer before continuing");
     for fact in attempt.facts().values() {
         let fact = match fact {

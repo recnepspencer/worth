@@ -36,6 +36,8 @@ pub(super) fn prepare_members(
         )?;
     }
     for member in members {
+        let source = member.source();
+        let producer = member.producer_route().is_some();
         let owned = member.owned.as_mut().expect("atomic group extraction");
         support::require(
             execution,
@@ -43,7 +45,7 @@ pub(super) fn prepare_members(
             &owned.attempt,
             before,
             complete.as_ref().expect("coupled complete image"),
-            member.meaning.source_scope,
+            source,
             owned
                 .commit
                 .as_ref()
@@ -64,15 +66,21 @@ pub(super) fn prepare_members(
             consumed_output::verify(execution, provider, &mut owned.attempt, before)?
                 .required_prerequisites;
         managed_source::bind(execution, provider, before, &owned.attempt, candidate)?;
-        prepared.witness = crate::domain_computation::primary_graph::output_lineage::PreparedNativeOutputWitness::prepare(&owned.attempt, &provider.graph.layout).map_err(native_output_witness_stop)?;
+        prepared.witness = if producer {
+            crate::domain_computation::primary_graph::output_lineage::PreparedNativeOutputWitness::prepare(&owned.attempt, &provider.graph.layout).map_err(native_output_witness_stop)?
+        } else {
+            None
+        };
         owned.attempt.reserve_coupled_dispatch(provider).map_err(|cause| match cause {
             crate::domain_computation::primary_graph::live_delivery::WorthQueryLiveAdmissionDenial::Execution(cause) => crate::domain_computation::primary_graph::provider::relational_execution_denial::relational_execution_stop(cause, None),
             crate::domain_computation::primary_graph::live_delivery::WorthQueryLiveAdmissionDenial::Unavailable(detail) => crate::domain_computation::WorthQueryProviderSessionCommitStop::PreEffectDenied(super::failure(detail)),
         })?;
         let request = owned.attempt.affinity().publication_request();
-        prepared.rebase = Some(provider.graph.with_runtime(execution, |runtime| prepared.rebase.take().expect("one rebase preparation").prepare_candidate(candidate, runtime, before,
+        if let Some(rebase) = prepared.rebase.take() {
+            prepared.rebase = Some(provider.graph.with_runtime(execution, |runtime| rebase.prepare_candidate(candidate, runtime, before,
             crate::domain_computation::primary_graph::application_attempt::retained_decision_facts::StorageControl::new(policy, Some(request))
         )).map_err(stops::source_rebase_preparation_stop)?);
+        }
     }
     Ok(())
 }
@@ -83,6 +91,7 @@ pub(super) fn prepare_lineage(
     planned: &worth_runtime_world::facade::PlannedProductReferenceSuccessor,
 ) -> Result<(), WorthQueryOutputDemandDenial> {
     for member in members {
+        let crate::domain_computation::primary_graph::provider::CoupledApplicationMemberKind::Producer { producer, .. } = &member.kind else { continue };
         let owned = member.owned.as_mut().expect("group owns writer");
         let prepared = owned.commit.as_mut().expect("group owns prepared evidence");
         if let Some(slot) = prepared.slot.as_ref()
@@ -117,7 +126,7 @@ pub(super) fn prepare_lineage(
                 .take_coupled_preparation()
                 .expect("actual registered producer source and completed handler");
             slot.retain_native_prior_checkpoint(
-                &member.producer,
+                producer,
                 source.completion.source().checkpoint_identity(),
             )?;
             slot.retain_coupled_completion(source.completion);
@@ -195,8 +204,9 @@ impl WorthQueryCommittedApplicationSession {
             .into_publications()
         {
             if let Some(member) = self.members.iter_mut().find(|member| {
-                member.producer == publication.producer()
-                    && &member.meaning == publication.meaning()
+                member.producer_route().is_some_and(|(producer, meaning)| {
+                    producer == publication.producer() && meaning == publication.meaning()
+                })
             }) {
                 let slot = &mut member
                     .owned

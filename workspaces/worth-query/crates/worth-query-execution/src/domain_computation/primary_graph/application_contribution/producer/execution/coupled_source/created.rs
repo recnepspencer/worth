@@ -119,15 +119,15 @@ where
                 scope_rejected(B::IDENTITY, current_absence)
             } else { query_admission_denied(B::IDENTITY, cause) }
         })?;
-    if demand.reuse_prepared {
-        if let Some(index) = assembly.prepared_route_index(
+    if demand.reuse_prepared
+        && let Some(index) = assembly.prepared_route_index(
             execution,
             demand.family,
             scope.entity_id(),
             parameters.parameters().identity().bytes(),
-        )? {
-            return Ok(CoupledSourceRead::Prepared(index));
-        }
+        )?
+    {
+        return Ok(CoupledSourceRead::Prepared(index));
     }
     match assembly.declared_owner(
         execution,

@@ -40,6 +40,37 @@ impl WorthQueryApplicationIdempotencyBinding {
             .bind_mutation::<Schema, Binding>()
     }
 
+    /// Extends drift identity without replacing the handler's own input proof.
+    /// Only a canonical full envelope intent can occupy this slot.
+    pub fn bind_edit_envelope(
+        mut self,
+        intent: &worth_query_declaration::facade::application_operation::ApplicationEditIntentIdentity,
+    ) -> Self {
+        self.envelope_intent = Some(*intent.identity());
+        self
+    }
+
+    /// A secondary authored stage has identity and session custody, but no
+    /// independent durable idempotency record. Its envelope alone owns the key.
+    pub(in crate::domain_computation::primary_graph) fn for_authored_stage_identities<S, B>(
+        identities: &ApplicationMutationIdentities<'_, S, B>,
+    ) -> Option<Self>
+    where
+        S: ApplicationSchema,
+        B: ApplicationMutationBinding<S>,
+    {
+        let mut binding = Self::for_mutation_identities(identities);
+        binding.authored_stage = Some(*identities.edit_stage_identity()?);
+        Some(binding)
+    }
+
+    pub(in crate::domain_computation::primary_graph) const fn authored_stage_identity(
+        &self,
+    ) -> Option<&worth_query_declaration::facade::application_operation::ApplicationEditStageIdentity>
+    {
+        self.authored_stage.as_ref()
+    }
+
     /// Names `Binding` as the mutation this request runs.
     pub(in crate::domain_computation::primary_graph) fn bind_mutation<Schema, Binding>(
         mut self,

@@ -230,19 +230,19 @@ where
     let program = program
         .with_output_demand_observation()
         .with_producer_required_invariants(Binding::REQUIRED_INVARIANTS);
-    prepare_coupled_application::<Schema, Binding>(
+    prepare_coupled_application::<Schema, Binding::Operation>(
         &execution,
         phase,
         runtime,
         coordination,
         program,
         idempotency,
-        (*source).into_publication_source(),
+        Some((*source).into_publication_source()),
     )
     .map_err(|outcome| preparation_denial(Binding::IDENTITY, outcome))
 }
 
-pub(in crate::domain_computation::primary_graph::application_contribution::producer) fn preparation_denial(
+pub(in crate::domain_computation::primary_graph::application_contribution) fn preparation_denial(
     producer: &str,
     outcome: crate::domain_computation::primary_graph::WorthQueryApplicationCommitOutcome,
 ) -> ProducerExecutionStop {

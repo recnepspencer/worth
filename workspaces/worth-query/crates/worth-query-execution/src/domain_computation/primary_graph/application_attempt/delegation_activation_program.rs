@@ -48,7 +48,8 @@ impl<Schema, Operation, Input, Scope>
         let effects = activation_effects(binding, self.admission.allowed_graph_contract())?;
         self.observe_unique_write_values(execution, &effects, allocation_policy)?;
         let program = WorthQueryApplicationEffectProgram {
-            synchronous_outputs: None,
+            synchronous_outputs: Vec::new(),
+            authored_stages: Vec::new(),
             producer_round_limits: crate::domain_computation::primary_graph::application_contribution::producer::synchronous_outputs::default_producer_round_bounds(),
             read_set: self,
             effects,

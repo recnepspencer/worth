@@ -7,6 +7,8 @@ use worth_relational::facade::mvcc::{
 pub(in crate::domain_computation::primary_graph) trait CoupledProducerAssembly:
     RelationalAuthoredCoupledProducerAssembly
 {
+    fn is_authored_edit(&self) -> bool;
+    fn authored_stage_sources(&self) -> Vec<worth_relational::facade::identity::EntityId>;
     fn prepared_members(&self) -> Vec<super::super::CoupledApplicationMember>;
     fn invariant_requirements(
         &self,
@@ -35,7 +37,7 @@ impl WorthQueryPrimaryGraphProvider {
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         session: WorthQueryProviderSessionView<'_>,
         material: &mut ApplicationInvariantCandidateMaterial,
-        assembly: Option<&'a dyn RelationalAuthoredCoupledProducerAssembly>,
+        assembly: Option<&'a dyn CoupledProducerAssembly>,
     ) -> Result<Option<NativeAuthoredCoupling<'a>>, WorthQueryInvariantExecutionFailure> {
         let Some(publisher) = &self.graph.application_publication else {
             return Ok(None);
@@ -80,11 +82,14 @@ impl WorthQueryPrimaryGraphProvider {
                                         &co_anchors,
                                         &roles,
                                     ),
-                                None => runtime.readmit_edit_coupled_owners(
+                                None => runtime.readmit_edit_coupled_stage_owners(
                                     execution,
                                     &publisher.native,
                                     basis,
                                     source,
+                                    &assembly
+                                        .map(|value| value.authored_stage_sources())
+                                        .unwrap_or_default(),
                                 ),
                             }
                         })
@@ -92,9 +97,10 @@ impl WorthQueryPrimaryGraphProvider {
                 )
             }
         };
-        let Some(owners) =
-            owners.filter(RelationalAuthoredCoupledOwners::requires_coupled_assembly)
-        else {
+        let Some(owners) = owners.filter(|owners| {
+            owners.requires_coupled_assembly()
+                || assembly.is_some_and(|assembly| assembly.is_authored_edit())
+        }) else {
             // A declaration does not run a producer when Native found no live
             // surviving writer. The established single/cascade path owns this edit.
             return Ok(None);

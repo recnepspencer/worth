@@ -151,6 +151,8 @@ where
                 | worth_query_execution::facade::primary_graph::WorthQueryOutputDemandDenialKind::IncompleteDependencyCoverage
                 | worth_query_execution::facade::primary_graph::WorthQueryOutputDemandDenialKind::RetainedBasisUnavailable
                 | worth_query_execution::facade::primary_graph::WorthQueryOutputDemandDenialKind::Closed
+                | worth_query_execution::facade::primary_graph::WorthQueryOutputDemandDenialKind::AuthoredStageRefused { .. }
+                | worth_query_execution::facade::primary_graph::WorthQueryOutputDemandDenialKind::ConflictingIntent { .. }
                 | worth_query_execution::facade::primary_graph::WorthQueryOutputDemandDenialKind::DuplicatePerformedSource
                 | worth_query_execution::facade::primary_graph::WorthQueryOutputDemandDenialKind::BridgeConditional(_)
                 | worth_query_execution::facade::primary_graph::WorthQueryOutputDemandDenialKind::ProductDelivery(_)

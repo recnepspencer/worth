@@ -238,8 +238,9 @@ pub(in crate::domain_computation::primary_graph) use provider_execution::Readmit
 pub(crate) mod coupled_outputs;
 
 pub(in crate::domain_computation::primary_graph) use provider_execution::{
-    inspect_coupled_application, prepare_coupled_application, register_coupled_application,
-    ApprovedCoupledWriter, CommitPreparedCoupledWriter, InspectedCoupledWriter,
+    inspect_authored_application, inspect_coupled_application, prepare_coupled_application,
+    register_coupled_application, ApprovedCoupledWriter, CommitPreparedCoupledWriter,
+    InspectedAuthoredApplication, InspectedCoupledWriter,
 };
 
 pub(in crate::domain_computation::primary_graph) use fact::candidate_support_source_stop;

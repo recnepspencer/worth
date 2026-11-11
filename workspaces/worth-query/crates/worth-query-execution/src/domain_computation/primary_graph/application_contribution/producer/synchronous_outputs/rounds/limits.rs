@@ -8,14 +8,14 @@ use std::num::NonZeroUsize;
 use worth_execution::{ExecutionOrderedMap, ExecutionOrderedMapDenial, ExecutionRequest};
 use worth_relational::facade::identity::EntityId;
 type Route = (EntityId, &'static str, [u8; 32]);
-pub(in crate::domain_computation::primary_graph::application_contribution::producer) struct ProducerRoundBudget
+pub(in crate::domain_computation::primary_graph::application_contribution) struct ProducerRoundBudget
 {
     bounds: (NonZeroUsize, NonZeroUsize),
     routes: ExecutionOrderedMap<Route, usize>,
     total: usize,
 }
 impl ProducerRoundBudget {
-    pub(in crate::domain_computation::primary_graph::application_contribution::producer) fn new(
+    pub(in crate::domain_computation::primary_graph::application_contribution) fn new(
         bounds: (NonZeroUsize, NonZeroUsize),
     ) -> Self {
         Self {
@@ -24,7 +24,7 @@ impl ProducerRoundBudget {
             total: 0,
         }
     }
-    pub(in crate::domain_computation::primary_graph::application_contribution::producer) fn start(
+    pub(in crate::domain_computation::primary_graph::application_contribution) fn start(
         &mut self,
         execution: &ExecutionRequest<'_, '_>,
         source: EntityId,

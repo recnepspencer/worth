@@ -41,12 +41,7 @@ impl<S: ApplicationSchema> Root<S> {
         wave: &mut SynchronousOutputWave<S>,
     ) -> Result<(), SynchronousOutputFailure> {
         match self {
-            Self::Fixed(tree) => {
-                if let Some(parent) = tree.prepare(context, candidate)? {
-                    tree.discover(context, &parent, wave)?;
-                }
-                Ok(())
-            }
+            Self::Fixed(tree) => tree.seed(context, wave),
             Self::Discovered(tree) => tree.seed(context, candidate, wave),
         }
     }

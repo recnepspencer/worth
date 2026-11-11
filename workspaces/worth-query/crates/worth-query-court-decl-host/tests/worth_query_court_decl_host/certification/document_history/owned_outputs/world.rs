@@ -10,6 +10,7 @@ pub struct Configuration {
     pub reconciliation_indices: bool,
     pub reconciliation_peer_caps: bool,
     pub reconciliation_emission: bool,
+    pub envelope_records: bool,
 }
 impl WorthQueryApplicationContribution<Schema> for Contribution {
     type Configuration = Configuration;
@@ -50,6 +51,7 @@ impl WorthQueryApplicationContribution<Schema> for Contribution {
         setup.handler::<synchronous_edit::new_source::restricted::Binding, _>(
             synchronous_edit::new_source::restricted::Handler,
         )?;
+        synchronous_edit::envelope_fixture::install(setup)?;
         setup.handler::<synchronous_edit::Binding, _>(synchronous_edit::Handler)?;
         setup.handler::<synchronous_edit::new_source::Binding, _>(
             synchronous_edit::new_source::Handler,
@@ -186,6 +188,9 @@ where
         limits,
         |_, graph, installed| {
             seed(graph, installed, initial_value, other_value)?;
+            if configuration.envelope_records {
+                synchronous_edit::envelope_fixture::seed(graph)?;
+            }
             if configuration.reconciliation_peer_caps {
                 synchronous_edit::reconciliation::peer_caps::seed(graph)?;
             }
@@ -283,14 +288,12 @@ where
         program,
         schema,
         (Configuration {
-            reconciliation_indices: false,
-            reconciliation_peer_caps: false,
-            reconciliation_emission: false,
             second_derivation: if changed {
                 Some(|value| value + 2000)
             } else {
                 None
             },
+            ..Default::default()
         },),
         ApplicationBuildIdentity::parse(if changed {
             "91830000-0000-0000-0000-000000005357"

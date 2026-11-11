@@ -1670,7 +1670,6 @@ crates/worth-relational/ workspaces/worth-query/crates/worth-query-execution/src
 workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-court-decl-host-authored-ownership/tests/authored_ownership/endpoint_fence.rs
 
 # A real Query writer reaches Native's stale/Birth participant defenses through receiver corruption.
-crates/worth-relational/ workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_contribution/producer/coupled_assembly.rs
 workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-court-decl-host-authored-ownership/tests/authored_ownership/coupled/foreign_participant.rs
 
 workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-court-decl-host-authored-ownership/tests/authored_ownership/coupled/private_membership.rs
@@ -1793,7 +1792,7 @@ workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crat
 workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-court-decl-host/tests/worth_query_court_decl_host/certification/document_history/owned_outputs/synchronous_edit/new_source/restricted.rs
 workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-court-decl-host/tests/worth_query_court_decl_host/certification/document_history/owned_outputs/synchronous_edit/new_source/identity.rs
 workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-court-decl-host/tests/worth_query_court_decl_host/certification/document_history/owned_outputs/synchronous_edit/new_source/control.rs
-crates/worth-relational/ workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_contribution/producer/coupled_assembly/preparation.rs
+crates/worth-relational/ workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_contribution/coupled_publication/preparation.rs
 workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-court-decl-host/tests/worth_query_court_decl_host/certification/document_history/owned_outputs/synchronous_edit/graph.rs
 workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-court-decl-host/tests/worth_query_court_decl_host/certification/document_history/owned_outputs/synchronous_edit/graph/failure.rs
 workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-court-decl-host/tests/worth_query_court_decl_host/certification/document_history/owned_outputs/synchronous_edit/graph/permission.rs
@@ -1859,6 +1858,15 @@ workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crat
 workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-court-decl-host-authored-ownership/tests/authored_ownership/coupled/creation_inverse.rs
 # The edit-envelope header court re-validates its own genuine recorded commit.
 crates/worth-relational/ crates/worth-court-relational-certification/tests/worth_court_relational_certification/relational/coupled_producers/stages.rs
+
+# D1634: residency-only Native placement, Query forwarding, one envelope oracle court.
+crates/worth-relational/ workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_runtime/certification_controls/cold_symbols.rs
+workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-court-decl-host/tests/worth_query_court_decl_host/certification/document_history/owned_outputs/synchronous_edit/envelope_cold.rs
+crates/worth-relational/ workspaces/worth-query/crates/worth-query-court-decl-host/tests/worth_query_court_decl_host/certification/document_history/owned_outputs/synchronous_edit/envelope_cold.rs
+
+# D1636: existing passive producer and lost-subject controls, exact envelope courts.
+workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-court-decl-host/tests/worth_query_court_decl_host/certification/document_history/owned_outputs/synchronous_edit/envelope_courts.rs
+workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-court-decl-host/tests/worth_query_court_decl_host/certification/document_history/owned_outputs/synchronous_edit/envelope_dag.rs
 
 # D1639: focused Native regression for cold applied-pin dictionary custody.
 crates/worth-relational/ crates/worth-court-relational-certification/tests/worth_court_relational_certification/relational/coupled_producers/cold_candidate_pin.rs

@@ -42,6 +42,15 @@ where
             <source::Source<S, Child<S, C>> as ApplicationQueryBinding<S>>::PrincipalIdentity,
         >,
 {
+    fn declared_families(visit: &mut impl FnMut(std::any::TypeId)) {
+        visit(
+            crate::equality_type_id::EqualityTypeId::of::<
+                <Child<S, C> as WorthQueryApplicationOutputDemand<S>>::OutputFamily,
+            >()
+            .into_external(),
+        );
+        E::declared_families(visit);
+    }
     fn assemble(
         context: &SynchronousOutputAssembly<'_, '_, '_, '_, S>,
         parent: &AppliedOutputParent,
@@ -84,6 +93,10 @@ where
     L: SynchronousOutputEdges<S, D>,
     R: SynchronousOutputEdges<S, D>,
 {
+    fn declared_families(visit: &mut impl FnMut(std::any::TypeId)) {
+        L::declared_families(visit);
+        R::declared_families(visit);
+    }
     fn assemble(
         context: &SynchronousOutputAssembly<'_, '_, '_, '_, S>,
         parent: &AppliedOutputParent,

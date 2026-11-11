@@ -4,6 +4,7 @@ mod canonical_basis;
 mod canonical_identity;
 mod canonical_work_policy;
 mod continuation_contract;
+mod declared_reads;
 mod denial;
 mod graph_access_contract;
 pub(crate) mod history;

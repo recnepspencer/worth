@@ -42,6 +42,28 @@ impl RelationalCoupledContribution<'_> {
     }
 }
 impl crate::mvcc::ValidatedRelationalProposal {
+    /// The exact applied contribution of a later authored stage. The stage's
+    /// admitted source must match; descriptive ordinals cannot select a foreign
+    /// contribution or grant any publication authority.
+    pub fn authored_stage_contribution_records(
+        &self,
+        stage: usize,
+        source: crate::identity::data::EntityId,
+    ) -> Option<RelationalCoupledContribution<'_>> {
+        let group =
+            self.required_output_publication
+                .as_ref()
+                .and_then(|admission| match &admission.publication {
+                    RequiredOutputPublication::CoupledAuthored { group } => Some(group),
+                    _ => None,
+                })?;
+        let part = group.stages.get(stage)?;
+        (part.source == source).then_some(RelationalCoupledContribution {
+            records: &part.records,
+            publication_required: false,
+            ordinary: Some((&part.roles, &part.output_ids)),
+        })
+    }
     /// Actual per-writer changes from the applied assembly, before publication.
     pub fn coupled_contribution_records(
         &self,

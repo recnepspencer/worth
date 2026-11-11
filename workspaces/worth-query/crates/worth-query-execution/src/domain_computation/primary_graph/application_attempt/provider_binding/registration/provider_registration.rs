@@ -21,7 +21,7 @@ mod published_causality;
 
 pub(in crate::domain_computation::primary_graph) struct WorthQueryPrimaryGraphApplicationAttempt {
     candidate_read_support: candidate_read_support::CandidateReadSupports,
-    coupled_preparation: Option<crate::domain_computation::primary_graph::provider::CoupledProducerPreparation>,
+    coupled_preparation: Option<crate::domain_computation::primary_graph::provider::CoupledAttemptPreparation>,
     workflow_origin: Option<crate::domain_computation::primary_graph::workflow::operation_output::WorkflowOperationOrigin>,
     required_output_demand: Option<crate::domain_computation::primary_graph::RequiredOutputDemandContext>,
     affinity: WorthQueryApplicationAttemptAffinity,

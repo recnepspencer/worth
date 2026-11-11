@@ -106,6 +106,7 @@ where
                 OwnedMutationInput::Shared(input) => MutationInput::Shared(input.clone()),
             },
             key_identity: *key_identity,
+            stage: None,
             input_identity: *input_identity,
             work: *work,
             capture: capture.clone(),

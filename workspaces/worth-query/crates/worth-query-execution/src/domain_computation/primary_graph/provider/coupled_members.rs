@@ -15,9 +15,11 @@ pub(super) fn require_complete(
                     checkpoint(
                         context,
                         (producer.len()
-                            + member.producer.len()
+                            + member.producer_route().map_or(0, |(name, _)| name.len())
                             + meaning.family.len()
-                            + member.meaning.family.len()
+                            + member
+                                .producer_route()
+                                .map_or(0, |(_, meaning)| meaning.family.len())
                             + 97) as u64,
                     )
                     .map_err(|cause| {
@@ -26,11 +28,29 @@ pub(super) fn require_complete(
                         ))
                     })?;
                 }
-                if !members
-                    .iter()
-                    .any(|member| member.producer == producer && member.meaning == *meaning)
-                {
+                if !members.iter().any(|member| {
+                    member
+                        .producer_route()
+                        .is_some_and(|(name, actual)| name == producer && actual == meaning)
+                }) {
                     return Err(missing(meaning.source_scope));
+                }
+            }
+            for member in members {
+                if let CoupledApplicationMemberKind::AuthoredStage { stage, source, .. } =
+                    &member.kind
+                {
+                    checkpoint(context, 1).map_err(|cause| {
+                        super::invariant_execution_failure::map_validation_failure(native_stop(
+                            cause.into(),
+                        ))
+                    })?;
+                    if candidate
+                        .authored_stage_contribution_records(*stage, *source)
+                        .is_none()
+                    {
+                        return Err(missing(*source));
+                    }
                 }
             }
             Ok(())

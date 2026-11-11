@@ -204,4 +204,6 @@ mod mixed;
 
 mod stages;
 
+mod stage_record_conflict;
+
 mod cold_candidate_pin;

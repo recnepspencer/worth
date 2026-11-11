@@ -57,7 +57,7 @@ macro_rules! program {
             const IDENTITY: ApplicationProgramIdentity = ApplicationProgramIdentity::new($id);
             fn feature_specs() -> Vec<ApplicationFeatureSpec> {
                 let mut specs = HierarchyProgram::feature_specs();
-                specs[0] = ApplicationFeatureSpec::root::<Schema, Entry>().provides::<EntryOutput>()
+                specs[0] = super::super::super::program::with_envelope_completion_actions(ApplicationFeatureSpec::root::<Schema, Entry>()).provides::<EntryOutput>()
                     .action::<synchronous_edit::new_source::Binding, Completion>().finish_action()
                 .action::<synchronous_edit::new_source::restricted::Binding, Completion>().finish_action()
                 .action::<synchronous_edit::Binding, Completion>().finish_action()

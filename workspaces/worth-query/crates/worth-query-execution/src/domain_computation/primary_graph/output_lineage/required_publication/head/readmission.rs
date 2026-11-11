@@ -8,7 +8,7 @@ use worth_relational::facade::{
     identity::{EntityId, PartitionId},
     mvcc::{
         RelationalInstalledApplicationPublicationAuthority, RequiredOutputPublicationMeaning,
-        RequiredOutputRolePosture, RequiredOutputRoleTarget, TransactionCommitError,
+        RequiredOutputRoleTarget, TransactionCommitError,
     },
     runtime::RelationalRuntime,
     transactions::EntityReference,

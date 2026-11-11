@@ -5,7 +5,7 @@ use crate::domain_computation::primary_graph::{
     WorthQueryApplicationAttemptDenialKind as Attempt,
     WorthQueryManagedComputationInterruption as Interrupted,
 };
-pub(in crate::domain_computation::primary_graph::application_contribution::producer) fn candidate_support_denied(
+pub(in crate::domain_computation::primary_graph::application_contribution) fn candidate_support_denied(
     cause: WorthQueryApplicationAttemptDenial,
 ) -> WorthQueryOutputDemandDenial {
     use WorthQueryOutputDemandDenialKind as Kind;

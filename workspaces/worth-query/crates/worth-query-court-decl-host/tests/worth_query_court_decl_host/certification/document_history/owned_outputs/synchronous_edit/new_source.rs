@@ -239,6 +239,7 @@ fn refusal(worker: bool) {
             reconciliation_indices: false,
             reconciliation_peer_caps: false,
             reconciliation_emission: false,
+            envelope_records: false,
             second_derivation: Some(refused_new_source),
         },
     );

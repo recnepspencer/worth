@@ -5,11 +5,23 @@ use crate::domain_computation::primary_graph::{
     WorthQueryApplicationCleanupRequired, WorthQueryApplicationCommitOutcome,
     WorthQueryApplicationUncommitted as Uncommitted,
 };
-impl<S: ApplicationSchema> DeclaredProducerAssembly<'_, '_, '_, S> {
+impl<S: ApplicationSchema> CoupledApplicationAssembly<'_, '_, '_, S> {
     pub(in crate::domain_computation::primary_graph) fn abort_writers(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
     ) -> bool {
+        for writer in self.authored.borrow_mut().drain(..) {
+            let outcome = match writer.stage {
+                Some(CoupledWriterStage::Inspected(writer)) => {
+                    writer.abort(execution, self.phase, self.application)
+                }
+                Some(CoupledWriterStage::Prepared(writer)) => {
+                    writer.abort(execution, self.phase, self.application)
+                }
+                None => continue,
+            };
+            self.retain_abort_outcome(outcome);
+        }
         for writer in self.writers.borrow_mut().drain(..) {
             let Some(stage) = writer.stage else { continue };
             let outcome = match stage {

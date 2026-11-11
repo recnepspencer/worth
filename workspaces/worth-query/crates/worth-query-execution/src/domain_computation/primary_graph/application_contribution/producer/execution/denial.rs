@@ -5,7 +5,7 @@ use crate::domain_computation::primary_graph::{
 use worth_query_declaration::facade::application_operation::ApplicationMutationIdentityDenial;
 
 mod candidate_support;
-pub(in crate::domain_computation::primary_graph::application_contribution::producer) use candidate_support::candidate_support_denied;
+pub(in crate::domain_computation::primary_graph::application_contribution) use candidate_support::candidate_support_denied;
 pub(crate) mod content_identity;
 pub(crate) mod request_execution;
 pub(crate) mod source_readmission;
@@ -28,7 +28,7 @@ pub enum ProducerExecutionStop {
 }
 
 impl ProducerExecutionStop {
-    pub(in crate::domain_computation::primary_graph::application_contribution::producer) fn into_output_denial(
+    pub(in crate::domain_computation::primary_graph::application_contribution) fn into_output_denial(
         self,
     ) -> WorthQueryOutputDemandDenial {
         match self {

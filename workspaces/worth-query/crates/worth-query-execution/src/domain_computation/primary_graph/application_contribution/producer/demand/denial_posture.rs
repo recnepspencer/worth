@@ -7,6 +7,7 @@ impl WorthQueryOutputDemandDenialKind {
     pub(super) fn default_recovery_posture(&self) -> WorthQueryOutputDemandRecoveryPosture {
         use WorthQueryOutputDemandRecoveryPosture::{Retryable, Terminal};
         match self {
+            Self::AuthoredStageRefused { .. } | Self::ConflictingIntent { .. } => Terminal,
             Self::PublicationReceipt(stop) => {
                 use crate::domain_computation::primary_graph::WorthQueryApplicationIdempotencyResolutionDenialKind as Read;
                 match stop {

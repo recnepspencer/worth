@@ -213,7 +213,7 @@ impl<'run> WorthQueryRegisteredProviderAttempt<'run> {
                 return outcome
             }
         };
-        let assembly = crate::domain_computation::primary_graph::application_contribution::DeclaredProducerAssembly::new(
+        let assembly = crate::domain_computation::primary_graph::application_contribution::CoupledApplicationAssembly::new(
             phase, authority.coordination(), authority.application(), authority.admission().graph_work().authenticating_principal(),
             authority.product, authority.admission().publication_request(), authority.coupled_outputs, root_session,
         );

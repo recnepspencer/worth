@@ -7,6 +7,7 @@ mod control;
 mod decision_dependency;
 mod diamond;
 mod discovered;
+mod envelope;
 mod failure;
 mod healthy;
 mod independent;

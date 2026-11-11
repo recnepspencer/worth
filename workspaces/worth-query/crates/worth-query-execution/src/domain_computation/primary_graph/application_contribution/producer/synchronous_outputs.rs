@@ -1,5 +1,5 @@
 //! Request-local required graph; its parent is proposed truth, never settlement.
-use super::coupled_assembly::DeclaredProducerAssembly;
+use super::super::CoupledApplicationAssembly;
 use super::execution::CoupledSourceReadStop;
 use crate::domain_computation::primary_graph::application_attempt::coupled_outputs::DeclaredCoupledOutputDemand;
 use worth_query_declaration::facade::{
@@ -29,7 +29,7 @@ mod root;
 pub use discovered::SynchronousDiscoveredOutputRoot;
 mod discovery;
 mod edges;
-pub(super) mod rounds;
+pub(in crate::domain_computation::primary_graph::application_contribution) mod rounds;
 mod source;
 mod wave;
 pub use rounds::default_producer_round_bounds;
@@ -48,7 +48,7 @@ impl AppliedOutputParent {
     pub(super) fn source(&self) -> worth_relational::facade::identity::EntityId {
         self.source
     }
-    pub(super) fn new(
+    pub(in crate::domain_computation::primary_graph::application_contribution) fn new(
         pin: RelationalPinnedRead<RelationalAppliedCandidateReadIdentity>,
         source: worth_relational::facade::identity::EntityId,
     ) -> Self {
@@ -62,7 +62,7 @@ impl From<CoupledSourceReadStop> for SynchronousOutputFailure {
     }
 }
 pub struct SynchronousOutputAssembly<'a, 'owner, 'run, 'phase, S: ApplicationSchema> {
-    owner: &'a DeclaredProducerAssembly<'owner, 'run, 'phase, S>,
+    owner: &'a CoupledApplicationAssembly<'owner, 'run, 'phase, S>,
     execution: &'a worth_execution::ExecutionRequest<'a, 'a>,
     before: &'a RelationalPinnedRead,
     order:
@@ -76,6 +76,7 @@ where
     S: ApplicationSchema,
     D: WorthQueryApplicationOutputDemand<S>,
 {
+    fn declared_families(visit: &mut impl FnMut(std::any::TypeId));
     fn assemble(
         context: &SynchronousOutputAssembly<'_, '_, '_, '_, S>,
         parent: &AppliedOutputParent,
@@ -87,6 +88,7 @@ impl sealed::Edges for ApplicationOutputLeaf {}
 impl<S: ApplicationSchema, D: WorthQueryApplicationOutputDemand<S>> SynchronousOutputEdges<S, D>
     for ApplicationOutputLeaf
 {
+    fn declared_families(_: &mut impl FnMut(std::any::TypeId)) {}
     fn assemble(
         _: &SynchronousOutputAssembly<'_, '_, '_, '_, S>,
         _: &AppliedOutputParent,

@@ -16,6 +16,7 @@ pub(in crate::mvcc::publication::application_publication::coupled_assembly) enum
     /// The authored writer: one later stage editing an admitted stage source.
     Authored {
         source: crate::identity::data::EntityId,
+        roles: &'a mut [RequiredOutputRoleTarget],
     },
 }
 
@@ -59,14 +60,14 @@ impl RelationalAuthoredCoupledCandidate<'_> {
                     super::super::writer_custody::Writer::Producer(predecessor),
                 )
             }
-            SuffixWriter::Authored { source } => {
+            SuffixWriter::Authored { source, roles } => {
                 super::super::local_keys::scope(
                     execution,
                     self.applied_parts(),
                     &self.mutation.outcome.created_entities,
                     self.mutation.candidate_symbols().interner(),
                     &mut batches,
-                    &mut [],
+                    roles,
                 )?;
                 (
                     crate::publication::data::CoupledFreshWriter::Authored,

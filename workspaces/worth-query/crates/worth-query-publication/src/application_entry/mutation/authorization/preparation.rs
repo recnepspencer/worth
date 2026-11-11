@@ -85,6 +85,7 @@ where
         (None, Some(_)) => unreachable!("a no-source binding has no constructible source marker"),
     }
     let extension = WorthQueryCommitExtension {
+        envelope: None,
         source: pending_source
             .as_ref()
             .map(|pending| pending.bound_source()),

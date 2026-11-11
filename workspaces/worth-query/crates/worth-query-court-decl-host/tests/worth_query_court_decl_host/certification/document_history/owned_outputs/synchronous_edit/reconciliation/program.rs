@@ -157,7 +157,7 @@ impl ApplicationChangeShape for Change {
     const POSTURE: ApplicationChangePosture = ApplicationChangePosture::Replace;
 }
 fn entry<D: ApplicationActionDelivery<Schema, edit::Binding>>() -> ApplicationFeatureSpec {
-    ApplicationFeatureSpec::root::<Schema, base::Entry>()
+    base::with_envelope_completion_actions(ApplicationFeatureSpec::root::<Schema, base::Entry>())
         .provides::<base::EntryOutput>()
         .action::<predecessor::synchronous::Binding, Completion>()
         .finish_action()

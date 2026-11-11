@@ -207,7 +207,8 @@ impl<Schema, Operation, Input, Scope>
         self.output_correspondence.validate_effects(&self.effects)?;
         self.validate_body_external_emission()?;
         Ok(WorthQueryApplicationEffectProgram {
-            synchronous_outputs: None,
+            synchronous_outputs: Vec::new(),
+            authored_stages: Vec::new(),
             producer_round_limits: crate::domain_computation::primary_graph::application_contribution::producer::synchronous_outputs::default_producer_round_bounds(),
             read_set: self.read_set,
             effects: self.effects,

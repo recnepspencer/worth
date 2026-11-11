@@ -120,7 +120,7 @@ pub(super) fn commit(
     })
     .map_err(crate::domain_computation::WorthQueryProviderSessionCommitStop::from)?;
     let consumed_output::VerifiedConsumedOutputPublication {
-        mut required_prerequisites,
+        required_prerequisites,
     } = consumed_output::verify(&execution, provider, &mut attempt, before.as_snapshot())?;
     let availability_fence =
         availability::prepare(&execution, provider, &attempt, before.as_snapshot())?;

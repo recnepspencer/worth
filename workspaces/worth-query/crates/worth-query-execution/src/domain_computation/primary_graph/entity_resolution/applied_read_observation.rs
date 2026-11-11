@@ -60,13 +60,13 @@ pub(super) fn record(
     candidate: &RelationalPinnedRead<RelationalAppliedCandidateReadIdentity>,
 ) {
     PENDING.with(|pending| {
-        if let Some(pending) = pending.borrow().as_ref() {
-            if pending.runtime == installed.runtime_authority {
-                pending
-                    .reads
-                    .borrow_mut()
-                    .push((entity.into(), before.clone(), candidate.clone()));
-            }
+        if let Some(pending) = pending.borrow().as_ref()
+            && pending.runtime == installed.runtime_authority
+        {
+            pending
+                .reads
+                .borrow_mut()
+                .push((entity.into(), before.clone(), candidate.clone()));
         }
     });
 }
