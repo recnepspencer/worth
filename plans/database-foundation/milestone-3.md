@@ -278,6 +278,11 @@ Remaining pure cleanup roots (per-claim Landing 2a disposition):
 
 ### C2 - Cost and bounds: backing and work budgets
 
+Pinned-reader restoration private remainders:
+
+Full original native_restore_work_counts_revised_history_sibling_roots_and_partition_images and divergent_sibling_is_not_reused_as_the_storage_mirror including shares_first_generation/shares_partition_generation: `5b18804fbd34c814d69aefd527653b11e3d2da59:crates/worth-relational/src/durability/authority/runtime_rebuild/checkpoint_restore_tests.rs`. Restore the same-SHA runtime_rebuild.rs and runtime_rebuild directory, `crates/worth-relational/src/tests/support.rs`, complete tests/support tree, and direct durability/history/runtime source/control ancestors. Preserve every section/work/directory/partition and pointer comparison, complete original arming/observations. Restore through genuinely source-owned infrastructure; never resurrect runtime_attachment discovery.
+
+
 Capture, dictionary and lineage private remainders:
 
 All these original roots and fixtures are unchanged at f9a53a5d17e01562d503b39b4627252bb63d8639:

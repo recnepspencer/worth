@@ -1,0 +1,9 @@
+command: "C:/Program Files/Git/bin/bash.exe" scripts/ci/check_workspace_rust_line_caps.sh dirty
+HEAD: 5d37a209ee227fdef639cbec2c438d82396a7209
+git_status_short_empty: false
+start_utc: 2026-11-11T03:00:01.930019+00:00
+[workspace-rust-line-caps] enforcing 400-line cap for dirty Rust files
+warning: in the working copy of 'crates/worth-relational/src/durability/log/native_checkpoint_codec/tests.rs', LF will be replaced by CRLF the next time Git touches it
+[workspace-rust-line-caps] PASS: checked 8 Rust files
+end_utc: 2026-11-11T03:00:21.068813+00:00
+exit_code: 0

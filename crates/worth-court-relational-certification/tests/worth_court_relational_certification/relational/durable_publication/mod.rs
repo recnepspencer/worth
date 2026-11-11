@@ -173,3 +173,13 @@ mod checkpoint_lineage_issuance;
 mod checkpoint_lineage_publication;
 mod checkpoint_merge_continuity;
 mod merge_source_copy_identity;
+
+mod checkpoint_catalog_originals;
+
+mod checkpoint_pinned_root;
+
+mod checkpoint_recovered_readers;
+
+mod checkpoint_root_publications;
+
+mod checkpoint_shared_partition;
