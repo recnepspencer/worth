@@ -1,5 +1,4 @@
 //! Real external native checkpoint input for aggregate cold-read integration.
-use super::fixtures::*;
 use crate::durability::{data::*, medium::*};
 use crate::publication::patch::data::PatchStreamPosition;
 use crate::storage::data::RelationalStorageUnavailableCause as Cause;
@@ -156,7 +155,17 @@ pub(super) fn reopen(
     )
     .unwrap()
     .manifest;
-    let artifacts = attached_test_medium(producer).offered();
+    let artifacts = producer
+        .history
+        .commit_artifacts()
+        .iter()
+        .map(|entry| {
+            entry
+                .envelope_residency()
+                .require_original_artifact(execution, None)
+                .unwrap()
+        })
+        .collect::<Vec<_>>();
     let source = Arc::new(ColdSource {
         members: native
             .members()
@@ -201,17 +210,7 @@ pub(super) fn reopen(
         Vec::new(),
         source.clone(),
     );
-    let attachment = TestDurableMedium::new().attachment();
-    for artifact in artifacts {
-        assert!(matches!(
-            attachment.publish(&artifact),
-            DurablePublicationFate::Committed
-        ));
-    }
-    let mut receiving = RelationalRuntimeApi::builder()
-        .schema_registry(registry())
-        .build_durable(attachment)
-        .unwrap();
+    let mut receiving = super::fixtures::runtime();
     let plan = receiving
         .durability()
         .recovery_plan_from_source(

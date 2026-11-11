@@ -123,7 +123,7 @@ proptest! {
     }
 
     #[test]
-    fn cdc_property_persisted_random_operation_matrix_recovers(
+    fn cdc_property_checkpointed_random_operation_matrix_recovers(
         operations in vec(arb_scenario_operation(), 16..64),
         checkpoint_seed in any::<u64>(),
     ) {
@@ -132,27 +132,27 @@ proptest! {
 
         let world = run_property_scenario(execution,
             operations,
-            RuntimeHarnessMode::Persisted,
+            RuntimeHarnessMode::CheckpointReconstruction,
         );
         let head = collect_subscriber_patches_from_head(&world.runtime, 4096);
         let checkpoints = random_checkpoints_from_patches(&head, checkpoint_seed, 8);
         let views = collect_multi_subscriber_views(&world.runtime, &checkpoints, &[1, 2, 4, 8]);
         assert_multi_subscriber_converges(
-            "property persisted random operation matrix",
+            "property checkpointed random operation matrix",
             &views,
             &head,
         );
 
-        crate::tests::support::checkpoint_durably(execution, &world.runtime).unwrap();
-        let recovery_plan = crate::tests::support::recovery_plan_for(execution, &world.runtime, RecoveryMode::NormalRecoveryVerification).unwrap();
-        let mut recovered = build_property_runtime(RuntimeHarnessMode::Persisted);
+        world.runtime.durability_authority().checkpoint(execution).unwrap();
+        let recovery_plan = world.runtime.durability().recovery_plan(execution, RecoveryMode::NormalRecoveryVerification).unwrap();
+        let mut recovered = build_property_runtime(RuntimeHarnessMode::CheckpointReconstruction);
         recovered.durability_recovery().recover(execution, recovery_plan).unwrap();
         let recovered_patch_stream = collect_patch_stream_from_head(execution, &recovered, 4096);
         prop_assert_eq!(recovered_patch_stream, head);
         let truth = VisibleTruthSummary::capture(execution, &world.runtime);
         let recovered_truth = VisibleTruthSummary::capture(execution, &recovered);
         assert_visible_truth_matches(
-            "property persisted random operation matrix recovered truth",
+            "property checkpointed random operation matrix recovered truth",
             &truth,
             &recovered_truth,
         );

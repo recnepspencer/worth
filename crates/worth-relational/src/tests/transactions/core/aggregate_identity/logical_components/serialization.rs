@@ -1,5 +1,5 @@
 //! Required content authority preserves explicit empty preceding tail slots.
-use super::checkpoint::persisted;
+use super::checkpoint::configured_runtime;
 use super::fixtures::*;
 use crate::durability::data::DurableBranchRootSchemaImage;
 use serde::{de::IgnoredAny, Serialize};
@@ -92,7 +92,7 @@ fn required_content_authority_keeps_exact_shape_and_positional_empty_tails() {
             authority
         );
 
-        let runtime = persisted(registry);
+        let runtime = configured_runtime(registry);
         commit(
             execution,
             &runtime,

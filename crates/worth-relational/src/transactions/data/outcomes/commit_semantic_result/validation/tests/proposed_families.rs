@@ -1,14 +1,11 @@
 //! Contradictions start from an actual produced aggregate, not invented Original custody.
 use super::super::*;
 use crate::facade::runtime::*;
-use crate::tests::support::{
-    create_entity_outcome, release_test_commit_snapshot, test_schema_registry, TestDurableMedium,
-};
+use crate::tests::support::{test_schema_registry, with_entity_publication_world};
 use std::sync::{
     atomic::{AtomicUsize, Ordering},
     Arc,
 };
-use worth_execution::ExecutionRequest;
 
 struct Probe {
     point: InvariantExecutionPoint,
@@ -67,27 +64,25 @@ fn recorded_execution() -> RelationalInvariantExecutionMeaning {
             .unwrap(),
         );
     }
-    let runtime = builder
-        .build_durable(TestDurableMedium::new().attachment())
-        .unwrap();
-    let host = crate::test_execution_policy::serial_request();
-    let request = ExecutionRequest::serial(&host);
-    let committed = create_entity_outcome(&request, &runtime, "semantic-family-observation");
-    assert_eq!(
-        calls.load(Ordering::SeqCst),
-        2,
-        "both actual declared callbacks execute once"
-    );
-    let meaning = committed
-        .semantic_result()
-        .validation()
-        .iter()
-        .find(|meaning| meaning.metadata.execution_point == InvariantExecutionPoint::ProposedState)
-        .unwrap()
-        .clone();
-    assert!(meaning.is_consistent());
-    release_test_commit_snapshot(&runtime, &committed);
-    meaning
+    with_entity_publication_world(builder, "semantic-family-observation", |world| {
+        let committed = &world.committed;
+        assert_eq!(
+            calls.load(Ordering::SeqCst),
+            2,
+            "both actual declared callbacks execute once"
+        );
+        let meaning = committed
+            .semantic_result()
+            .validation()
+            .iter()
+            .find(|meaning| {
+                meaning.metadata.execution_point == InvariantExecutionPoint::ProposedState
+            })
+            .unwrap()
+            .clone();
+        assert!(meaning.is_consistent());
+        meaning
+    })
 }
 
 fn custom_index(

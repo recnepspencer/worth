@@ -19,9 +19,22 @@ fn native_patch_state_survives_checkpoint_readmission() {
     let created = commit_entity_create(execution, &runtime, whole_set(&note, text("durable")));
     let entity = changed_entities(&created)[0];
     let recovery_fixture = fixture.clone();
-    let (_, recovered) = checkpoint_and_recover_with(execution, &runtime, move || {
-        recovery_fixture.build_runtime()
-    });
+    runtime
+        .durability_authority()
+        .checkpoint(execution)
+        .unwrap();
+    let plan = runtime
+        .durability()
+        .recovery_plan(
+            execution,
+            crate::durability::data::RecoveryVerificationMode::NormalRecoveryVerification,
+        )
+        .unwrap();
+    let mut recovered = { recovery_fixture.build_runtime() };
+    recovered
+        .durability_recovery()
+        .recover(execution, plan)
+        .unwrap();
     let read = recovered
         .read_truth()
         .read_version(execution, created.version_id)

@@ -472,7 +472,55 @@ Remaining pure cleanup roots (per-claim Landing 2a disposition):
   `cold_source/protected_reads.rs`. This is relocation, not retirement or
   weakened fault assertions.
 
+- C4: the original local-medium checkpoint corruption injection in
+  `fintech_failure_injection_helpers_cover_savepoints_replay_and_checkpoint_corruption`:
+  restore full original from `bbbce86edd7a7e843ecd1e44a8d3ffbfca2cf52f:crates/worth-relational/src/tests/domains/fintech/workflows/persistence.rs`.
+  Restore same-SHA `tests/domains/fintech/failure_injection/{mod.rs,durability.rs}`,
+  `fixture` (complete tree), `scenarios.rs`, `actions/recovery.rs`, owning module parents,
+  `tests/support.rs`, complete `tests/support` and direct production/control closure
+  under `crates/worth-relational/src`. Preserve the actual checkpoint damage and
+  `damage_filed_checkpoint == true` assertion through genuine owned storage;
+  never revive runtime_attachment. The original savepoint/replay checks remain
+  mounted as `fintech_failure_injection_keeps_savepoint_and_replay_refusals`.
+
 #### C2 - Cost and bounds: backing and work budgets
+
+- C2: complete private campaigns
+  `selected_ack_partial_transfer_preserves_later_cells_and_resumes_same_capture`
+  and `selected_ack_exposes_backed_data_before_retirement_and_releases_holds_only_on_completion`:
+  restore `22e638d638e724fc2ca3947a583f43c45b56990f:crates/worth-relational/src/durability/data/native_checkpoint/tests/selected_ack.rs`.
+  Restore both delayed-selection variants
+  `native_custody_correction_delayed_canonical_selection_retains_actual_root_and_interrupted_ack`
+  and `native_custody_correction_delayed_empty_selection_retains_actual_schema_and_interrupted_ack`
+  from the same immutable SHA at
+  `crates/worth-relational/src/durability/data/native_checkpoint/component_custody/tests.rs`.
+  Each restore includes its full original body and helper, same-SHA parent mounts,
+  Native checkpoint/canonical publication/region placement/catalog/custody/retirement
+  owners and controls, direct runtime/history/schema ancestors, `tests/support.rs`
+  and COMPLETE `tests/support` tree under `crates/worth-relational/src`.
+  Preserve exact one-unit/C+regions work windows, all per-cell placement and
+  source `same_owner`/Arc identities, acknowledged catalog frontiers, Weak/census,
+  original root/schema/Full-read and capture-release/reclamation assertions.
+  Restore through actual Home-owned capture, physical selection and ACK;
+  never revive fixed-generation selection or runtime_attachment discovery.
+  Functional Home counterparts stay mounted: selected observer-drop/history/mutation
+  recovery, pending selected DATA catalog delta, and both retained Empty/canonical
+  original-schema/entity-read journeys through pending ACK/recovery/reopen/advancement.
+  The Query original-attempt interrupted-ACK restart court stays mounted too.
+
+
+- C2: exact `branch_transition_artifacts(...).next().is_none()` in
+  `completing_an_older_capture_cannot_replace_the_compacted_transition_basis`.
+  Restore the complete original at `bbbce86edd7a7e843ecd1e44a8d3ffbfca2cf52f:crates/worth-relational/src/durability/authority/checkpoint_concurrency_tests.rs`,
+  same-SHA parent mounts, checkpoint_capture/checkpointing/append owners,
+  checkpoint catalog and branch-transition state/control closure, `tests/support.rs`
+  and complete `tests/support` tree under `crates/worth-relational/src`.
+  Restore the actual durable compaction and original capture/coverage/budgets
+  through genuine owned storage; never revive runtime_attachment. The complete
+  private catalog-ordering counterpart stays mounted as
+  `older_checkpoint_completion_keeps_the_newest_transition_basis` on Memory.
+  Actual Home stale-capture/selected-generation proof remains separately mounted.
+
 
 Integration protocol restoration refresh (same per-claim disposition; no retired campaign is remounted):
 - `22e638d638e724fc2ca3947a583f43c45b56990f:crates/worth-relational/src/durability/authority/runtime_rebuild/checkpoint_restore_tests.rs`

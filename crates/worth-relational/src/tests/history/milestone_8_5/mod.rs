@@ -19,9 +19,8 @@ use crate::facade::replay::{
 };
 use crate::facade::runtime::{RelationalRuntime, RelationalRuntimeApi};
 use crate::tests::support::{
-    changed_entities, checkpoint_and_recover_with, create_branch_from_main, create_entity,
-    entity_field_aspect, entity_u64_field_aspect, lifecycle_aspect, read_entity_name,
-    AspectSchemaFixture,
+    changed_entities, create_branch_from_main, create_entity, entity_field_aspect,
+    entity_u64_field_aspect, lifecycle_aspect, read_entity_name, AspectSchemaFixture,
 };
 use crate::transactions::data::AspectFieldPatch;
 use worth_foundational::facade::{

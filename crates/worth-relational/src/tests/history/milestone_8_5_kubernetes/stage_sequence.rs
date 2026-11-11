@@ -3,9 +3,7 @@ use super::*;
 pub(super) fn run_kubernetes_style_certification(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
 ) -> KubernetesIntentCertificationBundle {
-    let medium = crate::tests::support::TestDurableMedium::new();
-    let recovered_root = medium.clone();
-    let runtime = persisted_strategy_runtime(medium);
+    let runtime = strategy_runtime();
     let entity = create_entity(execution, &runtime, "kube-service");
     let controller_branch = create_branch_from_main(&runtime, "kube-controller");
     let main_branch = BranchId("main".to_string());
@@ -56,7 +54,7 @@ pub(super) fn run_kubernetes_style_certification(
         .history()
         .branch_head(&controller_branch)
         .expect("overlap controller head");
-    let runtime = recover_stage(execution, &runtime, recovered_root.clone());
+    let runtime = recover_stage(execution, &runtime);
     let recovered_overlap_planning = planning_for(
         execution,
         &runtime,
@@ -132,7 +130,7 @@ pub(super) fn run_kubernetes_style_certification(
         .history()
         .branch_head(&controller_branch)
         .expect("narrowed controller head");
-    let runtime = recover_stage(execution, &runtime, recovered_root.clone());
+    let runtime = recover_stage(execution, &runtime);
     let recovered_narrowed_planning = planning_for(
         execution,
         &runtime,
@@ -186,7 +184,7 @@ pub(super) fn run_kubernetes_style_certification(
     assert!(rebroadened_intent_replay
         .compared_surfaces
         .contains(&ReplayObservableSurface::Strategy));
-    let runtime = recover_stage(execution, &runtime, recovered_root.clone());
+    let runtime = recover_stage(execution, &runtime);
     let recovered_rebroadened_planning = planning_for(
         execution,
         &runtime,
@@ -319,7 +317,7 @@ pub(super) fn run_kubernetes_style_certification(
         execution,
         final_recovery::FinalRecoveryCertificationInput {
             runtime,
-            recovered_root,
+
             entity,
             main_branch,
             controller_branch,

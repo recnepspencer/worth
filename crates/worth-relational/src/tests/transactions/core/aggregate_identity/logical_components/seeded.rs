@@ -1,6 +1,6 @@
 //! Literal business edits are checked against independent full-key partitions.
 use super::{
-    checkpoint::persisted,
+    checkpoint::configured_runtime,
     fixtures::*,
     lifecycle,
     oracle::{Anchor, Carrier, Oracle},
@@ -128,7 +128,7 @@ mod exhaustive {
     fn seeded_full_key_differential_fork_recovery_and_replay_keep_actual_names_and_lineage() {
         let host = crate::test_execution_policy::serial_request();
         let execution = &ExecutionRequest::serial(&host);
-        let runtime = persisted(registry());
+        let runtime = configured_runtime(registry());
         let mut batch = WorkerIntentBatch::new("seeded-literal-world");
         for index in 0..8 {
             batch = batch.push(entity(1, index));
@@ -313,7 +313,18 @@ mod exhaustive {
         let final_result = final_result.unwrap();
         audit(execution, &runtime, &final_result);
         let expected = state(execution, &runtime, &current, &oracle.groups());
-        let (_, recovered) = recover_with(execution, &runtime, || persisted(registry()));
+        let plan = runtime
+            .durability()
+            .recovery_plan(
+                execution,
+                crate::durability::data::RecoveryVerificationMode::NormalRecoveryVerification,
+            )
+            .unwrap();
+        let mut recovered = configured_runtime(registry());
+        recovered
+            .durability_recovery()
+            .recover(execution, plan)
+            .unwrap();
         let recovered_head = snapshot_for_owner_branch(&recovered, &BranchId("main".into()));
         assert_eq!(
             state(execution, &recovered, &recovered_head, &oracle.groups()),

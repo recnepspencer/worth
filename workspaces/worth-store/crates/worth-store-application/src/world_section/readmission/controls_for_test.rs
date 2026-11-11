@@ -22,8 +22,14 @@ where
 
     pub fn publish_captured_relational_checkpoint_for_test(
         &self,
-        checkpoint: worth_relational::facade::durability::CompleteRelationalNativeCheckpoint,
+        checkpoint: Option<
+            worth_relational::facade::durability::CompleteRelationalNativeCheckpoint,
+        >,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
+        observe_capture: Option<
+            &dyn Fn(&worth_relational::facade::durability::RelationalNativeCheckpoint),
+        >,
+        before_native_acknowledgement: Option<&(dyn Fn() + Send + Sync)>,
     ) -> Result<crate::ApplicationHomeCheckpoint, crate::ApplicationHomeCheckpointDenial> {
         let world = self
             .world
@@ -38,11 +44,16 @@ where
                 self.home
                     .relational()
                     .prepare_captured_complete_checkpoint_for_test(
-                        checkpoint, home, through, digest, execution,
+                        checkpoint,
+                        home,
+                        through,
+                        digest,
+                        execution,
+                        observe_capture,
                     )
             },
             None,
-            None,
+            before_native_acknowledgement,
             None,
         )
     }

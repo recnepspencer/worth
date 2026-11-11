@@ -172,5 +172,3 @@ fn native_region_retains_the_whole_admitted_enclosing_backing_charge() {
         payload.len() as u64
     );
 }
-
-mod selected_ack;

@@ -230,12 +230,27 @@ fn historical_relation_lifecycle_does_not_reveal_future_audit_retention_after_re
         Some(retired.version_id),
     );
 
-    let (_, recovered) = checkpoint_and_recover_with(execution, &runtime, || {
+    runtime
+        .durability_authority()
+        .checkpoint(execution)
+        .unwrap();
+    let plan = runtime
+        .durability()
+        .recovery_plan(
+            execution,
+            crate::durability::data::RecoveryVerificationMode::NormalRecoveryVerification,
+        )
+        .unwrap();
+    let mut recovered = {
         endpoint_deletion_runtime(
             crate::schema::data::EndpointDeletionIntegrityMode::RequireRelationRetirement,
             CascadeDeletePolicy::RetainDanglingForAudit,
         )
-    });
+    };
+    recovered
+        .durability_recovery()
+        .recover(execution, plan)
+        .unwrap();
     assert_relation_lifecycle_at_version(
         execution,
         &recovered,

@@ -88,6 +88,29 @@ impl CheckpointPublication {
         &self.subject
     }
 
+    pub(crate) fn progress(
+        &self,
+    ) -> Result<crate::durability::medium::RelationalCheckpointAcknowledgementProgress, Denial>
+    {
+        use crate::durability::medium::RelationalCheckpointAcknowledgementProgress as Progress;
+        let phase = match self.phase.try_lock() {
+            Ok(guard) => guard,
+            Err(std::sync::TryLockError::Poisoned(error)) => error.into_inner(),
+            Err(std::sync::TryLockError::WouldBlock) => return Err(Denial::Busy),
+        };
+        Ok(match &*phase {
+            AcknowledgementPhase::Captured { .. } => Progress::AwaitingSelectionObservation,
+            AcknowledgementPhase::Acknowledging(state) => {
+                if state.directory_applied {
+                    Progress::RetiringSources
+                } else {
+                    Progress::PlacingData
+                }
+            }
+            AcknowledgementPhase::Acknowledged { .. } => Progress::Complete,
+        })
+    }
+
     pub(crate) fn advance(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,

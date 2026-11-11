@@ -2,6 +2,56 @@ use super::*;
 use crate::capabilities::AspectPlanSource;
 use worth_execution::ExecutionAllocationPolicy as Allocation;
 
+/// A published entity and the complete Native world that issued its identity.
+pub(crate) struct CreatedEntityWorld<'host, 'scope> {
+    pub(crate) runtime: RelationalRuntime,
+    pub(crate) entity: crate::facade::identity::EntityId,
+    pub(crate) execution: worth_execution::ExecutionRequest<'host, 'scope>,
+}
+
+pub(crate) fn with_created_entity_world<R>(
+    name: &str,
+    observe: impl for<'host, 'scope> FnOnce(CreatedEntityWorld<'host, 'scope>) -> R,
+) -> R {
+    let host = crate::test_execution_policy::serial_request();
+    let execution = worth_execution::ExecutionRequest::serial(&host);
+    let runtime = runtime_with_test_schema();
+    let entity = create_entity(&execution, &runtime, name);
+    observe(CreatedEntityWorld {
+        runtime,
+        entity,
+        execution,
+    })
+}
+
+/// An actual entity publication observed before its snapshot is released.
+pub(crate) struct EntityPublicationWorld<'host, 'scope> {
+    runtime: RelationalRuntime,
+    pub(crate) committed: CommitResult,
+    _execution: worth_execution::ExecutionRequest<'host, 'scope>,
+}
+
+pub(crate) fn with_entity_publication_world<R>(
+    builder: crate::facade::runtime::RelationalRuntimeBuilder,
+    name: &str,
+    observe: impl for<'host, 'scope> FnOnce(&EntityPublicationWorld<'host, 'scope>) -> R,
+) -> R {
+    let host = crate::test_execution_policy::serial_request();
+    let execution = worth_execution::ExecutionRequest::serial(&host);
+    let runtime = builder
+        .build()
+        .expect("valid entity-publication world configuration");
+    let committed = create_entity_outcome(&execution, &runtime, name);
+    let world = EntityPublicationWorld {
+        runtime,
+        committed,
+        _execution: execution,
+    };
+    let observed = observe(&world);
+    release_test_commit_snapshot(&world.runtime, &world.committed);
+    observed
+}
+
 pub(crate) fn batch_create(name: &str) -> WorkerIntentBatch {
     WorkerIntentBatch::new(format!("batch-{name}")).push(MutationIntent::Create(
         CreateIntent::Entity(crate::transactions::data::EntitySpec {

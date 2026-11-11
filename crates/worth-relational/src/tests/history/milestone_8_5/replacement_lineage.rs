@@ -3,9 +3,7 @@ use super::*;
 pub(super) fn run_replacement_strategy_certification(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
 ) -> ReplacementCertificationBundle {
-    let medium = crate::tests::support::TestDurableMedium::new();
-    let recovered_root = medium.clone();
-    let runtime = persisted_replacement_strategy_runtime(medium);
+    let runtime = replacement_strategy_runtime();
     let replacement_entity = create_entity(execution, &runtime, "replace-target");
     let replacement_start_lineage = runtime
         .lineage_access()
@@ -93,9 +91,22 @@ pub(super) fn run_replacement_strategy_certification(
                 .lineage_transition_count(),
         },
     };
-    let (_recovery, recovered) = checkpoint_and_recover_with(execution, &runtime, || {
-        persisted_replacement_strategy_runtime(recovered_root)
-    });
+    runtime
+        .durability_authority()
+        .checkpoint(execution)
+        .unwrap();
+    let plan = runtime
+        .durability()
+        .recovery_plan(
+            execution,
+            crate::durability::data::RecoveryVerificationMode::NormalRecoveryVerification,
+        )
+        .unwrap();
+    let mut recovered = replacement_strategy_runtime();
+    recovered
+        .durability_recovery()
+        .recover(execution, plan)
+        .unwrap();
     let recovered_replacement_envelope = recovered
         .replay()
         .canonical_commit_envelope(execution, replacement_commit.commit.commit_id)
