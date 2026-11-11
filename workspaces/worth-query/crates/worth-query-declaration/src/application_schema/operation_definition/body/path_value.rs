@@ -49,14 +49,19 @@ impl ApplicationOperationBodyPathValueAssignment {
 }
 impl ApplicationOperationBodyProgram {
     pub(super) fn has_duplicate_path_destinations(&self) -> bool {
-        let mut writes = std::collections::BTreeSet::new();
-        self.path_value_assignments().iter().any(|step| {
-            !writes.insert((&step.target.path, &step.target.field))
-                || (step.target.path.steps().is_empty()
+        let mut writes = self
+            .path_value_assignments()
+            .iter()
+            .map(|step| (&step.target.path, &step.target.field))
+            .collect::<Vec<_>>();
+        writes.sort_unstable();
+        writes.windows(2).any(|pair| pair[0] == pair[1])
+            || self.path_value_assignments().iter().any(|step| {
+                step.target.path.steps().is_empty()
                     && self.scope_fields().iter().any(|scope| {
                         scope.write_target().is_some() && scope.field() == &step.target.field
-                    }))
-        })
+                    })
+            })
     }
     pub(super) fn validate_path_bindings(
         &self,

@@ -81,8 +81,12 @@ impl WorthQueryAdmittedApplicationQueryParameters {
                     .payload()
                     .owned_allocation_capacity_bytes(),
                 |total, (name, value)| {
+                    let name_capacity = match name {
+                        Cow::Borrowed(_) => 0,
+                        Cow::Owned(name) => name.capacity(),
+                    };
                     total
-                        .checked_add(owned_name_capacity(name))?
+                        .checked_add(name_capacity)?
                         .checked_add(value.owned_allocation_capacity_bytes())
                 },
             )?
@@ -108,8 +112,12 @@ impl WorthQueryAdmittedApplicationQueryParameters {
             .bindings
             .iter()
             .try_fold(0usize, |total, (name, value)| {
+                let name_capacity = match name {
+                    Cow::Borrowed(_) => 0,
+                    Cow::Owned(name) => name.capacity(),
+                };
                 total
-                    .checked_add(owned_name_capacity(name))?
+                    .checked_add(name_capacity)?
                     .checked_add(value.owned_allocation_capacity_bytes())
             })?;
         let bytes = basis_bytes
@@ -246,11 +254,4 @@ fn canonical_work_denial(
         _ => WorthQueryApplicationQueryParameterDenialKind::CanonicalDigestSlotRejected,
     };
     WorthQueryApplicationQueryParameterDenial::new(kind, parameter)
-}
-
-fn owned_name_capacity(name: &Cow<'static, str>) -> usize {
-    match name {
-        Cow::Borrowed(_) => 0,
-        Cow::Owned(name) => name.capacity(),
-    }
 }
