@@ -146,21 +146,28 @@ without a check is category 5: hope.
 
 ## V. The loop
 
-18. **Scope is derived, not chosen.** One repository command, `loop`, owns
-    iteration:
-    - `loop edit` compiles only the crates that own the changed files;
-    - `loop court` runs only the court crates and path prefixes that cover
-      those crates;
-    - `loop gate` runs everything, once, at handoff;
-    - `loop where <path>` prints the owning crate, its role, its court crates
-      and their prefixes.
+18. **Scope is derived, not chosen; compile time is sacred.** One repository
+    command, `loop`, owns iteration:
+    - `loop edit` compiles only the owners of changed files;
+    - `loop court` selects the covering court crates and path prefixes;
+    - routine handoff and landing use cheap source checks and focused affected
+      evidence through an implemented small normal gate;
+    - expensive workspace gates run at milestone completion, release
+      verification or nightly jobs, never automatically after every slice;
+    - `loop where <path>` identifies owners and covering courts.
 
-    Scope comes from the diff, the crate registry (law 11) and the court
-    registry (which production crates and areas each court crate covers),
-    never from an agent's guess. Agents, briefs and footers say `loop`, never
-    hand-composed cargo invocations. A brief may narrow `loop court` to its
-    lane's prefixes. *Check: the court registry covers every production crate;
-    footers and briefs contain no raw cargo commands.*
+    Scope comes from the diff and production/court registries, not an agent's
+    guessed package list. A shared API change requires inspecting affected
+    boundaries, not automatically running every dependent or workspace CI.
+    Include compilation, linking and fixture construction in the cost of a
+    check. Three QA lenses do not imply three builds or repeated tests.
+
+    A concrete suspected defect can require an expensive focused reproducer;
+    name the uncertainty and why cheaper evidence cannot resolve it. This does
+    not authorize a full gate. Reuse valid evidence and report deferred work
+    honestly. Existing broad commands do not become cheap by being called
+    normal; the build-speed owner must align selection and pass-record tooling.
+    Do not bypass hooks or fabricate a full-gate pass for focused evidence.
 
 19. **Every run checks its own configuration first.** Each `loop` tier starts
     with a preflight of milliseconds that refuses to run when the
