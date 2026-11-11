@@ -79,6 +79,9 @@ pub struct RecoveryPlan {
             >,
         >,
     >,
+    /// Actual retained Memory transition DATA, independent of external-source admission.
+    pub(crate) retained_transition_prefix:
+        Option<std::sync::Arc<crate::runtime::OriginalBranchSchemaInputs>>,
     pub(crate) original_source: Option<
         std::sync::Arc<
             crate::durability::source_initial_inputs::source_admission::SourceOriginalInputs,
@@ -180,6 +183,7 @@ impl RecoveryPlan {
         Self {
             home_world_selection: None,
             original_source: None,
+            retained_transition_prefix: None,
             config,
             cold_source,
             checkpoint,

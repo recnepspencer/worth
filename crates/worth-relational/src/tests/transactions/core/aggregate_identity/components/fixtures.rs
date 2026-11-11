@@ -69,12 +69,6 @@ pub(super) fn runtime() -> RelationalRuntime {
         .build()
         .expect("valid native runtime configuration")
 }
-pub(super) fn persisted() -> RelationalRuntime {
-    RelationalRuntimeApi::builder()
-        .schema_registry(registry())
-        .build_durable(TestDurableMedium::new().attachment())
-        .expect("valid native runtime configuration")
-}
 const COUPLINGS: [(usize, u32, usize, usize); 6] = [
     (0, 2, 0, 1),
     (1, 6, 1, 0),

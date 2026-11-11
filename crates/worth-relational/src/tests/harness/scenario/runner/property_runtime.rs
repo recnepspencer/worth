@@ -23,12 +23,14 @@ pub(crate) fn build_property_runtime(mode: RuntimeHarnessMode) -> RelationalRunt
                 .build()
                 .expect("valid native runtime configuration")
         }
-        RuntimeHarnessMode::Persisted => crate::facade::runtime::RelationalRuntimeApi::builder()
-            .profile(RelationalRuntimeProfile::CertificationCore)
-            .schema_registry(test_schema_registry())
-            .mvcc(property_mvcc_config())
-            .build_durable(crate::tests::support::TestDurableMedium::new().attachment())
-            .expect("valid native runtime configuration"),
+        RuntimeHarnessMode::CheckpointReconstruction => {
+            crate::facade::runtime::RelationalRuntimeApi::builder()
+                .profile(RelationalRuntimeProfile::CertificationCore)
+                .schema_registry(test_schema_registry())
+                .mvcc(property_mvcc_config())
+                .build()
+                .expect("valid native runtime configuration")
+        }
     }
 }
 

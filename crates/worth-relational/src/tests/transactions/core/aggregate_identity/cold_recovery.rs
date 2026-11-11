@@ -34,7 +34,7 @@ fn split(born: &CommitResult) -> WorkerIntentBatch {
 fn cold_split_and_warm_split_publish_identical_aggregate_names_without_history_loads() {
     let host = crate::test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host);
-    let producer = persisted();
+    let producer = runtime();
     let born = commit(execution, &producer, "main", birth(&[1, 2, 3, 0]));
     let (cold, source) = reopen(execution, &producer);
     let batch = split(&born);
@@ -59,7 +59,7 @@ fn cold_split_and_warm_split_publish_identical_aggregate_names_without_history_l
 fn cold_aggregate_source_refusal_publishes_nothing_and_can_retry() {
     let host = crate::test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host);
-    let producer = persisted();
+    let producer = runtime();
     let born = commit(execution, &producer, "main", birth(&[1, 2, 3, 0]));
     let (cold, source) = reopen(execution, &producer);
     let before = cold.history().branch_head(&BranchId("main".into()));

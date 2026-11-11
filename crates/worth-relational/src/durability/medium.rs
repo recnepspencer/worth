@@ -22,7 +22,7 @@ mod binding;
 mod checkpoint_selection;
 pub use checkpoint_selection::{
     CheckpointSelectionIdentity, CheckpointSelectionObservation, OpaqueCapturedCheckpointSubject,
-    RelationalCheckpointAcknowledgementDenial,
+    RelationalCheckpointAcknowledgementDenial, RelationalCheckpointAcknowledgementProgress,
 };
 mod cold_source;
 mod commit_publication;
@@ -164,17 +164,6 @@ pub trait RelationalDurableMedium: Send + Sync + std::fmt::Debug {
         &self,
         artifact: &RelationalBranchTransitionArtifact,
     ) -> DurablePublicationFate<String>;
-
-    /// The in-crate test medium's durable contents behind this medium, so
-    /// Relational's own durability tests can recover from the medium a
-    /// runtime publishes to. Exists only in this crate's unit-test build.
-    #[cfg(test)]
-    #[doc(hidden)]
-    fn in_crate_test_medium(
-        &self,
-    ) -> Option<std::sync::Arc<crate::tests::support::TestDurableMedium>> {
-        None
-    }
 }
 
 /// Why a medium-backed publication stopped before any effect.

@@ -7,7 +7,7 @@ pub(crate) fn certify_replay_recovery(
 ) -> StrategyCertificationBundle {
     let StrategyReplayRecoveryInput {
         runtime,
-        recovered_root,
+
         entity,
         feature_branch,
         aspect_overlap_branch,
@@ -171,20 +171,13 @@ pub(crate) fn certify_replay_recovery(
         visible_truth: live_visible_truth,
     };
 
-    let recovery_plan = crate::tests::support::recovery_plan_for(
-        execution,
-        &runtime,
-        RecoveryMode::AuditRecoveryVerification,
-    )
-    .unwrap();
+    let recovery_plan = runtime
+        .durability()
+        .recovery_plan(execution, RecoveryMode::AuditRecoveryVerification)
+        .unwrap();
 
     let (missing_executor_mismatch_present, failing_executor_mismatch_present) =
-        executor_faults::certify(
-            execution,
-            &recovery_plan,
-            &recovered_root,
-            main_commit.commit.commit_id,
-        );
+        executor_faults::certify(execution, &recovery_plan, main_commit.commit.commit_id);
     live_bundle.missing_executor_replay = StrategyReplayMismatchEvidence {
         strategy_surface_mismatch_present: missing_executor_mismatch_present,
     };
@@ -192,9 +185,22 @@ pub(crate) fn certify_replay_recovery(
         strategy_surface_mismatch_present: failing_executor_mismatch_present,
     };
 
-    let (_recovery, recovered) = checkpoint_and_recover_with(execution, &runtime, || {
-        persisted_strategy_runtime(recovered_root)
-    });
+    runtime
+        .durability_authority()
+        .checkpoint(execution)
+        .unwrap();
+    let plan = runtime
+        .durability()
+        .recovery_plan(
+            execution,
+            crate::durability::data::RecoveryVerificationMode::NormalRecoveryVerification,
+        )
+        .unwrap();
+    let mut recovered = strategy_runtime();
+    recovered
+        .durability_recovery()
+        .recover(execution, plan)
+        .unwrap();
 
     let recovered_planning = recovered
         .merge()

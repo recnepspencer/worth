@@ -52,12 +52,12 @@ impl SeededScenarioConfig {
         }
     }
 
-    pub(crate) fn persisted_geometry(seed: u64, profile: CertificationPressureProfile) -> Self {
+    pub(crate) fn checkpointed_geometry(seed: u64, profile: CertificationPressureProfile) -> Self {
         Self {
             seed,
             steps: profile.steps(),
             checkpoint_stride: 16,
-            runtime_mode: RuntimeHarnessMode::Persisted,
+            runtime_mode: RuntimeHarnessMode::CheckpointReconstruction,
             relation_pressure: true,
             durable_checkpoint_every: Some(32),
             retention_pass_every: Some(8),

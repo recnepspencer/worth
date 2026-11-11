@@ -4,7 +4,7 @@ use super::scales::FintechScale;
 #[derive(Clone, Copy)]
 pub(super) enum FintechScenario {
     SmokeBook,
-    PersistedSmokeBook,
+    CheckpointRecoverySmokeBook,
     HistoricalVisibility,
     IntradayRisk,
     LateTradeCorrection,
@@ -19,7 +19,7 @@ pub(super) struct FintechScenarioSelection {
     pub(super) expected_artifacts: &'static [&'static str],
     pub(super) expected_read_alias: &'static str,
     pub(super) probe_prefix: &'static str,
-    pub(super) persisted: bool,
+    pub(super) checkpoint_recovery: bool,
 }
 
 pub(super) fn setup_world(execution: &worth_execution::ExecutionRequest<'_, '_>) -> FintechWorld {
@@ -39,7 +39,7 @@ pub(super) fn setup_world_for(
 ) -> FintechWorld {
     match scenario {
         FintechScenario::SmokeBook => FintechWorld::setup_world(execution),
-        FintechScenario::PersistedSmokeBook => FintechWorld::setup_persisted_world(execution),
+        FintechScenario::CheckpointRecoverySmokeBook => FintechWorld::setup_world(execution),
         FintechScenario::HistoricalVisibility => FintechWorld::setup_world(execution),
         FintechScenario::IntradayRisk => FintechWorld::setup_world(execution),
         FintechScenario::LateTradeCorrection => FintechWorld::setup_world(execution),
@@ -57,11 +57,11 @@ pub(super) fn selection_for(scenario: FintechScenario) -> FintechScenarioSelecti
             expected_artifacts: &["snapshot-visible-truth", "branch-head-state"],
             expected_read_alias: "portfolio.read.baseline",
             probe_prefix: "portfolio",
-            persisted: false,
+            checkpoint_recovery: false,
         },
-        FintechScenario::PersistedSmokeBook => FintechScenarioSelection {
+        FintechScenario::CheckpointRecoverySmokeBook => FintechScenarioSelection {
             scenario,
-            scenario_key: "persisted-smoke-book",
+            scenario_key: "checkpoint-recovery-smoke-book",
             canonical_case: FintechCaseRole::BaselinePortfolio,
             expected_invariants: &[
                 "fixture_shape_smoke",
@@ -75,7 +75,7 @@ pub(super) fn selection_for(scenario: FintechScenario) -> FintechScenarioSelecti
             ],
             expected_read_alias: "portfolio.read.recovery",
             probe_prefix: "portfolio",
-            persisted: true,
+            checkpoint_recovery: true,
         },
         FintechScenario::HistoricalVisibility => FintechScenarioSelection {
             scenario,
@@ -89,7 +89,7 @@ pub(super) fn selection_for(scenario: FintechScenario) -> FintechScenarioSelecti
             expected_artifacts: &["snapshot-visible-truth", "branch-head-state"],
             expected_read_alias: "trade-correction.read.historical",
             probe_prefix: "historical-visibility",
-            persisted: false,
+            checkpoint_recovery: false,
         },
         FintechScenario::IntradayRisk => FintechScenarioSelection {
             scenario,
@@ -103,7 +103,7 @@ pub(super) fn selection_for(scenario: FintechScenario) -> FintechScenarioSelecti
             ],
             expected_read_alias: "intraday-risk.read.post-mutation",
             probe_prefix: "intraday-risk",
-            persisted: false,
+            checkpoint_recovery: false,
         },
         FintechScenario::LateTradeCorrection => FintechScenarioSelection {
             scenario,
@@ -117,7 +117,7 @@ pub(super) fn selection_for(scenario: FintechScenario) -> FintechScenarioSelecti
             expected_artifacts: &["snapshot-visible-truth", "branch-head-state", "diagnostics"],
             expected_read_alias: "trade-correction.read.post-mutation",
             probe_prefix: "trade-correction",
-            persisted: false,
+            checkpoint_recovery: false,
         },
         FintechScenario::FailedSettlementRepair => FintechScenarioSelection {
             scenario,
@@ -135,7 +135,7 @@ pub(super) fn selection_for(scenario: FintechScenario) -> FintechScenarioSelecti
             ],
             expected_read_alias: "settlement-repair.read.post-mutation",
             probe_prefix: "settlement-repair",
-            persisted: false,
+            checkpoint_recovery: false,
         },
     }
 }

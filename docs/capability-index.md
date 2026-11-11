@@ -221,6 +221,13 @@ Native platform diagnostics inspect publication-medium ownership through
 retaining its original cold readers and transition history. This immutable
 observation leaves operation admission with the owning ports.
 
+Native checkpoint owners inspect a capture through
+`RelationalNativeCheckpoint::acknowledgement_progress()` and
+`facade::durability::RelationalCheckpointAcknowledgementProgress`. The immutable
+observation distinguishes pending DATA placement, source retirement and completion;
+an active driver returns typed `Busy`, and decoded unbound bytes have no progress.
+Progress describes that original capture; selection validity remains with its owner.
+
 Native index DATA inspection uses the projection's request-aware
 `bounded_index_relations_for_frontier`. It includes audit-retained edges under
 the same visibility rule as index maintenance; ordinary frontier queries retain

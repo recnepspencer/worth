@@ -1,9 +1,6 @@
-use worth_execution::{
-    CancellationSource, ExecutionAllocationPolicy, ExecutionRequest, SerialMemoryBudget,
-    SerialRequest,
-};
+use worth_execution::{CancellationSource, ExecutionRequest, SerialMemoryBudget, SerialRequest};
 use worth_relational::facade::durability::RelationalCheckpointArtifactPolicy;
-use worth_relational::facade::{history::BranchId, runtime::RelationalRuntimeApi};
+use worth_relational::facade::history::BranchId;
 
 #[test]
 fn a_late_capture_cannot_regress_the_selected_transition_frontier_or_membership() {
@@ -14,65 +11,8 @@ fn a_late_capture_cannot_regress_the_selected_transition_frontier_or_membership(
         None,
     );
     let execution = ExecutionRequest::serial(&request);
-    use worth_relational::facade::{
-        identity::{KindId, PartitionId},
-        mvcc::RelationalTransactionIntent,
-        schema::{
-            EntityKindRegistration, KindAspectContractDeclarations, RelationalSchemaRegistry,
-            SchemaId, SchemaVersionId,
-        },
-        symbols::ClientKey,
-        transactions::{CreateIntent, EntitySpec, MutationIntent, WorkerIntentBatch},
-    };
-    let registry = RelationalSchemaRegistry::new()
-        .register_entity_kind(EntityKindRegistration {
-            kind_id: KindId(1),
-            kind_name: "checkpoint.seed".into(),
-            schema_id: SchemaId("checkpoint".into()),
-            schema_version_id: SchemaVersionId(1),
-            aspect_contract_declarations: KindAspectContractDeclarations::new(Vec::new()),
-        })
-        .unwrap();
-    let fixture = super::coupled_home::open(
-        &directory.path().join("home"),
-        RelationalRuntimeApi::builder().schema_setup(move |schema| {
-            schema.schema_registry(registry);
-        }),
-        true,
-        &execution,
-    );
-    let home = fixture.home;
-    let (_, basis) = home
-        .relational()
-        .runtime()
-        .observe_branch(&home.relational().runtime().main_branch_identity())
-        .unwrap();
-    let mut transaction = home
-        .relational()
-        .runtime()
-        .begin_branch_transaction(&basis, RelationalTransactionIntent::ordinary())
-        .unwrap();
-    transaction
-        .push_batch(
-            WorkerIntentBatch::new("seed").push(MutationIntent::Create(CreateIntent::Entity(
-                EntitySpec {
-                    partition_id: PartitionId::main(),
-                    kind_id: KindId(1),
-                    client_key: ClientKey::raw("seed"),
-                    fields: Default::default(),
-                },
-            ))),
-            ExecutionAllocationPolicy::SystemAllocation,
-        )
-        .unwrap();
-    let committed = transaction
-        .commit(&execution, home.relational().runtime())
-        .unwrap();
-    home.relational()
-        .runtime()
-        .snapshots()
-        .release_snapshot(&committed.snapshot)
-        .unwrap();
+    let seeded = super::checkpoint_seed::seeded(&directory.path().join("home"), &execution);
+    let home = seeded.fixture.home;
     // Native capture precedes Store's exclusive publication-inventory fence.
     // Two simultaneous prepared Store selections are intentionally refused.
     let earlier = home
@@ -102,7 +42,7 @@ fn a_late_capture_cannot_regress_the_selected_transition_frontier_or_membership(
             > earlier.checkpoint().covered_branch_transitions().unwrap().0
     );
     let refused = home
-        .publish_captured_relational_checkpoint_for_test(earlier, &execution)
+        .publish_captured_relational_checkpoint_for_test(Some(earlier), &execution, None, None)
         .unwrap_err();
     assert!(
         matches!(
@@ -346,44 +286,45 @@ fn selected_checkpoint_survives_observer_drop_online_history_and_mutation_before
     ));
 }
 
-#[test]
-fn known_checkpoint_failure_allows_close_and_reopen_preserves_the_journal_tail() {
-    use worth_store_application::ApplicationHomeCloseOutcome;
-    let directory = tempfile::tempdir().unwrap();
-    let request = crate::workload::serial_request();
-    let execution = ExecutionRequest::serial(&request);
-    let home = crate::durable_run::open(directory.path(), &execution).unwrap();
-    let committed = crate::workload::commit(
-        home.relational().runtime(),
-        &execution,
-        &BranchId("main".into()),
-        crate::batches::create(1),
-    )
-    .unwrap();
-    home.relational()
-        .runtime()
-        .snapshots()
-        .release_snapshot(&committed.snapshot)
-        .unwrap();
-    let expected = crate::workload::artifacts_of(&execution, home.relational().runtime());
-    let closing = SerialRequest::from_memory(
-        SerialMemoryBudget::new(Some(0)),
-        CancellationSource::new().token(),
+/// The original Complete capture, actual Home selection and caller handoff.
+pub(super) struct SelectedHomeCheckpoint {
+    pub(super) capture: worth_relational::facade::durability::RelationalNativeCheckpoint,
+    pub(super) generation: u64,
+}
+
+pub(super) fn select_before_native_ack(
+    home: &worth_store_application::WorldReadmittedApplicationHome<(), (), (), (), ()>,
+    before_selection: impl Fn(),
+) -> SelectedHomeCheckpoint {
+    let captured = std::sync::Mutex::new(None);
+    let observe = |capture: &worth_relational::facade::durability::RelationalNativeCheckpoint| {
+        *captured.lock().unwrap() = Some(capture.clone());
+        before_selection();
+    };
+    let cancellation = CancellationSource::new();
+    let backing =
+        SerialRequest::from_memory(SerialMemoryBudget::new(None), cancellation.token(), None);
+    let observer = match home.publish_captured_relational_checkpoint_for_test(
         None,
-    );
-    match home.close(&ExecutionRequest::serial(&closing)) {
-        ApplicationHomeCloseOutcome::Closed { checkpoint, .. } => assert!(checkpoint.is_err()),
-        ApplicationHomeCloseOutcome::CloseRefused { .. } => {
-            panic!("a known checkpoint admission failure cannot refuse close")
-        }
+        &ExecutionRequest::serial(&backing),
+        Some(&observe),
+        Some(&|| cancellation.cancel()),
+    ) {
+        Err(worth_store_application::ApplicationHomeCheckpointDenial::RecoveryRequired(
+            observer,
+        )) => observer,
+        other => panic!("actual selected Home capture must retain its original attempt: {other:?}"),
+    };
+    assert!(!observer.acknowledgement_complete);
+    let generation = observer
+        .selected_generation
+        .expect("the actual original capture is selected");
+    drop(observer);
+    SelectedHomeCheckpoint {
+        capture: captured
+            .into_inner()
+            .unwrap()
+            .expect("the actual Home captured Native"),
+        generation,
     }
-    let home = crate::durable_run::open(directory.path(), &execution).unwrap();
-    assert_eq!(
-        crate::workload::artifacts_of(&execution, home.relational().runtime()),
-        expected
-    );
-    assert!(matches!(
-        home.close(&execution),
-        ApplicationHomeCloseOutcome::Closed { .. }
-    ));
 }

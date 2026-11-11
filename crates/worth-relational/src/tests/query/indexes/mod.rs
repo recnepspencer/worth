@@ -44,8 +44,11 @@ fn runtime_with_index_field_aspects() -> RelationalRuntime {
     runtime_with_declared_aspect_schema(CascadeDeletePolicy::CascadeDeleteRelations)
 }
 
-fn durable_runtime_with_index_field_aspects() -> RelationalRuntime {
-    durable_runtime_with_declared_aspect_schema(CascadeDeletePolicy::CascadeDeleteRelations)
+fn certification_index_runtime() -> RelationalRuntime {
+    runtime_with_declared_aspect_schema_profile(
+        RelationalRuntimeProfile::CertificationCore,
+        CascadeDeletePolicy::CascadeDeleteRelations,
+    )
 }
 
 fn sampled_plan_key_for(

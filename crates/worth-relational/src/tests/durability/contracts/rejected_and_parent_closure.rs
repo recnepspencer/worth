@@ -28,10 +28,9 @@ fn durability_contract_recovery_ignores_rejected_relation_integrity_attempts() {
         ),
         ..RelationIntegritySchemaFixture::default()
     };
-    let medium = TestDurableMedium::new();
     let runtime = RelationalRuntimeApi::builder()
         .schema_registry(fixture.build_registry())
-        .build_durable(medium.attachment())
+        .build()
         .expect("valid native runtime configuration");
     let source = create_entity(execution, &runtime, "source");
     let target_a = create_entity(execution, &runtime, "target-a");
@@ -106,16 +105,17 @@ fn durability_contract_recovery_ignores_rejected_relation_integrity_attempts() {
         main_digest_before
     );
 
-    crate::tests::support::checkpoint_durably(execution, &runtime).unwrap();
-    let plan = crate::tests::support::recovery_plan_for(
-        execution,
-        &runtime,
-        RecoveryMode::NormalRecoveryVerification,
-    )
-    .unwrap();
+    runtime
+        .durability_authority()
+        .checkpoint(execution)
+        .unwrap();
+    let plan = runtime
+        .durability()
+        .recovery_plan(execution, RecoveryMode::NormalRecoveryVerification)
+        .unwrap();
     let mut recovered = RelationalRuntimeApi::builder()
         .schema_registry(fixture.build_registry())
-        .build_durable(medium.attachment())
+        .build()
         .expect("valid native runtime configuration");
     let outcome = recovered
         .durability_recovery()

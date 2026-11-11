@@ -260,17 +260,6 @@ impl RelationalDurableMediumBinding {
         Some(RelationalDurableMediumTransfer { medium, phase })
     }
 
-    /// The in-crate test medium behind this binding, if it is one.
-    #[cfg(test)]
-    pub(crate) fn in_crate_test_medium(
-        &self,
-    ) -> Option<std::sync::Arc<crate::tests::support::TestDurableMedium>> {
-        self.state()
-            .medium
-            .as_ref()
-            .and_then(|medium| medium.in_crate_test_medium())
-    }
-
     fn home_phase(&self) -> MutexGuard<'_, Option<RelationalHomeProgramPhase>> {
         self.home_phase
             .lock()

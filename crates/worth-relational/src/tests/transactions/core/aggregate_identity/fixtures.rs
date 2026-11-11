@@ -73,12 +73,6 @@ pub(super) fn runtime() -> RelationalRuntime {
         .build()
         .expect("valid native runtime configuration")
 }
-pub(super) fn persisted() -> RelationalRuntime {
-    RelationalRuntimeApi::builder()
-        .schema_registry(registry())
-        .build_durable(TestDurableMedium::new().attachment())
-        .expect("valid native runtime configuration")
-}
 pub(super) fn created(key: usize) -> EntityReference {
     EntityReference::Created(CreatedEntityRef {
         partition_id: PartitionId::main(),
