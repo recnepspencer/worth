@@ -8,7 +8,7 @@ use std::sync::{Mutex, OnceLock, Weak};
 use worth_query_host::facade::{
     application_entry::WorthQueryApplicationMutationOutcome,
     primary_graph::{
-        QueryDispatchCustody, QueryDispatchProvenNoEffect,
+        ExternalEffectNoEffectCause, QueryDispatchCustody,
         QueryDispatchRecordedObservation as Observation, QueryDispatchUnresolvedCause,
         WorthQueryExternalDispatchPostureKind, WorthQueryExternalDispatchRequest,
         WorthQueryExternalEffectTransport, WorthQueryExternalTransportOutcome as Outcome,
@@ -172,6 +172,17 @@ fn notify_in(
     let posture = receipt
         .external_dispatch()
         .map(|dispatch| dispatch.posture().kind());
+    if posture == Some(WorthQueryExternalDispatchPostureKind::ProvenNoEffect) {
+        use worth_query_host::facade::publication::application_aftermath::{
+            publish_application_aftermath, WorthQueryPublishedExternalEffectNoEffect,
+        };
+        let published = publish_application_aftermath(&receipt).external_effect();
+        assert_eq!(
+            published.proven_no_effect(),
+            Some(WorthQueryPublishedExternalEffectNoEffect::PayloadRejected)
+        );
+        assert_eq!(published.failure(), None);
+    }
     (effect, posture)
 }
 
@@ -202,7 +213,11 @@ fn every_dispatch_is_recorded_before_contact_and_survives_graceful_reopen() {
         Some(Observation::Completed),
         "the observation is durable as soon as the dispatch returns"
     );
-    let (rejected, _) = notify(&home, 0x802, 9);
+    let (rejected, rejection) = notify(&home, 0x802, 9);
+    assert_eq!(
+        rejection,
+        Some(WorthQueryExternalDispatchPostureKind::ProvenNoEffect)
+    );
     let (lost, _) = notify(&home, 0x803, 10);
     assert_eq!(handler_contacts.load(Ordering::SeqCst), 3);
 
@@ -219,7 +234,7 @@ fn every_dispatch_is_recorded_before_contact_and_survives_graceful_reopen() {
     assert_eq!(
         custody(&home, &rejected).observation(),
         Some(Observation::ProvenNoEffect(
-            QueryDispatchProvenNoEffect::PayloadRejected
+            ExternalEffectNoEffectCause::PayloadRejected
         )),
         "a rejected payload is proven no effect, never unresolved"
     );

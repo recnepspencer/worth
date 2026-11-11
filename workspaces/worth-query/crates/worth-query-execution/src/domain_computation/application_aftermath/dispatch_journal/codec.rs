@@ -54,8 +54,8 @@ fn observation_tag(observation: QueryDispatchRecordedObservation) -> [u8; 2] {
     match observation {
         Observation::Completed => [0, 0],
         Observation::Acknowledged => [1, 0],
-        Observation::ProvenNoEffect(QueryDispatchProvenNoEffect::PayloadRejected) => [2, 0],
-        Observation::ProvenNoEffect(QueryDispatchProvenNoEffect::ContactNotStarted) => [2, 1],
+        Observation::ProvenNoEffect(ExternalEffectNoEffectCause::PayloadRejected) => [2, 0],
+        Observation::ProvenNoEffect(ExternalEffectNoEffectCause::ContactNotStarted) => [2, 1],
         Observation::Unresolved(cause) => [
             3,
             match cause {
@@ -79,8 +79,8 @@ fn read_observation(
     Ok(match tag {
         [0, 0] => Observation::Completed,
         [1, 0] => Observation::Acknowledged,
-        [2, 0] => Observation::ProvenNoEffect(QueryDispatchProvenNoEffect::PayloadRejected),
-        [2, 1] => Observation::ProvenNoEffect(QueryDispatchProvenNoEffect::ContactNotStarted),
+        [2, 0] => Observation::ProvenNoEffect(ExternalEffectNoEffectCause::PayloadRejected),
+        [2, 1] => Observation::ProvenNoEffect(ExternalEffectNoEffectCause::ContactNotStarted),
         [3, 0] => Observation::Unresolved(Cause::Timeout),
         [3, 1] => Observation::Unresolved(Cause::Disconnect),
         [3, 2] => Observation::Unresolved(Cause::LostResponse),

@@ -12,6 +12,7 @@ use super::classification::{ExternalEffectClassification, ExternalRailTransportF
 use super::correlation::ExternalEffectCorrelationIdentity;
 use super::identity_derivation::provider_commit_identity;
 use super::observation::classify_dispatch_observation;
+use super::proven_no_effect::ExternalEffectProvenNoEffect;
 use super::transport::{WorthQueryExternalDispatchRequest, WorthQueryExternalEffectTransport};
 use super::ExternalEffectPostureKind;
 
@@ -20,6 +21,8 @@ use super::ExternalEffectPostureKind;
 pub enum WorthQueryExternalDispatchPostureKind {
     Completed,
     Acknowledged,
+    /// The external owner proved the attempt changed nothing.
+    ProvenNoEffect,
     Unresolved,
 }
 
@@ -34,6 +37,7 @@ pub struct WorthQueryExternalDispatchPosture {
 enum DispatchPostureState {
     Completed(ExternalEffectPosture),
     Acknowledged(ExternalEffectPosture),
+    ProvenNoEffect(ExternalEffectProvenNoEffect),
     Unresolved(ExternalEffectClassification),
 }
 
@@ -50,6 +54,12 @@ impl WorthQueryExternalDispatchPosture {
         }
     }
 
+    pub(super) const fn from_proven_no_effect(proof: ExternalEffectProvenNoEffect) -> Self {
+        Self {
+            state: DispatchPostureState::ProvenNoEffect(proof),
+        }
+    }
+
     pub(super) const fn unresolved(classification: ExternalEffectClassification) -> Self {
         Self {
             state: DispatchPostureState::Unresolved(classification),
@@ -62,6 +72,9 @@ impl WorthQueryExternalDispatchPosture {
             DispatchPostureState::Acknowledged(_) => {
                 WorthQueryExternalDispatchPostureKind::Acknowledged
             }
+            DispatchPostureState::ProvenNoEffect(_) => {
+                WorthQueryExternalDispatchPostureKind::ProvenNoEffect
+            }
             DispatchPostureState::Unresolved(_) => {
                 WorthQueryExternalDispatchPostureKind::Unresolved
             }
@@ -72,14 +85,26 @@ impl WorthQueryExternalDispatchPosture {
         match &self.state {
             DispatchPostureState::Completed(observation)
             | DispatchPostureState::Acknowledged(observation) => Some(observation),
-            DispatchPostureState::Unresolved(_) => None,
+            DispatchPostureState::ProvenNoEffect(_) | DispatchPostureState::Unresolved(_) => None,
         }
     }
 
     pub const fn classification(&self) -> Option<&ExternalEffectClassification> {
         match &self.state {
             DispatchPostureState::Unresolved(classification) => Some(classification),
-            DispatchPostureState::Completed(_) | DispatchPostureState::Acknowledged(_) => None,
+            DispatchPostureState::Completed(_)
+            | DispatchPostureState::Acknowledged(_)
+            | DispatchPostureState::ProvenNoEffect(_) => None,
+        }
+    }
+
+    /// The external owner's proof that this attempt changed nothing.
+    pub const fn proven_no_effect(&self) -> Option<&ExternalEffectProvenNoEffect> {
+        match &self.state {
+            DispatchPostureState::ProvenNoEffect(proof) => Some(proof),
+            DispatchPostureState::Completed(_)
+            | DispatchPostureState::Acknowledged(_)
+            | DispatchPostureState::Unresolved(_) => None,
         }
     }
 }

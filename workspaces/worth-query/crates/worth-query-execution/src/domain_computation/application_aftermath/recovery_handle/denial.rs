@@ -97,6 +97,8 @@ pub enum WorthQueryRecoveryHandleDenialKind {
     /// took effect.
     AdmissionAuthenticationExpired,
     DisclosureAdmissionRequired,
+    /// The attempted effect is known not to have happened; it did not complete.
+    ProvenNoEffect(worth_foundational::facade::ExternalEffectNoEffectCause),
     UnresolvedExternalPosture,
 }
 

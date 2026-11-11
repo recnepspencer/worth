@@ -28,15 +28,7 @@ mod tests;
 
 pub const QUERY_DISPATCH_FRAME_MAX_BYTES: u64 = 149;
 
-/// The external owner proved that the attempt changed nothing.
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub enum QueryDispatchProvenNoEffect {
-    /// The external owner decoded the projected payload and refused it.
-    PayloadRejected,
-    /// The attempt became durable only after its caller had stopped, so this
-    /// runtime never began the external contact the attempt names.
-    ContactNotStarted,
-}
+pub use worth_foundational::facade::ExternalEffectNoEffectCause;
 
 /// The attempt contacted the external owner and its effect remains unknown.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -55,7 +47,7 @@ pub enum QueryDispatchUnresolvedCause {
 pub enum QueryDispatchRecordedObservation {
     Completed,
     Acknowledged,
-    ProvenNoEffect(QueryDispatchProvenNoEffect),
+    ProvenNoEffect(ExternalEffectNoEffectCause),
     Unresolved(QueryDispatchUnresolvedCause),
 }
 

@@ -22,6 +22,8 @@ fn bank(kind: Query) -> Bank {
 fn redispatch_refusals_keep_distinct_bank_kinds() {
     let refusals = [
         (Query::AlreadyCompleted, Bank::AlreadyCompleted),
+        (Query::ProvenNoEffect(worth_foundational::facade::ExternalEffectNoEffectCause::PayloadRejected), Bank::ProvenNoEffect(worth_foundational::facade::ExternalEffectNoEffectCause::PayloadRejected)),
+        (Query::ProvenNoEffect(worth_foundational::facade::ExternalEffectNoEffectCause::ContactNotStarted), Bank::ProvenNoEffect(worth_foundational::facade::ExternalEffectNoEffectCause::ContactNotStarted)),
         (
             Query::CompletionPublicationPending,
             Bank::CompletionPublicationPending,
@@ -49,6 +51,16 @@ fn redispatch_refusals_keep_distinct_bank_kinds() {
             Bank::CanonicalDerivationDenied,
         ),
         (Query::TimeObservationDenied, Bank::TimeObservationDenied),
+        (
+            Query::DurableStateAdmission(worth_query_host::facade::product::WorthQueryDurableStateAdmissionDenial::Unsupported {
+                family: worth_foundational::facade::DurableStateFamily::RecoveryHandleCustody,
+                supported_from_phase: 8,
+            }),
+            Bank::DurableStateAdmission(worth_query_host::facade::product::WorthQueryDurableStateAdmissionDenial::Unsupported {
+                family: worth_foundational::facade::DurableStateFamily::RecoveryHandleCustody,
+                supported_from_phase: 8,
+            }),
+        ),
         (Query::RecoveryNotAdmitted, Bank::RecoveryNotAdmitted),
         (Query::StaleIncarnation, Bank::StaleIncarnation),
         (Query::FreshAuthorityDenied, Bank::FreshAuthorityDenied),

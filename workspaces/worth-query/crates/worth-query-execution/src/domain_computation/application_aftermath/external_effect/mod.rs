@@ -13,6 +13,7 @@ pub(crate) mod inbound;
 mod observation;
 pub(crate) mod outbox;
 mod posture;
+mod proven_no_effect;
 mod transport;
 
 pub use causal_event::ExternalEffectPosture;
@@ -46,6 +47,7 @@ pub(crate) use outbox::{
 };
 pub use outbox::{WorthQueryDispatchOutboxLayout, WorthQueryDispatchOutboxRecord};
 pub use posture::ExternalEffectPostureKind;
+pub use proven_no_effect::{ExternalEffectNoEffectCause, ExternalEffectProvenNoEffect};
 pub use transport::{
     WorthQueryExternalDispatchRequest, WorthQueryExternalEffectTransport,
     WorthQueryExternalTransportOutcome,

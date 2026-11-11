@@ -692,11 +692,17 @@ For a committed operation, inspect:
   inspection.
 
 `Unresolved` includes typed failures such as timeout, disconnect, lost response,
-duplicate acknowledgement, payload rejection, unsupported protocol version, or
-an unknown provider outcome. Unsupported versions retain the exact produced
+duplicate acknowledgement, unsupported protocol version, or an unknown provider
+outcome. Unsupported versions retain the exact produced
 version and distinguish `PredatesWindow`, `ExceedsWindow`, and `Retired`.
 These values explain what Query observed; they do not overwrite the external
 owner's ledger.
+
+Payload rejection is instead `ProvenNoEffect(PayloadRejected)` in live dispatch,
+published aftermath and durable journal custody. The live posture's
+`proven_no_effect()` retains its exact attempt and available decision time, while
+`classification()` is absent. Published `proven_no_effect()` is distinct from
+`failure()`: no effect is neither unresolved, completed nor compensated.
 
 ## Preserve the owning recovery path
 

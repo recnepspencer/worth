@@ -6,8 +6,8 @@ use super::denial::{
     WorthQueryExternalDispatchAttemptDenial, WorthQueryExternalDispatchPreparationDenial,
 };
 use crate::domain_computation::application_aftermath::dispatch_journal::{
-    QueryDispatchJournalDenial, QueryDispatchProvenNoEffect, QueryDispatchRecordedObservation,
-    QueryDispatchUnresolvedCause, WorthQueryDispatchJournal,
+    QueryDispatchJournalDenial, QueryDispatchRecordedObservation, QueryDispatchUnresolvedCause,
+    WorthQueryDispatchJournal,
 };
 use crate::domain_computation::application_aftermath::{
     ExternalRailTransportFault, WorthQueryDispatchOutboxRecord,
@@ -131,13 +131,17 @@ pub(super) fn recorded_observation(
     match dispatch.posture().kind() {
         WorthQueryExternalDispatchPostureKind::Completed => Observation::Completed,
         WorthQueryExternalDispatchPostureKind::Acknowledged => Observation::Acknowledged,
+        WorthQueryExternalDispatchPostureKind::ProvenNoEffect => Observation::ProvenNoEffect(
+            dispatch
+                .posture()
+                .proven_no_effect()
+                .expect("a proven-no-effect posture retains its exact proof")
+                .cause(),
+        ),
         WorthQueryExternalDispatchPostureKind::Unresolved => match dispatch
             .fault()
             .expect("an unresolved posture carries its classified fault")
         {
-            ExternalRailTransportFault::PayloadRejected => {
-                Observation::ProvenNoEffect(QueryDispatchProvenNoEffect::PayloadRejected)
-            }
             ExternalRailTransportFault::Timeout => Observation::Unresolved(Cause::Timeout),
             ExternalRailTransportFault::Disconnect => Observation::Unresolved(Cause::Disconnect),
             ExternalRailTransportFault::LostResponse => {

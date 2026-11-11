@@ -8,6 +8,7 @@ use super::causal_event::{
 };
 use super::classification::{classify_transport_fault, ExternalRailTransportFault};
 use super::dispatch::WorthQueryExternalDispatchPosture;
+use super::proven_no_effect::{prove_no_effect, ExternalEffectNoEffectCause};
 use super::transport::WorthQueryExternalTransportOutcome;
 
 pub(super) struct ClassifiedDispatchObservation {
@@ -40,13 +41,19 @@ pub(super) fn classify_dispatch_observation(
                 ),
             }
         }
+        WorthQueryExternalTransportOutcome::Rejected => ClassifiedDispatchObservation {
+            posture: WorthQueryExternalDispatchPosture::from_proven_no_effect(prove_no_effect(
+                ExternalEffectNoEffectCause::PayloadRejected,
+                attempt,
+                clock,
+            )),
+            observation: None,
+            canonical_work: WorthQueryCanonicalWorkEvidence::zero(),
+        },
         other => {
             let fault = match other {
                 WorthQueryExternalTransportOutcome::DuplicateAcknowledgement => {
                     ExternalRailTransportFault::DuplicatedAcknowledgement
-                }
-                WorthQueryExternalTransportOutcome::Rejected => {
-                    ExternalRailTransportFault::PayloadRejected
                 }
                 WorthQueryExternalTransportOutcome::UnsupportedProtocolVersion(unsupported) => {
                     ExternalRailTransportFault::UnsupportedProtocolVersion(unsupported)
@@ -59,7 +66,8 @@ pub(super) fn classify_dispatch_observation(
                     ExternalRailTransportFault::LostResponse
                 }
                 WorthQueryExternalTransportOutcome::Completed
-                | WorthQueryExternalTransportOutcome::Acknowledged => unreachable!(),
+                | WorthQueryExternalTransportOutcome::Acknowledged
+                | WorthQueryExternalTransportOutcome::Rejected => unreachable!(),
             };
             unresolved_observation(fault, attempt, clock)
         }
