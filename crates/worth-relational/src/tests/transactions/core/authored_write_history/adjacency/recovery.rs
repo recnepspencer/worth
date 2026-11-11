@@ -5,7 +5,7 @@ use super::*;
 fn adjacency_occurrence_identities_rebuild_from_cold_canonical_history() {
     let host = crate::test_execution_policy::serial_request();
     let execution = ExecutionRequest::serial(&host);
-    let runtime = durable_runtime_with_test_schema();
+    let runtime = runtime_with_test_schema();
     let a = create_entity(&execution, &runtime, "source");
     let b = create_entity(&execution, &runtime, "target");
     let c = create_entity(&execution, &runtime, "new-target");
@@ -52,8 +52,22 @@ fn adjacency_occurrence_identities_rebuild_from_cold_canonical_history() {
         ),
         expected
     );
-    let (_, recovered) =
-        checkpoint_and_recover_with(&execution, &runtime, durable_runtime_with_test_schema);
+    runtime
+        .durability_authority()
+        .checkpoint(&execution)
+        .unwrap();
+    let plan = runtime
+        .durability()
+        .recovery_plan(
+            &execution,
+            crate::durability::data::RecoveryVerificationMode::NormalRecoveryVerification,
+        )
+        .unwrap();
+    let mut recovered = runtime_with_test_schema();
+    recovered
+        .durability_recovery()
+        .recover(&execution, plan)
+        .unwrap();
     let recovered_source = recovered
         .admit_branch_basis(
             &recovered
