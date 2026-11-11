@@ -54,6 +54,15 @@ with NULs stripped (the scratch `logrep.py`/`groups.py` idea: group failures by 
 Expected: the Query/Store index-after-reopen reds (Q1, S3) cured by P-C; reclassify everything against the
 families below. Note: `105e888f4e` changed only a Python test, the spec and .gitattributes.
 
+**Tier 2 RESULT (finished 2026-11-11T01:29Z):** root-t2 EXIT 1, the FIRST Root Tier 2 after the repair. Per
+binary (`fable-batch1-tier2-root/run-*.log`): execution 400/400, signal 2409/2409, determinism 15/15, relational
+2755 pass / 52 fail, root-rest 2886 / 70 fail, root-cost 60 / 23 fail (F4, C2), root-exhaustive 108 / 2 fail,
+root-process 152 / 4 fail, root-compile-fail 51 / 1 fail; totals 9036 passed, 152 failed. Not yet grouped into
+families (do that first; compare against F1-F7). query/fixture/store/bank stages did NOT run: the runner exits 75
+"DEFERRED BEFORE PREPARATION: finish and commit Root repair batch" when Root is red. Their out dirs do not
+exist, so launch them (after the Root classification) with the runner's Root deferral handled honestly, not
+bypassed silently. Disk at deferral: 39 GB free (delete regenerable `incremental` caches in this worktree first).
+
 ### Linker override (machine finding)
 This machine sets user env `CARGO_TARGET_X86_64_PC_WINDOWS_MSVC_LINKER` = rust-lld 1.94.0; env beats config, so the
 committed linker (and before it `rust-lld`) was silently bypassed. `fable_batch_lanes.ps1` runs
