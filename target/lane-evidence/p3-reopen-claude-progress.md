@@ -148,3 +148,24 @@ Memory roots explicitly retained by the coordinator (canonical refusal3 and
 descriptor-semantics refusal). Do not apply that inventory blindly.
 Additional public verification round: the reviewed schema batch's first runtime packet was 26/1/0; the sole setup failure authored name/label on intentionally aspect-free kind declarations. Corrected only that court to the original empty-field setup, and rerun only its name. Original typed contract-family/expected-found assertions unchanged. No green body rerun.
 Counted fixture causal expansion before its commit: the same missing request-funded protocol exists in HistoryUnavailable, RetryAfterFailure and CustodySource. Traced cell::raw_head -> region_load::load_head -> history_custody::capture, so their wrapped probes/retry/suffix claims would still fail before the intended behavior. Added actual funded custody forwarding plus owned reads preserving each wrapper's failure/active-owner semantics. Additional focused Native build/run selects46 dependent fixture tests, excluding the three already-green regressions. This is the recorded extra verification round for the shared fixture closure, with no production change or assertion edits. Counts before it:0check,2Clippy,4focused builds,3selected runs; tools boundary2/context1.
+Independent CountedSource final review REJECT P2: member_custody_tests.rs acquired a new BC9002 root from its added request signatures (boundary13, not12). No behavioral findings;49fixture cases were green. Corrected placement by moving the complete controlled provider/owner implementation to existing region_fixture.rs with CountedSource, exposing only a narrow private fixture type to the two assertion cases. No baseline, alias, suppression or test assertion change. Review-fix Native build/run selects only those two custody cases; all other prior greens reused. Final boundary, caps, Clippy and fresh scoped review follow. This is the required review-fix round for the actual new boundary finding.
+
+T3 safe points:71d5c78f13 schema/history16public with six C2 exact restore refs
+and shared truth counts;85d0486f45 deferred naming/placement/visibility minors.
+Both independent APPROVE. CountedSource fixture final2 now APPROVE;49distinct
+fixture cases green, placement correction rerun2green, only existing12boundary
+findings and2adapter warnings. Ready for separate fixture commit.
+
+Current continuation counts:0check,4Clippy,6focused builds,5selected runs.
+Static tools:boundary4 (first invalid UTF8 input; then12,13,12 findings),context2;
+format/check rounds and caps include documented shell/import-wrap corrections.
+No ignored/query-scale/exhaustive oracle/scenario/merge/push/native subagents.
+Next:42-root cleanup plan reviewed; only pending plan3 checks exact anchor batch
+naming in the new four-assertion merge identity counterpart. All other dispositions
+accepted. apply_pa_remaining_cleanup.py is prepared but NOT applied. Then qualify
+that coherent cutout, finish remaining B2/C public/owner consumers, adapter deletion,
+clean-HEAD Complete/ACK and zero owned boundary. No integration SHA received;
+never merge integration until coordinator supplies it. New executable schema
+contract journeys still need the real Home final-binding completion caller;
+Native exposes complete_home_program_transition but Store/Query scoped rg finds
+no caller in this checkout. Do not fabricate that proof or substitute a refusal.

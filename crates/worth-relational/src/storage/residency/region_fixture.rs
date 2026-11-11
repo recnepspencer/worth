@@ -1,6 +1,9 @@
 //! Producer-written region members and their immutable counted archive.
 use super::super::{capture_region_members, RelationalColdRegion, RelationalRegionResidency};
-use crate::durability::medium::{RelationalDurableColdSource, RelationalDurableMemberLocator};
+use crate::durability::medium::{
+    RelationalDurableColdSource, RelationalDurableMemberCustody, RelationalDurableMemberLocator,
+    RelationalDurableOwnedReadRefusal,
+};
 use crate::history::data::BranchId;
 use crate::identity::data::KindId;
 use crate::publication::patch::data::PatchStreamPosition;
@@ -10,7 +13,7 @@ use crate::tests::support::*;
 use crate::transactions::data::{MutationIntent, WorkerIntentBatch};
 use std::collections::BTreeMap;
 use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
-use std::sync::Arc;
+use std::sync::{Arc, Mutex};
 
 #[derive(Debug)]
 pub(super) struct CountedSource {
@@ -22,6 +25,47 @@ pub(super) struct CountedSource {
 }
 
 impl RelationalDurableColdSource for CountedSource {
+    fn retain_members_for_request(
+        &self,
+        request: &worth_execution::ExecutionRequest<'_, '_>,
+        _members: &[RelationalDurableMemberLocator],
+        issuer: std::sync::Weak<dyn RelationalDurableColdSource>,
+    ) -> Result<RelationalDurableMemberCustody, RelationalDurableOwnedReadRefusal> {
+        // This source owns its immutable archive for its entire Arc lifetime.
+        // Only the actual custody owner needs new request-funded backing.
+        RelationalDurableMemberCustody::try_new_from_source_for_request(issuer, request, || Ok(()))
+    }
+
+    fn read_member_owned(
+        &self,
+        request: &worth_execution::ExecutionRequest<'_, '_>,
+        original: &(dyn std::any::Any + Send + Sync),
+        locator: RelationalDurableMemberLocator,
+        limit: u64,
+    ) -> Result<worth_execution::ExecutionImmutableBytes, RelationalDurableOwnedReadRefusal> {
+        use RelationalDurableOwnedReadRefusal as Refusal;
+        request
+            .check_live()
+            .map_err(|cause| Refusal::Request(cause.into()))?;
+        if !original.is::<()>() {
+            return Err(Refusal::ForeignProtection);
+        }
+        let bytes = self.member(locator, limit).map_err(Refusal::Storage)?;
+        let mut copy =
+            worth_execution::ExecutionRequestArrayBuilder::allocate(*request, bytes.len())
+                .map_err(Refusal::Buffer)?;
+        if let Some((&first, rest)) = bytes.split_first() {
+            copy.push(if self.corrupt.load(Ordering::SeqCst) {
+                first ^ 1
+            } else {
+                first
+            })
+            .map_err(Refusal::Buffer)?;
+            copy.extend_from_slice(rest).map_err(Refusal::Buffer)?;
+        }
+        copy.seal_immutable_bytes().map_err(Refusal::Buffer)
+    }
+
     fn retain_members(
         &self,
         _members: &[RelationalDurableMemberLocator],
@@ -34,6 +78,19 @@ impl RelationalDurableColdSource for CountedSource {
         locator: RelationalDurableMemberLocator,
         limit: u64,
     ) -> Result<Vec<u8>, Cause> {
+        let mut bytes = self.member(locator, limit)?.to_vec();
+        if self.corrupt.load(Ordering::SeqCst) {
+            bytes[0] ^= 1;
+        }
+        Ok(bytes)
+    }
+    fn read_commit(&self, _: PatchStreamPosition, _: u64) -> Result<Vec<u8>, Cause> {
+        Err(Cause::SourceUnavailable)
+    }
+}
+
+impl CountedSource {
+    fn member(&self, locator: RelationalDurableMemberLocator, limit: u64) -> Result<&[u8], Cause> {
         self.reads.fetch_add(1, Ordering::SeqCst);
         if locator == self.history {
             self.history_reads.fetch_add(1, Ordering::SeqCst);
@@ -45,14 +102,7 @@ impl RelationalDurableColdSource for CountedSource {
                 limit,
             });
         }
-        let mut bytes = bytes.clone();
-        if self.corrupt.load(Ordering::SeqCst) {
-            bytes[0] ^= 1;
-        }
         Ok(bytes)
-    }
-    fn read_commit(&self, _: PatchStreamPosition, _: u64) -> Result<Vec<u8>, Cause> {
-        Err(Cause::SourceUnavailable)
     }
 }
 
@@ -158,5 +208,96 @@ pub(super) fn region_with_history() -> RegionFixture {
         relation,
         expected_digest,
         expected_history,
+    }
+}
+
+#[derive(Debug)]
+pub(super) struct CountedPlacementSource {
+    pub(super) source: Arc<CountedSource>,
+    pub(super) active: Arc<AtomicUsize>,
+    pub(super) refusal: Mutex<Option<Cause>>,
+}
+
+struct CustodyOwner {
+    active: Arc<AtomicUsize>,
+    _source: RelationalDurableMemberCustody,
+}
+
+impl Drop for CustodyOwner {
+    fn drop(&mut self) {
+        self.active.fetch_sub(1, Ordering::SeqCst);
+    }
+}
+
+impl RelationalDurableColdSource for CountedPlacementSource {
+    fn retain_members_for_request(
+        &self,
+        request: &worth_execution::ExecutionRequest<'_, '_>,
+        members: &[RelationalDurableMemberLocator],
+        issuer: std::sync::Weak<dyn RelationalDurableColdSource>,
+    ) -> Result<
+        RelationalDurableMemberCustody,
+        crate::durability::medium::RelationalDurableOwnedReadRefusal,
+    > {
+        use crate::durability::medium::RelationalDurableOwnedReadRefusal as Refusal;
+        if let Some(cause) = *self.refusal.lock().unwrap() {
+            return Err(Refusal::Storage(cause));
+        }
+        RelationalDurableMemberCustody::try_new_from_source_for_request(issuer, request, || {
+            let source: Arc<dyn RelationalDurableColdSource> = self.source.clone();
+            let original =
+                source.retain_members_for_request(request, members, Arc::downgrade(&source))?;
+            self.active.fetch_add(1, Ordering::SeqCst);
+            Ok(CustodyOwner {
+                active: self.active.clone(),
+                _source: original,
+            })
+        })
+    }
+
+    fn read_member_owned(
+        &self,
+        request: &worth_execution::ExecutionRequest<'_, '_>,
+        original: &(dyn std::any::Any + Send + Sync),
+        member: RelationalDurableMemberLocator,
+        limit: u64,
+    ) -> Result<
+        worth_execution::ExecutionImmutableBytes,
+        crate::durability::medium::RelationalDurableOwnedReadRefusal,
+    > {
+        let original = original.downcast_ref::<CustodyOwner>().ok_or(
+            crate::durability::medium::RelationalDurableOwnedReadRefusal::ForeignProtection,
+        )?;
+        let source: Arc<dyn RelationalDurableColdSource> = self.source.clone();
+        original
+            ._source
+            .read_selected_member(&source, request, member, limit)
+    }
+
+    fn retain_members(
+        &self,
+        members: &[RelationalDurableMemberLocator],
+    ) -> Result<RelationalDurableMemberCustody, Cause> {
+        if let Some(cause) = *self.refusal.lock().unwrap() {
+            return Err(cause);
+        }
+        let source = self.source.retain_members(members)?;
+        self.active.fetch_add(1, Ordering::SeqCst);
+        Ok(RelationalDurableMemberCustody::new(CustodyOwner {
+            active: self.active.clone(),
+            _source: source,
+        }))
+    }
+
+    fn read_member(
+        &self,
+        locator: RelationalDurableMemberLocator,
+        limit: u64,
+    ) -> Result<Vec<u8>, Cause> {
+        self.source.read_member(locator, limit)
+    }
+
+    fn read_commit(&self, position: PatchStreamPosition, limit: u64) -> Result<Vec<u8>, Cause> {
+        self.source.read_commit(position, limit)
     }
 }

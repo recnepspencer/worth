@@ -6,6 +6,38 @@ use crate::validation::engine::state_view::InvariantStateView;
 #[derive(Debug)]
 struct HistoryUnavailable(Arc<CountedSource>);
 impl RelationalDurableColdSource for HistoryUnavailable {
+    fn retain_members_for_request(
+        &self,
+        request: &worth_execution::ExecutionRequest<'_, '_>,
+        members: &[RelationalDurableMemberLocator],
+        issuer: std::sync::Weak<dyn RelationalDurableColdSource>,
+    ) -> Result<
+        crate::durability::medium::RelationalDurableMemberCustody,
+        crate::durability::medium::RelationalDurableOwnedReadRefusal,
+    > {
+        self.0.retain_members_for_request(request, members, issuer)
+    }
+
+    fn read_member_owned(
+        &self,
+        request: &worth_execution::ExecutionRequest<'_, '_>,
+        original: &(dyn std::any::Any + Send + Sync),
+        member: RelationalDurableMemberLocator,
+        limit: u64,
+    ) -> Result<
+        worth_execution::ExecutionImmutableBytes,
+        crate::durability::medium::RelationalDurableOwnedReadRefusal,
+    > {
+        if member == self.0.history {
+            return Err(
+                crate::durability::medium::RelationalDurableOwnedReadRefusal::Storage(
+                    Cause::SourceUnavailable,
+                ),
+            );
+        }
+        self.0.read_member_owned(request, original, member, limit)
+    }
+
     fn retain_members(
         &self,
         members: &[RelationalDurableMemberLocator],
