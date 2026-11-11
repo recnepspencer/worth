@@ -4,8 +4,10 @@ use std::any::Any;
 use std::cell::{Cell, RefCell};
 use worth_query_host::facade::runtime::WorthQueryOutputDemandResourceProfile;
 
-// The four-round independent model captured 77 checkpoints through 162 events.
-// Its original request peaked at 19,484,190 Work; shared refusal Worlds stay at 8m.
+// Four rounds retain 162 events and capture 77 checkpoints. Native now charges
+// each retained root's current/historical kind projection (8edb6e5653), which
+// was previously uncharged. Fund that bounded reconstruction with headroom;
+// shared refusal Worlds keep their separate 8m ordinary request.
 const FULL_RUN_HISTORY_POLICY: worth_foundational::ExecutionRequestPolicy =
     worth_foundational::ExecutionRequestPolicy::new(
         worth_foundational::ExecutionPosture::Serial,
@@ -13,7 +15,7 @@ const FULL_RUN_HISTORY_POLICY: worth_foundational::ExecutionRequestPolicy =
         worth_foundational::ExecutionBudget::new(
             std::num::NonZeroUsize::MIN,
             None,
-            Some(20_000_000),
+            Some(128_000_000),
         ),
     );
 
@@ -156,7 +158,8 @@ impl Reference {
 }
 
 // Generated payloads retain their Native creation/deletion history. Its positive
-// checkpoint journey funds content closure, encoding and integrity work separately
+// checkpoint journey funds content closure, encoding, integrity and charged
+// per-root kind reconstruction separately
 // from the logical partition ceilings; the shared refusal World stays at 8m.
 pub(in super::super) fn model_history_policy() -> worth_foundational::ExecutionRequestPolicy {
     worth_foundational::ExecutionRequestPolicy::new(
@@ -165,7 +168,7 @@ pub(in super::super) fn model_history_policy() -> worth_foundational::ExecutionR
         worth_foundational::ExecutionBudget::new(
             std::num::NonZeroUsize::MIN,
             None,
-            Some(16_000_000),
+            Some(128_000_000),
         ),
     )
 }
