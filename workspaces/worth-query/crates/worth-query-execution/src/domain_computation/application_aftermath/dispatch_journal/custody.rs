@@ -193,9 +193,9 @@ impl WorthQueryDispatchJournal {
     pub(in crate::domain_computation) fn settle_for_close(
         &self,
         request: &ExecutionRequest<'_, '_>,
-    ) -> Result<(), QueryDispatchJournalDenial> {
+    ) -> Result<QueryDispatchCloseCustody, QueryDispatchJournalDenial> {
         let Some(medium) = self.medium.get().map(Arc::clone) else {
-            return Ok(());
+            return Ok(QueryDispatchCloseCustody::ProcessLocal);
         };
         let driver = DispatchJournalDriver::lock(self, request)?;
         driver.settle(medium.as_ref(), request)?;
@@ -203,7 +203,13 @@ impl WorthQueryDispatchJournal {
         let state = guard.as_ref().expect("admitted dispatch journal");
         match state.ledger.first_unobserved() {
             Some(unobserved) => Err(unobserved),
-            None => Ok(()),
+            None => Ok(QueryDispatchCloseCustody::Durable(
+                medium.authority().admit_query_dispatch_prefix(
+                    state.ledger.position(),
+                    state.ledger.digest(),
+                    state.ledger.payload_digest(),
+                ),
+            )),
         }
     }
 

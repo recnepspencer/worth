@@ -1,6 +1,7 @@
 //! External dispatch custody on a real Directory Home: the attempt is durable
 //! before the contact and its one observation is durable when the dispatch
 //! returns. Every recorded fate here is issued by the actual Home.
+mod recovery_admission;
 use super::*;
 use std::collections::VecDeque;
 use std::sync::{Mutex, OnceLock, Weak};
@@ -11,7 +12,6 @@ use worth_query_host::facade::{
         QueryDispatchRecordedObservation as Observation, QueryDispatchUnresolvedCause,
         WorthQueryExternalDispatchPostureKind, WorthQueryExternalDispatchRequest,
         WorthQueryExternalEffectTransport, WorthQueryExternalTransportOutcome as Outcome,
-        WorthQueryHomeRetirementDenial as CloseDenial, WorthQueryHomeRetirementOwner as CloseOwner,
     },
     WorthQueryApplicationHome,
 };
@@ -183,7 +183,7 @@ fn custody(home: &Home, effect: &[u8; 32]) -> QueryDispatchCustody {
 }
 
 #[test]
-fn every_dispatch_is_recorded_before_contact_and_refuses_close_while_outstanding() {
+fn every_dispatch_is_recorded_before_contact_and_survives_graceful_reopen() {
     let location = dispatch::location();
     let handler_contacts = Arc::new(AtomicUsize::new(0));
     let lease = checkpoint_capture::lease(128 * 1024 * 1024);
@@ -231,30 +231,38 @@ fn every_dispatch_is_recorded_before_contact_and_refuses_close_while_outstanding
     );
     let recorded = [completed, rejected, lost].map(|effect| custody(&home, &effect));
 
-    // Every dispatched commit's basis is still owed to its dispatch owner.
-    // Carrying that outstanding custody across a close is not delivered yet:
-    // close refuses before any seal and the same Home resumes service.
-    let Err(refused) = Arc::into_inner(home)
+    Arc::into_inner(home)
         .expect("no contact still holds the Home")
         .close(&execution)
-    else {
-        panic!("outstanding dispatch custody refuses graceful close");
-    };
-    assert!(
-        matches!(
-            refused.query_denial(),
-            Some(CloseDenial::Unsupported(CloseOwner::ReceiptBases))
-        ),
-        "the outstanding dispatch basis owner refuses: {refused:?}"
+        .unwrap_or_else(|refused| panic!("durably retained dispatch closes: {refused:?}"))
+        .reclaim();
+    let reopened_rail = ScriptedRail::answering(&[]);
+    let reopened = open(
+        &location,
+        execution,
+        &handler_contacts,
+        false,
+        &reopened_rail,
     );
-    let home = refused
-        .resume()
-        .unwrap_or_else(|refused| panic!("a pre-seal refusal resumes: {refused:?}"));
     assert_eq!(
-        [completed, rejected, lost].map(|effect| custody(&home, &effect)),
+        [completed, rejected, lost].map(|effect| custody(&reopened, &effect)),
         recorded,
-        "the resumed Home still holds every recorded attempt and observation"
+        "the reopened Home retains every attempt identity and observation"
     );
+    assert!(
+        reopened_rail.contacts().is_empty(),
+        "readmission never contacts the external owner"
+    );
+    assert_eq!(
+        handler_contacts.load(Ordering::SeqCst),
+        3,
+        "readmission never reexecutes the handler"
+    );
+    Arc::into_inner(reopened)
+        .expect("reopened Home remains exclusive")
+        .close(&execution)
+        .unwrap_or_else(|refused| panic!("reopened dispatch closes again: {refused:?}"))
+        .reclaim();
 }
 
 #[test]
@@ -299,4 +307,48 @@ fn a_request_stopped_at_contact_keeps_its_observation_for_the_next_dispatch() {
         "neither effect was contacted twice"
     );
     assert_recorded_before_contact(&home, &contacts);
+}
+
+#[test]
+fn close_records_a_stopped_requests_retained_observation_before_reopen() {
+    let location = dispatch::location();
+    let handler_contacts = Arc::new(AtomicUsize::new(0));
+    let lease = checkpoint_capture::lease(128 * 1024 * 1024);
+    let execution = worth_execution::ExecutionRequest::leased(&lease);
+    let rail = ScriptedRail::answering(&[Outcome::LostResponse]);
+    let home = open(&location, execution, &handler_contacts, true, &rail);
+    let (cancellation, scope) = pending_support::scope();
+    *rail.stops_at_contact.lock().unwrap() = Some(cancellation);
+    let (effect, _) = notify_in(&home, &scope, 0x821, 11);
+    let recorded = custody(&home, &effect);
+    assert_eq!(recorded.observation(), None);
+    assert_eq!(rail.contacts().len(), 1);
+    Arc::into_inner(home)
+        .expect("contact released the Home")
+        .close(&execution)
+        .unwrap_or_else(|refused| panic!("close settles the retained observation: {refused:?}"))
+        .reclaim();
+    let reopened_rail = ScriptedRail::answering(&[]);
+    let reopened = open(
+        &location,
+        execution,
+        &handler_contacts,
+        false,
+        &reopened_rail,
+    );
+    let recovered = custody(&reopened, &effect);
+    assert_eq!(recovered.attempt(), recorded.attempt());
+    assert_eq!(
+        recovered.observation(),
+        Some(Observation::Unresolved(
+            QueryDispatchUnresolvedCause::LostResponse
+        ))
+    );
+    assert!(reopened_rail.contacts().is_empty());
+    assert_eq!(handler_contacts.load(Ordering::SeqCst), 1);
+    Arc::into_inner(reopened)
+        .expect("reopened Home remains exclusive")
+        .close(&execution)
+        .unwrap_or_else(|refused| panic!("settled reopened Home closes: {refused:?}"))
+        .reclaim();
 }

@@ -17,6 +17,7 @@ use crate::domain_computation::primary_graph::{
 mod correlation;
 mod original_attempt;
 mod original_row;
+mod readmission;
 pub(crate) mod restoration;
 mod work;
 

@@ -1,5 +1,6 @@
 //! Each original receipt-map slot retains its own Native retirement progress.
 use super::*;
+use crate::domain_computation::application_aftermath::dispatch_journal::QueryDispatchCloseCustody;
 use crate::domain_computation::primary_graph::{
     WorthQueryHomeRetirementDenial as Denial, WorthQueryHomeRetirementOwner as Owner,
     WorthQueryOperationHomeRetirementProgress as Progress,
@@ -70,27 +71,49 @@ impl RetirableReceiptBasis {
 }
 
 impl WorthQueryReceiptBasisRetentionStore {
+    /// A dispatch-owned basis keeps its commit readable for the dispatch
+    /// that still owes a terminal. Close may release it only when that
+    /// dispatch's custody is durable: the outbox row is in the commit and
+    /// every attempt and observation is in `query.dispatch`.
     pub(in crate::domain_computation::primary_graph::provider) fn preflight_home_retirement(
         &self,
+        dispatch_custody: &QueryDispatchCloseCustody,
     ) -> Result<(), Denial> {
-        if self.mandatory.is_empty() {
-            Ok(())
-        } else {
-            Err(Denial::Unsupported(Owner::ReceiptBases))
+        match dispatch_custody {
+            QueryDispatchCloseCustody::Durable(_admitted_prefix) => Ok(()),
+            QueryDispatchCloseCustody::ProcessLocal if self.mandatory.is_empty() => Ok(()),
+            QueryDispatchCloseCustody::ProcessLocal => {
+                Err(Denial::Unsupported(Owner::ReceiptBases))
+            }
         }
     }
     pub(in crate::domain_computation::primary_graph::provider) fn advance_home_retirement(
         &mut self,
         request: &ExecutionRequest<'_, '_>,
+        dispatch_custody: &QueryDispatchCloseCustody,
     ) -> Result<Progress, Denial> {
         use std::ops::Bound::{Excluded, Unbounded};
-        self.preflight_home_retirement()?;
-        let next = match self.retirement_cursor {
-            Some(after) => self
-                .by_commit
-                .range_mut((Excluded(after), Unbounded))
-                .next(),
-            None => self.by_commit.iter_mut().next(),
+        self.preflight_home_retirement(dispatch_custody)?;
+        // One commit opens one basis, ordinary or dispatch-owned, so one
+        // cursor walks both maps in commit order.
+        let after = match self.retirement_cursor {
+            Some(after) => Excluded(after),
+            None => Unbounded,
+        };
+        let ordinary = self
+            .by_commit
+            .range_mut((after, Unbounded))
+            .next()
+            .map(|(commit, basis)| (*commit, basis));
+        let owned = self
+            .mandatory
+            .range_mut((after, Unbounded))
+            .next()
+            .map(|(commit, (basis, _claims))| (*commit, basis));
+        let next = match (ordinary, owned) {
+            (Some(ordinary), Some(owned)) if owned.0 < ordinary.0 => Some(owned),
+            (Some(ordinary), Some(_) | None) => Some(ordinary),
+            (None, owned) => owned,
         };
         let Some((commit, basis)) = next else {
             return Ok(Progress::Complete);
@@ -98,7 +121,7 @@ impl WorthQueryReceiptBasisRetentionStore {
         match basis.advance(request)? {
             Progress::Advanced => Ok(Progress::Advanced),
             Progress::Complete => {
-                self.retirement_cursor = Some(*commit);
+                self.retirement_cursor = Some(commit);
                 Ok(Progress::Advanced)
             }
         }

@@ -22,6 +22,7 @@ mod home_query_dispatch;
 pub use home_query_dispatch::{
     AdmittedHomeQueryDispatch, CommittedHomeQueryDispatch, HomeQueryDispatchAuthority,
     HomeQueryDispatchOwner, HomeQueryDispatchSubject, NoEffectHomeQueryDispatch,
+    QueryDispatchCloseCustody,
 };
 mod home_query_obligations;
 pub use home_query_obligations::{

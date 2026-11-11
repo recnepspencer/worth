@@ -22,6 +22,7 @@ use generation::QueryDispatchPublicationGenerations;
 pub use ledger::QueryDispatchCustody;
 use ledger::QueryDispatchLedger;
 pub use medium::{QueryDispatchMedium, QueryDispatchPublicationOutcome};
+pub(in crate::domain_computation) use worth_proof::QueryDispatchCloseCustody;
 #[cfg(test)]
 mod tests;
 

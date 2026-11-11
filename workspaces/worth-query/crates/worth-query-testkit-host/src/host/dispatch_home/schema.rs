@@ -51,6 +51,8 @@ impl ApplicationSchemaContribution<DispatchHomeSchema> for DispatchSurface {
         BalanceNoticeEffect,
         NotifyBalance,
         NotifyBalanceBinding,
+        super::recoverable::RecoverableNotice,
+        super::recoverable::RecoverableNoticeBinding,
     );
 }
 impl WorthQueryApplicationContribution<DispatchHomeSchema> for DispatchSurface {
@@ -59,7 +61,10 @@ impl WorthQueryApplicationContribution<DispatchHomeSchema> for DispatchSurface {
         configuration: Self::Configuration,
         setup: &mut WorthQueryApplicationContributionSetup<'_, DispatchHomeSchema>,
     ) -> Result<(), WorthQueryPrimaryGraphInstallationDenial> {
-        setup.handler::<NotifyBalanceBinding, _>(NotifyHandler(configuration))?;
+        setup.handler::<NotifyBalanceBinding, _>(NotifyHandler(configuration.clone()))?;
+        setup.handler::<super::recoverable::RecoverableNoticeBinding, _>(
+            super::recoverable::RecoverableNoticeHandler(configuration),
+        )?;
         Ok(())
     }
 }

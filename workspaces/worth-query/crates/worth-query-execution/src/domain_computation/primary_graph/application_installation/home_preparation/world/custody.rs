@@ -13,6 +13,8 @@ pub enum QueryHomeCustodyReadmissionDenial {
     ),
     Correction(corrections::QueryHomeCorrectionLineageDenial),
     Dispatch(crate::domain_computation::application_aftermath::dispatch_journal::QueryDispatchJournalDenial),
+    DispatchOutbox(crate::domain_computation::primary_graph::provider::WorthQueryCommittedDispatchOutboxReadDenial),
+    DispatchCapability(crate::domain_computation::execution_runtime::product_world::WorthQueryDurableStateAdmissionDenial),
     Execution(worth_execution::WorkCeilingDenial),
     World(RuntimeWorldServiceDenial<RuntimeWorldRecoveryDenial>),
     Recovery(RuntimeWorldRecoveryDenial),
@@ -194,6 +196,9 @@ impl<Schema: worth_query_installation::facade::ApplicationSchema + 'static, Prog
             });
         }
         if let Err(cause) = self.admit_original_custody(execution) {
+            return Err(QueryHomeCustodyReadmissionRefused { query: self, cause });
+        }
+        if let Err(cause) = self.admit_dispatch_contracts(execution) {
             return Err(QueryHomeCustodyReadmissionRefused { query: self, cause });
         }
         if let Err(cause) = self.admit_dispatch_custody(execution, dispatch) {

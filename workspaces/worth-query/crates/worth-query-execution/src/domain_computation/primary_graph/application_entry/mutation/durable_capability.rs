@@ -15,6 +15,8 @@ pub enum WorthQueryOperationDurableCapability {
     WorkflowExecution,
     ExternalEmission,
     ExternalDispatch,
+    InboundCompletion,
+    RecoveryCustody,
     RetainedCorrectionMaterial,
     RetainedOriginalOperationOwner,
     NativeBranchCleanup,
@@ -79,6 +81,25 @@ impl WorthQueryOperationDurableCapability {
             }
             Self::ExternalEmission => (&[Family::DispatchOutbox], 8),
             Self::ExternalDispatch => (&[Family::DispatchAttempts, Family::OutstandingDispatch], 8),
+            Self::InboundCompletion => (
+                &[
+                    Family::OutstandingDispatch,
+                    Family::InboundCompletionRows,
+                    Family::InboundMessageCustody,
+                    Family::InstalledTransportCompletionCustody,
+                    Family::TerminalAcknowledgement,
+                    Family::InboundSourceControls,
+                ],
+                8,
+            ),
+            Self::RecoveryCustody => (
+                &[
+                    Family::RecoveryHandleCustody,
+                    Family::RecoveryClaims,
+                    Family::RecoveryClaimDispositions,
+                ],
+                8,
+            ),
             Self::RetainedCorrectionMaterial => (
                 &[
                     Family::CorrectionGovernedInput,

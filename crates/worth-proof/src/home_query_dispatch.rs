@@ -1,7 +1,9 @@
 //! Query dispatch-custody readmission stays bound to the original Home journal occurrence.
 use crate::{HomeIncarnationDenial, HomeIncarnationFence};
 use std::sync::Arc;
+mod close_custody;
 mod publication;
+pub use close_custody::QueryDispatchCloseCustody;
 pub use publication::{
     CommittedHomeQueryDispatch, HomeQueryDispatchSubject, NoEffectHomeQueryDispatch,
 };

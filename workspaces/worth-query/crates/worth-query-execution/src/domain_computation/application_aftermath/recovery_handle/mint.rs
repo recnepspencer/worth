@@ -54,6 +54,7 @@ where
             self.runtime.authority_identity(),
             receipt.runtime_authority(),
         )?;
+        self.admit_recovery_custody()?;
         mint_recovery_handle_in_registry(receipt, Arc::clone(&self.runtime.recovery_handles))
     }
 
@@ -85,6 +86,7 @@ where
             self.runtime.authority_identity(),
             original.original_authority().runtime_authority(),
         )?;
+        self.admit_recovery_custody()?;
         let registry = Arc::clone(&self.runtime.recovery_handles);
         let binding = WorthQueryRecoveryHandleBinding::from_pending_original(
             original,
@@ -96,6 +98,14 @@ where
             original.original_publication().composite_commit().clone(),
         );
         mint_bound_recovery_handle(binding, claim, original.canonical_work(), registry)
+    }
+
+    fn admit_recovery_custody(&self) -> Result<(), WorthQueryRecoveryHandleDenial> {
+        self.runtime.product_runtime.admit_directory_capability(
+            crate::domain_computation::primary_graph::WorthQueryOperationDurableCapability::RecoveryCustody,
+        ).map_err(|cause| WorthQueryRecoveryHandleDenial::new(
+            WorthQueryRecoveryHandleDenialKind::DurableStateAdmission(cause),
+        ))
     }
 
     /// Read the exact commit's recovery fate without minting or consuming it.

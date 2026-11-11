@@ -13,6 +13,7 @@ pub enum WorthQueryRecoveryHandleDenialKind {
     AdmissionAuthorization(
         crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenialKind,
     ),
+    DurableStateAdmission(crate::domain_computation::execution_runtime::product_world::WorthQueryDurableStateAdmissionDenial),
     RecoveryNotAdmitted,
     /// This authoritative commit already opened its sole recovery handle.
     RecoveryAlreadyMinted,
