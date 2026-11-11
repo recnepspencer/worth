@@ -194,3 +194,5 @@ mod checkpoint_topology_reidentification;
 mod checkpoint_inspection_self_edge;
 mod checkpoint_shipping_lookup;
 mod checkpoint_truth_equivalence;
+
+mod checkpoint_subscriber_source;

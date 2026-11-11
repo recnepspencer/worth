@@ -124,12 +124,10 @@ fn checkpoint_reconstruction_does_not_exclude_publication_after_capture() {
     runtime
         .settle_performed_publication(performed)
         .expect("publication settles after checkpoint completes");
-    let plan = crate::tests::support::recovery_plan_for(
-        execution,
-        &runtime,
-        RecoveryMode::NormalRecoveryVerification,
-    )
-    .unwrap();
+    let plan = runtime
+        .durability()
+        .recovery_plan(execution, RecoveryMode::NormalRecoveryVerification)
+        .unwrap();
     assert_eq!(plan.tail_log.len(), 1);
     assert_eq!(plan.tail_log[0].position(), performed_position);
     assert_eq!(

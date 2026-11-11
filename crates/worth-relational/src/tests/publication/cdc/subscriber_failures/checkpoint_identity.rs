@@ -23,8 +23,8 @@ fn subscriber_stream_rejects_schema_unsupported_checkpoint() {
 }
 
 #[test]
-fn subscriber_stream_rejects_checkpoint_without_history_or_durable_coverage() {
-    let runtime = durable_runtime_with_test_schema();
+fn memory_subscriber_stream_rejects_checkpoint_without_history_or_durable_coverage() {
+    let runtime = runtime_with_test_schema();
     let missing_checkpoint =
         checkpoint_for_schema_version(PatchStreamPosition(42), SchemaVersionId(1));
     let error = runtime
