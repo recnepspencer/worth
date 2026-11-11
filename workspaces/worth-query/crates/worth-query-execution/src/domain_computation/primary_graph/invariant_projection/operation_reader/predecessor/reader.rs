@@ -41,6 +41,29 @@ impl<S: ApplicationSchema, O> PredecessorDecisionReader<'_, '_, '_, S, O> {
     {
         self.reader.decision_field(&entity.identity, field)
     }
+    /// Read admitted content at this predecessor basis under the independently
+    /// authorized operation's field contract. The handle never becomes current.
+    pub fn content<E, F, C>(
+        &mut self,
+        entity: &PredecessorEntity<S, E>,
+        content: worth_query_declaration::facade::application_schema::ApplicationContentFieldRef<
+            F,
+            C,
+        >,
+    ) -> Result<
+        Option<crate::domain_computation::primary_graph::AdmittedContent<C>>,
+        crate::domain_computation::primary_graph::ContentReadDenial,
+    >
+    where
+        F: worth_query_declaration::facade::application_schema::fragment::RecordSelection<
+            Entity = E,
+        >,
+        F::Binding:
+            worth_query_declaration::facade::application_schema::ApplicationContentReferenceBinding,
+        C: worth_query_declaration::facade::application_schema::ApplicationContentBinding,
+    {
+        self.reader.decision_content(&entity.identity, content)
+    }
     pub fn relations_from<R: OperationReads<O>, F, T>(
         &mut self,
         relation: ApplicationRelationRef<S, R, F, T>,
