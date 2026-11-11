@@ -113,3 +113,26 @@ pub fn commit_distinct_records_and_admit_fixture() -> (
         .expect("the second World publication admits dispatch");
     (first, second, first_ref, second_ref)
 }
+
+/// Admitted real owner evidence and the clock installed when its runtime was published.
+pub fn commit_observe_and_admit_with_clock_fixture(seed: u8) -> (
+    WorthQueryAdmittedExternalDispatchAttempt,
+    worth_query_testkit_execution_primary_graph_application_attempt::domain_computation::primary_graph::tests::fixture::authorization_time::AuthorizationTimeController,
+){
+    let (world, receipt) = recoverable_application_world(seed, "no-effect-observation-time");
+    let observation = world
+        .application
+        .with_host_advancement(|phase| {
+            world
+                .application
+                .observe_committed_dispatch_outbox(&phase, &receipt)
+        })
+        .unwrap()
+        .unwrap()
+        .unwrap();
+    let admitted = world
+        .application
+        .admit_external_dispatch_attempt_for_test(observation)
+        .unwrap();
+    (admitted, world.authorization_time)
+}

@@ -1,0 +1,191 @@
+use worth_foundational::facade::{BoundaryProtocolCompatibilityWindow, BoundaryProtocolVersion};
+use worth_query_execution::facade::primary_graph::ExternalRailTransportFault;
+use worth_query_execution::facade::primary_graph::{
+    WorthQueryCommittedDispatchOutboxReadDenial, WorthQueryExternalDispatchAttemptDenial,
+    WorthQueryExternalDispatchPreparationDenial,
+};
+
+use super::{
+    publish_failure, publish_preparation_failure, WorthQueryPublishedExternalEffectFailure,
+    WorthQueryPublishedUnsupportedProtocolVersionPosture,
+};
+
+#[test]
+fn every_non_version_transport_fault_is_preserved_exactly() {
+    let cases = [
+        (
+            ExternalRailTransportFault::Timeout,
+            WorthQueryPublishedExternalEffectFailure::Timeout,
+        ),
+        (
+            ExternalRailTransportFault::Disconnect,
+            WorthQueryPublishedExternalEffectFailure::Disconnect,
+        ),
+        (
+            ExternalRailTransportFault::LostResponse,
+            WorthQueryPublishedExternalEffectFailure::LostResponse,
+        ),
+        (
+            ExternalRailTransportFault::DuplicatedAcknowledgement,
+            WorthQueryPublishedExternalEffectFailure::DuplicatedAcknowledgement,
+        ),
+        (
+            ExternalRailTransportFault::UnknownProviderOutcome,
+            WorthQueryPublishedExternalEffectFailure::UnknownProviderOutcome,
+        ),
+        (
+            ExternalRailTransportFault::ObservationDerivationDenied,
+            WorthQueryPublishedExternalEffectFailure::ObservationDerivationDenied,
+        ),
+    ];
+
+    for (owner_fault, expected) in cases {
+        assert_eq!(publish_failure(owner_fault), expected);
+    }
+}
+
+#[test]
+fn proven_no_effect_is_its_own_posture_and_never_a_failure() {
+    use super::{
+        WorthQueryPublishedExternalEffectNoEffect as NoEffect,
+        WorthQueryPublishedExternalEffectPosture as Posture,
+        WorthQueryPublishedExternalEffectPostureKind as Kind,
+    };
+    for cause in [NoEffect::PayloadRejected, NoEffect::ContactNotStarted] {
+        let published = Posture::ProvenNoEffect(cause);
+        assert_eq!(published.kind(), Kind::ProvenNoEffect);
+        assert_eq!(published.proven_no_effect(), Some(cause));
+        assert_eq!(published.failure(), None);
+    }
+    let unresolved = Posture::Unresolved(WorthQueryPublishedExternalEffectFailure::LostResponse);
+    assert_eq!(unresolved.proven_no_effect(), None);
+    assert_eq!(Posture::Completed.proven_no_effect(), None);
+}
+
+#[test]
+fn every_initial_dispatch_preparation_denial_is_preserved_exactly() {
+    use worth_query_execution::facade::installed::provider_session::{
+        WorthQueryProviderSessionControlStopKind as Control,
+        WorthQueryProviderSessionDenialKind as Kind,
+    };
+    use worth_query_execution::facade::primary_graph::WorthQueryApplicationCommitDenialStage as Stage;
+    let stage = Stage::ProviderCommit;
+    let kind = Kind::ExecutionWorkerPanicked {
+        partition_identity: Some(1),
+    };
+    assert_eq!(
+        publish_preparation_failure(
+            WorthQueryExternalDispatchPreparationDenial::CompletionExecutionDenied { stage, kind }
+        ),
+        WorthQueryPublishedExternalEffectFailure::CompletionExecutionDenied { stage, kind },
+    );
+    for kind in [Control::Cancelled, Control::TimedOut] {
+        assert_eq!(
+            publish_preparation_failure(
+                WorthQueryExternalDispatchPreparationDenial::CompletionExecutionControlStopped {
+                    stage,
+                    kind
+                }
+            ),
+            WorthQueryPublishedExternalEffectFailure::CompletionExecutionControlStopped {
+                stage,
+                kind
+            },
+        );
+    }
+
+    let cases = [
+        (
+            WorthQueryExternalDispatchPreparationDenial::CompletionAllocationDenied {
+                stage, kind: worth_query_execution::facade::runtime::ExecutionAllocationDenialClass::Physical(worth_query_execution::facade::runtime::ExecutionPhysicalAllocationDenialKind::Allocator),
+                requested_payload_bytes: Some(17),
+            },
+            WorthQueryPublishedExternalEffectFailure::CompletionAllocationDenied {
+                stage, kind: worth_query_execution::facade::runtime::ExecutionAllocationDenialClass::Physical(worth_query_execution::facade::runtime::ExecutionPhysicalAllocationDenialKind::Allocator),
+                requested_payload_bytes: Some(17),
+            },
+        ),
+        (WorthQueryExternalDispatchPreparationDenial::CompletionStagingCardinalityOverflow,
+         WorthQueryPublishedExternalEffectFailure::CompletionStagingCardinalityOverflow),
+        (WorthQueryExternalDispatchPreparationDenial::CompletionInputDirectoryAllocationDenied { requested_batches: 3 },
+         WorthQueryPublishedExternalEffectFailure::CompletionInputDirectoryAllocationDenied { requested_batches: 3 }),
+        (
+            WorthQueryExternalDispatchPreparationDenial::OwnerReadDenied(
+                WorthQueryCommittedDispatchOutboxReadDenial::RecordMismatch,
+            ),
+            WorthQueryPublishedExternalEffectFailure::InitialDispatchOwnerReadDenied(
+                WorthQueryCommittedDispatchOutboxReadDenial::RecordMismatch,
+            ),
+        ),
+        (
+            WorthQueryExternalDispatchPreparationDenial::AttemptAdmissionDenied(
+                WorthQueryExternalDispatchAttemptDenial::InFlightCapacityExhausted,
+            ),
+            WorthQueryPublishedExternalEffectFailure::InitialDispatchAttemptAdmissionDenied(
+                WorthQueryExternalDispatchAttemptDenial::InFlightCapacityExhausted,
+            ),
+        ),
+        (
+            WorthQueryExternalDispatchPreparationDenial::AlreadyCompleted,
+            WorthQueryPublishedExternalEffectFailure::InitialDispatchAlreadyCompleted,
+        ),
+        (
+            WorthQueryExternalDispatchPreparationDenial::TerminalIndexUnavailable,
+            WorthQueryPublishedExternalEffectFailure::InitialDispatchTerminalIndexUnavailable,
+        ),
+        (
+            WorthQueryExternalDispatchPreparationDenial::CanonicalDerivationDenied,
+            WorthQueryPublishedExternalEffectFailure::InitialDispatchCanonicalDerivationDenied,
+        ),
+        (
+            WorthQueryExternalDispatchPreparationDenial::TimeObservationDenied,
+            WorthQueryPublishedExternalEffectFailure::InitialDispatchTimeObservationDenied,
+        ),
+    ];
+    for (denial, expected) in cases {
+        assert_eq!(publish_preparation_failure(denial), expected);
+    }
+}
+
+#[test]
+fn every_unsupported_version_posture_maps_exhaustively_and_exactly() {
+    let v1 = BoundaryProtocolVersion::new(1);
+    let v2 = BoundaryProtocolVersion::new(2);
+    let v3 = BoundaryProtocolVersion::new(3);
+    let cases = [
+        (
+            BoundaryProtocolCompatibilityWindow::inclusive(v2, v2)
+                .admit(v1)
+                .unwrap_err(),
+            1,
+            WorthQueryPublishedUnsupportedProtocolVersionPosture::PredatesWindow,
+        ),
+        (
+            BoundaryProtocolCompatibilityWindow::inclusive(v1, v2)
+                .admit(v3)
+                .unwrap_err(),
+            3,
+            WorthQueryPublishedUnsupportedProtocolVersionPosture::ExceedsWindow,
+        ),
+        (
+            BoundaryProtocolCompatibilityWindow::inclusive(v1, v2)
+                .retire_before(v2)
+                .admit(v1)
+                .unwrap_err(),
+            1,
+            WorthQueryPublishedUnsupportedProtocolVersionPosture::Retired,
+        ),
+    ];
+
+    for (unsupported, produced, posture) in cases {
+        assert_eq!(
+            publish_failure(ExternalRailTransportFault::UnsupportedProtocolVersion(
+                unsupported,
+            )),
+            WorthQueryPublishedExternalEffectFailure::UnsupportedProtocolVersion {
+                produced,
+                posture,
+            }
+        );
+    }
+}

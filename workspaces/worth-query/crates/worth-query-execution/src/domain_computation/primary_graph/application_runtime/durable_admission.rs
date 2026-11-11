@@ -71,6 +71,23 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         {
             require_capability(Capability::ExternalEmission)?;
         }
+        if installed
+            .operation()
+            .contracts()
+            .external_effect()
+            .inbound()
+            .is_some()
+        {
+            require_capability(Capability::InboundCompletion)?;
+        }
+        if let Some(aftermath) = installed.operation().contracts().aftermath() {
+            match aftermath.recovery() {
+                worth_query_installation::facade::InstalledAftermathRecoveryContract::NotAdmitted => {},
+                worth_query_installation::facade::InstalledAftermathRecoveryContract::Admissible { .. } => {
+                    require_capability(Capability::RecoveryCustody)?;
+                }
+            }
+        }
         if installed.correction_binding().is_some() {
             require_capability(Capability::RetainedCorrectionMaterial)?;
         }

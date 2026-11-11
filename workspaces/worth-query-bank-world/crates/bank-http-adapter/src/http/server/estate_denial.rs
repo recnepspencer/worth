@@ -110,6 +110,12 @@ fn recovery_denial(kind: BankRecoveryDenialKind) -> BankHttpDenial {
         Kind::CompletionExecutionRequest(cause) => {
             return super::advancement_denial::advancement(cause)
         }
+        // Durable custody support is a runtime configuration fact, not a caller retry.
+        Kind::DurableStateAdmission(cause) => match cause {
+            worth_query_host::facade::product::WorthQueryDurableStateAdmissionDenial::Unsupported { .. } => (Denial::Unavailable, Next::ContactOperator),
+            worth_query_host::facade::product::WorthQueryDurableStateAdmissionDenial::PolicyUnavailable
+            | worth_query_host::facade::product::WorthQueryDurableStateAdmissionDenial::UndeclaredSupplierCapabilities => (Denial::InternalDenied, Next::ContactOperator),
+        },
         // The installed contract refuses this recovery, or the principal is not
         // the one it belongs to. No retry, refresh, or new credential changes
         // that.
@@ -147,6 +153,12 @@ fn recovery_denial(kind: BankRecoveryDenialKind) -> BankHttpDenial {
         | Kind::CompletionInputDirectoryAllocationDenied { .. }
         | Kind::TerminalIndexUnavailable
         | Kind::TimeObservationDenied => (Denial::Unavailable, Next::Retry),
+        Kind::ProvenNoEffect(cause) => match cause {
+            // The original payload is immutable: repeating this recovery request
+            // cannot correct the external owner's semantic rejection.
+            worth_foundational::facade::ExternalEffectNoEffectCause::PayloadRejected => (Denial::Unavailable, Next::ContactOperator),
+            worth_foundational::facade::ExternalEffectNoEffectCause::ContactNotStarted => (Denial::Unavailable, Next::Retry),
+        },
         Kind::TransportNotInstalled => (Denial::Unavailable, Next::ContactOperator),
         Kind::DispatchOwnerReadDenied(read) => return dispatch_owner_read_denial(read),
         Kind::AttemptAdmissionDenied(attempt) => return dispatch_attempt_denial(attempt),

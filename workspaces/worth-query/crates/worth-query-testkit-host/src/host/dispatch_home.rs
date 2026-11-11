@@ -16,6 +16,7 @@ use worth_query_host::facade::{
 };
 
 pub mod notify;
+pub mod recoverable;
 pub mod schema;
 use schema::{DispatchHomeSchema, DispatchSurface};
 
@@ -26,6 +27,14 @@ impl ApplicationActionDelivery<DispatchHomeSchema, notify::NotifyBalanceBinding>
 {
     type Mode = ApplicationSourceCompletion;
     const IDENTITY: &'static str = "worth.query.host.dispatch-home.notify-completion.v1";
+}
+pub struct RecoverableNoticeCompletion;
+impl ApplicationActionDelivery<DispatchHomeSchema, recoverable::RecoverableNoticeBinding>
+    for RecoverableNoticeCompletion
+{
+    type Mode = ApplicationSourceCompletion;
+    const IDENTITY: &'static str =
+        "worth.query.host.dispatch-home.recoverable-notice-completion.v1";
 }
 struct DispatchFeature;
 impl ApplicationFeature<DispatchHomeSchema> for DispatchFeature {
@@ -42,6 +51,8 @@ impl ApplicationProgramDefinition<DispatchHomeSchema> for DispatchHomeProgram {
         vec![
             ApplicationFeatureSpec::root::<DispatchHomeSchema, DispatchFeature>()
                 .action::<notify::NotifyBalanceBinding, NotifyCompletion>()
+                .finish_action()
+                .action::<recoverable::RecoverableNoticeBinding, RecoverableNoticeCompletion>()
                 .finish_action()
                 .finish(),
         ]

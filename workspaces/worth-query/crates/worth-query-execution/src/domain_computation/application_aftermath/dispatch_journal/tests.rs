@@ -14,7 +14,7 @@ fn effect(byte: u8) -> CanonicalDigestId {
 /// Every observation the journal can record. The exhaustive match stops
 /// compiling when a variant is added, so a new variant cannot skip the codec.
 fn every_observation() -> Vec<Observation> {
-    use QueryDispatchProvenNoEffect as NoEffect;
+    use ExternalEffectNoEffectCause as NoEffect;
     use QueryDispatchUnresolvedCause as Cause;
     let listed = |observation: Observation| match observation {
         Observation::Completed

@@ -4,6 +4,7 @@ use super::super::{
     WorthQueryOperationHomeRetirementProgress as Progress,
 };
 use super::WorthQueryPrimaryGraphProvider;
+use crate::domain_computation::application_aftermath::dispatch_journal::QueryDispatchCloseCustody;
 use std::sync::Arc;
 use worth_execution::ExecutionRequest;
 use worth_relational::facade::runtime::RelationalRuntime;
@@ -12,6 +13,8 @@ pub(crate) struct PrimaryProviderCustody {
     serving: Option<Arc<WorthQueryPrimaryGraphProvider>>,
     retiring: Option<WorthQueryPrimaryGraphProvider>,
     stage: ProviderRetirementStage,
+    /// What the latest admitted preflight proved about dispatch custody.
+    dispatch_custody: QueryDispatchCloseCustody,
 }
 enum ProviderRetirementStage {
     ReceiptBases,
@@ -35,16 +38,21 @@ impl PrimaryProviderCustody {
             serving: Some(provider),
             retiring: None,
             stage: ProviderRetirementStage::ReceiptBases,
+            dispatch_custody: QueryDispatchCloseCustody::ProcessLocal,
         }
     }
     pub(in crate::domain_computation::primary_graph) fn preflight(
-        &self,
+        &mut self,
         request: &ExecutionRequest<'_, '_>,
+        dispatch_custody: QueryDispatchCloseCustody,
     ) -> Result<(), Denial> {
+        self.dispatch_custody = QueryDispatchCloseCustody::ProcessLocal;
         self.serving
             .as_ref()
             .expect("only serving provider preflights")
-            .preflight_home_retirement(request)
+            .preflight_home_retirement(request, &dispatch_custody)?;
+        self.dispatch_custody = dispatch_custody;
+        Ok(())
     }
     pub(in crate::domain_computation::primary_graph) fn advance(
         &mut self,
@@ -75,7 +83,7 @@ impl PrimaryProviderCustody {
                     .receipt_basis_retention
                     .try_lock()
                     .map_err(|_| Denial::Busy(Owner::ReceiptBases))?
-                    .advance_home_retirement(request)?;
+                    .advance_home_retirement(request, &self.dispatch_custody)?;
                 if progress == Progress::Complete {
                     self.stage = ProviderRetirementStage::Publications;
                 }
@@ -125,7 +133,11 @@ impl std::ops::Deref for PrimaryProviderCustody {
 }
 
 impl WorthQueryPrimaryGraphProvider {
-    fn preflight_home_retirement(&self, request: &ExecutionRequest<'_, '_>) -> Result<(), Denial> {
+    fn preflight_home_retirement(
+        &self,
+        request: &ExecutionRequest<'_, '_>,
+        dispatch_custody: &QueryDispatchCloseCustody,
+    ) -> Result<(), Denial> {
         request.consult().map_err(Denial::Execution)?;
         let attempts = self
             .attempts
@@ -159,7 +171,7 @@ impl WorthQueryPrimaryGraphProvider {
         self.receipt_basis_retention
             .try_lock()
             .map_err(|_| Denial::Busy(Owner::ReceiptBases))?
-            .preflight_home_retirement()?;
+            .preflight_home_retirement(dispatch_custody)?;
         self.graph.source_owner.preflight_home_retirement(request)
     }
 }

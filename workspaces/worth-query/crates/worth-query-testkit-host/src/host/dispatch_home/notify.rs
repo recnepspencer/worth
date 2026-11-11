@@ -166,6 +166,7 @@ impl OperationHandler<DispatchHomeSchema, NotifyBalanceBinding> for NotifyHandle
         Some(&[
             WorthQueryOperationDurableCapability::RelationalMutation,
             WorthQueryOperationDurableCapability::ExternalEmission,
+            WorthQueryOperationDurableCapability::ExternalDispatch,
         ])
     }
     fn decide(

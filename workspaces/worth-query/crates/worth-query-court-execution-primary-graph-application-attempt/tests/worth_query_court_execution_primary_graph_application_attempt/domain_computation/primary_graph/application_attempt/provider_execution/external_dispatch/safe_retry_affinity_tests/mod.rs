@@ -66,6 +66,15 @@ pub fn real_handle(seed: u8, label: &str) -> RealHandle {
 /// A production recovery handle and a current admission under `request`.
 pub fn real_handle_under(seed: u8, label: &str, request: WorthQueryRequestScope) -> RealHandle {
     let (world, receipt) = recoverable_application_world(seed, label);
+    real_handle_on(world, receipt, label, request)
+}
+
+fn real_handle_on(
+    world: AuthorizationWorld,
+    receipt: WorthQueryApplicationCommitReceipt,
+    label: &str,
+    request: WorthQueryRequestScope,
+) -> RealHandle {
     let handle = world
         .application
         .mint_recovery_handle(&receipt)
@@ -292,3 +301,5 @@ fn redispatch_names_fresh_authority_and_current_admission_failures_apart() {
 
 #[path = "advancement_custody/mod.rs"]
 pub mod advancement_custody;
+
+mod no_effect;

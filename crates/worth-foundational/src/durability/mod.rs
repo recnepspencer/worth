@@ -20,7 +20,9 @@ pub use native_checkpoint_reference::{
     NativeCheckpointBranchTarget,
 };
 mod dispatch_custody;
+mod external_effect_no_effect;
 pub use dispatch_custody::DispatchAttemptIdentity;
+pub use external_effect_no_effect::ExternalEffectNoEffectCause;
 mod program_support;
 mod workflow_ending_actor;
 pub use program_support::{

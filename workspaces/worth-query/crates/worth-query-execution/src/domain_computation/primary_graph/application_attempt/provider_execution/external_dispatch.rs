@@ -302,14 +302,14 @@ where
             Ok(dispatch) => dispatch,
             Err(denial) => {
                 use crate::domain_computation::application_aftermath::dispatch_journal::{
-                    QueryDispatchProvenNoEffect, QueryDispatchRecordedObservation,
+                    ExternalEffectNoEffectCause, QueryDispatchRecordedObservation,
                 };
                 use crate::domain_computation::application_aftermath::WorthQueryAftermathDerivationFailure as Failure;
                 // Every derivation failure precedes the transport call.
                 contact.observe(
                     execution,
                     QueryDispatchRecordedObservation::ProvenNoEffect(
-                        QueryDispatchProvenNoEffect::ContactNotStarted,
+                        ExternalEffectNoEffectCause::ContactNotStarted,
                     ),
                 );
                 return Err(match denial {

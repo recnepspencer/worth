@@ -10,7 +10,10 @@ use worth_query_host::facade::{
         ApplicationBuildIdentity, WorthQueryApplicationLimits, WorthQueryApplicationProgramRoster,
     },
     primary_graph::SignalConditionalEvaluationBudget,
-    runtime::WorthQueryApplicationQueryResourceProfile,
+    runtime::{
+        DeterminismContract, ExecutionBudget, ExecutionPosture, ExecutionRequestPolicy,
+        WorthQueryApplicationQueryResourceProfile,
+    },
     WorthQueryApplicationHomeLocation, WorthQueryApplicationHomeRequest,
 };
 
@@ -135,7 +138,14 @@ fn request_at_location_with_initializer(
         (contacts,),
         build,
         WorthQueryApplicationLimits::new(
-            identity::world_resources(),
+            // Home lifecycle courts fund cold original-owner reads through the
+            // public policy. Their scopes retain deadlines, and checkpoint
+            // funding courts retain their explicit maintenance limits.
+            identity::world_resources().with_execution_policy(ExecutionRequestPolicy::new(
+                ExecutionPosture::Serial,
+                DeterminismContract::CanonicalBitwise,
+                ExecutionBudget::new(std::num::NonZeroUsize::MIN, None, None),
+            )),
             WorthQueryApplicationQueryResourceProfile::default(),
             SignalConditionalEvaluationBudget::development(),
         ),

@@ -63,7 +63,7 @@ impl<'a> DispatchJournalDriver<'a> {
                     .insert(
                         attempt.identity,
                         QueryDispatchRecordedObservation::ProvenNoEffect(
-                            QueryDispatchProvenNoEffect::ContactNotStarted,
+                            ExternalEffectNoEffectCause::ContactNotStarted,
                         ),
                     );
             }

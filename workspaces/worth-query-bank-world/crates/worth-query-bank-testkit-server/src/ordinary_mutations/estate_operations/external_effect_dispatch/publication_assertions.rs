@@ -152,7 +152,8 @@ pub fn assert_dispatch_publication_and_work(receipt: &BankCommitReceipt, scenari
     let event_count = match posture.kind() {
         WorthQueryPublishedExternalEffectPostureKind::Completed
         | WorthQueryPublishedExternalEffectPostureKind::Acknowledged => 4,
-        WorthQueryPublishedExternalEffectPostureKind::Unresolved => 3,
+        WorthQueryPublishedExternalEffectPostureKind::ProvenNoEffect
+        | WorthQueryPublishedExternalEffectPostureKind::Unresolved => 3,
         WorthQueryPublishedExternalEffectPostureKind::NotDeclared
         | WorthQueryPublishedExternalEffectPostureKind::PendingDispatch => {
             panic!("{scenario}: a dispatched effect cannot publish as undispatched")

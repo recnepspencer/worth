@@ -38,14 +38,15 @@ pub(crate) use external_effect::{
 pub use external_effect::{
     derive_external_effect_correlation_identity, ExternalEffectCausalLink,
     ExternalEffectClassification, ExternalEffectCorrelationBasis,
-    ExternalEffectCorrelationIdentity, ExternalEffectPosture, ExternalEffectPostureIdentity,
-    ExternalEffectPostureKind, ExternalRailTransportFault, WorthQueryDispatchOutboxLayout,
-    WorthQueryDispatchOutboxRecord, WorthQueryExternalDispatchCausalRelation,
-    WorthQueryExternalDispatchPosture, WorthQueryExternalDispatchPostureKind,
-    WorthQueryExternalDispatchRequest, WorthQueryExternalEffectCausalLadder,
-    WorthQueryExternalEffectDispatch, WorthQueryExternalEffectTransport,
-    WorthQueryExternalTransportOutcome, WorthQueryInboundOccurrenceClaims,
-    WorthQueryInboundOccurrenceVerifier, WorthQueryInboundVerificationDenial,
+    ExternalEffectCorrelationIdentity, ExternalEffectNoEffectCause, ExternalEffectPosture,
+    ExternalEffectPostureIdentity, ExternalEffectPostureKind, ExternalEffectProvenNoEffect,
+    ExternalRailTransportFault, WorthQueryDispatchOutboxLayout, WorthQueryDispatchOutboxRecord,
+    WorthQueryExternalDispatchCausalRelation, WorthQueryExternalDispatchPosture,
+    WorthQueryExternalDispatchPostureKind, WorthQueryExternalDispatchRequest,
+    WorthQueryExternalEffectCausalLadder, WorthQueryExternalEffectDispatch,
+    WorthQueryExternalEffectTransport, WorthQueryExternalTransportOutcome,
+    WorthQueryInboundOccurrenceClaims, WorthQueryInboundOccurrenceVerifier,
+    WorthQueryInboundVerificationDenial,
 };
 pub(in crate::domain_computation) use external_effect::{
     WorthQueryAcceptedInboundOccurrence, WorthQueryInboundCustody,

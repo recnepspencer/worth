@@ -34,7 +34,9 @@ pub const fn directory_family_support(family: DurableStateFamily) -> DirectoryFa
         | PublicationDiagnosticMaterial => DirectoryFamilySupport::Supported(4),
         // Phase 8's external dispatch custody is delivered for exactly an
         // emission's outbox row and its attempt journal.
-        DispatchOutbox | DispatchAttempts => DirectoryFamilySupport::Supported(8),
+        DispatchOutbox | DispatchAttempts | OutstandingDispatch => {
+            DirectoryFamilySupport::Supported(8)
+        }
         WorldConditionalDefinitionCustody
         | SignalNodeDefinitions
         | SignalTopology
@@ -97,8 +99,7 @@ pub const fn directory_family_support(family: DurableStateFamily) -> DirectoryFa
         | CapturedExternalInput
         | FixedOperationCustody
         | SignalResourceRequestCustody => DirectoryFamilySupport::RefusedUntil(7),
-        OutstandingDispatch
-        | InboundCompletionRows
+        InboundCompletionRows
         | InboundMessageCustody
         | InstalledTransportCompletionCustody
         | TerminalAcknowledgement
@@ -121,10 +122,9 @@ pub const fn directory_family_support(family: DurableStateFamily) -> DirectoryFa
 /// Operation intent can require a later extension of an already-supported family.
 ///
 /// Phase 8's external dispatch custody is delivered for exactly the outbox
-/// row and the attempt journal. An emission is therefore admitted; a Home
-/// that has dispatched cannot yet close gracefully (its receipt-basis owner
-/// refuses). Inbound completion and recovery claims stay refused through
-/// their own families.
+/// row and the attempt journal. A non-inbound emission and dispatch are
+/// admitted, and their recorded custody survives graceful close and reopen.
+/// Inbound completion and recovery claims retain their own family requirements.
 pub(crate) fn directory_requirement_refusal(
     family: DurableStateFamily,
     required_phase: u8,

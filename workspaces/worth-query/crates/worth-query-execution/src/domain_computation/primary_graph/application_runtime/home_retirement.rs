@@ -88,7 +88,8 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         self.installed_conditionals
             .preflight_home_retirement(self.runtime.bridge.conditional_owner())?;
         // Every recorded attempt owns its one durable observation before close.
-        self.runtime
+        let dispatch_custody = self
+            .runtime
             .dispatch_journal
             .settle_for_close(request)
             .map_err(WorthQueryHomeRetirementDenial::DispatchCustody)?;
@@ -98,7 +99,9 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             .as_mut()
             .expect("serving participation remains owned")
             .preflight(&self.runtime.primary_provider)?;
-        self.runtime.primary_provider.preflight(request)?;
+        self.runtime
+            .primary_provider
+            .preflight(request, dispatch_custody)?;
         self.mutation_projection
             .preflight_home_retirement(request)?;
         self.runtime

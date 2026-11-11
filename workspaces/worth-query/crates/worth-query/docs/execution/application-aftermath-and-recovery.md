@@ -692,11 +692,17 @@ For a committed operation, inspect:
   inspection.
 
 `Unresolved` includes typed failures such as timeout, disconnect, lost response,
-duplicate acknowledgement, payload rejection, unsupported protocol version, or
-an unknown provider outcome. Unsupported versions retain the exact produced
+duplicate acknowledgement, unsupported protocol version, or an unknown provider
+outcome. Unsupported versions retain the exact produced
 version and distinguish `PredatesWindow`, `ExceedsWindow`, and `Retired`.
 These values explain what Query observed; they do not overwrite the external
 owner's ledger.
+
+Payload rejection is instead `ProvenNoEffect(PayloadRejected)` in live dispatch,
+published aftermath and durable journal custody. The live posture's
+`proven_no_effect()` retains its exact attempt and available decision time, while
+`classification()` is absent. Published `proven_no_effect()` is distinct from
+`failure()`: no effect is neither unresolved, completed nor compensated.
 
 ## Preserve the owning recovery path
 
@@ -733,11 +739,14 @@ committed outbox record carries
 data: it grants no dispatch authority. A memory-only Home returns `None`,
 because its dispatch custody is process-local.
 
-A Directory Home that has dispatched an external effect cannot close
-gracefully yet. The dispatched commit's basis stays owed to its dispatch owner,
-so close refuses before any seal and `resume()` returns the same Home with its
-recorded custody. Carrying outstanding dispatch across close and reopen is not
-yet delivered.
+A Directory Home retains dispatch custody across graceful close and reopen
+for operations that declare neither inbound completion nor recoverable aftermath.
+Installed contracts that require either family refuse before effects, and
+recovery-claim minting independently checks Directory support. Close settles every retained observation before releasing the
+dispatch's local receipt-basis lease. Reopen readmits those same attempt
+identities and observations from `query.dispatch`; it never contacts the
+transport or reexecutes the mutation handler. The reopened Home receives a
+fresh transport installation from its host.
 
 A dispatch whose attempt record the Home refuses never reaches the transport.
 The commit's dispatch preparation reports

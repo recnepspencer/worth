@@ -7,6 +7,25 @@ use crate::domain_computation::application_aftermath::dispatch_journal::{
 impl<Schema: worth_query_installation::facade::ApplicationSchema + 'static, Program: 'static>
     ReadmittedHomeQueryService<Schema, Program>
 {
+    pub(super) fn admit_dispatch_contracts(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> Result<(), QueryHomeCustodyReadmissionDenial> {
+        use QueryHomeCustodyReadmissionDenial as Denial;
+        let application = self.runtime.runtime();
+        if application
+            .runtime
+            .primary_provider
+            .readmit_dispatch_outboxes(execution)
+            .map_err(Denial::DispatchOutbox)?
+        {
+            application.runtime.product_runtime.admit_directory_capability(
+                crate::domain_computation::primary_graph::WorthQueryOperationDurableCapability::InboundCompletion,
+            ).map_err(Denial::DispatchCapability)?;
+        }
+        Ok(())
+    }
+
     /// Folds recorded DATA only. No attempt is contacted, replayed or reissued,
     /// and a retried admission must reach the identical protected prefix.
     pub(super) fn admit_dispatch_custody(

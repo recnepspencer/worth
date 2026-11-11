@@ -51,12 +51,10 @@ impl ApplicationCorrectionBinding<Schema> for Resize {
         ControlSource::reference().definition().no_external_effect()
     }
     fn mechanism() -> DeclaredCorrectionMechanism<Schema> {
-        DeclaredCorrectionMechanism::recorded_inverse_binding::<Self>(
-            DeclaredPreImageDemand::new(
-                [DeclaredPreImageLocus::from_field(Width::at("Width"))],
-                9,
-            ),
-        )
+        DeclaredCorrectionMechanism::recorded_inverse_binding::<Self>(DeclaredPreImageDemand::new(
+            [DeclaredPreImageLocus::from_field(Width::at("Width"))],
+            9,
+        ))
     }
     fn derive_correction(
         original: &Control,
@@ -68,9 +66,7 @@ impl ApplicationCorrectionBinding<Schema> for Resize {
         };
         let width = U64ApplicationValueBinding::decode(
             fields
-                .field(
-                    &DeclaredPreImageLocus::from_field(Width::at("Width")),
-                )
+                .field(&DeclaredPreImageLocus::from_field(Width::at("Width")))
                 .ok_or(MissingPreImage)?,
         )
         .map_err(|_| InvalidPreImage)?;
