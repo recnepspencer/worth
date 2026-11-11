@@ -112,7 +112,13 @@ fn recovery_denial(kind: BankRecoveryDenialKind) -> BankHttpDenial {
         }
         // Durable custody support is a runtime configuration fact, not a caller retry.
         Kind::DurableStateAdmission(cause) => match cause {
-            worth_query_host::facade::product::WorthQueryDurableStateAdmissionDenial::Unsupported { .. } => (Denial::Unavailable, Next::ContactOperator),
+            worth_query_host::facade::product::WorthQueryDurableStateAdmissionDenial::Unsupported { .. }
+            | worth_query_host::facade::product::WorthQueryDurableStateAdmissionDenial::UnsupportedCorrectionRelationPreimage
+            | worth_query_host::facade::product::WorthQueryDurableStateAdmissionDenial::UnsupportedCorrectionCoupledOutputs
+            | worth_query_host::facade::product::WorthQueryDurableStateAdmissionDenial::UnsupportedCorrectionCompensation
+            | worth_query_host::facade::product::WorthQueryDurableStateAdmissionDenial::UnsupportedCorrectionOutputMaterial
+            | worth_query_host::facade::product::WorthQueryDurableStateAdmissionDenial::UnsupportedCorrectionReapplication
+            | worth_query_host::facade::product::WorthQueryDurableStateAdmissionDenial::UnsupportedDivergentCorrection => (Denial::Unavailable, Next::ContactOperator),
             worth_query_host::facade::product::WorthQueryDurableStateAdmissionDenial::PolicyUnavailable
             | worth_query_host::facade::product::WorthQueryDurableStateAdmissionDenial::UndeclaredSupplierCapabilities => (Denial::InternalDenied, Next::ContactOperator),
         },
