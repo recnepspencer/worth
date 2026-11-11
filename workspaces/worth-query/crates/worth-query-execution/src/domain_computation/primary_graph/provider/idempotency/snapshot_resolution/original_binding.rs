@@ -19,7 +19,10 @@ pub(in crate::domain_computation::primary_graph::provider) fn read(
         )
     };
     let text = |locator: &AspectFieldLocator| match value(locator) {
-        Some(AspectValue::String(InternedString::Raw(value))) => Ok(value.clone()),
+        Some(AspectValue::String(value)) => value
+            .raw_text()
+            .map(str::to_owned)
+            .ok_or(Denial::Unavailable),
         _ => Err(Denial::Unavailable),
     };
     let number = |locator: &AspectFieldLocator| match value(locator) {
