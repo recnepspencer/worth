@@ -134,7 +134,14 @@ impl RelationalPinnedRead<RelationalAppliedCandidateReadIdentity> {
                 // this exact dictionary owner. Carry that same owner into the
                 // pin; another detached binding loses the new admission marks
                 // and a cold dictionary then refuses its otherwise valid read.
-                let services = runtime.with_candidate_symbols(symbols).services;
+                let mut services = runtime.with_candidate_symbols(symbols).services;
+                if let Some(previous) = previous {
+                    // The verified prior revision owns admission of its D root.
+                    // Starting again from C loses that root's predecessor mark.
+                    services.symbols = symbols
+                        .binding_from_applied_predecessor(previous.resident_basis().symbols())
+                        .map_err(crate::mvcc::origin_denial)?;
+                }
                 let root = runtime
                     .history
                     .capture_applied_candidate_root(

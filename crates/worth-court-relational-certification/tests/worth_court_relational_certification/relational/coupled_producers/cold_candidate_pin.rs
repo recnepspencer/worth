@@ -7,6 +7,7 @@ use worth_relational::facade::runtime::ProjectionAspectScope;
 struct ProducerRead<'a> {
     world: &'a World,
     reads: Cell<usize>,
+    second_revision: bool,
 }
 impl RelationalAuthoredCoupledProducerAssembly for ProducerRead<'_> {
     fn assemble(
@@ -14,10 +15,33 @@ impl RelationalAuthoredCoupledProducerAssembly for ProducerRead<'_> {
         execution: &ExecutionRequest<'_, '_>,
         candidate: &mut RelationalAuthoredCoupledCandidate<'_>,
     ) -> Result<ControlFlow<()>, RelationalCoupledAssemblyFailure> {
+        // Capture D without an incidental head read re-admitting its lost
+        // owned mark. The real producer consumes that pin as its predecessor.
         let read = candidate.pin_source(execution)?;
+        assert!(assembly(self.world)
+            .assemble(execution, candidate)?
+            .is_continue());
         let value = name(&read.project_candidate(), execution, self.world.source);
         assert_eq!(value, "edited-source");
         self.reads.set(self.reads.get() + 1);
+        if self.second_revision {
+            candidate.append_publication(
+                execution,
+                RelationalCoupledProducerPosture::Publication(RequiredOutputPublication::Birth {
+                    admission: self.world.owner.admit_required_output("second", [3; 32]),
+                    absence: Some(self.world.absence(execution, "second")),
+                    meaning: self.world.meaning("second"),
+                    roles: vec![created("second-output")],
+                }),
+                &RelationalContentAttachments::default(),
+                vec![create("second-output")],
+            )?;
+        }
+        let next = candidate.pin_source(execution)?;
+        assert_eq!(
+            name(&next.project_candidate(), execution, self.world.carrier),
+            "calculated-carrier"
+        );
         Ok(ControlFlow::Continue(()))
     }
 }
@@ -40,9 +64,16 @@ fn name(
 }
 #[test]
 fn cold_applied_candidate_pin_retains_admitted_symbol_predecessor() {
+    exercise(false);
+}
+#[test]
+fn cold_later_applied_revision_carries_previous_dictionary_admission() {
+    exercise(true);
+}
+fn exercise(second_revision: bool) {
     let host = request();
     let execution = &ExecutionRequest::serial(&host);
-    let world = World::new(execution, false, false);
+    let world = World::new(execution, true, false);
     let cold = world.runtime.place_symbol_pages_cold_for_test(execution);
     let before = world.basis();
     let view = world
@@ -58,6 +89,7 @@ fn cold_applied_candidate_pin_retains_admitted_symbol_predecessor() {
     let producer = ProducerRead {
         world: &world,
         reads: Cell::new(0),
+        second_revision,
     };
     let owners = world
         .runtime
