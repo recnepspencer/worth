@@ -23,13 +23,13 @@ worth_query_structured_value_binding!(pub InputBinding for Edit { identity: "nes
 worth_query_structured_value_binding!(pub ResultBinding for Changed { identity: "nested-catalog.edit.result.v1" });
 worth_query_structured_value_binding!(pub DenialBinding for Denial { identity: "nested-catalog.edit.denial.v1" });
 worth_query_operation!(pub EditGraph for Catalog, input InputBinding);
-worth_query_operation_reads!(EditGraph => [Directory,DirectoryIdentity,Item,ItemIdentity,ItemName,ItemEnabled,BadgeFlag,BadgeDetail,Children]);
+worth_query_operation_reads!(EditGraph => [Directory,DirectoryIdentity,Item,ItemIdentity,ItemName,ItemEnabled,BadgeFlag,Children]);
 worth_query_operation_creates!(EditGraph => [Directory,Item]);
 worth_query_operation_links!(EditGraph => [Contains,Children]);
 worth_query_operation_unlinks!(EditGraph => [Children]);
 worth_query_operation_deletes!(EditGraph => [Item]);
 worth_query_operation_removes_aspects!(EditGraph => [ItemBadge]);
-worth_query_operation_writes!(EditGraph => [DirectoryIdentity,ItemIdentity,ItemName,ItemEnabled,BadgeFlag,BadgeDetail]);
+worth_query_operation_writes!(EditGraph => [DirectoryIdentity,ItemIdentity,ItemName,ItemEnabled,BadgeFlag]);
 
 fn scope(_: &Edit) -> String {
     "catalog".into()

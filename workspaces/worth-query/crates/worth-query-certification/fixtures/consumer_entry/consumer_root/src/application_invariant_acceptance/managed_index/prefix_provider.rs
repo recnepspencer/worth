@@ -205,6 +205,8 @@ impl<S: ApplicationSchema, I: PrefixSourceIndex<S>> WorthQueryManagedIndexProvid
     ) -> Result<Option<WorthQueryManagedIndexNodeId>, Stop> {
         self.0.updates.fetch_add(1, Ordering::SeqCst);
         #[cfg(test)]
+        I::observe_update(&self.0, before, after, changes)?;
+        #[cfg(test)]
         self.0
             .cost_stages
             .record(prefix_cost_stages::Stage::UpdateBegin);

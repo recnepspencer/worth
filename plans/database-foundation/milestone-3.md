@@ -1268,6 +1268,22 @@ these splits do not claim equivalent funding coverage from a related public cour
   equality, allocation ownership and exact refunds. Five-node topology, escaped
   leaf shape and original key remain active private value evidence.
 
+### Landing 2a historical handler-key custody split
+
+- **C2:** restore the complete original
+  `historical_key_aliases_retain_and_refund_the_original_authoring_payment`,
+  `refused_normalization_never_yields_historical_keys_or_a_retained_bill`, and
+  their two-allowance `reads` fixture from
+  `669ac9fcd4:workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/invariant_projection/operation_reader/decision_reads/expected_keys/historical_retention_tests.rs`.
+  Preserve normalization charging, historical conversion/alias custody, exact
+  zero-memory error category and every refund observation. Active H evidence
+  separately exercises the exact handler-only 1/2 allowance contrast through
+  the already permitted public normalizer court
+  `conflicting_handler_adjacencies_keep_the_strongest_allowance`; the private
+  value court `historical_conversion_and_aliases_preserve_exact_handler_keys`
+  exercises actual conversion and aliases with the complete expected key.
+  Neither H court claims funding coverage or a public historical-conversion door.
+
 ### Landing 2a selected-payload funding split
 
 - **C2:** restore the complete original
@@ -1282,6 +1298,23 @@ these splits do not claim equivalent funding coverage from a related public cour
   courts exercise the same production selection kernel, retain both payload
   kinds and target postures, and verify latest-history carrier and retained
   values after source and target drop. They do not claim funding coverage.
+
+### Landing 2a exact Home-step invoice campaign
+
+- **C2:** restore the complete
+  `home_step_body_and_candidate_share_the_original_work_ceiling` campaign and
+  `trial` fixture from
+  `0890a7800a:workspaces/worth-store/crates/worth-store-court-application/tests/worth_store_court_application/process/application/no_pending_owners/transition_indexes/work_account.rs`.
+  Restore its same-SHA `mod work_account` mount in `transition_indexes.rs`, the
+  COMPLETE `transition_indexes/` fixture tree (including `target.rs`),
+  `no_pending_owners/transition_opening.rs` and its child fixture closure, and all
+  referenced parent imports, actual Home transition-plan/step-grant/World-open/
+  Native preparation owners and work-account controls. Preserve the actual SDK
+  invoice, exact and one-unit-short requests in both wrapped/unwrapped forms,
+  typed WorkExhausted, discarded candidate and unchanged Native basis assertions.
+  Restore through the current genuine Home and index-maintenance budget contract;
+  never revive an obsolete signature or fabricate original-step/source admission.
+  Ordinary transition/index and step-affinity courts remain active under H.
 
 ### Landing 2a Memory invoice and deferred complexity proofs
 
@@ -1310,38 +1343,33 @@ these splits do not claim equivalent funding coverage from a related public cour
   currently executed or verified; every remaining named proof must still name
   a registered test and every Verified declaration must have proof.
 
-### Landing 2a historical handler-key custody split
+### Landing 2a foreign-node injection campaign
 
-- **C2:** restore the complete original
-  `historical_key_aliases_retain_and_refund_the_original_authoring_payment`,
-  `refused_normalization_never_yields_historical_keys_or_a_retained_bill`, and
-  their two-allowance `reads` fixture from
-  `669ac9fcd4:workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/invariant_projection/operation_reader/decision_reads/expected_keys/historical_retention_tests.rs`.
-  Preserve normalization charging, historical conversion/alias custody, exact
-  zero-memory error category and every refund observation. Active H evidence
-  separately exercises the exact handler-only 1/2 allowance contrast through
-  the already permitted public normalizer court
-  `conflicting_handler_adjacencies_keep_the_strongest_allowance`; the private
-  value court `historical_conversion_and_aliases_preserve_exact_handler_keys`
-  exercises actual conversion and aliases with the complete expected key.
-  Neither H court claims funding coverage or a public historical-conversion door.
-
-### Landing 2a exact Home-step invoice campaign
-
-- **C2:** restore the complete
-  `home_step_body_and_candidate_share_the_original_work_ceiling` campaign and
-  `trial` fixture from
-  `0890a7800a:workspaces/worth-store/crates/worth-store-court-application/tests/worth_store_court_application/process/application/no_pending_owners/transition_indexes/work_account.rs`.
-  Restore its same-SHA `mod work_account` mount in `transition_indexes.rs`, the
-  COMPLETE `transition_indexes/` fixture tree (including `target.rs`),
-  `no_pending_owners/transition_opening.rs` and its child fixture closure, and all
-  referenced parent imports, actual Home transition-plan/step-grant/World-open/
-  Native preparation owners and work-account controls. Preserve the actual SDK
-  invoice, exact and one-unit-short requests in both wrapped/unwrapped forms,
-  typed WorkExhausted, discarded candidate and unchanged Native basis assertions.
-  Restore through the current genuine Home and index-maintenance budget contract;
-  never revive an obsolete signature or fabricate original-step/source admission.
-  Ordinary transition/index and step-affinity courts remain active under H.
+- **C4:** restore the complete `ordered_chain_foreign_node_owner_cannot_enter_a_birth_edit`
+  wrapper from `0890a7800a6b1a3d4becef3299915c0bf5aec4bd:workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/managed_index/maintained/court/prefix_growth/ordered_chain.rs`
+  and its full `events/chain/foreign_node.rs` body and `events/chain.rs` module
+  mount/imports/append/principal closure from the same immutable managed_index
+  tree. Restore the complete enclosing maintained/events/court/prefix-growth
+  mounts, `events/court.rs` and `court/fixture.rs`, and the genuine events schema,
+  query, shape, paths, prefix, rule, composition, authoring, history, mutation,
+  plain, `maintained/nested/edit.rs`, registered host construction and directly
+  used authentication/resource fixtures at that SHA.
+  The original receiver-owned `observed_root` and `foreign_node` fields, genuine
+  provider build-root observation and update-time foreign lookup are at
+  `3656bb1cc3dc7449efed2f4788b8c5d0f362a502:workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/managed_index/prefix.rs`
+  with its complete same-SHA `prefix/` child closure. Use the current shared
+  `prefix_observation.rs`, `prefix_provider.rs` and children and execution
+  managed-index Node issuance/edit/validation, controls/stops and provider-failure
+  owners from `0890a7800a6b1a3d4becef3299915c0bf5aec4bd` as the surviving owner
+  reference. Adapt these restoration sources to current genuine contracts;
+  never overwrite landed owners with historical replicated providers or retired
+  construction routes. Preserve the actual unrelated U node, arm/disarm, exact
+  Controlled(ForeignNode) failure chain, unchanged head and A contents, and the
+  lawful cleared-arm append producing E with x/e. The original retry uses a new
+  idempotency key; it does not prove same-key retry or rollback after effects.
+  Ordinary foreign-Source-slot and current Node validation evidence stays active.
+  The optional-aspect provider receiver, watch and complete Source campaigns stay
+  active under H through their actual borrowed SourceRows; they are not C2/C4 moves.
 
 ### Parallel work
 

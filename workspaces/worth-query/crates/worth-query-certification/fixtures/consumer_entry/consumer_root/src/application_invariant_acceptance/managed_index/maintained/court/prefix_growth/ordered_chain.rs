@@ -36,11 +36,6 @@ fn ordered_chain_foreign_scope_slots_cannot_cross_the_predecessor_door() {
 }
 
 #[test]
-fn ordered_chain_foreign_node_owner_cannot_enter_a_birth_edit() {
-    chain::foreign_node::run();
-}
-
-#[test]
 fn ordered_chain_stronger_graph_laws_still_refuse_an_excess_member() {
     ordered_refusing::stronger_law();
 }

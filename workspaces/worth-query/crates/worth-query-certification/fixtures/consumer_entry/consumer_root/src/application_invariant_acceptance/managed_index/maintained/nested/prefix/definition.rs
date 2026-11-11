@@ -13,6 +13,9 @@ impl ApplicationManagedIndexBinding<Catalog> for PrefixIndex {
     const NAME: &'static str = "catalog_prefix_index";
     const PROVIDER: &'static str = "managed-catalog.utf8-prefix.v1";
     const PROVIDER_VERSION: u32 = 1;
+    const SOURCE_SCOPE:
+        worth_query_decl::facade::application_query::ApplicationManagedIndexSourceScope =
+        super::super::PREFIX_SOURCE_SCOPE;
     const MAINTENANCE: ApplicationManagedIndexMaintenance = super::super::PREFIX_MAINTENANCE;
     const REFINEMENT: Option<
         worth_query_decl::facade::application_query::ApplicationManagedIndexRefinement,

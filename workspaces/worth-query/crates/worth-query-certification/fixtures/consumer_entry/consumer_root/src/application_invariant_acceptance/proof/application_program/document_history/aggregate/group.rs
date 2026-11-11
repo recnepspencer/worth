@@ -5,7 +5,6 @@ use worth_query_decl::facade::application_program::{
     ApplicationAction, ApplicationConnectionShape, ApplicationFixedActionDelivery,
     ApplicationOutputEdgeShape, ApplicationOutputGraphShape,
 };
-use worth_query_host::facade::application_entry::WorthQueryHistoryOutputsMode;
 use worth_query_host::facade::primary_graph::WorthQueryOutputDemandDenialKind;
 
 mod disposal;
