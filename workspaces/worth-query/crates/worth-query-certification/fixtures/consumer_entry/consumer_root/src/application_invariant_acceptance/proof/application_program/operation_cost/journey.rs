@@ -105,7 +105,7 @@ fn ordinary(fanout: usize, unrelated: usize) -> Sample {
         .unwrap_or_else(|(_, d)| panic!("ordinary lawful close: {d:?}"));
     let cleanup = closing.finish(&runtime);
     assert!(
-        closed.managed_cleanup_receipt().is_none(),
+        closed.managed_cleanup_receipts().is_empty(),
         "unarmed fresh path has no failed physical cleanup"
     );
     assert_eq!(closed.retired_component_count(), 0);
