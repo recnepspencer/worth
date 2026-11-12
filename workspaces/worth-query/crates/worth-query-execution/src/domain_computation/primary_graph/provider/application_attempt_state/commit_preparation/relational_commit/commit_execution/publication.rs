@@ -138,7 +138,14 @@ fn prepare_pending(
     if let Some(managed_views) = managed_views {
         managed_views.apply(&committed, &next_basis, &product_publication);
     }
-    let changed_record_count = committed.patch().len();
+    // Native's canonical result counts distinct changed records. A record may
+    // have more than one patch, so patch cardinality is not the receipt field.
+    let changed_record_count = committed
+        .publication()
+        .envelope
+        .semantic_result()
+        .changed_records()
+        .len();
     let runtime_instance_id = committed.snapshot.runtime_instance_id();
     let emitted_effect_count = attempt.emitted_effect_count();
     let outcome_identity = attempt.outcome_identity();
