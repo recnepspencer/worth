@@ -24,12 +24,11 @@ impl OriginalHomeTransitionContinuation {
                         .as_ref()
                         .expect("original occurrence finalized before submission")
                         .clone();
-                    let mut permit = work
+                    let permit = work
                         .common
                         .cell
                         .begin_durable_movement(&work.common.before, subject)
                         .map_err(|_| Denial::WorldHeadUnavailable)?;
-                    permit.bind_home_transition_control(work.common.control.clone());
                     loan.submit(permit);
                     return Ok(OriginalContinuationAdvance::Pending);
                 }

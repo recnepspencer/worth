@@ -1,10 +1,7 @@
 //! Original-effect continuation never returns a fabricated live Performed value.
 use crate::{history::WorldReadmittedPublication, recovery::WorldRecoveredUnpublishedEffects};
-mod control;
 mod progress;
 mod retention;
-pub(crate) use control::HomeTransitionEffectControlState;
-pub use control::{WorldHomeTransitionEffectControl, WorldHomeTransitionEffectInterruption};
 pub use progress::WorldHomeTransitionEffectProgress;
 
 #[derive(Debug)]

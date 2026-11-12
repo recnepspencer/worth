@@ -221,7 +221,6 @@ query-world-commit-preparation workspaces/worth-query/crates/worth-query-executi
 query-world-commit-preparation workspaces/worth-query/crates/worth-query-host/src/application_home/transition/publication.rs
 query-world-commit-preparation workspaces/worth-store/crates/worth-store-court-application/tests/worth_store_court_application/process/application/no_pending_owners/transition_indexes/promotion.rs
 query-world-commit-preparation workspaces/worth-store/crates/worth-store-court-application/tests/worth_store_court_application/process/application/no_pending_owners/transition_indexes/publication.rs
-query-world-commit-preparation workspaces/worth-store/crates/worth-store-court-application/tests/worth_store_court_application/process/application/no_pending_owners/transition_native_effect/native_original.rs
 world-fresh-home crates/worth-court-runtime-world/tests/worth_court_runtime_world/runtime_world/court/retention/artifact_source.rs
 world-fresh-home workspaces/worth-store/crates/worth-store-application/src/tests/world_section/readmission.rs
 world-fresh-home workspaces/worth-store/crates/worth-store-application/src/world_section/readmission.rs

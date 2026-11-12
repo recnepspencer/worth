@@ -196,6 +196,58 @@ Cleanup courts moved out of the tree are listed under their C item, with `restor
   publication. `world_original_state` separately protects acknowledged published
   state and no-effect released state across graceful reopen and further editing.
 
+- **C1: Original Native transition before World occurrence (D18 / D16).**
+  All six `process::application::no_pending_owners::transition_native_effect`
+  courts first abandon an associated Native effect without its World occurrence
+  or disposition. D18 refuses that reopen before service; their later assertions
+  remain C1 obligations, not passing Landing 2a evidence. Preserve all of:
+  original receipt/attempt/commit/custody identity; zero provider reexecution;
+  stale/foreign grants before use; release refusal and claim reclamation; ACK
+  retention through allocation refusal; actual head installation; one associated
+  effect; cleared recovery inventory; close refusal/resume; spent movement; and
+  observation without retaining the old Home lease.
+  The complete courts and their distinct retained claims are:
+  - `a_durable_native_transition_effect_continues_its_original_world_occurrence_without_execution`: original receipt/identity and zero-reexecution continuation across reopen.
+  - `affinity::original_native_continuation_refuses_stale_and_foreign_grants_before_use`: stale/foreign admission preserves custody for the current receiver.
+  - `allocation::an_acknowledged_original_retains_its_native_custody_through_allocation_refusal_and_retry`: actual ACK and receipt survive refusal/reclaim/retry.
+  - `interruption::consuming_original_world_movement_refusal_preserves_custody_for_actual_home_reopen`: consuming movement refusal retains original custody and refuses close until reopen.
+  - `interruption::unwind_at_the_actual_committed_world_head_keeps_the_original_in_reopen_required`: actual head and spent movement survive unwind without reexecution.
+  - `interruption::dropping_an_original_interruption_guard_disarms_only_its_receiver_control`: busy arming and disarm/rearm preserve original continuation and receiver isolation.
+  Restore the complete assertion-bearing files from these immutable references:
+  - `restore from 4ea38baa3bd783462c48aee1d753d2e4248d20ac:workspaces/worth-store/crates/worth-store-court-application/tests/worth_store_court_application/process/application/no_pending_owners/transition_native_effect.rs`.
+  - `restore from 4ea38baa3bd783462c48aee1d753d2e4248d20ac:workspaces/worth-store/crates/worth-store-court-application/tests/worth_store_court_application/process/application/no_pending_owners/transition_native_effect/native_original.rs`.
+  - `restore from 4ea38baa3bd783462c48aee1d753d2e4248d20ac:workspaces/worth-store/crates/worth-store-court-application/tests/worth_store_court_application/process/application/no_pending_owners/transition_native_effect/progression.rs`.
+  - `restore from 4ea38baa3bd783462c48aee1d753d2e4248d20ac:workspaces/worth-store/crates/worth-store-court-application/tests/worth_store_court_application/process/application/no_pending_owners/transition_native_effect/affinity.rs`.
+  - `restore from 4ea38baa3bd783462c48aee1d753d2e4248d20ac:workspaces/worth-store/crates/worth-store-court-application/tests/worth_store_court_application/process/application/no_pending_owners/transition_native_effect/allocation.rs`.
+  - `restore from 4ea38baa3bd783462c48aee1d753d2e4248d20ac:workspaces/worth-store/crates/worth-store-court-application/tests/worth_store_court_application/process/application/no_pending_owners/transition_native_effect/interruption.rs`.
+  Shared opener context (retained active for its other callers): `restore from 4ea38baa3bd783462c48aee1d753d2e4248d20ac:workspaces/worth-store/crates/worth-store-court-application/tests/worth_store_court_application/process/application/no_pending_owners/transition_open_original.rs`.
+  The sole-caller interruption controls and their attached plumbing move with
+  these courts. Restore the relevant control portions from these references,
+  preserving ordinary movement witnesses, recovery barriers, continuation
+  progression and independent owner publication-unwind tests:
+  - `restore from 4ea38baa3bd783462c48aee1d753d2e4248d20ac:crates/worth-runtime-world/src/publication/home_transition_effect/control.rs`.
+  - `restore from 4ea38baa3bd783462c48aee1d753d2e4248d20ac:crates/worth-runtime-world/src/lifecycle/owner/operation/home_transition_effect/control.rs`.
+  - `restore from 4ea38baa3bd783462c48aee1d753d2e4248d20ac:crates/worth-runtime-world/src/publication/home_transition_effect.rs`.
+  - `restore from 4ea38baa3bd783462c48aee1d753d2e4248d20ac:crates/worth-runtime-world/src/lifecycle/owner/operation/home_transition_effect.rs`.
+  - `restore from 4ea38baa3bd783462c48aee1d753d2e4248d20ac:crates/worth-runtime-world/src/publication/mod.rs`.
+  - `restore from 4ea38baa3bd783462c48aee1d753d2e4248d20ac:crates/worth-runtime-world/src/facade.rs`.
+  - `restore from 4ea38baa3bd783462c48aee1d753d2e4248d20ac:crates/worth-runtime-world/src/lifecycle/service_ports/publication/home_transition_effect.rs`.
+  - `restore from 4ea38baa3bd783462c48aee1d753d2e4248d20ac:crates/worth-runtime-world/src/recovery/recovered_publication.rs`.
+  - `restore from 4ea38baa3bd783462c48aee1d753d2e4248d20ac:crates/worth-runtime-world/src/lifecycle/close/recovered.rs`.
+  - `restore from 4ea38baa3bd783462c48aee1d753d2e4248d20ac:crates/worth-runtime-world/src/recovery/recovered_publication/home_transition/work.rs`.
+  - `restore from 4ea38baa3bd783462c48aee1d753d2e4248d20ac:crates/worth-runtime-world/src/lifecycle/owner/operation/home_transition_effect/preparation.rs`.
+  - `restore from 4ea38baa3bd783462c48aee1d753d2e4248d20ac:crates/worth-runtime-world/src/recovery/recovered_publication/home_transition/advance.rs`.
+  - `restore from 4ea38baa3bd783462c48aee1d753d2e4248d20ac:crates/worth-runtime-world/src/branch/reference_cell/durable_movement.rs`.
+  - `restore from 4ea38baa3bd783462c48aee1d753d2e4248d20ac:crates/worth-runtime-world/src/branch/reference_cell.rs`.
+  - `restore from 4ea38baa3bd783462c48aee1d753d2e4248d20ac:crates/worth-runtime-world/src/branch/reference_cell/publication.rs`.
+  - `restore from 4ea38baa3bd783462c48aee1d753d2e4248d20ac:crates/worth-runtime-world/src/recovery/product_unpublished.rs`.
+  Reintroducing the removed `query-world-commit-preparation` certification
+  caller for `transition_native_effect/native_original.rs` requires a fresh
+  boundary ruling; restoration references grant no caller-list expansion.
+  Restore complete courts only through public owner recovery after C1 supports
+  this Native-effect prefix and C5 lifts D18. No graceful close may replace
+  their abandoned prefix or weaken the original assertions.
+
 Courts held out under D13 are listed the same way, under the H item whose Home capability they need. The second master merge (`171d380829`) brought in Query cold journeys that reach `WorthQueryInterimCheckpointRestore` from outside the frozen caller list, directly or through a shared reopen fixture. D13's list only shrinks, and Directory Home refuses their producers until the phases below land, so each court is deleted from the tree and returns through the Directory Home open, never through the interim door. The assertions move intact.
 
 - **Phase 6 / H6** (also needs H5 producer admission). All `restore from 171d380829:`.

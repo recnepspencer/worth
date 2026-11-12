@@ -87,7 +87,6 @@ impl OriginalRecoveredClose {
             expected,
             binding,
             native,
-            control,
             claimed,
             release,
             committed_release,
@@ -134,7 +133,6 @@ impl OriginalRecoveredClose {
         // owner. This is a nonfinal local share, so no medium/provider Drop can
         // run here. Retired data must not retain this Serving capability.
         drop(binding);
-        drop(control);
         Self {
             _identity: identity,
             _attempt: attempt,

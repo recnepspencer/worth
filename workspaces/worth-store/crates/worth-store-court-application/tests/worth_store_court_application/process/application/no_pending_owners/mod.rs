@@ -13,7 +13,6 @@ mod transition_identity_space;
 mod transition_indexes;
 mod transition_intent;
 mod transition_interruption;
-mod transition_native_effect;
 mod transition_open_original;
 mod transition_open_refusal;
 mod transition_open_resume;

@@ -11,7 +11,6 @@ use worth_foundational::facade::{
     CompositeAttemptAssociation, HomeProgramTransitionPlanDescription,
     HomeProgramTransitionStepAssociation,
 };
-mod control;
 mod preparation;
 
 impl<D, I, E, Ctx, T> RuntimeWorldOwnerRoot<D, I, E, Ctx, T>

@@ -106,12 +106,6 @@ impl ProductBranchReferenceCell {
             _retention_transfer: successor_receipt,
         };
         let publication = publication.map(|record| record.stage(&movement));
-        if permit.is_some_and(WorldProductMovementPermit::refuse_head_movement) {
-            return Err(ProductBranchReferenceLoss {
-                denial: ProductBranchReferenceCellDenial::ControlledInterruption,
-                observed_head: current.snapshot.clone(),
-            });
-        }
         let seated = current
             .protection
             .as_ref()
@@ -137,9 +131,6 @@ impl ProductBranchReferenceCell {
         }
         drop(current);
         drop(acknowledged_subject);
-        if let Some(permit) = permit {
-            permit.after_committed();
-        }
         #[cfg(test)]
         publication_unwind::after_committed();
         drop(old_image);
