@@ -38,30 +38,18 @@ fn exercise(worker: bool, cold: bool) {
     let mut original = done
         .start_required_outputs(&host, &request, WorthQueryOutputDemandControls::default())
         .unwrap_or_else(|cause| panic!("{:?}", cause.denial()));
-    // D1717: Stable adoption has no effectful delivery to interrupt. Its
-    // original receipt remains descriptive recovery evidence, not new work.
-    let (settlement, delivery) = observe_maintenance_work(8, || {
-        for _ in 0..128 {
-            match original
-                .required_output_mut()
-                .advance(&host, &request)
-                .unwrap()
-            {
-                WorthQueryDiscoveredProgramOutputProgress::Progressed => {}
-                WorthQueryDiscoveredProgramOutputProgress::Settled(settlement) => {
-                    return settlement
-                }
-                WorthQueryDiscoveredProgramOutputProgress::Pending => {
-                    panic!("Stable reuse must not wait for effectful delivery")
-                }
-            }
-        }
-        panic!("the finite Stable root set must settle");
+    // D1724: advance actual runnable work, but retain the original source.
+    // Settled closes its custody; the receipt alone cannot reopen that source.
+    let (progress, delivery) = observe_maintenance_work(8, || {
+        original
+            .required_output_mut()
+            .advance(&host, &request)
+            .unwrap()
     });
-    assert_eq!(settlement.root_outputs().count(), 2);
-    assert!(settlement
-        .root_outputs()
-        .all(|(_, root)| root.application_commit_receipt().is_none()));
+    assert!(matches!(
+        progress,
+        WorthQueryDiscoveredProgramOutputProgress::Progressed
+    ));
     assert_eq!(
         delivery.published_rows.len() + delivery.omitted_publications,
         0
@@ -82,12 +70,19 @@ fn exercise(worker: bool, cold: bool) {
             .unwrap_or_else(|cause| panic!("{cause:?}"));
         let mut settled = false;
         for _ in 0..128 {
-            if let WorthQueryDiscoveredProgramOutputProgress::Settled(result) =
-                recovered.advance(&host, &request).unwrap()
-            {
-                assert_eq!(result.root_outputs().count(), 2);
-                settled = true;
-                break;
+            match recovered.advance(&host, &request).unwrap() {
+                WorthQueryDiscoveredProgramOutputProgress::Progressed => {}
+                WorthQueryDiscoveredProgramOutputProgress::Settled(result) => {
+                    assert_eq!(result.root_outputs().count(), 2);
+                    assert!(result
+                        .root_outputs()
+                        .all(|(_, root)| root.application_commit_receipt().is_none()));
+                    settled = true;
+                    break;
+                }
+                WorthQueryDiscoveredProgramOutputProgress::Pending => {
+                    panic!("Stable reuse must not wait for effectful delivery")
+                }
             }
         }
         (recovered, settled)
@@ -97,6 +92,27 @@ fn exercise(worker: bool, cold: bool) {
         0
     );
     assert!(settled);
+    assert_eq!(
+        host.producer_contacts_on_this_thread_for_test(),
+        contacts + 4
+    );
+    assert_eq!(courts::native_head(&host), head);
+    // Even with the original handle retained, completion closes the source.
+    // This lawful negative distinguishes a receipt from active source custody.
+    let closed = request
+        .advanced()
+        .recover_discovered_required_outputs::<program::Program, program::Tree>(
+            &host,
+            &receipt,
+            WorthQueryOutputDemandControls::default(),
+        );
+    let Err(WorthQueryRequiredOutputPreparationDenial::DemandExecution(denial)) = closed else {
+        panic!("a completed source cannot be reopened by its receipt alone")
+    };
+    assert!(matches!(
+        denial.kind(),
+        WorthQueryOutputDemandDenialKind::RetainedBasisUnavailable
+    ));
     assert_eq!(
         host.producer_contacts_on_this_thread_for_test(),
         contacts + 4
@@ -156,11 +172,11 @@ fn exercise(worker: bool, cold: bool) {
     assert_eq!(courts::native_head(&host), head);
 }
 #[test]
-fn settled_discovered_delivery_recovers_without_producers_or_commits() {
+fn runnable_retained_source_recovers_without_producers_or_commits() {
     exercise(false, false)
 }
 #[test]
-fn worker_only_settled_discovered_delivery_recovers_without_producers_or_commits() {
+fn worker_only_runnable_retained_source_recovers_without_producers_or_commits() {
     exercise(true, false)
 }
 #[test]
