@@ -4,7 +4,7 @@ use super::*;
 mod program;
 use worth_query_host::facade::primary_graph::WorthQueryInvariantExecutionDenialKind as Kind;
 use worth_relational::facade::{inspection::observe_maintenance_work, transactions::RecordRef};
-fn limits(worker: bool) -> WorthQueryInMemoryApplicationLimits {
+fn limits(worker: bool) -> WorthQueryApplicationLimits {
     if worker {
         world::worker_limits()
     } else {

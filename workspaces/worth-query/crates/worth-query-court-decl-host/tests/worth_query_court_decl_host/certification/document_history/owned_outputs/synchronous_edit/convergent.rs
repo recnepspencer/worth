@@ -30,7 +30,7 @@ fn settle<P>(
     }
     panic!("real convergent producer did not settle");
 }
-fn limits(worker: bool) -> WorthQueryInMemoryApplicationLimits {
+fn limits(worker: bool) -> WorthQueryApplicationLimits {
     if worker {
         world::worker_limits()
     } else {

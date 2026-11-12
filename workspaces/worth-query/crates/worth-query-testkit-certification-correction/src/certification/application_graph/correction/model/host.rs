@@ -143,9 +143,7 @@ pub fn install_with_outputs() -> OutputHost {
         roster().support(validated::<Program>()),
     )
 }
-pub(super) fn install_with_output_limits(
-    limits: WorthQueryInMemoryApplicationLimits,
-) -> OutputHost {
+pub(super) fn install_with_output_limits(limits: WorthQueryApplicationLimits) -> OutputHost {
     install_program_with_seed_and_limits(
         validated::<super::output_program::OutputProgram>(),
         roster().support(validated::<Program>()),
@@ -188,7 +186,7 @@ pub(super) fn install_program_with_seed_and_limits<P>(
     seed: impl FnOnce(
         &mut WorthQueryPrimaryGraphBootstrap<NumericSchema>,
     ) -> Result<(), WorthQueryPrimaryGraphInstallationDenial>,
-    limits: WorthQueryInMemoryApplicationLimits,
+    limits: WorthQueryApplicationLimits,
 ) -> WorthQueryProgramApplicationRuntime<NumericSchema, P>
 where
     P: ApplicationProgramDefinition<NumericSchema, Contributions = (NumericContribution,)>,

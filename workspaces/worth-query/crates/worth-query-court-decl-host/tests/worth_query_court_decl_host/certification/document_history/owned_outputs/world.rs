@@ -90,6 +90,11 @@ pub fn install_worker_only() -> Host {
     install_with(worker_limits())
 }
 pub(super) fn worker_limits() -> WorthQueryApplicationLimits {
+    worker_limits_with_clock(worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system())
+}
+pub(super) fn worker_limits_with_clock(
+    clock: worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock,
+) -> WorthQueryApplicationLimits {
     use worth_query_host::facade::runtime::*;
     let world =
         worth_query_testkit_document_retention::facade::document_world_resources::world_resources(
@@ -144,7 +149,7 @@ where
     install_configured::<P>(limits, initial_value, other_value, Configuration::default())
 }
 pub(super) fn install_configured<P>(
-    limits: WorthQueryInMemoryApplicationLimits,
+    limits: WorthQueryApplicationLimits,
     initial_value: u64,
     other_value: Option<u64>,
     configuration: Configuration,
@@ -277,7 +282,7 @@ where
     } else {
         host_limits(worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system())
     };
-    in_memory_program_from_checkpoint(
+    WorthQueryInterimCheckpointRestore::program(
         program,
         schema,
         (Configuration {
