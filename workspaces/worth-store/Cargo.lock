@@ -2388,6 +2388,7 @@ dependencies = [
  "fs4",
  "getrandom",
  "maybe-owned",
+ "rustix 1.1.5",
  "same-file",
  "sha2",
  "stats_alloc",
