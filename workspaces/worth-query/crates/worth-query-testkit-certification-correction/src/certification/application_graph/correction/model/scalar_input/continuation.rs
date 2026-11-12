@@ -67,7 +67,7 @@ pub fn retry_before_and_after_successor(worker: bool) {
         successor.idempotency_binding().key_identity(),
         source.idempotency_binding().key_identity()
     );
-    equivalent_at_current(&application, &successor);
+    readmitted_at_current(&application, &successor);
     // The settled handle is already dropped. Another delivery after publication
     // must neither execute a producer nor create another Native/World commit.
     let (rejoined, contacts, commits) = settle(&application);
@@ -75,7 +75,7 @@ pub fn retry_before_and_after_successor(worker: bool) {
     if let Some(rejoined) = rejoined {
         assert_eq!(rejoined.commit_reference(), successor.commit_reference());
     }
-    equivalent_at_current(&application, &successor);
+    readmitted_at_current(&application, &successor);
     assert_values(&application);
 }
 
@@ -113,7 +113,7 @@ fn settle(
     )
 }
 
-fn equivalent_at_current(
+fn readmitted_at_current(
     application: &host::OutputHost,
     successor: &WorthQueryApplicationCommitReceipt,
 ) {
@@ -140,12 +140,13 @@ fn equivalent_at_current(
                         &selected.product().publication_binding_for_test(),
                     )
                     .unwrap();
-                let WorthQueryProviderIdempotencyResolution::Equivalent(committed) = result else {
-                    panic!("retry resolves the real published successor Equivalent")
+                let WorthQueryProviderIdempotencyResolution::Readmitted(committed) = result else {
+                    panic!("retry readmits the real published successor")
                 };
+                assert_eq!(committed.commit_reference(), successor.commit_reference());
                 assert_eq!(
-                    committed.commit_reference_for_test(),
-                    successor.commit_reference()
+                    committed.idempotency_key_identity(),
+                    successor.idempotency_binding().key_identity()
                 );
             })
             .unwrap()

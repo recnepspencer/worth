@@ -353,16 +353,6 @@ pub fn read_on<P: ApplicationProgramDefinition<NumericSchema>>(
         .rows()
         .to_vec()
 }
-pub(super) fn installation_limits() -> WorthQueryApplicationLimits {
-    WorthQueryApplicationLimits::new(
-        world_resources::world_resources(256, 4 * 1024 * 1024, 256, worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system()),
-        runtime::WorthQueryApplicationQueryResourceProfile::new(
-            std::num::NonZeroUsize::new(128).unwrap(),
-        ),
-        SignalConditionalEvaluationBudget::development(),
-    )
-}
-
 /// Bootstrap issues the ordinary retained projection owner used by decode courts.
 pub fn install_with_projection() -> (
     Host,
