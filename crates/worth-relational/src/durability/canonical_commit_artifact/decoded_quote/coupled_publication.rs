@@ -18,6 +18,12 @@ pub(super) fn quote(
                             match variant {
                                 "Retirement" => super::cascades::authored(event, request)?,
                                 "Restoration" => super::cascades::restoration(event, request)?,
+                                "Edit" => OwnerAllocation::default(),
+                                "Stages" => vector::<crate::identity::data::EntityId>(
+                                    event,
+                                    request,
+                                    |_| Ok(OwnerAllocation::default()),
+                                )?,
                                 _ => return Err(Refusal::NonCanonicalPayload),
                             },
                         )
