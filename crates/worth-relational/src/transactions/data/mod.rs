@@ -47,7 +47,6 @@ pub use intents::{
 pub use mutation_planning::CommitTopology;
 pub(crate) use outcomes::merge_commit_mutation_plan_token;
 pub(crate) use outcomes::CommitCreatedEntityBindings;
-pub(crate) use outcomes::CommitCreatedRelationBindings;
 #[cfg(test)]
 pub(crate) use outcomes::EntityUpdateMissingState;
 pub use outcomes::{
@@ -65,6 +64,7 @@ pub use outcomes::{
     RelationEndpointUpdateMissingState, RollbackEffect, RollbackOutcome, RollbackSummary,
     SelectedBranchRootDenialReason, TransactionCommitError, UndoRecord,
 };
+pub(crate) use outcomes::{CommitCreatedRelationBindings, CoupledOriginalRelationCreates};
 pub(crate) use primitives::{
     lineage_safe_bulk_mutation_batch, naming_stable_bulk_mutation_batch,
     provenance_complete_bulk_mutation_batch,

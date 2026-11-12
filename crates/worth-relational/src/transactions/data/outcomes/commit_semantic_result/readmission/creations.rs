@@ -17,50 +17,75 @@ pub(super) fn validate_original_keys(
     // Canonical ordering is established above. This ordinal roster preserves
     // the prior LAST value for duplicate symbols without cloning text or nodes.
     let symbols = SymbolNames::new(&envelope.symbol_texts.entries);
-    let entity = |partition, kind, key: &ClientKey| {
+    let entity = |partition, kind, key: &ClientKey, (intent_ordinal, entity_ordinal)| {
         let text = symbols.text(key)?;
         result
             .created_entities
             .binary_search_by(|created| compare_entity_key(&created.key, partition, kind, text))
             .map(|_| ())
-            .map_err(|_| Refusal::ConflictingCreateCorrespondence)
+            .map_err(|_| Refusal::OriginalEntityKeyMissing {
+                intent_ordinal,
+                entity_ordinal,
+            })
     };
-    let require_relation =
-        |partition, kind, key: &ClientKey, source: &EntityReference, target: &EntityReference| {
-            let text = symbols.text(key)?;
-            let source_text = endpoint_text(&symbols, source)?;
-            let target_text = endpoint_text(&symbols, target)?;
-            result
-                .created_relations
-                .binary_search_by(|created| {
-                    compare_relation_key(
-                        &created.key,
-                        partition,
-                        kind,
-                        text,
-                        source,
-                        source_text,
-                        target,
-                        target_text,
-                    )
-                })
-                .map(|_| ())
-                .map_err(|_| Refusal::ConflictingCreateCorrespondence)
-        };
-    for intent in &envelope.merged_plan.merged_intents {
+    let require_relation = |partition,
+                            kind,
+                            key: &ClientKey,
+                            source: &EntityReference,
+                            target: &EntityReference,
+                            (intent_ordinal, relation_ordinal)| {
+        let text = symbols.text(key)?;
+        let source_text = endpoint_text(&symbols, source)?;
+        let target_text = endpoint_text(&symbols, target)?;
+        result
+            .created_relations
+            .binary_search_by(|created| {
+                compare_relation_key(
+                    &created.key,
+                    partition,
+                    kind,
+                    text,
+                    source,
+                    source_text,
+                    target,
+                    target_text,
+                )
+            })
+            .map(|_| ())
+            .map_err(|_| Refusal::OriginalRelationKeyMissing {
+                intent_ordinal,
+                relation_ordinal,
+            })
+    };
+    for (intent_ordinal, intent) in envelope.merged_plan.merged_intents.iter().enumerate() {
         let MutationIntent::Create(create) = intent else {
             continue;
         };
         match create {
             CreateIntent::Entity(value) => {
-                entity(value.partition_id, value.kind_id, &value.client_key)?;
+                entity(
+                    value.partition_id,
+                    value.kind_id,
+                    &value.client_key,
+                    (intent_ordinal, 0),
+                )?;
             }
             CreateIntent::EntityAspects(value) => {
-                entity(value.partition_id, value.kind_id, &value.client_key)?;
+                entity(
+                    value.partition_id,
+                    value.kind_id,
+                    &value.client_key,
+                    (intent_ordinal, 0),
+                )?;
             }
             CreateIntent::BulkEntities(value) => {
-                for key in &value.client_keys {
-                    entity(value.partition_id, value.kind_id, key)?;
+                for (entity_ordinal, key) in value.client_keys.iter().enumerate() {
+                    entity(
+                        value.partition_id,
+                        value.kind_id,
+                        key,
+                        (intent_ordinal, entity_ordinal),
+                    )?;
                 }
             }
             CreateIntent::Relation(value) => require_relation(
@@ -69,6 +94,7 @@ pub(super) fn validate_original_keys(
                 &value.client_key,
                 &value.source,
                 &value.target,
+                (intent_ordinal, 0),
             )?,
             CreateIntent::RelationAspects(value) => require_relation(
                 value.partition_id,
@@ -76,13 +102,23 @@ pub(super) fn validate_original_keys(
                 &value.client_key,
                 &value.source,
                 &value.target,
+                (intent_ordinal, 0),
             )?,
             CreateIntent::BulkRelations(value) => {
                 if value.client_keys.len() != value.endpoints.len() {
-                    return Err(Refusal::ConflictingCreateCorrespondence);
+                    return Err(Refusal::BulkRelationArityMismatch { intent_ordinal });
                 }
-                for (key, (source, target)) in value.client_keys.iter().zip(&value.endpoints) {
-                    require_relation(value.partition_id, value.kind_id, key, source, target)?;
+                for (relation_ordinal, (key, (source, target))) in
+                    value.client_keys.iter().zip(&value.endpoints).enumerate()
+                {
+                    require_relation(
+                        value.partition_id,
+                        value.kind_id,
+                        key,
+                        source,
+                        target,
+                        (intent_ordinal, relation_ordinal),
+                    )?;
                 }
             }
         }
