@@ -1,5 +1,20 @@
 # AGENTS.md
 
+## Review and verification policy
+
+Before reviewing, read [REVIEW.md](REVIEW.md). Apply the repository skills
+[qa-loop](skills/qa-loop/SKILL.md), [qa-tests](skills/qa-tests/SKILL.md) and
+[code-quality-qa](skills/code-quality-qa/SKILL.md) to each final platform slice.
+Use [implementation-batch](skills/implementation-batch/SKILL.md) for new slices.
+CAD kernel work uses cad-qa-loop and cad-qa-tests instead of the generic pair.
+Review briefs must name the files; a skill label alone is not application.
+
+Compile time is sacred. Routine edits, reviews and slice landings use cheap
+source checks and focused affected evidence. Expensive gates belong at
+milestone completion, release verification or nightly jobs. Do not automatically
+expand to all reverse dependencies or workspace CI. Reuse valid evidence and
+report deferred checks; never describe a focused pass as a full gate pass.
+
 ## Consumers And Contributors
 
 If you are consuming WORTH (building an application), read
@@ -133,9 +148,11 @@ cargo run --manifest-path tools/boundary-check/Cargo.toml -- --root .
 cargo run --manifest-path tools/agent-context/Cargo.toml -- check
 ```
 
-Also run the focused owner tests, affected integration or UI proofs, formatting,
-line-cap checks, and broader lanes required by the governing specification and
-the risk of the change.
+Run cheap source checks, focused owner tests and affected integration or UI
+evidence. Formatting and line-cap checks remain source checks. The review
+policy above governs scheduling: broad expensive lanes are milestone, release
+or nightly work. A concrete defect may require an expensive focused reproducer;
+name the uncertainty and why cheaper evidence is insufficient.
 
 ## Generated Files
 

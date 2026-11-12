@@ -5,6 +5,11 @@ description: Review and correct WORTH code composition and domain topology withi
 
 # Code Quality QA
 
+This skill is shared by public platform and CAD kernel work. For kernel
+behavior and test QA, pair it with cad-qa-loop and cad-qa-tests; for public
+platform work, pair it with qa-loop and qa-tests. Read the task repository's
+REVIEW.md and current domain laws; do not infer CAD ownership from platform code.
+
 Review whether the change's physical structure preserves its meaning. Judge
 against `composition_laws.md`, `domain_structure_laws.md`, the governing
 specification, and the Composition and Architecture sections of
@@ -80,6 +85,9 @@ report that limitation without treating the primary pass as independent.
   status without archaeology.
 - **Boundary honesty:** Facades aggregate rather than implement, and dependency
   direction preserves authority.
+- **Compile locality:** Dependencies, generic instantiations, test worlds,
+  harnesses and crate placement preserve economical normal edits. Inspect
+  compile and link closure rather than considering only test runtime.
 - **Deletion and extension:** Adding or removing a responsibility has an obvious
   location and does not require unrelated edits.
 - **Size discipline:** Task-scoped files satisfy repository limits and are not
@@ -98,3 +106,22 @@ Review is complete when the task-scoped structure is coherent, required limits
 and checks pass, the assigned reviewer has inspected the final diff, and no
 known in-scope structural defect remains. Report unrelated repository debt as a
 caveat rather than silently absorbing or fixing it.
+
+## Compile time is sacred
+
+During ordinary development, slice review and routine landing, use cheap source
+checks and the smallest meaningful compilation and test scope. Include compile,
+link and fixture construction cost when selecting evidence; test runtime alone
+does not describe its cost.
+
+Expensive gates belong at milestone completion, release verification or nightly
+jobs. They are not prerequisites for every edit, review, commit or slice landing.
+Do not expand automatically to all reverse dependencies or workspace CI.
+
+A concrete suspected defect may require an expensive focused reproducer. Name
+the uncertainty and why cheaper evidence cannot resolve it; this does not
+authorize a full gate. Do not invent a scheduling job by invoking this policy.
+
+Reuse valid evidence and rerun checks when a correction affects what they
+establish. Three QA lenses do not imply three builds, test runs or reviewers.
+Report deferred verification honestly; a focused pass is not a full gate pass.

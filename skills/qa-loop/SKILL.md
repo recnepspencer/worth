@@ -5,6 +5,10 @@ description: Review and correct a WORTH implementation against its intent, speci
 
 # QA Loop
 
+For CAD kernel implementations, use cad-qa-loop and cad-qa-tests with the shared
+code-quality-qa instead of this generic QA pair. Public platform work uses this
+skill with qa-tests and code-quality-qa.
+
 Read the repository instructions, governing specification, and `docs/coding-guidelines/arch_laws.md`, `docs/coding-guidelines/perf_laws.md`, and `docs/coding-guidelines/MENTALITY.md` before reviewing. Inspect the implementation, affected owners, consumers, and tests. Scope follows causal necessity: include boundaries and prerequisites needed to make the requested behavior correct, preserve unrelated work, and report unrelated debt separately.
 
 Check consequential implementation claims using plausible inputs, boundary conditions, and execution sequences. Build a compact risk matrix connecting claims and invariants to failure cases and distinguishing evidence. Prioritize authority, correctness, recovery, and performance risks, including interactions between them. Reuse adequate evidence and investigate concrete uncertainty; avoid exhaustive combinations, speculative concerns, and repeated review without new evidence.
@@ -46,4 +50,33 @@ to product behavior; do not turn this instruction into a repository-wide purge.
 
 Each finding must state the defect and consequence, concrete evidence, root cause, proposed correction, and required verification. Pin it to an exact law or numbered principle in `arch_laws.md`, `perf_laws.md`, or `MENTALITY.md`, explaining the violation. Use **N/A** when none applies and name the violated specification, contract, or expected behavior; these findings carry equal weight. Close findings by restoring the underlying invariant at its owning boundary. Use typed progression, carried authority, or required infrastructure when the governing laws call for them. A guard, special case, or green reproducer does not close a surviving root cause. Complete causally necessary foundations; difficulty or a larger diff alone does not justify deferral.
 
-Use the reviewer arrangement selected by the user or repository. Run focused verification during correction and required gates before completion. Reviewers must inspect corrections and affected evidence before clearance. Escalate genuine specification contradictions, undiscoverable product choices, and actions beyond granted authority with evidence and options; resolve discoverable uncertainty through investigation. Broaden review only when new evidence or a correction invalidates an earlier conclusion. Stop when required verification and review are complete and no supported, material in-scope finding remains. Report findings, corrections, evidence, and limitations; do not add rounds merely to discover more issues.
+Use the reviewer arrangement selected by the user or repository. Run focused
+verification during correction and inspect the final diff and affected evidence
+before clearance. Required cheap landing checks remain required; expensive
+gates are milestone, release or nightly work under the policy below. Escalate
+genuine specification contradictions, undiscoverable product choices and actions
+beyond granted authority with evidence and options. Investigate discoverable
+uncertainty. Broaden review only when new evidence or a correction invalidates
+an earlier conclusion. Stop when focused verification and review are complete
+and no supported material in-scope finding remains. Report findings, corrections,
+actual evidence, deferred checks and limitations; do not add rounds merely to
+discover more issues.
+
+## Compile time is sacred
+
+During ordinary development, slice review and routine landing, use cheap source
+checks and the smallest meaningful compilation and test scope. Include compile,
+link and fixture construction cost when selecting evidence; test runtime alone
+does not describe its cost.
+
+Expensive gates belong at milestone completion, release verification or nightly
+jobs. They are not prerequisites for every edit, review, commit or slice landing.
+Do not expand automatically to all reverse dependencies or workspace CI.
+
+A concrete suspected defect may require an expensive focused reproducer. Name
+the uncertainty and why cheaper evidence cannot resolve it; this does not
+authorize a full gate. Do not invent a scheduling job by invoking this policy.
+
+Reuse valid evidence and rerun checks when a correction affects what they
+establish. Three QA lenses do not imply three builds, test runs or reviewers.
+Report deferred verification honestly; a focused pass is not a full gate pass.

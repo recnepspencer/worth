@@ -5,6 +5,10 @@ description: Review and correct WORTH tests and test harnesses for honest, propo
 
 # QA Tests
 
+CAD kernel tests use cad-qa-tests with cad-qa-loop and shared code-quality-qa,
+instead of also applying this generic QA pair. Public platform tests use this
+skill to establish platform guarantees at their public owner.
+
 Review whether the tests are credible evidence for the behavior they claim to
 protect. Test adequacy is a code-review judgment; tests do not need a second
 evidence system that certifies their adequacy.
@@ -42,14 +46,16 @@ avoid broad exhaustion campaigns or repeated full builds after each edit.
 
 - **Focused:** the reproducer, affected owner tests, and the smallest honest
   boundary smoke during development.
-- **CI:** the accepted requirement tests and mandatory repository gates for the
-  final change.
-- **Scheduled:** expensive mutation, fuzz, soak, compatibility, maximum-scale,
-  destructive-recovery, and environment-specific suites.
+- **Routine landing:** cheap source checks and focused affected requirement
+  tests; no automatic expansion to all reverse dependencies or workspace CI.
+- **Milestone, release or nightly:** expensive gates, broad integration,
+  mutation, fuzz, soak, compatibility, maximum-scale, destructive-recovery
+  and environment-specific suites.
 
-Run an expensive lane during ordinary development only when it is the actual
-reproducer or materially affected evidence. Run cheap discovery, configuration,
-fixture, exact-name, and harness checks before expensive worlds.
+An expensive focused reproducer during ordinary development needs a concrete
+suspected defect and an explanation of why cheaper evidence is insufficient.
+This does not authorize an expensive gate. Run cheap discovery, configuration,
+fixture, exact-name and harness checks before expensive worlds.
 
 ## Independent review
 
@@ -107,3 +113,22 @@ appropriately scoped, reasonably economical, pass on the final change, and the
 assigned reviewer finds them adequate. Report material findings, corrections,
 tests run, expensive or environment-dependent checks not run, and accepted
 residual risk.
+
+## Compile time is sacred
+
+During ordinary development, slice review and routine landing, use cheap source
+checks and the smallest meaningful compilation and test scope. Include compile,
+link and fixture construction cost when selecting evidence; test runtime alone
+does not describe its cost.
+
+Expensive gates belong at milestone completion, release verification or nightly
+jobs. They are not prerequisites for every edit, review, commit or slice landing.
+Do not expand automatically to all reverse dependencies or workspace CI.
+
+A concrete suspected defect may require an expensive focused reproducer. Name
+the uncertainty and why cheaper evidence cannot resolve it; this does not
+authorize a full gate. Do not invent a scheduling job by invoking this policy.
+
+Reuse valid evidence and rerun checks when a correction affects what they
+establish. Three QA lenses do not imply three builds, test runs or reviewers.
+Report deferred verification honestly; a focused pass is not a full gate pass.
