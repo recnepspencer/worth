@@ -299,7 +299,7 @@ pub(in crate::http::server) fn install<A: BankRailCompletionRuntime>(
 ) -> io::Result<Arc<dyn BankRailCompletionRoute>> {
     let estate = application
         .runtime()
-        .install_estate_rail_completion_verifier(Arc::new(configuration.estate_verifier()))
+        .install_estate_rail_completion_verifier(configuration.estate_verifier())
         .map_err(|denial| io::Error::other(format!("rail completion installation: {denial:?}")))?;
     let payment = application
         .runtime()

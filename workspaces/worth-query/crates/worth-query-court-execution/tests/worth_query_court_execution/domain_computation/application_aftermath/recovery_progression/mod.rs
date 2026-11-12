@@ -6,3 +6,5 @@ pub mod binding_axis;
 pub mod mechanism_tests;
 #[path = "resolve_tests/mod.rs"]
 pub mod resolve_tests;
+
+mod local_transition;

@@ -245,7 +245,7 @@ where
             }
         };
         let handle = application
-            .mint_recovery_handle(&receipt)
+            .mint_recovery_handle(phase, &receipt)
             .map_err(WorthQueryWorkflowOperationRecoveryPreparationDenial::Recovery)?;
         Ok(WorthQueryPreparedWorkflowOperationRecovery {
             application,

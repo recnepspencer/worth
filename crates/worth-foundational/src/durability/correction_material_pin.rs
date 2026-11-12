@@ -33,6 +33,9 @@ impl DurableIdentity for CorrectionMaterialPinIdentity {}
 /// The same mandatory use is handed from a disclosed command to its actual open.
 #[derive(Clone, Copy, Debug, Eq, PartialEq, serde::Serialize, serde::Deserialize)]
 pub enum CorrectionMaterialPinOwner {
+    Recovery {
+        original: DurableCompositePublicationAttemptIdentity,
+    },
     PreparedCommand {
         key: [u8; 32],
     },

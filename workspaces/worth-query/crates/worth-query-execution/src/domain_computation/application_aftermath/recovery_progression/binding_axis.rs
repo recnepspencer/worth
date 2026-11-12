@@ -67,9 +67,7 @@ impl WorthQueryRecoveryBindingCurrentTruth {
             branch: binding.branch().clone(),
             application_binding_generation: binding.application_binding_generation(),
             installed_operation: *binding.installed_operation(),
-            governed_input_identity: binding
-                .retained_governed_input()
-                .and_then(|input| input.governed_identity()),
+            governed_input_identity: binding.governed_input_identity(),
             principal_scope: binding.principal_scope().clone(),
             installed_aftermath: *binding.installed_aftermath_identity().digest().bytes(),
         }

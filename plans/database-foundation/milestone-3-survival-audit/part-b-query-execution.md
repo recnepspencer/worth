@@ -176,6 +176,23 @@ Two important exclusions/refinements:
 Approval authorization snapshots require the cross-owner provenance check in
 §5; their opaque identity fields are not asserted runtime-neutral here.
 
+### Phase 8 identity cutover
+
+The historical inventory above records the audited baseline. Home dispatches
+now use causal grammar `worth-query-external-effect-causal-event-v5`:
+
+| Meaning | Directory Home identity | MemoryOnly identity |
+|---|---|---|
+| Provider/emission causal root | Home identity, World owner slot, original branch/incarnation/generation, World commit/attempt and Native receipt/row | Query runtime and live World owner plus the same original coordinates |
+| Physical attempt | Actual `query.dispatch` Home and recorded attempt position, borrowed from its contact guard | Runtime-issued local attempt ordinal under the local provider root |
+| Runtime source commitment (`v2`) | Durable Product Home/World slot/incarnation and canonical source footprint | Query runtime and live Product owner/incarnation, or unqualified Relational source |
+
+Outbox correlation remains the existing operation/key/outcome/branch-derived
+meaning. Journal attempt/observation frames are unchanged. Live Query authority,
+World admission fences, source interning and epoch issuance retain process
+scope; a portable digest never reconstructs those capabilities. Inbound and
+recovery obligation cutover remains separate from these descriptive names.
+
 ## 3. Defects
 
 | ID | Evidence | Process-death consequence | Target phase |

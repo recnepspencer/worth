@@ -37,10 +37,12 @@ impl LiveMaterialPins {
     }
     pub(super) fn validate(&self, record: &MaterialRecord) -> Result<(), Denial> {
         match record {
-            MaterialRecord::Pin { identity, .. } if self.0.contains_key(identity) => {
+            MaterialRecord::Pin { identity, .. } | MaterialRecord::RecoveryPin { identity, .. }
+                if self.0.contains_key(identity) =>
+            {
                 Err(Denial::PinAlreadyClaimed)
             }
-            MaterialRecord::Pin { .. } => Ok(()),
+            MaterialRecord::Pin { .. } | MaterialRecord::RecoveryPin { .. } => Ok(()),
             MaterialRecord::Transfer { identity, .. }
             | MaterialRecord::Release { identity, .. }
             | MaterialRecord::DischargePreparation { identity, .. } => {
@@ -88,7 +90,9 @@ impl LiveMaterialPins {
 impl MaterialPinChange {
     pub(super) fn from_record(record: &MaterialRecord, catalog: &MaterialCatalog) -> Self {
         match record {
-            MaterialRecord::Pin { identity, .. } => Self::Acquire(*identity),
+            MaterialRecord::Pin { identity, .. } | MaterialRecord::RecoveryPin { identity, .. } => {
+                Self::Acquire(*identity)
+            }
             MaterialRecord::Transfer {
                 identity, after, ..
             } => Self::Transfer(*identity, *after),

@@ -218,6 +218,11 @@ pub const fn from_attempt_admission(
         Admission::MissingInboundOperationSlot => {
             Preparation::AttemptAdmissionDenied(Attempt::InboundOperationSlotMissing)
         }
+        Admission::DurableAttemptRecordRequired => {
+            Preparation::AttemptAdmissionDenied(Attempt::DurableAttemptRecordDenied(
+                super::WorthQueryDurableDispatchRecordDenial::JournalRefused,
+            ))
+        }
         Admission::AttemptIdentityExhausted => {
             Preparation::AttemptAdmissionDenied(Attempt::AttemptIdentityExhausted)
         }

@@ -23,6 +23,7 @@ pub trait QueryDispatchMedium: std::fmt::Debug + Send + Sync {
         &self,
         request: &ExecutionRequest<'_, '_>,
         position: u64,
+        maximum_bytes: u64,
     ) -> Result<Option<Vec<u8>>, QueryDispatchJournalDenial>;
     fn advance_publication(
         &self,

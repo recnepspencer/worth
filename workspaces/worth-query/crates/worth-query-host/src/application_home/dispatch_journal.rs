@@ -4,7 +4,7 @@ use worth_execution::ExecutionRequest;
 use worth_foundational::facade::{HomeIdentity, HomeIncarnation};
 use worth_query_execution::facade::application_home_integration::{
     QueryDispatchFrame, QueryDispatchJournalDenial, QueryDispatchMedium,
-    QueryDispatchPublicationOutcome, QUERY_DISPATCH_FRAME_MAX_BYTES,
+    QueryDispatchPublicationOutcome,
 };
 use worth_store_application::{
     ApplicationHomeDispatchJournalDenial, ApplicationHomeDispatchJournalOperation,
@@ -38,9 +38,10 @@ impl QueryDispatchMedium for HomeQueryDispatchMedium {
         &self,
         request: &ExecutionRequest<'_, '_>,
         position: u64,
+        maximum_bytes: u64,
     ) -> Result<Option<Vec<u8>>, QueryDispatchJournalDenial> {
         self.operation
-            .read_frame(request, position, QUERY_DISPATCH_FRAME_MAX_BYTES)
+            .read_frame(request, position, maximum_bytes)
             .map_err(query_denial)
     }
     fn advance_publication(

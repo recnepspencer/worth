@@ -42,10 +42,7 @@ fn faulted_dispatch_then_safe_retry_escapes_exactly_once() {
             .commit_recovery_claim_status(receipt),
         Ok(BankRecoveryClaimStatus::Completed)
     );
-    assert_eq!(
-        admission.durability(),
-        BankRecoveryDurability::StoreCapabilityRequired
-    );
+    assert_eq!(admission.durability(), BankRecoveryDurability::ProcessLocal);
     assert_eq!(
         world.transport.ledger_status(&correlation),
         LedgerStatus::Completed

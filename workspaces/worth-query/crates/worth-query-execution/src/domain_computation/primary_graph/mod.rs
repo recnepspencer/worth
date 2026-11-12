@@ -1,4 +1,5 @@
 mod content;
+mod home_original_progression;
 pub(in crate::domain_computation) use content::retention_checkpoint;
 pub use content::{
     AdmittedContent, ContentReadDenial, ContentWriteDenial, RelationalContentDenial,
@@ -200,6 +201,7 @@ pub(crate) use application_query::WorthQueryApplicationQueryControls;
 pub(in crate::domain_computation) use crate::domain_computation::application_aftermath::external_effect::WorthQueryAdmittedExternalDispatchAttempt;
 pub(in crate::domain_computation) use application_runtime::WorthQueryExternalDispatchAttemptOrdinal;
 pub use application_runtime::WorthQueryPerformedInboundCompletion;
+pub use application_runtime::WorthQueryRecordedCompletionDenial;
 pub use application_runtime::WorthQueryUnpublishedInboundCompletion;
 pub(in crate::domain_computation::primary_graph) use application_runtime::InstalledTransportCompletion;
 pub(in crate::domain_computation::primary_graph) use application_runtime::InstalledTransportResumeOutcome;

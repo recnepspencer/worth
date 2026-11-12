@@ -25,7 +25,8 @@ where
         Ok(redispatch) => redispatch,
         Err(cause) => return Err(refused_handle(cause.into(), handle)),
     };
-    safe_retry_recovery_handle(handle, &authority, redispatch).map_err(|cause| cause.into_parts())
+    safe_retry_recovery_handle(phase, handle, &authority, redispatch)
+        .map_err(|cause| cause.into_parts())
 }
 
 fn refused_handle(

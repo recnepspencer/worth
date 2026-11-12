@@ -4,7 +4,7 @@ use worth_relational::facade::durability::{
     RelationalAssociatedEffectRefusal as Native, RelationalRecoveryStop,
 };
 
-pub(super) fn native(cause: Native) -> Denial {
+pub(in crate::domain_computation::primary_graph::provider) fn native(cause: Native) -> Denial {
     match cause {
         Native::Recovery(RelationalRecoveryStop::Content(cause)) => content(cause),
         Native::Recovery(RelationalRecoveryStop::Request(cause)) => idempotency_read_stop(cause),
@@ -47,7 +47,7 @@ pub(super) fn component(
     }
 }
 
-pub(super) fn world(
+pub(in crate::domain_computation::primary_graph::provider) fn world(
     cause: worth_runtime_world::facade::RuntimeWorldServiceDenial<
         worth_runtime_world::facade::WorldReadmittedPublicationDenial,
     >,

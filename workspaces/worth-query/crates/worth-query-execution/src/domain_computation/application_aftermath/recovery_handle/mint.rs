@@ -7,8 +7,7 @@ use worth_query_declaration::facade::application_capability::ApplicationCapabili
 use worth_query_installation::facade::ApplicationSchema;
 
 use crate::domain_computation::managed_run::{
-    WorthQueryRecoveryHandleRegistry, WorthQueryRecoveryMintClaim,
-    WorthQueryRecoveryResourceTerminal,
+    RecoveryClaimDisposition, WorthQueryRecoveryHandleRegistry, WorthQueryRecoveryMintClaim,
 };
 use crate::domain_computation::primary_graph::{
     WorthQueryApplicationCommitReceipt, WorthQueryPrimaryGraphApplicationRuntime,
@@ -48,6 +47,7 @@ where
     /// runtimes would hold a live handle for the same commit (R8.28).
     pub fn mint_recovery_handle(
         &self,
+        phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
         receipt: &WorthQueryApplicationCommitReceipt,
     ) -> Result<WorthQueryRecoveryHandle, WorthQueryRecoveryHandleDenial> {
         ensure_receipt_belongs_to_runtime(
@@ -55,13 +55,25 @@ where
             receipt.runtime_authority(),
         )?;
         self.admit_recovery_custody()?;
-        mint_recovery_handle_in_registry(receipt, Arc::clone(&self.runtime.recovery_handles))
+        let registry = Arc::clone(&self.runtime.recovery_handles);
+        let mut binding = WorthQueryRecoveryHandleBinding::from_receipt(
+            receipt,
+            expiry_deadline(registry.clock())?,
+        )?;
+        let slot = self.admit_recovery_binding(phase, &mut binding, claim_for(receipt))?;
+        Ok(mint_from_slot(
+            binding,
+            slot,
+            receipt.canonical_work(),
+            registry,
+        ))
     }
 
     /// Mint only from the original operation retained through actual failed
     /// cleanup. Recovered data and descriptive cleanup copies open no door.
     pub fn mint_cleanup_recovery_handle(
         &self,
+        phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
         cleanup: &crate::domain_computation::primary_graph::WorthQueryApplicationManagedCleanupReceipt,
     ) -> Result<WorthQueryRecoveryHandle, WorthQueryRecoveryHandleDenial> {
         use crate::domain_computation::primary_graph::WorthQueryCleanupDispatchPosture as Posture;
@@ -88,7 +100,7 @@ where
         )?;
         self.admit_recovery_custody()?;
         let registry = Arc::clone(&self.runtime.recovery_handles);
-        let binding = WorthQueryRecoveryHandleBinding::from_pending_original(
+        let mut binding = WorthQueryRecoveryHandleBinding::from_pending_original(
             original,
             cleanup.dispatch.as_ref(),
             expiry_deadline(registry.clock())?,
@@ -97,10 +109,18 @@ where
             original.original_runtime_instance_id(),
             original.original_publication().composite_commit().clone(),
         );
-        mint_bound_recovery_handle(binding, claim, original.canonical_work(), registry)
+        let slot = self.admit_recovery_binding(phase, &mut binding, claim)?;
+        Ok(mint_from_slot(
+            binding,
+            slot,
+            original.canonical_work(),
+            registry,
+        ))
     }
 
-    fn admit_recovery_custody(&self) -> Result<(), WorthQueryRecoveryHandleDenial> {
+    pub(in crate::domain_computation) fn admit_recovery_custody(
+        &self,
+    ) -> Result<(), WorthQueryRecoveryHandleDenial> {
         self.runtime.product_runtime.admit_directory_capability(
             crate::domain_computation::primary_graph::WorthQueryOperationDurableCapability::RecoveryCustody,
         ).map_err(|cause| WorthQueryRecoveryHandleDenial::new(
@@ -120,7 +140,8 @@ where
         let (claimed, terminal) = self
             .runtime
             .recovery_handles
-            .claim_state(&claim_for(receipt));
+            .claim_state(&claim_for(receipt))
+            .map_err(WorthQueryRecoveryHandleDenial::journal)?;
         Ok(status_from_claim_state(claimed, terminal))
     }
 
@@ -133,48 +154,19 @@ where
 /// Default handle lifetime when the host does not supply a tighter bound.
 pub const DEFAULT_RECOVERY_HANDLE_TTL_MS: u64 = 3_600_000;
 
-/// Mint one framework-owned recovery handle into the runtime's registry.
-///
-/// Derives exactly one identity (R8.33). Binding fields come from the receipt
-/// (R8.62) â€” never from caller assertions. Lookup/inspection remain at zero
-/// basis/digest cost after mint.
-///
-/// The deadline comes from the registry's own runtime clock. Passing the clock
-/// in used to be optional, and the `None` arm minted a handle that never
-/// expired; there is now no lane through which the deadline can be omitted or
-/// sourced from a clock other than the one the owning runtime was published
-/// with (R8.31).
-pub(crate) fn mint_recovery_handle_in_registry(
-    receipt: &WorthQueryApplicationCommitReceipt,
-    registry: Arc<WorthQueryRecoveryHandleRegistry>,
-) -> Result<WorthQueryRecoveryHandle, WorthQueryRecoveryHandleDenial> {
-    let expires_at = expiry_deadline(registry.clock())?;
-    let binding = WorthQueryRecoveryHandleBinding::from_receipt(receipt, expires_at)?;
-    let claim = claim_for(receipt);
-    mint_bound_recovery_handle(binding, claim, receipt.canonical_work(), registry)
-}
-
-fn mint_bound_recovery_handle(
+pub(in crate::domain_computation) fn mint_from_slot(
     binding: WorthQueryRecoveryHandleBinding,
-    claim: WorthQueryRecoveryMintClaim,
+    slot: crate::domain_computation::managed_run::WorthQueryRecoveryRegistrySlot,
     canonical_work: worth_query_installation::facade::WorthQueryCanonicalWorkPhases,
     registry: Arc<WorthQueryRecoveryHandleRegistry>,
-) -> Result<WorthQueryRecoveryHandle, WorthQueryRecoveryHandleDenial> {
-    let slot = registry.register_once(claim).map_err(|_| {
-        WorthQueryRecoveryHandleDenial::new(
-            WorthQueryRecoveryHandleDenialKind::RecoveryAlreadyMinted,
-        )
-    })?;
-    // Exactly one identity for the successfully claimed handle. A rejected
-    // receipt clone performs no identity mint or canonical derivation work.
-    let identity = WorthQueryRecoveryHandleIdentity::mint();
-    Ok(WorthQueryRecoveryHandle::new(
-        identity,
+) -> WorthQueryRecoveryHandle {
+    WorthQueryRecoveryHandle::new(
+        WorthQueryRecoveryHandleIdentity::mint(),
         slot,
         registry,
         binding,
         canonical_work,
-    ))
+    )
 }
 
 fn claim_for(receipt: &WorthQueryApplicationCommitReceipt) -> WorthQueryRecoveryMintClaim {
@@ -200,7 +192,7 @@ pub(crate) fn ensure_receipt_belongs_to_runtime(
     Ok(())
 }
 
-fn expiry_deadline(
+pub(in crate::domain_computation) fn expiry_deadline(
     clock: &WorthQueryRuntimeClock,
 ) -> Result<Option<u64>, WorthQueryRecoveryHandleDenial> {
     let sample = clock
@@ -218,25 +210,17 @@ fn expiry_deadline(
 
 pub(super) fn status_from_claim_state(
     claimed: bool,
-    terminal: Option<WorthQueryRecoveryResourceTerminal>,
+    terminal: Option<RecoveryClaimDisposition>,
 ) -> WorthQueryRecoveryClaimStatus {
     match terminal {
-        Some(WorthQueryRecoveryResourceTerminal::Consumed) => {
-            WorthQueryRecoveryClaimStatus::Consumed
-        }
-        Some(WorthQueryRecoveryResourceTerminal::Completed) => {
-            WorthQueryRecoveryClaimStatus::Completed
-        }
-        Some(WorthQueryRecoveryResourceTerminal::Expired) => WorthQueryRecoveryClaimStatus::Expired,
-        Some(WorthQueryRecoveryResourceTerminal::Disposed) => {
-            WorthQueryRecoveryClaimStatus::Disposed
-        }
-        Some(WorthQueryRecoveryResourceTerminal::ForceTerminated) => {
+        Some(RecoveryClaimDisposition::Consumed) => WorthQueryRecoveryClaimStatus::Consumed,
+        Some(RecoveryClaimDisposition::Completed) => WorthQueryRecoveryClaimStatus::Completed,
+        Some(RecoveryClaimDisposition::Expired) => WorthQueryRecoveryClaimStatus::Expired,
+        Some(RecoveryClaimDisposition::Disposed) => WorthQueryRecoveryClaimStatus::Disposed,
+        Some(RecoveryClaimDisposition::ForceTerminated) => {
             WorthQueryRecoveryClaimStatus::ForceTerminated
         }
-        Some(WorthQueryRecoveryResourceTerminal::Relinquished) => {
-            WorthQueryRecoveryClaimStatus::Unclaimed
-        }
+        Some(RecoveryClaimDisposition::Relinquished) => WorthQueryRecoveryClaimStatus::Unclaimed,
         None if claimed => WorthQueryRecoveryClaimStatus::Live,
         None => WorthQueryRecoveryClaimStatus::Unclaimed,
     }

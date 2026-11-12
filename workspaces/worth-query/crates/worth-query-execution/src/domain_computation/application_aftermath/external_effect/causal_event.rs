@@ -1,17 +1,17 @@
 //! Compiler-enforced progression of the external-effect causal ladder.
 
-use std::sync::Arc;
-
 use worth_query_installation::facade::WorthQueryCanonicalWorkEvidence;
 
 use super::super::WorthQueryAftermathDerivationFailure;
+use super::dispatch_admission::{
+    DispatchAttemptCoordinate, WorthQueryAdmittedExternalDispatchAttempt,
+};
 use super::identity::{ExternalEffectCausalLink, ExternalEffectPostureIdentity};
 use super::identity_derivation::{
     attempt_identity, emission_identity, observation_identity, provider_commit_identity,
 };
 use super::{ExternalEffectPostureKind, WorthQueryDispatchOutboxRecord};
 use crate::domain_computation::primary_graph::WorthQueryCommittedDispatchOutboxObservation;
-use crate::domain_computation::primary_graph::WorthQueryExternalDispatchAttemptOrdinal;
 use crate::domain_computation::runtime_time::WorthQueryRuntimeClock;
 
 /// Read-only projection of one causal stage. Only the typed transitions in this module can seal it.
@@ -65,6 +65,7 @@ const CAUSAL_CONSTRUCTION: CausalConstructionAuthority =
     CausalConstructionAuthority { _private: () };
 
 struct ProviderCommitEvent {
+    runtime: crate::domain_computation::execution_runtime::WorthQueryRuntimeAuthorityIdentity,
     posture: ExternalEffectPosture,
     committed: WorthQueryCommittedDispatchOutboxObservation,
 }
@@ -87,39 +88,8 @@ pub(super) struct ExternalAcknowledgementEvent {
     posture: ExternalEffectPosture,
 }
 
-/// Move-only authority for one exact runtime-admitted physical attempt.
-///
-/// Only the runtime can mint the opaque ordinal required by `seal`, and only
-/// this causal owner can decompose the completed admission.
-pub struct WorthQueryAdmittedExternalDispatchAttempt {
-    committed: WorthQueryCommittedDispatchOutboxObservation,
-    query_runtime: crate::domain_computation::execution_runtime::WorthQueryRuntimeAuthorityIdentity,
-    ordinal: WorthQueryExternalDispatchAttemptOrdinal,
-    clock: Arc<WorthQueryRuntimeClock>,
-}
-
-impl WorthQueryAdmittedExternalDispatchAttempt {
-    pub(in crate::domain_computation) fn seal(
-        committed: WorthQueryCommittedDispatchOutboxObservation,
-        query_runtime: crate::domain_computation::execution_runtime::WorthQueryRuntimeAuthorityIdentity,
-        ordinal: WorthQueryExternalDispatchAttemptOrdinal,
-        clock: Arc<WorthQueryRuntimeClock>,
-    ) -> Self {
-        Self {
-            committed,
-            query_runtime,
-            ordinal,
-            clock,
-        }
-    }
-
-    pub const fn ordinal_for_test(&self) -> u64 {
-        self.ordinal.value_for_test()
-    }
-}
-
 pub(super) fn with_admitted_dispatch<Output>(
-    admitted: WorthQueryAdmittedExternalDispatchAttempt,
+    admitted: WorthQueryAdmittedExternalDispatchAttempt<'_>,
     continue_with: impl FnOnce(
         &DispatchAttemptEvent<'_>,
         &WorthQueryRuntimeClock,
@@ -129,11 +99,11 @@ pub(super) fn with_admitted_dispatch<Output>(
     let WorthQueryAdmittedExternalDispatchAttempt {
         committed,
         query_runtime,
-        ordinal,
+        coordinate,
         clock,
     } = admitted;
     let (emission, emission_work) = admit_co_committed_emission(query_runtime, committed)?;
-    let (attempt, attempt_work) = begin_dispatch_attempt(&emission, ordinal.into_value())?;
+    let (attempt, attempt_work) = begin_dispatch_attempt(&emission, &coordinate)?;
     continue_with(&attempt, &clock, emission_work.combine(attempt_work))
 }
 
@@ -149,6 +119,7 @@ fn admit_co_committed_emission(
 > {
     let provider = provider_commit_identity(runtime, &committed)?;
     let provider_commit = ProviderCommitEvent {
+        runtime,
         posture: ExternalEffectPosture::root(
             ExternalEffectPostureKind::ProviderCommit,
             ExternalEffectPostureIdentity::from_digest(&CAUSAL_CONSTRUCTION, provider.digest),
@@ -174,17 +145,20 @@ fn admit_co_committed_emission(
     ))
 }
 
-fn begin_dispatch_attempt(
-    emission: &CoCommittedApplicationEmission,
-    attempt_ordinal: u64,
+fn begin_dispatch_attempt<'emission>(
+    emission: &'emission CoCommittedApplicationEmission,
+    coordinate: &DispatchAttemptCoordinate<'_>,
 ) -> Result<
-    (DispatchAttemptEvent<'_>, WorthQueryCanonicalWorkEvidence),
+    (
+        DispatchAttemptEvent<'emission>,
+        WorthQueryCanonicalWorkEvidence,
+    ),
     WorthQueryAftermathDerivationFailure,
 > {
     let derived = attempt_identity(
         emission.posture.identity(),
         emission.record().correlation(),
-        attempt_ordinal,
+        coordinate,
     )?;
     let posture = ExternalEffectPosture::successor(
         ExternalEffectPostureKind::DispatchAttempt,
@@ -263,6 +237,12 @@ impl CoCommittedApplicationEmission {
 }
 
 impl DispatchAttemptEvent<'_> {
+    pub(super) fn runtime_authority(
+        &self,
+    ) -> crate::domain_computation::execution_runtime::WorthQueryRuntimeAuthorityIdentity {
+        self.emission.provider_commit.runtime
+    }
+
     pub(super) const fn record(&self) -> &WorthQueryDispatchOutboxRecord {
         self.emission.record()
     }

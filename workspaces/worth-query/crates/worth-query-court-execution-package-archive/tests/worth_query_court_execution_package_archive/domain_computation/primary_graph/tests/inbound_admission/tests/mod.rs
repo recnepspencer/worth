@@ -284,3 +284,45 @@ fn retired_and_revoked_sources_cannot_admit_new_completion() {
 pub mod helpers;
 #[path = "lost_terminal_index_denies_until_bounded_owner_reconstruction/mod.rs"]
 pub mod lost_terminal_index_denies_until_bounded_owner_reconstruction;
+
+#[test]
+fn accepted_completion_respects_retirement_and_revocation_before_world_consumption() {
+    let host_request = worth_query_testkit_execution_primary_graph_application_attempt_2::test_request_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+    for revoked in [false, true] {
+        let world = installed_world();
+        let dispatch = world.commit_dispatch(32, "accepted-source-control");
+        let record = dispatch.dispatch_outbox().unwrap();
+        let envelope = signed_envelope(record, [0x97; 32], record.payload(), false);
+        let accepted = world
+            .application
+            .authenticate_inbound_occurrence(&world.verifier, &envelope)
+            .unwrap()
+            .correlate()
+            .unwrap()
+            .accept()
+            .unwrap();
+        if revoked {
+            world
+                .application
+                .revoke_inbound_occurrence_source(&world.verifier)
+                .unwrap();
+        } else {
+            world
+                .application
+                .retire_inbound_occurrence_source(&world.verifier)
+                .unwrap();
+        }
+        let request = worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::schema_types::live_scope();
+        let receipt = accepted.execute(&request).unwrap();
+        if revoked {
+            assert_eq!(receipt.posture(), Posture::AcceptedPending);
+            assert_eq!(receipt.pending_reason(), Some(worth_query_execution::facade::domain_computation::WorthQueryInboundPendingReason::SourceRevoked));
+            assert_eq!(completion_records(execution, &world), 0);
+        } else {
+            assert_eq!(receipt.posture(), Posture::Performed);
+            assert_eq!(receipt.pending_reason(), None);
+            assert_eq!(completion_records(execution, &world), 1);
+        }
+    }
+}

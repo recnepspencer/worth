@@ -82,8 +82,11 @@ const fn publish_durability(
     durability: WorthQueryRecoveryDurabilityPosture,
 ) -> WorthQueryPublishedRecoveryDurability {
     match durability {
-        WorthQueryRecoveryDurabilityPosture::StoreCapabilityRequired => {
-            WorthQueryPublishedRecoveryDurability::StoreCapabilityRequired
+        WorthQueryRecoveryDurabilityPosture::ProcessLocal => {
+            WorthQueryPublishedRecoveryDurability::ProcessLocal
+        }
+        WorthQueryRecoveryDurabilityPosture::DurableHome => {
+            WorthQueryPublishedRecoveryDurability::DurableHome
         }
     }
 }
@@ -122,8 +125,12 @@ mod tests {
     #[test]
     fn disclosure_admitted_durability_maps_exactly() {
         assert_eq!(
-            publish_durability(WorthQueryRecoveryDurabilityPosture::StoreCapabilityRequired),
-            WorthQueryPublishedRecoveryDurability::StoreCapabilityRequired
+            publish_durability(WorthQueryRecoveryDurabilityPosture::ProcessLocal),
+            WorthQueryPublishedRecoveryDurability::ProcessLocal
+        );
+        assert_eq!(
+            publish_durability(WorthQueryRecoveryDurabilityPosture::DurableHome),
+            WorthQueryPublishedRecoveryDurability::DurableHome
         );
     }
 }

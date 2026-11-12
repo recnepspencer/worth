@@ -9,7 +9,7 @@ use crate::domain_computation::primary_graph::tests::recoverable_commit_support:
 pub fn commit_observe_and_admit_fixture(
     seed: u8,
 ) -> (
-    WorthQueryAdmittedExternalDispatchAttempt,
+    WorthQueryAdmittedExternalDispatchAttempt<'static>,
     worth_relational::facade::history::RelationalCommitReceipt,
     RecordRef,
     u64,
@@ -38,8 +38,8 @@ pub fn commit_observe_and_admit_fixture(
 pub fn commit_observe_and_admit_twice_fixture(
     seed: u8,
 ) -> (
-    WorthQueryAdmittedExternalDispatchAttempt,
-    WorthQueryAdmittedExternalDispatchAttempt,
+    WorthQueryAdmittedExternalDispatchAttempt<'static>,
+    WorthQueryAdmittedExternalDispatchAttempt<'static>,
 ) {
     let (world, receipt) = recoverable_application_world(seed, &format!("dispatch-twice-{seed}"));
     let first = world
@@ -75,8 +75,8 @@ pub fn commit_observe_and_admit_twice_fixture(
 }
 
 pub fn commit_distinct_records_and_admit_fixture() -> (
-    WorthQueryAdmittedExternalDispatchAttempt,
-    WorthQueryAdmittedExternalDispatchAttempt,
+    WorthQueryAdmittedExternalDispatchAttempt<'static>,
+    WorthQueryAdmittedExternalDispatchAttempt<'static>,
     RecordRef,
     RecordRef,
 ) {
@@ -116,7 +116,7 @@ pub fn commit_distinct_records_and_admit_fixture() -> (
 
 /// Admitted real owner evidence and the clock installed when its runtime was published.
 pub fn commit_observe_and_admit_with_clock_fixture(seed: u8) -> (
-    WorthQueryAdmittedExternalDispatchAttempt,
+    WorthQueryAdmittedExternalDispatchAttempt<'static>,
     worth_query_testkit_execution_primary_graph_application_attempt::domain_computation::primary_graph::tests::fixture::authorization_time::AuthorizationTimeController,
 ){
     let (world, receipt) = recoverable_application_world(seed, "no-effect-observation-time");

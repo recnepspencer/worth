@@ -49,7 +49,13 @@ fn rejected_redispatch_retains_its_no_effect_cause_while_lost_response_stays_unr
         real_handle_on(world, receipt, "rejected-original", live_scope());
     let authority = authority(&world, &handle, &admission);
     let rejected = performed_redispatch(&world, &handle, &authority, &admission);
-    let denial = safe_retry_recovery_handle(handle, &authority, rejected).unwrap_err();
+    let denial = world
+        .application
+        .with_host_advancement(|phase| {
+            safe_retry_recovery_handle(&phase, handle, &authority, rejected)
+        })
+        .unwrap()
+        .unwrap_err();
     assert_eq!(
         denial.kind(),
         WorthQueryRecoveryHandleDenialKind::ProvenNoEffect(
@@ -59,7 +65,11 @@ fn rejected_redispatch_retains_its_no_effect_cause_while_lost_response_stays_unr
     let (_, handle) = denial.into_parts();
     let handle = handle.expect("no-effect denial retains the live handle");
     let lost = performed_redispatch(&world, &handle, &authority, &admission);
-    let denial = safe_retry_recovery_handle(handle, &authority, lost).unwrap_err();
+    let denial = world
+        .application
+        .with_host_advancement(|phase| safe_retry_recovery_handle(&phase, handle, &authority, lost))
+        .unwrap()
+        .unwrap_err();
     assert_eq!(
         denial.kind(),
         WorthQueryRecoveryHandleDenialKind::UnresolvedExternalPosture
@@ -67,7 +77,12 @@ fn rejected_redispatch_retains_its_no_effect_cause_while_lost_response_stays_unr
     let (_, handle) = denial.into_parts();
     let handle = handle.expect("uncertainty also retains its original handle");
     let completed = performed_redispatch(&world, &handle, &authority, &admission);
-    safe_retry_recovery_handle(handle, &authority, completed)
+    world
+        .application
+        .with_host_advancement(|phase| {
+            safe_retry_recovery_handle(&phase, handle, &authority, completed)
+        })
+        .unwrap()
         .expect("only actual completion consumes as completed");
     assert!(transport.0.lock().unwrap().is_empty());
 }

@@ -1,31 +1,23 @@
 //! Exact descriptive lookup in the existing owner registry, without claim issuance.
 use super::*;
-use worth_foundational::facade::{RecordedProductBranchReference, WorldOwnerCoordinate};
+use worth_foundational::facade::RecordedProductBranchReference;
 
 impl WorthQueryRecoveryHandleRegistry {
     pub(crate) fn recorded_claim_state(
         &self,
         provider_runtime_instance_id: u64,
         original: &RecordedProductBranchReference,
-    ) -> (bool, Option<WorthQueryRecoveryResourceTerminal>) {
-        let (world_owner, commit_ordinal) = match original {
-            RecordedProductBranchReference::Home(head) => (
-                WorldOwnerCoordinate::Home {
-                    owner: head.selected_commit().owner(),
-                },
-                head.selected_commit().ordinal(),
-            ),
-            RecordedProductBranchReference::Memory(head) => (
-                WorldOwnerCoordinate::MemoryOnly {
-                    observation: head.owner(),
-                },
-                head.selected_commit(),
-            ),
+    ) -> Result<(bool, Option<RecoveryClaimDisposition>), crate::domain_computation::application_aftermath::dispatch_journal::QueryDispatchJournalDenial>{
+        let claim = match original {
+            RecordedProductBranchReference::Home(head) => {
+                WorthQueryRecoveryMintClaim::Home(head.selected_commit())
+            }
+            RecordedProductBranchReference::Memory(head) => WorthQueryRecoveryMintClaim::Memory {
+                provider_runtime_instance_id,
+                world_owner: head.owner(),
+                commit_ordinal: head.selected_commit(),
+            },
         };
-        self.claim_state(&WorthQueryRecoveryMintClaim {
-            provider_runtime_instance_id,
-            world_owner,
-            commit_ordinal,
-        })
+        self.claim_state(&claim)
     }
 }

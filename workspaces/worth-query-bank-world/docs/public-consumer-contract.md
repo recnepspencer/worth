@@ -500,29 +500,37 @@ postures are `AcceptedPending`, `AlreadyAccepted`, `Performed`, and
 `AlreadyCompleted`; unavailable or revoked recovery receives no signed ACK.
 The rail retains immutable signed bytes through bounded retry and reports
 exhausted obligations for reconciliation. HTTPS installation requires pinned
-Bank TLS trust plus a distinct pinned Bank ACK key. Both rail delivery and
-Query accepted rail custody are process-local; orderly rail close reports
-unresolved obligations. This rail/workflow contract does not promise persistence
-of those owners after forced process death.
+Bank TLS trust plus a distinct pinned Bank ACK key. Rail delivery remains
+process-local; orderly rail close reports unresolved obligations. Query accepted
+custody is durable when its actual owner is a Directory Home. The current full
+Bank server uses a Memory composition, so its accepted custody remains local to
+that process.
 
-## Relational-only persistence boundary
+## Directory Home persistence boundary
 
-A supported Relational-only application opened through Host
-`WorthQueryApplicationHomeRequest` at `Directory(path)` can reopen its journal-only
-Home after process death. The same original mutation key, intent and product
-affinity can resolve to `RecoveredCommitted` without executing the business
-handler again. A fresh opener needs fresh authenticated authority and newly
-issued selectors, capabilities and sessions; old live handles refuse with typed
-`StaleIncarnation`. Use the owning Directory close path for orderly shutdown.
+A supported application opened with Host `WorthQueryApplicationHomeRequest` at
+`Directory(path)` preserves acknowledged dispatch and inbound custody across
+graceful close/reopen and a quiescent kill between operations. The original key,
+input and product affinity can resolve to `RecoveredCommitted` without repeating
+the handler. Recovery claims preserve their original status and live deadline;
+fresh request admission reissues capability for the same original claim.
+
+Install fresh transport and source verifier owners after each open. Authentic
+callbacks complete the original dispatch, and duplicate messages keep their
+terminal result across repeated reopen. Terminal acknowledgement and exact
+message expiry are distinct from remote completion. New authentication and live
+selectors are required; old capabilities refuse with `StaleIncarnation`.
+
+The Bank rail integration courts exercise this Host contract with the actual
+Bank payload, transport, separate rail process and cryptographic verifier.
+The full Bank server composition still uses the process-local installation and
+includes producers, conditionals and workflow owners. Its response-loss and
+user-node restart controls do not certify Bank-server durability.
+
+Crash recovery during an operation is not yet certified. A typed refused open or
+close retains its stated custody and requires the owning recovery action. Do not
+switch a refused Directory installation to Memory and report it as durable.
 See [install or reopen](../../../docs/build-an-application.md#4-install-or-reopen).
-
-This is a platform contract for supported Relational-only flows. The current Bank
-composition uses the process-local installation path and includes producers,
-conditionals and workflow/rail owners. It does not acquire this Directory
-persistence contract. Its response-loss and user-node restart controls do not
-prove Bank-server process-death recovery. Installing an unsupported authored
-Signal/Bridge seed in a Directory refuses with `UnsupportedSeed`; do not switch
-to MemoryOnly and report the flow as durable.
 
 ## Request and continuation handling
 

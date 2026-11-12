@@ -1,6 +1,6 @@
 //! Dispose transition — terminal, consumes the handle (R8.29 / R8.30).
 
-use crate::domain_computation::managed_run::WorthQueryRecoveryResourceTerminal;
+use crate::domain_computation::managed_run::RecoveryClaimDisposition;
 
 use super::super::recovery_handle::{
     RelinquishOnDenial, WorthQueryRecoveryHandle, WorthQueryRecoveryHandleBinding,
@@ -64,6 +64,7 @@ impl WorthQueryRecoveryDisposalDenial {
 /// success the handle is consumed as disposed and the receipt names its binding.
 /// On refusal the actual handle is returned; only native terminal consumption returns none.
 pub fn dispose_recovery_handle(
+    phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
     handle: WorthQueryRecoveryHandle,
     authority: &WorthQueryRecoveryEffectAuthority,
 ) -> Result<WorthQueryRecoveryDisposalReceipt, WorthQueryRecoveryDisposalDenial> {
@@ -80,17 +81,30 @@ pub fn dispose_recovery_handle(
         );
     }
     handle
-        .consume(WorthQueryRecoveryResourceTerminal::Disposed)
+        .consume(phase, RecoveryClaimDisposition::Disposed)
         .map(|binding| WorthQueryRecoveryDisposalReceipt { binding })
-        .map_err(WorthQueryRecoveryDisposalDenial::Terminal)
+        .map_err(|failed| {
+            let (denial, handle) = failed.into_parts();
+            match handle {
+                Some(handle) => WorthQueryRecoveryDisposalDenial::Retained {
+                    denial,
+                    handle: Box::new(handle),
+                },
+                None => WorthQueryRecoveryDisposalDenial::Terminal(denial),
+            }
+        })
 }
 
 /// Expire after `evaluate_expiry` proves the deadline. Records the sample via
 /// the decision argument (R8.7 M3).
 pub fn expire_recovery_handle(
+    phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
     handle: WorthQueryRecoveryHandle,
     decision: &super::WorthQueryRecoveryExpiryDecision,
-) -> Result<WorthQueryRecoveryHandleBinding, WorthQueryRecoveryHandleDenial> {
+) -> Result<
+    WorthQueryRecoveryHandleBinding,
+    super::super::recovery_handle::WorthQueryRecoveryTransitionDenial,
+> {
     let handle = handle.admit(|handle| {
         if decision.handle_authority() == handle.authority_identity() {
             Ok(())
@@ -103,5 +117,5 @@ pub fn expire_recovery_handle(
     // `WorthQueryRecoveryExpiryDecision` is the expired branch of a typed
     // runtime-clock evaluation. Current evidence has a different type and
     // cannot reach this signature (R8.7 M2 / R8.31).
-    handle.consume(WorthQueryRecoveryResourceTerminal::Expired)
+    handle.consume(phase, RecoveryClaimDisposition::Expired)
 }

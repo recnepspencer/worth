@@ -77,7 +77,8 @@ fn real_handle_on(
 ) -> RealHandle {
     let handle = world
         .application
-        .mint_recovery_handle(&receipt)
+        .with_host_advancement(|phase| world.application.mint_recovery_handle(&phase, &receipt))
+        .unwrap()
         .expect("the production receipt admits a recovery handle");
     let admission = world
         .application
@@ -171,7 +172,12 @@ fn redispatch_performed_for_handle_a_cannot_safe_retry_handle_b() {
         receipt_a.dispatch_outbox().unwrap().correlation(),
     );
 
-    let denied = safe_retry_recovery_handle(handle_b, &authority_b, redispatch_a)
+    let denied = world_b
+        .application
+        .with_host_advancement(|phase| {
+            safe_retry_recovery_handle(&phase, handle_b, &authority_b, redispatch_a)
+        })
+        .unwrap()
         .expect_err("a proof performed for handle A cannot retire handle B");
     assert_eq!(
         denied.kind(),
@@ -179,7 +185,12 @@ fn redispatch_performed_for_handle_a_cannot_safe_retry_handle_b() {
     );
 
     let redispatch_a = performed_redispatch(&world_a, &handle_a, &authority_a, &admission_a);
-    safe_retry_recovery_handle(handle_a, &authority_a, redispatch_a)
+    world_a
+        .application
+        .with_host_advancement(|phase| {
+            safe_retry_recovery_handle(&phase, handle_a, &authority_a, redispatch_a)
+        })
+        .unwrap()
         .expect("the exact handle admits its own performed re-dispatch");
 }
 
@@ -230,7 +241,12 @@ fn safe_retry_denies_when_the_handle_carries_no_co_committed_outbox() {
         outboxless.authority_identity_for_test(),
         &outboxless,
     );
-    let denied = safe_retry_recovery_handle(outboxless, &authority, redispatch)
+    let denied = world
+        .application
+        .with_host_advancement(|phase| {
+            safe_retry_recovery_handle(&phase, outboxless, &authority, redispatch)
+        })
+        .unwrap()
         .expect_err("no bound outbox means no proof can match");
     assert_eq!(
         denied.kind(),

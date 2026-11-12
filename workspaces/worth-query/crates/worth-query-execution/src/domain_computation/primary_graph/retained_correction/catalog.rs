@@ -53,7 +53,22 @@ impl MaterialEntry {
 pub(in crate::domain_computation::primary_graph) struct MaterialPinRow {
     pub(in crate::domain_computation::primary_graph) original: Original,
     pub(in crate::domain_computation::primary_graph) owner: CorrectionMaterialPinOwner,
-    pub(in crate::domain_computation::primary_graph) prepared: Arc<PreparedCorrectionSnapshot>,
+    purpose: MaterialPinPurpose,
+}
+#[derive(Clone, Debug)]
+enum MaterialPinPurpose {
+    Prepared(Arc<PreparedCorrectionSnapshot>),
+    Recovery,
+}
+impl MaterialPinRow {
+    pub(in crate::domain_computation::primary_graph) fn prepared(
+        &self,
+    ) -> Result<&Arc<PreparedCorrectionSnapshot>, Denial> {
+        match &self.purpose {
+            MaterialPinPurpose::Prepared(value) => Ok(value),
+            MaterialPinPurpose::Recovery => Err(Denial::PinOwnerMismatch),
+        }
+    }
 }
 #[derive(Debug)]
 pub(in crate::domain_computation::primary_graph) struct MaterialCatalog {
@@ -161,7 +176,19 @@ impl MaterialCatalog {
                     MaterialPinRow {
                         original,
                         owner,
-                        prepared: Arc::from(prepared),
+                        purpose: MaterialPinPurpose::Prepared(Arc::from(prepared)),
+                    },
+                );
+            }
+            MaterialRecord::RecoveryPin {
+                identity, original, ..
+            } => {
+                self.pins.insert(
+                    identity,
+                    MaterialPinRow {
+                        original,
+                        owner: CorrectionMaterialPinOwner::Recovery { original },
+                        purpose: MaterialPinPurpose::Recovery,
                     },
                 );
             }
@@ -185,7 +212,7 @@ impl MaterialCatalog {
                     .remove(&identity)
                     .expect("validated prepared command");
                 self.discharged
-                    .insert(key, (pin.original, pin.prepared.intent));
+                    .insert(key, (pin.original, pin.prepared()?.intent));
             }
             MaterialRecord::Abandon { original } => {
                 if let super::pins::MaterialPinChange::Release(identity) = change {

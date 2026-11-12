@@ -221,6 +221,28 @@ does not prevent later entries from being considered. The route-bound terminal
 observation on the Bank server handle is a privileged host diagnostic; it is
 not an authenticated operator inspection endpoint.
 
+## Home-level inbound source controls
+
+`retire_inbound_occurrence_source(&handle)` stops new messages from that source;
+accepted work may still finish. `revoke_inbound_occurrence_source(&handle)` also
+fences accepted work that has not entered its World attempt. The source is the
+immutable installed source identity, shared across all its operation slots.
+
+On a Directory Home, successful control records the fact in `query.dispatch`
+before returning. Graceful close settles the same original record. Reopening
+with fresh verifier objects or a different audience does not reset retirement or
+revocation. Retirement never downgrades a revoked source. A memory-only runtime
+keeps its source controls for that runtime's lifetime.
+
+A control with an unsettled physical fate fences consumption until its original
+record settles; it is not reported as a committed security fact. Retry the
+control on a fresh host request or settle it through graceful close. A refusal
+preserves the exact execution, support-policy or journal cause.
+
+This source-control support does not yet admit inbound completion on a Directory
+Home. Accepted-message, terminal and recovery-claim durability have separate
+requirements.
+
 ## Core Mental Model
 
 There are four independent owners:
@@ -584,7 +606,7 @@ use worth_query_host::facade::publication::application_aftermath::{
     publish_recovery_support,
 };
 
-let handle = runtime.mint_recovery_handle(&commit_receipt)?;
+let handle = runtime.mint_recovery_handle(phase, &commit_receipt)?;
 
 let disclosure =
     runtime.admit_recovery_inspection_disclosure(&capability_access)?;
@@ -599,11 +621,12 @@ let published_support = publish_recovery_support(&inspection);
 let effect_authority =
     runtime.admit_recovery_effect_authority(&handle, &admitted_operation)?;
 let idempotency = runtime.resolve_admitted_application_idempotency(
+    phase,
     &admitted_operation,
     handle.binding().idempotency(),
 )?;
 let resolution =
-    resolve_recovery_handle(handle, &effect_authority, idempotency)?;
+    resolve_recovery_handle(phase, handle, &effect_authority, idempotency)?;
 ```
 
 Inspection borrows the live handle and returns descriptive, publishable state.
@@ -739,10 +762,9 @@ committed outbox record carries
 data: it grants no dispatch authority. A memory-only Home returns `None`,
 because its dispatch custody is process-local.
 
-A Directory Home retains dispatch custody across graceful close and reopen
-for operations that declare neither inbound completion nor recoverable aftermath.
-Installed contracts that require either family refuse before effects, and
-recovery-claim minting independently checks Directory support. Close settles every retained observation before releasing the
+A Directory Home retains dispatch and inbound-completion custody across graceful
+close and reopen. Recovery claims preserve their acknowledged lifecycle in the same Home. Close
+settles every retained observation before releasing the
 dispatch's local receipt-basis lease. Reopen readmits those same attempt
 identities and observations from `query.dispatch`; it never contacts the
 transport or reexecutes the mutation handler. The reopened Home receives a
@@ -762,8 +784,40 @@ while a contact is still in flight.
 Process death before an observation is recorded is not yet certified. A Home
 whose journal ends in an attempt with no recorded observation refuses to open,
 and `unclean_recovery_unsupported()` names the `Dispatch` owner and that
-effect. Inbound completion and recovery claims are not yet durable on a
-Directory Home.
+effect. Recovery claim readmission still requires fresh original-source admission.
+
+## Durable inbound custody on a Directory Home
+
+Install a fresh verifier and transport after opening the Home. An authentic
+callback for an original dispatch can then enter through
+`runtime.inbound_occurrences().receive(source, bytes, scope).execute()`.
+Query records the accepted message's exact identity, meaning, audience and
+original dispatch before reporting acceptance. Accepted pending work survives
+graceful close, including a caller leaving before publication. A new verifier's
+audience does not rewrite an already accepted audience.
+
+The terminal comes from the original Native completion row and its actual World
+publication. Duplicate messages retain their original result across repeated
+reopens; a reused message identity with different authenticated meaning is a
+typed permanent conflict. Query records terminal acknowledgement before making
+the message eligible for expiry. An ACK that proves no effect remains owned
+maintenance work, including when a transport completion wins the publication
+race. `maintain_inbound_occurrences` progresses this work without requiring the
+callback caller to return. `cleanup_completed_inbound_occurrences` expires exact
+acknowledged message identities under the trusted clock while preserving
+canonical completion truth.
+
+A recorded completed transport observation survives reopen without a live
+dispatch object. Its original operation and audience binding survives too. An
+originally absent audience may acquire its first binding before completion;
+an already selected audience cannot be replaced. Maintenance continues the
+recorded observation through World publication without another transport
+contact. An unpublished internal completion retains its actual original World
+recovery obligation and continues that occurrence.
+
+These are graceful-close and quiescent-reopen guarantees. Crash recovery remains
+uncertified, and Query makes no remote exactly-once claim beyond the external
+owner's admitted contract.
 
 ## Recovery lifetime and scope
 
@@ -787,3 +841,82 @@ For live `next`, cancellation or expiration already present when the call opens
 its request is an `ExecutionRequest(Interrupted)` refusal. If it arrives after
 the opening, the live lease returns its terminal delivery outcome; hosts handle
 both forms.
+
+A completion with a live durable `ProductUnpublished` original requires Home
+reopen. Owning close can refuse while preserving the same serving Home; end
+that Home's ownership and open the directory through Host. Readmission retains
+the actual original Native effect. Advance its maintenance across physical
+pending steps; it neither contacts the transport again nor grants live release
+or continuation to the old recovery handle. A new mutation may answer
+`ProductBasisStale` until the original completion is recovered. This is the
+specified `ReopenRequired` route, not a crash-recovery certification.
+
+## Durable recovery claims on a Directory Home
+
+A recovery handle is live authority for one runtime incarnation. Its claim is a
+Home obligation in `query.dispatch`: original World occurrence, claim generation,
+expiry and terminal disposition survive a graceful close and reopen. Memory-only
+applications report `ProcessLocal`; Home-backed inspection and safe retry report
+`DurableHome`. A wire recovery token cannot readmit authority.
+
+Mint and terminal progression borrow the invoking runtime's actual advancement
+phase. After reopen, repeat the original intent and idempotency key under fresh
+request authorization. The mutation request's `with_recovery_in_program` lends
+the selected admission, its actual funded phase, idempotency binding and typed
+encoded request input without executing the handler. Pass those four values to
+`mint_admitted_recovery_handle` to acquire capability for
+the same live claim and original deadline. A second local acquisition refuses;
+terminal claims remain terminal. The original material and current principal,
+operation, scope, input and schema axes must still match. Old handles are fenced.
+
+Recovery pins keep their actual original material mandatory until the terminal
+record is acknowledged. A consuming transition that cannot acknowledge its
+record returns a typed refusal with the same live handle; retain it and retry
+under fresh request admission. Compensation and reconciliation return their
+existing admissions, not a claim that the external owner already changed its
+state. Safe retry still requires actual performed dispatch evidence. A recorded
+Completed observation cannot manufacture that evidence or contact a completed
+external effect again.
+
+Dropping a live Home handle performs no I/O and does not acknowledge disposal.
+The framework retains deferred disposition work. `maintain_recovery_claims` under
+a funded advancement, the next recovery-handle acquisition, or graceful close settles the
+original record and then releases the mandatory material pin. Pure status reads
+report the acknowledged journal fate. After close, obtain new capability from
+the newly opened Home; dropping an old incarnation's value cannot dispose the
+new incarnation's claim. An actual publication no-effect leaves the existing
+handle and claim retryable.
+
+These guarantees cover graceful close/reopen and the authorized quiescent
+ownership handoff. Crash recovery is not certified by this lane.
+
+A recovered claim whose original external completion is already acknowledged
+uses `settle_recorded_recovery_completion(phase, handle, admission)`. It checks
+the actual original outbox, dispatch history and any required canonical inbound
+terminal, then acknowledges the existing claim as Completed. It returns the
+binding without a new dispatch or Performed value. An unresolved original
+returns the same handle with `UnresolvedExternalPosture`; actual safe retry
+still needs fresh admission and a performed dispatch.
+
+For a pending or unresolved claim publication, retain the returned handle and
+fund `maintain_recovery_claims` to drive that original publication before another
+transition. Observe the acknowledged claim fate afterward: if settlement already
+made it terminal, the old handle cannot grant another transition. A pending
+record never grants effect authority merely because its bytes are retained.
+
+## Embedded Bank rail integration
+
+Bank's trusted `BankRailCompletionServerInstallation::estate_verifier` returns the
+same pinned cryptographic verifier used by the Bank HTTP route. An embedded Host
+can install that mechanism for its declared estate rail operation after each
+open. Callback bytes do not choose the source, audience or signing key.
+
+The graceful Bank rail courts use Bank's actual payload encoder and transport,
+a separate rail process, and its real signed HTTP callback bytes. They cover
+completion, lost-response retry, duplicate acknowledgement, timeout followed by
+late completion, proven semantic rejection and duplicate callbacks across
+repeated Home reopen. The fixture's admitted handler contact count and the
+rail's independent physical consequence ledger detect replay and double effect.
+This is Host/external-party integration; the full Bank server's Memory
+composition and the rail's own process-local delivery queue retain their stated
+limits. Crash recovery during an operation is not yet certified.

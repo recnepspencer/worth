@@ -39,6 +39,9 @@ enum Endpoint {
     NoEffectBeforeStart,
 }
 impl QueryJournalPublication {
+    pub(in crate::query_journal) fn stop_before_start_for_test(&self) {
+        self.stop();
+    }
     pub(super) fn prepare(
         serving: &ServingPhysicalRuntime,
         journal: &'static str,

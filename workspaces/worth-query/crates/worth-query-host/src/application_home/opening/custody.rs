@@ -1,5 +1,16 @@
 //! Compose the Query owner's actual custody admission with the same Home.
 use super::*;
+impl<Schema, Program> super::super::runtime::WorthQueryApplicationHome<Schema, Program> {
+    /// Receiver-owned stop of an actual prepared Home frame before effects.
+    #[doc(hidden)]
+    pub fn stop_next_prepared_dispatch_publication_for_test(&self) {
+        self.directory
+            .as_ref()
+            .expect("this physical control requires a Directory Home")
+            .query_dispatch_journal_operation()
+            .stop_next_prepared_publication_for_test();
+    }
+}
 pub(super) struct AdmittedHomeCustody<Schema: ApplicationSchemaComposition, Program> {
     pub(super) query: ReadmittedHomeQueryService<Schema, Program>,
     pub(super) home: DirectoryHome,

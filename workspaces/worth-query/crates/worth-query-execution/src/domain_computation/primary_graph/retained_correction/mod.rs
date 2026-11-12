@@ -7,6 +7,7 @@ mod observation;
 mod pins;
 mod prepared_commands;
 mod readmission;
+mod recovery_pins;
 mod retention_denial;
 pub use retention_denial::WorthQueryCorrectionRetentionDenial;
 pub(super) mod record;
@@ -14,7 +15,7 @@ use crate::domain_computation::application_aftermath::correction_material::{
     QueryCorrectionMaterialDenial as Denial, QueryCorrectionMaterialFrame, QueryCorrectionsMedium,
 };
 use catalog::MaterialCatalog;
-pub(in crate::domain_computation::primary_graph) use observation::RetainedCorrectionMaterial;
+pub(in crate::domain_computation) use observation::RetainedCorrectionMaterial;
 use record::MaterialRecord;
 use std::sync::{Arc, Mutex, MutexGuard};
 use worth_execution::ExecutionRequest;
@@ -130,6 +131,7 @@ impl CorrectionMaterialOwner {
         };
         for (identity, owner) in pins {
             match owner {
+                worth_foundational::facade::CorrectionMaterialPinOwner::Recovery { .. } => continue,
                 worth_foundational::facade::CorrectionMaterialPinOwner::PreparedCommand {
                     ..
                 } => {}

@@ -28,6 +28,7 @@ pub(crate) struct ApplicationQueryJournal {
     serving: Weak<ServingPhysicalRuntime>,
     name: &'static str,
     publication: Mutex<Option<Box<QueryJournalPublication>>>,
+    stop_next_prepared: std::sync::atomic::AtomicBool,
 }
 impl ApplicationQueryJournal {
     pub(crate) fn new(serving: &Arc<ServingPhysicalRuntime>, name: &'static str) -> Self {
@@ -35,6 +36,7 @@ impl ApplicationQueryJournal {
             serving: Arc::downgrade(serving),
             name,
             publication: Mutex::new(None),
+            stop_next_prepared: std::sync::atomic::AtomicBool::new(false),
         }
     }
     pub(crate) fn admit_prefix(
@@ -182,6 +184,14 @@ impl ApplicationQueryJournal {
                 Ok(task) => *slot = Some(Box::new(task)),
                 Err(cause) => return Outcome::Refused(cause),
             }
+            if self
+                .stop_next_prepared
+                .swap(false, std::sync::atomic::Ordering::AcqRel)
+            {
+                slot.as_mut()
+                    .expect("actual original task was prepared")
+                    .stop_before_start_for_test();
+            }
         }
         match slot
             .as_mut()
@@ -220,6 +230,10 @@ impl ApplicationQueryJournal {
         }
         *slot = None;
         Ok(())
+    }
+    pub(crate) fn stop_next_prepared_publication_for_test(&self) {
+        self.stop_next_prepared
+            .store(true, std::sync::atomic::Ordering::Release);
     }
 }
 fn journal<'a>(

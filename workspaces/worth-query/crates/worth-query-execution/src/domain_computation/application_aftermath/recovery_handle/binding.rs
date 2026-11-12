@@ -30,12 +30,11 @@ pub struct WorthQueryRecoveryHandleBinding {
     /// Generation of the installed application schema binding.
     application_binding_generation: u64,
     installed_operation: [u8; 32],
-    mutation_work: Option<WorthQueryPrimaryMutationWorkEvidence>,
-    retained_preimage: Option<WorthQueryRetainedPreImage>,
-    retained_governed_input: Option<WorthQueryRetainedGovernedInput>,
+    input_custody: RecoveryInputCustody,
     principal_scope: WorthQueryOperationScopeBinding,
     idempotency: WorthQueryApplicationIdempotencyBinding,
     provider_posture: Option<WorthQueryExternalDispatchPosture>,
+    recorded_provider_observation: Option<crate::domain_computation::application_aftermath::dispatch_journal::QueryDispatchRecordedObservation>,
     /// Co-committed outbox record — R8.28 correlation evidence (R8.68).
     committed_dispatch_outbox:
         Option<crate::domain_computation::primary_graph::WorthQueryCommittedDispatchOutboxBinding>,
@@ -43,8 +42,46 @@ pub struct WorthQueryRecoveryHandleBinding {
     expires_at_unix_ms: Option<u64>,
 }
 
+#[derive(Clone, Debug, Eq, PartialEq)]
+enum RecoveryInputCustody {
+    Performed {
+        mutation_work: Option<WorthQueryPrimaryMutationWorkEvidence>,
+        retained_preimage: Option<WorthQueryRetainedPreImage>,
+        retained_governed_input: Option<WorthQueryRetainedGovernedInput>,
+    },
+    Recorded {
+        governed_input_identity: Option<[u8; 32]>,
+    },
+}
+impl RecoveryInputCustody {
+    fn from_original(
+        publication: &crate::domain_computation::primary_graph::WorthQueryCommittedProductPublication,
+        mutation_work: Option<WorthQueryPrimaryMutationWorkEvidence>,
+        retained_preimage: Option<WorthQueryRetainedPreImage>,
+        retained_governed_input: Option<WorthQueryRetainedGovernedInput>,
+    ) -> Self {
+        if publication
+            .composite_commit()
+            .owner_identity()
+            .durable()
+            .is_some()
+        {
+            Self::Recorded {
+                governed_input_identity: retained_governed_input
+                    .as_ref()
+                    .and_then(|input| input.governed_identity()),
+            }
+        } else {
+            Self::Performed {
+                mutation_work,
+                retained_preimage,
+                retained_governed_input,
+            }
+        }
+    }
+}
 impl WorthQueryRecoveryHandleBinding {
-    pub(in crate::domain_computation::application_aftermath) fn from_receipt(
+    pub(in crate::domain_computation) fn from_receipt(
         receipt: &WorthQueryApplicationCommitReceipt,
         expires_at_unix_ms: Option<u64>,
     ) -> Result<Self, WorthQueryRecoveryHandleDenial> {
@@ -73,18 +110,32 @@ impl WorthQueryRecoveryHandleBinding {
             runtime_instance_id: receipt.provider_runtime_instance_id(),
             schema_identity,
             commit,
-            committed_product_publication: receipt.committed_product_publication().clone(),
+            committed_product_publication: if receipt
+                .committed_product_publication()
+                .composite_commit()
+                .owner_identity()
+                .durable()
+                .is_some()
+            {
+                receipt.committed_product_publication().descriptive()
+            } else {
+                receipt.committed_product_publication().clone()
+            },
             application_binding_generation,
             installed_operation: *receipt.installed_operation(),
-            mutation_work: receipt.mutation_work().cloned(),
-            retained_preimage: receipt.retained_preimage().cloned(),
-            retained_governed_input: receipt
-                .authority_binding()
-                .retained_governed_input_carrier()
-                .cloned(),
+            input_custody: RecoveryInputCustody::from_original(
+                receipt.committed_product_publication(),
+                receipt.mutation_work().cloned(),
+                receipt.retained_preimage().cloned(),
+                receipt
+                    .authority_binding()
+                    .retained_governed_input_carrier()
+                    .cloned(),
+            ),
             principal_scope: receipt.principal_scope().clone(),
             idempotency: receipt.idempotency_binding(),
             provider_posture: receipt.external_dispatch().map(|d| d.posture().clone()),
+            recorded_provider_observation: None,
             committed_dispatch_outbox: receipt.committed_dispatch_outbox().cloned(),
             installed_aftermath: aftermath.clone(),
             expires_at_unix_ms,
@@ -117,15 +168,29 @@ impl WorthQueryRecoveryHandleBinding {
             runtime_instance_id: original.original_runtime_instance_id(),
             schema_identity: *scope.binding_identity().schema_identity().bytes(),
             commit: original.original_commit().clone(),
-            committed_product_publication: original.original_publication().clone(),
+            committed_product_publication: if original
+                .original_publication()
+                .composite_commit()
+                .owner_identity()
+                .durable()
+                .is_some()
+            {
+                original.original_publication().descriptive()
+            } else {
+                original.original_publication().clone()
+            },
             application_binding_generation: scope.binding_identity().generation(),
             installed_operation: *authority.installed_operation(),
-            mutation_work: original.original_work().cloned(),
-            retained_preimage: original.original_preimage().cloned(),
-            retained_governed_input: authority.retained_governed_input_carrier().cloned(),
+            input_custody: RecoveryInputCustody::from_original(
+                original.original_publication(),
+                original.original_work().cloned(),
+                original.original_preimage().cloned(),
+                authority.retained_governed_input_carrier().cloned(),
+            ),
             principal_scope: scope.clone(),
             idempotency: authority.idempotency_binding(),
             provider_posture: dispatch.map(|dispatch| dispatch.posture().clone()),
+            recorded_provider_observation: None,
             committed_dispatch_outbox: original.original_outbox_binding().cloned(),
             installed_aftermath: aftermath.clone(),
             expires_at_unix_ms,
@@ -175,6 +240,28 @@ impl WorthQueryRecoveryHandleBinding {
         self.provider_posture.as_ref()
     }
 
+    /// A recovered observation is descriptive; it never becomes a live posture proof.
+    pub fn provider_posture_kind(
+        &self,
+    ) -> Option<
+        crate::domain_computation::application_aftermath::WorthQueryExternalDispatchPostureKind,
+    > {
+        use crate::domain_computation::application_aftermath::dispatch_journal::QueryDispatchRecordedObservation as Observation;
+        use crate::domain_computation::application_aftermath::WorthQueryExternalDispatchPostureKind as Kind;
+        self.provider_posture
+            .as_ref()
+            .map(|posture| posture.kind())
+            .or_else(|| {
+                self.recorded_provider_observation
+                    .map(|observed| match observed {
+                        Observation::Completed => Kind::Completed,
+                        Observation::Acknowledged => Kind::Acknowledged,
+                        Observation::ProvenNoEffect(_) => Kind::ProvenNoEffect,
+                        Observation::Unresolved(_) => Kind::Unresolved,
+                    })
+            })
+    }
+
     /// Correlation identity derived from the bound outbox record.
     ///
     /// Preserved for callers that only need the identity; re-dispatch requires
@@ -222,8 +309,22 @@ impl WorthQueryRecoveryHandleBinding {
         &self.installed_aftermath
     }
 
-    pub(crate) const fn retained_governed_input(&self) -> Option<&WorthQueryRetainedGovernedInput> {
-        self.retained_governed_input.as_ref()
+    pub(crate) fn governed_input_identity(&self) -> Option<[u8; 32]> {
+        match &self.input_custody {
+            RecoveryInputCustody::Performed {
+                retained_governed_input,
+                ..
+            } => retained_governed_input
+                .as_ref()
+                .and_then(|input| input.governed_identity()),
+            RecoveryInputCustody::Recorded {
+                governed_input_identity,
+            } => *governed_input_identity,
+        }
+    }
+
+    pub(in crate::domain_computation) fn readmit_expiry(&mut self, expires_at_unix_ms: u64) {
+        self.expires_at_unix_ms = Some(expires_at_unix_ms);
     }
 
     pub const fn expires_at_unix_ms(&self) -> Option<u64> {
@@ -232,3 +333,5 @@ impl WorthQueryRecoveryHandleBinding {
 }
 
 mod court_doors_for_test;
+
+mod recorded;

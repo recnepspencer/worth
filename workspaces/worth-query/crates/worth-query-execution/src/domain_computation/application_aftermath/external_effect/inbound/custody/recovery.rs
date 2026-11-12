@@ -15,6 +15,7 @@ use super::{
 #[must_use = "return exact World recovery to inbound owner custody"]
 #[derive(Clone)]
 pub(in crate::domain_computation) enum WorthQueryInboundRecoveryState {
+    Recorded(crate::domain_computation::primary_graph::application_runtime::inbound_publication::recovered::RecordedCompletionContinuation),
     Active(WorthQueryProductUnpublishedRecovery),
     HandoffWorld {
         old: WorthQueryProductUnpublishedRecovery,
@@ -37,6 +38,71 @@ pub(in crate::domain_computation) enum WorthQueryInboundRecoveryState {
 }
 
 impl WorthQueryInboundCustody {
+    pub(in crate::domain_computation) fn recorded_completion_denial(
+        &self,
+        operation: &str,
+        correlation: &crate::domain_computation::application_aftermath::ExternalEffectCorrelationIdentity,
+    ) -> Option<Arc<crate::domain_computation::primary_graph::WorthQueryRecordedCompletionDenial>>
+    {
+        let accepted = self.accepted_by_correlation(correlation)?;
+        if accepted.operation() != operation {
+            return None;
+        }
+        let entry = self
+            .by_message
+            .get(&MessageKey::from_claims(accepted.claims()))?;
+        match entry.unpublished.as_ref()? {
+            WorthQueryInboundRecoveryState::Recorded(original) => original.last_denial(),
+            WorthQueryInboundRecoveryState::Active(_)
+            | WorthQueryInboundRecoveryState::HandoffWorld { .. }
+            | WorthQueryInboundRecoveryState::HandoffCleanup { .. }
+            | WorthQueryInboundRecoveryState::PublishedWorld { .. }
+            | WorthQueryInboundRecoveryState::PublishedCleanup { .. }
+            | WorthQueryInboundRecoveryState::StaleWorld(_)
+            | WorthQueryInboundRecoveryState::StaleCleanup(_) => None,
+        }
+    }
+
+    pub(in crate::domain_computation) fn readmit_unpublished_completion(
+        &mut self,
+        accepted: &Arc<WorthQueryAcceptedInboundOccurrence>,
+        continuation: crate::domain_computation::primary_graph::application_runtime::inbound_publication::recovered::RecordedCompletionContinuation,
+    ) -> bool {
+        let Some(entry) = self
+            .by_message
+            .get_mut(&MessageKey::from_claims(accepted.claims()))
+        else {
+            return false;
+        };
+        if let Some(WorthQueryInboundRecoveryState::Recorded(existing)) = &entry.unpublished {
+            return Arc::ptr_eq(&entry.accepted, accepted) && existing.same_original(&continuation);
+        }
+        if !Arc::ptr_eq(&entry.accepted, accepted)
+            || entry.publication != PublicationState::Retryable
+        {
+            return false;
+        }
+        entry.unpublished = Some(WorthQueryInboundRecoveryState::Recorded(continuation));
+        entry.publication = PublicationState::Unpublished;
+        true
+    }
+
+    pub(in crate::domain_computation) fn finish_recorded_completion_recovery(
+        &mut self,
+        accepted: &Arc<WorthQueryAcceptedInboundOccurrence>,
+        completion: worth_runtime_world::facade::CompositeCommitIdentity,
+    ) {
+        let entry = self
+            .by_message
+            .get_mut(&MessageKey::from_claims(accepted.claims()))
+            .expect("accepted recovery remains owned");
+        assert!(Arc::ptr_eq(&entry.accepted, accepted));
+        assert_eq!(entry.publication, PublicationState::Recovering);
+        assert!(entry.unpublished.is_none());
+        // The recovering claim already owns this one publication charge.
+        entry.publication = PublicationState::Publishing;
+        self.release_accepted_after_external_terminal(accepted, completion);
+    }
     pub(in crate::domain_computation) fn retain_unpublished(
         &mut self,
         accepted: &Arc<WorthQueryAcceptedInboundOccurrence>,
@@ -83,7 +149,10 @@ impl WorthQueryInboundCustody {
         if entry.publication != PublicationState::Unpublished {
             return Err(match entry.publication {
                 PublicationState::Terminal => WorthQueryInboundPublicationClaim::Terminal,
-                _ => WorthQueryInboundPublicationClaim::Publishing,
+                PublicationState::Publishing
+                | PublicationState::Recovering
+                | PublicationState::Retryable
+                | PublicationState::Unpublished => WorthQueryInboundPublicationClaim::Publishing,
             });
         }
         let usage = self

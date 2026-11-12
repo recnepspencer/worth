@@ -1,6 +1,6 @@
 //! Safe-retry transition — consumes proof of one completed re-dispatch (R8.66).
 
-use crate::domain_computation::managed_run::WorthQueryRecoveryResourceTerminal;
+use crate::domain_computation::managed_run::RecoveryClaimDisposition;
 
 use super::super::external_effect::WorthQueryExternalEffectDispatch;
 use super::super::recovery_handle::{
@@ -87,6 +87,7 @@ impl WorthQueryRecoverySafeRetryAdmission {
 /// On denial, [`WorthQueryRecoverySafeRetryDenial::Retained`] hands the live
 /// handle back; `Terminal` means the handle had already ended.
 pub fn safe_retry_recovery_handle(
+    phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
     handle: WorthQueryRecoveryHandle,
     authority: &WorthQueryRecoveryEffectAuthority,
     redispatch: WorthQueryPerformedExternalRedispatch,
@@ -139,12 +140,26 @@ pub fn safe_retry_recovery_handle(
             handle: Box::new(handle),
         });
     }
+    let outbox_durability = if handle.home_owner().durable().is_some() {
+        WorthQueryDispatchOutboxDurabilityPosture::DurableHome
+    } else {
+        WorthQueryDispatchOutboxDurabilityPosture::ProcessLocal
+    };
     let dispatch = redispatch.into_dispatch();
     Ok(WorthQueryRecoverySafeRetryAdmission {
         binding: handle
-            .consume(WorthQueryRecoveryResourceTerminal::Completed)
-            .map_err(WorthQueryRecoverySafeRetryDenial::Terminal)?,
+            .consume(phase, RecoveryClaimDisposition::Completed)
+            .map_err(|failed| {
+                let (denial, handle) = failed.into_parts();
+                match handle {
+                    Some(handle) => WorthQueryRecoverySafeRetryDenial::Retained {
+                        denial,
+                        handle: Box::new(handle),
+                    },
+                    None => WorthQueryRecoverySafeRetryDenial::Terminal(denial),
+                }
+            })?,
         dispatch,
-        outbox_durability: WorthQueryDispatchOutboxDurabilityPosture::StoreCapabilityRequired,
+        outbox_durability,
     })
 }

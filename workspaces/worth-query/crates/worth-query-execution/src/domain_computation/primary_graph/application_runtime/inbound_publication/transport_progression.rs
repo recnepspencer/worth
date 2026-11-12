@@ -1,4 +1,5 @@
 //! World publication from one installed transport's observed completion.
+use super::completion_publication::{CompletionPreparationDenial, PreparedCompletionPublication};
 use crate::domain_computation::execution_runtime::product_world::publication_denial::{
     WorthQueryProductPublicationDenial as PublicationDenial,
     WorthQueryProductPublicationOutcome as PublicationOutcome,
@@ -6,7 +7,7 @@ use crate::domain_computation::execution_runtime::product_world::publication_den
 use crate::domain_computation::primary_graph::application_contribution::advancement_denial;
 use crate::domain_computation::primary_graph::provider::WorthQueryInboundCompletionPreparationDenial as Preparation;
 use crate::domain_computation::primary_graph::WorthQueryAdvancementPhase;
-use worth_relational::facade::mvcc::PreparedRelationalCommitCandidate;
+use worth_relational::facade::mvcc::ValidatedRelationalProposal;
 
 use std::sync::Arc;
 
@@ -61,7 +62,7 @@ where
         if owner.commit_reference() != original.relational_commit() {
             return Outcome::Denied(evidence, Denial::OriginalPublicationCommitMismatch);
         }
-        let binding = match self.resolve_installed_transport_completion_binding(owner) {
+        let binding = match self.admit_installed_transport_completion_binding(execution, owner) {
             Ok(binding) => binding,
             Err(_) => return Outcome::Denied(evidence, Denial::BindingUnavailable),
         };
@@ -95,15 +96,20 @@ where
             Ok(lease) => lease,
             Err(_) => return Outcome::Denied(evidence, Denial::ProductAdmission),
         };
+        // Ordinary selection carries the program observed at this exact occurrence.
+        let selected = match self.on_product(execution, lease) {
+            Ok(selected) => selected,
+            Err(_) => return Outcome::Denied(evidence, Denial::ProductAdmission),
+        };
+        let lease = selected.product();
         let candidate = match completion_candidate(
             Arc::clone(&evidence),
             self.runtime
                 .primary_provider
-                .prepare_installed_transport_completion_candidate(
+                .validate_installed_transport_completion_proposal(
                     execution,
                     lease.relational_basis(),
-                    owner,
-                    evidence.dispatch(),
+                    &evidence,
                     &binding,
                 ),
         ) {
@@ -112,15 +118,23 @@ where
         };
         let publication = lease.publication_binding();
         let recovery = publication.recovery();
-        let prepared = match publication.prepare_relational_candidate(candidate, request, false) {
+        let prepared = match PreparedCompletionPublication::prepare(&self.runtime.primary_provider, &publication, candidate, request, execution) {
             Ok(prepared) => prepared,
-            Err(PublicationDenial::ClockMismatch) => {
+            Err(CompletionPreparationDenial::Native(cause)) => return Outcome::Denied(evidence, Denial::CompletionPreparation(cause)),
+            Err(CompletionPreparationDenial::Opening(cause)) => {
+                let denial = match super::completion_publication::opening_request_stop(cause) {
+                    Some(stop) => Denial::ExecutionDenied(advancement_denial(stop)),
+                    None => Denial::ProductAdmission,
+                };
+                return Outcome::Denied(evidence, denial);
+            },
+            Err(CompletionPreparationDenial::Request(PublicationDenial::ClockMismatch)) => {
                 return Outcome::Denied(evidence, Denial::ExecutionDenied(crate::domain_computation::primary_graph::WorthQueryAdvancementDenial::Resource(crate::domain_computation::primary_graph::WorthQueryManagedComputationResourceDenial::ForeignAdmissionClock)))
             },
-Err(PublicationDenial::Stopped(stop)) => {
+Err(CompletionPreparationDenial::Request(PublicationDenial::Stopped(stop))) => {
                 return Outcome::Denied(evidence, Denial::ExecutionDenied(advancement_denial(stop)))
             }
-            Err(PublicationDenial::Refused(_)) => return Outcome::NoEffect(evidence),
+            Err(CompletionPreparationDenial::Request(PublicationDenial::Refused(_))) => return Outcome::NoEffect(evidence),
         };
         let terminal = WorthQueryReservedProductPublicationReceipt::new(
             publication.root_identity(),
@@ -180,8 +194,8 @@ Err(PublicationDenial::Stopped(stop)) => {
 // refusal travels with the publication outcome rather than becoming a string.
 pub fn completion_candidate(
     evidence: Arc<InstalledTransportCompletion>,
-    result: Result<PreparedRelationalCommitCandidate, Preparation>,
-) -> Result<PreparedRelationalCommitCandidate, Outcome> {
+    result: Result<ValidatedRelationalProposal, Preparation>,
+) -> Result<ValidatedRelationalProposal, Outcome> {
     match result {
         Ok(candidate) => Ok(candidate),
         Err(

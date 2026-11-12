@@ -6,8 +6,7 @@ use worth_proof::LinearResource;
 use worth_query_installation::facade::WorthQueryCanonicalWorkPhases;
 
 use crate::domain_computation::managed_run::{
-    WorthQueryRecoveryHandleRegistry, WorthQueryRecoveryRegistrySlot,
-    WorthQueryRecoveryResourceTerminal,
+    RecoveryClaimDisposition, WorthQueryRecoveryHandleRegistry, WorthQueryRecoveryRegistrySlot,
 };
 
 use super::binding::WorthQueryRecoveryHandleBinding;
@@ -21,7 +20,7 @@ worth_proof::authority_marker!(WorthQueryRecoveryLifecycleAuthority);
 
 type WorthQueryLinearRecoveryResource = LinearResource<
     WorthQueryRecoveryHandleIdentity,
-    WorthQueryRecoveryResourceTerminal,
+    RecoveryClaimDisposition,
     WorthQueryRecoveryLifecycleAuthority,
 >;
 
@@ -133,6 +132,16 @@ impl WorthQueryRecoveryHandle {
 
     pub(crate) fn ensure_live(&self) -> Result<(), WorthQueryRecoveryHandleDenial> {
         if self.registry.is_live(self.slot) {
+            if self
+                .registry
+                .recorded_terminal(self.slot)
+                .map_err(WorthQueryRecoveryHandleDenial::journal)?
+                .is_some()
+            {
+                return Err(WorthQueryRecoveryHandleDenial::new(
+                    WorthQueryRecoveryHandleDenialKind::AlreadyTerminal,
+                ));
+            }
             Ok(())
         } else {
             Err(WorthQueryRecoveryHandleDenial::new(
@@ -147,15 +156,55 @@ impl WorthQueryRecoveryHandle {
     /// callers are the [`RelinquishOnDenial`] combinators.
     fn relinquish(mut self) {
         if let Some(resource) = self.lifecycle.take() {
-            let _ = resource.terminate(WorthQueryRecoveryResourceTerminal::Relinquished);
+            let _ = resource.terminate(RecoveryClaimDisposition::Relinquished);
             self.registry.relinquish(self.slot);
         }
     }
 
     pub(crate) fn consume(
         mut self,
-        terminal: WorthQueryRecoveryResourceTerminal,
-    ) -> Result<WorthQueryRecoveryHandleBinding, WorthQueryRecoveryHandleDenial> {
+        phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+        terminal: RecoveryClaimDisposition,
+    ) -> Result<WorthQueryRecoveryHandleBinding, super::WorthQueryRecoveryTransitionDenial> {
+        use super::WorthQueryRecoveryTransitionDenial as Failed;
+        if let Err(denial) = self.ensure_live() {
+            return Err(
+                if denial.kind() == WorthQueryRecoveryHandleDenialKind::AlreadyTerminal {
+                    Failed::Terminal(denial)
+                } else {
+                    Failed::Retained {
+                        denial,
+                        handle: Box::new(self),
+                    }
+                },
+            );
+        }
+        let check = (|| {
+            // Memory termination is owner-local registry work; only a Home
+            // disposition crosses the funded journal boundary.
+            if self.home_owner().durable().is_none() {
+                return Ok(());
+            }
+            let request = phase
+                .request_for_owner(self.home_owner())
+                .map_err(|cause| {
+                    WorthQueryRecoveryHandleDenial::new(
+                        WorthQueryRecoveryHandleDenialKind::CompletionExecutionRequest(
+                            cause.into(),
+                        ),
+                    )
+                })?;
+            request.consult().map_err(|cause| WorthQueryRecoveryHandleDenial::journal(crate::domain_computation::application_aftermath::dispatch_journal::QueryDispatchJournalDenial::Execution(cause)))?;
+            self.registry
+                .publish_terminal(self.slot, terminal, &request)
+                .map_err(WorthQueryRecoveryHandleDenial::journal)
+        })();
+        if let Err(denial) = check {
+            return Err(Failed::Retained {
+                denial,
+                handle: Box::new(self),
+            });
+        }
         let resource = self
             .lifecycle
             .take()
@@ -164,11 +213,11 @@ impl WorthQueryRecoveryHandle {
             let recorded = self
                 .registry
                 .terminal_of(self.slot)
-                .unwrap_or(WorthQueryRecoveryResourceTerminal::ForceTerminated);
+                .unwrap_or(RecoveryClaimDisposition::ForceTerminated);
             let _ = resource.terminate(recorded);
-            return Err(WorthQueryRecoveryHandleDenial::new(
+            return Err(Failed::Terminal(WorthQueryRecoveryHandleDenial::new(
                 WorthQueryRecoveryHandleDenialKind::AlreadyTerminal,
-            ));
+            )));
         }
         let receipt = resource.terminate(terminal);
         debug_assert_eq!(receipt.terminal(), &terminal);
@@ -263,7 +312,7 @@ impl Drop for WorthQueryRecoveryHandle {
             let terminal = self
                 .registry
                 .terminal_of(self.slot)
-                .unwrap_or(WorthQueryRecoveryResourceTerminal::Disposed);
+                .unwrap_or(RecoveryClaimDisposition::Disposed);
             let receipt = resource.terminate(terminal);
             let _ = self.registry.mark_terminal(self.slot, *receipt.terminal());
         }

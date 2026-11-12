@@ -75,7 +75,7 @@ impl BankIdentityRuntime {
                 .map_err(BankEstateProgressionDenial::from_mutation_identity)?,
             );
             let admission = self.admit_estate_disbursement(&phase, principal, action, request)?;
-            return self.application_runtime().resolve_admitted_recovery_claim_status(&phase, &admission, binding).map(|status| status.map(super::BankRecoveryClaimStatus::from_query)).map_err(BankEstateProgressionDenial::from_idempotency);
+            return self.application_runtime().resolve_admitted_recovery_claim_status(&phase, &admission, binding).map(|status| status.map(super::BankRecoveryClaimStatus::from_query)).map_err(BankEstateProgressionDenial::from_recovery);
         }
         let binding = WorthQueryApplicationIdempotencyBinding::for_mutation_identities(
             &ApplicationMutationIdentities::<BankSchema, NotifyEstateDeathMutationBinding>::encode(
@@ -84,7 +84,7 @@ impl BankIdentityRuntime {
             .map_err(BankEstateProgressionDenial::from_mutation_identity)?,
         );
         let admission = self.admit_notification_operation(&phase, principal, action, request)?;
-        self.application_runtime().resolve_admitted_recovery_claim_status(&phase, &admission, binding).map(|status| status.map(super::BankRecoveryClaimStatus::from_query)).map_err(BankEstateProgressionDenial::from_idempotency)
+        self.application_runtime().resolve_admitted_recovery_claim_status(&phase, &admission, binding).map(|status| status.map(super::BankRecoveryClaimStatus::from_query)).map_err(BankEstateProgressionDenial::from_recovery)
 
         }).map_err(|cause| BankEstateProgressionDenial::ApplicationEntry(Box::new(worth_query_host::facade::application_entry::WorthQueryApplicationRequestMutationDenial::ExecutionRequest(cause))))?
     }
@@ -150,9 +150,9 @@ impl BankIdentityRuntime {
                 handle.query().binding().idempotency(),
             )
             .map_err(BankEstateProgressionDenial::from_idempotency)?;
-        resolve_recovery_handle(handle.query, &authority, resolution)
+        resolve_recovery_handle(phase, handle.query, &authority, resolution)
             .map(map_idempotency)
-            .map_err(BankEstateProgressionDenial::from_recovery)
+            .map_err(BankEstateProgressionDenial::from_recovery_transition)
     }
 
     /// Re-dispatches through fresh authority and the live recovery handle.
@@ -186,7 +186,18 @@ impl BankIdentityRuntime {
             )),
         };
         // Only consumed recovery evidence remains; no source read follows the host call.
-        safe_retry_recovery_handle(handle.query, &authority, redispatch)
+        let mut owned = Some(handle);
+        let settled = self.application_runtime().with_host_advancement(|phase| {
+            let handle = owned
+                .take()
+                .expect("funded terminal takes actual handle once");
+            safe_retry_recovery_handle(&phase, handle.query, &authority, redispatch)
+        });
+        let settled = match settled {
+            Ok(result) => result,
+            Err(cause) => return Err(BankRecoverySafeRetryDenial::retained(BankEstateProgressionDenial::ApplicationEntry(Box::new(worth_query_host::facade::application_entry::WorthQueryApplicationRequestMutationDenial::ExecutionRequest(cause))), owned.take().expect("opening refusal retains handle"))),
+        };
+        settled
             .map(BankRecoverySafeRetryReceipt::from_query)
             .map_err(|denial| {
                 let (denial, handle) = denial.into_parts();

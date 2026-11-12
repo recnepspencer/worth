@@ -57,7 +57,8 @@ pub(in crate::domain_computation) use external_effect::{
 pub use recovery_handle::{
     WorthQueryOpaqueRecoveryWireIdentity, WorthQueryRecoveryClaimStatus, WorthQueryRecoveryHandle,
     WorthQueryRecoveryHandleBinding, WorthQueryRecoveryHandleDenial,
-    WorthQueryRecoveryHandleDenialKind,
+    WorthQueryRecoveryHandleDenialKind, WorthQueryRecoverySourceDenial,
+    WorthQueryRecoveryTransitionDenial,
 };
 pub use recovery_posture::{
     WorthQueryDispatchOutboxDurabilityPosture, WorthQueryRecoveryDurabilityPosture,

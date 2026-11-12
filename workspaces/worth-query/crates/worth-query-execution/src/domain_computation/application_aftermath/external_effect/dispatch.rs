@@ -141,6 +141,7 @@ impl WorthQueryExternalEffectCausalLadder {
 /// One completed production dispatch invocation and its exact canonical cost.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct WorthQueryExternalEffectDispatch {
+    live_runtime: crate::domain_computation::execution_runtime::WorthQueryRuntimeAuthorityIdentity,
     correlation: ExternalEffectCorrelationIdentity,
     posture: WorthQueryExternalDispatchPosture,
     causal_ladder: WorthQueryExternalEffectCausalLadder,
@@ -167,6 +168,9 @@ impl WorthQueryExternalEffectDispatch {
         runtime: crate::domain_computation::execution_runtime::WorthQueryRuntimeAuthorityIdentity,
         committed: &crate::domain_computation::primary_graph::WorthQueryCommittedDispatchOutboxObservation,
     ) -> bool {
+        if self.live_runtime != runtime {
+            return false;
+        }
         let ladder = &self.causal_ladder;
         let Some(observation) = ladder.observation() else {
             return false;
@@ -244,7 +248,9 @@ impl WorthQueryExternalEffectDispatch {
 /// Dispatches one authoritative committed outbox observation through the host port.
 pub fn dispatch_external_effect(
     transport: &dyn WorthQueryExternalEffectTransport,
-    admitted: crate::domain_computation::primary_graph::WorthQueryAdmittedExternalDispatchAttempt,
+    admitted: crate::domain_computation::primary_graph::WorthQueryAdmittedExternalDispatchAttempt<
+        '_,
+    >,
     starting: impl FnOnce(),
 ) -> Result<WorthQueryExternalEffectDispatch, WorthQueryAftermathDerivationFailure> {
     with_admitted_dispatch(admitted, |attempt, clock, progression_work| {
@@ -263,6 +269,7 @@ pub fn dispatch_external_effect(
             observation: classified.observation.clone(),
         };
         Ok(WorthQueryExternalEffectDispatch {
+            live_runtime: attempt.runtime_authority(),
             correlation,
             posture: classified.posture,
             causal_ladder,

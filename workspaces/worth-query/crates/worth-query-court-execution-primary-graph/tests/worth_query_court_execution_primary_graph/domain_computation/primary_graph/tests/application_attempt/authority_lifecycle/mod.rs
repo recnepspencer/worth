@@ -89,7 +89,9 @@ fn admission_from_an_equivalent_foreign_runtime_opens_no_application_door() {
         .unwrap();
     assert_eq!(
         claim_denial.kind(),
-        WorthQueryApplicationIdempotencyResolutionDenialKind::ForeignAdmission
+        worth_query_execution::facade::domain_computation::WorthQueryRecoveryHandleDenialKind::OriginalRead(
+            WorthQueryApplicationIdempotencyResolutionDenialKind::ForeignAdmission
+        )
     );
 
     let read_denial = target_world

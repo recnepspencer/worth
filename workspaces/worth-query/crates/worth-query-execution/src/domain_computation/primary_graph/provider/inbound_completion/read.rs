@@ -12,7 +12,8 @@ use worth_relational::facade::{
 use crate::domain_computation::application_aftermath::ExternalEffectCorrelationIdentity;
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub(in crate::domain_computation::primary_graph) enum WorthQueryInboundCompletionReadDenial {
+pub enum WorthQueryInboundCompletionReadDenial {
+    SourceRead(super::super::WorthQueryCommittedDispatchOutboxReadDenial),
     ReadRequest(worth_relational::facade::transactions::RelationalExecutionDenialCause),
     AmbiguousCorrelation,
     Malformed,
@@ -35,6 +36,7 @@ pub(in crate::domain_computation::primary_graph) struct WorthQueryCanonicalCompl
     pub signed_meaning_digest: Option<[u8; 32]>,
     pub provenance: WorthQueryCompletionProvenance,
     pub payload: Vec<u8>,
+    pub original_entity: String,
     pub original_commit: RelationalCommitReceipt,
     pub original_incarnation_ordinal: u64,
     pub completion_commit: RelationalCommitReceipt,
@@ -99,6 +101,7 @@ pub(super) fn decode_completion_values(
         signed_meaning_digest,
         provenance,
         payload: decode_hex(&raw_string(&values[11])?)?,
+        original_entity: raw_string(&values[14])?,
         original_commit: original,
         original_incarnation_ordinal: number(&values[15])?,
         completion_commit: completed,
@@ -265,4 +268,31 @@ mod provenance_tests {
             Err(WorthQueryInboundCompletionReadDenial::Malformed)
         );
     }
+}
+
+pub(super) fn completion_locators(
+    layout: &crate::domain_computation::primary_graph::schema_layout::WorthQueryInboundCompletionLayout,
+) -> [&AspectFieldLocator; 20] {
+    [
+        &layout.correlation,
+        &layout.family,
+        &layout.operation,
+        &layout.audience,
+        &layout.source,
+        &layout.expires_at,
+        &layout.key_epoch,
+        &layout.message,
+        &layout.protocol,
+        &layout.version,
+        &layout.meaning_digest,
+        &layout.payload,
+        &layout.original_commit,
+        &layout.original_branch,
+        &layout.original_entity,
+        &layout.original_incarnation,
+        &layout.terminal,
+        &layout.provenance_kind,
+        &layout.transport_attempt,
+        &layout.transport_observation,
+    ]
 }
