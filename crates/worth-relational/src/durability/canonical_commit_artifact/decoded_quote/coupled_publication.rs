@@ -61,7 +61,7 @@ pub(super) fn quote(
 mod tests {
     use super::*;
     #[test]
-    fn malformed_stages_vector_still_refuses_noncanonical_payload() {
+    fn malformed_stages_vector_is_refused_before_decode() {
         #[derive(serde::Serialize)]
         enum Sources {
             Stages(&'static str),
@@ -73,6 +73,32 @@ mod tests {
         }
         let bytes = rmp_serde::to_vec_named(&Malformed {
             sources: Sources::Stages("not an entity vector"),
+            participants: Vec::new(),
+        })
+        .unwrap();
+        let request = worth_execution::SerialRequest::from_memory(
+            worth_execution::SerialMemoryBudget::new(None),
+            worth_execution::CancellationSource::new().token(),
+            None,
+        );
+        assert!(matches!(
+            quote(BorrowedPayload(&bytes), &ExecutionRequest::serial(&request)),
+            Err(Refusal::PayloadDecode { .. })
+        ));
+    }
+    #[test]
+    fn unknown_authored_source_variant_still_refuses_noncanonical_payload() {
+        #[derive(serde::Serialize)]
+        enum Sources {
+            UnknownStages(Vec<crate::identity::data::EntityId>),
+        }
+        #[derive(serde::Serialize)]
+        struct Malformed {
+            sources: Sources,
+            participants: Vec<()>,
+        }
+        let bytes = rmp_serde::to_vec_named(&Malformed {
+            sources: Sources::UnknownStages(Vec::new()),
             participants: Vec::new(),
         })
         .unwrap();
