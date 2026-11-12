@@ -40,15 +40,24 @@ fn exercise(worker: bool, cold: bool) {
         .unwrap_or_else(|cause| panic!("{:?}", cause.denial()));
     // D1717: Stable adoption has no effectful delivery to interrupt. Its
     // original receipt remains descriptive recovery evidence, not new work.
-    let (progress, delivery) = observe_maintenance_work(8, || {
-        original
-            .required_output_mut()
-            .advance(&host, &request)
-            .unwrap()
+    let (settlement, delivery) = observe_maintenance_work(8, || {
+        for _ in 0..128 {
+            match original
+                .required_output_mut()
+                .advance(&host, &request)
+                .unwrap()
+            {
+                WorthQueryDiscoveredProgramOutputProgress::Progressed => {}
+                WorthQueryDiscoveredProgramOutputProgress::Settled(settlement) => {
+                    return settlement
+                }
+                WorthQueryDiscoveredProgramOutputProgress::Pending => {
+                    panic!("Stable reuse must not wait for effectful delivery")
+                }
+            }
+        }
+        panic!("the finite Stable root set must settle");
     });
-    let WorthQueryDiscoveredProgramOutputProgress::Settled(settlement) = progress else {
-        panic!("the already-current Stable roots settle immediately");
-    };
     assert_eq!(settlement.root_outputs().count(), 2);
     assert!(settlement
         .root_outputs()
