@@ -148,8 +148,7 @@ where
             WorthQueryAuthorizedApplicationReadDenial::StalePrincipal => {
                 self.acknowledge_and_terminate(WorthQueryApplicationLiveOutcome::StalePrincipal)
             }
-            WorthQueryAuthorizedApplicationReadDenial::StaleScope
-            | WorthQueryAuthorizedApplicationReadDenial::StaleBasisScope => {
+            WorthQueryAuthorizedApplicationReadDenial::ScopeFreshness(_) => {
                 self.acknowledge_and_terminate(WorthQueryApplicationLiveOutcome::StaleScope)
             }
             WorthQueryAuthorizedApplicationReadDenial::Authorization(authorization) => {

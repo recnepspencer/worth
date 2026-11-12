@@ -284,7 +284,8 @@ pub(in crate::domain_computation::primary_graph::provider) fn idempotency_denial
         | Source::RetentionIdentityExhausted
         | Source::SnapshotIdentityExhausted
         | Source::RecordedIntentUnverifiable
-        | Source::Unavailable => Denial::NotAuthoritative,
+        | Source::Unavailable
+        | Source::NativeKeyLookup { .. } => Denial::NotAuthoritative,
     }
 }
 

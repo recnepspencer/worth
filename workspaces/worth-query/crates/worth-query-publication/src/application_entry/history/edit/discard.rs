@@ -78,6 +78,17 @@ where
     /// Deliberately discard an unselected candidate and its completed evidence.
     /// Native unpublished/indeterminate custody must settle before it can close.
     pub fn discard(
+        self,
+        request: &WorthQueryApplicationRequest<'_, '_, '_, S>,
+    ) -> Result<
+        WorthQueryApplicationHistoryDocument<'runtime, S, H, Payload, Outputs>,
+        (Self, WorthQueryHistoryEditDenial),
+    > {
+        worth_execution::run_with_execution_stack(move || self.discard_on_execution_stack(request))
+    }
+
+    #[inline(never)]
+    fn discard_on_execution_stack(
         mut self,
         request: &WorthQueryApplicationRequest<'_, '_, '_, S>,
     ) -> Result<

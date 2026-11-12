@@ -66,6 +66,17 @@ fn run<const MODE: u8>() {
             "edge source scopes no route"
         );
     }
+    let before_world = host
+        .with_host_advancement(|phase| {
+            host.runtime()
+                .on_branch(host.current_world())
+                .select(&phase)
+                .unwrap()
+                .product()
+                .observation_for_test()
+                .clone()
+        })
+        .unwrap();
     let before = host
         .with_host_advancement(|phase| {
             host.capture_application_checkpoint(
@@ -99,7 +110,40 @@ fn run<const MODE: u8>() {
             .unwrap()
         })
         .unwrap();
-    assert_eq!(before, after, "Native preparation published no change");
+    host.with_host_advancement(|phase| {
+        let before = host
+            .inspect_application_checkpoint(&phase, before.bytes())
+            .unwrap();
+        let after = host
+            .inspect_application_checkpoint(&phase, after.bytes())
+            .unwrap();
+        assert_eq!(
+            before.model, after.model,
+            "Native preparation published no model change"
+        );
+        assert_eq!(
+            before.symbol_identity_frontier,
+            after.symbol_identity_frontier
+        );
+        assert_eq!(before.frontiers, after.frontiers);
+        assert_eq!(before.generations, after.generations);
+        assert_eq!(before.live_records, after.live_records);
+        assert_eq!(
+            before.current_publication_records,
+            after.current_publication_records
+        );
+        let selected = host
+            .runtime()
+            .on_branch(host.current_world())
+            .select(&phase)
+            .unwrap();
+        assert_eq!(
+            &before_world,
+            selected.product().observation_for_test(),
+            "no World product movement"
+        );
+    })
+    .unwrap();
     settle(&host, &request, 10);
     assert!(request.query(query::Input { id: 20 }).execute().is_ok());
 }

@@ -111,6 +111,7 @@ impl<'runtime, S: ApplicationSchema, H: ApplicationHistoryBinding<S>>
                 WorthQueryHistorySourceEvidence::Live(receipt) => receipt.idempotency_binding(),
                 WorthQueryHistorySourceEvidence::Recorded(_) => meaning,
             },
+            source,
             profile,
             Arc::clone(&last.endpoint),
             last.root_posture,

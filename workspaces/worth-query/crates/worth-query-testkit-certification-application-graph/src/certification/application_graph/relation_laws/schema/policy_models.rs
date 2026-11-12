@@ -29,9 +29,6 @@ pub use derived::*;
 #[path = "policy_models/logical.rs"]
 mod logical;
 pub use logical::*;
-#[path = "policy_models/local_logical.rs"]
-mod local_logical;
-pub use local_logical::*;
 #[path = "policy_models/leaf_and_principal_minimum_two.rs"]
 mod leaf_and_principal_minimum_two;
 pub use leaf_and_principal_minimum_two::*;

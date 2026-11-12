@@ -12,19 +12,6 @@ where
     Ctx: Send + Sync + 'static,
     T: Copy + Ord + Send + Sync + 'static,
 {
-    /// Arm one exact current original before its continuation starts. The
-    /// returned guard has no owner ports; Drop disarms this one interruption.
-    pub fn arm_home_transition_effect_control(
-        &self,
-        request: &worth_execution::ExecutionRequest<'_, '_>,
-        claim: &crate::recovery::WorldRecoveredUnpublishedEffects,
-        mode: crate::publication::WorldHomeTransitionEffectInterruption,
-    ) -> Result<crate::publication::WorldHomeTransitionEffectControl, Denial> {
-        self.service()
-            .map_err(|_| Denial::Source(NoEffectCause::OwnerUnavailable))?
-            .arm_home_transition_effect_control(request, claim, mode)
-    }
-
     pub fn continue_home_transition_effect(
         &self,
         request: &worth_execution::ExecutionRequest<'_, '_>,

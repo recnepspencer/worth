@@ -38,9 +38,11 @@ fn reopened_home_refuses_the_authentic_prior_provider_session_before_any_provide
         .expect("the actual owner issued this grant");
     assert_eq!(grant.counters().provider_calls(), 0);
     assert_eq!(contacts.load(Ordering::SeqCst), 1);
-    // Both the authentic grant AND the control survive Home abandonment. Neither
-    // owns a source port; there is no test-side release of capability custody.
-    drop(home);
+    // Both the authentic grant AND the control survive graceful Home close.
+    // Neither owns a source port; no capability is released by the fixture.
+    (*home).close(&execution).unwrap_or_else(|cause| {
+        panic!("session writer closes with its port-free grant retained: {cause:?}")
+    });
     let home = with_bootstrap_advancement_from_request(execution, |phase| {
         Box::new(
             fixture::request_with_initializer(path, build, contacts.clone(), |_, _, _| {
@@ -52,6 +54,7 @@ fn reopened_home_refuses_the_authentic_prior_provider_session_before_any_provide
     })
     .unwrap();
     assert_eq!(initialized.load(Ordering::SeqCst), 1);
+    let (_, live) = scope();
     let app = home.runtime().runtime();
     let before = app
         .with_application_advancement(&live, |phase| {

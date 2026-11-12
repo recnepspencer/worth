@@ -39,27 +39,23 @@ pub fn transition_counted(
     policy: installation::WorthQueryCheckpointCapturePolicy<'_, '_>,
     callbacks: &mut usize,
 ) -> Result<Target, installation::WorthQueryApplicationPreparationDenial> {
-    installation::WorthQueryInterimCheckpointRestore::rostered_program_with_transition(
-        new::host::program::<new::program::TargetProgram>(),
-        installation::WorthQueryApplicationProgramRoster::new(),
-        successor::schema::CanonicalSchema::declaration().unwrap(),
-        ((),),
-        ApplicationBuildIdentity::parse("11111111-1111-1111-1111-111111111111").unwrap(),
-        successor::host::limits(),
-        checkpoint,
-        installation::WorthQueryCheckpointProgramPredecessor::new(
-            &old::host::program::<old::program::SourceProgram>()
-                .revision()
-                .to_string(),
-        )
-        .unwrap(),
-        installation::WorthQueryCheckpointTransitionResources::bounded(65_536, 32, 65_536).unwrap(),
-        policy,
-        |_, _| {
-            *callbacks += 1;
-            Ok(())
-        },
-    )
+    match policy {
+        installation::WorthQueryCheckpointCapturePolicy::SystemAllocation => {
+            let funding = worth_execution::ExecutionResourceLease::serial(
+                super::super::capture_child::complete_capture_funding(),
+            )
+            .expect("the existing complete-image fixture allowance is valid");
+            transition_funded(
+                checkpoint,
+                &funding,
+                installation::WorthQueryCheckpointCapturePolicy::Execution(&funding),
+                callbacks,
+            )
+        }
+        installation::WorthQueryCheckpointCapturePolicy::Execution(funding) => {
+            transition_funded(checkpoint, funding, policy, callbacks)
+        }
+    }
 }
 /// The same transition inside a phase `funding` opens, with its capture
 /// capped by the caller-named `capture` policy.

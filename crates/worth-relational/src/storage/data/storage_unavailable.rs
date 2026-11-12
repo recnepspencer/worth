@@ -29,6 +29,12 @@ pub enum RelationalStorageUnavailableCause {
     MissingMember,
     /// The source refused or failed without proving durable damage. Retryable.
     SourceUnavailable,
+    /// Incremental publication lacks its admitted resident predecessor.
+    MissingResidentPublicationRegion,
+    /// Incremental publication lacks the predecessor content commitment.
+    MissingResidentPublicationCommitment,
+    /// Incremental publication lacks the predecessor kind-index custody.
+    MissingResidentPublicationKindIndexes,
     /// Owned successor admission lost its dictionary-specific predecessor proof.
     /// This is retryable maintenance state loss, never proven region damage.
     MissingSymbolMaintenancePredecessor,

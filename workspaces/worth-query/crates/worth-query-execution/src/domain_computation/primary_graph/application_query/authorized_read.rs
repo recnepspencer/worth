@@ -24,8 +24,7 @@ pub(in crate::domain_computation::primary_graph::application_query) use selected
 
 pub enum WorthQueryAuthorizedApplicationReadDenial {
     StalePrincipal,
-    StaleScope,
-    StaleBasisScope,
+    ScopeFreshness(super::WorthQueryScopeFreshnessDiagnostic),
     Authorization(crate::domain_computation::primary_graph::WorthQueryOperationAuthorizationDenial),
     Read(WorthQueryApplicationReadExecutionDenial),
     Session,
@@ -247,7 +246,8 @@ where
         .map_err(|denial| {
             freshness_denial(
                 denial,
-                WorthQueryAuthorizedApplicationReadDenial::StaleScope,
+                super::WorthQueryScopeFreshnessCheck::CurrentSecurity,
+                current,
             )
         })?;
     Ok(plan.authorization_work)

@@ -253,7 +253,7 @@ where
                 "pending publication execution refused",
             ))
         }
-        Err(IdempotencyDenial::Unavailable) => {
+        Err(IdempotencyDenial::Unavailable | IdempotencyDenial::NativeKeyLookup { .. }) => {
             candidate.discard();
             progression_denied(DenialStage::Idempotency)
         }

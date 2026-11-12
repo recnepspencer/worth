@@ -48,6 +48,10 @@ pub enum WorthQueryEntityResolutionRefusalKind {
 pub struct WorthQueryEntityResolutionDenial {
     kind: WorthQueryEntityResolutionDenialKind,
     subject: String,
+    native_lookup: Option<(
+        worth_relational::facade::indexes::DerivedIndexId,
+        worth_relational::facade::indexes::BoundedEntityFieldLookupDenialKind,
+    )>,
 }
 
 impl WorthQueryEntityResolutionDenial {
@@ -58,7 +62,26 @@ impl WorthQueryEntityResolutionDenial {
         Self {
             kind,
             subject: subject.into(),
+            native_lookup: None,
         }
+    }
+
+    pub(super) fn with_native_lookup(
+        mut self,
+        index: worth_relational::facade::indexes::DerivedIndexId,
+        cause: worth_relational::facade::indexes::BoundedEntityFieldLookupDenialKind,
+    ) -> Self {
+        self.native_lookup = Some((index, cause));
+        self
+    }
+    /// The original exact index failure, when Native refused the identity lookup.
+    pub const fn native_lookup(
+        &self,
+    ) -> Option<(
+        worth_relational::facade::indexes::DerivedIndexId,
+        worth_relational::facade::indexes::BoundedEntityFieldLookupDenialKind,
+    )> {
+        self.native_lookup
     }
 
     pub const fn kind(&self) -> WorthQueryEntityResolutionDenialKind {

@@ -26,7 +26,7 @@ where
     install_configured::<Program>(checkpoint, profile, limits, seed, configuration)
 }
 
-fn configuration(
+pub(super) fn configuration(
     domain_denial: Arc<AtomicBool>,
     producer_contacts: Option<crate::producer::ProviderContacts>,
 ) -> TopologyConfiguration {
@@ -79,6 +79,7 @@ pub(super) fn install_checkpoint_in_bootstrap<Program>(
     checkpoint: application_installation::WorthQueryApplicationCheckpoint,
     profile: worth_query_host::facade::runtime::WorthQueryOutputDemandResourceProfile,
     limits: WorthQueryApplicationLimits,
+    configuration: TopologyConfiguration,
 ) -> Result<
     application_installation::WorthQueryProgramApplicationRuntime<CheckpointSchema, Program>,
     Box<application_installation::WorthQueryApplicationPreparationDenial>,
@@ -96,7 +97,7 @@ where
         profile,
         limits,
         |_| {},
-        configuration(Arc::new(AtomicBool::new(false)), None),
+        configuration,
     )
 }
 

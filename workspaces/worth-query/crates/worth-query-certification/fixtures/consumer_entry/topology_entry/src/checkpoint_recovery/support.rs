@@ -139,7 +139,11 @@ where
                 execution_policy::POPULATION_BOOTSTRAP_POLICY,
                 |phase| {
                     installation::install_checkpoint_in_bootstrap::<Program>(
-                        &phase, checkpoint, profile, limits,
+                        &phase,
+                        checkpoint,
+                        profile,
+                        limits,
+                        installation::configuration(Arc::new(AtomicBool::new(false)), None),
                     )
                 },
             )

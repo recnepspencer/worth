@@ -36,6 +36,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             .installed_schema
             .installed_mutation_binding::<Binding>()
             .map_err(Denial::DurableBindingAdmission)?;
+        self.admit_directory_recovery_custody(installed.operation().contracts().aftermath())?;
         self.runtime
             .product_runtime
             .admit_directory_correction_shape(
@@ -80,16 +81,31 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         {
             require_capability(Capability::InboundCompletion)?;
         }
-        if let Some(aftermath) = installed.operation().contracts().aftermath() {
-            match aftermath.recovery() {
-                worth_query_installation::facade::InstalledAftermathRecoveryContract::NotAdmitted => {},
-                worth_query_installation::facade::InstalledAftermathRecoveryContract::Admissible { .. } => {
-                    require_capability(Capability::RecoveryCustody)?;
-                }
-            }
-        }
         if installed.correction_binding().is_some() {
             require_capability(Capability::RetainedCorrectionMaterial)?;
+        }
+        Ok(())
+    }
+
+    fn admit_directory_recovery_custody(
+        &self,
+        aftermath: Option<&worth_query_installation::facade::WorthQueryInstalledAftermathContract>,
+    ) -> Result<(), Denial> {
+        use worth_query_installation::facade::{
+            InstalledAftermathRecoveryContract as Recovery, PublishedAftermathPosture as Posture,
+        };
+        let requires_claim_custody = match aftermath.map(|contract| contract.recovery()) {
+            None | Some(Recovery::NotAdmitted) => false,
+            Some(Recovery::Admissible { posture }) => match posture {
+                Posture::Reversible => false,
+                Posture::Compensatable | Posture::Reconcilable | Posture::Irreversible => true,
+            },
+        };
+        if requires_claim_custody {
+            self.runtime
+                .product_runtime
+                .admit_directory_capability(Capability::RecoveryCustody)
+                .map_err(Denial::DurableStateAdmission)?;
         }
         Ok(())
     }
