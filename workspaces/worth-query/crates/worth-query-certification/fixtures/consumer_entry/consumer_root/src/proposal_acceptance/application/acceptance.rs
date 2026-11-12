@@ -31,9 +31,9 @@ pub(super) struct Attempt<'host> {
     phase: Phase<'host>,
 }
 enum Phase<'host> {
-    Claim(ClaimOperation),
-    ClaimCompleted(ClaimCompleted),
-    ClaimTerminal(ClaimTerminal),
+    Claim(Box<ClaimOperation>),
+    ClaimCompleted(Box<ClaimCompleted>),
+    ClaimTerminal(Box<ClaimTerminal>),
     Registered(Registration),
     PreparingFailed {
         registration: Registration,
@@ -68,9 +68,9 @@ struct Registration {
 }
 enum Delivery {
     Needed,
-    Operation(ResultOperation),
-    Completed(ResultCompleted),
-    Terminal(ResultTerminal),
+    Operation(Box<ResultOperation>),
+    Completed(Box<ResultCompleted>),
+    Terminal(Box<ResultTerminal>),
     Written(StoredResult),
 }
 pub struct Accepted {
