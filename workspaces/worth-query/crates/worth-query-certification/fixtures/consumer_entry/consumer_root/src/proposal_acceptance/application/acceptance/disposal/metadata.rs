@@ -1,9 +1,9 @@
 //! Close the genuine metadata owner on its original routing branch without executing an input.
 use super::*;
 pub(in crate::proposal_acceptance::application::acceptance) enum Owner {
-    Pending(ClaimOperation),
-    Completed(ClaimCompleted),
-    Terminal(ClaimTerminal),
+    Pending(Box<ClaimOperation>),
+    Completed(Box<ClaimCompleted>),
+    Terminal(Box<ClaimTerminal>),
 }
 pub(super) fn close<'host>(
     owner: Owner,
@@ -18,15 +18,15 @@ pub(super) fn close<'host>(
         .request(&caller.principal, caller.scope)
         .on_branch(loaded.source());
     let closed = match owner {
-        Owner::Pending(owner) => owner
+        Owner::Pending(owner) => (*owner)
             .close(&request)
-            .map_err(|(owner, cause)| (Owner::Pending(owner), cause)),
-        Owner::Completed(owner) => owner
+            .map_err(|(owner, cause)| (Owner::Pending(Box::new(owner)), cause)),
+        Owner::Completed(owner) => (*owner)
             .close(&request)
-            .map_err(|(owner, cause)| (Owner::Completed(owner), cause)),
-        Owner::Terminal(owner) => owner
+            .map_err(|(owner, cause)| (Owner::Completed(Box::new(owner)), cause)),
+        Owner::Terminal(owner) => (*owner)
             .close(&request)
-            .map_err(|(owner, cause)| (Owner::Terminal(owner), cause)),
+            .map_err(|(owner, cause)| (Owner::Terminal(Box::new(owner)), cause)),
     };
     match closed {
         Ok(closed) => (

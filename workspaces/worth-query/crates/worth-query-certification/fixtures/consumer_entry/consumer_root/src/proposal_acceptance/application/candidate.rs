@@ -43,9 +43,9 @@ pub struct Staging<'host> {
     completed: Vec<retention_action::Completion>,
 }
 enum Step {
-    Pending(retention_action::Operation),
-    Completed(retention_action::Completed),
-    Terminal(retention_action::Terminal),
+    Pending(Box<retention_action::Operation>),
+    Completed(Box<retention_action::Completed>),
+    Terminal(Box<retention_action::Terminal>),
 }
 /// Only complete staging can enter the application's guarded head replacement.
 pub struct ReadyToAdopt<'host> {

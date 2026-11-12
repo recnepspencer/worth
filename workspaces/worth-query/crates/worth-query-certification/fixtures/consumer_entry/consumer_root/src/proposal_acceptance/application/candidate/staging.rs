@@ -24,6 +24,10 @@ impl Staging<'_> {
         if self.next == self.proposal.intents.len() {
             return StageEvent::AllStaged;
         }
+        self.advance_step(caller)
+    }
+
+    fn advance_step(&mut self, caller: &Caller<'_>) -> StageEvent {
         if self.step.is_none() {
             let AuthoredIntent::Retention(input) = &self.proposal.intents[self.next];
             // prepare() checked representability of every ordinal before forking.
@@ -32,7 +36,7 @@ impl Staging<'_> {
                 ordinal: u64::try_from(self.next).expect("prepared ordinal"),
             };
             match retention_action::construct(self.host, self.branch(), caller, input, key) {
-                Ok(operation) => self.step = Some(Step::Pending(operation)),
+                Ok(operation) => self.step = Some(Step::Pending(Box::new(operation))),
                 Err(cause) => return StageEvent::Refused(StageRefusal::Construction(cause)),
             }
         }
@@ -42,20 +46,20 @@ impl Staging<'_> {
             .on_branch(self.branch());
         let step = self.step.take().expect("constructed ordinary step");
         let completed = match step {
-            Step::Pending(operation) => match operation.advance(&request) {
+            Step::Pending(operation) => match (*operation).advance(&request) {
                 WorthQuerySourceOnlyAdvance::Progress(operation) => {
-                    self.step = Some(Step::Pending(operation));
+                    self.step = Some(Step::Pending(Box::new(operation)));
                     return StageEvent::Progress;
                 }
                 WorthQuerySourceOnlyAdvance::Refused { operation, denial } => {
-                    self.step = Some(Step::Pending(operation));
+                    self.step = Some(Step::Pending(Box::new(operation)));
                     return StageEvent::Refused(StageRefusal::Advance(denial));
                 }
                 WorthQuerySourceOnlyAdvance::Terminal(terminal) => {
-                    self.step = Some(Step::Terminal(terminal));
+                    self.step = Some(Step::Terminal(Box::new(terminal)));
                     return StageEvent::Terminal;
                 }
-                WorthQuerySourceOnlyAdvance::Completed(completed) => completed,
+                WorthQuerySourceOnlyAdvance::Completed(completed) => Box::new(completed),
             },
             Step::Completed(completed) => completed,
             Step::Terminal(terminal) => {
@@ -63,7 +67,7 @@ impl Staging<'_> {
                 return StageEvent::Terminal;
             }
         };
-        match completed.close_with_evidence(&request) {
+        match (*completed).close_with_evidence(&request) {
             Ok((_closed, evidence)) => {
                 // Capacity was reserved before creation; no allocation follows this effect.
                 self.completed.push(evidence);
@@ -71,7 +75,7 @@ impl Staging<'_> {
                 StageEvent::StepCompleted
             }
             Err((completed, denial)) => {
-                self.step = Some(Step::Completed(completed));
+                self.step = Some(Step::Completed(Box::new(completed)));
                 StageEvent::Refused(StageRefusal::Close(denial))
             }
         }
