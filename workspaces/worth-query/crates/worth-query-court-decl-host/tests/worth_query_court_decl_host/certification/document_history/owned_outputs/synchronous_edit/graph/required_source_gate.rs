@@ -94,9 +94,10 @@ fn exercise(worker: bool) {
         .idempotency(&"required-source-gate".to_owned())
         .execute_in_program(&host, ExecutionAllocationPolicy::SystemAllocation)
         .unwrap();
-    let WorthQueryApplicationMutationOutcome::AlreadyCommitted(receipt) = replay else {
+    let WorthQueryApplicationMutationOutcome::RecoveredCommitted(receipt) = replay else {
         panic!("the exact recorded receipt precedes missing fresh preparation")
     };
+    assert!(done.receipt().matches_recorded_original(&receipt));
     assert_eq!(
         receipt.commit_reference(),
         done.receipt().commit_reference()

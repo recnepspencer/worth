@@ -97,9 +97,13 @@ fn run(worker: bool) {
         .idempotency(&"initial-synchronous-edit".to_owned())
         .execute_in_program(&host, ExecutionAllocationPolicy::SystemAllocation)
         .unwrap();
-    let WorthQueryApplicationMutationOutcome::AlreadyCommitted(replayed) = replay else {
+    let WorthQueryApplicationMutationOutcome::RecoveredCommitted(replayed) = replay else {
         panic!("{replay:?}")
     };
+    assert!(initial
+        .receipt()
+        .unwrap()
+        .matches_recorded_original(&replayed));
     assert_eq!(
         replayed.commit_reference(),
         initial.receipt().unwrap().commit_reference()

@@ -167,9 +167,13 @@ pub(super) fn edit_two_families(host: &world::Host) {
         0,
         "idempotent replay publishes on no branch"
     );
-    let WorthQueryApplicationMutationOutcome::AlreadyCommitted(replayed) = replay else {
+    let WorthQueryApplicationMutationOutcome::RecoveredCommitted(replayed) = replay else {
         panic!("{replay:?}")
     };
+    assert!(outcome
+        .receipt()
+        .unwrap()
+        .matches_recorded_original(&replayed));
     assert_eq!(
         replayed.commit_reference(),
         outcome.receipt().unwrap().commit_reference()

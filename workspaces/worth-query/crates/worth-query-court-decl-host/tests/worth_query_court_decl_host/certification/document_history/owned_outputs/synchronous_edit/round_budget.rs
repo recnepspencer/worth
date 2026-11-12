@@ -124,9 +124,12 @@ fn budget(worker: bool) {
     });
     assert!(matches!(
         replay,
-        WorthQueryApplicationMutationOutcome::AlreadyCommitted(_)
+        WorthQueryApplicationMutationOutcome::RecoveredCommitted(_)
     ));
-    assert_eq!(replay.receipt().unwrap().commit_reference(), &receipt);
+    assert_eq!(
+        replay.recovered_receipt().unwrap().commit_reference(),
+        &receipt
+    );
     assert_eq!(
         publications.published_rows.len() + publications.omitted_publications,
         0

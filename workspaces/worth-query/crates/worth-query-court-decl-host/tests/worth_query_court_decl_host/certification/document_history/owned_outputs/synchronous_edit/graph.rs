@@ -151,9 +151,10 @@ fn exercise(worker: bool, value: u64) {
         .idempotency(&"required-graph".to_owned())
         .execute_in_program(&host, ExecutionAllocationPolicy::SystemAllocation)
         .unwrap();
-    let WorthQueryApplicationMutationOutcome::AlreadyCommitted(replayed) = replay else {
+    let WorthQueryApplicationMutationOutcome::RecoveredCommitted(replayed) = replay else {
         panic!("the whole graph edit must replay its original receipt: {replay:?}")
     };
+    assert!(source_receipt.matches_recorded_original(&replayed));
     assert_eq!(
         replayed.commit_reference(),
         source_receipt.commit_reference()

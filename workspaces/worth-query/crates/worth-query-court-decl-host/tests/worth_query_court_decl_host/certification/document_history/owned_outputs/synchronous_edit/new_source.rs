@@ -194,9 +194,13 @@ fn run(worker: bool) {
         .idempotency(&"new-source-edit".to_owned())
         .execute_in_program(&host, ExecutionAllocationPolicy::SystemAllocation)
         .unwrap();
-    let WorthQueryApplicationMutationOutcome::AlreadyCommitted(replayed) = replay else {
+    let WorthQueryApplicationMutationOutcome::RecoveredCommitted(replayed) = replay else {
         panic!("the complete creating edit must replay as one unit: {replay:?}")
     };
+    assert!(outcome
+        .receipt()
+        .unwrap()
+        .matches_recorded_original(&replayed));
     assert_eq!(
         replayed.commit_reference(),
         outcome.receipt().unwrap().commit_reference()
