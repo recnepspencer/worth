@@ -98,7 +98,7 @@ fn run(worker: bool) {
         let (_, _, basis) = selected.into_parts_for_test();
         graph
             .integration_handle_for_test()
-            .with_runtime_mut_for_test(&execution, |native| {
+            .with_runtime_for_test(&execution, |native| {
                 let truth = installed
                     .at_snapshot_for_test(
                         native,

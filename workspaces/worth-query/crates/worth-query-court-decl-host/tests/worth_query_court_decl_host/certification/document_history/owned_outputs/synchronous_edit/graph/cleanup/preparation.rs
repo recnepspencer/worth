@@ -40,7 +40,7 @@ fn exercise(worker: bool) {
     else {
         panic!("the first real writer's failed cleanup must remain owned: {outcome:?}")
     };
-    let WorthQueryApplicationUncommitted::Denied(cause) = failed.outcome() else {
+    let WorthQueryApplicationCommitOutcome::Denied(cause) = failed.outcome() else {
         panic!("original Native refusal: {:?}", failed.outcome())
     };
     let refusal = cause

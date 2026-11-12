@@ -295,3 +295,62 @@ fn owned_decode_shared_schema_preflight_refuses_zero_original_memory() {
     ));
     assert_eq!(budget.charged_memory_bytes(), 0);
 }
+
+#[test]
+fn malformed_stages_vector_is_refused_before_decode() {
+    #[derive(serde::Serialize)]
+    enum Sources {
+        Stages(&'static str),
+    }
+    #[derive(serde::Serialize)]
+    struct Malformed {
+        sources: Sources,
+        participants: Vec<()>,
+    }
+    let bytes = rmp_serde::to_vec_named(&Malformed {
+        sources: Sources::Stages("not an entity vector"),
+        participants: Vec::new(),
+    })
+    .unwrap();
+    let request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::new(None),
+        worth_execution::CancellationSource::new().token(),
+        None,
+    );
+    assert!(matches!(
+        super::coupled_publication::quote(
+            BorrowedPayload(&bytes),
+            &ExecutionRequest::serial(&request)
+        ),
+        Err(Refusal::PayloadDecode { .. })
+    ));
+}
+#[test]
+fn unknown_authored_source_variant_still_refuses_noncanonical_payload() {
+    #[derive(serde::Serialize)]
+    enum Sources {
+        UnknownStages(Vec<crate::identity::data::EntityId>),
+    }
+    #[derive(serde::Serialize)]
+    struct Malformed {
+        sources: Sources,
+        participants: Vec<()>,
+    }
+    let bytes = rmp_serde::to_vec_named(&Malformed {
+        sources: Sources::UnknownStages(Vec::new()),
+        participants: Vec::new(),
+    })
+    .unwrap();
+    let request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::new(None),
+        worth_execution::CancellationSource::new().token(),
+        None,
+    );
+    assert!(matches!(
+        super::coupled_publication::quote(
+            BorrowedPayload(&bytes),
+            &ExecutionRequest::serial(&request)
+        ),
+        Err(Refusal::NonCanonicalPayload)
+    ));
+}

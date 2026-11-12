@@ -53,3 +53,6 @@ query-interim-checkpoint workspaces/worth-query/crates/worth-query-testkit-host/
 query-interim-checkpoint workspaces/worth-query/crates/worth-query-testkit-host/src/host/temporal_conditional_operation/contribution_installation/checkpoint_transition.rs
 query-interim-checkpoint workspaces/worth-query/crates/worth-query-testkit-host/src/host/temporal_conditional_operation/contribution_installation/checkpoint_transition/admission.rs
 query-interim-checkpoint workspaces/worth-query/crates/worth-query-testkit-host/src/host/temporal_conditional_operation/contribution_installation/checkpoint_transition/original_request.rs
+
+# D1688: the existing envelope checkpoint court uses the sealed replacement entry.
+query-interim-checkpoint workspaces/worth-query/crates/worth-query-court-decl-host/tests/worth_query_court_decl_host/certification/document_history/owned_outputs/world.rs
