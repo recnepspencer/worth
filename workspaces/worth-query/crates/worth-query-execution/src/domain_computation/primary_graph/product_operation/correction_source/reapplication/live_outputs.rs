@@ -28,7 +28,7 @@ pub(super) fn require<S: ApplicationSchema>(
     if publication != active.world() {
         return Err(Denial::ForeignAlternative);
     }
-    provider.graph.with_runtime_mut(&execution, |runtime| {
+    provider.graph.with_runtime(&execution, |runtime| {
         let snapshot = open_exact_basis_snapshot(runtime, target.product().relational_basis())
             .map_err(Denial::Basis)?;
         let result = (|| {
