@@ -7,9 +7,11 @@ fn direct_publication_settles_before_a_child_can_acknowledge() {
     let host_request = crate::test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
-    let runtime = durable_runtime_with_test_schema();
+    let runtime = runtime_with_test_schema();
     create_entity(execution, &runtime, "settlement-anchor");
-    crate::tests::support::checkpoint_durably(execution, &runtime)
+    runtime
+        .durability_authority()
+        .checkpoint(execution)
         .expect("checkpoint seals the baseline before the direct parent");
 
     let mut transaction = test_owner_begin_transaction_for_main(&runtime);
@@ -91,14 +93,11 @@ fn direct_publication_settles_before_a_child_can_acknowledge() {
     let child_position = tail[1].position();
     release_test_commit_snapshot(&runtime, &child);
 
-    let plan = crate::tests::support::recovery_plan_for(
-        execution,
-        &runtime,
-        RecoveryMode::NormalRecoveryVerification,
-    )
-    .unwrap();
-    let mut recovered = durable_runtime_with_test_schema();
-    bind_durable_medium(&mut recovered, attached_test_medium(&runtime).attachment());
+    let plan = runtime
+        .durability()
+        .recovery_plan(execution, RecoveryMode::NormalRecoveryVerification)
+        .unwrap();
+    let mut recovered = runtime_with_test_schema();
     recovered
         .durability_recovery()
         .recover(execution, plan)

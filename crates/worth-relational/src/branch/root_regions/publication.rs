@@ -9,6 +9,7 @@ impl RelationalPersistentRegionSet {
             live_counts: Default::default(),
             kinds: Default::default(),
             materialization_unavailable_records: 0,
+            _memory: None,
         })
     }
     pub(crate) fn initial(
@@ -36,11 +37,13 @@ impl RelationalPersistentRegionSet {
             index_root = Some(insert_leaf(
                 index_root.as_ref(),
                 partition_id,
-                RelationalPersistentRegionLeaf::Present(Box::new(RelationalRootRegionReference(
+                RelationalPersistentRegionLeaf::Present(Box::new(RelationalRootRegionReference {
                     region,
-                ))),
+                    _memory: None,
+                })),
                 0,
                 issuer,
+                None,
             )?);
         }
         Ok(Arc::new(Self {
@@ -50,6 +53,7 @@ impl RelationalPersistentRegionSet {
             live_counts,
             kinds,
             materialization_unavailable_records,
+            _memory: None,
         }))
     }
 
@@ -89,11 +93,13 @@ impl RelationalPersistentRegionSet {
             index_root = Some(insert_leaf(
                 index_root.as_ref(),
                 partition_id,
-                RelationalPersistentRegionLeaf::Present(Box::new(RelationalRootRegionReference(
+                RelationalPersistentRegionLeaf::Present(Box::new(RelationalRootRegionReference {
                     region,
-                ))),
+                    _memory: None,
+                })),
                 0,
                 issuer,
+                None,
             )?);
         }
         for partition_id in removed {
@@ -114,11 +120,13 @@ impl RelationalPersistentRegionSet {
             index_root = Some(insert_leaf(
                 index_root.as_ref(),
                 partition_id,
-                RelationalPersistentRegionLeaf::Removed(Box::new(RelationalRemovedPartition(
+                RelationalPersistentRegionLeaf::Removed(Box::new(RelationalRemovedPartition {
                     partition_id,
-                ))),
+                    _memory: None,
+                })),
                 0,
                 issuer,
+                None,
             )?);
         }
         Ok(Arc::new(Self {
@@ -128,6 +136,7 @@ impl RelationalPersistentRegionSet {
             live_counts,
             kinds,
             materialization_unavailable_records,
+            _memory: None,
         }))
     }
 }

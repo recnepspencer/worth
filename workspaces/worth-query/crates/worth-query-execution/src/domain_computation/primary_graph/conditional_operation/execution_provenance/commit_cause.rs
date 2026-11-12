@@ -4,7 +4,8 @@ pub(super) fn application_commit_cause(
 ) -> WorthQueryConditionalExecutionCause {
     use crate::domain_computation::primary_graph::WorthQueryApplicationCommitDenialKind as Kind;
     match kind {
-        Kind::ContentInconsistency
+        Kind::IdempotencyPreparationBusy
+        | Kind::ContentInconsistency
         | Kind::Content(_)
         | Kind::StorageUnavailable(_)
         | Kind::ExecutionResource { .. }
@@ -29,8 +30,9 @@ pub(super) fn application_commit_cause(
         | Kind::CandidateIdentityExhausted
         | Kind::IndexMaintenanceBudgetExceeded
         | Kind::IndexGenerationIdentityExhausted
+        | Kind::IdempotencyForeignAffinity
         | Kind::IdempotencyIntentDrift
-        | Kind::IdempotencyReceiptNotRetained { .. }
+        | Kind::OriginalEffectReleased
         | Kind::IdempotencyIntentUnverifiable
         | Kind::MutationBindingMismatch
         | Kind::MutationInputMismatch
@@ -57,6 +59,7 @@ pub(super) fn application_commit_cause(
         | Kind::ProgramNotActiveOnOccurrence { .. }
         | Kind::ProgramSupportRetired
         | Kind::ProgramActivationUnresolved
+        | Kind::StaleIncarnation
         | Kind::CorrectionContextMismatch
         | Kind::CorrectionIdentityMismatch => WorthQueryConditionalExecutionCause::TerminalFailure,
     }

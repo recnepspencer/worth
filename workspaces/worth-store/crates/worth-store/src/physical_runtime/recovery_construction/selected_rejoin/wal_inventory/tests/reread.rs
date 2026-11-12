@@ -22,13 +22,13 @@ fn final_reread_native_denial_preserves_initial_fingerprint_and_retry_moves_fing
     assert_eq!(first.frames.len(), 1);
     let first = first.into_fingerprint();
     let first_bytes = (first.artifacts.capacity() * size_of::<WalArtifactFingerprint>()) as u64;
-    assert_eq!(fixture::active(&ports), first_bytes);
+    assert_eq!(fixture::active(&ports), SERVING_BACKING_BYTES + first_bytes);
     let media = first_discovery.finish();
     let mut discovery = media.bounded_discovery(64, MAX_WAL_BYTES).unwrap();
     let held = ports
         .begin_operation(
             Scope::Recovery,
-            NonZeroU64::new(fixture::ORIGINAL - first_bytes - 1).unwrap(),
+            NonZeroU64::new(fixture::ORIGINAL - SERVING_BACKING_BYTES - first_bytes - 1).unwrap(),
         )
         .unwrap();
     let before = observer.snapshot().for_dimension(dimension);
@@ -70,7 +70,10 @@ fn final_reread_native_denial_preserves_initial_fingerprint_and_retry_moves_fing
     assert_eq!(after.admissions(), before.admissions());
     assert_eq!(after.admitted_units(), before.admitted_units());
     assert_eq!(after.denials(), before.denials() + 1);
-    assert_eq!(fixture::active(&ports), first_bytes + held.bytes());
+    assert_eq!(
+        fixture::active(&ports),
+        SERVING_BACKING_BYTES + first_bytes + held.bytes()
+    );
     assert_eq!(std::fs::read(&path).unwrap(), encoded);
     drop(held);
     drop(cause);
@@ -84,7 +87,10 @@ fn final_reread_native_denial_preserves_initial_fingerprint_and_retry_moves_fing
     let fingerprint = final_read.into_fingerprint();
     assert_eq!(fingerprint.artifacts.as_ptr(), pointer);
     assert_eq!(fingerprint.charged_bytes(), fingerprint_bytes);
-    assert_eq!(fixture::active(&ports), fingerprint_bytes);
+    assert_eq!(
+        fixture::active(&ports),
+        SERVING_BACKING_BYTES + fingerprint_bytes
+    );
     assert_eq!(std::fs::read(&path).unwrap(), encoded);
     assert_eq!(discovery.finish().recovery_effect_count(), 0);
     drop(coordination);

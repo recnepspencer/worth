@@ -2,6 +2,7 @@
 use super::*;
 use crate::indexes::data::DerivedIndexKind;
 use std::sync::atomic::{AtomicU64, Ordering};
+mod routing;
 
 fn incarnation() -> u64 {
     static NEXT: AtomicU64 = AtomicU64::new(1);
@@ -49,13 +50,17 @@ impl worth_execution::ChargedBytes for IndexCatalogCoverage {
 pub(crate) struct IndexDefinitionCatalog {
     pub(super) globals: im::OrdSet<DerivedIndexId>,
     pub(super) installed: im::OrdSet<DerivedIndexId>,
-    pub(super) definitions: BTreeMap<DerivedIndexId, Arc<DerivedIndexDefinition>>,
-    pub(super) field_definitions:
-        BTreeMap<AspectKey, BTreeMap<FieldKey, Vec<Arc<DerivedIndexDefinition>>>>,
+    pub(super) definitions:
+        BTreeMap<DerivedIndexId, crate::indexes::RetainedDerivedIndexDefinition>,
+    pub(super) field_definitions: BTreeMap<
+        AspectKey,
+        BTreeMap<FieldKey, Vec<crate::indexes::RetainedDerivedIndexDefinition>>,
+    >,
     entity_field_indexes: usize,
     introductions: BTreeMap<DerivedIndexId, u64>,
-    routing: BTreeMap<[u8; 32], Arc<crate::indexes::data::InstalledIndexRouting>>,
+    routing: routing::IndexRoutingCache,
     coverage: IndexCatalogCoverage,
+    pub(super) backing: Option<Arc<super::definition_preparation::IndexDefinitionBacking>>,
 }
 impl Default for IndexDefinitionCatalog {
     fn default() -> Self {
@@ -66,7 +71,8 @@ impl Default for IndexDefinitionCatalog {
             field_definitions: BTreeMap::new(),
             entity_field_indexes: 0,
             introductions: BTreeMap::new(),
-            routing: BTreeMap::new(),
+            backing: None,
+            routing: routing::IndexRoutingCache::default(),
             coverage: IndexCatalogCoverage {
                 incarnation: incarnation(),
                 epoch: 0,
@@ -116,14 +122,17 @@ impl IndexDefinitionCatalog {
                 self.field_definitions.remove(&aspect);
             }
         }
-        let definition = Arc::new(definition);
+        let definition = crate::indexes::RetainedDerivedIndexDefinition::funded(
+            definition,
+            self.backing.clone(),
+        );
         if let Some((aspect, field)) = field_index_locator(&definition.kind) {
             self.field_definitions
                 .entry(aspect)
                 .or_default()
                 .entry(field)
                 .or_default()
-                .push(Arc::clone(&definition));
+                .push(definition.clone());
         }
         self.definitions.insert(definition.index_id, definition);
     }
@@ -132,6 +141,21 @@ impl IndexDefinitionCatalog {
         self.coverage.incarnation = incarnation();
     }
 
+    pub(crate) fn is_empty(&self) -> bool {
+        self.definitions.is_empty()
+    }
+    pub(crate) fn definition_count(&self) -> usize {
+        self.definitions.len()
+    }
+    pub(crate) fn index_ids(&self) -> impl Iterator<Item = DerivedIndexId> + '_ {
+        self.definitions.keys().copied()
+    }
+    pub(crate) fn definition(
+        &self,
+        index: DerivedIndexId,
+    ) -> Option<crate::indexes::RetainedDerivedIndexDefinition> {
+        self.definitions.get(&index).cloned()
+    }
     pub(crate) fn has_entity_field_indexes(&self) -> bool {
         self.entity_field_indexes != 0
     }
@@ -139,12 +163,24 @@ impl IndexDefinitionCatalog {
     pub(crate) fn coverage(&self) -> IndexCatalogCoverage {
         self.coverage
     }
+    /// Readmission inserts an ordered issued-ID prefix; equal overlap never
+    /// reinserts it. Preserve this prefix's actual installation provenance.
+    pub(crate) fn coverage_before(&self, next: u64) -> IndexCatalogCoverage {
+        IndexCatalogCoverage {
+            incarnation: self.coverage.incarnation,
+            epoch: self
+                .introductions
+                .range(..DerivedIndexId(next))
+                .next_back()
+                .map_or(0, |(_, epoch)| *epoch),
+        }
+    }
 
-    pub(super) fn with_field<R>(
+    pub(crate) fn with_field<R>(
         &self,
         aspect: &AspectKey,
         field: &FieldKey,
-        read: impl FnOnce(&[Arc<DerivedIndexDefinition>]) -> R,
+        read: impl FnOnce(&[crate::indexes::RetainedDerivedIndexDefinition]) -> R,
     ) -> R {
         read(
             self.field_definitions
@@ -182,35 +218,6 @@ impl IndexDefinitionCatalog {
                 incarnation: self.coverage.incarnation,
                 epoch: *epoch,
             }))
-    }
-}
-
-impl IndexDefinitionCatalog {
-    pub(crate) fn routing(
-        &self,
-        schema: [u8; 32],
-    ) -> Option<Arc<crate::indexes::data::InstalledIndexRouting>> {
-        self.routing.get(&schema).map(Arc::clone)
-    }
-}
-impl IndexingSubsystem {
-    /// cost-lane: installation, schema transition or explicit recovery.
-    pub(crate) fn install_routing(
-        &self,
-        schema: [u8; 32],
-        plans: &crate::schema::data::AspectContractPlanCatalog,
-    ) {
-        let mut state = self.state.write();
-        if state.catalog.routing.contains_key(&schema) {
-            return;
-        }
-        let routing = crate::indexes::data::InstalledIndexRouting::compile(
-            state.catalog.definitions.values().map(Arc::as_ref),
-            plans,
-        );
-        Arc::make_mut(&mut state.catalog)
-            .routing
-            .insert(schema, Arc::new(routing));
     }
 }
 

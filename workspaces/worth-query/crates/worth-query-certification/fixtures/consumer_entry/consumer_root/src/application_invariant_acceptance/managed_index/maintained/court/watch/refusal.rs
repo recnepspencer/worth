@@ -1,11 +1,12 @@
 //! No-effect domain and original cancellation keep the genuine watch unchanged.
 use super::*;
+use crate::application_invariant_acceptance::managed_index::prefix_observation;
 
 pub(super) fn run(
     world: &host::Host,
     principal: &WorthQueryAuthenticatedExternalPrincipal<super::super::super::schema::Catalog>,
     scope: &WorthQueryRequestScope,
-    calls: &Arc<prefix::Calls>,
+    calls: &Arc<prefix_observation::Calls>,
 ) {
     let request = world
         .runtime()

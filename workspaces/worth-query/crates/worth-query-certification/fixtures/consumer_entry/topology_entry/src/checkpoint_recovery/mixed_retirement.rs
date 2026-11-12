@@ -125,13 +125,11 @@ mod serial {
                 .execute()
                 .expect("preserved and created members stay live");
         }
-        let bytes = application
+        let checkpoint = application
             .with_host_advancement(|host_phase| {
                 application
                     .capture_application_checkpoint(&host_phase, CapturePolicy::SystemAllocation)
                     .unwrap()
-                    .bytes()
-                    .to_vec()
             })
             .expect("installed host call opens");
         // The created live member still owns all installed aspects. Reverting its
@@ -180,9 +178,7 @@ mod serial {
         drop(scope);
         drop(application);
         reset_contacts();
-        let reopened = install(Some(
-            application_installation::WorthQueryApplicationCheckpoint::from_untrusted_bytes(bytes),
-        ));
+        let reopened = install(Some(checkpoint));
         let (scope, principal) = authenticate(&reopened);
         let request = reopened.request(&principal, &scope);
         let mut demand = request

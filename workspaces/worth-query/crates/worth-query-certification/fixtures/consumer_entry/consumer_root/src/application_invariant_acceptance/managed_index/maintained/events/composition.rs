@@ -1,5 +1,6 @@
 //! Ordinary program installation; only the new capability opts into this Source.
 use super::{authoring, history, mutation, plain, prefix, rule, schema::*};
+use crate::application_invariant_acceptance::managed_index::prefix_observation;
 use std::sync::Arc;
 use worth_query_decl::facade::{application_program::*, application_schema::*};
 use worth_query_host::facade::{application_contribution::*, primary_graph::*};
@@ -10,8 +11,8 @@ impl ApplicationSchemaContribution<Catalog> for Contribution {
     type Members = (CatalogRecords, ContributionContracts);
 }
 pub struct Configuration {
-    pub provider: Arc<prefix::Calls>,
-    pub records: Arc<rule::Calls>,
+    pub provider: Arc<prefix_observation::Calls>,
+    pub(in super::super) records: Arc<rule::Calls>,
 }
 impl WorthQueryApplicationContribution<Catalog> for Contribution {
     type Configuration = Configuration;

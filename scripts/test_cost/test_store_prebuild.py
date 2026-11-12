@@ -2,6 +2,7 @@ import json
 from pathlib import Path
 from types import SimpleNamespace
 import tempfile
+import tomllib
 import unittest
 
 from store_prebuild import ExecutablePrebuildFailure, REQUESTS, prepare, retain
@@ -10,6 +11,17 @@ from native_features import NativeFeatureGraph, NativeFeatureRefusal, library_id
 
 
 class StoreExecutablePrebuildTests(unittest.TestCase):
+    def test_executable_prerequisite_features_belong_to_actual_declaring_packages(self):
+        workspace = Path(__file__).resolve().parents[2] / 'workspaces/worth-store/crates'
+        for request in REQUESTS:
+            for qualified in request['features']:
+                package, feature = qualified.split('/', 1)
+                manifest = workspace / package / 'Cargo.toml'
+                with self.subTest(binary=request['binary'], feature=qualified):
+                    declared = tomllib.loads(manifest.read_text(encoding='utf-8'))
+                    self.assertEqual(declared['package']['name'], package)
+                    self.assertIn(feature, declared.get('features', {}))
+
     def fixture(self, root):
         events = []
         for request in REQUESTS:
@@ -21,7 +33,7 @@ class StoreExecutablePrebuildTests(unittest.TestCase):
         library = dict(reason='compiler-artifact', package_id='authority', target={'name': 'authority', 'kind': ['lib']},
                        profile={'test': False}, features=['observed'], fresh=True, filenames=['authority-native.rlib'])
         native = NativeFeatureGraph(root / 'workspaces/worth-store', ('authority/observed',),
-                                    {library_identity(library): {signature(library)}}, ())
+                                    {library_identity(library): {signature(library)}}, (), ('native-owner',))
         return native, [*events, library]
 
     def test_only_independently_compiled_binary_can_be_retained(self):
@@ -74,10 +86,21 @@ class StoreExecutablePrebuildTests(unittest.TestCase):
                 calls.append(command)
                 return SimpleNamespace(returncode=0, stdout='\n'.join(map(json.dumps, events)))
             result = prepare(root, root / 'output', runner, 'ci-test', native=native)
+            self.assertNotIn('--workspace', calls[0])
+            self.assertNotIn('--bins', calls[0])
+            self.assertEqual([calls[0][index + 1] for index, argument in enumerate(calls[0])
+                              if argument == '--package'],
+                             [*dict.fromkeys(request['package'] for request in REQUESTS),
+                              'native-owner', 'authority'])
+            self.assertIn('--no-default-features', calls[0])
+            self.assertEqual([calls[0][index + 1] for index, argument in enumerate(calls[0])
+                              if argument == '--bin'],
+                             [request['binary'] for request in REQUESTS])
             self.assertEqual(calls[0][calls[0].index('--features') + 1], 'authority/observed')
             self.assertTrue(Path(result['WORTH_PREBUILT_EXECUTABLES']).is_file())
             receipt = json.loads((root / 'output/native-feature-graph.json').read_text())
             self.assertEqual(receipt['validated_shared_libraries'], 1)
+            self.assertEqual(receipt['native_packages'], ['native-owner'])
 
     def test_product_adapter_refuses_cached_library_graph_drift_before_path_publication(self):
         with tempfile.TemporaryDirectory() as temporary:

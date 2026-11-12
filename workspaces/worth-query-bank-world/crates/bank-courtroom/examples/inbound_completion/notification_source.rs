@@ -5,8 +5,8 @@ use bank_domain::{
     schema::{BankSchema, NotifyEstateDeath},
 };
 use bank_server::{
-    BankApplication, BankAuthenticatedPrincipal, BankCommitReceipt, BankIdentityRuntime,
-    BankMutationControls, DeathNotificationAction,
+    BankApplication, BankAuthenticatedPrincipal, BankIdentityRuntime, BankMutationControls,
+    DeathNotificationAction,
 };
 use worth_query_host::facade::{
     application_entry::*, declaration::application_program::ApplicationSourceCompletion,
@@ -112,7 +112,10 @@ pub(super) fn issue(
     runtime: &BankIdentityRuntime,
     principal: &BankAuthenticatedPrincipal,
     action: EstateAction,
-) -> Result<BankCommitReceipt, ExampleFailure> {
+) -> Result<
+    bank_server::BankClosedSourceCompletion<bank_domain::schema::EstateMutationResult>,
+    ExampleFailure,
+> {
     let fail = |custody| ExampleFailure::Notification(Box::new(custody));
     let input = NotifyEstateDeath::try_from(action)
         .map_err(|action| fail(NotificationCustody::WrongInput(action)))?;
@@ -143,5 +146,5 @@ pub(super) fn issue(
         .map_err(|(completed, denial)| {
             fail(NotificationCustody::CloseRefused { completed, denial })
         })?;
-    Ok(BankCommitReceipt::from_closed_source(closed))
+    Ok(bank_server::BankClosedSourceCompletion::from_query(closed))
 }

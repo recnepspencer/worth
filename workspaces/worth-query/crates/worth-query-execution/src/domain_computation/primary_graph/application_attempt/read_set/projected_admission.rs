@@ -12,21 +12,6 @@ pub(super) struct ProjectedReadParts {
     dependent_source_facts: Option<RetainedSourceFacts>,
     consumed_outputs: Vec<ConsumedOutputEvidence>,
 }
-impl ProjectedReadParts {
-    pub(super) fn from_projection<Schema: ApplicationSchema, Operation>(
-        projection: WorthQueryApplicationOperationInvariantProjectionSnapshot<Schema, Operation>,
-    ) -> Self {
-        let (lease, projected_scope, decision_reads, dependent_source_facts, consumed_outputs) =
-            projection.into_lease_and_realized_scope();
-        Self {
-            lease,
-            projected_scope,
-            decision_reads,
-            dependent_source_facts,
-            consumed_outputs,
-        }
-    }
-}
 impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
     /// Consumes the genuine before authorization lease and the separately
     /// sealed applied decision. No committed projection snapshot is constructed.

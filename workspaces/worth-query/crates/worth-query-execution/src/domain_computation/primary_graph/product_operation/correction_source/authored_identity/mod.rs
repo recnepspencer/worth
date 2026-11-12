@@ -14,7 +14,7 @@ use worth_query_declaration::facade::{
     application_operation::ApplicationMutationOutputPosture as Posture,
     application_schema::{ApplicationSchema, ApplicationSchemaMember},
 };
-use worth_relational::facade::{identity::EntityId, transactions::RecordRef};
+use worth_relational::facade::identity::EntityId;
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub(super) struct PreparedAuthoredIdentity {
@@ -100,10 +100,7 @@ impl PreparedAuthoredIdentity {
         family: &DeclaredAuthoredCorrection,
         members: &mut Vec<Self>,
     ) -> Result<(), Denial> {
-        let outputs = source
-            .occurrence()
-            .commit_evidence()
-            .output_correspondence();
+        let outputs = source.occurrence().correspondence();
         for (name, _, _, _) in
             outputs
                 .native_witness_roles()
@@ -143,8 +140,8 @@ impl PreparedAuthoredIdentity {
         else {
             return Err(Denial::UnsupportedSourceMeaning);
         };
-        let evidence = source.occurrence().commit_evidence();
-        let outputs = evidence.output_correspondence();
+        let evidence = source.occurrence();
+        let outputs = evidence.correspondence();
         outputs
             .require_source_binding::<C::Source>()
             .map_err(|cause| {
@@ -174,8 +171,7 @@ impl PreparedAuthoredIdentity {
         );
         let key = match parts.source_posture {
             Posture::Create => evidence
-                .committed_changes()
-                .committed_field_ref(request, original, &locator)
+                .field(request, original, &locator)
                 .map_err(|cause| {
                     Denial::SourceOutput(
                         super::material::WorthQueryCorrectionOutputProjectionDenial::Stopped(cause),
@@ -183,22 +179,10 @@ impl PreparedAuthoredIdentity {
                 })?
                 .ok_or(Denial::MissingPreImage)?
                 .clone(),
-            Posture::Retire => {
-                let retained = evidence
-                    .retained_preimage()
-                    .ok_or(Denial::MissingPreImage)?;
-                retained
-                    .fields()
-                    .iter()
-                    .find(|value| {
-                        value.target_record() == &RecordRef::Entity(original)
-                            && value.locator() == &locator
-                            && value.locus().entity() == entity
-                    })
-                    .ok_or(Denial::MissingPreImage)?
-                    .value()
-                    .clone()
-            }
+            Posture::Retire => evidence
+                .preimage_key(original, entity, &locator)
+                .ok_or(Denial::MissingPreImage)?
+                .clone(),
             Posture::Preserve => return Err(Denial::UnsupportedSourceMeaning),
         };
         let mut co_anchors = Vec::with_capacity(declaration.co_anchors().len());

@@ -12,6 +12,11 @@ mod actualization;
 mod boundary_facts;
 #[path = "allocation_events/boundary_trace.rs"]
 mod boundary_trace;
+#[path = "allocation_events/trace_storage.rs"]
+mod trace_storage;
+pub(crate) use trace_storage::PreparedTracePage;
+#[path = "allocation_events/release.rs"]
+mod release;
 pub(crate) use actualization::{
     PhysicalResidencyActualAllocationUnits, PhysicalResidencyAllocationActualization,
     PhysicalResidencyRequestedAllocationUnits,
@@ -59,7 +64,7 @@ struct PhysicalResidencyAllocationEventCells {
     #[cfg(feature = "certification-test-authority")]
     next_sequence: u64,
     #[cfg(feature = "certification-test-authority")]
-    events: Vec<PhysicalResidencyAllocationBoundaryEvent>,
+    events: trace_storage::EventTrace,
 }
 
 impl PhysicalResidencyAllocationEventRecorder {
@@ -73,7 +78,7 @@ impl PhysicalResidencyAllocationEventRecorder {
             #[cfg(feature = "certification-test-authority")]
             next_sequence: 1,
             #[cfg(feature = "certification-test-authority")]
-            events: Vec::new(),
+            events: trace_storage::EventTrace::default(),
         }));
         (
             Self {
@@ -275,7 +280,7 @@ impl PhysicalResidencyAllocationEventObserver {
             .cells
             .lock()
             .unwrap_or_else(|poisoned| poisoned.into_inner());
-        PhysicalResidencyAllocationTrace::new(self.store, self.pool, cells.events.clone())
+        PhysicalResidencyAllocationTrace::new(self.store, self.pool, cells.events.snapshot())
     }
 }
 

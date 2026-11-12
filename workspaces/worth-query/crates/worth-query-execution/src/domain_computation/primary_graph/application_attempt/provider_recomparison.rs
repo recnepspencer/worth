@@ -33,12 +33,6 @@ pub(super) fn certify_provider_recomparison(
     evidence(preconditions)
 }
 
-pub(super) fn recover_equivalent_commit_evidence(
-    preconditions: &WorthQueryBoundMutationPreconditions,
-) -> WorthQueryMutationPreconditionComparisonEvidence {
-    evidence(preconditions)
-}
-
 fn evidence(
     preconditions: &WorthQueryBoundMutationPreconditions,
 ) -> WorthQueryMutationPreconditionComparisonEvidence {

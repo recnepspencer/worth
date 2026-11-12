@@ -6,6 +6,7 @@ use super::{
     schema::*,
     source_authorization,
 };
+use crate::application_invariant_acceptance::managed_index::prefix_observation;
 use std::sync::Arc;
 use worth_query_decl::facade::{application_program::*, application_schema::*};
 use worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock;
@@ -18,11 +19,14 @@ pub use catalog::{Configuration, Contribution};
 pub(super) use catalog::{Feature, Program};
 
 pub(super) type Host = WorthQueryProgramApplicationRuntime<Catalog, Program>;
-pub(super) fn install(prefix: Arc<prefix::Calls>, rules: Arc<rule::Calls>) -> Host {
+pub(super) fn install(prefix: Arc<prefix_observation::Calls>, rules: Arc<rule::Calls>) -> Host {
     install_decision_read(prefix, rules, DecisionRead::Declared)
 }
 #[cfg(test)]
-pub(super) fn install_watch(prefix: Arc<prefix::Calls>, rules: Arc<rule::Calls>) -> Host {
+pub(super) fn install_watch(
+    prefix: Arc<prefix_observation::Calls>,
+    rules: Arc<rule::Calls>,
+) -> Host {
     let resources = super::super::super::resources::application_limits_with_observations(
         super::super::super::resources::EXECUTION_POLICY,
         320,
@@ -37,7 +41,7 @@ pub(super) fn install_watch(prefix: Arc<prefix::Calls>, rules: Arc<rule::Calls>)
     )
 }
 pub(super) fn install_decision_read(
-    prefix: Arc<prefix::Calls>,
+    prefix: Arc<prefix_observation::Calls>,
     rules: Arc<rule::Calls>,
     decision_read: DecisionRead,
 ) -> Host {
@@ -49,14 +53,14 @@ pub(super) fn install_decision_read(
     )
 }
 pub(super) fn install_geometry(
-    prefix: Arc<prefix::Calls>,
+    prefix: Arc<prefix_observation::Calls>,
     rules: Arc<rule::Calls>,
     geometry: geometry::Configuration,
 ) -> Host {
     install_configured(prefix, rules, DecisionRead::Declared, geometry)
 }
 fn install_configured(
-    prefix: Arc<prefix::Calls>,
+    prefix: Arc<prefix_observation::Calls>,
     rules: Arc<rule::Calls>,
     decision_read: DecisionRead,
     geometry: geometry::Configuration,
@@ -72,11 +76,11 @@ fn install_configured(
 }
 
 fn install_configured_with_limits(
-    prefix: Arc<prefix::Calls>,
+    prefix: Arc<prefix_observation::Calls>,
     rules: Arc<rule::Calls>,
     decision_read: DecisionRead,
     geometry: geometry::Configuration,
-    limits: WorthQueryInMemoryApplicationLimits,
+    limits: WorthQueryApplicationLimits,
     clock: WorthQueryAdmissionClock,
 ) -> Host {
     let world = try_install_root(
@@ -94,20 +98,12 @@ fn install_configured_with_limits(
 }
 #[cfg(test)]
 pub(super) fn install_growth(
-    prefix: Arc<prefix::Calls>,
+    prefix: Arc<prefix_observation::Calls>,
     rules: Arc<rule::Calls>,
     geometry: geometry::Configuration,
     clock: worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock,
 ) -> Host {
-    let policy = worth_foundational::ExecutionRequestPolicy::new(
-        worth_foundational::ExecutionPosture::Serial,
-        worth_foundational::DeterminismContract::CanonicalBitwise,
-        worth_foundational::ExecutionBudget::new(
-            std::num::NonZeroUsize::MIN,
-            None,
-            Some(20_000_000_000),
-        ),
-    );
+    let policy = super::super::super::resources::POPULATION_BOOTSTRAP_POLICY;
     install_configured_with_limits(
         prefix,
         rules,
@@ -119,13 +115,13 @@ pub(super) fn install_growth(
 }
 
 fn try_install_root(
-    prefix: Arc<prefix::Calls>,
+    prefix: Arc<prefix_observation::Calls>,
     rules: Arc<rule::Calls>,
     decision_read: DecisionRead,
     geometry: geometry::Configuration,
-    limits: WorthQueryInMemoryApplicationLimits,
+    limits: WorthQueryApplicationLimits,
     clock: WorthQueryAdmissionClock,
-) -> Result<Host, WorthQueryInMemoryApplicationDenial> {
+) -> Result<Host, WorthQueryApplicationPreparationDenial> {
     try_install_root_with_sources(
         prefix,
         rules,
@@ -138,7 +134,7 @@ fn try_install_root(
 }
 #[cfg(test)]
 pub(super) fn install_source_authorization(sources: source_authorization::Configuration) -> Host {
-    let prefix = Arc::new(prefix::Calls::default());
+    let prefix = Arc::new(prefix_observation::Calls::default());
     let rules = Arc::new(rule::Calls::new(Arc::clone(&prefix)));
     let world = try_install_root_with_sources(
         prefix,
@@ -155,14 +151,14 @@ pub(super) fn install_source_authorization(sources: source_authorization::Config
     world
 }
 fn try_install_root_with_sources(
-    prefix: Arc<prefix::Calls>,
+    prefix: Arc<prefix_observation::Calls>,
     rules: Arc<rule::Calls>,
     decision_read: DecisionRead,
     geometry: geometry::Configuration,
     sources: source_authorization::Configuration,
-    limits: WorthQueryInMemoryApplicationLimits,
+    limits: WorthQueryApplicationLimits,
     clock: WorthQueryAdmissionClock,
-) -> Result<Host, WorthQueryInMemoryApplicationDenial> {
+) -> Result<Host, WorthQueryApplicationPreparationDenial> {
     let declaration =
         <Catalog as worth_query_decl::facade::application_schema::ApplicationSchema>::declaration()
             .unwrap();
@@ -206,9 +202,9 @@ fn try_install_root_with_sources(
 
 #[cfg(test)]
 pub(super) fn try_install_unpopulated(
-    prefix: Arc<prefix::Calls>,
+    prefix: Arc<prefix_observation::Calls>,
     rules: Arc<rule::Calls>,
-) -> Result<Host, WorthQueryInMemoryApplicationDenial> {
+) -> Result<Host, WorthQueryApplicationPreparationDenial> {
     try_install_root(
         prefix,
         rules,
@@ -225,7 +221,7 @@ pub(super) type NestedHost = WorthQueryProgramApplicationRuntime<
     super::nested::composition::Program,
 >;
 pub(super) fn install_nested(
-    provider: Arc<super::nested::prefix::Calls>,
+    provider: Arc<prefix_observation::Calls>,
     records: Arc<super::nested::rule::Calls>,
 ) -> NestedHost {
     use super::nested::{
@@ -252,7 +248,7 @@ pub(super) type EventHost = WorthQueryProgramApplicationRuntime<
     super::events::composition::Program,
 >;
 pub(super) fn install_events(
-    provider: Arc<super::events::prefix::Calls>,
+    provider: Arc<prefix_observation::Calls>,
     records: Arc<super::events::rule::Calls>,
 ) -> EventHost {
     install_events_with_policy(
@@ -263,7 +259,7 @@ pub(super) fn install_events(
 }
 #[cfg(test)]
 pub(super) fn install_event_growth(
-    provider: Arc<super::events::prefix::Calls>,
+    provider: Arc<prefix_observation::Calls>,
     records: Arc<super::events::rule::Calls>,
 ) -> EventHost {
     let policy = worth_foundational::ExecutionRequestPolicy::new(
@@ -278,7 +274,7 @@ pub(super) fn install_event_growth(
     install_events_with_policy(provider, records, policy)
 }
 fn install_events_with_policy(
-    provider: Arc<super::events::prefix::Calls>,
+    provider: Arc<prefix_observation::Calls>,
     records: Arc<super::events::rule::Calls>,
     policy: worth_foundational::ExecutionRequestPolicy,
 ) -> EventHost {
@@ -302,7 +298,7 @@ fn install_events_with_policy(
 
 #[cfg(test)]
 pub(super) fn install_ordered_refusing(
-    calls: Arc<super::ordered_refusing::prefix::Calls>,
+    calls: Arc<prefix_observation::Calls>,
 ) -> WorthQueryProgramApplicationRuntime<
     super::ordered_refusing::schema::Catalog,
     super::ordered_refusing::composition::Program,

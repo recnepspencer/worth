@@ -4,7 +4,7 @@ use sha2::{Digest, Sha256};
 use worth_store_physical_format::ReleasedDropWalFateWitnessV1;
 use worth_store_recovery_physics::{VerifiedOrderedRootEdge, VerifiedOrderedRootHistory};
 
-use super::{Denial, PlanningContext, ResolvedPlanningBasis};
+use super::{Denial, PlanningContext, ResolvedPlanningState};
 use crate::entry::PhysicalRecoveryOrderedReleaseJoin as Join;
 use crate::orchestration::planning::page_observation::OrderedReleasedObservation;
 
@@ -25,7 +25,7 @@ impl JoinedOrderedReleaseMember {
 
 pub(super) fn join(
     context: &PlanningContext,
-    basis: &ResolvedPlanningBasis,
+    basis: &ResolvedPlanningState,
     history: &VerifiedOrderedRootHistory,
     release: &OrderedReleasedObservation,
 ) -> Result<JoinedOrderedReleaseMember, Denial> {

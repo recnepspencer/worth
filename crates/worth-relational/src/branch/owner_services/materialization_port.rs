@@ -221,13 +221,13 @@ impl RelationalMaterializationPort {
         let mut validated = transaction
             .validate(execution, &runtime)
             .map_err(RelationalMaterializationError::Commit)?;
-        validated.required_output_materialization =
+        validated.state.required_output_materialization =
             crate::history::data::prepare_materialization_continuity(
                 execution,
                 &runtime,
                 basis,
                 custody,
-                validated.proposed_mutation.state(),
+                validated.state.proposed_mutation.state(),
             )
             .map_err(RelationalMaterializationError::Commit)?;
         let invariant_evidence = validated.invariant_evidence().clone();

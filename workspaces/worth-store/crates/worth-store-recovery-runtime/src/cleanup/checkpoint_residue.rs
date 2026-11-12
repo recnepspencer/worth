@@ -11,13 +11,14 @@ use crate::progression::ReopenedPhysicalRecovery;
 /// checkpoint is selected) under the same recovery media owner, before
 /// closing the fresh-reopen authority.
 pub(super) fn prepare(reopened: &ReopenedPhysicalRecovery) -> RecoveryCheckpointResidueOutcome {
-    let limits = reopened.state.authority.limits.declaration();
+    let limits = reopened.payload().state.authority.limits.declaration();
     reopened
+        .payload()
         .state
         .coordination
         .owner()
         .remove_unselected_checkpoint_candidate(
-            &reopened.state.authority.media,
+            &reopened.payload().state.authority.media,
             limits.cleanup_bytes.min(limits.observation_bytes),
         )
 }
@@ -26,12 +27,14 @@ pub(super) fn failure(
     reopened: ReopenedPhysicalRecovery,
     outcome: RecoveryCheckpointResidueOutcome,
 ) -> PhysicalRecoveryOutcome {
-    let ReopenedPhysicalRecovery {
+    let (payload, unused_handoff) = reopened.into_handoff_parts();
+    drop(unused_handoff);
+    let crate::progression::ReopenedPayload {
         state,
         publication_counters,
         publication_settlement,
         ..
-    } = reopened;
+    } = payload;
     let store = state.authority.media.store_identity();
     let session_identity = state.authority.session.identity();
     let recovery_effects = state.authority.media.recovery_effect_count();

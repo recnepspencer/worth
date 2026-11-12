@@ -50,7 +50,8 @@ pub(in crate::logic::transaction::runtime) use branches::{
 pub(crate) use branches::{
     BranchState, SignalCanonicalCallerUnwind, SignalOwnerMetadataCloseBatch,
     SignalOwnerMetadataState, SignalOwnerPartition, SignalOwnerRetirementCleanup,
-    SignalOwnerSnapshotReservationDenial, SnapshotBranchState, SnapshotStatePacket,
+    SignalOwnerSnapshotReservationDenial, SignalReadmittedCellSeed, SnapshotBranchState,
+    SnapshotStatePacket,
 };
 pub use fork_contract::{
     SignalBranchForkDenial, SignalBranchForkReceipt, SignalBranchForkRequest,
@@ -63,3 +64,6 @@ pub use targeted_transaction::{
     LoweredBranchTargetedTransactionPlan, ValidatedBranchTargetedTransactionRequest,
 };
 pub use transaction_head::SignalBranchTransactionHead;
+#[cfg(test)]
+#[path = "mod_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;

@@ -9,8 +9,8 @@ use worth_runtime_bridge::facade::{
 };
 
 use super::{
-    bridge_denial, QueryConditionalComputeProvider, QueryConditionalComputeSemanticContract,
-    QueryOutputReadinessPredicate, WorthQueryConditionalRuntimeInstallationDenial,
+    bridge_denial, QueryAuthoredConditionalComputeProvider, QueryOutputReadinessPredicate,
+    WorthQueryConditionalRuntimeInstallationDenial,
 };
 
 pub(in crate::domain_computation::primary_graph) fn prepare_dependency_conditional_installation<
@@ -45,18 +45,20 @@ where
     let contract = super::lower_dependency_contract(node.declaration())?;
     let dependencies = super::dependency_candidates(node, graph)?;
     let node_authority: Arc<str> = Arc::from(node.authority_identity());
+    let portable_node: Arc<str> = Arc::from(node.declaration().identity());
     Ok(BridgeOwnedConditionalInstallationRequest {
         contract,
         location: super::lower_location(node.location()),
         dependencies,
         providers: BridgeConditionalProviderSet::new()
-            .condition(QueryOutputReadinessPredicate::new(
+            .authored_condition(QueryOutputReadinessPredicate::new(
                 Arc::clone(&node_authority),
+                Arc::clone(&portable_node),
                 node.declaration().condition().dependencies().len(),
             ))
-            .compute(QueryConditionalComputeProvider::<Node> {
-                semantics: QueryConditionalComputeSemanticContract(node_authority),
-                output_version: None,
-            }),
+            .authored_compute(QueryAuthoredConditionalComputeProvider::<Node>::new(
+                portable_node,
+                None,
+            )),
     })
 }

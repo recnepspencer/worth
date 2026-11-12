@@ -204,17 +204,41 @@ checkpoint fixture's 32,545-byte payload or fate `4`.
 
 ### Recovery profiles and memory budgets
 
-Ordinary Phase 8 recovery uses the named `c8-phase2-admission-v1` profile and
-its admitted 512 KiB recovery-memory budget. The checkpoint-fate and recovery-
+Ordinary Phase 8 recovery uses the named `c8-phase2-admission-v2` profile and
+its admitted 2 MiB recovery-memory budget. The checkpoint-fate and recovery-
 yieldpoint campaigns use the explicitly named
 `c8-phase8-fate-coverage-v1` profile with a separate 4 MiB admission because
 their deliberately oversized multi-checkpoint fixture must retain enough
 physical evidence to cross every named boundary. Those campaigns assert their
 own 4 MiB bound; they are additional crash-composition evidence and do not
-substitute for the ordinary 512 KiB budget proof. The C.10 multi-page extent
+substitute for the ordinary 2 MiB budget proof. The C.10 multi-page extent
 rewrite world uses `c10-extent-rewrite-v1` with the same 4 MiB admission: it
 stages a multi-page source range beside the ordinary working set, and it
 proves the rewrite applies, not the ordinary budget.
+
+The Phase 3 integration retires `c8-phase2-admission-v1`. Its 512 KiB cap
+predates the original-funded, prepaid phase storage required by the default
+stack repair. Six actual one-slot backings remain live until their consuming
+phase; construction also admits the maximum adjacent value-movement overlap.
+These capacities are physical memory even while a future slot is empty.
+The ordinary one-record and tier-recovery process worlds require 792,491 and
+800,890 bytes respectively before effects. Those smaller worlds do not bound
+ordinary WAL rewrite: its 129-record history also retains source, record and
+manifest metadata, and requires 1,245,169 bytes before effects. The finite
+ordinary envelope is 2 MiB, qualified against an even larger submitted history
+and the actual WAL rewrite. The active profile is v2; v1 refuses instead of
+silently selecting a different budget. No persisted Store format changes.
+
+The accounting and required-minus-one refusal proofs in
+`progression/planned/state_tests.rs` and
+`progression/planned/basis/expectation_storage.rs` remain unchanged. They
+continue to require actual capacity plus conversion overlap before allocation.
+The production-entry process courts prove the larger ordinary envelope, while
+the distinct 4 MiB campaigns retain their existing contracts.
+The submitted ordinary history now derives its operation count as
+`ordinary_memory / payload_bytes + 1` (257 records of 8 KiB). Its existing
+strict assertion that semantic payload exceeds the recovery allowance remains
+unchanged; the former 96-record setup no longer proved that contract.
 
 ### Hostile sequence
 

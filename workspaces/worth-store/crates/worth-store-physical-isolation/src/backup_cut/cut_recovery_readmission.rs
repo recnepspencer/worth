@@ -156,7 +156,7 @@ fn validate_observation(
     if observation.content_digest() != row.content_digest() {
         return Err(BackupCutReadmissionDenial::SourceDigestChanged(name()?));
     }
-    if observation.physical_identity() != source.physical_identity {
+    if observation.physical_identity() != *source.physical_identity.bytes() {
         return Err(BackupCutReadmissionDenial::SourcePhysicalIdentityChanged(
             name()?,
         ));
@@ -197,8 +197,8 @@ fn recover_coverage(
             checkpoint_identity: copy_string(checkpoint_identity)?,
             manifest_generation: *manifest_generation,
             durable_checkpoint_lsn: *durable_checkpoint_lsn,
-            authority_fingerprint: *authority_fingerprint,
-            frontier_digest: *frontier_digest,
+            authority_fingerprint: *authority_fingerprint.bytes(),
+            frontier_digest: *frontier_digest.bytes(),
         },
         BackupBundleArtifactCoverage::WalSegment {
             start_lsn,

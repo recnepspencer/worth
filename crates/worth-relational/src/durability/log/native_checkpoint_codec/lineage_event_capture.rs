@@ -121,7 +121,9 @@ impl CapturedManifest {
                     std::sync::Arc::new(bytes.into_boxed_slice()),
                 ),
             });
-        self.manifest.lineage_events.push(descriptor);
+        let mut rows = self.manifest.lineage_events.ordinary_owned_copy();
+        rows.push(descriptor);
+        self.manifest.lineage_events = CheckpointLineageEventPages::from_ordinary(rows);
         Ok(())
     }
 }

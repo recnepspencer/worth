@@ -10,7 +10,9 @@ pub use descriptor_versions::{
     DescriptorCanonicalBasisSupportPolicy, DescriptorCanonicalBasisVersion,
     DescriptorSemanticsSupportPolicy, DescriptorSemanticsVersion,
 };
-pub use diff_atoms::{SchemaDiffAtom, SchemaDiffDetail, SchemaElementKind, SchemaElementRef};
+pub use diff_atoms::{
+    SchemaChangeText, SchemaDiffAtom, SchemaDiffDetail, SchemaElementKind, SchemaElementRef,
+};
 pub use transition_classification::{
     default_boundary_visibility_for_continuation,
     default_boundary_visibility_for_subscriber_impact, FreeFormSchemaDiffIntent,
@@ -25,3 +27,5 @@ pub use transition_plans::{
     SchemaContinuationDescriptor, SchemaLineageArtifact, SchemaReconciliationDescriptor,
     SchemaTransitionArtifact, SchemaTransitionSummary, ValidatedSchemaTransition,
 };
+
+pub(crate) use diff_atoms::{SchemaTextReadmissionMemory, SchemaTransitionReadmissionMemory};

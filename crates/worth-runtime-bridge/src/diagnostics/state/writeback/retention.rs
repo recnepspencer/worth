@@ -146,27 +146,30 @@ impl BridgeDiagnosticsState {
         record: BridgeWritebackExecutionRecord,
         limit: usize,
     ) {
-        let record = Arc::new(record);
+        let record = WritebackDiagnosticSlot::new(record);
+        let value = record.value();
         self.latest_writeback_execution_by_record_identity.insert(
-            record.record_identity().as_str().to_string(),
+            value.record_identity().as_str().to_string(),
             Arc::clone(&record),
         );
-        if let Some(candidate_digest) = record.candidate_digest() {
+        if let Some(candidate_digest) = value.candidate_digest() {
             self.latest_writeback_execution_by_candidate_digest
                 .insert(candidate_digest.to_string(), Arc::clone(&record));
         }
         self.writeback_execution_records.push_back(record);
         while self.writeback_execution_records.len() > limit.max(1) {
             if let Some(evicted) = self.writeback_execution_records.pop_front() {
+                evicted.expire();
+                let evicted_value = evicted.value();
                 if self
                     .latest_writeback_execution_by_record_identity
-                    .get(evicted.record_identity().as_str())
+                    .get(evicted_value.record_identity().as_str())
                     .is_some_and(|current| Arc::ptr_eq(current, &evicted))
                 {
                     self.latest_writeback_execution_by_record_identity
-                        .remove(evicted.record_identity().as_str());
+                        .remove(evicted_value.record_identity().as_str());
                 }
-                if let Some(candidate_digest) = evicted.candidate_digest()
+                if let Some(candidate_digest) = evicted_value.candidate_digest()
                     && self
                         .latest_writeback_execution_by_candidate_digest
                         .get(candidate_digest)
@@ -186,7 +189,8 @@ impl BridgeDiagnosticsState {
         let Some(previous_record) = self.writeback_execution_records.pop_back() else {
             return;
         };
-        let previous_record = previous_record.as_ref().clone();
+        let slot = previous_record;
+        let previous_record = slot.value().as_ref().clone();
         self.latest_writeback_execution_by_record_identity
             .remove(previous_record.record_identity().as_str());
         if let Some(candidate_digest) = previous_record.candidate_digest()
@@ -194,7 +198,7 @@ impl BridgeDiagnosticsState {
                 .latest_writeback_execution_by_candidate_digest
                 .get(candidate_digest)
                 .is_some_and(|current| {
-                    current.record_identity() == previous_record.record_identity()
+                    current.value().record_identity() == previous_record.record_identity()
                 })
         {
             self.latest_writeback_execution_by_candidate_digest
@@ -202,16 +206,18 @@ impl BridgeDiagnosticsState {
         }
 
         let updated_record =
-            Arc::new(previous_record.with_execution_receipt_digest(execution_receipt_digest));
+            previous_record.with_execution_receipt_digest(execution_receipt_digest);
+        slot.replace(updated_record);
+        let updated_record = slot.value();
         self.latest_writeback_execution_by_record_identity.insert(
             updated_record.record_identity().as_str().to_string(),
-            Arc::clone(&updated_record),
+            Arc::clone(&slot),
         );
         if let Some(candidate_digest) = updated_record.candidate_digest() {
             self.latest_writeback_execution_by_candidate_digest
-                .insert(candidate_digest.to_string(), Arc::clone(&updated_record));
+                .insert(candidate_digest.to_string(), Arc::clone(&slot));
         }
-        self.writeback_execution_records.push_back(updated_record);
+        self.writeback_execution_records.push_back(slot);
     }
 
     pub(crate) fn record_writeback_replay(
@@ -219,21 +225,25 @@ impl BridgeDiagnosticsState {
         record: BridgeWritebackReplayRecord,
         limit: usize,
     ) {
-        let record = Arc::new(record);
+        let record = WritebackDiagnosticSlot::new(record);
+        let value = record.value();
         self.latest_writeback_replay_by_record_identity.insert(
-            record.record_identity().as_str().to_string(),
+            value.record_identity().as_str().to_string(),
             Arc::clone(&record),
         );
         self.writeback_replay_records.push_back(record);
         while self.writeback_replay_records.len() > limit.max(1) {
-            if let Some(evicted) = self.writeback_replay_records.pop_front()
-                && self
+            if let Some(evicted) = self.writeback_replay_records.pop_front() {
+                evicted.expire();
+                let evicted_value = evicted.value();
+                if self
                     .latest_writeback_replay_by_record_identity
-                    .get(evicted.record_identity().as_str())
+                    .get(evicted_value.record_identity().as_str())
                     .is_some_and(|current| Arc::ptr_eq(current, &evicted))
-            {
-                self.latest_writeback_replay_by_record_identity
-                    .remove(evicted.record_identity().as_str());
+                {
+                    self.latest_writeback_replay_by_record_identity
+                        .remove(evicted_value.record_identity().as_str());
+                }
             }
         }
     }

@@ -18,10 +18,12 @@ use crate::domain_computation::{
 /// machine. The provider session is joined exactly once by [`bind_session`].
 pub struct WorthQueryApplicationAttemptBasis {
     core: WorthQueryApplicationAttemptCore,
+    original_completion: Option<super::super::super::provider::OriginalCompletionReceiver>,
     product: crate::basis::WorthQueryProductBranchLease,
 }
 
 struct WorthQueryApplicationAttemptCore {
+    completion: super::super::super::provider::OriginalCompletionPublisher,
     runtime: WorthQueryRuntimeAuthorityIdentity,
     operation_attempt: WorthQueryOperationAdmissionIdentity,
     installed_binding: worth_query_installation::facade::ApplicationSchemaBindingIdentity,
@@ -110,16 +112,14 @@ impl WorthQueryApplicationAttemptAffinityView for WorthQueryProviderSessionTermi
     }
 }
 
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub struct WorthQueryApplicationAttemptBasisMismatch;
-
 impl WorthQueryApplicationAttemptBasis {
     pub fn capture<Schema, Operation, Input, Scope>(
         application: &super::super::super::WorthQueryPrimaryGraphApplicationRuntime<Schema>,
         admission: &WorthQueryAdmittedApplicationOperation<Schema, Operation, Input, Scope>,
         snapshot: &SnapshotHandle,
         product: &crate::basis::WorthQueryProductBranchLease,
-    ) -> Result<Self, WorthQueryApplicationAttemptBasisMismatch> {
+        policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
+    ) -> Result<Self, super::super::WorthQueryApplicationCommitOutcome> {
         if admission.runtime_authority() != application.runtime.authority_identity()
             || snapshot.branch_id() != admission.graph_work_branch()
             || snapshot.branch_id()
@@ -137,10 +137,19 @@ impl WorthQueryApplicationAttemptBasis {
                     .observation()
                     .version_id()
         {
-            return Err(WorthQueryApplicationAttemptBasisMismatch);
+            return Err(super::provider_denial::denied(
+                super::super::WorthQueryApplicationCommitDenialStage::ManagedRunAdmission,
+            ));
         }
+        let (completion, receiver) =
+            super::super::super::provider::OriginalCompletionPublisher::pending_slot(policy)
+                .map_err(
+                    super::super::provider_compare_denial::original_custody_allocation_denied,
+                )?;
         Ok(Self {
+            original_completion: Some(receiver),
             core: WorthQueryApplicationAttemptCore {
+                completion,
                 runtime: admission.runtime_authority(),
                 operation_attempt: admission.admission_identity(),
                 installed_binding: admission.binding_identity().clone(),
@@ -159,6 +168,13 @@ impl WorthQueryApplicationAttemptBasis {
         })
     }
 
+    pub(super) fn take_original_completion(
+        &mut self,
+    ) -> super::super::super::provider::OriginalCompletionReceiver {
+        self.original_completion
+            .take()
+            .expect("only the active original progression receives its result")
+    }
     pub fn retained_product(&self) -> crate::basis::WorthQueryProductBranchLease {
         self.product.retained_clone()
     }
@@ -242,6 +258,12 @@ impl WorthQueryApplicationAttemptBasis {
 }
 
 impl WorthQueryApplicationAttemptAffinity {
+    pub(in crate::domain_computation::primary_graph) fn take_original_completion_publisher(
+        &self,
+    ) -> super::super::super::provider::OriginalCompletionPublisher {
+        self.basis.completion.take()
+    }
+
     pub(in crate::domain_computation::primary_graph) fn owns_original_read(
         &self,
         read: &super::super::CompletedOriginalRead,
@@ -331,3 +353,6 @@ impl WorthQueryApplicationAttemptAffinity {
 }
 
 mod court_doors_for_test;
+#[cfg(test)]
+#[path = "application_attempt_affinity_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;

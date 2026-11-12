@@ -1,6 +1,7 @@
 //! Actual registered cold construction, interruption and final-owner cleanup.
 use super::super::authentication;
 use super::{host, journey, prefix, query};
+use crate::application_invariant_acceptance::managed_index::prefix_observation;
 use stats_alloc::{Region, StatsAlloc, INSTRUMENTED_SYSTEM};
 use std::sync::{Arc, Mutex};
 use worth_query_host::facade::{
@@ -69,7 +70,7 @@ fn cancelled_cold_prefix_build_releases_partial_backing_and_rebuilds_with_fresh_
     isolated_allocation_case(cancelled_build, concat!(module_path!(), "::cancelled_cold_prefix_build_releases_partial_backing_and_rebuilds_with_fresh_request"));
 }
 fn cancelled_build() {
-    let calls = Arc::new(prefix::Calls::default());
+    let calls = Arc::new(prefix_observation::Calls::default());
     let world = host::install(Arc::clone(&calls));
     let cancellation = WorthQueryCancellationSource::new();
     let scope = WorthQueryRequestScope::new(None, cancellation.token(), worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system());
@@ -175,7 +176,7 @@ fn final_release() {
     // Observe physical allocation, not a reservation estimate or a Drop flag.
     // Exact acquisition runs this case alone with --test-threads=1.
     let region = Region::new(ALLOCATOR);
-    let calls = Arc::new(prefix::Calls::default());
+    let calls = Arc::new(prefix_observation::Calls::default());
     let world = host::install(Arc::clone(&calls));
     let keepalive = world.clone();
     let scope = authentication::request_scope();
@@ -316,7 +317,7 @@ fn warm_allocation_observation() {
     // Execution/codec thread-local stacks retain their reusable capacity until
     // thread exit. Initialize those existing stacks before measuring World
     // ownership, rather than counting their first-use capacity as an index leak.
-    let world = host::install(Arc::new(prefix::Calls::default()));
+    let world = host::install(Arc::new(prefix_observation::Calls::default()));
     let scope = authentication::request_scope();
     let principal = authenticate(&world, &scope);
     let request = world

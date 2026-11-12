@@ -2,10 +2,10 @@ use std::sync::Arc;
 use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_binding_identity::OutputBindingIdentity;
 use worth_query_execution::court_doors_for_test::equality_type_id::EqualityTypeId as TypeId;
 
+use worth_query_execution::facade::product::WorthQueryProductBranchCreationOutcome;
 use worth_runtime_world::facade::ProductBranchCreationIntent;
 use worth_runtime_world::facade::ProductBranchCreationPlans;
 use worth_runtime_world::facade::RelationalBranchCreationPlan;
-use worth_runtime_world::facade::RuntimeWorldBranchCreationOutcome;
 use worth_runtime_world::facade::RuntimeWorldCancellationSource;
 use worth_runtime_world::facade::SignalBranchCreationPlan;
 
@@ -42,7 +42,7 @@ fn cutoff_candidate_pins_the_selected_ancestor_partition() {
         ),
     )
     .expect("the fork intent is valid");
-    let RuntimeWorldBranchCreationOutcome::Performed(child) = world
+    let WorthQueryProductBranchCreationOutcome::Performed(child) = world
         .application
         .product_runtime()
         .create_product_branch_for_test(

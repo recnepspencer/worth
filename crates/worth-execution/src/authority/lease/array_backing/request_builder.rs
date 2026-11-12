@@ -36,7 +36,11 @@ impl<'request, 'authority, T> ExecutionRequestArrayBuilder<'request, 'authority,
                 context
                     .poll()
                     .map_err(|cause| Denial::Request(WorkCeilingDenial::Stopped(cause)))?;
-                BuildingFixedBacking::allocate_reserved(element_count, reservation)
+                let status = request
+                    .allocation_policy()
+                    .status(Some(quote))
+                    .map_err(Denial::Allocation)?;
+                BuildingFixedBacking::allocate_reserved(element_count, reservation, status)
                     .map_err(Denial::Allocation)
             })());
         });
@@ -147,6 +151,27 @@ impl<T> std::fmt::Debug for ExecutionRequestArrayBuilder<'_, '_, T> {
 }
 
 impl ExecutionRequestArrayBuilder<'_, '_, u8> {
+    /// Seal immutable bytes while the original request can still admit the
+    /// concrete byte owner's shared control allocation as well as its payload.
+    pub fn seal_immutable_bytes(
+        self,
+    ) -> Result<crate::ExecutionImmutableBytes, ExecutionRequestArrayDenial> {
+        use ExecutionRequestArrayDenial as Denial;
+        let Self {
+            request,
+            building,
+            writes: _,
+        } = self;
+        request.consult().map_err(Denial::Request)?;
+        // Sealing only moves the already admitted exact backing. Its new Arc
+        // is admitted by the byte owner; wrapping this in another native scope
+        // would introduce an unrelated framework allocation before that quote.
+        let backing = building.seal().map_err(Denial::Allocation)?;
+        let bytes = crate::ExecutionImmutableBytes::from_owned_for_request(backing, &request)?;
+        request.consult().map_err(Denial::Request)?;
+        Ok(bytes)
+    }
+
     /// Copy bytes into the already admitted fixed layout, consulting the same
     /// original request between bounded copies. This never grows the layout.
     pub fn extend_from_slice(&mut self, bytes: &[u8]) -> Result<(), ExecutionRequestArrayDenial> {

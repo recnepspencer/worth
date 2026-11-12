@@ -251,7 +251,7 @@ pub fn recover_executor(
     let WorthQueryWorkflowOperationChoice::Here(completed) = completed.into_operation();
     assert!(matches!(
         completed.evidence(),
-        WorthQuerySourceCompletion::Recovered {
+        WorthQuerySourceCompletion::Recorded {
             initial_posture: Some(WorthQueryApplicationUncommitted::Indeterminate(_)),
             ..
         }

@@ -1,8 +1,20 @@
 use std::sync::{Arc, Mutex, MutexGuard, OnceLock};
+mod source_retirement;
+pub(crate) use source_retirement::SealedRelationalMediumBinding;
+mod checkpoint_selection;
+mod home_transition_requirement;
+mod initial_inputs;
+pub(crate) use checkpoint_selection::CheckpointPublication;
+pub(crate) use home_transition_requirement::RelationalDurableMediumTransfer;
+use home_transition_requirement::RelationalHomeProgramPhase;
+pub use home_transition_requirement::RelationalHomeProgramWriteDenial;
+pub(crate) use initial_inputs::RelationalCommittedInitialInputs;
+pub use initial_inputs::RelationalInitialInputsPublicationStop;
+use worth_proof::{AuthorityMarker, DurablyCommitted};
 
 use super::{
-    RelationalDurabilityUnresolved, RelationalDurabilityUnresolvedSubject, RelationalDurableMedium,
-    RelationalDurablePublication, RelationalDurablePublicationRefusal,
+    DurablePublicationFate, RelationalDurabilityUnresolved, RelationalDurabilityUnresolvedSubject,
+    RelationalDurableMedium, RelationalDurablePublicationRefusal,
 };
 use crate::branch::PositionedBranchTransition;
 use crate::durability::branch_transition_artifact::RelationalBranchTransitionArtifact;
@@ -22,8 +34,18 @@ use crate::history::data::PositionedCanonicalCommit;
 /// delete and a later transition never overtakes an unresolved commit.
 #[derive(Debug)]
 pub(crate) struct RelationalDurableMediumBinding {
+    transition: Option<worth_proof::HomeProgramTransitionAuthority>,
+    world_selection: Option<
+        Arc<
+            worth_proof::VerifiedHomeWorldSelection<
+                Arc<crate::durability::RelationalWorldSourceCatalog>,
+            >,
+        >,
+    >,
+    // Admission observes the writer phase without waiting for medium I/O.
+    home_phase: Mutex<Option<RelationalHomeProgramPhase>>,
     state: Mutex<BindingState>,
-    cold_source: Arc<dyn super::RelationalDurableColdSource>,
+    cold_source: Option<Arc<dyn super::RelationalDurableColdSource>>,
     unresolved: Arc<OnceLock<RelationalDurabilityUnresolved>>,
 }
 
@@ -47,23 +69,49 @@ pub(crate) enum RelationalDurableStepStop {
 /// Placement facts issued only after the journal answered Committed.
 #[derive(Debug)]
 pub(crate) struct RelationalDurableCommitReadmission {
-    entry: crate::history::RelationalCommitIndexEntry,
+    positioned: Arc<PositionedCanonicalCommit>,
+    entry: crate::history::RetainedCanonicalIndex,
     source: Arc<dyn super::RelationalDurableColdSource>,
 }
 impl RelationalDurableCommitReadmission {
     pub(crate) fn into_parts(
         self,
     ) -> (
-        crate::history::RelationalCommitIndexEntry,
+        Arc<PositionedCanonicalCommit>,
+        crate::history::RetainedCanonicalIndex,
         Arc<dyn super::RelationalDurableColdSource>,
     ) {
-        (self.entry, self.source)
+        (self.positioned, self.entry, self.source)
+    }
+}
+
+impl AuthorityMarker for RelationalDurableCommitReadmission {}
+
+/// The exact positioned transition accepted by the medium. Its construction
+/// stays in this binding, on the Committed branch only.
+#[derive(Debug)]
+pub(crate) struct RelationalDurableTransitionPublication {
+    positioned: PositionedBranchTransition,
+    digest: [u8; 32],
+}
+
+impl AuthorityMarker for RelationalDurableTransitionPublication {}
+
+impl RelationalDurableTransitionPublication {
+    pub(crate) fn into_evidence(self) -> (PositionedBranchTransition, [u8; 32]) {
+        (self.positioned, self.digest)
     }
 }
 
 impl RelationalDurableMediumBinding {
+    pub(crate) fn has_unresolved_publication(&self) -> bool {
+        self.unresolved.get().is_some()
+    }
     pub(crate) fn cold_source(&self) -> Arc<dyn super::RelationalDurableColdSource> {
-        self.cold_source.clone()
+        self.cold_source
+            .as_ref()
+            .expect("only the live binding exposes its source")
+            .clone()
     }
     pub(super) fn preparation_fate(&self) -> Arc<OnceLock<RelationalDurabilityUnresolved>> {
         self.unresolved.clone()
@@ -79,11 +127,17 @@ impl RelationalDurableMediumBinding {
             .ok_or(super::RelationalDurableTransitionReadFailure::MediumMoved)?
             .read_transition(sequence)
     }
-    pub(crate) fn new(medium: Box<dyn RelationalDurableMedium>) -> Self {
+    pub(crate) fn new(transfer: RelationalDurableMediumTransfer) -> Self {
+        let RelationalDurableMediumTransfer { medium, phase } = transfer;
         let unresolved = Arc::new(OnceLock::new());
         let cold_source = medium.cold_source();
+        let transition = medium.home_transition_authority().cloned();
+        let world_selection = medium.home_world_selection();
         Self {
-            cold_source,
+            transition,
+            world_selection,
+            cold_source: Some(cold_source),
+            home_phase: Mutex::new(Some(phase)),
             state: Mutex::new(BindingState {
                 medium: Some(medium),
                 unresolved: unresolved.clone(),
@@ -92,28 +146,47 @@ impl RelationalDurableMediumBinding {
         }
     }
 
+    pub(crate) fn home_world_selection(
+        &self,
+    ) -> Option<
+        Arc<
+            worth_proof::VerifiedHomeWorldSelection<
+                Arc<crate::durability::RelationalWorldSourceCatalog>,
+            >,
+        >,
+    > {
+        self.world_selection.clone()
+    }
+
+    pub(crate) fn home_transition_authority(
+        &self,
+    ) -> Option<&worth_proof::HomeProgramTransitionAuthority> {
+        self.transition.as_ref()
+    }
+
     /// Encode `commit` as its canonical artifact and make it durable.
     ///
     /// Called with the patch-position reservation held, after preparation and
     /// before the live cutover, so a refusal leaves no live or durable effect.
     pub(crate) fn publish(
         &self,
-        commit: &PositionedCanonicalCommit,
+        commit: Arc<PositionedCanonicalCommit>,
         roots: &crate::branch::RelationalBranchRootDescriptor,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
-    ) -> Result<RelationalDurableCommitReadmission, RelationalDurableStepStop> {
+    ) -> Result<DurablyCommitted<RelationalDurableCommitReadmission>, RelationalDurableStepStop>
+    {
         let mut state = self.state();
         let medium = state.admitting_medium()?;
         let artifact =
-            RelationalCanonicalCommitArtifact::from_positioned_request(commit, execution)
+            RelationalCanonicalCommitArtifact::from_positioned_request(&commit, execution)
                 .map_err(|denial| refused(RelationalDurablePublicationRefusal::Encoding(denial)))?;
-        let entry = crate::history::RelationalCommitIndexEntry {
-            commit: commit.commit.clone(),
-            position: commit.position(),
-            root: roots.clone(),
-            payload_digest: *artifact.payload_digest().as_bytes(),
-            schema_version: commit.schema_version,
-        };
+        let entry = crate::history::RetainedCanonicalIndex::from_publication(
+            &commit,
+            roots,
+            *artifact.payload_digest().as_bytes(),
+            execution,
+        )
+        .map_err(|denial| refused(RelationalDurablePublicationRefusal::Encoding(denial)))?;
         crate::execution::check_request(execution).map_err(|cause| {
             refused(RelationalDurablePublicationRefusal::Encoding(
                 crate::durability::canonical_commit_artifact::RelationalCanonicalCommitArtifactEncodeDenial::Request(cause),
@@ -127,11 +200,12 @@ impl RelationalDurableMediumBinding {
                 commit_id: artifact.commit_id(),
                 digest: artifact.payload_digest(),
             },
-        )?;
-        Ok(RelationalDurableCommitReadmission {
-            entry,
-            source: self.cold_source.clone(),
-        })
+            || RelationalDurableCommitReadmission {
+                positioned: commit,
+                entry,
+                source: self.cold_source(),
+            },
+        )
     }
 
     /// Encode `transition` as its artifact and make it durable.
@@ -140,12 +214,18 @@ impl RelationalDurableMediumBinding {
     /// preparation step and before any live effect of the transition.
     pub(crate) fn publish_transition(
         &self,
-        transition: &PositionedBranchTransition,
+        transition: PositionedBranchTransition,
         policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
-    ) -> Result<(), RelationalDurableStepStop> {
+    ) -> Result<DurablyCommitted<RelationalDurableTransitionPublication>, RelationalDurableStepStop>
+    {
+        self.admit_home_program_write(None, None).map_err(|cause| {
+            refused(RelationalDurablePublicationRefusal::HomeProgramTransition(
+                cause,
+            ))
+        })?;
         let mut state = self.state();
         let medium = state.admitting_medium()?;
-        let artifact = RelationalBranchTransitionArtifact::from_positioned(transition, policy)
+        let artifact = RelationalBranchTransitionArtifact::from_positioned(&transition, policy)
             .map_err(|denial| {
                 refused(RelationalDurablePublicationRefusal::TransitionEncoding(
                     denial,
@@ -159,6 +239,11 @@ impl RelationalDurableMediumBinding {
                 follows: artifact.follows(),
                 digest: artifact.payload_digest(),
             },
+            || RelationalDurableTransitionPublication {
+                positioned: transition
+                    .with_recorded_artifact_digest(Some(*artifact.payload_digest().as_bytes())),
+                digest: *artifact.payload_digest().as_bytes(),
+            },
         )
     }
 
@@ -166,19 +251,19 @@ impl RelationalDurableMediumBinding {
     /// Waits for a publication in flight; afterwards this attachment refuses
     /// every publication. An unresolved fate stays behind: the rebuilt
     /// runtime's recovery has decided it. `None` if it already moved.
-    pub(crate) fn detach(&self) -> Option<Box<dyn RelationalDurableMedium>> {
-        self.state().medium.take()
+    pub(crate) fn detach(&self) -> Option<RelationalDurableMediumTransfer> {
+        let mut state = self.state();
+        // The transfer takes both owners in I/O-then-phase order.
+        let mut phase = self.home_phase();
+        let medium = state.medium.take()?;
+        let phase = phase.take().expect("the live medium owns its phase");
+        Some(RelationalDurableMediumTransfer { medium, phase })
     }
 
-    /// The in-crate test medium behind this binding, if it is one.
-    #[cfg(test)]
-    pub(crate) fn in_crate_test_medium(
-        &self,
-    ) -> Option<std::sync::Arc<crate::tests::support::TestDurableMedium>> {
-        self.state()
-            .medium
-            .as_ref()
-            .and_then(|medium| medium.in_crate_test_medium())
+    fn home_phase(&self) -> MutexGuard<'_, Option<RelationalHomeProgramPhase>> {
+        self.home_phase
+            .lock()
+            .unwrap_or_else(|poisoned| poisoned.into_inner())
     }
 
     fn state(&self) -> MutexGuard<'_, BindingState> {
@@ -202,24 +287,31 @@ impl BindingState {
 
     /// Record the medium's answer for `subject`; an unknown fate blocks every
     /// later publication.
-    fn settle(
+    fn settle<Publication: AuthorityMarker>(
         &mut self,
-        answer: RelationalDurablePublication,
+        answer: DurablePublicationFate<String>,
         subject: RelationalDurabilityUnresolvedSubject,
-    ) -> Result<(), RelationalDurableStepStop> {
+        committed: impl FnOnce() -> Publication,
+    ) -> Result<DurablyCommitted<Publication>, RelationalDurableStepStop> {
         match answer {
-            RelationalDurablePublication::Committed => Ok(()),
-            RelationalDurablePublication::ProvenNoEffect { detail } => Err(refused(
+            DurablePublicationFate::Committed => Ok(DurablyCommitted::from_owner(committed())),
+            DurablePublicationFate::ProvenNoEffect { detail } => Err(refused(
                 RelationalDurablePublicationRefusal::ProvenNoEffect { detail },
             )),
-            RelationalDurablePublication::Indeterminate { detail } => {
-                let fate = self
-                    .unresolved
-                    .get_or_init(|| RelationalDurabilityUnresolved::new(subject, detail))
-                    .clone();
-                Err(RelationalDurableStepStop::Unresolved(fate))
-            }
+            DurablePublicationFate::Indeterminate { detail } => Err(
+                RelationalDurableStepStop::Unresolved(self.record_unresolved(subject, detail)),
+            ),
         }
+    }
+
+    fn record_unresolved(
+        &self,
+        subject: RelationalDurabilityUnresolvedSubject,
+        detail: String,
+    ) -> RelationalDurabilityUnresolved {
+        self.unresolved
+            .get_or_init(|| RelationalDurabilityUnresolved::new(subject, detail))
+            .clone()
     }
 }
 

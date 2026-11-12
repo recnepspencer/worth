@@ -26,6 +26,19 @@ concurrency:
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
+  repository-hygiene:
+    name: Keep root build artifacts out of Git
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Test root build artifact guard
+        run: python -m unittest discover -s scripts/ci -p test_root_build_artifacts.py
+      - name: Reject tracked root target output
+        run: python scripts/ci/check_root_build_artifacts.py
+
   qualification-selection:
     name: Select consumer qualification from Cargo reach
     runs-on: ubuntu-latest

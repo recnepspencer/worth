@@ -83,6 +83,14 @@ pub fn declare<S: Scenario>(
 }
 pub struct Inverse<S>(PhantomData<fn() -> S>);
 impl<S: Scenario> ApplicationCorrectionBinding<S> for Inverse<S> {
+    fn recover_source_input(bytes: &[u8], expected: worth_query_decl::facade::application_schema::CanonicalDigestId, bounds: worth_query_decl::facade::application_schema::ValueDecodeBounds) -> Result<worth_query_decl::facade::application_operation::ApplicationEncodedInput<<Self::Source as worth_query_decl::facade::application_operation::ApplicationMutationBinding<S>>::InputBinding>, worth_query_decl::facade::application_operation::ApplicationRetainedInputDenial>{
+        worth_query_decl::facade::application_operation::ApplicationEncodedInput::decode_retained_with_seed(bytes, expected, bounds, worth_query_decl::facade::application_schema::CanonicalValueSeed::<<Self::Source as worth_query_decl::facade::application_operation::ApplicationMutationBinding<S>>::Input>::new(bounds))
+    }
+
+    fn recover_inverse_input(bytes: &[u8], expected: worth_query_decl::facade::application_schema::CanonicalDigestId, bounds: worth_query_decl::facade::application_schema::ValueDecodeBounds) -> Result<worth_query_decl::facade::application_operation::ApplicationEncodedInput<<worth_query_decl::facade::application_aftermath::ApplicationInverseBinding<S, Self> as worth_query_decl::facade::application_operation::ApplicationMutationBinding<S>>::InputBinding>, worth_query_decl::facade::application_operation::ApplicationRetainedInputDenial>{
+        worth_query_decl::facade::application_operation::ApplicationEncodedInput::decode_retained_with_seed(bytes, expected, bounds, worth_query_decl::facade::application_schema::CanonicalValueSeed::<<worth_query_decl::facade::application_aftermath::ApplicationInverseBinding<S, Self> as worth_query_decl::facade::application_operation::ApplicationMutationBinding<S>>::Input>::new(bounds))
+    }
+
     const IDENTITY: &'static str = "ownership.parameter-inverse.v1";
     type Source = Binding<S>;
     type InverseIntent = Edit;
@@ -165,7 +173,7 @@ fn worker_only_recorded_parameter_inverse_rederives_through_the_owned_predecesso
             std::num::NonZeroUsize::MIN,
         ));
     assert!(resources.execution_policy().accounting().is_none());
-    let limits = WorthQueryInMemoryApplicationLimits::new(
+    let limits = WorthQueryApplicationLimits::new(
         resources,
         runtime::WorthQueryApplicationQueryResourceProfile::new(
             std::num::NonZeroUsize::new(128).unwrap(),
@@ -222,5 +230,3 @@ fn worker_only_recorded_parameter_inverse_rederives_through_the_owned_predecesso
     assert_eq!(super::coupled::producer::handler::contacts(), 2);
     assert!(request.query(query::Input { id: 101 }).execute().is_ok());
 }
-
-mod adjacency_gap;

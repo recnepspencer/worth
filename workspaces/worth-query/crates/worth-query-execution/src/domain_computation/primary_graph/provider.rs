@@ -27,6 +27,10 @@ pub(crate) mod branch_commit_coordination;
 mod commit_causality;
 pub(crate) mod committed_dispatch_outbox;
 mod completed_observation;
+pub(crate) mod original_attempt_completion;
+pub(in crate::domain_computation::primary_graph) use original_attempt_completion::{
+    OriginalCompletionPublisher, OriginalCompletionReceiver, OriginalCompletionSlot,
+};
 pub(crate) mod correction_witness;
 pub(in crate::domain_computation::primary_graph) use correction_witness::{
     CorrectionPerformedWitness, CorrectionWitnessDenial,
@@ -40,8 +44,18 @@ mod evidence_window;
 pub(crate) mod fault_port;
 mod graph_participation;
 mod history_retirement;
+mod home_retirement;
+pub(crate) use home_retirement::PrimaryProviderCustody;
+mod correction_material;
 pub(crate) mod idempotency;
 pub(in crate::domain_computation::primary_graph) use idempotency::ReceiptAppendix;
+mod original_meaning_support;
+mod original_publication;
+pub use idempotency::{
+    WorthQueryRecoveredAftermathCausality, WorthQueryRecoveredApplicationCommitReceipt,
+    WorthQueryRecoveredDispatchOutbox, WorthQueryReleasedApplicationEffect,
+};
+use original_publication::OriginalPublication;
 pub(crate) mod inbound_completion;
 mod inbound_cost;
 pub(in crate::domain_computation::primary_graph) mod managed_cleanup_control;
@@ -59,6 +73,7 @@ pub(in crate::domain_computation::primary_graph) use invariant_execution::Closed
 pub(in crate::domain_computation::primary_graph) use invariant_execution::CoupledProducerAssembly;
 pub(crate) mod invariant_execution_failure;
 mod managed_application_recovery;
+pub(in crate::domain_computation::primary_graph) use managed_application_recovery::ProducerRecoveryCustody;
 pub(in crate::domain_computation::primary_graph) mod recovered_program_source_delivery;
 pub use recovered_program_source_delivery::WorthQueryRecoveredProgramSourceDeliveryDenialForTest;
 pub use recovered_program_source_delivery::WorthQueryRecoveredProgramSourceDeliveryForTest;
@@ -77,13 +92,14 @@ pub(in crate::domain_computation::primary_graph) use outstanding_dispatch::Outst
 pub(in crate::domain_computation::primary_graph) use pending_application_publication::WorthQueryApplicationPublicationRecoveryReservation;
 pub(crate) mod product_retirement;
 mod provisional_state;
-mod publication_recovery;
 mod resource_support;
 pub(in crate::domain_computation::primary_graph) use resource_support::WorthQueryPrimaryGraphResourceSupport;
 pub(crate) mod session_commit;
 mod session_lifecycle;
 mod terminal_dispatch_release;
 pub(crate) mod unpublished_idempotency;
+
+pub(in crate::domain_computation) use unpublished_idempotency::QueryDurablePreparationGuard;
 pub(in crate::domain_computation) use unpublished_idempotency::WorthQueryUnpublishedIdempotencyDisposition;
 pub(in crate::domain_computation::primary_graph) use unpublished_idempotency::WorthQueryUnpublishedIdempotencyReservation;
 
@@ -107,7 +123,6 @@ pub use mutation_work::WorthQueryTouchedRecordIdentity;
 pub(in crate::domain_computation) use session_commit::WorthQueryCommittedDispatchOutboxBinding;
 pub(super) use session_commit::WorthQueryCommittedDispatchOutboxBindingDenial;
 pub(super) use session_commit::WorthQueryCommittedDispatchOutboxReceiptSeal;
-pub(super) use session_commit::WorthQueryRetainedApplicationCommitBasis;
 pub(crate) use session_commit::{
     WorthQueryRetainedPreImageSeal, WorthQueryRetainedRelationPreImageSeal,
 };
@@ -117,6 +132,7 @@ use std::sync::Mutex;
 pub struct WorthQueryPrimaryGraphProvider {
     pub(in crate::domain_computation::primary_graph) managed_cleanup_control: Arc<managed_cleanup_control::ManagedCleanupControl>,
     pub(crate) graph: WorthQueryPrimaryGraphIntegrationHandle,
+    installed_operations: Arc<worth_query_installation::facade::InstalledOperationCatalog>,
     resource_support: resource_support::WorthQueryPrimaryGraphResourceSupport,
     branch_commit_coordination:
         branch_commit_coordination::WorthQueryApplicationBranchCommitCoordinator,
@@ -135,7 +151,9 @@ pub struct WorthQueryPrimaryGraphProvider {
         pending_application_publication::registry::WorthQueryPendingApplicationPublicationRegistryOwner,
     fault_port: Arc<dyn fault_port::WorthQueryPrimaryGraphFaultPort>,
     pub(in crate::domain_computation::primary_graph) publication_fault_control: Arc<publication_fault_control::PublicationFaultControl>,
-    world_history: std::sync::OnceLock<worth_runtime_world::facade::RuntimeWorldLifecyclePort>,
+    correction_material: std::sync::OnceLock<super::retained_correction::CorrectionMaterialOwner>,
+    original_meaning_support: std::sync::OnceLock<std::sync::Weak<super::program_occurrence::support_lifecycle::WorthQueryProgramSupportLifecycle>>,
+    world_history: std::sync::OnceLock<worth_runtime_world::facade::RuntimeWorldRecoveryPort>,
     pub(super) teardown_sentinel: Mutex<Option<Box<dyn std::any::Any + Send + Sync>>>,
 }
 
@@ -193,6 +211,8 @@ impl WorthQueryPrimaryGraphProvider {
         outcome_identity: super::application_attempt::WorthQueryApplicationCommitOutcomeIdentity,
         emitted_effect_count: u64,
         mutation_partition: worth_relational::facade::identity::PartitionId,
+        product: &worth_runtime_world::facade::ProductBranchObservation,
+        has_output_settlement: bool,
     ) -> (
         worth_relational::facade::transactions::WorkerIntentBatch,
         idempotency::ReceiptAppendix,
@@ -204,6 +224,8 @@ impl WorthQueryPrimaryGraphProvider {
             outcome_identity,
             emitted_effect_count,
             mutation_partition,
+            product,
+            has_output_settlement,
         )
     }
 
@@ -319,7 +341,7 @@ impl WorthQueryPrimaryGraphProvider {
     }
 }
 
-pub(super) struct WorthQueryPrimaryLogicalGraph;
+pub(crate) struct WorthQueryPrimaryLogicalGraph;
 
 pub(in crate::domain_computation::primary_graph) use application_attempt_state::PreparedRebaseDenial;
 pub(in crate::domain_computation::primary_graph) use application_attempt_state::PreparedSourceFactRebase;
@@ -327,4 +349,11 @@ pub(in crate::domain_computation::primary_graph) use application_attempt_state::
 pub use managed_cleanup_control::WorthQueryManagedCleanupRegistrationDenial;
 pub use managed_cleanup_control::WorthQueryManagedCleanupScheduleForTest;
 
+pub(in crate::domain_computation) use application_attempt_state::QueryPreparingApplicationCommit;
+pub(in crate::domain_computation::primary_graph::provider) use application_attempt_state::RetainedQueryDurablePreparation;
+
+pub(in crate::domain_computation::primary_graph::provider) use unpublished_idempotency::BeforeWorldQueryReservation;
 mod court_doors_for_test;
+#[cfg(test)]
+#[path = "provider_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;

@@ -83,7 +83,7 @@ impl WorthQueryPendingApplicationPublication {
     }
     pub(super) fn release_before(
         &mut self,
-        runtime: &mut worth_relational::facade::runtime::RelationalRuntime,
+        runtime: &worth_relational::facade::runtime::RelationalRuntime,
     ) {
         if let Some(before) = self.before.take() {
             crate::relational_snapshot_release::release_query_snapshot(runtime, &before);

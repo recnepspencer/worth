@@ -66,8 +66,8 @@ pub struct BankApprovedPaymentPerformedOperation {
 #[derive(Debug)]
 pub enum BankApprovedPaymentApplyOutcome {
     Performed(BankApprovedPaymentPerformedOperation),
-    PreviouslyCommitted(
-        worth_query_host::facade::primary_graph::WorthQueryHistoricalApplicationCommit,
+    RecoveredCommitted(
+        worth_query_host::facade::primary_graph::WorthQueryRecoveredApplicationCommitReceipt,
     ),
     IdempotencyIntentDrift,
     DomainDenied(BankProposalDenial),
@@ -88,6 +88,11 @@ impl BankApprovedPaymentApplyOutcome {
 }
 
 impl BankApprovedPaymentPerformedOperation {
+    #[cfg(test)]
+    pub(crate) const fn native_receipt(&self) -> &WorthQueryApplicationCommitReceipt {
+        &self.receipt
+    }
+
     /// Locates this actual performed occurrence for a freshly admitted correction request.
     pub fn correction_source(
         &self,

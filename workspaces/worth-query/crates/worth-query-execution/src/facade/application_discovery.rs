@@ -12,3 +12,6 @@ pub use crate::domain_computation::primary_graph::application_discovery::{
     WorthQueryWorkflowReadExtent, WorthQueryWorkflowReadTarget, WorthQueryWorkflowRecordedActor,
     WorthQueryWorkflowTransitionActors,
 };
+pub use worth_foundational::facade::{
+    WorkflowEndingActorDecodeDenial, WorkflowEndingActorProvenance,
+};

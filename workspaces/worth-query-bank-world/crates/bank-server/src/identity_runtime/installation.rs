@@ -13,8 +13,9 @@ use worth_query_host::facade::application_installation::ApplicationBuildIdentity
 use worth_query_host::facade::declaration::application_program::ApplicationWorkflowComponentLimits;
 use worth_query_host::facade::{
     application_installation::{
-        in_memory_rostered_program, in_memory_rostered_program_with_authorization_time_source,
-        WorthQueryApplicationProgramRoster, WorthQueryInMemoryApplicationLimits,
+        in_memory_rostered_program_in_advancement,
+        in_memory_rostered_program_with_authorization_time_source_in_advancement,
+        WorthQueryApplicationLimits, WorthQueryApplicationProgramRoster,
     },
     domain::{
         WorthQueryApplicationWorkflowResourceCeiling,
@@ -81,6 +82,14 @@ pub(super) fn prepare_installation(
         None => resources,
     };
     let limits = application_limits(resources);
+    // Initial source publication is one bootstrap, rather than an ordinary
+    // per-operation advancement. It retains its own finite original grant.
+    let bootstrap_policy = super::product_world_resources::bank_bootstrap_policy();
+    #[cfg(test)]
+    let bootstrap_policy = world
+        .as_ref()
+        .and_then(|seed| seed.execution_policy)
+        .unwrap_or(bootstrap_policy);
     let mut invariant_projection = None;
     let initialize =
         |_phase: &worth_query_host::facade::application_contribution::WorthQueryBootstrapAdvancementPhase<'_>,
@@ -95,21 +104,11 @@ pub(super) fn prepare_installation(
     let account_index_work = std::sync::Arc::new(
         crate::application_definition::current_accounts::AccountIndexWork::default(),
     );
-    let runtime = match authorization_time {
-        BankAuthorizationTimeInstallation::System => in_memory_rostered_program(
-            program,
-            WorthQueryApplicationProgramRoster::new()
-                .support(successor)
-                .support(successor_p2),
-            declaration,
-            (account_index_work.clone(), (), ()),
-            ApplicationBuildIdentity::parse(env!("WORTH_IMPLEMENTATION_BUILD_ID"))
-                .expect("embedded application build identity"),
-            limits,
-            initialize,
-        ),
-        BankAuthorizationTimeInstallation::Installed(source) => {
-            in_memory_rostered_program_with_authorization_time_source(
+    let runtime = worth_query_host::facade::application_contribution::with_bootstrap_advancement(
+        bootstrap_policy,
+        |phase| match authorization_time {
+            BankAuthorizationTimeInstallation::System => in_memory_rostered_program_in_advancement(
+                &phase,
                 program,
                 WorthQueryApplicationProgramRoster::new()
                     .support(successor)
@@ -120,10 +119,26 @@ pub(super) fn prepare_installation(
                     .expect("embedded application build identity"),
                 limits,
                 initialize,
-                source,
-            )
-        }
-    }
+            ),
+            BankAuthorizationTimeInstallation::Installed(source) => {
+                in_memory_rostered_program_with_authorization_time_source_in_advancement(
+                    &phase,
+                    program,
+                    WorthQueryApplicationProgramRoster::new()
+                        .support(successor)
+                        .support(successor_p2),
+                    declaration,
+                    (account_index_work.clone(), (), ()),
+                    ApplicationBuildIdentity::parse(env!("WORTH_IMPLEMENTATION_BUILD_ID"))
+                        .expect("embedded application build identity"),
+                    limits,
+                    initialize,
+                    source,
+                )
+            }
+        },
+    )
+    .map_err(BankIdentityRuntimeBuildError::BootstrapAdvancement)?
     .map_err(|denial| BankIdentityRuntimeBuildError::ApplicationInstallation(Box::new(denial)))?;
     let invariant_projection = invariant_projection
         .expect("program construction invokes the initializer before publication");
@@ -218,17 +233,17 @@ fn payment_workflow_resources() -> WorthQueryApplicationWorkflowResourceCeiling 
 }
 
 #[cfg(test)]
-pub(crate) fn bank_application_limits() -> WorthQueryInMemoryApplicationLimits {
+pub(crate) fn bank_application_limits() -> WorthQueryApplicationLimits {
     application_limits(super::product_world_resources::bank_product_world_resources())
 }
 
 fn application_limits(
     resources: worth_query_host::facade::runtime::WorthQueryProductWorldResources,
-) -> WorthQueryInMemoryApplicationLimits {
+) -> WorthQueryApplicationLimits {
     let queries = WorthQueryApplicationQueryResourceProfile::new(
         std::num::NonZeroUsize::new(64).expect("native graph concurrency is nonzero"),
     );
-    WorthQueryInMemoryApplicationLimits::new(
+    WorthQueryApplicationLimits::new(
         resources,
         queries,
         SignalConditionalEvaluationBudget::development(),

@@ -50,8 +50,10 @@ impl BoundaryEpoch {
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct CanonicalDigestId([u8; 32]);
+
+mod canonical_digest_wire;
 
 impl CanonicalDigestId {
     pub const fn new(bytes: [u8; 32]) -> Self {

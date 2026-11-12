@@ -5,7 +5,7 @@ use std::sync::Arc;
 #[allow(clippy::too_many_arguments)]
 pub(super) fn require_roster(
     execution: &ExecutionRequest<'_, '_>,
-    runtime: &RelationalRuntime,
+    runtime: &crate::history::data::codec_retirement_closure::history_request::RuntimeHistoryRequest<'_, '_, '_>,
     basis: &AdmittedRelationalBranchBasis,
     anchor: EntityId,
     anchors: &[EntityId],

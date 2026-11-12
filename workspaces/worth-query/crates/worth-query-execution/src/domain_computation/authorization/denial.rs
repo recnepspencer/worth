@@ -37,6 +37,8 @@ pub enum WorthQueryOperationAuthorizationRefusalKind {
     ExpiredAuthentication,
     /// The authorization material belongs to a different runtime.
     ForeignRuntime,
+    /// Authority was issued by an earlier admission of this same Home.
+    StaleIncarnation,
     /// The installed schema binding changed since the material was admitted.
     StaleInstalledSchema,
     /// The installed operation changed or is no longer installed.
@@ -342,3 +344,6 @@ impl From<crate::basis::WorthQueryProductBranchAdmissionDenial>
 }
 
 mod court_doors_for_test;
+#[cfg(test)]
+#[path = "denial_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;

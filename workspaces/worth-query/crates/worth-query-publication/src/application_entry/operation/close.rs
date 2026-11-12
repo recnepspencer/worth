@@ -19,10 +19,12 @@ pub enum WorthQueryOperationCloseDenial {
     Owner(worth_query_execution::facade::product::WorthQueryProductBranchOwnerCleanupDenial),
 }
 
-/// No source, demand, descriptor or pending cleanup remains owned by this result.
+/// Native disposal evidence with any remaining original dispatch/recovery custody.
+/// Closing is not business completion.
 pub struct WorthQueryClosedOperation {
-    managed:
-        Vec<worth_query_execution::facade::domain_computation::WorthQueryDirectRunCleanupReceipt>,
+    managed: Vec<
+        worth_query_execution::facade::primary_graph::WorthQueryApplicationManagedCleanupReceipt,
+    >,
     retired_component_count: usize,
     output_unavailable: Option<WorthQueryApplicationProgramOutputUnavailable>,
 }
@@ -36,7 +38,7 @@ pub(super) fn terminal_outcome_can_close<D, R>(
             super::native_publication::native_terminal_can_close(posture)
         }
         WorthQueryApplicationMutationOutcome::AlreadyCommitted(_)
-        | WorthQueryApplicationMutationOutcome::PreviouslyCommitted(_)
+        | WorthQueryApplicationMutationOutcome::RecoveredCommitted(_)
         | WorthQueryApplicationMutationOutcome::IdempotencyIntentDrift
         | WorthQueryApplicationMutationOutcome::DomainDenied(_)
         | WorthQueryApplicationMutationOutcome::Cancelled
@@ -68,9 +70,13 @@ impl WorthQueryClosedOperation {
         self.output_unavailable.as_ref()
     }
     /// Every actual native release receipt; closure is no business settlement proof.
+    /// Lends each actual remaining dispatch/recovery owner without copying custody.
+    pub fn managed_cleanup_receipts_mut(&mut self) -> &mut [worth_query_execution::facade::primary_graph::WorthQueryApplicationManagedCleanupReceipt]{
+        &mut self.managed
+    }
     pub fn managed_cleanup_receipts(
         &self,
-    ) -> &[worth_query_execution::facade::domain_computation::WorthQueryDirectRunCleanupReceipt]
+    ) -> &[worth_query_execution::facade::primary_graph::WorthQueryApplicationManagedCleanupReceipt]
     {
         &self.managed
     }
@@ -143,3 +149,6 @@ where
             .map_err(WorthQueryOperationCloseDenial::Execution)?
     }
 }
+#[cfg(test)]
+#[path = "close_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;

@@ -188,8 +188,7 @@ where
     ) -> WorthQueryApplicationCommitOutcome {
         let outcome =
             writer.complete::<S, B>(execution, context.phase, context.application, unpublished);
-        if let WorthQueryApplicationCommitOutcome::Committed(receipt)
-        | WorthQueryApplicationCommitOutcome::AlreadyCommitted(receipt) = &outcome
+        if let WorthQueryApplicationCommitOutcome::Committed(receipt) = &outcome
             && let Some(value) = self
                 .result
                 .lock()

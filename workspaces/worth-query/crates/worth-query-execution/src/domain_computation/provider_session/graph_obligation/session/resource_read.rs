@@ -18,7 +18,7 @@ impl WorthQueryManagedGraphWorkSession {
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         basis: &WorthQueryApplicationBasisIdentity,
         read_graph: impl FnOnce(
-            &mut worth_relational::facade::runtime::RelationalRuntime,
+            &worth_relational::facade::runtime::RelationalRuntime,
             &crate::domain_computation::primary_graph::WorthQueryPrimaryGraphLayout,
         ) -> T,
     ) -> Result<(T, WorthQuerySessionResourceReadProof), WorthQueryManagedGraphReadDenial> {

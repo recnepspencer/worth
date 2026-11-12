@@ -383,6 +383,9 @@ impl
         Self::ForeignPhase(cause)
     }
 }
+#[cfg(test)]
+#[path = "error_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;
 
 impl From<IdentityDerivationDenial> for WorthQueryRuntimeError {
     fn from(cause: IdentityDerivationDenial) -> Self {

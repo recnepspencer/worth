@@ -2,9 +2,9 @@
 use super::*;
 use std::sync::{Arc, Mutex};
 use worth_relational::facade::durability::{
-    RecoveryVerificationMode, RelationalBranchTransitionArtifact,
+    DurablePublicationFate, RecoveryVerificationMode, RelationalBranchTransitionArtifact,
     RelationalCanonicalCommitArtifact, RelationalDurableColdSource, RelationalDurableMedium,
-    RelationalDurableMemberLocator, RelationalDurablePublication, RelationalDurableRecoverySource,
+    RelationalDurableMemberLocator, RelationalDurableRecoverySource,
 };
 use worth_relational::facade::runtime::RelationalRuntimeApi;
 use worth_relational::facade::storage::RelationalStorageUnavailableCause;
@@ -91,16 +91,16 @@ impl RelationalDurableMedium for LostForkAnswer {
     fn publish(
         &self,
         artifact: &RelationalCanonicalCommitArtifact,
-    ) -> RelationalDurablePublication {
+    ) -> DurablePublicationFate<String> {
         self.0.lock().unwrap().commits.push(artifact.clone());
-        RelationalDurablePublication::Committed
+        DurablePublicationFate::Committed
     }
     fn publish_transition(
         &self,
         artifact: &RelationalBranchTransitionArtifact,
-    ) -> RelationalDurablePublication {
+    ) -> DurablePublicationFate<String> {
         self.0.lock().unwrap().transitions.push(artifact.clone());
-        RelationalDurablePublication::Indeterminate {
+        DurablePublicationFate::Indeterminate {
             detail: "answer lost after append".into(),
         }
     }

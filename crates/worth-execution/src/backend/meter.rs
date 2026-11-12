@@ -18,7 +18,9 @@ thread_local! {
 }
 
 mod request_observation;
-pub(crate) use request_observation::{active_cancelled, active_deadline, active_serial_memory};
+pub(crate) use request_observation::{
+    active_cancelled, active_deadline, active_nested_stop_owner, active_serial_memory,
+};
 
 pub(crate) fn active_stop() -> Option<KernelStop> {
     ACTIVE_METER.with(|active| {

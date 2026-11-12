@@ -1,7 +1,6 @@
 //! Walk actual storage owners, preserving identities across retained arena editions.
 use super::payload_allocation::{
-    aspect_version_bytes, diagnostic_enrichment_bytes, field_revision_bytes, visit_history_prefix,
-    visit_metadata,
+    diagnostic_enrichment_bytes, visit_history_prefix, visit_metadata,
 };
 use super::{RecordArena, RecordKind};
 use crate::storage::substrate::{visit_inline_value, StorageAllocationVisitor};
@@ -12,6 +11,9 @@ impl<K: RecordKind> RecordArena<K> {
         unique: bool,
         visitor: &mut dyn StorageAllocationVisitor,
     ) {
+        let mut union = super::extra_allocations::AllocationUnion::new(visitor);
+        let visitor: &mut dyn StorageAllocationVisitor = &mut union;
+
         self.slots.visit_allocations(unique, visitor);
         self.partition_ids
             .visit_allocations(unique, visitor, &mut visit_inline_value);
@@ -33,30 +35,34 @@ impl<K: RecordKind> RecordArena<K> {
             unique,
             visitor,
             &mut |history, allocation, visitor| {
-                if visitor.visit(allocation) {
+                if allocation.visit(visitor) {
                     history.visit_allocations(allocation.unique, visitor, &mut visit_metadata::<K>);
                 }
             },
         );
         self.extra
             .visit_allocations(unique, visitor, &mut |extra, mut allocation, visitor| {
-                allocation.bytes += K::extra_owned_allocation_bytes(extra);
-                visitor.visit(allocation);
+                allocation.add_checked_nested_bound(K::extra_reachable_bound_bytes(extra));
+                allocation.visit(visitor);
             });
         self.aspect_versions.visit_allocations(
             unique,
             visitor,
-            &mut |versions, mut allocation, visitor| {
-                allocation.bytes += aspect_version_bytes(versions);
-                visitor.visit(allocation);
+            &mut |versions, allocation, visitor| {
+                versions.visit_allocations(allocation.unique, visitor, &mut visit_inline_value);
             },
         );
         self.field_revisions.visit_allocations(
             unique,
             visitor,
-            &mut |revisions, mut allocation, visitor| {
-                allocation.bytes += field_revision_bytes(revisions);
-                visitor.visit(allocation);
+            &mut |revisions, allocation, visitor| {
+                if let Some(revisions) = revisions {
+                    revisions.visit_allocations(
+                        allocation.unique,
+                        visitor,
+                        &mut visit_inline_value,
+                    );
+                }
             },
         );
     }
@@ -70,8 +76,8 @@ impl<K: RecordKind> RecordArena<K> {
             unique,
             visitor,
             &mut |entries, mut allocation, visitor| {
-                allocation.bytes += diagnostic_enrichment_bytes(entries);
-                visitor.visit(allocation);
+                allocation.add_owned_bytes(diagnostic_enrichment_bytes(entries));
+                allocation.visit(visitor);
             },
         );
     }

@@ -14,6 +14,73 @@ where
     I: Copy + Ord + Send + Sync + 'static,
     T: Copy + Ord + Send + Sync + 'static,
 {
+    fn observe_memory_original_publication(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        effect: worth_relational::facade::durability::ObservedRelationalMemoryCommit,
+    ) -> Result<
+        crate::history::WorldObservedMemoryPublication,
+        crate::history::WorldReadmittedPublicationDenial,
+    > {
+        use crate::history::WorldReadmittedPublicationDenial as Denial;
+        let _call = self.try_admit_call().ok_or(Denial::OwnerUnavailable)?;
+        let _operation = self
+            .reserve_creation_operation()
+            .map_err(|()| Denial::OwnerUnavailable)?;
+        if self.state.durable.is_some() {
+            return Err(Denial::ForeignHome);
+        }
+        self.state
+            .history
+            .observe_memory_original(execution, self.owner_identity(), effect)
+    }
+    fn readmitted_native_publication(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        effect: worth_relational::facade::durability::ReadmittedRelationalAssociatedEffect,
+    ) -> Result<
+        crate::history::WorldReadmittedPublication,
+        crate::history::WorldReadmittedPublicationDenial,
+    > {
+        self.read_original_native_publication(execution, effect)
+    }
+    fn readmitted_publication(
+        &self,
+        identity: &worth_foundational::facade::DurableCompositeCommitIdentity,
+    ) -> Result<
+        crate::history::WorldReadmittedPublication,
+        crate::history::WorldReadmittedPublicationDenial,
+    > {
+        use crate::history::WorldReadmittedPublicationDenial as Denial;
+        if !self.branch_service_is_available() {
+            return Err(Denial::OwnerUnavailable);
+        }
+        let _operation = self
+            .reserve_creation_operation()
+            .map_err(|()| Denial::OwnerUnavailable)?;
+        let identity =
+            crate::identity::readmission::readmit_commit(self.owner_identity(), *identity)
+                .ok_or(Denial::ForeignHome)?;
+        self.state.history.readmitted_publication(&identity)
+    }
+    fn observe_root_product_branch(
+        &self,
+    ) -> Result<ProductBranchObservation, RuntimeWorldBranchAdmissionDenial> {
+        crate::lifecycle::read_observation::record_read();
+        if !self.branch_service_is_available() {
+            return Err(RuntimeWorldBranchAdmissionDenial::OwnerUnavailable);
+        }
+        let _operation = self
+            .reserve_creation_operation()
+            .map_err(|()| RuntimeWorldBranchAdmissionDenial::OwnerUnavailable)?;
+        let cell = self
+            .state
+            .branches
+            .root_cell()
+            .ok_or(RuntimeWorldBranchAdmissionDenial::RetiredBranch)?;
+        cell.observe(&self.state.history, &self.state.retention)
+            .map_err(super::map_observation_denial)
+    }
     fn product_branch_writers_are_locked_out_for_test(
         &self,
         expected: &ProductBranchObservation,
@@ -45,7 +112,7 @@ where
                 actual: description.format_version,
             });
         }
-        if description.owner_ordinal != self.owner_identity().get() {
+        if !description.matches_owner(self.owner_identity()) {
             return Err(Denial::Branch(
                 RuntimeWorldBranchAdmissionDenial::ForeignOwner,
             ));
@@ -75,9 +142,8 @@ where
         RuntimeWorldBranchAdmissionDenial,
     > {
         crate::lifecycle::read_observation::record_read();
-        if expected.owner_identity() != self.owner_identity() {
-            return Err(RuntimeWorldBranchAdmissionDenial::ForeignOwner);
-        }
+        self.owner_identity()
+            .admit_branch_authority(expected.owner_identity())?;
         if !self.branch_service_is_available() {
             return Err(RuntimeWorldBranchAdmissionDenial::OwnerUnavailable);
         }
@@ -99,14 +165,33 @@ where
         ))
     }
 
+    fn observe_installed_product_branches(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> Result<crate::branch::ObservedProductBranches, crate::branch::ProductBranchInventoryDenial>
+    {
+        use crate::branch::ProductBranchInventoryDenial as Denial;
+        if !self.branch_service_is_available() {
+            return Err(Denial::Branch(
+                RuntimeWorldBranchAdmissionDenial::OwnerUnavailable,
+            ));
+        }
+        let _operation = self
+            .reserve_creation_operation()
+            .map_err(|()| Denial::Branch(RuntimeWorldBranchAdmissionDenial::OwnerUnavailable))?;
+        self.state.branches.observe_installed(execution, |cell| {
+            cell.observe(&self.state.history, &self.state.retention)
+                .map_err(super::map_observation_denial)
+        })
+    }
+
     fn observe_product_branch(
         &self,
         branch: &ProductBranchIdentity,
     ) -> Result<ProductBranchObservation, RuntimeWorldBranchAdmissionDenial> {
         crate::lifecycle::read_observation::record_read();
-        if branch.owner_identity() != self.owner_identity() {
-            return Err(RuntimeWorldBranchAdmissionDenial::ForeignOwner);
-        }
+        self.owner_identity()
+            .admit_branch_authority(branch.owner_identity())?;
         if !self.branch_service_is_available() {
             return Err(RuntimeWorldBranchAdmissionDenial::OwnerUnavailable);
         }
@@ -127,9 +212,8 @@ where
         occurrence: ProductBranchIncarnation,
     ) -> Result<ProductBranchObservation, RuntimeWorldBranchAdmissionDenial> {
         crate::lifecycle::read_observation::record_read();
-        if occurrence.owner_identity() != self.owner_identity() {
-            return Err(RuntimeWorldBranchAdmissionDenial::ForeignOwner);
-        }
+        self.owner_identity()
+            .admit_branch_authority(occurrence.owner_identity())?;
         if !self.branch_service_is_available() {
             return Err(RuntimeWorldBranchAdmissionDenial::OwnerUnavailable);
         }

@@ -252,8 +252,9 @@ mod tests {
                 "worth_execution::ExecutionRequest::leased();",
                 "let _: Option<worth_execution::ExecutionRequest>;",
             ] {
+                let owner = variant.split_once("::").expect("qualified owner").0;
                 let source = format!(
-                "#[cfg(test)] mod tests {{ fn case() {{ match kind {{ {variant} => (), _ => () }} {actual_root} }} }}"
+                "enum {owner} {{ ExecutionRequest(()) }} #[cfg(test)] mod tests {{ fn case() {{ match kind {{ {variant} => (), _ => () }} {actual_root} }} }}"
             );
                 let mut input = Inputs::fixture(
                     &[

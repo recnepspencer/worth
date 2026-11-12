@@ -19,9 +19,18 @@ impl RelationalPublicationAuthority<'_> {
             .root()
             .map(|root| root.schema_authority().registry().clone())
             .unwrap_or_else(|| self.runtime.config.schema.registry.clone());
+        let original_artifact = self.runtime.history.commit_artifact(commit_id);
+        let content = envelope
+            .content
+            .readmit_unchanged_root(execution, &binding.inner.root)
+            .map_err(|cause| {
+                PublicationPreparationDenial::from(
+                    crate::branch::RelationalBranchRootCaptureDenial::Content(cause),
+                )
+            })?;
         let prepared = prepare_versioned_publication(
-            execution,
             self.runtime,
+            execution,
             commit_id,
             commit_reference,
             binding,
@@ -31,6 +40,8 @@ impl RelationalPublicationAuthority<'_> {
             &schema_registry,
             PublicationSequence::RecoveryTruth,
             None,
+            original_artifact.as_deref(),
+            Some(&content),
         )?;
         Ok(PreparedRecoveredRelationalPublication {
             publication:

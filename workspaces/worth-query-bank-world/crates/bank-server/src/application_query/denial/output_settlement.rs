@@ -1,5 +1,59 @@
 //! One exhaustive descriptive projection of Query output-settlement refusals.
 use super::*;
+
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub enum BankApplicationOutputSettlementDenialKind {
+    DurableStateAdmission(worth_query_host::facade::product::WorthQueryDurableStateAdmissionDenial),
+    WorldRecovery(worth_query_host::facade::primary_graph::RuntimeWorldRecoveryDenial),
+    RecoveryPublication(worth_query_host::facade::primary_graph::NoEffectCause),
+    PublicationReceipt(worth_query_host::facade::primary_graph::WorthQueryApplicationIdempotencyResolutionDenialKind),
+    CurrentControlBusy,
+    PredecessorRead(Box<worth_query_host::facade::application_contribution::WorthQueryPredecessorReadDenial>),
+    CurrentPublication(Box<worth_query_host::facade::primary_graph::TransactionCommitError>),
+    RetainedVerificationFactUnavailable(Box<worth_query_host::facade::primary_graph::RebaseVerificationReason>),
+    SettlementProvenance(worth_query_host::facade::primary_graph::WorthQueryOutputSettlementProvenanceDenial),
+    ManagedIndexSourceDenied,
+    ManagedCleanupRequired(worth_query_host::facade::primary_graph::WorthQueryMutationCleanupFailureKind),
+    RelationalExecution(worth_query_host::facade::primary_graph::RelationalExecutionDenialCause),
+    BridgeConditional(Box<worth_query_host::facade::primary_graph::BridgeConditionalDenialKind>),
+    CorrespondenceDelivery(Box<worth_query_host::facade::primary_graph::BridgeCorrespondenceDeliveryStop>),
+    ProductDelivery(Box<worth_query_host::facade::product::WorthQueryPerformedRelationalProductChangeDeliveryDenialKind>),
+    ExecutionRequest(
+        worth_query_host::facade::application_contribution::WorthQueryAdvancementDenial,
+    ),
+    SourceQueryInstallation(BankApplicationQueryInstallationDenialKind),
+    SourcePrincipal(WorthQueryPrincipalResolutionDenialKind),
+    SourceScope(BankEntityResolutionDenialKind),
+    SourceQueryAdmission(BankApplicationQueryAdmissionDenialKind),
+    SourceQueryExecution(BankApplicationOneShotDenialKind),
+    ForeignSource,
+    MissingApplicableProducer,
+    AmbiguousApplicableProducer,
+    ProducerUnavailable,
+    ProducerDomainDenied,
+    RequestAuthorization(BankAuthorizationDenialKind),
+    ProductSelection(BankProductSelectionDenialKind),
+    SchedulingRejected,
+    SchedulingDeferred,
+    PublicationStale,
+    NoEffect,
+    Superseded,
+    Cancelled,
+    TimedOut,
+    WorkBudgetExceeded,
+    RetentionBudgetExceeded,
+    PublicationCapacityExceeded,
+    ForeignDemand,
+    RequiredSuccessorStateUnavailable,
+    ForeignSettlement,
+    RetainedBasisUnavailable,
+    Closed,
+    DuplicatePerformedSource,
+    IncompleteDependencyCoverage,
+    ManagedSourceExpansionUnsupported,
+    UnobservedWrite(worth_query_host::facade::primary_graph::WorthQueryApplicationUnobservedWrite),
+}
+
 impl From<WorthQueryOutputDemandDenialKind> for BankApplicationOutputSettlementDenialKind {
     fn from(kind: WorthQueryOutputDemandDenialKind) -> Self {
         use BankApplicationOutputSettlementDenialKind as Bank;
@@ -9,7 +63,9 @@ impl From<WorthQueryOutputDemandDenialKind> for BankApplicationOutputSettlementD
             Query::RecoveryPublication(cause) => Bank::RecoveryPublication(cause),
             Query::PublicationReceipt(cause) => Bank::PublicationReceipt(cause),
             Query::CurrentControlBusy => Bank::CurrentControlBusy,
-            cause @ Query::RetainedVerificationFactUnavailable(_) => Bank::RetainedVerificationFactUnavailable(Box::new(cause)),
+            Query::PredecessorRead(cause) => Bank::PredecessorRead(cause),
+            Query::CurrentPublication(cause) => Bank::CurrentPublication(cause),
+            Query::RetainedVerificationFactUnavailable(cause) => Bank::RetainedVerificationFactUnavailable(Box::new(cause)),
             Query::SettlementProvenance(cause) => Bank::SettlementProvenance(cause),
             Query::ManagedIndexSourceDenied => Bank::ManagedIndexSourceDenied,
             Query::ManagedCleanupRequired(kind) => Bank::ManagedCleanupRequired(kind),
@@ -50,6 +106,7 @@ impl From<WorthQueryOutputDemandDenialKind> for BankApplicationOutputSettlementD
             Query::Closed => Bank::Closed,
             Query::DuplicatePerformedSource => Bank::DuplicatePerformedSource,
             Query::IncompleteDependencyCoverage => Bank::IncompleteDependencyCoverage,
+            Query::DurableStateAdmission(cause) => Bank::DurableStateAdmission(cause),
             Query::ManagedSourceExpansionUnsupported => Bank::ManagedSourceExpansionUnsupported,
             Query::UnobservedWrite(cause) => Bank::UnobservedWrite(cause),
         }

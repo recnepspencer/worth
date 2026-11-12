@@ -121,7 +121,7 @@ fn run<'p>(
             checkpoint,
         };
         let mut work = ValidatedMutationTouchProjectionWork::default();
-        let plan = proposal.prepared.plan.view();
+        let plan = proposal.state.prepared.plan.view();
         if let Some(selection) = plan.selection() {
             (sink.checkpoint)(1)?;
             sink.insert(ValidatedMutationTouch::UnrepresentableEntityMutation {
@@ -133,6 +133,7 @@ fn run<'p>(
         }
         if plan.graph_selection().is_some() {
             for delta in &proposal
+                .state
                 .proposed_mutation
                 .outcome
                 .effect
@@ -175,7 +176,7 @@ fn project_intent<'p>(
         }
         _ => super::intent_projection::project_intent(
             intent,
-            &proposal.prepared.working_state,
+            &proposal.state.prepared.working_state,
             sink,
             work,
         )?,
@@ -195,7 +196,7 @@ fn metered<T>(
         .in_scope(|lease| match lease {
             Some(lease) => crate::execution::prepare_borrowed_artifact(
                 lease,
-                proposal.commit_work_budget.as_ref(),
+                proposal.state.commit_work_budget.as_ref(),
                 0,
                 |budget| {
                     Ok((

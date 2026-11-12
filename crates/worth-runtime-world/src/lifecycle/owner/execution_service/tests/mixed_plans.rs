@@ -17,7 +17,7 @@ fn disjoint_owner_attempts_both_execute_and_only_one_product_head_moves() {
         // the independently observed product reference still selects the root.
         assert!(owner
             .state
-            .relational
+            .relational_services()
             .basis_port()
             .compare_current_exact(expected.basis().relational_basis())
             .is_err());
@@ -33,7 +33,7 @@ fn disjoint_owner_attempts_both_execute_and_only_one_product_head_moves() {
         let signal_basis = signal.successor_basis().unwrap().clone();
         owner
             .state
-            .relational
+            .relational_services()
             .basis_port()
             .compare_current_exact(relational_basis.relational_basis())
             .unwrap();
@@ -87,9 +87,13 @@ fn disjoint_owner_attempts_both_execute_and_only_one_product_head_moves() {
         assert!(owner.cleanup_recovery_handle(&handle).is_some());
         assert_eq!(owner.recovery_record_count(), 0);
         assert_eq!(owner.state.operation.active(), 0);
-        drop(winner);
+        drop(winner.consume());
         drop(expected);
-        let _report = owner.close().unwrap();
+        let _report = owner
+            .close(&worth_execution::ExecutionRequest::serial(
+                &crate::test_execution_policy::serial_request(),
+            ))
+            .unwrap();
     }
 }
 

@@ -65,7 +65,7 @@ impl<S: ApplicationSchema> WorthQuerySelectedProductOperation<'_, S> {
                 })?;
             if meaning.family == family
                 && meaning.source_scope == source
-                && meaning.source_partition == partition
+                && meaning.source_partition.bytes() == &partition
             {
                 return self
                     .current_route_is_current(execution, native, &route)

@@ -20,12 +20,13 @@ pub struct WorthQueryCanonicalCorrectionFact {
     pub prior: Option<WorthQueryCorrectionSourceCoordinates>,
 }
 
-pub(super) fn read(
+pub(in crate::domain_computation::primary_graph) fn read(
     runtime: &worth_relational::facade::runtime::RelationalRuntime,
     snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
     layout: &WorthQueryAftermathCausalityLayout,
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     entity: worth_relational::facade::identity::EntityId,
+    owner: worth_foundational::facade::WorldOwnerCoordinate,
 ) -> Result<WorthQueryCanonicalCorrectionFact, WorthQueryAftermathCausalityReadDenial> {
     let fields = required_fields(layout)?;
     let aspect = layout.key_locator.aspect().aspect_key().clone();
@@ -53,13 +54,26 @@ pub(super) fn read(
         })
         .map_err(aftermath_read_stop)?
         .ok_or(WorthQueryAftermathCausalityReadDenial::Unavailable)?;
-    decode(runtime, entity, row)
+    for locator in canonical_locators(layout) {
+        let revision = view
+            .entity_field_revision(
+                execution,
+                entity,
+                &crate::domain_computation::primary_graph::observations::authoritative(locator),
+            )
+            .map_err(aftermath_read_stop)?;
+        if revision.is_none_or(|revision| revision.version() != row.0) {
+            return Err(WorthQueryAftermathCausalityReadDenial::InconsistentCanonicalRelationships);
+        }
+    }
+    decode(runtime, entity, row, owner)
 }
 
-fn decode(
+pub(super) fn decode(
     runtime: &worth_relational::facade::runtime::RelationalRuntime,
     entity: worth_relational::facade::identity::EntityId,
     (version, values): AftermathCausalityRecord,
+    owner: worth_foundational::facade::WorldOwnerCoordinate,
 ) -> Result<WorthQueryCanonicalCorrectionFact, WorthQueryAftermathCausalityReadDenial> {
     use WorthQueryAftermathCausalityReadDenial::Unavailable;
     let role = match number(&values, 1)? {
@@ -78,11 +92,11 @@ fn decode(
     if parent.branch_id.0 != string(&values, 2)? || child.parents.as_slice() != [parent.commit_id] {
         return Err(Unavailable);
     }
-    let source = coordinates(runtime, &values, 5)?.ok_or(Unavailable)?;
-    let root = coordinates(runtime, &values, 9)?.ok_or(Unavailable)?;
-    let selected = coordinates(runtime, &values, 13)?;
-    let active = coordinates(runtime, &values, 17)?;
-    let prior = coordinates(runtime, &values, 21)?;
+    let source = coordinates(runtime, &values, 5, owner)?.ok_or(Unavailable)?;
+    let root = coordinates(runtime, &values, 9, owner)?.ok_or(Unavailable)?;
+    let selected = coordinates(runtime, &values, 13, owner)?;
+    let active = coordinates(runtime, &values, 17, owner)?;
+    let prior = coordinates(runtime, &values, 21, owner)?;
     let shape = match role {
         WorthQueryAftermathCausalRole::RecordedReverse => {
             selected.is_none()
@@ -124,10 +138,14 @@ fn coordinates(
     runtime: &worth_relational::facade::runtime::RelationalRuntime,
     values: &AftermathCausalityValues,
     start: usize,
+    owner: worth_foundational::facade::WorldOwnerCoordinate,
 ) -> Result<Option<WorthQueryCorrectionSourceCoordinates>, WorthQueryAftermathCausalityReadDenial> {
     use WorthQueryAftermathCausalityReadDenial::Unavailable;
     if values[start..start + 4].iter().all(Option::is_none) {
         return Ok(None);
+    }
+    if number(values, start)? != owner.row_owner_number() {
+        return Err(Unavailable);
     }
     let relational = runtime
         .history()
@@ -138,7 +156,7 @@ fn coordinates(
     }
     Ok(Some(
         WorthQueryCorrectionSourceCoordinates::from_untrusted_parts(
-            number(values, start)?,
+            owner,
             number(values, start + 1)?,
             relational,
         ),

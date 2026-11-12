@@ -15,7 +15,7 @@ where
         self.admit_retained_source_lifecycle(source)?;
         let native = self
             .state
-            .relational
+            .relational_services()
             .fork_port()
             .admit_retained_fork_source(source.basis().relational_basis())
             .map_err(map_retained_native_denial)?;

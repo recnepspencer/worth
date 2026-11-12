@@ -36,6 +36,17 @@ impl<'a> WorthQueryConnectedApplicationInspection<'a> {
     pub fn reason(&self) -> CausalInspectionReason {
         CausalInspectionReason::ObservedResult
     }
+    /// Original predecessor-read metadata, after this source connection's fresh
+    /// diagnostic admission. None means this original retained no such metadata.
+    /// The borrowed values grant no old root, current dependency or READ authority.
+    pub fn predecessor_reads(
+        &self,
+    ) -> Option<&[crate::domain_computation::primary_graph::application_contribution::producer::predecessor_reads::WorthQueryHistoricalProducerRead]>{
+        self.original
+            .source
+            .original_settled_producer()?
+            .predecessor_reads()
+    }
     pub fn producer_connection(&self) -> &WorthQueryApplicationProducerConnection {
         &self.connection
     }

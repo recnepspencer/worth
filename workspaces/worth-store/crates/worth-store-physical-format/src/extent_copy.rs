@@ -9,6 +9,7 @@ use crate::{
     PhysicalGeneration, PhysicalGenerationAuthority, PhysicalRecordFormatDeclaration,
     SelectedRecordRouteMetadata,
 };
+use worth_foundational::CanonicalDigestId;
 
 pub const EXTENT_COPY_DOMAIN: &[u8] = b"store.physical.extent-copy.v1";
 pub const EXTENT_COPY_V2_DOMAIN: &[u8] = b"store.physical.extent-copy.v2";
@@ -21,14 +22,14 @@ pub fn payload_is_extent_copy_any(bytes: &[u8]) -> bool {
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct PhysicalExtentCopyIntent {
-    operation: [u8; 32],
+    operation: CanonicalDigestId,
     source_root: u64,
     source: DurableExtentRecordPlacement,
     destination: DurableExtentRecordPlacement,
     alignment: u64,
     maximum_frame_bytes: u32,
     chunk_count: u32,
-    source_digest: [u8; 32],
+    source_digest: CanonicalDigestId,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -42,8 +43,8 @@ pub enum PhysicalExtentCopyResolutionKind {
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct PhysicalExtentCopyResolution {
-    operation: [u8; 32],
-    intent_digest: [u8; 32],
+    operation: CanonicalDigestId,
+    intent_digest: CanonicalDigestId,
     intent_lsn: u64,
     kind: PhysicalExtentCopyResolutionKind,
 }
@@ -130,21 +131,21 @@ impl PhysicalExtentCopyIntent {
             destination_metadata,
         )?;
         let value = Self {
-            operation,
+            operation: CanonicalDigestId::new(operation),
             source_root,
             source,
             destination,
             alignment,
             maximum_frame_bytes,
             chunk_count,
-            source_digest,
+            source_digest: CanonicalDigestId::new(source_digest),
         };
         value.source_manifest(format)?;
         Some(value)
     }
 
     pub const fn operation(self) -> [u8; 32] {
-        self.operation
+        *self.operation.bytes()
     }
     /// The source-root protection basis, never a final publication generation.
     pub const fn source_root(self) -> u64 {
@@ -166,7 +167,7 @@ impl PhysicalExtentCopyIntent {
         self.chunk_count
     }
     pub const fn source_digest(self) -> [u8; 32] {
-        self.source_digest
+        *self.source_digest.bytes()
     }
 
     pub fn source_manifest(
@@ -217,17 +218,17 @@ impl PhysicalExtentCopyResolution {
             return None;
         }
         Some(Self {
-            operation,
-            intent_digest,
+            operation: CanonicalDigestId::new(operation),
+            intent_digest: CanonicalDigestId::new(intent_digest),
             intent_lsn,
             kind,
         })
     }
     pub const fn operation(self) -> [u8; 32] {
-        self.operation
+        *self.operation.bytes()
     }
     pub const fn intent_digest(self) -> [u8; 32] {
-        self.intent_digest
+        *self.intent_digest.bytes()
     }
     pub const fn intent_lsn(self) -> u64 {
         self.intent_lsn

@@ -362,3 +362,6 @@ pub use bound::{WorthQueryAdvancedWorkflowOperation, WorthQueryBoundWorkflowOper
 
 #[cfg(test)]
 mod binding_denial_tests;
+#[cfg(test)]
+#[path = "operation_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;

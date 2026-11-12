@@ -89,21 +89,24 @@ fn content_old_retained_contract_cannot_hide_a_reference_after_current_binding_i
         )
         .unwrap();
     let committed = transaction.commit(&execution, &runtime).unwrap();
-    let (root, mut envelope) = committed_root_and_envelope(&runtime, committed.commit.commit_id);
+    let (root, mut envelope) =
+        committed_root_and_envelope(&execution, &runtime, committed.commit.commit_id);
     let mut changed = root.schema_authority().registry().clone();
     changed
         .entity_kinds
         .get_mut(&crate::identity::data::KindId(1))
         .unwrap()
         .aspect_contract_declarations = KindAspectContractDeclarations::default();
-    envelope.schema_authority = changed.authority_snapshot();
+    envelope.body_mut_for_test().schema_authority = changed.authority_snapshot();
     let authority = super::RelationalBranchRootSchemaAuthority::readmit_exact(
         2,
         changed,
         root.schema_authority().retained_aspect_contracts().to_vec(),
         &envelope.schema_authority,
         envelope.descriptor_semantics_version,
+        crate::schema::SchemaCompilationControl::Configuration,
     )
+    .expect("configuration compilation cannot refuse")
     .unwrap();
     let descriptor = super::RelationalBranchRootDescriptor::new(
         *root.descriptor().unwrap().truth_root(),
@@ -128,7 +131,11 @@ fn content_old_retained_contract_cannot_hide_a_reference_after_current_binding_i
         &execution,
         &RelationalContentAttachments::default(),
         partitions,
-        Arc::new(envelope),
+        crate::branch::RelationalOriginalRootCommitEvidence::prepare(
+            &execution,
+            Arc::new(envelope),
+        )
+        .unwrap(),
         descriptor,
         authority,
         &runtime.services.symbols.interner_snapshot(),
@@ -150,16 +157,20 @@ fn strategy_artifacts_are_bound_into_the_committed_root() {
     let host_request = crate::test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
-    let mut runtime =
-        crate::commit_strategies::facade::persisted_intent_runtime(TestDurableMedium::new(), true);
+    let mut runtime = crate::commit_strategies::facade::intent_strategy_runtime();
     let entity = create_entity(execution, &runtime, "strategy-before");
     let outcome = crate::commit_strategies::facade::execute_persisted_intent_strategy_commit(
         execution,
         &mut runtime,
         entity,
     );
-    let (root, mut envelope) = committed_root_and_envelope(&runtime, outcome.commit.commit_id);
-    assert!(envelope.strategy_artifacts.take().is_some());
+    let (root, mut envelope) =
+        committed_root_and_envelope(execution, &runtime, outcome.commit.commit_id);
+    assert!(envelope
+        .body_mut_for_test()
+        .strategy_artifacts
+        .take()
+        .is_some());
 
     assert_axis_mutation_rejected(execution, &runtime, &root, envelope, "strategy artifacts");
 }
@@ -199,8 +210,12 @@ fn merge_execution_authority_is_bound_into_the_committed_root() {
         .execute_prepared_merge(execution, prepared)
         .expect("governed merge executes");
     let (root, mut envelope) =
-        committed_root_and_envelope(&runtime, outcome.commit.commit.commit_id);
-    assert!(envelope.merge_execution_authority.take().is_some());
+        committed_root_and_envelope(execution, &runtime, outcome.commit.commit.commit_id);
+    assert!(envelope
+        .body_mut_for_test()
+        .merge_execution_authority
+        .take()
+        .is_some());
 
     assert_axis_mutation_rejected(
         execution,
@@ -216,7 +231,7 @@ fn schema_transition_descriptors_are_each_bound_into_the_committed_root() {
     let host_request = crate::test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
-    let mut runtime = durable_runtime_with_test_schema();
+    let mut runtime = runtime_with_test_schema();
     create_entity_outcome(execution, &runtime, "schema-before");
     runtime.set_schema_registry_for_test(
         AspectSchemaFixture {
@@ -243,13 +258,22 @@ fn schema_transition_descriptors_are_each_bound_into_the_committed_root() {
     let outcome = transaction
         .commit(execution, &runtime)
         .expect("schema transition commits");
-    let (root, envelope) = committed_root_and_envelope(&runtime, outcome.commit.commit_id);
+    let (root, envelope) =
+        committed_root_and_envelope(execution, &runtime, outcome.commit.commit_id);
 
-    let mut transition = envelope.clone();
-    assert!(transition.schema_transition.take().is_some());
+    let mut transition = envelope.copy_original_for_test(execution);
+    assert!(transition
+        .body_mut_for_test()
+        .schema_transition
+        .take()
+        .is_some());
     assert_axis_mutation_rejected(execution, &runtime, &root, transition, "schema transition");
-    let mut continuation = envelope.clone();
-    assert!(continuation.schema_continuation_descriptor.take().is_some());
+    let mut continuation = envelope.copy_original_for_test(execution);
+    assert!(continuation
+        .body_mut_for_test()
+        .schema_continuation_descriptor
+        .take()
+        .is_some());
     assert_axis_mutation_rejected(
         execution,
         &runtime,
@@ -259,6 +283,7 @@ fn schema_transition_descriptors_are_each_bound_into_the_committed_root() {
     );
     let mut reconciliation = envelope;
     assert!(reconciliation
+        .body_mut_for_test()
         .schema_reconciliation_descriptor
         .take()
         .is_some());
@@ -272,6 +297,7 @@ fn schema_transition_descriptors_are_each_bound_into_the_committed_root() {
 }
 
 fn committed_root_and_envelope(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &crate::runtime::RelationalRuntime,
     commit_id: crate::history::data::CommitId,
 ) -> (
@@ -287,7 +313,10 @@ fn committed_root_and_envelope(
         .canonical_envelope()
         .expect("root carries canonical envelope");
     assert_eq!(envelope.commit.commit_id, commit_id);
-    (Arc::clone(&root), envelope.as_ref().clone())
+    (
+        Arc::clone(&root),
+        envelope.copy_original_for_test(execution),
+    )
 }
 
 fn assert_axis_mutation_rejected(
@@ -300,7 +329,11 @@ fn assert_axis_mutation_rejected(
     let denial = root
         .relink_canonical_envelope(
             execution,
-            Arc::new(mutant),
+            crate::branch::RelationalOriginalRootCommitEvidence::prepare(
+                execution,
+                Arc::new(mutant),
+            )
+            .unwrap(),
             &runtime.services.symbols.interner_snapshot(),
         )
         .expect_err("authoritative payload mutation cannot relink");

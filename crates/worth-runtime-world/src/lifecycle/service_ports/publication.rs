@@ -12,8 +12,21 @@ use crate::publication::{
 use std::sync::{Arc, Weak};
 use worth_signal::facade::{SignalError, SignalTransaction};
 
+mod bootstrap;
 mod conditional_recovery;
+mod durable;
+mod durable_definition;
+mod execution;
+mod incarnation;
 mod memory_cutover;
+use incarnation::publication_owner_denial;
+mod home_transition;
+mod home_transition_effect;
+mod home_transition_resume;
+mod home_transition_step;
+mod home_transition_unopened;
+mod open_attempt;
+mod owned_async;
 use crate::lifecycle::owner::RelationalCutoverHandoff;
 
 /// Executes the concrete component-owner progression and exact product CAS.
@@ -52,7 +65,7 @@ where
     pub(in crate::lifecycle) fn new(owner: Weak<RuntimeWorldOwnerRoot<D, I, E, Ctx, T>>) -> Self {
         Self { owner }
     }
-    fn service(
+    pub(in crate::lifecycle) fn service(
         &self,
     ) -> Result<Arc<RuntimeWorldOwnerRoot<D, I, E, Ctx, T>>, RuntimeWorldOwnerUnavailable> {
         let service = self
@@ -115,12 +128,14 @@ where
             Ok(owner) => owner,
             Err(_) => return unavailable(prepared.expected_head().clone()),
         };
-        if prepared.expected_head().owner_identity() != owner.owner_identity() {
-            return foreign(prepared.expected_head().clone());
+        if let Some(denial) =
+            publication_owner_denial(owner.owner_identity(), prepared.expected_head())
+        {
+            return RuntimeWorldPublicationOutcome::NoEffect(denial);
         }
         let outcome =
             owner.execute_without_signal_with_cutover(execution, prepared, cancellation, cutover);
-        owner.finish_publication(outcome, cancellation)
+        owner.finish_publication(&execution, outcome, cancellation)
     }
     pub fn execute_with_signal<F>(
         &self,
@@ -153,8 +168,10 @@ where
             Ok(owner) => owner,
             Err(_) => return unavailable(prepared.expected_head().clone()),
         };
-        if prepared.expected_head().owner_identity() != owner.owner_identity() {
-            return foreign(prepared.expected_head().clone());
+        if let Some(denial) =
+            publication_owner_denial(owner.owner_identity(), prepared.expected_head())
+        {
+            return RuntimeWorldPublicationOutcome::NoEffect(denial);
         }
         let outcome = owner.execute_with_signal_with_cutover(
             execution,
@@ -164,7 +181,7 @@ where
             apply,
             cutover,
         );
-        owner.finish_publication(outcome, cancellation)
+        owner.finish_publication(&execution, outcome, cancellation)
     }
 
     pub(crate) fn execute_conditional_definition_with_signal<F, H>(
@@ -198,8 +215,10 @@ where
             Ok(owner) => owner,
             Err(_) => return (unavailable(prepared.expected_head().clone()), custody),
         };
-        if prepared.expected_head().owner_identity() != owner.owner_identity() {
-            return (foreign(prepared.expected_head().clone()), custody);
+        if let Some(denial) =
+            publication_owner_denial(owner.owner_identity(), prepared.expected_head())
+        {
+            return (RuntimeWorldPublicationOutcome::NoEffect(denial), custody);
         }
         let outcome = owner.execute_conditional_definition_with_signal_and_cutover(
             execution,
@@ -211,7 +230,10 @@ where
             || admit_activation(&custody),
             cutover,
         );
-        (owner.finish_publication(outcome, cancellation), custody)
+        (
+            owner.finish_publication(&execution, outcome, cancellation),
+            custody,
+        )
     }
 }
 
@@ -283,7 +305,9 @@ impl RuntimeWorldPublicationPort<(), (), (), (), ()> {
             RuntimeWorldPublicationOutcome::NoEffect(no_effect) => Outcome::NoEffect(no_effect),
             RuntimeWorldPublicationOutcome::ProductUnpublished(effects) => {
                 Outcome::ProductUnpublished(
-                    crate::publication::RuntimeWorldUnpublishedConditionalDefinition::new(effects),
+                    crate::publication::RuntimeWorldUnpublishedConditionalDefinition::from_effects(
+                        effects,
+                    ),
                 )
             }
         }
@@ -292,12 +316,6 @@ impl RuntimeWorldPublicationPort<(), (), (), (), ()> {
 fn unavailable(expected: ProductBranchObservation) -> RuntimeWorldPublicationOutcome {
     RuntimeWorldPublicationOutcome::NoEffect(NoEffectCompositePublication::new(
         NoEffectCause::OwnerUnavailable,
-        Some(expected),
-    ))
-}
-fn foreign(expected: ProductBranchObservation) -> RuntimeWorldPublicationOutcome {
-    RuntimeWorldPublicationOutcome::NoEffect(NoEffectCompositePublication::new(
-        NoEffectCause::OwnerDeniedBeforeEffect,
         Some(expected),
     ))
 }

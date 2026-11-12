@@ -126,7 +126,7 @@ impl WorthQueryRecoveredProgramOutputSource {
     /// A mismatch or shared delivery returns the complete original carrier.
     pub(in crate::domain_computation::primary_graph) fn into_producer_delivery(
         mut self,
-        receipt: &crate::domain_computation::primary_graph::WorthQueryApplicationCommitReceipt,
+        publication: &crate::domain_computation::primary_graph::WorthQueryCommittedProductPublication,
     ) -> Result<
         (
             WorthQueryPerformedRelationalProductChange,
@@ -135,12 +135,8 @@ impl WorthQueryRecoveredProgramOutputSource {
         ),
         Self,
     > {
-        if self.publication.composite_commit()
-            != receipt.committed_product_publication().composite_commit()
-            || self.publication.product_incarnation()
-                != receipt
-                    .committed_product_publication()
-                    .product_incarnation()
+        if self.publication.composite_commit() != publication.composite_commit()
+            || self.publication.product_incarnation() != publication.product_incarnation()
             || !self.has_original_delivery()
             || self
                 .observation

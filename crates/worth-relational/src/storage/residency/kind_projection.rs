@@ -16,6 +16,7 @@ pub(super) type ProjectionRetention<'a> = dyn FnMut(
     ) -> Result<Option<crate::storage::partition::HistoricalKindCustody>, Cause>
     + 'a;
 
+#[cfg(test)]
 pub(super) fn capture(
     lane: &ReconstructionLane<'_>,
     partition: &PartitionState,
@@ -72,14 +73,17 @@ pub(super) fn capture_controlled(
     Ok(answer)
 }
 
+pub(super) mod full;
 mod reconstruction;
+#[cfg(test)]
 pub(super) use reconstruction::rebuild;
-pub(super) use reconstruction::rebuild_head_history;
+pub(super) use reconstruction::{rebuild_for_request, rebuild_head_history_for_request};
 
-pub(super) use reconstruction::{
-    canonical_history, canonical_history_controlled, rebuild_controlled,
-};
+#[cfg(test)]
+pub(super) use reconstruction::canonical_history;
+pub(super) use reconstruction::{canonical_history_controlled, rebuild_controlled};
 
+#[cfg(test)]
 pub(crate) fn rebuild_region_history_kind_buckets(
     lane: &ReconstructionLane<'_>,
     partition: &mut PartitionState,

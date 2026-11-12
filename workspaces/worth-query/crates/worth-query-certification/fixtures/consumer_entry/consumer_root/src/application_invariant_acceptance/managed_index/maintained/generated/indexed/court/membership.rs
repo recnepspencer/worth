@@ -1,10 +1,11 @@
 //! Actual Source content changes can preserve canonical input and complete selection.
 use super::*;
+use crate::application_invariant_acceptance::managed_index::prefix_observation;
 
 #[test]
 fn equal_canonical_input_reuses_managed_output_after_real_source_content_changes() {
     lifecycle::run(|| {
-        let calls = Arc::new(prefix::Calls::default());
+        let calls = Arc::new(prefix_observation::Calls::default());
         let world = host::install(calls.clone(), Arc::new(rule::Calls::new(calls)));
         let scope = authentication::request_scope();
         let principal = authentication::block_on(
@@ -118,7 +119,7 @@ fn equal_canonical_input_reuses_managed_output_after_real_source_content_changes
 #[test]
 fn equal_scalar_input_cannot_reuse_a_replaced_full_generation_source() {
     lifecycle::run(|| {
-        let calls = Arc::new(prefix::Calls::default());
+        let calls = Arc::new(prefix_observation::Calls::default());
         let world = host::install(calls.clone(), Arc::new(rule::Calls::new(calls)));
         let scope = authentication::request_scope();
         let principal = authentication::block_on(

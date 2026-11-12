@@ -53,7 +53,7 @@ pub fn correspondence_bridge(
     registration: BridgeSemanticCorrespondenceRegistration,
 ) -> (RuntimeBridge, RelationalCommittedPatchRequest) {
     let dependency = registration.dependency();
-    let mut relational = RelationalRuntimeApi::builder()
+    let relational = RelationalRuntimeApi::builder()
         .schema_registry(
             RelationalSchemaRegistry::new()
                 .register_entity_kind(EntityKindRegistration {
@@ -106,7 +106,7 @@ pub fn correspondence_bridge(
             RecordRef::Relation(_) => None,
         })
         .expect("create commit should retain its entity identity");
-    commit_snapshot_closeout::release_commit_snapshot(&mut relational, &created);
+    commit_snapshot_closeout::release_commit_snapshot(&relational, &created);
 
     let mut update = begin_main_transaction(&relational);
     update
@@ -135,7 +135,7 @@ pub fn correspondence_bridge(
     let request = RelationalCommittedPatchRequest::new(
         TruthCommitIdentity::from_relational_commit_id(updated.commit.commit_id.0),
     );
-    commit_snapshot_closeout::release_commit_snapshot(&mut relational, &updated);
+    commit_snapshot_closeout::release_commit_snapshot(&relational, &updated);
     let source = match dependency.locality() {
         BridgeSemanticLocality::SourcePartition(role) => {
             RuntimeBridgeRelationalSource::for_graph_partition(

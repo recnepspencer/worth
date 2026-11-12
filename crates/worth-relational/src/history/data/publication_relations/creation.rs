@@ -1,5 +1,8 @@
 //! Exact native creation position and canonical allocations classify relation custody.
-use super::{charge, writes, CanonicalCommitEnvelope, CanonicalRequiredOutputOrigin, Stop};
+use super::{
+    charge, writes, CanonicalCommitEnvelope, CanonicalCommitEnvelopeBody,
+    CanonicalRequiredOutputOrigin, Stop,
+};
 use crate::history::data::canonical_commit_envelope::OutputOriginHistory;
 use crate::identity::data::{EntityId, KindId, RelationId, VersionId};
 use crate::publication::patch::data::RecordStructuralChange;
@@ -14,8 +17,12 @@ pub(super) fn validate(
     id: RelationId,
     selected: &CanonicalRequiredOutputOrigin,
     current: Option<super::CurrentPublicationFrame<'_>>,
-    lookup: &mut impl FnMut(VersionId) -> Option<Arc<CanonicalCommitEnvelope>>,
+    lookup: &mut impl FnMut(
+        VersionId,
+        &mut MapKernelContext<'_, '_>,
+    ) -> Result<Option<Arc<CanonicalCommitEnvelope>>, Stop>,
     validated_history: &mut OutputOriginHistory,
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     context: &mut MapKernelContext<'_, '_>,
 ) -> Result<(), Stop> {
     if ownership_at_creation(
@@ -25,6 +32,7 @@ pub(super) fn validate(
         current,
         lookup,
         validated_history,
+        execution,
         context,
     )? {
         return Err("producer-owned incident relation is omitted from selected succession".into());
@@ -37,8 +45,12 @@ pub(in super::super) fn validate_owned(
     state: &dyn CurrentPartitionAccess,
     id: RelationId,
     selected: &CanonicalRequiredOutputOrigin,
-    lookup: &mut impl FnMut(VersionId) -> Option<Arc<CanonicalCommitEnvelope>>,
+    lookup: &mut impl FnMut(
+        VersionId,
+        &mut MapKernelContext<'_, '_>,
+    ) -> Result<Option<Arc<CanonicalCommitEnvelope>>, Stop>,
     validated_history: &mut OutputOriginHistory,
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     context: &mut MapKernelContext<'_, '_>,
 ) -> Result<(), Stop> {
     if !ownership_at_creation(
@@ -48,6 +60,7 @@ pub(in super::super) fn validate_owned(
         None,
         lookup,
         validated_history,
+        execution,
         context,
     )? {
         return Err("claimed relation was not producer-owned at birth".into());
@@ -60,8 +73,12 @@ fn ownership_at_creation(
     id: RelationId,
     selected: &CanonicalRequiredOutputOrigin,
     current: Option<super::CurrentPublicationFrame<'_>>,
-    lookup: &mut impl FnMut(VersionId) -> Option<Arc<CanonicalCommitEnvelope>>,
+    lookup: &mut impl FnMut(
+        VersionId,
+        &mut MapKernelContext<'_, '_>,
+    ) -> Result<Option<Arc<CanonicalCommitEnvelope>>, Stop>,
     validated_history: &mut OutputOriginHistory,
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     context: &mut MapKernelContext<'_, '_>,
 ) -> Result<bool, Stop> {
     charge(context, 3)?;
@@ -85,13 +102,13 @@ fn ownership_at_creation(
     if latest != version {
         let held;
         charge(context, 1)?;
-        let write = match current
+        let write: &CanonicalCommitEnvelopeBody = match current
             .map(|view| view.envelope())
             .filter(|e| e.commit.version_id == latest)
         {
             Some(envelope) => envelope,
             None => {
-                held = lookup(latest).ok_or("relation latest canonical write absent")?;
+                held = lookup(latest, context)?.ok_or("relation latest canonical write absent")?;
                 held.as_ref()
             }
         };
@@ -114,7 +131,7 @@ fn ownership_at_creation(
         Some(view) => view.origins(context)?,
         None => {
             held = validated_history
-                .by_version(version, lookup, context)?
+                .by_version(version, lookup, execution, context)?
                 .ok_or("relation exact canonical creation absent")?;
             held.as_view()
         }

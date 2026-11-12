@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use super::{
     BridgeConditionalDecisionEvidence, BridgeConditionalDenial, BridgeConditionalDenialKind,
-    BridgeInstalledConditionalLowering, BridgeOwnedSignalRuntime,
+    BridgeInstalledConditionalLowering,
 };
 
 pub(super) struct BridgeRetainedConditionalDecisionCore {
@@ -43,7 +43,7 @@ pub struct BridgeConditionalDecisionReentryRequest<'a> {
     pub bridge_snapshot_identity: Option<&'a crate::snapshot::TruthSnapshotIdentity>,
 }
 
-impl BridgeOwnedSignalRuntime {
+impl super::execution_view::BridgeConditionalExecutionView<'_> {
     pub fn reenter_retained_conditional_decision(
         &self,
         request: BridgeConditionalDecisionReentryRequest<'_>,

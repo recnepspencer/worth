@@ -2,12 +2,12 @@
 use super::*;
 
 pub(super) struct CommittedOutboxRead<'a> {
-    pub(super) runtime: &'a mut worth_relational::facade::runtime::RelationalRuntime,
+    pub(super) runtime: &'a worth_relational::facade::runtime::RelationalRuntime,
     pub(super) layout: &'a WorthQueryDispatchOutboxLayout,
     pub(super) binding: &'a super::super::WorthQueryCommittedDispatchOutboxBinding,
     pub(super) expected_commit: &'a worth_relational::facade::history::RelationalCommitReceipt,
     pub(super) expected_runtime: u64,
-    pub(super) retained_basis: &'a super::super::WorthQueryRetainedApplicationCommitBasis,
+    pub(super) retained_basis: &'a worth_relational::facade::branch::RelationalBranchRetentionLease,
 }
 
 impl CommittedOutboxRead<'_> {
@@ -20,8 +20,8 @@ impl CommittedOutboxRead<'_> {
         };
         let entity_id = *entity_id;
         let (created_at, values, owner_work) = self.read_record(execution, entity_id)?;
-        let record = restore_record(values)?;
-        if !record.same_persisted_fields(self.binding.record()) {
+        let record = decode_fields(values)?;
+        if !self.binding.record().matches_persisted_fields(&record) {
             return Err(Denial::RecordMismatch);
         }
         let committed = self
@@ -71,7 +71,7 @@ impl CommittedOutboxRead<'_> {
             .project_retained_entity_for_commit(
                 self.expected_runtime,
                 self.expected_commit,
-                self.retained_basis.lease(),
+                self.retained_basis,
                 entity_id,
                 self.layout.entity_kind,
                 scope,

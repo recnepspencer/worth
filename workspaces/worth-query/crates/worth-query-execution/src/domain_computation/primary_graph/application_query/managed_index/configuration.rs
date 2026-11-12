@@ -57,6 +57,15 @@ impl<S> Clone for ManagedIndexProviderCatalog<S> {
 }
 
 impl<S: ApplicationSchema> ManagedIndexProviderCatalog<S> {
+    #[cfg(test)]
+    pub(in crate::domain_computation::primary_graph) fn configured_instances_for_test(
+        &self,
+    ) -> Vec<*const ()> {
+        self.in_registration_order()
+            .map(|entry| Arc::as_ptr(&entry.executor).cast::<()>())
+            .collect()
+    }
+
     fn in_registration_order(&self) -> impl Iterator<Item = &ConfiguredProvider<S>> {
         self.providers
             .registration_order

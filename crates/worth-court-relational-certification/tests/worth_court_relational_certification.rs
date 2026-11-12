@@ -1,4 +1,8 @@
+// Concrete retained metadata and fixed im chunks deepen auto-trait obligations.
+#![recursion_limit = "256"]
 #![cfg_attr(test, allow(clippy::disallowed_methods))]
+#[path = "worth_court_relational_certification/support/canonical_commit_frame.rs"]
+pub(crate) mod canonical_commit_frame;
 #[path = "worth_court_relational_certification/content/mod.rs"]
 mod content;
 #[path = "worth_court_relational_certification/cost/mod.rs"]
@@ -10,6 +14,8 @@ pub(crate) mod index_retirement;
 #[allow(dead_code, unused_imports)]
 #[path = "worth_court_relational_certification/support/leased_preparation/mod.rs"]
 pub(crate) mod leased_preparation;
+#[path = "worth_court_relational_certification/support/messagepack_value_spans.rs"]
+pub(crate) mod messagepack_value_spans;
 #[path = "worth_court_relational_certification/oracle/mod.rs"]
 pub(crate) mod oracle;
 #[path = "worth_court_relational_certification/process/mod.rs"]
@@ -19,3 +25,5 @@ pub(crate) mod relational;
 #[allow(dead_code, unused_imports)]
 #[path = "worth_court_relational_certification/support/relational_certification/mod.rs"]
 pub(crate) mod relational_certification;
+#[path = "worth_court_relational_certification/support/source_wire_value.rs"]
+pub(crate) mod source_wire_value;

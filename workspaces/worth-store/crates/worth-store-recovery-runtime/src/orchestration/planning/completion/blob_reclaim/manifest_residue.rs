@@ -8,7 +8,7 @@ use worth_store_physical_format::{
     BLOB_CONTROL_FRAME_MAX_BYTES,
 };
 
-use super::super::super::{context::PlanningContext, resolved_basis::ResolvedPlanningBasis};
+use super::super::super::{context::PlanningContext, resolved_basis::ResolvedPlanningState};
 use super::{historical_publication, selected, selected_record};
 
 #[path = "manifest_residue/wal_fate.rs"]
@@ -38,7 +38,7 @@ impl ValidatedManifestResidueCleanup {
 
 pub(super) fn verify(
     mut context: PlanningContext,
-    basis: &mut ResolvedPlanningBasis,
+    basis: &mut ResolvedPlanningState,
 ) -> Result<PlanningContext, crate::entry::PhysicalRecoveryOutcome> {
     let observation_count = basis.sample.blob_manifest_residue_cleanups().len();
     let covered_end = context.selection.covered_wal_end_exclusive();
@@ -174,8 +174,8 @@ pub(super) fn verify(
                         || value.source_basis_digest() != intent.source_basis_digest()
                         || value.manifest_selected_generation() != manifest_generation
                         || value.reserved_selected_generation() > intent.source_root_generation()
-                        || value.request().idempotency() != idempotency
-                        || value.request().fingerprint() != fingerprint
+                        || value.request().idempotency() != *idempotency.bytes()
+                        || value.request().fingerprint() != *fingerprint.bytes()
                         || (recovered
                             && !wal_fate::recovered_reservation_key_matches(
                                 intent,
@@ -184,7 +184,7 @@ pub(super) fn verify(
                             ))
                         || (!recovered
                             && !basis.fates.operations().iter().any(|operation| {
-                                operation.identity().idempotency() == idempotency
+                                operation.identity().idempotency() == *idempotency.bytes()
                                     && operation.lease_issuance_generation()
                                         == value.request().lease_issuance_generation()
                                     && operation.lease_expiry_generation()
@@ -318,7 +318,7 @@ fn expiry_matches(
 
 fn verify_historical_result(
     context: PlanningContext,
-    basis: &mut ResolvedPlanningBasis,
+    basis: &mut ResolvedPlanningState,
     intent: BlobManifestResidueCleanup,
 ) -> Result<PlanningContext, crate::entry::PhysicalRecoveryOutcome> {
     let format = context.authority.record_format;

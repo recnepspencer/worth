@@ -9,7 +9,7 @@ use crate::runtime::RelationalRuntime;
 pub(in crate::replay) fn load_replay_envelope(
     source: &impl CommitEnvelopeSource,
     commit_id: CommitId,
-) -> Option<CanonicalCommitEnvelope> {
+) -> Option<std::sync::Arc<CanonicalCommitEnvelope>> {
     #[cfg(test)]
     replay_contacts::observe();
     source.resident_commit_envelope(commit_id)

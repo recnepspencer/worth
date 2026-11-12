@@ -19,6 +19,7 @@ impl RelationalAuthoredCoupledCandidate<'_> {
             .unwrap_or_else(|e| e.into_inner())
             .as_ref()
             .expect("the ordinary merger carried the authored prefix")
+            .plan()
             .transaction_id;
         aggregate
             .borrow_retained(self.mutation.state())

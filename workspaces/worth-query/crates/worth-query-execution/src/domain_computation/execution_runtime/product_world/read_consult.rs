@@ -11,6 +11,7 @@ pub(super) struct NamedReadProbe {
 }
 #[derive(Clone, Copy)]
 pub(crate) enum NamedRead {
+    AuthorityRevalidation = 1,
     SourceProgramResolution = 2,
     GeneratedRecoverySourceSelection = 3,
 }
@@ -64,6 +65,12 @@ impl super::WorthQueryProductRuntime {
     fn named_read_active(&self, name: NamedRead) -> bool {
         self.named_read_probe.armed.load(Ordering::Acquire)
             && CURRENT.get() == (Arc::as_ptr(&self.named_read_probe) as usize, name as u8)
+    }
+    pub(in crate::domain_computation) fn enter_authority_revalidation(&self) -> NamedReadRegion {
+        self.enter_named_read(NamedRead::AuthorityRevalidation)
+    }
+    pub fn authority_revalidation_is_active_for_test(&self) -> bool {
+        self.named_read_active(NamedRead::AuthorityRevalidation)
     }
     pub fn source_program_resolution_is_active_for_test(&self) -> bool {
         self.named_read_active(NamedRead::SourceProgramResolution)

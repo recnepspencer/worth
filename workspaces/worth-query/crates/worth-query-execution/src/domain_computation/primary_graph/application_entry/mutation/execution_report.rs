@@ -101,3 +101,25 @@ impl<Value, Denial> WorthQueryMutationHandlerExecutionReport<Value, Denial> {
         self.outcome
     }
 }
+
+// Preparation may stop, but it cannot have completed a candidate. Keep that
+// fact in its value type instead of reserving candidate storage on error paths.
+impl<Denial> WorthQueryMutationHandlerExecutionReport<std::convert::Infallible, Denial> {
+    pub(in crate::domain_computation::primary_graph) fn into_uncompleted_report<Value>(
+        self,
+    ) -> WorthQueryMutationHandlerExecutionReport<Value, Denial> {
+        WorthQueryMutationHandlerExecutionReport {
+            outcome: self.outcome.map(|outcome| match outcome {
+                HandlerResult::Completed(impossible) => match impossible {},
+                HandlerResult::DomainDenied(denial) => HandlerResult::DomainDenied(denial),
+                HandlerResult::ExecutionDenied(denial) => HandlerResult::ExecutionDenied(denial),
+                HandlerResult::Cancelled => HandlerResult::Cancelled,
+                HandlerResult::DeadlineExceeded => HandlerResult::DeadlineExceeded,
+            }),
+            decision_work: self.decision_work,
+        }
+    }
+}
+#[cfg(test)]
+#[path = "execution_report_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;

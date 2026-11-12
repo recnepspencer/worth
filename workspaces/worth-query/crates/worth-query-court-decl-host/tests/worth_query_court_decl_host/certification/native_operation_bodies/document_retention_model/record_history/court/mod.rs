@@ -59,12 +59,20 @@ fn supplied_equal_value_retains_its_occurrence_and_bounded_pages_match_authored_
     let mut actual = Vec::new();
     let mut coordinates = Vec::new();
     let mut incomplete_empty = false;
+    let mut imported = false;
     loop {
         let page = page_public(&application, &subjects, &mut cursor, &root).unwrap();
         assert!(page.source_visits() <= 1);
         assert!(page.entries().count() <= 1);
         assert!(page.newly_owned_bytes() <= limits().maximum_owned_bytes.get());
         incomplete_empty |= page.entries().next().is_none() && !page.is_complete();
+        if page.is_root_import() {
+            assert_eq!(page.product_commit(), Some(bootstrap.selected_commit()));
+            // f1809bdcfb made completion the common terminal bootstrap commit.
+            // History imports that component, not pre-World seed ancestors.
+            assert!(page.entries().next().is_none());
+            imported = true;
+        }
         for entry in page.entries() {
             if entry.commit_id().0 == equal.commit_reference().commit_id.0 {
                 assert_eq!(entry.structural_change(), RecordStructuralChange::Updated);
@@ -83,13 +91,17 @@ fn supplied_equal_value_retains_its_occurrence_and_bounded_pages_match_authored_
     }
     drop(fork_origin);
     assert!(incomplete_empty);
+    assert!(imported, "the genuine World root must still be visited");
+    assert!(
+        !actual.contains(&imported_commit),
+        "completion contains no document occurrence"
+    );
     assert_eq!(
         actual,
         &[
             forked.commit_reference().commit_id.0,
             changed.commit_reference().commit_id.0,
             equal.commit_reference().commit_id.0,
-            imported_commit,
         ]
     );
     assert_eq!(

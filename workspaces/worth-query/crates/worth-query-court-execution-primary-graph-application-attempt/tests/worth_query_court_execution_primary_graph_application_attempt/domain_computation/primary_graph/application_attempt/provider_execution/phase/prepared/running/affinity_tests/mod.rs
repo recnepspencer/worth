@@ -1,3 +1,5 @@
+use worth_query_execution::facade::product::WorthQueryProductBranchCreationOutcome;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::advancement::test_host_policy::TestHostRequest;
 pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::provider_execution::phase::prepared::running::start_managed_application_commit;
 pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::provider_execution::application_attempt_affinity::WorthQueryApplicationAttemptBasis;
 pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::provider_execution::phase::prepared::running::WorthQueryRunningApplicationCommit;
@@ -43,7 +45,7 @@ fn exact_affinity_accepts_its_real_session_and_rejects_runtime_snapshot_and_bran
             let running = start(
                 phase,
                 &world,
-                retained_program(phase, &world, "axis-owner"),
+                retained_program(&(phase).test_host_request_for_test(), &world, "axis-owner"),
                 idempotency(187, 188),
             );
             let (
@@ -59,6 +61,7 @@ fn exact_affinity_accepts_its_real_session_and_rejects_runtime_snapshot_and_bran
                 mutation_run,
                 attempt_basis,
                 _aftermath_causality,
+                _completion_storage,
             ) = running.into_parts_for_test();
             let staged = real_terminal_session(
                 execution,
@@ -75,6 +78,12 @@ fn exact_affinity_accepts_its_real_session_and_rejects_runtime_snapshot_and_bran
                 &admission,
                 lease.snapshot_for_test(),
                 lease.product(),
+                phase
+                    .execution_request_for_for_test(
+                        (*world.application.runtime_for_test()).product_runtime_for_test()
+                    )
+                    .expect("fixture issuer")
+                    .allocation_policy()
             )
             .is_err());
 
@@ -98,6 +107,12 @@ fn exact_affinity_accepts_its_real_session_and_rejects_runtime_snapshot_and_bran
                 &admission,
                 substitute_lease.snapshot_for_test(),
                 substitute_lease.product(),
+                phase
+                    .execution_request_for_for_test(
+                        (*world.application.runtime_for_test()).product_runtime_for_test(),
+                    )
+                    .expect("fixture issuer")
+                    .allocation_policy(),
             )
             .expect("same-runtime same-branch snapshot remains a valid pre-session basis");
             assert!(staged
@@ -105,7 +120,7 @@ fn exact_affinity_accepts_its_real_session_and_rejects_runtime_snapshot_and_bran
                 .is_err());
             assert!(substitute_lease.release_for_test());
 
-            let foreign_branch_snapshot = lease.handle_for_test().with_runtime_mut_for_test(
+            let foreign_branch_snapshot = lease.handle_for_test().with_runtime_for_test(
                 &phase
                     .execution_request_for_for_test(
                         (*world.application.runtime_for_test()).product_runtime_for_test(),
@@ -143,9 +158,15 @@ fn exact_affinity_accepts_its_real_session_and_rejects_runtime_snapshot_and_bran
                 &admission,
                 &foreign_branch_snapshot,
                 lease.product(),
+                phase
+                    .execution_request_for_for_test(
+                        (*world.application.runtime_for_test()).product_runtime_for_test()
+                    )
+                    .expect("fixture issuer")
+                    .allocation_policy()
             )
             .is_err());
-            assert!(lease.handle_for_test().with_runtime_mut_for_test(
+            assert!(lease.handle_for_test().with_runtime_for_test(
                 &phase
                     .execution_request_for_for_test(
                         (*world.application.runtime_for_test()).product_runtime_for_test()
@@ -177,13 +198,13 @@ fn a_real_peer_plan_and_session_cannot_substitute_for_the_captured_attempt() {
             let first = start(
                 phase,
                 &world,
-                retained_program(phase, &world, "plan-owner"),
+                retained_program(&(phase).test_host_request_for_test(), &world, "plan-owner"),
                 idempotency(189, 190),
             );
             let second = start(
                 phase,
                 &world,
-                retained_program(phase, &world, "plan-peer"),
+                retained_program(&(phase).test_host_request_for_test(), &world, "plan-peer"),
                 idempotency(191, 192),
             );
             let (
@@ -199,6 +220,7 @@ fn a_real_peer_plan_and_session_cannot_substitute_for_the_captured_attempt() {
                 first_mutation_run,
                 first_basis,
                 _first_aftermath,
+                _first_completion_storage,
             ) = first.into_parts_for_test();
             let (
                 _coupled_outputs,
@@ -213,6 +235,7 @@ fn a_real_peer_plan_and_session_cannot_substitute_for_the_captured_attempt() {
                 second_mutation_run,
                 second_basis,
                 _second_aftermath,
+                _second_completion_storage,
             ) = second.into_parts_for_test();
             let first_staged = real_terminal_session(
                 execution,
@@ -281,9 +304,7 @@ pub fn fork_product(
             &worth_runtime_world::facade::RuntimeWorldCancellationSource::new().token(),
         )
         .expect("the product owner accepts the sibling request");
-    let worth_runtime_world::facade::RuntimeWorldBranchCreationOutcome::Performed(observation) =
-        outcome
-    else {
+    let WorthQueryProductBranchCreationOutcome::Performed(observation) = outcome else {
         panic!("the product owner must create an exact sibling: {outcome:?}")
     };
     observation.branch_identity().clone()
@@ -304,9 +325,12 @@ pub fn real_terminal_session<'run>(
         .expect("real application authorities must admit their provider plan")
         .bind_application_product_for_test(product)
         .expect("the exact selected product must bind its provider plan")
-        .readmit(execution)
-        .expect("the real provider must readmit its exact plan")
-        .prepare()
+        .admit_session(execution)
+        .and_then(|(grant, receiver)| {
+            world
+                .application
+                .prepare_provider_session_grant(execution, grant, || Ok(receiver))
+        })
         .expect("the real provider must prepare its exact session")
         .bind_reads_and_effects()
 }
@@ -357,33 +381,8 @@ pub fn start(
         .unwrap_or_else(|outcome| panic!("affinity fixture must start: {outcome:?}"))
 }
 
-pub fn retained_program(
-    phase_custody: &worth_query_execution::facade::application_contribution::WorthQueryAdvancementPhase<'_>,
-    world: &AuthorizationWorld,
-    replacement: &str,
-) -> RetainedProgram {
-    let request = live_scope();
-    let principal = authenticated_principal(
-        &(phase_custody).test_host_request_for_test(),
-        world,
-        &request,
-    );
-    let account = resolved_account(
-        &(phase_custody).test_host_request_for_test(),
-        world,
-        "open",
-        &request,
-    );
-    retained_status_program(
-        &(phase_custody).test_host_request_for_test(),
-        world,
-        &principal,
-        &account,
-        &request,
-        replacement,
-        RetentionMutationBreadth::Narrow,
-    )
-}
+mod retained_program;
+pub use retained_program::retained_program;
 
 #[path = "foreign_phase/mod.rs"]
 pub mod foreign_phase;

@@ -61,7 +61,7 @@ impl WorthQueryPrimaryGraphProvider {
             None
         };
         let candidate = match coupling {
-            None => self.graph.with_runtime_mut(execution, |runtime| {
+            None => self.graph.with_runtime(execution, |runtime| {
                 if let Some(pending) = aftermath_causality {
                     let observed_parent = basis
                         .observation()
@@ -139,7 +139,7 @@ impl WorthQueryPrimaryGraphProvider {
                 } else {
                     None
                 };
-                let transaction = self.graph.with_runtime_mut(execution, |runtime| {
+                let transaction = self.graph.with_runtime(execution, |runtime| {
                     let mut transaction = runtime
                         .begin_branch_transaction_with_control(
                             basis,
@@ -181,7 +181,7 @@ impl WorthQueryPrimaryGraphProvider {
                     })?;
                 Ok(self
                     .graph
-                    .with_runtime_mut(execution, |runtime| match &factory {
+                    .with_runtime(execution, |runtime| match &factory {
                         Some(factory) => runtime.validate_branch_transaction_with_source_context(
                             execution,
                             transaction,

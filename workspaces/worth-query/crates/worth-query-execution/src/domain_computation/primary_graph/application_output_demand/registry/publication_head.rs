@@ -136,7 +136,7 @@ impl WorthQueryOutputDemandRegistry {
         let state = self.state.lock().unwrap();
         let scan = state.records.values().filter(|record| matches!(&record.state,
             DemandState::Output(output) if !matches!(output.advancement(), WorthQueryOutputAdvancement::Stopped { .. })
-            && matches!(output.checkpoint, Some(WorthQueryOutputCheckpoint::Published { .. })))).count();
+            && matches!(output.checkpoint, Some(WorthQueryOutputCheckpoint::Published { .. } | WorthQueryOutputCheckpoint::RecoveredPublished { .. })))).count();
         (state.records.publication_count_for_test(), scan)
     }
 }

@@ -7,7 +7,7 @@ use sha2::{Digest, Sha256};
 pub(super) struct RetentionOmission {
     count: u64,
     high_water: u64,
-    digest: [u8; 32],
+    digest: worth_foundational::CanonicalDigestId,
 }
 
 impl RetentionOmission {
@@ -16,12 +16,12 @@ impl RetentionOmission {
         sha.update(b"worth.signal.retention-omission.v1");
         sha.update((domain.len() as u64).to_le_bytes());
         sha.update(domain);
-        sha.update(self.digest);
+        sha.update(self.digest.bytes());
         sha.update(ordinal.to_le_bytes());
         let encoded = serde_json::to_vec(value).expect("retention evidence serializes");
         sha.update((encoded.len() as u64).to_le_bytes());
         sha.update(encoded);
-        self.digest = sha.finalize().into();
+        self.digest = worth_foundational::CanonicalDigestId::new(sha.finalize().into());
         self.count = self.count.saturating_add(1);
         self.high_water = self.high_water.max(ordinal);
     }
@@ -39,6 +39,6 @@ impl RetentionOmission {
     }
 
     pub(super) const fn digest(self) -> [u8; 32] {
-        self.digest
+        *self.digest.bytes()
     }
 }

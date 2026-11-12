@@ -15,7 +15,7 @@ use super::RelationalEffectExecutionFailure;
 
 pub(super) fn execute_lowered_mutation_batch(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-    runtime: &mut RelationalRuntime,
+    runtime: &RelationalRuntime,
     declarations: &[LoweredMutationIntentDeclaration],
 ) -> Result<CommitResult, RelationalEffectExecutionFailure> {
     let first_declaration = declarations.first().ok_or_else(|| {
@@ -133,7 +133,7 @@ pub(super) fn execute_lowered_mutation_batch(
 }
 
 fn lower_batch_component(
-    runtime: &mut RelationalRuntime,
+    runtime: &RelationalRuntime,
     request_execution: &worth_execution::ExecutionRequest<'_, '_>,
     declaration: &LoweredMutationIntentDeclaration,
     transaction_basis: &worth_relational::facade::branch::AdmittedRelationalBranchBasis,

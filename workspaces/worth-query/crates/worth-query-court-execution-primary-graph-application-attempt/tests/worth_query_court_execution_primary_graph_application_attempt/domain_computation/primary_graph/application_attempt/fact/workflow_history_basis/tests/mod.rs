@@ -24,8 +24,8 @@ fn history_basis_requires_same_owner_branch_version_and_live_candidate() {
     let host_request = worth_query_testkit_execution_primary_graph_application_attempt_2::test_request_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
-    let mut runtime = history_runtime();
-    let first = commit(execution, &mut runtime, "first");
+    let runtime = history_runtime();
+    let first = commit(execution, &runtime, "first");
     let retained = runtime
         .admit_branch_basis(&runtime.main_branch_identity())
         .unwrap();
@@ -85,7 +85,7 @@ fn history_basis_requires_same_owner_branch_version_and_live_candidate() {
         },
         1
     ));
-    let changed = commit(execution, &mut runtime, "second");
+    let changed = commit(execution, &runtime, "second");
     for (owner, candidate) in [(&runtime, &fork_snapshot), (&runtime, &changed)] {
         assert!(!remains_equal(
             owner,
@@ -113,8 +113,8 @@ fn history_basis_requires_same_owner_branch_version_and_live_candidate() {
         },
         1
     ));
-    let mut foreign = history_runtime();
-    let foreign_snapshot = commit(execution, &mut foreign, "first");
+    let foreign = history_runtime();
+    let foreign_snapshot = commit(execution, &foreign, "first");
     assert!(!remains_equal(
         &foreign,
         &foreign_snapshot,
@@ -142,7 +142,7 @@ fn history_basis_requires_same_owner_branch_version_and_live_candidate() {
         1
     ));
     worth_query_execution::court_doors_for_test::relational_snapshot_release::release_query_snapshot(
-        &mut runtime,
+        &runtime,
         &second_lease,
     );
     assert!(!remains_equal(
@@ -175,19 +175,19 @@ fn history_basis_requires_same_owner_branch_version_and_live_candidate() {
         Err(worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::fact::adjacency::AdjacencyObservationDenial::SnapshotUnavailable)
     );
     worth_query_execution::court_doors_for_test::relational_snapshot_release::release_query_snapshot(
-        &mut runtime,
+        &runtime,
         &first,
     );
     worth_query_execution::court_doors_for_test::relational_snapshot_release::release_query_snapshot(
-        &mut runtime,
+        &runtime,
         &changed,
     );
     worth_query_execution::court_doors_for_test::relational_snapshot_release::release_query_snapshot(
-        &mut runtime,
+        &runtime,
         &fork_snapshot,
     );
     worth_query_execution::court_doors_for_test::relational_snapshot_release::release_query_snapshot(
-        &mut foreign,
+        &foreign,
         &foreign_snapshot,
     );
 }
@@ -210,7 +210,7 @@ pub fn history_runtime() -> RelationalRuntime {
 
 pub fn commit(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-    runtime: &mut RelationalRuntime,
+    runtime: &RelationalRuntime,
     name: &str,
 ) -> SnapshotHandle {
     let basis = runtime

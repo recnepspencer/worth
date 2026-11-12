@@ -53,10 +53,15 @@ pub(crate) fn main() {
     let cancellation = RuntimeWorldCancellationSource::new();
     let _token: RuntimeWorldCancellationToken = cancellation.token();
     names_the_signal_execution_seam(|_transaction| Ok(()));
+    struct E;
+    struct Ctx;
+    type Apply = fn(&mut SignalTransaction<'_, (), (), E, Ctx, ()>) -> Result<(), SignalError>;
+    let _ = exact_generic_contract::<(), (), E, Ctx, (), Apply>;
     let _ = (
         takes_public_return_types,
         names_public_component_signatures,
         names_both_prepared_stages,
+        canonical_owner_artifacts,
     );
 }
 

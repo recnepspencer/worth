@@ -37,7 +37,10 @@ pub(super) fn world_no_effect(
             WorthQueryProviderSessionControlStopKind::TimedOut,
             "World publication deadline elapsed before effect",
         )),
-        NoEffectCause::ExecutionRequest(_)
+        NoEffectCause::DurableOpenRequired
+        | NoEffectCause::StaleIncarnation
+        | NoEffectCause::CorrespondenceAdmissionDenied(_)
+        | NoEffectCause::ExecutionRequest(_)
         | NoEffectCause::OwnerDeniedBeforeEffect
         | NoEffectCause::CurrentReadDependency(_)
         | NoEffectCause::CorrespondenceRebindRequired

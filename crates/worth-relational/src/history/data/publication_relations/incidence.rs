@@ -16,9 +16,13 @@ pub(super) fn validate(
     root: &RelationalBranchRoot,
     origin: &CanonicalRequiredOutputOrigin,
     current: Option<super::CurrentPublicationFrame<'_>>,
-    lookup: &mut impl FnMut(VersionId) -> Option<Arc<CanonicalCommitEnvelope>>,
+    lookup: &mut impl FnMut(
+        VersionId,
+        &mut MapKernelContext<'_, '_>,
+    ) -> Result<Option<Arc<CanonicalCommitEnvelope>>, Stop>,
     lease: Option<&ExecutionResourceLease<'_>>,
     validated_history: &mut crate::history::data::canonical_commit_envelope::OutputOriginHistory,
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     context: &mut MapKernelContext<'_, '_>,
 ) -> Result<(), Stop> {
     for output in &origin.outputs {
@@ -103,6 +107,7 @@ pub(super) fn validate(
                     current,
                     lookup,
                     validated_history,
+                    execution,
                     context,
                 )?;
                 let kind = row.kind_id().ok_or("incident relation kind absent")?;

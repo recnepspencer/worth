@@ -14,7 +14,8 @@ fn seeded_transfers_match_at_host_policy_and_each_request_width() {
         let stdout = String::from_utf8_lossy(&output.stdout);
         assert!(
             output.status.success(),
-            "Bank width {width}: {stdout}{}",
+            "Bank width {width}, child status {}: {stdout}{}",
+            output.status,
             String::from_utf8_lossy(&output.stderr)
         );
         let lines = stdout

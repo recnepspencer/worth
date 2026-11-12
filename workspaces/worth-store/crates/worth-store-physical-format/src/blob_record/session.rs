@@ -1,5 +1,6 @@
 use super::envelope::{admitted_chunk_size, encode, nonzero_16, nonzero_32};
 use super::{BlobRecordDenial, BlobRecordKind};
+use worth_foundational::CanonicalDigestId;
 
 const PAYLOAD_BYTES: usize = 108;
 
@@ -8,7 +9,7 @@ pub struct BlobSessionDeclarationV1 {
     store: [u8; 16],
     session: [u8; 16],
     object: [u8; 16],
-    key_scope: [u8; 32],
+    key_scope: CanonicalDigestId,
     chunk_size: u32,
     declared_bytes: u64,
     memory_limit: u64,
@@ -34,7 +35,7 @@ impl BlobSessionDeclarationV1 {
             store: nonzero_16(store)?,
             session: nonzero_16(session)?,
             object: nonzero_16(object)?,
-            key_scope: nonzero_32(key_scope)?,
+            key_scope: CanonicalDigestId::new(nonzero_32(key_scope)?),
             chunk_size: admitted_chunk_size(chunk_size)?,
             declared_bytes,
             memory_limit,
@@ -47,7 +48,7 @@ impl BlobSessionDeclarationV1 {
         payload.extend_from_slice(&self.store);
         payload.extend_from_slice(&self.session);
         payload.extend_from_slice(&self.object);
-        payload.extend_from_slice(&self.key_scope);
+        payload.extend_from_slice(self.key_scope.bytes());
         payload.extend_from_slice(&self.chunk_size.to_le_bytes());
         payload.extend_from_slice(&self.declared_bytes.to_le_bytes());
         payload.extend_from_slice(&self.memory_limit.to_le_bytes());
@@ -90,7 +91,7 @@ impl BlobSessionDeclarationV1 {
         self.object
     }
     pub const fn key_scope(self) -> [u8; 32] {
-        self.key_scope
+        *self.key_scope.bytes()
     }
     pub const fn chunk_size(self) -> u32 {
         self.chunk_size

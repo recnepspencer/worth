@@ -4,7 +4,7 @@ use crate::storage::overlay::PartitionState;
 use crate::storage::substrate::{HistoricalMetadata, SharedColumn, VersionedRelationMetadata};
 
 pub(in super::super) fn visible_metadata<M: HistoricalMetadata + Clone>(
-    history: &SharedColumn<M>,
+    history: &SharedColumn<crate::storage::substrate::StorageAllocation<M>>,
     version_id: VersionId,
 ) -> Option<&M> {
     let bound = VersionBound::new(version_id);
@@ -40,7 +40,7 @@ pub(in super::super) fn visible_relation_metadata(
 }
 
 pub(in super::super) fn historical_created_at<M: HistoricalMetadata + Clone>(
-    history: &SharedColumn<M>,
+    history: &SharedColumn<crate::storage::substrate::StorageAllocation<M>>,
     visible: &M,
     current_generation: u32,
     current_created_at: VersionId,

@@ -12,11 +12,16 @@ impl WorthQueryOutputDemandDenialKind {
                 use crate::domain_computation::primary_graph::WorthQueryApplicationIdempotencyResolutionDenialKind as Read;
                 match stop {
                     Read::ForeignAdmission
-                    | Read::CommittedReceiptNotRetained { .. }
+                    | Read::OriginalEffectReleased
                     | Read::RecordedIntentUnverifiable
                     | Read::RetentionIdentityExhausted
                     | Read::SnapshotIdentityExhausted => Terminal,
-                    _ => Retryable,
+                    Read::PreparationBusy
+                    | Read::ExecutionDenied(_)
+                    | Read::Authorization(_)
+                    | Read::ActiveSnapshotCapacityExhausted { .. }
+                    | Read::RetentionCapacityExhausted
+                    | Read::ProviderUnavailable => Retryable,
                 }
             }
             Self::WorldRecovery(stop) => match stop {
@@ -66,7 +71,8 @@ impl WorthQueryOutputDemandDenialKind {
             | Self::SourceQueryInstallation(_)
             | Self::SourceQueryAdmission(_)
             | Self::SourceQueryExecution(_) => Terminal,
-            Self::ForeignSource
+            Self::DurableStateAdmission(_)
+            | Self::ForeignSource
             | Self::ManagedIndexSourceDenied
             | Self::ManagedSourceExpansionUnsupported
             | Self::MissingApplicableProducer

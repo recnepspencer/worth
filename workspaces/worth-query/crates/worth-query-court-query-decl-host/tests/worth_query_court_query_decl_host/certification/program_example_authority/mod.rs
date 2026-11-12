@@ -204,7 +204,7 @@ fn installed_conditional_requires_its_declared_program_action() {
     .expect("installation must reject the missing conditional action");
     assert!(matches!(
         denial,
-        WorthQueryInMemoryApplicationDenial::ConditionalProgramMismatch
+        WorthQueryApplicationPreparationDenial::ConditionalProgramMismatch
     ));
 }
 
@@ -235,7 +235,7 @@ fn installed_conditional_rejects_a_client_action_for_its_operation() {
     .expect("the client action must not share the conditional operation");
     assert!(matches!(
         denial,
-        WorthQueryInMemoryApplicationDenial::ConditionalProgramMismatch
+        WorthQueryApplicationPreparationDenial::ConditionalProgramMismatch
     ));
 }
 

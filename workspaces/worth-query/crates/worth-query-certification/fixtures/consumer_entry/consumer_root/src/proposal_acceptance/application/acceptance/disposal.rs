@@ -174,7 +174,8 @@ fn registered<'host>(
 ) {
     match &mut registration.evidence {
         WorthQuerySourceCompletion::Fresh { retained, .. }
-        | WorthQuerySourceCompletion::Recovered { retained, .. } => drop(retained.take()),
+        | WorthQuerySourceCompletion::Recovered { retained, .. }
+        | WorthQuerySourceCompletion::Recorded { retained, .. } => drop(retained.take()),
     }
     (
         None,

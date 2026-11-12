@@ -112,8 +112,8 @@ impl RuntimeSymbolTable {
             ))?;
         let frontier = frontier.max(manifest.symbol_identity_frontier);
         let pages = RuntimeSymbolResidency::new(
-            manifest.symbols.clone(),
-            manifest.symbol_buckets.clone(),
+            manifest.symbols.ordinary_owned_copy(),
+            manifest.symbol_buckets.ordinary_owned_copy(),
             source,
         )
         .map_err(ColdSymbolDirectoryDenial::StorageUnavailable)?;

@@ -3,9 +3,9 @@ use super::{WorthQueryOperationCleanup, WorthQueryOperationCloseDenial};
 use worth_query_execution::facade::application_contribution::WorthQueryAdvancementDenial;
 use worth_query_execution::facade::domain_computation::WorthQueryProductUnpublishedRecovery;
 use worth_query_execution::facade::primary_graph::{
-    WorthQueryApplicationCommitReceipt, WorthQueryApplicationIdempotencyResolution as Resolution,
-    WorthQueryApplicationUncommitted, WorthQueryManagedApplicationRecoveryOutcome as Recovery,
-    WorthQueryManagedApplicationRecoveryPerformed,
+    WorthQueryApplicationIdempotencyResolution as Resolution, WorthQueryApplicationUncommitted,
+    WorthQueryManagedApplicationRecoveryOutcome as Recovery,
+    WorthQueryManagedApplicationRecoveryPerformed, WorthQueryRecoveredApplicationCommitReceipt,
 };
 
 // Private to Publication: no consumer can supply or implement a progression backend.
@@ -22,7 +22,7 @@ pub(in crate::application_entry) enum NativePublicationState<Outcome, Completion
 }
 
 pub(in crate::application_entry) struct NativeRecoveredPublication {
-    pub receipt: WorthQueryApplicationCommitReceipt,
+    pub receipt: WorthQueryRecoveredApplicationCommitReceipt,
     pub publication: Option<WorthQueryManagedApplicationRecoveryPerformed>,
     pub initial_posture: Option<WorthQueryApplicationUncommitted>,
     pub initial_advancement_failure: Option<WorthQueryAdvancementDenial>,
@@ -92,8 +92,16 @@ impl<Outcome, Completion, AdmissionDenial>
     /// On refusal the original state and every owned obligation stay in place.
     pub(in crate::application_entry) fn complete_keyed(
         &mut self,
-        receipt: WorthQueryApplicationCommitReceipt,
+        receipt: WorthQueryRecoveredApplicationCommitReceipt,
     ) -> Result<NativeRecoveredPublication, WorthQueryOperationCloseDenial> {
+        if let Self::Performed(performed) = self
+            && !performed.matches_original_receipt(
+                &worth_query_execution::publication_boundary::program_publication_access(),
+                &receipt,
+            )
+        {
+            return Err(WorthQueryOperationCloseDenial::NativeObligationRetained);
+        }
         let prior = std::mem::replace(self, Self::Initial);
         let (publication, initial_posture, initial_advancement_failure) = match prior {
             Self::Performed(performed) => (Some(performed), None, None),
@@ -115,11 +123,18 @@ impl<Outcome, Completion, AdmissionDenial>
     /// Resolving a key transfers original publication evidence, never a synthetic result.
     pub(in crate::application_entry) fn accept_keyed(
         &mut self,
-        resolution: Resolution,
+        read: worth_query_execution::facade::primary_graph::WorthQueryAdmittedIdempotencyRead,
         cleanup: &WorthQueryOperationCleanup,
     ) -> Result<NativeKeyedProgress, WorthQueryOperationCloseDenial> {
+        let binding = read.binding();
+        let resolution = read.into_resolution();
+        if let Resolution::RecoveredCommitted(receipt) = &resolution
+            && receipt.idempotency_key_identity() != binding.key_identity()
+        {
+            return Err(WorthQueryOperationCloseDenial::NativeObligationRetained);
+        }
         match resolution {
-            Resolution::AlreadyCommitted(receipt) => self
+            Resolution::RecoveredCommitted(receipt) => self
                 .complete_keyed(receipt)
                 .map(NativeKeyedProgress::Completed),
             Resolution::Unseen
@@ -142,7 +157,10 @@ impl<Outcome, Completion, AdmissionDenial>
                 }
             }
             Resolution::Unseen => Ok(NativeKeyedProgress::Progress { proved_abort: None }),
-            resolution @ Resolution::IntentDrift => Ok(NativeKeyedProgress::Terminal(resolution)),
+            resolution @ (Resolution::ReleasedOriginal(_)
+            | Resolution::IntentDrift
+            | Resolution::ProductPreparationPending(_)
+            | Resolution::ProductUnpublished(_)) => Ok(NativeKeyedProgress::Terminal(resolution)),
         }
     }
 }

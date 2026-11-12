@@ -329,7 +329,7 @@ fn idempotent_retry_terminal() {
             idempotency(69, 69),
             worth_execution::ExecutionAllocationPolicy::SystemAllocation
         ),
-        WorthQueryApplicationCommitOutcome::AlreadyCommitted(_)
+        WorthQueryApplicationCommitOutcome::RecoveredCommitted(_)
     ));
     assert_baselines(request_execution, &world, baseline);
 }

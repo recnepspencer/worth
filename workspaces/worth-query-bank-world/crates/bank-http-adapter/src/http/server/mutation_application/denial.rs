@@ -9,7 +9,20 @@ pub(in crate::http::server) fn request_mutation_denial(
 ) -> BankHttpDenial {
     use WorthQueryApplicationRequestMutationDenialKind as Denial;
     match kind {
+        Denial::OriginalEffectReleased => BankHttpDenial::new(
+            BankHttpDenialKind::OriginalEffectReleased,
+            BankHttpNextAction::ContactOperator,
+        ),
         Denial::ExecutionRequest(cause) => super::super::advancement_denial::advancement(cause),
+        Denial::IdempotencyPreparationBusy => {
+            BankHttpDenial::new(BankHttpDenialKind::Unavailable, BankHttpNextAction::Retry)
+        }
+        Denial::DurableStateAdmission(_) | Denial::DurableBindingAdmission(_) => {
+            BankHttpDenial::new(
+                BankHttpDenialKind::Unavailable,
+                BankHttpNextAction::ContactOperator,
+            )
+        }
         Denial::IdempotencyExecutionDenied(stop) => pending_execution_stop(stop),
         Denial::ProductSelection => {
             BankHttpDenial::new(BankHttpDenialKind::Stale, BankHttpNextAction::Refresh)
@@ -29,9 +42,7 @@ pub(in crate::http::server) fn request_mutation_denial(
         ),
         // State already moved on, by a later workflow step or by the key's
         // earlier commit; reading current state shows it.
-        Denial::WorkflowAuthoritySpent
-        | Denial::WorkflowTransitionCurrentness
-        | Denial::IdempotencyReceiptNotRetained => {
+        Denial::WorkflowAuthoritySpent | Denial::WorkflowTransitionCurrentness => {
             BankHttpDenial::new(BankHttpDenialKind::Stale, BankHttpNextAction::Refresh)
         }
         // The same request can never pass these, so a retry would loop forever:
@@ -100,11 +111,13 @@ pub(in crate::http::server) fn pending_execution_denial(
     use worth_query_host::facade::primary_graph::WorthQueryProviderSessionDenialKind as Kind;
     match kind {
         Kind::Content(cause) => super::super::relational_execution_denial::content(cause.into()),
+        Kind::StaleIncarnation => BankHttpDenial::new(BankHttpDenialKind::Stale, BankHttpNextAction::Refresh),
+        Kind::ContentInconsistency => BankHttpDenial::new(BankHttpDenialKind::InternalDenied, BankHttpNextAction::ContactOperator),
         Kind::ProjectionContract { denial, .. } => super::super::relational_execution_denial::denial(worth_query_host::facade::primary_graph::RelationalExecutionDenialCause::ProjectionContract(denial)),
         Kind::HistoricalVisibility { denial, .. } => super::super::relational_execution_denial::denial(worth_query_host::facade::primary_graph::RelationalExecutionDenialCause::HistoricalVisibility(denial)),
         Kind::StorageUnavailable(failure) => super::super::relational_execution_denial::denial(worth_query_host::facade::primary_graph::RelationalExecutionDenialCause::StorageUnavailable(failure)),
         Kind::ExecutionResource { denial, .. } => super::commit_denial::execution_resource(denial),
-        Kind::ContentInconsistency | Kind::OutputCorrespondenceMismatch { .. }
+        Kind::OutputCorrespondenceMismatch { .. }
         | Kind::ExecutionWorkerPanicked { .. }
         | Kind::ExecutionUncheckedCustomKernel { .. }
         | Kind::ExecutionIdentitiesNotCanonical { .. }
@@ -171,6 +184,7 @@ mod tests {
     fn each_idempotency_cause_asks_for_the_action_that_can_succeed() {
         use worth_query_host::facade::primary_graph::WorthQueryOperationAuthorizationDenialKind as Authorization;
         let cases = [
+            (Denial::OriginalEffectReleased, BankHttpDenialKind::OriginalEffectReleased, BankHttpNextAction::ContactOperator),
             (
                 Denial::Authorization(Authorization::Stopped(Err(worth_query_host::facade::primary_graph::WorthQueryProviderSessionControlStopKind::TimedOut))),
                 BankHttpDenialKind::DeadlineExceeded,
@@ -209,14 +223,6 @@ mod tests {
                 "{kind:?}"
             );
         }
-    }
-
-    #[test]
-    fn a_key_committed_before_a_restore_asks_for_a_refresh_not_a_retry() {
-        assert_eq!(
-            request_mutation_denial(Denial::IdempotencyReceiptNotRetained),
-            BankHttpDenial::new(BankHttpDenialKind::Stale, BankHttpNextAction::Refresh),
-        );
     }
 }
 

@@ -92,3 +92,6 @@ impl WorthQueryOutputDemandKey {
 }
 
 mod court_doors_for_test;
+#[cfg(test)]
+#[path = "demand_key_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;

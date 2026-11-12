@@ -1,5 +1,6 @@
 use std::io::Write;
 use std::path::Path;
+use worth_foundational::CanonicalDigestId;
 
 use sha2::{Digest, Sha256};
 
@@ -11,12 +12,12 @@ const RECORD_BYTES: usize = 8 + 32 + 8 + 8 + 8 + 32 + 32 + 32;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) struct DurableForensicSourceRecord {
-    pub(crate) plan_identity: [u8; 32],
+    pub(crate) plan_identity: CanonicalDigestId,
     pub(crate) source_index: u64,
     pub(crate) source_length: u64,
     pub(crate) acquired_prefix_bytes: u64,
-    pub(crate) acquired_digest: [u8; 32],
-    pub(crate) source_fingerprint: [u8; 32],
+    pub(crate) acquired_digest: CanonicalDigestId,
+    pub(crate) source_fingerprint: CanonicalDigestId,
 }
 
 impl DurableForensicSourceRecord {
@@ -75,12 +76,12 @@ pub(crate) fn read_all(
 fn encode(record: DurableForensicSourceRecord) -> Vec<u8> {
     let mut bytes = Vec::with_capacity(RECORD_BYTES);
     bytes.extend_from_slice(MAGIC);
-    bytes.extend_from_slice(&record.plan_identity);
+    bytes.extend_from_slice(record.plan_identity.bytes());
     bytes.extend_from_slice(&record.source_index.to_be_bytes());
     bytes.extend_from_slice(&record.source_length.to_be_bytes());
     bytes.extend_from_slice(&record.acquired_prefix_bytes.to_be_bytes());
-    bytes.extend_from_slice(&record.acquired_digest);
-    bytes.extend_from_slice(&record.source_fingerprint);
+    bytes.extend_from_slice(record.acquired_digest.bytes());
+    bytes.extend_from_slice(record.source_fingerprint.bytes());
     let checksum: [u8; 32] = Sha256::digest(&bytes).into();
     bytes.extend_from_slice(&checksum);
     bytes
@@ -95,12 +96,12 @@ fn decode(bytes: &[u8]) -> Result<DurableForensicSourceRecord, ForensicAcquisiti
         return Err(ForensicAcquisitionDenial::DamagedAcquisitionJournal);
     }
     let record = DurableForensicSourceRecord {
-        plan_identity: bytes[8..40].try_into().unwrap(),
+        plan_identity: CanonicalDigestId::new(bytes[8..40].try_into().unwrap()),
         source_index: u64::from_be_bytes(bytes[40..48].try_into().unwrap()),
         source_length: u64::from_be_bytes(bytes[48..56].try_into().unwrap()),
         acquired_prefix_bytes: u64::from_be_bytes(bytes[56..64].try_into().unwrap()),
-        acquired_digest: bytes[64..96].try_into().unwrap(),
-        source_fingerprint: bytes[96..128].try_into().unwrap(),
+        acquired_digest: CanonicalDigestId::new(bytes[64..96].try_into().unwrap()),
+        source_fingerprint: CanonicalDigestId::new(bytes[96..128].try_into().unwrap()),
     };
     if record.acquired_prefix_bytes > record.source_length {
         return Err(ForensicAcquisitionDenial::DamagedAcquisitionJournal);

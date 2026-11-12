@@ -1,4 +1,5 @@
 pub(crate) mod application_entry_current_read;
+pub(crate) mod application_home;
 
 pub(crate) mod application_runtime_surface;
 

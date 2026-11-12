@@ -50,7 +50,7 @@ fn retained_relation_history_checkpoint_matches_published_leaf_and_recovers() {
     let tail = world
         .runtime
         .durability()
-        .canonical_commit_artifacts(execution.allocation_policy())
+        .canonical_commit_artifacts(&execution)
         .map(Result::unwrap)
         .filter(|a| a.position() > covered)
         .map(|a| {

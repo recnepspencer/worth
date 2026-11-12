@@ -13,6 +13,7 @@ mod authority_session_naming_digest;
 mod causal_envelope_mapping;
 mod causal_envelope_mapping_scale;
 mod causal_envelope_mapping_support;
+mod diagnostic_retention;
 mod diagnostics_explanations;
 mod diagnostics_provenance;
 mod diagnostics_replay;

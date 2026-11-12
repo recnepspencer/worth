@@ -1,10 +1,11 @@
-use std::collections::BTreeMap;
+use crate::storage::substrate::SharedMap;
 
 use crate::identity::data::PartitionId;
 
 use super::WorkingState;
 
 impl WorkingState {
+    #[cfg(test)]
     pub(crate) fn mark_entity_slot_touched(&mut self, partition_id: PartitionId, slot: usize) {
         self.mutation_journal
             .entry(partition_id)
@@ -13,6 +14,7 @@ impl WorkingState {
             .insert(slot);
     }
 
+    #[cfg(test)]
     pub(crate) fn mark_relation_slot_touched(&mut self, partition_id: PartitionId, slot: usize) {
         self.mutation_journal
             .entry(partition_id)
@@ -21,29 +23,9 @@ impl WorkingState {
             .insert(slot);
     }
 
-    pub(crate) fn mark_adjacency_slot_touched(&mut self, partition_id: PartitionId, slot: usize) {
-        self.mutation_journal
-            .entry(partition_id)
-            .or_default()
-            .adjacency_slots
-            .insert(slot);
-    }
-
-    pub(crate) fn mark_reverse_adjacency_slot_touched(
-        &mut self,
-        partition_id: PartitionId,
-        slot: usize,
-    ) {
-        self.mutation_journal
-            .entry(partition_id)
-            .or_default()
-            .reverse_adjacency_slots
-            .insert(slot);
-    }
-
     pub(crate) fn mutation_journal(
         &self,
-    ) -> &BTreeMap<PartitionId, super::super::PartitionMutationJournal> {
+    ) -> &SharedMap<PartitionId, super::super::PartitionMutationJournal> {
         &self.mutation_journal
     }
 

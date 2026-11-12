@@ -5,6 +5,7 @@ mod actor_retention;
 mod correction_history_indexes;
 mod inspection_materialization;
 mod managed_cleanup;
+mod provider_session_grant;
 use crate::basis::WorthQueryProductBranchAdmissionRefusalKind as AdmissionRefusal;
 #[path = "certification_controls/workflow_membership.rs"]
 mod workflow_membership;
@@ -187,7 +188,7 @@ where
         self.runtime
             .primary_provider
             .graph
-            .with_runtime_mut(request_execution, |runtime| {
+            .with_runtime(request_execution, |runtime| {
                 let active = runtime.retention().active_snapshot_count();
                 let identity = runtime
                     .branch_identity(self.runtime.relational_branch_identity.branch_id())
@@ -220,7 +221,7 @@ where
             .primary_graph()
             .expect("the application retains its primary graph")
             .integration_handle();
-        let candidate = handle.with_query_runtime_mut(&execution, |runtime, layout| {
+        let candidate = handle.with_query_runtime(&execution, |runtime, layout| {
             let membership = runtime
                 .read_truth()
                 .visible_relations_of_kind(
@@ -281,7 +282,7 @@ where
             .primary_graph()
             .expect("the application retains its primary graph")
             .integration_handle();
-        let candidate = handle.with_query_runtime_mut(&execution, |runtime, layout| {
+        let candidate = handle.with_query_runtime(&execution, |runtime, layout| {
             let workflow = layout.workflow();
             let version = application_basis.snapshot_handle().version_id();
             let published = |kind| {

@@ -10,7 +10,7 @@ use worth_query_installation::facade::{ApplicationSchema, WorthQueryInstalledApp
 
 mod access;
 mod evidence;
-pub(in crate::domain_computation::primary_graph) use evidence::HistoricalProducerRead;
+pub use evidence::WorthQueryHistoricalProducerRead;
 mod installation;
 pub(in crate::domain_computation::primary_graph) use access::{
     ProducerPredecessorReadAccess, ProducerPredecessorReadState,

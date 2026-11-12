@@ -1,4 +1,6 @@
 use std::sync::Arc;
+mod retirement;
+pub(crate) use retirement::RelationalExternalLeaseRetirement;
 
 use crate::branch::{RelationalBranchBasisDescriptor, RelationalBranchIdentity};
 use crate::mvcc::RelationalBranchObservation;
@@ -18,6 +20,14 @@ pub struct RelationalBranchRetentionLease {
 }
 
 impl RelationalBranchRetentionLease {
+    /// Retire this issued external lease and its original observation share
+    /// through the same nonwaiting Native observation owner, retaining payloads
+    /// until explicit unbudgeted reclaim. Independent aliases keep their veto.
+    pub fn into_observation_retirement(
+        self,
+    ) -> crate::change_source::RelationalRetainedObservationRetirement {
+        crate::change_source::RelationalRetainedObservationRetirement::from_retention_lease(self)
+    }
     pub(crate) fn new(
         observation: RelationalBranchObservation,
         binding: &super::RelationalBranchRetentionBinding,
@@ -25,7 +35,7 @@ impl RelationalBranchRetentionLease {
     ) -> Result<Self, super::RelationalRetentionAcquisitionDenial> {
         let obligation = super::RelationalExternalBasisRetentionObligation::acquire(
             binding,
-            Arc::clone(observation.selected_root()),
+            &observation.admitted_basis(),
         )?;
         Ok(Self {
             observation: Some(observation),
@@ -89,10 +99,12 @@ impl RelationalBranchRetentionLease {
 
 impl Drop for RelationalBranchRetentionLease {
     fn drop(&mut self) {
-        if self.observation.take().is_some() {
+        let observation = self.observation.take();
+        if observation.is_some() {
             self.obligation.take();
             self.terminal_accounting.record_dropped_release();
         }
+        drop(observation);
     }
 }
 

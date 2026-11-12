@@ -1,3 +1,10 @@
+mod retirement;
+pub use retirement::{
+    RelationalBranchBasisRetirement, RelationalBranchBasisRetirementDenial,
+    RelationalBranchBasisRetirementProgress, RetiredRelationalBranchBasis,
+};
+mod component_capture;
+pub(crate) use component_capture::CheckpointComponentDescriptorView;
 use std::sync::{Arc, OnceLock};
 
 use serde::{Deserialize, Serialize};
@@ -36,8 +43,8 @@ pub struct RelationalBranchBasisDescriptor {
     truth_version: RelationalBranchVersion,
     root_identity: u64,
     #[serde(default)]
-    schema_commitment: [u8; 32],
-    visibility_commitment: [u8; 32],
+    schema_commitment: worth_foundational::CanonicalDigestId,
+    visibility_commitment: worth_foundational::CanonicalDigestId,
     posture: RelationalBranchBasisPosture,
 }
 
@@ -63,8 +70,10 @@ impl RelationalBranchBasisDescriptor {
             reference: axes.reference,
             truth_version: axes.truth_version,
             root_identity: axes.root_identity,
-            schema_commitment: axes.schema_commitment,
-            visibility_commitment: axes.visibility_commitment,
+            schema_commitment: worth_foundational::CanonicalDigestId::new(axes.schema_commitment),
+            visibility_commitment: worth_foundational::CanonicalDigestId::new(
+                axes.visibility_commitment,
+            ),
             posture,
         }
     }
@@ -94,11 +103,11 @@ impl RelationalBranchBasisDescriptor {
     }
 
     pub const fn schema_commitment(&self) -> [u8; 32] {
-        self.schema_commitment
+        *self.schema_commitment.bytes()
     }
 
     pub const fn visibility_commitment(&self) -> [u8; 32] {
-        self.visibility_commitment
+        *self.visibility_commitment.bytes()
     }
 
     pub const fn posture(&self) -> RelationalBranchBasisPosture {
@@ -161,7 +170,7 @@ pub(crate) struct AdmittedRelationalBranchBasisInner {
     pub(crate) retention: crate::history::retention::RelationalObservationRetentionObligation,
     pub(crate) retention_binding: crate::history::retention::RelationalBranchRetentionBinding,
     pub(crate) publication_cell: super::RelationalBranchPublicationCell,
-    pub(super) registry_lease: OnceLock<super::basis_registry::RelationalBasisRegistryLease>,
+    pub(crate) registry_lease: OnceLock<super::basis_registry::RelationalBasisRegistryLease>,
 }
 
 impl AdmittedRelationalBranchBasis {
@@ -224,13 +233,16 @@ impl AdmittedRelationalBranchBasis {
             worth_foundational::FoundationalBranchTarget::Empty => return None,
             worth_foundational::FoundationalBranchTarget::Basis(target) => target,
         };
-        let envelope = self.inner.root.canonical_envelope()?;
-        (envelope.commit.commit_id.0 == target.selected_commit_id()).then(|| {
+        let receipt = self.inner.root.commit_receipt()?;
+        (receipt.commit_id.0 == target.selected_commit_id()).then(|| {
             crate::history::RelationalCommitIdentity::new(
-                envelope.commit.commit_id,
-                envelope.commit.version_id,
-                envelope.branch_context.clone(),
+                receipt.commit_id,
+                receipt.version_id,
+                receipt.branch_id.clone(),
             )
         })
     }
 }
+#[cfg(test)]
+#[path = "basis_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;

@@ -10,7 +10,7 @@ impl<'a, 'run, 'phase, S: ApplicationSchema> CoupledApplicationAssembly<'a, 'run
             return Err(CoupledSourceReadStop::capture(cause));
         }
         let graph = &self.application.runtime.primary_provider.graph;
-        let before_pin = graph.with_runtime_mut(execution, |runtime| {
+        let before_pin = graph.with_runtime(execution, |runtime| {
             let snapshot = crate::domain_computation::primary_graph::exact_basis_access::open_exact_basis_snapshot(
                 runtime, self.before.relational_basis(),
             ).map_err(|cause| WorthQueryOutputDemandDenial::new(WorthQueryOutputDemandDenialKind::ForeignSource, format!("coupled before basis: {cause:?}")))?;

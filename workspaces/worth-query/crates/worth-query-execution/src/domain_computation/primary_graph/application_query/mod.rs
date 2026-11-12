@@ -82,15 +82,14 @@ pub use component_result::{
 };
 pub use orbit_result::WorthQueryApplicationQueryOrbit;
 pub(crate) mod output_source_observation;
-pub(in crate::domain_computation::primary_graph) use one_shot::WorthQueryAdmittedOneShotStop;
+pub use one_shot::WorthQueryAdmittedOneShotStop;
 pub(in crate::domain_computation::primary_graph) use output_source_observation::{
     ObservedQuerySource, SourceQueryObservationStop, SourceQueryReadClosure,
     SourceQueryReaderAccess,
 };
 pub(crate) mod projection;
-pub(in crate::domain_computation::primary_graph) use projection::retained_projection::{
-    compare_original_projections, ProjectionComparisonDenial,
-};
+pub(in crate::domain_computation::primary_graph) use projection::retained_projection::compare_original_projections;
+pub use projection::retained_projection::ProjectionComparisonDenial;
 pub(in crate::domain_computation::primary_graph) use projection::{
     ContentScratch, ProjectionContentStorageFault,
 };
@@ -114,6 +113,7 @@ pub use admitted_result::{
     WorthQueryApplicationOutputDemandSource,
 };
 pub use authorization_work::WorthQueryApplicationAuthorizationWorkEvidence;
+
 pub use continuation::{
     WorthQueryApplicationContinuationDenial, WorthQueryApplicationContinuationDenialKind,
     WorthQueryApplicationContinuationPageResult, WorthQueryApplicationQueryContinuation,
@@ -178,8 +178,6 @@ pub use retained_read::WorthQueryApplicationReadObservation;
 
 pub use one_shot::{WorthQueryDependentPairReadContext, WorthQueryDerivedPairReadPlans};
 
-pub(in crate::domain_computation::primary_graph) use read_execution::dispatch_witness::DispatchWitness;
-
 pub use observed_source::retained_dependencies::{
     WorthQueryRequiredSetCurrentnessDenial, WorthQueryRetainedQueryDependencies,
 };
@@ -195,3 +193,8 @@ pub(in crate::domain_computation::primary_graph) use observed_source::{
     AppliedQuerySource, AppliedQuerySupport, AppliedSourcePublication,
 };
 pub(in crate::domain_computation::primary_graph) use projection::ProjectionContentComparisonFault;
+
+pub(in crate::domain_computation::primary_graph::application_query) use read_execution::dispatch_witness::DispatchWitness;
+#[cfg(test)]
+#[path = "mod_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;

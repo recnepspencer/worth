@@ -6,13 +6,13 @@ use worth_query_host::facade::application_installation::ApplicationBuildIdentity
 pub(super) fn try_install_program_with_limits_and_domain_denial<Program>(
     checkpoint: Option<application_installation::WorthQueryApplicationCheckpoint>,
     profile: worth_query_host::facade::runtime::WorthQueryOutputDemandResourceProfile,
-    limits: WorthQueryInMemoryApplicationLimits,
+    limits: WorthQueryApplicationLimits,
     seed: impl FnOnce(&mut WorthQueryPrimaryGraphBootstrap<CheckpointSchema>),
     domain_denial: Arc<AtomicBool>,
     producer_contacts: Option<crate::producer::ProviderContacts>,
 ) -> Result<
     application_installation::WorthQueryProgramApplicationRuntime<CheckpointSchema, Program>,
-    Box<application_installation::WorthQueryInMemoryApplicationDenial>,
+    Box<application_installation::WorthQueryApplicationPreparationDenial>,
 >
 where
     Program: ApplicationProgramDefinition<CheckpointSchema>,
@@ -48,11 +48,11 @@ pub(in crate::checkpoint_recovery) fn install_program_in_bootstrap<Program>(
         '_,
     >,
     profile: worth_query_host::facade::runtime::WorthQueryOutputDemandResourceProfile,
-    limits: WorthQueryInMemoryApplicationLimits,
+    limits: WorthQueryApplicationLimits,
     seed: impl FnOnce(&mut WorthQueryPrimaryGraphBootstrap<CheckpointSchema>),
 ) -> Result<
     application_installation::WorthQueryProgramApplicationRuntime<CheckpointSchema, Program>,
-    Box<application_installation::WorthQueryInMemoryApplicationDenial>,
+    Box<application_installation::WorthQueryApplicationPreparationDenial>,
 >
 where
     Program: ApplicationProgramDefinition<CheckpointSchema>,
@@ -71,16 +71,45 @@ where
     )
 }
 
+/// Successful reconstruction borrows its own opening phase, preserving World limits.
+pub(super) fn install_checkpoint_in_bootstrap<Program>(
+    phase: &worth_query_host::facade::application_contribution::WorthQueryBootstrapAdvancementPhase<
+        '_,
+    >,
+    checkpoint: application_installation::WorthQueryApplicationCheckpoint,
+    profile: worth_query_host::facade::runtime::WorthQueryOutputDemandResourceProfile,
+    limits: WorthQueryApplicationLimits,
+) -> Result<
+    application_installation::WorthQueryProgramApplicationRuntime<CheckpointSchema, Program>,
+    Box<application_installation::WorthQueryApplicationPreparationDenial>,
+>
+where
+    Program: ApplicationProgramDefinition<CheckpointSchema>,
+    Program::Contributions: WorthQueryApplicationContributionTuple<
+        CheckpointSchema,
+        Configuration = (TopologyConfiguration,),
+    >,
+    Program::Outputs: application_installation::WorthQueryApplicationProgramRoots<CheckpointSchema>,
+{
+    install_configured_source::<Program>(
+        InstallSource::CheckpointInBootstrap(phase, checkpoint),
+        profile,
+        limits,
+        |_| {},
+        configuration(Arc::new(AtomicBool::new(false)), None),
+    )
+}
+
 /// The same installer accepts the contribution's actual observer configuration.
 pub(super) fn install_configured<Program>(
     checkpoint: Option<application_installation::WorthQueryApplicationCheckpoint>,
     profile: worth_query_host::facade::runtime::WorthQueryOutputDemandResourceProfile,
-    limits: WorthQueryInMemoryApplicationLimits,
+    limits: WorthQueryApplicationLimits,
     seed: impl FnOnce(&mut WorthQueryPrimaryGraphBootstrap<CheckpointSchema>),
     configuration: TopologyConfiguration,
 ) -> Result<
     application_installation::WorthQueryProgramApplicationRuntime<CheckpointSchema, Program>,
-    Box<application_installation::WorthQueryInMemoryApplicationDenial>,
+    Box<application_installation::WorthQueryApplicationPreparationDenial>,
 >
 where
     Program: ApplicationProgramDefinition<CheckpointSchema>,
@@ -102,12 +131,12 @@ pub(in crate::checkpoint_recovery) fn install_configured_in_bootstrap<Program>(
         '_,
     >,
     profile: worth_query_host::facade::runtime::WorthQueryOutputDemandResourceProfile,
-    limits: WorthQueryInMemoryApplicationLimits,
+    limits: WorthQueryApplicationLimits,
     seed: impl FnOnce(&mut WorthQueryPrimaryGraphBootstrap<CheckpointSchema>),
     configuration: TopologyConfiguration,
 ) -> Result<
     application_installation::WorthQueryProgramApplicationRuntime<CheckpointSchema, Program>,
-    Box<application_installation::WorthQueryInMemoryApplicationDenial>,
+    Box<application_installation::WorthQueryApplicationPreparationDenial>,
 >
 where
     Program: ApplicationProgramDefinition<CheckpointSchema>,
@@ -151,18 +180,19 @@ pub(in crate::checkpoint_recovery) fn install_on_clock(
 enum InstallSource<'borrow, 'phase> {
     Fresh(authentication::WorthQueryAdmissionClock),
     Checkpoint(application_installation::WorthQueryApplicationCheckpoint),
+    CheckpointInBootstrap(&'borrow worth_query_host::facade::application_contribution::WorthQueryBootstrapAdvancementPhase<'phase>, application_installation::WorthQueryApplicationCheckpoint),
     Bootstrap(&'borrow worth_query_host::facade::application_contribution::WorthQueryBootstrapAdvancementPhase<'phase>),
 }
 
 fn install_configured_source<Program>(
     source: InstallSource<'_, '_>,
     profile: worth_query_host::facade::runtime::WorthQueryOutputDemandResourceProfile,
-    limits: WorthQueryInMemoryApplicationLimits,
+    limits: WorthQueryApplicationLimits,
     seed: impl FnOnce(&mut WorthQueryPrimaryGraphBootstrap<CheckpointSchema>),
     configuration: TopologyConfiguration,
 ) -> Result<
     application_installation::WorthQueryProgramApplicationRuntime<CheckpointSchema, Program>,
-    Box<application_installation::WorthQueryInMemoryApplicationDenial>,
+    Box<application_installation::WorthQueryApplicationPreparationDenial>,
 >
 where
     Program: ApplicationProgramDefinition<CheckpointSchema>,
@@ -184,8 +214,20 @@ where
         Ok(())
     };
     match source {
+        InstallSource::CheckpointInBootstrap(phase, checkpoint) => {
+            application_installation::WorthQueryInterimCheckpointRestore::rostered_program_in_advancement(
+                phase,
+                program,
+                application_installation::WorthQueryApplicationProgramRoster::new(),
+                declaration,
+                configuration,
+                ApplicationBuildIdentity::parse("11111111-1111-1111-1111-111111111111").unwrap(),
+                limits.with_output_demand_resources(profile),
+                checkpoint,
+            )
+        }
         InstallSource::Checkpoint(checkpoint) => {
-            application_installation::in_memory_program_from_checkpoint(
+            application_installation::WorthQueryInterimCheckpointRestore::program(
                 program,
                 declaration,
                 configuration,

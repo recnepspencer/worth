@@ -2,8 +2,7 @@
 use super::*;
 use crate::domain_computation::primary_graph::application_installation::WorthQueryRecoveredProgramOutputSource;
 use crate::domain_computation::primary_graph::{
-    WorthQueryCommittedProductPublication, WorthQueryManagedApplicationRecoveryPerformed,
-    WorthQueryOutputReadCloseDenial,
+    WorthQueryCommittedProductPublication, WorthQueryOutputReadCloseDenial,
 };
 use crate::domain_computation::{
     WorthQueryProductUnpublishedApplication, WorthQueryProductUnpublishedRecovery,
@@ -48,8 +47,7 @@ struct ContinuationState
 enum PublicationState {
     Unpublished(WorthQueryProductUnpublishedRecovery),
     Performed {
-        outcome: WorthQueryManagedApplicationRecoveryPerformed,
-        carrier: Option<WorthQueryRecoveredProgramOutputSource>,
+        custody: crate::domain_computation::primary_graph::provider::ProducerRecoveryCustody,
     },
     Closing,
     Closed,
@@ -111,10 +109,10 @@ impl PendingProducerPublication {
         &self,
     ) -> Option<&WorthQueryCommittedProductPublication> {
         match &self.state().state {
-            PublicationState::Performed {
-                carrier: Some(carrier),
-                ..
-            } => Some(carrier.publication()),
+            PublicationState::Performed { custody } => custody
+                .carrier
+                .as_ref()
+                .map(|carrier| carrier.publication()),
             _ => None,
         }
     }
@@ -142,10 +140,11 @@ impl ContinuationState {
                         "producer publication",
                     )
                 }),
-            PublicationState::Performed {
-                carrier: Some(carrier),
-                ..
-            } => Ok(carrier.product_branch().occurrence() == selected.lifecycle_incarnation()),
+            PublicationState::Performed { custody } => {
+                Ok(custody.carrier.as_ref().is_some_and(|carrier| {
+                    carrier.product_branch().occurrence() == selected.lifecycle_incarnation()
+                }))
+            }
             _ => Ok(false),
         }
     }
@@ -160,17 +159,9 @@ impl ContinuationState {
             self.finish_close();
             return Ok(());
         }
-        let prior = match &mut self.state {
-            PublicationState::Performed { outcome, .. } => outcome.take_original_cleanup_failure(),
-            _ => None,
-        };
-        if let Some(prior) = prior {
-            self.prior_cleanup = Some(prior);
-            self.close_prior(phase, runtime)?;
-        }
         let recovery = match &mut self.state {
             PublicationState::Unpublished(recovery) => Some(recovery.clone()),
-            PublicationState::Performed { outcome, .. } => outcome.take_original_cleanup(),
+            PublicationState::Performed { custody } => custody.cleanup.take(),
             PublicationState::Closed | PublicationState::Closing => None,
         };
         if let Some(recovery) = recovery

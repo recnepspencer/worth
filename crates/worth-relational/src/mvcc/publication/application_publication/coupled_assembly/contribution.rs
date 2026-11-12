@@ -51,12 +51,12 @@ impl crate::mvcc::ValidatedRelationalProposal {
         source: crate::identity::data::EntityId,
     ) -> Option<RelationalCoupledContribution<'_>> {
         let group =
-            self.required_output_publication
-                .as_ref()
-                .and_then(|admission| match &admission.publication {
+            self.state.required_output_publication.as_ref().and_then(
+                |admission| match &admission.publication {
                     RequiredOutputPublication::CoupledAuthored { group } => Some(group),
                     _ => None,
-                })?;
+                },
+            )?;
         let part = group.stages.get(stage)?;
         (part.source == source).then_some(RelationalCoupledContribution {
             records: &part.records,
@@ -70,7 +70,8 @@ impl crate::mvcc::ValidatedRelationalProposal {
         producer: &str,
         meaning: &RequiredOutputPublicationMeaning,
     ) -> Option<RelationalCoupledContribution<'_>> {
-        self.required_output_publication
+        self.state
+            .required_output_publication
             .iter()
             .find_map(|admission| {
                 let RequiredOutputPublication::CoupledAuthored { group } = &admission.publication
@@ -99,7 +100,8 @@ impl crate::mvcc::ValidatedRelationalProposal {
     pub fn coupled_participants(
         &self,
     ) -> impl Iterator<Item = (&str, &RequiredOutputPublicationMeaning)> {
-        self.required_output_publication
+        self.state
+            .required_output_publication
             .iter()
             .filter_map(|admission| match &admission.publication {
                 RequiredOutputPublication::CoupledAuthored { group } => Some(group),

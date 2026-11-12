@@ -8,6 +8,8 @@
 //! length overflow) and its cost class (two serializer passes over one
 //! payload). Each artifact maps the denial into its own encode denial.
 
+pub(crate) mod request;
+
 use std::io::{self, Write};
 
 use serde::Serialize;

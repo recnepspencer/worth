@@ -109,7 +109,7 @@ impl<S: Fixture> WorthQueryApplicationOutputRole for Role<S> {
     type Cardinality = WorthQueryExactlyOneOutput;
     const NAME: &'static str = "number";
 }
-pub fn installed<S: Fixture>() -> domain::WorthQueryInstalledApplicationSchema<S> {
+fn installed<S: Fixture>() -> domain::WorthQueryInstalledApplicationSchema<S> {
     let declaration = S::declaration().unwrap();
     let admitted = domain::WorthQueryInstallationAdmissionProfile::new("equivalence", "field")
         .admit(
@@ -130,7 +130,7 @@ pub fn installed<S: Fixture>() -> domain::WorthQueryInstalledApplicationSchema<S
     .bind_application_schema(declaration)
     .unwrap()
 }
-pub fn declaration<S: Fixture>() -> DeclaredProducerBinding {
+fn declaration<S: Fixture>() -> DeclaredProducerBinding {
     let mut declaration = declared(TypeId::of_for_test::<InstalledProducer>());
     let field = WorthQueryProducerOutputEquivalence::<S, Role<S>>::exact_u64(S::field())
         .expect("the equivalence field is declared")

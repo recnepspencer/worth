@@ -1,0 +1,176 @@
+//! One actual Home checkpoint owner serves manual and automatic advancement.
+mod controls_for_test;
+use super::{
+    owner::HomeCheckpointOwner, ApplicationHomeCheckpoint as Summary,
+    ApplicationHomeCheckpointDenial as Denial, ApplicationHomeCheckpointLimits,
+};
+use std::sync::Arc;
+use worth_execution::ExecutionRequest;
+use worth_runtime_world::facade::WorldCheckpointPort;
+use worth_store::physical_runtime::ServingPhysicalRuntime;
+use worth_store_relational::RelationalSectionCompleteCheckpointPreparation;
+
+/// A Home-issued operation, never a Home lifecycle or Native service owner.
+/// Actual pending work remains in the SAME Home checkpoint owner on refusal.
+/// The Native and World preparation ports are weak; this value cannot reopen them.
+pub struct ApplicationHomeCheckpointOperation {
+    serving: Arc<ServingPhysicalRuntime>,
+    owner: Arc<HomeCheckpointOwner>,
+    world: WorldCheckpointPort,
+    signal: worth_signal::facade::durability::SignalAuthoredCheckpointPort,
+    native: RelationalSectionCompleteCheckpointPreparation,
+    limits: ApplicationHomeCheckpointLimits,
+}
+/// Original operation metadata after its actual serving alias is discharged.
+pub struct RetiredApplicationHomeCheckpointOperation {
+    _owner: Arc<HomeCheckpointOwner>,
+    _world: WorldCheckpointPort,
+    _signal: worth_signal::facade::durability::SignalAuthoredCheckpointPort,
+    _native: RelationalSectionCompleteCheckpointPreparation,
+    _limits: ApplicationHomeCheckpointLimits,
+}
+impl std::fmt::Debug for RetiredApplicationHomeCheckpointOperation {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str("RetiredApplicationHomeCheckpointOperation")
+    }
+}
+impl std::fmt::Debug for ApplicationHomeCheckpointOperation {
+    fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        formatter.write_str("ApplicationHomeCheckpointOperation")
+    }
+}
+impl ApplicationHomeCheckpointOperation {
+    /// Admit this Home's automatic allowance before Host service begins.
+    /// The same worker also serves close without a Query-specific registration.
+    pub fn install_home_checkpoint_maintenance(&self) -> Result<(), Denial> {
+        self.owner.maintenance.install(self.limits)
+    }
+    pub fn checkpoint_maintenance_is_active(&self) -> bool {
+        self.owner.maintenance.is_active()
+    }
+    /// Automatic upkeep never borrows the threshold-crossing caller's request.
+    pub fn automatic_checkpoint_maintenance(&self) -> Result<Option<Summary>, Denial> {
+        self.owner.maintenance.advance(self, self.limits)
+    }
+    pub(crate) fn checkpoint_for_close(&self) -> Result<Summary, Denial> {
+        self.owner.maintenance.capture(self, self.limits)
+    }
+    pub(crate) fn retire_for_home(
+        self,
+        owner: &Arc<ServingPhysicalRuntime>,
+        request: &ExecutionRequest<'_, '_>,
+    ) -> Result<RetiredApplicationHomeCheckpointOperation, (Self, crate::ApplicationHomeCloseDenial)>
+    {
+        if !Arc::ptr_eq(&self.serving, owner) {
+            return Err((
+                self,
+                crate::ApplicationHomeCloseDenial::ForeignCheckpointOperation,
+            ));
+        }
+        if let Err(cause) = request.consult() {
+            return Err((self, crate::ApplicationHomeCloseDenial::Execution(cause)));
+        }
+        let Self {
+            serving,
+            owner,
+            world,
+            signal,
+            native,
+            limits,
+        } = self;
+        // The matching borrowed Home Arc guarantees nonfinal local release.
+        drop(serving);
+        Ok(RetiredApplicationHomeCheckpointOperation {
+            _owner: owner,
+            _world: world,
+            _signal: signal,
+            _native: native,
+            _limits: limits,
+        })
+    }
+    pub(crate) fn new(
+        serving: Arc<ServingPhysicalRuntime>,
+        owner: Arc<HomeCheckpointOwner>,
+        world: WorldCheckpointPort,
+        signal: worth_signal::facade::durability::SignalAuthoredCheckpointPort,
+        native: RelationalSectionCompleteCheckpointPreparation,
+        limits: ApplicationHomeCheckpointLimits,
+    ) -> Self {
+        Self {
+            serving,
+            owner,
+            world,
+            signal,
+            native,
+            limits,
+        }
+    }
+
+    pub fn checkpoint(&self, request: &ExecutionRequest<'_, '_>) -> Result<Summary, Denial> {
+        super::journey::checkpoint(
+            &self.serving,
+            &self.owner,
+            Some(&self.world),
+            Some(&self.signal),
+            request,
+            |home, through, digest| self.native.prepare_home(home, through, digest, request),
+            None,
+            None,
+            None,
+        )
+    }
+    /// The actual operation owns this passive observer through its selected
+    /// boundary. It grants neither selection nor acknowledgement authority.
+    pub fn checkpoint_with_native_ack_observer_for_test(
+        &self,
+        request: &ExecutionRequest<'_, '_>,
+        observer: Box<dyn Fn() + Send + Sync>,
+    ) -> Result<Summary, Denial> {
+        super::journey::checkpoint(
+            &self.serving,
+            &self.owner,
+            Some(&self.world),
+            Some(&self.signal),
+            request,
+            |home, through, digest| self.native.prepare_home(home, through, digest, request),
+            None,
+            Some(observer.as_ref()),
+            None,
+        )
+    }
+    pub fn recover_checkpoint(
+        &self,
+        request: &ExecutionRequest<'_, '_>,
+    ) -> Result<Summary, Denial> {
+        super::journey::recover(&self.serving, &self.owner, request)
+    }
+    /// Run only actual due work, or resume the original accepted attempt.
+    /// Failure is retained by that attempt or remains due in actual journal tails;
+    /// it never becomes a separate error ledger or a replacement business result.
+    pub fn after_advancement(
+        &self,
+        request: &ExecutionRequest<'_, '_>,
+    ) -> Result<Option<Summary>, Denial> {
+        request.consult().map_err(Denial::Execution)?;
+        if self.owner.pending().is_some() {
+            return self.recover_checkpoint(request).map(Some);
+        }
+        let observed = super::inspection::inspect(
+            &self.serving,
+            &self.owner,
+            &self.world,
+            self.limits,
+            self.native
+                .cold_storage_reads()
+                .ok_or(Denial::Native(
+                    worth_store_relational::RelationalSectionCheckpointDenial::OwnerUnavailable,
+                ))?
+                .commit_reads,
+            request,
+        )?;
+        if !observed.due {
+            return Ok(None);
+        }
+        self.checkpoint(request).map(Some)
+    }
+}

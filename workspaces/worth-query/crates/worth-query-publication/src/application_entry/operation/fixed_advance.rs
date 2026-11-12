@@ -98,7 +98,7 @@ where
         }
         match &self.state {
             FixedState::Initial => self.advance_initial_in_phase(phase, request),
-            FixedState::Replay(_) => self.advance_replay_in_phase(phase, request),
+            FixedState::ReplayRetained(_) | FixedState::ReplayRecorded(_) => self.advance_replay_in_phase(phase, request),
             FixedState::Unpublished(_) => self.advance_partial_in_phase(phase, request),
             FixedState::Retention(_) => self.advance_retention_in_phase(phase, request),
             FixedState::Preparation(_) => self.advance_preparation_in_phase(phase, request),

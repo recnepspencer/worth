@@ -340,3 +340,6 @@ impl WorthQueryRuntimeFamilySupport {
             || self.teaching_posture == WorthQueryRuntimeFamilyTeachingPosture::SupportGateOnly
     }
 }
+#[cfg(test)]
+#[path = "facade_families_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;

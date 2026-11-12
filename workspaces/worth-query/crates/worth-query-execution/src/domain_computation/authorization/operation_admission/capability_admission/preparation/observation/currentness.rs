@@ -167,7 +167,7 @@ where
         .primary_graph()
         .unwrap()
         .retain_entity_resolution_context();
-    let (resolved, mut revalidation) = handle.with_runtime_mut(execution, |relational| {
+    let (resolved, mut revalidation) = handle.with_runtime(execution, |relational| {
         validate_principal_freshness(execution, prepared, principal, relational, &snapshot)?;
         let truth = resolution
             .at_snapshot(
@@ -229,7 +229,7 @@ where
             revalidation.recorded_actor = Some(std::sync::Arc::new(actor));
         }
     }
-    handle.with_runtime_mut(execution, |relational| {
+    handle.with_runtime(execution, |relational| {
         validate_approval_support(execution, prepared, relational, &snapshot)?;
         let observation =
             WorthQueryCurrentCapabilityObservation::from_axes(CurrentCapabilityObservationAxes {

@@ -1,4 +1,9 @@
+mod authored_source;
 use crate::domain_computation::primary_graph::WorthQueryAdvancementPhase;
+use crate::domain_computation::primary_graph::{
+    conditional_operation::installation::route_binding::InstalledConditionalRoute,
+    managed_bridge::conditional_execution::ConditionalExecutionOwner,
+};
 use std::collections::BTreeMap;
 use std::sync::Arc;
 
@@ -8,8 +13,7 @@ use worth_runtime_bridge::facade::{
     BridgeConditionalProviderHeapRetention, BridgeConditionalProviderRetentionOverflow,
     BridgeConditionalProviderSemantics, BridgeConditionalProviderSet,
     BridgeConditionalRuntimeBuilder, BridgeConditionalTriggerProvider,
-    BridgeInstalledConditionalLowering, BridgeOwnedConditionalInstallationRequest,
-    BridgeSealedRuntimeAssembly,
+    BridgeOwnedConditionalInstallationRequest,
 };
 use worth_signal::facade::{
     Aspect, AspectVersion, NodeEvaluationResult, SignalConditionalArtifactReuse,
@@ -22,8 +26,7 @@ use crate::domain_computation::primary_graph::{
 };
 
 pub struct WorthQueryInstalledOutputProducerRoute {
-    pub(in crate::domain_computation::primary_graph) scheduling:
-        Arc<BridgeInstalledConditionalLowering>,
+    pub(in crate::domain_computation::primary_graph) scheduling: InstalledConditionalRoute,
     pub(in crate::domain_computation::primary_graph) output_comparison:
         Option<super::output_evaluation::InstalledOutputComparison>,
 }
@@ -132,10 +135,10 @@ pub(super) fn install_output_producer_routes<'a>(
                     location: BridgeConditionalLocation::operation(scheduling_identity),
                     dependencies: Vec::new(),
                     providers: BridgeConditionalProviderSet::new()
-                        .trigger(ProducerDemandTrigger {
+                        .authored_trigger(ProducerDemandTrigger {
                             semantics: semantics.clone(),
                         })
-                        .compute(ProducerSignalCompute { semantics }),
+                        .authored_compute(ProducerSignalCompute { semantics }),
                 })
                 .map_err(|denial| installation_denial(identity, denial))?;
             let output_comparison = output_meaning
@@ -146,7 +149,7 @@ pub(super) fn install_output_producer_routes<'a>(
             Ok((
                 identity.to_owned(),
                 WorthQueryInstalledOutputProducerRoute {
-                    scheduling: lowering,
+                    scheduling: InstalledConditionalRoute::from_installation(lowering),
                     output_comparison,
                 },
             ))
@@ -157,8 +160,8 @@ pub(super) fn install_output_producer_routes<'a>(
 pub(in crate::domain_computation::primary_graph) fn schedule_output_producer(
     phase: &WorthQueryAdvancementPhase<'_>,
 
-    bridge: &BridgeSealedRuntimeAssembly,
-    lowering: &Arc<BridgeInstalledConditionalLowering>,
+    bridge: &ConditionalExecutionOwner<'_>,
+    lowering: &InstalledConditionalRoute,
     truth: &super::super::super::conditional_operation::WorthQueryConditionalTruthBasis,
     signal_basis: &worth_signal::facade::branch::AdmittedSignalBranchBasis,
     query_binding_identity: &str,
@@ -188,8 +191,8 @@ pub(in crate::domain_computation::primary_graph) fn schedule_output_producer(
 pub(in crate::domain_computation::primary_graph) fn schedule_output_producer_on_selected(
     phase: &WorthQueryAdvancementPhase<'_>,
 
-    bridge: &BridgeSealedRuntimeAssembly,
-    lowering: &Arc<BridgeInstalledConditionalLowering>,
+    bridge: &ConditionalExecutionOwner<'_>,
+    lowering: &InstalledConditionalRoute,
     truth: &super::super::super::conditional_operation::WorthQuerySelectedSignalProjections,
     signal_basis: &worth_signal::facade::branch::AdmittedSignalBranchBasis,
     query_binding_identity: &str,
@@ -221,8 +224,8 @@ pub(in crate::domain_computation::primary_graph) fn schedule_output_producer_on_
 fn schedule_output_producer_core(
     execution: worth_execution::ExecutionRequest<'_, '_>,
 
-    bridge: &BridgeSealedRuntimeAssembly,
-    lowering: &Arc<BridgeInstalledConditionalLowering>,
+    bridge: &ConditionalExecutionOwner<'_>,
+    lowering: &InstalledConditionalRoute,
     snapshot_projection: &str,
     truth_branch_projection: &str,
     signal_basis: &worth_signal::facade::branch::AdmittedSignalBranchBasis,
@@ -234,13 +237,13 @@ fn schedule_output_producer_core(
     WorthQueryConditionalSignalDecision,
     worth_runtime_bridge::facade::BridgeConditionalDenial,
 > {
-    let signal_basis = bridge.admit_exact_conditional_signal_basis(lowering, signal_basis)?;
+    let signal_basis = lowering.admit_signal_basis(bridge, signal_basis)?;
     let mut compute = ProducerSignalComputeContext { attempt };
     let evidence = bridge.execute(
         execution,
         &signal_basis,
         BridgeConditionalExecutionRequest {
-            lowering,
+            lowering: signal_basis.installed_lowering_ref(),
             query_binding_identity,
             query_capability_identity: query_identity,
             snapshot_identity: snapshot_projection,

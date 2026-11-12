@@ -47,7 +47,7 @@ impl crate::mvcc::ValidatedRelationalProposal {
             }
             Ok(None)
         }
-        let Some(admission) = &self.required_output_publication else {
+        let Some(admission) = &self.state.required_output_publication else {
             return Ok(None);
         };
         // The existing single non-owned path enters no new charged scope.

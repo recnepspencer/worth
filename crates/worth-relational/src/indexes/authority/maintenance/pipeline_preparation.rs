@@ -8,7 +8,7 @@ use crate::indexes::data::{
     DerivedIndexBuildRequest, DerivedIndexMaintenanceBudget, DerivedIndexMaintenanceDenial,
     DerivedIndexMaintenanceDenialKind as Denial,
 };
-use crate::runtime::IndexDefinitionReadBinding;
+use crate::runtime::{IndexDefinitionReadBinding, PreparedRelationalIndexDefinitions};
 use crate::storage::substrate::maintenance::CommitChange;
 use std::sync::Arc;
 
@@ -21,15 +21,32 @@ impl IndexDefinitionReadBinding {
         predecessor: &Arc<RelationalBranchRoot>,
         successor: &Arc<RelationalBranchRoot>,
         change: &Arc<CommitChange>,
+        definitions: Option<&PreparedRelationalIndexDefinitions>,
+        maintenance_budget: Option<DerivedIndexMaintenanceBudget>,
     ) -> Result<Option<PreparedCandidateIndexPublication>, DerivedIndexMaintenanceDenial> {
         crate::storage::substrate::maintenance::ChangeWork::run_phase(
             execution,
             "index_maintenance",
             |_| {
                 if change.schema_changed() && predecessor.commit_id().is_some() {
-                    self.prepare_schema_transition(execution, predecessor, successor, change)
+                    self.prepare_schema_transition(
+                        execution,
+                        predecessor,
+                        successor,
+                        change,
+                        definitions,
+                        maintenance_budget,
+                    )
                 } else {
-                    self.prepare_index_publication(execution, predecessor, successor, change, None)
+                    self.prepare_index_publication(
+                        execution,
+                        predecessor,
+                        successor,
+                        change,
+                        None,
+                        definitions,
+                        maintenance_budget,
+                    )
                 }
             },
         )
@@ -45,6 +62,8 @@ impl IndexDefinitionReadBinding {
             &crate::storage::substrate::maintenance::ReconstructionLane<'_>,
             &mut crate::storage::substrate::maintenance::ReconstructionWork<'_, '_>,
         )>,
+        definitions: Option<&PreparedRelationalIndexDefinitions>,
+        maintenance_budget: Option<DerivedIndexMaintenanceBudget>,
     ) -> Result<Option<PreparedCandidateIndexPublication>, DerivedIndexMaintenanceDenial> {
         crate::execution::check_request(execution).map_err(|cause| {
             DerivedIndexMaintenanceDenial {
@@ -53,109 +72,109 @@ impl IndexDefinitionReadBinding {
             }
         })?;
         let indexes = self.indexing_subsystem();
-        if indexes.with_definitions(|definitions| definitions.is_empty()) {
+        let owner = IndexMaintenanceOwner {
+            indexes: &indexes,
+            definitions,
+        };
+        let catalog = owner.catalog();
+        if catalog.is_empty() {
             return Ok(None);
         }
-        let owner = IndexMaintenanceOwner { indexes: &indexes };
-        let (prepared, counts) = request_payment::run(
-            execution,
-            DerivedIndexMaintenanceBudget {
-                maximum_work_units: None,
-                maximum_cold_record_slots: if reconstruction.is_some() {
-                    None
-                } else {
-                    Some(0)
-                },
-                maximum_derived_rows: None,
-            },
-            |work| {
-                if successor
-                    .commit_change()
-                    .is_none_or(|actual| !Arc::ptr_eq(actual, change))
-                    || successor.commit_id() != Some(change.commit_id())
-                {
-                    return Err(Denial::CommitMismatch);
+        let mut budget = maintenance_budget.unwrap_or(DerivedIndexMaintenanceBudget {
+            maximum_work_units: None,
+            maximum_cold_record_slots: None,
+            maximum_derived_rows: None,
+        });
+        if reconstruction.is_none() {
+            // A caller allowance never grants the ordinary lane cold authority.
+            budget.maximum_cold_record_slots = Some(0);
+        }
+        let (prepared, counts) = request_payment::run(execution, budget, |work| {
+            if successor
+                .commit_change()
+                .is_none_or(|actual| !Arc::ptr_eq(actual, change))
+                || successor.commit_id() != Some(change.commit_id())
+            {
+                return Err(Denial::CommitMismatch);
+            }
+            let envelope = successor
+                .canonical_envelope()
+                .ok_or(Denial::CommitMismatch)?;
+            super::basis::validate_root_predecessor(envelope, predecessor)?;
+            work.prepare(
+                envelope.branch_context.0.len() as u64,
+                envelope.branch_context.0.len() as u64,
+            )?;
+            let mut request = DerivedIndexBuildRequest {
+                source_commit_id: change.commit_id(),
+                branch_id: envelope.branch_context.clone(),
+                index_ids: Vec::new(),
+            };
+            if reconstruction.is_some() {
+                // A sealed schema transition is the explicit cold trust boundary.
+                for index in catalog.index_ids() {
+                    work.grow_vec(&mut request.index_ids)?;
+                    request.index_ids.push(index);
                 }
-                let envelope = successor
-                    .canonical_envelope()
-                    .ok_or(Denial::CommitMismatch)?;
-                super::basis::validate_root_predecessor(envelope, predecessor)?;
-                work.prepare(
-                    envelope.branch_context.0.len() as u64,
-                    envelope.branch_context.0.len() as u64,
-                )?;
-                let mut request = DerivedIndexBuildRequest {
-                    source_commit_id: change.commit_id(),
-                    branch_id: envelope.branch_context.clone(),
-                    index_ids: Vec::new(),
-                };
-                if reconstruction.is_some() {
-                    // A sealed schema transition is the explicit cold trust boundary.
-                    indexes.install_routing(
-                        successor.schema_authority().authority_digest(),
-                        successor.schema_authority().aspect_plans(),
-                    );
-                    indexes.with_definitions(|definitions| -> Result<(), Denial> {
-                        for index in definitions.keys() {
-                            work.grow_vec(&mut request.index_ids)?;
-                            request.index_ids.push(*index);
-                        }
-                        Ok(())
-                    })?;
-                } else {
-                    work.restrict_to_routed_indexes();
-                }
-                work.defer_publication();
-                let before = IndexRootView::new(Arc::clone(predecessor));
-                let after = IndexRootView::new(Arc::clone(successor));
-                let routes = indexes
-                    .definition_read_binding()
-                    .snapshot()
-                    .routing(successor.schema_authority().authority_digest())
-                    .ok_or(Denial::ColdReconstructionRequired)?;
-                let inputs = if reconstruction.is_some() {
-                    None
-                } else {
-                    Some(owner.refresh_inputs(execution, &request, Some(&before), &after, work)?)
-                };
-                let previous = inputs
-                    .as_ref()
-                    .and_then(|inputs| inputs.inherited.as_ref())
-                    .map(|basis| basis.selection_state());
-                let mut maintainer = super::maintained_selection::IndexSelectionMaintainer {
-                    owner: &owner,
+            } else {
+                work.restrict_to_routed_indexes();
+            }
+            let before = IndexRootView::new(Arc::clone(predecessor));
+            let after = IndexRootView::new(Arc::clone(successor));
+            // Descriptive route compilation grants no population-reconstruction door.
+            // Ordinary installed catalogs must already carry their schema routes.
+            let routes = if definitions.is_some() || reconstruction.is_some() {
+                catalog.routing_for_request(
                     execution,
-                    before: &before,
-                    after: &after,
-                    request: &request,
-                    native: work,
-                    routes,
-                    inputs,
-                    prepared: None,
-                };
-                let state = if let Some((lane, cold_work)) = reconstruction.as_mut() {
-                    crate::storage::substrate::maintenance::Maintained::cold(
+                    successor.schema_authority().authority_digest(),
+                    successor.schema_authority().aspect_plans(),
+                )?
+            } else {
+                owner.routes(successor)?
+            };
+            let inputs = if reconstruction.is_some() {
+                None
+            } else {
+                Some(owner.refresh_inputs(execution, &request, Some(&before), &after, work)?)
+            };
+            let previous = inputs
+                .as_ref()
+                .and_then(|inputs| inputs.inherited.as_ref())
+                .map(|basis| basis.selection_state());
+            let mut maintainer = super::maintained_selection::IndexSelectionMaintainer {
+                owner: &owner,
+                execution,
+                before: &before,
+                after: &after,
+                request: &request,
+                native: work,
+                routes,
+                inputs,
+                prepared: None,
+            };
+            let state = if let Some((lane, cold_work)) = reconstruction.as_mut() {
+                crate::storage::substrate::maintenance::Maintained::cold(
+                    &mut maintainer,
+                    lane,
+                    cold_work,
+                )?
+            } else {
+                crate::storage::substrate::maintenance::ChangeWork::run(execution, |shared| {
+                    crate::storage::substrate::maintenance::apply_change(
                         &mut maintainer,
-                        lane,
-                        cold_work,
-                    )?
-                } else {
-                    crate::storage::substrate::maintenance::ChangeWork::run(execution, |shared| {
-                        crate::storage::substrate::maintenance::apply_change(
-                            &mut maintainer,
-                            previous.as_ref(),
-                            change,
-                            shared,
-                        )
-                    })?
-                };
-                maintainer.finish(state)
-            },
-        )?;
+                        previous.as_ref(),
+                        change,
+                        shared,
+                    )
+                })?
+            };
+            maintainer.finish(state)
+        })?;
         let (prepared, funding) = prepared.into_funded_parts();
         Ok(Some(PreparedCandidateIndexPublication {
             prepared,
             funding,
+            metadata: None,
             work: counts,
         }))
     }

@@ -1,3 +1,4 @@
+use super::super::recorded_workflow_receipt as recorded_receipt;
 pub(crate) use worth_query_testkit_certification_application_graph::facade::certification::application_graph::workflow_retirement::discovery::*;
 
 #[test]
@@ -24,7 +25,11 @@ fn workflow_actor_contract_disabled_discovery_preserves_native_start_currentness
         discover(&application, main, &identity),
         Err(WorthQueryApplicationWorkflowInstallationDenialKind::InvalidPolicy)
     );
-    let recorded = expect_started(start_instance(&application, first.clone(), 602));
+    let original_start = match start_instance(&application, first.clone(), 602).unwrap() {
+        WorkflowInstanceStartOutcome::Started(value) => value,
+        other => panic!("the original start must perform: {other:?}"),
+    };
+    let recorded = original_start.instance().clone();
     let second = expect_published(
         "second revision",
         publish_definition(
@@ -44,12 +49,9 @@ fn workflow_actor_contract_disabled_discovery_preserves_native_start_currentness
     match start_instance(&application, first.clone(), 602)
         .expect("a recorded start's retry prepares")
     {
-        WorkflowInstanceStartOutcome::Started(replay) => {
-            assert!(
-                replay.replayed(),
-                "a superseded definition's recorded start replays"
-            );
-            assert_eq!(replay.instance(), &recorded);
+        WorkflowInstanceStartOutcome::RecoveredCommitted(replay) => {
+            recorded_receipt::original(&replay, original_start.receipt());
+            recorded_receipt::creates(&replay, recorded.entity_id());
         }
         other => panic!("a recorded start must replay, got {other:?}"),
     }

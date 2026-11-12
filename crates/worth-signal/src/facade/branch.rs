@@ -7,9 +7,10 @@
 pub use crate::branch::{
     signal_branch_identity, signal_branch_observation, validate_signal_branch_name,
     AdmittedSignalBranchBasis, AdmittedSignalBranchSnapshot,
-    AdmittedSignalConditionalDefinitionPublication, ManagedSignalBranchReference,
-    ManagedSignalBranchReferenceAdmissionDenial, PlannedSignalBranchRetirement,
-    PlannedSignalBranchRetirementBatch, SignalBranchAdvanceCompletion, SignalBranchAdvanceDenial,
+    AdmittedSignalConditionalDefinitionPublication, AdmittedSignalInitialEmptyRoot,
+    ManagedSignalBranchReference, ManagedSignalBranchReferenceAdmissionDenial,
+    PlannedSignalBranchRetirement, PlannedSignalBranchRetirementBatch,
+    RecordedSignalInitialEmptyRoot, SignalBranchAdvanceCompletion, SignalBranchAdvanceDenial,
     SignalBranchAdvanceEngineDenial, SignalBranchAdvanceOutcome,
     SignalBranchBasisAdmissionIdentity, SignalBranchBasisAuthority,
     SignalBranchBasisAuthorityMarker, SignalBranchBasisLifecyclePosture,
@@ -43,16 +44,16 @@ pub use crate::branch::{
     SignalConditionalServiceExecutionRequest, SignalConditionalServiceIssuanceDenial,
     SignalConditionalSuccessorTransition, SignalConditionalTemporalPartition,
     SignalConditionalTemporalPartitionDenial, SignalConditionalTemporalPromotion,
-    SignalConditionalTemporalPromotionView, SignalOwnedAsyncCompletionAdmission,
-    SignalOwnedAsyncCompletionCommit, SignalOwnedAsyncManagedAdmission,
-    SignalOwnedAsyncManagedProgress, SignalOwnedAsyncManagedQueueBinding,
-    SignalOwnedAsyncManagedReport, SignalOwnedAsyncQueueDenial, SignalOwnedAsyncReleasedResource,
-    SignalOwnedAsyncReleasedRetry, SignalOwnedAsyncRequestAdmission,
-    SignalOwnedAsyncResourceReleaseRefusal, SignalOwnedAsyncRetentionStorageForTest,
-    SignalOwnedAsyncRetryAdmission, SignalOwnedAsyncRetrySchedule,
-    SignalOwnedAsyncRevalidationAdmission, SignalOwnedAsyncSourceBinding,
-    SignalOwnedAsyncTimeoutAdmission, SignalOwnerCancellationSource, SignalOwnerCancellationToken,
-    SignalOwnerLifecycleObservation, SignalOwnerServiceCostSnapshot,
+    SignalConditionalTemporalPromotionView, SignalInitialEmptyRootRefusal,
+    SignalOwnedAsyncCompletionAdmission, SignalOwnedAsyncCompletionCommit,
+    SignalOwnedAsyncManagedAdmission, SignalOwnedAsyncManagedProgress,
+    SignalOwnedAsyncManagedQueueBinding, SignalOwnedAsyncManagedReport,
+    SignalOwnedAsyncQueueDenial, SignalOwnedAsyncReleasedResource, SignalOwnedAsyncReleasedRetry,
+    SignalOwnedAsyncRequestAdmission, SignalOwnedAsyncResourceReleaseRefusal,
+    SignalOwnedAsyncRetentionStorageForTest, SignalOwnedAsyncRetryAdmission,
+    SignalOwnedAsyncRetrySchedule, SignalOwnedAsyncRevalidationAdmission,
+    SignalOwnedAsyncSourceBinding, SignalOwnedAsyncTimeoutAdmission, SignalOwnerCancellationSource,
+    SignalOwnerCancellationToken, SignalOwnerLifecycleObservation, SignalOwnerServiceCostSnapshot,
     SignalOwnerServiceIssuanceDenial, SignalOwnerServicePorts, SignalOwnerUnavailable,
     SignalPreparedConditionalInstallationExtension, ValidatedSignalBranchName,
 };
@@ -67,4 +68,9 @@ pub use crate::branch::{
 pub use crate::branch::{
     SignalOwnerOperationBoundaryForTest, SignalOwnerOperationControlForTest,
     SignalOwnerOperationPauseForTest,
+};
+
+pub use crate::branch::{
+    RetiredSignalBranchRetention, SignalBranchRetentionRetirement,
+    SignalBranchRetentionRetirementDenial, SignalBranchRetentionRetirementProgress,
 };

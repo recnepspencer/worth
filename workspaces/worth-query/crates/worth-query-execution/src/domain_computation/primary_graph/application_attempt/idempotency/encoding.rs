@@ -92,6 +92,13 @@ impl WorthQueryApplicationIdempotencyBinding {
         if self.correction_identity.is_some() {
             append_identity_slot(&mut encoded, "correction", self.correction_identity);
         }
+        if self.transport_intent_identity.is_some() {
+            append_identity_slot(
+                &mut encoded,
+                "transport-intent",
+                self.transport_intent_identity,
+            );
+        }
         encoded
     }
 }

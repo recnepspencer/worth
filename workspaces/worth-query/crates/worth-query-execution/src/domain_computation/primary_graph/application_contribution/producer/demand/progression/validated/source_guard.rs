@@ -146,9 +146,16 @@ where
         // A changed source at the Ready's own publication is born stale:
         // this demand must refresh to the lasting result of that source.
         // An unrelated later publication still supersedes an unsettled caller.
-        let own_publication = matches!(held, Some(Authority::Committed(receipt))
-            if disclosure.source().selected_product_commit()
-                == Some(receipt.committed_product_publication().composite_commit()));
+        let own_publication =
+            held.and_then(Authority::publication_view)
+                .is_some_and(|publication| {
+                    disclosure.source().selected_product_commit()
+                        == Some(
+                            publication
+                                .committed_product_publication()
+                                .composite_commit(),
+                        )
+                });
         if !demand.settled
             && !own_publication
             && !matches!(held, Some(Authority::Stable(_) | Authority::Restored(_)))

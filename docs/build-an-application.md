@@ -16,6 +16,11 @@ feature's schema members, actions, required lifecycle roles and runtime slots
 together; the SDK derives their projections. The lower-level builders later in
 this guide explain the underlying contracts and support specialized composition.
 
+Directory Homes currently support only the Relational-only lane in [§4](#4-install-or-reopen).
+Producer, resource, conditional, workflow and branch-adoption examples use
+MemoryOnly unless stated otherwise. They do not acquire durability by being
+part of the same program.
+
 | Your next task | Start here | What you supply |
 |---|---|---|
 | Choose durable facts, names and links | [Native representations](native-representations.md), then [source subgraphs](source-subgraphs.md) | Independently mutable fields, entities, typed relations and an explicit read closure; canonical atoms need a recorded reason |
@@ -43,18 +48,20 @@ use worth_query_decl::facade::{application_operation, application_query, applica
 use worth_query_host::facade::{
     admission::authenticated_principal,   // principals and request scopes
     application_entry,                    // requests, mutations, adoption, workflow lifecycle
-    application_installation,             // in_memory_program, rosters, limits
+    application_installation,             // build identity, rosters, limits
     domain,                               // installed schema, workflow vocabulary installation
     primary_graph,                        // handlers, seeding, inspection types
     runtime,                              // resource profiles
+    WorthQueryApplicationHomeLocation, WorthQueryApplicationHomeRequest,
 };
 ```
 
 | Module | Names you will look for there |
 |---|---|
+| `…host::facade` | `WorthQueryApplicationHomeRequest`, `WorthQueryApplicationHomeLocation`, `WorthQueryApplicationHome`, owning opening and close refusals |
 | `â€¦decl::facade::application_program` | `ApplicationFeature`, `ApplicationFeatureSpec`, `ApplicationProgramDefinition`, `ApplicationProgramAuthoring`, `ValidatedApplicationProgram`, ports and connections, `ApplicationWorkflowSpec`, `ApplicationWorkflowDefinitionBuilder` |
 | `â€¦decl::facade::application_operation` | `ApplicationMutationBinding`, `ApplicationMutationIntent`, `ApplicationCapabilityMutationBinding` |
-| `â€¦host::facade::application_installation` | `in_memory_program`, `in_memory_rostered_program`, `WorthQueryInMemoryApplicationLimits`, `WorthQueryProgramApplicationRuntime`, `WorthQueryProgramOwner` (a trait: import it to call `owned_revision()`) |
+| `â€¦host::facade::application_installation` | `in_memory_program`, `in_memory_rostered_program`, `WorthQueryApplicationProgramRoster`, `WorthQueryApplicationLimits`, `WorthQueryProgramApplicationRuntime`, `WorthQueryProgramOwner` (a trait: import it to call `owned_revision()`) |
 | `â€¦host::facade::application_entry` | `WorthQueryApplicationRequestExt`, `WorthQueryOperationBuilder`, `WorthQueryOperationDescription`, `WorthQueryOperationAdvance`, `WorthQuerySettledFixedOperation`, `WorthQueryTerminalFixedOperation`, `WorthQueryWorkflowOperation`, `WorthQueryApplicationMutationOutcome`, `WorthQueryBranchAdoptionPublicationOutcome`, `Workflow*Outcome`, `Published*Ref` |
 | `â€¦host::facade::application_discovery` | `WorthQueryWorkflowDefinitionDiscovery`, `WorthQueryWorkflowInstanceRead`, `WorthQueryWorkflowInstancePage`, `WorthQueryWorkflowHistoryPage`, `WorthQueryWorkflowHistoryMark` |
 | `â€¦host::facade::domain` | `WorthQueryApplicationWorkflowSpecInstallation`, `WorthQueryApplicationWorkflowResourceCeiling`, `WorthQueryInstalledApplicationSchema` |
@@ -80,7 +87,7 @@ some declaration macros. `worth_query_mutation_binding!`,
 - [1. The model: six things, kept apart](#1-the-model-six-things-kept-apart)
 - [2. Declare the schema and its contributions](#2-declare-the-schema-and-its-contributions)
 - [3. Declare features and the program](#3-declare-features-and-the-program)
-- [4. Install the application graph](#4-install-the-application-graph)
+- [4. Install or reopen](#4-install-or-reopen)
 - [5. Run the program](#5-run-the-program)
 - [6. Author, publish, and run workflows](#6-author-publish-and-run-workflows)
 - [7. Adopt a new program on a branch](#7-adopt-a-new-program-on-a-branch)
@@ -97,7 +104,7 @@ some declaration macros. `worth_query_mutation_binding!`,
 | 1 | Declare the schema and its contributions | `worth_query_application!`, `worth_query_application_contribution!`, `impl WorthQueryApplicationContribution` | [Â§2](#2-declare-the-schema-and-its-contributions) |
 | 2 | Declare features and the program | `worth_query_application_contribution! { pub feature ... }`, its `ApplicationFeatureDefinition` projections, `impl ApplicationProgramDefinition` | [Complete definitions](#complete-feature-definitions), [Â§3](#3-declare-features-and-the-program) |
 | 3 | Validate the program | `ApplicationProgramAuthoring::<S, P>::begin().validated_program()` | [Â§3.5](#35-validate) |
-| 4 | Install the application graph | `application_installation::in_memory_program(..)` or `in_memory_rostered_program(..)` | [Â§4](#4-install-the-application-graph) |
+| 4 | Install or reopen | `WorthQueryApplicationHomeRequest::open_in_advancement(&phase)` | [§4](#4-install-or-reopen) |
 | 5 | Run program-owned actions | `request.mutate(intent)â€¦idempotency_owned(key)?.retain_operation::<Program, Action>(&runtime)`, then `operation.advance(&fresh_request)` | [Â§5](#5-run-the-program) |
 | 6 | Install the workflow vocabulary | `WorthQueryApplicationWorkflowSpecInstallation::begin(..)â€¦finish()`, then `retain_workflow_spec(..)` | [Â§6.2](#62-install-the-workflow-vocabulary-once) |
 | 7 | Author and validate a workflow | `ApplicationWorkflowDefinitionBuilder::<Spec>::new(..)`, nodes, connections, `finish()?.validate()?` | [Â§6.3](#63-author-a-definition) |
@@ -1889,6 +1896,10 @@ impl<Schema: TopologySchemaBinding> OperationHandler<Schema, RegionTotalsDemandB
         plan.and_then(move |()| decided)
     }
 
+    #[expect(
+        clippy::result_large_err,
+        reason = "The fixture preserves the original typed owner denial."
+    )]
     fn build_candidate(
         &self,
         input: &RegionTotalsDemand,
@@ -1911,7 +1922,13 @@ impl<Schema: TopologySchemaBinding> OperationHandler<Schema, RegionTotalsDemandB
 
 ---
 
-## 4. Install the application graph
+## 4. Install or reopen
+
+`WorthQueryApplicationHomeRequest` is the Host entry point for a new or existing
+application Home. Choose `WorthQueryApplicationHomeLocation::Directory(path)` for
+the supported durable Relational-only lane, or `MemoryOnly` for process-local
+installation. Keep the returned Home while borrowing `home.runtime()` to serve
+requests. Applications do not open Store or reconstruct lower owners themselves.
 
 Installation derives graph-obligation, query and authorization identities with an
 internal allowance of 16 times the admitted declaration's canonical entries and
@@ -1932,11 +1949,10 @@ denials' `canonical_denial()` accessors.
 ### Application build identity
 
 Each complete build supplies a fresh UUID through `WORTH_IMPLEMENTATION_BUILD_ID`.
-The application embeds it with `env!`, parses it through
-`host::application_installation::ApplicationBuildIdentity::parse`, and passes
-it once after contribution configuration to every fresh/reopen installation
-entry point. Missing identity fails compilation; malformed or zero identity
-fails parsing before installation.
+Embed it with `env!`, parse it with
+`host::application_installation::ApplicationBuildIdentity::parse`, and supply it
+in the Home request. Missing identity fails compilation; malformed or zero
+identity fails parsing before opening.
 
 Build from the repository root with:
 
@@ -1944,42 +1960,30 @@ Build from the repository root with:
 python scripts/application_build.py cargo build --locked
 ```
 
-The wrapper supplies a fresh UUID for the invocation and forwards the Cargo
-arguments and other environment inputs. Use it for each complete build command.
-Applications outside this repository should issue and embed a fresh UUID in
-their own build entry point.
+The wrapper issues a fresh UUID for each complete build invocation, including a
+dirty, dependency/configuration or otherwise Cargo-fresh rebuild. Keep the embedded
+identity when launching the same artifact again. External application builds
+supply and embed their own fresh UUID. Tests use explicit fixture identities.
 
-The fresh environment value must be supplied for **every complete build
-invocation**, including a dirty checkout, dependency/configuration rebuild or
-an otherwise Cargo-fresh invocation. `env!` embeds that value and makes it a
-compiler input. Keep the embedded identity when launching or reopening with the
-same artifact. Runnable application examples use this same environment input;
-test worlds use explicit fixture identities.
-
-Query seals the same identity into every installed producer edition, including
-producers with `INPUT_REUSE=None`. A changed build makes old derived output
-stale even when its value is unchanged. Reopen preserves authored source and
-references, then regenerates derived output as required by the installed program.
-
-
-Installation turns a validated program, a schema declaration, the
-contributions' configuration, and resource limits into a running runtime. The
-`initial_state` closure seeds the primary graph before the first publication.
+A journal-only Directory Home with the same supported program/schema opens under
+a new build UUID. Authored binding and durable history remain intact; the
+initializer does not run and nothing regenerates eagerly. Producers are not
+supported in this Directory lane. Accepted-output reuse and regeneration on demand
+are Phase 6 behavior, not a promise of rebuild admission.
 
 ### One process execution service
 
 Construct the physical execution authority at the process composition root,
 after validating immutable startup inputs and before installing applications.
 Keep it in an `Arc` above application, document and session lifetimes. Every
-fresh installation and checkpoint reopen receives a clone of that same `Arc`
+Home open or journal-only reopen receives a clone of that same `Arc`
 through `limits.with_execution_authority(Arc::clone(&service))`. Retain the
 process handle while applications close and reopen.
 
 The runnable [shared execution example](../workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/topology_entry/examples/shared_execution.rs)
-shows this complete sequence: two installed applications share one service,
-one closes and reopens from its original checkpoint, the reopened application
-edits its own source, and the other application retains its independent model
-state. Construct the authority once per process: later construction returns
+shows two MemoryOnly applications sharing one service. Its app-owned interim
+checkpoint is separate from the Directory contract documented here. Construct
+the authority once per process: later construction returns
 `ConstructionDenial::AlreadyConstructed`, including after the final handle drops.
 For an application installation retry, reuse the retained process service.
 
@@ -1988,7 +1992,7 @@ For an application installation retry, reuse the retained process service.
 | Physical worker service | `ExecutionAuthorityConfig::for_workers(workers)` and `ExecutionAuthority::try_construct(config)`; retain the resulting `Arc` at process scope. `ExecutionAuthorityConfig::available_worker_count()` supplies the machine's available width when that is the intended policy. |
 | Ordinary request policy | `ExecutionRequestPolicy::for_workers(ExecutionPosture::Serial, DeterminismContract::CanonicalBitwise, workers)` selects placement, determinism and worker width. |
 | Application installation | Pass that policy through the ordinary World resources and supply the same service with `with_execution_authority`. The application still supplies its own schema, configuration, build identity and model state. |
-| Reopen and overlapping applications | Retain the process service while applications close or install; pass another `Arc::clone` to each installation alongside its checkpoint or initial state. |
+| Reopen and overlapping applications | Retain the process service while applications close or install; pass another `Arc::clone` to each installation alongside its Home location and initial state. |
 | Operation execution | Use the application's authorized request. Handlers and retained computations borrow that request's execution authority. |
 
 Start with **Serial** placement. To use admitted workers for independent compute
@@ -2014,91 +2018,187 @@ lifetimes, failure types and measured-result handling.
 
 ### 4.1 One program
 
-<!-- illustrative -->
-```rust,ignore
-// Illustrative: not compiled.
-// workspaces/worth-query/crates/worth-query-testkit-certification/src/certification/program_example_authority/product_workflow_support/application.rs
-use worth_query_host::facade::{application_installation, primary_graph, runtime};
-
-let declaration = TemporalHostSchema::declaration().expect("the example schema is valid");
-let runtime = application_installation::in_memory_program(
-    program::validated_program(),                  // ValidatedApplicationProgram<S, P>
-    declaration,                                   // ApplicationSchemaDeclaration<S>
-    (TemporalContributionConfiguration { clock_source },), // one entry per contribution
-    application_installation::ApplicationBuildIdentity::parse(env!("WORTH_IMPLEMENTATION_BUILD_ID"))
-        .expect("the build pipeline embeds one nonzero UUID"),
-    example_limits(),                              // WorthQueryInMemoryApplicationLimits
-    |_phase, graph, installed| {                           // seed the primary graph
-        let principal_binding = installed
-            .principal_binding(TemporalPrincipalBinding::reference())
-            .expect("the temporal principal binding must install");
-        seed_graph(graph, &principal_binding, gate);
-        Ok(())
-    },
-)
-.expect("the validated temporal program must install");
-```
+Supply the validated program, roster, declaration, contribution configuration,
+build identity, ordinary limits and initializer in one Home request. For fresh
+setup, `with_bootstrap_advancement` opens the setup request from its policy. If
+setup already has an original execution request, borrow it with
+`with_bootstrap_advancement_from_request` instead of opening another allowance.
+The following
+shape is used by the real Directory Home court; `MySchema`, `MyProgram`,
+`seed_graph`, the configuration, limits and original execution request belong to
+the application. The program must satisfy the Relational-only restrictions below.
 
 <!-- illustrative -->
 ```rust,ignore
-// Illustrative: not compiled.
-// Same file: limits.
-application_installation::WorthQueryInMemoryApplicationLimits::new(
-    product_world_resources(),
-    runtime::WorthQueryApplicationQueryResourceProfile::new(
-        std::num::NonZeroUsize::new(128).expect("concurrent graph work is nonzero"),
-    ),
-    primary_graph::SignalConditionalEvaluationBudget::development(),
-)
+// Illustrative: not compiled; the application supplies the named inputs.
+use worth_query_host::facade::{
+    application_contribution::with_bootstrap_advancement_from_request,
+    application_installation::{ApplicationBuildIdentity, WorthQueryApplicationProgramRoster},
+    WorthQueryApplicationHomeLocation, WorthQueryApplicationHomeRequest,
+};
+
+let request = WorthQueryApplicationHomeRequest::new(
+    WorthQueryApplicationHomeLocation::Directory(path),
+    validated_program,                 // ValidatedApplicationProgram<MySchema, MyProgram>
+    WorthQueryApplicationProgramRoster::new(),
+    declaration,                       // MySchema::declaration()
+    configuration,                     // one value per contribution
+    ApplicationBuildIdentity::parse(env!("WORTH_IMPLEMENTATION_BUILD_ID"))?,
+    limits,                            // WorthQueryApplicationLimits
+    |_phase, graph, installed| seed_graph(graph, installed),
+);
+let opening = with_bootstrap_advancement_from_request(original_request, |phase| {
+    request.open_in_advancement(&phase)
+})?;
+let home = opening.unwrap_or_else(|refused| panic!("Home opening: {refused:?}"));
+let runtime = home.runtime();           // borrow it; keep the owning Home
 ```
 
-The result is a `WorthQueryProgramApplicationRuntime<Schema, Program>`.
+For a real host, retain `WorthQueryApplicationHomeOpenRefused` instead of panicking:
+an opening refusal may own the physical Home and mutation lease. Its consuming
+`close(&request)` either closes that actual preparation or returns owning cleanup
+custody. A failed open is not permission to initialize or discard the directory.
+The outer bootstrap result and the inner opening result are separate failures.
+
+`WorthQueryApplicationLimits` is used by both locations. It carries World resources, the query resource profile,
+Signal conditional evaluation budget and the process execution service.
+Use `request.with_authorization_time_source(source)` to supply trusted capability
+time in either location. Reopening can supply a new trusted source. Opening does
+not sample it; an authorization decision that needs unavailable time returns
+`TrustedTimeUnavailable`.
+
+#### Initialize once, then reopen the same Directory
+
+Store decides whether the physical Home is genuinely new. Only that disposition
+calls `initial_state`; successful fresh opening records completed seeds and indexes
+before exposing the first published World root. Existing directories, including
+incomplete initialization, do not receive a new initializer opportunity.
+
+To reopen a journal-only Home, construct a new ordinary Home request for the same
+Directory and supported program/schema. Still provide the initializer argument;
+existing-Home admission does not call it or replay seed suppliers. Reopen admits
+the original program activation and published World basis. Reads remain on that
+World basis even if Native history is newer. Preserve typed opening refusals and
+close their actual custody before trying another open.
+
+Two real processes cannot both become writers for the same Directory. The writer
+holds Store Application's mutation lease; a competing Host opener receives
+`MutationOwnerContended`. If the writer dies without closing, another process can
+acquire the lease and reopen the journal-only Home. Process death releases the
+lease without certifying application cleanup.
+
+#### Supported Directory seeds and operations
+
+Phases 3 and 4 compose only an owner-proven InitialEmpty Signal root and Bridge
+baseline. Relational handlers, managed Native indexes, World resources and
+trusted authorization time use the shared installation path. A declaration that
+needs Signal node allocation or Bridge correspondence is unsupported. In
+particular, producers, conditionals and application resource pools return
+`WorthQueryApplicationHomeOpenRefused::Preparation` with
+`WorthQueryApplicationPreparationDenial::UnsupportedSeed` before contribution
+configuration, physical Home creation, initialization or World bootstrap.
+Its `WorthQueryDurableStateAdmissionDenial::Unsupported` cause identifies the
+family (`SignalNodeDefinitions`, `BridgeConditionalDefinitions` or
+`BridgeOwnedAsyncDefinitions`) and `supported_from_phase: 5`.
+
+Directory operations requiring unsupported Signal/Bridge, managed/workflow,
+dispatch, correction or adoption state also refuse with typed durable-state
+admission outcomes. MemoryOnly supports its ordinary installation and execution
+contracts, but adds no restart guarantee. Keep the rich producer, resource,
+workflow and adoption examples in this guide in that lane; do not fall back to
+MemoryOnly when the application requires durable state.
+
+#### Reacquire authority after reopen
+
+Every open has a new incarnation. Prior-open selectors, retained capability
+access and provider-session grants cannot act on the new Home. Their receivers
+return typed `StaleIncarnation` before data disclosure or provider effects.
+Reacquire them from `home.runtime()` under fresh principal and request authority.
+A retained capability or session grant holds identity and its authority grant,
+not the old Home's live ports; the receiver supplies live resources at use.
+Recorded occurrences and receipts are data requiring new owner admission, so
+valid durable retry is separate from reusing a stale selector.
 
 ### 4.2 Several program revisions: the roster
 
-A host that must be able to adopt a successor program rosters it at install.
-Bank installs `BankApplication` and rosters `BankApplicationP1` beside it:
+Supply `WorthQueryApplicationProgramRoster::new().support(successor)` as the
+roster argument when a validated successor must be installed. Roster support is
+not permission to transition an existing Directory to different program/schema
+meaning. Use the Directory development workflow in §4.4 for such changes.
+MemoryOnly retains its ordinary roster and branch-adoption contracts in §7.
+
+### Commit, retry and close a Directory Home
+
+Use the same stable original key, typed intent and product affinity after response
+loss. The qualified Relational-only mutation path is the public program execution
+route shown in the Directory court:
 
 <!-- illustrative -->
 ```rust,ignore
-// Illustrative: not compiled.
-// bank-server/src/identity_runtime/installation.rs (abridged)
-let program = validated_bank_application()?;
-let successor = validated_bank_application_p1()?;
-let declaration = BankSchema::declaration()?;
-let runtime = in_memory_rostered_program(
-    program,
-    WorthQueryApplicationProgramRoster::new().support(successor),
-    declaration,
-    ((), (), ()),          // three contributions, none configured
-    application_installation::ApplicationBuildIdentity::parse(env!("WORTH_IMPLEMENTATION_BUILD_ID"))
-        .expect("the build pipeline embeds one nonzero UUID"),
-    limits,
-    initialize,            // |_phase, graph, installed| { ... Ok(()) }
-)?;
+// Illustrative: not compiled; runtime is borrowed from the open Directory Home.
+let outcome = runtime.request(&principal, &scope)
+    .advanced()
+    .mutate(intent)
+    .without_source()
+    .idempotency(&stable_key)
+    .execute_in_program(runtime, allocation_policy)?;
 ```
 
-Other constructors on `application_installation`:
-`in_memory_program_with_authorization_time_source`,
-`in_memory_rostered_program_with_authorization_time_source`, and the
-`*_from_checkpoint` variants.
+Match `WorthQueryApplicationMutationOutcome` rather than treating every return as
+completion:
 
-A reopened downstream demand may consume a checkpoint root before any separate
-root demand. Query first verifies the complete retained producer facts and native
-output witness, then retains bounded custody of that exact settlement through
-downstream publication. This static custody contains no executable source query:
-changing the root invalidates the old result and requires genuine typed source
-admission before it can refresh. Ordinary missing or retired managed settlements
-continue to refuse publication.
+| Outcome | Caller meaning |
+|---|---|
+| `Committed { receipt, result }` | A new published commit and its live Rust result. |
+| `AlreadyCommitted(receipt)` | An already-held live receipt; no new handler result. |
+| `RecoveredCommitted(receipt)` | Original recorded receipt data, with no recreated Rust result or live delivery capability. |
+| `Commit(...)` or a typed refusal | Inspect the actual native outcome and retain any returned pending, unpublished or indeterminate owner. A timeout or loss of observation does not prove no effect. |
+
+An exact same-key Directory retry can read the original receipt without replaying
+the handler. Changed intent refuses with `IdempotencyIntentDrift`; a stale or
+foreign selector refuses before effects, even if its key names a committed row.
+After process loss, first reopen and obtain fresh authority, then resolve the same
+original request. Never choose a new key solely because an answer was lost.
+
+`outcome.recovered_receipt()` exposes a
+`WorthQueryRecoveredApplicationCommitReceipt`: original Native semantics,
+old/new product references, publication attempt, intent, outcome and exact output
+settlement. It contains no live output capability, snapshot, `Performed` delivery
+or arbitrary application return value. Query current state separately.
+For a retained historical read, use `request.at_original_receipt(&phase, &receipt,
+maximum_history_work)` with fresh authority; unavailable history can refuse.
+`at_recorded_commit` admits a Home-scoped `DurableCompositeCommitIdentity`.
+Memory-scoped receipt coordinates are not durable evidence.
+
+For `ProductPreparationPending`, keep the original terminal and stable request
+data. Its explicit `try_into_recovery()` handoff returns original recovery custody
+or the same pending terminal when busy. A live persistent recovery can report
+`ReopenRequired`; inspect its `next_actions()`, end current Home ownership, then
+reopen the same location. Obtain recovery claims from that new owner rather than
+reusing an old handle. Opening can itself refuse while unsupported or unpublished
+custody remains. Neither zero observed effects nor a dropped carrier proves
+release, rollback or safe resubmission.
+
+Before shutdown, release request/read owners and runtime aliases. Consume the
+Directory Home with `home.close(&original_request)`. Keep
+`WorthQueryApplicationHomeCloseRefused`, inspect `query_denial()` or
+`directory_denial()`, and call its `try_close(&fresh_request)` after addressing the
+cause. `resume()` returns the serving Home only while the retained refusal is
+before seal. After seal, retry continues the same retirement task. Pending work,
+held receipts, aliases or supplier retirement refusal can prevent close; dropping
+those obligations is not a successful close. On success, inspect `is_closed()`
+and `outcome()`, then use `reclaim()` to release inert retired payloads outside the
+budgeted close. This Directory close contract does not complete MemoryOnly close.
 
 ### 4.3 What the runtime gives you
 
-`WorthQueryProgramApplicationRuntime` dereferences to the primary-graph
+Borrow `WorthQueryProgramApplicationRuntime` from `home.runtime()`. It dereferences to the primary-graph
 application runtime, so `request(..)`, `discovery()`, `current_world()`,
 `installed_schema()`, `branches()`, and `conditional::<T>()` are all available
 on it.
 
-For an isolated branch from a selection already admitted in a host advancement,
+The following branch, output and managed-resource capabilities use MemoryOnly.
+Durable branch creation remains pending. For an isolated branch from a selection already admitted in a host advancement,
 consume that selection with `runtime.branches().fork_expected(selected)` and
 create it with the same runtime's phase. The returned candidate retains its
 source; use `candidate.branch()` for ordinary requests and `candidate.close(&phase)`
@@ -2671,7 +2771,7 @@ Its own methods:
 | `installed_program()` | The installed program meaning: `identity`, `revision`, `features`, `actions`, `connections`, `rules` |
 | `contains_action::<Binding>()`, `contains_output_root::<Root>()` | Whether the installed program owns an action or output root |
 | `supported_program::<P>()` | `Option<WorthQuerySupportedProgramHandle>` for a rostered program. The handle implements the `WorthQueryProgramOwner` trait; import the trait to call `owned_revision()`, which is the adoption target |
-| `retire_program_support(&revision)` | Retires support for a revision no branch still needs |
+| `retire_program_support(&execution, &revision)` | Retires support for a revision no branch still needs |
 | `retain_workflow_spec(..)` | Binds a workflow vocabulary ([Â§6.2](#62-install-the-workflow-vocabulary-once)) |
 | `close_conditional_runtime()` | Closes conditional resources at shutdown |
 
@@ -2706,30 +2806,63 @@ See [native source and cleanup custody](../crates/worth-runtime-world/README.md#
 
 ### 4.4 Checkpoint program transitions
 
-Ordinary `in_memory_rostered_program_from_checkpoint` requires the recovered
-activation to name a supported program. For an app-owned predecessor mapping,
-`in_memory_rostered_program_from_checkpoint_with_transition` checks an exact
-`WorthQueryCheckpointProgramPredecessor` rendering and admits the current target
-through the ordinary program/roster installation path. The predecessor rendering
-never becomes a program revision or a roster member.
+#### Development workflow for Directory Homes
 
-For fresh installation with a separately funded setup request, borrow that original
-request with `host::application_contribution::with_bootstrap_advancement_from_request`.
-Call `host::application_installation::in_memory_rostered_program_in_advancement` with
-the phase first, followed by the validated program, roster, declaration,
-configuration, build identity, World limits and ordinary seed callback. It uses the
-same construction and roster core as default installation. The phase's original
-work, memory, cancellation and deadline govern all setup; the installed World's
-request policy remains the one declared in its limits. A larger seed grant therefore
-cannot make a zero-work runtime query succeed. Default `in_memory_program` and
-`in_memory_rostered_program` still open their bootstrap from the World policy.
-The public-entry funding, cancellation and memory regressions live in
-`topology_entry/src/checkpoint_recovery/support/bootstrap_funding.rs`.
+Keep the predecessor's complete declaration, validated program and configuration
+available alongside the successor. Each schema type owns a closed static
+declaration: a schema edit needs a corresponding successor schema definition,
+not a different declaration passed under the old type. The latter refuses with
+`SchemaMeaningChanged`.
+
+Construct the successor Home request, then call
+`with_program_transition(predecessor, resources, author)` and open it through
+the same bootstrap advancement. The predecessor request supplies the old
+meaning; its location and initializer do not run. The successor request selects
+the physical Home and its opening options.
+
+The author receives a read-only source over the readmitted predecessor and a
+prepared target. Read declared kinds with bounded `entities` and `relations`
+calls. Use their schema observations and `planned_field` locators to construct
+relational DATA from `host::home_program_transition`. Return a complete
+`WorthQueryHomeProgramTransitionPlan` with nonempty `steps`, a `target` index,
+and the actual `ProposedSchemaTransition` and optional reconciliation policy
+when changing the Native schema. Steps before that index use the old meaning;
+the target and following steps use the prepared successor. Supply positive,
+finite work, cold-record and derived-row limits in the exported
+`DerivedIndexMaintenanceBudget`; the opening request's cancellation, deadline
+and remaining resources still apply.
+
+The Host records the intent before performing any step. It uses the same Native,
+World and registered Source owners throughout and returns the Home only after
+the final binding is acknowledged. User bodies cannot address private Query
+records or materialization maintenance. Signal node allocation, Bridge
+correspondence, producers and conditionals retain their Relational-only refusals.
+
+A fresh or already-current Home skips the author. After a successful transition,
+close normally; subsequent opens need only the successor request. Original
+entities and durable history remain, and initialization is not replayed. Keep
+an owning refusal if opening fails after recording the intent; inspect
+`refused.phase()` rather than treating it as a fresh installation.
+
+#### Interrupted Directory transitions — cleanup track (owner P-C)
+
+Resume, drift, interrupted binding and process-kill qualification remain pending.
+
+### Checkpoint admission — pending (owner P-A, D12)
+
+Ordinary checkpoint restore has the same original-request option:
+`host::application_installation::WorthQueryInterimCheckpointRestore::rostered_program_in_advancement`
+takes that bootstrap phase first, followed by the validated program, roster,
+declaration, configuration, build identity, unchanged World limits and checkpoint.
+It reconstructs through the ordinary restore core and accepts no seed or transition
+callback. Use a separately funded opening request for a large recovered population;
+its allowance does not increase later World business calls. Default ordinary
+checkpoint restoration continues to open from the World request policy.
 
 When installation belongs to an already admitted execution attempt, borrow its
 `ExecutionRequest` through `host::application_contribution::with_bootstrap_advancement_from_request`
 and pass the resulting phase to
-`host::application_installation::in_memory_rostered_program_from_checkpoint_with_transition_in_advancement`.
+`host::application_installation::WorthQueryInterimCheckpointRestore::rostered_program_with_transition_in_advancement`.
 This variant takes the existing transition arguments with the phase first and a
 required capture policy. It borrows the original cancellation/deadline and
 remaining cumulative work through construction, roster admission, native transition,
@@ -2750,168 +2883,7 @@ transition: the bootstrap runs on that lease, as if borrowed through
 `with_bootstrap_advancement_from_request`, so the lease carries the transition's
 work as well as the captured frame.
 
-The bootstrap phase cannot escape its callback or stand in for an installed-runtime
-phase. `OpeningCustody` still refuses a second Query opening from a host advancement
-or managed computation. The opener preserves a callback result that ran: completion
-owners check the original request before success or domain failure, and a generic
-outer stop preserves a performed transition's recovery capsule.
-
-For that capsule, call `repair_to_checkpoint_with_request(original_request)`.
-It holds itself outside the opening callback until entry succeeds; refusal returns
-the same capsule, including on entry cancellation or exhausted work. Its typed
-`capture_denial()` may contain `Execution` with the original Query execution cause;
-the original `finalization_denial()` remains distinct. Fresh-request retry repairs
-the same successor without reauthoring. The existing phase/policy repair method
-remains available for its explicit contract; its `Execution(&lease)` must be the
-caller lease that funds the call or one of its ancestors, and any other lease
-refuses `UnrelatedNestedLease`. The runnable
-[original request fixture](../workspaces/worth-query/crates/worth-query-testkit-host/src/host/temporal_conditional_operation/contribution_installation/checkpoint_transition/original_request.rs)
-uses the real nonempty native transition; its
-[capture repair companion](../workspaces/worth-query/crates/worth-query-testkit-host/src/host/temporal_conditional_operation/contribution_installation/checkpoint_transition/admission.rs)
-retains the native capsule across stopped attempts.
-
-Its bounded `WorthQueryCheckpointMigrationWriter` authors new typed entity seeds
-and relations between entities created in that batch. It currently cannot read or
-rewrite recovered records, or link a new record to an existing endpoint. Query
-commits those effects, the target activation and complete supported entity and
-relation revalidation in one native candidate before exposing a World. Surviving
-relations are judged through native read demands that preserve their fields,
-endpoints and record versions. Rules overlapping retired relations still refuse;
-retained workflows remain unsupported. Native candidate/publication limits remain
-in force alongside explicit selection and authoring bounds.
-
-For a derived-only codec change, use that same entry point with the target schema
-and program and an empty author callback (`|_, _| Ok(())`). Native recovery must
-first establish each affected present field's actual producer publication and
-complete payload coverage. The target must install the actual birth and successor
-producers with their complete output-role meaning for the same native kinds;
-a Preserve producer may itself create dynamic members. Before any disposition, each accepted output must match the complete original
-native publication; an optional role cannot be omitted when its native output
-is present. Each accepted output must then either retire completely or survive
-completely.
-A survivor must match live exact native identities, kinds and present payload,
-its original performed producer association and the complete installed output
-role meaning. A mixed or incomplete correspondence refuses. Surviving output
-metadata retains historical locators with no producer facts; it cannot establish
-target readiness. The installed producer must genuinely publish before that
-output can become current.
-An empty callback, a role declaration, a revision advance, or a copied producer
-description grants no retirement permission.
-
-The supported cutover retires whole output records and rebuilds native
-entity-field equality indexes. Native producer-created internal relations may
-retire in that same candidate when both endpoints are independently proven in
-that same performed publication's complete output closure and the present
-relation payload still matches its
-native creation or authenticated producer succession. Retirement deletes the exact admitted relations before their
-entities. Related ordering indexes are prepared before publication and require
-unchanged ordering-key codecs. External or rewritten relations, ordinary or
-subsequently overwritten payload, affected custom invariants, changed ordering
-keys, join consequences and multiple current branch heads remain refused.
-Codec cutover cannot append authored rows. Unaffected surviving relations are
-rejudged by the target program's actual installed rules before publication.
-Transition capture and the acknowledged recovery capsule
-retain the same funded historical output roster. Capture refusal returns that
-same acknowledged capsule for funded repair; repair does not reauthor or copy
-predecessor currentness.
-
-Historical roots and the original checkpoint keep their old meaning. Demand
-output through the installed target producer after installation, then use
-ordinary edits and checkpoint capture/reopen. Keep the original runtime
-available for requests that resume its existing continuations. Each token owns
-its historical selection and ordered-index generation; a fresh authorised
-request on that original runtime can consume it after current values advance.
-The target installation is a foreign owner. A token, observation or catalogue
-comparison cannot grant target-current authority.
-
-Start a page on the current branch with `.page(...)`; public paging does not
-accept `.at(observation)`. Resume with the token itself and a fresh request:
-
-<!-- illustrative -->
-```rust,ignore
-// Illustrative: not compiled.
-// The application declares read_children and the query.
-let first = original_request.query(read_children.clone()).page(width)?;
-let (owned_rows, continuation, _) = first.into_parts();
-let token = continuation.expect("another child page");
-// Keep the original owner available while installing/regenerating the target.
-let second = fresh_original_request.query(read_children).resume(token, width)?;
-```
-
-### Protected continuation pages
-
-An ordinary continuation advances one ordered Many child collection below an
-ExactlyOne root with pinned basis support. Open a governed first page with
-`page_governed` and resume with `resume_governed`, supplying the actual capability,
-operation and purpose on every call. The `_approved` forms additionally require
-current approved elevation. `readmit_resume_governed` and its `_approved` twin
-lend the canonical admitted plan to an owning callback when needed.
-
-This compiled maintained-Catalog court uses real protected child rows:
-
-<!-- compiled: protected_continuation.rs -->
-```rust
-    let first = request
-        .query(input())
-        .page_governed(
-            access::ReadBoxes::reference(),
-            access::InspectBoxes::reference(),
-            purpose(),
-            width(),
-        )
-        .unwrap();
-    let (rows, continuation, _) = first.into_parts();
-    let second = request
-        .query(input())
-        .resume_governed(
-            access::ReadBoxes::reference(),
-            access::InspectBoxes::reference(),
-            purpose(),
-            continuation.expect("another child page"),
-            width(),
-        )
-        .unwrap();
-```
-
-Each page admits current capability and independent READ before rows, count,
-ordering, cursor or completion metadata. Hidden ordering fields need explicit
-Ordering and Pagination influence; permitted hidden values remain omitted.
-The cursor retains the exact old World, parameters and Native ordering generation.
-Regrant can authorize an independently issued old cursor while current data has
-changed; it does not replace the cursor's data with current values. A failed
-resume consumes its move-only token. Retain separate genuinely issued cursors
-when separate attempts are required. A requested page width cannot widen the
-installed binding limit.
-
-Managed-index root selection and related-collection continuation remain distinct
-declared shapes. Combining them refuses during declaration; a managed candidate
-hit supplies no child-page position or root-pagination authority.
-
-The [related-output journey](../workspaces/worth-query/crates/worth-query-testkit-certification-canonical/src/certification/application_graph/canonical_transition/related/continuation.rs)
-publishes three output roles and two internal relations. An original token still
-reads the old child total `12` after Preserve advances all three original outputs
-to `37`; the genuine target producer emits child total `1012`, then Preserve
-advances it to `1037` before current-format reopen. Live delivery, paired
-reconstruction and retained snapshot reads also retain their original request
-and decode custody through completion. A swallowed seed refusal or late
-cancellation denies the final page, image or successful delivery. Closing a
-live consumer and closing its publisher are separate lifecycle operations.
-
-`CheckpointTransitionCaptureStopped` retains the acknowledged phase when its
-first checkpoint capture stops. Consuming `repair_to_checkpoint` returns a
-target checkpoint, or the same capsule if capture stops again. A later installation failure returns
-`CheckpointTransitionFinalizationStopped` if target finalization refused before
-capture; its capsule retains the acknowledged successor and exposes the original
-typed `finalization_denial()`. Capture retries preserve that original cause.
-A later installation failure after checkpoint capture returns
-`CheckpointTransitionAcknowledged`
-with the already acknowledged target checkpoint and the original phase denial;
-fix the installation configuration and ordinary-restore that checkpoint. An
-unknown durable fate for the native transition is a typed
-`RelationalDurabilityUnresolved` installation denial and issues no acknowledged
-successor.
-
----
+### Durable branch creation — pending (owner P-C, after D12)
 
 ### 4.5 Declaration failures
 
@@ -3085,6 +3057,56 @@ outside publication timing. It unions shared allocations across current, held
 and queued roots and reports catalog footprints separately. Keep requested-object
 allocation peaks, checkpoint readmission and complete first-answer costs as
 separate measurements.
+
+### Protected continuation pages
+
+An ordinary continuation advances one ordered Many child collection below an
+ExactlyOne root with pinned basis support. Open a governed first page with
+`page_governed` and resume with `resume_governed`, supplying the actual capability,
+operation and purpose on every call. The `_approved` forms additionally require
+current approved elevation. `readmit_resume_governed` and its `_approved` twin
+lend the canonical admitted plan to an owning callback when needed.
+
+This compiled maintained-Catalog court uses real protected child rows:
+
+<!-- compiled: protected_continuation.rs -->
+```rust
+    let first = request
+        .query(input())
+        .page_governed(
+            access::ReadBoxes::reference(),
+            access::InspectBoxes::reference(),
+            purpose(),
+            width(),
+        )
+        .unwrap();
+    let (rows, continuation, _) = first.into_parts();
+    let second = request
+        .query(input())
+        .resume_governed(
+            access::ReadBoxes::reference(),
+            access::InspectBoxes::reference(),
+            purpose(),
+            continuation.expect("another child page"),
+            width(),
+        )
+        .unwrap();
+```
+
+Each page admits current capability and independent READ before rows, count,
+ordering, cursor or completion metadata. Hidden ordering fields need explicit
+Ordering and Pagination influence; permitted hidden values remain omitted.
+The cursor retains the exact old World, parameters and Native ordering generation.
+Regrant can authorize an independently issued old cursor while current data has
+changed; it does not replace the cursor's data with current values. A failed
+resume consumes its move-only token. Retain separate genuinely issued cursors
+when separate attempts are required. A requested page width cannot widen the
+installed binding limit.
+
+Managed-index root selection and related-collection continuation remain distinct
+declared shapes. Combining them refuses during declaration; a managed candidate
+hit supplies no child-page position or root-pagination authority.
+
 
 The entity a mutation acts on is its intent's *scope binding*, shown next.
 
@@ -3324,8 +3346,8 @@ ordered:
 
 ## 5.3 Execute through the program
 
-Every ordinary application installs a program with `in_memory_program` or
-`in_memory_rostered_program`. Declare a no-output action with
+Open a program Home as described in [§4](#4-install-or-reopen), then borrow
+its installed runtime. The owning-action examples here use MemoryOnly. Declare a no-output action with
 `.action::<Binding, Delivery>() ... .finish_action()`; its delivery mode is
 `ApplicationSourceCompletion` or `ApplicationRetainedCommit`. Select the exact
 `ApplicationActionReference`, rather than a first matching binding.
@@ -3994,7 +4016,8 @@ Source-only: the runnable ordinary product example retains a no-output action, d
             assert_eq!(result.revision, 2);
             receipt.commit_reference().version_id.as_u64()
         }
-        WorthQuerySourceCompletion::Recovered { .. } => {
+        WorthQuerySourceCompletion::Recovered { .. }
+        | WorthQuerySourceCompletion::Recorded { .. } => {
             panic!("a new key must produce the actual handler result")
         }
     };
@@ -4105,7 +4128,7 @@ mutation bindings supply the conventional association; the macro's explicit
 unpublished-recovery and keyed-read handoffs borrow the original intent, key,
 source and full preconditions. They store no principal or request scope.
 
-For fixed delivery, an idempotent `AlreadyCommitted` source advances through
+For fixed delivery, an idempotent `RecoveredCommitted` source advances through
 `SourceReplayObserved` and then `RegisteredOutputsRecovered`. Each attempt uses
 fresh binding-selected admission and the exact installed action. Query resolves
 the original key and rejoins the registered native output demand from the
@@ -4114,6 +4137,13 @@ result. Keep the returned owner on `Refused` and retry with a fresh request.
 Missing, retired or superseded registration returns terminal historical source
 evidence instead of output settlement. Terminal `close` releases actual cleanup
 obligations; it does not mean the declared outputs completed.
+
+An original producer that completes after an unpublished World effect retains its
+actual correspondence, settlement owner and one-use delivery. It passes through
+ordinary Bridge delivery and readiness before settlement; the handler does not
+run again. That recovered settlement exposes its typed output roles and original
+provenance. Its `application_commit_receipt()` is `None`: a recovered description
+does not recreate a live Query commit receipt.
 
 The executable [fixed reply-loss journey](../workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/proof/application_program/fixed_replay.rs)
 checks registered recovery, real observation-pressure refusal and retry, and
@@ -5386,7 +5416,7 @@ unchanged canonical bytes are also available through `invariant_refusal_bytes()`
 Relational retains that same payload in the transaction conflict and diagnostic
 history. Neither reading the denial nor decoding it reruns the rejected candidate.
 
-At installation, seed refusals use `WorthQueryInMemoryApplicationDenial::Publication`;
+At installation, seed refusals use `WorthQueryApplicationPreparationDenial::Publication`;
 conditional publication uses `ConditionalPublication` and
 `WorthQueryConditionalRuntimeInstallationDenialKind::PrimaryGraphPublication`.
 Inspect the enclosed graph denial's `custom_invariant_denial()`. Both installation and commit retain
@@ -5490,8 +5520,10 @@ scheduler, and no timer or callback advances an instance: **the caller pumps
 progress**, one request per step. An external effect completes through an
 authenticated inbound occurrence (`inbound_occurrences().receive(..)` on the
 installed runtime), which completes the effect's owner. After a caller accepts
-the owner's receipt (`accept_operation_from_owner`), an `AwaitInbound` node
-observes that owner result on the next advance. Callback bytes never resume
+the actual original owner's receipt (`accept_operation_from_owner` requires
+that live receipt alongside the freshly admitted bound request), an `AwaitInbound`
+node observes that owner result on the next advance. Recorded retry data cannot
+supply live recovery authority. Callback bytes never resume
 an instance. See
 [Workflows: Caller-pumped progression](../workspaces/worth-query/crates/worth-query/docs/foundations/workflows.md#caller-pumped-progression)
 and [Waiting for an inbound completion](../workspaces/worth-query/crates/worth-query/docs/foundations/workflows.md#waiting-for-an-inbound-completion).
@@ -6906,9 +6938,14 @@ but did not publish is recovered with
   enforcing the old program's rules.
 - **Retained reads pin their program.** A retained selection or read keeps
   the old program's support and occurrence alive for as long as it is held.
-- **Retirement.** `retire_program_support(&revision)` succeeds only when no
+- **Retirement.** `retire_program_support(&execution, &revision)` succeeds only when no
   current branch, retained interpretation, or mandatory custody still uses
-  that revision.
+  that revision. In a Directory Home, the status is recorded in
+  `query.obligations`. Keep the revision rostered across graceful close/reopen:
+  retired support stays unavailable through `supported_program::<P>()`, and
+  another retirement returns `AlreadyRetired`. An unused revision can retire
+  while the main program remains available. See [Directory support retirement](../workspaces/worth-query/crates/worth-query/docs/foundations/programs-and-adoption.md#directory-support-retirement)
+  for durable failures and the close sequence.
 
 ---
 
@@ -6923,8 +6960,8 @@ but did not publish is recovered with
   finish each builder before validation.
 - Validate programs with
   `ApplicationProgramAuthoring::<S, P>::begin().validated_program()` and
-  install with `application_installation::in_memory_program` or
-  `in_memory_rostered_program`.
+  open with `WorthQueryApplicationHomeRequest::open_in_advancement`; keep its
+  owning Home and select a location that supports the declared state.
 - Run fixed, discovered and source-only actions through `idempotency_owned(key)` and
   `retain_operation::<Program, Action>(&runtime)`, then supply fresh ordinary
   requests for advancement, delivery and close. Native admission checks the
@@ -8098,6 +8135,156 @@ Follow [Explain original query results and source operations](../workspaces/wort
 for contract setup, capability admission, supported shapes, materialized values,
 loss outcomes and retry handling.
 
+### Current durable Home composition boundary
+
+Directory Homes retain authored Signal definitions, topology, branch cells and
+generation frontiers. Installed and runtime-published conditional definitions
+travel in Signal-owned, versioned, checksummed transitions, including Bridge's
+complete provider protocols, versions and parameters. The Home's protected
+Complete image is its sole reopen identity route; branch forks retain their
+original association and inherit the exact source Native root and authored
+Signal state.
+
+After reopen, discover serving branch selectors through the admitted Home:
+call `runtime.branches().inventory(&phase)` inside its
+`with_host_advancement` call. The returned inventory retains the actual World
+membership observations; iterate it for fresh `WorthQueryProductBranch`
+selectors, then select a branch normally for each domain request. Drop the
+inventory before Home close. Expected-basis descriptions remain tied to their
+live installation, while the protected Complete image owns reopen identity.
+
+Opening admits Native, installs fresh program/provider services, readmits the
+authored Signal owner, and then reconciles every World branch. Query serves that
+same `BridgeReadmittedAuthoredAssembly`. Initialization and completed owner
+effects do not execute again. Descriptor bytes grant no live authority: the
+actual recovering owner must readmit them, and foreign owners or unknown codec
+versions refuse with typed causes.
+
+Values, dirty/aspect versions, pending causes, traces and telemetry are derived.
+They start cold and recompute on demand, including when the application build
+identity changes. Bridge rebuilds its lowering registry and retention ledger
+from authored source and genuine fresh installation bindings; a cached value
+cannot replace a missing definition. Resource and temporal runtime state still
+require their later recovery phases.
+
+Ordinary Signal-only and mixed Native/Signal publications use the original
+durable `WithSignal` preparation. A Signal-only occurrence contains no Native
+effect and inherits its predecessor's exact Native source. Mixed publication
+settles Native first and preserves both original effects in its World
+occurrence. A graceful close or quiescent process kill preserves published
+authored state and committed receipts without repeating either effect.
+Unresolved live publication custody refuses close. If an unclean tail contains
+an associated owner effect without an occurrence or disposition, reopen refuses
+with `UncleanRecoveryUnsupported` before service (D18). A retained original
+cannot become a no-effect result; its crash continuation and pending settlement
+recovery belong to track C.
+
+Use `bind_conditional_definition` to install authored conditional membership
+without a managed clock or temporal operation. Actual temporal installation and
+execution keep their typed later-phase refusals. Writeback diagnostic retention
+is process-local and reports loss across reopen; diagnostic entries never
+authorize effect replay. Applications continue through the Query declaration
+and Host facades. See the [Signal owner contract](../crates/worth-signal/README.md#standalone-authored-owner-readmission)
+and [Bridge authored recovery](../crates/worth-runtime-bridge/README.md#authored-conditional-definition-recovery).
+
+The fresh Native-only Directory Host journey now opens the actual Home,
+initializes once, reads seeded data, publishes an ordinary mutation through the
+same World, and closes through the owning Home. A genuine retained runtime
+clone produces a composition refusal after World seal; dropping that clone and
+retrying the same close custody completes the close. Existing Directory startup
+uses the same ordinary Home request and physical location. It admits the recorded
+portable schema/program meaning, completion and activation through the recovered
+World root without calling the initializer or replaying seed suppliers.
+
+Fresh Memory and Directory startup publish the same bootstrap completion commit
+after every seed batch and index build succeeds, before creating World genesis.
+The record describes installed package/schema meaning, the terminal seed receipt
+and counts; it grants no durable association to Memory. A refused Directory
+completion keeps the accepted seeds and original Home in opening custody without
+rerunning initialization. Development Homes with the retired completion format
+refuse with a typed Query recovery outcome; opening performs no migration.
+
+Ordinary reads after reopen use the selected published World basis, including
+when independent Native history is newer. Actual recovered index definitions
+and the generations needed at that basis are admitted before serving a request.
+An exact old mutation key returns `RecoveredCommitted`, preserving the original
+recorded receipt without rerunning the business handler. Inspect
+`outcome.recovered_receipt()` for original Native meaning, old/new product
+references, publication attempt, intent, outcome, emitted effects, exact output
+settlement, dispatch outbox and aftermath causality. Every field comes from the
+original owner artifacts. The recorded receipt carries no live output or
+publication authority and does not reconstruct a Rust handler result. Query
+fresh current state separately. A changed intent returns `IdempotencyIntentDrift`;
+a foreign product affinity refuses at idempotency admission. Keep unresolved or
+unpublished custody and follow its typed recovery route before trying again.
+New keys receive identities beyond the actual durable outcome frontier.
+Malformed, duplicate or invalid binding state returns owning opening refusal.
+An exhausted outcome frontier refuses the new commit.
+
+For retained reads, pass the recovered data to
+`request.at_original_receipt(&phase, &receipt, maximum_history_work)` under a
+fresh authorized request. This selects through the current owner's real history
+and can refuse unavailable retained material. `at_recorded_commit` accepts the
+Home-scoped commit coordinate. Neither method turns recorded data into live
+publication or recovery authority. Owning source completion exposes recorded
+evidence through `recorded_receipt()` and already-held live evidence through
+`live_receipt()`; keep its publication and cleanup obligations until lawful close.
+
+Treat `ProductPreparationPending` as original custody. Keep the returned
+terminal and business key; duplicate requests must observe that custody rather
+than invoke the handler again. `try_into_recovery()` is an explicit unbudgeted
+handoff of the actual retained phase. A busy handoff returns the same terminal.
+Inspect the returned record's actual `next_actions()`, using
+`worth_query_host::facade::primary_graph::ProductUnpublishedNextAction`.
+
+For a persistent live open, the canonical `RuntimeWorldRecoveryDenial` reports
+`ReopenRequired` and the record permits exactly `[Inspect, ReopenRequired]`.
+Preserve stable request/correlation data and end ownership of the current Home,
+then reopen the same physical location under Store's new mutation lease for
+recovered reconciliation. A close refusal keeps its actual recovery custody;
+ordinary disposal is neither release nor successful close. The old lease blocks
+concurrent open. Old recovery handles are incarnation-fenced, so obtain claims
+from the newly readmitted Home. Do not loop live release, reconstruct the old
+proposal, or resubmit the handler.
+Zero observed effects are descriptive and do not issue a no-effect authority.
+Reopen validates each recovered World open against its actual Native association
+and original Query key/intent/affinity before admitting service. Untypable or
+inconsistent original evidence still returns an owning typed opening refusal.
+Retrying the original key returns distinct recovered `ProductUnpublished`
+custody, with the original Native meaning and predecessor, and no reconstructed
+Rust return value. Its `ContinueOriginalPublication` action is executed through
+`continue_original_in_request` on the fresh recovery claim: it publishes the
+original occurrence without handler or effect replay. Release first commits its
+original durable disposition. Pending/refused outcomes retain the same owner.
+A released effect-bearing original keeps its idempotency binding. Explicit
+resolution returns `ReleasedOriginal` with the original Native meaning and
+release provenance. It carries no application receipt or adoption authority.
+An ordinary retry refuses with `OriginalEffectReleased` before the handler;
+changed intent still reports drift. Only an actual no-effect release permits
+fresh execution of that key. Memory release preserves the same terminal meaning
+without claiming a durable World association.
+A durable `Continued` disposition excludes release across every subsequent open. Persisted
+workflow, outbox, inbound-completion and aftermath rows refuse cold service;
+compiled workflow declarations alone remain allowed. Missing or incompatible
+completion artifacts keep their existing origin and never regain initialization.
+
+Directory startup also refuses before service if Store finds a retained entry
+or unresolved publication in an unsupported transition, Signal or Query
+obligation journal, or cannot inspect that journal. The opening refusal owns
+the original Query preparation and Home. Consume its `close` operation to
+release them through the actual lifecycle; a refusal continues to hold the
+mutation lease. Matching program activation does not settle a pending Home
+transition.
+
+A terminal `ProductPreparationRefused` has no future publication or retry door.
+Its business entry is released, while its opaque carrier can still own partial
+successor reservations. Discard it to release those resources through ordinary
+unbudgeted destruction before an otherwise resource-blocked fresh attempt.
+Resource contention is distinct from a retained business key. Memory continues
+to use its actual owner-specific recovery actions.
+
+See [the Home composition capability](capability-index.md#compose-world-with-an-admitted-application-home)
+for current refusals and lifecycle custody.
 
 ## Read Bank accounts through the installed managed provider
 

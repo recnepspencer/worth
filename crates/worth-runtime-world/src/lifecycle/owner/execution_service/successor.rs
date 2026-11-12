@@ -52,6 +52,8 @@ where
     ) -> bool {
         self.state
             .bridge
+            .as_ref()
+            .expect("serving World owns correspondence")
             .compare_current_exact(successor.correspondence_basis())
             .is_ok()
     }

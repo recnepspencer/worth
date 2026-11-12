@@ -36,11 +36,12 @@ pub(crate) fn apply(
         &mut records,
         runtime.commit_work_budget.clone(),
     )?;
-    crate::authority::mutation::apply_adjacency_deltas(
+    crate::authority::mutation::apply_adjacency_deltas_for_request(
+        execution,
         &mut state,
         &outcome.effect.adjacency.deltas,
         identity.proposed_version_id(),
-    );
+    )?;
     state.content = content::prepare(
         execution,
         runtime,

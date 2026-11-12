@@ -244,3 +244,6 @@ impl crate::domain_computation::execution_observation::WorthQueryExecutionObserv
         })
     }
 }
+#[cfg(test)]
+#[path = "observation_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;

@@ -1,15 +1,38 @@
-//! HTTP instructions for the original output-settlement refusal.
+//! Original output-recovery causes keep their owner-specific next action.
 use super::*;
+use crate::http::server::{
+    advancement_denial, mutation_application, relational_execution_denial, world_denial,
+};
+use worth_query_host::facade::primary_graph::{
+    BoundedEntityFieldLookupDenialKind, IndexedSelectionReobserveDenial, RebaseVerificationReason,
+    WorthQueryApplicationIdempotencyResolutionDenialKind,
+    WorthQueryOutputSettlementProvenanceDenial,
+};
 pub(super) fn output_settlement(kind: BankApplicationOutputSettlementDenialKind) -> BankHttpDenial {
     use BankApplicationOutputSettlementDenialKind as Settlement;
     match kind {
+        Settlement::WorldRecovery(cause) => world_denial::recovery(cause),
+        Settlement::RecoveryPublication(cause) => world_denial::publication(cause),
+        Settlement::PublicationReceipt(cause) => original_receipt(cause),
+        Settlement::DurableStateAdmission(cause) => mutation_application::request_mutation_denial(
+            worth_query_host::facade::application_entry::WorthQueryApplicationRequestMutationDenialKind::DurableStateAdmission(cause),
+        ),
         Settlement::CurrentControlBusy => unavailable(),
-        Settlement::WorldRecovery(_)
-        | Settlement::RecoveryPublication(_)
-        | Settlement::PublicationReceipt(_)
-        | Settlement::RetainedVerificationFactUnavailable(_)
-        | Settlement::SettlementProvenance(_)
-        | Settlement::ManagedIndexSourceDenied => internal_denied(),
+        Settlement::PredecessorRead(cause) => predecessor_read::denial(*cause),
+        Settlement::CurrentPublication(cause) => publication_read::denial(*cause),
+        Settlement::RetainedVerificationFactUnavailable(cause) => verification(*cause),
+        Settlement::SettlementProvenance(cause) => match cause {
+            WorthQueryOutputSettlementProvenanceDenial::OriginalSettlementMissing
+            | WorthQueryOutputSettlementProvenanceDenial::ReceiptSettlementMissing
+            | WorthQueryOutputSettlementProvenanceDenial::ForeignSettlementOwner
+            | WorthQueryOutputSettlementProvenanceDenial::OriginalDisclosureMissing
+            | WorthQueryOutputSettlementProvenanceDenial::ReceiptDisclosureMissing
+            | WorthQueryOutputSettlementProvenanceDenial::ForeignDisclosureOwner
+            | WorthQueryOutputSettlementProvenanceDenial::PublicationMismatch
+            | WorthQueryOutputSettlementProvenanceDenial::ReusedSettlementOwnerMismatch
+            | WorthQueryOutputSettlementProvenanceDenial::RestoredCheckpointMismatch => operator(),
+        },
+
         Settlement::ManagedCleanupRequired(_) => {
             BankHttpDenial::new(Kind::ManagedCleanupRequired, Next::ContactOperator)
         }
@@ -22,7 +45,9 @@ pub(super) fn output_settlement(kind: BankApplicationOutputSettlementDenialKind)
         Settlement::RelationalExecution(cause) => {
             crate::http::server::relational_execution_denial::denial(cause)
         }
-        Settlement::SourceQueryInstallation(_) => unavailable(),
+        Settlement::ManagedIndexSourceDenied | Settlement::SourceQueryInstallation(_) => {
+            unavailable()
+        }
         Settlement::SourcePrincipal(_) => stale(),
         Settlement::SourceScope(kind) => entity(kind),
         Settlement::SourceQueryAdmission(kind) => admission(kind),
@@ -54,4 +79,69 @@ pub(super) fn output_settlement(kind: BankApplicationOutputSettlementDenialKind)
         | Settlement::ManagedSourceExpansionUnsupported
         | Settlement::UnobservedWrite(_) => internal_denied(),
     }
+}
+
+fn original_receipt(cause: WorthQueryApplicationIdempotencyResolutionDenialKind) -> BankHttpDenial {
+    use WorthQueryApplicationIdempotencyResolutionDenialKind as D;
+    match cause {
+        D::OriginalEffectReleased => {
+            BankHttpDenial::new(Kind::OriginalEffectReleased, Next::ContactOperator)
+        }
+        D::ExecutionDenied(cause) => mutation_application::pending_execution_stop(cause),
+        D::Authorization(cause) => authorization_denial(cause.into()),
+        D::PreparationBusy
+        | D::ActiveSnapshotCapacityExhausted { .. }
+        | D::RetentionCapacityExhausted
+        | D::ProviderUnavailable => unavailable(),
+        D::RetentionIdentityExhausted | D::SnapshotIdentityExhausted => {
+            BankHttpDenial::new(Kind::Unavailable, Next::ContactOperator)
+        }
+        D::ForeignAdmission | D::RecordedIntentUnverifiable => operator(),
+    }
+}
+
+fn verification(cause: RebaseVerificationReason) -> BankHttpDenial {
+    use worth_query_host::facade::runtime::ExecutionAllocationDenialClass as Allocation;
+    use RebaseVerificationReason as D;
+    match cause {
+        D::ManagedIndex(cause) => managed_index::work(&cause),
+        D::Execution(cause) => relational_execution_denial::denial(cause),
+        D::AdmissionDenied(cause) => managed_index::native_admission(&cause),
+        D::NativePayloadStorage {
+            class: Allocation::Request(cause),
+            ..
+        } => advancement_denial::request(cause),
+        D::NativePayloadStorage {
+            class: Allocation::Physical(cause),
+            ..
+        } => advancement_denial::physical_allocation(cause),
+        D::IndexedSelectionDenied(cause) | D::IndexedSelectionFactDenied(cause) => indexed(cause),
+        D::NativeRevisionUnavailable | D::NativeFactRevisionUnavailable => {
+            BankHttpDenial::new(Kind::Unavailable, Next::ContactOperator)
+        }
+        D::UnsupportedDecisionFact => operator(),
+    }
+}
+
+fn indexed(cause: IndexedSelectionReobserveDenial) -> BankHttpDenial {
+    use IndexedSelectionReobserveDenial as D;
+    match cause {
+        D::WorkBudgetExceeded => exhausted(),
+        D::UnexpectedFact | D::Overflow => operator(),
+        D::Lookup(cause) => match cause {
+            BoundedEntityFieldLookupDenialKind::Execution(cause) => {
+                relational_execution_denial::denial(cause)
+            }
+            BoundedEntityFieldLookupDenialKind::SnapshotUnavailable
+            | BoundedEntityFieldLookupDenialKind::ExactGenerationUnavailable => unavailable(),
+            BoundedEntityFieldLookupDenialKind::InvalidCandidateLimit
+            | BoundedEntityFieldLookupDenialKind::IndexNotInstalled
+            | BoundedEntityFieldLookupDenialKind::WrongIndexKind
+            | BoundedEntityFieldLookupDenialKind::CorruptIndexEntries
+            | BoundedEntityFieldLookupDenialKind::StorageParityMismatch => operator(),
+        },
+    }
+}
+fn operator() -> BankHttpDenial {
+    BankHttpDenial::new(Kind::InternalDenied, Next::ContactOperator)
 }

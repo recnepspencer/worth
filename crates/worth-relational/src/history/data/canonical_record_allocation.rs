@@ -27,15 +27,6 @@ pub(crate) struct CanonicalRecordAllocation {
 }
 
 impl CanonicalRecordAllocation {
-    #[cfg(test)]
-    pub(crate) fn new(ordinal: u64, record: RecordRef) -> Self {
-        Self {
-            ordinal,
-            record,
-            origin: RecordAllocationOrigin::AppendFrontier,
-        }
-    }
-
     pub(crate) fn with_origin(
         ordinal: u64,
         record: RecordRef,

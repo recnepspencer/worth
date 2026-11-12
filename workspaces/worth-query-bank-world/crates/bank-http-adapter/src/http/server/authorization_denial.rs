@@ -24,7 +24,8 @@ pub(super) fn authorization_denial(kind: BankAuthorizationDenialKind) -> BankHtt
         Authorization::ExpiredAuthentication => (Kind::Unauthenticated, Next::Authenticate),
         // Installed meaning, principal, scope or grants moved since the view
         // the request was built from.
-        Authorization::StaleInstalledSchema
+        Authorization::StaleIncarnation
+        | Authorization::StaleInstalledSchema
         | Authorization::StaleInstalledOperation
         | Authorization::StalePrincipal
         | Authorization::StaleScope
@@ -102,6 +103,12 @@ fn execution_request_denial(
     use worth_query_host::facade::application_contribution::WorthQueryManagedComputationResourceDenial as Resource;
     use worth_query_host::facade::primary_graph::WorthQueryProviderSessionDenialKind as Session;
     match kind {
+        Session::Content(cause) => super::relational_execution_denial::denial(
+            worth_query_host::facade::primary_graph::RelationalExecutionDenialCause::Content(cause),
+        ),
+        Session::ContentInconsistency => {
+            BankHttpDenial::new(Kind::InternalDenied, Next::ContactOperator)
+        }
         Session::ExecutionResource {
             denial:
                 Resource::WorkExhausted
@@ -113,9 +120,7 @@ fn execution_request_denial(
                 | Resource::ScratchCapacityExceeded,
             ..
         } => BankHttpDenial::new(Kind::ResourceExhausted, Next::NarrowRequest),
-        kind @ (Session::ContentInconsistency
-        | Session::Content(_)
-        | Session::OutputCorrespondenceMismatch { .. }
+        kind @ (Session::OutputCorrespondenceMismatch { .. }
         | Session::ProjectionContract { .. }
         | Session::HistoricalVisibility { .. }
         | Session::StorageUnavailable(_)
@@ -129,8 +134,8 @@ fn execution_request_denial(
                 | Resource::ChargedBytesOverflow
                 | Resource::NestedLeaseMisuse
                 | Resource::NestedAdvancementOpening
-                | Resource::ForeignAdvancementPhase
                 | Resource::ForeignAdmissionClock
+                | Resource::ForeignAdvancementPhase
                 | Resource::NoActiveExecutionScope
                 | Resource::EquivalenceContractUnavailable,
             ..
@@ -143,6 +148,7 @@ fn execution_request_denial(
         | Session::SnapshotIdentityExhausted
         | Session::CandidateIdentityExhausted
         | Session::IndexGenerationIdentityExhausted
+        | Session::StaleIncarnation
         | Session::ForeignOperationAttempt
         | Session::ForeignExecutionBasis
         | Session::ForeignGraphAuthority

@@ -1,10 +1,10 @@
-use super::{PlanningContext, ResolvedPlanningBasis};
+use super::{PlanningContext, ResolvedPlanningState};
 use sha2::{Digest, Sha256};
 use worth_store_physical_format::{PhysicalExtentCopyRecord, PhysicalExtentCopyResolutionKind};
 
 pub(super) fn verify(
     context: &PlanningContext,
-    basis: &ResolvedPlanningBasis,
+    basis: &ResolvedPlanningState,
 ) -> Result<std::collections::BTreeSet<([u8; 32], u64)>, ()> {
     let cutoff = context.selection.covered_wal_end_exclusive();
     let mut intents = std::collections::BTreeMap::new();

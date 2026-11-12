@@ -1,6 +1,6 @@
 use std::{
     collections::BTreeMap,
-    sync::{Arc, Mutex, MutexGuard, PoisonError, RwLock},
+    sync::{Arc, Mutex, PoisonError, RwLock},
 };
 
 use worth_proof::TransitionOutcome;
@@ -11,6 +11,8 @@ use super::{
     BridgeInstalledConditionalLowering, BridgeInstalledConditionalLoweringCounters,
 };
 use crate::facade::RuntimeBridge;
+mod home_retirement_slots;
+use home_retirement_slots::{OrdinaryBridgeCustody, SignalRuntimeGuard};
 
 pub struct BridgeConditionalInstallationRequest {
     pub contract: super::BridgeConditionalContract,
@@ -33,10 +35,10 @@ pub(super) struct AdmittedConditionalInstallationRequest {
 /// Bridge-owned ordinary conditional runtime. It retains the exact Signal
 /// graph; Query never receives a raw graph or a detached node capability.
 pub struct BridgeOwnedSignalRuntime {
-    pub(super) bridge: RuntimeBridge,
+    pub(super) bridge: OrdinaryBridgeCustody,
     pub(super) retention: Arc<super::retention::BridgeRetentionLedger>,
     pub(super) baseline_semantic_dependency_count: usize,
-    pub(super) signal_runtime: Mutex<SignalRuntime<(), (), (), (), ()>>,
+    pub(super) signal_runtime: Mutex<Option<SignalRuntime<(), (), (), (), ()>>>,
     pub(super) signal_graph_instance_id: u64,
     pub(super) signal_graph_lifecycle_probe: worth_signal::facade::SignalGraphLifecycleProbe,
     pub(super) signal_services: Option<super::service_binding::BridgeSignalServiceBinding>,
@@ -80,7 +82,7 @@ impl BridgeOwnedSignalRuntime {
         let signal_graph_instance_id = graph.installed_graph_capability().graph_instance_id();
         let signal_graph_lifecycle_probe = graph.lifecycle_probe();
         let baseline_semantic_dependency_count =
-            bridge.semantic_dependency_registry.authoritative_count();
+            bridge.semantic_dependency_registry.admitted_count();
         crate::correspondence::isolate_allocation_state(&mut bridge).map_err(|_| {
             BridgeConditionalDenial::new(
                 BridgeConditionalDenialKind::CorrespondenceAdmission,
@@ -111,9 +113,9 @@ impl BridgeOwnedSignalRuntime {
         })?;
         Ok(Self {
             retention,
-            bridge,
+            bridge: OrdinaryBridgeCustody::new(bridge),
             baseline_semantic_dependency_count,
-            signal_runtime: Mutex::new(signal_runtime),
+            signal_runtime: Mutex::new(Some(signal_runtime)),
             signal_graph_instance_id,
             signal_graph_lifecycle_probe,
             signal_services: None,
@@ -130,12 +132,16 @@ impl BridgeOwnedSignalRuntime {
         self.signal_runtime
             .get_mut()
             .unwrap_or_else(PoisonError::into_inner)
+            .as_mut()
+            .expect("serving assembly owns its original Signal runtime")
     }
 
-    pub(super) fn lock_signal_runtime(&self) -> MutexGuard<'_, SignalRuntime<(), (), (), (), ()>> {
-        self.signal_runtime
-            .lock()
-            .unwrap_or_else(PoisonError::into_inner)
+    pub(super) fn lock_signal_runtime(&self) -> SignalRuntimeGuard<'_> {
+        SignalRuntimeGuard::new(
+            self.signal_runtime
+                .lock()
+                .unwrap_or_else(PoisonError::into_inner),
+        )
     }
 
     pub(super) fn install(
@@ -178,7 +184,9 @@ impl BridgeOwnedSignalRuntime {
             let runtime = self
                 .signal_runtime
                 .get_mut()
-                .unwrap_or_else(PoisonError::into_inner);
+                .unwrap_or_else(PoisonError::into_inner)
+                .as_mut()
+                .expect("serving assembly owns Signal");
             let prepared = crate::correspondence::prepare_registered_correspondence_batch(
                 bridge,
                 admitted.dependency_extension.registrations(),
@@ -223,142 +231,6 @@ impl BridgeOwnedSignalRuntime {
         };
         self.commit_conditional_lowering(admitted, signal_contract, correspondences, None, counters)
     }
-
-    fn admit_conditional_installation_request(
-        &self,
-        mut request: BridgeConditionalInstallationRequest,
-        owned_node: Option<worth_signal::facade::NodeId>,
-    ) -> Result<AdmittedConditionalInstallationRequest, BridgeConditionalDenial> {
-        let mut counters = BridgeInstalledConditionalLoweringCounters::default();
-        counters.contract_admission_checks += 1;
-        super::installation_admission::validate_declaration_pairing(&request)
-            .map_err(|denial| denial.with_lowering_counters(counters))?;
-        counters.provider_checks += super::provider_admission::PROVIDER_DIMENSION_CHECK_COUNT;
-        let provider_admission =
-            super::provider_admission::admit_provider_set(&request.contract, &request.providers)
-                .map_err(|denial| denial.with_lowering_counters(counters))?;
-        let signal_branch_identity = {
-            let runtime = self.lock_signal_runtime();
-            let selected = runtime.current_branch();
-            let basis = runtime
-                .observe_signal_branch_basis(selected)
-                .map_err(|denial| {
-                    BridgeConditionalDenial::new(
-                        BridgeConditionalDenialKind::SignalExecution(
-                            super::BridgeSignalDenial::BranchObservation(denial.clone()),
-                        ),
-                        format!("Signal branch identity admission was denied: {denial:?}"),
-                    )
-                    .with_lowering_counters(counters)
-                })?;
-            basis.observation().branch_id().clone()
-        };
-        let node = match owned_node {
-            Some(node) if request.registrations.is_empty() => node,
-            Some(_) => {
-                return Err(BridgeConditionalDenial::new(
-                    BridgeConditionalDenialKind::DeclarationCorrespondenceMismatch,
-                    "owner-allocated source-free node cannot accompany correspondence targets",
-                )
-                .with_lowering_counters(counters));
-            }
-            None => {
-                self.admit_conditional_signal_target(&mut request.registrations, &mut counters)?
-            }
-        };
-        let dependency_extension =
-            self.admit_conditional_dependency_extension(&request.registrations, &mut counters)?;
-        counters.semantic_observation_plan_compilations += 1;
-        let semantic_observation_plan =
-            super::semantic_observation_plan::compile_semantic_observation_plan(
-                &request.contract,
-                &request.registrations,
-            )
-            .map_err(|denial| denial.with_lowering_counters(counters))?;
-        Ok(AdmittedConditionalInstallationRequest {
-            request,
-            provider_admission,
-            node: Some(node),
-            signal_branch_identity,
-            dependency_extension,
-            semantic_observation_plan,
-            counters,
-        })
-    }
-
-    fn admit_conditional_signal_target(
-        &self,
-        registrations: &mut [crate::correspondence::BridgeSemanticCorrespondenceRegistration],
-        counters: &mut BridgeInstalledConditionalLoweringCounters,
-    ) -> Result<worth_signal::facade::NodeId, BridgeConditionalDenial> {
-        if registrations.is_empty() {
-            return Err(BridgeConditionalDenial::new(
-                BridgeConditionalDenialKind::EmptyCorrespondenceSet,
-                "conditional lowering requires one correspondence per declared dependency",
-            )
-            .with_lowering_counters(*counters));
-        }
-        counters.correspondence_registrations_inspected += registrations.len();
-        registrations.sort_by_key(|registration| registration.dependency().dependency_ordinal());
-        let (graph_instance_id, node) =
-            super::declared_signal_node::declared_signal_node(registrations, counters)?;
-        counters.signal_graph_checks += 1;
-        if graph_instance_id
-            != self
-                .lock_signal_runtime()
-                .graph()
-                .installed_graph_capability()
-                .graph_instance_id()
-        {
-            return Err(BridgeConditionalDenial::new(
-                BridgeConditionalDenialKind::ForeignSignalGraph,
-                "conditional target registrations belong to another Signal graph",
-            )
-            .with_lowering_counters(*counters));
-        }
-        counters.signal_node_ownership_checks += 1;
-        if self
-            .conditional_lowerings
-            .read()
-            .unwrap_or_else(PoisonError::into_inner)
-            .values()
-            .any(|lowering| lowering.signal_node() == node)
-        {
-            return Err(BridgeConditionalDenial::new(
-                BridgeConditionalDenialKind::SignalNodeAlreadyBound,
-                "a Signal node cannot back multiple conditional declarations before explicit sharing admission",
-            )
-            .with_lowering_counters(*counters));
-        }
-        Ok(node)
-    }
-
-    fn admit_conditional_dependency_extension(
-        &self,
-        registrations: &[crate::correspondence::BridgeSemanticCorrespondenceRegistration],
-        counters: &mut BridgeInstalledConditionalLoweringCounters,
-    ) -> Result<crate::correspondence::AdmittedSemanticDependencyExtension, BridgeConditionalDenial>
-    {
-        counters.dependency_registry_compilations += 1;
-        let extension = self
-            .bridge
-            .semantic_dependency_registry
-            .admit_extension(registrations)
-            .map_err(|denial| {
-                counters.dependency_registry_existing_key_lookups =
-                    denial.counters.existing_key_lookups;
-                counters.dependency_registry_batch_key_lookups = denial.counters.batch_key_lookups;
-                BridgeConditionalDenial::new(
-                    BridgeConditionalDenialKind::CorrespondenceAdmission,
-                    format!("{:?}", denial.error),
-                )
-                .with_lowering_counters(*counters)
-            })?;
-        counters.dependency_registry_existing_key_lookups =
-            extension.counters().existing_key_lookups;
-        counters.dependency_registry_batch_key_lookups = extension.counters().batch_key_lookups;
-        Ok(extension)
-    }
 }
 
 pub(super) fn lowering_key(
@@ -369,8 +241,19 @@ pub(super) fn lowering_key(
 
 impl Drop for BridgeOwnedSignalRuntime {
     fn drop(&mut self) {
+        if self
+            .signal_runtime
+            .get_mut()
+            .unwrap_or_else(PoisonError::into_inner)
+            .is_none()
+        {
+            return;
+        }
         self.retention.close();
         self.revoke_conditional_liveness();
         self.revoke_managed_clock_liveness();
     }
 }
+#[cfg(test)]
+#[path = "contract_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;

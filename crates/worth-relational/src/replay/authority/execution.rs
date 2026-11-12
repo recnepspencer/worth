@@ -27,7 +27,7 @@ use self::envelope_self_audit::audit_retained_envelope_authority;
 use self::surface_audit::compare_replay_surfaces;
 
 struct ReplayAdmission {
-    envelope: CanonicalCommitEnvelope,
+    envelope: std::sync::Arc<CanonicalCommitEnvelope>,
     commit_closure: Vec<CommitId>,
     verification_plan: ReplayVerificationPlan,
 }
@@ -170,6 +170,9 @@ impl<'runtime> ReplayAuthority<'runtime> {
             Err(RelationalRecoveryStop::Request(cause)) => {
                 return Err(RelationalRecoveryStop::Request(cause))
             }
+            Err(RelationalRecoveryStop::AdmissionImage(cause)) => {
+                return Err(RelationalRecoveryStop::AdmissionImage(cause))
+            }
             Err(RelationalRecoveryStop::Content(cause)) => {
                 return Err(RelationalRecoveryStop::Content(cause));
             }
@@ -228,7 +231,7 @@ impl<'runtime> ReplayAuthority<'runtime> {
         }
         Ok(ControlFlow::Continue(ReplayReconstruction {
             runtime,
-            envelope,
+            envelope: envelope.into_arc(),
         }))
     }
 

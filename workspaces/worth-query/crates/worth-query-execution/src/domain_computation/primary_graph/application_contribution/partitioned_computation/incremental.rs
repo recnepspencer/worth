@@ -296,3 +296,5 @@ fn enter<'key, Schema, Operation>(
 }
 
 mod court_doors_for_test;
+
+pub use tree_membership::TreeTarget;

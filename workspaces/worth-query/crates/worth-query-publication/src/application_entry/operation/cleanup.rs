@@ -7,21 +7,26 @@ pub(super) use release_control::{
 use worth_query_execution::facade::domain_computation::WorthQueryProductUnpublishedRecoveryReleaseFailure as Failure;
 /// Completion of this cleanup collection alone, never whole-operation completion.
 pub struct WorthQueryOperationCleanupReceipt {
-    managed:
-        Vec<worth_query_execution::facade::domain_computation::WorthQueryDirectRunCleanupReceipt>,
+    managed: Vec<
+        worth_query_execution::facade::primary_graph::WorthQueryApplicationManagedCleanupReceipt,
+    >,
     retired_component_count: usize,
 }
 impl WorthQueryOperationCleanupReceipt {
     /// The actual native release evidence for every discharged managed owner.
+    /// Lends each actual remaining dispatch/recovery owner without copying custody.
+    pub fn managed_cleanup_receipts_mut(&mut self) -> &mut [worth_query_execution::facade::primary_graph::WorthQueryApplicationManagedCleanupReceipt]{
+        &mut self.managed
+    }
     pub fn managed_cleanup_receipts(
         &self,
-    ) -> &[worth_query_execution::facade::domain_computation::WorthQueryDirectRunCleanupReceipt]
+    ) -> &[worth_query_execution::facade::primary_graph::WorthQueryApplicationManagedCleanupReceipt]
     {
         &self.managed
     }
     pub(super) fn into_managed_receipts(
         self,
-    ) -> Vec<worth_query_execution::facade::domain_computation::WorthQueryDirectRunCleanupReceipt>
+    ) -> Vec<worth_query_execution::facade::primary_graph::WorthQueryApplicationManagedCleanupReceipt>
     {
         self.managed
     }
@@ -38,12 +43,14 @@ pub struct WorthQueryOperationCleanup {
     release_control: release_control::CleanupReleaseControl,
     // The existing installed allocation remains owned after descriptor abandonment.
     keepalive: Option<Box<dyn std::any::Any + Send + Sync>>,
-    managed_receipts:
-        Vec<worth_query_execution::facade::domain_computation::WorthQueryDirectRunCleanupReceipt>,
+    managed_receipts: Vec<
+        worth_query_execution::facade::primary_graph::WorthQueryApplicationManagedCleanupReceipt,
+    >,
     managed: Vec<worth_query_execution::facade::primary_graph::WorthQueryApplicationManagedCleanup>,
     // A failed output producer may have unpublished or uncertain business custody.
-    producer_outcome:
-        Option<Box<worth_query_execution::facade::primary_graph::WorthQueryApplicationUncommitted>>,
+    producer_outcome: Option<
+        Box<worth_query_execution::facade::primary_graph::WorthQueryApplicationCommitOutcome>,
+    >,
     failures: Vec<Failure>,
     original_failures: Option<Vec<Failure>>,
     pending: Vec<
@@ -73,8 +80,8 @@ impl WorthQueryOperationCleanup {
         P: ApplicationProgramDefinition<S>,
         WorthQueryProgramApplicationRuntime<S, P>: Send + Sync + 'static,
     {
-        let mut outcome=worth_query_execution::facade::primary_graph::WorthQueryApplicationUncommitted::CleanupRequired(required);
-        while let worth_query_execution::facade::primary_graph::WorthQueryApplicationUncommitted::CleanupRequired(required)=outcome {
+        let mut outcome=worth_query_execution::facade::primary_graph::WorthQueryApplicationCommitOutcome::CleanupRequired(required);
+        while let worth_query_execution::facade::primary_graph::WorthQueryApplicationCommitOutcome::CleanupRequired(required)=outcome {
             let (original,cleanup)=required.into_parts();
             self.absorb_managed(runtime,cleanup);outcome=original;
         }
@@ -109,7 +116,7 @@ impl WorthQueryOperationCleanup {
             match outcome {
                 WorthQueryApplicationMutationOutcome::Commit(worth_query_execution::facade::primary_graph::WorthQueryApplicationUncommitted::CleanupRequired(required))=>{
                     let (original,cleanup)=required.into_parts();self.absorb_managed(runtime,cleanup);
-                    outcome=WorthQueryApplicationMutationOutcome::Commit(original);
+                    outcome=WorthQueryApplicationMutationOutcome::from_commit_outcome(original);
                 },
                 other=>return other,
             }
@@ -143,7 +150,7 @@ impl WorthQueryOperationCleanup {
     /// Original output-producer business evidence remains independent of cleanup release.
     pub fn producer_native_outcome(
         &self,
-    ) -> Option<&worth_query_execution::facade::primary_graph::WorthQueryApplicationUncommitted>
+    ) -> Option<&worth_query_execution::facade::primary_graph::WorthQueryApplicationCommitOutcome>
     {
         self.producer_outcome.as_deref()
     }

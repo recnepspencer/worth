@@ -250,27 +250,6 @@ impl WorthQueryRegisteredProviderEffects {
             .clone()
             .seal_from_publication(publication)
     }
-    pub(super) fn seal_output_correspondence_from_adoption(
-        &self,
-        adoption: &worth_relational::facade::mvcc::RelationalCurrentOutputAdoption,
-    ) -> super::super::effect_program::WorthQueryApplicationOutputCorrespondence {
-        self.output_correspondence
-            .clone()
-            .seal_from_adoption(adoption)
-    }
-
-    pub(super) fn admit_ordinary_part(
-        &mut self,
-        actual: &worth_relational::facade::mvcc::RelationalCoupledContribution<'_>,
-    ) -> Result<
-        (),
-        (
-            crate::domain_computation::primary_graph::WorthQueryApplicationOutputProjectionDenial,
-            String,
-        ),
-    > {
-        self.output_correspondence.admit_ordinary_part(actual)
-    }
     pub(super) fn admit_output_correspondence(
         &mut self,
         prepared: &worth_relational::facade::mvcc::RelationalPreparedOutputPublications,
@@ -311,6 +290,27 @@ impl WorthQueryRegisteredProviderEffects {
         commit: &worth_relational::facade::transactions::CommitResult,
     ) -> super::super::effect_program::WorthQueryApplicationOutputCorrespondence {
         self.output_correspondence.clone().seal(commit)
+    }
+    pub(super) fn seal_output_correspondence_from_adoption(
+        &self,
+        adoption: &worth_relational::facade::mvcc::RelationalCurrentOutputAdoption,
+    ) -> super::super::effect_program::WorthQueryApplicationOutputCorrespondence {
+        self.output_correspondence
+            .clone()
+            .seal_from_adoption(adoption)
+    }
+
+    pub(super) fn admit_ordinary_part(
+        &mut self,
+        actual: &worth_relational::facade::mvcc::RelationalCoupledContribution<'_>,
+    ) -> Result<
+        (),
+        (
+            crate::domain_computation::primary_graph::WorthQueryApplicationOutputProjectionDenial,
+            String,
+        ),
+    > {
+        self.output_correspondence.admit_ordinary_part(actual)
     }
 }
 

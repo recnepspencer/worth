@@ -163,3 +163,64 @@ where
         ))
     }
 }
+
+impl<D, I, T> SignalBranchForkReservation<D, I, T>
+where
+    D: Copy + Ord + std::fmt::Debug + 'static,
+    I: Copy + Ord,
+    T: Copy + Ord,
+{
+    pub(crate) fn branch(&self) -> &crate::state::SignalBranchHandle {
+        &self.destination.handle
+    }
+    pub(in crate::branch::owner_services) fn prepare_for_durable<'a>(
+        self,
+        owner: &'a Arc<SignalOwner<D, I, T>>,
+        admission: &'a crate::branch::owner_services::SignalOwnerOperationAdmission<'a>,
+        cancellation: &SignalOwnerCancellationToken,
+    ) -> Result<
+        (
+            crate::branch::owner_services::owner::fork_reservation::SignalPreparedOwnedFork<
+                D,
+                I,
+                T,
+            >,
+            crate::branch::retention::SignalBranchAdmissionReservation,
+        ),
+        SignalBranchForkOperationDenial,
+    > {
+        if !Arc::ptr_eq(owner, &self.owner) {
+            return Err(SignalBranchForkOperationDenial::OwnerUnavailable(
+                SignalOwnerUnavailable,
+            ));
+        }
+        let SignalOwnedForkDestination {
+            handle,
+            owner_runtime_instance_id,
+            definition_basis,
+            registry,
+            lineage,
+            retention,
+        } = self.destination;
+        let registry = registry.into_borrowed(owner.registry(), admission);
+        let lineage = lineage.into_borrowed(&owner.metadata, admission);
+        let destination = SignalOwnerForkReservation::new(
+            handle,
+            owner_runtime_instance_id,
+            definition_basis,
+            registry,
+            lineage,
+        );
+        let custody = self
+            .source_cell
+            .acquire_fork_source_custody(admission)
+            .map_err(|denial| {
+                crate::branch::owner_services::branch_execution_cell::fork::map_fork_cell_denial(
+                    denial,
+                    self.source.owner_branch_id(),
+                )
+            })?;
+        let prepared = destination.capture(custody, &self.source, cancellation)?;
+        Ok((prepared.into_owned(Arc::clone(owner)), retention))
+    }
+}

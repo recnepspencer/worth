@@ -50,7 +50,7 @@ fn execute_read_with_security<Schema, Context, Output, Stop>(
     session_denial: impl Fn() -> Stop,
     prepare: impl FnOnce() -> Result<Context, Stop>,
     perform: impl FnOnce(
-        &mut worth_relational::facade::runtime::RelationalRuntime,
+        &worth_relational::facade::runtime::RelationalRuntime,
         &crate::domain_computation::primary_graph::WorthQueryPrimaryGraphLayout,
         &worth_relational::facade::snapshots::SnapshotHandle,
         Context,
@@ -114,7 +114,7 @@ pub(super) fn execute_graph_read_with_snapshot<Context, Output, Stop>(
     session_denial: impl Fn() -> Stop,
     context: Context,
     perform: impl FnOnce(
-        &mut worth_relational::facade::runtime::RelationalRuntime,
+        &worth_relational::facade::runtime::RelationalRuntime,
         &crate::domain_computation::primary_graph::WorthQueryPrimaryGraphLayout,
         &worth_relational::facade::snapshots::SnapshotHandle,
         Context,
@@ -147,7 +147,7 @@ pub(super) fn execute_graph_read_with_snapshot_with_native_access<Context, Outpu
     context: Context,
     native: &mut super::ApplicationQueryNativeAccess<'_>,
     perform: impl FnOnce(
-        &mut worth_relational::facade::runtime::RelationalRuntime,
+        &worth_relational::facade::runtime::RelationalRuntime,
         &crate::domain_computation::primary_graph::WorthQueryPrimaryGraphLayout,
         &worth_relational::facade::snapshots::SnapshotHandle,
         Context,
@@ -182,7 +182,7 @@ fn validate_current_authorization<
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     application: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
     entity_resolution: &WorthQueryInstalledEntityResolutionContext,
-    runtime: &mut worth_relational::facade::runtime::RelationalRuntime,
+    runtime: &worth_relational::facade::runtime::RelationalRuntime,
     current: &worth_relational::facade::snapshots::SnapshotHandle,
     plan: &WorthQueryAdmittedApplicationQueryPlan<
         '_,

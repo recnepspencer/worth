@@ -2,6 +2,7 @@
 //! bytes from independently selected facts; the digest is not itself proof.
 
 use sha2::{Digest, Sha256};
+use worth_foundational::CanonicalDigestId;
 
 use crate::{PersistedRecordIdentity, ReleasedDropPredecessorV1, MAXIMUM_DROP_SET_RECORDS};
 
@@ -55,13 +56,13 @@ pub fn release_checkpoint_batch_records_digest_v1(
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct ReleasedDropCumulativeEvidenceV1 {
     descriptor_record: PersistedRecordIdentity,
-    descriptor_frame_sha256: [u8; 32],
-    custody_digest: [u8; 32],
+    descriptor_frame_sha256: CanonicalDigestId,
+    custody_digest: CanonicalDigestId,
     reservation_record: PersistedRecordIdentity,
-    reservation_frame_sha256: [u8; 32],
+    reservation_frame_sha256: CanonicalDigestId,
     fate: ReleasedDropWalFateWitnessV1,
     candidate_root_generation: u64,
-    candidate_root_sha256: [u8; 32],
+    candidate_root_sha256: CanonicalDigestId,
     predecessor: Option<ReleasedDropPredecessorV1>,
     batch_dropped: u16,
     terminal: bool,
@@ -99,13 +100,13 @@ impl ReleasedDropCumulativeEvidenceV1 {
         }
         Ok(Self {
             descriptor_record,
-            descriptor_frame_sha256,
-            custody_digest,
+            descriptor_frame_sha256: CanonicalDigestId::new(descriptor_frame_sha256),
+            custody_digest: CanonicalDigestId::new(custody_digest),
             reservation_record,
-            reservation_frame_sha256,
+            reservation_frame_sha256: CanonicalDigestId::new(reservation_frame_sha256),
             fate,
             candidate_root_generation,
-            candidate_root_sha256,
+            candidate_root_sha256: CanonicalDigestId::new(candidate_root_sha256),
             predecessor,
             batch_dropped,
             terminal,
@@ -131,16 +132,16 @@ impl ReleasedDropCumulativeEvidenceV1 {
         digest.update(prior_dropped.to_le_bytes());
         digest.update(prior_digest);
         write_record(&mut digest, self.descriptor_record);
-        digest.update(self.descriptor_frame_sha256);
-        digest.update(self.custody_digest);
+        digest.update(*self.descriptor_frame_sha256.bytes());
+        digest.update(*self.custody_digest.bytes());
         write_record(&mut digest, self.reservation_record);
-        digest.update(self.reservation_frame_sha256);
+        digest.update(*self.reservation_frame_sha256.bytes());
         digest.update(self.fate.lsn_start().to_le_bytes());
         digest.update(self.fate.lsn_end_exclusive().to_le_bytes());
         digest.update(self.fate.identity_digest());
         digest.update(self.fate.payload_digest());
         digest.update(self.candidate_root_generation.to_le_bytes());
-        digest.update(self.candidate_root_sha256);
+        digest.update(*self.candidate_root_sha256.bytes());
         if let Some(prior) = self.predecessor {
             digest.update([1]);
             write_record(&mut digest, prior.descriptor_record());

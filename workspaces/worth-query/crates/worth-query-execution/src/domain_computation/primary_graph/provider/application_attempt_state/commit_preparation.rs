@@ -155,6 +155,10 @@ pub(in crate::domain_computation::primary_graph) use relational_commit::{
 // a relation preimage, any preimage retention denial, candidate support) is a
 // pre-effect refusal carrying its cause (public #122). The rest go through the
 // existing abort-and-cleanup owner.
+pub(in crate::domain_computation) use relational_commit::QueryPreparingApplicationCommit;
+pub(in crate::domain_computation::primary_graph::provider) use relational_commit::RetainedQueryDurablePreparation;
+// Typed content/read stops precede the Native transaction. Preserve semantic
+// protocol failures through the existing abort-and-cleanup owner.
 fn preparation_stop(
     failure: WorthQueryProviderSessionFailure,
 ) -> crate::domain_computation::WorthQueryProviderSessionCommitStop {
@@ -176,3 +180,6 @@ fn preparation_stop(
         None => Stop::from(failure),
     }
 }
+#[cfg(test)]
+#[path = "commit_preparation_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;

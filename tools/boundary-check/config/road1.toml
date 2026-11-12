@@ -11,8 +11,8 @@ guidance = "C.11 mechanism crates depend downward; only Store composes Blob, Lay
 [[source_dependency_allowlists]]
 workspace_manifest = "Cargo.toml"
 sources = ["worth-execution"]
-allowed_targets = ["allocator-api2", "rayon", "serde", "serde_json", "trybuild", "worth-foundational", "worth-proof", "worth-value-shape-derive"]
-guidance = "Milestone 9.17.6.3: the execution authority is below Relational, Signal and Query; it may use only its worker backend, the exactly pinned fresh payload allocator, portable vocabulary, proof doors, the host-compiled resident-value derive and test support. Serde dependencies serve only dev-test wire/resident comparison oracles. Payload layout and reservation precede allocation; higher runtime or graph owners remain forbidden."
+allowed_targets = ["allocator-api2", "rayon", "serde", "serde_json", "stacker", "trybuild", "worth-foundational", "worth-proof", "worth-value-shape-derive"]
+guidance = "Milestone 9.17.6.3: the execution authority is below Relational, Signal and Query; it may use only its worker backend, the M3 H10 public-entry execution-stack backend (stacker), the exactly pinned fresh payload allocator, portable vocabulary, proof doors, the host-compiled resident-value derive and test support. Serde dependencies serve only dev-test wire/resident comparison oracles. Payload layout and reservation precede allocation; higher runtime or graph owners remain forbidden."
 
 [[source_dependency_allowlists.dependency_contracts]]
 target = "allocator-api2"
@@ -162,6 +162,9 @@ guidance = "The Bridge owns the Relational adapter and depends on Relational; Re
 workspace_manifest = "Cargo.toml"
 sources = ["worth-runtime-world"]
 allowed_targets = [
+  "serde",
+  "serde_json",
+  "sha2",
   "worth-execution",
   "worth-foundational",
   "worth-proof",
@@ -170,7 +173,7 @@ allowed_targets = [
   "worth-signal",
   "trybuild",
 ]
-guidance = "Runtime World composes the one execution authority above the component runtimes and may depend only on that authority, foundational and proof contracts, component-owner and bridge facades; trybuild is test-only contract evidence"
+guidance = "Runtime World composes the one execution authority above component runtimes; serde/json and sha2 encode owner artifacts, with foundational/proof contracts and component-owner/bridge facades; trybuild is test-only contract evidence"
 
 [[dependency_denials]]
 workspace_manifest = "workspaces/worth-store/Cargo.toml"
@@ -216,6 +219,9 @@ target = "worth-signal"
 # Leaf courts and testkits cannot become production construction callers.
 allowed_sources = [
   "worth-store",
+  "worth-store-application",
+  # court drives Signal through Store's SignalDurableMedium adapter.
+  "worth-store-court-application-replication",
   "worth-store-court-recovery-runtime-replication-store-physical-blob-journeys",
   "worth-store-court-recovery-runtime-replication-store-physical-record-journeys-durability-admission",
   "worth-store-court-recovery-runtime-replication-store-physical-record-journeys-record-chunk-views",
@@ -224,8 +230,9 @@ allowed_sources = [
   "worth-store-court-store-replication-physical-record-journeys-physical-work",
   "worth-store-court-store-replication",
   "worth-store-testkit-store",
+  "worth-store-testkit-application-oracle",
 ]
-guidance = "ordinary and recovery physical Signal composition remain behind Store-owned construction ports; the closed relocated test audience consumes only their clock, duration, aspect and subscription vocabulary"
+guidance = "physical Signal composition remains behind Store-owned construction ports; Store Application composes the actual InitialEmpty Signal/Bridge assembly, relocated courts consume vocabulary, and the application oracle retains its actual Signal owner"
 
 [[dependency_denials]]
 workspace_manifest = "Cargo.toml"
@@ -239,9 +246,43 @@ guidance = "generic Signal cannot import Store composition or Store-owned physic
 workspace_manifest = "workspaces/worth-query/Cargo.toml"
 sources = []
 source_prefixes = ["worth-query"]
+exclude_sources = ["worth-query-host"]
 forbidden_targets = []
 forbidden_target_prefixes = ["worth-store"]
-guidance = "Query defines checkpoint handoff and readmission contracts but cannot import Store persistence or reconstruction authority"
+guidance = "M3 D1: only Query Host composes Store Application; other Query packages cannot import Store persistence or reconstruction authority"
+
+[[source_dependency_allowlists]]
+workspace_manifest = "workspaces/worth-query/Cargo.toml"
+sources = ["worth-query-host"]
+allowed_targets = ["worth-query-admission", "worth-query-declaration", "worth-query-execution", "worth-query-installation", "worth-query-publication", "worth-query-decl", "worth-runtime-bridge", "worth-runtime-world", "worth-execution", "worth-harness", "worth-foundational", "worth-proof", "worth-relational", "worth-store-application", "sha2"]
+guidance = "M3 D1: Host may compose only Store Application, never another Store implementation owner"
+
+[[source_identifier_denials]]
+root = "workspaces/worth-query/crates/worth-query-host/src"
+exclude_paths = ["workspaces/worth-query/crates/worth-query-host/src/application_home"]
+forbidden_identifiers = ["worth_store_application"]
+guidance = "M3 D1: only Host's application_home production composition names Store Application"
+
+[[dependency_denials]]
+workspace_manifest = "workspaces/worth-store/Cargo.toml"
+sources = []
+source_prefixes = ["worth-store"]
+exclude_sources = ["worth-store-application", "worth-store-testkit-application-oracle", "worth-store-court-application"]
+forbidden_targets = []
+forbidden_target_prefixes = ["worth-query"]
+guidance = "M3 D1: physical-only Store owners and courts stay Query-independent; application composition and its closed oracle own the application seam"
+
+[[dependency_denials]]
+workspace_manifest = "workspaces/worth-store/Cargo.toml"
+sources = ["worth-store-application"]
+forbidden_targets = ["worth-query-host"]
+guidance = "M3 D1: Store Application implements owner ports and cannot depend on its Host composition root"
+
+[[source_identifier_denials]]
+root = "workspaces/worth-store/crates/worth-store-application/src"
+exclude_paths = ["workspaces/worth-store/crates/worth-store-application/src/tests"]
+forbidden_identifiers = ["worth_query_testkit_installation"]
+guidance = "The genuine authored Query binding fixture is test-only and cannot supply production Home authority"
 
 [[source_identifier_denials]]
 root = "workspaces/worth-store/crates/worth-store/src/physical_runtime/work"

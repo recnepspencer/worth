@@ -16,7 +16,10 @@ fn durable_log_compaction_respects_checkpoint_policy() {
         .expect("valid native runtime configuration");
 
     create_entity(execution, &runtime, "first");
-    crate::tests::support::checkpoint_durably(execution, &runtime).unwrap();
+    runtime
+        .durability_authority()
+        .checkpoint(execution)
+        .unwrap();
     create_entity(execution, &runtime, "second");
     create_entity(execution, &runtime, "third");
 

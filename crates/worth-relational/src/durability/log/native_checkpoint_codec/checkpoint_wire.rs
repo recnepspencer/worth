@@ -6,11 +6,11 @@ use crate::durability::medium::RelationalDurableMemberLocator;
 /// Placement is a property of the artifact, not a second checkpoint grammar.
 #[derive(Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
-pub(super) struct CheckpointWire<'a> {
-    pub(super) manifest: RelationalCheckpointManifest,
-    #[serde(borrow)]
+pub(super) struct CheckpointWire<'a, M = RelationalCheckpointManifest> {
+    pub(super) manifest: M,
+    #[serde(borrow, deserialize_with = "super::member_sequence::decode")]
     pub(super) members: Vec<(RelationalDurableMemberLocator, ByteString<'a>)>,
-    #[serde(borrow)]
+    #[serde(borrow, deserialize_with = "super::member_sequence::empty_envelopes")]
     pub(super) envelopes: Vec<ByteString<'a>>,
 }
 

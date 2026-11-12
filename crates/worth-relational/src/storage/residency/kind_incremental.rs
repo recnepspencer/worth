@@ -15,6 +15,7 @@ pub(super) struct RegionKindIndexes {
     pub(super) supports: super::kind_history::HistorySupports,
 }
 impl RegionKindIndexes {
+    #[cfg(test)]
     pub(super) fn capture(
         lane: &ReconstructionLane<'_>,
         partition: &PartitionState,
@@ -52,8 +53,8 @@ impl RegionKindIndexes {
     }
     pub(super) fn commitment(&self) -> RelationalRegionKindCommitment {
         RelationalRegionKindCommitment {
-            head: self.head.digest(),
-            history: self.history.digest(),
+            head: worth_foundational::CanonicalDigestId::new(self.head.digest()),
+            history: worth_foundational::CanonicalDigestId::new(self.history.digest()),
         }
     }
     pub(super) fn allocation_bytes(&self) -> u64 {

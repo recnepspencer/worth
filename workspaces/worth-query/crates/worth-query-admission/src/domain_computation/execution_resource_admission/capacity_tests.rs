@@ -76,29 +76,31 @@ fn racing_reservations_never_exceed_the_physical_limit() {
     let start = Arc::new(Barrier::new(THREADS + 1));
     let held = Arc::new(Barrier::new(THREADS + 1));
     let successes = Arc::new(AtomicUsize::new(0));
-    let workers = plans
-        .into_iter()
-        .map(|plan| {
-            let start = Arc::clone(&start);
-            let held = Arc::clone(&held);
-            let successes = Arc::clone(&successes);
-            std::thread::spawn(move || {
-                start.wait();
-                let reservation = reserve_execution_resource_plan(plan);
-                if reservation.is_some() {
-                    successes.fetch_add(1, Ordering::AcqRel);
-                }
-                held.wait();
-                drop(reservation);
+    std::thread::scope(|scope| {
+        let workers = plans
+            .into_iter()
+            .map(|plan| {
+                let start = Arc::clone(&start);
+                let held = Arc::clone(&held);
+                let successes = Arc::clone(&successes);
+                scope.spawn(move || {
+                    start.wait();
+                    let reservation = reserve_execution_resource_plan(plan);
+                    if reservation.is_some() {
+                        successes.fetch_add(1, Ordering::AcqRel);
+                    }
+                    held.wait();
+                    drop(reservation);
+                })
             })
-        })
-        .collect::<Vec<_>>();
+            .collect::<Vec<_>>();
 
-    start.wait();
-    held.wait();
-    for worker in workers {
-        worker.join().unwrap();
-    }
+        start.wait();
+        held.wait();
+        for worker in workers {
+            worker.join().unwrap();
+        }
+    });
     assert_eq!(successes.load(Ordering::Acquire), 1);
     assert_eq!(capacity.active(), 0);
 }

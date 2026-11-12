@@ -6,24 +6,27 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         &self,
         body: impl for<'scope> FnOnce(WorthQueryAdvancementPhase<'scope>) -> R,
     ) -> Result<R, WorthQueryAdvancementDenial> {
+        worth_execution::run_with_execution_stack(move || {
+            self.with_host_advancement_on_execution_stack(body)
+        })
+    }
+
+    #[inline(never)]
+    fn with_host_advancement_on_execution_stack<R>(
+        &self,
+        body: impl for<'scope> FnOnce(WorthQueryAdvancementPhase<'scope>) -> R,
+    ) -> Result<R, WorthQueryAdvancementDenial> {
         let _custody = OpeningCustody::enter()?;
-        let world = std::sync::Arc::clone(&self.runtime.product_runtime.owner);
-        let execution = QueryRequestExecution::open_control(
-            world.execution_placement(),
-            worth_execution::CancellationToken::new(),
-            None,
-        );
-        execution.run_advancement(
-            Some(world.owner_identity()),
-            Some(
-                self.runtime
-                    .product_runtime
-                    .source
-                    .authoritative_source_profile()
-                    .runtime_instance_id(),
-            ),
-            body,
-        )
+        self.runtime
+            .product_runtime
+            .with_execution_placement(|placement| {
+                let execution = QueryRequestExecution::open_control(
+                    placement,
+                    worth_execution::CancellationToken::new(),
+                    None,
+                );
+                execution.run_product_advancement(&self.runtime.product_runtime, body)
+            })?
     }
 
     /// Runs one host call funded as `allocation_policy` says. Under
@@ -32,6 +35,17 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
     /// one budget; any other lease is unrelated to those workers and refuses
     /// `UnrelatedNestedLease`. `SystemAllocation` uses the World's placement.
     pub fn with_funded_host_advancement<R>(
+        &self,
+        allocation_policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
+        body: impl for<'scope> FnOnce(WorthQueryAdvancementPhase<'scope>) -> R,
+    ) -> Result<R, WorthQueryAdvancementDenial> {
+        worth_execution::run_with_execution_stack(move || {
+            self.with_funded_host_advancement_on_execution_stack(allocation_policy, body)
+        })
+    }
+
+    #[inline(never)]
+    fn with_funded_host_advancement_on_execution_stack<R>(
         &self,
         allocation_policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
         body: impl for<'scope> FnOnce(WorthQueryAdvancementPhase<'scope>) -> R,
@@ -49,6 +63,22 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
     /// the caller's allocation policy opens through this, so `Execution(lease)`
     /// is the call's one budget rather than a second one inside the World's.
     pub fn with_funded_application_advancement<R>(
+        &self,
+        request: &WorthQueryRequestScope,
+        allocation_policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
+        body: impl for<'scope> FnOnce(WorthQueryAdvancementPhase<'scope>) -> R,
+    ) -> Result<R, WorthQueryAdvancementDenial> {
+        worth_execution::run_with_execution_stack(move || {
+            self.with_funded_application_advancement_on_execution_stack(
+                request,
+                allocation_policy,
+                body,
+            )
+        })
+    }
+
+    #[inline(never)]
+    fn with_funded_application_advancement_on_execution_stack<R>(
         &self,
         request: &WorthQueryRequestScope,
         allocation_policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
@@ -75,30 +105,19 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         body: impl for<'scope> FnOnce(WorthQueryAdvancementPhase<'scope>) -> R,
     ) -> Result<R, WorthQueryAdvancementDenial> {
         let _custody = OpeningCustody::enter()?;
-        let world = std::sync::Arc::clone(&self.runtime.product_runtime.owner);
-        let execution = match allocation_policy {
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation => {
-                QueryRequestExecution::open_control(
-                    world.execution_placement(),
-                    cancellation,
-                    deadline,
-                )
-            }
-            worth_execution::ExecutionAllocationPolicy::Execution(lease) => {
-                QueryRequestExecution::under_lease(lease, cancellation, deadline)
-            }
-        };
-        execution.run_advancement(
-            Some(world.owner_identity()),
-            Some(
-                self.runtime
-                    .product_runtime
-                    .source
-                    .authoritative_source_profile()
-                    .runtime_instance_id(),
-            ),
-            body,
-        )
+        self.runtime
+            .product_runtime
+            .with_execution_placement(|placement| {
+                let execution = match allocation_policy {
+                    worth_execution::ExecutionAllocationPolicy::SystemAllocation => {
+                        QueryRequestExecution::open_control(placement, cancellation, deadline)
+                    }
+                    worth_execution::ExecutionAllocationPolicy::Execution(lease) => {
+                        QueryRequestExecution::under_lease(lease, cancellation, deadline)
+                    }
+                };
+                execution.run_product_advancement(&self.runtime.product_runtime, body)
+            })?
     }
 
     /// Checks borrowed advancement custody before a Publication entry reader.
@@ -120,20 +139,24 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         request: &WorthQueryRequestScope,
         body: impl for<'scope> FnOnce(WorthQueryAdvancementPhase<'scope>) -> R,
     ) -> Result<R, WorthQueryAdvancementDenial> {
+        worth_execution::run_with_execution_stack(move || {
+            self.with_application_advancement_on_execution_stack(request, body)
+        })
+    }
+
+    #[inline(never)]
+    fn with_application_advancement_on_execution_stack<R>(
+        &self,
+        request: &WorthQueryRequestScope,
+        body: impl for<'scope> FnOnce(WorthQueryAdvancementPhase<'scope>) -> R,
+    ) -> Result<R, WorthQueryAdvancementDenial> {
         let _custody = OpeningCustody::enter()?;
-        let world = std::sync::Arc::clone(&self.runtime.product_runtime.owner);
-        let execution = QueryRequestExecution::open(world.execution_placement(), request);
-        execution.run_advancement(
-            Some(world.owner_identity()),
-            Some(
-                self.runtime
-                    .product_runtime
-                    .source
-                    .authoritative_source_profile()
-                    .runtime_instance_id(),
-            ),
-            body,
-        )
+        self.runtime
+            .product_runtime
+            .with_execution_placement(|placement| {
+                let execution = QueryRequestExecution::open(placement, request);
+                execution.run_product_advancement(&self.runtime.product_runtime, body)
+            })?
     }
 }
 
@@ -146,12 +169,33 @@ impl crate::domain_computation::execution_runtime::product_world::WorthQueryProd
         &self,
         body: impl for<'scope> FnOnce(WorthQueryAdvancementPhase<'scope>) -> R,
     ) -> Result<R, WorthQueryAdvancementDenial> {
+        worth_execution::run_with_execution_stack(move || {
+            self.with_advancement_on_execution_stack(body)
+        })
+    }
+
+    #[inline(never)]
+    fn with_advancement_on_execution_stack<R>(
+        &self,
+        body: impl for<'scope> FnOnce(WorthQueryAdvancementPhase<'scope>) -> R,
+    ) -> Result<R, WorthQueryAdvancementDenial> {
         self.open_host_advancement(worth_execution::CancellationToken::new(), None, body)
     }
 
     /// Runs a scoped host call under this installed World's policy and the
     /// caller's cancellation and deadline, lending only its branded phase.
     pub fn with_request_advancement<R>(
+        &self,
+        request: &WorthQueryRequestScope,
+        body: impl for<'scope> FnOnce(WorthQueryAdvancementPhase<'scope>) -> R,
+    ) -> Result<R, WorthQueryAdvancementDenial> {
+        worth_execution::run_with_execution_stack(move || {
+            self.with_request_advancement_on_execution_stack(request, body)
+        })
+    }
+
+    #[inline(never)]
+    fn with_request_advancement_on_execution_stack<R>(
         &self,
         request: &WorthQueryRequestScope,
         body: impl for<'scope> FnOnce(WorthQueryAdvancementPhase<'scope>) -> R,
@@ -170,19 +214,9 @@ impl crate::domain_computation::execution_runtime::product_world::WorthQueryProd
         body: impl for<'scope> FnOnce(WorthQueryAdvancementPhase<'scope>) -> R,
     ) -> Result<R, WorthQueryAdvancementDenial> {
         let _custody = OpeningCustody::enter()?;
-        QueryRequestExecution::open_control(
-            self.owner.execution_placement(),
-            cancellation,
-            deadline,
-        )
-        .run_advancement(
-            Some(self.owner.owner_identity()),
-            Some(
-                self.source
-                    .authoritative_source_profile()
-                    .runtime_instance_id(),
-            ),
-            body,
-        )
+        self.with_execution_placement(|placement| {
+            QueryRequestExecution::open_control(placement, cancellation, deadline)
+                .run_product_advancement(self, body)
+        })?
     }
 }

@@ -1,32 +1,29 @@
-use super::{SharedColumn, SharedColumnIter};
-
-impl<T: Clone> Default for SharedColumn<T> {
+//! Plain owner views preserve the original value wire, never carrier internals.
+use super::{SharedColumn, SharedColumnIter, StoredValue};
+impl<T: StoredValue> Default for SharedColumn<T> {
     fn default() -> Self {
         Self::with_capacity(0)
     }
 }
-
-impl<T: Clone> std::ops::Index<usize> for SharedColumn<T> {
-    type Output = T;
-    fn index(&self, index: usize) -> &T {
-        self.get(index).expect(/* Proof: Owner callers derive these indices from the same arena/column length or admitted source slot; the private indexing API is not an external unchecked read door. */ "column index out of bounds")
+impl<T: StoredValue> std::ops::Index<usize> for SharedColumn<T> {
+    type Output = T::Value;
+    fn index(&self, index: usize) -> &T::Value {
+        self.get(index).expect("selected column index is in range")
     }
 }
-
-impl<T: Clone> std::ops::IndexMut<usize> for SharedColumn<T> {
-    fn index_mut(&mut self, index: usize) -> &mut T {
-        self.get_mut(index).expect(/* Proof: Owner callers derive these indices from the same arena/column length or admitted source slot; the private indexing API is not an external unchecked read door. */ "column index out of bounds")
+impl<T: StoredValue> std::ops::IndexMut<usize> for SharedColumn<T> {
+    fn index_mut(&mut self, index: usize) -> &mut T::Value {
+        self.get_mut(index)
+            .expect("selected column index is in range")
     }
 }
-
-impl<T: Clone> From<Vec<T>> for SharedColumn<T> {
-    fn from(values: Vec<T>) -> Self {
+impl<T: StoredValue> From<Vec<T::Value>> for SharedColumn<T> {
+    fn from(values: Vec<T::Value>) -> Self {
         Self::from_dense_values(values)
     }
 }
-
-impl<T: Clone> FromIterator<T> for SharedColumn<T> {
-    fn from_iter<I: IntoIterator<Item = T>>(values: I) -> Self {
+impl<T: StoredValue> FromIterator<T::Value> for SharedColumn<T> {
+    fn from_iter<I: IntoIterator<Item = T::Value>>(values: I) -> Self {
         let mut column = Self::default();
         for value in values {
             column.push(value);
@@ -34,24 +31,24 @@ impl<T: Clone> FromIterator<T> for SharedColumn<T> {
         column
     }
 }
-
-impl<'a, T: Clone> IntoIterator for &'a SharedColumn<T> {
-    type Item = &'a T;
+impl<'a, T: StoredValue> IntoIterator for &'a SharedColumn<T> {
+    type Item = &'a T::Value;
     type IntoIter = SharedColumnIter<'a, T>;
     fn into_iter(self) -> Self::IntoIter {
         self.iter()
     }
 }
-
-impl<T: Clone> IntoIterator for SharedColumn<T> {
-    type Item = T;
-    type IntoIter = std::vec::IntoIter<T>;
+impl<T: StoredValue> IntoIterator for SharedColumn<T> {
+    type Item = T::Value;
+    type IntoIter = std::vec::IntoIter<T::Value>;
     fn into_iter(self) -> Self::IntoIter {
         self.into_vec().into_iter()
     }
 }
-
-impl<T: Clone + serde::Serialize> serde::Serialize for SharedColumn<T> {
+impl<T: StoredValue> serde::Serialize for SharedColumn<T>
+where
+    T::Value: serde::Serialize,
+{
     fn serialize<S: serde::Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
         serializer.collect_seq(self.iter())
     }

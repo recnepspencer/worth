@@ -1,3 +1,5 @@
+#[path = "reference_world_selection.rs"]
+mod world_selection;
 use std::sync::{Arc, Mutex};
 use worth_foundational::{FoundationalBranchReferenceGeneration, FoundationalBranchTarget};
 
@@ -329,10 +331,12 @@ mod tests;
 
 #[path = "reference_checkpoint.rs"]
 mod checkpoint;
+pub(super) use checkpoint::CheckpointCellSource;
 pub(crate) use checkpoint::RelationalBranchCellCheckpoint;
 #[path = "reference_coordination_access.rs"]
 mod coordination_access;
 #[path = "reference_root_access.rs"]
 mod root_access;
+pub(crate) use root_access::CheckpointComponentCellSource;
 #[path = "reference_runtime_rebinding.rs"]
 mod runtime_rebinding;

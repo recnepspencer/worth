@@ -59,7 +59,7 @@ fn drift(worker: bool) {
             )
             .unwrap()
     });
-    let Outcome::AlreadyCommitted(replay) = replay else {
+    let Outcome::RecoveredCommitted(replay) = replay else {
         panic!("whole envelope was not replayed")
     };
     assert_eq!(

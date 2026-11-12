@@ -44,6 +44,8 @@ pub(crate) fn source_free_successor<Provider, SemanticContract>(
     semantic_contract_state_bytes: usize,
 ) -> u64 {
     arc::<super::super::BridgeInstalledConditionalLowering>()
+        + arc::<super::super::BridgeConditionalContract>()
+        + arc::<super::super::BridgeConditionalLocation>()
         + arc::<super::super::liveness::BridgeConditionalLoweringLease>()
         + arc::<super::BridgeRetentionReservation>()
         + arc::<worth_signal::facade::branch::SignalBranchIdentity>()

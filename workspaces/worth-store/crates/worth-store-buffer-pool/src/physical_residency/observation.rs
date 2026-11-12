@@ -1,5 +1,6 @@
 #[path = "observation/allocation_events.rs"]
 mod allocation_events;
+pub(crate) use allocation_events::PreparedTracePage;
 #[path = "observation/resource_accounting.rs"]
 mod resource_accounting;
 

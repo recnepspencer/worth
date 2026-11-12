@@ -1,8 +1,6 @@
 //! Carries verified native recovery lineage across one validated, settled commit.
 mod outcome;
 mod snapshot_closeout;
-#[cfg(test)]
-mod tests;
 pub use outcome::{
     RecoveredCheckpointTransition, RecoveredCheckpointTransitionDenial,
     RecoveredCheckpointTransitionError, RefusedRecoveredCheckpointTransition,

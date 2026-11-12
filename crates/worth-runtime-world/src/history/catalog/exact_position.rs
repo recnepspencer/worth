@@ -44,7 +44,7 @@ impl CompositeHistoryCatalog {
             .and_then(|slot| slot.get())
             .ok_or(Denial::SourceUnavailable)?;
         Ok(Arc::new(RetainedExactHistoryPosition {
-            commit: Arc::clone(&entry.commit),
+            commit: entry.shared_commit(),
             _protection: protect_installed(&state, selected)?,
             catalog: self.clone(),
             _memory: memory,
@@ -78,7 +78,7 @@ impl CompositeHistoryCatalog {
             .ok_or(Denial::RetiredHistoryGap)?;
         let memory = reserve_position(execution)?;
         Ok(Some(Arc::new(RetainedExactHistoryPosition {
-            commit: Arc::clone(&entry.commit),
+            commit: entry.shared_commit(),
             _protection: protect_installed(&state, parent.commit())?,
             catalog: self.clone(),
             _memory: memory,

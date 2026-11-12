@@ -177,6 +177,10 @@ impl<'o, Schema: ApplicationSchema, Binding: ApplicationQueryBinding<Schema>>
         )
     }
 
+    #[allow(
+        clippy::type_complexity,
+        reason = "The borrowed policy callback couples the schema binding and original request memory without allocating"
+    )]
     fn execute_inner_core(
         self,
         before: Option<&'o WorthQueryApplicationQueryObservation>,

@@ -205,8 +205,26 @@ fn publication_workflow() {
         "ProductUnpublished: {:?}; explicit cleanup follows",
         effects.cause()
     );
+    let original_receipt = effects
+        .component_results()
+        .relational_settlement()
+        .unwrap()
+        .clone();
     recovery.continue_effects(effects).unwrap(); // Settlement/cleanup only; never call a sibling or CAS.
-    recovery.release_effects(&handle, 0).unwrap();
+    recovery
+        .release_effects(
+            &execution,
+            &handle,
+            0,
+            Some(
+                records
+                    .runtime
+                    .durability_authority()
+                    .observe_memory_commit(&execution, &original_receipt)
+                    .unwrap(),
+            ),
+        )
+        .unwrap();
     assert_eq!(
         world
             .observation_port()
@@ -224,7 +242,18 @@ fn publication_workflow() {
         head.basis().relational_basis().admission_identity()
     ); // Cleanup did not roll back owner truth.
     drop((root, head));
-    let close = world.lifecycle_port().close().unwrap();
+    let close_policy = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::new(None),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let close = world
+        .lifecycle_port()
+        .close(
+            &worth_execution::ExecutionRequest::serial(&close_policy),
+            &world,
+        )
+        .unwrap();
     assert_eq!(close.outstanding_observations(), 0);
     assert!(close.retained_records().is_empty());
     drop((close, world, installed, bridge, reference));

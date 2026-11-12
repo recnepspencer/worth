@@ -7,8 +7,8 @@ pub(crate) use cache::{VisibilityCache, VisibilityResidency};
 use replay_retention::ReplayRetentionIndex;
 pub(crate) use snapshot_handle_binding::SnapshotHandleBinding;
 pub(crate) use snapshot_handles::{
-    PublishedSnapshotCapacityOwner, PublishedSnapshotCloseout, PublishedSnapshotReservationDenial,
-    PublishedSnapshotSlotReservation, SnapshotHandles,
+    PublishedSnapshotCapacityOwner, PublishedSnapshotCloseout, PublishedSnapshotReleaseObservation,
+    PublishedSnapshotReservationDenial, PublishedSnapshotSlotReservation, SnapshotHandles,
 };
 
 use crate::runtime::state::subsystems::RuntimeSubsystem;
@@ -26,6 +26,17 @@ pub(crate) struct VisibilitySubsystem {
 }
 
 impl VisibilitySubsystem {
+    pub(crate) fn try_memory_read_registrations(&self) -> Result<(bool, bool, bool, bool), ()> {
+        let (active, published) = self.handles.try_retained_registrations()?;
+        let capacity = self.published_snapshot_capacity.occupied_handles() != 0;
+        let replay = !self
+            .replay_retention
+            .try_read()
+            .ok_or(())?
+            .entries
+            .is_empty();
+        Ok((active, published, capacity, replay))
+    }
     pub(crate) fn snapshot_identity_binding(&self) -> std::sync::Arc<std::sync::atomic::AtomicU64> {
         self.handles.snapshot_identity_binding()
     }
@@ -165,15 +176,23 @@ impl VisibilitySubsystem {
         self.handles.insert_published(snapshot_id, binding);
     }
 
-    pub(crate) fn remove_published_handle(
+    pub(crate) fn remove_published_handle(&self, snapshot_id: SnapshotId) -> Option<()> {
+        self.handles
+            .remove_published_accounted(snapshot_id, &self.published_snapshot_capacity)
+    }
+    pub(crate) fn try_remove_original_result(
+        &self,
+        original: &std::sync::Arc<PublishedSnapshotReleaseObservation>,
+    ) -> Result<Option<bool>, ()> {
+        self.handles
+            .try_remove_original(original, &self.published_snapshot_capacity)
+    }
+
+    pub(crate) fn published_release_observation(
         &self,
         snapshot_id: SnapshotId,
-    ) -> Option<SnapshotHandleBinding> {
-        let removed = self.handles.remove_published(snapshot_id);
-        if removed.is_some() {
-            self.published_snapshot_capacity.release();
-        }
-        removed
+    ) -> Option<std::sync::Arc<PublishedSnapshotReleaseObservation>> {
+        self.handles.published_release_observation(snapshot_id)
     }
 
     pub(crate) fn published_snapshot_binding(
@@ -242,13 +261,6 @@ impl VisibilitySubsystem {
         tracked_states: &[crate::visibility::snapshot_states::VisibilitySnapshotStateKey],
     ) {
         self.cache.clear_branch_head_residency(tracked_states);
-    }
-
-    /// Every version a replay pin currently retains, collected so the fence
-    /// computation never scans the index while holding its lock.
-    #[cfg(test)]
-    pub(crate) fn replay_retention_versions(&self) -> Vec<crate::identity::data::VersionId> {
-        self.replay_retention.read().versions().collect()
     }
 
     pub(crate) fn increment_replay_retention(

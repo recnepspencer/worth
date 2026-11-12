@@ -26,6 +26,16 @@ pub enum WorthQueryOutputCheckpoint {
         delivery: Option<worth_runtime_bridge::facade::BridgeCorrespondenceDeliveryReceipt>,
         ready_backing: super::PreparedReadyBacking,
     },
+    RecoveredPublished {
+        publication: super::super::WorthQueryRecoveredProducerPublication,
+        delivery: WorthQueryPendingOutputDelivery,
+        ready_backing: super::PreparedReadyBacking,
+    },
+    RecoveredDelivered {
+        publication: super::super::WorthQueryRecoveredProducerPublication,
+        delivery: Option<worth_runtime_bridge::facade::BridgeCorrespondenceDeliveryReceipt>,
+        ready_backing: super::PreparedReadyBacking,
+    },
     Ready(ReadyCompletion),
 }
 
@@ -37,7 +47,9 @@ impl WorthQueryOutputCheckpoint {
         match self {
             Self::PublicationPending { ready_backing, .. }
             | Self::Published { ready_backing, .. }
-            | Self::Delivered { ready_backing, .. } => ready_backing.generation(),
+            | Self::Delivered { ready_backing, .. }
+            | Self::RecoveredPublished { ready_backing, .. }
+            | Self::RecoveredDelivered { ready_backing, .. } => ready_backing.generation(),
             Self::Ready(completion) => completion.generation(),
         }
     }
@@ -48,22 +60,41 @@ impl WorthQueryOutputCheckpoint {
     {
         match self {
             Self::PublicationPending { owner, .. } => owner.publication(),
-            _ => self
-                .receipt()
-                .map(|receipt| receipt.committed_product_publication()),
+            Self::RecoveredPublished { publication, .. }
+            | Self::RecoveredDelivered { publication, .. } => {
+                Some(publication.view().committed_product_publication())
+            }
+            Self::Published { receipt, .. } | Self::Delivered { receipt, .. } => {
+                Some(receipt.committed_product_publication())
+            }
+            Self::Ready(completion) => match &completion.authority {
+                super::WorthQueryAcceptedOutputAuthority::Committed(receipt) => {
+                    Some(receipt.committed_product_publication())
+                }
+                super::WorthQueryAcceptedOutputAuthority::Recovered(publication) => {
+                    Some(publication.view().committed_product_publication())
+                }
+                super::WorthQueryAcceptedOutputAuthority::Stable(_)
+                | super::WorthQueryAcceptedOutputAuthority::Restored(_) => None,
+            },
         }
     }
     fn owes_delivery(&self) -> bool {
-        matches!(self, Self::Published { .. })
-            || matches!(self, Self::PublicationPending { owner, .. }
+        matches!(
+            self,
+            Self::Published { .. } | Self::RecoveredPublished { .. }
+        ) || matches!(self, Self::PublicationPending { owner, .. }
                 if !owner.is_closed() && owner.publication().is_some())
     }
     pub fn receipt(&self) -> Option<&WorthQueryApplicationCommitReceipt> {
         match self {
-            Self::PublicationPending { .. } => None,
+            Self::PublicationPending { .. }
+            | Self::RecoveredPublished { .. }
+            | Self::RecoveredDelivered { .. } => None,
             Self::Published { receipt, .. } | Self::Delivered { receipt, .. } => Some(receipt),
             Self::Ready(completion) => match &completion.authority {
                 super::WorthQueryAcceptedOutputAuthority::Committed(receipt) => Some(receipt),
+                super::WorthQueryAcceptedOutputAuthority::Recovered(_) => None,
                 super::WorthQueryAcceptedOutputAuthority::Stable(_) => None,
                 super::WorthQueryAcceptedOutputAuthority::Restored(_) => None,
             },
@@ -255,7 +286,9 @@ impl WorthQueryOutputProgress {
             }
         } else if matches!(
             &checkpoint,
-            WorthQueryOutputCheckpoint::Delivered { .. } | WorthQueryOutputCheckpoint::Ready(_)
+            WorthQueryOutputCheckpoint::Delivered { .. }
+                | WorthQueryOutputCheckpoint::RecoveredDelivered { .. }
+                | WorthQueryOutputCheckpoint::Ready(_)
         ) || matches!(&checkpoint, WorthQueryOutputCheckpoint::PublicationPending { owner, .. } if owner.is_closed())
         {
             self.undelivered.take();
@@ -265,3 +298,6 @@ impl WorthQueryOutputProgress {
 }
 
 mod court_doors_for_test;
+#[cfg(test)]
+#[path = "checkpoint_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;

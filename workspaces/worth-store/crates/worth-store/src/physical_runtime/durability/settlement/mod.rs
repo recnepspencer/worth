@@ -14,3 +14,6 @@ pub use proven_no_effect::{
     PhysicalMutationPreSealAdmissionDetail, PhysicalMutationProvenNoEffectCause,
     ProvenNoEffectPhysicalMutation,
 };
+#[cfg(test)]
+#[path = "mod_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;

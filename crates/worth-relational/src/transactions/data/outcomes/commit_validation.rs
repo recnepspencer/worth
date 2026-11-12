@@ -41,82 +41,98 @@ impl CommitValidation {
     }
 
     pub fn summarize(invariant_executions: &[InvariantExecutionResult]) -> CommitValidationSummary {
-        let mut summary = CommitValidationSummary {
-            execution_count: invariant_executions.len(),
-            ..CommitValidationSummary::default()
-        };
-
+        let mut summary = CommitValidationSummary::default();
         for execution in invariant_executions {
-            if execution.metadata().has_merged_plan() {
-                summary.plan_backed_execution_count += 1;
-            }
-
-            match execution.metadata().observation_kind() {
-                InvariantObservationKind::Committed => {
-                    summary.committed_observation_count += 1;
-                }
-                InvariantObservationKind::Speculative => {
-                    summary.speculative_observation_count += 1;
-                }
-            }
-
-            match execution.metadata().execution_point() {
-                InvariantExecutionPoint::ProposedState => {
-                    summary.commit_boundary_seen = true;
-                    summary.mutation_sensitive_seen = true;
-                    summary.snapshot_publication_seen = true;
-                }
-                InvariantExecutionPoint::CommitBoundary => {
-                    summary.commit_boundary_seen = true;
-                }
-                InvariantExecutionPoint::MutationSensitive => {
-                    summary.mutation_sensitive_seen = true;
-                }
-                InvariantExecutionPoint::SnapshotPublication => {
-                    summary.snapshot_publication_seen = true;
-                }
-                InvariantExecutionPoint::CertificationBoundary => {
-                    summary.certification_boundary_seen = true;
-                }
-                InvariantExecutionPoint::HarnessAudit => {
-                    summary.harness_audit_seen = true;
-                }
-                InvariantExecutionPoint::GraphComposition => {
-                    summary.graph_composition_seen = true;
-                }
-            }
-
-            summary.consumed_groups = summary
-                .consumed_groups
-                .union(execution.metadata().consumed_groups());
-            summary.applicable_groups = summary
-                .applicable_groups
-                .union(execution.metadata().applicable_groups());
-
-            match execution.metadata().disposition() {
-                InvariantExecutionDisposition::Executed => {
-                    summary.executed_count += 1;
-                }
-                InvariantExecutionDisposition::SkippedByPlanContract
-                | InvariantExecutionDisposition::SkippedByMayBreakMask => {
-                    summary.skipped_count += 1;
-                }
-            }
-
-            let execution_summary = execution.summary();
-            summary.result_count += execution_summary.result_count();
-            summary.advisory_count += execution_summary.advisory_count();
-            summary.violation_count += execution_summary.violation_count();
-            summary.custom_failure_count += execution_summary.custom_failure_count();
-            summary.custom_panic_count += execution_summary.custom_panic_count();
-            summary.blocking_violation |= execution_summary.has_blocking_violation();
-            summary.publication_violation |= execution_summary.has_publication_violation();
+            summary.include_execution(ValidationSummaryInput {
+                execution_point: execution.metadata().execution_point(),
+                observation_kind: execution.metadata().observation_kind(),
+                consumed_groups: execution.metadata().consumed_groups(),
+                applicable_groups: execution.metadata().applicable_groups(),
+                disposition: execution.metadata().disposition(),
+                has_merged_plan: execution.metadata().has_merged_plan(),
+                results: execution.summary(),
+            });
         }
-
         summary
     }
 
     pub fn summary(&self) -> CommitValidationSummary {
         self.summary
+    }
+}
+
+pub(crate) struct ValidationSummaryInput<'a> {
+    pub(crate) execution_point: InvariantExecutionPoint,
+    pub(crate) observation_kind: InvariantObservationKind,
+    pub(crate) consumed_groups: InvariantGroupSet,
+    pub(crate) applicable_groups: InvariantGroupSet,
+    pub(crate) disposition: InvariantExecutionDisposition,
+    pub(crate) has_merged_plan: bool,
+    pub(crate) results: &'a crate::validation::engine::InvariantExecutionSummary,
+}
+
+impl CommitValidationSummary {
+    pub(crate) fn include_execution(&mut self, input: ValidationSummaryInput<'_>) {
+        self.execution_count += 1;
+        if input.has_merged_plan {
+            self.plan_backed_execution_count += 1;
+        }
+
+        match input.observation_kind {
+            InvariantObservationKind::Committed => {
+                self.committed_observation_count += 1;
+            }
+            InvariantObservationKind::Speculative => {
+                self.speculative_observation_count += 1;
+            }
+        }
+
+        match input.execution_point {
+            InvariantExecutionPoint::ProposedState => {
+                self.commit_boundary_seen = true;
+                self.mutation_sensitive_seen = true;
+                self.snapshot_publication_seen = true;
+            }
+            InvariantExecutionPoint::CommitBoundary => {
+                self.commit_boundary_seen = true;
+            }
+            InvariantExecutionPoint::MutationSensitive => {
+                self.mutation_sensitive_seen = true;
+            }
+            InvariantExecutionPoint::SnapshotPublication => {
+                self.snapshot_publication_seen = true;
+            }
+            InvariantExecutionPoint::CertificationBoundary => {
+                self.certification_boundary_seen = true;
+            }
+            InvariantExecutionPoint::HarnessAudit => {
+                self.harness_audit_seen = true;
+            }
+            InvariantExecutionPoint::GraphComposition => {
+                self.graph_composition_seen = true;
+            }
+        }
+
+        self.consumed_groups = self.consumed_groups.union(input.consumed_groups);
+        self.applicable_groups = self.applicable_groups.union(input.applicable_groups);
+
+        match input.disposition {
+            InvariantExecutionDisposition::Executed => {
+                self.executed_count += 1;
+            }
+            InvariantExecutionDisposition::SkippedByPlanContract
+            | InvariantExecutionDisposition::SkippedByMayBreakMask => {
+                self.skipped_count += 1;
+            }
+        }
+
+        let execution_summary = input.results;
+        self.result_count += execution_summary.result_count();
+        self.advisory_count += execution_summary.advisory_count();
+        self.violation_count += execution_summary.violation_count();
+        self.custom_failure_count += execution_summary.custom_failure_count();
+        self.custom_panic_count += execution_summary.custom_panic_count();
+        self.blocking_violation |= execution_summary.has_blocking_violation();
+        self.publication_violation |= execution_summary.has_publication_violation();
     }
 }

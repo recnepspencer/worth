@@ -98,6 +98,7 @@ impl SourceCustody {
 
 #[derive(Clone)]
 pub enum WorthQueryAcceptedOutputAuthority {
+    Recovered(super::WorthQueryRecoveredProducerPublication),
     Committed(crate::domain_computation::primary_graph::WorthQueryApplicationCommitReceipt),
     Stable(crate::domain_computation::primary_graph::output_lineage::PublishedStableLineage),
     Restored(WorthQueryRestoredAcceptedOutput),
@@ -190,7 +191,7 @@ pub(in crate::domain_computation::primary_graph) use restoration::WorthQueryRest
 pub(crate) mod consumer_custody;
 pub(crate) mod settlement_index;
 mod settlement_progression;
-pub(in crate::domain_computation::primary_graph) use consumer_custody::ConsumerCustody;
+
 pub(crate) mod settlement_retirement;
 pub(crate) mod succession;
 use settlement_retirement::SupersededSettlements;
@@ -370,3 +371,20 @@ mod court_doors_for_test;
 mod demand_record_court_doors_for_test;
 #[path = "registry/source_custody_court_doors_for_test.rs"]
 mod source_custody_court_doors_for_test;
+
+impl WorthQueryAcceptedOutputAuthority {
+    pub(in crate::domain_computation::primary_graph) fn publication_view(
+        &self,
+    ) -> Option<super::OutputPublicationView<'_>> {
+        match self {
+            Self::Committed(receipt) => Some(receipt.into()),
+            Self::Recovered(publication) => Some(publication.view()),
+            Self::Stable(_) | Self::Restored(_) => None,
+        }
+    }
+}
+
+pub use consumer_custody::{ConsumerCustody, ConsumerHandoff};
+#[cfg(test)]
+#[path = "registry_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;

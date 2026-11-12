@@ -345,3 +345,26 @@ impl WorthQueryExactRecordedOutput {
         )
     }
 }
+
+impl WorthQueryApplicationOutputLineage {
+    #[doc(hidden)]
+    pub fn resolve_original_publication_for_test<Binding: 'static>(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        scope: &crate::domain_computation::authorization::WorthQueryOperationScopeBinding,
+        observation: &worth_runtime_world::facade::ProductBranchObservation,
+        binding: crate::domain_computation::primary_graph::WorthQueryApplicationIdempotencyBinding,
+        receipt: &crate::domain_computation::primary_graph::WorthQueryRecoveredApplicationCommitReceipt,
+    ) -> Result<
+        Option<super::input_cutoff::stable_cutover::PublishedStableLineage>,
+        worth_relational::facade::mvcc::CompanionPreflightStop,
+    > {
+        self.resolve_original_publication::<Binding>(
+            execution,
+            scope,
+            observation,
+            binding,
+            receipt,
+        )
+    }
+}

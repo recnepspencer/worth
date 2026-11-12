@@ -25,6 +25,27 @@ Inspect that report for observed placement and worker activity. Handle admission
 interruption and allocation failures through their typed result at the call that
 owns them.
 
+For an effectful owner that must retain its returned business result through
+later maintenance, use `ExecutionRequest::run_native_completion`. It returns
+the exact callback value whenever the callback returns, even when a final or
+nested stop occurs, together with the original scope's physical report.
+Admission or interruption before callback entry still refuses. Keep business
+success, refusal and partial-effect custody in that value; its return does not
+prove that canonical work committed. Existing `run_native` retains its final
+control check, and `prepare_native` remains exclusively pre-effect preparation.
+Completion keeps the actual descendant and meter alive throughout the callback;
+accounted ancestors retain remaining work, one charge and latched stops. It
+adds no accounting contract or fresh allowance to worker-only requests.
+
+For accounted effectful completion, use
+`ExecutionRequest::run_completion(ceiling, operation)`. It uses the existing
+value-preserving `ExecutionWorkCeiling::run` scope and returns its aggregate
+`ExecutionReport`. The declared ceiling and remaining parent allowance both
+apply. Admission projects the actual descendant before checking its memory and
+worker policy. Both completion ports refuse an invoking owner's existing or
+unpolled joined stop without calling the operation or settling that cause again.
+No extra scope surrounds the accounted operation.
+
 For a platform entry that prepares several dependent values before publishing
 effects, use `ExecutionRequest::prepare_native`. Standalone leased entry opens
 one original scope for the complete preparation; active carriage reuses the
@@ -88,6 +109,23 @@ bounds denial is `UninitializedElement`; a stopped request cannot seal. The seal
 `ExecutionArray` remains immutable. `ExecutionRequestArrayDenial` distinguishes
 original request refusal from physical allocation failure.
 
+For retained immutable bytes, finish a byte request builder with
+`seal_immutable_bytes()`. The original request admits the byte owner's actual
+shared control allocation before construction, in addition to its existing
+payload backing. Clones share both reservations through the final alias.
+`charged_payload_bytes()` continues to report only the payload charge. Converting
+an already sealed array with `into_immutable_bytes()` retains its ordinary
+control-allocation contract because the original request is no longer present.
+
+
+Native owners moving a non-`Clone` value into an ordered map use
+`ExecutionOrderedMapCell::prepare_owned_native_for_request`. It admits the
+actual entry and map-node controls before constructing either shared owner.
+Consume that detached cell with `insert_owned_vacant_prepared` on the unique map.
+`remove_owned_retaining_unique` returns its actual retired cell so the owner can
+dispose of the payload outside its gate. The caller still owns the admission
+contract of any heap inside the moved value; these APIs share no mutable payload
+or raw `Arc` and require no value clone.
 ## Original-scoped work
 
 Within `ExecutionRequest::run_native_with_checkpoint`, use
@@ -471,6 +509,22 @@ Use `retained_bytes()` when the map has an accounted storage contract.
 `iter`/`keys`/`values` borrow that backing. `rank_of(&key)` and
 `entry_at(rank)` navigate cached subtree counts. The application retains source,
 session and installation checks around access to these values.
+
+For a private, uniquely owned map with `Copy` keys and values,
+`ExecutionOrderedMapCell::prepare_for_request` admits the actual singleton node
+and entry before allocating either owner. `insert_vacant_prepared`,
+`set_existing_unique` and `remove_retaining_unique` preflight every affected
+owner, including rotation and successor paths, through actual Arc uniqueness.
+Alias refusal preserves the map and prepared cell. These edits allocate no map
+backing and invoke no key/value `Clone`; comparator behavior remains the key's
+`Ord` contract. Removal returns the detached original cell and its reservations
+for disposal outside the caller's registry guard. No shared map root may escape
+an owner that relies on a sequence of these unique edits.
+
+`prepare_in` retains an explicit ordinary allocation policy without fabricating
+a request. Layout bookkeeping alone does not establish an execution reservation;
+outside a run, System allocation can report a measured layout without funding it.
+The existing persistent edit path and node layout are unchanged.
 
 `KeyedPartitioner::upsert_in`, `remove_in` and explicit full `kept_in` use this
 same storage with the current allocation policy. Edits update membership and

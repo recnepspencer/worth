@@ -165,7 +165,7 @@ impl<'runtime> HistoryAccess<'runtime> {
     }
 
     #[cfg(test)]
-    pub(crate) fn commit_envelopes_snapshot(&self) -> Vec<CanonicalCommitEnvelope> {
+    pub(crate) fn commit_envelopes_snapshot(&self) -> Vec<std::sync::Arc<CanonicalCommitEnvelope>> {
         let mut envelopes = self
             .runtime
             .history
@@ -176,14 +176,12 @@ impl<'runtime> HistoryAccess<'runtime> {
                     artifact.commit_id(),
                     artifact
                         .resident_envelope()
-                        .expect("memory fixture retains its envelopes")
-                        .as_ref()
-                        .clone(),
+                        .expect("memory fixture retains its envelopes"),
                 )
             })
             .collect::<std::collections::BTreeMap<_, _>>();
         for envelope in self.runtime.history.performed_canonical_envelopes() {
-            envelopes.insert(envelope.commit.commit_id, envelope.as_ref().clone());
+            envelopes.insert(envelope.commit.commit_id, envelope);
         }
         envelopes.into_values().collect()
     }
@@ -210,9 +208,7 @@ impl<'runtime> HistoryAccess<'runtime> {
     pub(crate) fn branch_head(&self, branch_id: &BranchId) -> Option<RelationalCommitReceipt> {
         let cell = self.runtime.history.branch_cell(branch_id)?;
         if let Some(root) = cell.root() {
-            return root
-                .canonical_envelope()
-                .map(|envelope| envelope.commit.clone());
+            return root.commit_receipt().cloned();
         }
         // Rootless cells exist only in legacy recovery fixtures. Operational
         // cells always select their head through the immutable root above.

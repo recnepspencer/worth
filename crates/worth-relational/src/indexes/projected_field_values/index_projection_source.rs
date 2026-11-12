@@ -74,13 +74,6 @@ impl<'view> IndexProjectionSource<'view> {
         self.schema_authority()?.entity_aspect_plan(kind_id)
     }
 
-    pub(in crate::indexes) fn relation_aspect_plan(
-        &self,
-        kind_id: KindId,
-    ) -> Option<&LoweredAspectContractPlan> {
-        self.schema_authority()?.relation_aspect_plan(kind_id)
-    }
-
     /// Cost: the selected endpoint's adjacency, never the complete relation kind.
     pub(in crate::indexes) fn relations_for_endpoint(
         &self,
@@ -99,23 +92,6 @@ impl<'view> IndexProjectionSource<'view> {
             )?
             .map(|read| read.into_records())
             .map_err(|_| crate::execution::RelationalExecutionDenialCause::ResultCapacityExceeded)
-    }
-
-    pub(in crate::indexes) fn for_each_entity(
-        &self,
-        execution: &worth_execution::ExecutionRequest<'_, '_>,
-        kind_id: KindId,
-        mut visit: impl FnMut(
-            &EntityReadRecord,
-        ) -> Result<(), crate::execution::RelationalExecutionDenialCause>,
-    ) -> Result<(), crate::execution::RelationalExecutionDenialCause> {
-        for record in self
-            .projection
-            .authoritative_entity_records(execution, kind_id)?
-        {
-            visit(&record)?;
-        }
-        Ok(())
     }
 
     pub(in crate::indexes) fn for_each_relation(

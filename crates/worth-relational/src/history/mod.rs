@@ -24,10 +24,10 @@ pub use access::{
     RelationalRecordHistoryPageLimits, RelationalRecordHistorySelection,
     RelationalRecordHistorySelectionLimits, RelationalRecordHistorySubject,
 };
-pub use authority::{HistoryAuthority, OutputOriginHeaderCorruptionForTest};
+pub use authority::HistoryAuthority;
 pub(crate) use commit::{
-    RelationalCommitArtifact, RelationalCommitAuthoritativeAllocationKind, RelationalCommitCatalog,
-    RelationalCommitCatalogEnvelopeAppendDenial,
+    OriginalCanonicalInputs, RelationalCommitArtifact, RelationalCommitAuthoritativeAllocationKind,
+    RelationalCommitCatalog, RelationalCommitCatalogEnvelopeAppendDenial,
 };
 pub use commit::{
     RelationalCommitArtifactDenial, RelationalCommitCatalogAppendDenial,
@@ -36,8 +36,12 @@ pub use commit::{
     RelationalRetainedSelectionArtifactDenial,
 };
 
-pub(crate) use commit::{RelationalCommitEnvelopeResidency, RelationalCommitIndexEntry};
-
 pub(crate) use access::relevant_writes::posting_key::AuthoredWritePostingKey;
-
 pub(crate) use access::relevant_writes::source_impact;
+pub(crate) use commit::{
+    RelationalCommitEnvelopeResidency, RelationalCommitIndexEntry, RetainedCanonicalIndex,
+    RetiredCanonicalPlacement,
+};
+#[cfg(test)]
+#[path = "mod_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;

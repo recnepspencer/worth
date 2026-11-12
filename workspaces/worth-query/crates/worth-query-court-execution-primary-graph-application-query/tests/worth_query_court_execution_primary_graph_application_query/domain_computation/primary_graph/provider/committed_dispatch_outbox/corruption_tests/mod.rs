@@ -81,7 +81,7 @@ fn a_committed_record_of_another_kind_denies_before_projection() {
     );
     let provider = (*world.application.runtime_for_test()).primary_provider_for_test();
     let record = record();
-    let (binding, commit, runtime_id) = (*provider.graph_for_test()).with_runtime_mut_for_test(execution, |runtime| {
+    let (binding, commit, runtime_id) = (*provider.graph_for_test()).with_runtime_for_test(execution, |runtime| {
         let (outbox_intent, pending) = bind_dispatch_outbox_create_intent(
             Some((*(*provider.graph_for_test()).layout_for_test()).provider_dispatch_outbox_for_test()),
             Some(&record),
@@ -95,6 +95,8 @@ fn a_committed_record_of_another_kind_denies_before_projection() {
             WorthQueryApplicationCommitOutcomeIdentity::mint_for_test().unwrap(),
             0,
             worth_relational::facade::identity::PartitionId::main(),
+            None,
+            false,
         );
         let mut transaction: BranchBoundRelationalTransaction = {
     let transaction_validation_input = runtime
@@ -154,7 +156,7 @@ fn a_deleted_record_is_non_visible_at_the_requested_commit_without_binding_fallb
     );
     let provider = (*world.application.runtime_for_test()).primary_provider_for_test();
     let record = record();
-    let (binding, deletion_commit, runtime_id) = (*provider.graph_for_test()).with_runtime_mut_for_test(execution, |runtime| {
+    let (binding, deletion_commit, runtime_id) = (*provider.graph_for_test()).with_runtime_for_test(execution, |runtime| {
         let (intent, pending) = bind_dispatch_outbox_create_intent(
             Some((*(*provider.graph_for_test()).layout_for_test()).provider_dispatch_outbox_for_test()),
             Some(&record),
@@ -239,7 +241,7 @@ pub fn committed_substituted_row(
         .provider_dispatch_outbox_for_test()
         .clone();
     let branch = primary_relational_branch_id();
-    let (binding, commit, runtime_id) = (*provider.graph_for_test()).with_runtime_mut_for_test(request_execution, |runtime| {
+    let (binding, commit, runtime_id) = (*provider.graph_for_test()).with_runtime_for_test(request_execution, |runtime| {
         let (intent, pending) =
             bind_dispatch_outbox_create_intent(
                 Some(&layout),

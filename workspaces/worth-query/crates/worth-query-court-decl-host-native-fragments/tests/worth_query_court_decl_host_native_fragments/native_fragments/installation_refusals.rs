@@ -1,6 +1,6 @@
 //! Installation carries field codec and Native commit refusals through publication.
 use super::*;
-use worth_query_host::facade::application_installation::WorthQueryInMemoryApplicationDenial;
+use worth_query_host::facade::application_installation::WorthQueryApplicationPreparationDenial;
 use worth_query_testkit_decl::fragment_capacity_fixture::{Limited, Text, TextBinding};
 
 #[test]
@@ -11,7 +11,7 @@ fn over_capacity_field_installation_preserves_its_locus_and_typed_codec_cause() 
         Err(error) => error,
         Ok(_) => panic!("the over-capacity field must refuse installation"),
     };
-    let WorthQueryInMemoryApplicationDenial::InitialState(denial) = error else {
+    let WorthQueryApplicationPreparationDenial::InitialState(denial) = error else {
         panic!("the field codec must refuse the initial seed: {error:?}");
     };
     let (field, cause) = denial
@@ -83,7 +83,7 @@ fn conditional_installation_retains_the_original_native_field_commit_refusal() {
         Err(error) => error,
         Ok(_) => panic!("the incomplete stored aspect must refuse publication"),
     };
-    let WorthQueryInMemoryApplicationDenial::ConditionalPublication(denial) = error else {
+    let WorthQueryApplicationPreparationDenial::ConditionalPublication(denial) = error else {
         panic!("expected the conditional publication refusal: {error:?}");
     };
     let WorthQueryConditionalRuntimeInstallationDenialKind::PrimaryGraphPublication(cause) =

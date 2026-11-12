@@ -14,7 +14,7 @@ enum SymbolClosureLevel {
 // Weak opaque allocations keep keys unique after a cell is released without
 // retaining any region payload or making dictionary snapshots own a region.
 enum SymbolAdmissionSubject {
-    Region(Weak<()>),
+    Region(super::cell::RegionCellWeak),
     Publication(Weak<()>),
 }
 #[derive(Debug, Clone)]
@@ -47,7 +47,7 @@ impl RelationalRegionSymbolAdmissionIdentity {
             };
         }
         Self {
-            subject: SymbolAdmissionSubject::Region(Arc::downgrade(&region.symbol_identity)),
+            subject: SymbolAdmissionSubject::Region(RelationalRegionResidency::downgrade(region)),
             level,
         }
     }

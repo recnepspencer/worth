@@ -18,6 +18,7 @@ use pinning::pin_runtime_read;
 mod root_selection;
 pub(crate) mod tree_materialization;
 pub(crate) mod work_observation;
+
 pub use entry_observation::{
     query_read_kernel_entries_by_root_on_this_thread_for_test,
     query_read_kernel_entries_on_this_thread_for_test,

@@ -3,10 +3,10 @@
 use worth_store_physical_format::BLOB_CONTROL_FRAME_MAX_BYTES;
 use worth_store_recovery_physics::WitnessedSelectedControlFrame;
 
-use super::ResolvedPlanningBasis;
+use super::ResolvedPlanningState;
 
 pub(super) fn record_selected_reads(
-    basis: &mut ResolvedPlanningBasis,
+    basis: &mut ResolvedPlanningState,
     addressed_artifacts_read: u64,
     bytes_read: u64,
     scratch: u64,

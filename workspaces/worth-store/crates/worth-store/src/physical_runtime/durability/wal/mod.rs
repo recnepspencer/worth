@@ -42,3 +42,6 @@ pub use reclamation::{PhysicalWalReclamationObservation, PhysicalWalReclamationR
 pub(in crate::physical_runtime) use runtime_owner::PhysicalWalRuntimeOwner;
 mod copy_obligation;
 pub(in crate::physical_runtime) use copy_obligation::RetainedExtentCopyObligation;
+#[cfg(test)]
+#[path = "mod_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;

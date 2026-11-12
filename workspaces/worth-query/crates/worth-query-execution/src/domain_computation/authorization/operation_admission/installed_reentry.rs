@@ -91,10 +91,10 @@ impl WorthQueryAdmittedOperation {
         tag: &BrandTag,
         installed: &InstalledOperationCatalog,
     ) -> Result<(), Denial> {
-        let retained = installed.operation(&self.operation).ok_or_else(|| {
+        let retained = installed.operation(&self.data.operation).ok_or_else(|| {
             Denial::new(
                 Kind::Refused(Refusal::StaleInstalledOperation),
-                &self.operation,
+                &self.data.operation,
             )
         })?;
         // Borrow the genuine installed handle after releasing the catalog lock.
@@ -106,11 +106,11 @@ impl WorthQueryAdmittedOperation {
         tag: &BrandTag,
         installed: InstalledOperationView<'_>,
     ) -> Result<(), Denial> {
-        let refuse = |kind| Denial::new(Kind::Refused(kind), &self.operation);
-        if self.binding_identity != *installed.binding_identity()
-            || self.operation != installed.operation()
-            || self.operation_authority_identity_bytes != installed.authority_identity_bytes()
-            || self.operation_definition_identity != installed.definition_identity_bytes()
+        let refuse = |kind| Denial::new(Kind::Refused(kind), &self.data.operation);
+        if self.data.binding_identity != *installed.binding_identity()
+            || self.data.operation != installed.operation()
+            || self.data.operation_authority_identity_bytes != installed.authority_identity_bytes()
+            || self.data.operation_definition_identity != installed.definition_identity_bytes()
             || tag.operation_type != EqualityTypeId::from(installed.operation_type_id())
         {
             return Err(refuse(Refusal::StaleInstalledOperation));

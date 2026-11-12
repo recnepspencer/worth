@@ -88,7 +88,7 @@ pub fn assert_commit_affinity_substitutions(
         Err(Denial::CommitMismatch)
     );
     let feature = BranchId("committed-outbox-feature".to_owned());
-    (*provider.graph_for_test()).with_runtime_mut_for_test(execution, |runtime| {
+    (*provider.graph_for_test()).with_runtime_for_test(execution, |runtime| {
         let (_, basis) = runtime.observe_fork_source(&commit.branch_id).unwrap();
         runtime
             .fork_branch(execution, feature.clone(), basis)
@@ -181,7 +181,7 @@ fn every_later_valid_field_substitution_leaves_exact_commit_truth_unchanged() {
         let RecordRef::Entity(entity_id) = observed.record_ref() else {
             panic!("dispatch outbox is an entity record");
         };
-        (*provider.graph_for_test()).with_runtime_mut_for_test(execution, |runtime| {
+        (*provider.graph_for_test()).with_runtime_for_test(execution, |runtime| {
             let locator = outbox_field_locator(
                 (*(*provider.graph_for_test()).layout_for_test())
                     .provider_dispatch_outbox_for_test(),
@@ -242,7 +242,7 @@ fn later_deletion_cannot_erase_exact_commit_truth() {
     let RecordRef::Entity(entity_id) = observed.record_ref() else {
         panic!("dispatch outbox is an entity record");
     };
-    (*provider.graph_for_test()).with_runtime_mut_for_test(execution, |runtime| {
+    (*provider.graph_for_test()).with_runtime_for_test(execution, |runtime| {
         let mut transaction = {
             let transaction_validation_input = runtime
                 .admit_branch_basis(&runtime.main_branch_identity())

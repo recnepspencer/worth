@@ -8,6 +8,7 @@ use crate::domain_computation::authorization::{
 impl WorthQueryAdmittedOperation {
     pub(super) fn bind_elevation_approval(
         mut self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         binding: WorthQueryElevationApprovalBinding,
     ) -> Result<
         Self,
@@ -17,7 +18,7 @@ impl WorthQueryAdmittedOperation {
         ),
     > {
         if !matches!(
-            self.authorization_basis,
+            self.data.authorization_basis,
             ErasedAuthorizationBasis::Capability
         ) {
             return Err((
@@ -25,20 +26,38 @@ impl WorthQueryAdmittedOperation {
                     WorthQueryOperationAuthorizationDenialKind::Refused(
                         AuthorizationRefusal::InconsistentDecision,
                     ),
-                    &self.operation,
+                    &self.data.operation,
                 ),
                 binding,
             ));
-        }
-        self.authorization_basis = ErasedAuthorizationBasis::ElevationApproval { binding };
+        };
+        let memory = match execution.reserve_retained_memory(std::mem::size_of::<
+            WorthQueryElevationApprovalBinding,
+        >() as u64)
+        {
+            Ok(memory) => memory,
+            Err(stop) => {
+                return Err((
+                    crate::domain_computation::authorization::denial::relational_read_denial(
+                        stop.into(),
+                        &self.data.operation,
+                    ),
+                    binding,
+                ))
+            }
+        };
+        self.data.authorization_basis = ErasedAuthorizationBasis::ElevationApproval {
+            binding: Box::new(binding),
+            _binding_memory: memory,
+        };
         Ok(self)
     }
 
     pub(in crate::domain_computation) fn elevation_approval_binding(
         &self,
     ) -> Option<&WorthQueryElevationApprovalBinding> {
-        match &self.authorization_basis {
-            ErasedAuthorizationBasis::ElevationApproval { binding } => Some(binding),
+        match &self.data.authorization_basis {
+            ErasedAuthorizationBasis::ElevationApproval { binding, .. } => Some(binding),
             _ => None,
         }
     }
@@ -47,12 +66,19 @@ impl WorthQueryAdmittedOperation {
         &mut self,
     ) -> Option<WorthQueryElevationApprovalBinding> {
         match std::mem::replace(
-            &mut self.authorization_basis,
+            &mut self.data.authorization_basis,
             ErasedAuthorizationBasis::Capability,
         ) {
-            ErasedAuthorizationBasis::ElevationApproval { binding } => Some(binding),
+            ErasedAuthorizationBasis::ElevationApproval {
+                binding,
+                _binding_memory: memory,
+            } => {
+                let binding = *binding;
+                drop(memory);
+                Some(binding)
+            }
             other => {
-                self.authorization_basis = other;
+                self.data.authorization_basis = other;
                 None
             }
         }

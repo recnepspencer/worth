@@ -13,7 +13,9 @@ use crate::domain_computation::primary_graph::{
 #[derive(Clone)]
 pub enum OriginalSettledProducerSource {
     Committed {
+        #[allow(dead_code, reason = "The typed diagnostic or custody payload stays owned through return and Drop; this owner does not inspect it")]
         settlement: Option<Arc<RecordedSettlementIdentity>>,
+        #[allow(dead_code, reason = "The typed diagnostic or custody payload stays owned through return and Drop; this owner does not inspect it")]
         publication: Option<WorthQueryProductBranchReadIdentity>,
         changes: WorthQueryApplicationCommittedChanges,
         inputs: Option<
@@ -21,13 +23,16 @@ pub enum OriginalSettledProducerSource {
         >,
         conditional: Option<worth_runtime_bridge::facade::BridgeConditionalCausalObservation>,
         evaluation: Option<Arc<crate::domain_computation::primary_graph::application_contribution::ProducerOutputEvaluation>>,
+        #[allow(dead_code, reason = "The typed diagnostic or custody payload stays owned through return and Drop; this owner does not inspect it")]
         disclosure: Option<Arc<OriginalSourceInspectionDisclosure>>,
         original_publication: Option<Arc<super::OriginalProducingPublication>>,
     },
     StableReused {
+        #[allow(dead_code, reason = "The typed diagnostic or custody payload stays owned through return and Drop; this owner does not inspect it")]
         settlement: Arc<RecordedSettlementIdentity>,
     },
     Restored {
+        #[allow(dead_code, reason = "The typed diagnostic or custody payload stays owned through return and Drop; this owner does not inspect it")]
         checkpoint: super::super::WorthQueryAcceptedOutputCheckpointIdentity,
     },
     HistoricalSelection {
@@ -43,6 +48,7 @@ pub struct OriginalSettledProducerObservation {
     read: WorthQueryProductBranchReadIdentity,
     source: OriginalSettledProducerSource,
     correspondence: Arc<WorthQueryApplicationOutputCorrespondence>,
+    historical_reads: Option<Arc<[crate::domain_computation::primary_graph::application_contribution::producer::predecessor_reads::WorthQueryHistoricalProducerRead]>>,
     _memory: Option<worth_execution::ExecutionMemoryReservation>,
 }
 
@@ -77,6 +83,25 @@ impl OriginalSettledProducerObservation {
                     original_publication: completion.original_producing_publication().cloned(),
                 },
                 receipt.retain_output_correspondence(),
+            ),
+            WorthQueryAcceptedOutputAuthority::Recovered(publication) => (
+                OriginalSettledProducerSource::Committed {
+                    settlement: publication.view().exact_output_settlement().cloned(),
+                    publication: publication
+                        .view()
+                        .committed_product_publication()
+                        .observed_product_identity(),
+                    changes: publication.view().committed_changes().clone(),
+                    inputs: publication.view().performed_input_facts().cloned(),
+                    conditional: completion.readiness.causal_observation().cloned(),
+                    evaluation: completion.readiness.output_evaluation().cloned(),
+                    disclosure: publication
+                        .view()
+                        .authority_binding()
+                        .retain_original_inspection_disclosure(),
+                    original_publication: completion.original_producing_publication().cloned(),
+                },
+                publication.view().retain_output_correspondence(),
             ),
             WorthQueryAcceptedOutputAuthority::Stable(stable) => (
                 OriginalSettledProducerSource::StableReused {
@@ -144,12 +169,34 @@ impl OriginalSettledProducerObservation {
                 "original settled producer observation",
             )
         })?;
+        let historical_reads = match &source {
+            OriginalSettledProducerSource::Committed {
+                settlement: Some(identity),
+                ..
+            }
+            | OriginalSettledProducerSource::StableReused {
+                settlement: identity,
+            } => runtime
+                .runtime
+                .primary_provider
+                .graph
+                .output_lineage
+                .lock()
+                .unwrap_or_else(std::sync::PoisonError::into_inner)
+                .retain_predecessor_reads(identity),
+            OriginalSettledProducerSource::Committed {
+                settlement: None, ..
+            }
+            | OriginalSettledProducerSource::Restored { .. }
+            | OriginalSettledProducerSource::HistoricalSelection { .. } => None,
+        };
         Ok(Arc::new(Self {
             runtime_authority: runtime.runtime.authority_identity().as_u64(),
             schema: runtime.installed_schema.binding_identity(),
             read: WorthQueryProductBranchReadIdentity::from_observation(product.observation()),
             source,
             correspondence,
+            historical_reads,
             _memory: memory,
         }))
     }
@@ -173,6 +220,11 @@ impl OriginalSettledProducerObservation {
         self.read.matches_observation(product)
     }
 
+    pub(in crate::domain_computation::primary_graph) fn predecessor_reads(
+        &self,
+    ) -> Option<&[crate::domain_computation::primary_graph::application_contribution::producer::predecessor_reads::WorthQueryHistoricalProducerRead]>{
+        self.historical_reads.as_deref()
+    }
     pub fn read(&self) -> &WorthQueryProductBranchReadIdentity {
         &self.read
     }

@@ -1,13 +1,9 @@
 use crate::runtime::{RelationalPreparationRuntime, RelationalRuntime};
-use crate::transactions::data::{
-    CommitConflict, CommitValidation, ConflictClass, TransactionCommitError,
-};
+use crate::transactions::data::{CommitConflict, ConflictClass, TransactionCommitError};
 
 use super::proposal_invariants::stale_validated_proposal;
 use super::proposal_source::RelationalProposalSource;
-use super::validated_proposal::{
-    RelationalMutationInvariantEvidence, StrategyProposalDecoration, ValidatedRelationalProposal,
-};
+use super::validated_proposal::{StrategyProposalDecoration, ValidatedRelationalProposal};
 
 impl RelationalPreparationRuntime {
     pub(crate) fn validate_consulted_branch_transaction(
@@ -102,10 +98,34 @@ impl RelationalPreparationRuntime {
     fn validate_branch_transaction_source(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
+        transaction: crate::mvcc::BranchBoundRelationalTransaction,
+        source: RelationalProposalSource,
+        context: Option<&dyn crate::validation::candidate_source::ManagedIndexSourceContextFactory>,
+    ) -> Result<ValidatedRelationalProposal, TransactionCommitError> {
+        self.select_home_contracts(&transaction.basis, transaction.home_target.as_ref())?
+            .validate_selected_branch_transaction_source(execution, transaction, source, context)
+    }
+
+    fn validate_selected_branch_transaction_source(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         mut transaction: crate::mvcc::BranchBoundRelationalTransaction,
         source: RelationalProposalSource,
         context: Option<&dyn crate::validation::candidate_source::ManagedIndexSourceContextFactory>,
     ) -> Result<ValidatedRelationalProposal, TransactionCommitError> {
+        self.durability_admission
+            .admit_home_program_write(
+                transaction.home_step.as_deref(),
+                transaction.recovered_codec_publication_custody.as_deref(),
+            )
+            .map_err(|cause| {
+                TransactionCommitError::publication_denied(
+                    crate::mvcc::RelationalPublicationDenial::HomeProgramTransition(cause),
+                )
+            })?;
+        crate::execution::transaction_stage(execution, self.commit_work_budget.as_ref(), || {
+            transaction.require_home_program_body(execution)
+        })?;
         require_not_interrupted(
             &transaction.control,
             &transaction.basis.inner.retention_binding,
@@ -114,7 +134,6 @@ impl RelationalPreparationRuntime {
         let complexity_before = self.performance_access().complexity_counters_snapshot();
         let batch_count = transaction.batches().len();
         let basis = transaction.basis.clone();
-        let branch = basis.identity().branch_id().clone();
         if basis.identity().runtime_instance_id() != self.runtime_instance_id() {
             return Err(TransactionCommitError::conflict(CommitConflict::new(
                 ConflictClass::ForeignRuntime {
@@ -123,7 +142,8 @@ impl RelationalPreparationRuntime {
                 },
             )));
         }
-        self.history.record_transaction_validation_attempt(&branch);
+        self.history
+            .record_transaction_validation_attempt(basis.identity().branch_id());
         if !basis.is_current() {
             return Err(stale_validated_proposal(
                 "transaction basis is no longer current",
@@ -132,108 +152,56 @@ impl RelationalPreparationRuntime {
         self.durability_admission
             .require_open()
             .map_err(TransactionCommitError::durability_unresolved)?;
-        if transaction.schema_authority_input.is_some() {
-            // Schema reframing is a declared whole-root operation; its capture
-            // must not reconstruct a cold region after candidate acceptance.
-            transaction.demand_preparation_regions(
-                execution,
-                &self.services.symbols,
-                &self.index_definitions,
-                &self.mirror_residency,
-            )?;
-        } else {
-            transaction.demand_preparation_inputs(
-                execution,
-                &self.services.symbols,
-                &self.index_definitions,
-            )?;
-        }
+        crate::execution::transaction_stage(execution, self.commit_work_budget.as_ref(), || {
+            if transaction.schema_authority_input.is_some() {
+                // Schema reframing is a declared whole-root operation; its capture
+                // must not reconstruct a cold region after candidate acceptance.
+                transaction.demand_preparation_regions(
+                    execution,
+                    &self.services.symbols,
+                    &self.index_definitions,
+                    &self.mirror_residency,
+                )?;
+            } else {
+                transaction.demand_preparation_inputs(
+                    execution,
+                    &self.services.symbols,
+                    &self.index_definitions,
+                )?;
+            }
+            transaction.prepare_home_target_coverage(execution, self)
+        })?;
         let validated_against_version = basis.observation().version_id();
         let validated_against_commit = basis.observation().commit_id();
-        let super::proposal_round::PreparedProposalRound {
-            prepared,
-            mutation: proposed_mutation,
-            identity: proposal_identity,
-            validation_input,
-            coupled_publication,
-            invariants,
-        } = self.prepare_proposal_round(execution, &mut transaction, &source, context)?;
-        require_not_interrupted(
-            &transaction.control,
-            &transaction.basis.inner.retention_binding,
-            crate::mvcc::RelationalInterruptionBoundary::ProposalValidation,
-        )?;
-        let transaction_id = transaction.transaction_id;
-        let proposed_version = proposal_identity.proposed_version_id();
-        let summary = CommitValidation::summarize(std::slice::from_ref(&invariants));
-        let custom_invariant_execution_receipts =
-            super::custom_invariant_execution_receipt::collect_custom_invariant_execution_receipts(
-                [&invariants],
-                &self.schema_contract_runtime.custom_invariant_registries,
-            );
-        let strategy = source.into_strategy();
-        let strategy_commit_artifacts = strategy.as_ref().map(|strategy| {
-            let validation_cost =
-                crate::commit_strategies::data::StrategyPreviewValidationCostSummary::new(
-                    proposed_version,
-                    prepared.plan.view().commands().merged_intents.len(),
-                    prepared.structural_summary.touched_partitions.len(),
-                    prepared.structural_summary.bulk_entity_slots_reserved,
-                    prepared.structural_summary.bulk_relation_slots_reserved,
-                    1,
-                );
-            strategy.artifacts.clone().with_preview_validation(
-                summary,
-                validation_cost,
-                validated_against_commit,
-                validated_against_version,
-            )
-        });
-        let strategy_bulk_mutation_batch =
-            strategy.and_then(|strategy| strategy.bulk_mutation_batch);
-        let complexity_after = self.performance_access().complexity_counters_snapshot();
-        let validation_complexity_delta =
-            crate::performance::operation_complexity_accounting::complexity_delta_without_commit_gauges(
-                complexity_before,
-                complexity_after,
-            );
-        require_not_interrupted(
-            &transaction.control,
-            &transaction.basis.inner.retention_binding,
-            crate::mvcc::RelationalInterruptionBoundary::ProposalValidation,
-        )?;
-        Ok(ValidatedRelationalProposal {
-            required_output_publication: coupled_publication,
-            required_output_materialization: None,
-            commit_work_budget: self.commit_work_budget.clone(),
-            mutation_authority: transaction.mutation_authority,
-            transaction_id,
-            validation_input,
-            prepared,
-            proposed_mutation,
-            invariants,
-            evidence: RelationalMutationInvariantEvidence {
-                branch,
-                proposed_version,
-                proposal_identity: proposal_identity.clone(),
-                summary,
-                custom_invariant_execution_receipts,
-            },
-            proposal_identity,
+        let round = self.prepare_proposal_round(execution, &mut transaction, &source, context)?;
+        super::proposal_completion::complete(
+            self,
+            execution,
+            transaction,
+            source,
+            round,
+            complexity_before,
+            batch_count,
+            basis,
             validated_against_commit,
             validated_against_version,
-            validated_against_branch_version: basis.descriptor().truth_version(),
-            custom_invariant_generation: self.schema_contract_runtime.custom_invariant_generation,
-            batch_count,
-            strategy_commit_artifacts,
-            strategy_bulk_mutation_batch,
-            validation_complexity_delta,
-        })
+        )
     }
 }
 
 impl RelationalRuntime {
     pub fn validate_branch_transaction(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        transaction: crate::mvcc::BranchBoundRelationalTransaction,
+    ) -> Result<ValidatedRelationalProposal, TransactionCommitError> {
+        worth_execution::run_with_execution_stack(move || {
+            self.validate_branch_transaction_on_execution_stack(execution, transaction)
+        })
+    }
+
+    #[inline(never)]
+    fn validate_branch_transaction_on_execution_stack(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         transaction: crate::mvcc::BranchBoundRelationalTransaction,
@@ -249,6 +217,22 @@ impl RelationalRuntime {
     /// Validate with metadata independently bound to every actual proposal round.
     /// The factory is borrowed; the caller retains its outer fence ownership.
     pub fn validate_branch_transaction_with_source_context(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        transaction: crate::mvcc::BranchBoundRelationalTransaction,
+        context: &dyn crate::validation::candidate_source::ManagedIndexSourceContextFactory,
+    ) -> Result<ValidatedRelationalProposal, TransactionCommitError> {
+        worth_execution::run_with_execution_stack(move || {
+            self.validate_branch_transaction_with_source_context_on_execution_stack(
+                execution,
+                transaction,
+                context,
+            )
+        })
+    }
+
+    #[inline(never)]
+    fn validate_branch_transaction_with_source_context_on_execution_stack(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         transaction: crate::mvcc::BranchBoundRelationalTransaction,

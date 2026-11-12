@@ -1,4 +1,5 @@
 use super::{CanonicalRedoExtentCoordinate, CanonicalRedoTarget, CanonicalRedoTargetIdentity};
+use worth_foundational::CanonicalDigestId;
 
 impl CanonicalRedoTarget {
     pub const fn identity(&self) -> CanonicalRedoTargetIdentity {
@@ -17,7 +18,7 @@ impl CanonicalRedoTarget {
         self.artifact_length
     }
     pub const fn resulting_digest(&self) -> [u8; 32] {
-        self.resulting_digest
+        *self.resulting_digest.bytes()
     }
 
     pub(super) fn canonical_order(&self) -> CanonicalRedoTargetOrder {
@@ -45,7 +46,7 @@ impl CanonicalRedoTarget {
                     artifact_generation,
                     artifact_offset: self.artifact_offset,
                     artifact_length: self.artifact_length,
-                    resulting_digest: self.resulting_digest,
+                    resulting_digest: CanonicalDigestId::new(*self.resulting_digest.bytes()),
                 }
             }
             (
@@ -73,7 +74,7 @@ impl CanonicalRedoTarget {
                     artifact_arena,
                     artifact_offset: self.artifact_offset,
                     artifact_length: self.artifact_length,
-                    resulting_digest: self.resulting_digest,
+                    resulting_digest: CanonicalDigestId::new(*self.resulting_digest.bytes()),
                 }
             }
             _ => unreachable!("decoded redo targets keep exact kind coordinates"),
@@ -91,7 +92,7 @@ pub(super) enum CanonicalRedoTargetOrder {
         artifact_generation: u64,
         artifact_offset: u64,
         artifact_length: u32,
-        resulting_digest: [u8; 32],
+        resulting_digest: CanonicalDigestId,
     },
     Extent {
         allocation_epoch: [u8; 16],
@@ -104,7 +105,7 @@ pub(super) enum CanonicalRedoTargetOrder {
         artifact_arena: u64,
         artifact_offset: u64,
         artifact_length: u32,
-        resulting_digest: [u8; 32],
+        resulting_digest: CanonicalDigestId,
     },
 }
 

@@ -1,9 +1,11 @@
+mod relation_rematerialization;
 use crate::authority::mutation::outcomes::{MutationEvent, MutationOutcome, RecordMutation};
 use crate::authority::mutation::MutationWorkspace;
 use crate::storage::substrate::{EntityExtra, RelationEndpoints, RelationExtra};
 use crate::transactions::data::{
     CommitConflict, ConflictClass, MaterializationMutationIntent, RecordAspectPatchTarget,
 };
+use relation_rematerialization::rematerialize_relation;
 use worth_foundational::facade::PortablePatchReadmissionPurpose;
 
 use super::field_authoring_candidate::{self, FieldAuthoringDomain};
@@ -12,7 +14,7 @@ use super::{record_aspect_patch, relation_endpoint_candidate};
 pub(super) fn apply(
     intent: &MaterializationMutationIntent,
     workspace: &mut MutationWorkspace<'_>,
-) -> Result<MutationOutcome, CommitConflict> {
+) -> Result<MutationOutcome, crate::transactions::data::TransactionCommitError> {
     match intent {
         MaterializationMutationIntent::SuspendEntity(intent) => {
             suspend_entity(intent.entity_id, workspace)
@@ -32,9 +34,18 @@ pub(super) fn apply(
 fn suspend_entity(
     entity_id: crate::identity::data::EntityId,
     workspace: &mut MutationWorkspace<'_>,
-) -> Result<MutationOutcome, CommitConflict> {
+) -> Result<MutationOutcome, crate::transactions::data::TransactionCommitError> {
+    let mut unavailable =
+        EntityExtra::empty_for_request(&workspace.execution()).map_err(|cause| {
+            crate::transactions::data::TransactionCommitError::execution(cause.into())
+        })?;
     let (kind_id, old_state) = workspace.with_context(|context| {
-        let partition = context.state.get_partition_mut(entity_id.partition_id);
+        let partition = context
+            .state
+            .get_partition_mut_for_request(entity_id.partition_id, &context.execution)
+            .map_err(|cause| {
+                crate::transactions::data::TransactionCommitError::execution(cause.into())
+            })?;
         let slot = partition.entity_arena.get(&entity_id).ok_or_else(|| {
             materialization_conflict(
                 crate::transactions::data::RecordRef::Entity(entity_id),
@@ -47,37 +58,70 @@ fn suspend_entity(
                 "entity suspension requires retained kind identity",
             )
         })?;
-        let old_state = slot.extra().authoritative_aspect_state.clone();
+        unavailable.lineage_id = slot.extra().lineage_id;
+        let old_state = Some(slot.retained_extra());
         partition
             .entity_arena
-            .suspend_materialization(entity_id.slot_index())
-            .map_err(|detail| {
-                materialization_conflict(
-                    crate::transactions::data::RecordRef::Entity(entity_id),
-                    detail,
-                )
+            .suspend_materialization_with_extra_for_request(
+                &context.execution,
+                entity_id.slot_index(),
+                unavailable,
+            )
+            .map_err(|denial| match denial {
+                crate::storage::substrate::MetadataWriteDenial::Request(cause) => {
+                    crate::transactions::data::TransactionCommitError::execution(cause.into())
+                }
+                crate::storage::substrate::MetadataWriteDenial::Invalid(detail) => {
+                    materialization_conflict(
+                        crate::transactions::data::RecordRef::Entity(entity_id),
+                        detail,
+                    )
+                    .into()
+                }
             })?;
         context
             .state
-            .mark_entity_slot_touched(entity_id.partition_id, entity_id.slot_index());
-        Ok((kind_id, old_state))
+            .mark_entity_slot_touched_for_request(
+                entity_id.partition_id,
+                entity_id.slot_index(),
+                &context.execution,
+            )
+            .map_err(|cause| {
+                crate::transactions::data::TransactionCommitError::execution(cause.into())
+            })?;
+        Ok::<_, crate::transactions::data::TransactionCommitError>((kind_id, old_state))
     })?;
-    let mut outcome = MutationOutcome::with_capacity(1, 1);
-    outcome.record_change(RecordMutation::EntityMaterializationSuspended {
-        entity_id,
-        kind_id,
-        old_authoritative_aspect_state: old_state,
-    });
-    outcome.record_event(MutationEvent::EntityUpdated { entity_id });
+    let mut outcome = MutationOutcome::with_capacity(&workspace.execution(), 1, 1)?;
+    outcome.record_change(
+        &workspace.execution(),
+        RecordMutation::EntityMaterializationSuspended {
+            entity_id,
+            kind_id,
+            old_authoritative_aspect_state: old_state,
+        },
+    )?;
+    outcome.record_event(
+        &workspace.execution(),
+        MutationEvent::EntityUpdated { entity_id },
+    )?;
     Ok(outcome)
 }
 
 fn suspend_relation(
     relation_id: crate::identity::data::RelationId,
     workspace: &mut MutationWorkspace<'_>,
-) -> Result<MutationOutcome, CommitConflict> {
+) -> Result<MutationOutcome, crate::transactions::data::TransactionCommitError> {
+    let unavailable =
+        RelationExtra::empty_for_request(&workspace.execution()).map_err(|cause| {
+            crate::transactions::data::TransactionCommitError::execution(cause.into())
+        })?;
     let (kind_id, endpoints, old_state) = workspace.with_context(|context| {
-        let partition = context.state.get_partition_mut(relation_id.partition_id);
+        let partition = context
+            .state
+            .get_partition_mut_for_request(relation_id.partition_id, &context.execution)
+            .map_err(|cause| {
+                crate::transactions::data::TransactionCommitError::execution(cause.into())
+            })?;
         let slot = partition.relation_arena.get(&relation_id).ok_or_else(|| {
             materialization_conflict(
                 crate::transactions::data::RecordRef::Relation(relation_id),
@@ -96,53 +140,81 @@ fn suspend_relation(
                 "live relation suspension requires exact endpoints",
             )
         })?;
-        let old_state = slot.extra().authoritative_aspect_state.clone();
+        let old_state = Some(slot.retained_extra());
         partition
             .relation_arena
-            .suspend_materialization(relation_id.slot_index())
-            .map_err(|detail| {
-                materialization_conflict(
-                    crate::transactions::data::RecordRef::Relation(relation_id),
-                    detail,
-                )
+            .suspend_materialization_with_extra_for_request(
+                &context.execution,
+                relation_id.slot_index(),
+                unavailable,
+            )
+            .map_err(|denial| match denial {
+                crate::storage::substrate::MetadataWriteDenial::Request(cause) => {
+                    crate::transactions::data::TransactionCommitError::execution(cause.into())
+                }
+                crate::storage::substrate::MetadataWriteDenial::Invalid(detail) => {
+                    materialization_conflict(
+                        crate::transactions::data::RecordRef::Relation(relation_id),
+                        detail,
+                    )
+                    .into()
+                }
             })?;
         context
             .state
-            .mark_relation_slot_touched(relation_id.partition_id, relation_id.slot_index());
-        Ok((kind_id, endpoints, old_state))
+            .mark_relation_slot_touched_for_request(
+                relation_id.partition_id,
+                relation_id.slot_index(),
+                &context.execution,
+            )
+            .map_err(|cause| {
+                crate::transactions::data::TransactionCommitError::execution(cause.into())
+            })?;
+        Ok::<_, crate::transactions::data::TransactionCommitError>((kind_id, endpoints, old_state))
     })?;
-    let mut outcome = MutationOutcome::with_capacity(1, 1);
-    outcome.record_change(RecordMutation::RelationMaterializationSuspended {
-        relation_id,
-        kind_id,
-        source: endpoints.source,
-        target: endpoints.target,
-        old_authoritative_aspect_state: old_state,
-    });
-    outcome.record_event(MutationEvent::RelationUpdated { relation_id });
+    let mut outcome = MutationOutcome::with_capacity(&workspace.execution(), 1, 1)?;
+    outcome.record_change(
+        &workspace.execution(),
+        RecordMutation::RelationMaterializationSuspended {
+            relation_id,
+            kind_id,
+            source: endpoints.source,
+            target: endpoints.target,
+            old_authoritative_aspect_state: old_state,
+        },
+    )?;
+    outcome.record_event(
+        &workspace.execution(),
+        MutationEvent::RelationUpdated { relation_id },
+    )?;
     Ok(outcome)
 }
 
 fn rematerialize_entity(
     intent: &crate::transactions::data::RematerializeEntityIntent,
     workspace: &mut MutationWorkspace<'_>,
-) -> Result<MutationOutcome, CommitConflict> {
+) -> Result<MutationOutcome, crate::transactions::data::TransactionCommitError> {
     let target = RecordAspectPatchTarget::EntityCreation {
         kind_id: intent.kind_id,
     };
     let patch = record_aspect_patch::readmit_field_authoring(
+        &workspace.execution(),
         &intent.fields,
         PortablePatchReadmissionPurpose::RecordCreation,
         workspace.entity_aspect_plan(intent.kind_id),
         target,
         FieldAuthoringDomain::Entity,
     )?;
-    let state = record_aspect_patch::apply(None, &patch, target)?;
+    let mut state =
+        record_aspect_patch::apply_entity(&workspace.execution(), None, &patch, target)?;
     let version_id = workspace.version_id();
     workspace.with_context(|context| {
         let partition = context
             .state
-            .get_partition_mut(intent.entity_id.partition_id);
+            .get_partition_mut_for_request(intent.entity_id.partition_id, &context.execution)
+            .map_err(|cause| {
+                crate::transactions::data::TransactionCommitError::execution(cause.into())
+            })?;
         let lineage_id = partition
             .entity_arena
             .get(&intent.entity_id)
@@ -150,112 +222,64 @@ fn rematerialize_entity(
             .and_then(|slot| slot.extra().lineage_id);
         partition
             .entity_arena
-            .rematerialize(
+            .rematerialize_for_request(
+                &context.execution,
                 &intent.entity_id,
                 intent.kind_id,
                 version_id,
-                EntityExtra {
-                    lineage_id,
-                    authoritative_aspect_state: state.clone(),
-                    ..EntityExtra::default()
+                {
+                    state.lineage_id = lineage_id;
+                    state
                 },
             )
-            .map_err(|detail| {
+            .map_err(|denial| {
+                let detail = match denial {
+                    crate::storage::substrate::MetadataWriteDenial::Request(cause) => {
+                        return crate::transactions::data::TransactionCommitError::execution(
+                            cause.into(),
+                        )
+                    }
+                    crate::storage::substrate::MetadataWriteDenial::Invalid(detail) => detail,
+                };
                 materialization_conflict(
                     crate::transactions::data::RecordRef::Entity(intent.entity_id),
                     detail,
                 )
+                .into()
             })?;
         context
             .state
-            .mark_entity_slot_touched(intent.entity_id.partition_id, intent.entity_id.slot_index());
-        Ok(())
-    })?;
-    let mut outcome = MutationOutcome::with_capacity(1, 1);
-    outcome.record_change(RecordMutation::EntityRematerialized {
-        entity_id: intent.entity_id,
-        kind_id: intent.kind_id,
-        new_authoritative_aspect_state: state,
-        authoritative_patch: record_aspect_patch::published_patch(patch),
-    });
-    outcome.record_event(MutationEvent::EntityUpdated {
-        entity_id: intent.entity_id,
-    });
-    Ok(outcome)
-}
-
-fn rematerialize_relation(
-    intent: &crate::transactions::data::RematerializeRelationIntent,
-    workspace: &mut MutationWorkspace<'_>,
-) -> Result<MutationOutcome, CommitConflict> {
-    let target_record = RecordAspectPatchTarget::RelationCreation {
-        kind_id: intent.kind_id,
-    };
-    let plan = workspace.relation_aspect_plan(intent.kind_id);
-    let candidate = field_authoring_candidate::lower(
-        &intent.fields,
-        PortablePatchReadmissionPurpose::RecordCreation,
-        plan,
-        intent.kind_id,
-        FieldAuthoringDomain::Relation,
-    )
-    .map_err(|denial| record_aspect_patch::conflict(target_record, denial))?;
-    let candidate = relation_endpoint_candidate::append_authoritative_endpoints(
-        candidate,
-        plan,
-        intent.source,
-        intent.target,
-    );
-    let patch = record_aspect_patch::readmit(
-        candidate,
-        PortablePatchReadmissionPurpose::RecordCreation,
-        plan,
-        target_record,
-    )?;
-    let state = record_aspect_patch::apply(None, &patch, target_record)?;
-    let version_id = workspace.version_id();
-    workspace.with_context(|context| {
-        let partition = context
-            .state
-            .get_partition_mut(intent.relation_id.partition_id);
-        partition
-            .relation_arena
-            .rematerialize(
-                &intent.relation_id,
-                intent.kind_id,
-                version_id,
-                RelationExtra {
-                    endpoints: Some(RelationEndpoints {
-                        source: intent.source,
-                        target: intent.target,
-                    }),
-                    authoritative_aspect_state: state.clone(),
-                },
+            .mark_entity_slot_touched_for_request(
+                intent.entity_id.partition_id,
+                intent.entity_id.slot_index(),
+                &context.execution,
             )
-            .map_err(|detail| {
-                materialization_conflict(
-                    crate::transactions::data::RecordRef::Relation(intent.relation_id),
-                    detail,
-                )
+            .map_err(|cause| {
+                crate::transactions::data::TransactionCommitError::execution(cause.into())
             })?;
-        context.state.mark_relation_slot_touched(
-            intent.relation_id.partition_id,
-            intent.relation_id.slot_index(),
-        );
-        Ok(())
+        Ok::<_, crate::transactions::data::TransactionCommitError>(())
     })?;
-    let mut outcome = MutationOutcome::with_capacity(1, 1);
-    outcome.record_change(RecordMutation::RelationRematerialized {
-        relation_id: intent.relation_id,
-        kind_id: intent.kind_id,
-        source: intent.source,
-        target: intent.target,
-        new_authoritative_aspect_state: state,
-        authoritative_patch: record_aspect_patch::published_patch(patch),
+    let state = workspace.with_context(|context| {
+        context
+            .state
+            .retained_entity_extra(intent.entity_id.partition_id, intent.entity_id.slot_index())
     });
-    outcome.record_event(MutationEvent::RelationUpdated {
-        relation_id: intent.relation_id,
-    });
+    let mut outcome = MutationOutcome::with_capacity(&workspace.execution(), 1, 1)?;
+    outcome.record_change(
+        &workspace.execution(),
+        RecordMutation::EntityRematerialized {
+            entity_id: intent.entity_id,
+            kind_id: intent.kind_id,
+            new_authoritative_aspect_state: state,
+            authoritative_patch: record_aspect_patch::published_patch(patch),
+        },
+    )?;
+    outcome.record_event(
+        &workspace.execution(),
+        MutationEvent::EntityUpdated {
+            entity_id: intent.entity_id,
+        },
+    )?;
     Ok(outcome)
 }
 

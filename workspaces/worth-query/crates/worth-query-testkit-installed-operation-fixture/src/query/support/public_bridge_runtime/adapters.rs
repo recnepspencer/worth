@@ -144,7 +144,7 @@ impl WorthQueryRuntimeWriteAuthorityAdapter for PublicWriteAuthorityAdapter {
         &mut self,
         _execution: &worth_execution::ExecutionRequest<'_, '_>,
         _bridge: &RuntimeBridge,
-        _relational_runtime: Option<&mut RelationalRuntime>,
+        _relational_runtime: Option<&RelationalRuntime>,
         mutation: WorthQueryBackendAdmissibleMutation,
     ) -> Result<WriteAuthorityExecutionReceipt, WorthQueryWorkspaceError> {
         let mut state = self.state.borrow_mut();

@@ -113,7 +113,7 @@ where
             != self
                 .runtime
                 .product_runtime
-                .source
+                .source()
                 .authoritative_source_profile()
                 .runtime_instance_id()
             || publication.product_branch().owner_identity()

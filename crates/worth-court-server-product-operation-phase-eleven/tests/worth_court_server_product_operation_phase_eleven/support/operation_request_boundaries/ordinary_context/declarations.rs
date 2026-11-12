@@ -123,10 +123,8 @@ pub(crate) fn prepared_mutation_request(
     }
 }
 
-pub(crate) fn compat_mutation_denied(
-    outcome: worth_server::WorthServerCompatibilityMutationOutcome<
-        worth_server::WorthServerCompatibilityMutation,
-    >,
+pub(crate) fn compat_mutation_denied<T: std::fmt::Debug>(
+    outcome: worth_server::WorthServerCompatibilityMutationOutcome<T>,
 ) -> WorthServerQueryHandoffDenial {
     match outcome {
         worth_proof::TransitionOutcome::Denied(denial) => denial,

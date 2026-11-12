@@ -67,7 +67,7 @@ impl RelationalPreparationPort {
                     &runtime,
                     &basis,
                     |mut symbols, round| {
-                        transaction.with_accepted_preparation_overlay(|transaction| {
+                        transaction.with_accepted_preparation_overlay(execution, |transaction| {
                             if let Some(prior) = &transaction.pending_symbols {
                                 symbols.adopt(prior)?;
                             }

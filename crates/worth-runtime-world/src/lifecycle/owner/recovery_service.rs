@@ -5,6 +5,9 @@ use crate::recovery::{
 };
 
 use super::RuntimeWorldOwnerRoot;
+mod memory_release;
+mod recovered_continuation;
+mod recovered_publication;
 
 #[cfg(test)]
 #[path = "recovery_service/tests.rs"]
@@ -89,7 +92,11 @@ where
         handle: &ProductUnpublishedRecoveryHandle,
     ) -> Option<Vec<OwnerRetirementWork>> {
         let work = self.reserve_recovery_retirement_work(handle).ok()?;
-        let released = self.state.recovery.cleanup_record(handle, None).ok()?;
+        let released = self
+            .state
+            .recovery
+            .cleanup_record(handle, None, None, || {})
+            .ok()?;
         Some(self.drain_released_occurrence(&released, work))
     }
 
@@ -140,6 +147,61 @@ where
     I: Copy + Ord + Send + Sync + 'static,
     T: Copy + Ord + Send + Sync + 'static,
 {
+    fn owner_identity(&self) -> crate::identity::RuntimeWorldOwnerIdentity {
+        self.owner_identity()
+    }
+    fn retained_commits(
+        &self,
+        candidates: &[crate::identity::CompositeCommitIdentity],
+    ) -> Vec<crate::identity::CompositeCommitIdentity> {
+        super::super::ports::RuntimeWorldLifecycleService::retained_commits(self, candidates)
+    }
+    fn retire_changed_history(
+        &self,
+    ) -> Result<
+        Vec<crate::identity::CompositeCommitIdentity>,
+        crate::history::HistoryReclamationDenial,
+    > {
+        super::super::ports::RuntimeWorldLifecycleService::retire_changed_history(self)
+    }
+    fn release_retired_branch_history(
+        &self,
+        from: &crate::identity::CompositeCommitIdentity,
+    ) -> Result<crate::history::RetiredBranchHistoryRelease, crate::history::HistoryReclamationDenial>
+    {
+        super::super::ports::RuntimeWorldLifecycleService::release_retired_branch_history(
+            self, from,
+        )
+    }
+
+    fn inspect_recovered_effects(
+        &self,
+        handle: &ProductUnpublishedRecoveryHandle,
+    ) -> Result<
+        crate::recovery::WorldRecoveredUnpublishedEffects,
+        crate::recovery::RuntimeWorldRecoveryDenial,
+    > {
+        let _operation = self
+            .reserve_recovery_operation_if_open_and_bootstrapped()
+            .map_err(|_| super::super::RuntimeWorldOwnerUnavailable::new())?;
+        self.state.recovery.claim_recovered(handle)
+    }
+
+    fn continue_recovered_effects(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        effects: crate::recovery::WorldRecoveredUnpublishedEffects,
+    ) -> crate::recovery::WorldRecoveredContinuationOutcome {
+        self.continue_recovered_publication(execution, effects)
+    }
+    fn release_recovered_effects(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        effects: crate::recovery::WorldRecoveredUnpublishedEffects,
+    ) -> crate::recovery::WorldRecoveredReleaseOutcome {
+        self.release_recovered_publication(execution, effects)
+    }
+
     fn prepare_settled_relational_adoption(
         &self,
         effects: &ProductUnpublishedOwnerEffects,
@@ -151,6 +213,15 @@ where
     > {
         use crate::lifecycle::ports::RuntimeWorldPreparationService;
         use crate::recovery::RuntimeWorldSettledRelationalAdoptionDenial as Denial;
+        self.state
+            .recovery
+            .admit_handle(&effects.recovery_handle())
+            .map_err(Denial::Recovery)?;
+        if self.state.durable.is_some() {
+            return Err(Denial::Recovery(
+                crate::recovery::RuntimeWorldRecoveryDenial::ReopenRequired,
+            ));
+        }
 
         let record = self
             .state
@@ -188,37 +259,41 @@ where
     }
     fn release_effects(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         handle: &ProductUnpublishedRecoveryHandle,
         minimum_age_ticks: u64,
+        native: Option<worth_relational::facade::durability::ObservedRelationalMemoryCommit>,
+    ) -> Result<crate::recovery::WorldReleasedEffects, crate::recovery::RuntimeWorldRecoveryDenial>
+    {
+        self.state.recovery.admit_handle(handle)?;
+        self.release_memory_original(execution, handle, minimum_age_ticks, native)
+    }
+    fn released_original_page(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        after: Option<&crate::identity::ProductUnpublishedOwnerEffectsIdentity>,
+        maximum: std::num::NonZeroUsize,
     ) -> Result<
-        crate::recovery::ProductUnpublishedCleanup,
-        crate::recovery::RuntimeWorldRecoveryDenial,
+        crate::recovery::WorldReleasedOriginalPage,
+        crate::durability::WorldDurableMediumDenial,
     > {
         let _operation = self
             .reserve_recovery_operation_if_open_and_bootstrapped()
-            .map_err(|_| super::super::RuntimeWorldOwnerUnavailable::new())?;
-        let work = self.reserve_recovery_retirement_work(handle)?;
-        let mut unpublished_history_candidates = Vec::new();
-        unpublished_history_candidates
-            .try_reserve_exact(1)
-            .map_err(|_| crate::recovery::RuntimeWorldRecoveryDenial::OutputCapacityExhausted)?;
-        let released = self
-            .state
+            .map_err(|()| crate::durability::WorldDurableMediumDenial::Unavailable)?;
+        self.state
             .recovery
-            .cleanup_record(handle, Some((self.state.clock.now(), minimum_age_ticks)))?;
-        if let Some(commit) = released.unpublished_commit() {
-            unpublished_history_candidates.push(commit.clone());
-        }
-        let owner_retirement_work = self.drain_released_occurrence(&released, work);
-        Ok(crate::recovery::ProductUnpublishedCleanup::new(
-            unpublished_history_candidates,
-            owner_retirement_work,
-        ))
+            .released_original_page(execution, after, maximum)
     }
     fn continue_effects(
         &self,
         effects: ProductUnpublishedOwnerEffects,
     ) -> Result<RecoveryContinuationContract, crate::recovery::RuntimeWorldRecoveryDenial> {
+        self.state
+            .recovery
+            .admit_handle(&effects.recovery_handle())?;
+        if self.state.durable.is_some() {
+            return Err(crate::recovery::RuntimeWorldRecoveryDenial::ReopenRequired);
+        }
         let _operation = self
             .reserve_recovery_operation_if_open_and_bootstrapped()
             .map_err(|_| super::super::ports::RuntimeWorldOwnerUnavailable::new())?;
@@ -246,7 +321,7 @@ where
             Some(performed) => {
                 match self
                     .state
-                    .relational
+                    .relational_services()
                     .settlement_port()
                     .settle_performed_publication(performed)
                 {
@@ -267,7 +342,7 @@ where
                 if let Some(commit_identity) = recovery.take_identity_repair() {
                     match self
                         .state
-                        .relational
+                        .relational_services()
                         .settlement_port()
                         .repair_pending_publication_settlement(commit_identity.commit_id())
                     {

@@ -111,7 +111,7 @@ pub fn cutoff_journey(
             (*record.settlement_identity_for_test()).coordinate_for_test(),
             0,
         );
-        handle.with_runtime_mut_for_test(request_execution, |runtime| {
+        handle.with_runtime_for_test(request_execution, |runtime| {
             let (before_handle, before) = snapshot(runtime);
             let prefix: Arc<[_]> = Arc::from([field_fact(request_execution, runtime, &before_handle, entity, label)]);
             register(owner, Arc::clone(&a0), Arc::from([field_fact(request_execution, runtime, &before_handle, entity, status.clone())]), &before, OrdSet::new());

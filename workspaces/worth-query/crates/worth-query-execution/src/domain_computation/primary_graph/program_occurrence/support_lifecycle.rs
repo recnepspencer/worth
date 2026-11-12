@@ -1,3 +1,4 @@
+pub(crate) mod journal;
 use std::collections::BTreeMap;
 use std::sync::{Arc, Mutex};
 
@@ -7,13 +8,17 @@ use worth_query_installation::facade::{
     WorthQueryProgramSupportRetirementInventory, WorthQueryProgramSupportRoster,
 };
 
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub enum WorthQueryProgramSupportStatus {
-    Active,
-    Retiring,
-    Retired,
-}
-
+use worth_foundational::facade::ProgramSupportStatus;
+mod durable_retirement;
+mod interpretation_membership;
+mod original_expiry;
+mod original_readmission;
+mod original_transfer;
+use interpretation_membership::InterpretationMembership;
+mod journal_publication;
+mod journal_readmission;
+mod publication_allocation;
+use publication_allocation::SupportJournalState;
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct WorthQueryProgramSupportRetirementReceipt {
     inventory: WorthQueryProgramSupportRetirementInventory,
@@ -27,18 +32,21 @@ impl WorthQueryProgramSupportRetirementReceipt {
 
 #[derive(Clone, Copy)]
 struct SupportEntryState {
-    status: WorthQueryProgramSupportStatus,
+    status: ProgramSupportStatus,
     retained_interpretations: usize,
     mandatory_custody: usize,
+    retirement_claimed: bool,
 }
 
 struct SupportLifecycleState {
     entries: BTreeMap<ApplicationProgramRevision, SupportEntryState>,
+    journal: Option<SupportJournalState>,
 }
 
-#[derive(Clone)]
 pub struct WorthQueryProgramSupportLifecycle {
     state: Arc<Mutex<SupportLifecycleState>>,
+    medium: std::sync::OnceLock<Arc<dyn journal::QueryObligationsMedium>>,
+    publication_driver: Mutex<()>,
 }
 
 impl WorthQueryProgramSupportLifecycle {
@@ -50,24 +58,50 @@ impl WorthQueryProgramSupportLifecycle {
                 (
                     *entry.revision(),
                     SupportEntryState {
-                        status: WorthQueryProgramSupportStatus::Active,
+                        status: ProgramSupportStatus::Active,
                         retained_interpretations: 0,
                         mandatory_custody: 0,
+                        retirement_claimed: false,
                     },
                 )
             })
             .collect();
         Self {
-            state: Arc::new(Mutex::new(SupportLifecycleState { entries })),
+            state: Arc::new(Mutex::new(SupportLifecycleState {
+                entries,
+                journal: None,
+            })),
+            medium: std::sync::OnceLock::new(),
+            publication_driver: Mutex::new(()),
         }
     }
 
-    pub(super) fn is_active(&self, revision: &ApplicationProgramRevision) -> bool {
+    fn state(&self) -> std::sync::MutexGuard<'_, SupportLifecycleState> {
         self.state
             .lock()
-            .ok()
-            .and_then(|state| state.entries.get(revision).copied())
-            .is_some_and(|entry| entry.status == WorthQueryProgramSupportStatus::Active)
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
+    }
+    fn pending_affects(
+        state: &SupportLifecycleState,
+        revision: &ApplicationProgramRevision,
+    ) -> bool {
+        state.journal.as_ref().is_some_and(|journal| {
+            journal.pending.as_ref().is_some_and(|frame| {
+                journal.ledger.record_mentions_revision(
+                    frame.record(),
+                    &worth_foundational::facade::CanonicalDigestId::new(*revision.as_bytes()),
+                )
+            })
+        })
+    }
+
+    pub(super) fn is_active(&self, revision: &ApplicationProgramRevision) -> bool {
+        self.state.lock().ok().is_some_and(|state| {
+            !Self::pending_affects(&state, revision)
+                && state.entries.get(revision).is_some_and(|entry| {
+                    entry.status == ProgramSupportStatus::Active && !entry.retirement_claimed
+                })
+        })
     }
 
     pub(super) fn retain_interpretation(
@@ -76,8 +110,9 @@ impl WorthQueryProgramSupportLifecycle {
     ) -> Option<WorthQueryProgramSupportInterpretation> {
         self.acquire(revision, SupportUse::Interpretation)?;
         Some(WorthQueryProgramSupportInterpretation {
-            lifecycle: self.clone(),
+            state: Arc::clone(&self.state),
             revision: *revision,
+            membership: Arc::new(Mutex::new(InterpretationMembership::Local)),
         })
     }
 
@@ -88,11 +123,11 @@ impl WorthQueryProgramSupportLifecycle {
     ) -> Option<WorthQueryProgramSupportCustody> {
         self.acquire(source, SupportUse::Custody)?;
         if source != target && self.acquire(target, SupportUse::Custody).is_none() {
-            self.release(source, SupportUse::Custody);
+            Self::release(&self.state, source, SupportUse::Custody);
             return None;
         }
         Some(WorthQueryProgramSupportCustody {
-            lifecycle: self.clone(),
+            state: Arc::clone(&self.state),
             source: *source,
             target: (source != target).then_some(*target),
         })
@@ -100,8 +135,11 @@ impl WorthQueryProgramSupportLifecycle {
 
     fn acquire(&self, revision: &ApplicationProgramRevision, usage: SupportUse) -> Option<()> {
         let mut state = self.state.lock().ok()?;
+        if Self::pending_affects(&state, revision) {
+            return None;
+        }
         let entry = state.entries.get_mut(revision)?;
-        if entry.status != WorthQueryProgramSupportStatus::Active {
+        if entry.status != ProgramSupportStatus::Active || entry.retirement_claimed {
             return None;
         }
         let count = match usage {
@@ -112,9 +150,12 @@ impl WorthQueryProgramSupportLifecycle {
         Some(())
     }
 
-    fn release(&self, revision: &ApplicationProgramRevision, usage: SupportUse) {
-        let mut state = self
-            .state
+    fn release(
+        state: &Arc<Mutex<SupportLifecycleState>>,
+        revision: &ApplicationProgramRevision,
+        usage: SupportUse,
+    ) {
+        let mut state = state
             .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner);
         let Some(entry) = state.entries.get_mut(revision) else {
@@ -139,30 +180,45 @@ impl WorthQueryProgramSupportLifecycle {
             .state
             .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner);
-        let entry = state.entries.get_mut(revision).ok_or(
-            WorthQueryProgramSupportRetirementDenial::UnrosteredProgram {
+        if self.medium.get().is_some() {
+            return Err(
+                WorthQueryProgramSupportRetirementDenial::RetirementInProgress {
+                    revision: *revision,
+                },
+            );
+        }
+        Self::claim_retirement(&mut state, &self.state, revision)
+    }
+    fn claim_retirement(
+        state: &mut SupportLifecycleState,
+        owner: &Arc<Mutex<SupportLifecycleState>>,
+        revision: &ApplicationProgramRevision,
+    ) -> Result<WorthQueryProgramSupportRetirementAttempt, WorthQueryProgramSupportRetirementDenial>
+    {
+        use WorthQueryProgramSupportRetirementDenial as Denial;
+        let entry = state
+            .entries
+            .get_mut(revision)
+            .ok_or(Denial::UnrosteredProgram {
                 revision: *revision,
-            },
-        )?;
+            })?;
+        if entry.retirement_claimed {
+            return Err(Denial::RetirementInProgress {
+                revision: *revision,
+            });
+        }
         match entry.status {
-            WorthQueryProgramSupportStatus::Active => {
-                entry.status = WorthQueryProgramSupportStatus::Retiring;
-            }
-            WorthQueryProgramSupportStatus::Retiring => {
-                return Err(
-                    WorthQueryProgramSupportRetirementDenial::RetirementInProgress {
-                        revision: *revision,
-                    },
-                )
-            }
-            WorthQueryProgramSupportStatus::Retired => {
-                return Err(WorthQueryProgramSupportRetirementDenial::AlreadyRetired {
+            ProgramSupportStatus::Active => entry.status = ProgramSupportStatus::Retiring,
+            ProgramSupportStatus::Retiring => {} // Fresh authority resumes acknowledged Retiring.
+            ProgramSupportStatus::Retired => {
+                return Err(Denial::AlreadyRetired {
                     revision: *revision,
                 })
             }
         }
+        entry.retirement_claimed = true;
         Ok(WorthQueryProgramSupportRetirementAttempt {
-            lifecycle: self.clone(),
+            state: Arc::clone(owner),
             revision: *revision,
             finished: false,
         })
@@ -176,26 +232,41 @@ enum SupportUse {
 }
 
 pub struct WorthQueryProgramSupportInterpretation {
-    lifecycle: WorthQueryProgramSupportLifecycle,
+    membership: Arc<Mutex<InterpretationMembership>>,
+    state: Arc<Mutex<SupportLifecycleState>>,
     revision: ApplicationProgramRevision,
 }
 
 impl WorthQueryProgramSupportInterpretation {
+    pub(in crate::domain_computation::primary_graph) const fn revision(
+        &self,
+    ) -> &ApplicationProgramRevision {
+        &self.revision
+    }
     pub fn same_support_as(&self, other: &Self) -> bool {
-        self.revision == other.revision
-            && Arc::ptr_eq(&self.lifecycle.state, &other.lifecycle.state)
+        self.revision == other.revision && Arc::ptr_eq(&self.state, &other.state)
     }
 }
 
 impl Drop for WorthQueryProgramSupportInterpretation {
     fn drop(&mut self) {
-        self.lifecycle
-            .release(&self.revision, SupportUse::Interpretation);
+        let mut state = self
+            .state
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
+        let entry = state
+            .entries
+            .get_mut(&self.revision)
+            .expect("issued interpretation entry");
+        self.membership
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
+            .abandon(&mut entry.retained_interpretations);
     }
 }
 
 pub(in crate::domain_computation::primary_graph) struct WorthQueryProgramSupportCustody {
-    lifecycle: WorthQueryProgramSupportLifecycle,
+    state: Arc<Mutex<SupportLifecycleState>>,
     source: ApplicationProgramRevision,
     target: Option<ApplicationProgramRevision>,
 }
@@ -212,110 +283,14 @@ impl std::fmt::Debug for WorthQueryProgramSupportCustody {
 
 impl Drop for WorthQueryProgramSupportCustody {
     fn drop(&mut self) {
-        self.lifecycle.release(&self.source, SupportUse::Custody);
+        WorthQueryProgramSupportLifecycle::release(&self.state, &self.source, SupportUse::Custody);
         if let Some(target) = &self.target {
-            self.lifecycle.release(target, SupportUse::Custody);
+            WorthQueryProgramSupportLifecycle::release(&self.state, target, SupportUse::Custody);
         }
     }
 }
 
-pub struct WorthQueryProgramSupportRetirementAttempt {
-    lifecycle: WorthQueryProgramSupportLifecycle,
-    revision: ApplicationProgramRevision,
-    finished: bool,
-}
-
-impl WorthQueryProgramSupportRetirementAttempt {
-    pub(in crate::domain_computation::primary_graph) fn inventory_unavailable(
-        mut self,
-        retained_program_bytes: usize,
-    ) -> WorthQueryProgramSupportRetirementDenial {
-        let mut state = self
-            .lifecycle
-            .state
-            .lock()
-            .unwrap_or_else(std::sync::PoisonError::into_inner);
-        let entry = state
-            .entries
-            .get_mut(&self.revision)
-            .expect("a retirement attempt retains its installed program");
-        let inventory = WorthQueryProgramSupportPartialRetirementInventory::inspected(
-            self.revision,
-            entry.retained_interpretations,
-            entry.mandatory_custody,
-            retained_program_bytes,
-        );
-        entry.status = WorthQueryProgramSupportStatus::Active;
-        self.finished = true;
-        WorthQueryProgramSupportRetirementDenial::InventoryUnavailable(inventory)
-    }
-
-    pub(in crate::domain_computation::primary_graph) fn finish(
-        mut self,
-        current_branches: usize,
-        retained_program_bytes: usize,
-    ) -> Result<WorthQueryProgramSupportRetirementReceipt, WorthQueryProgramSupportRetirementDenial>
-    {
-        let mut state = self
-            .lifecycle
-            .state
-            .lock()
-            .unwrap_or_else(std::sync::PoisonError::into_inner);
-        let entry = state
-            .entries
-            .get_mut(&self.revision)
-            .expect("a retirement attempt retains its installed program");
-        let inventory = WorthQueryProgramSupportRetirementInventory::inspected(
-            self.revision,
-            current_branches,
-            entry.retained_interpretations,
-            entry.mandatory_custody,
-            retained_program_bytes,
-        );
-        let denial = if current_branches != 0 {
-            Some(WorthQueryProgramSupportRetirementDenial::CurrentBranches(
-                inventory.clone(),
-            ))
-        } else if entry.retained_interpretations != 0 {
-            Some(
-                WorthQueryProgramSupportRetirementDenial::RetainedInterpretation(inventory.clone()),
-            )
-        } else if entry.mandatory_custody != 0 {
-            Some(WorthQueryProgramSupportRetirementDenial::MandatoryCustody(
-                inventory.clone(),
-            ))
-        } else {
-            None
-        };
-        entry.status = if denial.is_some() {
-            WorthQueryProgramSupportStatus::Active
-        } else {
-            WorthQueryProgramSupportStatus::Retired
-        };
-        self.finished = true;
-        match denial {
-            Some(denial) => Err(denial),
-            None => Ok(WorthQueryProgramSupportRetirementReceipt { inventory }),
-        }
-    }
-}
-
-impl Drop for WorthQueryProgramSupportRetirementAttempt {
-    fn drop(&mut self) {
-        if self.finished {
-            return;
-        }
-        let mut state = self
-            .lifecycle
-            .state
-            .lock()
-            .unwrap_or_else(std::sync::PoisonError::into_inner);
-        if let Some(entry) = state.entries.get_mut(&self.revision)
-            && entry.status == WorthQueryProgramSupportStatus::Retiring
-        {
-            entry.status = WorthQueryProgramSupportStatus::Active;
-        }
-    }
-}
+mod retirement;
+pub use retirement::WorthQueryProgramSupportRetirementAttempt;
 
 mod court_doors_for_test;

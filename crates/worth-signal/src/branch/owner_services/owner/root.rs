@@ -10,11 +10,11 @@ where
     I: Copy + Ord,
     T: Copy + Ord,
 {
-    state: SignalOwnerRootState<D, I, T>,
+    pub(super) state: SignalOwnerRootState<D, I, T>,
     definition_publication_issued: bool,
 }
 
-enum SignalOwnerRootState<D, I, T>
+pub(super) enum SignalOwnerRootState<D, I, T>
 where
     D: Copy + Ord + std::fmt::Debug + 'static,
     I: Copy + Ord,
@@ -26,6 +26,7 @@ where
         basis_registry: SignalBranchBasisRegistry,
     },
     Sealed(Arc<SignalOwner<D, I, T>>),
+    Transferred,
 }
 
 impl<D, I, T> SignalOwnerRoot<D, I, T>
@@ -56,6 +57,7 @@ where
     pub(crate) fn seal(
         &mut self,
         partition: SignalOwnerPartition<D, I, T>,
+        schema_commitment: String,
         conditional_budget: crate::runtime_policy::SignalConditionalEvaluationBudget,
         temporal_budget: crate::runtime_policy::SignalConditionalTemporalBudget,
     ) {
@@ -69,13 +71,14 @@ where
                 *definition_basis,
                 basis_registry.clone(),
             ),
-            SignalOwnerRootState::Sealed(_) => {
+            SignalOwnerRootState::Sealed(_) | SignalOwnerRootState::Transferred => {
                 panic!("Signal owner root cannot consume a second canonical partition")
             }
         };
         let owner = SignalOwner::from_partition(
             runtime_instance_id,
             definition_basis,
+            schema_commitment,
             partition,
             basis_registry,
             conditional_budget,
@@ -88,11 +91,26 @@ where
         &self,
     ) -> Result<Weak<SignalOwner<D, I, T>>, SignalOwnerUnavailable> {
         match &self.state {
-            SignalOwnerRootState::Unsealed { .. } => Err(SignalOwnerUnavailable),
+            SignalOwnerRootState::Unsealed { .. } | SignalOwnerRootState::Transferred => {
+                Err(SignalOwnerUnavailable)
+            }
             SignalOwnerRootState::Sealed(owner) => Ok(Arc::downgrade(owner)),
         }
     }
 
+    pub(crate) fn transfer_to_durable_owner(
+        &mut self,
+    ) -> Option<super::SignalSealedOwnerRoot<D, I, T>> {
+        if !matches!(self.state, SignalOwnerRootState::Sealed(_)) {
+            return None;
+        }
+        match std::mem::replace(&mut self.state, SignalOwnerRootState::Transferred) {
+            SignalOwnerRootState::Sealed(owner) => Some(super::SignalSealedOwnerRoot { owner }),
+            SignalOwnerRootState::Unsealed { .. } | SignalOwnerRootState::Transferred => {
+                unreachable!("same original was sealed")
+            }
+        }
+    }
     pub(crate) fn claim_definition_publication(&mut self) -> bool {
         if self.definition_publication_issued {
             return false;
@@ -103,7 +121,7 @@ where
 
     pub(super) fn sealed_owner(&self) -> Option<Arc<SignalOwner<D, I, T>>> {
         match &self.state {
-            SignalOwnerRootState::Unsealed { .. } => None,
+            SignalOwnerRootState::Unsealed { .. } | SignalOwnerRootState::Transferred => None,
             SignalOwnerRootState::Sealed(owner) => Some(Arc::clone(owner)),
         }
     }
@@ -115,7 +133,9 @@ where
         SignalOwnerUnavailable,
     > {
         match &self.state {
-            SignalOwnerRootState::Unsealed { .. } => Err(SignalOwnerUnavailable),
+            SignalOwnerRootState::Unsealed { .. } | SignalOwnerRootState::Transferred => {
+                Err(SignalOwnerUnavailable)
+            }
             SignalOwnerRootState::Sealed(owner) => Ok(owner.operation_control_for_test()),
         }
     }

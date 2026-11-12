@@ -1,15 +1,5 @@
-use std::collections::BTreeMap;
-
-use worth_foundational::facade::{AspectValue, InternedString};
-use worth_relational::facade::transactions::{
-    AspectFieldPatch, CreateIntent, EntitySpec, MutationIntent,
-};
-
 use super::WorthQueryPrimaryGraphProvider;
-use crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationCommitOutcomeIdentity;
 use crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationIdempotencyBinding;
-use crate::domain_computation::primary_graph::provider::WorthQueryPrimaryGraphCommittedApplication;
-use crate::domain_computation::primary_graph::schema_layout::WorthQueryProviderIdempotencyLayout;
 
 mod publication_appendix;
 pub(super) use publication_appendix::bind_receipt;
@@ -18,21 +8,40 @@ mod lookup_key;
 pub(crate) mod product_affinity;
 pub(in crate::domain_computation::primary_graph) use lookup_key::WorthQueryIdempotencyLookupKey;
 pub(in crate::domain_computation::primary_graph) use product_affinity::WorthQueryProductIdempotencyAffinity;
+pub(super) mod recorded_origin;
+mod registration;
+pub(super) mod released_original;
+pub use registration::idempotency_create_intent;
+pub use released_original::WorthQueryReleasedApplicationEffect;
 pub(crate) mod snapshot_resolution;
 use snapshot_resolution::resolve_at_snapshot;
+pub use snapshot_resolution::{
+    WorthQueryRecoveredAftermathCausality, WorthQueryRecoveredApplicationCommitReceipt,
+    WorthQueryRecoveredDispatchOutbox,
+};
 
 #[derive(Debug)]
 pub enum WorthQueryProviderIdempotencyResolution {
+    ReleasedOriginal(WorthQueryReleasedApplicationEffect),
+    PreparationBusy,
+    RecoveredUnpublished {
+        handle: worth_runtime_world::facade::ProductUnpublishedRecoveryHandle,
+    },
     Absent,
-    Equivalent(WorthQueryPrimaryGraphCommittedApplication),
+    Readmitted(WorthQueryRecoveredApplicationCommitReceipt),
     Drift,
     Unpublished,
+    PreparationPending {
+        handle: worth_runtime_world::facade::ProductUnpublishedRecoveryHandle,
+        stage: crate::domain_computation::WorthQueryProductPreparationStage,
+    },
 }
 
 pub(in crate::domain_computation::primary_graph) enum WorthQueryProviderGuardedWorkflowOperationCustody
 {
+    ReleasedOriginal(WorthQueryReleasedApplicationEffect),
     Unseen,
-    Committed(WorthQueryPrimaryGraphCommittedApplication),
+    Readmitted(WorthQueryRecoveredApplicationCommitReceipt),
     IntentDrift,
     PublicationPending,
     ProductUnpublished(worth_runtime_world::facade::ProductUnpublishedRecoveryHandle),
@@ -41,17 +50,14 @@ pub(in crate::domain_computation::primary_graph) enum WorthQueryProviderGuardedW
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryProviderIdempotencyResolutionDenial {
+    ForeignAffinity,
+    PreparationBusy,
     ActiveSnapshotCapacityExhausted {
         maximum_active_snapshots: usize,
     },
     RetentionCapacityExhausted,
     RetentionIdentityExhausted,
     SnapshotIdentityExhausted,
-    /// The key records `commit` for this intent, but this provider does not
-    /// retain its receipt.
-    CommittedReceiptNotRetained {
-        commit: worth_relational::facade::history::CommitId,
-    },
     /// The key's first-encoding record matches every durable part of this
     /// intent but names its operation by a seal no later runtime can confirm.
     RecordedIntentUnverifiable,
@@ -70,42 +76,6 @@ impl From<&'static str> for WorthQueryProviderIdempotencyResolutionDenial {
     }
 }
 
-pub fn idempotency_create_intent(
-    layout: &WorthQueryProviderIdempotencyLayout,
-    binding: WorthQueryApplicationIdempotencyBinding,
-    outcome_identity: WorthQueryApplicationCommitOutcomeIdentity,
-    emitted_effect_count: u64,
-    mutation_partition: worth_relational::facade::identity::PartitionId,
-) -> MutationIntent {
-    let key = binding.key_text();
-    let fields = BTreeMap::from([
-        (
-            layout.key_locator.clone(),
-            AspectValue::String(InternedString::from(key.clone())),
-        ),
-        (
-            layout.intent_locator.clone(),
-            AspectValue::String(InternedString::from(binding.intent_text())),
-        ),
-        (
-            layout.outcome_identity_locator.clone(),
-            AspectValue::UInt64(outcome_identity.get()),
-        ),
-        (
-            layout.emitted_effect_count_locator.clone(),
-            AspectValue::UInt64(emitted_effect_count),
-        ),
-    ]);
-    MutationIntent::Create(CreateIntent::Entity(EntitySpec {
-        partition_id: mutation_partition,
-        kind_id: layout.entity_kind,
-        client_key: worth_relational::facade::symbols::ClientKey::raw(format!(
-            "worth-query-idempotency:{key}"
-        )),
-        fields: AspectFieldPatch::from(fields),
-    }))
-}
-
 impl WorthQueryPrimaryGraphProvider {
     pub(in crate::domain_computation::primary_graph) fn resolve_guarded_workflow_operation_custody(
         &self,
@@ -117,6 +87,25 @@ impl WorthQueryPrimaryGraphProvider {
 
         let affinity =
             WorthQueryProductIdempotencyAffinity::from_observation(product.observation());
+        match self.resolve_unpublished_application_idempotency(&affinity, binding) {
+            Some(WorthQueryProviderIdempotencyResolution::ReleasedOriginal(original)) => {
+                return Custody::ReleasedOriginal(original)
+            }
+            Some(WorthQueryProviderIdempotencyResolution::PreparationBusy) => {
+                return Custody::Indeterminate(
+                    WorthQueryProviderIdempotencyResolutionDenial::PreparationBusy,
+                )
+            }
+            Some(WorthQueryProviderIdempotencyResolution::Drift) => return Custody::IntentDrift,
+            None
+            | Some(
+                WorthQueryProviderIdempotencyResolution::Absent
+                | WorthQueryProviderIdempotencyResolution::Readmitted(_)
+                | WorthQueryProviderIdempotencyResolution::RecoveredUnpublished { .. }
+                | WorthQueryProviderIdempotencyResolution::Unpublished
+                | WorthQueryProviderIdempotencyResolution::PreparationPending { .. },
+            ) => {}
+        }
         // A retained World partial keeps its publication slot reserved for
         // resumption, and a reserved slot reports its binding, so exact
         // unpublished custody is read before that reservation.
@@ -145,11 +134,23 @@ impl WorthQueryPrimaryGraphProvider {
             );
         }
         match self.resolve_idempotency_binding_at_product(execution, binding, product) {
+            Ok(WorthQueryProviderIdempotencyResolution::PreparationBusy) => Custody::Indeterminate(
+                WorthQueryProviderIdempotencyResolutionDenial::PreparationBusy,
+            ),
+            Ok(WorthQueryProviderIdempotencyResolution::ReleasedOriginal(original)) => {
+                Custody::ReleasedOriginal(original)
+            }
             Ok(WorthQueryProviderIdempotencyResolution::Absent) => Custody::Unseen,
-            Ok(WorthQueryProviderIdempotencyResolution::Equivalent(committed)) => {
-                Custody::Committed(committed)
+            Ok(WorthQueryProviderIdempotencyResolution::Readmitted(receipt)) => {
+                Custody::Readmitted(receipt)
             }
             Ok(WorthQueryProviderIdempotencyResolution::Drift) => Custody::IntentDrift,
+            Ok(WorthQueryProviderIdempotencyResolution::PreparationPending { .. }) => {
+                Custody::PublicationPending
+            }
+            Ok(WorthQueryProviderIdempotencyResolution::RecoveredUnpublished { handle }) => {
+                Custody::ProductUnpublished(handle)
+            }
             Ok(WorthQueryProviderIdempotencyResolution::Unpublished) => {
                 Custody::Indeterminate(WorthQueryProviderIdempotencyResolutionDenial::Unavailable)
             }
@@ -167,11 +168,37 @@ impl WorthQueryPrimaryGraphProvider {
         WorthQueryProviderIdempotencyResolutionDenial,
     > {
         self.application_attempt_work.observe_retained_resolution();
+        if let Some(resolution) = self.resolve_recovered_application_idempotency(
+            &WorthQueryProductIdempotencyAffinity::from_observation(product.observation()),
+            binding,
+        )? {
+            return Ok(resolution);
+        }
+
         let layout = self.graph.layout.provider_idempotency().clone();
         let product_affinity =
             WorthQueryProductIdempotencyAffinity::from_observation(product.observation());
+        match self.resolve_unpublished_application_idempotency(&product_affinity, binding) {
+            Some(WorthQueryProviderIdempotencyResolution::PreparationBusy) => {
+                return Err(WorthQueryProviderIdempotencyResolutionDenial::PreparationBusy)
+            }
+            Some(
+                resolution @ (WorthQueryProviderIdempotencyResolution::PreparationPending {
+                    ..
+                }
+                | WorthQueryProviderIdempotencyResolution::Drift
+                | WorthQueryProviderIdempotencyResolution::ReleasedOriginal(_)),
+            ) => return Ok(resolution),
+            None
+            | Some(
+                WorthQueryProviderIdempotencyResolution::Absent
+                | WorthQueryProviderIdempotencyResolution::Readmitted(_)
+                | WorthQueryProviderIdempotencyResolution::RecoveredUnpublished { .. }
+                | WorthQueryProviderIdempotencyResolution::Unpublished,
+            ) => {}
+        }
         let mut retired = crate::domain_computation::primary_graph::application_query::derived_view::PredicatePreparationRetirement::default();
-        self.graph.with_runtime_mut_unwind_isolated(execution, |runtime| {
+        self.graph.with_runtime(execution, |runtime| {
             if binding.correction_identity().is_some()
                 && self.inspect_pending_correction_idempotency(binding.key_identity())
                     .is_some_and(|recorded| recorded != binding)
@@ -195,14 +222,15 @@ impl WorthQueryPrimaryGraphProvider {
                 &mut retired,
             )
                 .map_err(pending_publication_denial)?;
-            let basis = product.observation().basis().relational_basis();
+            // Concurrent requests can have admitted the same earlier head.
+            // Under the branch lane, locate the key in the SAME live occurrence's
+            // current owner selection, then read its immutable original source.
+            let selected = product.observation_port().observe_product_branch_occurrence(
+                product.observation().lifecycle_incarnation(),
+            ).map_err(|_| WorthQueryProviderIdempotencyResolutionDenial::ForeignAffinity)?;
+            let observation = &selected;
+            let basis = observation.basis().relational_basis();
             if let Some(resolution) = self.resolve_unpublished_application_idempotency(
-                &product_affinity,
-                binding,
-            ) {
-                return Ok(resolution);
-            }
-            if let Some(resolution) = self.resolve_completed_application_idempotency(
                 &product_affinity,
                 binding,
             ) {
@@ -213,18 +241,12 @@ impl WorthQueryPrimaryGraphProvider {
                 .map_err(idempotency_index_currency_denial)?;
             let snapshot = crate::domain_computation::primary_graph::exact_basis_access::open_exact_basis_snapshot(runtime, basis)
                 .map_err(|denial| idempotency_snapshot_denial(denial.into()))?;
-            let resolution = resolve_at_snapshot(execution,
-                self,
-                runtime,
-                &snapshot,
-                &layout,
-                &product_affinity,
-                binding,
-            );
+            let resolution = resolve_at_snapshot(execution, self, runtime, &snapshot, &layout, product, binding);
             crate::relational_snapshot_release::release_query_snapshot(runtime, &snapshot);
             let resolution = resolution?;
-            if let WorthQueryProviderIdempotencyResolution::Equivalent(committed) = &resolution {
-                self.repair_equivalent_publication_settlement(runtime, committed)?;
+            if let WorthQueryProviderIdempotencyResolution::Readmitted(receipt) = &resolution {
+                runtime.repair_pending_publication_settlement(receipt.commit_reference().commit_id)
+                    .map_err(|_| WorthQueryProviderIdempotencyResolutionDenial::Unavailable)?;
             }
             Ok(resolution)
         })
@@ -276,7 +298,8 @@ fn pending_publication_denial(
         Kind::SnapshotIdentityExhausted => {
             WorthQueryProviderIdempotencyResolutionDenial::SnapshotIdentityExhausted
         }
-        kind @ (Kind::ProjectionContract { .. }
+        kind @ (Kind::StaleIncarnation
+        | Kind::ProjectionContract { .. }
         | Kind::HistoricalVisibility { .. }
         | Kind::OutputCorrespondenceMismatch { .. }
         | Kind::ContentInconsistency
@@ -355,5 +378,3 @@ fn idempotency_snapshot_denial(
 #[cfg(test)]
 #[path = "idempotency/denial_mapping_tests.rs"]
 mod denial_mapping_tests;
-
-mod court_doors_for_test;

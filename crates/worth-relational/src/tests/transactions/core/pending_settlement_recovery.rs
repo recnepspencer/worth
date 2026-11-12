@@ -12,7 +12,7 @@ fn dropping_the_performed_witness_leaves_settlement_recoverable() {
     let host_request = crate::test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
-    let runtime = durable_runtime_with_test_schema();
+    let runtime = runtime_with_test_schema();
     create_entity(execution, &runtime, "abandoned-witness-anchor");
     let performed = perform_main_write(execution, &runtime, "abandoned-witness");
     let commit_id = performed.canonical_commit().commit.commit_id;
@@ -71,7 +71,7 @@ fn repeated_terminal_settlement_returns_one_receipt_and_one_durable_append() {
     let host_request = crate::test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
-    let runtime = durable_runtime_with_test_schema();
+    let runtime = runtime_with_test_schema();
     create_entity(execution, &runtime, "repeated-settlement-anchor");
     let performed = perform_main_write(execution, &runtime, "repeated-settlement");
     let commit_id = performed.canonical_commit().commit.commit_id;
@@ -101,7 +101,7 @@ fn repair_and_witness_settlement_execute_exactly_once() {
     let host_request = crate::test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
-    let runtime = durable_runtime_with_test_schema();
+    let runtime = runtime_with_test_schema();
     create_entity(execution, &runtime, "single-execution-anchor");
     let performed = perform_main_write(execution, &runtime, "single-execution");
     let commit_id = performed.canonical_commit().commit.commit_id;

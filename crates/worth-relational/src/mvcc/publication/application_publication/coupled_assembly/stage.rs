@@ -48,7 +48,7 @@ impl RelationalAuthoredCoupledCandidate<'_> {
         self.authored_writes.retain(
             execution,
             self.stages.len() + 1,
-            &applied.plan,
+            applied.plan.plan(),
             &applied.records,
         )?;
         let output_ids = ordinary_roles::resolve_applied_roles(

@@ -53,26 +53,19 @@ pub(super) use retained_basis::{
 
 use super::WorthQueryPrimaryGraphApplicationAttempt;
 
-#[derive(Clone, Copy, Debug, Eq, Ord, PartialEq, PartialOrd)]
-struct WorthQueryApplicationAttemptLookupKey(WorthQueryProviderSessionAffinityIdentity);
-
-impl WorthQueryApplicationAttemptLookupKey {
-    fn from_affinity(
-        affinity: &super::super::application_attempt::WorthQueryApplicationAttemptAffinity,
-    ) -> Self {
-        Self(affinity.lookup_identity())
-    }
-
-    const fn from_identity(identity: WorthQueryProviderSessionAffinityIdentity) -> Self {
-        Self(identity)
-    }
-}
+mod lookup_key;
+use lookup_key::WorthQueryApplicationAttemptLookupKey;
 
 #[derive(Default)]
 pub struct WorthQueryPrimaryGraphApplicationAttemptStore {
     attempts: BTreeMap<WorthQueryApplicationAttemptLookupKey, WorthQueryApplicationAttemptEntry>,
     next_registration: u64,
     next_overlay: u64,
+}
+impl WorthQueryPrimaryGraphApplicationAttemptStore {
+    pub(super) fn home_close_has_work(&self) -> bool {
+        !self.attempts.is_empty()
+    }
 }
 
 enum WorthQueryApplicationAttemptEntry {
@@ -349,4 +342,9 @@ pub(in crate::domain_computation::primary_graph) use commit_preparation::{
     PreparedRebaseDenial, PreparedSourceFactRebase,
 };
 
+pub(in crate::domain_computation) use commit_preparation::QueryPreparingApplicationCommit;
+pub(in crate::domain_computation::primary_graph::provider) use commit_preparation::RetainedQueryDurablePreparation;
 mod court_doors_for_test;
+#[cfg(test)]
+#[path = "application_attempt_state_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;

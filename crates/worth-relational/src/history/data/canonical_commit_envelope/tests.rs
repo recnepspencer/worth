@@ -24,8 +24,9 @@ fn envelope_with_patch_and_update(
     patch_target: RecordRef,
     update_target: EntityId,
 ) -> CanonicalCommitEnvelope {
-    CanonicalCommitEnvelope::new(
+    let draft = crate::history::data::CanonicalCommitEnvelopeDraft::new(
         Default::default(),
+        crate::history::data::CanonicalIndexDefinitionDelta::prepared(1, 1, Vec::new(), None),
         RelationalCommitReceipt {
             commit_id: CommitId(1),
             version_id: VersionId(1),
@@ -81,7 +82,25 @@ fn envelope_with_patch_and_update(
         None,
         None,
         DescriptorSemanticsVersion(1),
-    )
+    );
+    // Pure predicate/inspection input: keep an actual original semantic image,
+    // then edit only this test body. No publication or readmission is claimed.
+    let host = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host);
+    let runtime = crate::tests::support::runtime_with_test_schema();
+    let produced = crate::tests::support::create_entity_outcome(
+        execution,
+        &runtime,
+        "predicate-semantic-source",
+    );
+    let envelope = produced.publication().envelope.clone().into_arc();
+    crate::tests::support::release_test_commit_snapshot(&runtime, &produced);
+    drop(produced);
+    drop(runtime);
+    let mut envelope = std::sync::Arc::try_unwrap(envelope)
+        .expect("source owner and result released their actual envelope shares");
+    *envelope.body_mut_for_test() = draft.into_body();
+    envelope
 }
 
 #[test]
@@ -117,7 +136,7 @@ fn named_envelope_wire_preserves_exact_touch_graph_and_defaults_old_missing_grap
 
     let entity = EntityId::new(PartitionId::main(), 8, 1);
     let mut envelope = envelope_with_patch_and_update(RecordRef::Entity(entity), entity);
-    envelope.descriptive_touches =
+    envelope.body_mut_for_test().descriptive_touches =
         RelationalDescriptiveTouchGraph::exact(vec![RelationalDescriptiveTouch::EntityLifecycle {
             entity,
             kind: KindId(1),

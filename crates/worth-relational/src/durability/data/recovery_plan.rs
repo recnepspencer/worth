@@ -72,6 +72,21 @@ pub enum RecoveryAuthorityParity {
 
 #[derive(Debug, Clone)]
 pub struct RecoveryPlan {
+    pub(crate) home_world_selection: Option<
+        std::sync::Arc<
+            worth_proof::VerifiedHomeWorldSelection<
+                std::sync::Arc<crate::durability::RelationalWorldSourceCatalog>,
+            >,
+        >,
+    >,
+    /// Actual retained Memory transition DATA, independent of external-source admission.
+    pub(crate) retained_transition_prefix:
+        Option<std::sync::Arc<crate::runtime::OriginalBranchSchemaInputs>>,
+    pub(crate) original_source: Option<
+        std::sync::Arc<
+            crate::durability::source_initial_inputs::source_admission::SourceOriginalInputs,
+        >,
+    >,
     pub config: crate::runtime::RelationalRuntimeConfig,
     pub(crate) cold_source:
         Option<std::sync::Arc<dyn crate::durability::medium::RelationalDurableColdSource>>,
@@ -166,6 +181,9 @@ impl RecoveryPlan {
             .as_ref()
             .map(crate::durability::access::checkpoint_coverage);
         Self {
+            home_world_selection: None,
+            original_source: None,
+            retained_transition_prefix: None,
             config,
             cold_source,
             checkpoint,

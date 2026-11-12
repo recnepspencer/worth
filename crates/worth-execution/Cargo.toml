@@ -13,6 +13,7 @@ worth-foundational.workspace = true
 worth-proof.workspace = true
 rayon.workspace = true
 allocator-api2.workspace = true
+stacker = "0.1.24"
 
 [lints]
 workspace = true

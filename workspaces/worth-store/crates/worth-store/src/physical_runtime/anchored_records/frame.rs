@@ -10,6 +10,7 @@
 //! publisher's order; a member's key is its locator's SHA-256.
 
 use sha2::{Digest, Sha256};
+use worth_foundational::CanonicalDigestId;
 use worth_store_physical_format::{RecordAnchorName, RECORD_ANCHOR_NAME_BYTES};
 
 use super::{
@@ -30,7 +31,7 @@ pub(super) const HEADER_BYTES: usize = MEMBER_COUNT_AT + 8;
 pub(super) struct AnchoredRecordHeader {
     pub(super) anchor: RecordAnchorName,
     pub(super) generation: u64,
-    pub(super) payload_sha256: [u8; 32],
+    pub(super) payload_sha256: CanonicalDigestId,
     pub(super) payload_bytes: u64,
     pub(super) member_count: u64,
 }
@@ -47,7 +48,7 @@ impl AnchoredRecordHeader {
         Self {
             anchor,
             generation,
-            payload_sha256: Sha256::digest(payload).into(),
+            payload_sha256: CanonicalDigestId::new(Sha256::digest(payload).into()),
             payload_bytes: payload.len() as u64,
             member_count: member_count as u64,
         }
@@ -58,7 +59,7 @@ impl AnchoredRecordHeader {
         bytes[..NAME_AT].copy_from_slice(&MAGIC);
         bytes[NAME_AT..GENERATION_AT].copy_from_slice(&padded(self.anchor));
         bytes[GENERATION_AT..PAYLOAD_SHA256_AT].copy_from_slice(&self.generation.to_le_bytes());
-        bytes[PAYLOAD_SHA256_AT..PAYLOAD_BYTES_AT].copy_from_slice(&self.payload_sha256);
+        bytes[PAYLOAD_SHA256_AT..PAYLOAD_BYTES_AT].copy_from_slice(self.payload_sha256.bytes());
         bytes[PAYLOAD_BYTES_AT..MEMBER_COUNT_AT].copy_from_slice(&self.payload_bytes.to_le_bytes());
         bytes[MEMBER_COUNT_AT..].copy_from_slice(&self.member_count.to_le_bytes());
         bytes
@@ -114,9 +115,11 @@ impl AnchoredRecordHeader {
         Ok(Self {
             anchor,
             generation,
-            payload_sha256: bytes[PAYLOAD_SHA256_AT..PAYLOAD_BYTES_AT]
-                .try_into()
-                .expect("fixed field"),
+            payload_sha256: CanonicalDigestId::new(
+                bytes[PAYLOAD_SHA256_AT..PAYLOAD_BYTES_AT]
+                    .try_into()
+                    .expect("fixed field"),
+            ),
             payload_bytes: field(PAYLOAD_BYTES_AT),
             member_count,
         })
@@ -126,7 +129,7 @@ impl AnchoredRecordHeader {
         &self,
         payload_sha256: [u8; 32],
     ) -> Result<(), AnchoredRecordDamage> {
-        if payload_sha256 != self.payload_sha256 {
+        if payload_sha256 != *self.payload_sha256.bytes() {
             return Err(AnchoredRecordDamage::PayloadDigestMismatch);
         }
         Ok(())

@@ -1,6 +1,7 @@
 use std::fs::OpenOptions;
 use std::io::Read;
 use std::path::Path;
+use worth_foundational::CanonicalDigestId;
 
 use worth_store_authority::ControlStoreSelectionCoordinates;
 use worth_store_operations::OperationalControlSessionObservation;
@@ -15,24 +16,24 @@ const MAX_OPERATION_BYTES: usize = 256;
 
 #[derive(Debug)]
 pub(super) struct ProcessObservationReport {
-    pub(super) challenge: [u8; 32],
+    pub(super) challenge: CanonicalDigestId,
     pub(super) yieldpoint: OperationalRecoveryYieldpoint,
     pub(super) observation: OperationalControlSessionObservation,
-    pub(super) trace_identity: [u8; 32],
+    pub(super) trace_identity: CanonicalDigestId,
     pub(super) operations: Vec<String>,
 }
 
 pub(super) fn write_report(path: &Path, report: &ProcessObservationReport) -> std::io::Result<()> {
     let mut bytes = Vec::with_capacity(256);
     bytes.extend_from_slice(MAGIC);
-    bytes.extend_from_slice(&report.challenge);
+    bytes.extend_from_slice(report.challenge.bytes());
     let point = OperationalRecoveryYieldpoint::ALL
         .iter()
         .position(|candidate| *candidate == report.yieldpoint)
         .expect("declared yieldpoint") as u16;
     bytes.extend_from_slice(&point.to_be_bytes());
     append_observation(&mut bytes, report.observation);
-    bytes.extend_from_slice(&report.trace_identity);
+    bytes.extend_from_slice(report.trace_identity.bytes());
     assert!(report.operations.len() <= MAX_OPERATIONS);
     bytes.extend_from_slice(&(report.operations.len() as u16).to_be_bytes());
     for operation in &report.operations {
@@ -109,13 +110,13 @@ fn decode_report(bytes: &[u8]) -> Option<ProcessObservationReport> {
         return None;
     }
     Some(ProcessObservationReport {
-        challenge,
+        challenge: CanonicalDigestId::new(challenge),
         yieldpoint,
         observation:
             worth_store_operations::OperationalControlSessionObservation::from_untrusted_certification_report(
                 process, session, media, coordinates,
             ),
-        trace_identity,
+        trace_identity: CanonicalDigestId::new(trace_identity),
         operations,
     })
 }

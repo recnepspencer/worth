@@ -45,8 +45,7 @@ where
             Ok(presented) => presented,
             Err(cause) => return WorthQueryApplicationCommitOutcome::Denied(cause),
         };
-        self.backing
-            .runtime
+        self.runtime()
             .compare_and_commit_application_for_required_output_source(
             &execution,
             phase,

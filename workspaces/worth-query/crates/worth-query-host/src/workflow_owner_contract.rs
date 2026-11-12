@@ -5,11 +5,12 @@
 //!     application_entry::*,
 //!     declaration::{application_operation::*, application_program::ApplicationWorkflowSpec},
 //!     domain::ApplicationSchema,
-//!     primary_graph::WorthQueryRecoverySafeRetryAdmission,
+//!     primary_graph::{WorthQueryApplicationCommitReceipt, WorthQueryRecoverySafeRetryAdmission},
 //! };
 //! fn accept<S, W, O, Input, Scope, I, Preparation>(
 //!     advance: WorthQueryWorkflowAdvanceRequest<'_, '_, '_, S, W, O, Input, Scope>,
 //!     required: &RequiredWorkflowOperation,
+//!     original: &WorthQueryApplicationCommitReceipt,
 //!     operation: WorthQueryBoundWorkflowOperation<'_, '_, '_, '_, S, I, Preparation>,
 //!     recovery: Option<&WorthQueryRecoverySafeRetryAdmission>,
 //! ) where
@@ -23,9 +24,9 @@
 //!         ApplicationMutationScopeResolution<S, <I::Binding as ApplicationMutationBinding<S>>::PrincipalIdentity>,
 //! {
 //!     if let Some(recovery) = recovery {
-//!         let _ = advance.accept_recovered_operation_from_owner(required, operation, recovery);
+//!         let _ = advance.accept_recovered_operation_from_owner(required, original, operation, recovery);
 //!     } else {
-//!         let _ = advance.accept_operation_from_owner(required, operation);
+//!         let _ = advance.accept_operation_from_owner(required, original, operation);
 //!     }
 //! }
 //! ```
@@ -35,12 +36,13 @@
 //!     application_entry::*,
 //!     declaration::{application_operation::*, application_program::ApplicationWorkflowSpec},
 //!     domain::ApplicationSchema,
-//!     primary_graph::WorthQueryRecoverySafeRetryAdmission,
+//!     primary_graph::{WorthQueryApplicationCommitReceipt, WorthQueryRecoverySafeRetryAdmission},
 //! };
 //! use worth_query_host::facade::application_entry::advanced::WorthQueryApplicationMutationRequestWithIdempotency;
 //! fn accept<S, W, O, Input, Scope, I, Preparation>(
 //!     advance: WorthQueryWorkflowAdvanceRequest<'_, '_, '_, S, W, O, Input, Scope>,
 //!     required: &RequiredWorkflowOperation,
+//!     original: &WorthQueryApplicationCommitReceipt,
 //!     operation: WorthQueryApplicationMutationRequestWithIdempotency<'_, '_, '_, '_, S, I, Preparation>,
 //!     recovery: Option<&WorthQueryRecoverySafeRetryAdmission>,
 //! ) where
@@ -54,9 +56,9 @@
 //!         ApplicationMutationScopeResolution<S, <I::Binding as ApplicationMutationBinding<S>>::PrincipalIdentity>,
 //! {
 //!     if let Some(recovery) = recovery {
-//!         let _ = advance.accept_recovered_operation_from_owner(required, operation, recovery);
+//!         let _ = advance.accept_recovered_operation_from_owner(required, original, operation, recovery);
 //!     } else {
-//!         let _ = advance.accept_operation_from_owner(required, operation);
+//!         let _ = advance.accept_operation_from_owner(required, original, operation);
 //!     }
 //! }
 //! ```
@@ -115,5 +117,37 @@
 //!     binding: WorthQueryOwnedWorkflowBirthBinding<'_, S, I>,
 //! ) -> (WorthQueryOperationDescription<S, I>, RequiredWorkflowBirth) {
 //!     binding.into_parts()
+//! }
+//! ```
+
+//! Recorded original data cannot replace the actual owner on advanced recovery.
+//! ```compile_fail,E0308
+//! use worth_query_host::facade::{
+//!     application_entry::*,
+//!     declaration::{application_operation::*, application_program::ApplicationWorkflowSpec},
+//!     domain::ApplicationSchema,
+//!     primary_graph::{WorthQueryApplicationCommitReceipt, WorthQueryRecoverySafeRetryAdmission},
+//! };
+//! fn accept<S, W, O, Input, Scope, I, Preparation>(
+//!     advance: WorthQueryWorkflowAdvanceRequest<'_, '_, '_, S, W, O, Input, Scope>,
+//!     required: &RequiredWorkflowOperation,
+//!     original: &worth_query_host::facade::primary_graph::WorthQueryRecoveredApplicationCommitReceipt,
+//!     operation: WorthQueryBoundWorkflowOperation<'_, '_, '_, '_, S, I, Preparation>,
+//!     recovery: Option<&WorthQueryRecoverySafeRetryAdmission>,
+//! ) where
+//!     S: ApplicationSchema,
+//!     W: ApplicationWorkflowSpec<Schema = S>,
+//!     O: 'static,
+//!     Input: Clone + Send + Sync + 'static,
+//!     I: ApplicationMutationIntent<S>,
+//!     <I::Binding as ApplicationMutationBinding<S>>::Input: Clone + Send + Sync + 'static,
+//!     <I::Binding as ApplicationMutationBinding<S>>::ScopeBinding:
+//!         ApplicationMutationScopeResolution<S, <I::Binding as ApplicationMutationBinding<S>>::PrincipalIdentity>,
+//! {
+//!     if let Some(recovery) = recovery {
+//!         let _ = advance.accept_recovered_operation_from_owner(required, original, operation, recovery);
+//!     } else {
+//!         let _ = advance.accept_operation_from_owner(required, original, operation);
+//!     }
 //! }
 //! ```

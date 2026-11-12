@@ -146,6 +146,23 @@ pub(in crate::domain_computation) struct CapturedApplicationQueryParameters {
 }
 
 impl CapturedApplicationQueryParameters {
+    pub(in crate::domain_computation::primary_graph) fn readmitted(
+        query: WorthQueryInstalledApplicationQueryIdentity,
+        parameters: WorthQueryAdmittedApplicationQueryParameters,
+        execution: &ExecutionRequest<'_, '_>,
+    ) -> Result<Self, Denial> {
+        let bytes = parameters
+            .retained_owned_capacity_bytes()
+            .and_then(|bytes| {
+                bytes.checked_add(std::mem::size_of::<Self>() + 2 * std::mem::size_of::<usize>())
+            })
+            .and_then(|bytes| u64::try_from(bytes).ok())
+            .ok_or_else(overflow)?;
+        let funding = execution
+            .reserve_retained_memory(bytes)
+            .map_err(request_stopped)?;
+        Ok(Self::captured(query, parameters, funding))
+    }
     fn captured(
         query: WorthQueryInstalledApplicationQueryIdentity,
         parameters: WorthQueryAdmittedApplicationQueryParameters,

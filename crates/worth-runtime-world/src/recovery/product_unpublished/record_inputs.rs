@@ -12,6 +12,7 @@ use crate::publication::{CompositeAttemptProgress, CompositeOwnerExecutionResult
 /// subset of it.
 pub(crate) struct RetainedAttemptFacts {
     pub(crate) admitted_at: crate::lifecycle::RuntimeWorldInstant,
+    pub(crate) before_effect_refusal: Option<crate::publication::NoEffectCause>,
     pub(crate) identity: ProductUnpublishedOwnerEffectsIdentity,
     pub(crate) attempt_identity: CompositePublicationAttemptIdentity,
     pub(crate) expected_head: ProductBranchObservation,

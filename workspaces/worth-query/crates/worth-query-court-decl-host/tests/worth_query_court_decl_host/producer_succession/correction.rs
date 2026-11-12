@@ -6,6 +6,41 @@ impl ApplicationCorrectionBinding<Schema> for Resize {
     type Source = Binding;
     type InverseIntent = Control;
     type Disclosure = ReadBinding;
+
+    fn recover_source_input(
+        bytes: &[u8],
+        expected: worth_query_decl::facade::application_schema::CanonicalDigestId,
+        bounds: worth_query_decl::facade::application_schema::ValueDecodeBounds,
+    ) -> Result<
+        worth_query_decl::facade::application_operation::ApplicationEncodedInput<
+            <Self::Source as worth_query_decl::facade::application_operation::ApplicationMutationBinding<Schema>>::InputBinding,
+        >,
+        worth_query_decl::facade::application_operation::ApplicationRetainedInputDenial,
+    >{
+        worth_query_decl::facade::application_operation::ApplicationEncodedInput::decode_retained(
+            bytes, expected, bounds,
+        )
+    }
+
+    fn recover_inverse_input(
+        bytes: &[u8],
+        expected: worth_query_decl::facade::application_schema::CanonicalDigestId,
+        bounds: worth_query_decl::facade::application_schema::ValueDecodeBounds,
+    ) -> Result<
+        worth_query_decl::facade::application_operation::ApplicationEncodedInput<
+            <worth_query_decl::facade::application_aftermath::ApplicationInverseBinding<
+                Schema,
+                Self,
+            > as worth_query_decl::facade::application_operation::ApplicationMutationBinding<
+                Schema,
+            >>::InputBinding,
+        >,
+        worth_query_decl::facade::application_operation::ApplicationRetainedInputDenial,
+    > {
+        worth_query_decl::facade::application_operation::ApplicationEncodedInput::decode_retained(
+            bytes, expected, bounds,
+        )
+    }
     fn disclosure_parameters(
         _: &Control,
     ) -> Result<ApplicationQueryParameterSet<Query>, ApplicationCorrectionDerivationDenial> {
@@ -16,12 +51,10 @@ impl ApplicationCorrectionBinding<Schema> for Resize {
         ControlSource::reference().definition().no_external_effect()
     }
     fn mechanism() -> DeclaredCorrectionMechanism<Schema> {
-        DeclaredCorrectionMechanism::recorded_inverse_binding::<Self>(
-            DeclaredPreImageDemand::new(
-                [DeclaredPreImageLocus::from_field(Width::at("Width"))],
-                9,
-            ),
-        )
+        DeclaredCorrectionMechanism::recorded_inverse_binding::<Self>(DeclaredPreImageDemand::new(
+            [DeclaredPreImageLocus::from_field(Width::at("Width"))],
+            9,
+        ))
     }
     fn derive_correction(
         original: &Control,
@@ -33,9 +66,7 @@ impl ApplicationCorrectionBinding<Schema> for Resize {
         };
         let width = U64ApplicationValueBinding::decode(
             fields
-                .field(
-                    &DeclaredPreImageLocus::from_field(Width::at("Width")),
-                )
+                .field(&DeclaredPreImageLocus::from_field(Width::at("Width")))
                 .ok_or(MissingPreImage)?,
         )
         .map_err(|_| InvalidPreImage)?;

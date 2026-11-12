@@ -3,8 +3,10 @@ use sha2::{Digest, Sha256};
 use super::RecoveryStagingInput;
 
 pub(super) fn exact_plan_commands(input: &RecoveryStagingInput) -> bool {
-    let commands = input.staging.commands();
-    if input.quiescence.staging_commands() != input.staging.scheduler_command_count() {
+    let commands = input.state().staging.commands();
+    if input.state().quiescence.staging_commands()
+        != input.state().staging.scheduler_command_count()
+    {
         return false;
     }
     let mut artifacts = std::collections::BTreeSet::new();

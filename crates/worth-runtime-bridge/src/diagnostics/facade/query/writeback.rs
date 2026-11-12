@@ -67,7 +67,13 @@ impl BridgeDiagnosticsFacade {
 
     pub fn last_writeback_execution_record(
         &self,
-    ) -> Option<crate::writeback::BridgeWritebackExecutionRecord> {
+    ) -> Result<
+        crate::writeback::BridgeWritebackExecutionRecord,
+        worth_foundational::facade::DiagnosticRecordAbsence,
+    > {
+        if !self.config.records_enabled {
+            return Err(worth_foundational::facade::DiagnosticRecordAbsence::NeverRetained);
+        }
         self.state
             .read()
             .expect("bridge diagnostics lock poisoned")
@@ -103,7 +109,13 @@ impl BridgeDiagnosticsFacade {
 
     pub fn last_writeback_replay_record(
         &self,
-    ) -> Option<crate::writeback::BridgeWritebackReplayRecord> {
+    ) -> Result<
+        crate::writeback::BridgeWritebackReplayRecord,
+        worth_foundational::facade::DiagnosticRecordAbsence,
+    > {
+        if !self.config.records_enabled {
+            return Err(worth_foundational::facade::DiagnosticRecordAbsence::NeverRetained);
+        }
         self.state
             .read()
             .expect("bridge diagnostics lock poisoned")
@@ -130,24 +142,32 @@ impl BridgeDiagnosticsFacade {
             .writeback_admission_record_for_contract_digest(contract_digest)
     }
 
-    pub fn writeback_execution_record_for_identity(
+    pub fn retained_writeback_execution_reference_for_identity(
         &self,
         record_identity: &BridgeWritebackExecutionRecordIdentity,
-    ) -> Option<crate::writeback::BridgeWritebackExecutionRecord> {
+    ) -> Option<
+        crate::diagnostics::BridgeWritebackDiagnosticReference<
+            crate::writeback::BridgeWritebackExecutionRecord,
+        >,
+    > {
         self.state
             .read()
             .expect("bridge diagnostics lock poisoned")
-            .writeback_execution_record_for_identity(record_identity)
+            .writeback_execution_reference_for_identity(record_identity)
     }
 
-    pub fn writeback_execution_record_for_candidate_digest(
+    pub fn retained_writeback_execution_reference_for_candidate_digest(
         &self,
         candidate_digest: &str,
-    ) -> Option<crate::writeback::BridgeWritebackExecutionRecord> {
+    ) -> Option<
+        crate::diagnostics::BridgeWritebackDiagnosticReference<
+            crate::writeback::BridgeWritebackExecutionRecord,
+        >,
+    > {
         self.state
             .read()
             .expect("bridge diagnostics lock poisoned")
-            .writeback_execution_record_for_candidate_digest(candidate_digest)
+            .writeback_execution_reference_for_candidate_digest(candidate_digest)
     }
 
     pub fn writeback_mapper_envelope_for_identity(
@@ -210,13 +230,47 @@ impl BridgeDiagnosticsFacade {
             .writeback_mapper_record_for_candidate_digest(candidate_digest)
     }
 
-    pub fn writeback_replay_record_for_identity(
+    pub fn retained_writeback_replay_reference_for_identity(
         &self,
         record_identity: &BridgeWritebackReplayRecordIdentity,
-    ) -> Option<crate::writeback::BridgeWritebackReplayRecord> {
+    ) -> Option<
+        crate::diagnostics::BridgeWritebackDiagnosticReference<
+            crate::writeback::BridgeWritebackReplayRecord,
+        >,
+    > {
         self.state
             .read()
             .expect("bridge diagnostics lock poisoned")
-            .writeback_replay_record_for_identity(record_identity)
+            .writeback_replay_reference_for_identity(record_identity)
+    }
+    pub fn writeback_execution_record_for_reference(
+        &self,
+        reference: &crate::diagnostics::BridgeWritebackDiagnosticReference<
+            crate::writeback::BridgeWritebackExecutionRecord,
+        >,
+    ) -> Result<
+        crate::writeback::BridgeWritebackExecutionRecord,
+        worth_foundational::facade::DiagnosticRecordReadDenial,
+    > {
+        self.state
+            .read()
+            .expect("bridge diagnostics lock poisoned")
+            .writeback_scope
+            .read(reference)
+    }
+    pub fn writeback_replay_record_for_reference(
+        &self,
+        reference: &crate::diagnostics::BridgeWritebackDiagnosticReference<
+            crate::writeback::BridgeWritebackReplayRecord,
+        >,
+    ) -> Result<
+        crate::writeback::BridgeWritebackReplayRecord,
+        worth_foundational::facade::DiagnosticRecordReadDenial,
+    > {
+        self.state
+            .read()
+            .expect("bridge diagnostics lock poisoned")
+            .writeback_scope
+            .read(reference)
     }
 }

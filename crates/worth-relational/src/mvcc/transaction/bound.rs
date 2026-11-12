@@ -1,9 +1,10 @@
-use crate::transactions::data::{MergedCommitPlan, TransactionId, WorkerIntentBatch};
+use crate::transactions::data::{TransactionId, WorkerIntentBatch};
 
 use super::{
     DetachedRelationalTransactionOverlay, RelationalTransactionFootprint,
     RelationalTransactionIntent,
 };
+mod replay_staging;
 
 /// Move-only detached transaction bound to one owner-admitted exact basis.
 /// It contains no reference to `RelationalRuntime`.
@@ -12,7 +13,7 @@ pub struct BranchBoundRelationalTransaction {
     pub(crate) appendix_adoption:
         Option<std::sync::Arc<crate::history::data::CanonicalRequiredOutputOrigin>>,
     pub(crate) prepared_coupled_commands:
-        std::sync::Mutex<Option<crate::transactions::data::MergedCommitPlan>>,
+        std::sync::Mutex<Option<std::sync::Arc<super::OwnedNormalizedPlan>>>,
     pub(crate) authored_coupling: Option<std::sync::Arc<crate::mvcc::BoundAuthoredCoupling>>,
     pub(crate) content: crate::content::RelationalContentAttachments,
     pub(crate) symbols: crate::runtime::RuntimeSymbolTable,
@@ -28,13 +29,18 @@ pub struct BranchBoundRelationalTransaction {
     pub(crate) recovered_codec_publication_custody:
         Option<std::sync::Arc<crate::durability::RecoveredCodecPublicationCustody>>,
     pub(crate) schema_authority_input: Option<crate::schema::SchemaContinuityAuthorityInput>,
+    pub(crate) home_target:
+        Option<std::sync::Arc<crate::runtime::AdmittedRelationalHomeProgramTarget>>,
+    pub(crate) home_step: Option<std::sync::Arc<crate::runtime::AdmittedRelationalHomeProgramStep>>,
+    pub(crate) home_target_coverage:
+        Option<std::sync::Arc<crate::runtime::RelationalHomeTargetCoverage>>,
     pub(crate) schema_authority: std::sync::Arc<crate::branch::RelationalBranchRootSchemaAuthority>,
     pub(crate) overlay: DetachedRelationalTransactionOverlay,
     pub(crate) maximum_savepoints: usize,
     pub(crate) footprint: RelationalTransactionFootprint,
     pub(crate) savepoints: Vec<super::RelationalTransactionSavepoint>,
     pub(crate) next_savepoint_ordinal: u64,
-    pub(crate) last_merged_plan: Option<MergedCommitPlan>,
+    pub(crate) last_merged_plan: Option<super::OwnedNormalizedPlan>,
     pub(crate) pending_symbols: Option<crate::runtime::PendingSymbolMeanings>,
     pub(crate) client_key_symbol_policy: crate::symbols::data::ClientKeySymbolPolicy,
     pub(crate) retention:
@@ -43,6 +49,14 @@ pub struct BranchBoundRelationalTransaction {
 }
 
 impl BranchBoundRelationalTransaction {
+    pub(crate) fn mutation_schema_authority(
+        &self,
+    ) -> &std::sync::Arc<crate::branch::RelationalBranchRootSchemaAuthority> {
+        self.home_target
+            .as_ref()
+            .map_or(&self.schema_authority, |target| &target.meaning.schema)
+    }
+
     pub fn transaction_id(&self) -> TransactionId {
         self.transaction_id
     }

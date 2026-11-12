@@ -37,6 +37,12 @@ impl crate::runtime::RelationalRuntime {
         RelationalBranchDeletionOutcome,
         RelationalBranchTransitionStop<RelationalBranchDeleteDenial>,
     > {
+        if let Some(medium) = self.durability.medium() {
+            medium.admit_home_program_write(None, None).map_err(|cause|
+                RelationalBranchTransitionStop::Denied(
+                    RelationalBranchDeleteDenial::DurablePublicationRefused(
+                        crate::durability::medium::RelationalDurablePublicationRefusal::HomeProgramTransition(cause))))?;
+        }
         let step = LiveBranchTransitionStep::new(self.durability.medium(), execution);
         self.delete_branch_with(
             execution,
@@ -113,8 +119,12 @@ impl crate::runtime::RelationalRuntime {
             publication.record_with_cutover(
                 execution,
                 step,
+                state
+                    .selected_root()
+                    .ok_or(denied(RelationalBranchDeleteDenial::OwnerFailure))?
+                    .retained_schema_authority(),
                 || self.admit_name_retirement(&branch, transition),
-                |_| {
+                |_, _| {
                     self.history.retire_admitted_branch_name(branch.clone());
                     state.mark_deleting();
                 },
@@ -149,8 +159,8 @@ impl crate::runtime::RelationalRuntime {
             .selected_root()
             .ok_or(denied(RelationalBranchDeleteDenial::OwnerFailure))?;
         let previous_head_version = selected_root
-            .canonical_envelope()
-            .map(|envelope| envelope.commit.version_id);
+            .commit_receipt()
+            .map(|receipt| receipt.version_id);
         let head_retirement = self
             .history
             .reserve_branch_head_retirement(
@@ -169,8 +179,9 @@ impl crate::runtime::RelationalRuntime {
         let retired_root_identity = publication.record_with_cutover(
             execution,
             step,
+            selected_root.retained_schema_authority(),
             || self.admit_name_retirement(&branch, transition),
-            |_| {
+            |_, _| {
                 self.history.retire_admitted_branch_name(branch.clone());
                 state.mark_deleting();
                 let removed_cell = self

@@ -15,8 +15,14 @@ fn paired_protected_account_detail_worlds_publish_equal_complete_commit_surfaces
     assert_eq!(protected_foreign_status(&left), AccountStatus::Open);
     assert_eq!(protected_foreign_status(&right), AccountStatus::Closed);
 
-    let left = commit_freeze(&left, 31);
-    let right = commit_freeze(&right, 31);
+    let left_closed = commit_freeze(&left, 31);
+    let left = left_closed
+        .live_receipt()
+        .expect("fresh protected-fact twin retains native custody");
+    let right_closed = commit_freeze(&right, 31);
+    let right = right_closed
+        .live_receipt()
+        .expect("fresh protected-fact twin retains native custody");
 
     // Each receipt carries its real World publication identity. Compare the
     // Bank-visible semantics rather than pretending two Worlds share authority.

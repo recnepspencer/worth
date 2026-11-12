@@ -1,4 +1,5 @@
 use super::history_binding::HistoryBoundCommitExecution;
+use super::phase_backing::CommitPhaseBacking;
 
 pub(super) struct SnapshotValidatedCommitExecution {
     admitted: super::execution_admission::AdmittedCommitState,
@@ -76,18 +77,27 @@ impl SnapshotValidatedCommitExecution {
 pub(super) fn validate_snapshot_publication(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     _runtime: &crate::runtime::RelationalPreparationRuntime,
-    mut history_bound: HistoryBoundCommitExecution,
+    history_bound: CommitPhaseBacking<HistoryBoundCommitExecution>,
     _control: &crate::validation::engine::InvariantPreparationControl<'_, '_>,
-) -> Result<SnapshotValidatedCommitExecution, crate::transactions::data::TransactionCommitError> {
-    super::consult_stage(execution, super::CommitStage::Snapshot)?;
-    let (log, _) = history_bound
-        .mutated_mut()
-        .prepared
-        .admitted
-        .commit_phase_state();
-    log.begin_phase(crate::transactions::data::CommitPhase::InvariantPostCheck);
-    log.complete_phase(crate::transactions::data::CommitPhase::InvariantPostCheck);
-    Ok(into_snapshot_validated_execution(history_bound))
+) -> Result<
+    CommitPhaseBacking<SnapshotValidatedCommitExecution>,
+    crate::transactions::data::TransactionCommitError,
+> {
+    // Producer temporaries retire before funding the retained successor,
+    // matching the former caller-side allocation boundary.
+    let result = {
+        let mut history_bound = history_bound.into_inner();
+        super::consult_stage(execution, super::CommitStage::Snapshot)?;
+        let (log, _) = history_bound
+            .mutated_mut()
+            .prepared
+            .admitted
+            .commit_phase_state();
+        log.begin_phase(crate::transactions::data::CommitPhase::InvariantPostCheck);
+        log.complete_phase(crate::transactions::data::CommitPhase::InvariantPostCheck);
+        into_snapshot_validated_execution(history_bound)
+    };
+    CommitPhaseBacking::new(execution, result)
 }
 
 fn into_snapshot_validated_execution(
@@ -103,7 +113,7 @@ fn into_snapshot_validated_execution(
         invariant_executions,
         outcome,
         mutation_identities,
-        aggregate: _,
+        _aggregate: _,
         source_interpretation,
     } = mutated;
     let super::draft_execution::PreparedCommitState {

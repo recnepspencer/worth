@@ -24,7 +24,7 @@ pub(in crate::mvcc::publication::application_publication::coupled_assembly) stru
     pub(in crate::mvcc::publication::application_publication::coupled_assembly) read:
         RelationalPinnedRead<RelationalAppliedCandidateReadIdentity>,
     pub(in crate::mvcc::publication::application_publication::coupled_assembly) plan:
-        crate::transactions::data::MergedCommitPlan,
+        crate::mvcc::OwnedNormalizedPlan,
     pub(in crate::mvcc::publication::application_publication::coupled_assembly) records:
         Vec<RecordRef>,
     pub(in crate::mvcc::publication::application_publication::coupled_assembly) delta_state:
@@ -101,28 +101,30 @@ impl RelationalAuthoredCoupledCandidate<'_> {
         let runtime = self
             .runtime
             .with_candidate_symbols(self.mutation.candidate_symbols());
-        let mut intents = self
+        let intents = self
             .transaction
-            .push_normalized_coupled_batches(execution, &runtime, batches)?;
-        super::super::fresh_references::resolve(
-            execution,
-            &self.mutation.outcome.created_entities,
-            &mut intents,
-        )?;
+            .push_normalized_coupled_batches(execution, &runtime, batches)?
+            .into_coupled_suffix(0, &self.mutation.outcome.created_entities, execution)?;
         let read = self.pin_source(execution)?;
         let root = read.resident_basis().root();
-        let plan = self
-            .transaction
-            .build_merged_plan_for_state(&runtime, root.as_ref(), intents)
-            .map_err(TransactionCommitError::conflict)?;
+        let plan = self.transaction.build_merged_plan_for_state(
+            &runtime,
+            root.as_ref(),
+            intents,
+            execution,
+        )?;
         self.fresh_records
-            .require(execution, creator, source, &plan)?;
-        let deferred_edges =
-            super::super::writer_custody::require(execution, &self.binding.owners, custody, &plan)?;
+            .require(execution, creator, source, plan.plan())?;
+        let deferred_edges = super::super::writer_custody::require(
+            execution,
+            &self.binding.owners,
+            custody,
+            plan.plan(),
+        )?;
         let (_, mut state, _) = prepare_authoritative_working_state_scope_for_base(
             &runtime,
             root.as_ref(),
-            &plan,
+            plan.plan(),
             0,
             None,
         );
@@ -134,7 +136,7 @@ impl RelationalAuthoredCoupledCandidate<'_> {
                 root.as_ref(),
                 self.identity.proposed_version_id(),
             ),
-            &plan.merged_intents,
+            &plan.plan().merged_intents,
             None,
         )?;
         let config = crate::config::data::MutationConfig {
@@ -143,11 +145,12 @@ impl RelationalAuthoredCoupledCandidate<'_> {
             cross_context_policy: runtime.config.storage.cross_context_policy,
         };
         let apply = AuthoritativeApplyPlan {
-            transaction_id: plan.transaction_id,
+            transaction_id: plan.plan().transaction_id,
             version_id: self.identity.proposed_version_id(),
-            merged_intents: plan.merged_intents.clone(),
+            merged_intents: plan.plan().merged_intents.clone(),
         };
         let outcome = crate::authority::mutation::apply_plan_with_publication_edges(
+            execution,
             &mut state,
             &apply,
             &config,
@@ -177,11 +180,12 @@ impl RelationalAuthoredCoupledCandidate<'_> {
             interpretation.restoration_content(),
         )
         .map_err(RelationalCoupledAssemblyFailure::from_apply)?;
-        crate::authority::mutation::apply_adjacency_deltas(
+        crate::authority::mutation::apply_adjacency_deltas_for_request(
+            execution,
             &mut state,
             &outcome.effect.adjacency.deltas,
             self.identity.proposed_version_id(),
-        );
+        )?;
         self.fresh_records
             .retain(execution, creator, source, &outcome)?;
         let records = outcome.effect.publication.changed_records.clone();
@@ -203,7 +207,10 @@ impl RelationalAuthoredCoupledCandidate<'_> {
         // Retain only this part's actual sparse state for the next physical pin.
         // Applying it over the previous D reuses the ordinary root-region owner.
         let delta_state = state.clone();
-        self.mutation.state.adopt_sequential_apply(state);
+        self.mutation
+            .state
+            .adopt_sequential_apply(state, execution)
+            .map_err(custody::execution_stop)?;
         self.mutation.aggregate = crate::aggregate_identity::AggregateProposal::capture(
             &self.prepared.schema_authority,
             &self.prepared.selected_branch_state,

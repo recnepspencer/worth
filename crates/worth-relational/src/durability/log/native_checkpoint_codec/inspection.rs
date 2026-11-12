@@ -1,5 +1,4 @@
 //! Inspection is a projection of the native codec's actual decoded input.
-use super::checkpoint_wire::CheckpointWire;
 use crate::durability::data::*;
 use crate::history::data::RecordAllocationClass;
 use std::{
@@ -15,30 +14,18 @@ pub(crate) fn inspect<'a>(
         .check_live()
         .map_err(|stop| RelationalRecoveryStop::Request(stop.into()))?;
     let payload = super::checkpoint_payload(bytes)?;
-    let wire: CheckpointWire<'_> = rmp_serde::from_slice(payload)
-        .map_err(|e| invalid(format!("native checkpoint inspection: {e}")))?;
-    let CheckpointWire {
-        manifest: _,
-        members: _,
-        envelopes: _,
-    } = wire;
+    // The one request-aware codec admits the roster/table before they grow.
     let decoded = super::decode_checkpoint(execution, bytes)?.checkpoint;
     let symbol_identity_frontier = decoded.symbol_identity_frontier;
     let record_identity = decoded.record_identity;
     let partition_images = decoded.partition_images;
     let branch_roots = decoded.branch_roots;
-    let DurableRecordIdentityState {
-        schema_version,
-        generation_high_water,
-        append_frontiers,
-        reusable_slots: _,
-        pending_reservations: _,
-    } = record_identity;
-    if schema_version != DurableRecordIdentityState::CURRENT_SCHEMA_VERSION {
+    if record_identity.schema_version != DurableRecordIdentityState::CURRENT_SCHEMA_VERSION {
         return Err(invalid("unknown record identity schema").into());
     }
-    let frontiers = append_frontiers
-        .into_iter()
+    let frontiers = record_identity
+        .append_frontiers
+        .iter()
         .map(|row| {
             let DurableRecordSlotFrontier {
                 class,
@@ -46,14 +33,15 @@ pub(crate) fn inspect<'a>(
                 next_slot,
             } = row;
             CheckpointRecordFrontier {
-                class: record_class(class),
+                class: record_class(*class),
                 partition_id: partition_id.0,
-                next_slot,
+                next_slot: *next_slot,
             }
         })
         .collect();
-    let generations = generation_high_water
-        .into_iter()
+    let generations = record_identity
+        .generation_high_water
+        .iter()
         .map(|row| {
             let DurableRecordGenerationHighWater {
                 class,
@@ -62,10 +50,10 @@ pub(crate) fn inspect<'a>(
                 generation,
             } = row;
             CheckpointRecordIdentity {
-                class: record_class(class),
+                class: record_class(*class),
                 partition_id: partition_id.0,
-                slot,
-                generation,
+                slot: *slot,
+                generation: *generation,
             }
         })
         .collect();
@@ -111,6 +99,7 @@ pub(crate) fn inspect<'a>(
     take(&mut allocator, "append_frontiers")?;
     take(&mut allocator, "generation_high_water")?;
     Ok(RelationalCheckpointInspection {
+        branch_cells: decoded.branch_cells,
         model: NativeCheckpointModelBytes {
             envelope,
             fields,

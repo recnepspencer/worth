@@ -348,3 +348,6 @@ impl WorthQueryRuntimeInspectionEvidence {
         &self.evidence
     }
 }
+#[cfg(test)]
+#[path = "authority_artifacts_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;

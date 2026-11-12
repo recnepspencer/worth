@@ -53,7 +53,7 @@ pub fn completion_records(
         .runtime_for_test())
         .primary_provider_for_test())
         .graph_for_test())
-        .with_runtime_mut_for_test(execution, |runtime| {
+        .with_runtime_for_test(execution, |runtime| {
             let snapshot =
                 worth_query_execution::court_doors_for_test::domain_computation::primary_graph::exact_basis_access::open_exact_basis_snapshot(
                     runtime,

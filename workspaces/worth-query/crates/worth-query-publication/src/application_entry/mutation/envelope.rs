@@ -31,8 +31,8 @@ use worth_query_execution::facade::{
     primary_graph::{
         HandlerExecutionDenial, MutationHandlerExecutionDenial, WorthQueryApplicationCommitReceipt,
         WorthQueryApplicationIdempotencyBinding, WorthQueryApplicationProjection,
-        WorthQueryApplicationUncommitted, WorthQueryHistoricalApplicationCommit,
-        WorthQueryMutationHandlerWork, WorthQueryPrimaryGraphApplicationRuntime,
+        WorthQueryApplicationUncommitted, WorthQueryMutationHandlerWork,
+        WorthQueryPrimaryGraphApplicationRuntime, WorthQueryRecoveredApplicationCommitReceipt,
     },
     runtime::ExecutionAllocationPolicy,
 };

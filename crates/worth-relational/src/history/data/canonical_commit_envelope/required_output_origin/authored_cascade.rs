@@ -11,7 +11,7 @@ use crate::{
 use std::sync::Arc;
 use worth_execution::{ExecutionResourceLease, MapKernelContext};
 
-#[derive(Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub(crate) struct CanonicalAuthoredRetirement {
     pub(crate) anchor: EntityId,
     pub(crate) owned_members: bool,
@@ -19,6 +19,8 @@ pub(crate) struct CanonicalAuthoredRetirement {
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub(crate) co_anchors: Vec<(EntityId, CommitId)>,
     pub(crate) publications: Vec<Arc<CanonicalRequiredOutputOrigin>>,
+    #[serde(skip)]
+    pub(crate) _decoded_memory: Option<std::sync::Arc<worth_execution::ExecutionMemoryReservation>>,
 }
 
 impl CanonicalAuthoredRetirement {
@@ -32,9 +34,9 @@ impl CanonicalAuthoredRetirement {
 
 #[allow(clippy::too_many_arguments)]
 pub(super) fn install(
-    envelope: &mut CanonicalCommitEnvelope,
+    envelope: &mut CanonicalCommitEnvelopeBody,
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-    runtime: &crate::runtime::RelationalPreparationRuntime,
+    runtime: &crate::history::data::canonical_commit_envelope::required_output_origin::history_request::PreparationRuntimeRequest<'_, '_, '_>,
     basis: &AdmittedRelationalBranchBasis,
     created: &CommitCreatedEntityBindings,
     created_relations: &CommitCreatedRelationBindings,
@@ -119,6 +121,7 @@ pub(super) fn install(
     // Only this private installer, after consuming Native's sealed cascade,
     // establishes the enclosing retirement event used by per-route installation.
     envelope.authored_cascade_retirement = Some(Arc::new(CanonicalAuthoredRetirement {
+        _decoded_memory: None,
         anchor: predecessor.anchor,
         owned_members: predecessor.owned_members,
         birth: predecessor.birth,
@@ -221,6 +224,7 @@ pub(super) fn install(
         publications.push(retired);
     }
     envelope.authored_cascade_retirement = Some(Arc::new(CanonicalAuthoredRetirement {
+        _decoded_memory: None,
         anchor: predecessor.anchor,
         owned_members: predecessor.owned_members,
         birth: predecessor.birth,
@@ -229,3 +233,13 @@ pub(super) fn install(
     }));
     Ok(positions)
 }
+
+impl PartialEq for CanonicalAuthoredRetirement {
+    fn eq(&self, other: &Self) -> bool {
+        self.anchor == other.anchor
+            && self.birth == other.birth
+            && self.co_anchors == other.co_anchors
+            && self.publications == other.publications
+    }
+}
+impl Eq for CanonicalAuthoredRetirement {}

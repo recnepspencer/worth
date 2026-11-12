@@ -3,22 +3,22 @@ use super::*;
 
 impl WorthQueryPrimaryGraphIntegrationHandle {
     #[doc(hidden)]
-    pub fn with_runtime_mut_for_test<T>(
+    pub fn with_runtime_for_test<T>(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
-        mutate: impl FnOnce(&mut RelationalRuntime) -> T,
+        mutate: impl FnOnce(&RelationalRuntime) -> T,
     ) -> T {
-        Self::with_runtime_mut(self, execution, mutate)
+        Self::with_runtime(self, execution, mutate)
     }
 }
 
 impl WorthQueryPrimaryGraphIntegrationHandle {
     #[doc(hidden)]
-    pub fn with_query_runtime_mut_for_test<T>(
+    pub fn with_query_runtime_for_test<T>(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
-        read: impl FnOnce(&mut RelationalRuntime, &super::super::WorthQueryPrimaryGraphLayout) -> T,
+        read: impl FnOnce(&RelationalRuntime, &super::super::WorthQueryPrimaryGraphLayout) -> T,
     ) -> T {
-        Self::with_query_runtime_mut(self, execution, read)
+        Self::with_query_runtime(self, execution, read)
     }
 }

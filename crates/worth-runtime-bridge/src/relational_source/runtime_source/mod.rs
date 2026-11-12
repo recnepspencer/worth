@@ -4,7 +4,17 @@ use worth_relational::facade::change_source::RelationalRuntimeHandle;
 use worth_relational::facade::identity::PartitionId;
 use worth_relational::facade::runtime::RelationalRuntime;
 
+mod basis_retirement;
 mod branch_basis;
+pub use basis_retirement::{
+    RelationalBridgeBasisRetirementDenial, RelationalBridgeBasisRetirementProgress,
+};
+#[cfg(test)]
+pub(in crate::relational_source) use branch_head_bindings::assert_wrapped_successor_survives_abandonment;
+#[cfg(test)]
+pub(in crate::relational_source) use observation_bindings::{
+    assert_observation_busy_and_indexes, assert_observation_index_refusals,
+};
 mod branch_head_bindings;
 mod branch_heads;
 mod canonical_subscription;
@@ -14,23 +24,33 @@ mod lock_observation;
 mod observation_bindings;
 mod retained_entity_projection;
 mod retained_snapshot;
+mod retirement;
 mod selected_commit_resolution;
 mod snapshot_reads;
+mod source_adapter;
 mod source_profile;
+pub use retirement::RetiredRuntimeBridgeRelationalSource;
 
 pub use branch_head_bindings::{
     RelationalBridgeBranchHeadLease, RelationalBridgeBranchHeadReleaseReceipt,
+    RelationalBridgeBranchHeadRetirement, RetiredRelationalBridgeBranchHead,
 };
 pub use canonical_subscription::{
     PendingRelationalBridgeCanonicalSubscription, RelationalBridgeCanonicalSubscription,
+    RetiredRelationalBridgeCanonicalSubscription,
 };
 pub use observation_bindings::{
     RelationalBridgeObservationLease, RelationalBridgeObservationReleaseReceipt,
+    RelationalBridgeObservationRetirement, RetiredRelationalBridgeObservation,
 };
 pub(in crate::relational_source) use observation_bindings::{
     RelationalBridgeSelectedCommitObservation, RelationalBridgeSelectedObservation,
 };
-pub use retained_snapshot::RelationalBridgeRetainedSnapshot;
+pub use retained_snapshot::{
+    RelationalBridgeRetainedSnapshot, RelationalBridgeRetainedSnapshotRetirement,
+    RelationalBridgeRetainedSnapshotRetirementDenial,
+    RelationalBridgeRetainedSnapshotRetirementProgress, RetiredRelationalBridgeRetainedSnapshot,
+};
 
 #[derive(Debug, Clone)]
 pub struct RuntimeBridgeRelationalSource {
@@ -54,6 +74,12 @@ pub enum RelationalBridgeSourceConfigurationError {
 }
 
 impl RuntimeBridgeRelationalSource {
+    /// Closed Query attachment borrows this source's authentic existing handle.
+    /// Runtime/profile equality cannot construct a replacement source binding.
+    pub fn query_runtime_handle(&self) -> RelationalRuntimeHandle {
+        self.runtime.clone()
+    }
+
     pub fn for_graph_role(
         runtime: Arc<RelationalRuntime>,
         graph_role: impl Into<Arc<str>>,

@@ -9,3 +9,17 @@ impl PublishedStableLineage {
         Self::exact_settlement(self)
     }
 }
+
+impl PublishedStableLineage {
+    #[doc(hidden)]
+    pub fn output_correspondence_for_test(
+        &self,
+    ) -> &Arc<crate::domain_computation::primary_graph::WorthQueryApplicationOutputCorrespondence>
+    {
+        self.output_correspondence()
+    }
+    #[doc(hidden)]
+    pub fn idempotency_key_identity_for_test(&self) -> [u8; 32] {
+        self.idempotency_key_identity()
+    }
+}

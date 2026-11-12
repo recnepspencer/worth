@@ -25,6 +25,37 @@ pub(super) async fn run<A: BankHttpApplicationAuthenticator>(
     let mut records = HashMap::new();
     while let Some(command) = receiver.recv().await {
         match command {
+            WorkerCommand::ClosedHandoff {
+                return_sender,
+                command,
+                queued_slot: _queued_slot,
+                cancellation,
+                response,
+            } => {
+                super::closed_mutation_handoff::execute(
+                    Arc::clone(&application),
+                    &mut records,
+                    command,
+                    cancellation,
+                    response,
+                    return_sender,
+                )
+                .await;
+            }
+            WorkerCommand::ConfirmClosedHandoff { id } => {
+                assert!(
+                    matches!(records.remove(&id), Some(MutationRecord::ClosedHandoff)),
+                    "reserved closed acknowledgement"
+                );
+            }
+            WorkerCommand::ReturnClosedHandoff { id, record } => {
+                assert!(
+                    matches!(records.remove(&id), Some(MutationRecord::ClosedHandoff)),
+                    "reserved closed custody return"
+                );
+                records.insert(id, MutationRecord::Closed(record));
+            }
+
             WorkerCommand::Execute {
                 command,
                 queued_slot: _queued_slot,

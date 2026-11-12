@@ -57,21 +57,27 @@ impl<'runtime> HistoryAuthority<'runtime> {
 
     pub(crate) fn tamper_commit_patch_for_test(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         commit_id: crate::history::data::CommitId,
         mutate: impl FnOnce(&mut crate::publication::patch::data::CanonicalAuthoritativePatch),
     ) -> bool {
         let Some(envelope) = self.runtime.history.recorded_commit_envelope(commit_id) else {
             return false;
         };
-        let mut replacement = envelope.as_ref().clone();
-        mutate(&mut replacement.patch);
-        let payload = std::sync::Arc::from(replacement.encode_authoritative_payload().unwrap());
+        let mut replacement = envelope.copy_original_for_test(execution);
+        mutate(&mut replacement.body_mut_for_test().patch);
+        let original = crate::branch::RelationalOriginalRootCommitEvidence::prepare(
+            execution,
+            std::sync::Arc::new(replacement),
+        )
+        .expect(
+            "corruption fixture prepares its actual changed envelope under the supplied request",
+        );
         self.runtime.history.with_ledger_mut(|ledger| {
             ledger.commit_envelopes.insert(
                 commit_id,
                 std::sync::Arc::new(crate::history::RelationalCommitEnvelopeResidency::resident(
-                    std::sync::Arc::new(replacement),
-                    payload,
+                    original,
                 )),
             )
         });
@@ -81,13 +87,14 @@ impl<'runtime> HistoryAuthority<'runtime> {
 
     pub(crate) fn tamper_commit_envelope_for_test(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         commit_id: crate::history::data::CommitId,
-        mutate: impl FnOnce(&mut crate::history::data::CanonicalCommitEnvelope),
+        mutate: impl FnOnce(&mut crate::history::data::CanonicalCommitEnvelopeBody),
     ) -> bool {
         let Some(envelope) = self.runtime.history.recorded_commit_envelope(commit_id) else {
             return false;
         };
-        let mut replacement = envelope.as_ref().clone();
+        let mut replacement = envelope.copy_original_for_test(execution);
         if replacement.derived_index_artifacts().is_empty() {
             let generations = self
                 .runtime
@@ -96,17 +103,22 @@ impl<'runtime> HistoryAuthority<'runtime> {
                 .into_iter()
                 .filter(|generation| generation.source_commit_id == commit_id)
                 .collect::<Vec<_>>();
-            replacement.derived_index_artifacts =
+            replacement.body_mut_for_test().derived_index_artifacts =
                 crate::indexes::data::DerivedIndexArtifacts::new(generations);
         }
-        mutate(&mut replacement);
-        let payload = std::sync::Arc::from(replacement.encode_authoritative_payload().unwrap());
+        mutate(replacement.body_mut_for_test());
+        let original = crate::branch::RelationalOriginalRootCommitEvidence::prepare(
+            execution,
+            std::sync::Arc::new(replacement),
+        )
+        .expect(
+            "corruption fixture prepares its actual changed envelope under the supplied request",
+        );
         self.runtime.history.with_ledger_mut(|ledger| {
             ledger.commit_envelopes.insert(
                 commit_id,
                 std::sync::Arc::new(crate::history::RelationalCommitEnvelopeResidency::resident(
-                    std::sync::Arc::new(replacement),
-                    payload,
+                    original,
                 )),
             )
         });

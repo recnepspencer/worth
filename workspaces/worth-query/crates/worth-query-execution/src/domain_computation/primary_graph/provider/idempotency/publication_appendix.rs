@@ -1,7 +1,11 @@
 //! Only the idempotency writer marks the receipt position in its sealed batch.
 use super::*;
+use crate::domain_computation::primary_graph::schema_layout::WorthQueryProviderIdempotencyLayout;
+use crate::domain_computation::primary_graph::WorthQueryApplicationCommitOutcomeIdentity;
+
 use worth_relational::facade::{
-    mvcc::RelationalPublicationAppendix, transactions::WorkerIntentBatch,
+    mvcc::RelationalPublicationAppendix,
+    transactions::{CreateIntent, MutationIntent, WorkerIntentBatch},
 };
 
 #[derive(Clone, Copy)]
@@ -16,10 +20,18 @@ pub(in crate::domain_computation::primary_graph::provider) fn bind_receipt(
     outcome: WorthQueryApplicationCommitOutcomeIdentity,
     emitted: u64,
     partition: worth_relational::facade::identity::PartitionId,
+    product: &worth_runtime_world::facade::ProductBranchObservation,
+    has_output_settlement: bool,
 ) -> (WorkerIntentBatch, ReceiptAppendix) {
     let position = batch.intents.len();
     batch = batch.push(idempotency_create_intent(
-        layout, binding, outcome, emitted, partition,
+        layout,
+        binding,
+        outcome,
+        emitted,
+        partition,
+        Some(product),
+        has_output_settlement,
     ));
     (batch, ReceiptAppendix { position })
 }

@@ -29,9 +29,9 @@ pub struct StrategyReplayDescriptor {
     input_schema_name: StrategyInputSchemaName,
     input_schema_version: StrategyInputSchemaVersion,
     output_schema_name: StrategyOutputSchemaName,
-    lowering_summary_digest: [u8; 32],
-    preview_validation_summary_digest: Option<[u8; 32]>,
-    preview_validation_cost_digest: Option<[u8; 32]>,
+    lowering_summary_digest: worth_foundational::CanonicalDigestId,
+    preview_validation_summary_digest: Option<worth_foundational::CanonicalDigestId>,
+    preview_validation_cost_digest: Option<worth_foundational::CanonicalDigestId>,
     validated_against_commit_id: Option<CommitId>,
     validated_against_version_id: Option<VersionId>,
     runtime_determinism_basis: StrategyRuntimeDeterminismBasis,
@@ -51,7 +51,9 @@ impl StrategyReplayDescriptor {
             input_schema_name: lowered.request().canonical_input().schema_name().clone(),
             input_schema_version: lowered.request().canonical_input().schema_version(),
             output_schema_name: lowered.execution().output().schema_name().clone(),
-            lowering_summary_digest: lowering_summary_digest(lowered.lowering_summary()),
+            lowering_summary_digest: worth_foundational::CanonicalDigestId::new(
+                lowering_summary_digest(lowered.lowering_summary()),
+            ),
             preview_validation_summary_digest: None,
             preview_validation_cost_digest: None,
             validated_against_commit_id: None,
@@ -69,10 +71,12 @@ impl StrategyReplayDescriptor {
         validated_against_commit_id: Option<CommitId>,
         validated_against_version_id: VersionId,
     ) -> Self {
-        self.preview_validation_summary_digest =
-            Some(commit_validation_summary_digest(preview_validation_summary));
-        self.preview_validation_cost_digest =
-            Some(preview_validation_cost_digest(preview_validation_cost));
+        self.preview_validation_summary_digest = Some(worth_foundational::CanonicalDigestId::new(
+            commit_validation_summary_digest(preview_validation_summary),
+        ));
+        self.preview_validation_cost_digest = Some(worth_foundational::CanonicalDigestId::new(
+            preview_validation_cost_digest(preview_validation_cost),
+        ));
         self.validated_against_commit_id = validated_against_commit_id;
         self.validated_against_version_id = Some(validated_against_version_id);
         self
@@ -111,15 +115,19 @@ impl StrategyReplayDescriptor {
     }
 
     pub fn lowering_summary_digest(&self) -> &[u8; 32] {
-        &self.lowering_summary_digest
+        self.lowering_summary_digest.bytes()
     }
 
     pub fn preview_validation_summary_digest(&self) -> Option<&[u8; 32]> {
-        self.preview_validation_summary_digest.as_ref()
+        self.preview_validation_summary_digest
+            .as_ref()
+            .map(worth_foundational::CanonicalDigestId::bytes)
     }
 
     pub fn preview_validation_cost_digest(&self) -> Option<&[u8; 32]> {
-        self.preview_validation_cost_digest.as_ref()
+        self.preview_validation_cost_digest
+            .as_ref()
+            .map(worth_foundational::CanonicalDigestId::bytes)
     }
 
     pub fn validated_against_commit_id(&self) -> Option<CommitId> {
@@ -140,8 +148,8 @@ impl StrategyReplayDescriptor {
 pub struct StrategyRuntimeDeterminismBasis {
     #[serde(deserialize_with = "deserialize_basis_version")]
     basis_version: u8,
-    schema_registry_digest: [u8; 32],
-    invariant_catalog_digest: [u8; 32],
+    schema_registry_digest: worth_foundational::CanonicalDigestId,
+    invariant_catalog_digest: worth_foundational::CanonicalDigestId,
     descriptor_semantics_version: DescriptorSemanticsVersion,
     descriptor_canonical_basis_version: DescriptorCanonicalBasisVersion,
 }
@@ -165,9 +173,11 @@ impl StrategyRuntimeDeterminismBasis {
         let schema_authority = runtime_config.schema.registry.authority_snapshot();
         Self {
             basis_version: 2,
-            schema_registry_digest: schema_authority_snapshot_digest_bytes(&schema_authority),
-            invariant_catalog_digest: runtime_invariant_catalog_digest(
-                &runtime_config.schema.invariant_catalog,
+            schema_registry_digest: worth_foundational::CanonicalDigestId::new(
+                schema_authority_snapshot_digest_bytes(&schema_authority),
+            ),
+            invariant_catalog_digest: worth_foundational::CanonicalDigestId::new(
+                runtime_invariant_catalog_digest(&runtime_config.schema.invariant_catalog),
             ),
             descriptor_semantics_version: runtime_config
                 .schema
@@ -181,11 +191,11 @@ impl StrategyRuntimeDeterminismBasis {
     }
 
     pub fn schema_registry_digest(&self) -> &[u8; 32] {
-        &self.schema_registry_digest
+        self.schema_registry_digest.bytes()
     }
 
     pub fn invariant_catalog_digest(&self) -> &[u8; 32] {
-        &self.invariant_catalog_digest
+        self.invariant_catalog_digest.bytes()
     }
 
     pub fn descriptor_semantics_version(&self) -> DescriptorSemanticsVersion {
@@ -212,9 +222,9 @@ impl<'de> Deserialize<'de> for StrategyReplayDescriptor {
             input_schema_name: StrategyInputSchemaName,
             input_schema_version: StrategyInputSchemaVersion,
             output_schema_name: StrategyOutputSchemaName,
-            lowering_summary_digest: [u8; 32],
-            preview_validation_summary_digest: Option<[u8; 32]>,
-            preview_validation_cost_digest: Option<[u8; 32]>,
+            lowering_summary_digest: worth_foundational::CanonicalDigestId,
+            preview_validation_summary_digest: Option<worth_foundational::CanonicalDigestId>,
+            preview_validation_cost_digest: Option<worth_foundational::CanonicalDigestId>,
             validated_against_commit_id: Option<CommitId>,
             validated_against_version_id: Option<VersionId>,
             runtime_determinism_basis: StrategyRuntimeDeterminismBasis,

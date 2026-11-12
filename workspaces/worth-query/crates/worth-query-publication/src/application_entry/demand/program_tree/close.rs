@@ -50,10 +50,17 @@ impl WorthQueryClosedProgramOutputRequest {
     pub fn construction_denial(&self) -> Option<&WorthQueryProgramOutputConstructionDenial> {
         self.construction.as_ref()
     }
+    /// Lends remaining original effect custody, never a diagnostic copy.
+    pub fn managed_cleanup_receipt_mut(&mut self) -> Option<&mut worth_query_execution::facade::primary_graph::WorthQueryApplicationManagedCleanupReceipt>{
+        self.cleanup
+            .as_mut()
+            .and_then(WorthQueryOutputReadCleanup::receipt_mut)
+    }
     pub fn managed_cleanup_receipt(
         &mut self,
-    ) -> Option<&worth_query_execution::facade::domain_computation::WorthQueryDirectRunCleanupReceipt>
-    {
+    ) -> Option<
+        &worth_query_execution::facade::primary_graph::WorthQueryApplicationManagedCleanupReceipt,
+    > {
         self.cleanup
             .as_mut()
             .and_then(WorthQueryOutputReadCleanup::receipt)
@@ -91,7 +98,7 @@ where
     }
     pub fn producer_outcome(
         &mut self,
-    ) -> Option<&worth_query_execution::facade::primary_graph::WorthQueryApplicationUncommitted>
+    ) -> Option<&worth_query_execution::facade::primary_graph::WorthQueryApplicationCommitOutcome>
     {
         self.core
             .custody

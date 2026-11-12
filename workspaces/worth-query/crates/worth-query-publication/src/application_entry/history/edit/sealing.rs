@@ -60,70 +60,83 @@ where
                     ),
                 ))?;
             self.document
-                .outputs
-                .with_recording(&phase, |mut recording| {
-                    let result = (|| {
-                        if let Some(forest) = recording.as_deref_mut()
-                            && !super::recording::advance_output_recording::<
-                                S,
-                                H,
-                                I,
-                                P,
-                                A,
-                                Payload,
-                            >(
-                                &self.document.owner,
-                                &self.document.payload,
-                                &self.document.access,
-                                &phase,
-                                &current,
-                                completed,
-                                state.reservation.as_ref().expect("original reservation"),
-                                state.candidate.as_ref().expect("actual candidate"),
-                                forest,
-                                &mut source,
-                            )? {
-                                return Ok(false);
-                            }
-                        let operation = WorthQueryDocumentHistoryOperation::new(
-                            &selected,
-                            &prepared.admission,
-                            prepared.idempotency,
-                        );
-                        let reservation = state.reservation.take().expect("reserved record");
-                        let candidate = state.candidate.take().expect("actual candidate");
-                        let adopted = if let Some(forest) =
-                            recording.as_ref().and_then(|forest| forest.completed())
-                        {
-                            let (source, required) = source.parts();
-                            self.document
-                                .owner
-                                .adopt_recording_output_forest::<I::Binding>(
+                    .outputs
+                    .with_recording(&phase, |mut recording| {
+                        let result = (|| {
+                            if let Some(forest) = recording.as_deref_mut()
+                                && !super::recording::advance_output_recording::<
+                                    S,
+                                    H,
+                                    I,
+                                    P,
+                                    A,
+                                    Payload,
+                                >(
+                                    &self.document.owner,
+                                    &self.document.payload,
+                                    &self.document.access,
                                     &phase,
-                                    &program_publication_access(),
-                                    &installed,
-                                    operation,
-                                    reservation,
-                                    candidate,
-                                    source,
-                                    required,
+                                    &current,
+                                    completed,
+                                    state.reservation.as_ref().expect("original reservation"),
+                                    state.candidate.as_ref().expect("actual candidate"),
                                     forest,
-                                )
-                        } else {
-                            match source {
-                                HistoryRecordingSource::Source(receipt) => {
-                                    self.document.owner.adopt_recorded_history::<I::Binding>(
+                                    &mut source,
+                                )? {
+                                    return Ok(false);
+                            }
+                            let operation = WorthQueryDocumentHistoryOperation::new(
+                                &selected,
+                                &prepared.admission,
+                                prepared.idempotency,
+                            );
+                            let reservation = state.reservation.take().expect("reserved record");
+                            let candidate = state.candidate.take().expect("actual candidate");
+                            let adopted = if let Some(forest) =
+                                recording.as_ref().and_then(|forest| forest.completed())
+                            {
+                                let (source, required) = source.parts();
+                                self.document
+                                    .owner
+                                    .adopt_recording_output_forest::<I::Binding>(
                                         &phase,
                                         &program_publication_access(),
                                         &installed,
                                         operation,
                                         reservation,
                                         candidate,
-                                        receipt,
+                                        source,
+                                        required,
+                                        forest,
                                     )
-                                }
-                                HistoryRecordingSource::RequiredOutputs { source, completed } => {
-                                    self.document.owner.adopt_completed_history::<I::Binding>(
+                            } else {
+                                match source {
+                                    HistoryRecordingSource::Source(receipt) => {
+                                        self.document.owner.adopt_recorded_history::<I::Binding>(
+                                            &phase,
+                                            &program_publication_access(),
+                                            &installed,
+                                            operation,
+                                            reservation,
+                                            candidate,
+                                            receipt,
+                                        )
+                                    }
+                                    HistoryRecordingSource::RecordedSource(receipt) => {
+                                        self.document.owner.adopt_original_history::<I::Binding>(
+                                            &phase,
+                                            &program_publication_access(),
+                                            &installed,
+                                            operation,
+                                            reservation,
+                                            candidate,
+                                            receipt,
+                                        )
+                                    }
+                                    HistoryRecordingSource::RequiredOutputs {
+                                        source,
+                                        completed,
+                                    } => self.document.owner.adopt_completed_history::<I::Binding>(
                                         &phase,
                                         &program_publication_access(),
                                         &installed,
@@ -132,37 +145,36 @@ where
                                         candidate,
                                         source,
                                         &completed,
-                                    )
+                                    ),
+                                }
+                            };
+                            match adopted {
+                                Ok(step) => state.selected = Some(step),
+                                Err(failure) => {
+                                    let (reservation, candidate, cause) = failure.into_parts();
+                                    state.reservation = Some(reservation);
+                                    state.candidate = Some(candidate);
+                                    return Err(WorthQueryHistoryEditDenial::History(
+                                        WorthQueryApplicationHistoryDenial::Document(cause),
+                                    ));
                                 }
                             }
-                        };
-                        match adopted {
-                            Ok(step) => state.selected = Some(step),
-                            Err(failure) => {
-                                let (reservation, candidate, cause) = failure.into_parts();
-                                state.reservation = Some(reservation);
-                                state.candidate = Some(candidate);
-                                return Err(WorthQueryHistoryEditDenial::History(
-                                    WorthQueryApplicationHistoryDenial::Document(cause),
-                                ));
+                            if let Some(handoff) = &self.handoff {
+                                handoff.pause();
                             }
-                        }
-                        if let Some(handoff) = &self.handoff {
-                            handoff.pause();
-                        }
-                        self.document
-                            .owner
-                            .validate_record_delivery(&phase, &program_publication_access())
-                            .map_err(|cause| {
-                                WorthQueryHistoryEditDenial::History(
-                                    WorthQueryApplicationHistoryDenial::Document(cause),
-                                )
-                            })
-                            .map(|_| true)
-                    })();
-                    (result, state.selected.is_some())
-                })
-                .map_err(WorthQueryHistoryEditDenial::Outputs)?
+                            self.document
+                                .owner
+                                .validate_record_delivery(&phase, &program_publication_access())
+                                .map_err(|cause| {
+                                    WorthQueryHistoryEditDenial::History(
+                                        WorthQueryApplicationHistoryDenial::Document(cause),
+                                    )
+                                })
+                                .map(|_| true)
+                        })();
+                        (result, state.selected.is_some())
+                    })
+                    .map_err(WorthQueryHistoryEditDenial::Outputs)?
         });
         if matches!(&self.phase, Some(Phase::Selecting(state)) if state.selected.is_some()) {
             let Some(Phase::Selecting(mut state)) = self.phase.take() else {

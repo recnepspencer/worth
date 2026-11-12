@@ -1,4 +1,4 @@
-use super::{BridgeCausalEnvelopeDenial, BridgeCausalExplanationEnvelope};
+use super::BridgeCausalExplanationEnvelope;
 use crate::diagnostics::BridgeDiagnosticsFacade;
 
 mod native_evidence;

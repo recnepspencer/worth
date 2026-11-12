@@ -44,3 +44,11 @@ pub enum PhysicalReadProtectionDenial {
     /// This Store incarnation has stopped issuing read authority.
     Revoked,
 }
+
+/// One nonwaiting checkpoint-reader acquisition; no registration exists on refusal.
+#[derive(Debug)]
+pub enum PhysicalCheckpointReadProtectionDenial {
+    Busy,
+    Request(worth_execution::MapKernelStop),
+    Protection(PhysicalReadProtectionDenial),
+}

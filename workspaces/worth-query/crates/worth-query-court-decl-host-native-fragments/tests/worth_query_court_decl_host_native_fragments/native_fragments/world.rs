@@ -4,7 +4,7 @@ use super::resources::{execution_policy, product_world_resources};
 use super::*;
 use std::time::Duration;
 use worth_query_decl::facade::authentication::WorthQueryPrincipalMappingStatus;
-use worth_query_host::facade::application_installation::WorthQueryInMemoryApplicationDenial;
+use worth_query_host::facade::application_installation::WorthQueryApplicationPreparationDenial;
 use worth_query_host::facade::runtime::WorthQueryExecutionRuntimeInstaller;
 
 #[derive(Clone, Copy)]
@@ -46,7 +46,7 @@ impl World {
         seed_fields: impl FnOnce(
             WorthQueryApplicationEntitySeed<Fixture, Item>,
         ) -> WorthQueryApplicationEntitySeed<Fixture, Item>,
-    ) -> Result<Self, WorthQueryInMemoryApplicationDenial> {
+    ) -> Result<Self, WorthQueryApplicationPreparationDenial> {
         Self::install_seeded(mode, Box::new(seed_fields))
     }
     fn install_seeded(
@@ -57,7 +57,7 @@ impl World {
                 ) -> WorthQueryApplicationEntitySeed<Fixture, Item>
                 + '_,
         >,
-    ) -> Result<Self, WorthQueryInMemoryApplicationDenial> {
+    ) -> Result<Self, WorthQueryApplicationPreparationDenial> {
         worth_query_host::facade::application_contribution::with_bootstrap_advancement(
             execution_policy(),
             |phase| {
@@ -163,7 +163,7 @@ impl World {
                 }
                 bootstrap
                     .bind_entity(seed_fields(seed))
-                    .map_err(WorthQueryInMemoryApplicationDenial::InitialState)?;
+                    .map_err(WorthQueryApplicationPreparationDenial::InitialState)?;
                 bootstrap
                     .bind_entity(
                         WorthQueryApplicationEntitySeed::new(
@@ -204,9 +204,9 @@ impl World {
                         schema,
                         SignalConditionalEvaluationBudget::development(),
                     )
-                    .map_err(WorthQueryInMemoryApplicationDenial::ConditionalPublication)?
+                    .map_err(WorthQueryApplicationPreparationDenial::ConditionalPublication)?
                     .publish(&phase)
-                    .map_err(WorthQueryInMemoryApplicationDenial::ConditionalPublication)?;
+                    .map_err(WorthQueryApplicationPreparationDenial::ConditionalPublication)?;
                 Ok(Self {
                     application,
                     binding,

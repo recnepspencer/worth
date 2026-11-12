@@ -43,7 +43,7 @@ where
         candidate: PreparedRelationalCommitCandidate,
         handoff: Option<&mut RelationalCutoverHandoff<'_>>,
     ) -> Result<RelationalPublicationOutcome, Denial> {
-        let port = self.state.relational.publication_port();
+        let port = self.state.relational_services().publication_port();
         let Some(current) = attempt.plan().relational().current_read() else {
             if handoff.is_some() {
                 return Err(Denial::CurrentReadRequired);

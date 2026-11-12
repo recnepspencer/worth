@@ -8,6 +8,8 @@
 
 mod application_invariant_acceptance;
 mod application_program;
+#[cfg(test)]
+mod inline_type_sizes;
 mod program_deployment;
 pub mod proposal_acceptance;
 use program_deployment::ConsumerProgramDeployment;
@@ -81,19 +83,8 @@ impl TopologySchemaBinding for ConsumerSchema {
 }
 impl ParameterSchemaBinding for ConsumerSchema {}
 
-#[expect(
-    clippy::disallowed_methods,
-    reason = "owner-entry-bridge owner-entry-bridge=1: This public consumer entry owns its joined application thread and stack; computation retains installed Execution authority"
-)]
 fn main() {
-    // Match the execution stack provisioned by the public application examples.
-    std::thread::Builder::new()
-        .name("prem0-consumer".to_owned())
-        .stack_size(8 * 1024 * 1024)
-        .spawn(run)
-        .expect("the host provisions its application thread")
-        .join()
-        .expect("the public consumer journey completes");
+    run();
 }
 
 fn installed_schema() -> WorthQueryInstalledApplicationSchema<ConsumerSchema> {

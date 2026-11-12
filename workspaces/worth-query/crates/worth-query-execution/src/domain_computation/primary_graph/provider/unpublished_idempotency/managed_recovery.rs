@@ -1,5 +1,5 @@
 use std::sync::Arc;
-use std::sync::Mutex;
+use std::sync::{Mutex, OnceLock};
 
 use worth_runtime_world::facade::{
     ProductUnpublishedRecoveryHandle, RuntimeWorldRecoveryDenial, RuntimeWorldRecoveryPort,
@@ -54,7 +54,7 @@ impl ManagedUnpublishedRecoveryGuard {
         let mut locked = entry
             .lock()
             .unwrap_or_else(|poisoned| poisoned.into_inner());
-        if locked.posture != Posture::Retained || &locked.recovery_handle != handle {
+        if locked.posture != Posture::Retained || locked.handle() != handle {
             return Err(ManagedUnpublishedRecoveryStop::Busy);
         }
         let attempt = locked
@@ -99,12 +99,12 @@ impl ManagedUnpublishedRecoveryGuard {
             if locked.posture != Posture::Retained {
                 return Err(Stop::Busy);
             }
-            let preferred = locked.recovery_handle.clone();
+            let preferred = locked.handle().clone();
             let alternate = owner
                 .by_recovery
                 .iter()
-                .find(|(handle, candidate)| candidate == &key && handle != &preferred)
-                .map(|(handle, _)| handle.clone());
+                .find(|(handle, candidate)| candidate == &key && handle.get() != Some(&preferred))
+                .map(|(handle, _)| handle.get().expect("bound alias").clone());
             drop(locked);
             (key, entry, preferred, alternate)
         };
@@ -137,13 +137,13 @@ impl ManagedUnpublishedRecoveryGuard {
         let mut locked = entry
             .lock()
             .unwrap_or_else(|poisoned| poisoned.into_inner());
-        if locked.posture != Posture::Retained || locked.recovery_handle != preferred {
+        if locked.posture != Posture::Retained || locked.handle() != &preferred {
             return Err(Stop::Busy);
         }
-        locked.recovery_handle = resolved.clone();
+        locked.handle_slot = owner.slot_for(&resolved);
         owner
             .by_recovery
-            .retain(|(handle, candidate)| candidate != &key || handle == &resolved);
+            .retain(|(handle, candidate)| candidate != &key || handle.get() == Some(&resolved));
         if requested != &resolved {
             return Err(Stop::Missing);
         }
@@ -196,9 +196,10 @@ impl ManagedUnpublishedRecoveryGuard {
             .by_recovery
             .try_reserve_exact(1)
             .map_err(|_| ManagedUnpublishedRecoveryStop::Capacity)?;
-        store
-            .by_recovery
-            .push((successor.clone(), self.key.clone()));
+        store.by_recovery.push((
+            Arc::new(OnceLock::from(successor.clone())),
+            self.key.clone(),
+        ));
         self.prepared_successor = Some(successor.clone());
         Ok(())
     }
@@ -223,9 +224,9 @@ impl ManagedUnpublishedRecoveryGuard {
             .entry
             .lock()
             .unwrap_or_else(|poisoned| poisoned.into_inner());
-        assert_eq!(entry.recovery_handle, self.handle);
+        assert_eq!(entry.handle(), &self.handle);
         assert!(matches!(entry.posture, Posture::Recovering));
-        entry.recovery_handle = successor.clone();
+        entry.handle_slot = store.slot_for(successor);
         assert!(entry
             .managed
             .replace(self.attempt.take().unwrap())
@@ -282,7 +283,7 @@ impl Drop for ManagedUnpublishedRecoveryGuard {
         if let Some(successor) = self.prepared_successor.take() {
             match successor_evidence {
                 Some(Ok(())) => {
-                    entry.recovery_handle = successor;
+                    entry.handle_slot = store.slot_for(&successor);
                     store.remove_recovery(&self.handle);
                 }
                 Some(Err(RuntimeWorldRecoveryDenial::MissingRecord)) => {
@@ -291,7 +292,7 @@ impl Drop for ManagedUnpublishedRecoveryGuard {
                 Some(Err(_)) => {
                     // Both mappings were reserved before effects. Keep both until
                     // a fresh admission can resolve the actual native record.
-                    entry.recovery_handle = successor;
+                    entry.handle_slot = store.slot_for(&successor);
                 }
                 None => {}
             }

@@ -22,5 +22,11 @@ pub use lowered_plan::{
     LoweredRelationIntegrityPlan, LoweredSymmetryContract, LoweredUniquenessContract,
 };
 pub use plan_catalog::RelationIntegrityPlanCatalog;
-pub(crate) use plan_revision::derive_relation_integrity_plan_revision;
 pub use plan_revision::RelationIntegrityPlanRevision;
+pub(crate) use plan_revision::{
+    derive_relation_integrity_plan_revision,
+    derive_relation_integrity_plan_revision_for_compilation,
+};
+
+mod lowering_backing;
+mod retained_backing;

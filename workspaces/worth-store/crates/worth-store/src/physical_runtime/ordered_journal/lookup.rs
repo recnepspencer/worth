@@ -11,6 +11,26 @@ use crate::physical_runtime::{
 };
 
 impl OrderedJournal<'_> {
+    /// Describe one exact position from this original protected reader.
+    /// Reader affinity is checked before I/O; the original request is checked
+    /// even when the position is absent. This funded header lookup does not
+    /// read/verify the complete payload and issues no verified-byte capability.
+    /// Physical identities and frames remain bound to the reader's selected root.
+    pub fn describe_entry_from(
+        &self,
+        reader: &PhysicalRecordReader,
+        request: &worth_execution::ExecutionRequest<'_, '_>,
+        position: u64,
+    ) -> Result<OrderedJournalEntry, OrderedJournalReadFailure> {
+        if !reader.belongs_to(self.runtime) {
+            return Err(OrderedJournalReadFailure::ForeignReader);
+        }
+        request.check_live().map_err(|stop| {
+            OrderedJournalReadFailure::Execution(worth_execution::WorkCeilingDenial::Stopped(stop))
+        })?;
+        self.locate_header(reader, position, Some(request))
+    }
+
     /// The newest durable entry, or `None` for an empty journal.
     pub fn head(&self) -> Result<Option<OrderedJournalEntry>, OrderedJournalReadFailure> {
         let reader = self.reader()?;
@@ -128,6 +148,26 @@ impl OrderedJournal<'_> {
         reader: &PhysicalRecordReader,
         target: u64,
     ) -> Result<OrderedJournalEntry, OrderedJournalReadFailure> {
+        if let Some(head) = self
+            .head_anchor(reader)
+            .filter(|head| head.generation() == target)
+        {
+            return self.entry_at(reader, head, target);
+        }
+        self.locate_header(reader, target, None)
+    }
+
+    /// Header-only resolution for the protected streaming owner. The selected
+    /// root protects immutable record identities and their physical integrity.
+    /// The payload stream verifies the target payload, and the full selecting
+    /// anchor digest when the target is the head. Spine entries carry physical
+    /// identities, not predecessor digests.
+    pub(super) fn locate_header(
+        &self,
+        reader: &PhysicalRecordReader,
+        target: u64,
+        execution: Option<&worth_execution::ExecutionRequest<'_, '_>>,
+    ) -> Result<OrderedJournalEntry, OrderedJournalReadFailure> {
         let head = self.head_anchor(reader);
         let head_position = head.map_or(0, RecordAnchor::generation);
         let Some(head) = head.filter(|_| target >= 1 && target <= head_position) else {
@@ -136,14 +176,18 @@ impl OrderedJournal<'_> {
             });
         };
         if target == head_position {
-            return self.entry_at(reader, head, target);
+            let header = read_header_controlled(reader, self, head.record(), execution)?;
+            if header.position != target {
+                return Err(OrderedJournalReadFailure::Damaged);
+            }
+            return Ok(entry(head.record(), &header));
         }
-        let mut header = read_header(reader, self, head.record())?;
+        let mut header = read_header_controlled(reader, self, head.record(), execution)?;
         loop {
             let next = header
                 .descend_toward(target)
                 .ok_or(OrderedJournalReadFailure::Damaged)?;
-            let next_header = read_header(reader, self, next.record)?;
+            let next_header = read_header_controlled(reader, self, next.record, execution)?;
             if next_header.position != next.position {
                 return Err(OrderedJournalReadFailure::Damaged);
             }
@@ -187,12 +231,12 @@ fn entry(record: PersistedRecordIdentity, header: &JournalRecordHeader) -> Order
     OrderedJournalEntry {
         position: header.position,
         record: PhysicalRecordId::from_persisted(record),
-        payload_sha256: header.payload_sha256,
+        payload_sha256: *header.payload_sha256.bytes(),
         payload_bytes: header.payload_bytes,
     }
 }
 
-fn persisted(record: PhysicalRecordId) -> PersistedRecordIdentity {
+pub(super) fn persisted(record: PhysicalRecordId) -> PersistedRecordIdentity {
     PersistedRecordIdentity::new(record.allocation_epoch(), record.ordinal())
         .expect("a physical record id names a valid persisted identity")
 }
@@ -203,10 +247,26 @@ pub(super) fn read_header(
     journal: &OrderedJournal<'_>,
     record: PersistedRecordIdentity,
 ) -> Result<JournalRecordHeader, OrderedJournalReadFailure> {
+    read_header_controlled(reader, journal, record, None)
+}
+
+pub(super) fn read_header_controlled(
+    reader: &PhysicalRecordReader,
+    journal: &OrderedJournal<'_>,
+    record: PersistedRecordIdentity,
+    execution: Option<&worth_execution::ExecutionRequest<'_, '_>>,
+) -> Result<JournalRecordHeader, OrderedJournalReadFailure> {
     let mut session = open(reader, record)?;
-    let mut buffer = vec![0; MAXIMUM_HEADER_BYTES];
+    let mut buffer = [0; MAXIMUM_HEADER_BYTES];
     let mut filled = 0;
     while filled < buffer.len() {
+        if let Some(execution) = execution {
+            execution.check_live().map_err(|stop| {
+                OrderedJournalReadFailure::Execution(worth_execution::WorkCeilingDenial::Stopped(
+                    stop,
+                ))
+            })?;
+        }
         let read = session
             .read_next(&mut buffer[filled..])
             .map_err(OrderedJournalReadFailure::Stream)?;
@@ -215,8 +275,16 @@ pub(super) fn read_header(
         }
         filled += read;
     }
-    JournalRecordHeader::decode(&buffer[..filled], journal.name, None)
-        .map_err(|_| OrderedJournalReadFailure::Damaged)
+    match execution {
+        Some(execution) => JournalRecordHeader::decode_funded(
+            &buffer[..filled],
+            journal.name,
+            session.observation().bytes_requested(),
+            execution,
+        ),
+        None => JournalRecordHeader::decode(&buffer[..filled], journal.name, None)
+            .map_err(|_| OrderedJournalReadFailure::Damaged),
+    }
 }
 
 /// Reads a whole record, refusing one longer than its header declared.

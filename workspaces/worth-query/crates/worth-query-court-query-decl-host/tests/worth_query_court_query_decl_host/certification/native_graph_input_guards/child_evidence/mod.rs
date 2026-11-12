@@ -56,8 +56,8 @@ fn one_candidate_creates_distinct_cells_nested_detail_and_computed_root_and_repl
     );
     assert_eq!(revision(&app), 2);
     match execute(&app, original, 500) {
-        Outcome::AlreadyCommitted(replay) => {
-            assert_eq!(replay.outcome_identity(), receipt.outcome_identity())
+        Outcome::RecoveredCommitted(replay) => {
+            assert_eq!(Some(replay.outcome_identity()), receipt.outcome_identity())
         }
         other => panic!("{other:?}"),
     }

@@ -369,6 +369,9 @@ impl
         )
     }
 }
+#[cfg(test)]
+#[path = "mod_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;
 
 impl From<IdentityDerivationDenial> for WorthQueryWorkspaceError {
     fn from(cause: IdentityDerivationDenial) -> Self {

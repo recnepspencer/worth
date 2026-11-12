@@ -176,7 +176,7 @@ pub(super) fn run(observer_executable: &Path) {
         assert_eq!(observed.report["run"], hex(observer_run));
         assert_eq!(observed.report["scenario"], hex(scenario));
         assert_eq!(observed.report["store"], hex(manifest.store_identity()));
-        assert_eq!(observed.executable_sha256, observer_digest);
+        assert_eq!(*observed.executable_sha256.bytes(), observer_digest);
         assert_eq!(
             observed.report["completeness"], "complete",
             "offline report: {}",

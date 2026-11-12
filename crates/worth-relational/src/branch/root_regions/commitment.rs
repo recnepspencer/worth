@@ -20,17 +20,17 @@ pub(super) fn node_commitment(
     match leaf {
         Some(RelationalPersistentRegionLeaf::Present(region)) => {
             digest.update([1]);
-            digest.update(region.0.partition_id.0.to_be_bytes());
-            digest.update(region.0.content_digest);
-            digest.update(region.0.directory.digest());
-            digest.update((region.0.live_counts.entities as u64).to_be_bytes());
-            digest.update((region.0.live_counts.relations as u64).to_be_bytes());
-            digest.update(region.0.kind_commitment.head);
-            digest.update(region.0.kind_commitment.history);
+            digest.update(region.region.partition_id.0.to_be_bytes());
+            digest.update(region.region.content_digest);
+            digest.update(region.region.directory.digest());
+            digest.update((region.region.live_counts.entities as u64).to_be_bytes());
+            digest.update((region.region.live_counts.relations as u64).to_be_bytes());
+            digest.update(region.region.kind_commitment.head.bytes());
+            digest.update(region.region.kind_commitment.history.bytes());
         }
         Some(RelationalPersistentRegionLeaf::Removed(partition_id)) => {
             digest.update([2]);
-            digest.update(partition_id.0 .0.to_be_bytes());
+            digest.update(partition_id.partition_id.0.to_be_bytes());
         }
         None => digest.update([0]),
     }

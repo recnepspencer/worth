@@ -78,6 +78,20 @@ fn admission_from_an_equivalent_foreign_runtime_opens_no_application_door() {
         WorthQueryApplicationIdempotencyResolutionDenialKind::ForeignAdmission
     );
 
+    let claim_denial = target_world
+        .application
+        .with_host_advancement(|phase| {
+            target_world
+                .application
+                .resolve_admitted_recovery_claim_status(&phase, &admission, idempotency(16, 16))
+                .unwrap_err()
+        })
+        .unwrap();
+    assert_eq!(
+        claim_denial.kind(),
+        WorthQueryApplicationIdempotencyResolutionDenialKind::ForeignAdmission
+    );
+
     let read_denial = target_world
         .application
         .with_host_advancement(|phase| {

@@ -14,7 +14,7 @@ impl RelationalBranchRoot {
     ) -> Option<Arc<Self>> {
         let region = self.regions.get(entity.partition_id)?;
         let mut partition = region.resident_partition().ok()?.clone();
-        if !partition.corrupt_entity_field_for_test(entity, locator, replacement) {
+        if !partition.corrupt_entity_field_for_test(execution, entity, locator, replacement) {
             return None;
         }
         let replacement = RelationalRootRegion::new(

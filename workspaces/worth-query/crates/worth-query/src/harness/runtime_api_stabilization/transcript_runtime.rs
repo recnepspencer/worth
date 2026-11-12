@@ -212,7 +212,7 @@ impl WorthQueryIntentAuthorityAdapter for TranscriptIntentAuthority {
     fn execute_intent(
         &mut self,
         bridge: &RuntimeBridge,
-        _relational_runtime: Option<&mut RelationalRuntime>,
+        _relational_runtime: Option<&RelationalRuntime>,
         declaration: &WorthQueryIntentDeclaration,
     ) -> Result<WorthQueryIntentExecution, WorthQueryWorkspaceError> {
         let collection = declaration

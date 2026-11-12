@@ -25,7 +25,7 @@ where
         RootConnection<Schema, Root>:
             WorthQueryApplicationRequiredOutputConnection<Schema, Demand = Demand>,
     {
-        let runtime = &program.backing.runtime;
+        let runtime = program.backing.runtime();
         let execution = phase
             .execution_request_for(&runtime.runtime.product_runtime)
             .map_err(|cause| {

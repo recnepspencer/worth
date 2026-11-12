@@ -145,7 +145,7 @@ fn exercise(worker: bool) {
                 )
                 .unwrap()
         });
-        let Outcome::AlreadyCommitted(replayed) = replay else {
+        let Outcome::RecoveredCommitted(replayed) = replay else {
             panic!("cold={cold}: replay was not committed")
         };
         assert_eq!(
@@ -244,12 +244,12 @@ fn exercise(worker: bool) {
                 )
                 .unwrap()
         });
-        let Outcome::PreviouslyCommitted(recorded) = replay else {
+        let Outcome::RecoveredCommitted(recorded) = replay else {
             panic!(
                 "reopen without a retained live receipt reports its historical commit: {replay:?}"
             )
         };
-        assert_eq!(recorded.commit_id(), live_commit);
+        assert_eq!(recorded.commit_reference().commit_id, live_commit);
         assert_eq!(writes.published_rows.len() + writes.omitted_publications, 0);
         let (drift, writes) = observe_maintenance_work(8, || {
             request

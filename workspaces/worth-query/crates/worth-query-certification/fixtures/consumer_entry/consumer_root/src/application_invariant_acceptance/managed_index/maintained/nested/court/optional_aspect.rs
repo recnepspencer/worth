@@ -50,14 +50,16 @@ fn root_and_child_optional_aspects_maintain_presence_fields_and_complete_influen
                 .unwrap();
             let observed_updates = Arc::new(Mutex::new(Vec::new()));
             let observed = Arc::clone(&observed_updates);
-            *calls.source_updates.lock().unwrap() =
-                Some(Box::new(move |before, after, changed| {
+            let recording = prefix::source_updates::arm(
+                &calls,
+                Box::new(move |before, after, changed| {
                     observed.lock().unwrap().push(Update {
                         before,
                         after,
                         changed,
                     });
-                }));
+                }),
+            );
             records.records.lock().unwrap().clear();
             publish(
                 &world,
@@ -68,7 +70,7 @@ fn root_and_child_optional_aspects_maintain_presence_fields_and_complete_influen
                     value,
                 },
             );
-            calls.source_updates.lock().unwrap().take();
+            drop(recording);
             let updates = std::mem::take(&mut *observed_updates.lock().unwrap());
             assert!(
                 !updates.is_empty(),

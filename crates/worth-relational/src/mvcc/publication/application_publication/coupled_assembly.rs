@@ -128,7 +128,7 @@ pub(crate) struct CoupledPublicationPart {
         Option<worth_execution::ExecutionArray<crate::identity::data::EntityId>>,
     pub(crate) input: RelationalPinnedRead<RelationalAppliedCandidateReadIdentity>,
     pub(crate) publication: RelationalCoupledProducerPosture,
-    pub(crate) commands: crate::transactions::data::MergedCommitPlan,
+    pub(crate) commands: crate::mvcc::OwnedNormalizedPlan,
     pub(crate) records: Vec<crate::transactions::data::RecordRef>,
 }
 
@@ -139,7 +139,7 @@ pub(crate) struct CoupledAuthoredStagePart {
     pub(crate) output_ids: worth_execution::ExecutionArray<crate::identity::data::EntityId>,
     pub(crate) source: crate::identity::data::EntityId,
     pub(crate) input: RelationalPinnedRead<RelationalAppliedCandidateReadIdentity>,
-    pub(crate) commands: crate::transactions::data::MergedCommitPlan,
+    pub(crate) commands: crate::mvcc::OwnedNormalizedPlan,
     pub(crate) records: Vec<crate::transactions::data::RecordRef>,
 }
 

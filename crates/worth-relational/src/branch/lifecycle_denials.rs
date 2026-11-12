@@ -14,6 +14,10 @@ pub enum RelationalBranchArchiveDenial {
     DurablePublicationRefused(RelationalDurablePublicationRefusal),
     /// No branch transition sequence remains.
     TransitionSequenceExhausted,
+    /// The retained transition's concrete storage cannot be represented.
+    TransitionStorageExhausted,
+    /// Restored transition data differs from this source's original prefix.
+    TransitionOriginalPrefixMismatch,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -30,6 +34,10 @@ pub enum RelationalBranchDeleteDenial {
     DurablePublicationRefused(RelationalDurablePublicationRefusal),
     /// No branch transition sequence remains.
     TransitionSequenceExhausted,
+    /// The retained transition's concrete storage cannot be represented.
+    TransitionStorageExhausted,
+    /// Restored transition data differs from this source's original prefix.
+    TransitionOriginalPrefixMismatch,
 }
 
 impl RelationalBranchTransitionDenial for RelationalBranchArchiveDenial {
@@ -40,6 +48,14 @@ impl RelationalBranchTransitionDenial for RelationalBranchArchiveDenial {
     fn transition_sequence_exhausted() -> Self {
         Self::TransitionSequenceExhausted
     }
+
+    fn transition_storage_exhausted() -> Self {
+        Self::TransitionStorageExhausted
+    }
+
+    fn transition_original_prefix_mismatch() -> Self {
+        Self::TransitionOriginalPrefixMismatch
+    }
 }
 
 impl RelationalBranchTransitionDenial for RelationalBranchDeleteDenial {
@@ -49,5 +65,13 @@ impl RelationalBranchTransitionDenial for RelationalBranchDeleteDenial {
 
     fn transition_sequence_exhausted() -> Self {
         Self::TransitionSequenceExhausted
+    }
+
+    fn transition_storage_exhausted() -> Self {
+        Self::TransitionStorageExhausted
+    }
+
+    fn transition_original_prefix_mismatch() -> Self {
+        Self::TransitionOriginalPrefixMismatch
     }
 }

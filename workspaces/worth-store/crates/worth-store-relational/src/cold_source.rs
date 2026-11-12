@@ -2,7 +2,7 @@
 //! frames after Store has verified physical integrity and current membership.
 use std::sync::{
     atomic::{AtomicU64, Ordering},
-    Arc, RwLock,
+    Arc, RwLock, Weak,
 };
 
 use worth_relational::facade::durability::{
@@ -11,19 +11,31 @@ use worth_relational::facade::durability::{
 use worth_relational::facade::publication::PatchStreamPosition;
 use worth_relational::facade::storage::RelationalStorageUnavailableCause as Cause;
 use worth_store::physical_runtime::{
-    AnchoredRecordMemberDamage, AnchoredRecordMemberLocator, AnchoredRecordMemberReadFailure,
-    AnchoredRecordName, OrderedJournalReadFailure, RecordReadDenial, RecordReadError,
-    ServingPhysicalRuntime,
+    OrderedJournalReadFailure, RecordReadDenial, RecordReadError, ServingPhysicalRuntime,
 };
 
+mod frame_prefix;
+mod home_retirement;
+mod initial_inputs;
+mod initial_selection;
+pub(crate) use home_retirement::{RetiredStoreColdSource, StoreColdSourceClose};
 mod member_custody;
+mod member_read;
+mod owned_read;
+mod read_protection;
+mod selected_read;
+pub(crate) mod selected_replacement;
+mod selection;
+pub use selection::RelationalStoreMemberSelectionDenial;
 #[cfg(test)]
 mod member_custody_tests;
+#[cfg(test)]
+pub(crate) mod test_store;
 #[cfg(test)]
 mod tests;
 pub(crate) use member_custody::RetainedMemberPublication;
 
-/// Calls through the home's demand-read port, including typed refusals.
+/// Canonical transport/demand and member reads, including typed refusals.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct RelationalStoreColdReadCounters {
     pub member_reads: u64,
@@ -31,17 +43,18 @@ pub struct RelationalStoreColdReadCounters {
 }
 
 pub(crate) struct StoreColdSource {
-    serving: Arc<ServingPhysicalRuntime>,
-    members: RwLock<(
-        u64,
-        std::collections::BTreeMap<RelationalDurableMemberLocator, AnchoredRecordMemberLocator>,
-    )>,
+    weak_self: Weak<Self>,
+    members: RwLock<selection::SelectedMembers>,
     custody: member_custody::MemberCustodyRegistry,
     member_reads: AtomicU64,
     commit_reads: AtomicU64,
-    #[cfg(feature = "certification-test-authority")]
+    #[cfg(test)]
+    canonical_journal_attempts: AtomicU64,
     commit_read_observer:
         Option<Box<dyn Fn(PatchStreamPosition, RelationalStoreColdReadCounters) + Send + Sync>>,
+    // Local selected readers/pins retire before a possible final pool-owner Drop.
+    serving: Option<Arc<ServingPhysicalRuntime>>,
+    _allocation_memory: Option<worth_execution::ExecutionMemoryReservation>,
 }
 
 impl std::fmt::Debug for StoreColdSource {
@@ -51,38 +64,61 @@ impl std::fmt::Debug for StoreColdSource {
 }
 
 impl StoreColdSource {
-    pub(crate) fn new(serving: Arc<ServingPhysicalRuntime>) -> Self {
-        Self {
-            serving,
-            members: RwLock::new((0, Default::default())),
+    pub(crate) fn observe_original_commit_transport(&self, position: PatchStreamPosition) {
+        // The closed Home transport delivers the body read by its original
+        // protected reader. Observe that SAME ingress; never read it again.
+        self.commit_reads.fetch_add(1, Ordering::Relaxed);
+        #[cfg(test)]
+        self.record_canonical_journal_attempt();
+        if let Some(observer) = &self.commit_read_observer {
+            observer(position, self.counters());
+        }
+    }
+    fn serving(&self) -> &Arc<ServingPhysicalRuntime> {
+        self.serving
+            .as_ref()
+            .expect("only a serving cold source exposes physical ports")
+    }
+    pub(crate) fn belongs_to(&self, serving: &Arc<ServingPhysicalRuntime>) -> bool {
+        self.serving
+            .as_ref()
+            .is_some_and(|original| Arc::ptr_eq(original, serving))
+    }
+
+    pub(crate) fn new(serving: Arc<ServingPhysicalRuntime>) -> Arc<Self> {
+        Self::new_admitted(serving, None, None)
+    }
+    pub(crate) fn new_for_request(
+        serving: Arc<ServingPhysicalRuntime>,
+        request: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> Result<Arc<Self>, worth_execution::WorkCeilingDenial> {
+        let layout = std::alloc::Layout::new::<[usize; 2]>()
+            .extend(std::alloc::Layout::new::<Self>())
+            .expect("fixed Source allocation layout fits")
+            .0
+            .pad_to_align();
+        let memory = request.reserve_retained_memory(layout.size() as u64)?;
+        Ok(Self::new_admitted(serving, memory, None))
+    }
+    fn new_admitted(
+        serving: Arc<ServingPhysicalRuntime>,
+        memory: Option<worth_execution::ExecutionMemoryReservation>,
+        observer: Option<
+            Box<dyn Fn(PatchStreamPosition, RelationalStoreColdReadCounters) + Send + Sync>,
+        >,
+    ) -> Arc<Self> {
+        Arc::new_cyclic(|weak_self| Self {
+            weak_self: weak_self.clone(),
+            members: RwLock::new(Default::default()),
             custody: Default::default(),
             member_reads: AtomicU64::new(0),
             commit_reads: AtomicU64::new(0),
-            #[cfg(feature = "certification-test-authority")]
-            commit_read_observer: None,
-        }
-    }
-    /// A verified selected membership supplied by open or completed publication.
-    pub(crate) fn select_members(&self, generation: u64, members: &[AnchoredRecordMemberLocator]) {
-        let selected = members
-            .iter()
-            .map(|member| {
-                (
-                    RelationalDurableMemberLocator {
-                        sha256: member.sha256(),
-                        length: member.length(),
-                    },
-                    *member,
-                )
-            })
-            .collect();
-        let mut current = self
-            .members
-            .write()
-            .unwrap_or_else(|error| error.into_inner());
-        if generation >= current.0 {
-            *current = (generation, selected);
-        }
+            #[cfg(test)]
+            canonical_journal_attempts: AtomicU64::new(0),
+            commit_read_observer: observer,
+            serving: Some(serving),
+            _allocation_memory: memory,
+        })
     }
     pub(crate) fn counters(&self) -> RelationalStoreColdReadCounters {
         RelationalStoreColdReadCounters {
@@ -90,44 +126,224 @@ impl StoreColdSource {
             commit_reads: self.commit_reads.load(Ordering::Relaxed),
         }
     }
+    #[cfg(test)]
+    fn record_canonical_journal_attempt(&self) {
+        self.canonical_journal_attempts
+            .fetch_add(1, Ordering::Relaxed);
+    }
+    #[cfg(test)]
+    pub(crate) fn canonical_journal_attempts(&self) -> u64 {
+        self.canonical_journal_attempts.load(Ordering::Relaxed)
+    }
     #[cfg(feature = "certification-test-authority")]
-    pub(crate) fn observe_commit_reads(
-        &mut self,
+    pub(crate) fn new_with_commit_read_observer(
+        serving: Arc<ServingPhysicalRuntime>,
         observer: impl Fn(PatchStreamPosition, RelationalStoreColdReadCounters) + Send + Sync + 'static,
-    ) {
-        self.commit_read_observer = Some(Box::new(observer));
+    ) -> Arc<Self> {
+        Self::new_admitted(serving, None, Some(Box::new(observer)))
     }
-    pub(crate) fn protect_member_selection(&self) -> RetainedMemberPublication<'_> {
-        self.custody.protect_selection()
+    #[cfg(feature = "certification-test-authority")]
+    pub(crate) fn new_with_owned_observer_for_request(
+        serving: Arc<ServingPhysicalRuntime>,
+        observer: Box<dyn Fn(PatchStreamPosition, RelationalStoreColdReadCounters) + Send + Sync>,
+        request: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> Result<Arc<Self>, worth_execution::WorkCeilingDenial> {
+        let layout = std::alloc::Layout::new::<[usize; 2]>()
+            .extend(std::alloc::Layout::new::<Self>())
+            .expect("fixed Source allocation layout fits")
+            .0
+            .pad_to_align();
+        let memory = request.reserve_retained_memory(layout.size() as u64)?;
+        Ok(Self::new_admitted(serving, memory, Some(observer)))
     }
+    pub(crate) fn protect_member_selection_for_request(
+        &self,
+        next: impl IntoIterator<Item = RelationalDurableMemberLocator>,
+        request: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> Result<
+        RetainedMemberPublication,
+        worth_relational::facade::durability::RelationalDurableOwnedReadRefusal,
+    > {
+        self.custody.protect_selection_for_request(next, request)
+    }
+    #[cfg(test)]
     pub(crate) fn member_locators(&self) -> Vec<RelationalDurableMemberLocator> {
         self.members
             .read()
             .unwrap_or_else(|error| error.into_inner())
-            .1
+            .entries
             .keys()
             .copied()
             .collect()
     }
-}
 
-impl RelationalDurableColdSource for StoreColdSource {
-    fn retain_members(
+    fn retain_custody_owner(
         &self,
         members: &[RelationalDurableMemberLocator],
-    ) -> Result<RelationalDurableMemberCustody, Cause> {
+    ) -> Result<member_custody::MemberCustodyOwner, Cause> {
         self.custody
-            .retain(members, self.serving.clone(), |selected| {
+            .retain(members, Arc::clone(self.serving()), |selected| {
                 let current = self
                     .members
                     .read()
                     .unwrap_or_else(|error| error.into_inner());
-                if selected.iter().all(|member| current.1.contains_key(member)) {
+                if selected
+                    .iter()
+                    .all(|member| current.entries.contains_key(member))
+                {
                     Ok(())
                 } else {
                     Err(Cause::MissingMember)
                 }
             })
+    }
+}
+
+impl RelationalDurableColdSource for StoreColdSource {
+    fn observe_canonical_member_read(&self, _member: RelationalDurableMemberLocator) {
+        self.commit_reads.fetch_add(1, Ordering::Relaxed);
+    }
+    fn read_member_prefix_owned(
+        &self,
+        request: &worth_execution::ExecutionRequest<'_, '_>,
+        original: &(dyn std::any::Any + Send + Sync),
+        member: RelationalDurableMemberLocator,
+        length: usize,
+    ) -> Result<
+        worth_execution::ExecutionImmutableBytes,
+        worth_relational::facade::durability::RelationalDurableOwnedReadRefusal,
+    > {
+        self.owned_member_prefix(request, original, member, length)
+    }
+    fn read_initial_inputs_owned(
+        &self,
+        request: &worth_execution::ExecutionRequest<'_, '_>,
+        original: &(dyn std::any::Any + Send + Sync),
+        limit: u64,
+    ) -> Result<
+        Option<worth_execution::ExecutionImmutableBytes>,
+        worth_relational::facade::durability::RelationalDurableOwnedReadRefusal,
+    > {
+        self.owned_initial_inputs(request, original, limit)
+    }
+    fn checkpoint_selected_read_protection(
+        &self,
+        request: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> Result<
+        worth_relational::facade::durability::RelationalDurableReadPayload,
+        worth_relational::facade::durability::RelationalDurableOwnedReadRefusal,
+    > {
+        self.capture_selected_read(request)
+    }
+    fn checkpoint_read_protection(
+        &self,
+        request: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> Result<
+        (
+            worth_relational::facade::durability::RelationalDurableReadBounds,
+            worth_relational::facade::durability::RelationalDurableReadPayload,
+        ),
+        worth_relational::facade::durability::RelationalDurableOwnedReadRefusal,
+    > {
+        self.capture_native_read(request)
+    }
+    fn read_commit_owned(
+        &self,
+        request: &worth_execution::ExecutionRequest<'_, '_>,
+        original: &(dyn std::any::Any + Send + Sync),
+        position: PatchStreamPosition,
+        limit: u64,
+    ) -> Result<
+        worth_execution::ExecutionImmutableBytes,
+        worth_relational::facade::durability::RelationalDurableOwnedReadRefusal,
+    > {
+        self.owned_commit(request, original, position, limit)
+    }
+    fn read_transition_owned(
+        &self,
+        request: &worth_execution::ExecutionRequest<'_, '_>,
+        original: &(dyn std::any::Any + Send + Sync),
+        sequence: worth_relational::facade::branch::RelationalBranchTransitionSequence,
+        limit: u64,
+    ) -> Result<
+        worth_execution::ExecutionImmutableBytes,
+        worth_relational::facade::durability::RelationalDurableOwnedReadRefusal,
+    > {
+        self.owned_transition(request, original, sequence, limit)
+    }
+    fn read_member_owned(
+        &self,
+        request: &worth_execution::ExecutionRequest<'_, '_>,
+        original: &(dyn std::any::Any + Send + Sync),
+        locator: RelationalDurableMemberLocator,
+        limit: u64,
+    ) -> Result<
+        worth_execution::ExecutionImmutableBytes,
+        worth_relational::facade::durability::RelationalDurableOwnedReadRefusal,
+    > {
+        self.owned_member(request, original, locator, limit)
+    }
+    fn validate_member_custody_retirement(
+        &self,
+        original: &(dyn std::any::Any + Send + Sync),
+    ) -> Result<(), worth_relational::facade::durability::RelationalDurableMemberRetirementRefusal>
+    {
+        self.validate_custody_owner(original)
+    }
+
+    fn advance_member_custody_retirement(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        original: &mut (dyn std::any::Any + Send + Sync),
+    ) -> worth_relational::facade::durability::RelationalDurableMemberRetirementObservation {
+        self.advance_custody_owner(execution, original)
+    }
+
+    fn retain_members_for_request(
+        &self,
+        request: &worth_execution::ExecutionRequest<'_, '_>,
+        members: &[RelationalDurableMemberLocator],
+        issuer: Weak<dyn RelationalDurableColdSource>,
+    ) -> Result<
+        RelationalDurableMemberCustody,
+        worth_relational::facade::durability::RelationalDurableOwnedReadRefusal,
+    > {
+        use worth_relational::facade::durability::RelationalDurableOwnedReadRefusal as Refusal;
+        if issuer.as_ptr().cast::<()>() != self.weak_self.as_ptr().cast::<()>() {
+            return Err(Refusal::ForeignSource);
+        }
+        RelationalDurableMemberCustody::try_new_from_source_for_request(issuer, request, || {
+            self.custody.retain_for_request(
+                members,
+                Arc::clone(self.serving()),
+                request,
+                |selected| {
+                    let current = match self.members.try_read() {
+                        Ok(current) => current,
+                        Err(std::sync::TryLockError::Poisoned(error)) => error.into_inner(),
+                        Err(std::sync::TryLockError::WouldBlock) => return Err(Refusal::Busy),
+                    };
+                    if selected
+                        .iter()
+                        .all(|member| current.entries.contains_key(member))
+                    {
+                        Ok(())
+                    } else {
+                        Err(Refusal::Storage(Cause::MissingMember))
+                    }
+                },
+            )
+        })
+    }
+
+    fn retain_members(
+        &self,
+        members: &[RelationalDurableMemberLocator],
+    ) -> Result<RelationalDurableMemberCustody, Cause> {
+        Ok(RelationalDurableMemberCustody::new_from_source(
+            self.retain_custody_owner(members)?,
+            self.weak_self.clone(),
+        ))
     }
 
     fn read_member(
@@ -135,49 +351,15 @@ impl RelationalDurableColdSource for StoreColdSource {
         locator: RelationalDurableMemberLocator,
         limit: u64,
     ) -> Result<Vec<u8>, Cause> {
-        self.member_reads.fetch_add(1, Ordering::Relaxed);
-        if locator.length > limit {
-            return Err(Cause::LimitExceeded {
-                length: locator.length,
-                limit,
-            });
-        }
-        let records = self
-            .serving
-            .anchored_records()
-            .map_err(|_| Cause::SourceUnavailable)?;
-        let anchor = AnchoredRecordName::new("relational.checkpoint").expect("static anchor");
-        let placed = self
-            .members
-            .read()
-            .unwrap_or_else(|error| error.into_inner())
-            .1
-            .get(&locator)
-            .copied()
-            .ok_or(Cause::MissingMember)?;
-        records
-            .read_member(anchor, placed, limit)
-            .map_err(|failure| match failure {
-                AnchoredRecordMemberReadFailure::NotCurrentMember => Cause::MissingMember,
-                AnchoredRecordMemberReadFailure::LimitExceeded { length } => {
-                    Cause::LimitExceeded { length, limit }
-                }
-                AnchoredRecordMemberReadFailure::Damaged(
-                    AnchoredRecordMemberDamage::DigestMismatch,
-                ) => Cause::IntegrityMismatch,
-                AnchoredRecordMemberReadFailure::Damaged(_) => Cause::Damaged,
-                // Failure to verify the selecting anchor proves nothing about
-                // this member's bytes. It must not poison every region cell.
-                AnchoredRecordMemberReadFailure::Value(_) => Cause::SourceUnavailable,
-                AnchoredRecordMemberReadFailure::Open(error) => record_failure(error),
-                _ => Cause::SourceUnavailable,
-            })
+        self.read_selected_member(locator, limit)
     }
 
     fn read_commit(&self, position: PatchStreamPosition, limit: u64) -> Result<Vec<u8>, Cause> {
         self.commit_reads.fetch_add(1, Ordering::Relaxed);
+        #[cfg(test)]
+        self.record_canonical_journal_attempt();
         let bytes = self
-            .serving
+            .serving()
             .canonical_commits()
             .map_err(|_| Cause::SourceUnavailable)?
             .read(position.0, limit)

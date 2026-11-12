@@ -29,7 +29,7 @@ pub fn install(d: Dimensions) -> App {
         },
         clock,
     );
-    let limits = WorthQueryInMemoryApplicationLimits::new(
+    let limits = WorthQueryApplicationLimits::new(
         resources,
         worth_query_host::facade::runtime::WorthQueryApplicationQueryResourceProfile::new(
             std::num::NonZeroUsize::new(128).unwrap(),

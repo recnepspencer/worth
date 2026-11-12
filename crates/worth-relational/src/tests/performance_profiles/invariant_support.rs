@@ -123,25 +123,6 @@ pub(super) fn fresh_diagnostics_metrics(
     (fresh_artifacts.len(), detailed_trace_entries)
 }
 
-pub(super) fn dense_patch_record_count(runtime: &RelationalRuntime) -> usize {
-    runtime
-        .publication()
-        .latest_patch()
-        .map(|patch| {
-            patch
-                .authoritative_record_patches
-                .iter()
-                .filter(|record| {
-                    matches!(
-                        record.detail,
-                        crate::publication::patch::data::PatchDetail::DenseBitset(_)
-                    )
-                })
-                .count()
-        })
-        .unwrap_or(0)
-}
-
 pub(super) fn entity_name_index_packet(
     runtime: &RelationalRuntime,
     snapshot: &crate::facade::snapshots::SnapshotHandle,

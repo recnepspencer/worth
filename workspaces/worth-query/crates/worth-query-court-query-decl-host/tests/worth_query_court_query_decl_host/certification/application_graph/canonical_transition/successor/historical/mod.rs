@@ -76,20 +76,22 @@ fn held_v1_result_snapshot_output_and_observation_survive_independent_v2_adoptio
     )
     .unwrap();
     output::reset_decodes();
-    let application = installation::in_memory_rostered_program_from_checkpoint_with_transition(
-        host::program(),
-        installation::WorthQueryApplicationProgramRoster::new(),
-        schema::CanonicalSchema::declaration().unwrap(),
-        ((),),
-        ApplicationBuildIdentity::parse("11111111-1111-1111-1111-111111111111").unwrap(),
-        host::limits(),
-        checkpoint,
-        expected_predecessor,
-        installation::WorthQueryCheckpointTransitionResources::bounded(4096, 32, 16384).unwrap(),
-        CapturePolicy::SystemAllocation,
-        |_, _| Ok(()),
-    )
-    .expect("actual derived provenance admits V2 while V1's historical holders remain live");
+    let application =
+        installation::WorthQueryInterimCheckpointRestore::rostered_program_with_transition(
+            host::program(),
+            installation::WorthQueryApplicationProgramRoster::new(),
+            schema::CanonicalSchema::declaration().unwrap(),
+            ((),),
+            ApplicationBuildIdentity::parse("11111111-1111-1111-1111-111111111111").unwrap(),
+            host::limits(),
+            checkpoint,
+            expected_predecessor,
+            installation::WorthQueryCheckpointTransitionResources::bounded(4096, 32, 16384)
+                .unwrap(),
+            CapturePolicy::SystemAllocation,
+            |_, _| Ok(()),
+        )
+        .expect("actual derived provenance admits V2 while V1's historical holders remain live");
     assert_eq!(output::decodes(), 0);
     assert!(old_catalogue.same_installation_as(predecessor.installed_schema().value_bindings()));
     assert!(!old_catalogue.same_installation_as(application.installed_schema().value_bindings()));

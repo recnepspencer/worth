@@ -4,12 +4,20 @@
 pub enum DigestIndexError {
     OpaqueBranch,
     NonCanonicalKeys,
+    Request(crate::execution::RelationalExecutionDenialCause),
 }
 use crate::storage::substrate::{StorageAllocation as Arc, StorageAllocationVisitor};
 use sha2::{Digest, Sha256};
 use std::sync::OnceLock;
 
 mod append_frontier;
+mod carrier;
+mod construction;
+use construction::{build_sorted, poll};
+#[cfg(test)]
+mod carrier_tests;
+#[cfg(test)]
+mod leaf_retention_tests;
 #[cfg(test)]
 mod tests;
 
@@ -25,13 +33,29 @@ struct HistoryLastValue {
     value: [u8; 32],
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 struct Node {
     key: u128,
     bit: u32,
     digest: OnceLock<[u8; 32]>,
     children: Option<[Arc<Node>; 2]>,
     nodes: usize,
+    _memory: Option<worth_execution::ExecutionMemoryReservation>,
+}
+
+impl Clone for Node {
+    fn clone(&self) -> Self {
+        // Existing ordinary path copying remains explicitly unqualified. The
+        // controlled cold builder admits every actual new node independently.
+        Self {
+            key: self.key,
+            bit: self.bit,
+            digest: self.digest.clone(),
+            children: self.children.clone(),
+            nodes: self.nodes,
+            _memory: None,
+        }
+    }
 }
 
 impl DigestIndex {
@@ -49,7 +73,7 @@ impl DigestIndex {
     /// Cold reconstruction of the same key-shaped Patricia commitment without
     /// copying an immutable path for every successive insertion.
     pub(crate) fn from_sorted_entries(
-        _lane: &super::maintenance::ReconstructionLane<'_>,
+        lane: &super::maintenance::ReconstructionLane<'_>,
         entries: &[(u128, [u8; 32])],
     ) -> Self {
         debug_assert!(
@@ -57,9 +81,33 @@ impl DigestIndex {
             entries.windows(2).all(|pair| pair[0].0 < pair[1].0)
         );
         Self {
-            root: (!entries.is_empty()).then(|| build_sorted(entries)),
+            root: (!entries.is_empty()).then(|| {
+                build_sorted(lane, entries, None)
+                    .expect("ordinary sorted construction has no request refusal")
+            }),
             history_last_value: None,
         }
+    }
+
+    pub(crate) fn from_sorted_entries_for_request(
+        lane: &super::maintenance::ReconstructionLane<'_>,
+        entries: &[(u128, [u8; 32])],
+        request: Option<&worth_execution::ExecutionRequest<'_, '_>>,
+    ) -> Result<Self, DigestIndexError> {
+        for pair in entries.windows(2) {
+            poll(request)?;
+            if pair[0].0 >= pair[1].0 {
+                return Err(DigestIndexError::NonCanonicalKeys);
+            }
+        }
+        Ok(Self {
+            root: if entries.is_empty() {
+                None
+            } else {
+                Some(build_sorted(lane, entries, request)?)
+            },
+            history_last_value: None,
+        })
     }
 
     pub(crate) fn construction_quote(entries: usize) -> Option<(u64, u64)> {
@@ -171,31 +219,6 @@ impl DigestIndex {
     }
 }
 
-fn build_sorted(entries: &[(u128, [u8; 32])]) -> Arc<Node> {
-    if let [(key, digest)] = entries {
-        return Arc::new(Node {
-            key: *key,
-            bit: 128,
-            digest: OnceLock::from(hash(1, &[&key.to_be_bytes(), digest])),
-            children: None,
-            nodes: 1,
-        });
-    }
-    let bit = (entries[0].0 ^ entries[entries.len() - 1].0).leading_zeros();
-    let split = entries.partition_point(|(key, _)| direction(*key, bit) == 0);
-    let node = Node::branch(
-        bit,
-        [
-            build_sorted(&entries[..split]),
-            build_sorted(&entries[split..]),
-        ],
-    );
-    // Cold construction pays its whole tree here, under the admitted lane.
-    // Carry a settled cache so the first ordinary edit hashes only dirty paths.
-    node.digest();
-    Arc::new(node)
-}
-
 // An Err retains the original root. Opaque checkpoint siblings may be carried,
 // but only an admitted Full image can expose their contents for edits.
 fn insert(root: Option<Arc<Node>>, key: u128, digest: [u8; 32]) -> Result<Arc<Node>, Arc<Node>> {
@@ -206,6 +229,7 @@ fn insert(root: Option<Arc<Node>>, key: u128, digest: [u8; 32]) -> Result<Arc<No
             digest: OnceLock::from(hash(1, &[&key.to_be_bytes(), &digest])),
             children: None,
             nodes: 1,
+            _memory: None,
         })
     };
     let Some(mut root) = root else {
@@ -295,6 +319,7 @@ impl Node {
             digest: OnceLock::new(),
             nodes: 1 + children[0].nodes + children[1].nodes,
             children: Some(children),
+            _memory: None,
         }
     }
 }

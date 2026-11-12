@@ -74,14 +74,21 @@ pub(in crate::aggregate_identity) fn member_key(
                 std::mem::size_of::<ProjectedMemberCoordinate>() + 2 * std::mem::size_of::<usize>(),
             )
         })
+        .and_then(|n| {
+            n.checked_add(
+                usize::try_from(crate::graph_member::ProjectedMemberStorage::control_bytes()?)
+                    .ok()?,
+            )
+        })
         .ok_or(worth_execution::MapKernelFailure::ResultCapacityExceeded)?;
     work.checkpoint(bytes as u64)?;
     work.retain(bytes as u64)?;
-    Ok(NativeMemberKey::Projected(std::sync::Arc::new(
-        ProjectedMemberCoordinate {
+    Ok(NativeMemberKey::Projected(
+        std::sync::Arc::new(ProjectedMemberCoordinate {
             domain: domain.parts().identity.clone(),
             carrier,
             case: case.into(),
-        },
-    )))
+        })
+        .into(),
+    ))
 }

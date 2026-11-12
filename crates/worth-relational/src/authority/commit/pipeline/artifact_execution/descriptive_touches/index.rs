@@ -192,7 +192,7 @@ pub(super) fn authoritative_state<'a>(
             let slot = arena.get_slot(index)?;
             (slot.generation() == entity.generation.0
                 && slot.lifecycle() == RecordLifecycleState::Live)
-                .then_some(arena.extra_at(index)?.authoritative_aspect_state.as_ref())
+                .then_some(arena.extra_at(index)?.authoritative_aspect_state())
                 .flatten()
         }
         RecordRef::Relation(relation) => {
@@ -203,7 +203,7 @@ pub(super) fn authoritative_state<'a>(
             let slot = arena.get_slot(index)?;
             (slot.generation() == relation.generation.0
                 && slot.lifecycle() == RecordLifecycleState::Live)
-                .then_some(arena.extra_at(index)?.authoritative_aspect_state.as_ref())
+                .then_some(arena.extra_at(index)?.authoritative_aspect_state())
                 .flatten()
         }
     }

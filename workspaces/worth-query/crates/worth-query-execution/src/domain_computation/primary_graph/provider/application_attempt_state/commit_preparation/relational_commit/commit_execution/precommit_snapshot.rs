@@ -17,7 +17,7 @@ impl WorthQueryPrecommitSnapshot {
         graph: WorthQueryPrimaryGraphIntegrationHandle,
         basis: &AdmittedRelationalBranchBasis,
     ) -> Result<Self, RelationalSnapshotAdmissionDenial> {
-        let snapshot = graph.with_runtime_mut(execution, |runtime| {
+        let snapshot = graph.with_runtime(execution, |runtime| {
             crate::domain_computation::primary_graph::exact_basis_access::open_exact_basis_snapshot(
                 runtime, basis,
             )

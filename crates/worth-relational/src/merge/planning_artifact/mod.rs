@@ -9,5 +9,5 @@ mod schema_snapshot;
 mod summaries;
 
 pub(crate) use execution_authority_contract::lowered_artifact_execution_authority_contract;
-pub(crate) use materialization::materialize_planning_artifact;
+pub(crate) use materialization::{materialize_planning_artifact, materialize_planning_observation};
 pub(crate) use schema_snapshot::merge_schema_snapshot_for_execution_ready;

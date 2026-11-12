@@ -42,7 +42,7 @@ pub fn install_program<L: LawPolicy>(
     edges: &[(u64, u64)],
     leaves: u64,
     feeds: &[(u64, u64)],
-) -> Result<World<L>, WorthQueryInMemoryApplicationDenial> {
+) -> Result<World<L>, WorthQueryApplicationPreparationDenial> {
     let schema = GraphSchema::<L>::declaration().unwrap();
     let mut projection = None;
     let application = in_memory_program(

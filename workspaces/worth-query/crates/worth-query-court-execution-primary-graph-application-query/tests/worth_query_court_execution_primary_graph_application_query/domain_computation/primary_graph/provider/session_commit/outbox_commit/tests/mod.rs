@@ -90,7 +90,7 @@ pub fn commit_only_other_outbox(
     .expect("committed outbox create binds");
     (*provider
         .graph_for_test())
-        .with_runtime_mut_for_test(request_execution, |runtime| {
+        .with_runtime_for_test(request_execution, |runtime| {
             let mut transaction = {
                 let transaction_validation_input = runtime
                     .admit_branch_basis(&runtime.main_branch_identity())

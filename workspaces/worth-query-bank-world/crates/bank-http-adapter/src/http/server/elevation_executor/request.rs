@@ -3,7 +3,10 @@ use worth_query_host::facade::admission::authenticated_principal::{
     WorthQueryCancellationSource, WorthQueryRequestScope,
 };
 
-use super::super::super::protocol::{BankHttpCommitDisposition, BankHttpElevationRequestOutcome};
+use super::super::super::protocol::{
+    BankHttpCommitDisposition, BankHttpDenial, BankHttpDenialKind, BankHttpElevationRequestOutcome,
+    BankHttpNextAction,
+};
 use super::super::authenticated_owner::BankHttpAuthenticatedOwner;
 use super::super::authentication::BankHttpApplicationAuthenticator;
 use super::super::elevation_registry::{
@@ -58,6 +61,12 @@ where
         Err(denial) => return (request_denied(Some(request_id), estate_denial(denial))).into(),
     };
     let (authority, disposition) = match outcome {
+        BankEstateElevationRequestOutcome::ProductPreparationPending(_)
+        | BankEstateElevationRequestOutcome::ProductPreparationRefused(_) => {
+            // Drop returns any checkout to its original Query registry; no
+            // recovery, no-effect proof or handler retry is authorized here.
+            return (request_denied(Some(request_id), indeterminate())).into();
+        }
         BankEstateElevationRequestOutcome::CleanupRequired(custody) => {
             return super::super::native_route::NativeRouteResult::Cleanup {
                 owner,
@@ -81,8 +90,12 @@ where
         BankEstateElevationRequestOutcome::Requested(authority) => {
             (authority, BankHttpCommitDisposition::Committed)
         }
-        BankEstateElevationRequestOutcome::AlreadyRequested(authority) => {
-            (authority, BankHttpCommitDisposition::AlreadyCommitted)
+        BankEstateElevationRequestOutcome::RecoveredCommitted(receipt) => {
+            return BankHttpElevationRequestOutcome::Recorded {
+                request_id,
+                commit: super::super::mutation_custody::describe_recorded(&receipt),
+            }
+            .into();
         }
         BankEstateElevationRequestOutcome::Stale { .. } => {
             return (request_denied(Some(request_id), stale())).into();
@@ -92,6 +105,19 @@ where
         }
         BankEstateElevationRequestOutcome::TimedOut => {
             return (request_denied(Some(request_id), deadline_exceeded())).into();
+        }
+        BankEstateElevationRequestOutcome::Denied {
+            kind: BankCommitDenialKind::OriginalEffectReleased,
+            ..
+        } => {
+            return (request_denied(
+                Some(request_id),
+                BankHttpDenial::new(
+                    BankHttpDenialKind::OriginalEffectReleased,
+                    BankHttpNextAction::ContactOperator,
+                ),
+            ))
+            .into();
         }
         BankEstateElevationRequestOutcome::Denied {
             kind: BankCommitDenialKind::IdempotencyIntentDrift,

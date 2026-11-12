@@ -17,7 +17,7 @@ impl<S: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRuntime<S>
             let graph = self.runtime.primary_graph().expect("actual Query graph");
             Ok(graph
                 .integration_handle()
-                .with_runtime_mut(&execution, |runtime| {
+                .with_runtime(&execution, |runtime| {
                     runtime.current_ownership_sources_for_record_for_test(
                         &execution,
                         product.relational_basis(),
@@ -49,7 +49,7 @@ impl<S: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRuntime<S>
             let graph = self.runtime.primary_graph().expect("actual Query graph");
             Ok(graph
                 .integration_handle()
-                .with_runtime_mut(&execution, |runtime| {
+                .with_runtime(&execution, |runtime| {
                     runtime.current_ownership_contacts_for_record_for_test(
                         &execution,
                         product.relational_basis(),
@@ -79,7 +79,7 @@ impl<S: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRuntime<S>
             let graph = self.runtime.primary_graph().expect("live Query graph");
             Ok(graph
                 .integration_handle()
-                .with_runtime_mut(&execution, |runtime| {
+                .with_runtime(&execution, |runtime| {
                     runtime.probe_unmatched_ownership_presence_for_test(
                         &execution,
                         product.relational_basis(),
@@ -138,7 +138,7 @@ impl<S: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRuntime<S>
                 .native;
             Ok(graph
                 .integration_handle()
-                .with_runtime_mut(&execution, |runtime| {
+                .with_runtime(&execution, |runtime| {
                     runtime.probe_current_history_contradiction_for_test(
                         &execution,
                         installed,
@@ -169,7 +169,7 @@ impl<S: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRuntime<S>
             let execution=phase.execution_request_for(&self.runtime.product_runtime)?;
             let (_,target,_)=self.on_branch(self.current_world()).select(&phase).expect("actual target branch").into_parts();
             let graph=self.runtime.primary_graph().expect("actual Query graph");
-            Ok(graph.integration_handle().with_runtime_mut(&execution,|runtime| {
+            Ok(graph.integration_handle().with_runtime(&execution,|runtime| {
                 let original=runtime.branch_identity(original).expect("actual checkpoint fork");
                 let (_,original)=runtime.observe_branch(&original).expect("readmitted real fork");
                 let target=target.relational_basis();
@@ -224,7 +224,7 @@ impl<S: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRuntime<S>
             let graph = self.runtime.primary_graph().expect("actual Query graph");
             Ok(graph
                 .integration_handle()
-                .with_runtime_mut(&execution, |runtime| {
+                .with_runtime(&execution, |runtime| {
                     runtime.current_ownership_descendants_for_record_for_test(
                         &execution,
                         product.relational_basis(),
@@ -249,7 +249,7 @@ impl<S: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRuntime<S>
             let graph = self.runtime.primary_graph().expect("actual Query graph");
             Ok(graph
                 .integration_handle()
-                .with_runtime_mut(&execution, |runtime| {
+                .with_runtime(&execution, |runtime| {
                     runtime.record_current_ownership_contacts_for_test(observer)
                 }))
         })?

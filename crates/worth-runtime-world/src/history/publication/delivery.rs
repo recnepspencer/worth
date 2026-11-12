@@ -15,7 +15,7 @@ const CONSUMED: u8 = 2;
 #[derive(Debug)]
 #[must_use = "a publication delivery claim is linear"]
 pub(crate) struct PublicationDeliveryClaim {
-    envelope: Arc<CanonicalPublicationEnvelope>,
+    envelope: Option<Arc<CanonicalPublicationEnvelope>>,
     history: Option<ExplicitCommitHistoryProtectionObligation>,
     successor_observation: Option<crate::branch::ProductBranchObservation>,
     consumed: bool,
@@ -49,7 +49,7 @@ impl CanonicalPublicationEnvelope {
             })?;
         Ok(PublicationDeliveryClaim {
             successor_observation: self.take_successor_observation(),
-            envelope: Arc::clone(self),
+            envelope: Some(Arc::clone(self)),
             history: Some(history),
             consumed: false,
         })
@@ -65,15 +65,31 @@ impl CanonicalPublicationEnvelope {
 }
 
 impl PublicationDeliveryClaim {
+    pub(crate) fn preflight_home_retirement(&self) -> Result<(), ()> {
+        if self.consumed && self.history.is_none() && self.successor_observation.is_none() {
+            Ok(())
+        } else {
+            Err(())
+        }
+    }
+    pub(crate) fn take_envelope_for_retirement(&mut self) -> Arc<CanonicalPublicationEnvelope> {
+        assert!(self.consumed && self.history.is_none() && self.successor_observation.is_none());
+        self.envelope
+            .take()
+            .expect("original consumed envelope moves once")
+    }
+
     pub(crate) fn envelope(&self) -> &CanonicalPublicationEnvelope {
-        &self.envelope
+        self.envelope
+            .as_deref()
+            .expect("serving delivery retains its original envelope")
     }
 
     /// The future product handoff must consume this claim, not an inspection
     /// image. There is no transition back from consumed to available.
     pub(crate) fn consume(mut self) -> Self {
-        assert!(self.envelope.facts().is_some());
-        self.envelope.delivery.store(CONSUMED, Ordering::Release);
+        assert!(self.envelope().facts().is_some());
+        self.envelope().delivery.store(CONSUMED, Ordering::Release);
         self.consumed = true;
         self
     }
@@ -103,9 +119,9 @@ impl Drop for PublicationDeliveryClaim {
     fn drop(&mut self) {
         if !self.consumed {
             if let Some(observation) = self.successor_observation.take() {
-                self.envelope.restore_successor_observation(observation);
+                self.envelope().restore_successor_observation(observation);
             }
-            self.envelope.delivery.store(AVAILABLE, Ordering::Release);
+            self.envelope().delivery.store(AVAILABLE, Ordering::Release);
         }
     }
 }

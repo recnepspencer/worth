@@ -6,7 +6,6 @@ use worth_query_host::facade::primary_graph::RelationalExecutionDenialCause as C
 pub(super) fn denial(cause: Cause) -> BankHttpDenial {
     let (kind, next) = match cause {
         Cause::Content(cause) => return content(cause.into()),
-        Cause::ContentInconsistency => (Kind::InternalDenied, Next::ContactOperator),
         Cause::StorageUnavailable(_) => (Kind::Unavailable, Next::ContactOperator),
         Cause::Cancelled => (Kind::Cancelled, Next::Retry),
         Cause::DeadlineElapsed => (Kind::DeadlineExceeded, Next::Retry),
@@ -20,7 +19,8 @@ pub(super) fn denial(cause: Cause) -> BankHttpDenial {
         | Cause::ResultCapacityExceeded
         | Cause::ScratchCapacityExceeded => (Kind::ResourceExhausted, Next::NarrowRequest),
         Cause::NestedStopped | Cause::AllocationFailed => (Kind::Unavailable, Next::Retry),
-        Cause::ProjectionContract(_)
+        Cause::ContentInconsistency
+        | Cause::ProjectionContract(_)
         | Cause::HistoricalVisibility(_)
         | Cause::ChargedBytesOverflow
         | Cause::AccountingUnavailable
@@ -43,11 +43,8 @@ pub(super) fn content(
     let (kind, next) = match cause {
         Content::Execution(cause) => return denial(cause),
         Content::BackingUnavailable { .. } => (Kind::Unavailable, Next::ContactOperator),
-        Content::HistoryNotResident => (Kind::Unavailable, Next::Retry),
+        Content::HistoryNotResident => (Kind::Unavailable, Next::ContactOperator),
         Content::SizeLimit { .. } => (Kind::ResourceExhausted, Next::NarrowRequest),
-        Content::InputTypeMismatch | Content::UnreferencedAttachment { .. } => {
-            (Kind::MalformedRequest, Next::CorrectRequest)
-        }
         Content::MissingContent
         | Content::FormatBindingMissing
         | Content::FormatMismatch
@@ -57,8 +54,10 @@ pub(super) fn content(
         | Content::IntegrityMismatch
         | Content::ContentIdentityConflict
         | Content::EncodingInconsistency
+        | Content::InputTypeMismatch
         | Content::DuplicateContentFormat
-        | Content::ArithmeticOverflow => (Kind::InternalDenied, Next::ContactOperator),
+        | Content::ArithmeticOverflow
+        | Content::UnreferencedAttachment { .. } => (Kind::InternalDenied, Next::ContactOperator),
     };
     BankHttpDenial::new(kind, next)
 }

@@ -67,14 +67,12 @@ pub(crate) fn prepare(
         None,
     );
     let plan = PreparedRelationalCommitPlan::OwnedGraphSelection {
-        commands: MergedCommitPlan {
-            transaction_id: transaction.transaction_id,
-            merged_intents: Vec::new(),
-        },
+        commands: crate::mvcc::OwnedNormalizedPlan::empty(transaction.transaction_id),
         retained: retained.clone(),
     };
     Ok(PreparedWorkingStateScope {
         selected_branch_state: selected.selected().clone(),
+        schema_authority: Arc::clone(transaction.mutation_schema_authority()),
         structural_summary: CommitStructuralSummary {
             invariant_contract: plan.view().invariant_contract(),
             commit_topology: CommitTopology::GraphMutation,
@@ -86,6 +84,5 @@ pub(crate) fn prepare(
         working_state,
         phase_timing: CommitPhaseTiming::default(),
         footprint: transaction.footprint.clone(),
-        schema_authority: Arc::clone(&transaction.schema_authority),
     })
 }

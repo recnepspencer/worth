@@ -14,6 +14,17 @@ impl RelationalPreparationPort {
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         input: RelationalRetainedEntitySelection,
     ) -> Result<PreparedRelationalCommitCandidate, Error> {
+        worth_execution::run_with_execution_stack(move || {
+            self.prepare_retained_entity_selection_on_execution_stack(execution, input)
+        })
+    }
+
+    #[inline(never)]
+    fn prepare_retained_entity_selection_on_execution_stack(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        input: RelationalRetainedEntitySelection,
+    ) -> Result<PreparedRelationalCommitCandidate, Error> {
         let configuration = self.binding.configuration_binding();
         let epoch = configuration.operation();
         let runtime = self.binding.runtime_snapshot_from(&epoch);

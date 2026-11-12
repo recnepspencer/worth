@@ -3,13 +3,16 @@ use crate::schema::data::{DescriptorSemanticsVersion, SchemaContinuationClassifi
 use crate::tests::support::*;
 
 #[test]
-fn subscriber_stream_rejects_durable_only_checkpoint_with_descriptor_version_mismatch() {
+fn memory_subscriber_stream_rejects_durable_only_checkpoint_with_descriptor_version_mismatch() {
     let host_request = crate::test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
-    let runtime = durable_runtime_with_test_schema();
+    let runtime = runtime_with_test_schema();
     let first = create_entity_outcome(execution, &runtime, "anchor");
-    crate::tests::support::checkpoint_durably(execution, &runtime).unwrap();
+    runtime
+        .durability_authority()
+        .checkpoint(execution)
+        .unwrap();
 
     assert!(runtime
         .history_authority()

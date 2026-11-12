@@ -6,7 +6,7 @@ use worth_store_physical_format::{CurrentPhysicalRecordPlacement, PersistedRecor
 
 use super::{observe_charged, HistoricalFailure};
 use crate::orchestration::planning::{
-    context::PlanningContext, resolved_basis::ResolvedPlanningBasis,
+    context::PlanningContext, resolved_basis::ResolvedPlanningState,
     selected_source_inventory::observe_routes_with_budget,
 };
 
@@ -38,7 +38,7 @@ impl RootRouteInventory {
 
 pub(in crate::orchestration::planning::completion) fn observe_all_routes(
     context: PlanningContext,
-    basis: &mut ResolvedPlanningBasis,
+    basis: &mut ResolvedPlanningState,
     generation: u64,
     anchor: PersistedRecordIdentity,
 ) -> Result<
@@ -52,7 +52,7 @@ pub(in crate::orchestration::planning::completion) fn observe_all_routes(
 /// that root is the exact frame the caller's custody names.
 pub(in crate::orchestration::planning::completion) fn observe_all_routes_of_root(
     context: PlanningContext,
-    basis: &mut ResolvedPlanningBasis,
+    basis: &mut ResolvedPlanningState,
     generation: u64,
     anchor: PersistedRecordIdentity,
     root_frame_sha256: [u8; 32],
@@ -64,7 +64,7 @@ pub(in crate::orchestration::planning::completion) fn observe_all_routes_of_root
 
 fn observe_routes(
     context: PlanningContext,
-    basis: &mut ResolvedPlanningBasis,
+    basis: &mut ResolvedPlanningState,
     generation: u64,
     anchor: PersistedRecordIdentity,
     root_frame_sha256: Option<[u8; 32]>,

@@ -33,6 +33,9 @@ pub(crate) struct RelationalPreparationHistory {
 }
 
 impl RelationalPreparationHistory {
+    pub(crate) fn index_definition_frontier(&self) -> u64 {
+        self.canonical_routes.index_definition_frontier()
+    }
     #[allow(clippy::too_many_arguments)]
     pub(super) fn new(
         branches: RelationalBranchReferenceRegistry,
@@ -74,18 +77,27 @@ impl RelationalPreparationHistory {
         VersionId(self.version_ids.load(Ordering::Relaxed).saturating_sub(1))
     }
 
-    pub(crate) fn canonical_envelope_for_version(
+    pub(crate) fn demand_canonical_envelope(
         &self,
-        version: VersionId,
-    ) -> Option<Arc<CanonicalCommitEnvelope>> {
-        self.canonical_routes.by_version(version)
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        id: CommitId,
+    ) -> Result<
+        Option<Arc<CanonicalCommitEnvelope>>,
+        crate::execution::RelationalExecutionDenialCause,
+    > {
+        crate::execution::check_request(execution)?;
+        self.canonical_routes
+            .demand_envelope(execution, id)
+            .map_err(Into::into)
     }
 
-    pub(crate) fn canonical_envelope(
+    pub(crate) fn commit_for_version_in_context(
         &self,
-        commit: CommitId,
-    ) -> Option<Arc<CanonicalCommitEnvelope>> {
-        self.canonical_routes.by_commit(commit)
+        version: VersionId,
+        context: &mut worth_execution::MapKernelContext<'_, '_>,
+    ) -> Result<Option<CommitId>, crate::execution::RelationalExecutionDenialCause> {
+        self.canonical_routes
+            .commit_for_version_in_context(version, context)
     }
 
     pub(crate) fn canonical_catalog_len(&self) -> usize {
@@ -148,11 +160,20 @@ impl RelationalPreparationHistory {
             .canonical_routes
             .prepare_authored_generation(execution, &resident)
             .map_err(super::canonical_publication_routes::authored_write_commit_denial)?;
+        let original_payload = crate::durability::canonical_commit_artifact::PreparedOriginalCanonicalPayload::capture(resident, &execution)
+            .map_err(|cause| match cause {
+                crate::durability::data::RelationalRecoveryStop::Content(cause) => crate::content::commit_denial(cause),
+                crate::durability::data::RelationalRecoveryStop::Request(cause) => crate::transactions::data::TransactionCommitError::execution(cause.into()),
+                crate::durability::data::RelationalRecoveryStop::Allocation(cause) => crate::execution::allocation_commit_error(crate::transactions::data::TransactionCommitError::conflict(crate::transactions::data::CommitConflict::new(crate::transactions::data::ConflictClass::ExecutionAllocationDenied { denial: cause }))),
+                crate::durability::data::RelationalRecoveryStop::Durability(cause) => crate::transactions::data::TransactionCommitError::publication(crate::publication::data::PublicationError::new(crate::publication::bundle::PublicationStage::BundleAssembly, cause.detail)),
+                crate::durability::data::RelationalRecoveryStop::AdmissionImage(cause) => crate::transactions::data::TransactionCommitError::publication(crate::publication::data::PublicationError::new(crate::publication::bundle::PublicationStage::BundleAssembly, format!("original payload capture: {cause:?}"))),
+            })?;
         RelationalCanonicalPublicationRoutes::reserve(
             &self.canonical_routes,
             envelope,
             root,
             generation,
+            original_payload,
         )
         .map_err(|detail| {
             crate::transactions::data::TransactionCommitError::publication(
@@ -203,8 +224,10 @@ impl RelationalPreparationHistory {
         published_delta: &crate::storage::RelationalPublishedPartitionDelta,
         previous: Option<&Arc<RelationalBranchRoot>>,
         envelope: Arc<CanonicalCommitEnvelope>,
+        content: &crate::content::ContentPublication,
         registry: &crate::schema::data::RelationalSchemaRegistry,
         symbols: &crate::runtime::RuntimeSymbolTable,
+        execution_contracts: Option<Arc<crate::runtime::RelationalRootExecutionContracts>>,
     ) -> Result<PreparedRelationalBranchRootCapture, RelationalBranchRootCaptureDenial> {
         #[cfg(test)]
         if self.root_capture_sabotage.swap(false, Ordering::Relaxed) {
@@ -219,8 +242,10 @@ impl RelationalPreparationHistory {
             published_delta,
             previous,
             envelope,
+            content,
             registry,
             symbols,
+            execution_contracts,
         )
     }
 

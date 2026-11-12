@@ -121,8 +121,15 @@ fn sibling_fork_denial_retains_only_real_relational_custody_until_cleanup() {
     let cleanup = court
         .world
         .recovery_port()
-        .release_effects(&handle, 0)
-        .unwrap();
+        .release_effects(
+            request_execution,
+            &handle,
+            0,
+            court.observe_recovery_original(request_execution, &handle),
+        )
+        .unwrap()
+        .into_parts();
+    let (_original, cleanup) = cleanup;
     assert_eq!(cleanup.unpublished_history_candidates().len(), 1);
     assert_eq!(
         cleanup.owner_retirement_work().len(),

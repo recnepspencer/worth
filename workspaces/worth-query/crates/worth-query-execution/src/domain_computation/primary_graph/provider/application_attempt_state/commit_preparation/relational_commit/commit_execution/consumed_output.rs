@@ -14,7 +14,9 @@ pub(super) struct VerifiedConsumedOutputPublication {
         Option<crate::domain_computation::primary_graph::PreparedPrerequisiteClaims>,
 }
 
-enum PrecommitOutputStop {
+#[derive(Debug)]
+pub(super) enum ConsumedOutputPreparationDenial {
+    Prerequisite(crate::domain_computation::primary_graph::WorthQueryOutputDemandDenial),
     SelectedUnavailable,
     Verification(ConsumedOutputVerificationStop),
     Changed,
@@ -28,7 +30,7 @@ pub(super) fn verify(
     provider: &WorthQueryPrimaryGraphProvider,
     attempt: &mut WorthQueryPrimaryGraphApplicationAttempt,
     before: &SnapshotHandle,
-) -> Result<VerifiedConsumedOutputPublication, WorthQueryProviderSessionCommitStop> {
+) -> Result<VerifiedConsumedOutputPublication, ConsumedOutputPreparationDenial> {
     let owner = &provider.graph.source_owner.invalidation_owner;
     let context = attempt.take_required_output_demand();
 
@@ -41,14 +43,14 @@ pub(super) fn verify(
             .try_for_each(|consumed| {
                 consumed
                     .establish_restored_before_commit(execution, &provider.graph.source_owner)
-                    .map_err(PrecommitOutputStop::Verification)
+                    .map_err(ConsumedOutputPreparationDenial::Verification)
             })
             .and_then(|()| {
                 provider.graph.with_runtime(execution, |runtime| {
                     let selected = runtime
                         .read_truth()
                         .positioned_snapshot(before)
-                        .map_err(|_| PrecommitOutputStop::SelectedUnavailable)?;
+                        .map_err(|_| ConsumedOutputPreparationDenial::SelectedUnavailable)?;
                     let current = ConsumedOutputEvidence::verify_many_with_admission(
                         execution,
                         attempt.consumed_outputs(),
@@ -57,26 +59,18 @@ pub(super) fn verify(
                         before,
                         &selected,
                     )
-                    .map_err(PrecommitOutputStop::Verification)?;
+                    .map_err(ConsumedOutputPreparationDenial::Verification)?;
                     if current != ConsumedOutputVerification::Current {
-                        return Err(PrecommitOutputStop::Changed);
+                        return Err(ConsumedOutputPreparationDenial::Changed);
                     }
-                    Ok::<(), PrecommitOutputStop>(())
+                    Ok::<(), ConsumedOutputPreparationDenial>(())
                 })
-            })
-            .map_err(publication_stop)?;
+            })?;
     }
     let required_prerequisites = if let Some(context) = context {
         let prepared = context
             .prepare_prerequisites(attempt.consumed_outputs().iter(), owner)
-            .map_err(|denial| {
-                WorthQueryProviderSessionCommitStop::Deferred(
-                    crate::domain_computation::WorthQueryProviderSessionCommitDeferred::required_prerequisite(
-                        denial,
-                        "required output prerequisites could not be admitted before publication",
-                    ),
-                )
-            })?;
+            .map_err(ConsumedOutputPreparationDenial::Prerequisite)?;
         Some(prepared)
     } else {
         None
@@ -89,15 +83,23 @@ pub(super) fn verify(
 pub(super) fn verification_stop(
     stop: ConsumedOutputVerificationStop,
 ) -> WorthQueryProviderSessionCommitStop {
-    publication_stop(PrecommitOutputStop::Verification(stop))
+    memory_stop(ConsumedOutputPreparationDenial::Verification(stop))
 }
 
-fn publication_stop(stop: PrecommitOutputStop) -> WorthQueryProviderSessionCommitStop {
+pub(super) fn memory_stop(
+    stop: ConsumedOutputPreparationDenial,
+) -> WorthQueryProviderSessionCommitStop {
     match stop {
-            PrecommitOutputStop::Verification(ConsumedOutputVerificationStop::ManagedIndex(cause)) => WorthQueryProviderSessionCommitStop::PreEffectDenied(
+            ConsumedOutputPreparationDenial::Prerequisite(denial) => WorthQueryProviderSessionCommitStop::Deferred(
+                crate::domain_computation::WorthQueryProviderSessionCommitDeferred::required_prerequisite(
+                    denial,
+                    "required output prerequisites could not be admitted before publication",
+                ),
+            ),
+            ConsumedOutputPreparationDenial::Verification(ConsumedOutputVerificationStop::ManagedIndex(cause)) => WorthQueryProviderSessionCommitStop::PreEffectDenied(
                 provider_failure(WorthQueryProviderSessionProtocolStage::Commit, "managed Source consistency refused")
                     .with_managed_index_denial(cause)),
-            PrecommitOutputStop::Verification(
+            ConsumedOutputPreparationDenial::Verification(
                 ConsumedOutputVerificationStop::RetryCurrentness(cause),
             ) => WorthQueryProviderSessionCommitStop::Deferred(
                 crate::domain_computation::WorthQueryProviderSessionCommitDeferred::new(
@@ -105,13 +107,13 @@ fn publication_stop(stop: PrecommitOutputStop) -> WorthQueryProviderSessionCommi
                     "consumed output currentness changed during verification",
                 ),
             ),
-            PrecommitOutputStop::Verification(ConsumedOutputVerificationStop::Interrupted(
+            ConsumedOutputPreparationDenial::Verification(ConsumedOutputVerificationStop::Interrupted(
                 event,
             )) => WorthQueryProviderSessionCommitStop::ControlStopped(
                 super::stops::interruption_control_stopped(event),
             ),
-            PrecommitOutputStop::Verification(ConsumedOutputVerificationStop::Execution(cause)) => crate::domain_computation::primary_graph::provider::relational_execution_denial::relational_execution_stop(cause, None),
-            PrecommitOutputStop::Verification(ConsumedOutputVerificationStop::SourceQueryAuthorization(kind)) => {
+            ConsumedOutputPreparationDenial::Verification(ConsumedOutputVerificationStop::Execution(cause)) => crate::domain_computation::primary_graph::provider::relational_execution_denial::relational_execution_stop(cause, None),
+            ConsumedOutputPreparationDenial::Verification(ConsumedOutputVerificationStop::SourceQueryAuthorization(kind)) => {
 use crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenialKind as Authorization;
                 let detail = "source query authorization is no longer current";
                 match kind {
@@ -129,32 +131,33 @@ use crate::domain_computation::authorization::WorthQueryOperationAuthorizationDe
                     ),
                 }
             }
-            PrecommitOutputStop::Verification(ConsumedOutputVerificationStop::CapacityExhausted(stop)) => capacity_denied(stop),
+            ConsumedOutputPreparationDenial::Verification(ConsumedOutputVerificationStop::CapacityExhausted(stop)) => capacity_denied(stop),
             other => {
                 let detail = match other {
-                    PrecommitOutputStop::Verification(ConsumedOutputVerificationStop::ManagedIndex(_)) => unreachable!("managed source cause retained above"),
-                    PrecommitOutputStop::Verification(ConsumedOutputVerificationStop::Execution(_)) => unreachable!("request execution routed above"),
-                    PrecommitOutputStop::Verification(ConsumedOutputVerificationStop::SourceQueryAuthorization(_)) => unreachable!("source query authorization routed above"),
-                    PrecommitOutputStop::SelectedUnavailable => {
+                    ConsumedOutputPreparationDenial::Prerequisite(_) => unreachable!("prerequisite cause routed above"),
+                    ConsumedOutputPreparationDenial::Verification(ConsumedOutputVerificationStop::ManagedIndex(_)) => unreachable!("managed source cause retained above"),
+                    ConsumedOutputPreparationDenial::Verification(ConsumedOutputVerificationStop::Execution(_)) => unreachable!("request execution routed above"),
+                    ConsumedOutputPreparationDenial::Verification(ConsumedOutputVerificationStop::SourceQueryAuthorization(_)) => unreachable!("source query authorization routed above"),
+                    ConsumedOutputPreparationDenial::SelectedUnavailable => {
                         "selected native root is unavailable for output evidence"
                     }
-                    PrecommitOutputStop::Verification(
+                    ConsumedOutputPreparationDenial::Verification(
                         ConsumedOutputVerificationStop::WorkExhausted,
                     ) => "consumed output currentness exceeded publication work",
-                    PrecommitOutputStop::Verification(ConsumedOutputVerificationStop::CapacityExhausted(_)) => unreachable!("capacity evidence retained above"),
-                    PrecommitOutputStop::Verification(
+                    ConsumedOutputPreparationDenial::Verification(ConsumedOutputVerificationStop::CapacityExhausted(_)) => unreachable!("capacity evidence retained above"),
+                    ConsumedOutputPreparationDenial::Verification(
                         ConsumedOutputVerificationStop::PendingUpstream,
                     ) => "consumed output has pending upstream source",
-                    PrecommitOutputStop::Verification(
+                    ConsumedOutputPreparationDenial::Verification(
                         ConsumedOutputVerificationStop::Unavailable,
                     ) => "consumed output source verification is unavailable",
-                    PrecommitOutputStop::Verification(
+                    ConsumedOutputPreparationDenial::Verification(
                         ConsumedOutputVerificationStop::Interrupted(_),
                     ) => unreachable!("an interruption is a control stop above"),
-                    PrecommitOutputStop::Changed => {
+                    ConsumedOutputPreparationDenial::Changed => {
                         "consumed output changed before application publication"
                     }
-                    PrecommitOutputStop::Verification(
+                    ConsumedOutputPreparationDenial::Verification(
                         ConsumedOutputVerificationStop::RetryCurrentness(_),
                     ) => unreachable!("currentness race is deferred above"),
                 };

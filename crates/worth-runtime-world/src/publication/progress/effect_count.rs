@@ -15,7 +15,8 @@ pub(crate) const fn owner_effect_count_from_postures(
     let signal = match signal {
         SignalAttemptProgressPosture::Untouched
         | SignalAttemptProgressPosture::PreparedForExecution => 0,
-        SignalAttemptProgressPosture::Performed => 1,
+        SignalAttemptProgressPosture::Performed
+        | SignalAttemptProgressPosture::DurabilityUnresolved => 1,
     };
     relational + signal
 }

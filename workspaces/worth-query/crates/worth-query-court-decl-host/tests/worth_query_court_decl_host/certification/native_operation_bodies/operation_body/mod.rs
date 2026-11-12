@@ -45,7 +45,7 @@ fn authored_body_literals_drive_actual_writes_and_program_revisions() {
 #[test]
 fn authored_body_replacement_is_denied_before_any_handler_is_installed() {
     use worth_query_host::facade::{
-        application_installation::WorthQueryInMemoryApplicationDenial,
+        application_installation::WorthQueryApplicationPreparationDenial,
         primary_graph::WorthQueryPrimaryGraphInstallationDenialKind,
     };
     let schema = program::schema::<8>();
@@ -58,7 +58,7 @@ fn authored_body_replacement_is_denied_before_any_handler_is_installed() {
         |_phase, _graph, _installed| Ok(()),
     );
     match result {
-        Err(WorthQueryInMemoryApplicationDenial::Contributions(denial)) => assert_eq!(
+        Err(WorthQueryApplicationPreparationDenial::Contributions(denial)) => assert_eq!(
             denial.kind(),
             WorthQueryPrimaryGraphInstallationDenialKind::OperationBodyReplacement
         ),
@@ -71,7 +71,7 @@ fn authored_body_replacement_is_denied_before_any_handler_is_installed() {
 fn authored_body_replay_recovers_original_commit_after_source_guard_changes() {
     let app = install::<8>();
     assert!(matches!(invoke(&app, 85), Outcome::Committed { .. }));
-    assert!(matches!(invoke(&app, 85), Outcome::AlreadyCommitted(_)));
+    assert!(matches!(invoke(&app, 85), Outcome::RecoveredCommitted(_)));
     assert_eq!(read_retention(&app), 8);
 }
 
@@ -125,7 +125,7 @@ fn authored_body_captured_dependency_stales_before_publication() {
 
 #[test]
 fn authored_body_unbound_program_cannot_acquire_body_by_label() {
-    use worth_query_host::facade::application_installation::WorthQueryInMemoryApplicationDenial;
+    use worth_query_host::facade::application_installation::WorthQueryApplicationPreparationDenial;
     use worth_query_host::facade::domain::WorthQueryProgramSupportDenial;
     let old_schema = program::schema::<8>();
     use worth_query_host::facade::declaration::application_program::ApplicationProgramAuthoring;
@@ -142,7 +142,7 @@ fn authored_body_unbound_program_cannot_acquire_body_by_label() {
         |_phase, _graph, _installed| panic!("mismatching body must deny before initialization"),
     );
     match result {
-        Err(WorthQueryInMemoryApplicationDenial::Program(denial)) => assert!(matches!(
+        Err(WorthQueryApplicationPreparationDenial::Program(denial)) => assert!(matches!(
             denial.support_denial(),
             Some(WorthQueryProgramSupportDenial::UnsupportedAction { .. })
         )),
@@ -154,7 +154,7 @@ fn authored_body_unbound_program_cannot_acquire_body_by_label() {
 #[test]
 fn authored_body_missing_executor_is_denied_at_installation() {
     use worth_query_host::facade::{
-        application_installation::WorthQueryInMemoryApplicationDenial,
+        application_installation::WorthQueryApplicationPreparationDenial,
         primary_graph::WorthQueryPrimaryGraphInstallationDenialKind,
     };
     let schema = program::schema::<8>();
@@ -167,7 +167,7 @@ fn authored_body_missing_executor_is_denied_at_installation() {
         |_phase, _graph, _installed| Ok(()),
     );
     match result {
-        Err(WorthQueryInMemoryApplicationDenial::Contributions(denial)) => assert_eq!(
+        Err(WorthQueryApplicationPreparationDenial::Contributions(denial)) => assert_eq!(
             denial.kind(),
             WorthQueryPrimaryGraphInstallationDenialKind::MissingMutationHandler
         ),

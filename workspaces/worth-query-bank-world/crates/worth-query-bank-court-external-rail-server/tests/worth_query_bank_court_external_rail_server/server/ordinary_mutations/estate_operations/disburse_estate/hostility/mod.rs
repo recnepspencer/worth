@@ -98,7 +98,7 @@ fn a_recognized_exact_executor_authority_is_required_but_not_artificially_unique
         },
     );
     let specialist = fixture.authenticate_actor();
-    let outcome = {
+    let outcome_closed = {
         let closing_actor = &specialist;
         let closing_scope = worth_query_bank_testkit_server::facade::support::request_scope();
         let closing_request = fixture.world.runtime.request(closing_actor, &closing_scope);
@@ -112,11 +112,14 @@ fn a_recognized_exact_executor_authority_is_required_but_not_artificially_unique
             done.evidence(),
             worth_query_host::facade::application_entry::WorthQuerySourceCompletion::Fresh { .. }
         ));
-        bank_server::BankCommitReceipt::from_closed_source(
+        bank_server::BankClosedSourceCompletion::from_query(
             done.close_with_evidence(&closing_request)
                 .unwrap_or_else(|(_, cause)| panic!("source close: {cause:?}")),
         )
     };
+    let outcome = outcome_closed
+        .live_receipt()
+        .expect("fresh completion retains its actual live receipt");
     let receipt = outcome;
     assert_eq!(receipt.decision_fact_count(), Some(41));
 }

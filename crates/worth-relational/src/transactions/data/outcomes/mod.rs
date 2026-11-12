@@ -2,6 +2,17 @@ mod aspect_delta_failure_fields;
 mod commit_conflict;
 mod commit_preparation;
 mod commit_result;
+mod commit_semantic_result;
+pub use commit_semantic_result::{
+    RecoveredRelationalSemanticResult, RelationalCommitPublicationMeaning,
+    RelationalCommitSemanticResult, RelationalCommitSemanticResultRefusal,
+    RelationalCommitStructuralMeaning, RelationalCreatedEndpoint,
+    RelationalCreatedEntityCorrespondence, RelationalCreatedEntityKey,
+    RelationalCreatedRelationCorrespondence, RelationalCreatedRelationKey,
+    RelationalInvariantCheckMeaning, RelationalInvariantCustomProvenanceMeaning,
+    RelationalInvariantDecisionMeaning, RelationalInvariantExecutionMeaning,
+    RelationalInvariantMetadataMeaning, RelationalInvariantProofScopeMeaning,
+};
 mod commit_validation;
 mod conflict_class;
 mod created_entity_bindings;
@@ -43,4 +54,8 @@ pub use plan_artifacts::{
 pub use rollback::{RollbackEffect, RollbackOutcome, RollbackSummary};
 pub use transaction_commit_error::{
     CommitExecutionDenial, CommitExecutionDenialKind, TransactionCommitError,
+};
+
+pub(crate) use commit_semantic_result::{
+    ValidationLeafMemory, ValidationReadmissionMemory, ValidationTouchedMemory,
 };

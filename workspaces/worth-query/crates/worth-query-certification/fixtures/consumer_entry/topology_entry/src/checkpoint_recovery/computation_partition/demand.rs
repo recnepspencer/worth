@@ -179,6 +179,10 @@ impl<Schema: TopologySchemaBinding> OperationHandler<Schema, RegionTotalsDemandB
         plan.and_then(move |()| decided)
     }
 
+    #[expect(
+        clippy::result_large_err,
+        reason = "The fixture preserves the original typed owner denial."
+    )]
     fn build_candidate(
         &self,
         input: &RegionTotalsDemand,

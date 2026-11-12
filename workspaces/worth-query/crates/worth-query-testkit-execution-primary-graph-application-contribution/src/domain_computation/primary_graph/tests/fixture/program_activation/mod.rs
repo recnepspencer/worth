@@ -60,7 +60,7 @@ pub fn seed_program_activation(
     let basis = performed.commit().basis().relational_basis().clone();
     drop(performed.consume());
     (*(*(*world.application.runtime_for_test()).primary_provider_for_test()).graph_for_test())
-        .with_runtime_mut_for_test(execution, |runtime| {
+        .with_runtime_for_test(execution, |runtime| {
             (*(*(*world.application.runtime_for_test()).primary_provider_for_test())
                 .graph_for_test())
             .carry_primary_index_basis_for_basis_for_test(execution, runtime, &basis)

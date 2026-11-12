@@ -3,7 +3,13 @@ use worth_query_installation::facade::ApplicationSchema;
 
 pub use super::super::handler::{CandidateWriter, DecisionReader, HandlerInterruption};
 mod decision_plan;
+mod durable_capability;
 pub use decision_plan::WorthQueryDecisionPlan;
+pub use durable_capability::WorthQueryOperationDurableCapability;
+mod home_retirement;
+pub use home_retirement::{
+    WorthQueryOperationHomeRetirementDenial, WorthQueryOperationHomeRetirementProgress,
+};
 mod completed_candidate;
 mod execution;
 mod execution_report;
@@ -80,6 +86,49 @@ where
     Schema: ApplicationSchema,
     Binding: ApplicationMutationBinding<Schema>,
 {
+    /// Admit retirement of the Home's invocation capability for this handler.
+    ///
+    /// The Home first establishes unique ownership of its original registry
+    /// entry and handler Arc. Preflight must preserve business state. After
+    /// World seal, that same handler can never be invoked again; its payload
+    /// remains retained until explicit, unbudgeted Home reclamation.
+    /// Supplier-internal shared state is outside Home custody: close neither
+    /// certifies nor destroys it. Override this hook to refuse when the handler
+    /// knows that its operational state cannot retire under that boundary.
+    fn preflight_home_retirement(
+        &mut self,
+        request: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> Result<(), WorthQueryOperationHomeRetirementDenial> {
+        request
+            .consult()
+            .map_err(WorthQueryOperationHomeRetirementDenial::Execution)
+    }
+
+    /// Complete retirement of the same sealed invocation capability.
+    /// The default retains the payload unchanged; it does not certify state
+    /// independently shared by the supplier. Overrides retain their original
+    /// progress through interruption and must not destroy arbitrary payloads.
+    fn advance_home_retirement(
+        &mut self,
+        request: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> Result<WorthQueryOperationHomeRetirementProgress, WorthQueryOperationHomeRetirementDenial>
+    {
+        request
+            .consult()
+            .map_err(WorthQueryOperationHomeRetirementDenial::Execution)?;
+        Ok(WorthQueryOperationHomeRetirementProgress::Complete)
+    }
+
+    /// Immutable capabilities of this installed handler implementation.
+    /// Omission leaves an opaque supplier unknown to directory admission.
+    /// Memory-only execution does not impose a durability contract.
+    fn declared_durable_capabilities() -> Option<&'static [WorthQueryOperationDurableCapability]>
+    where
+        Self: Sized,
+    {
+        None
+    }
+
     fn decide(
         &self,
         input: &Binding::Input,
@@ -103,3 +152,6 @@ where
         candidate: &mut CandidateWriter<'_, Schema, Binding>,
     ) -> HandlerResult<Binding::Result, Binding::Denial>;
 }
+#[cfg(test)]
+#[path = "mutation_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;

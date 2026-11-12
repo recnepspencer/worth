@@ -1,4 +1,6 @@
 use std::sync::{Arc, Mutex};
+mod retained_snapshot_retirement;
+mod retirement;
 
 use crate::facade::{
     RelationalBridgeRecordIdentityParts, SnapshotReadContract, SnapshotReadSource,

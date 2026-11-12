@@ -88,9 +88,9 @@ impl crate::transactions::data::CommitResult {
                 .is_some_and(|issuer| issuer.same_publication_owner(&installed.authority)))
         .then(|| RelationalRequiredOutputPublication {
             runtime_instance_id: installed.runtime_instance_id,
-            evidence: crate::publication::ownership::PublicationEvidence::Canonical(Arc::clone(
-                envelope,
-            )),
+            evidence: crate::publication::ownership::PublicationEvidence::Canonical(
+                envelope.clone().into_arc(),
+            ),
             origin: Arc::clone(
                 envelope
                     .required_output_origin
@@ -134,7 +134,7 @@ impl crate::transactions::data::CommitResult {
                         Ok(Some(RelationalRequiredOutputPublication {
                             runtime_instance_id: installed.runtime_instance_id,
                             evidence: crate::publication::ownership::PublicationEvidence::Canonical(
-                                Arc::clone(envelope),
+                                envelope.clone().into_arc(),
                             ),
                             origin: Arc::clone(origin),
                             readmitted_at: None,

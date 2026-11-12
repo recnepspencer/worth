@@ -75,7 +75,7 @@ impl WorthQueryPrimaryGraphProvider {
     pub(in crate::domain_computation::primary_graph) fn install_and_publish_application(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
-        runtime: &mut worth_relational::facade::runtime::RelationalRuntime,
+        runtime: &worth_relational::facade::runtime::RelationalRuntime,
         reservation: WorthQueryApplicationPublicationRecoveryReservation,
         pending: WorthQueryPendingApplicationPublication,
         predicate: &mut Option<PredicatePreparationOwner>,
@@ -89,7 +89,7 @@ impl WorthQueryPrimaryGraphProvider {
     pub(in crate::domain_computation::primary_graph) fn resume_pending_application_publication(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
-        runtime: &mut worth_relational::facade::runtime::RelationalRuntime,
+        runtime: &worth_relational::facade::runtime::RelationalRuntime,
         occurrence: worth_runtime_world::facade::ProductBranchIncarnation,
         retired: &mut PredicatePreparationRetirement,
     ) -> Result<(), WorthQueryProviderSessionFailure> {
@@ -127,7 +127,7 @@ impl WorthQueryPrimaryGraphProvider {
 fn resume(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     provider: &WorthQueryPrimaryGraphProvider,
-    runtime: &mut worth_relational::facade::runtime::RelationalRuntime,
+    runtime: &worth_relational::facade::runtime::RelationalRuntime,
     pending: &mut WorthQueryPendingApplicationPublication,
 ) -> Result<CompositeCommitIdentity, WorthQueryProviderSessionFailure> {
     let commit_id = pending.committed.envelope().commit.commit_id;
@@ -155,7 +155,7 @@ fn resume(
 fn publish_with_snapshot(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     provider: &WorthQueryPrimaryGraphProvider,
-    runtime: &mut worth_relational::facade::runtime::RelationalRuntime,
+    runtime: &worth_relational::facade::runtime::RelationalRuntime,
     pending: &mut WorthQueryPendingApplicationPublication,
     after: &worth_relational::facade::snapshots::SnapshotHandle,
     commit_id: worth_relational::facade::history::CommitId,
@@ -229,7 +229,7 @@ fn publish_with_snapshot(
             .pending
             .as_mut()
             .expect("group keeps member until shared cutover");
-        let mut completed =
+        let (mut completed, original_completion) =
             settlement::finish_writer(execution, provider, runtime, leaf, after, commit_id, false);
         // A member has a real receipt, but the root owns the one product delivery
         // and history lifecycle. Native publication custody remains on its slot.
@@ -238,27 +238,31 @@ fn publish_with_snapshot(
             .application
             .as_ref()
             .expect("root receipt")
-            .complete_coupled_member(ordinal, completed);
+            .complete_coupled_member(ordinal, completed.clone());
+        original_completion.complete(completed);
     }
-    let completed = settlement::finish_writer(
+    let (completed, original_completion) = settlement::finish_writer(
         execution, provider, runtime, pending, after, commit_id, true,
     );
     let settled = completed
         .committed_product_publication()
         .composite_commit()
         .clone();
+    let mut indexed = completed.clone();
+    drop(indexed.take_history());
+    original_completion.complete(completed);
     provider
         .completed_commit_evidence
         .lock()
         .unwrap_or_else(|poisoned| poisoned.into_inner())
-        .record(completed);
+        .record(indexed);
     Ok(settled)
 }
 
 fn prepare_writer(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     provider: &WorthQueryPrimaryGraphProvider,
-    runtime: &mut worth_relational::facade::runtime::RelationalRuntime,
+    runtime: &worth_relational::facade::runtime::RelationalRuntime,
     pending: &mut WorthQueryPendingApplicationPublication,
     after: &worth_relational::facade::snapshots::SnapshotHandle,
 ) -> Result<(), WorthQueryProviderSessionFailure> {
@@ -273,6 +277,38 @@ fn prepare_writer(
         .with_recovery_posture(WorthQueryProviderSessionRecoveryPosture::RecoveryRequired));
     }
     aftermath::seal(execution, provider, runtime, pending, after)?;
+    provider
+        .seal_correction_material(
+            pending
+                .application
+                .as_ref()
+                .expect("performed original remains in pending custody"),
+            execution,
+        )
+        .map_err(|cause| {
+            failure("original correction material publication remains in custody")
+                .with_correction_material_denial(cause)
+        })?;
+    if let Some(causality) = pending
+        .attempt
+        .as_ref()
+        .expect("pending original retains its attempt")
+        .aftermath_causality()
+    {
+        provider
+            .release_correction_preparation(
+                causality.prepared_correction(),
+                pending
+                    .application
+                    .as_ref()
+                    .expect("performed original remains in pending custody"),
+                execution,
+            )
+            .map_err(|cause| {
+                failure("correction material pin release remains in custody")
+                    .with_correction_material_denial(cause)
+            })?;
+    }
     Ok(())
 }
 

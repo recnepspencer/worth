@@ -1,4 +1,5 @@
 use sha2::{Digest, Sha256};
+use worth_foundational::CanonicalDigestId;
 
 use crate::PersistedRecordIdentity;
 
@@ -21,7 +22,7 @@ pub struct DropSetManifestV1 {
     store: [u8; 16],
     reclaim_attempt: [u8; 16],
     source_basis: FailedIngestReclaimBasisV1,
-    dropped_digest: [u8; 32],
+    dropped_digest: CanonicalDigestId,
     dropped: Box<[PersistedRecordIdentity]>,
 }
 
@@ -44,7 +45,7 @@ impl DropSetManifestV1 {
             store: nonzero_16(store)?,
             reclaim_attempt: nonzero_16(reclaim_attempt)?,
             source_basis,
-            dropped_digest: digest_dropped(&dropped),
+            dropped_digest: CanonicalDigestId::new(digest_dropped(&dropped)),
             dropped: dropped.into_boxed_slice(),
         })
     }
@@ -60,7 +61,7 @@ impl DropSetManifestV1 {
         payload.extend_from_slice(&self.reclaim_attempt);
         self.source_basis.encode_into(&mut payload);
         payload.extend_from_slice(&(self.dropped.len() as u16).to_le_bytes());
-        payload.extend_from_slice(&self.dropped_digest);
+        payload.extend_from_slice(self.dropped_digest.bytes());
         for record in &self.dropped {
             write_record(&mut payload, *record);
         }
@@ -85,7 +86,7 @@ impl DropSetManifestV1 {
             store: view.store(),
             reclaim_attempt: view.reclaim_attempt(),
             source_basis: view.source_basis(),
-            dropped_digest: view.dropped_digest(),
+            dropped_digest: CanonicalDigestId::new(view.dropped_digest()),
             dropped: view.collect_owned().into_boxed_slice(),
         }
     }
@@ -103,7 +104,7 @@ impl DropSetManifestV1 {
         self.source_basis.digest(self.store)
     }
     pub const fn dropped_digest(&self) -> [u8; 32] {
-        self.dropped_digest
+        *self.dropped_digest.bytes()
     }
     pub fn dropped(&self) -> &[PersistedRecordIdentity] {
         &self.dropped

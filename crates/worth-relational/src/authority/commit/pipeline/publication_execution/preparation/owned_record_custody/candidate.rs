@@ -5,7 +5,12 @@ use crate::{
     identity::data::{EntityId, RelationId},
 };
 use std::collections::{HashMap, HashSet};
-type Route<'a> = (&'a str, EntityId, [u8; 32], CommitId);
+type Route<'a> = (
+    &'a str,
+    EntityId,
+    worth_foundational::CanonicalDigestId,
+    CommitId,
+);
 pub(super) struct CandidateWrites<'a> {
     destroyed: HashMap<RecordRef, usize>,
     updated: HashMap<RelationId, usize>,
@@ -16,7 +21,7 @@ pub(super) struct CandidateWrites<'a> {
 impl<'a> CandidateWrites<'a> {
     pub(super) fn new(
         execution: &ExecutionRequest<'_, '_>,
-        candidate: &'a CanonicalCommitEnvelope,
+        candidate: &'a CanonicalCommitEnvelopeBody,
         adjacency: &[crate::authority::mutation::AdjacencyDelta],
         context: &mut worth_execution::MapKernelContext<'_, '_>,
     ) -> Result<Self, TransactionCommitError> {

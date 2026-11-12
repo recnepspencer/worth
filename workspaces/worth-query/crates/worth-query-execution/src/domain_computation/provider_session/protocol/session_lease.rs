@@ -75,6 +75,8 @@ impl<'scope> WorthQueryProviderSessionLease<'scope> {
             || matches!(
                 &result,
                 Err(super::WorthQueryProviderSessionCommitStop::ProductUnpublished(_))
+                    | Err(super::WorthQueryProviderSessionCommitStop::ProductPreparationPending(_))
+                    | Err(super::WorthQueryProviderSessionCommitStop::ProductPreparationRefused(_))
                     | Err(super::WorthQueryProviderSessionCommitStop::NoEffect(_))
                     | Err(super::WorthQueryProviderSessionCommitStop::ControlStopped(
                         _

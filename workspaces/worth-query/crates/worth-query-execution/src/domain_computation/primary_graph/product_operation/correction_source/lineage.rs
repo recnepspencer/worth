@@ -9,11 +9,7 @@ pub(super) fn source_locator<Schema>(
     source: &WorthQuerySelectedCorrectionSource<'_, Schema>,
 ) -> WorthQueryRecordedCorrectionSource {
     WorthQueryRecordedCorrectionSource::from_untrusted_parts(
-        source
-            .occurrence()
-            .committed_product_publication()
-            .composite_commit()
-            .clone(),
+        source.ancestry().source().identity().clone(),
         source.occurrence().commit_reference().clone(),
     )
 }
@@ -46,15 +42,16 @@ pub(super) fn reverse_identity<Schema>(
 ) -> Result<WorthQueryCorrectionLineageBinding, WorthQueryCorrectionDerivationDenial> {
     use WorthQueryCorrectionDerivationDenial as Denial;
     let locator = source_locator(source);
-    match source.occurrence().aftermath_causality() {
+    match source.occurrence().causality() {
         None => Ok(WorthQueryCorrectionLineageBinding::reverse(locator, None)),
-        Some(fact) if fact.role() == WorthQueryAftermathCausalRole::RecordedReapply => {
-            let prior = fact.correction_lineage();
-            Ok(WorthQueryCorrectionLineageBinding::reverse(
-                prior.root().clone(),
-                Some(locator),
-            ))
-        }
-        Some(_) => Err(Denial::UnsupportedSourceMeaning),
+        Some(fact) => match fact.role() {
+            WorthQueryAftermathCausalRole::RecordedReapply => {
+                Ok(WorthQueryCorrectionLineageBinding::reverse(
+                    fact.correction_lineage().root().clone(),
+                    Some(locator),
+                ))
+            }
+            WorthQueryAftermathCausalRole::RecordedReverse => Err(Denial::UnsupportedSourceMeaning),
+        },
     }
 }

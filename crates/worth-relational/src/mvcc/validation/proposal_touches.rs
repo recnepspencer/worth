@@ -181,12 +181,13 @@ impl ValidatedRelationalProposal {
         execution: &ExecutionRequest<'_, '_>,
     ) -> Result<ValidatedMutationTouches<'_>, ValidatedMutationTouchProjectionError> {
         let commands = match self
+            .state
             .required_output_publication
             .as_ref()
             .map(|p| &p.publication)
         {
             Some(crate::mvcc::RequiredOutputPublication::CoupledAuthored { group }) => {
-                Some(group.authored_commands.merged_intents.as_slice())
+                Some(group.authored_commands.plan().merged_intents.as_slice())
             }
             _ => None,
         };
@@ -203,6 +204,7 @@ impl ValidatedRelationalProposal {
         stage: usize,
     ) -> Option<Result<ValidatedMutationTouches<'_>, ValidatedMutationTouchProjectionError>> {
         let part = match self
+            .state
             .required_output_publication
             .as_ref()
             .map(|p| &p.publication)
@@ -216,7 +218,7 @@ impl ValidatedRelationalProposal {
             self,
             execution,
             true,
-            Some(&part.commands.merged_intents),
+            Some(&part.commands.plan().merged_intents),
         ))
     }
 
@@ -231,6 +233,7 @@ impl ValidatedRelationalProposal {
         meaning: &crate::mvcc::RequiredOutputPublicationMeaning,
     ) -> Option<Result<ValidatedMutationTouches<'a>, ValidatedMutationTouchProjectionError>> {
         let part = self
+            .state
             .required_output_publication
             .iter()
             .filter_map(|p| match &p.publication {
@@ -243,7 +246,7 @@ impl ValidatedRelationalProposal {
             self,
             execution,
             false,
-            Some(&part.commands.merged_intents),
+            Some(&part.commands.plan().merged_intents),
         ))
     }
 

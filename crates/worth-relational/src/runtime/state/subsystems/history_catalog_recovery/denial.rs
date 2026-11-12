@@ -6,6 +6,9 @@ use crate::durability::data::{DurabilityError, RecoveryFailureClass, RelationalR
 pub(crate) enum RelationalHistoryRecoveryDenial {
     Invalid(String),
     Root(RelationalBranchRootCaptureDenial),
+    Source(RelationalRecoveryStop),
+    Artifact(crate::history::RelationalCommitArtifactDenial),
+    Catalog(crate::history::RelationalCommitCatalogAppendDenial),
 }
 impl From<String> for RelationalHistoryRecoveryDenial {
     fn from(detail: String) -> Self {
@@ -20,9 +23,14 @@ impl From<RelationalBranchRootCaptureDenial> for RelationalHistoryRecoveryDenial
 impl From<RelationalHistoryRecoveryDenial> for RelationalRecoveryStop {
     fn from(cause: RelationalHistoryRecoveryDenial) -> Self {
         match cause {
+            RelationalHistoryRecoveryDenial::Source(cause) => cause,
             RelationalHistoryRecoveryDenial::Root(RelationalBranchRootCaptureDenial::Content(
                 cause,
             )) => cause.into(),
+            RelationalHistoryRecoveryDenial::Root(
+                RelationalBranchRootCaptureDenial::Request(cause)
+                | RelationalBranchRootCaptureDenial::Execution(cause),
+            ) => RelationalRecoveryStop::Request(cause),
             cause => {
                 DurabilityError::new(RecoveryFailureClass::CorruptCheckpoint, cause.to_string())
                     .into()
@@ -35,6 +43,9 @@ impl std::fmt::Display for RelationalHistoryRecoveryDenial {
         match self {
             Self::Invalid(detail) => f.write_str(detail),
             Self::Root(cause) => write!(f, "root readmission refused: {cause:?}"),
+            Self::Source(cause) => write!(f, "source readmission refused: {cause:?}"),
+            Self::Artifact(cause) => write!(f, "artifact preparation refused: {cause:?}"),
+            Self::Catalog(cause) => write!(f, "catalog replacement refused: {cause:?}"),
         }
     }
 }

@@ -21,8 +21,24 @@ where
         WorthQueryConditionalClockObservationDenial,
     > {
         let runtime = self.application();
+        if runtime
+            .conditional_cleanup
+            .definitions
+            .route(handle.binding_identity(), handle.lease())
+            .is_some()
+        {
+            return Err(WorthQueryConditionalClockObservationDenial::new(
+                WorthQueryConditionalClockObservationDenialKind::NotReadmitted {
+                    family:
+                        worth_foundational::facade::DurableStateFamily::BridgeManagedTemporalIntents,
+                    phase: 7,
+                },
+                handle.binding_identity(),
+            ));
+        }
         let operation = runtime
-            .conditional_operations
+            .conditional_cleanup
+            .operations
             .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner)
             .admit_clock(handle.binding_identity(), handle.lease())
@@ -40,8 +56,11 @@ where
         let bridge = bridge_root
             .read()
             .unwrap_or_else(std::sync::PoisonError::into_inner);
+        let memory = bridge.memory().map_err(|cause| WorthQueryConditionalClockObservationDenial::new(
+            WorthQueryConditionalClockObservationDenialKind::ProductAdmission(
+                super::super::installation::WorthQueryConditionalRuntimeInstallationDenialKind::BridgeConditional(Box::new(cause.kind()))), cause.detail()))?;
         operation
-            .admit_product_binding(execution, &bridge, runtime, &truth)
+            .admit_product_binding(execution, memory, runtime, &truth)
             .map_err(|denial| {
                 WorthQueryConditionalClockObservationDenial::new(
                     WorthQueryConditionalClockObservationDenialKind::ProductAdmission(

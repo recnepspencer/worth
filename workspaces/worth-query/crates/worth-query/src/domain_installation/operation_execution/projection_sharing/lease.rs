@@ -251,3 +251,6 @@ impl<D, O, F, L: BasisOperationLane> Drop for WorthQuerySharedLiveProjectionLeas
         }
     }
 }
+#[cfg(test)]
+#[path = "lease_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;

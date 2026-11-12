@@ -17,8 +17,8 @@ pub(in crate::application_query) enum ParameterBasisPreparationStop<Stop> {
     AccountingOverflow,
 }
 
-pub(in crate::application_query) fn prepare_parameter_basis_admitted<Stop>(
-    bindings: &[(&'static str, AspectValue)],
+pub(in crate::application_query) fn prepare_parameter_basis_admitted<Name: AsRef<str>, Stop>(
+    bindings: &[(Name, AspectValue)],
     budget: CanonicalDigestWorkBudget,
     admit: &mut impl FnMut(usize, usize) -> Result<(), Stop>,
 ) -> Result<WorthQueryApplicationParameterCanonicalArtifact, ParameterBasisPreparationStop<Stop>> {

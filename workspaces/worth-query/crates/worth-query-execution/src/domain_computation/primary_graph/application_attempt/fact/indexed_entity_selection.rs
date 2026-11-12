@@ -3,8 +3,7 @@ use worth_foundational::facade::{AspectFieldLocator, AspectValue};
 use worth_relational::facade::identity::{EntityId, KindId};
 use worth_relational::facade::indexes::{
     BoundedEntityFieldLookupDenialKind, BoundedEntityFieldLookupOutcome,
-    BoundedEntityFieldLookupRequest, BoundedIndexParityMode, DerivedIndexDefinition,
-    DerivedIndexId,
+    BoundedEntityFieldLookupRequest, BoundedIndexParityMode, DerivedIndexId,
 };
 
 use super::WorthQueryApplicationObservedFact;
@@ -133,7 +132,7 @@ pub fn remains_equal(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
     index_id: DerivedIndexId,
-    definition: &std::sync::Arc<DerivedIndexDefinition>,
+    definition: &worth_relational::facade::indexes::RetainedDerivedIndexDefinition,
     entity_kind: KindId,
     locator: &AspectFieldLocator,
     value: &AspectValue,

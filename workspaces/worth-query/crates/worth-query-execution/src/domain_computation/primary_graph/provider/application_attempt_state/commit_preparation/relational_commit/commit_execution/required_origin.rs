@@ -90,8 +90,8 @@ pub(super) fn bind(
             source_scope.local_slot(),
             source_scope.generation(),
         ),
-        source_partition: partition,
-        source_epoch,
+        source_partition: worth_foundational::CanonicalDigestId::new(partition),
+        source_epoch: worth_foundational::CanonicalDigestId::new(source_epoch),
     };
     let retired = provider
         .graph

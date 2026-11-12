@@ -3,7 +3,7 @@ use super::*;
 use crate::domain_computation::primary_graph::{
     application_attempt::WorthQueryApplicationObservedFact as Fact,
     application_contribution::producer::predecessor_reads::{
-        HistoricalProducerRead, WorthQueryPredecessorReadDenial as Denial,
+        WorthQueryHistoricalProducerRead, WorthQueryPredecessorReadDenial as Denial,
     },
 };
 use worth_query_declaration::facade::application_schema::{
@@ -61,7 +61,7 @@ impl<S: ApplicationSchema, O>
         let retention = self.reader.retention_control;
         let remaining = self.reader.work_budget.remaining();
         let authority = &access.application.mutation_projection;
-        let project = |native: &mut worth_relational::facade::runtime::RelationalRuntime| {
+        let project = |native: &worth_relational::facade::runtime::RelationalRuntime| {
             let (prior, input, contracts, authorization) =
                 access.prepare_predecessor(&execution, native, operation, scope, partition)?;
             let limit = match (contracts.projection_work_budget(), remaining) {
@@ -91,18 +91,18 @@ impl<S: ApplicationSchema, O>
                 completed.map_err(Denial::Projection)?,
             ))
         };
-        let (prior, input, authorization, completed) =
-            match self.reader.native.committed_runtime_mut() {
-                Some(native) => project(native),
-                // Scoped Native assembly holds its preparation port, not Query's
-                // Native transport. This is the sole ordinary transport entrance.
-                None => access
-                    .application
-                    .runtime
-                    .primary_provider
-                    .graph
-                    .with_runtime_mut(&execution, project),
-            }?;
+        let (prior, input, authorization, completed) = match self.reader.native.committed_runtime()
+        {
+            Some(native) => project(native),
+            // Scoped Native assembly holds its preparation port, not Query's
+            // Native transport. This is the sole ordinary transport entrance.
+            None => access
+                .application
+                .runtime
+                .primary_provider
+                .graph
+                .with_runtime(&execution, project),
+        }?;
         let (output, facts, consumed) = completed.output;
         if !self.reader.work_budget.consume(consumed) {
             return Err(Denial::Projection(
@@ -117,15 +117,12 @@ impl<S: ApplicationSchema, O>
         let (keys, _) = facts
             .into_expected(&execution)
             .map_err(|cause| Denial::Decision(format!("{cause:?}")))?;
-        access.record_predecessor_read(HistoricalProducerRead {
-            _publication: prior.authority().publication_coordinate(),
-            _before_basis: input.before_basis().descriptor().clone(),
-            _applied: input
-                .applied_read()
-                .map(|read| read.candidate_identity().qualification()),
-            _operation: R::IDENTIFIER,
-            _keys: keys.into_historical_keys(),
-        });
+        access.record_predecessor_read(WorthQueryHistoricalProducerRead::from_input(
+            &prior,
+            &input,
+            R::IDENTIFIER,
+            keys.into_historical_keys(),
+        ));
         // Only C authorization becomes a current dependency. Old read keys and
         // old values are descriptive evidence and never rechecked at C.
         self.reader

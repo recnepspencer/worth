@@ -2,7 +2,6 @@
 
 use crate::branch::AdmittedRelationalBranchBasis;
 use crate::history::data::canonical_commit_envelope::OutputOriginHistory;
-use crate::history::data::CanonicalCommitEnvelope;
 use crate::identity::data::{EntityId, KindId, RelationId};
 use crate::runtime::{CodecFieldLocus, RelationalRuntime};
 
@@ -11,6 +10,7 @@ mod authored_restoration;
 mod authored_retirement;
 mod coupled_restoration;
 mod historical_selection;
+mod history_request;
 pub(crate) use historical_selection::antecedent as historical_producer_antecedent;
 mod scope_dependents;
 pub(crate) mod source_scope_closure;
@@ -84,7 +84,8 @@ pub(crate) fn derive_codec_retirement_closure(
     basis: &AdmittedRelationalBranchBasis,
     changed_fields: &[CodecFieldLocus],
 ) -> Result<OwnedCodecRetirementClosure, CodecRetirementClosureStop> {
-    if basis.descriptor().runtime_instance_id() != runtime.runtime_instance_id()
+    let runtime = &crate::history::data::codec_retirement_closure::history_request::RuntimeHistoryRequest::new(runtime, execution);
+    if basis.descriptor().runtime_instance_id() != runtime.runtime.runtime_instance_id()
         || !basis.is_current()
     {
         return Err("codec provenance requires the current recovered native basis".into());
@@ -92,7 +93,7 @@ pub(crate) fn derive_codec_retirement_closure(
     basis
         .inner
         .root
-        .demand_all_full(execution, &runtime.services.symbols)
+        .demand_all_full(execution, &runtime.runtime.services.symbols)
         .map_err(|failure| CodecRetirementClosureStop::Request(failure.into()))?;
     let result = execution
         .in_scope(|lease| {
@@ -109,14 +110,14 @@ pub(crate) fn derive_codec_retirement_closure(
 }
 
 fn derive_metered(
-    runtime: &RelationalRuntime,
+    runtime: &crate::history::data::codec_retirement_closure::history_request::RuntimeHistoryRequest<'_, '_, '_>,
     basis: &AdmittedRelationalBranchBasis,
     changed_fields: &[CodecFieldLocus],
     context: &mut worth_execution::MapKernelContext<'_, '_>,
     lease: Option<&worth_execution::ExecutionResourceLease<'_>>,
 ) -> Result<OwnedCodecRetirementClosure, CodecRetirementClosureStop> {
     charge(context, 1)?;
-    if basis.descriptor().runtime_instance_id() != runtime.runtime_instance_id()
+    if basis.descriptor().runtime_instance_id() != runtime.runtime.runtime_instance_id()
         || !basis.is_current()
     {
         return Err("codec provenance requires the current recovered native basis".into());
@@ -132,7 +133,7 @@ fn derive_metered(
         }
     }
     let entity_bound = root.entity_slot_count();
-    let history_bound = runtime.history.catalog_len();
+    let history_bound = runtime.runtime.history.catalog_len();
     let entity_bytes = entity_bound
         .checked_mul(std::mem::size_of::<EntityId>())
         .ok_or_else(memory_overflow)?;
@@ -172,7 +173,7 @@ fn derive_metered(
             if !record.is_live() {
                 continue;
             }
-            let Some(payload) = record.extra().authoritative_aspect_state.as_ref() else {
+            let Some(payload) = record.extra().authoritative_aspect_state() else {
                 continue;
             };
             let mut has_changed_present_aspect = false;
@@ -221,8 +222,7 @@ fn derive_metered(
             .ok_or("affected output generation changed")?;
         let payload = row
             .extra()
-            .authoritative_aspect_state
-            .as_ref()
+            .authoritative_aspect_state()
             .ok_or("affected output payload missing")?;
         let selected = membership::latest(runtime, basis, id, validated_history, context, lease)?;
         if selected.authored_cascade_restoration.is_some()
@@ -287,7 +287,9 @@ fn intent_writes_entity(intent: &crate::transactions::data::MutationIntent, id: 
         == Some(crate::transactions::data::ExistingRecordTarget::Entity(id))
 }
 
-fn require_linear_history(envelope: &CanonicalCommitEnvelope) -> Result<(), String> {
+fn require_linear_history(
+    envelope: &crate::history::data::canonical_commit_envelope::CanonicalCommitEnvelopeBody,
+) -> Result<(), String> {
     if !envelope.is_unmerged_output_publication_step() {
         return Err("codec provenance does not admit merged physical output ownership".into());
     }

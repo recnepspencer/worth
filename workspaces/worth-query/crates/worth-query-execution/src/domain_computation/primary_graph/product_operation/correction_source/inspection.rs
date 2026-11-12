@@ -12,9 +12,7 @@ pub(super) fn inspect_source<Schema: ApplicationSchema>(
 ) -> Result<(), WorthQueryCorrectionDerivationDenial> {
     let binding = source
         .occurrence()
-        .commit_evidence()
-        .original_authority()
-        .original_mutation_binding()
+        .original_binding()
         .ok_or(WorthQueryCorrectionDerivationDenial::UnsupportedSourceMeaning)?;
     Schema::visit_correction(
         binding,

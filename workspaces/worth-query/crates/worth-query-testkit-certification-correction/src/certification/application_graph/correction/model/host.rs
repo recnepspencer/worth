@@ -10,7 +10,6 @@ use worth_query_host::facade::{
     primary_graph::*,
     runtime,
 };
-
 pub use worth_query_testkit_document_retention::facade::document_world_resources as world_resources;
 pub type Host = WorthQueryProgramApplicationRuntime<NumericSchema, Program>;
 pub type OutputHost =
@@ -303,6 +302,9 @@ pub fn edit_on(
     match evidence {
         WorthQuerySourceCompletion::Fresh { receipt, .. } => receipt,
         WorthQuerySourceCompletion::Recovered { receipt, .. } => receipt,
+        WorthQuerySourceCompletion::Recorded { .. } => panic!(
+            "this fixture requires an actual fresh correction source, not original receipt data"
+        ),
     }
 }
 pub fn edit_other(
@@ -353,6 +355,15 @@ pub fn read_on<P: ApplicationProgramDefinition<NumericSchema>>(
         .rows()
         .to_vec()
 }
+pub(super) fn installation_limits() -> WorthQueryApplicationLimits {
+    WorthQueryApplicationLimits::new(
+        world_resources::world_resources(256, 4 * 1024 * 1024, 256, worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system()),
+        runtime::WorthQueryApplicationQueryResourceProfile::new(
+            std::num::NonZeroUsize::new(128).unwrap(),
+        ),
+        SignalConditionalEvaluationBudget::development(),
+    )
+}
 
 /// Bootstrap issues the ordinary retained projection owner used by decode courts.
 pub fn install_with_projection() -> (
@@ -376,7 +387,7 @@ pub fn install_with_projection() -> (
 
 /// Reopen the exact current fixture representation; no migration is inferred.
 pub fn restore(checkpoint: WorthQueryApplicationCheckpoint) -> Host {
-    in_memory_rostered_program_from_checkpoint(
+    WorthQueryInterimCheckpointRestore::rostered_program(
         validated::<Program>(),
         roster().support(validated::<super::output_program::OutputProgram>()),
         NumericSchema::declaration().unwrap(),

@@ -9,7 +9,7 @@ use worth_relational::facade::transactions::{
     UpdateEntityFieldsIntent, WorkerIntentBatch,
 };
 
-use super::workflow::{admit_workflow_dispositions, workflow_read_denial};
+use super::workflow::workflow_read_denial;
 use super::{
     dispositions, selection, WorthQueryBranchAdoptionPreparationDenial,
     WorthQueryPreparedBranchAdoption, WorthQueryPreparedProgramMigration,
@@ -17,7 +17,8 @@ use super::{
 use crate::domain_computation::primary_graph::product_operation::WorthQuerySelectedProductOperation;
 use crate::domain_computation::primary_graph::program_occurrence::program_revision_rendering;
 use crate::domain_computation::primary_graph::workflow::adoption::{
-    inventory_workflows, stage_workflow_dispositions, WorkflowAdoptionInventoryRequest,
+    inventory_workflows, prepare_workflow_dispositions, WorkflowAdoptionInventoryRequest,
+    WorkflowDispositionPreparationDenial,
 };
 use crate::domain_computation::primary_graph::workflow::{
     WorthQueryWorkflowAdoptionInventory, WorthQueryWorkflowDispositions,
@@ -91,6 +92,9 @@ pub(super) fn prepare<Schema: ApplicationSchema, Operation, Input, Scope>(
     request: &worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope,
 ) -> Result<WorthQueryPreparedBranchAdoption, WorthQueryBranchAdoptionPreparationDenial> {
     admission.validate_current_authority().map_err(|cause| WorthQueryBranchAdoptionPreparationDenial::Authorization(super::super::authorization::WorthQueryProgramAdoptionAuthorizationDenial::Authorization(cause)))?;
+    selected.application().runtime.product_runtime
+        .admit_directory_capability(crate::domain_computation::primary_graph::WorthQueryOperationDurableCapability::ProgramAdoption)
+        .map_err(WorthQueryBranchAdoptionPreparationDenial::DurableStateAdmission)?;
     let (source, requirements) = requirements(selected, target)?;
     if &requirements != expected_requirements {
         return Err(WorthQueryBranchAdoptionPreparationDenial::RequirementsChanged);
@@ -173,12 +177,14 @@ pub(super) fn prepare<Schema: ApplicationSchema, Operation, Input, Scope>(
     })?;
     let selected_entity_count = selection.entities.len();
     let workflow_intents = match workflow_inventory.as_ref() {
-        Some(inventory) => admit_workflow_dispositions(inventory, workflow.as_ref(), selected.product().product_branch())?
-            .map(|choices| {
-                stage_workflow_dispositions(graph.layout.workflow(), inventory, &choices, target,
-                    crate::domain_computation::primary_graph::workflow::actor::record::WorkflowAdmittedActor::from_admission(&admission))
-            })
-            .unwrap_or_default(),
+        Some(inventory) => prepare_workflow_dispositions(
+            graph.layout.workflow(), inventory, workflow.as_ref(),
+            selected.product().product_branch(), target,
+            &crate::domain_computation::primary_graph::workflow::actor::record::WorkflowAdmittedActor::from_admission(&admission).ending_actor(),
+        ).map_err(|cause| match cause {
+            WorkflowDispositionPreparationDenial::Required => WorthQueryBranchAdoptionPreparationDenial::WorkflowDispositionRequired,
+            WorkflowDispositionPreparationDenial::Rejected => WorthQueryBranchAdoptionPreparationDenial::WorkflowDispositionRejected,
+        })?,
         None => Vec::new(),
     };
     let selection_work_units = selection.work_units.saturating_add(
@@ -188,7 +194,7 @@ pub(super) fn prepare<Schema: ApplicationSchema, Operation, Input, Scope>(
     );
     let target_rendering = program_revision_rendering(target);
     admission.validate_current_authority().map_err(|cause| WorthQueryBranchAdoptionPreparationDenial::Authorization(super::super::authorization::WorthQueryProgramAdoptionAuthorizationDenial::Authorization(cause)))?;
-    let candidate = graph.with_runtime_mut(execution, |runtime| {
+    let candidate = graph.with_runtime(execution, |runtime| {
         let mut batch =
             WorkerIntentBatch::new("application-program-adoption").push(MutationIntent::Entity(
                 EntityMutationIntent::UpdateFields(UpdateEntityFieldsIntent {

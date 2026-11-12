@@ -75,15 +75,6 @@ impl RetainedInputCutoffCandidate {
         super::required_publication::head::SelectedRequiredPublicationHead::retain(&self.cell)
     }
 
-    pub(in crate::domain_computation::primary_graph) fn retained_required_publication(
-        &self,
-    ) -> Option<worth_relational::facade::mvcc::RelationalRequiredOutputPublication> {
-        self.recorded()
-            .required_publication
-            .clone()
-            .or_else(|| self.originating_recorded()?.required_publication.clone())
-    }
-
     pub(in crate::domain_computation::primary_graph) fn prepared_input_key(
         &self,
     ) -> Option<&PreparedInputReuseKey> {

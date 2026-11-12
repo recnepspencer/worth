@@ -39,7 +39,11 @@ impl CompositeHistoryCatalog {
             .get(identity)
             .and_then(|slot| slot.get())
             .ok_or(Denial::MissingCommit)?;
-        let publication = entry.publication.as_ref().ok_or(Denial::NotPerformed)?;
+        let publication = entry
+            .publication
+            .as_ref()
+            .and_then(|evidence| evidence.live())
+            .ok_or(Denial::NotPerformed)?;
         if publication.facts().is_none() {
             return Err(Denial::NotPerformed);
         }

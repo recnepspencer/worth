@@ -6,6 +6,7 @@ impl WorthQueryRegisteredProviderEffects {
     pub(in crate::domain_computation::primary_graph::application_attempt::provider_binding) fn bind_registration_intents(
         self,
         provider: &crate::domain_computation::primary_graph::provider::WorthQueryPrimaryGraphProvider,
+        product: &worth_runtime_world::facade::ProductBranchObservation,
         emitted_effect_count: u64,
         aftermath_causality: Option<
             &crate::domain_computation::application_aftermath::WorthQueryPendingAftermathCausality,
@@ -22,6 +23,7 @@ impl WorthQueryRegisteredProviderEffects {
     > {
         let idempotency = dispatch_basis.idempotency;
         let outcome_identity = dispatch_basis.outcome_identity;
+        let has_output_settlement = self.output_binding_type().is_some();
         let mutation_partition = self.mutation_partition;
         let (mut batch, receipt_appendix) = if idempotency.authored_stage_identity().is_some() {
             // The stage's body joins the envelope's one receipt writer. It does
@@ -34,6 +36,8 @@ impl WorthQueryRegisteredProviderEffects {
                 outcome_identity,
                 emitted_effect_count,
                 mutation_partition,
+                product,
+                has_output_settlement,
             );
             (batch, Some(receipt))
         };

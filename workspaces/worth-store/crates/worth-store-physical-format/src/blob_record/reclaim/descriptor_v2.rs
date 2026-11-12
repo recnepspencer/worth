@@ -1,4 +1,5 @@
 use crate::PersistedRecordIdentity;
+use worth_foundational::CanonicalDigestId;
 
 use super::super::envelope::{
     nonzero_16, nonzero_32, visit_canonical_frame, BLOB_RECORD_HEADER_BYTES,
@@ -13,7 +14,7 @@ pub(super) const PAYLOAD_BYTES: usize = 205;
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct ReleasedDropPredecessorV1 {
     descriptor_record: PersistedRecordIdentity,
-    descriptor_frame_sha256: [u8; 32],
+    descriptor_frame_sha256: CanonicalDigestId,
 }
 
 impl ReleasedDropPredecessorV1 {
@@ -23,7 +24,7 @@ impl ReleasedDropPredecessorV1 {
     ) -> Result<Self, BlobRecordDenial> {
         Ok(Self {
             descriptor_record,
-            descriptor_frame_sha256: nonzero_32(descriptor_frame_sha256)?,
+            descriptor_frame_sha256: CanonicalDigestId::new(nonzero_32(descriptor_frame_sha256)?),
         })
     }
 
@@ -31,7 +32,7 @@ impl ReleasedDropPredecessorV1 {
         self.descriptor_record
     }
     pub const fn descriptor_frame_sha256(self) -> [u8; 32] {
-        self.descriptor_frame_sha256
+        *self.descriptor_frame_sha256.bytes()
     }
 }
 
@@ -42,9 +43,9 @@ pub struct BlobReclaimDescriptorV2 {
     store: [u8; 16],
     reclaim_attempt: [u8; 16],
     source_kind: BlobReclaimSourceKind,
-    source_basis_digest: [u8; 32],
+    source_basis_digest: CanonicalDigestId,
     manifest_record: PersistedRecordIdentity,
-    manifest_frame_sha256: [u8; 32],
+    manifest_frame_sha256: CanonicalDigestId,
     manifest_count: u16,
     source_root_generation: u64,
     candidate_root_generation: u64,
@@ -84,9 +85,9 @@ impl BlobReclaimDescriptorV2 {
             store: nonzero_16(store)?,
             reclaim_attempt: nonzero_16(reclaim_attempt)?,
             source_kind,
-            source_basis_digest: nonzero_32(source_basis_digest)?,
+            source_basis_digest: CanonicalDigestId::new(nonzero_32(source_basis_digest)?),
             manifest_record,
-            manifest_frame_sha256: nonzero_32(manifest_frame_sha256)?,
+            manifest_frame_sha256: CanonicalDigestId::new(nonzero_32(manifest_frame_sha256)?),
             manifest_count,
             source_root_generation,
             candidate_root_generation,
@@ -112,10 +113,10 @@ impl BlobReclaimDescriptorV2 {
         emit(&self.store);
         emit(&self.reclaim_attempt);
         emit(&[self.source_kind as u8]);
-        emit(&self.source_basis_digest);
+        emit(self.source_basis_digest.bytes());
         emit(&self.manifest_record.allocation_epoch());
         emit(&self.manifest_record.ordinal().to_le_bytes());
-        emit(&self.manifest_frame_sha256);
+        emit(self.manifest_frame_sha256.bytes());
         emit(&self.manifest_count.to_le_bytes());
         emit(&self.source_root_generation.to_le_bytes());
         emit(&self.candidate_root_generation.to_le_bytes());
@@ -188,13 +189,13 @@ impl BlobReclaimDescriptorV2 {
         self.source_kind
     }
     pub const fn source_basis_digest(self) -> [u8; 32] {
-        self.source_basis_digest
+        *self.source_basis_digest.bytes()
     }
     pub const fn manifest_record(self) -> PersistedRecordIdentity {
         self.manifest_record
     }
     pub const fn manifest_frame_sha256(self) -> [u8; 32] {
-        self.manifest_frame_sha256
+        *self.manifest_frame_sha256.bytes()
     }
     pub const fn manifest_count(self) -> u16 {
         self.manifest_count

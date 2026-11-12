@@ -47,13 +47,14 @@ impl RootSchemaReadmissionCatalog {
     pub(super) fn readmit_root(
         &mut self,
         lane: &crate::storage::substrate::maintenance::ReconstructionLane<'_>,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         restored: &RelationalRuntime,
         image: &DurableBranchRootImage,
         envelope: &crate::history::data::CanonicalCommitEnvelope,
     ) -> Result<Arc<crate::branch::RelationalBranchRootSchemaAuthority>, RelationalRecoveryStop>
     {
         if image.format_version == 0 {
-            return self.readmit_legacy_root(restored, image, envelope);
+            return self.readmit_legacy_root(execution, restored, image, envelope);
         }
         validate_root_image_integrity(lane, image)?;
         if let Some(authority) = self.admitted.get(&image.schema_carrier_digest) {
@@ -67,24 +68,40 @@ impl RootSchemaReadmissionCatalog {
             }
             return Ok(Arc::clone(authority));
         }
-        self.readmit_new_carrier(restored, image, envelope)
+        self.readmit_new_carrier(execution, restored, image, envelope)
     }
 
     fn readmit_legacy_root(
         &mut self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         restored: &RelationalRuntime,
         image: &DurableBranchRootImage,
         envelope: &crate::history::data::CanonicalCommitEnvelope,
     ) -> Result<Arc<crate::branch::RelationalBranchRootSchemaAuthority>, RelationalRecoveryStop>
     {
+        let expected = restored
+            .config
+            .schema
+            .registry
+            .snapshot_for_compilation(crate::schema::SchemaCompilationControl::Request(*execution))
+            .map_err(RelationalRecoveryStop::Request)?;
+        if expected != envelope.schema_authority {
+            return Err(schema_mismatch(format!(
+                "legacy branch-root image `{}` has no exact live schema authority",
+                image.commit_id.0
+            ))
+            .into());
+        }
         let allocation_id = self.issue_authority_id()?;
         crate::branch::RelationalBranchRootSchemaAuthority::readmit_exact(
             allocation_id,
             restored.config.schema.registry.clone(),
             active_contracts(&restored.schema_contract_runtime.aspect_contract_plans),
-            &envelope.schema_authority,
+            &expected,
             envelope.descriptor_semantics_version,
+            crate::schema::SchemaCompilationControl::Request(*execution),
         )
+        .map_err(RelationalRecoveryStop::Request)?
         .ok_or_else(|| {
             schema_mismatch(format!(
                 "legacy branch-root image `{}` has no exact live schema authority",
@@ -96,6 +113,7 @@ impl RootSchemaReadmissionCatalog {
 
     fn readmit_new_carrier(
         &mut self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         restored: &RelationalRuntime,
         image: &DurableBranchRootImage,
         envelope: &crate::history::data::CanonicalCommitEnvelope,
@@ -124,7 +142,10 @@ impl RootSchemaReadmissionCatalog {
         }
         // Carrier validation alone cannot substitute the configured source
         // issuer. First bind the complete durable meaning to this envelope.
-        if registry.authority_snapshot() != envelope.schema_authority {
+        let expected = registry
+            .snapshot_for_compilation(crate::schema::SchemaCompilationControl::Request(*execution))
+            .map_err(RelationalRecoveryStop::Request)?;
+        if expected != envelope.schema_authority {
             return Err(schema_mismatch(format!(
                 "branch-root image `{}` executable schema differs from its envelope",
                 image.commit_id.0
@@ -137,7 +158,12 @@ impl RootSchemaReadmissionCatalog {
                 .schema_authority
                 .projected_member_domains
                 .is_empty())
-            && configured.authority_snapshot() == envelope.schema_authority
+            && configured
+                .snapshot_for_compilation(crate::schema::SchemaCompilationControl::Request(
+                    *execution,
+                ))
+                .map_err(RelationalRecoveryStop::Request)?
+                == envelope.schema_authority
         {
             // Installed typed rules/layouts already retain these genuine entry
             // handles. Exact admitted meaning preserves their original issuer;
@@ -156,9 +182,11 @@ impl RootSchemaReadmissionCatalog {
             allocation_id,
             registry,
             retained_contracts,
-            &envelope.schema_authority,
+            &expected,
             envelope.descriptor_semantics_version,
+            crate::schema::SchemaCompilationControl::Request(*execution),
         )
+        .map_err(RelationalRecoveryStop::Request)?
         .ok_or_else(|| {
             schema_mismatch(format!(
                 "branch-root image `{}` executable schema differs from its envelope",
@@ -180,15 +208,21 @@ impl RootSchemaReadmissionCatalog {
     }
 }
 
-fn validate_root_image_integrity(
+pub(super) fn validate_root_image_integrity(
     lane: &crate::storage::substrate::maintenance::ReconstructionLane<'_>,
     image: &DurableBranchRootImage,
 ) -> Result<(), DurabilityError> {
     if image.format_version != DurableBranchRootImage::CURRENT_FORMAT_VERSION {
-        return Err(corrupt_checkpoint(format!(
-            "unsupported branch-root image version `{}`",
-            image.format_version
-        )));
+        return Err(DurabilityError::new(
+            crate::durability::data::RecoveryFailureClass::UnsupportedBranchRootImageVersion {
+                found: image.format_version,
+                supported: DurableBranchRootImage::CURRENT_FORMAT_VERSION,
+            },
+            format!(
+                "unsupported branch-root image version `{}`",
+                image.format_version
+            ),
+        ));
     }
     let digest = crate::durability::data::branch_root_image_digest(
         lane,

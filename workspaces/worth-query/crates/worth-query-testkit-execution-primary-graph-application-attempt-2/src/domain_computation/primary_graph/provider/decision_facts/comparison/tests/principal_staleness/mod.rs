@@ -33,7 +33,7 @@ impl PrincipalStalenessWorthQueryPrimaryGraphProviderForTest for WorthQueryPrima
             fact,
             WorthQueryPrimaryGraphApplicationDecisionFact::Principal(_)
         ));
-        let snapshot = (*self.graph_for_test()).with_runtime_mut_for_test(execution, |runtime| {
+        let snapshot = (*self.graph_for_test()).with_runtime_for_test(execution, |runtime| {
             let (_, basis) = runtime
                 .observe_branch(&runtime.main_branch_identity())
                 .unwrap();

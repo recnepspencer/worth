@@ -67,3 +67,6 @@ pub(crate) use counters::{
 };
 pub(crate) use integrity_observations::WalIntegrityObservationBuilder;
 pub(crate) use session::{RecoveredRecoverySessionReceipt, RecoverySession};
+#[cfg(test)]
+#[path = "mod_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;

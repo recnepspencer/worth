@@ -7,6 +7,7 @@ use std::sync::{
 use worth_query_decl::facade::application_query::*;
 use worth_query_host::facade::application_invariants::*;
 mod courts;
+mod directory_home;
 pub mod expectation;
 pub mod optional_aspect;
 mod provider;

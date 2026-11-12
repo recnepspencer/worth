@@ -10,8 +10,10 @@ impl WorthQueryProductRuntime {
 
 impl WorthQueryProductRuntime {
     #[doc(hidden)]
-    pub fn owner_for_test(&self) -> &Arc<RuntimeWorldOwner<(), (), (), (), ()>> {
-        &self.owner
+    pub fn inspection_port_for_test(
+        &self,
+    ) -> worth_runtime_world::facade::RuntimeWorldInspectionPort {
+        self.owner.inspection_port()
     }
 }
 
@@ -25,7 +27,7 @@ impl WorthQueryProductRuntime {
 impl WorthQueryProductRuntime {
     #[doc(hidden)]
     pub fn source_for_test(&self) -> &RuntimeBridgeRelationalSource {
-        &self.source
+        self.source()
     }
 }
 
@@ -42,5 +44,17 @@ impl WorthQueryProductRuntime {
     #[doc(hidden)]
     pub fn clock_for_test(&self) -> &WorthQueryProductWorldClock {
         &self.clock
+    }
+}
+
+impl WorthQueryProductRuntime {
+    #[doc(hidden)]
+    pub fn with_execution_placement_for_test<R>(
+        &self,
+        body: impl for<'owner> FnOnce(
+            worth_runtime_world::facade::RuntimeWorldExecutionPlacement<'owner>,
+        ) -> R,
+    ) -> Result<R, crate::domain_computation::primary_graph::WorthQueryAdvancementDenial> {
+        self.with_execution_placement(body)
     }
 }

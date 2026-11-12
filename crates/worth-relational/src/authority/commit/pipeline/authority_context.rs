@@ -11,11 +11,13 @@ use crate::validation::engine::InvariantExecutionResult;
 #[derive(Debug)]
 pub(super) enum CommitAuthorityInput {
     Mutation(PreparedRelationalCommitPlan),
-    Merge(MergeCommitMutationPlan),
+    Merge(crate::mvcc::OwnedMergePlan),
 }
 
 #[derive(Debug)]
 pub(crate) struct AuthoritativeCommitContext {
+    pub(super) recovered_index_catalog: Option<crate::durability::authority::RecoveredIndexCatalog>,
+    pub(super) caller_association: Option<crate::mvcc::RelationalCallerAssociation>,
     pub(super) required_output_publication: Option<crate::mvcc::RequiredOutputPublicationAdmission>,
     pub(super) required_output_materialization:
         Option<std::sync::Arc<crate::history::data::CanonicalRequiredOutputMaterialization>>,
@@ -59,10 +61,19 @@ pub(super) struct MergeExecutionAccounting {
 }
 
 impl AuthoritativeCommitContext {
+    pub(crate) fn with_recovered_index_catalog(
+        mut self,
+        catalog: crate::durability::authority::RecoveredIndexCatalog,
+    ) -> Self {
+        self.recovered_index_catalog = Some(catalog);
+        self
+    }
+
     pub(crate) fn from_validated_proposal(
         candidate: crate::mvcc::ValidatedRelationalProposal,
     ) -> Self {
-        let crate::mvcc::ValidatedRelationalProposal {
+        let crate::mvcc::ValidatedProposalState {
+            caller_association,
             required_output_publication,
             required_output_materialization,
             mutation_authority,
@@ -81,7 +92,7 @@ impl AuthoritativeCommitContext {
             validation_complexity_delta,
             commit_work_budget,
             ..
-        } = candidate;
+        } = candidate.into_state();
         let bulk_mutation_telemetry = strategy_bulk_mutation_batch
             .as_ref()
             .map(telemetry_from_strategy_batch)
@@ -92,6 +103,8 @@ impl AuthoritativeCommitContext {
                 )
             });
         Self {
+            recovered_index_catalog: None,
+            caller_association,
             required_output_publication,
             required_output_materialization,
             commit_work_budget,
@@ -122,7 +135,7 @@ impl AuthoritativeCommitContext {
 
     pub(crate) fn from_merge(
         validation_input: RelationalTransactionValidationInput,
-        merge_plan: MergeCommitMutationPlan,
+        merge_plan: crate::mvcc::OwnedMergePlan,
     ) -> Result<Self, TransactionCommitError> {
         Self::from_merge_execution(validation_input, merge_plan, None, None)
     }
@@ -135,7 +148,7 @@ impl AuthoritativeCommitContext {
     ) -> Result<Self, TransactionCommitError> {
         Self::from_merge_execution(
             validation_input,
-            merge_plan,
+            crate::mvcc::OwnedMergePlan::from_ordinary_plan(merge_plan),
             Some(diagnostics_plan),
             Some(complexity_baseline),
         )
@@ -143,23 +156,26 @@ impl AuthoritativeCommitContext {
 
     fn from_merge_execution(
         validation_input: RelationalTransactionValidationInput,
-        merge_plan: MergeCommitMutationPlan,
+        merge_plan: crate::mvcc::OwnedMergePlan,
         diagnostics_plan: Option<crate::merge::data::MergeExecutionDiagnosticsPlan>,
         complexity_baseline: Option<crate::performance::data::RuntimeComplexityCounters>,
     ) -> Result<Self, TransactionCommitError> {
-        validate_merge_context_proof(&validation_input, &merge_plan)?;
+        validate_merge_context_proof(&validation_input, merge_plan.plan())?;
 
         Ok(Self {
+            recovered_index_catalog: None,
+            caller_association: None,
             required_output_publication: None,
             required_output_materialization: None,
             commit_work_budget: None,
             _mutation_authority: None,
-            transaction_id: merge_plan.transaction_id,
+            transaction_id: merge_plan.plan().transaction_id,
             validation_input,
             phase_timing: CommitPhaseTiming::default(),
             merge_execution_accounting: Some(MergeExecutionAccounting {
-                admitted_records: merge_plan.structural_summary.executed_record_count,
+                admitted_records: merge_plan.plan().structural_summary.executed_record_count,
                 emitted_mutation_intents: merge_plan
+                    .plan()
                     .structural_summary
                     .emitted_mutation_intent_count,
             }),

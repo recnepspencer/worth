@@ -1,5 +1,6 @@
 //! An actual ReuseExact alias keeps its selected Source after Native owner close.
 use super::*;
+use crate::application_invariant_acceptance::managed_index::prefix_observation;
 
 #[test]
 fn closing_native_owner_keeps_retained_alias_read_eviction_and_refill_valid() {
@@ -24,7 +25,7 @@ fn run() {
 fn journey() {
     let calls = Arc::new(provider::Calls::default());
     let configuration = Configuration::new(Arc::clone(&calls));
-    let prefix_calls = Arc::new(prefix::Calls::default());
+    let prefix_calls = Arc::new(prefix_observation::Calls::default());
     let prefix_rules = Arc::new(prefix_rule::Calls::new(Arc::clone(&prefix_calls)));
     let world = host::install_geometry(prefix_calls, prefix_rules, configuration);
     let scope = authentication::request_scope();

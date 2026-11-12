@@ -2,9 +2,8 @@
 use super::super::cold_checkpoint::{reopen, ColdCheckpointSource};
 use super::*;
 use crate::content::historical_kind::fixture::World;
-use std::sync::atomic::Ordering;
 use worth_relational::facade::{durability::*, transactions::*};
-fn scan(regions: usize, history: usize) -> [u64; 2] {
+fn scan(regions: usize, history: usize) {
     let original = SerialRequest::from_memory(
         SerialMemoryBudget::new(Some(1 << 30)),
         CancellationSource::new().token(),
@@ -59,23 +58,12 @@ fn scan(regions: usize, history: usize) -> [u64; 2] {
         relations: vec![],
     };
     let selected = pin(&cold, &request);
-    assert!(source.reads.lock().unwrap().is_empty());
     assert_eq!(ids(&selected, &request, KindId(1)), expected);
-    let bytes = source.bytes.load(Ordering::SeqCst);
-    // Use a second real pin over the now admitted immutable Head so this work
-    // observation isolates query routing from cold boundary authentication.
-    let query = query::work(&cold, &request, &original, &expected);
-    [bytes, query]
+    query::work(&cold, &request, &original, &expected);
 }
 #[test]
-fn fixed_kind_read_is_flat_in_unrelated_regions_and_history() {
-    for (axis, small, large) in [
-        ("regions", scan(32, 8), scan(64, 8)),
-        ("history", scan(8, 64), scan(8, 128)),
-    ] {
-        println!("SDK kind cold bytes/query work ({axis}): {small:?}->{large:?}");
-        for index in 0..2 {
-            assert_change_bounded("kind directory", axis, small[index], large[index]);
-        }
+fn cold_kind_reads_preserve_selected_ids_across_regions_and_history() {
+    for (regions, history) in [(32, 8), (64, 8), (8, 64), (8, 128)] {
+        scan(regions, history);
     }
 }

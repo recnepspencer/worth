@@ -7,6 +7,8 @@ use worth_execution::{
 type ConsultRun<T, E> = (Result<T, E>, u64, usize);
 type ReadDoor<'a, T, E> = dyn Fn(&ExecutionRequest<'_, '_>) -> Result<T, E> + 'a;
 type CountedDoor<'a, T, E> = dyn Fn(&ReadDoor<'_, T, E>) -> ConsultRun<T, E> + 'a;
+type ScopedCountedDoor<'a, T, E> =
+    dyn Fn(Option<&ExecutionRequest<'_, '_>>, &ReadDoor<'_, T, E>) -> ConsultRun<T, E> + 'a;
 pub fn every_consult<T: Eq + Debug, E: Eq + Debug>(
     door: impl Fn(&ExecutionRequest<'_, '_>) -> Result<T, E>,
     cancelled: E,
@@ -81,6 +83,23 @@ pub fn every_consult_under<T: Eq + Debug, E: Eq + Debug>(
     );
 }
 
+/// Opens a fresh real parent and door for each injection, before observation.
+pub fn every_consult_in_fresh_scope<T: Eq + Debug, E: Eq + Debug>(
+    healthy_work: u64,
+    with_door: impl Fn(&ScopedCountedDoor<'_, T, E>) -> ConsultRun<T, E>,
+    cancelled: E,
+    exhausted: E,
+) {
+    selected_consult_answers_in_scopes(
+        healthy_work,
+        || true,
+        with_door,
+        false,
+        |at, _, error| assert_eq!(error, &cancelled, "consult {at}"),
+        |required, error| assert_eq!(error, &exhausted, "charge {required}"),
+    );
+}
+
 fn selected_consult_answers_under<T: Eq + Debug, E: Eq + Debug>(
     parent: Option<&ExecutionRequest<'_, '_>>,
     healthy_work: u64,
@@ -90,12 +109,30 @@ fn selected_consult_answers_under<T: Eq + Debug, E: Eq + Debug>(
     assert_cancelled: impl Fn(usize, usize, &E),
     assert_work: impl Fn(u64, &E),
 ) {
+    selected_consult_answers_in_scopes(
+        healthy_work,
+        observes,
+        |counted| with_door(&|door| counted(parent, door)),
+        all_charges,
+        assert_cancelled,
+        assert_work,
+    );
+}
+
+fn selected_consult_answers_in_scopes<T: Eq + Debug, E: Eq + Debug>(
+    healthy_work: u64,
+    observes: impl Fn() -> bool + 'static,
+    with_door: impl Fn(&ScopedCountedDoor<'_, T, E>) -> ConsultRun<T, E>,
+    all_charges: bool,
+    assert_cancelled: impl Fn(usize, usize, &E),
+    assert_work: impl Fn(u64, &E),
+) {
     let _observation =
         crate::facade::primary_graph::WorthQueryExecutionObservation::install_on_this_thread();
     let observes = std::rc::Rc::new(observes);
     let quotes = std::cell::RefCell::new(Vec::new());
     let run = |k: Option<usize>, ceiling: u64| {
-        with_door(&|door| {
+        with_door(&|parent, door| {
             let source = CancellationSource::new();
             let cancel = source.clone();
             let host =
@@ -151,7 +188,12 @@ fn selected_consult_answers_under<T: Eq + Debug, E: Eq + Debug>(
             let indices = selected_indices.borrow();
             let origins = observation.stop_origins_for_test();
             let answered_at = if let Some(at) = k.filter(|_| answer.is_err()) {
-                let injected = indices[at - 1];
+                let injected = *indices.get(at - 1).unwrap_or_else(|| {
+                    panic!(
+                        "door stopped before injection {at}, reached {} consults: {answer:?}",
+                        indices.len()
+                    )
+                });
                 let first = *answer_origins
                     .first()
                     .expect("the door emitted its stopped cause");
@@ -167,12 +209,8 @@ fn selected_consult_answers_under<T: Eq + Debug, E: Eq + Debug>(
                     assert!(*origin >= injected, "no stop predates the injection");
                     assert!(*emitted >= *origin, "a re-report follows its origin");
                 }
-                // The trace retains every origin, including emissions outside
-                // the selected window. The returned index is the selected
-                // injection plus the global consult distance to first emission.
-                // It proves emission order, not the returned value:
-                // a stop returned at selected consult 15 and a swallowed result
-                // re-reported by the same-meter latch at 16 are indistinguishable.
+                // Include emissions outside the window. Distance proves order,
+                // but cannot distinguish an original return from a latched stop.
                 at + (first.0 - injected)
             } else {
                 count.get()

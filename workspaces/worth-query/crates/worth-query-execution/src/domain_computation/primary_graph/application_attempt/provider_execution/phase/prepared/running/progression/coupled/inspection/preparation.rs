@@ -48,7 +48,7 @@ impl<'run> ApprovedCoupledWriter<'run> {
                     .downcast_ref::<CoupledWriterAdmission<S, B>>()
                     .expect("installed executor retains its own nominal writer");
                 let context = super::super::super::commit_resolution::WorthQueryAuthorizedCompareContext::from_admission(
-                    &application.runtime.primary_provider, &typed.admission, typed.idempotency,
+                    &application.runtime.primary_provider, &custody.original_completion, &typed.admission, typed.idempotency,
                     custody.lease.product().publication_binding(), custody.dispatch_outbox.take(), None, terminal,
                 );
                 let outcome = super::super::super::commit_resolution::finish_authorized_compare(
@@ -85,6 +85,11 @@ impl CommitPreparedCoupledWriter<'_> {
             self.prepared.terminal_binding(), stage, identity, source, binding,
         )
     }
+    pub(in crate::domain_computation::primary_graph) fn has_original_completion(&self) -> bool {
+        self.custody
+            .original_completion
+            .has_completion(&self.terminal_binding())
+    }
     pub(in crate::domain_computation::primary_graph) fn member(
         &self,
         producer: &str,
@@ -112,19 +117,25 @@ impl CommitPreparedCoupledWriter<'_> {
         let terminal = prepared.terminal_binding();
         let provider = &application.runtime.primary_provider;
         let product = custody.lease.product().publication_binding();
-        let compared = prepared.commit_with(|prepared| {
-            prepared.commit_using(|_, session| {
-                provider
-                    .complete_coupled_session(execution, &terminal, session, &product, unpublished)
-                    .map(crate::domain_computation::WorthQueryProviderCommitCompletion::Committed)
-            })
-        });
+        let compared =
+            prepared.commit_with(|prepared| {
+                prepared.commit_using(|_, session| {
+                    provider.complete_coupled_session(
+                    execution,
+                    &terminal,
+                    &custody.original_completion,
+                    session,
+                    &product,
+                    unpublished,
+                ).map(crate::domain_computation::WorthQueryProviderCommitCompletion::Committed)
+                })
+            });
         let typed = custody
             .typed
             .downcast_ref::<CoupledWriterAdmission<S, B>>()
             .expect("installed participant retains its nominal admission");
         let context = super::super::super::commit_resolution::WorthQueryAuthorizedCompareContext::from_admission(
-            provider, &typed.admission, typed.idempotency, product, custody.dispatch_outbox.take(), None, terminal,
+            provider, &custody.original_completion, &typed.admission, typed.idempotency, product, custody.dispatch_outbox.take(), None, terminal,
         );
         let outcome = super::super::super::commit_resolution::finish_authorized_compare(
             execution, compared, context,

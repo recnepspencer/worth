@@ -18,7 +18,7 @@ impl ReadLockProbeForTest {
     pub fn acquisitions_for_test(&self) -> u64 {
         self.owner.lock_acquisitions_for_test()
     }
-    pub fn with_owner_lock_for_test<T>(
+    pub fn with_owner_borrow_for_test<T>(
         &self,
         request: &worth_execution::ExecutionRequest<'_, '_>,
         read: impl FnOnce() -> T,
@@ -28,7 +28,7 @@ impl ReadLockProbeForTest {
 }
 
 impl ReadLockProbeForTest {
-    pub(in crate::domain_computation) fn retain_snapshot_for_test(
+    pub fn retain_snapshot_for_test(
         &self,
         request: &worth_execution::ExecutionRequest<'_, '_>,
     ) -> worth_relational::facade::snapshots::SnapshotHandle {
@@ -42,7 +42,7 @@ impl ReadLockProbeForTest {
                 .unwrap()
         })
     }
-    pub(in crate::domain_computation) fn release_snapshot_for_test(
+    pub fn release_snapshot_for_test(
         &self,
         snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
     ) {

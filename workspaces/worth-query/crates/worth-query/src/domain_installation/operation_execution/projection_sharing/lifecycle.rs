@@ -60,6 +60,14 @@ impl<D, O, F, L: BasisOperationLane> WorthQuerySharedLiveProjectionLease<D, O, F
         self,
         workspace: &mut WorthQueryWorkspace,
     ) -> WorthQuerySharedProjectionDisposalOutcome<D, O, F, L> {
+        worth_execution::run_with_execution_stack(|| self.dispose_on_execution_stack(workspace))
+    }
+
+    #[inline(never)]
+    fn dispose_on_execution_stack(
+        self,
+        workspace: &mut WorthQueryWorkspace,
+    ) -> WorthQuerySharedProjectionDisposalOutcome<D, O, F, L> {
         let (source, proof, capability, token, admission_counters) = self.into_parts();
         match workspace.release_shared_projection_lease(&capability, token) {
             Ok(release) => WorthQuerySharedProjectionDisposalOutcome::Disposed(

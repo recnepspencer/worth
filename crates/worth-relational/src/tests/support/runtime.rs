@@ -43,8 +43,6 @@ pub(crate) fn test_execution_lease() -> ExecutionResourceLease<'static> {
 pub(crate) enum PerfDiagnosticsPolicy {
     GeometryOperationalHotPath,
     GeometryRichCertification,
-    ChipOperationalHotPath,
-    ChipRichCertification,
 }
 
 pub(crate) fn apply_perf_diagnostics_policy(
@@ -57,12 +55,6 @@ pub(crate) fn apply_perf_diagnostics_policy(
         }
         PerfDiagnosticsPolicy::GeometryRichCertification => {
             RelationalDiagnosticsProfile::geometry_rich_certification()
-        }
-        PerfDiagnosticsPolicy::ChipOperationalHotPath => {
-            RelationalDiagnosticsProfile::chip_operational_hot_path()
-        }
-        PerfDiagnosticsPolicy::ChipRichCertification => {
-            RelationalDiagnosticsProfile::chip_rich_certification()
         }
     };
     runtime.configure_diagnostics_for_test(|configured| *configured = profile);
@@ -130,31 +122,6 @@ pub(crate) fn runtime_with_test_schema_profile_and_chunks(
             scan_packet_size: 256,
         })
         .build()
-        .expect("valid native runtime configuration")
-}
-
-/// A runtime that publishes every commit to a fresh in-crate test medium.
-pub(crate) fn durable_runtime_with_test_schema() -> RelationalRuntime {
-    durable_runtime_with_test_schema_profile(RelationalRuntimeProfile::CertificationCore)
-}
-
-pub(crate) fn durable_runtime_with_test_schema_profile(
-    profile: RelationalRuntimeProfile,
-) -> RelationalRuntime {
-    RelationalRuntimeApi::builder()
-        .profile(profile)
-        .schema_registry(test_schema_registry())
-        .build_durable(TestDurableMedium::new().attachment())
-        .expect("valid native runtime configuration")
-}
-
-pub(crate) fn durable_runtime_with_declared_aspect_schema(
-    cascade_delete_policy: CascadeDeletePolicy,
-) -> RelationalRuntime {
-    RelationalRuntimeApi::builder()
-        .profile(RelationalRuntimeProfile::CertificationCore)
-        .schema_registry(declared_aspect_schema_registry(cascade_delete_policy))
-        .build_durable(TestDurableMedium::new().attachment())
         .expect("valid native runtime configuration")
 }
 

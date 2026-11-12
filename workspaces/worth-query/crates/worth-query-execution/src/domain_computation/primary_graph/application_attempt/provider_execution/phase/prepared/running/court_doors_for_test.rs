@@ -81,7 +81,7 @@ impl<Schema, Operation, Input, Scope>
         Scope,
     >, WorthQueryApplicationSnapshotLease, WorthQueryPreparedApplicationProviderAttempt, crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationCommitOutcomeIdentity, Option<LocalWorkflowSettlementPublication>, crate::domain_computation::authorization::WorthQueryProviderCommitAuthorization, WorthQueryApplicationIdempotencyBinding, crate::domain_computation::WorthQueryRunningDirectRun, crate::domain_computation::provider_session::WorthQueryMutationRunBinding, WorthQueryApplicationAttemptBasis, Option<
         crate::domain_computation::application_aftermath::WorthQueryPendingAftermathCausality,
-    >,){
+    >,super::completion_storage::ApplicationCommitCompletionStorage,){
         (
             self.coupled_outputs,
             self.admission,
@@ -95,6 +95,7 @@ impl<Schema, Operation, Input, Scope>
             self.mutation_run,
             self.attempt_basis,
             self.aftermath_causality,
+            self.completion_storage,
         )
     }
 }

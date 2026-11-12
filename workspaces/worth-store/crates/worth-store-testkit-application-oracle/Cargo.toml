@@ -1,0 +1,32 @@
+[package]
+name = "worth-store-testkit-application-oracle"
+autotests = false
+publish = false
+edition.workspace = true
+rust-version.workspace = true
+version.workspace = true
+license.workspace = true
+
+[dependencies]
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+worth-query-host = { path = "../../../worth-query/crates/worth-query-host" }
+worth-query-testkit-host = { path = "../../../worth-query/crates/worth-query-testkit-host" }
+worth-store-application = { path = "../worth-store-application", features = ["certification-test-authority"] }
+worth-query-testkit-installation = { path = "../../../worth-query/crates/worth-query-testkit-installation" }
+worth-execution = { path = "../../../../crates/worth-execution" }
+worth-proof = { path = "../../../../crates/worth-proof" }
+worth-foundational = { path = "../../../../crates/worth-foundational" }
+worth-relational = { path = "../../../../crates/worth-relational" }
+worth-runtime-bridge = { path = "../../../../crates/worth-runtime-bridge" }
+worth-runtime-world = { path = "../../../../crates/worth-runtime-world" }
+worth-signal = { path = "../../../../crates/worth-signal" }
+worth-store.workspace = true
+worth-store-relational.workspace = true
+
+[lib]
+test = false
+doctest = false
+
+[lints]
+workspace = true

@@ -827,20 +827,24 @@ Host code that receives a raw `WorthQueryApplicationCommitOutcome` splits it wit
 ```rust,no_run
 # use worth_query_host::facade::primary_graph::{
 #     WorthQueryApplicationCommitOutcome, WorthQueryApplicationCommitReceipt,
+#     WorthQueryApplicationLandedCommit, WorthQueryRecoveredApplicationCommitReceipt,
 #     WorthQueryApplicationUncommitted,
 # };
-# fn publish(_: WorthQueryApplicationCommitReceipt, _replayed: bool) {}
+# fn publish(_: WorthQueryApplicationCommitReceipt) {}
+# fn observe(_: WorthQueryRecoveredApplicationCommitReceipt) {}
 # fn handle_uncommitted(_: WorthQueryApplicationUncommitted) {}
 # fn settle(commit_outcome: WorthQueryApplicationCommitOutcome) {
 match commit_outcome.landed() {
-    Ok((receipt, replayed)) => publish(receipt, replayed),
+    Ok(WorthQueryApplicationLandedCommit::Live { receipt }) => publish(receipt),
+    Ok(WorthQueryApplicationLandedCommit::Recovered(receipt)) => observe(receipt),
     Err(uncommitted) => handle_uncommitted(uncommitted),
 }
 # }
 ```
 
-`Ok((receipt, replayed))` is a landed commit; `replayed` is `true` when the
-landing replays an earlier commit of the same idempotency. `Err` carries a
+`Ok(Live { receipt })` carries live receipt custody. `Ok(Recovered(observation))`
+describes the original commitment without granting publication or settlement
+authority. `Err` carries a
 `WorthQueryApplicationUncommitted`, which holds every commit terminal except a
 landed commit. Match each of its variants:
 

@@ -89,6 +89,11 @@ where
             .chain(self.inactive_bindings.values().flat_map(|binding| binding.retained_wakes.iter())))
     }
 
+    fn take_released_managed_cleanup(&mut self) -> Option<crate::domain_computation::primary_graph::WorthQueryApplicationManagedCleanupReceipt> {
+        super::super::retained_managed_cleanup::take_released_original(self.retained_wakes.iter_mut()
+            .chain(self.inactive_bindings.values_mut().flat_map(|binding| binding.retained_wakes.iter_mut())))
+    }
+
     fn installation_canonical_work(
         &self,
     ) -> worth_query_installation::facade::WorthQueryCanonicalWorkEvidence {

@@ -52,7 +52,7 @@ pub(crate) fn assert_flat_history_samples(
 ) {
     let mut samples = Vec::new();
     for &history_len in history_lengths {
-        let (mut world, _) = certified_supply_chain_world(execution, worth_testkit_relational::relational_certification::ordinary_context::world::supply_chain::scale::SupplyChainScale::court());
+        let (world, _) = certified_supply_chain_world(execution, worth_testkit_relational::relational_certification::ordinary_context::world::supply_chain::scale::SupplyChainScale::court());
         let scale = worth_testkit_relational::relational_certification::ordinary_context::world::supply_chain::scale::SupplyChainScale::court();
         let branch = BranchId(format!("history-{history_len}"));
         let (_, source) = world

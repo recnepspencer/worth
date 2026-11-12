@@ -26,6 +26,8 @@ where
             .runtime
             .bridge
             .conditional()
+            .memory()
+            .map_err(ResourceCause::Bridge)?
             .release_process_local_completion_denial(owner, admission)
             .map_err(ResourceCause::Managed)?;
     }
@@ -37,6 +39,8 @@ where
             .runtime
             .bridge
             .conditional()
+            .memory()
+            .map_err(ResourceCause::Bridge)?
             .dequeue_managed_owned_async_queue(owner, 1)
             .map_err(ResourceCause::Managed)?;
         candidate.queue = ResourceCandidateQueue::Drained(drained);
@@ -101,6 +105,8 @@ where
             .runtime
             .bridge
             .conditional()
+            .memory()
+            .map_err(ResourceCause::Bridge)?
             .finish_managed_owned_async_wake_cleanup(owner)
             .map_err(ResourceCause::Managed)?;
     }
@@ -111,6 +117,8 @@ where
             .runtime
             .bridge
             .conditional()
+            .memory()
+            .map_err(ResourceCause::Bridge)?
             .finish_owned_async_completion_timeout_cleanup(completion)
             .map_err(ResourceCause::Completion)?;
     }
@@ -119,6 +127,8 @@ where
             .runtime
             .bridge
             .conditional()
+            .memory()
+            .map_err(ResourceCause::Bridge)?
             .abort_process_local_owned_async_retry(owner)
             .map_err(ResourceCause::Managed)?;
     }
@@ -128,6 +138,8 @@ where
             .runtime
             .bridge
             .conditional()
+            .memory()
+            .map_err(ResourceCause::Bridge)?
             .cancel_managed_owned_async_request(owner)
             .map_err(ResourceCause::Managed)?;
     }
@@ -144,6 +156,8 @@ where
         .runtime
         .bridge
         .conditional()
+        .memory()
+        .map_err(ResourceCause::Bridge)?
         .release_process_local_managed_request(owner, completion)
     {
         Ok(released) => occurrence.lifecycle = ResourceLifecycle::Released(released),

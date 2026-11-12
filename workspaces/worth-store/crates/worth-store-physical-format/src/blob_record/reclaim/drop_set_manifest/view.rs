@@ -1,4 +1,5 @@
 use sha2::{Digest, Sha256};
+use worth_foundational::CanonicalDigestId;
 
 use crate::PersistedRecordIdentity;
 
@@ -15,7 +16,7 @@ pub(in crate::blob_record::reclaim) struct DropSetManifestV1View<'a> {
     store: [u8; 16],
     reclaim_attempt: [u8; 16],
     source_basis: FailedIngestReclaimBasisV1,
-    dropped_digest: [u8; 32],
+    dropped_digest: CanonicalDigestId,
     dropped: &'a [u8],
     count: u16,
 }
@@ -61,7 +62,7 @@ impl<'a> DropSetManifestV1View<'a> {
             store,
             reclaim_attempt,
             source_basis,
-            dropped_digest,
+            dropped_digest: CanonicalDigestId::new(dropped_digest),
             dropped,
             count,
         })
@@ -80,7 +81,7 @@ impl<'a> DropSetManifestV1View<'a> {
         self.source_basis.digest(self.store)
     }
     pub const fn dropped_digest(self) -> [u8; 32] {
-        self.dropped_digest
+        *self.dropped_digest.bytes()
     }
     pub const fn count(self) -> u16 {
         self.count

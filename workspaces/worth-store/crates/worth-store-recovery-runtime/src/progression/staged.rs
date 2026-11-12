@@ -3,15 +3,14 @@ use worth_store_physical_format::store_namespace::StableStoreIdentity;
 use worth_store_recovery_physics::{PhysicalSourceSelection, RecoveryPlanningCounters};
 
 use crate::entry::{
-    AdmittedPlatformAuthority, PhysicalRecoveryOutcome, PhysicalRecoverySourceDenial,
-    PhysicalRecoveryStagingCounters, PhysicalRecoveryStagingSettlementLedger,
+    PhysicalRecoveryOutcome, PhysicalRecoverySourceDenial, PhysicalRecoveryStagingCounters,
+    PhysicalRecoveryStagingSettlementLedger,
 };
 use crate::handoff::RecoveryOperationFateSet;
-use crate::orchestration::{RecoveryCoordination, ResidentSourceSelection};
 
 use super::{
-    PhysicalRecoveryDiscoveryCounters, RecoveryBaseImagePlan, RecoveryIntegrityEvidence,
-    RecoveryPublicationPlan, RecoveryQuiescencePlan,
+    PhysicalRecoveryDiscoveryCounters, RecoveryBaseImagePlan, RecoveryPublicationPlan,
+    RecoveryQuiescencePlan,
 };
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -23,134 +22,75 @@ pub struct ClosedRecoveryStagingGeneration {
 }
 
 pub struct StagedPhysicalRecovery {
-    pub(crate) authority: AdmittedPlatformAuthority,
-    pub(crate) coordination: RecoveryCoordination,
-    pub(crate) selection: ResidentSourceSelection,
-    pub(crate) custody: crate::progression::PlanningCustody,
-    pub(crate) verified_selected_tier_custody:
-        Option<worth_store_recovery_physics::VerifiedSelectedTierEpochCustody>,
-    pub(crate) discovery_counters: PhysicalRecoveryDiscoveryCounters,
-    pub(crate) root_protocol_denials: Vec<PhysicalRecoverySourceDenial>,
-    pub(crate) integrity: RecoveryIntegrityEvidence,
-    pub(crate) freshness: StoreRecoveryBindingFreshnessSample,
-    pub(crate) fates: RecoveryOperationFateSet,
-    pub(crate) planning_counters: RecoveryPlanningCounters,
-    pub(crate) root_protocol_counters: crate::entry::PhysicalRecoveryRootProtocolCounters,
-    pub(crate) base: RecoveryBaseImagePlan,
-    pub(crate) publication: RecoveryPublicationPlan,
-    pub(crate) quiescence: RecoveryQuiescencePlan,
-    pub(crate) closed: ClosedRecoveryStagingGeneration,
-    pub(crate) staging_counters: PhysicalRecoveryStagingCounters,
-    pub(crate) staging_settlements: PhysicalRecoveryStagingSettlementLedger,
-    pub(crate) integrity_trace: crate::integrity_ingress::RecoveryIntegrityIngressTrace,
+    state: StagedStateBacking,
 }
 
+mod state;
+pub(crate) use state::{StagedRecoveryState, StagedStateBacking};
+
 impl StagedPhysicalRecovery {
-    #[allow(clippy::too_many_arguments)]
-    pub(crate) const fn new(
-        authority: AdmittedPlatformAuthority,
-        coordination: RecoveryCoordination,
-        selection: ResidentSourceSelection,
-        custody: crate::progression::PlanningCustody,
-        verified_selected_tier_custody: Option<
-            worth_store_recovery_physics::VerifiedSelectedTierEpochCustody,
-        >,
-        discovery_counters: PhysicalRecoveryDiscoveryCounters,
-        root_protocol_denials: Vec<PhysicalRecoverySourceDenial>,
-        integrity: RecoveryIntegrityEvidence,
-        freshness: StoreRecoveryBindingFreshnessSample,
-        fates: RecoveryOperationFateSet,
-        planning_counters: RecoveryPlanningCounters,
-        root_protocol_counters: crate::entry::PhysicalRecoveryRootProtocolCounters,
-        base: RecoveryBaseImagePlan,
-        publication: RecoveryPublicationPlan,
-        quiescence: RecoveryQuiescencePlan,
-        closed: ClosedRecoveryStagingGeneration,
-        staging_counters: PhysicalRecoveryStagingCounters,
-        staging_settlements: PhysicalRecoveryStagingSettlementLedger,
-        integrity_trace: crate::integrity_ingress::RecoveryIntegrityIngressTrace,
-    ) -> Self {
-        Self {
-            authority,
-            coordination,
-            selection,
-            custody,
-            verified_selected_tier_custody,
-            discovery_counters,
-            root_protocol_denials,
-            integrity,
-            freshness,
-            fates,
-            planning_counters,
-            root_protocol_counters,
-            base,
-            publication,
-            quiescence,
-            closed,
-            staging_counters,
-            staging_settlements,
-            integrity_trace,
-        }
+    pub(crate) fn into_state(self) -> StagedRecoveryState {
+        self.state.into_state()
     }
 
     pub fn store_identity(&self) -> StableStoreIdentity {
-        self.authority.media.store_identity()
+        self.state.state().authority.media.store_identity()
     }
     pub const fn closed_generation(&self) -> ClosedRecoveryStagingGeneration {
-        self.closed
+        self.state.state().closed
     }
     pub const fn staging_counters(&self) -> PhysicalRecoveryStagingCounters {
-        self.staging_counters
+        self.state.state().staging_counters
     }
     pub const fn staging_settlements(&self) -> &PhysicalRecoveryStagingSettlementLedger {
-        &self.staging_settlements
+        &self.state.state().staging_settlements
     }
     pub const fn operation_fates(&self) -> &RecoveryOperationFateSet {
-        &self.fates
+        &self.state.state().fates
     }
     pub const fn publication_plan(&self) -> &RecoveryPublicationPlan {
-        &self.publication
+        &self.state.state().publication
     }
     pub const fn base_image(&self) -> &RecoveryBaseImagePlan {
-        &self.base
+        &self.state.state().base
     }
     pub const fn selected_sources(&self) -> &PhysicalSourceSelection {
-        self.selection.facts()
+        self.state.state().selection.facts()
     }
     pub const fn discovery_counters(&self) -> PhysicalRecoveryDiscoveryCounters {
-        self.discovery_counters
+        self.state.state().discovery_counters
     }
     pub fn root_protocol_denials(&self) -> &[PhysicalRecoverySourceDenial] {
-        &self.root_protocol_denials
+        &self.state.state().root_protocol_denials
     }
     pub fn wal_integrity_observations(
         &self,
     ) -> &[crate::entry::PhysicalRecoveryWalIntegrityObservation] {
-        self.integrity.observations().wal()
+        self.state.state().integrity.observations().wal()
     }
     pub const fn freshness_sample(&self) -> &StoreRecoveryBindingFreshnessSample {
-        &self.freshness
+        &self.state.state().freshness
     }
     pub const fn planning_counters(&self) -> RecoveryPlanningCounters {
-        self.planning_counters
+        self.state.state().planning_counters
     }
     pub const fn root_protocol_counters(
         &self,
     ) -> crate::entry::PhysicalRecoveryRootProtocolCounters {
-        self.root_protocol_counters
+        self.state.state().root_protocol_counters
     }
     pub const fn quiescence_plan(&self) -> RecoveryQuiescencePlan {
-        self.quiescence
+        self.state.state().quiescence
     }
     pub fn is_quiescent(&self) -> bool {
-        self.coordination.is_ready()
+        self.state.state().coordination.is_ready()
     }
     pub const fn integrity_observation_count(&self) -> u64 {
-        self.integrity_trace.counters().attempted
+        self.state.state().integrity_trace.counters().attempted
     }
 
     pub fn integrity_observations(&self) -> &[crate::PhysicalRecoveryIntegrityObservation] {
-        self.integrity_trace.observations()
+        self.state.state().integrity_trace.observations()
     }
 
     #[cfg(feature = "certification-test-authority")]
@@ -158,7 +98,9 @@ impl StagedPhysicalRecovery {
         &self,
         stage: worth_store::physical_runtime::PhysicalRecoveryPublicationCommandStage,
     ) {
-        self.coordination
+        self.state
+            .state()
+            .coordination
             .fail_publication_scheduler_settlement_at_for_certification(stage);
     }
 
@@ -167,7 +109,9 @@ impl StagedPhysicalRecovery {
         &self,
         stage: worth_store::physical_runtime::PhysicalRecoveryPublicationCommandStage,
     ) {
-        self.coordination
+        self.state
+            .state()
+            .coordination
             .fail_publication_signal_settlement_at_for_certification(stage);
     }
 
@@ -176,7 +120,7 @@ impl StagedPhysicalRecovery {
     /// Staging effects have escaped, so this is a retained `Blocked` posture,
     /// never a counterfeit no-effect refusal.
     pub fn cancel_before_publication(self) -> PhysicalRecoveryOutcome {
-        let Self {
+        let StagedRecoveryState {
             authority,
             coordination,
             integrity,
@@ -188,7 +132,7 @@ impl StagedPhysicalRecovery {
             staging_settlements,
             integrity_trace,
             ..
-        } = self;
+        } = self.into_state();
         assert!(coordination.shutdown_is_quiescent());
         let store = authority.media.store_identity();
         let session_identity = authority.session.identity();

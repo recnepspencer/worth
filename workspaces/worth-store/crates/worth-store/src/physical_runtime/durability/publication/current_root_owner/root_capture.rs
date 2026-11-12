@@ -100,6 +100,40 @@ impl PhysicalCurrentRootOwner {
         Ok((root, protection, free))
     }
 
+    /// One attempt under the same current-root -> reclaim -> registration
+    /// order as ordinary capture. No I/O, reserve, retry or accepted-lease Drop.
+    pub(in crate::physical_runtime) fn try_capture_read_root(
+        &self,
+        request: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> Result<
+        (
+            DurablePhysicalRootManifest,
+            crate::physical_runtime::stability::PhysicalRootReadLease,
+        ),
+        crate::physical_runtime::PhysicalCheckpointReadProtectionDenial,
+    > {
+        use crate::physical_runtime::PhysicalCheckpointReadProtectionDenial as Failure;
+        request.check_live().map_err(Failure::Request)?;
+        let state = match self.state.try_lock() {
+            Ok(state) => state,
+            Err(std::sync::TryLockError::Poisoned(error)) => error.into_inner(),
+            Err(std::sync::TryLockError::WouldBlock) => return Err(Failure::Busy),
+        };
+        let reclaim = match self.reclaim.try_lock() {
+            Ok(reclaim) => reclaim,
+            Err(std::sync::TryLockError::Poisoned(error)) => error.into_inner(),
+            Err(std::sync::TryLockError::WouldBlock) => return Err(Failure::Busy),
+        };
+        if reclaim.is_some() {
+            return Err(Failure::Protection(
+                crate::physical_runtime::PhysicalReadProtectionDenial::ReclaimFenced,
+            ));
+        }
+        let root = state.current_root.clone();
+        let lease = self.read_protection.try_capture(&root, request)?;
+        Ok((root, lease))
+    }
+
     pub(in crate::physical_runtime) fn capture_read_root(
         &self,
     ) -> Result<

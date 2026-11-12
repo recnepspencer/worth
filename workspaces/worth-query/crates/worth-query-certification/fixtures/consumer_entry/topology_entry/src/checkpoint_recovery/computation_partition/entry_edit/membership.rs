@@ -97,6 +97,10 @@ pub(super) fn build<Schema: TopologySchemaBinding>(
 /// under its number is a new entity, holding every fact a seeded entry
 /// holds. It is made in its first set's context: a set holds only entries
 /// of its own context.
+#[expect(
+    clippy::result_large_err,
+    reason = "The fixture preserves the original typed owner denial."
+)]
 fn create<Schema: TopologySchemaBinding>(
     input: &EntryEdit,
     sets: &[WorthQueryInvariantMutationTarget<Schema, EntrySet>],

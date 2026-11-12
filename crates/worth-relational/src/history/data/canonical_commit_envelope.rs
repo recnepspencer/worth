@@ -21,22 +21,34 @@ use crate::transactions::data::{
 };
 
 mod authored_index_writes;
-mod construction;
+mod index_catalog;
 mod live_managed_source_history;
 mod live_publication_inputs;
 pub(crate) use authored_index_writes::{CanonicalAuthoredIndexWrite, CanonicalAuthoredIndexWrites};
+pub(crate) use index_catalog::CanonicalIndexDefinitionDelta;
+mod descriptive_decode;
+mod original_inputs;
 pub(crate) use live_managed_source_history::LiveManagedSourceHistory;
 pub(crate) use live_publication_inputs::{AppliedPublicationInputAccess, LivePublicationInputs};
+pub use original_inputs::{
+    RelationalIntroducedSchemaObservation, RelationalOriginalInputObservation,
+};
 mod authoritative_artifact_encoding;
+mod control_allocation;
+#[cfg(test)]
 mod embedded_checkpoint;
 mod lineage_projection;
 mod owned_graph_selection;
 mod payload_digest;
 mod retained_entity_selection;
+mod shared;
 pub(crate) use authoritative_artifact_encoding::AuthoritativeArtifactEnvelopeRef;
+pub(crate) use control_allocation::CanonicalEnvelopeControlAllocation;
+#[cfg(test)]
 pub(crate) use embedded_checkpoint::EmbeddedCheckpointEnvelopeRef;
 pub use owned_graph_selection::CanonicalOwnedGraphSelection;
 pub use retained_entity_selection::CanonicalRetainedEntitySelection;
+pub use shared::SharedCanonicalCommitEnvelope;
 #[path = "canonical_commit_envelope/descriptive_touches.rs"]
 mod descriptive_touches;
 mod payload_encoding;
@@ -54,6 +66,7 @@ pub(crate) use required_output_materialization::{
     CanonicalRequiredOutputMaterialization, CanonicalRequiredOutputMaterializationRecord,
 };
 pub(crate) use required_output_origin::validate_authored_restoration_candidate;
+pub(crate) use required_output_origin::CanonicalHistoricalOutputSelection;
 pub(crate) use required_output_origin::{
     CanonicalAuthoredRestoration, CanonicalAuthoredRetirement, CanonicalCoupledAuthoredPublication,
     CanonicalCoupledAuthoredSources, CanonicalOutputMember, CanonicalOutputPublication,
@@ -61,12 +74,99 @@ pub(crate) use required_output_origin::{
     OutputOriginHistory, OwnedValidatedOutputOrigins, ValidatedOutputOrigins,
 };
 
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+mod draft;
+mod readmission_memory;
+pub(crate) use readmission_memory::{
+    CanonicalEnvelopeReadmissionMemory, CodecDeclarationsReadmissionMemory,
+    StrategyReadmissionMemory,
+};
+mod wire_projection;
+pub(crate) use draft::CanonicalCommitEnvelopeDraft;
+pub(crate) use wire_projection::EnvelopeProjection;
+
+/// A complete immutable envelope. Its semantic image exists before it can be
+/// serialized, shared or registered for publication.
+///
+/// ```compile_fail,E0594
+/// use worth_relational::facade::replay::CanonicalCommitEnvelope;
+/// fn cannot_replace_receipt(envelope: &mut CanonicalCommitEnvelope) {
+///     envelope.commit.version_id.0 += 1;
+/// }
+/// ```
+///
+/// The shared unsealed body has no encoder without its complete semantic image:
+/// ```compile_fail,E0277
+/// use worth_relational::facade::replay::CanonicalCommitEnvelope;
+/// fn cannot_encode_an_incomplete_body(envelope: &CanonicalCommitEnvelope) {
+///     let _ = rmp_serde::to_vec_named(&**envelope);
+/// }
+/// ```
+#[derive(Debug)]
 pub struct CanonicalCommitEnvelope {
-    pub(crate) content: crate::content::ContentPublication,
+    original_inputs: std::sync::OnceLock<
+        Option<crate::durability::source_initial_inputs::recorded::RecordedCanonicalInputs>,
+    >,
     /// Live exact-envelope acceleration; deep Clone and all codecs omit it.
-    #[serde(skip)]
     pub(crate) live_managed_source_history: LiveManagedSourceHistory,
+    body: CanonicalCommitEnvelopeBody,
+    semantic_result: std::sync::Arc<crate::transactions::data::RelationalCommitSemanticResult>,
+    // Intrinsic input and body admission outlive every decoded body field.
+    #[allow(
+        dead_code,
+        reason = "Original diagnostic, proof and funding custody remains owned through retirement"
+    )]
+    pub(crate) decoded_bytes: Option<worth_execution::ExecutionImmutableBytes>,
+    #[allow(
+        dead_code,
+        reason = "Original diagnostic, proof and funding custody remains owned through retirement"
+    )]
+    pub(crate) decoded_memory: Option<worth_execution::ExecutionMemoryReservation>,
+    // LAST: real weak-position observers share only this fixed allocation bill.
+    pub(crate) control_allocation: Option<std::sync::Arc<CanonicalEnvelopeControlAllocation>>,
+}
+
+impl PartialEq for CanonicalCommitEnvelope {
+    fn eq(&self, other: &Self) -> bool {
+        self.body == other.body && self.semantic_result == other.semantic_result
+    }
+}
+impl Eq for CanonicalCommitEnvelope {}
+
+impl std::ops::Deref for CanonicalCommitEnvelope {
+    type Target = CanonicalCommitEnvelopeBody;
+    fn deref(&self) -> &Self::Target {
+        &self.body
+    }
+}
+
+impl Serialize for CanonicalCommitEnvelope {
+    fn serialize<S: serde::Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
+        wire_projection::serialize(self, serializer, wire_projection::EnvelopeProjection::Full)
+    }
+}
+
+impl CanonicalCommitEnvelope {
+    pub fn semantic_result(&self) -> &crate::transactions::data::RelationalCommitSemanticResult {
+        &self.semantic_result
+    }
+
+    pub(crate) fn semantic_result_arc(
+        &self,
+    ) -> std::sync::Arc<crate::transactions::data::RelationalCommitSemanticResult> {
+        self.semantic_result.clone()
+    }
+
+    #[cfg(test)]
+    pub(crate) fn body_mut_for_test(&mut self) -> &mut CanonicalCommitEnvelopeBody {
+        &mut self.body
+    }
+}
+
+#[derive(Debug, PartialEq, Eq, Deserialize)]
+pub struct CanonicalCommitEnvelopeBody {
+    pub(crate) content: crate::content::ContentPublication,
+    pub(crate) index_definition_delta: CanonicalIndexDefinitionDelta,
+    pub(crate) caller_association: Option<super::RelationalCallerAssociation>,
     pub(crate) required_output_codec_retirements:
         Vec<std::sync::Arc<CanonicalRequiredOutputCodecRetirement>>,
     #[serde(default)]
@@ -159,7 +259,15 @@ pub(crate) struct CommittedRecordChange<'a> {
     pub record: &'a PublishedAuthoritativeRecordPatch,
 }
 
-impl CanonicalCommitEnvelope {
+impl CanonicalCommitEnvelopeBody {
+    pub fn lineage_event_ids(&self) -> &[u64] {
+        self.lineage.lineage_event_ids()
+    }
+
+    pub fn caller_association(&self) -> Option<&super::RelationalCallerAssociation> {
+        self.caller_association.as_ref()
+    }
+
     pub fn descriptive_touches(&self) -> &RelationalDescriptiveTouchGraph {
         &self.descriptive_touches
     }
@@ -230,15 +338,6 @@ impl CanonicalCommitEnvelope {
             )
     }
 
-    /// Canonical bytes for owner truth only. Diagnostics and optional derived
-    /// indexes have distinct lifecycle lanes and cannot perturb commit-byte
-    /// accounting.
-    pub(crate) fn encode_authoritative_payload(&self) -> Result<Vec<u8>, rmp_serde::encode::Error> {
-        let mut bytes = Vec::new();
-        self.write_authoritative_payload(&mut bytes)?;
-        Ok(bytes)
-    }
-
     pub(crate) fn committed_record_changes(
         &self,
     ) -> impl Iterator<Item = CommittedRecordChange<'_>> {
@@ -263,20 +362,6 @@ impl CanonicalCommitEnvelope {
     pub(crate) fn published_lineage_mut_for_test(&mut self) -> &mut PublishedLineageArtifact {
         &mut self.lineage
     }
-
-    #[cfg(test)]
-    pub(crate) fn rebuild_lineage_basis_for_test(&mut self) {
-        self.lineage = crate::lineage::data::LineageFinalizationArtifact::new(
-            self.branch_context.clone(),
-            crate::lineage::data::FinalizedLineageEventBatch::new(
-                self.lineage.lineage_events().to_vec(),
-            ),
-            crate::lineage::data::LineageDecisionLog::new(
-                self.lineage.lineage_decision_log().to_vec(),
-            ),
-        )
-        .publish();
-    }
 }
 
 fn intent_record_ref(intent: &MutationIntent) -> Option<RecordRef> {
@@ -286,22 +371,17 @@ fn intent_record_ref(intent: &MutationIntent) -> Option<RecordRef> {
     })
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-pub struct ReplaySchemaVersion(pub u32);
-
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-pub struct RelationalReplayRecord {
-    pub schema_version: ReplaySchemaVersion,
-    pub commit_id: crate::history::data::CommitId,
-    pub version_id: crate::identity::data::VersionId,
-    pub snapshot_id: crate::snapshots::data::SnapshotId,
-    pub patch: crate::publication::patch::data::PublishedAuthoritativePatchEnvelope,
-    pub schema_authority: SchemaAuthoritySnapshot,
-}
+mod replay_record;
+pub use replay_record::{RelationalReplayRecord, ReplaySchemaVersion};
 
 #[cfg(test)]
 #[path = "canonical_commit_envelope/tests.rs"]
 mod tests;
 #[path = "canonical_commit_envelope/text_wire.rs"]
 mod text_wire;
-pub(crate) use text_wire::{CanonicalEnvelopeWire, PositionedEnvelopeSeed};
+pub(crate) use text_wire::{CanonicalEnvelopeSeed, CanonicalEnvelopeWire};
+#[cfg(test)]
+#[path = "canonical_commit_envelope_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;
+#[cfg(test)]
+mod semantic_patch_fixture;

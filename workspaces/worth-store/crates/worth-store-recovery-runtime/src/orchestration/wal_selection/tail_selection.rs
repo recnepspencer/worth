@@ -23,6 +23,11 @@ pub(crate) enum WalTailSelectionDenial {
     Selection(SelectedPhysicalWalTailDenial),
 }
 
+pub(crate) enum ResidentSourceSelectionDenial {
+    Allocation(RecoveryWalAllocationDenial),
+    Selection(PhysicalSourceSelectionDenial),
+}
+
 impl ResidentWalTail {
     #[cfg(test)]
     pub(crate) fn facts(&self) -> &SelectedPhysicalWalTail {
@@ -44,11 +49,11 @@ impl ResidentWalTail {
         let count = input.candidates.len();
         let covered = input
             .allocation
-            .prepare_vector(owner, count)
+            .prepare_vector(owner, count, 0)
             .map_err(WalTailSelectionDenial::Allocation)?;
         let retained = input
             .allocation
-            .prepare_vector(owner, count)
+            .prepare_vector(owner, count, 0)
             .map_err(WalTailSelectionDenial::Allocation)?;
         let candidates = std::mem::take(&mut input.candidates);
         let tail = admit_physical_wal_tail(frontier, cutoff, candidates, covered, retained)
@@ -70,26 +75,26 @@ impl ResidentWalTail {
 
     pub(crate) fn select_sources(
         self,
+        owner: &PhysicalRecoveryCoordination,
         root: SelectedPhysicalRoot,
         page_facts: SelectedPhysicalPageFacts,
         retained_previous: Option<SelectedPhysicalPageFacts>,
         checkpoint: Option<PhysicalCheckpointBase>,
         compaction: Option<SelectedCompactionProduct>,
         residue: Vec<PhysicalRecoveryResidue>,
-    ) -> Result<ResidentSourceSelection, PhysicalSourceSelectionDenial> {
-        let Self { tail, allocation } = self;
+    ) -> Result<ResidentSourceSelection, ResidentSourceSelectionDenial> {
+        let input = self;
         let selection = select_physical_recovery_sources(
             root,
             page_facts,
             retained_previous,
             checkpoint,
-            tail,
+            input.tail,
             compaction,
             residue,
-        )?;
-        Ok(ResidentSourceSelection {
-            selection,
-            allocation,
-        })
+        )
+        .map_err(ResidentSourceSelectionDenial::Selection)?;
+        ResidentSourceSelection::capture(selection, input.allocation, owner)
+            .map_err(ResidentSourceSelectionDenial::Allocation)
     }
 }

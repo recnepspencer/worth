@@ -9,7 +9,7 @@ pub(super) fn holds<S: ApplicationSchema>(
     facts: &FactPayload,
     family: &'static str,
 ) -> Result<bool, WorthQueryOutputDemandDenial> {
-    application.runtime.primary_provider.graph.with_runtime_mut(execution, |runtime| {
+    application.runtime.primary_provider.graph.with_runtime(execution, |runtime| {
         let snapshot = crate::domain_computation::primary_graph::exact_basis_access::open_exact_basis_snapshot(
             runtime, before.relational_basis(),
         ).map_err(|cause| WorthQueryOutputDemandDenial::new(

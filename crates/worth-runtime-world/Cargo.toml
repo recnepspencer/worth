@@ -12,6 +12,9 @@
 
 
 [dependencies]
+sha2 = "0.10"
+serde_json = { version = "1", features = ["raw_value"] }
+serde = { version = "1", features = ["derive", "rc"] }
 worth-foundational = { path = "../worth-foundational" }
 worth-proof = { path = "../worth-proof" }
 worth-execution = { path = "../worth-execution" }

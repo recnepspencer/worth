@@ -62,12 +62,14 @@ impl RelationalRuntime {
         let mut installed = configuration.initial_installation();
         let previous = &installed.schema_contract_runtime;
         let rebuilt = super::rebuilt_schema_contract_runtime(
-            &installed,
-            registry.clone(),
+            &registry,
+            &installed.config.schema.invariant_catalog.registrations,
             previous.custom_invariant_registries.clone(),
             previous.custom_invariant_generation,
             previous.initial_custom_invariants_sealed,
-        );
+            crate::schema::SchemaCompilationControl::Configuration,
+        )
+        .expect("request-free codec configuration has no execution refusal");
         std::sync::Arc::make_mut(&mut installed.config)
             .schema
             .registry = registry;

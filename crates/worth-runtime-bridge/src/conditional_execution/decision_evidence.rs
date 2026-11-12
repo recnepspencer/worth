@@ -25,6 +25,11 @@ impl BridgeConditionalDecisionEvidence {
         ))
     }
 
+    pub fn installed_lowering_ref(
+        &self,
+    ) -> &std::sync::Arc<super::BridgeInstalledConditionalLowering> {
+        &self.core.lowering
+    }
     pub fn lowering_projection(&self) -> &super::BridgeConditionalLoweringProjectionIdentity {
         self.core.lowering.projection()
     }
@@ -135,3 +140,6 @@ impl BridgeConditionalDecisionEvidence {
                 .is_ok()
     }
 }
+#[cfg(test)]
+#[path = "decision_evidence_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;

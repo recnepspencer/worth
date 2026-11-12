@@ -23,15 +23,52 @@ impl WorthQueryPreparedTemporalIdempotency {
     }
 }
 
+/// Publication affinity DATA. A live Home incarnation is deliberately absent.
+#[derive(Clone, Copy)]
+pub(super) enum TemporalIdempotencyScope<'a> {
+    ProcessLocal,
+    Home {
+        owner: worth_foundational::facade::DurableWorldOwnerIdentity,
+        branch: &'a str,
+        incarnation: u64,
+    },
+}
+
 pub(super) fn prepare_temporal_idempotency<Clock, Input>(
     runtime_binding: &WorthQueryTemporalRuntimeBindingIdentity,
     candidate: &WorthQueryTemporalIntentCandidate<Clock, Input>,
+    scope: TemporalIdempotencyScope<'_>,
 ) -> Result<WorthQueryPreparedTemporalIdempotency, CanonicalDigestDerivationDenial> {
     let mut key = CanonicalIdentityMaterial::new(
         "worth-query.temporal-operation-idempotency-key",
-        "worth-query-temporal-operation-idempotency-key-v1",
+        "worth-query-temporal-operation-idempotency-key-v2",
     );
-    key.digest("runtime-binding", runtime_binding.digest());
+    match scope {
+        TemporalIdempotencyScope::ProcessLocal => {
+            key.text("scope", "process-local");
+            key.digest("runtime-binding", runtime_binding.digest());
+        }
+        TemporalIdempotencyScope::Home {
+            owner,
+            branch,
+            incarnation,
+        } => {
+            key.text("scope", "home");
+            let bytes = owner.home().bytes();
+            key.unsigned_u64(
+                "home-low",
+                u64::from_le_bytes(bytes[..8].try_into().expect("fixed Home identity")),
+            );
+            key.unsigned_u64(
+                "home-high",
+                u64::from_le_bytes(bytes[8..].try_into().expect("fixed Home identity")),
+            );
+            key.unsigned_u64("world-slot", owner.slot().get());
+            key.text("branch", branch);
+            key.unsigned_u64("branch-incarnation", incarnation);
+            key.digest("definition", runtime_binding.definition());
+        }
+    }
     key.text("host-idempotency", candidate.idempotency().as_str());
     let (key, key_work) = key.derive()?;
 

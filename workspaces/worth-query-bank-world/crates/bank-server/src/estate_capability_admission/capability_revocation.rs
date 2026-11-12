@@ -1,3 +1,4 @@
+use crate::estate_progression::delegation::command_courts::CommandCourtOutcome;
 mod advancement_custody;
 use bank_domain::{
     estate::{
@@ -18,46 +19,71 @@ use super::fixture::{
 use crate::estate_progression::BankCapabilityRevocationProjectionDenial;
 use crate::{
     queries, BankCommitDenialKind, BankCommitDenialStage, BankEstateProgressionDenial,
-    BankMutationCommitOutcome, BankReadControls,
+    BankReadControls,
 };
 
 type GovernanceResult =
     WorthQueryPublishedApplicationResult<EstateGovernanceQuery, EstateGovernanceContext>;
 
 fn assert_equivalent_commit_semantics(
-    committed: &crate::BankCommitReceipt,
-    recovered: &crate::BankCommitReceipt,
+    committed: &crate::BankClosedCapabilityCommand,
+    recovered: &crate::BankClosedCapabilityCommand,
 ) {
-    assert_eq!(committed.aftermath(), recovered.aftermath());
+    let live = committed
+        .completion()
+        .receipt()
+        .expect("the original command performed");
+    let data = recovered
+        .recorded_receipt()
+        .expect("retry returns original durable meaning");
+    assert!(
+        recovered.live_receipt().is_none(),
+        "recorded data grants no live Bank authority"
+    );
+    assert_eq!(live.commit_reference(), data.commit_reference());
+    assert_eq!(live.outcome_identity(), Some(data.outcome_identity()));
+    assert_eq!(live.changed_record_count(), data.changed_record_count());
+    assert_eq!(live.emitted_effect_count(), data.emitted_effect_count());
     assert_eq!(
-        committed.changed_record_count(),
-        recovered.changed_record_count()
+        live.idempotency_binding().key_identity(),
+        data.idempotency_key_identity()
+    );
+    let (before, after) = (live.basis_descriptor(), data.basis_descriptor());
+    assert_eq!(before.descriptor_version(), after.descriptor_version());
+    assert_eq!(before.branch_id(), after.branch_id());
+    assert_eq!(before.posture(), after.posture());
+    assert_eq!(
+        before.reference().generation(),
+        after.reference().generation()
+    );
+    match (
+        before.reference().target().as_basis(),
+        after.reference().target().as_basis(),
+    ) {
+        (Some(left), Some(right)) => {
+            assert_eq!(left.selected_commit_id(), right.selected_commit_id());
+            assert_eq!(left.version_id(), right.version_id());
+            assert_eq!(left.parent_commit_ids(), right.parent_commit_ids());
+            assert_eq!(left.roots(), right.roots());
+        }
+        (None, None) => {}
+        (Some(_), None) | (None, Some(_)) => panic!("original target kind changed"),
+    }
+    assert_eq!(
+        live.basis_descriptor().truth_version(),
+        data.basis_descriptor().truth_version()
     );
     assert_eq!(
-        committed.emitted_effect_count(),
-        recovered.emitted_effect_count()
+        live.basis_descriptor().schema_commitment(),
+        data.basis_descriptor().schema_commitment()
     );
     assert_eq!(
-        committed.expected_version_count(),
-        recovered.expected_version_count()
+        live.basis_descriptor().visibility_commitment(),
+        data.basis_descriptor().visibility_commitment()
     );
     assert_eq!(
-        committed.expected_fact_count(),
-        recovered.expected_fact_count()
-    );
-    assert_eq!(
-        committed.decision_fact_count(),
-        recovered.decision_fact_count()
-    );
-    assert_eq!(committed.canonical_work(), recovered.canonical_work());
-    assert_eq!(
-        committed.co_committed_dispatch_outbox(),
-        recovered.co_committed_dispatch_outbox()
-    );
-    assert_eq!(committed.retained_preimage(), recovered.retained_preimage());
-    assert_eq!(
-        committed.performed_preimage_retention_work(),
-        recovered.performed_preimage_retention_work()
+        live.recorded_output_settlement(),
+        data.exact_output_settlement()
     );
 }
 
@@ -83,7 +109,7 @@ fn equivalent_revocation_retry_recovers_commit_before_fresh_poststate_denial() {
         &request_scope(),
     )
     .expect("an active exact grant should admit public revocation");
-    let BankMutationCommitOutcome::Committed(committed) = first else {
+    let CommandCourtOutcome::Committed(committed) = first else {
         panic!("the first revocation must authoritatively commit: {first:?}");
     };
 
@@ -95,19 +121,19 @@ fn equivalent_revocation_retry_recovers_commit_before_fresh_poststate_denial() {
         &request_scope(),
     )
     .expect("an equivalent retry should resolve idempotency before active-state projection");
-    let BankMutationCommitOutcome::AlreadyCommitted(recovered) = retry else {
+    let CommandCourtOutcome::RecoveredCommitted(recovered) = retry else {
         panic!("the equivalent retry must recover the prior commit: {retry:?}");
     };
     assert_equivalent_commit_semantics(&committed, &recovered);
-    assert_admission_derives_the_request_identities_once(committed.canonical_work().admission());
+    let live = committed
+        .live_receipt()
+        .expect("fresh command owns its live projection");
+    assert_admission_derives_the_request_identities_once(live.canonical_work().admission());
     assert_eq!(
-        committed.publication().inspect().kind(),
+        live.publication().inspect().kind(),
         WorthQueryPublishedApplicationCommitKind::Executed
     );
-    assert_eq!(
-        recovered.publication().inspect().kind(),
-        WorthQueryPublishedApplicationCommitKind::Recovered
-    );
+    assert!(recovered.recorded_receipt().is_some());
 
     let target_drift = crate::estate_progression::delegation::command_courts::complete_revocation(
         &fixture.runtime,
@@ -119,7 +145,7 @@ fn equivalent_revocation_retry_recovers_commit_before_fresh_poststate_denial() {
     .expect("governed target drift is a typed commit outcome");
     assert!(matches!(
         target_drift,
-        BankMutationCommitOutcome::Denied {
+        CommandCourtOutcome::Denied {
             kind: BankCommitDenialKind::IdempotencyIntentDrift,
             stage: BankCommitDenialStage::Idempotency,
         }

@@ -3,13 +3,10 @@ use worth_query_installation::facade::ApplicationSchema;
 
 use super::super::super::provider_binding::installed_preimage_demand;
 use super::super::super::{
-    provider_recomparison::recover_equivalent_commit_evidence,
-    WorthQueryApplicationCommitAuthorityBinding, WorthQueryApplicationCommitDenial,
-    WorthQueryApplicationCommitDenialStage as DenialStage, WorthQueryApplicationCommitOutcome,
-    WorthQueryApplicationCommitReceipt, WorthQueryApplicationEffectProgram,
-    WorthQueryApplicationIdempotencyBinding, WorthQueryCommittedReceiptProjection,
+    WorthQueryApplicationCommitDenial, WorthQueryApplicationCommitDenialStage as DenialStage,
+    WorthQueryApplicationCommitOutcome, WorthQueryApplicationEffectProgram,
+    WorthQueryApplicationIdempotencyBinding,
 };
-use super::super::aftermath_resolution::resolve_exact_committed_aftermath;
 use super::super::elevation_currentness::WorthQueryElevationCommitCurrentness;
 use super::super::outcome::commit_outcome_from_authorization_denial;
 use super::super::provider_denial::{denied, denied_with_detail};
@@ -66,17 +63,6 @@ pub struct WorthQueryPreparedApplicationCommit<
     aftermath_causality: Option<
         crate::domain_computation::application_aftermath::WorthQueryPendingAftermathCausality,
     >,
-}
-
-pub(in crate::domain_computation::primary_graph::application_attempt) struct WorthQueryEarlyEquivalentCommitReceiptPermit
-{
-    _owner_mint: (),
-}
-
-impl WorthQueryEarlyEquivalentCommitReceiptPermit {
-    fn mint() -> Self {
-        Self { _owner_mint: () }
-    }
 }
 
 pub enum WorthQueryApplicationCommitPreparation<Schema, Operation, Input, Scope> {
@@ -187,8 +173,6 @@ struct WorthQueryCurrentApplicationCommit<Schema, Operation, Input, Scope> {
     workflow_approval_authority:
         Option<crate::domain_computation::authorization::WorthQueryWorkflowApprovalAuthorityBasis>,
 }
-
-pub(in crate::domain_computation::primary_graph::application_attempt::provider_execution) use entry_custody::prepare_application_commit;
 
 fn prepare_authorized_application_commit<Schema, Operation, Input, Scope>(
     application: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
@@ -307,3 +291,7 @@ pub(in crate::domain_computation::primary_graph) use running::progression::coupl
 };
 
 mod court_doors_for_test;
+pub use running::WorthQueryManagedPhaseStorageForTest;
+#[cfg(test)]
+#[path = "prepared_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;

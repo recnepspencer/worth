@@ -11,8 +11,8 @@ pub fn relational_source_and_lease(
     TruthBranchIdentity,
     TruthSnapshotIdentity,
 ) {
-    let mut runtime = relational_runtime();
-    let committed = create_fixture_entity(execution, &mut runtime);
+    let runtime = relational_runtime();
+    let committed = create_fixture_entity(execution, &runtime);
     let branch_identity = runtime.main_branch_identity();
     let (_, bridge_basis) = runtime.observe_branch(&branch_identity).unwrap();
     let substitute_basis = runtime
@@ -46,7 +46,7 @@ pub fn relational_source_and_lease(
 
 pub fn create_fixture_entity(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-    runtime: &mut RelationalRuntime,
+    runtime: &RelationalRuntime,
 ) -> worth_relational::facade::transactions::CommitResult {
     let mut transaction = {
         let transaction_validation_input = runtime

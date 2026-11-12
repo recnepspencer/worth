@@ -19,12 +19,6 @@ pub enum RequiredWorkPop {
     Claimed(RequiredWorkClaim),
 }
 
-impl Default for RequiredWorkQueue {
-    fn default() -> Self {
-        Self::new()
-    }
-}
-
 impl RequiredWorkQueue {
     pub fn new() -> Self {
         Self {
@@ -102,6 +96,12 @@ impl RequiredWorkQueue {
         drop(member);
         drop(queue);
         RequiredWorkPop::Claimed(claim)
+    }
+}
+
+impl Default for RequiredWorkQueue {
+    fn default() -> Self {
+        Self::new()
     }
 }
 
@@ -192,7 +192,10 @@ impl<Schema>
                 };
                 matches!(
                     output.checkpoint,
-                    Some(super::super::WorthQueryOutputCheckpoint::Published { .. })
+                    Some(
+                        super::super::WorthQueryOutputCheckpoint::Published { .. }
+                            | super::super::WorthQueryOutputCheckpoint::RecoveredPublished { .. }
+                    )
                 )
                 .then(|| {
                     (
@@ -264,6 +267,6 @@ impl<Schema>
     pub fn undelivered_publication_counts_for_test(&self) -> (usize, usize) {
         let state = self.runtime.output_demands.state.lock().unwrap();
         (state.records.publication_count_for_test(), state.records.values().filter(|record|
-            matches!(&record.state, super::super::DemandState::Output(output) if !matches!(output.advancement(), super::super::WorthQueryOutputAdvancement::Stopped { .. }) && matches!(output.checkpoint, Some(super::super::WorthQueryOutputCheckpoint::Published { .. })))).count())
+            matches!(&record.state, super::super::DemandState::Output(output) if !matches!(output.advancement(), super::super::WorthQueryOutputAdvancement::Stopped { .. }) && matches!(output.checkpoint, Some(super::super::WorthQueryOutputCheckpoint::Published { .. } | super::super::WorthQueryOutputCheckpoint::RecoveredPublished { .. })))).count())
     }
 }

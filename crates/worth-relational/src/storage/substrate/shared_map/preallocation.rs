@@ -2,7 +2,7 @@
 use super::{node::MapNode, SharedMap};
 use crate::storage::substrate::StorageAllocation;
 
-impl<K: Ord + Copy, V: Clone> SharedMap<K, V> {
+impl<K: Ord + Copy, V: super::StoredValue> SharedMap<K, V> {
     /// Adoption shares V. At each AVL level a detached ancestor and up to
     /// two rotation pivots coexist; allow a new leaf and one root level too.
     pub(crate) fn adoption_allocation_bound(&self) -> Option<u64> {
@@ -14,13 +14,13 @@ impl<K: Ord + Copy, V: Clone> SharedMap<K, V> {
     }
 }
 
-impl<K: Ord + Copy, V: Copy> SharedMap<K, V> {
+impl<K: Ord + Copy, V: super::StoredValue + Copy> SharedMap<K, V> {
     /// Every insertion creates a value owner. A shared ancestor's copy makes
     /// its selected children shared too. Rotation pivots are on that same path;
     /// rotating uniquely admitted nodes does not create another allocation.
     pub(crate) fn insertion_allocation_bytes(&self, key: &K) -> Option<u64> {
         let node_bytes = StorageAllocation::<MapNode<K, V>>::layout_bytes();
-        let mut bytes = StorageAllocation::<V>::layout_bytes();
+        let mut bytes = V::allocation_bytes();
         let mut current = self.root.as_ref();
         let mut shared = false;
         while let Some(node) = current {
@@ -39,8 +39,8 @@ impl<K: Ord + Copy, V: Copy> SharedMap<K, V> {
 
     /// Node and value owners only; separately owned V payload is its owner's bill.
     pub(crate) fn shallow_allocation_bytes(&self) -> Option<u64> {
-        let pair = StorageAllocation::<MapNode<K, V>>::layout_bytes()
-            .checked_add(StorageAllocation::<V>::layout_bytes())?;
+        let pair =
+            StorageAllocation::<MapNode<K, V>>::layout_bytes().checked_add(V::allocation_bytes())?;
         u64::try_from(self.len()).ok()?.checked_mul(pair)
     }
 }

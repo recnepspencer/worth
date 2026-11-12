@@ -32,7 +32,7 @@ pub fn declare(
         .unwrap()
         .reverse(ModelMember::reference())
         .allow(Model::reference());
-    synchronous::declare(schema)
+    inspection::declare(synchronous::declare(schema))
         .declared_operation::<UndeclaredRead>(
             UndeclaredRead::reference()
                 .definition()
@@ -127,7 +127,7 @@ pub fn observe<B: ApplicationMutationBinding<Schema>>(
 }
 mod control;
 mod courts;
-mod foreign;
+pub(super) mod inspection;
 mod origin_kind;
 pub(super) mod program;
 pub(super) mod synchronous;

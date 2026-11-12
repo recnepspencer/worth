@@ -65,7 +65,7 @@ where
         .parameters
         .bindings()
         .iter()
-        .find(|(name, _)| *name == parameter.as_str())
+        .find(|(name, _)| name.as_ref() == parameter.as_str())
         .map(|(_, value)| value)
         .ok_or(Denial::ForeignAssociation)?;
     let lease = adapter.select_admitted(

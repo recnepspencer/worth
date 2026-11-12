@@ -21,6 +21,7 @@ mod recovery_build;
 pub(crate) use maintenance::charge_rendezvous::at_next_charges;
 pub(crate) use maintenance::PreparedCandidateIndexPublication;
 pub(crate) use maintenance::PreparedForkIndexSelection;
+pub(crate) use maintenance::{persistent_map_path_bytes, row_copy_bounds};
 mod packet_planning;
 
 use crate::history::data::CommitId;
@@ -71,6 +72,21 @@ impl RelationalRuntime {
 impl<'runtime> IndexAuthority<'runtime> {
     pub(crate) fn new(runtime: &'runtime RelationalRuntime) -> Self {
         Self { runtime }
+    }
+
+    /// Privately prepare an append-only catalog on this actual receiver.
+    pub fn prepare_home_program_definitions(
+        &self,
+        request: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> Result<
+        crate::runtime::RelationalIndexDefinitionPreparation,
+        crate::runtime::RelationalIndexDefinitionPreparationDenial,
+    > {
+        crate::runtime::RelationalIndexDefinitionPreparation::capture(
+            self.runtime.runtime_instance_id(),
+            self.runtime.indexes.definition_read_binding(),
+            request,
+        )
     }
 
     pub fn register(

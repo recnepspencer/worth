@@ -162,9 +162,9 @@ impl CheckpointBindingCompactionDecoder {
         {
             return Err(CheckpointStreamDecodeDenial::BindingCompactionMismatch);
         }
-        if footer.dirty_records_digest != dirty.digest()
-            || footer.binding_records_digest != bindings.digest()
-            || footer.certificate_records_digest != certificates.digest()
+        if *footer.dirty_records_digest.bytes() != dirty.digest()
+            || *footer.binding_records_digest.bytes() != bindings.digest()
+            || *footer.certificate_records_digest.bytes() != certificates.digest()
         {
             return Err(CheckpointStreamDecodeDenial::AggregateDigestMismatch);
         }

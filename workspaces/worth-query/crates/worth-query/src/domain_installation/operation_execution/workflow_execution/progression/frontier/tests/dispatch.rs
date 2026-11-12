@@ -19,20 +19,31 @@ const COSTS: [u64; 3] = [3, 17, 41];
 struct Policy {
     workers: usize,
     memory: Option<u64>,
-    work: u64,
+    work: Option<u64>,
 }
 impl Policy {
     fn width(workers: usize) -> Self {
         Self {
             workers,
             memory: None,
-            work: 1024,
+            work: None,
         }
     }
     fn workspace(
         self,
         request_execution: &worth_execution::ExecutionRequest<'_, '_>,
         probe: &phased_workflow::fold_executor::ComputeProbe,
+    ) -> worth_query::facade::runtime::WorthQueryWorkspace {
+        let work = self
+            .work
+            .unwrap_or_else(|| ordinary_owner_work_quote(request_execution, probe));
+        self.workspace_with_work(request_execution, probe, Some(work))
+    }
+    fn workspace_with_work(
+        self,
+        request_execution: &worth_execution::ExecutionRequest<'_, '_>,
+        probe: &phased_workflow::fold_executor::ComputeProbe,
+        work: Option<u64>,
     ) -> worth_query::facade::runtime::WorthQueryWorkspace {
         let policy = ExecutionRequestPolicy::new(
             if self.workers == 0 {
@@ -44,7 +55,7 @@ impl Policy {
             ExecutionBudget::new(
                 NonZeroUsize::new(self.workers).unwrap_or(NonZeroUsize::MIN),
                 self.memory,
-                Some(self.work),
+                work,
             ),
         );
         let resources = crate::consumer_kit::in_memory_test_product_world_resources()
@@ -60,6 +71,54 @@ impl Policy {
             resources,
         )
     }
+}
+// Quote the actual Native applications and installed reads independently of
+// frontier lowering and dispatch. Seed29 is the widest successful fixture input.
+fn ordinary_owner_work_quote(
+    request: &worth_execution::ExecutionRequest<'_, '_>,
+    probe: &phased_workflow::fold_executor::ComputeProbe,
+) -> u64 {
+    let mut workspace = Policy::width(0).workspace_with_work(request, probe, None);
+    let authority = probe.authority();
+    let lease = authority
+        .request_lease(worth_execution::LeaseRequest {
+            policy: ExecutionRequestPolicy::new(
+                ExecutionPosture::Serial,
+                DeterminismContract::CanonicalBitwise,
+                ExecutionBudget::new(NonZeroUsize::MIN, None, None),
+            ),
+            cancellation: worth_execution::CancellationToken::new(),
+            deadline: None,
+        })
+        .unwrap();
+    let execution = worth_execution::ExecutionRequest::leased(&lease);
+    let ((), report) = execution
+        .run(worth_execution::ExecutionWorkCeiling::new(None), |_| {
+            for (index, stage) in phased_workflow::MEMBERS.iter().enumerate() {
+                let seed = 29 + index as u64;
+                let folded = (0..COSTS[index]).fold(0_u64, |sum, offset| {
+                    sum.wrapping_add(seed.wrapping_add(offset).wrapping_mul(offset + 1))
+                });
+                let command = crate::runtime::WorthQueryAspectMutationBuilder::new()
+                    .aspect("identity.id", format!("{stage}:{folded}"))
+                    .build_insert("Vertex")
+                    .unwrap();
+                workspace
+                    .execute_ordinary_authoritative_mutation(&execution, command, false)
+                    .unwrap();
+                phased_workflow::world::installed_read_declaration()
+                    .clone_for_installed_execution()
+                    .using(crate::ordinary::read::current())
+                    .run(&execution, &mut workspace)
+                    .into_result()
+                    .unwrap();
+            }
+        })
+        .unwrap();
+    report
+        .charged_work()
+        .checked_add(COSTS.iter().sum())
+        .unwrap()
 }
 fn members(
     seed: u64,
@@ -207,23 +266,32 @@ fn reversed_completion_still_applies_canonical_effects_and_receipts() {
     let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let probe = phased_workflow::fold_executor::ComputeProbe::new();
-    // Native content/root preparation spends on this same original request.
-    // Keep refusal courts at 1024 and fund this positive ordering journey.
-    let funded = |workers| Policy {
-        work: 8_192,
-        ..Policy::width(workers)
-    };
+    // The independent owner quote funds this successful journey. Work refusal
+    // has its own finite-boundary court.
     probe.take_computes();
-    let (expected, _) = worth_execution::ExecutionWorkCeiling::new(None)
+    let (expected, report) = worth_execution::ExecutionWorkCeiling::new(None)
         .run_serial(&host_request, || {
-            observe(request_execution, 29, None, funded(0), &probe)
+            observe(request_execution, 29, None, Policy::width(0), &probe)
         })
         .unwrap();
+    assert!(
+        report.charged_work() >= expected.1,
+        "the original SDK invoice includes settled computation"
+    );
     // Reset observations between runs: any purity mutant must prove order
     // dependence, not simply a counter carried over from a previous run.
     probe.take_computes();
     assert_eq!(expected.0.outcome, None);
-    let repeated = observe(request_execution, 29, None, funded(0), &probe);
+    let (repeated, repeated_report) = worth_execution::ExecutionWorkCeiling::new(None)
+        .run_serial(&host_request, || {
+            observe(request_execution, 29, None, Policy::width(0), &probe)
+        })
+        .unwrap();
+    assert_eq!(
+        repeated_report.charged_work(),
+        report.charged_work(),
+        "reset serial journeys retain the same complete original invoice"
+    );
     assert_eq!(repeated.0.outcome, None);
     assert_eq!(repeated, expected, "two reset serial runs agree");
     assert_eq!(
@@ -239,7 +307,7 @@ fn reversed_completion_still_applies_canonical_effects_and_receipts() {
     for workers in [1, 2] {
         probe.take_computes();
         assert_eq!(
-            observe(request_execution, 29, None, funded(workers), &probe),
+            observe(request_execution, 29, None, Policy::width(workers), &probe),
             expected,
             "funded original grant at width {workers}"
         );
@@ -247,7 +315,7 @@ fn reversed_completion_still_applies_canonical_effects_and_receipts() {
 
     probe.take_computes();
     probe.reorder();
-    let actual = observe(request_execution, 29, None, funded(4), &probe);
+    let actual = observe(request_execution, 29, None, Policy::width(4), &probe);
     assert_eq!(actual.0.outcome, None);
     probe.assert_schedule_completed();
     assert_eq!(actual, expected);

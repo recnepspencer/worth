@@ -109,7 +109,7 @@ fn approval_request_round_trip_preserves_every_authorization_axis() {
         ("context_type", serde_json::json!("different-context-type")),
         (
             "capability_identity",
-            serde_json::to_value([9u8; 32]).unwrap(),
+            serde_json::to_value(worth_foundational::CanonicalDigestId::new([9u8; 32])).unwrap(),
         ),
     ] {
         let mut changed = metadata.clone();

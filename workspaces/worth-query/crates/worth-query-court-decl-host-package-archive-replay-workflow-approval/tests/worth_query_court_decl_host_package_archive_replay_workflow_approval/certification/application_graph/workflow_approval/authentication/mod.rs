@@ -89,16 +89,18 @@ fn approval_rejects_foreign_owner_wrong_purpose_and_intent_but_replays_without_r
             .authenticate((), &principal, intent, &scope),
     )
     .unwrap();
-    assert!(matches!(
-        signing.sign(&event).unwrap().execute(),
-        WorkflowProgressOutcome::Completed(_)
-    ));
+    let original = match signing.sign(&event).unwrap().execute() {
+        WorkflowProgressOutcome::Completed(performed) => performed,
+        other => panic!("the authentic signing event must perform once: {other:?}"),
+    };
     let replay = prepare!(instance, 24_012_u64).unwrap();
     assert!(replay.authentication_intent().is_none());
-    assert!(matches!(
-        replay.execute_replay().unwrap(),
-        WorkflowProgressOutcome::Completed(performed) if performed.replayed()
-    ));
+    match replay.execute_replay().unwrap() {
+        WorkflowProgressOutcome::RecoveredCommitted(data) => {
+            crate::recorded_receipt::assert_agrees(&data, original.receipt())
+        }
+        other => panic!("exact retry requires no repeated signing event: {other:?}"),
+    }
 }
 
 #[test]

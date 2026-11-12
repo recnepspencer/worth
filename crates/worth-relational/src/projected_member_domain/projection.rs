@@ -72,15 +72,24 @@ impl StructuralRelationView<'_> {
         }
         let bytes = names
             .checked_add(size_of::<ProjectedMemberCoordinate>() + 2 * size_of::<usize>())
+            .and_then(|bytes| {
+                bytes.checked_add(
+                    usize::try_from(crate::graph_member::ProjectedMemberStorage::control_bytes()?)
+                        .ok()?,
+                )
+            })
             .ok_or(Denial::WorkBudgetExceeded)?;
         self.read_budget()
             .claim_retained(bytes as u64)
             .map_err(ReadDenial::Structural)?;
-        let key = NativeMemberKey::Projected(Arc::new(ProjectedMemberCoordinate {
-            domain: domain.parts().identity.clone(),
-            carrier,
-            case: case.name().to_owned(),
-        }));
+        let key = NativeMemberKey::Projected(
+            Arc::new(ProjectedMemberCoordinate {
+                domain: domain.parts().identity.clone(),
+                carrier,
+                case: case.name().to_owned(),
+            })
+            .into(),
+        );
         self.read_budget()
             .check_live()
             .map_err(ReadDenial::Structural)?;

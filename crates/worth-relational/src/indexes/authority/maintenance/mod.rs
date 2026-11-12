@@ -22,10 +22,12 @@ mod generation_reuse;
 mod join;
 mod ordering;
 mod persistent_allocation;
+pub(crate) use persistent_allocation::{persistent_map_path_bytes, row_copy_bounds};
 mod preparation;
 mod publication;
 mod refresh_inputs;
 mod refresh_preparation;
+mod retained_projection;
 mod selected_field_request;
 use publication::PreparedRefresh;
 mod candidate_publication;
@@ -38,6 +40,7 @@ mod pipeline_preparation;
 mod reads;
 mod record_metadata;
 mod recovery;
+mod recovery_catalog;
 mod request_payment;
 mod root_view;
 mod schema_transition;
@@ -108,7 +111,7 @@ impl IndexAuthority<'_> {
             })
             .transpose()?;
         work.prepare(branch.0.len().min(request.branch_id.0.len()) as u64 + 1, 0)?;
-        basis::validate(request, &observation, before.as_ref(), &after)?;
+        basis::validate(request, &observation, before.as_ref(), &after, execution)?;
         let after = root_view::IndexRootView::from_projection(&after)?;
         let before = before
             .as_ref()

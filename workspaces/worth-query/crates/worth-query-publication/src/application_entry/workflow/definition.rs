@@ -28,3 +28,6 @@ type MutationOperation<Schema, Intent> =
     <IntentBinding<Schema, Intent> as ApplicationMutationBinding<Schema>>::Operation;
 type MutationInput<Schema, Intent> =
     <IntentBinding<Schema, Intent> as ApplicationMutationBinding<Schema>>::Input;
+#[cfg(test)]
+#[path = "definition_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;

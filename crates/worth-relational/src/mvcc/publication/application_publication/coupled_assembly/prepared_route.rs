@@ -28,7 +28,7 @@ impl RelationalAuthoredCoupledCandidate<'_> {
                         .map_err(custody::execution_stop)?;
                     if meaning.family == family
                         && meaning.source_scope == source
-                        && &meaning.source_partition == partition
+                        && meaning.source_partition.bytes() == partition
                     {
                         return Ok(Some(index));
                     }

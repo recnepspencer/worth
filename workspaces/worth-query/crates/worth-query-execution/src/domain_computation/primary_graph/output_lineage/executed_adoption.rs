@@ -17,12 +17,6 @@ pub struct WorthQueryApplicationOutputAdoption {
 }
 
 impl PendingExecutedOutputAdoption {
-    pub(in crate::domain_computation::primary_graph) fn session(
-        &self,
-    ) -> &WorthQueryProviderSessionTerminalBinding {
-        &self.session
-    }
-
     pub(in crate::domain_computation::primary_graph) fn complete(
         self,
         completion: WorthQueryMutationGraphWorkCompletion,

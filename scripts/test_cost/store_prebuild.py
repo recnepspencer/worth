@@ -14,6 +14,8 @@ from native_features import load as load_native_features, validate as validate_n
 
 
 REQUESTS = [
+    {'package': 'store-test-runner', 'binary': 'store-test-runner', 'features': []},
+    {'package': 'worth-store', 'binary': 'physical_media_os_observer', 'features': []},
     {'package': 'worth-store-offline-integrity-observer',
      'binary': 'physical_store_integrity_observer', 'features': []},
     {'package': 'worth-store-offline-verifier',
@@ -74,9 +76,19 @@ def prepare(repository, output_directory, cargo_runner, profile='dev', *, native
     output.mkdir(parents=True, exist_ok=True)
     if native.workspace != workspace.resolve():
         raise NativeFeatureRefusal('independent executable graph belongs to another workspace')
-    receipt = {'schema': 1, 'features': native.features, 'inputs': native.inputs}
+    receipt = {'schema': 1, 'features': native.features, 'inputs': native.inputs,
+               'native_packages': native.packages}
     (output / 'native-feature-graph.json').write_text(json.dumps(receipt, indent=2) + '\n', encoding='utf-8')
-    result = cargo_runner(['cargo', 'build', '--workspace', '--bins', '--locked',
+    # Cargo accepts qualified feature flags only for selected packages or their
+    # direct dependencies. Captured transitive owners must therefore be roots.
+    # Replay their observed defaults explicitly instead of enabling new ones.
+    feature_owners = [qualified.split('/', 1)[0] for qualified in native.features]
+    packages = dict.fromkeys([*(request['package'] for request in REQUESTS),
+                              *native.packages, *feature_owners])
+    selection = [argument for package in packages
+                 for argument in ('--package', package)]
+    selection.extend(argument for request in REQUESTS for argument in ('--bin', request['binary']))
+    result = cargo_runner(['cargo', 'build', *selection, '--locked', '--no-default-features',
                            '--profile', profile, '--features',
                            ','.join(native.features),
                            '--manifest-path', str(workspace / 'Cargo.toml')],

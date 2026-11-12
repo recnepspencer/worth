@@ -5,13 +5,12 @@ use crate::history::data::canonical_commit_envelope::{
 };
 use crate::{
     mvcc::RequiredOutputRolePosture as Posture,
-    publication::patch::data::RecordStructuralChange as Change, runtime::RelationalRuntime,
-    transactions::data::RecordRef,
+    publication::patch::data::RecordStructuralChange as Change, transactions::data::RecordRef,
 };
 use worth_execution::MapKernelContext;
 
 pub(super) fn validate(
-    runtime: &RelationalRuntime,
+    runtime: &crate::history::data::codec_retirement_closure::history_request::RuntimeHistoryRequest<'_, '_, '_>,
     view: ValidatedOutputOrigins<'_>,
     validated_history: &mut OutputOriginHistory,
     context: &mut MapKernelContext<'_, '_>,
@@ -32,7 +31,8 @@ pub(super) fn validate(
     let previous = validated_history
         .by_commit(
             predecessor,
-            &mut |commit| runtime.history.canonical_envelope(commit),
+            &mut |commit| runtime.commit(commit),
+            &runtime.execution(),
             context,
         )?
         .ok_or("producer retirement lost canonical predecessor")?;
@@ -62,9 +62,9 @@ pub(super) fn validate(
     }
     let latest = source_scope_closure::historical_positions(
         envelope.commit.parents.first().copied(),
-        runtime.history.catalog_len(),
+        runtime.runtime.history.catalog_len(),
         None,
-        &mut |commit| runtime.history.canonical_envelope(commit),
+        &mut |commit| runtime.commit(commit),
         &mut |event, context| {
             if event.required_output_materialization.is_some() {
                 super::materialization::validate_semantics(runtime, event, context, None, schema)?;

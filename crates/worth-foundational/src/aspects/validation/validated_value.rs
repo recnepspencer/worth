@@ -39,6 +39,33 @@ impl Clone for ContractValidatedAspectValue {
 }
 
 impl ContractValidatedAspectValue {
+    /// Newly admitted cell, cloned key and reachable immutable contract backing.
+    /// Payload storage is described separately by its concrete value owner.
+    pub fn admission_storage_bytes(contract: &AspectContract) -> Option<usize> {
+        Self::admission_cell_storage_bytes()?.checked_add(contract.key().as_str().len())
+    }
+
+    /// Actual admitted-value Arc cell, excluding its separately owned key and payload.
+    pub fn admission_cell_storage_bytes() -> Option<usize> {
+        Some(
+            std::alloc::Layout::new::<[usize; 2]>()
+                .extend(std::alloc::Layout::new::<ValidatedAspect>())
+                .ok()?
+                .0
+                .pad_to_align()
+                .size(),
+        )
+    }
+
+    pub(in crate::aspects) fn struct_retained_storage_bytes(
+        contract: &AspectContract,
+        fields: usize,
+    ) -> Option<usize> {
+        Self::admission_storage_bytes(contract)?
+            .checked_add(contract.owned_allocation_capacity_bytes())?
+            .checked_add(fields)
+    }
+
     pub(crate) fn scalar(contract: AspectContract, value: AspectValue) -> Self {
         Self {
             value: std::sync::Arc::new(ValidatedAspect {

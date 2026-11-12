@@ -36,6 +36,10 @@ fn assert_stale(
 mod serial {
     use super::*;
     #[test]
+    #[expect(
+        clippy::result_large_err,
+        reason = "The fixture preserves the original typed owner denial."
+    )]
     fn preserved_family_head_reopens_for_current_output_before_any_demand() {
         let _guard = checkpoint_recovery_test_guard();
         let provider_observation = crate::producer::ProviderContacts::default();
@@ -70,19 +74,12 @@ mod serial {
                     .unwrap()
             })
             .expect("installed host call opens");
-        let initial_bytes = initial_checkpoint.bytes().to_vec();
-        drop((initial_checkpoint, application));
+        drop(application);
 
         // The old Initial row is genuine recovered custody, so ready-cache
         // replacement cannot remove it from the next capture's recovered input.
-        let application = support::observed::install(
-            Some(
-                application_installation::WorthQueryApplicationCheckpoint::from_untrusted_bytes(
-                    initial_bytes,
-                ),
-            ),
-            &provider_observation,
-        );
+        let application =
+            support::observed::install(Some(initial_checkpoint), &provider_observation);
         let (scope, principal) = support::authenticate(&application);
         let request = application.request(&principal, &scope);
         let observed = request
@@ -147,21 +144,13 @@ mod serial {
                     .unwrap()
             })
             .expect("installed host call opens");
-        let bytes = checkpoint.bytes().to_vec();
-        drop((checkpoint, application));
+        drop(application);
 
-        // Reenter through untrusted bytes and installed producer readmission.
+        // Retain the issued capture proof for installed producer readmission.
         // No demand or supplier replay is allowed to repair this current-output read.
         provider_observation.reset();
         super::super::super::final_output::reset_provider_contacts();
-        let reopened = support::observed::install(
-            Some(
-                application_installation::WorthQueryApplicationCheckpoint::from_untrusted_bytes(
-                    bytes,
-                ),
-            ),
-            &provider_observation,
-        );
+        let reopened = support::observed::install(Some(checkpoint), &provider_observation);
         let (scope, principal) = support::authenticate(&reopened);
         let request = reopened.request(&principal, &scope);
         let verify = |command| {

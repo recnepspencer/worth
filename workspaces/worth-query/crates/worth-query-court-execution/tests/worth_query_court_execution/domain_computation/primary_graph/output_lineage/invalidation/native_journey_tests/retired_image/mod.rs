@@ -60,7 +60,7 @@ pub fn retirement_image(
         .unwrap();
     let handle = graph.integration_handle_for_test();
     let owner = (*handle.source_owner_for_test()).invalidation_owner_for_test();
-    handle.with_runtime_mut_for_test(request_execution, |runtime| {
+    handle.with_runtime_for_test(request_execution, |runtime| {
         let (snapshot, basis) = snapshot(runtime);
         register(
             owner,

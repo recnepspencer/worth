@@ -226,8 +226,7 @@ pub(super) fn assert_values(
             .unwrap();
         let value = record
             .extra()
-            .authoritative_aspect_state
-            .as_ref()
+            .authoritative_aspect_state()
             .unwrap()
             .get(&AspectKey::new("derived").unwrap())
             .unwrap();
@@ -257,7 +256,7 @@ pub(super) fn relation_payload(runtime: &RelationalRuntime, id: RelationId) -> V
         record.kind_id(),
         record.generation(),
         &record.extra().endpoints,
-        &record.extra().authoritative_aspect_state,
+        &record.extra().authoritative_aspect_state(),
     ))
     .unwrap()
 }

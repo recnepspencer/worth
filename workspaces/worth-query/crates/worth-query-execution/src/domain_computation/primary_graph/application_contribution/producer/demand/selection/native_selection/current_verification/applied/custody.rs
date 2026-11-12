@@ -55,8 +55,10 @@ pub(super) fn matches(
         implementation: checkpoint.implementation,
         family: family.into(),
         source_scope: prior.meaning().source_scope,
-        source_partition: checkpoint.source_partition,
-        source_epoch: checkpoint.source,
+        source_partition: worth_foundational::facade::CanonicalDigestId::new(
+            checkpoint.source_partition,
+        ),
+        source_epoch: worth_foundational::facade::CanonicalDigestId::new(checkpoint.source),
     };
     prior
         .matches_recorded_description(

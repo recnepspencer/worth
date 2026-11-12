@@ -1,5 +1,6 @@
 pub(crate) use worth_query_testkit_host::facade::host::temporal_conditional_operation::contribution_installation::checkpoint_transition::admission::*;
-use worth_query_host::facade::runtime::{ExecutionAllocationDenialClass, WorkCeilingDenial};
+use worth_query_testkit_host::facade::host::checkpoint_capture;
+use worth_execution::ExecutionRequest;
 
 #[test]
 fn checkpoint_transition_admission_refusal_retains_acknowledged_effects_for_explicit_repair() {
@@ -7,7 +8,7 @@ fn checkpoint_transition_admission_refusal_retains_acknowledged_effects_for_expl
     let mut calls = 0;
     let pending = worth_query_testkit_host::facade::host::checkpoint_capture::stopped(|phase| {
         calls = 0;
-        application_installation::in_memory_rostered_program_from_checkpoint_with_transition_in_advancement(
+        application_installation::WorthQueryInterimCheckpointRestore::rostered_program_with_transition_in_advancement(
             phase,
             validated_program(),
             application_installation::WorthQueryApplicationProgramRoster::new(),
@@ -25,27 +26,7 @@ fn checkpoint_transition_admission_refusal_retains_acknowledged_effects_for_expl
             },
         )
     });
-    let Some(CaptureDenial::Allocation(denied)) = pending.capture_denial() else {
-        panic!("exact final-frame allocation cause must survive: {pending:?}");
-    };
-    assert_eq!(
-        denied.classify(),
-        ExecutionAllocationDenialClass::Request(WorkCeilingDenial::Admission(
-            LeaseDenial::MemoryExhausted(
-                worth_query_host::facade::runtime::MemoryLimitDenial::Capacity {
-                    requested: denied.requested_payload_bytes().unwrap(),
-                    admitted: 0,
-                    level: worth_query_host::facade::runtime::MemoryLimitLevel::Policy {
-                        ancestor: 0
-                    }
-                }
-            )
-        ))
-    );
-    let frame_quote = denied
-        .requested_payload_bytes()
-        .expect("checked real final-frame payload quote");
-    assert!(frame_quote > 0);
+    assert_zero_memory(pending.capture_denial().expect("capture stopped"), Some(0));
     assert_eq!(
         calls, 1,
         "capture refusal follows actual authoring and acknowledgment"
@@ -54,24 +35,79 @@ fn checkpoint_transition_admission_refusal_retains_acknowledged_effects_for_expl
     let pending = pending
         .repair_to_checkpoint_with_request(worth_execution::ExecutionRequest::leased(&zero))
         .unwrap_err();
-    let Some(CaptureDenial::Execution(cause)) = pending.capture_denial() else {
-        panic!("zero request must preserve the bootstrap admission refusal: {pending:?}");
-    };
-    let primary_graph::WorthQueryPrimaryGraphInstallationDenialKind::ExecutionDenied {
-        kind: primary_graph::WorthQueryProviderSessionDenialKind::ExecutionResource {
-            denial: worth_query_host::facade::application_contribution::WorthQueryManagedComputationResourceDenial::MemoryLimit { requested: admission_bytes, admitted: 0, .. }, ..
-        }
-    } = cause.kind() else { panic!("typed original request memory refusal: {cause:?}"); };
-    assert!(admission_bytes > 0);
-    // Native preparation spends from the original request; the zero capture
-    // policy above narrowed only Query's final output backing. A grant for that
-    // frame alone now reaches the earlier Native preparation refusal.
-    let frame_only = worth_query_testkit_host::facade::host::checkpoint_capture::lease(
-        admission_bytes + frame_quote,
+    assert_zero_memory(
+        pending.capture_denial().expect("zero request stopped"),
+        None,
     );
-    let pending = pending
-        .repair_to_checkpoint_with_request(worth_execution::ExecutionRequest::leased(&frame_only))
-        .expect_err("the original request must fund Native preparation before final framing");
+    let original = checkpoint_capture::lease(64 * 1024 * 1024);
+    let capture_only = original
+        .child(checkpoint_capture::LeaseRequest {
+            policy: checkpoint_capture::ExecutionRequestPolicy::new(
+                original.policy().posture(),
+                original.policy().determinism(),
+                checkpoint_capture::ExecutionBudget::new(
+                    checkpoint_capture::NonZeroUsize::MIN,
+                    Some(0),
+                    None,
+                ),
+            ),
+            cancellation: checkpoint_capture::CancellationToken::new(),
+            deadline: None,
+        })
+        .unwrap();
+    let pending = checkpoint_capture::with_bootstrap_advancement_from_request(
+        ExecutionRequest::leased(&original),
+        |phase| {
+            pending.repair_to_checkpoint(
+                &phase,
+                application_installation::WorthQueryCheckpointCapturePolicy::Execution(
+                    &capture_only,
+                ),
+            )
+        },
+    )
+    .unwrap()
+    .expect_err("the complete capture cannot borrow its original parent when its selected child has zero memory");
+    let native_preparation_quote = assert_zero_memory(
+        pending.capture_denial().expect("zero capture stopped"),
+        Some(0),
+    );
+    assert_eq!(capture_only.charged_memory_bytes(), 0);
+    drop(capture_only);
+    // The selected request funds the entire Native/World/Query capture. Its
+    // exact first Native allocation quote came from the real zero-child refusal,
+    // before final framing. A smaller finite child must preserve that precise
+    // Native stop and return every transient reservation to the same payer.
+    let finite_limit = native_preparation_quote
+        .checked_sub(1)
+        .filter(|bytes| *bytes > 0)
+        .expect("the Native preparation quote includes real owner storage");
+    let finite = original
+        .child(checkpoint_capture::LeaseRequest {
+            policy: checkpoint_capture::ExecutionRequestPolicy::new(
+                original.policy().posture(),
+                original.policy().determinism(),
+                checkpoint_capture::ExecutionBudget::new(
+                    checkpoint_capture::NonZeroUsize::MIN,
+                    Some(finite_limit),
+                    None,
+                ),
+            ),
+            cancellation: checkpoint_capture::CancellationToken::new(),
+            deadline: None,
+        })
+        .unwrap();
+    let pending = checkpoint_capture::with_bootstrap_advancement_from_request(
+        ExecutionRequest::leased(&original),
+        |phase| {
+            pending.repair_to_checkpoint(
+                &phase,
+                application_installation::WorthQueryCheckpointCapturePolicy::Execution(&finite),
+            )
+        },
+    )
+    .unwrap()
+    .expect_err("the same Native preparation cannot fit below its own first quote");
     let Some(CaptureDenial::Execution(cause)) = pending.capture_denial() else {
         panic!("exact Native preparation cause must survive: {pending:?}");
     };
@@ -85,18 +121,46 @@ fn checkpoint_transition_admission_refusal_retains_acknowledged_effects_for_expl
         } if requested > admitted && admitted > 0),
         "the same owner retains the precise memory stop: {cause:?}"
     );
-    let released = frame_only.reserve_memory(frame_quote).unwrap();
+    assert_eq!(finite.charged_memory_bytes(), 0);
+    let released = finite.reserve_memory(finite_limit).unwrap();
     drop(released);
-    drop(frame_only);
-    // The same finite grant used by the original stopped fixture funds Native
-    // preparation and the final Query frame without re-running authoring.
-    let repair =
-        worth_query_testkit_host::facade::host::checkpoint_capture::lease(64 * 1024 * 1024);
-    let checkpoint = pending
-        .repair_to_checkpoint_with_request(worth_execution::ExecutionRequest::leased(&repair))
-        .expect("a fresh funded request captures the same acknowledged successor");
-    assert_eq!(checkpoint.bytes().len() as u64, frame_quote);
+    drop(finite);
+    assert_eq!(calls, 1, "refused capture retries cannot rerun authoring");
+    // Reuse the existing 64MiB original ceiling for the whole capture. The
+    // retired frame-only child quote cannot fund an authenticated origin.
+    let checkpoint = checkpoint_capture::with_bootstrap_advancement_from_request(
+        ExecutionRequest::leased(&original),
+        |phase| {
+            pending.repair_to_checkpoint(
+                &phase,
+                application_installation::WorthQueryCheckpointCapturePolicy::Execution(&original),
+            )
+        },
+    )
+    .unwrap()
+    .expect("a fresh funded request captures the same acknowledged successor");
+    let frame_quote = checkpoint.bytes().len() as u64;
     assert_eq!(checkpoint.charged_payload_bytes(), Some(frame_quote));
+    assert!(checkpoint.capture_origin().is_some());
+    assert!(original.charged_memory_bytes() > frame_quote);
     assert_target_record(checkpoint, 127);
+    assert_eq!(original.charged_memory_bytes(), 0);
     assert_eq!(calls, 1, "repair cannot rerun authoring");
+}
+
+fn assert_zero_memory(denial: &CaptureDenial, expected_ancestor: Option<u32>) -> u64 {
+    let CaptureDenial::Execution(cause) = denial else {
+        panic!("the complete capture retains its original admission cause: {denial:?}");
+    };
+    let primary_graph::WorthQueryPrimaryGraphInstallationDenialKind::ExecutionDenied {
+        kind: primary_graph::WorthQueryProviderSessionDenialKind::ExecutionResource {
+            denial: worth_query_host::facade::application_contribution::WorthQueryManagedComputationResourceDenial::MemoryLimit {
+                requested, admitted: 0,
+                level: worth_query_host::facade::application_contribution::WorthQueryMemoryLimitLevel::Policy,
+            }, partition_identity: None, policy_ancestor,
+        }
+    } = cause.kind() else { panic!("typed zero-memory refusal: {cause:?}"); };
+    assert_eq!(policy_ancestor, expected_ancestor);
+    assert!(requested > 0);
+    requested
 }

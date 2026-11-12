@@ -3,7 +3,6 @@
 //! and only when that selection holds no live entity but the one written.
 
 use std::collections::BTreeMap;
-use std::sync::Arc;
 
 use worth_foundational::facade::{
     AspectContractRevision, AspectFieldLocator, AspectIdentity, AspectKey, AspectValue,
@@ -21,7 +20,7 @@ use crate::domain_computation::primary_graph::application_attempt::{
     WorthQueryApplicationCommitDenial, WorthQueryApplicationCommitDenialKind,
     WorthQueryApplicationCommitDenialStage, WorthQueryApplicationObservedFact as Fact,
 };
-use crate::domain_computation::primary_graph::schema_layout::WorthQueryUniqueFieldFixture;
+use crate::domain_computation::primary_graph::schema_layout::unique_fields::WorthQueryUniqueFieldFixture;
 
 const KIND: KindId = KindId(7);
 const INDEX: DerivedIndexId = DerivedIndexId(8);
@@ -305,14 +304,16 @@ fn lower(
 fn selection(value: &str, candidates: Vec<EntityId>) -> Fact {
     Fact::IndexedEntitySelection {
         index_id: INDEX,
-        definition: Arc::new(DerivedIndexDefinition {
-            index_id: INDEX,
-            name: "unique-key".to_owned(),
-            kind: DerivedIndexKind::EntityField {
-                field_locator: field("key"),
+        definition: worth_relational::facade::indexes::RetainedDerivedIndexDefinition::from_owned(
+            DerivedIndexDefinition {
+                index_id: INDEX,
+                name: "unique-key".to_owned(),
+                kind: DerivedIndexKind::EntityField {
+                    field_locator: field("key"),
+                },
+                branch_scoped: true,
             },
-            branch_scoped: true,
-        }),
+        ),
         entity_kind: KIND,
         locator: field("key"),
         value: text(value),

@@ -32,6 +32,10 @@ where
         }
     }
 
+    pub(in crate::domain_computation::primary_graph) fn is_empty(&self) -> bool {
+        self.declared.is_empty() && self.providers.is_empty()
+    }
+
     /// Whether a declared producer runs `Operation`, whose partitioned
     /// computation is being installed; when one does, that producer's runs
     /// retain the computation's state. Every producer is declared before any
@@ -147,47 +151,64 @@ where
         packages: &worth_query_installation::facade::WorthQueryInstalledPackageIndex,
     ) -> Result<
         WorthQueryInstalledApplicationProducerRegistry<Schema>,
-        WorthQueryPrimaryGraphInstallationDenial,
+        super::seal_refusal::RefusedProducerSeal<Schema>,
     > {
-        super::scope_ownership::require_family_agreement(&self.declared)?;
-        if let Some((left, right)) = duplicate_operation_binding(&self.declared) {
-            return Err(denial(
-                DenialKind::DuplicateProducerOperationBinding,
-                format!("{left} / {right}"),
+        let mut entries = BTreeMap::new();
+        let validation = (|| {
+            super::scope_ownership::require_family_agreement(&self.declared)?;
+            if let Some((left, right)) = duplicate_operation_binding(&self.declared) {
+                return Err(denial(
+                    DenialKind::DuplicateProducerOperationBinding,
+                    format!("{left} / {right}"),
+                ));
+            }
+            self.validate_complete()
+        })();
+        if let Err(cause) = validation {
+            return Err(super::seal_refusal::RefusedProducerSeal::new(
+                self, entries, cause,
             ));
         }
-        let missing = self
-            .declared
-            .keys()
-            .find(|identity| !self.providers.contains_key(*identity));
-        if let Some(identity) = missing {
-            return Err(denial(DenialKind::MissingProducerProvider, identity));
+        while let Some((identity, declaration)) = self.declared.pop_first() {
+            let edition =
+                match InstalledProducerEdition::from_declaration(&declaration, build_identity) {
+                    Ok(edition) => edition.retaining_computation(
+                        self.retaining.contains(&declaration.operation_type),
+                    ),
+                    Err(cause) => {
+                        self.declared.insert(identity, declaration);
+                        return Err(super::seal_refusal::RefusedProducerSeal::new(
+                            self, entries, cause,
+                        ));
+                    }
+                };
+            let (value, executor) = self
+                .providers
+                .remove(&identity)
+                .expect("complete original provider inventory");
+            let executor = match executor.prepare(support, packages) {
+                Ok(executor) => executor,
+                Err(refused) => {
+                    self.providers
+                        .insert(identity.clone(), (value, refused.pending));
+                    self.declared.insert(identity, declaration);
+                    return Err(super::seal_refusal::RefusedProducerSeal::new(
+                        self,
+                        entries,
+                        refused.cause,
+                    ));
+                }
+            };
+            entries.insert(
+                identity,
+                Arc::new(InstalledProducerProvider {
+                    declaration,
+                    edition,
+                    value,
+                    executor,
+                }),
+            );
         }
-        let entries = self
-            .declared
-            .into_iter()
-            .map(|(identity, declaration)| {
-                let edition =
-                    InstalledProducerEdition::from_declaration(&declaration, build_identity)?
-                        .retaining_computation(
-                            self.retaining.contains(&declaration.operation_type),
-                        );
-                let (value, executor) = self
-                    .providers
-                    .remove(&identity)
-                    .expect("complete provider inventory checked");
-                let executor = executor.prepare(support, packages)?;
-                Ok((
-                    identity,
-                    Arc::new(InstalledProducerProvider {
-                        declaration,
-                        edition,
-                        value,
-                        executor,
-                    }),
-                ))
-            })
-            .collect::<Result<_, WorthQueryPrimaryGraphInstallationDenial>>()?;
         Ok(WorthQueryInstalledApplicationProducerRegistry {
             entries,
             marker: PhantomData,

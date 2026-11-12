@@ -4,7 +4,7 @@ use worth_relational::facade::mvcc::RelationalTransactionIntent;
 use worth_relational::facade::runtime::RelationalRuntime;
 pub fn commit_empty(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-    runtime: &mut RelationalRuntime,
+    runtime: &RelationalRuntime,
     branch: &str,
 ) -> RelationalCommitReceipt {
     let branch_id = BranchId(branch.to_owned());

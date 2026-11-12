@@ -1,5 +1,6 @@
 use super::envelope::{admitted_chunk_size, digest, encode, nonzero_16, nonzero_32};
 use super::{BlobRecordDenial, BlobRecordKind};
+use worth_foundational::CanonicalDigestId;
 
 const OCCURRENCE_BYTES: usize = 80;
 const CONTENT_PREFIX_BYTES: usize = 12;
@@ -18,7 +19,7 @@ pub struct BlobChunkFrameV1;
 pub struct DecodedBlobChunkFrameV1<'bytes> {
     occurrence: BlobChunkOccurrenceV1,
     chunk_size: u32,
-    stored_digest: [u8; 32],
+    stored_digest: CanonicalDigestId,
     bytes: &'bytes [u8],
 }
 
@@ -114,7 +115,7 @@ impl<'bytes> DecodedBlobChunkFrameV1<'bytes> {
         Ok(Self {
             occurrence,
             chunk_size,
-            stored_digest,
+            stored_digest: CanonicalDigestId::new(stored_digest),
             bytes: &content[12..],
         })
     }
@@ -126,7 +127,7 @@ impl<'bytes> DecodedBlobChunkFrameV1<'bytes> {
         self.chunk_size
     }
     pub const fn stored_digest(&self) -> [u8; 32] {
-        self.stored_digest
+        *self.stored_digest.bytes()
     }
     pub const fn bytes(&self) -> &'bytes [u8] {
         self.bytes

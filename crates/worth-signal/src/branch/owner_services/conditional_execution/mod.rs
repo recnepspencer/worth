@@ -109,3 +109,6 @@ pub(crate) use owned_async::{
     SignalOwnedAsyncManagedHandoff, SignalOwnedAsyncManagedQueueHandoff,
     SignalOwnedAsyncManagedWakeCleanup,
 };
+#[cfg(test)]
+#[path = "mod_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;

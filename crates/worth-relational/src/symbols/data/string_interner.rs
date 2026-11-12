@@ -22,6 +22,14 @@ impl Default for StringInterner {
 }
 
 impl StringInterner {
+    /// Ordinary borrowed traversal. Its two path buffers require caller admission
+    /// when used inside an original-request operation.
+    pub(crate) fn retained_entries(&self) -> im::ordmap::Iter<'_, Symbol, StoredSymbolText> {
+        self.by_symbol.iter()
+    }
+    pub(crate) fn retained_entry_count(&self) -> usize {
+        self.by_symbol.len()
+    }
     pub(crate) fn identity_frontier(&self) -> u32 {
         self.next_symbol
     }

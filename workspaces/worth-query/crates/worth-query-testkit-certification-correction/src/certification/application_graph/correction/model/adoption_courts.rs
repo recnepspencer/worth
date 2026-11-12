@@ -125,7 +125,7 @@ pub fn reverse_under_successor() {
         .prepare()
         .unwrap();
     let WorthQueryApplicationCorrectionPreparation::Settled(
-        WorthQueryApplicationMutationOutcome::AlreadyCommitted(replayed),
+        WorthQueryApplicationMutationOutcome::RecoveredCommitted(replayed),
     ) = replay
     else {
         panic!("retry must recover the same successor occurrence");

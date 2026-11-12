@@ -1,4 +1,5 @@
 use sha2::{Digest, Sha256};
+use worth_foundational::CanonicalDigestId;
 
 use super::cut_recovery::BackupCutRecoverySource;
 use super::cut_recovery_path::{
@@ -11,7 +12,7 @@ pub(super) const MAX_BACKUP_CUT_RECOVERY_BYTES: usize = 64 * 1024 * 1024;
 const MAX_RECOVERY_SOURCES: usize = 262_144;
 
 pub(super) struct DecodedBackupCutRecovery {
-    pub(super) authority_fingerprint: [u8; 32],
+    pub(super) authority_fingerprint: CanonicalDigestId,
     pub(super) security_progression_fingerprint: u64,
     pub(super) format_profile: String,
     pub(super) backend_profile: String,
@@ -51,7 +52,7 @@ pub(super) fn encode_backup_cut_recovery(
     push_u32(&mut encoded, sources.len())?;
     for source in sources {
         push_bytes(&mut encoded, source.output_name.as_bytes())?;
-        push_raw(&mut encoded, &source.physical_identity)?;
+        push_raw(&mut encoded, source.physical_identity.bytes())?;
         let (platform, path) = encode_recovery_path(&source.path).map_err(map_path_denial)?;
         push_raw(&mut encoded, &[platform])?;
         push_bytes(&mut encoded, &path)?;
@@ -112,14 +113,14 @@ pub(super) fn decode_backup_cut_recovery(
         sources.push(BackupCutRecoverySource {
             output_name,
             path,
-            physical_identity,
+            physical_identity: CanonicalDigestId::new(physical_identity),
         });
     }
     if !cursor.is_empty() {
         return Err(BackupCutRecoveryCodecDenial::InvalidEncoding);
     }
     Ok(DecodedBackupCutRecovery {
-        authority_fingerprint,
+        authority_fingerprint: CanonicalDigestId::new(authority_fingerprint),
         security_progression_fingerprint,
         format_profile,
         backend_profile,

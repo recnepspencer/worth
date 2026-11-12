@@ -180,10 +180,17 @@ impl ProductBranchObservationMismatch {
 /// history requires the caller to choose an available branch or occurrence.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum RuntimeWorldBranchAdmissionDenial {
+    DurableBranchPublicationRequired,
+    HomeCreationRequestRequired,
+    MemoryCreationRequestRequired,
+    ProgramSourceRequired,
+    ForeignProgramSource,
+    ProgramSourceMismatch,
     CancelledBeforeEffect,
     DeadlineBeforeEffect,
     OwnerUnavailable,
     ForeignOwner,
+    StaleIncarnation,
     RetiredBranch,
     DuplicateName,
     CapacityExhausted,
@@ -207,12 +214,32 @@ pub enum RuntimeWorldBranchAdmissionDenial {
     /// every shared exact axis of the admitted source basis, so forking it
     /// would silently create a branch from state the caller never observed.
     ForkSourceChanged,
+    /// Native deliberately permits forks only from a published, nonempty source.
+    EmptyNativeForkSource,
     /// A bounded history carrier did not contain the requested entry or had no
     /// owner-issued continuation for this product occurrence.
     HistoryEntryUnavailable,
 }
 
 impl ProductBranchObservation {
+    pub(crate) fn begin_close_basis_retirement(
+        &mut self,
+    ) -> Result<crate::history::CompositeCommitRetirement, ()> {
+        let snapshot = Arc::get_mut(&mut self.snapshot).ok_or(())?;
+        Ok(snapshot.begin_home_retirement())
+    }
+
+    /// Disarm only this exclusive original observation. Inert allocation
+    /// ownership stays here; independently cloned observations retain their veto.
+    pub(crate) fn try_retire_for_close(&mut self) -> Result<(), ()> {
+        let obligation = Arc::get_mut(&mut self.obligation).ok_or(())?;
+        obligation._components.try_retire_shared_for_close()?;
+        if let Some(history) = obligation.history.get_mut() {
+            history.try_retire_for_close()?;
+        }
+        Ok(())
+    }
+
     pub(crate) fn prepare_successor(
         snapshot: ProductBranchReferenceSnapshot,
         components: ObservationRetentionObligation,
@@ -263,6 +290,17 @@ impl ProductBranchObservation {
         })
     }
 
+    pub(crate) fn fork_checkpoint_history(
+        &self,
+    ) -> Result<
+        crate::retention::HistoryRetentionObligation,
+        crate::retention::RetentionTransferDenial,
+    > {
+        self.obligation
+            ._components
+            .fork_history(self.snapshot.commit())
+    }
+
     pub fn owner_identity(&self) -> RuntimeWorldOwnerIdentity {
         self.snapshot.owner()
     }
@@ -281,6 +319,17 @@ impl ProductBranchObservation {
 
     pub fn selected_commit(&self) -> &CompositeCommitIdentity {
         self.snapshot.commit().identity()
+    }
+
+    /// Original publication provenance of this retained product occurrence.
+    /// This observation cannot issue or restart the recorded attempt.
+    pub fn publication_attempt(
+        &self,
+    ) -> Option<&crate::identity::CompositePublicationAttemptIdentity> {
+        match self.snapshot.commit().provenance() {
+            crate::history::CompositeCommitProvenance::Bootstrap(_) => None,
+            crate::history::CompositeCommitProvenance::Publication(attempt) => Some(attempt),
+        }
     }
 
     pub fn basis(&self) -> &AdmittedCompositeRuntimeWorldBasis {

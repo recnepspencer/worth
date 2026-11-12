@@ -1,4 +1,9 @@
-use std::sync::{Arc, Weak};
+use crate::durability::data::RelationalRecoveryStop;
+use complete::CapturedCompleteRegion;
+use worth_execution::ExecutionRequest;
+mod complete;
+pub(crate) use complete::{RegionCheckpointAcknowledgementDenial, RetiredRegionCheckpointBindings};
+use std::sync::Arc;
 
 use super::RelationalRegionResidency;
 use crate::branch::RelationalBranchRootSchemaAuthority;
@@ -14,26 +19,41 @@ use crate::storage::overlay::PartitionContentCommitment;
 use crate::symbols::data::StringInterner;
 
 #[derive(Debug, Clone)]
-pub(super) struct RecordedRegionCheckpoint {
+pub(crate) struct RecordedRegionCheckpoint {
     pub(super) leaf: RelationalCheckpointRegion,
     pub(super) history_members: Arc<RelationalHistoryMemberDirectory>,
 }
 
 #[derive(Debug, Clone)]
 pub(crate) struct RelationalCheckpointRegionPublication {
-    cell: Weak<RelationalRegionResidency>,
+    cell: super::cell::RegionCellWeak,
     schema_digest: [u8; 32],
     recorded: RecordedRegionCheckpoint,
 }
 
 impl RelationalCheckpointRegionPublication {
-    pub(crate) fn acknowledge(&self) {
-        if let Some(cell) = self.cell.upgrade() {
-            cell.checkpoint_bindings
-                .lock()
-                .unwrap_or_else(|poisoned| poisoned.into_inner())
-                .insert(self.schema_digest, self.recorded.clone());
-        }
+    pub(crate) fn try_acknowledge(&self) -> Result<Option<RecordedRegionCheckpoint>, ()> {
+        let Some(cell) = self.cell.upgrade() else {
+            return Ok(None);
+        };
+        let mut bindings = match cell.checkpoint_bindings.try_lock() {
+            Ok(guard) => guard,
+            Err(std::sync::TryLockError::Poisoned(error)) => error.into_inner(),
+            Err(std::sync::TryLockError::WouldBlock) => return Err(()),
+        };
+        let displaced = bindings.get(&self.schema_digest).cloned();
+        let mut candidate = bindings.clone();
+        candidate
+            .insert_cloned_native_in(
+                &self.schema_digest,
+                &self.recorded,
+                worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+            )
+            .map_err(|_| ())?;
+        let old = std::mem::replace(&mut *bindings, candidate);
+        drop(bindings);
+        drop(old);
+        Ok(displaced)
     }
 }
 
@@ -176,7 +196,7 @@ impl RelationalRegionResidency {
         let history_dependencies = recorded.history_members.declarations_for(&required);
         Ok(RelationalCapturedRegionCheckpoint {
             publication: RelationalCheckpointRegionPublication {
-                cell: Arc::downgrade(self),
+                cell: Self::downgrade(self),
                 schema_digest,
                 recorded: recorded.clone(),
             },
@@ -206,4 +226,49 @@ pub(crate) fn verify_checkpoint_directory(
             .map(|actual| actual.as_ref() == expected)
             .map_err(|error| error.into_failure(directory.partition_id()))
     })
+}
+
+impl RelationalRegionResidency {
+    pub(crate) fn capture_complete_for_request(
+        self: &Arc<Self>,
+        request: &ExecutionRequest<'_, '_>,
+        schema: &RelationalBranchRootSchemaAuthority,
+        schema_digest: [u8; 32],
+        symbols: &dyn crate::symbols::data::SymbolTextLookup,
+    ) -> Result<CapturedCompleteRegion, RelationalRecoveryStop> {
+        request
+            .consult()
+            .map_err(|cause| RelationalRecoveryStop::Request(cause.into()))?;
+        let lease = match self.lease_resident_full()? {
+            Some(lease) => lease,
+            None => self.demand_full(
+                request,
+                super::history_capture_bound::FULL_HISTORY_READ_LIMIT,
+                None,
+            )?,
+        };
+        lease.capture_checkpoint_data_for_request(request, schema, schema_digest, symbols)
+    }
+}
+
+/// DATA projection consumes the actual same-cell counted Full observation.
+impl super::RelationalResidencyLease<super::Full> {
+    pub(crate) fn capture_checkpoint_data_for_request(
+        &self,
+        request: &ExecutionRequest<'_, '_>,
+        schema: &RelationalBranchRootSchemaAuthority,
+        schema_digest: [u8; 32],
+        symbols: &dyn crate::symbols::data::SymbolTextLookup,
+    ) -> Result<CapturedCompleteRegion, RelationalRecoveryStop> {
+        crate::storage::substrate::maintenance::ReconstructionLane::enter_reconstruction(|lane| {
+            self.cell().capture_full_contents_for_request(
+                lane,
+                self,
+                request,
+                schema,
+                schema_digest,
+                symbols,
+            )
+        })
+    }
 }

@@ -1,5 +1,6 @@
 //! Complete census outside edit invoices; sparse Parent results keep their actual order.
 use super::*;
+use crate::application_invariant_acceptance::managed_index::prefix_observation;
 fn roster<'a>(
     items: &'a [authoring::ItemSeed],
     x: &'a str,
@@ -53,7 +54,7 @@ pub(super) fn check(
     world: &host::Host,
     principal: &Principal,
     scope: &WorthQueryRequestScope,
-    calls: &prefix::Calls,
+    calls: &prefix_observation::Calls,
     items: &[authoring::ItemSeed],
     x: &str,
     stage: &str,

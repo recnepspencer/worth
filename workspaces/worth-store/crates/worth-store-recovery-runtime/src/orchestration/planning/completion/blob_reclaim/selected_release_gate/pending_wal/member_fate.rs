@@ -6,7 +6,7 @@ use worth_store_physical_format::{
 };
 use worth_store_recovery_physics::{PhysicalRedoProjection, RecoveryOperationFate};
 
-use super::{PlanningContext, ResolvedPlanningBasis};
+use super::{PlanningContext, ResolvedPlanningState};
 
 pub(super) struct PendingMemberFate {
     pub(super) descriptor: BlobReclaimDescriptorV3,
@@ -16,7 +16,7 @@ pub(super) struct PendingMemberFate {
 
 pub(super) fn witness(
     context: &PlanningContext,
-    basis: &ResolvedPlanningBasis,
+    basis: &ResolvedPlanningState,
     projection: &PhysicalRedoProjection,
 ) -> Option<PendingMemberFate> {
     let descriptor_bytes = basis.redo.admitted_projection_record_bytes(projection, 0)?;

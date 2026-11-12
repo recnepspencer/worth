@@ -18,9 +18,7 @@ pub(super) fn strategy_schema_registry() -> crate::schema::data::RelationalSchem
     .build_registry()
 }
 
-pub(super) fn persisted_strategy_runtime(
-    medium: std::sync::Arc<crate::tests::support::TestDurableMedium>,
-) -> RelationalRuntime {
+pub(super) fn strategy_runtime() -> RelationalRuntime {
     let intent_descriptor = IntentReconciliationStrategy::descriptor(
         crate::facade::commit_strategies::CommitStrategyId(881),
     );
@@ -48,7 +46,7 @@ pub(super) fn persisted_strategy_runtime(
         .commit_strategy_executor(ReplicaConvergenceStrategy::execution_registration(
             &replica_descriptor,
         ))
-        .build_durable(medium.attachment())
+        .build()
         .expect("valid native runtime configuration")
 }
 

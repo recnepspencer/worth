@@ -97,3 +97,6 @@ impl SignalGraph {
         outcome.0.resume()
     }
 }
+#[cfg(test)]
+#[path = "execution_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;

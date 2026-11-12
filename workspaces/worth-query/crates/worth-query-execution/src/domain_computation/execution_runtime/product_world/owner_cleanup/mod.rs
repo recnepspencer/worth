@@ -64,6 +64,7 @@ pub enum WorthQueryProductBranchOwnerCleanupDenial {
     /// branch transition until reopening it decides the fate.
     RelationalDurabilityUnresolved,
     SignalOwnerDenied,
+    DurableSignalRetirementRequired,
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]

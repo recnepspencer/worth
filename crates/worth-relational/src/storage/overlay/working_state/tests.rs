@@ -142,7 +142,7 @@ fn sparse_entity_overlay_only_materializes_touched_slot_authoritative_metadata()
         .is_none());
     assert!(partition_state.entity_arena.extra[0].lineage_id.is_none());
     assert!(partition_state.entity_arena.extra[0]
-        .authoritative_aspect_state
+        .authoritative_aspect_state()
         .is_none());
 }
 
@@ -166,13 +166,13 @@ fn sparse_relation_overlay_keeps_relation_shape_without_full_authoritative_state
         partition_id: partition,
         kind_id: KindId(2),
         version_id: VersionId(1),
-        extra: RelationExtra {
-            endpoints: Some(RelationEndpoints {
+        extra: RelationExtra::from_unbudgeted_parts(
+            Some(RelationEndpoints {
                 source: EntityId::new(PartitionId(1), 0, 1),
                 target: EntityId::new(PartitionId(2), 0, 1),
             }),
-            authoritative_aspect_state: None,
-        },
+            None,
+        ),
     });
 
     let mut base = BTreeMap::new();
@@ -197,6 +197,6 @@ fn sparse_relation_overlay_keeps_relation_shape_without_full_authoritative_state
     assert!(partition_state.relation_arena.metadata_history[0].is_empty());
     assert!(partition_state.relation_arena.extra[0].endpoints.is_none());
     assert!(partition_state.relation_arena.extra[0]
-        .authoritative_aspect_state
+        .authoritative_aspect_state()
         .is_none());
 }

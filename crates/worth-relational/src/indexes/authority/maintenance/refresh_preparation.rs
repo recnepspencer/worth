@@ -23,13 +23,9 @@ impl super::owner::IndexMaintenanceOwner<'_> {
         let root = after.root();
         let schema_version = root.schema_authority().schema_version();
         let authoring = root
-            .canonical_envelope()
-            .map(|envelope| &envelope.branch_context);
-        if work.routes_installed_indexes()
-            && self
-                .indexes
-                .with_definitions(|definitions| definitions.is_empty())
-        {
+            .commit_evidence()
+            .map(|evidence| evidence.authoring_branch());
+        if work.routes_installed_indexes() && self.catalog().is_empty() {
             return Ok(PreparedRefresh {
                 publication: IndexGenerationPublicationBasis::new(
                     request,
@@ -63,6 +59,7 @@ impl super::owner::IndexMaintenanceOwner<'_> {
                 .indexes
                 .maintenance_inputs_admitted(
                     index_id,
+                    self.prepared_catalog(),
                     &request.branch_id,
                     request.source_commit_id,
                     after.version_id(),
@@ -110,6 +107,11 @@ impl super::owner::IndexMaintenanceOwner<'_> {
                     .ok_or(DerivedIndexMaintenanceDenialKind::WorkBudgetExceeded)?;
                 work.prepare(initialized as u64 + 1, backing as u64)?;
                 reused.push(generation.as_ref().clone());
+                if let Some(basis) = &mut basis {
+                    basis.replace_admitted(generation, &mut |units, bytes| {
+                        work.prepare(units, bytes)
+                    })?;
+                }
                 work.note_reused_generations(1);
                 continue;
             }
@@ -127,6 +129,9 @@ impl super::owner::IndexMaintenanceOwner<'_> {
                     (seed.source_branch_id.0.len() + seed.applicability.branch_id.0.len()) as u64,
                 )?;
                 reused.push(seed.as_ref().clone());
+                if let Some(basis) = &mut basis {
+                    basis.replace_admitted(seed, &mut |units, bytes| work.prepare(units, bytes))?;
+                }
                 work.note_seeded_generations(1);
                 continue;
             }
@@ -237,12 +242,7 @@ impl super::owner::IndexMaintenanceOwner<'_> {
             }
         }
         if !pending_fields.is_empty() {
-            let routing = self
-                .indexes
-                .definition_read_binding()
-                .snapshot()
-                .routing(after.root().schema_authority().authority_digest())
-                .ok_or(DerivedIndexMaintenanceDenialKind::ColdReconstructionRequired)?;
+            let routing = self.routes(after.root())?;
             field::refresh(
                 execution,
                 &mut pending_fields,

@@ -1,3 +1,4 @@
+mod home_retirement;
 mod output_availability_candidate;
 mod retention;
 pub(in crate::domain_computation::primary_graph) use output_availability_candidate::{
@@ -75,10 +76,11 @@ pub use aggregate::{
     WorthQueryInvariantAggregate, WorthQueryInvariantAggregateDenial,
     WorthQueryInvariantAggregateDenialKind,
 };
+pub use consumed_output::SelectedPendingConsumedOutput;
 pub use consumed_output::VerificationCapacityStop;
 pub(in crate::domain_computation::primary_graph) use consumed_output::{
     ConsumedOutputEvidence, ConsumedOutputVerification, ConsumedOutputVerificationStop,
-    PublicationRecoveryStop, SelectedPendingConsumedOutput,
+    PublicationRecoveryStop,
 };
 pub use field_projection::WorthQueryRetainedSnapshotRead;
 pub use locked_reader::{
@@ -191,7 +193,7 @@ where
         &self,
         request_execution: &worth_execution::ExecutionRequest<'_, '_>,
     ) -> usize {
-        self.graph.with_runtime_mut(request_execution, |runtime| {
+        self.graph.with_runtime(request_execution, |runtime| {
             runtime.retention().active_snapshot_count()
         })
     }
@@ -211,7 +213,7 @@ where
                 )
             })?;
         let execution = &request;
-        let (basis, snapshot) = self.graph.with_runtime_mut(execution, |runtime| {
+        let (basis, snapshot) = self.graph.with_runtime(execution, |runtime| {
             let identity = runtime.main_branch_identity();
             let (_, basis) = runtime
                 .observe_branch(&identity)

@@ -82,7 +82,7 @@ impl<'scope> TestHostRequest<'scope> {
         self.lend_installed(
             AdvancementSource::Relational(
                 runtime
-                    .source
+                    .source()
                     .authoritative_source_profile()
                     .runtime_instance_id(),
             ),

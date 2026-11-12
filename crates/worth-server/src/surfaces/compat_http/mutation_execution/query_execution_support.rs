@@ -5,23 +5,6 @@ use crate::{
     WorthServerQueryHandoffDenialFacts,
 };
 
-use super::{request::WorthServerCompatibilityMutationRequest, WorthServerMutationPrecondition};
-
-pub(crate) fn canonical_mutation_request_digest(
-    prepared_request: &crate::WorthServerCompatibilityPreparedRequest,
-    operation_name: &str,
-    mutation_request: &WorthServerCompatibilityMutationRequest,
-    precondition: &WorthServerMutationPrecondition,
-) -> String {
-    format!(
-        "compat-http-mutation-request-digest-v1|request:{}|operation:{}|mutation:{}|precondition:{}",
-        prepared_request.request_contract().canonical_digest(),
-        operation_name.trim(),
-        mutation_request.canonical_digest(),
-        precondition.request_identity_digest(),
-    )
-}
-
 pub(crate) fn map_operation_request_denial(
     denial: WorthServerOperationRequestDenial,
 ) -> WorthServerQueryHandoffDenial {

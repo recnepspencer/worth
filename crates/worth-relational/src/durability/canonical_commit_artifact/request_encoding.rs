@@ -16,6 +16,41 @@ use worth_execution::{
 };
 
 impl Artifact {
+    pub(crate) fn from_owned_original(
+        bytes: worth_execution::ExecutionImmutableBytes,
+        execution: &ExecutionRequest<'_, '_>,
+    ) -> Result<Self, ControlledFrameCopyDenial> {
+        let mut answer = None;
+        let handoff = optional_stage(
+            execution,
+            |context, _| {
+                answer = Some((|| {
+                    let (header, payload) = CanonicalCommitArtifactHeader::inspect(bytes.bytes())
+                        .map_err(ControlledFrameCopyDenial::Frame)?;
+                    let digest = Digest::of_payload_for_request(
+                        header.position.0,
+                        header.commit_id.0,
+                        payload,
+                        context,
+                    )
+                    .map_err(copy_digest)?;
+                    header
+                        .require_digest(digest)
+                        .map_err(ControlledFrameCopyDenial::Frame)?;
+                    Ok(header)
+                })());
+            },
+            |_| 0,
+        );
+        let header = match (handoff, answer) {
+            (Ok(()), Some(answer)) => answer?,
+            (Err(_), Some(Err(cause))) => return Err(cause),
+            (Err(cause), _) => return Err(ControlledFrameCopyDenial::Request(cause)),
+            (Ok(()), None) => unreachable!("completed original verification ran its callback"),
+        };
+        Ok(Self { bytes, header })
+    }
+
     pub(crate) fn copy_frame_original(
         input: &[u8],
         execution: &ExecutionRequest<'_, '_>,
@@ -27,8 +62,13 @@ impl Artifact {
                 answer = Some((|| {
                     let (header, payload) = CanonicalCommitArtifactHeader::inspect(input)
                         .map_err(ControlledFrameCopyDenial::Frame)?;
-                    let digest = Digest::of_payload_for_request(payload, context)
-                        .map_err(ControlledFrameCopyDenial::Request)?;
+                    let digest = Digest::of_payload_for_request(
+                        header.position.0,
+                        header.commit_id.0,
+                        payload,
+                        context,
+                    )
+                    .map_err(copy_digest)?;
                     header
                         .require_digest(digest)
                         .map_err(ControlledFrameCopyDenial::Frame)?;
@@ -131,8 +171,13 @@ fn encode(
             emitted,
         });
     }
-    let digest = Digest::of_payload_for_request(&bytes.elements()[HEADER_LEN..], context)
-        .map_err(Denial::Request)?;
+    let digest = Digest::of_payload_for_request(
+        header.position.0,
+        header.commit_id.0,
+        &bytes.elements()[HEADER_LEN..],
+        context,
+    )
+    .map_err(encode_digest)?;
     for (index, byte) in digest.as_bytes().iter().enumerate() {
         bytes
             .replace_initialized(DIGEST_OFFSET + index, *byte)
@@ -220,5 +265,24 @@ fn allocation(cause: ExecutionRequestArrayDenial) -> Denial {
     match cause {
         ExecutionRequestArrayDenial::Request(cause) => Denial::Request(cause.into()),
         ExecutionRequestArrayDenial::Allocation(cause) => Denial::Allocation(cause),
+    }
+}
+
+fn copy_digest(cause: super::payload_digest::RequestDigestDenial) -> ControlledFrameCopyDenial {
+    match cause {
+        super::payload_digest::RequestDigestDenial::Frame(cause) => {
+            ControlledFrameCopyDenial::Frame(cause)
+        }
+        super::payload_digest::RequestDigestDenial::Request(cause) => {
+            ControlledFrameCopyDenial::Request(cause)
+        }
+    }
+}
+fn encode_digest(cause: super::payload_digest::RequestDigestDenial) -> Denial {
+    match cause {
+        super::payload_digest::RequestDigestDenial::Frame(cause) => Denial::PayloadEncoding {
+            detail: cause.to_string(),
+        },
+        super::payload_digest::RequestDigestDenial::Request(cause) => Denial::Request(cause),
     }
 }

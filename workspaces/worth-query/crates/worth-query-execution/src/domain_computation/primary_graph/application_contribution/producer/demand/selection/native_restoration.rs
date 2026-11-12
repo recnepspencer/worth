@@ -46,10 +46,14 @@ impl<Schema: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRunti
                 ),
             family: Family::IDENTITY.to_owned(),
             source_scope: source.source_root(),
-            source_partition: source.partition_identity(),
-            source_epoch: source.checkpoint_identity().bytes(),
+            source_partition: worth_foundational::CanonicalDigestId::new(
+                source.partition_identity(),
+            ),
+            source_epoch: worth_foundational::CanonicalDigestId::new(
+                source.checkpoint_identity().bytes(),
+            ),
         };
-        let restored = native.with_runtime_mut(graph, execution, foreign, |runtime| {
+        let restored = native.with_runtime(graph, execution, foreign, |runtime| {
             runtime
                 .readmit_restored_producer_prior(
                     execution,

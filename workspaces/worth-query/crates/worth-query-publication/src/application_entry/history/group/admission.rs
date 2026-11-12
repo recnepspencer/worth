@@ -127,13 +127,10 @@ where
         document: &WorthQueryApplicationHistoryDocument<'runtime, S, H, Payload, Outputs>,
         request: &WorthQueryApplicationRequest<'_, '_, '_, S>,
     ) -> Result<(), WorthQueryHistoryGroupDenial> {
-        if let Some(recovery) = self.recovery.take()
-            && let Err(recovery) = recovery.release()
+        if let Err(cause) =
+            super::super::edit::ForkRecovery::release_in_request(&mut self.recovery, request)
         {
-            self.recovery = Some(recovery);
-            return Err(WorthQueryHistoryGroupDenial::Member(
-                WorthQueryHistoryEditDenial::ForkRecovery,
-            ));
+            return Err(WorthQueryHistoryGroupDenial::Member(cause));
         }
         let runtime = document.owner.application();
         runtime.with_application_advancement(request.scope,|phase| {

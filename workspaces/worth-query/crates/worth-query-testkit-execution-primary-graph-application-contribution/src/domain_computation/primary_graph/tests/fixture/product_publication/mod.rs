@@ -37,7 +37,7 @@ pub fn publish_relational_mutation_on_application<
         .primary_graph_for_test()
         .unwrap();
     let handle = graph.integration_handle_for_test();
-    handle.with_runtime_mut_for_test(request_execution, |runtime| {
+    handle.with_runtime_for_test(request_execution, |runtime| {
         let observation = published_basis.observation();
         let head = observation
             .commit_receipt()
@@ -83,7 +83,7 @@ execution: &worth_execution::ExecutionRequest<'_, '_>,
         .primary_graph_for_test()
         .unwrap();
     let handle = graph.integration_handle_for_test();
-    let candidate = handle.with_runtime_mut_for_test(execution, |runtime| {
+    let candidate = handle.with_runtime_for_test(execution, |runtime| {
         let mut transaction = runtime
             .begin_branch_transaction(
                 product.relational_basis_for_test(),

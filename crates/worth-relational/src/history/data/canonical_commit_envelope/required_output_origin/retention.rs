@@ -9,7 +9,7 @@ pub(super) fn origin_request(
 }
 
 pub(super) fn origin_retention_bytes(
-    envelope: &CanonicalCommitEnvelope,
+    envelope: &CanonicalCommitEnvelopeBody,
     basis: &AdmittedRelationalBranchBasis,
     producer_bytes: usize,
     targets: usize,

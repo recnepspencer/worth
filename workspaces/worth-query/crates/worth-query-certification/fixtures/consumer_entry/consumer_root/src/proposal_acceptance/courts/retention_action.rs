@@ -48,7 +48,8 @@ pub(super) fn complete(
             let retention::Changed { days } = result;
             assert_eq!(*days, expected_days);
         }
-        WorthQuerySourceCompletion::Recovered { .. } => panic!("first execution must be fresh"),
+        WorthQuerySourceCompletion::Recovered { .. }
+        | WorthQuerySourceCompletion::Recorded { .. } => panic!("first execution must be fresh"),
     }
     completed
         .close(request)

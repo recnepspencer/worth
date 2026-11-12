@@ -9,6 +9,7 @@ use crate::{
     PhysicalRecordSlot, PhysicalRootReference, PhysicalSegmentId,
 };
 use sha2::{Digest, Sha256};
+use worth_foundational::CanonicalDigestId;
 
 #[test]
 fn output_names_are_unique_across_nonadjacent_families() {
@@ -30,8 +31,8 @@ fn output_names_are_unique_across_nonadjacent_families() {
                         checkpoint_identity: "checkpoint".into(),
                         manifest_generation: 1,
                         durable_checkpoint_lsn: 1,
-                        authority_fingerprint: [7; 32],
-                        frontier_digest: [8; 32],
+                        authority_fingerprint: CanonicalDigestId::new([7; 32]),
+                        frontier_digest: CanonicalDigestId::new([8; 32]),
                     }
                 }
                 _ => BackupBundleArtifactCoverage::PhysicalReachability,
@@ -236,7 +237,7 @@ fn manifest_declaration(
 ) -> BackupBundleManifestDeclaration {
     BackupBundleManifestDeclaration::new(
         BackupBundleManifestIdentity {
-            cut_identity: [1; 32],
+            cut_identity: CanonicalDigestId::new([1; 32]),
             store_lineage: "lineage".to_owned(),
             root_generation: 1,
             manifest_generation: 1,

@@ -22,7 +22,7 @@ pub(crate) use access::{
 pub(crate) use partition::{
     summarize_entity_chunk_plan, EntityWorkingSetLayout, PartitionCloneMode,
     PartitionMutationJournal, PartitionState, RelationalPartitionAllocationInventory,
-    SnapshotPartitionPins,
+    SnapshotPartitionPins, TouchedSlots,
 };
 pub(crate) use partition_content::{
     PartitionContentCommitment, PartitionContentDigestError, PartitionHistoryFrontiers,

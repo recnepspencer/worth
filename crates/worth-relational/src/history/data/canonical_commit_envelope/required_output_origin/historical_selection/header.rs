@@ -1,7 +1,7 @@
 //! A selection header cannot impersonate a birth, retirement or ordinary producer run.
 use super::*;
 use crate::history::data::CodecRetirementClosureStop as Stop;
-impl CanonicalCommitEnvelope {
+impl CanonicalCommitEnvelopeBody {
     pub(in crate::history::data) fn validate_historical_selection_header(
         &self,
         context: &mut MapKernelContext<'_, '_>,

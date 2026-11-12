@@ -41,20 +41,8 @@ fn cancellation_at_registration_binding_is_cancelled_not_denied() {
                 &request,
                 "interrupted-registration",
             );
-            let (
-                _coupled_outputs,
-                admission,
-                lease,
-                provider_attempt,
-                outcome_identity,
-                _,
-                mut authorization,
-                idempotency,
-                mut running,
-                mutation_run,
-                attempt_basis,
-                aftermath_causality,
-            ) = start(phase, &world, program, idempotency(185, 186)).into_parts_for_test();
+            let (_coupled_outputs, admission, lease, provider_attempt, outcome_identity, _, mut authorization, idempotency, mut running, mutation_run, mut attempt_basis, aftermath_causality, completion_storage,) = start(phase, &world, program, idempotency(185, 186)).into_parts_for_test();
+    let original_completion = attempt_basis.take_original_completion_for_test();
             let admitted = admit_provider_session(
                 phase,
                 &mut running,
@@ -90,15 +78,8 @@ fn cancellation_at_registration_binding_is_cancelled_not_denied() {
                 &phase.borrowed_request_for_test(),
                 phase,
                 &world.application,
-                WorthQueryProgressedApplicationCommit::new_for_test(
-                    None,
-                    outcome,
-                    lease,
-                    running,
-                    cleanup,
-                    admission.publication_request_for_test().clone(),
-                ),
-            );
+        completion_storage.complete_for_test(WorthQueryProgressedApplicationCommit::new_for_test(None, outcome, lease, running, cleanup, admission.publication_request_for_test().clone(), original_completion)),
+    );
             assert!(matches!(
                 finished,
                 WorthQueryApplicationCommitOutcome::Cancelled

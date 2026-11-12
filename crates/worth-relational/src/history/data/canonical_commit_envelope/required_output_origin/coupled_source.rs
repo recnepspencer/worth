@@ -11,9 +11,9 @@ use worth_execution::{ExecutionResourceLease, MapKernelContext};
 
 #[allow(clippy::too_many_arguments)]
 pub(super) fn install_empty(
-    envelope: &mut CanonicalCommitEnvelope,
+    envelope: &mut CanonicalCommitEnvelopeBody,
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-    runtime: &crate::runtime::RelationalPreparationRuntime,
+    runtime: &crate::history::data::canonical_commit_envelope::required_output_origin::history_request::PreparationRuntimeRequest<'_, '_, '_>,
     basis: &AdmittedRelationalBranchBasis,
     created: &CommitCreatedEntityBindings,
     created_relations: &CommitCreatedRelationBindings,
@@ -64,9 +64,9 @@ pub(super) fn install_empty(
 
 #[allow(clippy::too_many_arguments)]
 pub(super) fn install(
-    envelope: &mut CanonicalCommitEnvelope,
+    envelope: &mut CanonicalCommitEnvelopeBody,
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-    runtime: &crate::runtime::RelationalPreparationRuntime,
+    runtime: &crate::history::data::canonical_commit_envelope::required_output_origin::history_request::PreparationRuntimeRequest<'_, '_, '_>,
     basis: &AdmittedRelationalBranchBasis,
     created: &CommitCreatedEntityBindings,
     created_relations: &CommitCreatedRelationBindings,
@@ -133,6 +133,7 @@ pub(super) fn install(
                 require_authored_sources(envelope, *anchor, co_anchors, context)?;
                 envelope.authored_cascade_retirement =
                     Some(Arc::new(CanonicalAuthoredRetirement {
+                        _decoded_memory: None,
                         anchor: *anchor,
                         owned_members: false,
                         birth: *birth,
@@ -151,7 +152,7 @@ pub(super) fn install(
 }
 
 fn require_authored_sources(
-    envelope: &CanonicalCommitEnvelope,
+    envelope: &CanonicalCommitEnvelopeBody,
     anchor: crate::identity::data::EntityId,
     co_anchors: &[(
         crate::identity::data::EntityId,

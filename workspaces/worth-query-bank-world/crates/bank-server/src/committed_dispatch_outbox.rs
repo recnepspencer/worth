@@ -3,6 +3,7 @@
 use worth_query_host::facade::primary_graph::{
     WorthQueryCommittedDispatchOutboxObservation,
     WorthQueryCommittedDispatchOutboxReadDenial as QueryDenial,
+    WorthQueryDurableDispatchRecordDenial as QueryRecordDenial,
     WorthQueryExternalDispatchAttemptDenial as QueryAttemptDenial,
 };
 
@@ -157,6 +158,35 @@ pub enum BankExternalDispatchAttemptDenial {
     /// The concurrent physical sends for this effect are at their installed
     /// limit; one frees when an in-flight send settles.
     InFlightCapacityExhausted,
+    /// The durable Home did not record the attempt, so nothing was sent.
+    DurableAttemptRecordDenied(BankDurableDispatchRecordDenial),
+}
+
+/// Why a durable Home did not record one physical attempt before its send.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum BankDurableDispatchRecordDenial {
+    /// An earlier send of this effect is still being observed.
+    AttemptAwaitingObservation,
+    /// The request stopped before the record's fate was known.
+    RequestStopped,
+    /// The record was proven unwritten; the same request records afresh.
+    PublicationNoEffect,
+    /// The record's physical fate is unknown until the Home reopens.
+    PublicationUnresolved,
+    /// The Home journal refused the record or is no longer available.
+    JournalRefused,
+}
+
+impl From<QueryRecordDenial> for BankDurableDispatchRecordDenial {
+    fn from(denial: QueryRecordDenial) -> Self {
+        match denial {
+            QueryRecordDenial::AttemptAwaitingObservation => Self::AttemptAwaitingObservation,
+            QueryRecordDenial::RequestStopped => Self::RequestStopped,
+            QueryRecordDenial::PublicationNoEffect => Self::PublicationNoEffect,
+            QueryRecordDenial::PublicationUnresolved => Self::PublicationUnresolved,
+            QueryRecordDenial::JournalRefused => Self::JournalRefused,
+        }
+    }
 }
 
 impl From<QueryAttemptDenial> for BankExternalDispatchAttemptDenial {
@@ -171,6 +201,9 @@ impl From<QueryAttemptDenial> for BankExternalDispatchAttemptDenial {
             QueryAttemptDenial::OriginalPublicationPending => Self::OriginalPublicationPending,
             QueryAttemptDenial::OutstandingDispatchMismatch => Self::OutstandingDispatchMismatch,
             QueryAttemptDenial::InFlightCapacityExhausted => Self::InFlightCapacityExhausted,
+            QueryAttemptDenial::DurableAttemptRecordDenied(record) => {
+                Self::DurableAttemptRecordDenied(record.into())
+            }
         }
     }
 }

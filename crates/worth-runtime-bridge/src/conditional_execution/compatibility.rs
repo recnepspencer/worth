@@ -11,16 +11,7 @@ use std::sync::Arc;
 
 use super::BridgeInstalledConditionalLowering;
 
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub enum BridgeConditionalProviderRole {
-    Condition,
-    DependencyComparator,
-    OutputComparator,
-    ArtifactReuseComparator,
-    Trigger,
-    Wake,
-    Compute,
-}
+pub use worth_foundational::facade::BridgeConditionalProviderRole;
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum BridgeConditionalLoweringAdmissionError {

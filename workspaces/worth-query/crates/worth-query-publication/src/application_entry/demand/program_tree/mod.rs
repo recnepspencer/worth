@@ -139,7 +139,7 @@ where
 {
     pub fn producer_outcome(
         &mut self,
-    ) -> Option<&worth_query_execution::facade::primary_graph::WorthQueryApplicationUncommitted>
+    ) -> Option<&worth_query_execution::facade::primary_graph::WorthQueryApplicationCommitOutcome>
     {
         self.core
             .custody
@@ -167,3 +167,6 @@ where
             .expect("successful construction retains its issued basis")
     }
 }
+#[cfg(test)]
+#[path = "mod_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;

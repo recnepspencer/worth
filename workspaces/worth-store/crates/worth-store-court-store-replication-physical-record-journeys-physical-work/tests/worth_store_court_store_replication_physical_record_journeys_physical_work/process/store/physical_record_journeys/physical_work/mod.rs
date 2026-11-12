@@ -60,3 +60,6 @@ pub(crate) mod scheduler;
 pub(crate) mod serving_frame_residency;
 #[path = "speculative_residency/mod.rs"]
 pub(crate) mod speculative_residency;
+
+#[path = "checkpoint_reads/mod.rs"]
+mod checkpoint_reads;

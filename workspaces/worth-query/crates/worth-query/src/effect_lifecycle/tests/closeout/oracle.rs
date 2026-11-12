@@ -27,16 +27,16 @@ fn mutation_execution_verifies_against_independent_relational_runtime_state() {
     let host_request = crate::test_execution_policy::serial_request();
     let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
-    let mut runtime = relational_runtime_with_intent_strategy();
+    let runtime = relational_runtime_with_intent_strategy();
     let entity_id = create_entity(
         request_execution,
-        &mut runtime,
+        &runtime,
         "before",
         BranchId("main".to_string()),
     );
     crate::runtime::fork_branch_from_exact_source(
         request_execution,
-        &mut runtime,
+        &runtime,
         BranchId("branch-a".to_string()),
         &BranchId("main".to_string()),
     )
@@ -55,7 +55,7 @@ fn mutation_execution_verifies_against_independent_relational_runtime_state() {
     let executed = lowered
         .execute_with(
             request_execution,
-            EffectExecutionAuthority::relational(&mut runtime),
+            EffectExecutionAuthority::relational(&runtime),
         )
         .expect("mutation should execute");
     let verification = executed
@@ -75,23 +75,23 @@ fn merge_execution_verifies_against_independent_relational_runtime_state() {
     let host_request = crate::test_execution_policy::serial_request();
     let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
-    let mut runtime = relational_runtime_with_intent_strategy();
+    let runtime = relational_runtime_with_intent_strategy();
     create_entity(
         request_execution,
-        &mut runtime,
+        &runtime,
         "main",
         BranchId("main".to_string()),
     );
     crate::runtime::fork_branch_from_exact_source(
         request_execution,
-        &mut runtime,
+        &runtime,
         BranchId("candidate".to_string()),
         &BranchId("main".to_string()),
     )
     .expect("candidate branch should exist");
     create_entity(
         request_execution,
-        &mut runtime,
+        &runtime,
         "candidate-only",
         BranchId("candidate".to_string()),
     );
@@ -102,7 +102,7 @@ fn merge_execution_verifies_against_independent_relational_runtime_state() {
     let executed = lowered
         .execute_with(
             request_execution,
-            EffectExecutionAuthority::crate_relational_without_application_schema(&mut runtime),
+            EffectExecutionAuthority::crate_relational_without_application_schema(&runtime),
         )
         .expect("merge should execute");
     let verification = executed
@@ -169,22 +169,22 @@ fn mutation_batch_verifies_against_independent_relational_runtime_state() {
     let host_request = crate::test_execution_policy::serial_request();
     let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
-    let mut runtime = relational_runtime_with_intent_strategy();
+    let runtime = relational_runtime_with_intent_strategy();
     let left = create_entity(
         request_execution,
-        &mut runtime,
+        &runtime,
         "left",
         BranchId("main".to_string()),
     );
     let right = create_entity(
         request_execution,
-        &mut runtime,
+        &runtime,
         "right",
         BranchId("main".to_string()),
     );
     crate::runtime::fork_branch_from_exact_source(
         request_execution,
-        &mut runtime,
+        &runtime,
         BranchId("branch-a".to_string()),
         &BranchId("main".to_string()),
     )
@@ -209,7 +209,7 @@ fn mutation_batch_verifies_against_independent_relational_runtime_state() {
         .expect("batch should lower")
         .execute_with(
             request_execution,
-            EffectExecutionAuthority::relational(&mut runtime),
+            EffectExecutionAuthority::relational(&runtime),
         )
         .expect("batch should execute");
     let verification = executed
@@ -229,16 +229,16 @@ fn relational_oracle_rejects_independent_commit_mismatch() {
     let host_request = crate::test_execution_policy::serial_request();
     let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
-    let mut runtime = relational_runtime_with_intent_strategy();
+    let runtime = relational_runtime_with_intent_strategy();
     let entity_id = create_entity(
         request_execution,
-        &mut runtime,
+        &runtime,
         "before",
         BranchId("main".to_string()),
     );
     crate::runtime::fork_branch_from_exact_source(
         request_execution,
-        &mut runtime,
+        &runtime,
         BranchId("branch-a".to_string()),
         &BranchId("main".to_string()),
     )
@@ -256,7 +256,7 @@ fn relational_oracle_rejects_independent_commit_mismatch() {
     let executed = lowered
         .execute_with(
             request_execution,
-            EffectExecutionAuthority::relational(&mut runtime),
+            EffectExecutionAuthority::relational(&runtime),
         )
         .expect("mutation should execute");
 

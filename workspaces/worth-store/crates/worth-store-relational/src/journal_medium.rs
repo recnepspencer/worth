@@ -7,10 +7,11 @@
 //! in Relational's terms: durable, proven to have had no effect, or unknown.
 
 use std::sync::Arc;
+mod initial_inputs;
 
 use worth_relational::facade::durability::{
-    RelationalBranchTransitionArtifact, RelationalCanonicalCommitArtifact, RelationalDurableMedium,
-    RelationalDurablePublication,
+    DurablePublicationFate, RelationalBranchTransitionArtifact, RelationalCanonicalCommitArtifact,
+    RelationalDurableMedium,
 };
 use worth_store::physical_runtime::{
     AdmittedRecordPlacementPolicy, OrderedJournal, OrderedJournalDenial, OrderedJournalPublication,
@@ -22,9 +23,19 @@ use worth_store::physical_runtime::{
 const PUBLICATION_DEADLINE_MILLIS: u64 = 30_000;
 
 pub(crate) struct StoreJournalMedium {
-    serving: Arc<ServingPhysicalRuntime>,
+    world_selection: Option<
+        Arc<
+            worth_proof::VerifiedHomeWorldSelection<
+                Arc<worth_relational::facade::durability::RelationalWorldSourceCatalog>,
+            >,
+        >,
+    >,
+    transition: Option<worth_proof::HomeProgramTransitionAuthority>,
+    transition_required: Option<worth_proof::HomeProgramTransitionRequired>,
+    serving: Option<Arc<ServingPhysicalRuntime>>,
     placement: AdmittedRecordPlacementPolicy,
-    cold_source: Arc<crate::cold_source::StoreColdSource>,
+    cold_source: Option<Arc<crate::cold_source::StoreColdSource>>,
+    checkpoint_selection: Arc<dyn crate::section::RelationalCheckpointSelectionSource>,
 }
 
 impl StoreJournalMedium {
@@ -32,25 +43,58 @@ impl StoreJournalMedium {
         serving: Arc<ServingPhysicalRuntime>,
         placement: AdmittedRecordPlacementPolicy,
         cold_source: Arc<crate::cold_source::StoreColdSource>,
+        checkpoint_selection: Arc<dyn crate::section::RelationalCheckpointSelectionSource>,
     ) -> Self {
         Self {
-            serving,
+            world_selection: None,
+            transition: None,
+            transition_required: None,
+            serving: Some(serving),
             placement,
-            cold_source,
+            cold_source: Some(cold_source),
+            checkpoint_selection,
         }
     }
 
+    pub(crate) fn with_home_transition_authority(
+        mut self,
+        transition: Option<worth_proof::HomeProgramTransitionAuthority>,
+        required: Option<worth_proof::HomeProgramTransitionRequired>,
+    ) -> Self {
+        self.transition = transition;
+        self.transition_required = required;
+        self
+    }
+
+    pub(crate) fn with_home_world_selection(
+        mut self,
+        selection: Option<
+            Arc<
+                worth_proof::VerifiedHomeWorldSelection<
+                    Arc<worth_relational::facade::durability::RelationalWorldSourceCatalog>,
+                >,
+            >,
+        >,
+    ) -> Self {
+        self.world_selection = selection;
+        self
+    }
+    fn serving(&self) -> &Arc<ServingPhysicalRuntime> {
+        self.serving
+            .as_ref()
+            .expect("retired medium cannot publish or read")
+    }
     /// Append `bytes` at `entry` of the borrowed journal.
     fn publish_entry(
         &self,
         journal: Result<OrderedJournal<'_>, OrderedJournalDenial>,
         entry: u64,
         bytes: &[u8],
-    ) -> RelationalDurablePublication {
+    ) -> DurablePublicationFate<String> {
         let journal = match journal {
             Ok(journal) => journal,
             Err(denial) => {
-                return RelationalDurablePublication::ProvenNoEffect {
+                return DurablePublicationFate::ProvenNoEffect {
                     detail: format!("journal unavailable: {denial:?}"),
                 };
             }
@@ -58,7 +102,7 @@ impl StoreJournalMedium {
         let Some(deadline) =
             PhysicalMutationDeadline::after_milliseconds(PUBLICATION_DEADLINE_MILLIS)
         else {
-            return RelationalDurablePublication::ProvenNoEffect {
+            return DurablePublicationFate::ProvenNoEffect {
                 detail: "publication deadline is not representable".to_owned(),
             };
         };
@@ -68,7 +112,7 @@ impl StoreJournalMedium {
             Ok(
                 OrderedJournalPublished::Committed(_)
                 | OrderedJournalPublished::AlreadyCommitted(_),
-            ) => RelationalDurablePublication::Committed,
+            ) => DurablePublicationFate::Committed,
             Err(failure) => publication_failure(failure),
         }
     }
@@ -82,11 +126,66 @@ impl std::fmt::Debug for StoreJournalMedium {
     }
 }
 
+mod home_retirement;
 impl RelationalDurableMedium for StoreJournalMedium {
+    fn home_world_selection(
+        &self,
+    ) -> Option<
+        Arc<
+            worth_proof::VerifiedHomeWorldSelection<
+                Arc<worth_relational::facade::durability::RelationalWorldSourceCatalog>,
+            >,
+        >,
+    > {
+        self.world_selection.clone()
+    }
+
+    fn home_transition_authority(&self) -> Option<&worth_proof::HomeProgramTransitionAuthority> {
+        self.transition.as_ref()
+    }
+    fn home_transition_required(&self) -> Option<&worth_proof::HomeProgramTransitionRequired> {
+        self.transition_required.as_ref()
+    }
+    fn publish_initial_inputs(
+        &self,
+        artifact: &worth_relational::facade::durability::RelationalSourceInitialInputsArtifact,
+        request: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> DurablePublicationFate<
+        worth_relational::facade::durability::RelationalInitialInputsPublicationDetail,
+    > {
+        self.publish_original_initial_inputs(artifact, request)
+    }
+    fn preflight_source_retirement(
+        &self,
+        source: &dyn worth_relational::facade::durability::RelationalDurableColdSource,
+        request: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> Result<(), worth_relational::facade::durability::RelationalMediumRetirementDenial> {
+        self.preflight_home_retirement(source, request)
+    }
+    fn advance_source_retirement(
+        &mut self,
+        source: &dyn worth_relational::facade::durability::RelationalDurableColdSource,
+        request: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> Result<
+        worth_relational::facade::durability::RelationalMediumRetirementProgress,
+        worth_relational::facade::durability::RelationalMediumRetirementDenial,
+    > {
+        self.advance_home_retirement(source, request)
+    }
+
+    fn checkpoint_selection(
+        &self,
+        subject: &worth_relational::facade::durability::OpaqueCapturedCheckpointSubject,
+    ) -> worth_relational::facade::durability::CheckpointSelectionObservation {
+        crate::section::selection::observe(self.checkpoint_selection.as_ref(), subject)
+    }
     fn cold_source(
         &self,
     ) -> Arc<dyn worth_relational::facade::durability::RelationalDurableColdSource> {
-        self.cold_source.clone()
+        self.cold_source
+            .as_ref()
+            .expect("serving medium owns its source")
+            .clone()
     }
     fn read_transition(
         &self,
@@ -96,12 +195,12 @@ impl RelationalDurableMedium for StoreJournalMedium {
         worth_relational::facade::durability::RelationalDurableTransitionReadFailure,
     > {
         use worth_relational::facade::durability::RelationalDurableTransitionReadFailure as Failure;
-        let journal = self
-            .serving
-            .branch_transitions()
-            .map_err(|denial| Failure::Unavailable {
-                detail: format!("{denial:?}"),
-            })?;
+        let journal =
+            self.serving()
+                .branch_transitions()
+                .map_err(|denial| Failure::Unavailable {
+                    detail: format!("{denial:?}"),
+                })?;
         let bytes = journal
             .read(
                 sequence.0,
@@ -117,9 +216,9 @@ impl RelationalDurableMedium for StoreJournalMedium {
     fn publish(
         &self,
         artifact: &RelationalCanonicalCommitArtifact,
-    ) -> RelationalDurablePublication {
+    ) -> DurablePublicationFate<String> {
         self.publish_entry(
-            self.serving.canonical_commits(),
+            self.serving().canonical_commits(),
             artifact.position().0,
             artifact.as_bytes(),
         )
@@ -128,9 +227,9 @@ impl RelationalDurableMedium for StoreJournalMedium {
     fn publish_transition(
         &self,
         artifact: &RelationalBranchTransitionArtifact,
-    ) -> RelationalDurablePublication {
+    ) -> DurablePublicationFate<String> {
         self.publish_entry(
-            self.serving.branch_transitions(),
+            self.serving().branch_transitions(),
             artifact.sequence().0,
             artifact.as_bytes(),
         )
@@ -139,12 +238,14 @@ impl RelationalDurableMedium for StoreJournalMedium {
 
 /// Every journal failure either happened before any effect or leaves the fate
 /// to recovery; nothing in between is reported as durable.
-fn publication_failure(failure: OrderedJournalPublicationFailure) -> RelationalDurablePublication {
+fn publication_failure(
+    failure: OrderedJournalPublicationFailure,
+) -> DurablePublicationFate<String> {
     let detail = format!("{failure:?}");
     match failure {
         OrderedJournalPublicationFailure::Indeterminate(_)
         | OrderedJournalPublicationFailure::CompletedWithoutRecord => {
-            RelationalDurablePublication::Indeterminate { detail }
+            DurablePublicationFate::Indeterminate { detail }
         }
         OrderedJournalPublicationFailure::EmptyPayload
         | OrderedJournalPublicationFailure::PositionGap { .. }
@@ -156,9 +257,9 @@ fn publication_failure(failure: OrderedJournalPublicationFailure) -> RelationalD
         | OrderedJournalPublicationFailure::Preparation(_)
         | OrderedJournalPublicationFailure::ProvenNoEffect(_)
         | OrderedJournalPublicationFailure::Read(_) => {
-            RelationalDurablePublication::ProvenNoEffect { detail }
+            DurablePublicationFate::ProvenNoEffect { detail }
         }
         // A failure this build does not know cannot be proven harmless.
-        _ => RelationalDurablePublication::Indeterminate { detail },
+        _ => DurablePublicationFate::Indeterminate { detail },
     }
 }

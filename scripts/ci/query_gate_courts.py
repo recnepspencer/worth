@@ -30,11 +30,8 @@ COURT_OWNERS = {'worth-court-execution': ['worth-execution'], 'worth-court-found
 
 GROUPS = {
     "root": ROOT_TESTS,
-    # Rust 1.94 repeatedly ICEs in this external schema host's incremental
-    # evaluate_obligation cache. Keep the workaround in its build owner;
-    # ordinary Query and Bank builds retain their incremental settings.
     "fixture": ["--manifest-path", FIXTURE, *packages(*FIXTURE_PACKAGES),
-                "--lib", "--bins", "--tests", "--config", "build.incremental=false"],
+                "--lib", "--bins", "--tests"],
     "ui": ["--manifest-path", UI, "-p", "worth-ui-query-binding", "--lib"],
 }
 

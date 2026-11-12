@@ -30,6 +30,8 @@ where
             Scope,
         >,
     ) -> Result<(), WorthQueryOperationAuthorizationDenial> {
+        admission
+            .refuse_stale_home_authority(self.runtime.product_runtime.owner.owner_identity())?;
         let authorization = admission
             .authorization()
             .ok_or_else(inconsistent_authorization)?;
@@ -74,7 +76,7 @@ where
         let graph = self.runtime.primary_graph().ok_or_else(foreign_runtime)?;
         graph
             .integration_handle()
-            .with_runtime_mut(execution, |runtime| {
+            .with_runtime(execution, |runtime| {
                 let snapshot = security.snapshot_handle();
 
                 validate_retained_currentness(
@@ -128,21 +130,28 @@ where
                 Capability,
             >,
     {
+        access.refuse_stale_incarnation(self)?;
+        let authority = access.runtime_authority_for(self.runtime.product_runtime.owner.owner_identity())
+            .map_err(|cause| match cause {
+                worth_proof::HomeIncarnationDenial::ForeignHome => inconsistent_authorization(),
+                worth_proof::HomeIncarnationDenial::StaleIncarnation =>
+                    WorthQueryOperationAuthorizationDenial::new(
+                        super::super::WorthQueryOperationAuthorizationDenialKind::Refused(super::super::WorthQueryOperationAuthorizationRefusalKind::StaleIncarnation), "capability read access"),
+            })?;
         let authorization = access.read_authorization();
-        if access.runtime_authority() != self.runtime.authority_identity()
+        if authority != self.runtime.authority_identity()
             || access.binding_identity() != &self.installed_schema.binding_identity()
             || !authorization.belongs_to_session(access.graph_work_session_identity())
         {
             return Err(inconsistent_authorization());
         }
         let product = access
-            .read_product()
+            .read_product(self)
             .ok_or_else(inconsistent_authorization)?;
-        let prepared = crate::domain_computation::primary_graph::selected_read_indexes::PreparedSelectedReadIndexes::for_capability(access)
-            .ok_or_else(inconsistent_authorization)?;
+        let prepared = crate::domain_computation::primary_graph::selected_read_indexes::PreparedSelectedReadIndexes::for_capability(access);
         let (installed, sample) = self.prepare_capability_read_validation(authorization)?;
         let security = self
-            .admit_capability_read_security_basis(execution, product, &prepared)
+            .admit_capability_read_security_basis(execution, &product, &prepared)
             .map_err(|cause| {
                 super::super::denial::product_security_basis_denial(cause, "workflow read security")
             })?;
@@ -186,7 +195,7 @@ where
         let graph = self.runtime.primary_graph().ok_or_else(foreign_runtime)?;
         graph
             .integration_handle()
-            .with_runtime_mut(execution, |runtime| {
+            .with_runtime(execution, |runtime| {
                 self.validate_retained_capability_observation(
                     execution, capability, installed, sample, runtime, snapshot,
                 )?;

@@ -1,8 +1,7 @@
 //! External effects, recovery custody, and canonical recorded correction causality.
 
-#[cfg(test)]
-pub(crate) use external_effect::dispatch_outbox_create_intent;
 mod correction;
+pub(crate) mod correction_material;
 pub(in crate::domain_computation) use correction::OriginalCorrectionDisclosure;
 pub(crate) mod commit_causality;
 pub(crate) use commit_causality::ApplicationCommitCausality;
@@ -10,6 +9,7 @@ pub(crate) mod causal_fact;
 mod correction_coordinates;
 pub use correction_coordinates::WorthQueryCorrectionSourceCoordinates;
 pub mod derivation_failure;
+pub mod dispatch_journal;
 pub mod external_effect;
 pub mod recovery_handle;
 mod recovery_posture;
@@ -29,6 +29,7 @@ pub use causal_fact::{
     WorthQueryCorrectionLineageBinding, WorthQueryRecordedCorrectionSource,
 };
 pub(in crate::domain_computation) use external_effect::dispatch_external_effect;
+
 pub use external_effect::WorthQueryInboundCleanupReport;
 pub(crate) use external_effect::{
     bind_dispatch_outbox_create_intent, WorthQueryDispatchOutboxRestoredFields,
@@ -37,14 +38,15 @@ pub(crate) use external_effect::{
 pub use external_effect::{
     derive_external_effect_correlation_identity, ExternalEffectCausalLink,
     ExternalEffectClassification, ExternalEffectCorrelationBasis,
-    ExternalEffectCorrelationIdentity, ExternalEffectPosture, ExternalEffectPostureIdentity,
-    ExternalEffectPostureKind, ExternalRailTransportFault, WorthQueryDispatchOutboxLayout,
-    WorthQueryDispatchOutboxRecord, WorthQueryExternalDispatchCausalRelation,
-    WorthQueryExternalDispatchPosture, WorthQueryExternalDispatchPostureKind,
-    WorthQueryExternalDispatchRequest, WorthQueryExternalEffectCausalLadder,
-    WorthQueryExternalEffectDispatch, WorthQueryExternalEffectTransport,
-    WorthQueryExternalTransportOutcome, WorthQueryInboundOccurrenceClaims,
-    WorthQueryInboundOccurrenceVerifier, WorthQueryInboundVerificationDenial,
+    ExternalEffectCorrelationIdentity, ExternalEffectNoEffectCause, ExternalEffectPosture,
+    ExternalEffectPostureIdentity, ExternalEffectPostureKind, ExternalEffectProvenNoEffect,
+    ExternalRailTransportFault, WorthQueryDispatchOutboxLayout, WorthQueryDispatchOutboxRecord,
+    WorthQueryExternalDispatchCausalRelation, WorthQueryExternalDispatchPosture,
+    WorthQueryExternalDispatchPostureKind, WorthQueryExternalDispatchRequest,
+    WorthQueryExternalEffectCausalLadder, WorthQueryExternalEffectDispatch,
+    WorthQueryExternalEffectTransport, WorthQueryExternalTransportOutcome,
+    WorthQueryInboundOccurrenceClaims, WorthQueryInboundOccurrenceVerifier,
+    WorthQueryInboundVerificationDenial,
 };
 pub(in crate::domain_computation) use external_effect::{
     WorthQueryAcceptedInboundOccurrence, WorthQueryInboundCustody,
@@ -83,5 +85,8 @@ pub use retained_preimage::{
 // consumes it by name, and this phase does not export for consumers that do
 // not exist.
 
+#[cfg(test)]
+#[path = "mod_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;
 #[cfg(test)]
 mod retained_preimage_tests;

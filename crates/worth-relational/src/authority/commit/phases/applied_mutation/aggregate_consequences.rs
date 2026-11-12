@@ -58,6 +58,7 @@ impl AppliedMutationDraft {
                     cross_context_policy: runtime.config.storage.cross_context_policy,
                 };
                 let applied = apply_plan_to_working_state(
+                    execution,
                     working,
                     &prepared.apply,
                     &config,
@@ -80,11 +81,12 @@ impl AppliedMutationDraft {
                         )
                     }
                 })?;
-                crate::authority::mutation::apply_adjacency_deltas(
+                crate::authority::mutation::apply_adjacency_deltas_for_request(
+                    execution,
                     working,
                     &applied.effect.adjacency.deltas,
                     version_id,
-                );
+                )?;
                 self.outcome
                     .created_entities
                     .append_owned(applied.created_entities)?;

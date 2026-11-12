@@ -244,7 +244,7 @@ pub fn routed(
                     &admission,
                     |reader, root| {
                         let execution = phase
-                            .execution_for_for_test((*world.application.runtime_for_test()).product_runtime_for_test())
+                            .execution_for_for_test(world.application.runtime_for_test().product_runtime_for_test())
                             .expect("the installed fixture lends its computation execution");
                         for _ in 0..runs {
                             if installed.prepare_through_for_test(reader, execution, root).is_err() {

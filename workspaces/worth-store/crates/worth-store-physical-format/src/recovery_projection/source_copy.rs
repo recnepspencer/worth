@@ -5,6 +5,7 @@ use super::{
 };
 use crate::{CurrentPhysicalRecordPlacement, PhysicalExtentCopyIntent, PhysicalExtentCopyRecord};
 use sha2::{Digest, Sha256};
+use worth_foundational::CanonicalDigestId;
 
 /// Exact reference to an independently durable source-copy intent. The intent
 /// envelope LSN belongs to data frames, not to the later root publication WAL.
@@ -12,7 +13,7 @@ use sha2::{Digest, Sha256};
 pub struct PersistedExtentCopyRecipe {
     intent: PhysicalExtentCopyIntent,
     intent_lsn: u64,
-    intent_digest: [u8; 32],
+    intent_digest: CanonicalDigestId,
 }
 
 impl PersistedExtentCopyRecipe {
@@ -50,7 +51,7 @@ impl PersistedExtentCopyRecipe {
             .then_some(Self {
                 intent,
                 intent_lsn,
-                intent_digest,
+                intent_digest: CanonicalDigestId::new(intent_digest),
             })
             .ok_or_else(|| PhysicalRecoveryProjectionDenial::Malformed.into())
     }
@@ -61,7 +62,7 @@ impl PersistedExtentCopyRecipe {
         self.intent_lsn
     }
     pub const fn intent_digest(self) -> [u8; 32] {
-        self.intent_digest
+        *self.intent_digest.bytes()
     }
 }
 

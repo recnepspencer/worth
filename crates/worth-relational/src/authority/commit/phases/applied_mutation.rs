@@ -103,6 +103,10 @@ pub(crate) fn apply_mutation_draft(
     require_original_source_interpretation(identity, &source_interpretation)?;
     let materialization = source_interpretation.materialization_mode();
     let version_id = identity.proposed_version_id();
+    let _apply_memory = crate::mvcc::plan_copy_admission::reserve_copy(
+        execution,
+        crate::mvcc::plan_copy_admission::intent_bytes(&merged_plan.merged_intents),
+    )?;
     let apply_plan = AuthoritativeApplyPlan {
         transaction_id: merged_plan.transaction_id,
         version_id,
@@ -196,16 +200,23 @@ pub(crate) fn apply_retained_entity_selection_draft(
         adjacency_policy: runtime.config.storage.adjacency_policy.clone(),
         cross_context_policy: runtime.config.storage.cross_context_policy,
     };
-    let outcome = crate::authority::mutation::retained_entity_selection::apply(
-        &mut state,
-        retained,
-        identity.proposed_version_id(),
-        &config,
-        schema.registry(),
-        schema.aspect_plans(),
-        &mut symbols,
-        &mut records,
-        runtime.commit_work_budget.clone(),
+    let outcome = crate::execution::transaction_stage(
+        execution,
+        runtime.commit_work_budget.as_ref(),
+        || {
+            crate::authority::mutation::retained_entity_selection::apply(
+                execution,
+                &mut state,
+                retained,
+                identity.proposed_version_id(),
+                &config,
+                schema.registry(),
+                schema.aspect_plans(),
+                &mut symbols,
+                &mut records,
+                runtime.commit_work_budget.clone(),
+            )
+        },
     )?;
     state.content = content::prepare(
         execution,

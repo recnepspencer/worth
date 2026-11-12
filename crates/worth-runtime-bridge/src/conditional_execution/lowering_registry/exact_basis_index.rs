@@ -22,6 +22,9 @@ struct AliasOwner {
 }
 
 impl BridgeExactConditionalBasisIndex {
+    pub(super) fn is_empty_for_home_stop(&self) -> bool {
+        self.exact.is_empty() && self.aliases.is_empty()
+    }
     pub(super) fn get(
         &self,
         key: &BridgeExactConditionalBasisKey,

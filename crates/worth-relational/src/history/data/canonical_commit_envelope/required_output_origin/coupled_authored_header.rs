@@ -4,7 +4,7 @@ use crate::history::data::CodecRetirementClosureStop as Stop;
 use coupled_authored::{CanonicalCoupledAuthoredPublication, CanonicalCoupledAuthoredSources};
 use worth_execution::MapKernelContext;
 
-impl CanonicalCommitEnvelope {
+impl CanonicalCommitEnvelopeBody {
     pub(super) fn validate_coupled_authored_header(
         &self,
         event: &CanonicalCoupledAuthoredPublication,

@@ -95,7 +95,7 @@ pub fn has_exact_reviewer(
     let selected = world.selected_product(&(phase_custody).test_host_request_for_test());
     graph
         .integration_handle_for_test()
-        .with_runtime_mut_for_test(execution, |runtime| {
+        .with_runtime_for_test(execution, |runtime| {
             let snapshot = selected.application_basis_for_test().snapshot_handle();
             runtime
                 .read_truth()
@@ -152,7 +152,7 @@ pub fn has_exact_approver(
     let selected = world.selected_product(&(phase_custody).test_host_request_for_test());
     graph
         .integration_handle_for_test()
-        .with_runtime_mut_for_test(execution, |runtime| {
+        .with_runtime_for_test(execution, |runtime| {
             let snapshot = selected.application_basis_for_test().snapshot_handle();
             runtime
                 .read_truth()
@@ -224,7 +224,7 @@ where
         .expect("the selected product branch remains admitted");
     graph
         .integration_handle_for_test()
-        .with_runtime_mut_for_test(execution, |relational| {
+        .with_runtime_for_test(execution, |relational| {
             let snapshot = selected.application_basis_for_test().snapshot_handle();
             worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::observation::observe_field_value(
                 relational, execution, snapshot, entity, kind, locator,

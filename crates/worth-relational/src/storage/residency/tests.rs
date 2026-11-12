@@ -4,13 +4,10 @@ use crate::identity::data::KindId;
 use crate::publication::patch::data::PatchStreamPosition;
 use crate::storage::data::{RelationalStorageSubject, RelationalStorageUnavailableCause as Cause};
 use crate::storage::overlay::PartitionContentCommitment;
-use crate::tests::support::*;
 use std::collections::BTreeMap;
 use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
 use std::sync::Arc;
 
-#[path = "cross_region_forgery_tests.rs"]
-mod cross_region_forgery;
 #[path = "head_history_kind_tests.rs"]
 mod head_history_kind_tests;
 #[path = "head_metadata_tests.rs"]
@@ -142,13 +139,13 @@ fn intact_history_member_with_relabelled_content_is_refused_against_the_leaf() {
     let mut members = fixture.source.members.clone();
     members.insert(locator, bytes);
     cold.history = locator;
-    cold.source = Arc::new(CountedSource {
+    cold.source = Some(Arc::new(CountedSource {
         members,
         reads: AtomicUsize::new(0),
         history_reads: AtomicUsize::new(0),
         history: locator,
         corrupt: AtomicBool::new(false),
-    });
+    }));
     let cell = RelationalRegionResidency::cold(cold).unwrap();
     let head = head_demand(&cell, 1 << 24).unwrap();
     assert!(head.head_view().entity(fixture.entity).is_some());

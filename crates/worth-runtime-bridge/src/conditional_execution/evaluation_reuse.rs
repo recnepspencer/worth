@@ -1,6 +1,5 @@
 use super::{
     BridgeConditionalDenial, BridgeConditionalDenialKind, BridgeConditionalEvaluationSession,
-    BridgeOwnedSignalRuntime,
 };
 
 pub struct BridgeConditionalEvaluationReadmissionRequest<'a> {
@@ -39,7 +38,7 @@ impl BridgeConditionalEvaluationReadmissionCounters {
     }
 }
 
-impl BridgeOwnedSignalRuntime {
+impl super::execution_view::BridgeConditionalExecutionView<'_> {
     pub fn readmit_conditional_evaluation(
         &self,
         request: BridgeConditionalEvaluationReadmissionRequest<'_>,

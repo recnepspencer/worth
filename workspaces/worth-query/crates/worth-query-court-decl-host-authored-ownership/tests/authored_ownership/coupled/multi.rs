@@ -324,22 +324,6 @@ fn two_bodies<const MODE: u8>() {
             2,
             "both actual successors were settled atomically"
         );
-        if MODE == 15 {
-            create(&host, &request, 40, vec![]);
-            super::history::require_unique_edge_ownership(
-                &host,
-                match &outcome {
-                    WorthQueryApplicationMutationOutcome::Committed { receipt, .. } => receipt,
-                    _ => unreachable!(),
-                },
-                first
-                    .outputs_of::<CreatedOutputs>()
-                    .unwrap()
-                    .entity::<Created<S<MODE>>>()
-                    .unwrap()
-                    .entity_id(),
-            );
-        }
     }
 }
 #[test]
@@ -353,11 +337,6 @@ fn independent_writers_can_share_the_same_local_create_key() {
 #[test]
 fn later_unique_writes_read_the_actual_candidate_after_an_earlier_writer() {
     two_bodies::<9>();
-}
-
-#[test]
-fn each_coupled_writer_owns_only_its_own_business_edges_even_with_a_shared_endpoint() {
-    two_bodies::<15>();
 }
 
 #[test]

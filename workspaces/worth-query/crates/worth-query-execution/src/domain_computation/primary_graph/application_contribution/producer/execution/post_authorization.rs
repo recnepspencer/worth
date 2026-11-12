@@ -1,5 +1,6 @@
 //! Shared post-authorization producer progression for ordinary and selected Fresh.
 
+mod completion;
 mod preparation;
 use super::*;
 use crate::domain_computation::primary_graph::WorthQueryAdvancementPhase;

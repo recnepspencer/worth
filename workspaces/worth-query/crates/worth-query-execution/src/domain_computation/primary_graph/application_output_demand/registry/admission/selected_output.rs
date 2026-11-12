@@ -41,10 +41,17 @@ impl<'a> SelectedOutputAdmission<'a> {
                     WorthQueryOutputCheckpoint::Published { receipt, .. }
                     | WorthQueryOutputCheckpoint::Delivered { receipt, .. },
                 ) => *receipt.idempotency_binding().key_identity(),
+                Some(
+                    WorthQueryOutputCheckpoint::RecoveredPublished { publication, .. }
+                    | WorthQueryOutputCheckpoint::RecoveredDelivered { publication, .. },
+                ) => *publication.view().idempotency_binding().key_identity(),
                 Some(WorthQueryOutputCheckpoint::Ready(completion)) => {
                     match &completion.authority {
                         WorthQueryAcceptedOutputAuthority::Committed(receipt) => {
                             *receipt.idempotency_binding().key_identity()
+                        }
+                        WorthQueryAcceptedOutputAuthority::Recovered(publication) => {
+                            *publication.view().idempotency_binding().key_identity()
                         }
                         WorthQueryAcceptedOutputAuthority::Stable(published) => {
                             published.idempotency_key_identity()

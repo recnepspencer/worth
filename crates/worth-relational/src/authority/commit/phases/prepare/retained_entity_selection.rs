@@ -7,9 +7,7 @@ use crate::authority::commit::structural_summary::CommitStructuralSummary;
 use crate::branch::SelectedRelationalBranchRead;
 use crate::mvcc::BranchBoundRelationalTransaction;
 use crate::storage::overlay::{EntityWorkingSetLayout, PartitionCloneMode, WorkingState};
-use crate::transactions::data::{
-    CommitPhaseTiming, CommitTopology, MergedCommitPlan, TransactionCommitError,
-};
+use crate::transactions::data::{CommitPhaseTiming, CommitTopology, TransactionCommitError};
 use std::collections::{BTreeMap, BTreeSet};
 use std::sync::Arc;
 
@@ -26,10 +24,7 @@ pub(crate) fn prepare(
         .record_retained_entity_selection(entity, retained.meaning.kind(), policy)
         .map_err(|denial| TransactionCommitError::conflict(denial.into_conflict()))?;
     let plan = PreparedRelationalCommitPlan::RetainedEntitySelection {
-        commands: MergedCommitPlan {
-            transaction_id: transaction.transaction_id,
-            merged_intents: Vec::new(),
-        },
+        commands: crate::mvcc::OwnedNormalizedPlan::empty(transaction.transaction_id),
         retained: retained.clone(),
     };
     let partitions = BTreeSet::from([entity.partition_id]);

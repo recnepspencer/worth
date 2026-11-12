@@ -60,20 +60,21 @@ pub fn revoke_account_ownership(
         .expect("account ownership is installed")
         .kind_for_test();
     let selected = world.selected_product(&(phase_custody).test_host_request_for_test());
-    let relation = graph
-        .integration_handle_for_test()
-        .with_runtime_mut_for_test(execution, |runtime| {
-            let snapshot = selected.application_basis_for_test().snapshot_handle();
+    let relation =
+        graph
+            .integration_handle_for_test()
+            .with_runtime_for_test(execution, |runtime| {
+                let snapshot = selected.application_basis_for_test().snapshot_handle();
 
-            runtime
-                .read_truth()
-                .visible_relations_of_kind(execution, relation_kind, snapshot.version_id())
-                .expect("fixture read request remains live")
-                .into_iter()
-                .find(|record| record.target == account)
-                .expect("the admitted account has one ownership edge")
-                .relation_id
-        });
+                runtime
+                    .read_truth()
+                    .visible_relations_of_kind(execution, relation_kind, snapshot.version_id())
+                    .expect("fixture read request remains live")
+                    .into_iter()
+                    .find(|record| record.target == account)
+                    .expect("the admitted account has one ownership edge")
+                    .relation_id
+            });
     drop(selected);
     worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::product_publication::publish_relational_mutation(
         execution,

@@ -103,13 +103,13 @@ mod tests {
             partition_id: relation_partition_id,
             kind_id: KindId(9),
             version_id: VersionId(1),
-            extra: RelationExtra {
-                endpoints: Some(RelationEndpoints {
+            extra: RelationExtra::from_unbudgeted_parts(
+                Some(RelationEndpoints {
                     source: source_entity_id,
                     target: target_entity_id,
                 }),
-                authoritative_aspect_state: None,
-            },
+                None,
+            ),
         });
         let relation_id = RelationId::new(relation_partition_id, slot as u64, generation);
 
@@ -188,13 +188,13 @@ mod tests {
             partition_id: relation_partition_id,
             kind_id: KindId(9),
             version_id: VersionId(1),
-            extra: RelationExtra {
-                endpoints: Some(RelationEndpoints {
+            extra: RelationExtra::from_unbudgeted_parts(
+                Some(RelationEndpoints {
                     source: source_entity_id,
                     target: target_entity_id,
                 }),
-                authoritative_aspect_state: None,
-            },
+                None,
+            ),
         });
         let relation_id = RelationId::new(relation_partition_id, slot as u64, generation);
 

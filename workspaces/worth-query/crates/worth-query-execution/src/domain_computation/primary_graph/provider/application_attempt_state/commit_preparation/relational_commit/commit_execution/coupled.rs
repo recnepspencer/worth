@@ -1,8 +1,10 @@
 //! All participants prepare against one Native candidate and one planned successor.
 use super::*;
 mod support;
+use super::durable_custody::QueryCandidatePreparationDenial as Denial;
 use crate::domain_computation::primary_graph::provider::CoupledApplicationMember;
 use crate::domain_computation::primary_graph::WorthQueryOutputDemandDenial;
+pub(super) use support::CoupledSupportPreparationDenial;
 use worth_relational::facade::{
     mvcc::PreparedRelationalCommitCandidate, snapshots::SnapshotHandle,
 };
@@ -15,14 +17,14 @@ pub(super) fn prepare_members(
     candidate: &mut PreparedRelationalCommitCandidate,
     before: &SnapshotHandle,
     policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
-) -> Result<(), crate::domain_computation::WorthQueryProviderSessionCommitStop> {
+) -> Result<(), Denial> {
     let complete = if members.is_empty() && root.candidate_read_support().is_empty() {
         None
     } else {
         Some(
             candidate
                 .pin_coupled_candidate(execution)
-                .map_err(stops::transaction_commit_stop)?
+                .map_err(Denial::Native)?
                 .expect("Native retained genuine coupled proposal read custody"),
         )
     };
@@ -33,7 +35,8 @@ pub(super) fn prepare_members(
             root,
             before,
             complete.as_ref().expect("actual edit query candidate"),
-        )?;
+        )
+        .map_err(Denial::CoupledSupport)?;
     }
     for member in members {
         let source = member.source();
@@ -50,36 +53,42 @@ pub(super) fn prepare_members(
                 .commit
                 .as_ref()
                 .and_then(|prepared| prepared.rebase.as_ref()),
-        )?;
+        )
+        .map_err(Denial::CoupledSupport)?;
         support::require_read_support(
             execution,
             provider,
             &owned.attempt,
             before,
             complete.as_ref().expect("actual member query candidate"),
-        )?;
+        )
+        .map_err(Denial::CoupledSupport)?;
         let prepared = owned
             .commit
             .as_mut()
             .expect("member evidence admitted before candidate preparation");
         prepared.required =
-            consumed_output::verify(execution, provider, &mut owned.attempt, before)?
+            consumed_output::verify(execution, provider, &mut owned.attempt, before)
+                .map_err(Denial::ConsumedOutput)?
                 .required_prerequisites;
-        managed_source::bind(execution, provider, before, &owned.attempt, candidate)?;
+        managed_source::bind(execution, provider, before, &owned.attempt, candidate)
+            .map_err(Denial::ManagedSource)?;
         prepared.witness = if producer {
-            crate::domain_computation::primary_graph::output_lineage::PreparedNativeOutputWitness::prepare(&owned.attempt, &provider.graph.layout).map_err(native_output_witness_stop)?
+            crate::domain_computation::primary_graph::output_lineage::PreparedNativeOutputWitness::prepare(&owned.attempt, &provider.graph.layout)
+                .map_err(Denial::OutputWitness)?
         } else {
             None
         };
-        owned.attempt.reserve_coupled_dispatch(provider).map_err(|cause| match cause {
-            crate::domain_computation::primary_graph::live_delivery::WorthQueryLiveAdmissionDenial::Execution(cause) => crate::domain_computation::primary_graph::provider::relational_execution_denial::relational_execution_stop(cause, None),
-            crate::domain_computation::primary_graph::live_delivery::WorthQueryLiveAdmissionDenial::Unavailable(detail) => crate::domain_computation::WorthQueryProviderSessionCommitStop::PreEffectDenied(super::failure(detail)),
-        })?;
+        owned
+            .attempt
+            .reserve_coupled_dispatch(provider)
+            .map_err(Denial::Dispatch)?;
         let request = owned.attempt.affinity().publication_request();
         if let Some(rebase) = prepared.rebase.take() {
-            prepared.rebase = Some(provider.graph.with_runtime(execution, |runtime| rebase.prepare_candidate(candidate, runtime, before,
-            crate::domain_computation::primary_graph::application_attempt::retained_decision_facts::StorageControl::new(policy, Some(request))
-        )).map_err(stops::source_rebase_preparation_stop)?);
+            prepared.rebase = Some(provider.graph.with_runtime(execution, |runtime| rebase.prepare_candidate(
+                candidate, runtime, before,
+                crate::domain_computation::primary_graph::application_attempt::retained_decision_facts::StorageControl::new(policy, Some(request)),
+            )).map_err(Denial::SourceFacts)?);
         }
     }
     Ok(())

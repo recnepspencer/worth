@@ -5,6 +5,7 @@ mod publication;
 mod reclamation;
 mod retention;
 
+pub(crate) use catalog::MemoryOriginalRegistration;
 pub(crate) use catalog::{AncestorSelectionPath, HistoryTraversalControl};
 pub use catalog::{
     CompositeAncestorSelectionDenial, CompositeHistoryCatalogDenial, CompositeHistoryTraversal,
@@ -16,20 +17,34 @@ pub(crate) use catalog::{
     CompositeHistoryCatalog, ReservedCompositeCommitCapacity, RetainedExactHistoryPosition,
     RetiredHistoryEntries, RuntimeWorldHistoryCatalogContract,
 };
+pub(crate) use catalog::{CompositeHistoryCatalogEntry, InstalledRootCommitRollback};
 #[allow(
     unused_imports,
     reason = "the internal denial is asserted by the real constructor contract test"
 )]
 pub(crate) use commit::CompositeCommitConstructionDenial;
+pub(crate) use commit::ReadmittedWorldCommitDenial;
 pub use commit::{
     CompositeCallerCorrelation, CompositeCommitParent, CompositeCommitProvenance,
     CompositeComponentChangePosture, CompositeRuntimeWorldCommit,
     CompositeSignalPublicationIdentity,
 };
 pub use parentage::OrdinaryParent;
+pub(crate) use publication::MemoryPublicationRecord;
 pub(crate) use publication::{
     CanonicalPublicationEnvelope, PerformedPublicationFacts, PreparedPublicationRecord,
     PublicationDeliveryClaim, PublicationRevision,
+};
+pub(crate) use publication::{
+    MemoryPublicationMeaning, MemoryPublicationReceiver, MemoryPublicationReceiverScope,
+};
+pub(crate) use publication::{
+    NativeReadmittedPublicationRecord, PreparedReadmittedPublicationRecord, PublicationEvidence,
+    ReadmittedPublicationRecord, ReadmittedPublicationRecordBacking, RecoveredWorldOwnerEvidence,
+    RecoveredWorldOwnerEvidenceRef,
+};
+pub use publication::{
+    WorldObservedMemoryPublication, WorldReadmittedPublication, WorldReadmittedPublicationDenial,
 };
 #[cfg(test)]
 pub(crate) use reclamation::CompositeHistoryReclamationRequest;
@@ -39,3 +54,11 @@ pub(crate) use retention::{
 };
 
 pub use catalog::{HistoryCatalogCounters, HistoryMetadataLedger};
+
+pub(crate) use commit::CompositeCommitRetirement;
+
+pub(crate) use publication::PublicationFactsRetirement;
+
+pub(crate) use catalog::HistoryHomeRetirement;
+
+pub(crate) use publication::ReadmittedPublicationRetirement;

@@ -85,13 +85,24 @@ impl<Port: SourceRead> Evaluation<'_, Port> {
                 .and_then(|n| {
                     n.checked_add(size_of::<ProjectedMemberCoordinate>() + 2 * size_of::<usize>())
                 })
+                .and_then(|bytes| {
+                    bytes.checked_add(
+                        usize::try_from(
+                            crate::graph_member::ProjectedMemberStorage::control_bytes()?,
+                        )
+                        .ok()?,
+                    )
+                })
                 .ok_or(DefinitionDenial::WorkBudgetExceeded)?;
             self.read.retain(bytes)?;
-            let member = Member::Projected(Arc::new(ProjectedMemberCoordinate {
-                domain: identity.clone(),
-                carrier,
-                case: case.to_owned(),
-            }));
+            let member = Member::Projected(
+                Arc::new(ProjectedMemberCoordinate {
+                    domain: identity.clone(),
+                    carrier,
+                    case: case.to_owned(),
+                })
+                .into(),
+            );
             insert_member(self.read, &mut targets, member)?;
         }
         self.save(key, targets)

@@ -114,6 +114,43 @@ The scheduled CI job runs all three ignored profiles and the longer seeded model
 checks that every profile executed, and uploads its full output. Ordinary and
 operation-control lanes remain separate in the single certification target.
 
+## Directory checkpoint retention
+
+`checkpoint_port()` carries a weak reference to the actual durable binding. It
+can prepare a checkpoint while a stopped World is still owned. Capture reserves
+the same publication gate and refuses active branch, custody, occurrence or
+bootstrap publication work and nonterminal adapter tasks. An unrelated admitted
+Query call does not prevent its own maintenance capture. The adapter obtains
+one actual protected physical reader while reserved, then releases the World
+reservation before reading or decoding payloads.
+
+The selected World image and all three frozen journal heads come from that same
+reader. World admits the selected image before requesting only the uncovered
+journal suffixes. The normalized image retains every original open attempt,
+including terminal attempts, historical occurrence, predecessor, branch head,
+identity frontier and durable disposition. Its original source coordinates and
+digests remain part of the admitted meaning. Multiple-branch and recovered
+continuation readmission retain their existing refusals. A checkpoint cannot
+convert a supported descriptive record into live delivery or performed authority.
+
+World format 1 is an opaque inline section of Home format 2. It adds no external
+World member pages; Native canonical bodies remain Native-owned members.
+The combined Home payload is limited to 1 GiB. Individual source World journal
+frames retain their 64 KiB ceiling; normalized image rows are bounded by their
+checked remaining image length. Image admission and graph joins use the
+request-funded ordered maps, costing O((state + tail) log(state + tail)); framing
+and body processing also visit their actual bytes. This is reconstructive work,
+not a claim of work proportional only to the tail.
+
+Recorded Native, Signal and Bridge component descriptions and World release
+evidence share their original funded backing when cloned. Parser scratch and
+owner-shaped retained allocations are admitted under the original request
+before growth. Prepared capture retains its binding, protected source, encoded
+bytes and grants through the same Home publication and both acknowledgements.
+Only the attached Home's actual selected receipt and matching original full
+manifest identity admit World selection. Unknown publication and interrupted
+acknowledgement retain that attempt; retry does not recapture or republish it.
+
 ## Adjacent Signal batch-read limitation
 
 The warm routing court uses single-target `SignalTransaction::read`. The seeded

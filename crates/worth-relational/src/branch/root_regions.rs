@@ -7,6 +7,14 @@ use super::root::{
     RelationalBranchRootCaptureDenial, RelationalBranchRootIdentityIssuer, RelationalRootRegion,
 };
 
+mod source_retirement;
+pub(crate) use source_retirement::{
+    RelationalRegionSourceWalk, RelationalRegionSourceWalkProgress,
+};
+mod insertion;
+use insertion::insert_leaf;
+mod request_construction;
+pub(in crate::branch) use request_construction::PreparedRelationalRegionSet;
 mod allocation_visitation;
 mod commitment;
 mod publication;
@@ -18,7 +26,7 @@ const PARTITION_KEY_BITS: u32 = u32::BITS;
 
 /// Exact immutable radix index whose fixed 32-bit paths keep ordinary reads
 /// and replacements independent of publication ancestry.
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub(crate) struct RelationalPersistentRegionSet {
     set_id: u64,
     index_root: Option<Arc<RelationalPersistentRegionNode>>,
@@ -26,6 +34,7 @@ pub(crate) struct RelationalPersistentRegionSet {
     live_counts: crate::storage::residency::LiveRecordCounts,
     pub(super) kinds: crate::storage::residency::KindRegionDirectory,
     materialization_unavailable_records: usize,
+    _memory: Option<worth_execution::ExecutionMemoryReservation>,
 }
 #[derive(Debug)]
 struct RelationalPersistentRegionNode {
@@ -34,6 +43,7 @@ struct RelationalPersistentRegionNode {
     one: Option<Arc<Self>>,
     leaf: Option<RelationalPersistentRegionLeaf>,
     commitment: [u8; 32],
+    _memory: Option<worth_execution::ExecutionMemoryReservation>,
 }
 #[derive(Debug)]
 enum RelationalPersistentRegionLeaf {
@@ -41,9 +51,15 @@ enum RelationalPersistentRegionLeaf {
     Removed(Box<RelationalRemovedPartition>),
 }
 #[derive(Debug)]
-struct RelationalRootRegionReference(Arc<RelationalRootRegion>);
+struct RelationalRootRegionReference {
+    region: Arc<RelationalRootRegion>,
+    _memory: Option<worth_execution::ExecutionMemoryReservation>,
+}
 #[derive(Debug)]
-struct RelationalRemovedPartition(PartitionId);
+struct RelationalRemovedPartition {
+    partition_id: PartitionId,
+    _memory: Option<worth_execution::ExecutionMemoryReservation>,
+}
 
 impl RelationalPersistentRegionSet {
     pub(crate) fn materialize(&self) -> BTreeMap<PartitionId, Arc<RelationalRootRegion>> {
@@ -134,60 +150,6 @@ fn observe_new_node_cost(
     );
 }
 
-fn insert_leaf(
-    current: Option<&Arc<RelationalPersistentRegionNode>>,
-    partition_id: PartitionId,
-    leaf: RelationalPersistentRegionLeaf,
-    depth: u32,
-    issuer: &RelationalBranchRootIdentityIssuer,
-) -> Result<Arc<RelationalPersistentRegionNode>, RelationalBranchRootCaptureDenial> {
-    let (mut zero, mut one, mut current_leaf) = current.map_or((None, None, None), |node| {
-        (node.zero.clone(), node.one.clone(), clone_leaf(&node.leaf))
-    });
-    if depth == PARTITION_KEY_BITS {
-        current_leaf = Some(leaf);
-    } else if key_bit(partition_id, depth) == 0 {
-        zero = Some(insert_leaf(
-            zero.as_ref(),
-            partition_id,
-            leaf,
-            depth + 1,
-            issuer,
-        )?);
-    } else {
-        one = Some(insert_leaf(
-            one.as_ref(),
-            partition_id,
-            leaf,
-            depth + 1,
-            issuer,
-        )?);
-    }
-    let commitment = node_commitment(depth, zero.as_ref(), one.as_ref(), current_leaf.as_ref());
-    Ok(Arc::new(RelationalPersistentRegionNode {
-        node_id: issuer.issue_reachability_id()?,
-        zero,
-        one,
-        leaf: current_leaf,
-        commitment,
-    }))
-}
-
-fn clone_leaf(
-    leaf: &Option<RelationalPersistentRegionLeaf>,
-) -> Option<RelationalPersistentRegionLeaf> {
-    leaf.as_ref().map(|leaf| match leaf {
-        RelationalPersistentRegionLeaf::Present(region) => RelationalPersistentRegionLeaf::Present(
-            Box::new(RelationalRootRegionReference(Arc::clone(&region.0))),
-        ),
-        RelationalPersistentRegionLeaf::Removed(partition_id) => {
-            RelationalPersistentRegionLeaf::Removed(Box::new(RelationalRemovedPartition(
-                partition_id.0,
-            )))
-        }
-    })
-}
-
 fn get_region(
     mut current: Option<&Arc<RelationalPersistentRegionNode>>,
     partition_id: PartitionId,
@@ -201,7 +163,7 @@ fn get_region(
         };
     }
     match current?.leaf.as_ref()? {
-        RelationalPersistentRegionLeaf::Present(region) => Some(&region.0),
+        RelationalPersistentRegionLeaf::Present(region) => Some(&region.region),
         RelationalPersistentRegionLeaf::Removed(_) => None,
     }
 }
@@ -219,7 +181,7 @@ fn materialize_node(
     let Some(node) = current else { return };
     if depth == PARTITION_KEY_BITS {
         if let Some(RelationalPersistentRegionLeaf::Present(region)) = node.leaf.as_ref() {
-            regions.insert(PartitionId(key_prefix), Arc::clone(&region.0));
+            regions.insert(PartitionId(key_prefix), Arc::clone(&region.region));
         }
         return;
     }

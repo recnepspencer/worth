@@ -88,7 +88,7 @@ fn pending_candidate_rejects_changed_own_evidence_without_certifying_upstream() 
         )),
     )
     .unwrap();
-    world.application.with_host_advancement(|phase| { let host_custody = phase.test_host_request_for_test(); let execution = &host_custody.borrowed_request_for_test(); handle.with_runtime_mut_for_test(&host_custody.borrowed_request_for_test(), |runtime| {
+    world.application.with_host_advancement(|phase| { let host_custody = phase.test_host_request_for_test(); let execution = &host_custody.borrowed_request_for_test(); handle.with_runtime_for_test(&host_custody.borrowed_request_for_test(), |runtime| {
         write_field(&host_custody.borrowed_request_for_test(), runtime, entity, label.clone(), "prime");
         let (before_handle, before) = snapshot(runtime);
         let a_facts: Arc<[_]> =

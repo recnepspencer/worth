@@ -182,19 +182,14 @@ impl<'a, 'run, 'phase, S: ApplicationSchema> CoupledApplicationAssembly<'a, 'run
             phase: self.phase,
             application: self.application,
         };
-        let mut failure = None;
+        let mut failure: Option<
+            crate::domain_computation::primary_graph::WorthQueryApplicationUncommitted,
+        > = None;
         for writer in self.authored.borrow_mut().drain(..) {
             let Some(CoupledWriterStage::Prepared(prepared)) = writer.stage else {
                 unreachable!("validated authored stage")
             };
-            let terminal = prepared.terminal_binding();
-            let effected = unpublished.is_some()
-                || self
-                    .application
-                    .runtime
-                    .primary_provider
-                    .observe_completed_application_for_session(&terminal)
-                    .is_some();
+            let effected = unpublished.is_some() || prepared.has_original_completion();
             if !effected {
                 self.retain_abort_outcome(prepared.abort(execution, self.phase, self.application));
                 continue;
@@ -208,7 +203,7 @@ impl<'a, 'run, 'phase, S: ApplicationSchema> CoupledApplicationAssembly<'a, 'run
                 match (failure.take(), cause) {
                     (Some(prior), crate::domain_computation::primary_graph::WorthQueryApplicationUncommitted::CleanupRequired(cleanup)) => {
                         let (_, cleanup) = cleanup.into_parts();
-                        failure = Some(crate::domain_computation::primary_graph::WorthQueryApplicationUncommitted::CleanupRequired(crate::domain_computation::primary_graph::WorthQueryApplicationCleanupRequired::from_parts(prior, cleanup)));
+                        failure = Some(crate::domain_computation::primary_graph::WorthQueryApplicationUncommitted::CleanupRequired(crate::domain_computation::primary_graph::WorthQueryApplicationCleanupRequired::from_parts(prior.into(), cleanup)));
                     }
                     (Some(prior), _) => failure = Some(prior),
                     (None, cause) => failure = Some(cause),

@@ -31,17 +31,17 @@ impl PartitionChange {
     pub fn records(&self) -> &[ChangedRecord] {
         &self.records
     }
-    pub fn entity_slots(&self) -> &BTreeSet<usize> {
-        &self.journal.entity_slots
+    pub fn entity_slots(&self) -> impl ExactSizeIterator<Item = usize> + '_ {
+        self.journal.entity_slots.iter().copied()
     }
-    pub fn relation_slots(&self) -> &BTreeSet<usize> {
-        &self.journal.relation_slots
+    pub fn relation_slots(&self) -> impl ExactSizeIterator<Item = usize> + '_ {
+        self.journal.relation_slots.iter().copied()
     }
-    pub fn outgoing_slots(&self) -> &BTreeSet<usize> {
-        &self.journal.adjacency_slots
+    pub fn outgoing_slots(&self) -> impl ExactSizeIterator<Item = usize> + '_ {
+        self.journal.adjacency_slots.iter().copied()
     }
-    pub fn incoming_slots(&self) -> &BTreeSet<usize> {
-        &self.journal.reverse_adjacency_slots
+    pub fn incoming_slots(&self) -> impl ExactSizeIterator<Item = usize> + '_ {
+        self.journal.reverse_adjacency_slots.iter().copied()
     }
 }
 

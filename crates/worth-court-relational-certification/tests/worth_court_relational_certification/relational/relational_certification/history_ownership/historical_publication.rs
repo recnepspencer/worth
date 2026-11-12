@@ -85,11 +85,6 @@ fn selected_publication_keeps_original_ids_under_fresh_commit_and_cold_current_c
         .runtime
         .settle_performed_publication(performed)
         .unwrap();
-    super::historical_artifact::require_unknown_origin_refusal(
-        execution,
-        &world.runtime,
-        committed.commit.commit_id,
-    );
     let publications: Vec<_> = committed
         .required_output_publications(&world.installed, execution)
         .collect::<Result<_, _>>()

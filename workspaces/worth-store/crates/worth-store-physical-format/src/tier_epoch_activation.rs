@@ -3,6 +3,7 @@
 //! only a checksum-bound selected candidate root does so.
 
 use sha2::{Digest, Sha256};
+use worth_foundational::CanonicalDigestId;
 
 pub const TIER_EPOCH_ACTIVATION_DOMAIN: &[u8] = b"store.physical.tier-epoch-activation.v1";
 const BODY_BYTES: usize = 168;
@@ -27,11 +28,11 @@ pub struct TierEpochActivationV1 {
     store: [u8; 16],
     attempt: [u8; 16],
     source_root_generation: u64,
-    source_root_sha256: [u8; 32],
-    source_free_sha256: [u8; 32],
+    source_root_sha256: CanonicalDigestId,
+    source_free_sha256: CanonicalDigestId,
     tier_epoch_start: u64,
     candidate_root_generation: u64,
-    candidate_root_sha256: [u8; 32],
+    candidate_root_sha256: CanonicalDigestId,
     retained_metadata_bytes: u64,
     publication: u64,
 }
@@ -68,11 +69,11 @@ impl TierEpochActivationV1 {
             store,
             attempt,
             source_root_generation,
-            source_root_sha256,
-            source_free_sha256,
+            source_root_sha256: CanonicalDigestId::new(source_root_sha256),
+            source_free_sha256: CanonicalDigestId::new(source_free_sha256),
             tier_epoch_start,
             candidate_root_generation,
-            candidate_root_sha256,
+            candidate_root_sha256: CanonicalDigestId::new(candidate_root_sha256),
             retained_metadata_bytes,
             publication,
         })
@@ -103,11 +104,11 @@ impl TierEpochActivationV1 {
         write(&self.store);
         write(&self.attempt);
         write(&self.source_root_generation.to_le_bytes());
-        write(&self.source_root_sha256);
-        write(&self.source_free_sha256);
+        write(self.source_root_sha256.bytes());
+        write(self.source_free_sha256.bytes());
         write(&self.tier_epoch_start.to_le_bytes());
         write(&self.candidate_root_generation.to_le_bytes());
-        write(&self.candidate_root_sha256);
+        write(self.candidate_root_sha256.bytes());
         write(&self.retained_metadata_bytes.to_le_bytes());
         write(&self.publication.to_le_bytes());
         debug_assert_eq!(cursor, TIER_EPOCH_ACTIVATION_WIRE_BYTES);
@@ -165,10 +166,10 @@ impl TierEpochActivationV1 {
         self.source_root_generation
     }
     pub const fn source_root_sha256(self) -> [u8; 32] {
-        self.source_root_sha256
+        *self.source_root_sha256.bytes()
     }
     pub const fn source_free_sha256(self) -> [u8; 32] {
-        self.source_free_sha256
+        *self.source_free_sha256.bytes()
     }
     pub const fn tier_epoch_start(self) -> u64 {
         self.tier_epoch_start
@@ -177,7 +178,7 @@ impl TierEpochActivationV1 {
         self.candidate_root_generation
     }
     pub const fn candidate_root_sha256(self) -> [u8; 32] {
-        self.candidate_root_sha256
+        *self.candidate_root_sha256.bytes()
     }
     pub const fn retained_metadata_bytes(self) -> u64 {
         self.retained_metadata_bytes
@@ -193,8 +194,8 @@ impl TierEpochActivationV1 {
             self.store,
             self.attempt,
             self.source_root_generation,
-            self.source_root_sha256,
-            self.source_free_sha256,
+            *self.source_root_sha256.bytes(),
+            *self.source_free_sha256.bytes(),
             self.tier_epoch_start,
         )
         .expect("validated activation has an anchor")

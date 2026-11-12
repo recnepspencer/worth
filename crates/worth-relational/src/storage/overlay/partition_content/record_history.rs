@@ -92,6 +92,7 @@ fn same_basis(current: Option<&RecordHistoryPrefix>, old: Option<&RecordHistoryP
 pub(super) fn rebuild<K: RecordKind>(
     lane: &super::ReconstructionLane<'_>,
     work: &mut super::ReconstructionWork<'_, '_>,
+    request: super::request_admission::Request<'_, '_, '_>,
     arena: &RecordArena<K>,
     slot: usize,
 ) -> Result<(DigestIndex, u64), PartitionContentDigestError>
@@ -115,16 +116,16 @@ where
                 super::admission::hash_controlled(b"metadata", value, work)?,
             ));
         }
-        let (units, bytes) = DigestIndex::construction_quote(entries.len())
+        let (units, _) = DigestIndex::construction_quote(entries.len())
             .ok_or(PartitionContentDigestError::AllocationAccountingOverflow)?;
-        work.prepare(units, bytes)?;
+        work.prepare(units, 0)?;
         return Ok((
-            DigestIndex::from_sorted_entries(lane, &entries),
+            DigestIndex::from_sorted_entries_for_request(lane, &entries, request)?,
             current.len() as u64,
         ));
     }
     let (mut history, offset) = if let Some(prefix) = prefix {
-        let (units, bytes) = DigestIndex::construction_quote(
+        let (units, _) = DigestIndex::construction_quote(
             prefix
                 .history_opening
                 .frontier
@@ -135,9 +136,9 @@ where
                 .ok_or(PartitionContentDigestError::AllocationAccountingOverflow)?,
         )
         .ok_or(PartitionContentDigestError::AllocationAccountingOverflow)?;
-        work.prepare(units, bytes)?;
-        let history = DigestIndex::from_append_frontier(&prefix.history_opening.frontier)
-            .ok_or(PartitionContentDigestError::InvalidHistoryCoverage)?;
+        work.prepare(units, 0)?;
+        let history =
+            DigestIndex::from_append_frontier_using(&prefix.history_opening.frontier, request)?;
         let offset = history
             .next_history_index()
             .and_then(|n| n.checked_sub(1))

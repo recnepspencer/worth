@@ -1,12 +1,11 @@
+mod frontier_view;
 mod reconstruction;
-use super::{hash_value, PartitionContentDigestError};
-use super::{ReconstructionLane, ReconstructionWork};
+use super::{hash_value, PartitionContentDigestError, ReconstructionLane, ReconstructionWork};
 use crate::storage::substrate::DigestIndex;
 use crate::storage::substrate::{
     HistoryAppendFrontier, RecordArena, RecordKind, SharedMap, StorageAllocationVisitor,
 };
-use crate::symbols::data::{StringInterner, Symbol};
-use std::collections::BTreeMap;
+use crate::symbols::data::SymbolTextLookup;
 
 #[derive(Debug, Clone, Default)]
 pub(super) struct RecordContentIndex {
@@ -64,8 +63,11 @@ impl RecordContentIndex {
         arena: &RecordArena<K>,
         previous: &RecordArena<K>,
         slots: impl IntoIterator<Item = usize>,
-        symbols: &StringInterner,
-        extra: impl Fn(&K::Extra, &StringInterner) -> Result<[u8; 32], PartitionContentDigestError>,
+        symbols: &dyn SymbolTextLookup,
+        extra: impl Fn(
+            &K::Extra,
+            &dyn SymbolTextLookup,
+        ) -> Result<[u8; 32], PartitionContentDigestError>,
     ) -> Result<u64, PartitionContentDigestError>
     where
         K::Meta: serde::Serialize,
@@ -83,24 +85,14 @@ impl RecordContentIndex {
             let old_bytes = cached.allocation_bytes();
             let (history, hashed) = super::record_history::update(arena, previous, slot, &cached)?;
             hashed_values += hashed;
-            let versions = resolve_aspect_versions(&arena.aspect_versions[physical], symbols)?;
-            let digest = hash_value(
-                b"record",
-                &(
-                    slot as u64,
-                    // Physical row order remains part of the canonical storage
-                    // grammar: compaction changes this root, allocation IDs do not.
-                    physical as u64,
-                    arena.partition_ids[physical],
-                    arena.generations[physical],
-                    arena.lifecycle[physical],
-                    arena.kind_ids[physical],
-                    history.digest(),
-                    arena.created_at[physical],
-                    arena.retired_at[physical],
-                    extra(&arena.extra[physical], symbols)?,
-                    versions,
-                ),
+            let digest = record_digest(
+                arena,
+                slot,
+                physical,
+                history.digest(),
+                symbols,
+                &extra,
+                None,
             )?;
             hashed_values += 1;
             self.history_bytes = self
@@ -162,25 +154,78 @@ impl RecordContentIndex {
         self.reclaimable_words.visit_allocations(visitor);
         self.histories
             .visit_allocations(false, visitor, &mut |history, allocation, visitor| {
-                if visitor.visit(allocation) {
+                if allocation.visit(visitor) {
                     history.visit_allocations(visitor);
                 }
             });
     }
 }
 
+fn record_digest<K: RecordKind>(
+    arena: &RecordArena<K>,
+    slot: usize,
+    physical: usize,
+    history: [u8; 32],
+    symbols: &dyn SymbolTextLookup,
+    extra: &impl Fn(&K::Extra, &dyn SymbolTextLookup) -> Result<[u8; 32], PartitionContentDigestError>,
+    request: super::request_admission::Request<'_, '_, '_>,
+) -> Result<[u8; 32], PartitionContentDigestError> {
+    let resolved = resolve_aspect_versions(&arena.aspect_versions[physical], symbols, request)?;
+    hash_value(
+        b"record",
+        &(
+            slot as u64,
+            physical as u64,
+            arena.partition_ids[physical],
+            arena.generations[physical],
+            arena.lifecycle[physical],
+            arena.kind_ids[physical],
+            history,
+            arena.created_at[physical],
+            arena.retired_at[physical],
+            extra(&arena.extra[physical], symbols)?,
+            resolved,
+        ),
+    )
+}
+
 fn resolve_aspect_versions<'a>(
-    versions: &BTreeMap<Symbol, u64>,
-    symbols: &'a StringInterner,
+    versions: &crate::storage::substrate::AspectVersions,
+    symbols: &'a dyn SymbolTextLookup,
+    request: super::request_admission::Request<'_, '_, '_>,
 ) -> Result<Vec<(&'a str, u64)>, PartitionContentDigestError> {
-    let mut resolved = versions
-        .iter()
-        .map(|(symbol, version)| {
-            symbols.resolve(*symbol).map(|name| (name, *version)).ok_or(
-                PartitionContentDigestError::UnresolvedContentSymbol(*symbol),
-            )
+    let bytes = std::alloc::Layout::array::<(&str, u64)>(versions.len())
+        .ok()
+        .and_then(|layout| u64::try_from(layout.size()).ok())
+        .ok_or(PartitionContentDigestError::AllocationAccountingOverflow)?;
+    let _memory = request
+        .map(|request| {
+            request
+                .reserve_retained_memory(bytes)
+                .map_err(|cause| PartitionContentDigestError::Request(cause.into()))
         })
-        .collect::<Result<Vec<_>, _>>()?;
+        .transpose()?
+        .flatten();
+    let mut resolved = Vec::with_capacity(versions.len());
+    let mut text_bytes = 0u64;
+    for (symbol, version) in versions.iter() {
+        super::request_admission::poll(request)?;
+        let name = symbols.resolve(*symbol).ok_or(
+            PartitionContentDigestError::UnresolvedContentSymbol(*symbol),
+        )?;
+        text_bytes = text_bytes
+            .checked_add(name.len() as u64)
+            .ok_or(PartitionContentDigestError::AllocationAccountingOverflow)?;
+        resolved.push((name, *version));
+    }
+    // Name bytes vary independently of numeric Symbol IDs. A machine-width
+    // comparison bound covers lexical sorting as well as serialized hashing.
+    super::request_admission::charge(
+        request,
+        text_bytes
+            .checked_mul(2 * usize::BITS as u64)
+            .ok_or(PartitionContentDigestError::AllocationAccountingOverflow)?,
+    )?;
     resolved.sort_unstable_by(|left, right| left.0.cmp(right.0));
     Ok(resolved)
 }

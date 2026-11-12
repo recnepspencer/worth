@@ -30,12 +30,13 @@ impl super::IndexAuthority<'_> {
                     .read_truth()
                     .project_observation(&observation)
                     .map_err(Denial::Basis)?;
-                super::basis::validate(&request, &observation, None, &projection)?;
+                super::basis::validate(&request, &observation, None, &projection, execution)?;
                 let after = IndexRootView::from_projection(&projection)?;
-                self.runtime.indexes.install_routing(
+                self.maintenance().catalog().routing_for_request(
+                    execution,
                     after.root().schema_authority().authority_digest(),
                     after.root().schema_authority().aspect_plans(),
-                );
+                )?;
                 self.maintenance()
                     .prepare_recovery(lane, execution, &request, &after, work)?
                     .publish_admitted(self.runtime, work)
@@ -64,13 +65,10 @@ impl IndexMaintenanceOwner<'_> {
             work.ordered::<crate::indexes::data::DerivedIndexId, ()>(selected.len(), 1, 0)?;
             selected.insert(*index);
         }
+        let catalog = self.catalog();
         for index in selected {
-            work.prepare(
-                crate::indexes::data::SelectedIndexReadWork::MAXIMUM_ORDERED_DESCENT_WORK + 1,
-                0,
-            )?;
-            let definition = self
-                .indexes
+            work.lookup(catalog.definition_count(), 1)?;
+            let definition = catalog
                 .definition(index)
                 .ok_or(Denial::IndexUnavailable(index))?;
             let rows =
@@ -82,8 +80,8 @@ impl IndexMaintenanceOwner<'_> {
             lane,
             after.root(),
             &request.branch_id,
-            work.publication_is_deferred(),
             &mut |units, bytes| work.prepare(units, bytes),
+            self.prepared_catalog(),
         )?;
         Ok(PreparedRefresh {
             publication: IndexGenerationPublicationBasis::new(
@@ -115,34 +113,53 @@ impl super::IndexAuthority<'_> {
                 let recorded = self
                     .runtime
                     .history
-                    .recorded_commit_envelope(request.source_commit_id)
+                    .commit_artifact(request.source_commit_id)
                     .ok_or(DerivedIndexMaintenanceDenialKind::CommitMismatch)?;
-                if recorded.branch_context != request.branch_id {
+                let identity = recorded.identity();
+                let branch_bytes = request.branch_id.0.len();
+                // Compare the authoring name and copy the registry cell identity.
+                work.prepare(2 * branch_bytes as u64 + 2, branch_bytes as u64)?;
+                if identity.authoring_branch() != &request.branch_id {
                     return Err(DerivedIndexMaintenanceDenialKind::CommitMismatch);
                 }
-                let projection = self
-                    .runtime
-                    .read_truth()
-                    .try_project_retained_commit(
-                        request.source_commit_id,
-                        request.branch_id.clone(),
-                        recorded.commit.version_id,
-                    )
-                    .map_err(DerivedIndexMaintenanceDenialKind::Basis)?;
+                let projection = match self.project_registered_retained_commit(
+                    execution,
+                    &request,
+                    identity.version_id(),
+                    work,
+                )? {
+                    Some(projection) => projection,
+                    None => {
+                        work.prepare(branch_bytes as u64 + 1, branch_bytes as u64)?;
+                        self.runtime
+                            .read_truth()
+                            .try_project_retained_commit(
+                                request.source_commit_id,
+                                request.branch_id.clone(),
+                                identity.version_id(),
+                            )
+                            .map_err(DerivedIndexMaintenanceDenialKind::Basis)?
+                    }
+                };
                 let root = projection
                     .selected_root()
                     .ok_or(DerivedIndexMaintenanceDenialKind::CommitMismatch)?;
-                if root.commit_id() != Some(request.source_commit_id)
-                    || root
-                        .canonical_envelope()
-                        .is_none_or(|envelope| envelope.branch_context != request.branch_id)
+                work.prepare(branch_bytes as u64 + 1, 0)?;
+                if root.commit_receipt().is_none_or(|receipt| {
+                    receipt.commit_id != request.source_commit_id
+                        || receipt.version_id != identity.version_id()
+                }) || root
+                    .commit_evidence()
+                    .is_none_or(|evidence| evidence.authoring_branch() != &request.branch_id)
+                    || root.descriptor() != Some(recorded.roots())
                 {
                     return Err(DerivedIndexMaintenanceDenialKind::CommitMismatch);
                 }
-                self.runtime.indexes.install_routing(
+                self.maintenance().catalog().routing_for_request(
+                    execution,
                     root.schema_authority().authority_digest(),
                     root.schema_authority().aspect_plans(),
-                );
+                )?;
                 let after = root_view::IndexRootView::from_projection(&projection)?;
                 let prepared = self
                     .maintenance()

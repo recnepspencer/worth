@@ -2,7 +2,6 @@
 //! is reached, nothing decides again, and every output agrees with the model.
 
 use super::*;
-use worth_query_host::facade::application_installation::WorthQueryCheckpointCapturePolicy as CapturePolicy;
 use worth_query_host::facade::primary_graph::WorthQueryInvalidationEquivalenceForTest as EquivalenceForTest;
 
 /// Three rings settle, and the world is captured.
@@ -17,13 +16,7 @@ fn settled_checkpoint(
         court.demand_ring(rings, index, "before the checkpoint");
     }
     drop((principal, scope));
-    application
-        .with_host_advancement(|host_phase| {
-            application
-                .capture_application_checkpoint(&host_phase, CapturePolicy::SystemAllocation)
-                .unwrap()
-        })
-        .expect("installed host call opens")
+    worth_query_testkit_host::facade::host::checkpoint_capture::capture(&application)
 }
 
 mod forked_branch;

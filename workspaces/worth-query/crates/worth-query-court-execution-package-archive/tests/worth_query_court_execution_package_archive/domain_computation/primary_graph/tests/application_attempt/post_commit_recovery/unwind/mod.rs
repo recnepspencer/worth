@@ -98,7 +98,7 @@ fn unwind_after_performed_publication_preserves_one_exact_retriable_record() {
         })
         .expect("the fixture read owns its installed host call");
 
-    let WorthQueryApplicationCommitOutcome::AlreadyCommitted(recovered) =
+    let WorthQueryApplicationCommitOutcome::RecoveredCommitted(recovered) =
         world.application.compare_and_commit_application(
             retry,
             idempotency(198, 199),
@@ -107,7 +107,10 @@ fn unwind_after_performed_publication_preserves_one_exact_retriable_record() {
     else {
         panic!("the equivalent retry must recover the exact performed publication");
     };
-    assert!(recovered.is_same_authoritative_commit(&first_receipt));
+    worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::recorded_receipt::assert_original(
+        &recovered,
+        &first_receipt,
+    );
     assert_eq!(recovered.emitted_effect_count(), 1);
     assert_eq!(
         (*(*world.application.runtime_for_test()).primary_provider_for_test())
@@ -115,8 +118,19 @@ fn unwind_after_performed_publication_preserves_one_exact_retriable_record() {
         0,
         "terminal recovery must disarm and retire the exact slot"
     );
-    let emissions = (*(*world.application.runtime_for_test()).primary_provider_for_test())
-        .committed_application_emissions_for_test(recovered.committed_product_publication());
+    let owner_evidence = world
+        .application
+        .runtime_for_test()
+        .primary_provider_for_test()
+        .observe_completed_application_for_test(first_receipt.commit_reference())
+        .expect("actual retained dispatch custody remains with its owner");
+    let emissions = world
+        .application
+        .runtime_for_test()
+        .primary_provider_for_test()
+        .committed_application_emissions_for_test(
+            owner_evidence.committed_product_publication_for_test(),
+        );
     assert_eq!(emissions.len(), 1);
     assert_eq!(
         emissions[0]

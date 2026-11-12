@@ -52,7 +52,7 @@ fn sparse_publication_retires_more_predecessors_than_one_older_sweep() {
             .map(|generation| generation.generation_id)
             .collect::<Vec<_>>()
     };
-    let old = build_all(&first_basis);
+    let _old = build_all(&first_basis);
     let (_, middle_basis) = runtime.observe_branch(&main).unwrap();
     let middle_generations = build_all(&middle_basis);
     drop(middle_basis);

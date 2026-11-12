@@ -10,6 +10,7 @@ pub mod adapters;
 pub mod branch;
 pub mod core;
 pub mod diagnostics;
+pub mod durability;
 pub mod history;
 pub mod runtime;
 pub mod schema;

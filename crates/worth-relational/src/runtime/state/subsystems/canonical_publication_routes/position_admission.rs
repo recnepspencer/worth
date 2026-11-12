@@ -23,6 +23,7 @@ pub enum RelationalCanonicalPositionAdmissionDenial {
     BranchContextMismatch,
     /// The envelope fails its own commit-artifact invariants.
     CommitArtifact(RelationalCommitArtifactDenial),
+    SemanticResult(crate::transactions::data::RelationalCommitSemanticResultRefusal),
 }
 
 impl CanonicalPositionAdmission {
@@ -71,6 +72,10 @@ pub(crate) fn readmit_positioned_canonical_commit(
     if canonical.branch_context != canonical.commit.branch_id {
         return Err(RelationalCanonicalPositionAdmissionDenial::BranchContextMismatch);
     }
+    canonical
+        .semantic_result()
+        .validate_envelope(&canonical)
+        .map_err(RelationalCanonicalPositionAdmissionDenial::SemanticResult)?;
     crate::history::RelationalCommitCatalog::validate_detached_envelope(&canonical)
         .map_err(RelationalCanonicalPositionAdmissionDenial::CommitArtifact)?;
     Ok(PositionedCanonicalCommit::admit(
@@ -92,6 +97,10 @@ impl std::fmt::Display for RelationalCanonicalPositionAdmissionDenial {
             Self::CommitArtifact(denial) => {
                 write!(formatter, "canonical envelope admission failed: {denial:?}")
             }
+            Self::SemanticResult(denial) => write!(
+                formatter,
+                "canonical semantic result admission failed: {denial:?}"
+            ),
         }
     }
 }

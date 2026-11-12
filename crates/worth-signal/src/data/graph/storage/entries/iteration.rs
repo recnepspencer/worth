@@ -36,6 +36,20 @@ impl NodeArena {
 }
 
 impl SignalGraph {
+    pub(crate) fn authored_conditional_nodes(&self) -> impl Iterator<Item = NodeId> + '_ {
+        self.arena
+            .nodes
+            .iter()
+            .enumerate()
+            .filter_map(|(index, slot)| {
+                (slot.is_occupied()
+                    && self.arena.definitions[index]
+                        .conditional_definition
+                        .is_some())
+                .then_some(NodeId::new(index as u32, slot.generation))
+            })
+    }
+
     pub(crate) fn live_node_ids(&self) -> Vec<NodeId> {
         self.arena
             .nodes

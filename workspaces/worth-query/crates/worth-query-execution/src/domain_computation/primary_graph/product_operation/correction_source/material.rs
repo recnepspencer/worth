@@ -1,10 +1,11 @@
 //! Derivation material belongs to the original occurrence's installed mechanism.
 mod preimage;
+pub(super) mod recorded_input;
 use super::{
     disclosure::WorthQueryCorrectionDerivationDenial as Denial, WorthQuerySelectedCorrectionSource,
 };
-use crate::domain_computation::application_aftermath::retained_preimage::WorthQueryRetainedPreImage;
 use preimage::DisclosedPreImage;
+
 use worth_query_declaration::facade::{
     application_aftermath::{
         ApplicationCorrectionBinding, ApplicationCorrectionPreImage,
@@ -24,9 +25,7 @@ pub(super) fn mechanism<'a, S: ApplicationSchema>(
 ) -> Result<&'a InstalledCorrectionMechanism, Denial> {
     let contract = source
         .occurrence()
-        .commit_evidence()
-        .original_authority()
-        .installed_aftermath()
+        .aftermath()
         .ok_or(Denial::UnsupportedSourceMeaning)?;
     match contract.authority() {
         InstalledCorrectionAuthority::RuntimeAlone => {}
@@ -45,11 +44,11 @@ pub(super) fn mechanism<'a, S: ApplicationSchema>(
                 )
                 && source
                     .occurrence()
-                    .commit_evidence()
-                    .workflow_origin()
+                    .memory()
+                    .and_then(|value| value.commit_evidence().workflow_origin())
                     .is_some() =>
         {
-            match source.application.resolve_correction_external_settlement(source.occurrence()) {
+            match source.application.resolve_correction_external_settlement(source.occurrence().memory().expect("workflow origin belongs to real Memory evidence")) {
                 Ok(true) => {},
                 Ok(false) => return Err(Denial::Workflow(
                     crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenial::new(
@@ -60,7 +59,10 @@ pub(super) fn mechanism<'a, S: ApplicationSchema>(
                 Err(_) => return Err(Denial::UnsupportedSourceMeaning),
             }
         }
-        _ => return Err(Denial::UnsupportedSourceMeaning),
+        InstalledCorrectionAuthority::RuntimeWithExternalOwner
+        | InstalledCorrectionAuthority::NotCorrectable => {
+            return Err(Denial::UnsupportedSourceMeaning)
+        }
     }
     contract.mechanism().ok_or(Denial::UnsupportedSourceMeaning)
 }
@@ -82,20 +84,14 @@ pub(super) fn derive<S: ApplicationSchema, C: ApplicationCorrectionBinding<S>>(
             finish_derivation(result, outputs.take_failure())
         }
         InstalledCorrectionMechanism::RecordedInverse(_) => {
-            let preimage = source
-                .occurrence()
-                .commit_evidence()
-                .retained_preimage()
-                .ok_or(Denial::MissingPreImage)?;
+            if !source.occurrence().has_preimage() {
+                return Err(Denial::MissingPreImage);
+            }
             C::derive_correction(
                 input,
-                ApplicationCorrectionSourceMaterial::RecordedInverse(&DisclosedPreImage {
-                    retained: Some(preimage),
-                    outputs: source
-                        .occurrence()
-                        .commit_evidence()
-                        .output_correspondence(),
-                }),
+                ApplicationCorrectionSourceMaterial::RecordedInverse(&DisclosedPreImage::Retained(
+                    source.occurrence(),
+                )),
             )
             .map_err(Denial::Domain)
         }
@@ -122,21 +118,48 @@ pub fn finish_derivation<T>(
 
 /// The installed correction derives finite demands from its original input and pre-image.
 pub(super) fn capture_coupled<S: ApplicationSchema, C: ApplicationCorrectionBinding<S>>(
-    material: &super::WorthQueryPrimaryGraphCommittedApplication,
+    material: &super::occurrence::CorrectionOccurrence,
     execution: &worth_execution::ExecutionRequest<'_, '_>,
 ) -> crate::domain_computation::primary_graph::application_attempt::coupled_outputs::DeclaredCoupledOutputDemands{
     use crate::domain_computation::primary_graph::{
         application_attempt::coupled_outputs, WorthQueryApplicationAttemptDenial as Attempt,
         WorthQueryApplicationAttemptDenialKind as Kind,
     };
+    if material.memory().is_none() {
+        let Some((bytes, identity)) = material.input() else {
+            return coupled_outputs::DeclaredCoupledOutputDemands::failed(Attempt::new(
+                Kind::CorrectionCaptureDenied,
+                C::IDENTITY,
+            ));
+        };
+        let Ok(input) = recorded_input::recover_bytes(bytes, identity, C::recover_source_input)
+        else {
+            return coupled_outputs::DeclaredCoupledOutputDemands::failed(Attempt::new(
+                Kind::CorrectionCaptureDenied,
+                C::IDENTITY,
+            ));
+        };
+        return coupled_outputs::capture_correction::<S, C>(
+            execution,
+            input.input(),
+            &DisclosedPreImage::Retained(material),
+        );
+    }
+    let material = material.memory().expect("actual Memory occurrence");
     let Some(input) = material
         .commit_evidence()
         .original_authority()
         .retained_governed_input_carrier()
         .and_then(|carrier| {
-            carrier.encoded_input::<<C::Source as ApplicationMutationBinding<S>>::InputBinding>()
+            carrier.retained_input::<<C::Source as ApplicationMutationBinding<S>>::InputBinding>()
         })
     else {
+        return coupled_outputs::DeclaredCoupledOutputDemands::failed(Attempt::new(
+            Kind::CorrectionCaptureDenied,
+            C::IDENTITY,
+        ));
+    };
+    let Ok(input) = recorded_input::recover(input, C::recover_source_input) else {
         return coupled_outputs::DeclaredCoupledOutputDemands::failed(Attempt::new(
             Kind::CorrectionCaptureDenied,
             C::IDENTITY,
@@ -145,10 +168,7 @@ pub(super) fn capture_coupled<S: ApplicationSchema, C: ApplicationCorrectionBind
     coupled_outputs::capture_correction::<S, C>(
         execution,
         input.input(),
-        &DisclosedPreImage {
-            retained: material.commit_evidence().retained_preimage(),
-            outputs: material.commit_evidence().output_correspondence(),
-        },
+        &DisclosedPreImage::Captured(material),
     )
 }
 

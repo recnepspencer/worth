@@ -2,8 +2,8 @@
 use super::*;
 
 pub(super) fn validate<'a>(
-    candidate: &CanonicalCommitEnvelope,
-    runtime: &crate::runtime::RelationalPreparationRuntime,
+    candidate: &CanonicalCommitEnvelopeBody,
+    runtime: &crate::history::data::canonical_commit_envelope::required_output_origin::history_request::PreparationRuntimeRequest<'_, '_, '_>,
     basis: &AdmittedRelationalBranchBasis,
     predecessor: &'a crate::mvcc::RelationalRequiredOutputPublication,
     meaning: &crate::mvcc::RequiredOutputPublicationMeaning,
@@ -11,7 +11,7 @@ pub(super) fn validate<'a>(
     validated_history: &mut OutputOriginHistory,
     context: &mut MapKernelContext<'_, '_>,
 ) -> Result<&'a CanonicalRequiredOutputOrigin, TransactionCommitError> {
-    if predecessor.runtime_instance_id != runtime.runtime_instance_id() {
+    if predecessor.runtime_instance_id != runtime.runtime.runtime_instance_id() {
         return Err(crate::mvcc::origin_denial(
             "foreign native predecessor publication custody",
         ));
@@ -54,7 +54,7 @@ pub(super) fn validate<'a>(
             .iter()
             .any(|member| member.posture != crate::mvcc::RequiredOutputRolePosture::Retire)
     {
-        let current = runtime.current_ownership.as_ref().ok_or_else(|| {
+        let current = runtime.runtime.current_ownership.as_ref().ok_or_else(|| {
             crate::mvcc::origin_denial("live owned predecessor requires current Native custody")
         })?;
         let canonical = current
@@ -94,7 +94,12 @@ pub(super) fn validate<'a>(
     let canonical = validated_history
         .by_version(
             origin.commit.version_id,
-            &mut |version| runtime.history.canonical_envelope_for_version(version),
+            &mut |version, context| {
+                runtime
+                    .history
+                    .canonical_envelope_for_version(version, context)
+            },
+            &runtime.history.execution(),
             context,
         )
         .map_err(super::relation_stop)?
@@ -115,10 +120,15 @@ pub(super) fn validate<'a>(
             ),
         ),
         &mut |commit| runtime.history.canonical_envelope(commit),
-        &mut |version| runtime.history.canonical_envelope_for_version(version),
+        &mut |version, context| {
+            runtime
+                .history
+                .canonical_envelope_for_version(version, context)
+        },
         runtime.history.canonical_catalog_len(),
         lease,
         validated_history,
+        &runtime.history.execution(),
         context,
     )
     .map_err(|stop| super::relation_context(stop, "predecessor", basis, candidate))?;

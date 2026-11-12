@@ -31,9 +31,10 @@ fn selector_and_root_reads_require_original_and_native_capacity_before_allocatio
             drop(world);
             let before = snapshot_family(root);
 
+            let serving = worth_store::physical_runtime::PhysicalRecoveryCoordinationCapacity::serving_evidence_backing_bytes();
             let configurations = [
                 (
-                    ROOT_SELECTOR_BYTES as u64 - 1,
+                    serving + ROOT_SELECTOR_BYTES as u64 - 1,
                     worth_store_recovery_runtime::PhysicalRecoveryStaticConfiguration::current(),
                 ),
                 (
@@ -80,7 +81,7 @@ fn selector_and_root_reads_require_original_and_native_capacity_before_allocatio
                         0,
                         worth_store::physical_runtime::PhysicalRecoveryRejoinResidentDenial::BudgetExceeded { required, admitted },
                     ) => {
-                        assert_eq!(*required, ROOT_SELECTOR_BYTES as u64);
+                        assert_eq!(*required, serving + ROOT_SELECTOR_BYTES as u64);
                         assert_eq!(*admitted, memory);
                     }
                     (1, worth_store::physical_runtime::PhysicalRecoveryRejoinResidentDenial::OperationAllocation(allocation)) => {
@@ -94,7 +95,7 @@ fn selector_and_root_reads_require_original_and_native_capacity_before_allocatio
                             worth_store::physical_runtime::PhysicalResidencyDimension::OperationScope(worth_store::physical_runtime::PhysicalOperationAllocationScope::Recovery)
                         );
                         assert_eq!(pressure.requested(), ROOT_SELECTOR_BYTES as u64);
-                        assert_eq!(pressure.limit(), 1);
+                        assert_eq!(pressure.limit(), serving + 1);
                         assert!(!pressure.effect_may_have_started());
                     }
                     other => panic!("wrong first-read funding cause: {other:?}"),
@@ -123,13 +124,13 @@ fn selector_and_root_reads_require_original_and_native_capacity_before_allocatio
                 (
                     worth_store_recovery_runtime::PhysicalRecoverySourceReadAllocationBoundary::ReadBuffer,
                     root_bytes,
-                    selector_bytes + root_bytes,
+                    serving + selector_bytes + root_bytes,
                     selector_bytes,
                 ),
                 (
                     worth_store_recovery_runtime::PhysicalRecoverySourceReadAllocationBoundary::CanonicalValidation,
                     scratch_bytes,
-                    selector_bytes + root_bytes + scratch_bytes,
+                    serving + selector_bytes + root_bytes + scratch_bytes,
                     selector_bytes + root_bytes,
                 ),
             ] {
@@ -209,3 +210,5 @@ fn selector_and_root_reads_require_original_and_native_capacity_before_allocatio
         .join()
         .expect("source read funding worker did not panic");
 }
+
+mod source_slot;

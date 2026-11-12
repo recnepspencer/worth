@@ -352,3 +352,6 @@ pub struct WorthQueryReadReceipt {
     pub(super) decision_trace_envelope: Option<WorthQueryIntentDecisionTraceEnvelope>,
     pub(super) execution_provenance: Option<WorthQueryIntentExecutionProvenance>,
 }
+#[cfg(test)]
+#[path = "read_composition_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;

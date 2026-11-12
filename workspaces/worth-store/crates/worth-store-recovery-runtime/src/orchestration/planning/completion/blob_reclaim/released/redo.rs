@@ -7,7 +7,7 @@ use worth_store_physical_format::{
     PersistedRecordIdentity,
 };
 
-use super::super::super::super::{context::PlanningContext, resolved_basis::ResolvedPlanningBasis};
+use super::super::super::super::{context::PlanningContext, resolved_basis::ResolvedPlanningState};
 use super::{
     binding_matches, closure_evidence::ReleasedClosureEvidence, historical_anchor, selected,
     selected_blob_record,
@@ -15,7 +15,7 @@ use super::{
 
 pub(in crate::orchestration::planning::completion) fn preflight(
     mut context: PlanningContext,
-    basis: &mut ResolvedPlanningBasis,
+    basis: &mut ResolvedPlanningState,
     descriptor: BlobReclaimDescriptorV3,
     descriptor_record: PersistedRecordIdentity,
     operation_id: [u8; 32],

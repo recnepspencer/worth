@@ -52,7 +52,7 @@ impl<Schema, Operation, Input, Scope>
     where
         Schema: ApplicationSchema,
         Binding: ApplicationMutationBinding<Schema, Operation = Operation, Input = Input>,
-        Input: Send + Sync + 'static,
+        Input: serde::Serialize + Send + Sync + 'static,
     {
         if !self.requires_original_source_capture(access) {
             return Ok(self);
@@ -73,7 +73,7 @@ impl<Schema, Operation, Input, Scope>
     where
         Schema: ApplicationSchema,
         Binding: ApplicationMutationBinding<Schema, Operation = Operation, Input = Input>,
-        Input: Send + Sync + 'static,
+        Input: serde::Serialize + Send + Sync + 'static,
     {
         self.retain_checked_input::<Binding>(access, phase, runtime, input, true)
     }
@@ -89,7 +89,7 @@ impl<Schema, Operation, Input, Scope>
     where
         Schema: ApplicationSchema,
         Binding: ApplicationMutationBinding<Schema, Operation = Operation, Input = Input>,
-        Input: Send + Sync + 'static,
+        Input: serde::Serialize + Send + Sync + 'static,
     {
         let matches_handler =
             self.read_set
@@ -144,9 +144,12 @@ impl<Schema, Operation, Input, Scope>
         if retain_input {
             let correction =
                 correction::capture::<Schema, Binding>(&execution, runtime, input.input())?;
-            self.read_set
-                .admission
-                .retain_original_input::<Binding>(input, correction);
+            self.read_set.admission.retain_original_input::<Binding>(
+                input
+                    .retain_canonical_input()
+                    .map_err(WorthQueryApplicationAttemptDenial::retained_input)?,
+                correction,
+            );
         }
         Ok(self)
     }

@@ -5,6 +5,11 @@ use crate::validation::candidate_source::SourcePreparationGroup;
 use crate::validation::data::{
     CustomInvariantRegistration, CustomInvariantSemanticIdentity, InvariantExecutionPoint,
 };
+mod compilation;
+mod compilation_quote;
+mod source_inventory;
+pub(crate) use compilation::CustomInvariantCompilationDenial;
+pub(crate) use source_inventory::{CustomInvariantCompilationFunding, SourcePreparationInventory};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct DuplicateCustomInvariantRegistration {
@@ -15,10 +20,10 @@ pub struct DuplicateCustomInvariantRegistration {
 #[derive(Debug, Clone, Default)]
 pub(crate) struct FrozenCustomInvariantRegistry {
     registrations: Arc<[CustomInvariantRegistration]>,
+    source_groups: Arc<SourcePreparationInventory>,
+    source_postings: Arc<crate::validation::candidate_source::routing::SourceProgramPostings>,
     points: Arc<[Vec<usize>; InvariantExecutionPoint::COUNT]>,
     model_ownership_index: Option<usize>,
-    source_groups: Arc<[SourcePreparationGroup]>,
-    source_postings: crate::validation::candidate_source::routing::SourceProgramPostings,
     pub(crate) source_history:
         Arc<crate::validation::candidate_source::authored_history::catalog::SourceHistoryCatalog>,
     index_by_identity_and_execution_point: Arc<
@@ -30,48 +35,12 @@ pub(crate) struct FrozenCustomInvariantRegistry {
             usize,
         >,
     >,
+    _funding: Option<Arc<CustomInvariantCompilationFunding>>,
 }
 
 impl FrozenCustomInvariantRegistry {
-    pub(crate) fn from_registrations(
-        registrations: Vec<CustomInvariantRegistration>,
-        public_sources: Vec<SourcePreparationGroup>,
-    ) -> Result<Self, DuplicateCustomInvariantRegistration> {
-        let mut index_by_identity_and_execution_point = BTreeMap::new();
-        let mut model_ownership_index = None;
-        for (index, registration) in registrations.iter().enumerate() {
-            if registration.model_ownership.is_some() {
-                model_ownership_index = Some(index);
-            }
-            let identity = registration.descriptor().identity.clone();
-            let execution_point = registration.execution_point();
-            if index_by_identity_and_execution_point
-                .insert((identity.rule_id.clone(), execution_point), index)
-                .is_some()
-            {
-                return Err(DuplicateCustomInvariantRegistration {
-                    identity,
-                    execution_point,
-                });
-            }
-        }
-        let mut source_groups = registrations
-            .iter()
-            .filter_map(SourcePreparationGroup::from_invariant)
-            .collect::<Vec<_>>();
-        source_groups.extend(public_sources);
-        Ok(Self {
-            source_history: Arc::new(crate::validation::candidate_source::authored_history::catalog::SourceHistoryCatalog::compile(&source_groups)),
-            source_postings:
-                crate::validation::candidate_source::routing::SourceProgramPostings::compile(
-                    &source_groups,
-                ),
-            source_groups: source_groups.into(),
-            points: Arc::new(std::array::from_fn(|point| registrations.iter().enumerate().filter(|(_, r)| point == r.execution_point() as usize || (point == InvariantExecutionPoint::ProposedState as usize && InvariantExecutionPoint::ProposedState.includes(r.execution_point()))).map(|(i,_)| i).collect())),
-            registrations: registrations.into(),
-            model_ownership_index,
-            index_by_identity_and_execution_point: Arc::new(index_by_identity_and_execution_point),
-        })
+    pub(crate) fn registrations(&self) -> &[CustomInvariantRegistration] {
+        &self.registrations
     }
 
     /// The exact tagged registration; no request-time applicability scan or parallel meaning.
@@ -85,8 +54,12 @@ impl FrozenCustomInvariantRegistry {
         Some((registration, registration.model_ownership.as_deref()?))
     }
 
-    pub(crate) fn source_inventory(&self) -> Arc<[SourcePreparationGroup]> {
+    pub(crate) fn source_inventory(&self) -> Arc<SourcePreparationInventory> {
         self.source_groups.clone()
+    }
+
+    pub(crate) fn all_source_groups(&self) -> &[SourcePreparationGroup] {
+        &self.source_groups
     }
 
     pub(crate) fn explicit_source_programs(
@@ -209,9 +182,16 @@ mod tests {
         ))
         .unwrap();
 
-        let error =
-            FrozenCustomInvariantRegistry::from_registrations(vec![left, right], Vec::new())
-                .unwrap_err();
+        let error = FrozenCustomInvariantRegistry::compile(
+            &crate::schema::data::RelationalSchemaRegistry::default(),
+            vec![left, right],
+            Vec::new(),
+            crate::schema::SchemaCompilationControl::Configuration,
+        )
+        .unwrap_err();
+        let super::CustomInvariantCompilationDenial::Duplicate(error) = error else {
+            panic!("duplicate semantics must remain typed");
+        };
         assert_eq!(error.identity.rule_id.as_str(), "dup.rule");
         assert_eq!(
             error.execution_point,
@@ -233,9 +213,11 @@ mod tests {
         .unwrap();
         let identity = commit_backstop.descriptor().identity.clone();
 
-        let registry = FrozenCustomInvariantRegistry::from_registrations(
+        let registry = FrozenCustomInvariantRegistry::compile(
+            &crate::schema::data::RelationalSchemaRegistry::default(),
             vec![commit_backstop, graph_composition],
             Vec::new(),
+            crate::schema::SchemaCompilationControl::Configuration,
         )
         .unwrap();
 
@@ -256,9 +238,13 @@ mod tests {
         ))
         .unwrap();
         let identity = registration.descriptor().identity.clone();
-        let registry =
-            FrozenCustomInvariantRegistry::from_registrations(vec![registration], Vec::new())
-                .unwrap();
+        let registry = FrozenCustomInvariantRegistry::compile(
+            &crate::schema::data::RelationalSchemaRegistry::default(),
+            vec![registration],
+            Vec::new(),
+            crate::schema::SchemaCompilationControl::Configuration,
+        )
+        .unwrap();
 
         assert_eq!(registry.len(), 1);
         assert!(registry

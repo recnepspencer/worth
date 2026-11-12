@@ -1,3 +1,4 @@
+mod borrowed_allocation;
 mod error;
 #[cfg(test)]
 mod inline_bytes_tests;
@@ -10,6 +11,7 @@ pub(crate) use error::AspectValueCanonicalCodecError;
 pub(crate) use reading::decode_aspect_value;
 pub(crate) use writing::{
     encode_aspect_value, encode_length_prefixed_aspect_value, encoded_aspect_value_len,
+    write_aspect_value,
 };
 
 pub(crate) fn encode_string(bytes: &mut Vec<u8>, value: &str) {
@@ -20,3 +22,8 @@ pub(crate) fn encode_string(bytes: &mut Vec<u8>, value: &str) {
 pub(crate) fn encode_u32(bytes: &mut Vec<u8>, value: u32) {
     bytes.extend_from_slice(&value.to_le_bytes());
 }
+
+pub(crate) use borrowed_allocation::{
+    body_decoded_bytes as value_body_decoded_bytes,
+    framed_decoded_bytes as value_frame_decoded_bytes,
+};

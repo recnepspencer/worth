@@ -27,11 +27,16 @@ def target_identity(target):
             'source': normalized_path(target['src_path']), 'edition': target['edition']}
 
 
-def declarations(graph):
+def declarations(graph, checked_test_roots=()):
     if graph.get('version') != 1 or not isinstance(graph.get('units'), list):
         raise CompilerUnitRefusal('unsupported Cargo unit graph')
     units = graph['units']
     roles = [set() for _ in units]
+
+    def test_harness(index):
+        row = units[index]
+        return row['mode'] == 'test' or (row['mode'] == 'check' and
+            (row['target']['kind'] == ['test'] or index in checked_test_roots))
 
     def visit(index, role):
         if not isinstance(index, int) or not 0 <= index < len(units):
@@ -71,6 +76,7 @@ def declarations(graph):
         meaning = {'package': row['pkg_id'], 'target': target_identity(row['target']),
                    'role': role, 'platform': row['platform'],
                    'output': 'check' if mode == 'check' else 'codegen', 'mode': mode,
+                   'test_harness': test_harness(index),
                    'profile': row['profile'], 'features': sorted(row['features']),
                    'dependencies': sorted(dependencies, key=encoded)}
         value = digest(meaning)
@@ -89,6 +95,7 @@ def declarations(graph):
                      'roles': ['host' if row['platform'] is None else 'target'],
                      'required_by': sorted(roles[index]),
                      'platform': row['platform'], 'mode': row['mode'],
+                     'test_harness': test_harness(index),
                      'output': 'check' if row['mode'] == 'check' else 'codegen',
                      'profile': row['profile'], 'features': sorted(row['features']),
                      'dependency_units': sorted(identities[edge['index']] for edge in row['dependencies'])})
@@ -106,9 +113,10 @@ def output(event):
     raise CompilerUnitRefusal('compiler artifact has no attributable required output')
 
 
-def matches_profile(declared, observed, mode, target_kind):
+def matches_profile(declared, observed, mode, target_kind, test_harness=None):
     fields = ('opt_level', 'debuginfo', 'debug_assertions', 'overflow_checks')
-    test = mode == 'test' or (mode == 'check' and target_kind == ['test'])
+    test = (mode == 'test' or (mode == 'check' and target_kind == ['test'])
+            if test_harness is None else test_harness)
     return (all(declared[field] == observed[field] for field in fields)
             and observed['test'] == test)
 
@@ -123,8 +131,34 @@ def attribute(event, declaration):
                   and row['target']['source'] == normalized_path(target['src_path'])
                   and row['features'] == sorted(event['features'])
                   and row['output'] == output(event)
-                  and matches_profile(row['profile'], event['profile'], row['mode'], row['target']['kind'])]
+                  and matches_profile(row['profile'], event['profile'], row['mode'], row['target']['kind'],
+                                      row.get('test_harness'))]
     unique = {row['identity']: row for row in candidates}
+    if len(unique) > 1 and 'cargo_dependency_features' in event:
+        dependencies = {row['identity']: row for row in declaration['units']}
+        observed = event['cargo_dependency_features']
+        packages = {}
+        for row in unique.values():
+            for dependency in row['dependency_units']:
+                if dependency in dependencies:
+                    child = dependencies[dependency]
+                    packages.setdefault(child['target']['name'], set()).add(child['package'])
+        # Retained feature observations name crates, not package versions. Keep
+        # the full candidates when those names cannot establish package identity.
+        if all(len(choices) == 1 for choices in packages.values()):
+            unique = {identity: row for identity, row in unique.items()
+                      if all(dependency in dependencies for dependency in row['dependency_units'])
+                      and sorted((dependencies[dependency]['target']['name'],
+                                  dependencies[dependency]['features'])
+                                 for dependency in row['dependency_units']) ==
+                          sorted((name, features) for name, features in observed)}
+    if len(unique) > 1:
+        from compiler_fingerprint import FingerprintRefusal, resolve
+        try:
+            identity = resolve(event, unique.values(), declaration)
+            unique = {identity: unique[identity]}
+        except FingerprintRefusal:
+            pass  # Preserve the typed refusal and complete candidate inventory.
     if len(unique) != 1:
         raise CompilerUnitRefusal('artifact does not identify exactly one predeclared compiler unit: '
                                   + encoded({'package': event['package_id'], 'target': target,
@@ -135,6 +169,7 @@ def attribute(event, declaration):
 
 def observed_unit(row, declaration):
     return {'identity': row['identity'], 'roles': row['roles'], 'output': row['output'],
+            'test_harness': row.get('test_harness', row['mode'] == 'test'),
             'mode': row['mode'], 'features': row['features'],
             'platform': row['platform'], 'declared_target': row['target'],
             'dependency_units': row['dependency_units'], 'declared_profile': row['profile'],

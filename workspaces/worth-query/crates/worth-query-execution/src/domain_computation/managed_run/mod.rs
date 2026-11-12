@@ -32,9 +32,8 @@ mod retained_graph_execution;
 mod run_affinity;
 pub(in crate::domain_computation) use direct_graph_execution::WorthQueryCompletedDirectEvidenceOwner;
 pub(in crate::domain_computation) use readmission::WorthQueryDirectReadmissionTransitionPermit;
-pub(in crate::domain_computation) use relational_observation::{
-    WorthQueryManagedRelationalObservation, WorthQueryManagedRelationalObservationReleaseReceipt,
-};
+pub(in crate::domain_computation) use relational_observation::WorthQueryManagedRelationalObservation;
+pub use relational_observation::WorthQueryManagedRelationalObservationReleaseReceipt;
 
 mod safe_point_observation;
 mod semantic_basis;
@@ -187,4 +186,7 @@ pub use yield_recovery::WorthQueryYieldRecoveryKind;
 pub use yield_recovery_evidence::WorthQueryYieldRecoveryResourceEvidence;
 pub use yield_transition_counters::WorthQueryYieldTransitionCounters;
 
+#[cfg(test)]
+#[path = "mod_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;
 mod test_phase_custody;

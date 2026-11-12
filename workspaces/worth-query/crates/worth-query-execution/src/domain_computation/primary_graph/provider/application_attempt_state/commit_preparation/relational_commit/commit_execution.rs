@@ -1,6 +1,14 @@
 //! The single authoritative Relational commit transition.
 
 mod availability;
+mod before_world;
+mod durable;
+mod durable_custody;
+mod memory;
+mod native_work;
+mod preparation_reservation_control;
+pub(in crate::domain_computation) use durable_custody::QueryPreparingApplicationCommit;
+pub(in crate::domain_computation::primary_graph::provider) use durable_custody::RetainedQueryDurablePreparation;
 mod committed_session;
 mod correspondence;
 mod coupled;
@@ -91,279 +99,108 @@ pub(super) fn commit(
     ApplicationCommitExecution,
     crate::domain_computation::WorthQueryProviderSessionCommitStop,
 > {
-    let WorthQueryPreparedApplicationCommit {
-        mut attempt,
-        mut members,
-        candidate,
-        predicate,
-        work,
-        retained_preimage,
-        preimage_retention_work,
-        source_fact_rebase,
-        _completion,
-    } = prepared;
-    let _ = mint;
-    let group_evidence = coupled::prepare_evidence_slots(&execution, members.len())?;
-    let group_emissions = coupled::prepare_emissions(&execution, &attempt, &members)?;
-    let product = attempt.affinity().product_publication().clone();
-    let before = precommit_snapshot::WorthQueryPrecommitSnapshot::acquire(
-        &execution,
-        provider.graph.clone(),
-        product.observation().basis().relational_basis(),
-    )
-    .map_err(|denial| {
-        snapshot_admission_failure(
-            WorthQueryProviderSessionProtocolStage::Commit,
-            denial.into(),
-            "application publication could not retain its exact pre-commit basis",
-        )
-    })
-    .map_err(crate::domain_computation::WorthQueryProviderSessionCommitStop::from)?;
-    let consumed_output::VerifiedConsumedOutputPublication {
-        required_prerequisites,
-    } = consumed_output::verify(&execution, provider, &mut attempt, before.as_snapshot())?;
-    let availability_fence =
-        availability::prepare(&execution, provider, &attempt, before.as_snapshot())?;
-    let candidate = required_origin::bind(
-        candidate,
-        &execution,
-        before.as_snapshot(),
-        provider,
-        &attempt,
-        required_prerequisites.as_ref(),
-        history.is_some_and(|cutover| cutover.uses_owned_model_graph()),
-    )?;
-    let predecessor = match (
-        required_prerequisites.as_ref(),
-        attempt.idempotency().producer_dependency_identity(),
-    ) {
-        (Some(required), Some(dependency)) => {
-            let (producer, _) = required.native_prior_checkpoint_input();
-            candidate
-                .output_observation_predecessor(&execution, producer, &dependency)
-                .map_err(transaction_commit_stop)?
-        }
-        _ => None,
-    };
-    let source_fact_rebase = source_fact_rebase.with_predecessor(predecessor);
-    provider.fault_port.candidate_ready_for_native_preparation();
-    let mut candidate = provider
-        .graph
-        .with_runtime_mut(&execution, |runtime| {
-            runtime.prepare_validated_proposal(&execution, candidate)
-        })
-        .map_err(transaction_commit_stop)?;
-    if let Some(fence) = availability_fence {
-        fence
-            .bind(&mut candidate)
-            .map_err(native_output_witness_stop)?;
+    // The actual weak owner validates the expected owner before selecting the
+    // ordinary algorithm. Unavailability never selects memory publication.
+    let owned_history = history
+        .as_ref()
+        .is_some_and(|cutover| cutover.uses_owned_model_graph());
+    let query = native_work::prepare_before_native(&execution, provider, prepared, owned_history)?;
+    if provider.take_fault(crate::domain_computation::primary_graph::provider::fault_port::WorthQueryPrimaryGraphFault::DuplicateQueryPreparationSlot) {
+        return preparation_reservation_control::refuse_duplicate_before_world_for_test(execution, provider, query, allocation_policy).map(ApplicationCommitExecution::Committed);
     }
-    managed_source::bind(
-        &execution,
-        provider,
-        before.as_snapshot(),
-        &attempt,
-        &mut candidate,
-    )?;
-    coupled::prepare_members(
-        &execution,
-        provider,
-        &attempt,
-        &mut members,
-        &mut candidate,
-        before.as_snapshot(),
-        allocation_policy,
-    )?;
-    let prepared_group_publications = if members.is_empty() {
-        None
-    } else {
-        Some(
-            candidate
-                .prepare_required_output_publications(
-                    &execution,
-                    &provider
-                        .graph
-                        .application_publication
-                        .as_ref()
-                        .expect("Native admitted the installed group issuer")
-                        .native,
-                )
-                .map_err(transaction_commit_stop)?,
-        )
-    };
-    correspondence::admit(
-        &execution,
-        provider,
-        &mut attempt,
-        &mut members,
-        &candidate,
-        prepared_group_publications.as_ref(),
-    )?;
-    // Native admission has separated canonical roles from closure evidence.
-    // Prepare exactly those roles before publication seals their content proof.
-    let prepared_output_witness =
-        crate::domain_computation::primary_graph::output_lineage::PreparedNativeOutputWitness::prepare(
-            &attempt,
-            &provider.graph.layout,
-        )
-        .map_err(native_output_witness_stop)?;
-    let prepared_touched_records =
-        touched_records::PreparedTouchedRecords::prepare(&candidate, allocation_policy)?;
-    let source_fact_rebase = provider.graph.with_runtime(&execution, |runtime| source_fact_rebase.prepare_candidate(&candidate, runtime, before.as_snapshot(),
-        crate::domain_computation::primary_graph::application_attempt::retained_decision_facts::StorageControl::new(allocation_policy, Some(attempt.affinity().publication_request())),
-    )).map_err(stops::source_rebase_preparation_stop)?;
-    let index_maintenance_work = candidate.prepared_index_maintenance_work().ok_or_else(|| {
-        index_preparation_stop(worth_relational::facade::indexes::DerivedIndexMaintenanceDenial {
-            kind: worth_relational::facade::indexes::DerivedIndexMaintenanceDenialKind::CandidateUnavailable,
-            work: Default::default(),
-        })
-    })?;
-    // The native preparation already paid the phase. The existing caller's
-    // tighter admission policy can refuse that actual work before publication.
-    if provider.take_tight_index_maintenance_budget() && index_maintenance_work.work_units > 1 {
-        return Err(index_preparation_stop(worth_relational::facade::indexes::DerivedIndexMaintenanceDenial {
-            kind: worth_relational::facade::indexes::DerivedIndexMaintenanceDenialKind::WorkBudgetExceeded,
-            work: index_maintenance_work,
-        }));
-    }
-    let managed_views = managed_views::prepare(
-        &execution,
-        provider,
-        &product,
-        before.as_snapshot(),
-        &candidate,
-    );
-    provider.after_application_candidate_preparation_for_test();
-    let adoption = executed_adoption::prepare(
-        &execution,
-        provider,
-        &attempt,
-        &candidate,
-        members.is_empty() && history.is_none() && prepared_output_witness.is_some(),
-        source_fact_rebase,
-        required_prerequisites,
-    )?;
-    let (source_fact_rebase, mut required_prerequisites) = match adoption {
-        executed_adoption::AdoptionPreparation::Declined { rebase, required } => (rebase, required),
-        executed_adoption::AdoptionPreparation::Selected {
-            selected,
-            adoption,
-            association,
-            rebase,
-            required,
-        } => {
-            return Ok(ApplicationCommitExecution::AdoptionPrepared(Box::new(
-                executed_adoption::PreparedExecutedOutputAdoption::new(
-                    attempt,
-                    candidate,
-                    selected,
-                    adoption,
-                    association,
-                    before,
-                    rebase,
-                    required,
-                    prepared_output_witness.expect("adoption retained its real prepared witness"),
-                ),
-            )));
-        }
-    };
-    let performed = product_publication::publish(
-        execution,
-        provider,
-        &mut attempt,
-        candidate,
-        &mut required_prerequisites,
-        &mut members,
-        history,
-    )?;
-    let performed = match performed {
-        product_publication::WorthQueryApplicationProductPublicationOutcome::Performed(
-            performed,
-        ) => performed,
-        product_publication::WorthQueryApplicationProductPublicationOutcome::Unpublished {
-            unpublished,
-            reserved_terminal,
-            prepared_lineage_slot,
-            reservation,
-        } => {
-            let retained = ManagedUnpublishedAttempt {
-                publication_mode: if unpublished.retains_conditional_definition() {
-                    managed_unpublished::ManagedUnpublishedPublicationMode::ConditionalDefinition
-                } else {
-                    managed_unpublished::ManagedUnpublishedPublicationMode::Ordinary
-                },
-                attempt,
-                members,
-                prepared_group_publications,
-                group_evidence,
-                group_emissions,
-                work,
-                index_maintenance_work,
-                retained_preimage,
-                preimage_retention_work,
-                before,
-                managed_views,
-                predicate,
-                source_fact_rebase: Some(source_fact_rebase),
-                required_prerequisites,
-                prepared_lineage_slot,
-                prepared_output_witness,
-                prepared_touched_records,
-                lineage_metadata: None,
-
-                reserved_terminal,
-            };
-            reservation.retain_managed(unpublished.recovery_handle(), retained);
-            return Err(
-                crate::domain_computation::WorthQueryProviderSessionCommitStop::ProductUnpublished(
-                    unpublished,
-                ),
-            );
-        }
-    };
-    let prepared_lineage_slot = performed.prepared_lineage_slot;
-    let performed = performed.publication;
-    let next_basis = performed
+    let product = query.attempt.affinity().product_publication().clone();
+    match product
         .publication()
-        .commit()
-        .basis()
-        .relational_basis()
-        .clone();
-    let committed = performed
-        .publication()
-        .component_results()
-        .retain_relational_commit_result()
-        .expect("World performed a prepared Relational application candidate");
-    Ok(ApplicationCommitExecution::Committed(
-        WorthQueryCommittedApplicationSession {
-            attempt,
-            members,
-            prepared_group_publications,
-            group_evidence,
-            group_emissions,
-            own_publication: None,
-            own_records: None,
-            work,
-            index_maintenance_work,
-            retained_preimage,
-            preimage_retention_work,
-            before: before.into_publication(),
-            next_basis,
-            committed,
-            published_snapshot_custody: PublishedSnapshotCustody::LiveOwned,
-            prepared_touched_records: Some(prepared_touched_records),
-            product_publication: performed,
-            managed_views,
-            predicate,
-            source_fact_rebase: Some(source_fact_rebase),
-
-            required_prerequisites,
-            prepared_lineage_slot,
-            prepared_output_witness,
-            coupled_deletions: Default::default(),
+        .query_publication_home_binding(product.observation())
+    {
+        Ok(None) => memory::commit(execution, provider, query, mint, history, allocation_policy),
+        Ok(Some(_)) => match history {
+            None => durable::commit(execution, provider, query, allocation_policy).map(ApplicationCommitExecution::Committed),
+            Some(_) => Err(crate::domain_computation::WorthQueryProviderSessionCommitStop::ProductPreparationRefused(
+                crate::domain_computation::WorthQueryProductPreparationRefused::new(
+                    crate::domain_computation::WorthQueryProductPreparationRefusal::CurrentReadDependency(
+                        worth_runtime_world::facade::CurrentProductReadDependencyDenial::DurabilityUnsupported), query))),
         },
-    ))
+        Err(cause) => Err(durable::refused_before_open(query, cause)),
+    }
 }
 
 #[cfg(test)]
 mod index_preparation_tests;
+
+// These three governed producer calls stay in this exact registered module.
+mod durable_components;
+use durable_components::{QueryBoundWorldPreparation, QueryPreparedWorldPublication};
+fn prepare_query_open(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    product: &crate::domain_computation::execution_runtime::product_world::WorthQueryProductPublicationBinding,
+    control: &crate::domain_computation::execution_runtime::product_world::WorthQueryProductPublicationRequestControl,
+    with_signal: bool,
+) -> Result<
+    worth_runtime_world::facade::WorldPendingOpenAttempt,
+    worth_runtime_world::facade::WorldOpenAttemptRefusal,
+> {
+    if with_signal {
+        return product.publication().prepare_query_publication_with_signal(
+            execution,
+            product.observation().clone(),
+            product.admitted_program_source()?,
+            Some(worth_relational::facade::mvcc::RelationalTransactionIntent::ordinary()),
+            control.cancellation(),
+            control.deadline(),
+        );
+    }
+    product
+        .publication()
+        .prepare_query_publication_without_signal(
+            execution,
+            product.observation().clone(),
+            product.admitted_program_source()?,
+            worth_relational::facade::mvcc::RelationalTransactionIntent::ordinary(),
+            control.cancellation(),
+            control.deadline(),
+        )
+}
+fn bind_query_proposal(
+    opened: worth_runtime_world::facade::WorldOpenedPublicationAttempt,
+    proposal: worth_relational::facade::mvcc::ValidatedRelationalProposal,
+    with_signal: bool,
+) -> Result<
+    (
+        QueryBoundWorldPreparation,
+        worth_relational::facade::mvcc::ValidatedRelationalProposal,
+    ),
+    worth_runtime_world::facade::WorldNativePreparationRefusal,
+> {
+    if with_signal {
+        opened
+            .bind_query_signal_proposal(proposal)
+            .map(|(prepared, proposal)| {
+                (QueryBoundWorldPreparation::WithSignal(prepared), proposal)
+            })
+    } else {
+        opened
+            .bind_query_native_proposal(proposal)
+            .map(|(prepared, proposal)| {
+                (QueryBoundWorldPreparation::Relational(prepared), proposal)
+            })
+    }
+}
+fn complete_query_candidate(
+    preparation: QueryBoundWorldPreparation,
+    candidate: worth_relational::facade::mvcc::PreparedRelationalCommitCandidate,
+    request: &worth_execution::ExecutionRequest<'_, '_>,
+) -> Result<QueryPreparedWorldPublication, worth_runtime_world::facade::WorldNativePreparationRefusal>
+{
+    match preparation {
+        QueryBoundWorldPreparation::Relational(preparation) => preparation
+            .complete_query_native_preparation(candidate, request)
+            .map(QueryPreparedWorldPublication::Relational),
+        QueryBoundWorldPreparation::WithSignal(preparation) => preparation
+            .complete_query_native_preparation(candidate, request)
+            .map(QueryPreparedWorldPublication::WithSignal),
+    }
+}
+#[cfg(test)]
+#[path = "commit_execution_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;

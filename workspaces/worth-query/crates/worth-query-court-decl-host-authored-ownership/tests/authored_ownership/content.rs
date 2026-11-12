@@ -1,7 +1,6 @@
 //! Content retains its actual field and Native byte custody through writer succession.
 use super::*;
 use worth_foundational::facade::{CanonicalDigestId, ContentRefId};
-mod courts;
 
 #[derive(Clone, Copy)]
 pub struct Format;

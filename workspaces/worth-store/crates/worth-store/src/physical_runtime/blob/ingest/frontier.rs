@@ -106,7 +106,7 @@ impl BlobIngestSession<'_> {
             token.store,
             token.session,
             token.declaration_record,
-            token.declaration_digest,
+            *token.declaration_digest.bytes(),
             ordinal,
             progress.frontier.bytes,
             last_record,

@@ -1,5 +1,5 @@
 use crate::storage::residency::RelationalRecordHeadArenaView;
-use std::collections::BTreeMap;
+use crate::storage::substrate::SharedMap;
 use worth_execution::MapKernelFailure;
 
 use crate::history::data::{
@@ -14,6 +14,7 @@ use super::push;
 
 pub(super) fn entity(
     runtime: &crate::runtime::RelationalPreparationRuntime,
+    catalog: &crate::runtime::CapturedIndexDefinitionCatalog,
     selected: &crate::branch::SelectedRelationalBranchState,
     working: &crate::runtime::WorkingState,
     partition: PartitionId,
@@ -25,6 +26,7 @@ pub(super) fn entity(
 ) -> Result<bool, Failure> {
     record(
         runtime,
+        catalog,
         selected,
         working,
         partition,
@@ -39,6 +41,7 @@ pub(super) fn entity(
 
 pub(super) fn relation(
     runtime: &crate::runtime::RelationalPreparationRuntime,
+    catalog: &crate::runtime::CapturedIndexDefinitionCatalog,
     selected: &crate::branch::SelectedRelationalBranchState,
     working: &crate::runtime::WorkingState,
     partition: PartitionId,
@@ -121,6 +124,7 @@ pub(super) fn relation(
     }
     record(
         runtime,
+        catalog,
         selected,
         working,
         partition,
@@ -135,6 +139,7 @@ pub(super) fn relation(
 
 fn record<K: RecordKind>(
     runtime: &crate::runtime::RelationalPreparationRuntime,
+    catalog: &crate::runtime::CapturedIndexDefinitionCatalog,
     selected: &crate::branch::SelectedRelationalBranchState,
     working: &crate::runtime::WorkingState,
     partition: PartitionId,
@@ -188,8 +193,8 @@ fn record<K: RecordKind>(
             push(touches, touch, budget)?;
         }
     }
-    let empty_versions = BTreeMap::new();
-    let empty_fields = BTreeMap::new();
+    let empty_versions = SharedMap::new();
+    let empty_fields = SharedMap::new();
     let old_versions = old_live
         .and_then(|_| old.and_then(|arena| arena.aspect_versions_at(slot)))
         .unwrap_or(&empty_versions);
@@ -251,6 +256,7 @@ fn record<K: RecordKind>(
             && !append_field(
                 runtime,
                 FieldDifference {
+                    catalog,
                     selected,
                     working,
                     symbols,
@@ -272,6 +278,7 @@ fn record<K: RecordKind>(
             && !append_field(
                 runtime,
                 FieldDifference {
+                    catalog,
                     selected,
                     working,
                     symbols,

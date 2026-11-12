@@ -1,5 +1,6 @@
 use std::collections::{BTreeMap, BTreeSet};
 use std::path::{Path, PathBuf};
+use worth_foundational::CanonicalDigestId;
 
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
@@ -19,7 +20,7 @@ pub(crate) struct ClosedStoreProcessManifest {
     current_root: ProcessRootArtifact,
     directories: BTreeSet<PathBuf>,
     files: BTreeMap<PathBuf, ProcessStoreFile>,
-    identity: [u8; 32],
+    identity: CanonicalDigestId,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
@@ -29,14 +30,14 @@ pub(crate) struct ProcessRootArtifact {
     concrete_identity: u64,
     root_generation: u64,
     exact_length: u64,
-    content_sha256: [u8; 32],
+    content_sha256: CanonicalDigestId,
     covered_edit_offset: u64,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 struct ProcessStoreFile {
     exact_length: u64,
-    content_sha256: [u8; 32],
+    content_sha256: CanonicalDigestId,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -130,7 +131,7 @@ impl ClosedStoreProcessManifest {
             current_root,
             directories: snapshot.directories,
             files: snapshot.files,
-            identity,
+            identity: CanonicalDigestId::new(identity),
         })
     }
 
@@ -179,7 +180,7 @@ impl ClosedStoreProcessManifest {
         self.store_identity
     }
     pub(crate) const fn identity(&self) -> [u8; 32] {
-        self.identity
+        *self.identity.bytes()
     }
     pub(crate) fn file_count(&self) -> u64 {
         self.files.len() as u64
@@ -209,7 +210,7 @@ impl ProcessRootArtifact {
         self.exact_length
     }
     pub(crate) const fn content_sha256(&self) -> [u8; 32] {
-        self.content_sha256
+        *self.content_sha256.bytes()
     }
     pub(crate) const fn covered_edit_offset(&self) -> u64 {
         self.covered_edit_offset

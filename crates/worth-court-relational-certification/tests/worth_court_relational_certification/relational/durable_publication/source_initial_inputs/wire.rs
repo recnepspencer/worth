@@ -1,0 +1,104 @@
+//! Independent resealing changes roles while preserving the original CHK18 index.
+use super::*;
+#[test]
+fn format_prefixes_refuse_predecessors_before_payload_bytes_are_available() {
+    let mut canonical = b"WRTHRCCA".to_vec();
+    canonical.extend_from_slice(&4u16.to_le_bytes());
+    let RelationalCanonicalCommitArtifactFrameRefusal::UnsupportedVersion(cause) =
+        RelationalCanonicalCommitArtifact::preflight_frame_version(&canonical).unwrap_err()
+    else {
+        panic!("canonical predecessor must refuse from its ten-byte prefix");
+    };
+    assert_eq!(cause.produced().get(), 4);
+    canonical[8..10]
+        .copy_from_slice(&RelationalCanonicalCommitArtifact::FORMAT_VERSION.to_le_bytes());
+    RelationalCanonicalCommitArtifact::preflight_frame_version(&canonical).unwrap();
+    for version in [1u16, 2] {
+        let mut transition = b"WRTHRBTA".to_vec();
+        transition.extend_from_slice(&version.to_le_bytes());
+        let RelationalBranchTransitionArtifactFrameRefusal::UnsupportedVersion(cause) =
+            RelationalBranchTransitionArtifact::preflight_frame_version(&transition).unwrap_err()
+        else {
+            panic!("transition predecessor must refuse from its ten-byte prefix");
+        };
+        assert_eq!(cause.produced().get(), u32::from(version));
+        transition[8..10]
+            .copy_from_slice(&RelationalBranchTransitionArtifact::FORMAT_VERSION.to_le_bytes());
+        RelationalBranchTransitionArtifact::preflight_frame_version(&transition).unwrap();
+    }
+}
+#[test]
+fn normalized_policy_rewrite_refuses_with_unchanged_canonical_index_and_resealed_wrapper() {
+    require_rewrite_refusal(|normalized, _| {
+        let policy = &mut normalized["canonical"][0]["mutation"]["cascade_delete_policy"];
+        *policy = match policy.as_str().unwrap() {
+            "RetainDanglingForAudit" => "CascadeDeleteRelations".into(),
+            "CascadeDeleteRelations" => "RetainDanglingForAudit".into(),
+            other => panic!("unexpected producer policy {other}"),
+        };
+    });
+}
+#[test]
+fn normalized_schema_role_rewrite_refuses_with_unchanged_canonical_index_and_resealed_wrapper() {
+    require_rewrite_refusal(|normalized, original| {
+        let birth = &original["entries"][0]["Birth"]["schema_carrier"];
+        assert_ne!(&normalized["canonical"][0]["prestate_schema"], birth);
+        normalized["canonical"][0]["prestate_schema"] = birth.clone();
+    });
+}
+fn require_rewrite_refusal(rewrite: impl FnOnce(&mut serde_json::Value, &serde_json::Value)) {
+    let policy=worth_testkit_relational::shared_relational_certification_test_execution_policy::serial_request();
+    let request = ExecutionRequest::serial(&policy);
+    let (runtime, medium) = initialized(&request);
+    let commit = create_entity_outcome(&request, &runtime, "original");
+    release_test_commit_snapshot(&runtime, &commit);
+    let complete = capture(&runtime, &request);
+    medium.file_checkpoint(complete.checkpoint().clone());
+    let raw = complete.source_artifact().as_bytes();
+    let len = u64::from_le_bytes(raw[44..52].try_into().unwrap()) as usize;
+    let prefix = raw.len() - len;
+    let mut normalized = crate::source_wire_value::read(&raw[prefix..]);
+    rewrite(&mut normalized, &initial(complete.source_artifact()));
+    let bytes = rmp_serde::to_vec_named(&normalized).unwrap();
+    let mut changed = raw[..prefix].to_vec();
+    changed.extend_from_slice(&bytes);
+    changed[44..52].copy_from_slice(&(bytes.len() as u64).to_le_bytes());
+    use sha2::{Digest, Sha256};
+    let mut digest = Sha256::new();
+    digest.update(&changed[..52]);
+    digest.update(&changed[84..]);
+    changed[52..84].copy_from_slice(&digest.finalize());
+    assert_eq!(&changed[84..prefix], &raw[84..prefix]);
+    let length = changed.len();
+    let changed =
+        ExecutionImmutableBytes::from_external_bytes(Arc::new(changed.into_boxed_slice()));
+    let artifact =
+        RelationalCompleteSourceArtifact::from_untrusted_region(changed, 0..length, &request)
+            .unwrap();
+    assert!(matches!(
+        home_image_checkpoint(&complete, artifact, &request),
+        Err(RelationalInitialInputsRefusal::Native(
+            RelationalRecoveryStop::AdmissionImage(
+                RelationalCheckpointAdmissionRefusal::BindingMismatch(
+                    CheckpointAdmissionBindingMismatch::Source
+                )
+            )
+        ))
+    ));
+}
+
+#[test]
+fn complete_source_refuses_prior_normalized_grammar_before_its_payload() {
+    let policy = worth_testkit_relational::shared_relational_certification_test_execution_policy::serial_request();
+    let request = ExecutionRequest::serial(&policy);
+    let mut prefix = b"WRTHRCS1".to_vec();
+    prefix.extend_from_slice(&1u32.to_le_bytes());
+    let length = prefix.len();
+    let bytes = ExecutionImmutableBytes::from_external_bytes(Arc::new(prefix.into_boxed_slice()));
+    let Err(RelationalInitialInputsRefusal::UnsupportedVersion(cause)) =
+        RelationalCompleteSourceArtifact::from_untrusted_region(bytes, 0..length, &request)
+    else {
+        panic!("the prior normalized grammar must refuse before payload admission");
+    };
+    assert_eq!(cause.produced().get(), 1);
+}

@@ -1,8 +1,15 @@
+mod authored_construction;
+mod authored_predicate;
+mod output_comparator;
+mod output_version;
 use crate::domain_operation::{
     WorthQueryConditionalObservationView, WorthQueryHostConditionalOutputComparatorProvider,
     WorthQueryHostConditionalOutputVersionProvider, WorthQueryHostConditionalPredicateProvider,
     WorthQueryHostPredicateDecision, WorthQueryHostPredicateFailure,
 };
+pub use authored_predicate::WorthQueryAuthoredHostPredicateBinding;
+pub use output_comparator::WorthQueryBoundHostOutputComparator;
+pub use output_version::WorthQueryBoundHostOutputVersion;
 
 use super::{
     WorthQueryConditionalApplicationOperationDenial,
@@ -31,14 +38,9 @@ pub struct WorthQueryInstalledHostConditionalProvider<
         N,
     >,
     provider: std::sync::Arc<Provider>,
-    output_comparator: Option<(
-        &'static str,
-        std::sync::Arc<dyn WorthQueryHostConditionalOutputComparatorProvider<N>>,
-    )>,
-    output_version: Option<(
-        &'static str,
-        std::sync::Arc<dyn WorthQueryHostConditionalOutputVersionProvider<N>>,
-    )>,
+    authored_predicate: Option<WorthQueryAuthoredHostPredicateBinding<N, Provider>>,
+    output_comparator: Option<WorthQueryBoundHostOutputComparator<N>>,
+    output_version: Option<WorthQueryBoundHostOutputVersion<N>>,
 }
 
 impl<Schema, ApplicationOperation, Input, D, O, F, N>
@@ -67,6 +69,7 @@ impl<Schema, ApplicationOperation, Input, D, O, F, N>
         Ok(WorthQueryInstalledHostConditionalProvider {
             node: self,
             provider: std::sync::Arc::new(provider),
+            authored_predicate: None,
             output_comparator: None,
             output_version: None,
         })
@@ -96,7 +99,9 @@ where
     {
         let identity = provider.semantic_identity();
         validate_semantic_identity(identity)?;
-        self.output_comparator = Some((identity, std::sync::Arc::new(provider)));
+        self.output_comparator = Some(WorthQueryBoundHostOutputComparator::Memory(
+            std::sync::Arc::new(provider),
+        ));
         Ok(self)
     }
 
@@ -109,7 +114,9 @@ where
     {
         let identity = provider.semantic_identity();
         validate_semantic_identity(identity)?;
-        self.output_version = Some((identity, std::sync::Arc::new(provider)));
+        self.output_version = Some(WorthQueryBoundHostOutputVersion::Memory(
+            std::sync::Arc::new(provider),
+        ));
         Ok(self)
     }
 
@@ -145,27 +152,20 @@ where
     }
 
     #[doc(hidden)]
+    pub fn retain_authored_predicate_for_runtime(
+        &self,
+    ) -> Option<WorthQueryAuthoredHostPredicateBinding<N, Provider>> {
+        self.authored_predicate.clone()
+    }
+    #[doc(hidden)]
     pub fn retain_output_comparator_for_runtime(
         &self,
-    ) -> Option<(
-        &'static str,
-        std::sync::Arc<dyn WorthQueryHostConditionalOutputComparatorProvider<N>>,
-    )> {
-        self.output_comparator
-            .as_ref()
-            .map(|(identity, provider)| (*identity, std::sync::Arc::clone(provider)))
+    ) -> Option<WorthQueryBoundHostOutputComparator<N>> {
+        self.output_comparator.clone()
     }
-
     #[doc(hidden)]
-    pub fn retain_output_version_for_runtime(
-        &self,
-    ) -> Option<(
-        &'static str,
-        std::sync::Arc<dyn WorthQueryHostConditionalOutputVersionProvider<N>>,
-    )> {
-        self.output_version
-            .as_ref()
-            .map(|(identity, provider)| (*identity, std::sync::Arc::clone(provider)))
+    pub fn retain_output_version_for_runtime(&self) -> Option<WorthQueryBoundHostOutputVersion<N>> {
+        self.output_version.clone()
     }
 }
 

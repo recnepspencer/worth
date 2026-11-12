@@ -3,6 +3,7 @@ use std::path::PathBuf;
 /// Why a court could not establish its declared compiler boundary.
 #[derive(Debug)]
 pub enum CompilerFixtureRefusal {
+    Multiple(Vec<CompilerFixtureRefusal>),
     MissingPrebuild,
     SnapshotWarning(PathBuf),
     Read {
@@ -49,6 +50,12 @@ pub enum CompilerFixtureRefusal {
 impl std::fmt::Display for CompilerFixtureRefusal {
     fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
+            Self::Multiple(refusals) => {
+                for refusal in refusals {
+                    writeln!(formatter, "{refusal}")?;
+                }
+                Ok(())
+            }
             Self::MissingPrebuild => write!(formatter, "missing WORTH_PREBUILT_COMPILER_OUTCOMES; run python3 scripts/ci/query_gate.py root-landing (Query: query-landing)"),
             Self::SnapshotWarning(path) => write!(formatter, "{} contains an incidental compiler warning; make the fixture warning-free before recording", path.display()),
             Self::Read { path, reason } => write!(formatter, "read {}: {reason}", path.display()),

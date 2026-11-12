@@ -32,13 +32,13 @@ impl ExecutionProgress {
     fn new(input: &RecoveryStagingInput) -> Self {
         Self {
             counters: PhysicalRecoveryStagingCounters {
-                planned_scheduler_commands: input.quiescence.staging_commands(),
+                planned_scheduler_commands: input.state().quiescence.staging_commands(),
                 ..PhysicalRecoveryStagingCounters::default()
             },
-            settlements: Vec::with_capacity(input.staging.materialization_count() as usize),
+            settlements: Vec::with_capacity(input.state().staging.materialization_count() as usize),
             content: Sha256::new(),
             media_handle_baseline: {
-                let observed = input.authority.media.handle_observation();
+                let observed = input.state().authority.media.handle_observation();
                 (
                     observed.live_file_handles(),
                     observed.live_directory_handles(),
@@ -50,10 +50,10 @@ impl ExecutionProgress {
 
 pub(super) fn run(input: &mut RecoveryStagingInput) -> Result<StagingExecution, StagingExecution> {
     if !super::command::exact_plan_commands(input)
-        || input.cancellation == super::RecoveryStagingCancellation::Invalid
+        || input.state().cancellation == super::RecoveryStagingCancellation::Invalid
     {
         return Err(super::empty_execution(
-            input.quiescence.staging_commands(),
+            input.state().quiescence.staging_commands(),
             PhysicalRecoveryStagingDenial::InvalidPlan,
         ));
     }
@@ -81,11 +81,11 @@ fn execute_commands(
     input: &RecoveryStagingInput,
     progress: &mut ExecutionProgress,
 ) -> Result<(), StagingExecution> {
-    for command in input.staging.commands() {
+    for command in input.state().staging.commands() {
         let Some(declaration) = PhysicalRecoveryStagingCommand::new(
             command.ordinal(),
-            input.publication.plan_identity(),
-            input.staging.staging_generation(),
+            input.state().publication.plan_identity(),
+            input.state().staging.staging_generation(),
             command.artifact(),
             command.offset(),
             command.bytes(),
@@ -98,12 +98,13 @@ fn execute_commands(
             ));
         };
         let outcome = input
+            .state()
             .coordination
             .owner()
-            .execute_staging_command(&input.authority.media, declaration);
+            .execute_staging_command(&input.state().authority.media, declaration);
         record_command_outcome(progress, command.ordinal(), outcome)?;
         if matches!(
-            input.cancellation,
+            input.state().cancellation,
             super::RecoveryStagingCancellation::AfterSettledCommands(settled)
                 if settled == progress.settlements.len() as u64
         ) {
@@ -181,7 +182,7 @@ fn close_staging(
         || progress.counters.pending_signal_reconciliations_after_close != 0
         || progress.counters.signal_reconciliation_overflow_after_close != 0
         || progress.counters.live_media_handles_after_close != 0
-        || !input.coordination.is_ready()
+        || !input.state().coordination.is_ready()
     {
         return Err(failed(
             progress.counters,
@@ -190,7 +191,7 @@ fn close_staging(
         ));
     }
     let closed = ClosedRecoveryStagingGeneration::new(
-        input.staging.staging_generation(),
+        input.state().staging.staging_generation(),
         progress
             .counters
             .artifacts_created
@@ -215,14 +216,14 @@ fn record_quiescence(
     counters: &mut PhysicalRecoveryStagingCounters,
     media_handle_baseline: (u64, u64),
 ) {
-    let quiescence = input.coordination.quiescence_observation();
+    let quiescence = input.state().coordination.quiescence_observation();
     counters.live_commands_after_close = quiescence.live_commands();
     counters.live_scheduler_reservations_after_close = quiescence.live_scheduler_reservations();
     counters.pending_signal_reconciliations_after_close =
         quiescence.pending_signal_reconciliations();
     counters.signal_reconciliation_overflow_after_close =
         quiescence.signal_reconciliation_overflow();
-    let media = input.authority.media.handle_observation();
+    let media = input.state().authority.media.handle_observation();
     counters.live_media_handles_after_close = media
         .live_file_handles()
         .saturating_sub(media_handle_baseline.0)

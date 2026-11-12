@@ -121,8 +121,10 @@ fn source_transfer_restores_its_two_output_families_and_owned_edge_without_selec
                 )
                 .unwrap()
                 .is_none());
-            let mut foreign_partition = meaning.source_partition;
+            let mut foreign_partition = *meaning.source_partition.bytes();
             foreign_partition[0] ^= 1;
+            let foreign_partition =
+                worth_foundational::facade::CanonicalDigestId::new(foreign_partition);
             assert!(evidence
                 .selected_output_route(
                     execution,

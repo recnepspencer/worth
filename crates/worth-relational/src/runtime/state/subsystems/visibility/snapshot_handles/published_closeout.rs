@@ -24,6 +24,7 @@ pub(crate) struct PublishedSnapshotCloseout {
     /// cleared when the obligation moves to a commit-result holder, because
     /// exactly one party may release one published handle.
     armed: bool,
+    original: Arc<super::PublishedSnapshotReleaseObservation>,
 }
 
 impl PublishedSnapshotCloseout {
@@ -31,12 +32,14 @@ impl PublishedSnapshotCloseout {
         registry: &Arc<PublishedSnapshotHandleRegistry>,
         capacity: Arc<PublishedSnapshotCapacityOwner>,
         snapshot_id: SnapshotId,
+        original: Arc<super::PublishedSnapshotReleaseObservation>,
     ) -> Self {
         Self {
             registry: Arc::downgrade(registry),
             capacity,
             snapshot_id,
             armed: true,
+            original,
         }
     }
 
@@ -49,12 +52,10 @@ impl PublishedSnapshotCloseout {
     }
 
     fn close(&self) {
-        let Some(registry) = self.registry.upgrade() else {
-            return;
-        };
-        if registry.remove(self.snapshot_id).is_some() {
-            self.capacity.release();
+        if let Some(registry) = self.registry.upgrade() {
+            registry.remove(self.snapshot_id, Some(&self.capacity));
         }
+        self.original.finish_retirement_blocking();
     }
 }
 

@@ -10,7 +10,7 @@ pub struct TemporalRetiredWakeCompactionReport {
     expired_now: u32,
     retained_width: u32,
     expired_total: u64,
-    expired_digest: [u8; 32],
+    expired_digest: worth_foundational::CanonicalDigestId,
 }
 
 impl TemporalRetiredWakeCompactionReport {
@@ -24,7 +24,7 @@ impl TemporalRetiredWakeCompactionReport {
             expired_now,
             retained_width,
             expired_total,
-            expired_digest,
+            expired_digest: worth_foundational::CanonicalDigestId::new(expired_digest),
         }
     }
 
@@ -38,7 +38,7 @@ impl TemporalRetiredWakeCompactionReport {
         self.expired_total
     }
     pub const fn expired_digest(self) -> [u8; 32] {
-        self.expired_digest
+        *self.expired_digest.bytes()
     }
 }
 

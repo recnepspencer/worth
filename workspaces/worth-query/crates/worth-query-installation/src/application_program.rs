@@ -375,3 +375,6 @@ where
     }
     Ok(())
 }
+#[cfg(test)]
+#[path = "application_home/binding_tests.rs"]
+mod home_binding_tests;

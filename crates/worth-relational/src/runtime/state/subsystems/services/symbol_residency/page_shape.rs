@@ -1,6 +1,8 @@
 //! Authenticated page contents must also match their selected directory entry.
 use crate::durability::checkpoints::symbol_pages::SYMBOL_PAGE_CAPACITY;
-use crate::storage::data::{RelationalStorageSubject, RelationalStorageUnavailableCause as Cause};
+use crate::storage::data::{
+    RelationalStorageSubject, RelationalStorageUnavailableCause as Cause, SymbolPageShape,
+};
 use crate::symbols::data::{Symbol, SymbolTableSnapshot};
 use sha2::{Digest, Sha256};
 
@@ -22,14 +24,6 @@ impl SymbolPageSelection {
         };
         RelationalStorageSubject::Symbols { first, last }
     }
-}
-
-#[derive(Debug, Clone, Copy)]
-pub(super) struct SymbolPageShape {
-    first: Symbol,
-    last: Symbol,
-    homogeneous_bucket: Option<u8>,
-    id_digest: [u8; 32],
 }
 
 impl SymbolPageShape {

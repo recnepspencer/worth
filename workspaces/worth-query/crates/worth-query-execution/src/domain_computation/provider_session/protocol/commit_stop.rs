@@ -96,6 +96,9 @@ impl WorthQueryProviderSessionCommitDeferred {
 pub enum WorthQueryProviderSessionCommitStop {
     ProductStale(crate::domain_computation::WorthQueryProductStaleApplication),
     ProductUnpublished(crate::domain_computation::WorthQueryProductUnpublishedApplication),
+    ProductPreparationPending(crate::domain_computation::WorthQueryProductPreparationPending),
+    ProductPreparationRefused(crate::domain_computation::WorthQueryProductPreparationRefused),
+
     NoEffect(worth_runtime_world::facade::NoEffectCompositePublication),
     PreEffectDenied(WorthQueryProviderSessionFailure),
     Denied(WorthQueryProviderSessionFailure),

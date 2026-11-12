@@ -109,7 +109,7 @@ where
             }
             NativeCommandResult::Resolved(read) => match self
                 .state
-                .accept_keyed(read.into_resolution(), &self.cleanup)
+                .accept_keyed(read, &self.cleanup)
                 .map_err(WorthQueryCapabilityCommandDenial::Cleanup)?
             {
                 NativeKeyedProgress::Progress { .. } => Ok(Step::Progress),
@@ -129,31 +129,18 @@ where
     ) -> Result<Step, WorthQueryCapabilityCommandDenial<D>> {
         let outcome = self.cleanup.absorb_command_outcome(&self.runtime, outcome);
         match outcome.landed() {
-            Ok((receipt, false)) => Ok(Step::Completed(
+            Ok(worth_query_execution::facade::primary_graph::WorthQueryApplicationLandedCommit::Recovered(receipt)) => {
+                if matches!(self.state, NativePublicationState::Initial | NativePublicationState::RetryableNoEffect(_)) {
+                    Ok(Step::Completed(WorthQueryCapabilityCommandCompletion::DurableRecovered(receipt)))
+                } else {
+                    self.state.complete_keyed(receipt)
+                        .map(|evidence| Step::Completed(WorthQueryCapabilityCommandCompletion::recovered(evidence)))
+                        .map_err(WorthQueryCapabilityCommandDenial::Cleanup)
+                }
+            }
+            Ok(worth_query_execution::facade::primary_graph::WorthQueryApplicationLandedCommit::Live { receipt, .. }) => Ok(Step::Completed(
                 WorthQueryCapabilityCommandCompletion::Fresh { receipt },
             )),
-            Ok((receipt, true))
-                if matches!(
-                    self.state,
-                    NativePublicationState::Initial | NativePublicationState::RetryableNoEffect(_)
-                ) =>
-            {
-                Ok(Step::Completed(
-                    WorthQueryCapabilityCommandCompletion::Recovered {
-                        receipt,
-                        publication: None,
-                        initial_posture: None,
-                        initial_advancement_failure: None,
-                    },
-                ))
-            }
-            Ok((receipt, true)) => self
-                .state
-                .complete_keyed(receipt)
-                .map(|evidence| {
-                    Step::Completed(WorthQueryCapabilityCommandCompletion::recovered(evidence))
-                })
-                .map_err(WorthQueryCapabilityCommandDenial::Cleanup),
             // These native command outcomes prove publication did not occur. A fresh
             // attempt rebuilds only the command projection, never a performed effect.
             Err(

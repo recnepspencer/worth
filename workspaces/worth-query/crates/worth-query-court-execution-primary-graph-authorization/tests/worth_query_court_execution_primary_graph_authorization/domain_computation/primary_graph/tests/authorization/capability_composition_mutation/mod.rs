@@ -223,7 +223,7 @@ pub fn current_relation(
     let selected = world.selected_product(&(phase_custody).test_host_request_for_test());
     graph
         .integration_handle_for_test()
-        .with_runtime_mut_for_test(execution, |runtime| {
+        .with_runtime_for_test(execution, |runtime| {
             let snapshot = selected.application_basis_for_test().snapshot_handle();
 
             runtime

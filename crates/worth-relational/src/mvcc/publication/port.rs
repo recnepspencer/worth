@@ -19,6 +19,7 @@ pub struct RelationalPublicationPort {
     publication_binding: crate::runtime::RelationalRuntimePublicationBinding,
     branch_head_versions: crate::runtime::BranchHeadVersionIndexAuthority,
     history: crate::runtime::RelationalPreparationHistory,
+    index_definitions: crate::runtime::IndexDefinitionReadBinding,
     medium: Option<Arc<crate::durability::medium::RelationalDurableMediumBinding>>,
 }
 
@@ -57,6 +58,7 @@ impl RelationalPublicationPort {
         publication_binding: crate::runtime::RelationalRuntimePublicationBinding,
         branch_head_versions: crate::runtime::BranchHeadVersionIndexAuthority,
         history: crate::runtime::RelationalPreparationHistory,
+        index_definitions: crate::runtime::IndexDefinitionReadBinding,
         medium: Option<Arc<crate::durability::medium::RelationalDurableMediumBinding>>,
     ) -> Self {
         Self {
@@ -66,11 +68,23 @@ impl RelationalPublicationPort {
             publication_binding,
             branch_head_versions,
             history,
+            index_definitions,
             medium,
         }
     }
 
     pub fn compare_and_publish(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        candidate: PreparedRelationalCommitCandidate,
+    ) -> RelationalPublicationOutcome {
+        worth_execution::run_with_execution_stack(move || {
+            self.compare_and_publish_on_execution_stack(execution, candidate)
+        })
+    }
+
+    #[inline(never)]
+    fn compare_and_publish_on_execution_stack(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         candidate: PreparedRelationalCommitCandidate,
@@ -152,6 +166,7 @@ impl crate::runtime::RelationalRuntime {
             self.publication_binding(),
             self.history.branch_head_version_index(),
             self.history.preparation_binding(),
+            self.indexes.definition_read_binding(),
             self.durability.medium(),
         )
     }
@@ -169,4 +184,7 @@ mod cutover;
 mod handoff;
 #[path = "port_preflight.rs"]
 mod preflight;
+
+#[path = "port_service_retirement.rs"]
+mod service_retirement;
 pub use handoff::{PreparedMemoryRelationalCutover, ScopedRelationalPublication};

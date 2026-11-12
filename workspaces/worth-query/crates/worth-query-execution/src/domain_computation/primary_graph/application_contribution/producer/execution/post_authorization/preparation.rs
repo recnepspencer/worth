@@ -207,6 +207,7 @@ where
     if let Some(context) = prepared_context {
         required_output.retain_prepared_decision_reuse(context);
     }
+    let publication_scope = admission.operation_scope_binding().clone();
     let predecessor_reads =
         super::super::super::predecessor_reads::ProducerPredecessorReadAccess::prepare::<
             Schema,
@@ -286,7 +287,7 @@ where
                         result,
                         |denial| provider.domain_denial_reason(denial),
                     )
-                    .map(|_| unreachable!("a refused preparation cannot produce a candidate"))
+                    .map(|impossible| match impossible {})
                     .map_err(ProducerExecutionStop::ExecutionStopped)
                 },
             ))
@@ -298,6 +299,9 @@ where
 
             let _observation = application_identity.map(crate::domain_computation::primary_graph::application_contribution::request_execution::advancement::observation::application::apply_identity);
             let identities = owned_identities.borrow();
+            let (program, idempotency) = super::completion::prepare::<Schema, Binding>(
+                phase, runtime, &identities, bound_source, edition, successor_of,
+                || {
             let completed = completed_handler::<_, _, DeclaredDenial<Schema, Binding>>(
                 Binding::IDENTITY,
                 completion
@@ -307,35 +311,9 @@ where
                     .map_err(|error| execution_failed(Binding::IDENTITY, error))?,
                 |denial| provider.domain_denial_reason(denial),
             )?;
-            let (mut program, _) = completed.into_parts(); // Retries bind the complete typed dependency set.
-            let identity_execution = phase.execution_request_for(&runtime.runtime.product_runtime)
-                .map_err(|cause| denial(WorthQueryOutputDemandDenialKind::ExecutionRequest(cause.into()), "producer content phase"))?;
-            let (key_identity, dependency_identity) = program
-        .producer_idempotency_identities::<Operation<Schema, Binding>>(
-            runtime,
-            &phase.checked_execution_request_for(&runtime.runtime.product_runtime).map_err(|stop| denial(WorthQueryOutputDemandDenialKind::ExecutionRequest(stop), Binding::IDENTITY))?,
-            *identities.key_identity(),
-            worth_relational::facade::mvcc::RequiredOutputProducingImplementation::new(edition.build_identity(), edition.digest()),
-            successor_of,
-            identity_execution.allocation_policy(),
-            runtime.installed_producers.entries.get(Binding::IDENTITY)
-                .expect("execution retains its installed producer")
-                .declaration.installed_output_equivalence.is_some(),
-        )
-        .map_err(|identity_denial| super::super::denial::identity_failed(Binding::IDENTITY, identity_denial))?;
-            let idempotency = bound_source
-                .bind_idempotency(
-                    WorthQueryApplicationIdempotencyBinding::new(
-                        key_identity,
-                        *identities.input_identity(),
-                    )
-                    .bind_mutation::<Schema, Operation<Schema, Binding>>(),
-                )
-                .bind_producer_dependency(&dependency_identity)
-                .bind_producing_implementation(worth_relational::facade::mvcc::RequiredOutputProducingImplementation::new(edition.build_identity(), edition.digest()));
-            let program = program
-                .with_output_demand_observation()
-                .with_producer_required_invariants(Binding::REQUIRED_INVARIANTS);
+            Ok(completed.into_parts().0)
+                },
+            )?;
             let outcome = match commit_authority.mode() {
                 WorthQueryProducerCommitAuthority::Ordinary => runtime
                     .compare_and_commit_application_in_advancement_with_history(
@@ -365,6 +343,25 @@ where
                     )
                 }
             };
+            if let crate::domain_computation::primary_graph::WorthQueryApplicationCommitOutcome::RecoveredCommitted(receipt) = outcome {
+                let execution = phase.execution_request_for(&runtime.runtime.product_runtime)
+                    .map_err(|cause| denial(WorthQueryOutputDemandDenialKind::ExecutionRequest(cause.into()), "original producer publication"))?;
+                // Refresh only the same actual branch occurrence for output-owner
+                // selection. The handler's original source/dependency binding stays intact.
+                let current = runtime.runtime.product_runtime.owner.observation_port()
+                    .observe_product_branch_occurrence(selected.product().observation().lifecycle_incarnation())
+                    .map_err(|_| denial(WorthQueryOutputDemandDenialKind::PublicationStale, "original producer occurrence unavailable")
+                        .with_recovered_publication(receipt.clone())
+                        .with_recovery_posture(crate::domain_computation::primary_graph::WorthQueryOutputDemandRecoveryPosture::Retryable))?;
+                let stable = runtime.runtime.primary_provider.graph.output_lineage.lock()
+                    .unwrap_or_else(std::sync::PoisonError::into_inner)
+                    .resolve_original_publication::<Operation<Schema, Binding>>(
+                        &execution, &publication_scope, &current, idempotency, &receipt,
+                    ).map_err(|stop| super::super::source_readmission::ready_resource_denial(Binding::IDENTITY, stop))?;
+                return stable.map(ProducerExecutionOutcome::Stable).ok_or_else(||
+                    denial(WorthQueryOutputDemandDenialKind::ProducerUnavailable, Binding::IDENTITY)
+                        .with_recovered_publication(receipt).into());
+            }
             if let WorthQueryApplicationCommitOutcome::ProductUnpublished(original) = outcome {
                 return Ok(ProducerExecutionOutcome::Unpublished(
                     recovery_input.unpublished(idempotency, original),

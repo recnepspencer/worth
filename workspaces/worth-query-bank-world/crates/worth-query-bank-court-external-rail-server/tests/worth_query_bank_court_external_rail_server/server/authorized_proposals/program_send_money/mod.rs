@@ -38,10 +38,16 @@ fn concurrent_program_transfers_cannot_overspend_one_account() {
         amount: Money::from_minor(6_000).unwrap(),
     };
 
+    let rendezvous = Arc::new(std::sync::Barrier::new(2));
+    #[expect(
+        clippy::disallowed_methods,
+        reason = "This court owns two joined callers racing the actual shared Native commit lane"
+    )]
     let run = |operation_key: &'static str| {
         let world = Arc::clone(&world);
         let actor = Arc::clone(&actor);
         let input = input.clone();
+        let rendezvous = rendezvous.clone();
         std::thread::spawn(move || {
             let scope = request_scope();
             let request = world.runtime.request(&actor, &scope);
@@ -52,7 +58,21 @@ fn concurrent_program_transfers_cannot_overspend_one_account() {
                 .controls(controls(operation_key))
                 .retain_operation()
                 .unwrap_or_else(|cause| panic!("send construction: {cause:?}"));
-            match operation.advance(&request, Some(std::num::NonZeroUsize::new(20_000).unwrap())) {
+            rendezvous.wait();
+            let outcome =
+                operation.advance(&request, Some(std::num::NonZeroUsize::new(20_000).unwrap()));
+            let outcome = match outcome {
+                Advance::Progress(operation) => {
+                    assert_eq!(operation.posture(), worth_query_host::facade::application_entry::WorthQuerySourceOnlyPosture::RetryableNoEffect);
+                    let retry_scope = request_scope();
+                    let retry = world.runtime.request(&actor, &retry_scope);
+                    operation.advance(&retry, Some(std::num::NonZeroUsize::new(20_000).unwrap()))
+                }
+                Advance::Completed(done) => Advance::Completed(done),
+                Advance::Terminal(terminal) => Advance::Terminal(terminal),
+                Advance::Refused { operation, denial } => Advance::Refused { operation, denial },
+            };
+            match outcome {
                 Advance::Completed(done) => {
                     let Completion::Fresh { result, .. } = done.evidence() else {
                         panic!("fresh send evidence")
@@ -71,14 +91,14 @@ fn concurrent_program_transfers_cannot_overspend_one_account() {
                     assert!(terminal.close(&request).is_ok());
                     Err(denial)
                 }
-                _ => panic!("unexpected transfer custody"),
+                worth_query_host::facade::application_entry::WorthQuerySourceOnlyAdvance::Refused { denial, .. } => panic!("unexpected transfer refusal: {denial:?}"),
+                worth_query_host::facade::application_entry::WorthQuerySourceOnlyAdvance::Progress(operation) => panic!("unexpected transfer progress: {:?}", operation.posture()),
             }
         })
     };
-    let outcomes = [
-        run("program-concurrent-first").join().unwrap(),
-        run("program-concurrent-second").join().unwrap(),
-    ];
+    let first = run("program-concurrent-first");
+    let second = run("program-concurrent-second");
+    let outcomes = [first.join().unwrap(), second.join().unwrap()];
     assert_eq!(
         outcomes
             .iter()

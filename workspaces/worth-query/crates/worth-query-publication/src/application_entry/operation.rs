@@ -172,3 +172,8 @@ type DeliveredProjectionBatch<Schema, ReadBinding> = crate::domain_computation::
     <ReadBinding as ApplicationQueryBinding<Schema>>::Query,
     <<ReadBinding as ApplicationQueryBinding<Schema>>::ResultBinding as ApplicationStructuredValueBinding>::Value,
 >;
+
+#[cfg(test)]
+#[path = "operation_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;
+mod receipt_correspondence;

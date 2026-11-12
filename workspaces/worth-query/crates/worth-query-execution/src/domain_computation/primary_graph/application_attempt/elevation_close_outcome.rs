@@ -141,12 +141,17 @@ impl WorthQueryMandatoryReview {
 
 /// Every way committing an elevation close can end.
 ///
-/// This mirrors the application commit outcome. `Closed` and `AlreadyClosed`
+/// This mirrors the application commit outcome. `Closed`
 /// carry the move-only mandatory-review obligation. Most variants that did not
 /// land hand the consumed approved elevation back, so it can be committed
 /// again.
 #[derive(Debug)]
 pub enum WorthQueryElevationCloseOutcome {
+    /// Immutable original meaning plus the exact predecessor supplied by this call.
+    RecoveredCommitted {
+        receipt: crate::domain_computation::primary_graph::provider::WorthQueryRecoveredApplicationCommitReceipt,
+        approved: WorthQueryApprovedElevation,
+    },
     CleanupRequired(Box<super::WorthQueryApplicationCleanupRequired>),
     /// The product branch moved after the basis. Nothing was committed.
     ProductStale(
@@ -155,6 +160,9 @@ pub enum WorthQueryElevationCloseOutcome {
     ),
     /// Some owners moved, but the product head did not. Recover publication.
     ProductUnpublished(crate::domain_computation::WorthQueryProductUnpublishedApplication),
+    ProductPreparationPending(crate::domain_computation::WorthQueryProductPreparationPending),
+    ProductPreparationRefused(crate::domain_computation::WorthQueryProductPreparationRefused),
+
     /// Nothing was written; the cause says why.
     NoEffect(
         super::WorthQueryApplicationNoEffect,
@@ -162,8 +170,6 @@ pub enum WorthQueryElevationCloseOutcome {
     ),
     /// This attempt committed the close.
     Closed(WorthQueryMandatoryReview),
-    /// The idempotency key had already committed this close; nothing was redone.
-    AlreadyClosed(WorthQueryMandatoryReview),
     /// The basis was stale at compare. Nothing was committed; re-read and retry.
     Stale(
         WorthQueryApplicationStaleAttempt,
@@ -201,37 +207,14 @@ pub(in crate::domain_computation::primary_graph) fn closed_outcome(
             )
         }
 
+        WorthQueryApplicationCommitOutcome::RecoveredCommitted(receipt) => {
+            WorthQueryElevationCloseOutcome::RecoveredCommitted {
+                receipt,
+                approved: binding.into_approved(),
+            }
+        }
         WorthQueryApplicationCommitOutcome::Committed(commit) => {
             WorthQueryElevationCloseOutcome::Closed(closed(binding, commit))
-        }
-        WorthQueryApplicationCommitOutcome::AlreadyCommitted(commit) => {
-            let values = commit.committed_changes().committed_field_values(
-                binding.elevation(),
-                &[binding.status_field(), binding.closed_at_field()],
-            );
-            match values {
-                Some(values) => {
-                    match binding.restore_committed_close(values[0].clone(), values[1].clone()) {
-                        Ok(binding) => {
-                            WorthQueryElevationCloseOutcome::AlreadyClosed(closed(binding, commit))
-                        }
-                        Err(binding) => WorthQueryElevationCloseOutcome::Denied(
-                            WorthQueryApplicationCommitDenial::provider_rejected_with_detail(
-                                super::WorthQueryApplicationCommitDenialStage::Idempotency,
-                                "committed elevation status is invalid",
-                            ),
-                            binding.into_approved(),
-                        ),
-                    }
-                }
-                None => WorthQueryElevationCloseOutcome::Denied(
-                    WorthQueryApplicationCommitDenial::provider_rejected_with_detail(
-                        super::WorthQueryApplicationCommitDenialStage::Idempotency,
-                        "committed close fields are unavailable",
-                    ),
-                    binding.into_approved(),
-                ),
-            }
         }
         WorthQueryApplicationCommitOutcome::Stale(stale) => {
             WorthQueryElevationCloseOutcome::Stale(stale, binding.into_approved())
@@ -254,6 +237,12 @@ pub(in crate::domain_computation::primary_graph) fn closed_outcome(
         }
         WorthQueryApplicationCommitOutcome::ProductUnpublished(unpublished) => {
             WorthQueryElevationCloseOutcome::ProductUnpublished(unpublished)
+        }
+        WorthQueryApplicationCommitOutcome::ProductPreparationPending(owner) => {
+            WorthQueryElevationCloseOutcome::ProductPreparationPending(owner)
+        }
+        WorthQueryApplicationCommitOutcome::ProductPreparationRefused(owner) => {
+            WorthQueryElevationCloseOutcome::ProductPreparationRefused(owner)
         }
         WorthQueryApplicationCommitOutcome::NoEffect(no_effect) => {
             WorthQueryElevationCloseOutcome::NoEffect(no_effect, binding.into_approved())

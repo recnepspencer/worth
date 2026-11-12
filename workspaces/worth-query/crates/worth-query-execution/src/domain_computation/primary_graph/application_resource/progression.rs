@@ -41,7 +41,12 @@ where
         .runtime
         .product_runtime
         .advance_owned_async_source_clock(
-            &runtime.runtime.bridge.conditional(),
+            runtime
+                .runtime
+                .bridge
+                .conditional()
+                .memory()
+                .map_err(ResourceCause::Bridge)?,
             &slot.declaration,
             &row.occurrence().business_product,
             reading.nanoseconds,
@@ -53,7 +58,12 @@ where
         .runtime
         .product_runtime
         .admit_managed_owned_async_request(
-            &runtime.runtime.bridge.conditional(),
+            runtime
+                .runtime
+                .bridge
+                .conditional()
+                .memory()
+                .map_err(ResourceCause::Bridge)?,
             &slot.declaration,
             &row.occurrence().business_product,
         )

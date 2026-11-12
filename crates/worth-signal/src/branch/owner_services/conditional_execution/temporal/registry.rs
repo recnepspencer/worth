@@ -1,3 +1,4 @@
+mod initial_empty_stop;
 use std::collections::BTreeMap;
 use std::num::NonZeroUsize;
 use std::sync::{Arc, Mutex, Weak};
@@ -147,3 +148,6 @@ impl SignalConditionalTemporalRegistry {
         self.state.lock().unwrap().cells.len()
     }
 }
+#[cfg(test)]
+#[path = "registry_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;

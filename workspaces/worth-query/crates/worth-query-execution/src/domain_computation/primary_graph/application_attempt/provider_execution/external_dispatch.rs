@@ -12,7 +12,13 @@
 
 use crate::domain_computation::primary_graph::WorthQueryAdvancementPhase;
 
+mod cleanup_dispatch;
 pub(crate) mod denial;
+mod durable_attempt;
+enum OriginalDispatchObservation<'a> {
+    Starting,
+    Observed(&'a WorthQueryExternalEffectDispatch),
+}
 
 use std::sync::Arc;
 
@@ -36,6 +42,7 @@ pub use denial::{
     WorthQueryExternalDispatchAttemptDenial, WorthQueryExternalDispatchPreparationDenial,
     WorthQueryExternalRedispatchDenial, WorthQueryExternalTransportInstallationDenial,
 };
+pub use durable_attempt::WorthQueryDurableDispatchRecordDenial;
 
 /// Owner-sealed material for one re-dispatch that actually crossed the
 /// runtime's committed-observation dispatch operation.
@@ -109,6 +116,10 @@ where
         authority: &WorthQueryRecoveryEffectAuthority,
         admission: &WorthQueryAdmittedApplicationOperation<Schema, Operation, Input, Scope>,
     ) -> Result<WorthQueryPerformedExternalRedispatch, WorthQueryExternalRedispatchDenial> {
+        match self.runtime.product_runtime.owner.owner_identity().admit_incarnation(handle.home_owner()) {
+            Err(worth_proof::HomeIncarnationDenial::StaleIncarnation) => return Err(WorthQueryExternalRedispatchDenial::FreshAuthority(crate::domain_computation::application_aftermath::WorthQueryRecoveryHandleDenialKind::StaleIncarnation)),
+            Err(worth_proof::HomeIncarnationDenial::ForeignHome) | Ok(()) => {}
+        }
         let request = phase
             .execution_request_for(&self.runtime.product_runtime)
             .map_err(|cause| {
@@ -133,6 +144,11 @@ where
         admission
             .validate_installed_operation(&self.runtime.installed_operations)
             .map_err(WorthQueryExternalRedispatchDenial::from_admission_authorization)?;
+        handle
+            .admit_home_owner(self.runtime.product_runtime.owner.owner_identity())
+            .map_err(|denial| WorthQueryExternalRedispatchDenial::FreshAuthority(denial.kind()))?;
+        admission.refuse_stale_home_authority(self.runtime.product_runtime.owner.owner_identity())
+            .map_err(|_| WorthQueryExternalRedispatchDenial::FreshAuthority(crate::domain_computation::application_aftermath::WorthQueryRecoveryHandleDenialKind::StaleIncarnation))?;
         if let Some(lapse) = admission.current_authority_lapse() {
             return Err(match lapse {
                 WorthQueryAdmissionLapse::Cancelled => {
@@ -175,6 +191,7 @@ where
                 transport.as_ref(),
                 committed,
                 admission.publication_request(),
+                |_| {},
             )
             .map_err(WorthQueryExternalDispatchPreparationDenial::redispatch_denial)?;
         Ok(WorthQueryPerformedExternalRedispatch::record(
@@ -221,6 +238,7 @@ where
             transport.as_ref(),
             committed,
             request,
+            |_| {},
         ) {
             Ok(dispatch) => WorthQueryApplicationCommitOutcome::Committed(
                 receipt.with_external_dispatch(dispatch),
@@ -239,6 +257,7 @@ where
         transport: &dyn WorthQueryExternalEffectTransport,
         committed: crate::domain_computation::primary_graph::WorthQueryCommittedDispatchOutboxObservation,
         request: &worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope,
+        mut observe: impl FnMut(OriginalDispatchObservation<'_>),
     ) -> Result<WorthQueryExternalEffectDispatch, WorthQueryExternalDispatchPreparationDenial> {
         if committed.record().inbound().is_some()
             && self.has_retained_installed_transport_completion(committed.record().correlation())
@@ -275,12 +294,43 @@ where
             .primary_provider
             .begin_external_dispatch_in_flight(&completion_owner)
             .map_err(denial::from_in_flight)?;
-        let dispatch = dispatch_external_effect(transport, admitted).map_err(|denial| match denial {
-            crate::domain_computation::application_aftermath::WorthQueryAftermathDerivationFailure::RuntimeTimeUnavailable => {
-                WorthQueryExternalDispatchPreparationDenial::TimeObservationDenied
+        // Durable before contact: a refused record returns before the transport.
+        let contact = self.begin_durable_dispatch_contact(execution, completion_owner.record())?;
+        let dispatch = match dispatch_external_effect(transport, admitted, || {
+            observe(OriginalDispatchObservation::Starting)
+        }) {
+            Ok(dispatch) => dispatch,
+            Err(denial) => {
+                use crate::domain_computation::application_aftermath::dispatch_journal::{
+                    ExternalEffectNoEffectCause, QueryDispatchRecordedObservation,
+                };
+                use crate::domain_computation::application_aftermath::WorthQueryAftermathDerivationFailure as Failure;
+                // Every derivation failure precedes the transport call.
+                contact.observe(
+                    execution,
+                    QueryDispatchRecordedObservation::ProvenNoEffect(
+                        ExternalEffectNoEffectCause::ContactNotStarted,
+                    ),
+                );
+                return Err(match denial {
+                    Failure::RuntimeTimeUnavailable => {
+                        WorthQueryExternalDispatchPreparationDenial::TimeObservationDenied
+                    }
+                    Failure::RetentionCapacityExhausted
+                    | Failure::RetentionIdentityExhausted
+                    | Failure::SnapshotIdentityExhausted
+                    | Failure::BasisRejected
+                    | Failure::DigestRejected
+                    | Failure::EmptyCorrelationBasis
+                    | Failure::MissingExternalPayload => {
+                        WorthQueryExternalDispatchPreparationDenial::CanonicalDerivationDenied
+                    }
+                });
             }
-            _ => WorthQueryExternalDispatchPreparationDenial::CanonicalDerivationDenied,
-        })?;
+        };
+        // Durable before live: the record precedes every observer of the outcome.
+        contact.observe(execution, durable_attempt::recorded_observation(&dispatch));
+        observe(OriginalDispatchObservation::Observed(&dispatch));
         if completion_owner.record().inbound().is_some() && dispatch.is_external_completion() {
             let evidence =
                 InstalledTransportCompletion::from_observed_dispatch(completion_owner, &dispatch)

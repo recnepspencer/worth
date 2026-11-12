@@ -39,6 +39,7 @@ pub enum WorthQueryProviderSessionDenialKind {
     ForeignOperationAttempt,
     ForeignExecutionBasis,
     ForeignGraphAuthority,
+    StaleIncarnation,
     UndeclaredOperationScope,
     ResourceEnvelopeMismatch,
     /// An execution refusal retains Query's shared resource vocabulary.
@@ -92,6 +93,7 @@ pub enum WorthQueryProviderSessionDenialKind {
 /// this description does not itself grant retry or cleanup authority.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct WorthQueryProviderSessionFailure {
+    correction_material: Option<crate::facade::correction_material::QueryCorrectionMaterialDenial>,
     relation_preimage: Option<
         std::sync::Arc<
             crate::domain_computation::application_aftermath::WorthQueryRelationPreImageFailure,
@@ -126,6 +128,18 @@ pub struct WorthQueryProviderSessionFailure {
 }
 
 impl WorthQueryProviderSessionFailure {
+    pub(in crate::domain_computation) fn with_correction_material_denial(
+        mut self,
+        cause: crate::facade::correction_material::QueryCorrectionMaterialDenial,
+    ) -> Self {
+        self.correction_material = Some(cause);
+        self
+    }
+    pub fn correction_material_denial(
+        &self,
+    ) -> Option<&crate::facade::correction_material::QueryCorrectionMaterialDenial> {
+        self.correction_material.as_ref()
+    }
     pub fn relation_preimage_failure(
         &self,
     ) -> Option<&crate::domain_computation::application_aftermath::WorthQueryRelationPreImageFailure>
@@ -174,6 +188,7 @@ impl WorthQueryProviderSessionFailure {
         counters: WorthQueryProviderSessionProtocolCounters,
     ) -> Self {
         Self {
+            correction_material: None,
             relation_preimage: None,
             candidate_support: None,
             preimage: None,

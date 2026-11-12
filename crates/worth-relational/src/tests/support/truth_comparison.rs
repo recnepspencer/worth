@@ -32,13 +32,11 @@ pub(crate) fn assert_recovered_commit_truth_matches(
         .replay()
         .canonical_commit_envelope(execution, commit_id)
         .unwrap()
-        .map(|envelope| envelope.as_ref().clone())
         .unwrap();
     let recovered_envelope = recovered_runtime
         .replay()
         .canonical_commit_envelope(execution, commit_id)
         .unwrap()
-        .map(|envelope| envelope.as_ref().clone())
         .unwrap();
     let original_bundle = capture_aspect_truth_bundle(
         execution,
@@ -56,5 +54,33 @@ pub(crate) fn assert_recovered_commit_truth_matches(
     );
 
     assert_stable_aspect_truth_bundle_eq(&original_bundle, &recovered_bundle);
-    assert_eq!(original_envelope, recovered_envelope);
+    assert_durable_commit_meaning_eq(execution, &original_envelope, &recovered_envelope);
+}
+
+pub(crate) fn assert_durable_commit_meaning_eq(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    expected: &crate::history::data::CanonicalCommitEnvelope,
+    actual: &crate::history::data::CanonicalCommitEnvelope,
+) {
+    // The original artifact omits diagnostics/cache DATA (milestone-3 durable
+    // projection table). Compare every other field, not a receipt-only proxy.
+    assert_eq!(
+        expected.recorded_original_inputs(),
+        actual.recorded_original_inputs()
+    );
+    assert_eq!(
+        durable_commit_data(execution, expected),
+        durable_commit_data(execution, actual)
+    );
+}
+
+fn durable_commit_data(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    source: &crate::history::data::CanonicalCommitEnvelope,
+) -> crate::history::data::CanonicalCommitEnvelope {
+    let mut copied = source.copy_original_for_test(execution);
+    let body = copied.body_mut_for_test();
+    body.diagnostics_summary.entries.clear();
+    body.derived_index_artifacts = Default::default();
+    copied
 }

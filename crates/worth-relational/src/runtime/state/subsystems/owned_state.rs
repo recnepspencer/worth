@@ -14,6 +14,20 @@ pub(crate) struct RuntimeOwnedState<T> {
 }
 
 impl<T> RuntimeOwnedState<T> {
+    pub(crate) fn try_read(&self) -> Option<RwLockReadGuard<'_, T>> {
+        match self.state.try_read() {
+            Ok(value) => Some(value),
+            Err(std::sync::TryLockError::Poisoned(error)) => Some(error.into_inner()),
+            Err(std::sync::TryLockError::WouldBlock) => None,
+        }
+    }
+    pub(crate) fn try_write(&self) -> Option<RwLockWriteGuard<'_, T>> {
+        match self.state.try_write() {
+            Ok(value) => Some(value),
+            Err(std::sync::TryLockError::Poisoned(error)) => Some(error.into_inner()),
+            Err(std::sync::TryLockError::WouldBlock) => None,
+        }
+    }
     pub(crate) fn new(state: T) -> Self {
         Self {
             state: Arc::new(RwLock::new(state)),

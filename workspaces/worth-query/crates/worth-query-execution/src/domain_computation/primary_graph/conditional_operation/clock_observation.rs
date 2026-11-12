@@ -17,6 +17,10 @@ pub(in crate::domain_computation::primary_graph) use erased::{
 pub enum WorthQueryConditionalClockObservationDenialKind {
     /// The clock handle is not installed in this runtime.
     ForeignRuntime,
+    NotReadmitted {
+        family: worth_foundational::facade::DurableStateFamily,
+        phase: u8,
+    },
     /// The conditional binding could not be admitted on the selected product.
     ProductAdmission(super::installation::WorthQueryConditionalRuntimeInstallationDenialKind),
 }
@@ -267,6 +271,18 @@ impl<'runtime, Schema, Node, Clock>
 where
     Schema: ApplicationSchema,
 {
+    /// Transfers one actual completed cleanup's remaining original effect
+    /// custody. The operation lock ends before this returns; resume delivery
+    /// explicitly through the application owner with a fresh request.
+    pub fn take_released_managed_cleanup(
+        &mut self,
+    ) -> Option<crate::domain_computation::primary_graph::WorthQueryApplicationManagedCleanupReceipt>
+    {
+        self.operation
+            .lock_operation()
+            .take_released_managed_cleanup()
+    }
+
     pub fn observe(
         &mut self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
@@ -281,10 +297,16 @@ where
                 let bridge = bridge_root
                     .read()
                     .unwrap_or_else(std::sync::PoisonError::into_inner);
+                let memory = match bridge.memory() {
+                    Ok(memory) => memory,
+                    Err(cause) => return WorthQueryConditionalClockObservationOutcome::Failed(WorthQueryConditionalClockObservationFailure {
+                        kind: WorthQueryConditionalClockObservationFailureKind::ReconstructionDenied(super::installation::WorthQueryConditionalRuntimeInstallationDenialKind::BridgeConditional(Box::new(cause.kind()))), detail: cause.detail().to_owned(),
+                    }),
+                };
                 let outcome = self.operation.observe_clock(
                     execution,
                     phase,
-                    &bridge,
+                    memory,
                     self.runtime,
                     &self.truth,
                 );

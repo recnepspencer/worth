@@ -3,7 +3,10 @@ use super::*;
 use crate::execution::request_stage::checkpoint;
 use crate::{
     branch::AdmittedRelationalBranchBasis,
-    history::data::{CanonicalOutputPublication, CanonicalRequiredOutputOrigin},
+    history::data::{
+        CanonicalOutputPublication, CanonicalRequiredOutputOrigin,
+        CodecRetirementClosureStop as Stop,
+    },
     identity::data::EntityId,
     runtime::RelationalRuntime,
     transactions::data::RecordRef,
@@ -55,7 +58,12 @@ impl RelationalRuntime {
                 let mut current = validated_history
                     .by_commit(
                         publication.origin.commit.commit_id,
-                        &mut |commit| self.history.canonical_envelope(commit),
+                        &mut |commit| {
+                            self.history_access()
+                                .demand_commit_envelope(execution, commit)
+                                .map_err(Stop::Request)
+                        },
+                        execution,
                         context,
                     )
                     .map_err(custody::cold_stop)?
@@ -71,6 +79,7 @@ impl RelationalRuntime {
                         let meaning = origin.meaning.clone();
                         current = crate::history::data::historical_producer_antecedent(
                             self,
+                            execution,
                             &current,
                             &origin,
                             &mut validated_history,
@@ -111,7 +120,12 @@ impl RelationalRuntime {
                     current = validated_history
                         .by_commit(
                             predecessor,
-                            &mut |commit| self.history.canonical_envelope(commit),
+                            &mut |commit| {
+                                self.history_access()
+                                    .demand_commit_envelope(execution, commit)
+                                    .map_err(Stop::Request)
+                            },
+                            execution,
                             context,
                         )
                         .map_err(custody::cold_stop)?

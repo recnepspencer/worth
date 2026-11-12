@@ -85,7 +85,8 @@ pub fn try_with_reader<Output>(
     let affinity = admission.operation_scope_binding().clone();
     let context = std::cell::Cell::new(DecisionContextUse::default());
     let interruption = std::cell::Cell::new(None);
-    let execution = worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::QueryRequestExecution::open_for_test((*world.application.product_runtime().owner_for_test()).execution_placement(), admission.publication_request_for_test());
+    world.application.product_runtime().with_execution_placement_for_test(|placement| {
+    let execution = worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::QueryRequestExecution::open_for_test(placement, admission.publication_request_for_test());
     world
         .invariant
         .project_admitted_operation(
@@ -110,4 +111,5 @@ pub fn try_with_reader<Output>(
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
         .map(|completed| completed.into_parts().0)
+    }).expect("the installed projection World remains available")
 }

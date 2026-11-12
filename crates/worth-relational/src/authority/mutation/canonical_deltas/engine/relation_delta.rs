@@ -159,3 +159,29 @@ pub(super) fn evaluate_relation_update_delta(
         ),
     }
 }
+
+pub(crate) fn evaluate_relation_deletion_state(
+    plans: &impl AspectPlanSource,
+    id: crate::identity::data::RelationId,
+    kind: crate::identity::data::KindId,
+    source: EntityId,
+    target: EntityId,
+    state: Option<&worth_foundational::facade::AuthoritativeRecordAspectState>,
+) -> Result<CanonicalRecordAspectDelta, CanonicalDeltaError> {
+    evaluate_relation_delta(
+        plans,
+        id,
+        kind,
+        RelationState {
+            source: Some(source),
+            target: Some(target),
+            authoritative_state: state,
+        },
+        RelationState {
+            source: None,
+            target: None,
+            authoritative_state: None,
+        },
+        RecordStructuralChange::Deleted,
+    )
+}

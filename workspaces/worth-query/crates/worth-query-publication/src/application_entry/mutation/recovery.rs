@@ -22,6 +22,19 @@ use crate::application_entry::WorthQueryApplicationRequestMutationDenial;
 /// read, publication or cleanup failure remain in the recovery outcome instead.
 #[derive(Debug)]
 pub enum WorthQueryApplicationRecoveryRequestDenial {
+    ReleasedOriginal(
+        worth_query_execution::facade::primary_graph::WorthQueryReleasedApplicationEffect,
+    ),
+    ProductUnpublished(
+        worth_query_execution::facade::primary_graph::WorthQueryProductUnpublishedApplication,
+    ),
+    /// Durable original meaning cannot promote process-local output custody.
+    RecoveredCommitted(
+        worth_query_execution::facade::primary_graph::WorthQueryRecoveredApplicationCommitReceipt,
+    ),
+    ProductPreparationPending(
+        worth_query_execution::facade::primary_graph::WorthQueryProductPreparationPending,
+    ),
     Action(worth_query_installation::facade::WorthQueryActionResolutionDenial),
     Request(WorthQueryApplicationRequestMutationDenial),
     /// Workflow control and transition-bound requests need their workflow owner.
@@ -321,3 +334,6 @@ mod cancellation_spelling {
         .is_none());
     }
 }
+#[cfg(test)]
+#[path = "recovery_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;

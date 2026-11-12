@@ -14,7 +14,7 @@ use crate::orchestration::{
 
 use super::PhysicalRecoveryDiscoveryCounters;
 use crate::orchestration::{
-    wal_selection::{ResidentWalTail, WalTailSelectionDenial},
+    wal_selection::{ResidentSourceSelectionDenial, ResidentWalTail, WalTailSelectionDenial},
     ResidentSourceSelection,
 };
 
@@ -137,17 +137,20 @@ pub(super) fn select_sources(
             .with_integrity_trace(integrity_trace.clone())
     })?;
     let compaction = checkpoint.as_ref().map(SelectedCompactionProduct::admit);
-    let selection = select_final_cut(FinalSelectionInput {
-        root,
-        page_facts,
-        retained_previous_page_facts,
-        checkpoint,
-        wal_tail,
-        compaction,
-        residue: input.residue,
-        counters,
-        frontier,
-    })
+    let selection = select_final_cut(
+        FinalSelectionInput {
+            root,
+            page_facts,
+            retained_previous_page_facts,
+            checkpoint,
+            wal_tail,
+            compaction,
+            residue: input.residue,
+            counters,
+            frontier,
+        },
+        coordination,
+    )
     .map_err(|failure| {
         failure
             .with_root_protocol_denials(&root_protocol_denials)
@@ -303,11 +306,13 @@ fn select_wal(
 
 fn select_final_cut(
     input: FinalSelectionInput,
+    coordination: &worth_store::physical_runtime::PhysicalRecoveryCoordination,
 ) -> Result<ResidentSourceSelection, SelectionFailure> {
     let generation = input.root.selected().selector().root_generation();
     input
         .wal_tail
         .select_sources(
+            coordination,
             input.root,
             input.page_facts,
             input.retained_previous_page_facts,
@@ -316,14 +321,23 @@ fn select_final_cut(
             input.residue,
         )
         .map_err(|denial| {
-            SelectionFailure::new(
-                PhysicalRecoveryBlockKind::SourceSelection,
-                input.counters,
-                "selected persisted-source cut",
-            )
-            .with_generation(generation)
-            .with_lsn(input.frontier)
-            .with_source_denials(vec![PhysicalRecoverySourceDenial::FinalSelection(denial)])
+            let (kind, source_denial) = match denial {
+                ResidentSourceSelectionDenial::Selection(cause) => (
+                    PhysicalRecoveryBlockKind::SourceSelection,
+                    PhysicalRecoverySourceDenial::FinalSelection(cause),
+                ),
+                ResidentSourceSelectionDenial::Allocation(cause) => (
+                    PhysicalRecoveryBlockKind::SourceAllocation,
+                    PhysicalRecoverySourceDenial::WalInventoryAllocation {
+                        boundary: crate::entry::PhysicalRecoveryWalInventoryAllocationBoundary::SourceSelection,
+                        cause,
+                    },
+                ),
+            };
+            SelectionFailure::new(kind, input.counters, "selected persisted-source cut")
+                .with_generation(generation)
+                .with_lsn(input.frontier)
+                .with_source_denials(vec![source_denial])
         })
 }
 

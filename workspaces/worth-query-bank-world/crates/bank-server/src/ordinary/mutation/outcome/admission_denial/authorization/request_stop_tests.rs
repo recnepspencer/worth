@@ -78,3 +78,14 @@ fn workflow_actor_refusals_keep_their_exact_bank_cause_and_code() {
         assert_eq!(denial.contributing_cause_count(), 3);
     }
 }
+
+#[test]
+fn authorization_preserves_stale_incarnation_with_its_cause_count_and_code() {
+    let denial = BankAuthorizationDenial::from_kind(
+        QueryKind::Refused(AuthorizationRefusal::StaleIncarnation),
+        3,
+    );
+    assert_eq!(denial.kind(), BankAuthorizationDenialKind::StaleIncarnation);
+    assert_eq!(denial.code(), "stale-incarnation");
+    assert_eq!(denial.contributing_cause_count(), 3);
+}

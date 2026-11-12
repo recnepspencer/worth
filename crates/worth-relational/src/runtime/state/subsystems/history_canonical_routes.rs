@@ -7,6 +7,59 @@ use crate::publication::patch::data::PatchStreamPosition;
 use super::HistorySubsystem;
 
 impl HistorySubsystem {
+    pub(crate) fn commit_for_version_in_context(
+        &self,
+        version: VersionId,
+        context: &mut worth_execution::MapKernelContext<'_, '_>,
+    ) -> Result<Option<CommitId>, crate::execution::RelationalExecutionDenialCause> {
+        self.canonical_publication_routes
+            .commit_for_version_in_context(version, context)
+    }
+
+    pub(crate) fn retain_original_empty_birth(
+        &self,
+        schema: Arc<crate::branch::RelationalBranchRootSchemaAuthority>,
+    ) {
+        self.canonical_publication_routes
+            .retain_original_empty_birth(super::OriginalEmptySchemaObservation {
+                generation: worth_foundational::FoundationalBranchReferenceGeneration::initial(),
+                truth_version: crate::branch::RelationalBranchVersion::initial(),
+                lifecycle: crate::branch::RelationalBranchLifecyclePosture::Live,
+                schema,
+            });
+    }
+
+    pub(crate) fn discard_unobserved_construction_schema_inputs_for_recovery(&self) {
+        self.canonical_publication_routes
+            .discard_unobserved_construction_schema_inputs_for_recovery();
+    }
+
+    pub(crate) fn capture_original_branch_schema_inputs(
+        &self,
+        request: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> Result<super::OriginalBranchSchemaInputs, super::OriginalBranchSchemaInputsDenial> {
+        self.canonical_publication_routes
+            .capture_original_branch_schema_inputs(request)
+    }
+
+    pub(crate) fn performed_effect_residencies(
+        &self,
+    ) -> Vec<(
+        CommitId,
+        Arc<crate::history::RelationalCommitEnvelopeResidency>,
+    )> {
+        self.canonical_publication_routes
+            .performed_effect_residencies()
+    }
+
+    pub(crate) fn associated_effect_settlement(
+        &self,
+        entry: &crate::history::RelationalCommitIndexEntry,
+        residency: &Arc<crate::history::RelationalCommitEnvelopeResidency>,
+    ) -> Option<crate::durability::authority::RelationalAssociatedEffectSettlement> {
+        self.canonical_publication_routes
+            .associated_effect_settlement(entry, residency)
+    }
     pub(crate) fn discard_authored_write_generation(
         &self,
         commit: CommitId,

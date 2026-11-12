@@ -8,12 +8,24 @@ use super::{
     BridgeOwnedSignalRuntime,
 };
 use crate::facade::RuntimeBridge;
+mod authored_capture;
+mod fresh_bindings;
+pub use fresh_bindings::BridgeFreshAuthoredBindings;
+pub(super) mod authored_readmission;
+mod initial_source;
+mod relational_programme_handoff;
+pub use initial_source::{
+    BridgeInitialSourceDenial, BridgeInitialSourcePreparationRefusal,
+    BridgeInitialSourcePublication, BridgePublishedInitialSource,
+};
+pub use relational_programme_handoff::BridgeAuthoredProgrammeHandoffDenial;
 
 /// The only public construction posture for a Bridge-owned conditional runtime.
 /// Sealing consumes the builder, so installation authority cannot accompany the
 /// operational runtime.
 pub struct BridgeConditionalRuntimeBuilder {
-    runtime: BridgeOwnedSignalRuntime,
+    runtime: Box<BridgeOwnedSignalRuntime>,
+    program_owner: worth_proof::InstalledBridgeProgramOwner,
     managed_clocks:
         std::collections::BTreeMap<Arc<str>, super::managed_time::BridgeManagedClockDeclaration>,
 }
@@ -98,7 +110,7 @@ impl BridgeConditionalRuntimeBuilder {
                 .unwrap_or_else(std::sync::PoisonError::into_inner)
                 .insert(identity, Arc::new(std::sync::Mutex::new(lane)));
         }
-        super::BridgeSealedRuntimeAssembly::from_sealed_runtime(self.runtime)
+        super::BridgeSealedRuntimeAssembly::from_sealed_runtime(*self.runtime)
     }
 
     pub fn baseline_semantic_dependency_count(&self) -> usize {
@@ -116,8 +128,28 @@ impl BridgeConditionalRuntimeBuilder {
 
     pub(super) fn from_runtime(runtime: BridgeOwnedSignalRuntime) -> Self {
         Self {
-            runtime,
+            runtime: Box::new(runtime),
+            program_owner: worth_proof::InstalledBridgeProgramOwner::fresh(),
             managed_clocks: Default::default(),
         }
+    }
+}
+#[cfg(test)]
+#[path = "runtime_builder_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;
+
+#[cfg(test)]
+fn collect_owned_inline_type_sizes(census: &mut crate::inline_type_sizes::Census) {
+    {
+        let mut owner = census.owner::<BridgeConditionalRuntimeBuilder>(
+            "crates/worth-runtime-bridge/src/conditional_execution/runtime_builder.rs",
+            "BridgeConditionalRuntimeBuilder",
+            128 * 1024,
+        );
+        owner.field::<Box<BridgeOwnedSignalRuntime>>("runtime");
+        owner.field::<std::collections::BTreeMap<
+            Arc<str>,
+            super::managed_time::BridgeManagedClockDeclaration,
+        >>("managed_clocks");
     }
 }

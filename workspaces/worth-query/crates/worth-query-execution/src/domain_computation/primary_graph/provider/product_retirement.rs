@@ -2,7 +2,7 @@
 
 use std::collections::BTreeSet;
 
-use worth_runtime_world::facade::{CompositeCommitIdentity, RuntimeWorldLifecyclePort};
+use worth_runtime_world::facade::{CompositeCommitIdentity, RuntimeWorldRecoveryPort};
 
 use super::WorthQueryPrimaryGraphProvider;
 use crate::domain_computation::execution_runtime::product_world::WorthQueryProductRetentionFollower;
@@ -21,15 +21,14 @@ impl WorthQueryPrimaryGraphProvider {
         occurrence: worth_runtime_world::facade::ProductBranchIncarnation,
     ) -> Result<(), crate::domain_computation::WorthQueryProviderSessionFailure> {
         let mut retired = crate::domain_computation::primary_graph::application_query::derived_view::PredicatePreparationRetirement::default();
-        self.graph
-            .with_runtime_mut_unwind_isolated(execution, |runtime| {
-                self.resume_pending_application_publication(
-                    execution,
-                    runtime,
-                    occurrence,
-                    &mut retired,
-                )
-            })
+        self.graph.with_runtime(execution, |runtime| {
+            self.resume_pending_application_publication(
+                execution,
+                runtime,
+                occurrence,
+                &mut retired,
+            )
+        })
     }
 
     pub(crate) fn release_product_occurrence_retention(
@@ -144,7 +143,7 @@ impl WorthQueryProductRetentionFollower for WorthQueryPrimaryGraphProvider {
 /// The World commits of `candidates` history still retains. A World that is
 /// not attached or cannot answer keeps them all; nothing is lost but capacity.
 pub fn retained_among(
-    world: Option<&RuntimeWorldLifecyclePort>,
+    world: Option<&RuntimeWorldRecoveryPort>,
     candidates: &[CompositeCommitIdentity],
 ) -> BTreeSet<CompositeCommitIdentity> {
     world

@@ -63,13 +63,14 @@ impl WorthQueryEditEnvelopeReceipt {
         self.results.len()
     }
 }
-/// Committed carries live stage results. A replay carries only the recorded
-/// receipt; no handler runs and no fresh result is fabricated.
+/// Committed carries live stage results. Canonically readmitted replay carries
+/// recovered commit evidence; no handler runs and no live receipt or result is
+/// reconstructed (milestone 3, D1675/D1676, superseding D1637).
 pub enum WorthQueryEditEnvelopeOutcome {
     Committed(WorthQueryEditEnvelopeReceipt),
     AlreadyCommitted(WorthQueryApplicationCommitReceipt),
     IdempotencyIntentDrift,
-    PreviouslyCommitted(WorthQueryHistoricalApplicationCommit),
+    RecoveredCommitted(WorthQueryRecoveredApplicationCommitReceipt),
     Uncommitted(WorthQueryApplicationUncommitted),
     DomainDenied(WorthQueryEditStageDomainDenial),
     StageExecutionDenied(WorthQueryEditStageExecutionDenial),
@@ -146,8 +147,8 @@ impl std::fmt::Debug for WorthQueryEditEnvelopeOutcome {
                 f.debug_tuple("AlreadyCommitted").field(value).finish()
             }
             Self::IdempotencyIntentDrift => f.write_str("IdempotencyIntentDrift"),
-            Self::PreviouslyCommitted(value) => {
-                f.debug_tuple("PreviouslyCommitted").field(value).finish()
+            Self::RecoveredCommitted(value) => {
+                f.debug_tuple("RecoveredCommitted").field(value).finish()
             }
             Self::Uncommitted(value) => f.debug_tuple("Uncommitted").field(value).finish(),
             Self::DomainDenied(value) => f

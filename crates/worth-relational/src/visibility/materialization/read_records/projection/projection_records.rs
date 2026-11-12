@@ -76,7 +76,7 @@ impl<'a> EntityProjectionRecord<'a> {
             kind_name: &kind.kind_name,
             lifecycle: slot.lifecycle(),
             created_at_version,
-            authoritative_aspect_state: slot.extra().authoritative_aspect_state.as_ref(),
+            authoritative_aspect_state: slot.extra().authoritative_aspect_state(),
             projection_scope,
             aspect_plan,
         }

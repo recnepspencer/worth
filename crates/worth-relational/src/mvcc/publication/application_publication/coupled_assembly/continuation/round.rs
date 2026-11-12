@@ -74,7 +74,6 @@ impl RelationalAuthoredCoupledCandidate<'_> {
             return Ok(false);
         }
         let allocation = execution.allocation_policy();
-        let mut intents = Vec::new();
         let in_place = execution
             .run_native_with_checkpoint(|context| {
                 let mut raw_keys = std::collections::BTreeSet::new();
@@ -97,12 +96,6 @@ impl RelationalAuthoredCoupledCandidate<'_> {
                     if !patches_in_place(intent) || !raw_keys.is_empty() {
                         return Ok(false);
                     }
-                    intents.try_reserve(1).map_err(|_| {
-                        custody::execution_stop(
-                            crate::execution::RelationalExecutionDenialCause::AllocationFailed,
-                        )
-                    })?;
-                    intents.push(intent.clone());
                 }
                 Ok::<_, TransactionCommitError>(true)
             })
@@ -111,7 +104,7 @@ impl RelationalAuthoredCoupledCandidate<'_> {
         if !in_place {
             return Ok(false);
         }
-        if intents.is_empty() {
+        if batches.iter().all(|batch| batch.intents.is_empty()) {
             return Ok(true);
         }
         let predecessor = match self.parts[index].publication.owned() {
@@ -125,20 +118,27 @@ impl RelationalAuthoredCoupledCandidate<'_> {
         let runtime = self
             .runtime
             .with_candidate_symbols(self.mutation.candidate_symbols());
-        let plan = self
-            .transaction
-            .build_merged_plan_for_state(&runtime, root.as_ref(), intents)
-            .map_err(TransactionCommitError::conflict)?;
+        let intents = crate::mvcc::OwnedNormalizedPlan::copy_batches(
+            self.transaction.transaction_id(),
+            &batches,
+            execution,
+        )?;
+        let plan = self.transaction.build_merged_plan_for_state(
+            &runtime,
+            root.as_ref(),
+            intents,
+            execution,
+        )?;
         let deferred_edges = writer_custody::require(
             execution,
             &self.binding.owners,
             writer_custody::Writer::Producer(predecessor.as_deref()),
-            &plan,
+            plan.plan(),
         )?;
         let (_, mut state, _) = prepare_authoritative_working_state_scope_for_base(
             &runtime,
             root.as_ref(),
-            &plan,
+            plan.plan(),
             0,
             None,
         );
@@ -150,7 +150,7 @@ impl RelationalAuthoredCoupledCandidate<'_> {
                 root.as_ref(),
                 self.identity.proposed_version_id(),
             ),
-            &plan.merged_intents,
+            &plan.plan().merged_intents,
             None,
         )?;
         let mut symbols = self
@@ -165,11 +165,12 @@ impl RelationalAuthoredCoupledCandidate<'_> {
             cross_context_policy: runtime.config.storage.cross_context_policy,
         };
         let apply = AuthoritativeApplyPlan {
-            transaction_id: plan.transaction_id,
+            transaction_id: plan.plan().transaction_id,
             version_id: self.identity.proposed_version_id(),
-            merged_intents: plan.merged_intents,
+            merged_intents: plan.plan().merged_intents.clone(),
         };
         let outcome = crate::authority::mutation::apply_plan_with_publication_edges(
+            execution,
             &mut state,
             &apply,
             &config,

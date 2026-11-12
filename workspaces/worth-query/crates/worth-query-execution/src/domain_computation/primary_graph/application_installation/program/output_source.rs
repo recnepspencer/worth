@@ -47,16 +47,18 @@ where
         receipt: &crate::domain_computation::primary_graph::WorthQueryApplicationCommitReceipt,
     ) {
         self.backing
-            .runtime
+            .runtime()
             .complete_prepared_output_source(receipt);
     }
 
     pub fn recover_discovered_program_source<Root>(
         &self,
+        phase: &WorthQueryAdvancementPhase<'_>,
         _: &crate::publication_boundary::WorthQueryProgramPublicationAccess,
-        receipt: &crate::domain_computation::primary_graph::WorthQueryApplicationCommitReceipt,
+        selector: crate::domain_computation::primary_graph::WorthQueryOutputSourceReplay<'_>,
     ) -> Result<
         (
+            crate::domain_computation::primary_graph::WorthQueryApplicationCommitReceipt,
             <RootConnection<Schema, Root> as WorthQueryApplicationDiscoveredOutputConnection<
                 Schema,
             >>::Discovery,
@@ -78,9 +80,12 @@ where
                 "discovered output root is not installed for this program",
             ));
         }
-        self.backing.runtime.recover_discovered_output_source::<
+        let receipt = self.backing.runtime().resolve_output_source_replay(phase, selector,
+            crate::domain_computation::primary_graph::application_output_demand::PreparedOutputRootKind::Discovered(TypeId::of::<Root>()))?;
+        let (discovery, observation, prepared) = self.backing.runtime().recover_discovered_output_source::<
             <RootConnection<Schema, Root> as WorthQueryApplicationDiscoveredOutputConnection<Schema>>::Discovery,
-        >(receipt, TypeId::of::<Root>())
+        >(&receipt, TypeId::of::<Root>())?;
+        Ok((receipt, discovery, observation, prepared))
     }
 
     /// Commits one output source under `presented`, the program its caller
@@ -123,7 +128,7 @@ where
         };
         let source_preparation = self
             .backing
-            .runtime
+            .runtime()
             .runtime
             .output_demands
             .begin_source_preparation(program.product_branch().occurrence());
@@ -138,7 +143,7 @@ where
             .map_or(idempotency, |command| command.bind(idempotency));
         let pending = WorthQueryUnpublishedProgramOutputSource {
             correction,
-            runtime_authority: self.backing.runtime.runtime.authority_identity().as_u64(),
+            runtime_authority: self.backing.runtime().runtime.authority_identity().as_u64(),
             program: selected_program,
             binding: TypeId::of::<Source>(),
             idempotency,
@@ -146,7 +151,7 @@ where
             payload,
             preparation: source_preparation,
         };
-        match self.backing.runtime
+        match self.backing.runtime()
             .compare_and_commit_application_for_required_output_source(execution, phase,
                 &presented,
                 program,
@@ -185,8 +190,8 @@ where
                 if matches!(&outcome,
                     crate::domain_computation::primary_graph::WorthQueryApplicationCommitOutcome::CleanupRequired(required)
                     if matches!(required.outcome(),
-                        crate::domain_computation::primary_graph::WorthQueryApplicationUncommitted::ProductUnpublished(_)
-                            | crate::domain_computation::primary_graph::WorthQueryApplicationUncommitted::Indeterminate(_))) => {
+                        crate::domain_computation::primary_graph::WorthQueryApplicationCommitOutcome::ProductUnpublished(_)
+                            | crate::domain_computation::primary_graph::WorthQueryApplicationCommitOutcome::Indeterminate(_))) => {
                 // Cleanup and the pending source are independent original owners.
                 Ok((outcome, None, Some(pending)))
             }

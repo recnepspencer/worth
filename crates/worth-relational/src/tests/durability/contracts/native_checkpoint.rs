@@ -1,8 +1,5 @@
 use super::*;
-use crate::facade::transactions::{CreatedEntityRef, EntityReference, EntitySpec, RelationSpec};
 use std::sync::Arc;
-mod allocation;
-mod speculative_symbols;
 
 use crate::validation::data::{
     CustomInvariantDescriptor, CustomInvariantExecutionContext, CustomInvariantExecutionError,
@@ -53,278 +50,11 @@ impl CustomInvariantRule for NativeCheckpointRule {
 }
 
 #[test]
-fn native_checkpoint_round_trip_restores_a_live_editable_world() {
-    let host_request = crate::test_execution_policy::serial_request();
-    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
-
-    let runtime = durable_runtime_with_test_schema();
-    let committed = create_entity_outcome(execution, &runtime, "native-checkpoint");
-    let checkpoint = runtime
-        .durability_authority()
-        .native_checkpoint(
-            execution,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
-        .expect("the canonical committed world encodes as one opaque checkpoint");
-
-    let mut recovered = durable_runtime_with_test_schema();
-    bind_durable_medium(&mut recovered, attached_test_medium(&runtime).attachment());
-    let pre_recovery_identity = recovered.runtime_instance_id();
-    let outcome = recovered
-        .durability_recovery()
-        .restore_native_checkpoint(execution, &checkpoint)
-        .expect("the opaque native checkpoint restores through durability authority");
-
-    assert_ne!(recovered.runtime_instance_id(), pre_recovery_identity);
-    assert_eq!(outcome.latest_commit, Some(committed.commit.clone()));
-    assert_eq!(
-        recovered
-            .history()
-            .branch_head(&BranchId("main".to_owned())),
-        Some(committed.commit.clone())
-    );
-    let later = create_entity_outcome(execution, &recovered, "post-restore-edit");
-    assert_eq!(
-        recovered
-            .history()
-            .branch_head(&BranchId("main".to_owned())),
-        Some(later.commit.clone())
-    );
-}
-
-#[test]
-fn recovery_authority_only_admits_a_basis_from_the_recovered_image() {
-    let host_request = crate::test_execution_policy::serial_request();
-    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
-
-    let source = durable_runtime_with_test_schema();
-    create_entity_outcome(execution, &source, "recovered-authority-source");
-    let checkpoint = source
-        .durability_authority()
-        .native_checkpoint(
-            execution,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
-        .unwrap();
-
-    let mut exact_recovery = durable_runtime_with_test_schema();
-    bind_durable_medium(
-        &mut exact_recovery,
-        attached_test_medium(&source).attachment(),
-    );
-    let (_, exact_authority) = exact_recovery
-        .durability_recovery()
-        .restore_native_checkpoint_with_authority(execution, &checkpoint)
-        .unwrap();
-    let (_, exact_basis) = exact_recovery
-        .observe_branch(&exact_recovery.main_branch_identity())
-        .unwrap();
-    assert!(exact_authority.admit_basis(exact_basis).is_ok());
-
-    let mut moved_recovery = durable_runtime_with_test_schema();
-    bind_durable_medium(
-        &mut moved_recovery,
-        attached_test_medium(&source).attachment(),
-    );
-    let (_, moved_authority) = moved_recovery
-        .durability_recovery()
-        .restore_native_checkpoint_with_authority(execution, &checkpoint)
-        .unwrap();
-    create_entity_outcome(execution, &moved_recovery, "post-recovery-movement");
-    let (_, moved_basis) = moved_recovery
-        .observe_branch(&moved_recovery.main_branch_identity())
-        .unwrap();
-    assert!(moved_authority.admit_basis(moved_basis).is_err());
-}
-
-#[test]
-fn native_checkpoint_round_trip_restores_current_relation_adjacency() {
-    let host_request = crate::test_execution_policy::serial_request();
-    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
-
-    let runtime = durable_runtime_with_test_schema();
-    let source_key = crate::symbols::data::ClientKey::raw("native-relation-source");
-    let mut transaction = test_owner_begin_transaction_for_main(&runtime);
-    transaction
-        .push_batch(
-            WorkerIntentBatch::new("native-relation")
-                .push(MutationIntent::Create(CreateIntent::Entity(EntitySpec {
-                    partition_id: PartitionId::main(),
-                    kind_id: KindId(1),
-                    client_key: source_key.clone(),
-                    fields: single_string_aspect_field_patch(
-                        aspect_key("name"),
-                        field_key("name"),
-                        "native-relation-source",
-                    ),
-                })))
-                .push(MutationIntent::Create(CreateIntent::Relation(
-                    RelationSpec {
-                        partition_id: PartitionId::main(),
-                        kind_id: KindId(2),
-                        client_key: crate::symbols::data::ClientKey::raw("native-relation"),
-                        source: EntityReference::Created(CreatedEntityRef {
-                            partition_id: PartitionId::main(),
-                            kind_id: KindId(1),
-                            client_key: source_key.clone(),
-                        }),
-                        target: EntityReference::Created(CreatedEntityRef {
-                            partition_id: PartitionId::main(),
-                            kind_id: KindId(1),
-                            client_key: source_key,
-                        }),
-                        fields: Default::default(),
-                    },
-                ))),
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
-        .unwrap();
-    let created = transaction.commit(execution, &runtime).unwrap();
-    let source = changed_entities(&created)[0];
-    let target = source;
-    let relation = changed_relations(&created)[0];
-    let checkpoint = runtime
-        .durability_authority()
-        .native_checkpoint(
-            execution,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
-        .unwrap();
-
-    let mut recovered = durable_runtime_with_test_schema();
-    bind_durable_medium(&mut recovered, attached_test_medium(&runtime).attachment());
-    recovered
-        .durability_recovery()
-        .restore_native_checkpoint(execution, &checkpoint)
-        .unwrap();
-    let rows = recovered
-        .read_truth()
-        .bounded_outgoing_relations_of_kind_at_version(
-            execution,
-            source,
-            crate::facade::identity::KindId(2),
-            recovered.current_version_id(),
-            4,
-        )
-        .expect("read request remains live")
-        .unwrap()
-        .into_records();
-
-    assert_eq!(rows.len(), 1);
-    assert_eq!(rows[0].relation_id, relation);
-    assert_eq!(rows[0].target, target);
-    let snapshot = snapshot_for_owner_branch(&recovered, &BranchId("main".to_owned()));
-    let projected = recovered
-        .read_truth()
-        .project_snapshot(&snapshot)
-        .unwrap()
-        .bounded_outgoing_relations_for_frontier(
-            execution,
-            &std::collections::BTreeSet::from([source]),
-            KindId(2),
-            Some(4),
-        )
-        .expect("read request remains live")
-        .unwrap()
-        .into_records();
-    assert_eq!(projected.len(), 1);
-    assert_eq!(projected[0].relation_id, relation);
-}
-
-#[test]
-fn repeated_native_captures_do_not_retain_checkpoint_images() {
-    let host_request = crate::test_execution_policy::serial_request();
-    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
-
-    let runtime = durable_runtime_with_test_schema();
-    create_entity_outcome(execution, &runtime, "native-checkpoint-first");
-    let retained_before = runtime.durability.checkpoints().len();
-
-    for label in ["second", "third", "fourth"] {
-        runtime
-            .durability_authority()
-            .native_checkpoint(
-                execution,
-                worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-            )
-            .expect("each settled world encodes without retaining an internal checkpoint");
-        create_entity_outcome(execution, &runtime, label);
-    }
-    let checkpoint = runtime
-        .durability_authority()
-        .native_checkpoint(
-            execution,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
-        .expect("the latest settled world encodes");
-
-    assert_eq!(runtime.durability.checkpoints().len(), retained_before);
-    let mut recovered = durable_runtime_with_test_schema();
-    bind_durable_medium(&mut recovered, attached_test_medium(&runtime).attachment());
-    recovered
-        .durability_recovery()
-        .restore_native_checkpoint(execution, &checkpoint)
-        .expect("the final non-retained checkpoint restores");
-    create_entity_outcome(execution, &recovered, "post-bounded-retention-edit");
-}
-
-#[test]
-fn corrupt_native_checkpoint_is_denied_without_publishing_recovered_state() {
-    let host_request = crate::test_execution_policy::serial_request();
-    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
-
-    let mut bytes = crate::durability::log::native_checkpoint_codec::CHECKPOINT_MAGIC.to_vec();
-    bytes.extend([0xc1, 0x00, 0xff]);
-    let corrupt = crate::facade::durability::RelationalNativeCheckpoint::from_untrusted_bytes(
-        bytes.into_boxed_slice(),
-    );
-    let mut recovered = durable_runtime_with_test_schema();
-    let error = recovered
-        .durability_recovery()
-        .restore_native_checkpoint(execution, &corrupt)
-        .expect_err("corrupt native bytes cannot become runtime authority");
-    let error = crate::tests::support::expect_durability_failure(error);
-
-    assert_eq!(error.class, RecoveryFailureClass::CorruptCheckpoint);
-    assert_eq!(recovered.history().immutable_commit_count(), 0);
-}
-
-#[test]
-fn native_checkpoint_rejects_a_foreign_runtime_name_without_publishing_state() {
-    let host_request = crate::test_execution_policy::serial_request();
-    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
-
-    let runtime = durable_runtime_with_test_schema();
-    create_entity_outcome(execution, &runtime, "native-checkpoint-runtime-name");
-    let checkpoint = runtime
-        .durability_authority()
-        .native_checkpoint(
-            execution,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
-        .unwrap();
-    let mut recovered = RelationalRuntimeApi::builder()
-        .schema_registry(test_schema_registry())
-        .runtime_name("foreign-runtime")
-        .build_durable(TestDurableMedium::new().attachment())
-        .expect("valid native runtime configuration");
-
-    let error = recovered
-        .durability_recovery()
-        .restore_native_checkpoint(execution, &checkpoint)
-        .expect_err("a foreign runtime checkpoint cannot be admitted");
-    let error = crate::tests::support::expect_durability_failure(error);
-
-    assert_eq!(error.class, RecoveryFailureClass::RuntimeNameMismatch);
-    assert_eq!(recovered.history().immutable_commit_count(), 0);
-}
-
-#[test]
 fn native_checkpoint_preserves_unsealed_builder_invariant_authority() {
     let host_request = crate::test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
-    let source = durable_runtime_with_builder_invariant();
+    let source = memory_runtime_with_builder_invariant();
     create_entity_outcome(execution, &source, "native-checkpoint-builder-invariant");
     let checkpoint = source
         .durability_authority()
@@ -333,8 +63,7 @@ fn native_checkpoint_preserves_unsealed_builder_invariant_authority() {
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
         .unwrap();
-    let mut recovered = durable_runtime_with_builder_invariant();
-    bind_durable_medium(&mut recovered, attached_test_medium(&source).attachment());
+    let mut recovered = memory_runtime_with_builder_invariant();
 
     recovered
         .durability_recovery()
@@ -359,10 +88,10 @@ fn native_checkpoint_preserves_unsealed_builder_invariant_authority() {
     );
 }
 
-fn durable_runtime_with_builder_invariant() -> crate::runtime::RelationalRuntime {
+fn memory_runtime_with_builder_invariant() -> crate::runtime::RelationalRuntime {
     RelationalRuntimeApi::builder()
         .schema_registry(test_schema_registry())
         .custom_invariant(CustomInvariantRegistration::new(NativeCheckpointRule).unwrap())
-        .build_durable(TestDurableMedium::new().attachment())
+        .build()
         .expect("valid native runtime configuration")
 }

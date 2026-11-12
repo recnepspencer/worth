@@ -55,6 +55,7 @@ impl RelationalRuntime {
         if installed.runtime_instance_id != self.runtime_instance_id() || !basis.is_current() {
             return Err(reject(Cause::InvalidAuthoredAnchor, original));
         }
+        let history = super::history_request::RuntimeHistoryRequest::new(self, execution);
         // All publication readmissions and inverse reconstruction draw from the same request.
         execution
             .in_scope(|_| {
@@ -65,13 +66,13 @@ impl RelationalRuntime {
                         |context| {
                             charge(context, self.history.catalog_len().saturating_add(1))
                                 .map_err(failure)?;
-                            let envelope = self
-                                .history
-                                .canonical_envelope(retirement)
+                            let envelope = history
+                                .commit(retirement)
+                                .map_err(failure)?
                                 .ok_or_else(|| reject(Cause::CorruptPublication, original))?;
                             if envelope.authored_source_retirement().is_some() {
                                 super::source_scope_closure::validate_historical_prefix(
-                                    execution, self, basis, &envelope, original, context,
+                                    execution, &history, basis, &envelope, original, context,
                                 )?;
                             }
                             Ok::<_, TransactionCommitError>(envelope)
@@ -192,7 +193,8 @@ impl RelationalRuntime {
                                 let live = validated_history
                                     .by_commit(
                                         predecessor,
-                                        &mut |commit| self.history.canonical_envelope(commit),
+                                        &mut |commit| history.commit(commit),
+                                        &history.execution(),
                                         context,
                                     )
                                     .map_err(failure)?
@@ -207,7 +209,7 @@ impl RelationalRuntime {
                                             reject(Cause::CorruptPublication, member.id)
                                         })?;
                                     let payload = super::membership::reconstruct(
-                                        self,
+                                        &history,
                                         &live,
                                         member.id,
                                         plan,
@@ -259,7 +261,7 @@ impl RelationalRuntime {
                                             reject(Cause::CorruptPublication, original)
                                         })?;
                                     let payload = super::relation_payload::reconstruct(
-                                        self,
+                                        &history,
                                         &live,
                                         edge.id,
                                         plan,

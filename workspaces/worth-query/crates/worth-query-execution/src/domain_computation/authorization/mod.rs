@@ -4,6 +4,8 @@ pub(in crate::domain_computation) use admission::BorrowedReadOperationAdmission;
 pub(in crate::domain_computation) mod admitted_request;
 pub(crate) mod application_commit_authorization;
 pub(crate) mod application_disclosure;
+mod home_incarnation;
+pub(in crate::domain_computation) use home_incarnation::refuse_stale_home_authority;
 mod authorization_revalidation;
 mod bridge_binding;
 mod bridge_observation;
@@ -56,10 +58,10 @@ pub(in crate::domain_computation) use crate::domain_computation::runtime_time::W
 pub(in crate::domain_computation) use application_commit_authorization::WorthQueryApplicationCommitAuthorization;
 pub(super) use bridge_binding::bridge_authorization_binding_identity;
 pub(in crate::domain_computation) use capability_decision_fact::WorthQueryCapabilityCommitBasis;
-pub(in crate::domain_computation) use capability_decision_fact::WorthQueryRetainedCapabilityAuthorization;
+
 pub use capability_registry::WorthQueryCapabilityPlanCompilationEvidence;
 pub(in crate::domain_computation) use capability_revocation_progression::WorthQueryCapabilityRevocationBinding;
-pub(in crate::domain_computation) use decision_facts::WorthQueryAuthorizationDecisionFact;
+pub use decision_facts::WorthQueryAuthorizationDecisionFact;
 use decision_facts::WorthQueryCommitAuthorizationBasis;
 pub(in crate::domain_computation) use decision_facts::WorthQueryDurableAuthorizationDependencies;
 pub(in crate::domain_computation) use decision_facts::WorthQueryDurableCapabilityLineage;
@@ -120,3 +122,8 @@ fn authorization_denial(
 pub(in crate::domain_computation) use operation_progression::{
     BrandTag, ReadCompletionAdmission, WorthQueryAdmittedOperation,
 };
+
+pub use capability_decision_fact::WorthQueryRetainedCapabilityAuthorization;
+#[cfg(test)]
+#[path = "mod_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;

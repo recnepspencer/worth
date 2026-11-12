@@ -8,8 +8,8 @@ mod acknowledged_claim;
 mod sequence;
 use sequence::{Commit, Demands, Trace, Xorshift, COMMITS, DEMANDS, HELD_ORDERS};
 
-// All four seeds at both observation profiles peak at 24,009,727 original
-// checkpoint Work. Only this positive history journey receives the 25m grant.
+// The positive history World's business calls keep their existing finite allowance.
+// Whole-history capture and reconstruction use their separate population request.
 const HISTORY_EXECUTION_POLICY: worth_foundational::ExecutionRequestPolicy =
     worth_foundational::ExecutionRequestPolicy::new(
         worth_foundational::ExecutionPosture::Serial,
@@ -232,16 +232,25 @@ fn run(seed: u64, observations: u64, steps: usize, driven: &mut Driven) {
         drop((principal, scope));
         if step < steps {
             // Whatever the last step left marked and unsettled is captured so.
+            let capture = worth_query_host::facade::primary_graph::query_test_execution_authority_for_test()
+                .request_lease(worth_query_host::facade::runtime::LeaseRequest {
+                    policy: crate::checkpoint_recovery::support::observation::POPULATION_BOOTSTRAP_POLICY,
+                    cancellation: worth_query_host::facade::runtime::CancellationToken::new(),
+                    deadline: None,
+                }).expect("the population owns its original checkpoint-capture request");
             checkpoint = Some(
                 application
-                    .with_host_advancement(|host_phase| {
-                        application
-                            .capture_application_checkpoint(
-                                &host_phase,
-                                CapturePolicy::SystemAllocation,
-                            )
-                            .unwrap()
-                    })
+                    .with_funded_host_advancement(
+                        CapturePolicy::Execution(&capture),
+                        |host_phase| {
+                            application
+                                .capture_application_checkpoint(
+                                    &host_phase,
+                                    CapturePolicy::SystemAllocation,
+                                )
+                                .unwrap()
+                        },
+                    )
                     .expect("installed host call opens"),
             );
             driven.restores += 1;

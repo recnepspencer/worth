@@ -5,7 +5,7 @@ impl PartitionContentCommitment {
         lane: &ReconstructionLane<'_>,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         partition: &PartitionState,
-        symbols: &StringInterner,
+        symbols: &dyn crate::symbols::data::SymbolTextLookup,
     ) -> Result<(Self, u64), PartitionContentDigestError> {
         lane.recover(execution, |lane, work| {
             for prefix in partition
@@ -19,7 +19,14 @@ impl PartitionContentCommitment {
                     return Err(PartitionContentDigestError::InvalidHistoryCoverage);
                 }
             }
-            Self::capture_seeded(lane, work, partition, symbols, Self::default())
+            Self::capture_seeded(
+                lane,
+                work,
+                Some(execution),
+                partition,
+                symbols,
+                Self::default(),
+            )
         })
     }
     /// Prefix openings must already have been authenticated by Head admission.
@@ -27,25 +34,40 @@ impl PartitionContentCommitment {
         lane: &ReconstructionLane<'_>,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         partition: &PartitionState,
-        symbols: &StringInterner,
+        symbols: &dyn crate::symbols::data::SymbolTextLookup,
     ) -> Result<(Self, u64), PartitionContentDigestError> {
         lane.recover(execution, |lane, work| {
-            Self::capture_seeded(lane, work, partition, symbols, Self::default())
+            Self::capture_seeded(
+                lane,
+                work,
+                Some(execution),
+                partition,
+                symbols,
+                Self::default(),
+            )
         })
     }
     pub(super) fn capture_seeded(
         lane: &ReconstructionLane<'_>,
         work: &mut ReconstructionWork<'_, '_>,
+        request: request_admission::Request<'_, '_, '_>,
         partition: &PartitionState,
-        symbols: &StringInterner,
+        symbols: &dyn crate::symbols::data::SymbolTextLookup,
         mut seed: Self,
     ) -> Result<(Self, u64), PartitionContentDigestError> {
         let mut hashed = seed.entities.rebuild(
             lane,
             work,
+            request,
             &partition.entity_arena,
             symbols,
             |extra, symbols, work| {
+                if let Some(fingerprint) = extra.structural_fingerprint {
+                    let family = symbols.resolve(fingerprint.family).ok_or(
+                        PartitionContentDigestError::UnresolvedContentSymbol(fingerprint.family),
+                    )?;
+                    request_admission::charge(request, family.len() as u64)?;
+                }
                 admission::hash_controlled(
                     b"entity-extra",
                     &entity_extra_material(extra, symbols)?,
@@ -56,14 +78,17 @@ impl PartitionContentCommitment {
         hashed += seed.relations.rebuild(
             lane,
             work,
+            request,
             &partition.relation_arena,
             symbols,
             |extra, _, work| admission::hash_controlled(b"relation-extra", extra, work),
         )?;
-        hashed += seed.adjacency.rebuild(lane, work, &partition.adjacency)?;
         hashed += seed
-            .reverse_adjacency
-            .rebuild(lane, work, &partition.reverse_adjacency)?;
+            .adjacency
+            .rebuild(lane, work, request, &partition.adjacency)?;
+        hashed +=
+            seed.reverse_adjacency
+                .rebuild(lane, work, request, &partition.reverse_adjacency)?;
         Ok((seed, hashed))
     }
 }
@@ -72,7 +97,7 @@ impl PartitionContentCommitment {
 impl PartitionContentCommitment {
     pub(crate) fn capture_oracle(
         partition: &PartitionState,
-        symbols: &StringInterner,
+        symbols: &dyn crate::symbols::data::SymbolTextLookup,
     ) -> Result<(Self, u64), PartitionContentDigestError> {
         if partition
             .entity_arena
@@ -84,7 +109,7 @@ impl PartitionContentCommitment {
             return Err(PartitionContentDigestError::InvalidHistoryCoverage);
         }
         ReconstructionLane::inspect_oracle(|lane, work| {
-            Self::capture_seeded(lane, work, partition, symbols, Self::default())
+            Self::capture_seeded(lane, work, None, partition, symbols, Self::default())
         })
     }
 }

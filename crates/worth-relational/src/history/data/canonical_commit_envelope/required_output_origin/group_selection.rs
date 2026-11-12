@@ -4,7 +4,7 @@ use crate::{history::data::CodecRetirementClosureStop as Stop, identity::data::R
 use std::sync::Arc;
 use worth_execution::MapKernelContext;
 
-impl CanonicalCommitEnvelope {
+impl CanonicalCommitEnvelopeBody {
     pub(crate) fn output_origins(
         &self,
     ) -> impl Iterator<Item = &Arc<CanonicalRequiredOutputOrigin>> {
@@ -148,10 +148,10 @@ impl CanonicalCommitEnvelope {
 /// The envelope owner alone mints this immutable, envelope-bound validation result.
 #[derive(Clone, Copy)]
 pub(crate) struct ValidatedOutputOrigins<'a> {
-    envelope: &'a CanonicalCommitEnvelope,
+    envelope: &'a CanonicalCommitEnvelopeBody,
 }
 
-impl CanonicalCommitEnvelope {
+impl CanonicalCommitEnvelopeBody {
     pub(crate) fn validate_output_origins(
         &self,
         context: &mut MapKernelContext<'_, '_>,
@@ -226,7 +226,7 @@ impl<'a> ValidatedOutputOrigins<'a> {
 }
 
 impl<'a> ValidatedOutputOrigins<'a> {
-    pub(crate) fn envelope(&self) -> &'a CanonicalCommitEnvelope {
+    pub(crate) fn envelope(&self) -> &'a CanonicalCommitEnvelopeBody {
         self.envelope
     }
 }

@@ -62,7 +62,7 @@ fn explicit_schema_transition_is_lowered_into_canonical_commit_artifacts() {
             SchemaDiffDetail::AddedField {
                 field: field_key("tag"),
                 required: false,
-                default_expression: Some(Arc::<str>::from("null")),
+                default_expression: Some(Arc::<str>::from("null").into()),
             },
         )
         .with_boundary_visibility_proof(
@@ -118,10 +118,16 @@ fn explicit_schema_transition_is_lowered_into_canonical_commit_artifacts() {
         .envelope()
         .allocation_inventory()
         .authoritative_nested_bytes;
-    let mut omitted_schema_authority = outcome.envelope().clone();
-    omitted_schema_authority.schema_transition = None;
-    omitted_schema_authority.schema_continuation_descriptor = None;
-    omitted_schema_authority.schema_reconciliation_descriptor = None;
+    let mut omitted_schema_authority = outcome.envelope().copy_original_for_test(execution);
+    omitted_schema_authority
+        .body_mut_for_test()
+        .schema_transition = None;
+    omitted_schema_authority
+        .body_mut_for_test()
+        .schema_continuation_descriptor = None;
+    omitted_schema_authority
+        .body_mut_for_test()
+        .schema_reconciliation_descriptor = None;
     assert!(
         populated_nested_bytes
             > omitted_schema_authority
@@ -224,7 +230,7 @@ fn schema_certification_transition_is_explained_and_counted() {
             SchemaDiffDetail::AddedField {
                 field: field_key("tag"),
                 required: false,
-                default_expression: Some(Arc::<str>::from("null")),
+                default_expression: Some(Arc::<str>::from("null").into()),
             },
         )
         .with_boundary_visibility_proof(

@@ -37,10 +37,11 @@ impl From<RelationReadRecord> for RelationalTransactionRelationValue {
 }
 
 pub(super) fn project_entity<'a>(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     schema: &impl AspectPlanSource,
     mut effective: Option<EntityReadRecord>,
     staged: impl IntoIterator<Item = &'a EntityMutationIntent>,
-) -> Result<Option<EntityReadRecord>, CommitConflict> {
+) -> Result<Option<EntityReadRecord>, super::RelationalTransactionReadDenial> {
     for intent in staged {
         work_observation::record();
         match intent {
@@ -53,15 +54,16 @@ pub(super) fn project_entity<'a>(
                     kind_id: record.kind.kind_id,
                 };
                 let patch = record_aspect_patch::readmit_field_authoring(
+                    execution,
                     &intent.fields,
                     PortablePatchReadmissionPurpose::RecordMutation,
                     schema.entity_aspect_plan(record.kind.kind_id),
                     target,
                     field_authoring_candidate::FieldAuthoringDomain::Entity,
                 )?;
-                record.authoritative_aspect_state = record_aspect_patch::apply(
+                record.authoritative_aspect_state = apply_projection_state(
                     record.authoritative_aspect_state.as_ref(),
-                    &patch,
+                    patch.as_patch(),
                     target,
                 )?;
             }
@@ -79,9 +81,9 @@ pub(super) fn project_entity<'a>(
                     schema.entity_aspect_plan(record.kind.kind_id),
                     target,
                 )?;
-                record.authoritative_aspect_state = record_aspect_patch::apply(
+                record.authoritative_aspect_state = apply_projection_state(
                     record.authoritative_aspect_state.as_ref(),
-                    &patch,
+                    patch.as_patch(),
                     target,
                 )?;
             }
@@ -124,9 +126,9 @@ pub(super) fn project_relation<'a>(
                     schema.relation_aspect_plan(record.kind.kind_id),
                     target,
                 )?;
-                record.authoritative_aspect_state = record_aspect_patch::apply(
+                record.authoritative_aspect_state = apply_projection_state(
                     record.authoritative_aspect_state.as_ref(),
-                    &patch,
+                    patch.as_patch(),
                     target,
                 )?;
             }
@@ -135,4 +137,21 @@ pub(super) fn project_relation<'a>(
         }
     }
     Ok(effective)
+}
+
+/// Independent ordinary read-record copies; no Native extra or retained bill moves here.
+fn apply_projection_state(
+    current: Option<&worth_foundational::facade::AuthoritativeRecordAspectState>,
+    patch: &worth_foundational::facade::AuthoritativeRecordAspectPatch,
+    target: RecordAspectPatchTarget,
+) -> Result<Option<worth_foundational::facade::AuthoritativeRecordAspectState>, CommitConflict> {
+    match patch.apply_to_optional(current) {
+        worth_proof::TransitionOutcome::Success(state) => {
+            Ok(state.map(|value| value.into_parts().into_parts().0))
+        }
+        worth_proof::TransitionOutcome::Denied(denial) => Err(record_aspect_patch::conflict(
+            target,
+            crate::transactions::data::RecordAspectPatchDenial::ApplicationDenied(denial),
+        )),
+    }
 }

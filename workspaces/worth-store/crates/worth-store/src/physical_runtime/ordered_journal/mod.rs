@@ -18,13 +18,16 @@ use std::collections::BTreeMap;
 
 use crate::physical_runtime::{
     AdmittedRecordPlacementPolicy, PhysicalMutationDeadline,
-    PhysicalMutationIdempotencyIssuanceDenial, PhysicalMutationPreparationOutcome,
+    PhysicalMutationIdempotencyIssuanceDenial, PhysicalMutationPreparationRefusal,
     PhysicalReadProtectionDenial, PhysicalRecordId, RecordReadError, RecordStreamFailure,
     ServingPhysicalRuntime,
 };
 
 mod frame;
 mod lookup;
+mod payload_stream;
+mod selected_read;
+pub use payload_stream::OrderedJournalPayloadStream;
 mod name;
 mod publication;
 mod registry;
@@ -173,7 +176,7 @@ pub enum OrderedJournalPublicationFailure {
     Batch(crate::physical_runtime::RecordAppendDenial),
     Idempotency(PhysicalMutationIdempotencyIssuanceDenial),
     /// Physical preparation refused before any WAL effect.
-    Preparation(PhysicalMutationPreparationOutcome),
+    Preparation(PhysicalMutationPreparationRefusal),
     ProvenNoEffect(crate::physical_runtime::ProvenNoEffectPhysicalMutation),
     /// The publication may or may not be durable.
     Indeterminate(crate::physical_runtime::IndeterminatePhysicalMutation),
@@ -225,6 +228,10 @@ impl std::fmt::Debug for OrderedJournalPublicationFailure {
 #[derive(Debug)]
 #[non_exhaustive]
 pub enum OrderedJournalReadFailure {
+    EmptyReadBuffer,
+    PreviouslyRefused,
+    ForeignReader,
+    Execution(worth_execution::WorkCeilingDenial),
     Protection(PhysicalReadProtectionDenial),
     Open(RecordReadError),
     Stream(RecordStreamFailure),

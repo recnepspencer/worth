@@ -11,10 +11,10 @@ mod staged;
 
 pub(crate) use planned::{
     derive_execution_basis, requires_successor_candidate, verified_historical_release_transition,
-    CandidateMaterializationCost, ExecutionBasisDenial, PlanningMemoryDenial,
-    PlanningResidentAllowance, RecoveryObservedCandidateArtifact,
-    RecoveryObservedSuccessorCandidate, RecoverySelectedSegmentPage,
-    RecoverySelectedSourceInventory,
+    ExecutionBasis, ExecutionBasisDenial, ExecutionBasisState, ExpectationPayload,
+    PlannedStateBacking, PlanningMemoryDenial, PlanningResidentAllowance,
+    RecoveryObservedCandidateArtifact, RecoveryObservedSuccessorCandidate,
+    RecoverySelectedSegmentPage, RecoverySelectedSourceInventory,
 };
 
 pub use admitted::AdmittedPhysicalRecovery;
@@ -25,7 +25,9 @@ pub(crate) use custody::{CustodyState, PendingReleaseReplay, PlanningCustody};
 pub use discovered::{DiscoveredPhysicalRecovery, PhysicalRecoveryDiscoveryCounters};
 pub(crate) use integrity_evidence::RecoveryIntegrityEvidence;
 pub use namespace_durable::NamespaceDurablePhysicalRecovery;
-pub(crate) use namespace_durable::NamespaceDurableState;
+pub(crate) use namespace_durable::{
+    NamespaceDurableBacking, NamespaceDurablePayload, NamespaceDurableState,
+};
 pub use planned::{
     PhysicalRecoveryStagingCancellation, PlannedPhysicalRecovery, RecoveryBaseImageAction,
     RecoveryBaseImagePlan, RecoveryPayloadManifestAction, RecoveryPublicationAction,
@@ -34,5 +36,7 @@ pub use planned::{
     RecoveryStagingCommandPlan, RecoveryStagingLayoutPlan, RecoveryStagingRedoStep,
 };
 pub use reopened::ReopenedPhysicalRecovery;
+pub(crate) use reopened::{ReopenedBacking, ReopenedPayload};
 pub use selected::SelectedPhysicalRecovery;
 pub use staged::{ClosedRecoveryStagingGeneration, StagedPhysicalRecovery};
+pub(crate) use staged::{StagedRecoveryState, StagedStateBacking};

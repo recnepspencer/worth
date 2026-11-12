@@ -1,4 +1,6 @@
 //! Exact sorted view of existing projected keys, without another key copy.
+#[cfg(test)]
+mod historical_keys_tests;
 use crate::domain_computation::primary_graph::application_attempt::{
     ComputationFactAttribution, WorthQueryApplicationFactKey as Key,
 };
@@ -111,8 +113,11 @@ impl ExpectedFactKeys {
     /// Only its already recorded keys leave the read; no snapshot/root is retained.
     pub(in crate::domain_computation::primary_graph::invariant_projection) fn into_historical_keys(
         self,
-    ) -> Arc<BTreeSet<Key>> {
-        self.handler
+    ) -> Arc<ComputationFactAttribution> {
+        // The attribution already retains this same handler-key Arc and the
+        // original normalization/walk authoring payment. Moving only handler
+        // would release that payment while the historical keys remain alive.
+        self.computation
     }
     pub(in crate::domain_computation::primary_graph) fn iter(&self) -> impl Iterator<Item = &Key> {
         union(self.refresh_keys(), self.computation.carried_keys())

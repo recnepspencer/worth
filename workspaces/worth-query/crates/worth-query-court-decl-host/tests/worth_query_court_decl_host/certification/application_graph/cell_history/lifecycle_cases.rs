@@ -63,12 +63,14 @@ fn retained_cells_survive_replacement_and_retirement_without_restoring_the_head(
     assert_eq!(live_at::at_commit(&host, 1, &replaced), middle);
     assert_eq!(live_at::current(&host, 2), untouched);
     assert_eq!(live_at::at(&host, 2, &before), untouched);
-    let WorthQueryApplicationMutationOutcome::AlreadyCommitted(retry) =
+    let WorthQueryApplicationMutationOutcome::RecoveredCommitted(retry) =
         live_at::change(&host, replace, 301)
     else {
         panic!("replacement retry rejoins its original commit")
     };
-    assert!(retry.is_same_authoritative_commit(&replaced));
+    worth_query_testkit_certification_canonical::facade::recorded_receipt_comparison::assert_original(
+        &retry, &replaced,
+    );
     assert_eq!(
         live_at::observe(&host).selected_commit(),
         final_basis.selected_commit()

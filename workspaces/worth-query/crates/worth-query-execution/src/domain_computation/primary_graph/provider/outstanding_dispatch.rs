@@ -78,6 +78,25 @@ pub(in crate::domain_computation::primary_graph) struct OutstandingDispatchReser
 }
 
 impl OutstandingDispatchOwner {
+    pub(super) fn preflight_home_retirement(
+        &self,
+    ) -> Result<(), super::super::WorthQueryHomeRetirementDenial> {
+        use super::super::{
+            WorthQueryHomeRetirementDenial as Denial, WorthQueryHomeRetirementOwner as Owner,
+        };
+        let entries = self
+            .entries
+            .try_lock()
+            .map_err(|_| Denial::Busy(Owner::GraphProvider))?;
+        if entries.by_correlation.is_empty()
+            && entries.counts.is_empty()
+            && entries.by_branch.is_empty()
+        {
+            Ok(())
+        } else {
+            Err(Denial::Busy(Owner::GraphProvider))
+        }
+    }
     pub(super) fn count_for_contract(&self, contract: &InstalledInboundOccurrenceContract) -> u64 {
         self.entries
             .lock()

@@ -22,6 +22,17 @@ impl StructFields {
     pub(super) fn new() -> Self {
         Self::default()
     }
+    /// The caller has proved strict order. Consume the canonical stream once;
+    /// each field obtains one Node, key and value Arc, without path-copy churn.
+    pub(super) fn from_sorted_fields(
+        mut fields: std::vec::IntoIter<(FieldKey, AspectValue)>,
+    ) -> Self {
+        let count = fields.len();
+        Self {
+            root: sorted_node(&mut fields, count),
+        }
+    }
+
     pub(super) fn len(&self) -> usize {
         length(&self.root)
     }
@@ -64,12 +75,54 @@ impl StructFields {
     }
     /// One node, key and value allocation per field; strings are quoted separately.
     pub(super) fn allocation_bytes_per_field() -> usize {
-        std::mem::size_of::<Node>()
-            + std::mem::size_of::<FieldKey>()
-            + std::mem::size_of::<AspectValue>()
-            + 6 * std::mem::size_of::<usize>()
+        Self::checked_allocation_bytes_per_field()
+            .expect("the three fixed concrete field Arc layouts fit the address space")
+    }
+
+    pub(super) fn checked_allocation_bytes_per_field() -> Option<usize> {
+        arc_storage::<Node>()?
+            .checked_add(arc_storage::<FieldKey>()?)?
+            .checked_add(arc_storage::<AspectValue>()?)
+    }
+
+    pub(super) fn edit_storage_bytes(
+        &self,
+        operations: usize,
+        added_fields: usize,
+    ) -> Option<usize> {
+        let maximum = self.len().checked_add(added_fields)?.checked_add(1)?;
+        // AVL height is less than twice the binary height. A double rotation
+        // allocates at most three nodes at a reached level. Including key/value
+        // Arc cells in each node bound is deliberately conservative.
+        let levels = (usize::BITS as usize - maximum.leading_zeros() as usize)
+            .checked_mul(2)?
+            .checked_add(1)?;
+        Self::checked_allocation_bytes_per_field()?
+            .checked_mul(3)?
+            .checked_mul(levels)?
+            .checked_mul(operations)
     }
 }
+fn arc_storage<T>() -> Option<usize> {
+    let (layout, _) = std::alloc::Layout::new::<[usize; 2]>()
+        .extend(std::alloc::Layout::new::<T>())
+        .ok()?;
+    Some(layout.pad_to_align().size())
+}
+
+fn sorted_node(fields: &mut std::vec::IntoIter<(FieldKey, AspectValue)>, count: usize) -> Link {
+    if count == 0 {
+        return None;
+    }
+    let left_count = count / 2;
+    let left = sorted_node(fields, left_count);
+    let (key, value) = fields
+        .next()
+        .expect("the admitted stream has its declared field count");
+    let right = sorted_node(fields, count - left_count - 1);
+    Some(node(Arc::new(key), Arc::new(value), left, right))
+}
+
 fn height(link: &Link) -> usize {
     link.as_ref().map_or(0, |node| node.height)
 }

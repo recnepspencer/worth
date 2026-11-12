@@ -1,5 +1,10 @@
+mod retirement;
 use crate::branch::{SignalBranchBasisDescriptor, SignalBranchTarget};
 use crate::state::SignalBranchId;
+pub use retirement::{
+    RetiredSignalBranchRetention, SignalBranchRetentionRetirement,
+    SignalBranchRetentionRetirementDenial, SignalBranchRetentionRetirementProgress,
+};
 
 use super::accounting::SignalRetentionTerminalCause;
 use super::outcome::{

@@ -5,7 +5,7 @@ use crate::tests::support::*;
 fn checkpoint_schema_readmission_and_tail_replay_rederive_identical_private_records() {
     let host = crate::test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host);
-    let runtime = persisted();
+    let runtime = super::fixtures::runtime();
     let born = commit(execution, &runtime, "main", birth(&[1, 2, 3, 0]));
     let members = members(&born, 4);
     runtime
@@ -44,7 +44,18 @@ fn checkpoint_schema_readmission_and_tail_replay_rederive_identical_private_reco
     );
     assert_eq!(split.envelope().merged_plan.merged_intents.len(), 2);
     let expected = records(execution, &runtime, &split.snapshot);
-    let (_, recovered) = recover_with(execution, &runtime, persisted);
+    let plan = runtime
+        .durability()
+        .recovery_plan(
+            execution,
+            crate::durability::data::RecoveryVerificationMode::NormalRecoveryVerification,
+        )
+        .unwrap();
+    let mut recovered = super::fixtures::runtime();
+    recovered
+        .durability_recovery()
+        .recover(execution, plan)
+        .unwrap();
     let recovered_snapshot = snapshot_for_owner_branch(&recovered, &BranchId("main".into()));
     assert_eq!(
         records(execution, &recovered, &recovered_snapshot),
@@ -53,7 +64,22 @@ fn checkpoint_schema_readmission_and_tail_replay_rederive_identical_private_reco
     let original_envelopes = demand_canonical_history_snapshot(execution, &runtime);
     let recovered_envelopes = demand_canonical_history_snapshot(execution, &recovered);
     assert_eq!(recovered_envelopes, original_envelopes);
-    let checkpointed = checkpoint_and_recover_with(execution, &recovered, persisted).1;
+    recovered
+        .durability_authority()
+        .checkpoint(execution)
+        .unwrap();
+    let plan = recovered
+        .durability()
+        .recovery_plan(
+            execution,
+            crate::durability::data::RecoveryVerificationMode::NormalRecoveryVerification,
+        )
+        .unwrap();
+    let mut checkpointed = super::fixtures::runtime();
+    checkpointed
+        .durability_recovery()
+        .recover(execution, plan)
+        .unwrap();
     let snapshot = snapshot_for_owner_branch(&checkpointed, &BranchId("main".into()));
     assert_eq!(records(execution, &checkpointed, &snapshot), expected);
 }

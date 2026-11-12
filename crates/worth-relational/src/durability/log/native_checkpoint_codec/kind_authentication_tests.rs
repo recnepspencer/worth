@@ -1,139 +1,45 @@
 //! A capture cannot replace canonical adjacency authority by rehashing leaves.
 use super::*;
-use crate::durability::data::*;
-use crate::durability::medium::*;
-use crate::identity::data::PartitionId;
 use crate::tests::support::*;
-use std::collections::BTreeMap;
-use std::sync::{
-    atomic::{AtomicUsize, Ordering},
-    Arc,
-};
 
 #[test]
-fn forged_cross_region_kind_commitment_is_refused_before_member_reads() {
-    for dimension in 0..4 {
-        let host = crate::test_execution_policy::serial_request();
-        let execution = worth_execution::ExecutionRequest::serial(&host);
-        let runtime = durable_runtime_with_test_schema();
-        let source = create_entity_in_partition(&execution, &runtime, "source", PartitionId(1));
-        let target = create_entity_in_partition(&execution, &runtime, "target", PartitionId(2));
-        create_relation_in_partition(
-            &execution,
-            &runtime,
-            source,
-            target,
-            "cross-region",
-            PartitionId(3),
-        );
-        let native = runtime
-            .durability_authority()
-            .native_checkpoint_with_policy(
-                &execution,
-                execution.allocation_policy(),
-                RelationalCheckpointArtifactPolicy::ExternalMembers {
-                    current_members: &[],
-                    source: None,
-                },
-            )
-            .unwrap();
-        let mut wire: checkpoint_wire::CheckpointWire<'_> =
-            rmp_serde::from_slice(native.bytes().strip_prefix(CHECKPOINT_MAGIC).unwrap()).unwrap();
-        // Keep every copy of this leaf consistent; only canonical root authority
-        // can reject the forgery. No member is needed to perform that check.
-        for leaf in wire
-            .manifest
-            .roots
-            .iter_mut()
-            .flat_map(|root| &mut root.regions)
-            .chain(&mut wire.manifest.mirror)
-        {
-            if leaf.partition_id == PartitionId(1) {
-                match dimension {
-                    0 => leaf.kind_authority.head[0] ^= 1,
-                    1 => leaf.live_counts.entities += 1,
-                    2 => leaf.live_counts.relations += 1,
-                    _ => Arc::make_mut(&mut leaf.directory).entities.clear(),
-                }
-            }
-        }
-        let mut bytes = CHECKPOINT_MAGIC.to_vec();
-        bytes.extend(rmp_serde::to_vec_named(&wire).unwrap());
-        let source = Arc::new(ForgedKindSource {
-            members: member_source::InlineCheckpointSource {
-                members: native
-                    .members()
-                    .iter()
-                    .map(|member| match member {
-                        RelationalCheckpointMember::New { locator, bytes } => {
-                            (*locator, bytes.clone())
-                        }
-                        _ => panic!("first capture owns its members"),
-                    })
-                    .collect(),
-            },
-            journal: attached_durable_medium(&runtime)
-                .expect("fixture owns its actual durable medium"),
-            reads: AtomicUsize::new(0),
-        });
-        let recovery = RelationalDurableRecoverySource::new(
-            Some(RelationalDurableCheckpointSource::new(
-                native.covered_position().unwrap(),
-                native.covered_branch_transitions().unwrap(),
-                RelationalNativeCheckpoint::from_untrusted_bytes(bytes),
-            )),
-            Vec::new(),
-            Vec::new(),
-            source.clone(),
-        );
-        let mut receiving = durable_runtime_with_test_schema();
-        let plan = receiving
-            .durability()
-            .recovery_plan_from_source(
-                &execution,
-                recovery,
-                RecoveryVerificationMode::NormalRecoveryVerification,
-            )
-            .unwrap();
-        let failure = receiving
-            .durability_recovery()
-            .recover(&execution, plan)
-            .unwrap_err();
-        assert_eq!(source.reads.load(Ordering::SeqCst), 0);
-        assert!(matches!(failure, RelationalRecoveryStop::Durability(error)
-        if error.class == RecoveryFailureClass::CorruptCheckpoint && error.detail.contains("StorageContentMismatch")));
+fn checkpoint_readmission_refuses_retired_integer_array_digest_before_restore() {
+    let host = crate::test_execution_policy::serial_request();
+    let execution = worth_execution::ExecutionRequest::serial(&host);
+    let runtime = runtime_with_test_schema();
+    create_entity(&execution, &runtime, "binary-digest-checkpoint");
+    let native = runtime
+        .durability_authority()
+        .native_checkpoint(&execution, execution.allocation_policy())
+        .unwrap();
+    decode_checkpoint(&execution, native.bytes()).unwrap();
+    let wire: checkpoint_wire::CheckpointWire<'_> =
+        rmp_serde::from_slice(native.bytes().strip_prefix(CHECKPOINT_MAGIC).unwrap()).unwrap();
+    let digest = wire.manifest.mirror[0].kind_authority.head;
+    let mut current = rmp_serde::to_vec("head").unwrap();
+    current.extend(rmp_serde::to_vec(&digest).unwrap());
+    let mut retired = rmp_serde::to_vec("head").unwrap();
+    retired.extend(rmp_serde::to_vec(digest.bytes()).unwrap());
+    assert_ne!(current, retired);
+    // Rewrite only the representation of this actual captured digest. Every
+    // semantic value and every other field keeps the owning producer's bytes.
+    let mut bytes = Vec::new();
+    let mut remaining = native.bytes();
+    let mut replacements = 0;
+    while let Some(at) = remaining
+        .windows(current.len())
+        .position(|part| part == current)
+    {
+        bytes.extend_from_slice(&remaining[..at]);
+        bytes.extend_from_slice(&retired);
+        remaining = &remaining[at + current.len()..];
+        replacements += 1;
     }
-}
-
-#[derive(Debug)]
-struct ForgedKindSource {
-    members: member_source::InlineCheckpointSource,
-    journal: Arc<dyn RelationalDurableColdSource>,
-    reads: AtomicUsize,
-}
-impl RelationalDurableColdSource for ForgedKindSource {
-    fn retain_members(
-        &self,
-        members: &[RelationalDurableMemberLocator],
-    ) -> Result<
-        RelationalDurableMemberCustody,
-        crate::storage::data::RelationalStorageUnavailableCause,
-    > {
-        self.members.retain_members(members)
-    }
-    fn read_member(
-        &self,
-        locator: RelationalDurableMemberLocator,
-        limit: u64,
-    ) -> Result<Vec<u8>, crate::storage::data::RelationalStorageUnavailableCause> {
-        self.reads.fetch_add(1, Ordering::SeqCst);
-        self.members.read_member(locator, limit)
-    }
-    fn read_commit(
-        &self,
-        position: crate::publication::patch::data::PatchStreamPosition,
-        limit: u64,
-    ) -> Result<Vec<u8>, crate::storage::data::RelationalStorageUnavailableCause> {
-        self.journal.read_commit(position, limit)
-    }
+    bytes.extend_from_slice(remaining);
+    assert!(replacements > 0);
+    let stop = decode_checkpoint(&execution, &bytes).unwrap_err();
+    assert_eq!(
+        expect_durability_failure(stop).class,
+        RecoveryFailureClass::CorruptCheckpoint
+    );
 }

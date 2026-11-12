@@ -30,7 +30,9 @@ impl<S: ApplicationSchema, F: WorthQueryProducerOutputFamily<S>>
         &mut self,
         phase: &WorthQueryAdvancementPhase<'_>,
     ) -> Result<
-        Option<crate::domain_computation::WorthQueryDirectRunCleanupReceipt>,
+        Option<
+            crate::domain_computation::primary_graph::WorthQueryApplicationManagedCleanupReceipt,
+        >,
         WorthQueryOutputDemandDenial,
     > {
         match self.terminal_caller_denial.as_mut() {

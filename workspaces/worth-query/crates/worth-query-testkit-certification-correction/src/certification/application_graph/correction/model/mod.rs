@@ -39,6 +39,7 @@ pub mod principal_status;
 pub mod program;
 pub mod publication_courts;
 pub mod query;
+pub mod recorded_receipt;
 pub mod required_output_courts;
 pub mod required_reapplication;
 pub mod scalar_input;

@@ -5,8 +5,8 @@ use crate::storage::substrate::HistoryAppendFrontier;
 /// against the original region leaf and to append without reading old values.
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub(crate) struct PartitionHistoryFrontiers {
-    entities: Vec<(u64, HistoryAppendFrontier)>,
-    relations: Vec<(u64, HistoryAppendFrontier)>,
+    pub(super) entities: Vec<(u64, HistoryAppendFrontier)>,
+    pub(super) relations: Vec<(u64, HistoryAppendFrontier)>,
 }
 
 impl PartitionHistoryFrontiers {
@@ -47,7 +47,7 @@ impl PartitionContentCommitment {
         lane: &ReconstructionLane<'_>,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         partition: &PartitionState,
-        symbols: &StringInterner,
+        symbols: &dyn crate::symbols::data::SymbolTextLookup,
         frontiers: &PartitionHistoryFrontiers,
     ) -> Result<Self, PartitionContentDigestError> {
         lane.recover(execution, |lane, work| {
@@ -55,19 +55,38 @@ impl PartitionContentCommitment {
                 entities: records::RecordContentIndex::from_history_frontiers(
                     lane,
                     work,
+                    Some(execution),
                     &frontiers.entities,
                     &partition.entity_arena,
                 )?,
                 relations: records::RecordContentIndex::from_history_frontiers(
                     lane,
                     work,
+                    Some(execution),
                     &frontiers.relations,
                     &partition.relation_arena,
                 )?,
                 ..Self::default()
             };
-            Self::capture_seeded(lane, work, partition, symbols, seed)
+            Self::capture_seeded(lane, work, Some(execution), partition, symbols, seed)
                 .map(|(commitment, _)| commitment)
         })
+    }
+}
+
+impl PartitionContentCommitment {
+    pub(crate) fn borrowed_history_frontiers<'a>(
+        &'a self,
+        partition: &'a PartitionState,
+    ) -> impl serde::Serialize + 'a {
+        #[derive(serde::Serialize)]
+        struct View<E: serde::Serialize, R: serde::Serialize> {
+            entities: E,
+            relations: R,
+        }
+        View {
+            entities: self.entities.frontier_view(&partition.entity_arena),
+            relations: self.relations.frontier_view(&partition.relation_arena),
+        }
     }
 }

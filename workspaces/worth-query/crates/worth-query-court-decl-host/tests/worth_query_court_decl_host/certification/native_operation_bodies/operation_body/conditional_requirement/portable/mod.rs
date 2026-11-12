@@ -23,7 +23,7 @@ fn conditional_requirement_survives_checkpoint_and_fresh_schema_readmission() {
         validate_portable_application_schema_freshly(portable).unwrap(),
         *schema.erased()
     );
-    let restored = in_memory_program_from_checkpoint(
+    let restored = WorthQueryInterimCheckpointRestore::program(
         program::validated::<25>(&schema),
         schema,
         (program::Installation::Native,),

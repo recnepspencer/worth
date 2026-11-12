@@ -4,7 +4,7 @@
 use super::{
     DurableFreeSpaceManifestHeader, DurablePhysicalRootManifest, PhysicalRecordFormatDeclaration,
     QualifiedFilesystemMedia, RecoveredCheckpointCustodyDenial, RecoveredCheckpointCustodyEvidence,
-    StableStoreIdentity, VerifiedRecoveredCheckpointCustody,
+    RecoveredReleaseCustody, StableStoreIdentity, VerifiedRecoveredCheckpointCustody,
 };
 use crate::physical_runtime::{
     record_serving::RecordBootstrapDenial, PhysicalRecoveryReadAllocation,
@@ -27,10 +27,11 @@ impl RecoveredCheckpointCustodyEvidence {
         root: &DurablePhysicalRootManifest,
         window: &mut PhysicalRecoveryReadAllocation<'_>,
     ) -> Result<WalVerifiedRecoveredCustodyEvidence, RecordBootstrapDenial> {
-        if self.store != store || self.root != *root {
+        if self.payload().store != store || self.payload().root != *root {
             return Err(RecordBootstrapDenial::RecoveredCheckpointCustodyMismatch);
         }
         if !self
+            .payload()
             .selected_wal
             .matches_serving_media(media, window)
             .map_err(RecordBootstrapDenial::RecoveredWalRead)?
@@ -48,7 +49,7 @@ impl WalVerifiedRecoveredCustodyEvidence {
         format: PhysicalRecordFormatDeclaration,
         window: &mut PhysicalRecoveryReadAllocation<'_>,
     ) -> Result<FundedMediaVerifiedRecoveredCustodyEvidence, RecordBootstrapDenial> {
-        if let Some(checkpoint) = self.evidence.checkpoint_ownership.checkpoint()
+        if let Some(checkpoint) = self.evidence.payload().checkpoint_ownership.checkpoint()
             && !window.owns_checkpoint(checkpoint)
         {
             return Err(RecordBootstrapDenial::RecoveredCheckpointCustodyMismatch);
@@ -57,19 +58,17 @@ impl WalVerifiedRecoveredCustodyEvidence {
             .verify_funded_current_checkpoint(media, window)?;
         let controls = self
             .evidence
+            .payload()
             .selected_controls
             .as_ref()
             .ok_or(RecordBootstrapDenial::RecoveredCheckpointCustodyMismatch)?;
-        let required_heads_present = match (
-            &self.evidence.head_v2,
-            &self.evidence.pending_wal_release,
-            &self.evidence.historical_release,
-        ) {
-            (Some(_), None, None) => controls.has_selected_head_walk(),
-            (None, Some(_), None) => controls.has_pending_head_walks(),
-            (None, None, Some(_)) => controls.has_completed_history_head_walks(),
-            (None, None, None) => controls.has_no_head_walk(),
-            _ => false,
+        let required_heads_present = match &self.evidence.payload().release {
+            RecoveredReleaseCustody::HeadV2(_) => controls.has_selected_head_walk(),
+            RecoveredReleaseCustody::NoRelease(_) => controls.has_no_head_walk(),
+            RecoveredReleaseCustody::PendingWal { .. } => controls.has_pending_head_walks(),
+            RecoveredReleaseCustody::OrderedHistorical { .. } => {
+                controls.has_completed_history_head_walks()
+            }
         };
         if !required_heads_present {
             return Err(RecordBootstrapDenial::RecoveredHeadWitnessPostureMismatch);
@@ -77,7 +76,7 @@ impl WalVerifiedRecoveredCustodyEvidence {
         if !controls.verify_funded_heads_for_serving(media, format, window)? {
             return Err(RecordBootstrapDenial::RecoveredCheckpointCustodyMismatch);
         }
-        if self.evidence.historical_release.is_some()
+        if self.evidence.payload().release.is_historical()
             && !controls.verify_funded_completed_raw_for_serving(media, format, window)?
         {
             return Err(RecordBootstrapDenial::RecoveredCheckpointCustodyMismatch);

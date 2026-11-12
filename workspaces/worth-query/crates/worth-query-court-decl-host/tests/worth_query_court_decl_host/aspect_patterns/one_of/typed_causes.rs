@@ -3,9 +3,9 @@ use super::*;
 use rule::{Refusal, RefusalBinding};
 
 fn from_installation(
-    denial: &WorthQueryInMemoryApplicationDenial,
+    denial: &WorthQueryApplicationPreparationDenial,
 ) -> WorthQueryCustomInvariantDenial {
-    let WorthQueryInMemoryApplicationDenial::Publication(denial) = denial else {
+    let WorthQueryApplicationPreparationDenial::Publication(denial) = denial else {
         panic!("wrong seed publication phase: {denial:?}")
     };
     denial

@@ -160,3 +160,6 @@ mod tests {
         assert_eq!(narrowed.settlement_attempts(), Some(2));
     }
 }
+#[cfg(test)]
+#[path = "request_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;

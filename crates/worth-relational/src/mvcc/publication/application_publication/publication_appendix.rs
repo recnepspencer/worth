@@ -91,11 +91,11 @@ impl crate::runtime::RelationalRuntime {
                                 crate::execution::request_stage::checkpoint(context, 1).map_err(super::custody::execution_stop)?;
                                 match intent {
                                     MutationIntent::Entity(EntityMutationIntent::UpdateFields(intent)) => {
-                                        let prepared = crate::authority::mutation::intents::entity_aspect_preparation::prepare_fields(intent, &read, plans)?;
+                                        let prepared = crate::authority::mutation::intents::entity_aspect_preparation::prepare_fields(execution, intent, &read, plans)?;
                                         if prepared.changes_state(context)? { return Ok(false); }
                                     }
                                     MutationIntent::Entity(EntityMutationIntent::ApplyAspectPatch(intent)) => {
-                                        let prepared = crate::authority::mutation::intents::entity_aspect_preparation::prepare_portable(intent, &read, plans)?;
+                                        let prepared = crate::authority::mutation::intents::entity_aspect_preparation::prepare_portable(execution, intent, &read, plans)?;
                                         if prepared.changes_state(context)? { return Ok(false); }
                                     }
                                     // Revalidation has no mutation effect; actual validation still

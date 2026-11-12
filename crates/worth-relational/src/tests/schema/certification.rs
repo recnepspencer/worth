@@ -61,7 +61,7 @@ fn schema_evolution_cdc_contract_test() {
     let host_request = crate::test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
-    let mut runtime = durable_runtime_with_test_schema();
+    let mut runtime = runtime_with_test_schema();
     let baseline = create_entity_outcome(execution, &runtime, "anchor");
     let baseline_checkpoint =
         checkpoint_for_schema_version(baseline.patch_position(), SchemaVersionId(1));
@@ -123,7 +123,18 @@ fn schema_evolution_cdc_contract_test() {
     );
     let descriptor_semantics_version = committed.envelope().descriptor_semantics_version;
 
-    let (_recovery, recovered) = checkpoint_and_recover_with(execution, &runtime, || {
+    runtime
+        .durability_authority()
+        .checkpoint(execution)
+        .unwrap();
+    let plan = runtime
+        .durability()
+        .recovery_plan(
+            execution,
+            crate::durability::data::RecoveryVerificationMode::NormalRecoveryVerification,
+        )
+        .unwrap();
+    let mut recovered = {
         let registry = AspectSchemaFixture {
             schema_version_id: SchemaVersionId(2),
             ..AspectSchemaFixture::default()
@@ -132,15 +143,18 @@ fn schema_evolution_cdc_contract_test() {
         RelationalRuntimeApi::builder()
             .profile(RelationalRuntimeProfile::CertificationCore)
             .schema_registry(registry)
-            .build_durable(TestDurableMedium::new().attachment())
+            .build()
             .expect("valid native runtime configuration")
-    });
+    };
+    recovered
+        .durability_recovery()
+        .recover(execution, plan)
+        .unwrap();
 
     let recovered_envelope = recovered
         .replay()
         .canonical_commit_envelope(execution, committed.commit.commit_id)
         .unwrap()
-        .map(|envelope| envelope.as_ref().clone())
         .expect("recovered canonical envelope");
     let recovered_batch = recovered
         .publication()

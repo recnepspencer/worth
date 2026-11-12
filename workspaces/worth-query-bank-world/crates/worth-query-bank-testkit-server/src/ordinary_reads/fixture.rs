@@ -145,7 +145,7 @@ pub fn build_ordinary_read_world(
 ) -> OrdinaryReadFixture {
     assert!(pending_payment_count > 0);
     let mut identities = (0..(7 + unrelated_accounts))
-        .map(|ordinal| DynamicIdentity::new(&format!("{scenario}-{ordinal}")))
+        .map(|ordinal| DynamicIdentity::from_recipe(&format!("{scenario}-{ordinal}")))
         .collect::<Vec<_>>();
     let institution = id(InstitutionId::new, 1);
     let business = id(BusinessId::new, 1);

@@ -20,6 +20,7 @@ struct Patches {
 /// Called only for repeated records with a portable participant. Pure field
 /// groups keep their original command representation and allocation path.
 pub(super) fn collect(
+    execution: &ExecutionRequest<'_, '_>,
     context: &mut worth_execution::MapKernelContext<'_, '_>,
     batches: &[WorkerIntentBatch],
     selected: impl Fn(Entity) -> bool,
@@ -38,20 +39,21 @@ pub(super) fn collect(
                 intent.owned_allocation_capacity_bytes().saturating_add(1),
             )
             .map_err(custody::execution_stop)?;
-            let patch = match intent {
+            let lowered;
+            let operations = match intent {
                 MutationIntent::Entity(EntityMutationIntent::UpdateFields(fields)) => {
-                    crate::authority::mutation::intents::field_authoring_candidate::lower_entity(
-                        fields, state, plans,
-                    )
-                    .map_err(TransactionCommitError::conflict)?
+                    lowered = crate::authority::mutation::intents::field_authoring_candidate::lower_entity(
+                        execution, fields, state, plans,
+                    )?;
+                    lowered.operations()
                 }
                 MutationIntent::Entity(EntityMutationIntent::ApplyAspectPatch(patch)) => {
-                    patch.aspect_patch.clone()
+                    patch.aspect_patch.operations()
                 }
                 _ => unreachable!("selected aspect mutation"),
             };
             let group = groups.entry(entity).or_default();
-            for operation in patch.operations() {
+            for operation in operations {
                 checkpoint(context, 1).map_err(custody::execution_stop)?;
                 let key = operation.basis().key();
                 if let Operation::PatchFields {

@@ -15,7 +15,7 @@ where
                 FamilySourceQuery<Schema, Family>,
             > + 'static,
     FamilySourceQuery<Schema, Family>: 'static,
-    WorthQueryAdmittedOutputDemand<Schema, Family>: Send + Sync,
+    WorthQueryAdmittedOutputDemand<Schema, Family>: Send,
 {
     pub(in crate::domain_computation::primary_graph::application_contribution::producer::demand) fn assert_required_admission(
         &self,

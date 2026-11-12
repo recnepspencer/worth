@@ -50,7 +50,10 @@ fn source_path() -> ApplicationQueryRootPath<schema::Catalog, schema::Directory,
 
 pub(super) fn missing_parent() {
     use std::sync::atomic::Ordering;
-    let calls = Arc::new(prefix::Calls::default());
+    let calls = Arc::new(
+        crate::application_invariant_acceptance::managed_index::prefix_observation::Calls::default(
+        ),
+    );
     let world = super::host::install_ordered_refusing(Arc::clone(&calls));
     let scope = authentication::request_scope();
     let principal = authentication::block_on(
@@ -130,7 +133,10 @@ fn source_graph_laws() -> ApplicationRelationGraphLaws {
     }
 }
 pub(super) fn stronger_law() {
-    let world = super::host::install_ordered_refusing(Arc::new(prefix::Calls::default()));
+    let world = super::host::install_ordered_refusing(Arc::new(
+        crate::application_invariant_acceptance::managed_index::prefix_observation::Calls::default(
+        ),
+    ));
     let scope = authentication::request_scope();
     let principal = authentication::block_on(
         authentication::admit(world.installed_schema()).authenticate(

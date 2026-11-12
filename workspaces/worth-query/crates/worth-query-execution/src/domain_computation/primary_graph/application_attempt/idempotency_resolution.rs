@@ -5,31 +5,14 @@ use worth_query_installation::facade::ApplicationSchema;
 mod denial;
 #[path = "idempotency_resolution/external_settlement.rs"]
 mod external_settlement;
-#[path = "idempotency_resolution/historical_commit.rs"]
-mod historical_commit;
-
-pub use historical_commit::WorthQueryHistoricalApplicationCommit;
 
 pub use denial::{
     WorthQueryApplicationIdempotencyResolutionDenial,
     WorthQueryApplicationIdempotencyResolutionDenialKind,
 };
 
-use super::{
-    provider_recomparison::recover_equivalent_commit_evidence,
-    WorthQueryApplicationCommitAuthorityBinding, WorthQueryApplicationCommitReceipt,
-    WorthQueryApplicationIdempotencyBinding, WorthQueryCommittedReceiptProjection,
-};
+use super::{WorthQueryApplicationCommitReceipt, WorthQueryApplicationIdempotencyBinding};
 
-pub(super) struct WorthQueryIdempotencyReadCommitReceiptPermit {
-    _owner_mint: (),
-}
-
-impl WorthQueryIdempotencyReadCommitReceiptPermit {
-    fn mint() -> Self {
-        Self { _owner_mint: () }
-    }
-}
 use crate::domain_computation::application_aftermath::WorthQueryAdmittedIdempotencyRead;
 use crate::domain_computation::primary_graph::provider::WorthQueryProviderIdempotencyResolution;
 use crate::domain_computation::primary_graph::{
@@ -39,13 +22,14 @@ use crate::domain_computation::primary_graph::{
 /// What an idempotency key already means on the current product branch, read
 /// through `resolve_admitted_application_idempotency` without committing
 /// anything.
-#[derive(Clone, Debug, Eq, PartialEq)]
+#[derive(Debug)]
 pub enum WorthQueryApplicationIdempotencyResolution {
+    ReleasedOriginal(crate::domain_computation::primary_graph::WorthQueryReleasedApplicationEffect),
+    ProductUnpublished(crate::domain_computation::WorthQueryProductUnpublishedApplication),
+    ProductPreparationPending(crate::domain_computation::WorthQueryProductPreparationPending),
     /// No commit is recorded under this key.
     Unseen,
-    /// A commit with the same intent is recorded under this key; its receipt is
-    /// recovered.
-    AlreadyCommitted(WorthQueryApplicationCommitReceipt),
+    RecoveredCommitted(crate::domain_computation::primary_graph::provider::WorthQueryRecoveredApplicationCommitReceipt),
     /// The key was already used for a different intent.
     IntentDrift,
 }
@@ -54,8 +38,10 @@ pub enum WorthQueryApplicationIdempotencyResolution {
 /// carries authority to settle the workflow's operation transition.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum WorthQueryGuardedWorkflowOperationCustody {
+    ReleasedOriginal(crate::domain_computation::primary_graph::WorthQueryReleasedApplicationEffect),
     Unseen,
     Committed(WorthQueryApplicationCommitReceipt),
+    RecoveredCommitted(crate::domain_computation::primary_graph::provider::WorthQueryRecoveredApplicationCommitReceipt),
     /// The original dispatch has a matching World-performed terminal at its
     /// external-effect owner. Acceptance still rechecks that owner at commit.
     ExternallySettled(WorthQueryApplicationCommitReceipt),
@@ -84,6 +70,12 @@ where
     where
         Input: Clone + Send + Sync + 'static,
     {
+        if !binding.matches_guarded_workflow_effect(transition_identity) {
+            return Err(WorthQueryApplicationIdempotencyResolutionDenial::foreign_admission());
+        }
+        admission
+            .refuse_stale_home_authority(self.runtime.product_runtime.owner.owner_identity())
+            .map_err(WorthQueryApplicationIdempotencyResolutionDenial::from_authorization)?;
         if !admission.belongs_to(
             self.runtime.authority_identity(),
             &self.installed_schema.binding_identity(),
@@ -96,6 +88,9 @@ where
                 &self.installed_schema.binding_identity(),
                 &self.runtime.installed_operations,
             )
+            .map_err(WorthQueryApplicationIdempotencyResolutionDenial::from_authorization)?;
+        admission
+            .validate_current_authority()
             .map_err(WorthQueryApplicationIdempotencyResolutionDenial::from_authorization)?;
         if !binding.matches_guarded_workflow_effect(transition_identity) {
             return Err(WorthQueryApplicationIdempotencyResolutionDenial::foreign_admission());
@@ -163,6 +158,30 @@ where
             })?;
         use crate::domain_computation::primary_graph::provider::WorthQueryProviderGuardedWorkflowOperationCustody as Owner;
         Ok(match custody {
+            Owner::Readmitted(receipt) => {
+                if let Some(original) = completed {
+                    if original.commit_reference() != receipt.commit_reference() {
+                        return Ok(WorthQueryGuardedWorkflowOperationCustody::IntentDrift);
+                    }
+                    let original = original.clone();
+                    if original.dispatch_outbox().and_then(|record| record.inbound()).is_some() {
+                        match self.resolve_guarded_workflow_external_settlement(&original) {
+                            Ok(true) => WorthQueryGuardedWorkflowOperationCustody::ExternallySettled(original),
+                            Ok(false) => WorthQueryGuardedWorkflowOperationCustody::DispatchPending(original),
+                            Err(_) => WorthQueryGuardedWorkflowOperationCustody::Indeterminate(WorthQueryApplicationIdempotencyResolutionDenial::provider_unavailable()),
+                        }
+                    } else if super::workflow_transition_program::operation_receipt_requires_recovery(&original) {
+                        WorthQueryGuardedWorkflowOperationCustody::DispatchPending(original)
+                    } else {
+                        WorthQueryGuardedWorkflowOperationCustody::Committed(original)
+                    }
+                } else {
+                    WorthQueryGuardedWorkflowOperationCustody::RecoveredCommitted(receipt)
+                }
+            }
+            Owner::ReleasedOriginal(original) => {
+                WorthQueryGuardedWorkflowOperationCustody::ReleasedOriginal(original)
+            }
             Owner::Unseen => WorthQueryGuardedWorkflowOperationCustody::Unseen,
             Owner::IntentDrift => WorthQueryGuardedWorkflowOperationCustody::IntentDrift,
             Owner::PublicationPending => {
@@ -175,54 +194,6 @@ where
                 WorthQueryGuardedWorkflowOperationCustody::Indeterminate(
                     WorthQueryApplicationIdempotencyResolutionDenial::from_provider(denial),
                 )
-            }
-            Owner::Committed(provider) => {
-                let Ok(projection) = WorthQueryCommittedReceiptProjection::resolve(provider) else {
-                    return Ok(WorthQueryGuardedWorkflowOperationCustody::Indeterminate(
-                        WorthQueryApplicationIdempotencyResolutionDenial::provider_unavailable(),
-                    ));
-                };
-                let authority = match completed {
-                    Some(original) => original.authority_binding().clone(),
-                    None => WorthQueryApplicationCommitAuthorityBinding::from_admission(
-                        admission, bound,
-                    ),
-                };
-                let receipt = WorthQueryApplicationCommitReceipt::from_idempotency_read(
-                    WorthQueryIdempotencyReadCommitReceiptPermit::mint(),
-                    projection,
-                    recover_equivalent_commit_evidence(admission.mutation_preconditions()),
-                    admission.canonical_work(),
-                    authority,
-                );
-                if completed.is_some_and(|original| !receipt.is_same_authoritative_commit(original))
-                {
-                    return Ok(WorthQueryGuardedWorkflowOperationCustody::IntentDrift);
-                }
-                if receipt
-                    .dispatch_outbox()
-                    .and_then(|record| record.inbound())
-                    .is_some()
-                {
-                    match self.resolve_guarded_workflow_external_settlement(&receipt) {
-                        Ok(true) => {
-                            WorthQueryGuardedWorkflowOperationCustody::ExternallySettled(receipt)
-                        }
-                        Ok(false) => {
-                            WorthQueryGuardedWorkflowOperationCustody::DispatchPending(receipt)
-                        }
-                        Err(_) => WorthQueryGuardedWorkflowOperationCustody::Indeterminate(
-                            WorthQueryApplicationIdempotencyResolutionDenial::provider_unavailable(
-                            ),
-                        ),
-                    }
-                } else if super::workflow_transition_program::operation_receipt_requires_recovery(
-                    &receipt,
-                ) {
-                    WorthQueryGuardedWorkflowOperationCustody::DispatchPending(receipt)
-                } else {
-                    WorthQueryGuardedWorkflowOperationCustody::Committed(receipt)
-                }
             }
         })
     }
@@ -284,6 +255,9 @@ where
     where
         Input: Clone + Send + Sync + 'static,
     {
+        admission
+            .refuse_stale_home_authority(self.runtime.product_runtime.owner.owner_identity())
+            .map_err(WorthQueryApplicationIdempotencyResolutionDenial::from_authorization)?;
         if !admission.belongs_to(
             self.runtime.authority_identity(),
             &self.installed_schema.binding_identity(),
@@ -296,6 +270,9 @@ where
                 &self.installed_schema.binding_identity(),
                 &self.runtime.installed_operations,
             )
+            .map_err(WorthQueryApplicationIdempotencyResolutionDenial::from_authorization)?;
+        admission
+            .validate_current_authority()
             .map_err(WorthQueryApplicationIdempotencyResolutionDenial::from_authorization)?;
         let bindings = bindings
             .into_iter()
@@ -342,30 +319,13 @@ where
         bindings
             .into_iter()
             .zip(resolutions)
-            .map(|((read_for, binding), resolution)| match resolution {
+            .map(|((read_for, _binding), resolution)| match resolution {
+                Ok(WorthQueryProviderIdempotencyResolution::Readmitted(receipt)) => Ok(WorthQueryAdmittedIdempotencyRead::mint(read_for, WorthQueryApplicationIdempotencyResolution::RecoveredCommitted(receipt))),
+                Ok(WorthQueryProviderIdempotencyResolution::ReleasedOriginal(original)) => Ok(WorthQueryAdmittedIdempotencyRead::mint(read_for, WorthQueryApplicationIdempotencyResolution::ReleasedOriginal(original))),
                 Ok(WorthQueryProviderIdempotencyResolution::Absent) => {
                     Ok(WorthQueryAdmittedIdempotencyRead::mint(
                         read_for,
                         WorthQueryApplicationIdempotencyResolution::Unseen,
-                    ))
-                }
-                Ok(WorthQueryProviderIdempotencyResolution::Equivalent(receipt)) => {
-                    let projection = WorthQueryCommittedReceiptProjection::resolve(receipt)
-                        .map_err(|_| {
-                            WorthQueryApplicationIdempotencyResolutionDenial::provider_unavailable()
-                        })?;
-                    let receipt = WorthQueryApplicationCommitReceipt::from_idempotency_read(
-                        WorthQueryIdempotencyReadCommitReceiptPermit::mint(),
-                        projection,
-                        recover_equivalent_commit_evidence(admission.mutation_preconditions()),
-                        admission.canonical_work(),
-                        WorthQueryApplicationCommitAuthorityBinding::from_admission(
-                            admission, binding,
-                        ),
-                    );
-                    Ok(WorthQueryAdmittedIdempotencyRead::mint(
-                        read_for,
-                        WorthQueryApplicationIdempotencyResolution::AlreadyCommitted(receipt),
                     ))
                 }
                 Ok(WorthQueryProviderIdempotencyResolution::Drift) => {
@@ -374,6 +334,22 @@ where
                         WorthQueryApplicationIdempotencyResolution::IntentDrift,
                     ))
                 }
+                Ok(WorthQueryProviderIdempotencyResolution::RecoveredUnpublished { handle }) => {
+                    let value = self.runtime.primary_provider.recovered_unpublished_application(&product, handle)
+                        .map_err(|_| WorthQueryApplicationIdempotencyResolutionDenial::provider_unavailable())?;
+                    Ok(WorthQueryAdmittedIdempotencyRead::mint(read_for, WorthQueryApplicationIdempotencyResolution::ProductUnpublished(value)))
+                }
+                Ok(WorthQueryProviderIdempotencyResolution::PreparationPending {
+                    handle,
+                    stage,
+                }) => Ok(WorthQueryAdmittedIdempotencyRead::mint(
+                    read_for,
+                    WorthQueryApplicationIdempotencyResolution::ProductPreparationPending(
+                        self.pending_preparation_resolution(handle, stage),
+                    ),
+                )),
+                Ok(WorthQueryProviderIdempotencyResolution::PreparationBusy) => Err(WorthQueryApplicationIdempotencyResolutionDenial::from_provider(
+                    crate::domain_computation::primary_graph::provider::WorthQueryProviderIdempotencyResolutionDenial::PreparationBusy)),
                 Ok(WorthQueryProviderIdempotencyResolution::Unpublished) => {
                     Err(WorthQueryApplicationIdempotencyResolutionDenial::provider_unavailable())
                 }
@@ -384,3 +360,6 @@ where
             .collect()
     }
 }
+#[cfg(test)]
+#[path = "idempotency_resolution_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;

@@ -12,7 +12,15 @@ use super::patch_position_reservation::{
     RelationalPatchPositionReservationCounters,
 };
 use super::{CanonicalPublicationRecordError, CanonicalPublicationRoute};
-use crate::durability::medium::RelationalDurableStepStop as DurableStepStop;
+use crate::durability::medium::{RelationalCommitPublication, RelationalDurableMediumBinding};
+
+#[path = "performed_stream/cutover_deadline.rs"]
+mod cutover_deadline;
+#[path = "performed_stream/recovered_source.rs"]
+mod recovered_source;
+#[path = "performed_stream/source_retirement.rs"]
+mod source_retirement;
+pub(crate) use source_retirement::RelationalPerformedSourceWalk;
 
 #[derive(Default)]
 pub(super) struct PerformedPublicationStream {
@@ -23,6 +31,7 @@ pub(super) struct PerformedPublicationStream {
 }
 
 pub(super) struct PerformedPublicationNode {
+    index_definition_frontier: u64,
     position: PatchStreamPosition,
     route: Arc<CanonicalPublicationRoute>,
     previous: Option<Arc<PerformedPublicationNode>>,
@@ -31,6 +40,7 @@ pub(super) struct PerformedPublicationNode {
 #[derive(Clone)]
 pub(crate) struct PerformedCheckpointSelection {
     head: Option<Arc<PerformedPublicationNode>>,
+    indexed_head: Option<crate::history::RetainedCanonicalIndex>,
     /// The last branch transition the selection covers (D8).
     covered_transitions: crate::branch::RelationalBranchTransitionSequence,
 }
@@ -43,6 +53,12 @@ struct PerformedPublicationIndex {
 }
 
 impl PerformedPublicationStream {
+    pub(super) fn index_definition_frontier(&self) -> u64 {
+        self.head
+            .load_full()
+            .as_ref()
+            .map_or(1, |head| head.index_definition_frontier)
+    }
     pub(super) fn waiting_publisher_count_for_test(&self) -> usize {
         self.reservation.waiting_publisher_count_for_test()
     }
@@ -50,9 +66,11 @@ impl PerformedPublicationStream {
     pub(super) fn checkpoint_selection(
         &self,
         covered_transitions: crate::branch::RelationalBranchTransitionSequence,
+        indexed_head: Option<crate::history::RetainedCanonicalIndex>,
     ) -> PerformedCheckpointSelection {
         PerformedCheckpointSelection {
             head: self.head.load_full(),
+            indexed_head,
             covered_transitions,
         }
     }
@@ -93,73 +111,72 @@ impl PerformedPublicationStream {
     pub(super) fn record_with_cutover<T>(
         &self,
         route: Arc<CanonicalPublicationRoute>,
-        resident: Arc<CanonicalCommitEnvelope>,
+        original_payload: &crate::durability::canonical_commit_artifact::PreparedOriginalCanonicalPayload,
         admission: PatchPositionReservationAdmission<'_, '_, '_>,
         cutover_before: Option<std::time::Instant>,
-        durable: impl FnOnce(
-            &PositionedCanonicalCommit,
-            &crate::branch::RelationalBranchRootDescriptor,
-        ) -> Result<
-            Option<crate::durability::medium::RelationalDurableCommitReadmission>,
-            DurableStepStop,
-        >,
+        medium: Option<&RelationalDurableMediumBinding>,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         cutover: impl FnOnce(PatchStreamPosition) -> T,
     ) -> Result<(Arc<PositionedCanonicalCommit>, T), CanonicalPublicationRecordError> {
         let _reservation = self.reservation.enter(admission)?;
-        if let Some(deadline) = cutover_before {
-            // A memory publisher may have waited behind a lifecycle transition.
-            // Preserve the original request's first stop, then enforce the
-            // additional narrowing before assigning any canonical position.
-            match admission {
-                PatchPositionReservationAdmission::DeferWhenHeld => {}
-                PatchPositionReservationAdmission::DeferBehindCommit(execution)
-                | PatchPositionReservationAdmission::WaitWithin(execution) => {
-                    execution
-                        .consult()
-                        .map_err(CanonicalPublicationRecordError::ReservationWaitStopped)?
-                }
-            }
-            if std::time::Instant::now() >= deadline {
-                return Err(CanonicalPublicationRecordError::CutoverDeadlineElapsed);
-            }
-        }
+        cutover_deadline::require(admission, cutover_before)?;
         let current = self.head.load_full();
         let prior_position = self.performed_head_position(&current);
         let Some(next_position) = prior_position.checked_add(1) else {
             self.reservation.overflows.fetch_add(1, Ordering::Relaxed);
             return Err(CanonicalPublicationRecordError::PositionCapacityExhausted);
         };
+        let original = cutover_deadline::prepare_frame(admission, cutover_before, || {
+            RelationalCommitPublication::prepare_memory_frame(
+                PatchStreamPosition(next_position),
+                original_payload,
+                medium,
+                execution,
+            )
+        })?;
         let positioned = Arc::new(PositionedCanonicalCommit::admit(
             super::CanonicalPositionAdmission::performed(
                 PatchStreamPosition(next_position),
-                resident,
+                original_payload.envelope().clone(),
             ),
         ));
         // Durable before live: the position is assigned only once the medium
         // holds it, and the cutover below runs only after that.
-        let journal =
-            durable(&positioned, &route.roots).map_err(CanonicalPublicationRecordError::Durable)?;
-        route
-            .envelope
-            .bind_performed(&positioned, journal.map(|receipt| receipt.into_parts()));
-        let node = Arc::new(PerformedPublicationNode {
-            position: positioned.position(),
-            route: Arc::clone(&route),
-            previous: current,
-        });
-        route.set_position(PatchStreamPosition(next_position));
-        self.head.store(Some(node));
-        self.reservation.assignments.fetch_add(1, Ordering::Relaxed);
-        let completed = cutover(PatchStreamPosition(next_position));
-        route.mark_performed();
-        crate::execution::phase_observation::published_commit(
-            positioned
-                .envelope()
-                .patch
-                .authoritative_record_patches
-                .len(),
-        );
-        Ok((positioned, completed))
+        let publication = RelationalCommitPublication::publish(
+            positioned,
+            &route.roots,
+            medium,
+            execution,
+            original,
+        )
+        .map_err(CanonicalPublicationRecordError::Durable)?;
+        Ok(publication.cutover(|positioned, journal, original| {
+            route
+                .envelope
+                .bind_performed(&positioned, journal, original);
+            let node = Arc::new(PerformedPublicationNode {
+                index_definition_frontier: current
+                    .as_ref()
+                    .map_or(1, |node| node.index_definition_frontier)
+                    .max(positioned.envelope().index_definition_delta.next_index_id),
+                position: positioned.position(),
+                route: Arc::clone(&route),
+                previous: current,
+            });
+            route.set_position(positioned.position());
+            self.head.store(Some(node));
+            self.reservation.assignments.fetch_add(1, Ordering::Relaxed);
+            let completed = cutover(positioned.position());
+            route.mark_performed();
+            crate::execution::phase_observation::published_commit(
+                positioned
+                    .envelope()
+                    .patch
+                    .authoritative_record_patches
+                    .len(),
+            );
+            (positioned, completed)
+        }))
     }
 
     pub(super) fn link_recovered(
@@ -179,6 +196,10 @@ impl PerformedPublicationStream {
             return Err("recovered canonical stream order is not strictly increasing");
         }
         let node = Arc::new(PerformedPublicationNode {
+            index_definition_frontier: current
+                .as_ref()
+                .map_or(1, |node| node.index_definition_frontier)
+                .max(positioned.envelope().index_definition_delta.next_index_id),
             position: positioned.position(),
             route,
             previous: current,
@@ -311,11 +332,17 @@ impl PerformedPublicationStream {
 }
 
 impl PerformedCheckpointSelection {
-    pub(crate) fn latest_receipt(&self) -> Option<crate::history::data::RelationalCommitReceipt> {
+    pub(crate) fn selected_receipt(
+        &self,
+    ) -> Option<&crate::history::data::RelationalCommitReceipt> {
         self.head
             .as_ref()
             .filter(|head| head.route.is_performed())
-            .map(|head| head.route.commit.clone())
+            .map(|head| &head.route.commit)
+            .or_else(|| self.indexed_head.as_ref().map(|head| &head.commit))
+    }
+    pub(crate) fn latest_receipt(&self) -> Option<crate::history::data::RelationalCommitReceipt> {
+        self.selected_receipt().cloned()
     }
     /// The last branch transition sequence the checkpoint covers.
     pub(crate) fn covered_transitions(&self) -> crate::branch::RelationalBranchTransitionSequence {

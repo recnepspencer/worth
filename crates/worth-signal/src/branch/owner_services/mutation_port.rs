@@ -22,9 +22,12 @@ pub use fork_reservation::SignalBranchForkReservation;
 #[cfg(test)]
 mod tests;
 
+pub(in crate::branch::owner_services) use denials::{
+    map_advance_admission_denial, map_advance_registry_denial, map_fork_admission_denial,
+};
 use denials::{
-    map_advance_admission_denial, map_advance_registry_denial, map_capture_admission_denial,
-    map_capture_registry_denial, map_restore_admission_denial, map_restore_registry_denial,
+    map_capture_admission_denial, map_capture_registry_denial, map_restore_admission_denial,
+    map_restore_registry_denial,
 };
 
 /// Public concrete weak mutation service issued by a sealed owner root.
@@ -126,12 +129,60 @@ where
     where
         F: FnOnce(&mut SignalTransaction<'_, D, I, E, Ctx, T>) -> Result<(), SignalError>,
     {
+        worth_execution::run_with_execution_stack(move || {
+            self.advance_exact_on_execution_stack(
+                execution,
+                expected,
+                runtime_ctx,
+                cancellation,
+                apply,
+            )
+        })
+    }
+
+    #[inline(never)]
+    fn advance_exact_on_execution_stack<F>(
+        &self,
+        execution: worth_execution::ExecutionRequest<'_, '_>,
+
+        expected: &AdmittedSignalBranchBasis,
+        runtime_ctx: &mut Ctx,
+        cancellation: &SignalOwnerCancellationToken,
+        apply: F,
+    ) -> Result<SignalBranchAdvanceOutcome, SignalBranchAdvanceDenial>
+    where
+        F: FnOnce(&mut SignalTransaction<'_, D, I, E, Ctx, T>) -> Result<(), SignalError>,
+    {
         self.advance_exact_with_completion(execution, expected, runtime_ctx, cancellation, apply)
             .into_result()
     }
 
     /// Preserve exact owner completion when a post-movement boundary unwinds.
     pub fn advance_exact_with_completion<F>(
+        &self,
+        execution: worth_execution::ExecutionRequest<'_, '_>,
+
+        expected: &AdmittedSignalBranchBasis,
+        runtime_ctx: &mut Ctx,
+        cancellation: &SignalOwnerCancellationToken,
+        apply: F,
+    ) -> crate::branch::SignalBranchAdvanceCompletion
+    where
+        F: FnOnce(&mut SignalTransaction<'_, D, I, E, Ctx, T>) -> Result<(), SignalError>,
+    {
+        worth_execution::run_with_execution_stack(move || {
+            self.advance_exact_with_completion_on_execution_stack(
+                execution,
+                expected,
+                runtime_ctx,
+                cancellation,
+                apply,
+            )
+        })
+    }
+
+    #[inline(never)]
+    fn advance_exact_with_completion_on_execution_stack<F>(
         &self,
         execution: worth_execution::ExecutionRequest<'_, '_>,
 

@@ -177,7 +177,7 @@ fn inherited_row_changes_update_both_scopes_without_rebuilding_after_birth() {
     publish(
         &world,
         &mut key,
-        authoring::Edit::Name {
+        crate::application_invariant_acceptance::managed_index::maintained::nested::edit::Edit::Name {
             item: "x".into(),
             value: "changed-inherited-row".into(),
         },

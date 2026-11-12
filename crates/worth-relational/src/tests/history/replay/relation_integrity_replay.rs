@@ -70,7 +70,6 @@ fn replay_contract_preserves_relation_integrity_declared_schema() {
     let envelope = replay_access
         .canonical_commit_envelope(execution, outcome.commit.commit_id)
         .unwrap()
-        .map(|envelope| envelope.as_ref().clone())
         .unwrap();
 
     assert!(runtime.replay().compare_outcome(&replay));

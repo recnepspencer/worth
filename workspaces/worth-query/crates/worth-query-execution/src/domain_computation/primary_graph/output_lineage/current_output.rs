@@ -102,12 +102,12 @@ impl WorthQueryApplicationOutputLineage {
         }
     }
 
-    pub(in crate::domain_computation::primary_graph) fn source_facts_for_receipt(
+    pub(in crate::domain_computation::primary_graph) fn source_facts_for_publication(
         &self,
         runtime_authority: u64,
         schema: &ApplicationSchemaBindingIdentity,
         observation: &worth_runtime_world::facade::ProductBranchObservation,
-        receipt: &WorthQueryApplicationCommitReceipt,
+        receipt: crate::domain_computation::primary_graph::application_output_demand::OutputPublicationView<'_>,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<Option<RetainedOutputCurrentnessRead>, CompanionPreflightStop> {
         let Some(output_binding) = receipt.output_correspondence().binding_type() else {
@@ -227,19 +227,25 @@ impl WorthQueryApplicationOutputLineage {
         }
     }
 
-    pub(in crate::domain_computation::primary_graph) fn current_output_matches_receipt(
+    pub(in crate::domain_computation::primary_graph) fn current_output_matches_publication(
         &self,
         runtime_authority: u64,
         schema: &ApplicationSchemaBindingIdentity,
         observation: &worth_runtime_world::facade::ProductBranchObservation,
-        receipt: &WorthQueryApplicationCommitReceipt,
+        receipt: crate::domain_computation::primary_graph::application_output_demand::OutputPublicationView<'_>,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<bool, CompanionPreflightStop> {
-        self.source_facts_for_receipt(runtime_authority, schema, observation, receipt, execution)
-            .map(|read| {
-                read.and_then(|read| read.facts)
-                    .is_some_and(|facts| !facts.is_empty())
-            })
+        self.source_facts_for_publication(
+            runtime_authority,
+            schema,
+            observation,
+            receipt,
+            execution,
+        )
+        .map(|read| {
+            read.and_then(|read| read.facts)
+                .is_some_and(|facts| !facts.is_empty())
+        })
     }
 
     /// A stable authority names one immutable alias row. Selection must still

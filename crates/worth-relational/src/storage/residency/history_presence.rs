@@ -1,6 +1,6 @@
 //! Carried completeness of the history physically present in a resident region.
 use crate::storage::overlay::PartitionState;
-use crate::storage::substrate::{RecordHistoryPrefix, SharedColumn};
+use crate::storage::substrate::{RecordHistoryPrefix, SharedColumn, StorageAllocation};
 
 #[derive(Debug, Clone, Copy)]
 pub(super) struct HistoryPresence {
@@ -10,8 +10,8 @@ pub(super) struct HistoryPresence {
 /// Transient edit basis, not a linked history of earlier region versions.
 pub(super) struct HistoryPresenceBasis {
     presence: HistoryPresence,
-    entities: SharedColumn<Option<RecordHistoryPrefix>>,
-    relations: SharedColumn<Option<RecordHistoryPrefix>>,
+    entities: SharedColumn<StorageAllocation<Option<RecordHistoryPrefix>>>,
+    relations: SharedColumn<StorageAllocation<Option<RecordHistoryPrefix>>>,
 }
 
 impl HistoryPresence {
@@ -63,13 +63,13 @@ impl HistoryPresenceBasis {
 fn present<T>(value: Option<&Option<T>>) -> usize {
     usize::from(value.is_some_and(Option::is_some))
 }
-fn count<T: Clone>(column: &SharedColumn<Option<T>>) -> usize {
+fn count<T: Clone>(column: &SharedColumn<StorageAllocation<Option<T>>>) -> usize {
     column.iter().map(|value| present(Some(value))).sum()
 }
 fn adjust<T: Clone>(
     previous_count: usize,
-    previous: &SharedColumn<Option<T>>,
-    current: &SharedColumn<Option<T>>,
+    previous: &SharedColumn<StorageAllocation<Option<T>>>,
+    current: &SharedColumn<StorageAllocation<Option<T>>>,
 ) -> usize {
     let (mut removed, mut added) = (0, 0);
     current.visit_changed_values(previous, &mut |_, new, old| {

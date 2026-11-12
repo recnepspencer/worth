@@ -20,3 +20,5 @@ pub mod required_settlement;
 pub mod retained_computation;
 #[path = "tests/mod.rs"]
 pub mod tests;
+
+pub mod original_publication;

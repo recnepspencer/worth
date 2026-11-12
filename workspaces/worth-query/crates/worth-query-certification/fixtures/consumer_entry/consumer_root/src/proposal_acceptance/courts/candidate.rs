@@ -87,7 +87,8 @@ fn stored_edit_stages_under_a_fresh_caller_then_adopts_the_actual_model_head() {
     assert_eq!(adopted.completed().len(), 1);
     match &adopted.completed()[0] {
         WorthQuerySourceCompletion::Fresh { result, .. } => assert_eq!(result.days, 3),
-        WorthQuerySourceCompletion::Recovered { .. } => {
+        WorthQuerySourceCompletion::Recovered { .. }
+        | WorthQuerySourceCompletion::Recorded { .. } => {
             panic!("first candidate execution is fresh")
         }
     }

@@ -206,6 +206,8 @@ pub fn checkpoint_body(accepted_count: u64, accepted: Vec<u8>) -> Vec<u8> {
     body.extend_from_slice(&worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_checkpoint::WORKFLOW_INSTANCES.to_be_bytes());
     body.extend_from_slice(&1_u64.to_be_bytes());
     body.extend_from_slice(&0_u64.to_be_bytes());
+    body.extend_from_slice(&0_u64.to_be_bytes()); // Native admission image DATA.
+    body.extend_from_slice(&0_u64.to_be_bytes()); // World original registry DATA.
     body.extend_from_slice(&accepted_count.to_be_bytes());
     body.extend_from_slice(&accepted);
     body

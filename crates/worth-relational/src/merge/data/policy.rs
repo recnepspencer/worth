@@ -7,9 +7,12 @@ use worth_foundational::facade::AspectKey;
 
 use super::MergeResolvedAspectValueStrategy;
 
+mod custom_name;
+pub use custom_name::MergePolicyName;
+
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct CustomMergePolicyIdentity {
-    pub name: Arc<str>,
+    pub name: MergePolicyName,
     pub semantic_version: u32,
 }
 

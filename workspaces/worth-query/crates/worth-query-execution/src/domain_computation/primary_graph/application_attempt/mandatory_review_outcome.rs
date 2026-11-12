@@ -111,12 +111,16 @@ impl WorthQueryReviewedElevation {
 
 /// Every way committing a mandatory review can end.
 ///
-/// This mirrors the application commit outcome. `Reviewed` and
-/// `AlreadyReviewed` carry the move-only reviewed-elevation receipt. Most
+/// This mirrors the application commit outcome. `Reviewed` carries the move-only reviewed-elevation receipt. Most
 /// variants that did not land hand the consumed mandatory review back, so it
 /// can be committed again.
 #[derive(Debug)]
 pub enum WorthQueryMandatoryReviewOutcome {
+    /// Immutable original meaning plus the exact predecessor supplied by this call.
+    RecoveredCommitted {
+        receipt: crate::domain_computation::primary_graph::provider::WorthQueryRecoveredApplicationCommitReceipt,
+        mandatory: WorthQueryMandatoryReview,
+    },
     CleanupRequired(Box<super::WorthQueryApplicationCleanupRequired>),
     /// The product branch moved after the basis. Nothing was committed.
     ProductStale(
@@ -125,6 +129,9 @@ pub enum WorthQueryMandatoryReviewOutcome {
     ),
     /// Some owners moved, but the product head did not. Recover publication.
     ProductUnpublished(crate::domain_computation::WorthQueryProductUnpublishedApplication),
+    ProductPreparationPending(crate::domain_computation::WorthQueryProductPreparationPending),
+    ProductPreparationRefused(crate::domain_computation::WorthQueryProductPreparationRefused),
+
     /// Nothing was written; the cause says why.
     NoEffect(
         super::WorthQueryApplicationNoEffect,
@@ -132,8 +139,6 @@ pub enum WorthQueryMandatoryReviewOutcome {
     ),
     /// This attempt committed the mandatory review.
     Reviewed(WorthQueryReviewedElevation),
-    /// The idempotency key had already committed this mandatory review; nothing was redone.
-    AlreadyReviewed(WorthQueryReviewedElevation),
     /// The basis was stale at compare. Nothing was committed; re-read and retry.
     Stale(WorthQueryApplicationStaleAttempt, WorthQueryMandatoryReview),
     /// The attempt was cancelled before it landed.
@@ -165,26 +170,14 @@ pub(in crate::domain_computation::primary_graph) fn reviewed_outcome(
             )
         }
 
+        WorthQueryApplicationCommitOutcome::RecoveredCommitted(receipt) => {
+            WorthQueryMandatoryReviewOutcome::RecoveredCommitted {
+                receipt,
+                mandatory: binding.into_mandatory(),
+            }
+        }
         WorthQueryApplicationCommitOutcome::Committed(commit) => {
             WorthQueryMandatoryReviewOutcome::Reviewed(reviewed(binding, commit))
-        }
-        WorthQueryApplicationCommitOutcome::AlreadyCommitted(commit) => {
-            match commit
-                .committed_changes()
-                .committed_field_values(binding.review(), &[binding.reviewed_at_field()])
-            {
-                Some(values) => WorthQueryMandatoryReviewOutcome::AlreadyReviewed(reviewed(
-                    binding.restore_committed_review(values[0].clone()),
-                    commit,
-                )),
-                None => WorthQueryMandatoryReviewOutcome::Denied(
-                    WorthQueryApplicationCommitDenial::provider_rejected_with_detail(
-                        super::WorthQueryApplicationCommitDenialStage::Idempotency,
-                        "committed review field is unavailable",
-                    ),
-                    binding.into_mandatory(),
-                ),
-            }
         }
         WorthQueryApplicationCommitOutcome::Stale(stale) => {
             WorthQueryMandatoryReviewOutcome::Stale(stale, binding.into_mandatory())
@@ -207,6 +200,12 @@ pub(in crate::domain_computation::primary_graph) fn reviewed_outcome(
         }
         WorthQueryApplicationCommitOutcome::ProductUnpublished(unpublished) => {
             WorthQueryMandatoryReviewOutcome::ProductUnpublished(unpublished)
+        }
+        WorthQueryApplicationCommitOutcome::ProductPreparationPending(owner) => {
+            WorthQueryMandatoryReviewOutcome::ProductPreparationPending(owner)
+        }
+        WorthQueryApplicationCommitOutcome::ProductPreparationRefused(owner) => {
+            WorthQueryMandatoryReviewOutcome::ProductPreparationRefused(owner)
         }
         WorthQueryApplicationCommitOutcome::NoEffect(no_effect) => {
             WorthQueryMandatoryReviewOutcome::NoEffect(no_effect, binding.into_mandatory())

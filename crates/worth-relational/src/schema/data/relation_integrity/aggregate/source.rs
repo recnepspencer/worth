@@ -1,7 +1,7 @@
 //! Strict physical legacy objects and explicit registered-derived source objects.
 use crate::derived_relation::DerivedRelationIdentity;
 use crate::identity::data::KindId;
-use serde::{Deserialize, Deserializer, Serialize};
+use serde::Serialize;
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
 pub enum AggregateIdentitySource {
@@ -39,45 +39,7 @@ impl Serialize for AggregateIdentitySource {
     }
 }
 
-impl<'de> Deserialize<'de> for AggregateIdentitySource {
-    fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
-        #[derive(Deserialize)]
-        #[serde(deny_unknown_fields)]
-        struct Components {
-            relations: Vec<KindId>,
-        }
-        #[derive(Deserialize)]
-        #[serde(deny_unknown_fields)]
-        struct Orbit {
-            derived_orbit: DerivedRelationIdentity,
-        }
-        #[derive(Deserialize)]
-        #[serde(deny_unknown_fields)]
-        struct DerivedComponents {
-            derived_components: DerivedRelationIdentity,
-        }
-        #[derive(Deserialize)]
-        #[serde(untagged)]
-        enum Wire {
-            Physical(KindId),
-            Components(Components),
-            Orbit(Orbit),
-            DerivedComponents(DerivedComponents),
-        }
-        Ok(match Wire::deserialize(deserializer)? {
-            Wire::Physical(kind) => Self::Orbit(kind),
-            Wire::Components(value) => Self::Components {
-                relations: value.relations,
-            },
-            Wire::Orbit(value) => Self::DerivedOrbit {
-                derived_orbit: value.derived_orbit,
-            },
-            Wire::DerivedComponents(value) => Self::DerivedComponents {
-                derived_components: value.derived_components,
-            },
-        })
-    }
-}
+mod decoding;
 
 impl AggregateIdentitySource {
     pub fn orbit_relation(&self) -> Option<KindId> {
@@ -131,28 +93,28 @@ impl AggregateIdentitySource {
         }
     }
 
-    pub(super) fn write_canonical(&self, bytes: &mut Vec<u8>) {
+    pub(super) fn try_write_canonical(
+        &self,
+        emit: &mut dyn FnMut(&[u8]) -> Result<(), crate::execution::RelationalExecutionDenialCause>,
+    ) -> Result<(), crate::execution::RelationalExecutionDenialCause> {
         match self {
-            Self::Orbit(kind) => bytes.extend_from_slice(&kind.0.to_be_bytes()),
+            Self::Orbit(kind) => emit(&kind.0.to_be_bytes())?,
             Self::Components { relations } => {
-                bytes.extend_from_slice(b"WORTH_COMPONENT_SOURCES_V1\0");
-                bytes.extend_from_slice(&(relations.len() as u64).to_be_bytes());
+                emit(b"WORTH_COMPONENT_SOURCES_V1\0")?;
+                emit(&(relations.len() as u64).to_be_bytes())?;
                 for kind in relations {
-                    bytes.extend_from_slice(&kind.0.to_be_bytes());
+                    emit(&kind.0.to_be_bytes())?;
                 }
             }
             Self::DerivedOrbit { derived_orbit } => {
-                bytes.extend_from_slice(b"WORTH_DERIVED_ORBIT_SOURCE_V1\0");
-                crate::derived_relation::canonical::write_identity(derived_orbit, |part| {
-                    bytes.extend_from_slice(part)
-                });
+                emit(b"WORTH_DERIVED_ORBIT_SOURCE_V1\0")?;
+                crate::derived_relation::canonical::try_write_identity(derived_orbit, emit)?;
             }
             Self::DerivedComponents { derived_components } => {
-                bytes.extend_from_slice(b"WORTH_DERIVED_COMPONENT_SOURCE_V1\0");
-                crate::derived_relation::canonical::write_identity(derived_components, |part| {
-                    bytes.extend_from_slice(part)
-                });
+                emit(b"WORTH_DERIVED_COMPONENT_SOURCE_V1\0")?;
+                crate::derived_relation::canonical::try_write_identity(derived_components, emit)?;
             }
         }
+        Ok(())
     }
 }

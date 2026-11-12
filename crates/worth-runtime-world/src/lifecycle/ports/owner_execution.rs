@@ -79,6 +79,29 @@ pub(crate) trait RuntimeWorldOwnerExecutionService {
             >,
         ) -> Result<(), SignalError>;
 
+    fn execute_authored_conditional_definition_with_signal<F>(
+        &self,
+        execution: worth_execution::ExecutionRequest<'_, '_>,
+        prepared: PreparedCompositePublicationWithSignal,
+        publication: std::sync::Arc<
+            crate::publication::AuthoredConditionalDefinitionAttemptCustody,
+        >,
+        runtime_ctx: &mut Self::SignalContext,
+        cancellation: &RuntimeWorldCancellationToken,
+        apply: F,
+    ) -> OwnerExecutionOutcome
+    where
+        F: FnOnce(
+            &mut SignalTransaction<
+                '_,
+                Self::SignalDefinition,
+                Self::SignalIdentity,
+                Self::SignalEvent,
+                Self::SignalContext,
+                Self::SignalTransactionKey,
+            >,
+        ) -> Result<(), SignalError>;
+
     fn execute_conditional_definition_with_signal_and_cutover<F, H>(
         &self,
         execution: worth_execution::ExecutionRequest<'_, '_>,

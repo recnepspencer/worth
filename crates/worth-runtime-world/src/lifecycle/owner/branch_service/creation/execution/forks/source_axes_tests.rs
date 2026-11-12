@@ -2,7 +2,7 @@
 //!
 //! `source_is_the_admitted_basis` is the only thing standing between a
 //! creation admitted against one source observation and a fork taken from a
-//! different one. Its single caller, `observe_exact_fork_source`, turns a
+//! different one. Its owning entry, `observe_creation_native_source`, turns a
 //! `false` here into `RuntimeWorldBranchAdmissionDenial::ForkSourceChanged`
 //! before the destination is reserved or any branch is created; the
 //! end-to-end proof of that mapping is

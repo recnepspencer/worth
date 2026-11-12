@@ -60,7 +60,7 @@ where
             .mutation_handle()
             .expect("a mutation session owns its graph handle")
             .clone();
-        handle.with_runtime_mut(execution, |relational| {
+        handle.with_runtime(execution, |relational| {
             self.observe_current_operation_borrowed(
                 execution,
                 principal,

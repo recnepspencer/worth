@@ -105,6 +105,9 @@ pub fn provider_session_denied(
         Kind::ForeignExecutionBasis => {
             Denial::provider_rejected_with_detail(Stage::ProviderCommit, detail)
         }
+        Kind::StaleIncarnation => {
+            Denial::provider_execution_denied(Stage::ProviderCommit, Ok(kind), detail)
+        }
         Kind::ForeignGraphAuthority => {
             Denial::provider_rejected_with_detail(Stage::ProviderCommit, detail)
         }
@@ -156,6 +159,27 @@ pub(in crate::domain_computation::primary_graph::application_attempt) fn read_se
     }
 }
 
+#[cfg(test)]
+mod tests;
+
+pub(in crate::domain_computation::primary_graph) fn provider_session_admission_denied(
+    failure: crate::domain_computation::WorthQueryProviderSessionFailure,
+) -> Denial {
+    use crate::domain_computation::WorthQueryProviderSessionDenialKind as Kind;
+    if matches!(
+        failure.kind(),
+        Kind::StaleIncarnation | Kind::ForeignGraphAuthority | Kind::TokenNotMintedForPlan
+    ) {
+        Denial::provider_execution_denied(Stage::ProviderPlan, Ok(failure.kind()), failure.detail())
+            .with_provider_session_failure(failure)
+    } else {
+        Denial::provider_rejected_with_detail(
+            Stage::ProviderPlan,
+            format!("provider session admission: {failure:?}"),
+        )
+    }
+}
+
 pub fn provider_session_execution_denied(
     stop: Result<
         crate::domain_computation::WorthQueryProviderSessionDenialKind,
@@ -188,5 +212,21 @@ pub fn control_stopped_outcome(
         crate::domain_computation::WorthQueryProviderSessionControlStopKind::TimedOut => {
             Progression::TimedOut
         }
+    }
+}
+
+/// Original delivery backing is admitted before provider effects; exact stops remain typed.
+pub(in crate::domain_computation::primary_graph) fn original_custody_allocation_denied(
+    cause: worth_execution::ExecutionAllocationDenial,
+) -> super::WorthQueryApplicationCommitOutcome {
+    use crate::domain_computation::primary_graph::application_contribution::{
+        execution_denial, WorthQueryAdvancementDenial as Denial,
+    };
+    use worth_execution::ExecutionAllocationDenialClass as Class;
+    match cause.classify() {
+        Class::Request(stop) => execution_denial::advancement_scope_stop(stop).into_commit_outcome(),
+        Class::Physical(kind) => Denial::Resource(crate::domain_computation::primary_graph::application_contribution::WorthQueryManagedComputationResourceDenial::NativeAllocationRefused {
+            kind, requested_payload_bytes: cause.requested_payload_bytes(),
+        }).into_commit_outcome(),
     }
 }

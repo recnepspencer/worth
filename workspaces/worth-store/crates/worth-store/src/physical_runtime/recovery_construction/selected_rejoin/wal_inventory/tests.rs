@@ -29,6 +29,9 @@ fn entry(segment: u64, generation: u64) -> WalArtifactFingerprint {
     }
 }
 
+const SERVING_BACKING_BYTES: u64 =
+    crate::physical_runtime::record_serving::PreparedRecoveredCustodyBacking::required_bytes();
+
 #[test]
 fn wal_fingerprint_uses_typed_numeric_order_and_denies_duplicate_identity() {
     let mut fingerprints = vec![entry(10, 1), entry(2, 2), entry(2, 1)];
@@ -72,9 +75,9 @@ fn resident_fingerprint_handoff_moves_precharged_backing_without_clone() {
     assert!(first.matches_reread(&inventory));
     let charged =
         (inventory.artifacts.capacity() * std::mem::size_of::<WalArtifactFingerprint>()) as u64;
-    assert_eq!(fixture::active(&ports), 2 * charged);
+    assert_eq!(fixture::active(&ports), SERVING_BACKING_BYTES + 2 * charged);
     first.discard_with_resident(&mut resident).unwrap();
-    assert_eq!(fixture::active(&ports), charged);
+    assert_eq!(fixture::active(&ports), SERVING_BACKING_BYTES + charged);
     assert_eq!(resident.used(), 100 + charged);
     let artifacts = &inventory.artifacts;
     let original_ptr = artifacts.as_ptr();

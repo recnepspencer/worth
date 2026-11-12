@@ -1,40 +1,15 @@
 use super::commit_resolution::{finish_authorized_compare, WorthQueryAuthorizedCompareContext};
 use crate::domain_computation::primary_graph as graph;
 use graph::application_attempt::provider_compare_denial::provider_session_execution_denied;
-use graph::application_attempt::provider_execution::aftermath_resolution::resolve_exact_committed_aftermath;
 use graph::application_attempt::provider_execution::outcome::{
     progression_denied, progression_from_authorization_denial, WorthQueryProviderProgressionOutcome,
 };
 use graph::application_attempt::{
-    provider_recomparison::recover_equivalent_commit_evidence,
-    WorthQueryApplicationCommitAuthorityBinding, WorthQueryApplicationCommitDenial,
-    WorthQueryApplicationCommitDenialStage as DenialStage, WorthQueryApplicationCommitReceipt,
-    WorthQueryCommittedReceiptProjection,
+    WorthQueryApplicationCommitDenial, WorthQueryApplicationCommitDenialStage as DenialStage,
 };
 use graph::provider::WorthQueryProviderIdempotencyResolution;
 use graph::provider::WorthQueryProviderIdempotencyResolutionDenial as IdempotencyDenial;
 use graph::WorthQueryApplicationCommitDenialStage as ExecutionDenialStage;
-
-pub(in crate::domain_computation::primary_graph::application_attempt) struct WorthQueryManagedEquivalentCommitReceiptPermit
-{
-    provider_session:
-        crate::domain_computation::provider_session::WorthQueryProviderSessionTerminalBinding,
-}
-
-impl WorthQueryManagedEquivalentCommitReceiptPermit {
-    fn mint(
-        provider_session: crate::domain_computation::provider_session::
-            WorthQueryProviderSessionTerminalBinding,
-    ) -> Self {
-        Self { provider_session }
-    }
-
-    pub(in crate::domain_computation::primary_graph::application_attempt) fn into_provider_session(
-        self,
-    ) -> crate::domain_computation::provider_session::WorthQueryProviderSessionTerminalBinding {
-        self.provider_session
-    }
-}
 
 pub(super) struct WorthQueryAuthorizedProviderCommit<
     'run,
@@ -173,12 +148,23 @@ where
         .provider()
         .resolve_application_idempotency(execution, &provider_session)
     {
+        Ok(WorthQueryProviderIdempotencyResolution::PreparationBusy)
+        | Err(IdempotencyDenial::PreparationBusy) => {
+            candidate.discard();
+            WorthQueryProviderProgressionOutcome::Denied(
+                WorthQueryApplicationCommitDenial::idempotency_preparation_busy(),
+            )
+        }
         Ok(WorthQueryProviderIdempotencyResolution::Absent) => {
             let control = crate::domain_computation::primary_graph::request_allocation_control::RequestAllocationControl::new(
                 authority.admission().publication_request(), allocation_policy,
             );
-            finish_authorized_compare(execution,
-            candidate.compare_and_commit_with(|prepared| {
+            let context = WorthQueryAuthorizedCompareContext::from_progression(
+                authority,
+                dispatch_outbox,
+                provider_session,
+            );
+            let compared = candidate.compare_and_commit_with(|prepared| {
                 match authority.history {
                     Some(history) => {
                         let request = authority.admission().retain_admitted_request();
@@ -197,23 +183,52 @@ where
                         control.policy(), Some(authority.admission().publication_request()),
                     ),
                 )
-            }),
-            WorthQueryAuthorizedCompareContext::from_progression(
-                authority,
-                dispatch_outbox,
-                provider_session,
-            ),
-        )
+            });
+            finish_authorized_compare(execution, compared, context)
         }
-        Ok(WorthQueryProviderIdempotencyResolution::Equivalent(receipt)) => {
+        Ok(WorthQueryProviderIdempotencyResolution::ReleasedOriginal(_)) => {
             candidate.discard();
-            resolve_equivalent_commit(receipt, authority, provider_session)
+            WorthQueryProviderProgressionOutcome::Denied(
+                WorthQueryApplicationCommitDenial::original_effect_released(),
+            )
+        }
+        Ok(WorthQueryProviderIdempotencyResolution::Readmitted(receipt)) => {
+            candidate.discard();
+            if graph::application_attempt::provider_execution::aftermath_resolution::recovered_answers_aftermath(authority.aftermath_causality(), &receipt) {
+                WorthQueryProviderProgressionOutcome::RecoveredCommitted(receipt)
+            } else {
+                WorthQueryProviderProgressionOutcome::Denied(WorthQueryApplicationCommitDenial::idempotency_intent_drift())
+            }
         }
         Ok(WorthQueryProviderIdempotencyResolution::Drift) => {
             candidate.discard();
             WorthQueryProviderProgressionOutcome::Denied(
                 WorthQueryApplicationCommitDenial::idempotency_intent_drift(),
             )
+        }
+        Ok(WorthQueryProviderIdempotencyResolution::PreparationPending { handle, stage }) => {
+            candidate.discard();
+            WorthQueryProviderProgressionOutcome::ProductPreparationPending(
+                authority
+                    .application()
+                    .runtime
+                    .primary_provider
+                    .preparation_pending(&authority.product.publication_binding(), handle, stage),
+            )
+        }
+        Ok(WorthQueryProviderIdempotencyResolution::RecoveredUnpublished { handle }) => {
+            candidate.discard();
+            match authority
+                .application()
+                .runtime
+                .primary_provider
+                .recovered_unpublished_application(&authority.product.publication_binding(), handle)
+            {
+                Ok(effects) => WorthQueryProviderProgressionOutcome::ProductUnpublished(effects),
+                Err(_) => WorthQueryProviderProgressionOutcome::Denied(
+                    WorthQueryApplicationCommitDenial::idempotency_preparation_busy(),
+                ),
+            }
         }
         Ok(WorthQueryProviderIdempotencyResolution::Unpublished) => {
             candidate.discard();
@@ -242,10 +257,10 @@ where
             candidate.discard();
             progression_denied(DenialStage::Idempotency)
         }
-        Err(IdempotencyDenial::CommittedReceiptNotRetained { commit }) => {
+        Err(IdempotencyDenial::ForeignAffinity) => {
             candidate.discard();
             WorthQueryProviderProgressionOutcome::Denied(
-                WorthQueryApplicationCommitDenial::idempotency_receipt_not_retained(commit),
+                WorthQueryApplicationCommitDenial::idempotency_foreign_affinity(),
             )
         }
         Err(IdempotencyDenial::RecordedIntentUnverifiable) => {
@@ -278,48 +293,5 @@ where
                 ),
             )
         }
-    }
-}
-
-fn resolve_equivalent_commit<Schema, Operation, Input, Scope>(
-    receipt: graph::provider::WorthQueryPrimaryGraphCommittedApplication,
-    authority: &super::WorthQueryApplicationCommitProgressionAuthority<
-        '_,
-        '_,
-        Schema,
-        Operation,
-        Input,
-        Scope,
-    >,
-    provider_session: crate::domain_computation::provider_session::
-        WorthQueryProviderSessionTerminalBinding,
-) -> WorthQueryProviderProgressionOutcome
-where
-    Input: Clone + Send + Sync + 'static,
-{
-    let Ok(causality) =
-        resolve_exact_committed_aftermath(authority.aftermath_causality(), &receipt)
-    else {
-        return WorthQueryProviderProgressionOutcome::Denied(
-            WorthQueryApplicationCommitDenial::idempotency_intent_drift(),
-        );
-    };
-    match WorthQueryCommittedReceiptProjection::resolve(receipt) {
-        Ok(projection) => {
-            let receipt = WorthQueryApplicationCommitReceipt::from_managed_equivalent(
-                WorthQueryManagedEquivalentCommitReceiptPermit::mint(provider_session),
-                projection,
-                recover_equivalent_commit_evidence(authority.admission().mutation_preconditions()),
-                authority.admission().canonical_work(),
-                WorthQueryApplicationCommitAuthorityBinding::from_admission(
-                    authority.admission(),
-                    authority.idempotency(),
-                ),
-            );
-            WorthQueryProviderProgressionOutcome::AlreadyCommitted(
-                receipt.with_aftermath_causality(causality),
-            )
-        }
-        Err(_) => progression_denied(DenialStage::Idempotency),
     }
 }

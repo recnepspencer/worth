@@ -1,4 +1,5 @@
 use std::time::Duration;
+use worth_query_execution::facade::product::WorthQueryProductBranchCreationOutcome;
 
 use worth_query_execution::facade::domain_computation::WorthQueryApplicationLiveControls;
 use worth_query_execution::facade::domain_computation::WorthQueryApplicationLiveOutcome;
@@ -69,9 +70,7 @@ fn sibling_commit_wakes_only_its_exact_product_partition() {
             &worth_runtime_world::facade::RuntimeWorldCancellationSource::new().token(),
         )
         .unwrap();
-    let worth_runtime_world::facade::RuntimeWorldBranchCreationOutcome::Performed(created) =
-        created
-    else {
+    let WorthQueryProductBranchCreationOutcome::Performed(created) = created else {
         panic!("the exact sibling must be created")
     };
     let sibling = created.branch_identity().clone();

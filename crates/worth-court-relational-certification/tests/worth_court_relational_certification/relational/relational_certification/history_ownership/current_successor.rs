@@ -39,7 +39,7 @@ fn exercise(worker: bool) {
         assert!(!execution.has_accounting());
     }
     let mut next = world.meaning.clone();
-    next.source_epoch = [9; 32];
+    next.source_epoch = worth_foundational::facade::CanonicalDigestId::new([9; 32]);
     let current = world
         .runtime
         .readmit_current_owned_output_successor(
@@ -70,7 +70,7 @@ fn exercise(worker: bool) {
         .unwrap()
         .is_none());
     let mut foreign = next.clone();
-    foreign.source_partition = [7; 32];
+    foreign.source_partition = worth_foundational::facade::CanonicalDigestId::new([7; 32]);
     assert!(world
         .runtime
         .readmit_current_owned_output_successor(

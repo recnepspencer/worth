@@ -12,6 +12,7 @@ test = false
 doctest = false
 
 [dependencies]
+worth-proof = { path = "../../../../crates/worth-proof" }
 worth-foundational = { path = "../../../../crates/worth-foundational" }
 worth-query-declaration = { path = "../worth-query-declaration" }
 worth-query-installation = { path = "../worth-query-installation" }

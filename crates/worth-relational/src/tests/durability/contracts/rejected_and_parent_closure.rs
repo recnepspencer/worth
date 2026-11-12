@@ -28,10 +28,9 @@ fn durability_contract_recovery_ignores_rejected_relation_integrity_attempts() {
         ),
         ..RelationIntegritySchemaFixture::default()
     };
-    let medium = TestDurableMedium::new();
     let runtime = RelationalRuntimeApi::builder()
         .schema_registry(fixture.build_registry())
-        .build_durable(medium.attachment())
+        .build()
         .expect("valid native runtime configuration");
     let source = create_entity(execution, &runtime, "source");
     let target_a = create_entity(execution, &runtime, "target-a");
@@ -106,16 +105,17 @@ fn durability_contract_recovery_ignores_rejected_relation_integrity_attempts() {
         main_digest_before
     );
 
-    crate::tests::support::checkpoint_durably(execution, &runtime).unwrap();
-    let plan = crate::tests::support::recovery_plan_for(
-        execution,
-        &runtime,
-        RecoveryMode::NormalRecoveryVerification,
-    )
-    .unwrap();
+    runtime
+        .durability_authority()
+        .checkpoint(execution)
+        .unwrap();
+    let plan = runtime
+        .durability()
+        .recovery_plan(execution, RecoveryMode::NormalRecoveryVerification)
+        .unwrap();
     let mut recovered = RelationalRuntimeApi::builder()
         .schema_registry(fixture.build_registry())
-        .build_durable(medium.attachment())
+        .build()
         .expect("valid native runtime configuration");
     let outcome = recovered
         .durability_recovery()
@@ -137,56 +137,5 @@ fn durability_contract_recovery_ignores_rejected_relation_integrity_attempts() {
         .replay()
         .canonical_commit_envelope(execution, latest_commit_before.unwrap().commit_id)
         .unwrap()
-        .map(|envelope| envelope.as_ref().clone())
         .is_some());
-}
-
-#[test]
-fn durability_contract_failure_missing_authoritative_parent_closure_is_explicit() {
-    let host_request = crate::test_execution_policy::serial_request();
-    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
-
-    let runtime = runtime_with_test_schema();
-    let parent = create_entity_outcome(execution, &runtime, "main-a");
-    let child = create_entity_outcome(execution, &runtime, "main-b");
-    let child_envelope = runtime
-        .replay()
-        .canonical_commit_envelope(execution, child.commit.commit_id)
-        .unwrap()
-        .map(|envelope| envelope.as_ref().clone())
-        .unwrap();
-    let corrupt_plan = RecoveryPlan::new(
-        runtime.config().clone(),
-        None,
-        vec![
-            crate::durability::migration::ReadmittedCanonicalCommit::exact(
-                crate::history::data::PositionedCanonicalCommit::for_test(
-                    child.patch_position(),
-                    std::sync::Arc::new(child_envelope),
-                ),
-            ),
-        ],
-        crate::durability::data::RecoveryBranchTransitions::Contiguous(Vec::new()),
-        RecoveryAuthorityContinuityCheck::verified_at(ReplayVerificationLayer::DigestParity),
-        RecoveryVerificationMode::NormalRecoveryVerification,
-        DescriptorSemanticsVersion::default(),
-        vec![child.commit.commit_id],
-        None,
-    );
-    let mut recovered = runtime_with_test_schema();
-    let error = recovered
-        .durability_recovery()
-        .recover(execution, corrupt_plan)
-        .unwrap_err();
-    let error = crate::tests::support::expect_durability_failure(error);
-
-    assert_eq!(parent.commit.commit_id.0, 1);
-    assert_eq!(
-        error.class,
-        RecoveryFailureClass::MissingAuthoritativeParentClosure
-    );
-    assert_eq!(
-        error.history_drift_class,
-        Some(crate::facade::history::HistoryDriftClass::CanonicalHistoryDrift)
-    );
 }

@@ -27,11 +27,13 @@ fn complexity_budget_replay_verification_tracks_digest_and_deep_layers_separatel
     assert!(normal_counters.replay_digest_parity_checks > 0);
     assert_eq!(normal_counters.replay_deep_artifact_parity_checks, 0);
 
-    runtime
-        .history_authority()
-        .tamper_commit_patch_for_test(created.commit.commit_id, |patch| {
+    runtime.history_authority().tamper_commit_patch_for_test(
+        execution,
+        created.commit.commit_id,
+        |patch| {
             patch.authoritative_record_patches.clear();
-        });
+        },
+    );
 
     runtime.performance_access().reset_counters();
     let audited = runtime

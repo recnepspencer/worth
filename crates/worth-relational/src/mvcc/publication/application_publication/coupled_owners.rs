@@ -112,7 +112,7 @@ impl RelationalAuthoredCoupledOwners {
                         let meaning = &owner.origin.meaning;
                         if meaning.family == family
                             && meaning.source_scope == source
-                            && &meaning.source_partition == partition
+                            && meaning.source_partition.bytes() == partition
                         {
                             return Ok(Some(if retiring {
                                 RelationalDeclaredCoupledOwner::Retiring

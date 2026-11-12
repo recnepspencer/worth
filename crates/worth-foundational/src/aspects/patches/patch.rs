@@ -1,5 +1,3 @@
-use std::collections::{BTreeMap, BTreeSet};
-
 use crate::aspects::contracts::AspectContract;
 use crate::aspects::keys::AspectKey;
 use crate::aspects::masks::{AspectMask, MutationMask};
@@ -9,30 +7,34 @@ use crate::values::AspectValue;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct AuthoritativeRecordAspectPatch {
-    pub(crate) whole_aspect_sets: BTreeMap<AspectKey, ContractValidatedAspectValue>,
-    pub(crate) whole_aspect_clears: BTreeMap<AspectKey, AspectContract>,
-    pub(crate) field_patches: BTreeMap<AspectKey, FieldLevelAspectPatch>,
+    pub(crate) whole_aspect_sets: Box<[ContractValidatedAspectValue]>,
+    pub(crate) whole_aspect_clears: Box<[AspectContract]>,
+    pub(crate) field_patches: Box<[FieldLevelAspectPatch]>,
 }
 
 impl AuthoritativeRecordAspectPatch {
     pub fn whole_aspect_sets(
         &self,
     ) -> impl Iterator<Item = (&AspectKey, &ContractValidatedAspectValue)> {
-        self.whole_aspect_sets.iter()
+        self.whole_aspect_sets
+            .iter()
+            .map(|value| (value.key(), value))
     }
 
     pub fn whole_aspect_clears(&self) -> impl Iterator<Item = &AspectKey> {
-        self.whole_aspect_clears.keys()
+        self.whole_aspect_clears.iter().map(AspectContract::key)
     }
 
     pub fn whole_aspect_clear_contracts(
         &self,
     ) -> impl Iterator<Item = (&AspectKey, &AspectContract)> {
-        self.whole_aspect_clears.iter()
+        self.whole_aspect_clears
+            .iter()
+            .map(|contract| (contract.key(), contract))
     }
 
     pub fn field_patches(&self) -> impl Iterator<Item = (&AspectKey, &FieldLevelAspectPatch)> {
-        self.field_patches.iter()
+        self.field_patches.iter().map(|patch| (patch.key(), patch))
     }
 
     pub fn is_empty(&self) -> bool {
@@ -43,29 +45,24 @@ impl AuthoritativeRecordAspectPatch {
 
     pub fn semantic_byte_width(&self) -> usize {
         let sets = self
-            .whole_aspect_sets
-            .iter()
+            .whole_aspect_sets()
             .fold(0_usize, |total, (key, value)| {
                 total
                     .saturating_add(key.as_str().len())
                     .saturating_add(value.semantic_byte_width())
             });
         let clears = self
-            .whole_aspect_clears
-            .iter()
+            .whole_aspect_clear_contracts()
             .fold(0_usize, |total, (key, contract)| {
                 total
                     .saturating_add(key.as_str().len())
                     .saturating_add(contract.semantic_byte_width())
             });
-        let fields = self
-            .field_patches
-            .iter()
-            .fold(0_usize, |total, (key, patch)| {
-                total
-                    .saturating_add(key.as_str().len())
-                    .saturating_add(patch.semantic_byte_width())
-            });
+        let fields = self.field_patches().fold(0_usize, |total, (key, patch)| {
+            total
+                .saturating_add(key.as_str().len())
+                .saturating_add(patch.semantic_byte_width())
+        });
         sets.saturating_add(clears).saturating_add(fields)
     }
 }
@@ -74,8 +71,8 @@ impl AuthoritativeRecordAspectPatch {
 pub struct FieldLevelAspectPatch {
     pub(crate) contract: AspectContract,
     pub(crate) mask: AspectMask<MutationMask>,
-    pub(crate) field_sets: BTreeMap<FieldKey, AspectValue>,
-    pub(crate) field_clears: BTreeSet<FieldKey>,
+    pub(crate) field_sets: Box<[(FieldKey, AspectValue)]>,
+    pub(crate) field_clears: Box<[FieldKey]>,
 }
 
 impl FieldLevelAspectPatch {
@@ -92,7 +89,7 @@ impl FieldLevelAspectPatch {
     }
 
     pub fn field_sets(&self) -> impl Iterator<Item = (&FieldKey, &AspectValue)> {
-        self.field_sets.iter()
+        self.field_sets.iter().map(|(key, value)| (key, value))
     }
 
     pub fn field_clears(&self) -> impl Iterator<Item = &FieldKey> {

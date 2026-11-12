@@ -83,6 +83,10 @@ impl SignalAttemptProgress {
                 SignalAttemptProgressPosture::Performed,
                 Some(SignalProgressEvidence::Forked(outcome)),
             ) => Some(ResultEvidence::forked(outcome.clone())),
+            (
+                SignalAttemptProgressPosture::Performed,
+                Some(SignalProgressEvidence::Durable(outcome)),
+            ) => Some(ResultEvidence::durable(std::sync::Arc::clone(outcome))),
             _ => None,
         }
     }

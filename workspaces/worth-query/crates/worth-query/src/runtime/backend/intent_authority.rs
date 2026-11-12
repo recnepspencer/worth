@@ -8,7 +8,7 @@ pub trait WorthQueryIntentAuthorityAdapter {
     fn execute_intent(
         &mut self,
         bridge: &RuntimeBridge,
-        relational_runtime: Option<&mut RelationalRuntime>,
+        relational_runtime: Option<&RelationalRuntime>,
         declaration: &WorthQueryIntentDeclaration,
     ) -> Result<WorthQueryIntentExecution, WorthQueryWorkspaceError>;
 }

@@ -181,7 +181,7 @@ pub enum CascadeDeletePolicy {
     CascadeDeleteRelations,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub(crate) struct MutationConfig {
     pub(crate) cascade_delete_policy: CascadeDeletePolicy,
     pub(crate) adjacency_policy: AdjacencyPolicy,

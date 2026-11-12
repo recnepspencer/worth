@@ -12,6 +12,10 @@ pub enum DiagnosticContractDenial {
     NotDeclared,
     UnsupportedShape,
     Storage(RetainedStorageDenial),
+    #[allow(
+        dead_code,
+        reason = "The typed diagnostic or custody payload stays owned through return and Drop; this owner does not inspect it"
+    )]
     Contract(WorthQueryApplicationDisclosureContractDenial),
 }
 

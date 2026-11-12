@@ -1,6 +1,8 @@
 use super::*;
 
 mod actions;
+mod execution_storage;
+pub(crate) use execution_storage::{ExecutionBasis, ExecutionBasisState};
 pub(super) mod closeout;
 mod layout;
 mod materialization;
@@ -24,17 +26,7 @@ pub(crate) fn derive_execution_basis(
     maximum_staging_bytes: u64,
     maximum_dirty_frames: u64,
     allowance: &mut PlanningResidentAllowance,
-) -> Result<
-    (
-        RecoveryStagingLayoutPlan,
-        RecoveryPublicationPlan,
-        RecoveryQuiescencePlan,
-        CandidateMaterializationCost,
-        crate::entry::PhysicalRecoveryRootProtocolCounters,
-        u64,
-    ),
-    ExecutionBasisDenial,
-> {
+) -> Result<ExecutionBasis, ExecutionBasisDenial> {
     let pending = pending::admit(
         selection,
         fates,
@@ -69,7 +61,7 @@ pub(crate) fn derive_execution_basis(
         actions,
         allowance,
     )?;
-    let (staging, publication, quiescence, candidate_cost, counters) = closeout::seal(
+    closeout::seal(
         store,
         selection,
         freshness,
@@ -85,16 +77,7 @@ pub(crate) fn derive_execution_basis(
         maximum_manifest_entries,
         maximum_staging_bytes,
         allowance,
-    )?;
-    let planning_peak = allowance.peak();
-    Ok((
-        staging,
-        publication,
-        quiescence,
-        candidate_cost,
-        counters,
-        planning_peak,
-    ))
+    )
 }
 
 pub(crate) fn requires_successor_candidate(

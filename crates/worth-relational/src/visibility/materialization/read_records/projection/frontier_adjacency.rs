@@ -54,7 +54,7 @@ impl VisibilityProjectionView {
 
     /// Index maintenance mirrors full-build relation visibility, including
     /// audit-retained edges. Ordinary frontier queries remain Live-only.
-    pub(crate) fn bounded_index_relations_for_frontier(
+    pub fn bounded_index_relations_for_frontier(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         entity_ids: &BTreeSet<EntityId>,

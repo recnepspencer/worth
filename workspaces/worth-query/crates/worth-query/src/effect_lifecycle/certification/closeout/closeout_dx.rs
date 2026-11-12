@@ -185,14 +185,9 @@ fn inspectable_lowered_story(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
 ) -> Result<DxStoryEvidence, IdentityDerivationDenial> {
     let branch = "dx-lowered";
-    let mut runtime = relational_runtime_with_intent_strategy();
-    let entity = create_entity(
-        execution,
-        &mut runtime,
-        "before",
-        BranchId("main".to_string()),
-    );
-    fork_seed_branch_from_main(execution, &mut runtime, branch);
+    let runtime = relational_runtime_with_intent_strategy();
+    let entity = create_entity(execution, &runtime, "before", BranchId("main".to_string()));
+    fork_seed_branch_from_main(execution, &runtime, branch);
     let basis = EffectAuthoringBasis::from(branch_mutation_basis(branch));
     let binding =
         runtime_workflow_binding_for_branch(branch_snapshot_identity(&runtime, branch), branch)?;

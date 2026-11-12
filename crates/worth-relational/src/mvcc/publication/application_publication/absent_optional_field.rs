@@ -85,8 +85,7 @@ fn absent_optional_codec_cell_does_not_bypass_present_aspect_provenance() {
         let record = partition.entity_arena.get(&entity).unwrap();
         let value = record
             .extra()
-            .authoritative_aspect_state
-            .as_ref()
+            .authoritative_aspect_state()
             .unwrap()
             .get(&aspect_key("summary"))
             .unwrap();

@@ -35,7 +35,7 @@ where
     // Retain the closed native interest until this receipt's owner is dropped.
     _observation: WorthQueryApplicationOutputDemandContinuation<S, D>,
     cleanup: Option<
-        worth_query_execution::facade::domain_computation::WorthQueryDirectRunCleanupReceipt,
+        worth_query_execution::facade::primary_graph::WorthQueryApplicationManagedCleanupReceipt,
     >,
 }
 impl<S, D, P> WorthQueryClosedAssessmentObservation<S, D, P>
@@ -49,8 +49,9 @@ where
     }
     pub fn cleanup_receipt(
         &self,
-    ) -> Option<&worth_query_execution::facade::domain_computation::WorthQueryDirectRunCleanupReceipt>
-    {
+    ) -> Option<
+        &worth_query_execution::facade::primary_graph::WorthQueryApplicationManagedCleanupReceipt,
+    > {
         self.cleanup.as_ref()
     }
 }

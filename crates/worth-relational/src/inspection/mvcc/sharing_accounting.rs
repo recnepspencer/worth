@@ -7,6 +7,9 @@ use super::{
 use crate::branch::{RelationalBranchRoot, RelationalRootAuthoritativeAllocationKind};
 use crate::history::{RelationalCommitArtifact, RelationalCommitAuthoritativeAllocationKind};
 use crate::inspection::mvcc::retained_storage::RelationalRetainedStorageWork;
+#[cfg(test)]
+#[path = "sharing_accounting/byte_bound_overflow_tests.rs"]
+mod byte_bound_overflow_tests;
 #[path = "sharing_accounting/census.rs"]
 mod census;
 
@@ -80,10 +83,19 @@ impl RelationalAuthoritativeAllocationAccounting {
             .collect()
     }
 
-    pub(in crate::inspection::mvcc) fn unique_bytes(&self) -> u64 {
-        self.allocations.values().copied().sum()
+    /// Checked total over every distinct allocation. Declared per-carrier
+    /// bounds may exceed the physical bytes, so overflow is a typed refusal.
+    pub(in crate::inspection::mvcc) fn unique_bytes(
+        &self,
+    ) -> Result<u64, crate::inspection::mvcc::sharing::RelationalBranchSharingInspectionDenial>
+    {
+        self.allocations
+            .values()
+            .try_fold(0_u64, |total, bytes| total.checked_add(*bytes))
+            .ok_or(crate::inspection::mvcc::sharing::RelationalBranchSharingInspectionDenial::AuthoritativeByteBoundOverflow)
     }
 
+    /// A subset of the rows behind `unique_bytes`; read only after that total.
     pub(super) fn unique_bytes_for(&self, kind: RelationalAuthoritativeAllocationKind) -> u64 {
         self.allocations
             .iter()
@@ -116,12 +128,19 @@ impl RelationalAuthoritativeAllocationAccounting {
         .sum()
     }
 
-    pub(super) fn logical_bytes(&self) -> u64 {
-        self.logical_partition_bytes
-            .saturating_add(self.logical_region_object_bytes)
-            .saturating_add(self.logical_root_metadata_bytes)
-            .saturating_add(self.logical_root_reachability_bytes)
-            .saturating_add(self.logical_canonical_commit_bytes)
+    pub(super) fn logical_bytes(
+        &self,
+    ) -> Result<u64, crate::inspection::mvcc::sharing::RelationalBranchSharingInspectionDenial>
+    {
+        [
+            self.logical_region_object_bytes,
+            self.logical_root_metadata_bytes,
+            self.logical_root_reachability_bytes,
+            self.logical_canonical_commit_bytes,
+        ]
+        .into_iter()
+        .try_fold(self.logical_partition_bytes, u64::checked_add)
+        .ok_or(crate::inspection::mvcc::sharing::RelationalBranchSharingInspectionDenial::AuthoritativeByteBoundOverflow)
     }
 
     pub(super) fn excluded_unique_bytes(&self) -> (u64, u64, u64, u64) {
@@ -148,9 +167,11 @@ impl RelationalAuthoritativeAllocationAccounting {
             if let Some(work) = self.census_work.as_mut() {
                 work.region_entries += 1;
             }
+            // This lane carries the per-carrier declared bounds once per branch.
             self.logical_partition_bytes = self
                 .logical_partition_bytes
-                .saturating_add(region.authoritative_bytes);
+                .checked_add(region.authoritative_bytes)
+                .ok_or(crate::inspection::mvcc::sharing::RelationalBranchSharingInspectionDenial::AuthoritativeByteBoundOverflow)?;
             self.logical_region_object_bytes = self
                 .logical_region_object_bytes
                 .saturating_add(region.root_region_bytes)
@@ -164,7 +185,7 @@ impl RelationalAuthoritativeAllocationAccounting {
                     partition,
                     &mut self.seen_payload,
                     self.census_work.as_mut(),
-                )
+                )?
             {
                 self.insert(allocation.locator(), allocation.authoritative_bytes());
             }

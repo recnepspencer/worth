@@ -8,7 +8,7 @@ pub struct Row {
 worth_query_structured_value_binding!(pub RowBinding for Row { identity: "owned-model.row.v1" });
 pub struct Parameters;
 worth_query_structured_value_binding!(pub ParametersBinding for Parameters { identity: "owned-model.parameters.v1" });
-macro_rules! scalar_read { ($module:ident, $entity:ident, $facts:ident, $key:ident, $value:ident, $semantic:literal, $query:literal, $binding:literal) => { pub mod $module {
+macro_rules! scalar_read { ($module:ident, $entity:ident, $key:ident, $value:ident, $semantic:literal, $query:literal, $binding:literal) => { pub mod $module {
 use super::*;
 use super::super::schema::{$entity as Entity, $key as Key, $value as Value};
 worth_query_application_query!(pub Query for Schema, identity $query, parameters ParametersBinding, result RowBinding, scope Entity => $semantic, name $semantic);
@@ -111,7 +111,6 @@ impl ApplicationQueryIntent<Schema> for Read {
 scalar_read!(
     model,
     Model,
-    ModelFacts,
     ModelKey,
     ModelValue,
     "Model",
@@ -121,7 +120,6 @@ scalar_read!(
 scalar_read!(
     member,
     Member,
-    MemberFacts,
     MemberKey,
     MemberValue,
     "Member",

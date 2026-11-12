@@ -40,10 +40,10 @@ fn a_membership_that_gained_an_instance_or_is_full_is_not_current() {
     let host_request = worth_query_testkit_execution_primary_graph_application_attempt_2::test_request_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
-    let mut runtime = capacity_runtime();
+    let runtime = capacity_runtime();
     let [lineage, first, second] =
-        commit_entities(execution, &mut runtime, ["lineage", "first", "second"]);
-    let read = commit_live(execution, &mut runtime, "first-live", first, lineage);
+        commit_entities(execution, &runtime, ["lineage", "first", "second"]);
+    let read = commit_live(execution, &runtime, "first-live", first, lineage);
     let expected = incoming(execution, &runtime, &read.snapshot, lineage);
     assert_eq!(expected.len(), 1);
     assert!(remains_equal(
@@ -70,7 +70,7 @@ fn a_membership_that_gained_an_instance_or_is_full_is_not_current() {
         "a membership that already fills the lineage admits no start",
     );
 
-    let raced = commit_live(execution, &mut runtime, "second-live", second, lineage);
+    let raced = commit_live(execution, &runtime, "second-live", second, lineage);
     assert!(
         !remains_equal(
             &runtime,
@@ -99,7 +99,7 @@ fn a_membership_that_gained_an_instance_or_is_full_is_not_current() {
     );
     for snapshot in [&read.snapshot, &raced.snapshot] {
         worth_query_execution::court_doors_for_test::relational_snapshot_release::release_query_snapshot(
-            &mut runtime,
+            &runtime,
             snapshot,
         );
     }
@@ -155,7 +155,7 @@ pub fn capacity_runtime() -> RelationalRuntime {
 
 pub fn commit_entities<const N: usize>(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-    runtime: &mut RelationalRuntime,
+    runtime: &RelationalRuntime,
     keys: [&str; N],
 ) -> [EntityId; N] {
     let created = keys.map(|key| CreatedEntityRef {
@@ -186,7 +186,7 @@ pub fn commit_entities<const N: usize>(
 
 pub fn commit_live(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-    runtime: &mut RelationalRuntime,
+    runtime: &RelationalRuntime,
     key: &str,
     instance: EntityId,
     lineage: EntityId,
@@ -210,7 +210,7 @@ pub fn commit_live(
 
 pub fn commit<const N: usize>(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-    runtime: &mut RelationalRuntime,
+    runtime: &RelationalRuntime,
     name: &str,
     intents: [MutationIntent; N],
 ) -> CommitResult {

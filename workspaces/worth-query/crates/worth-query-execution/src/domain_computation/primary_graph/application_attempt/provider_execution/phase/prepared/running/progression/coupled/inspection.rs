@@ -20,6 +20,9 @@ struct CoupledWriterCustody {
     cleanup: WorthQueryApplicationMutationCleanupOwner,
     lease: WorthQueryApplicationSnapshotLease,
     request: worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope,
+    original_completion:
+        crate::domain_computation::primary_graph::provider::OriginalCompletionReceiver,
+    completion_storage: super::super::super::completion_storage::ApplicationCommitCompletionStorage,
 }
 pub(in crate::domain_computation::primary_graph) struct InspectedCoupledWriter<'run> {
     custody: CoupledWriterCustody,
@@ -57,16 +60,7 @@ where
         source,
         coupled_outputs: _,
         inspection,
-        custody:
-            CoupledWriterCustody {
-                completion: _,
-                mut typed,
-                dispatch_outbox,
-                returned,
-                cleanup,
-                lease,
-                request,
-            },
+        mut custody,
     } = registration::inspect_registered::<S, B::Operation>(
         execution,
         phase,
@@ -74,7 +68,8 @@ where
         registered,
         candidate,
     )?;
-    let source = source.expect("installed producer retains its source publication");
+    let source = source.expect("a genuine producer retains its source publication");
+    let typed = &mut custody.typed;
     let handler = typed
         .downcast_mut::<CoupledWriterAdmission<S, B::Operation>>()
         .expect("installed writer keeps its nominal admission")
@@ -97,7 +92,7 @@ where
                 .primary_provider
                 .coupled_writer_commands(
                     execution,
-                    lease.product().relational_basis(),
+                    custody.lease.product().relational_basis(),
                     inspection.provider_session_view(),
                     B::IDENTITY,
                     B::OutputFamily::IDENTITY,
@@ -109,37 +104,16 @@ where
         Ok(commands) => commands,
         Err(cause) => {
             inspection.discard();
-            drop(typed);
-            let outcome = WorthQueryProviderProgressionOutcome::Denied(crate::domain_computation::primary_graph::WorthQueryApplicationCommitDenial::invariant_execution_denied(
-                crate::domain_computation::primary_graph::WorthQueryApplicationCommitDenialStage::InvariantExecution, cause));
-            return Err(progressed::finish_application_commit(
-                execution,
-                phase,
-                application,
-                WorthQueryProgressedApplicationCommit {
-                    outcome,
-                    workflow_settlement_publication: None,
-                    lease,
-                    running: returned
-                        .take()
-                        .expect("discarded inspection returned its actual run"),
-                    cleanup,
-                    request,
-                },
-            ));
+            let outcome = WorthQueryProviderProgressionOutcome::Denied(
+                crate::domain_computation::primary_graph::WorthQueryApplicationCommitDenial::invariant_execution_denied(
+                    crate::domain_computation::primary_graph::WorthQueryApplicationCommitDenialStage::InvariantExecution, cause));
+            return Err(custody.finish(execution, phase, application, outcome));
         }
     };
+    custody.completion = Some(completion);
     Ok((
         InspectedCoupledWriter {
-            custody: CoupledWriterCustody {
-                completion: Some(completion),
-                typed,
-                dispatch_outbox,
-                returned,
-                cleanup,
-                lease,
-                request,
-            },
+            custody,
             inspection,
         },
         commands.publication,
@@ -201,13 +175,16 @@ impl CoupledWriterCustody {
             cleanup,
             lease,
             request,
+            original_completion,
+            completion_storage,
         } = self;
         drop(typed);
         progressed::finish_coupled_application_commit(
             execution,
             phase,
             application,
-            WorthQueryProgressedApplicationCommit {
+            completion_storage.complete(WorthQueryProgressedApplicationCommit {
+                original_completion,
                 outcome,
                 workflow_settlement_publication: None,
                 lease,
@@ -216,7 +193,7 @@ impl CoupledWriterCustody {
                     .expect("closed coupled protocol returns actual run"),
                 cleanup,
                 request,
-            },
+            }),
         )
     }
 }

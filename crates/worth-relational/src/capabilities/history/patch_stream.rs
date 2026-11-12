@@ -28,7 +28,7 @@ pub(crate) trait PatchStreamSource: CommitEnvelopeSource {
     fn commit_envelope_at_patch_stream_position(
         &self,
         position: PatchStreamPosition,
-    ) -> Option<CanonicalCommitEnvelope> {
+    ) -> Option<std::sync::Arc<CanonicalCommitEnvelope>> {
         self.commit_id_at_patch_stream_position(position)
             .and_then(|commit_id| self.resident_commit_envelope(commit_id))
     }

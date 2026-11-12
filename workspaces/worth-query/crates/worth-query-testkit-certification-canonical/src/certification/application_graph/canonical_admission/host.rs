@@ -131,7 +131,7 @@ pub fn key(identity: &str) -> WorthQueryApplicationEntityKey<AdmissionSchema, Do
     WorthQueryApplicationEntityKey::new(identity).unwrap()
 }
 pub fn restore(checkpoint: WorthQueryApplicationCheckpoint, work: u64) -> Host {
-    let program = in_memory_program_from_checkpoint(
+    let program = WorthQueryInterimCheckpointRestore::program(
         ApplicationProgramAuthoring::<AdmissionSchema, Program>::begin()
             .validated_program()
             .unwrap(),

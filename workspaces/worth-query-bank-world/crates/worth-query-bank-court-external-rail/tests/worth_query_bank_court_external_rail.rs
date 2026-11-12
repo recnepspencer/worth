@@ -1,3 +1,7 @@
+#![allow(
+    clippy::disallowed_methods,
+    reason = "These process courts own the Tokio test executor for real external-rail network I/O"
+)]
 //! Bank integration evidence grouped by its product frontier.
 #![recursion_limit = "512"]
 

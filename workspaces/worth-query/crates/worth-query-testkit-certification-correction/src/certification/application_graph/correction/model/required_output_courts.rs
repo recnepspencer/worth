@@ -201,7 +201,7 @@ pub fn run() {
         .unwrap();
     let WorthQueryRequiredCorrectionPreparation::Settled(
         WorthQueryApplicationPerformedMutationOutcome::NotPerformed(
-            WorthQueryApplicationMutationOutcome::AlreadyCommitted(replayed),
+            WorthQueryApplicationMutationOutcome::RecoveredCommitted(replayed),
         ),
     ) = retry
     else {

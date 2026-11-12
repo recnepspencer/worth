@@ -9,6 +9,7 @@ mod operation_allocation;
 mod pool;
 mod pool_ownership;
 mod pressure;
+mod retirement;
 mod speculation;
 mod work_kind;
 mod writeback_range_posture;
@@ -61,6 +62,9 @@ pub use pool_ownership::{
 };
 pub(in crate::physical_residency) use pressure::PhysicalResidencyPressureDemand;
 pub use pressure::{PhysicalResidencyLimitsBuilder, PhysicalResidencyPressureDenial};
+pub use retirement::{
+    PhysicalResidencyRetirementDenial, RetiredOperationAllocation, RetiredPhysicalFrame,
+};
 pub use speculation::{
     BufferPoolQueueDeclarationContext, BufferPoolQueueGroupingScope,
     BufferPoolQueueWriteDurability, BufferPoolReadQueueExecutionDeclaration,

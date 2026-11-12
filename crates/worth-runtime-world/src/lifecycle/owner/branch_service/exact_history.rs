@@ -67,11 +67,10 @@ where
     I: Copy + Ord + Send + Sync + 'static,
     T: Copy + Ord + Send + Sync + 'static,
 {
-    if target.owner_identity() != owner.owner_identity() {
-        return Err(Denial::Branch(
-            RuntimeWorldBranchAdmissionDenial::ForeignOwner,
-        ));
-    }
+    owner
+        .owner_identity()
+        .admit_branch_authority(target.owner_identity())
+        .map_err(Denial::Branch)?;
     if !owner.branch_service_is_available() {
         return Err(Denial::Branch(
             RuntimeWorldBranchAdmissionDenial::OwnerUnavailable,

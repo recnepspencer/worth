@@ -185,6 +185,7 @@ impl PhysicalResidencyPool {
     ) -> Result<OperationAllocationGrant, PhysicalResidencyDenial> {
         self.inner.reserve_operation(scope, bytes)?;
         Ok(OperationAllocationGrant {
+            armed: true,
             owner: Arc::clone(&self.inner),
             scope,
             bytes: bytes.get(),

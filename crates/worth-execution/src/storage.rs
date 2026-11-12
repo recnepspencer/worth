@@ -1,6 +1,9 @@
 //! Allocation custody for retained runtime data, separate from execution results.
 pub(crate) mod ordered;
-pub use ordered::{ExecutionOrderedMap, ExecutionOrderedMapDenial};
+pub use ordered::{
+    ExecutionOrderedMap, ExecutionOrderedMapCell, ExecutionOrderedMapDenial,
+    ExecutionOrderedMapUniqueDenial,
+};
 
 mod ordered_tree;
 pub use ordered_tree::{

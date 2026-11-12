@@ -250,10 +250,19 @@ impl<Schema, Operation, Input, Scope>
     }
 
     #[inline]
-    pub(in crate::domain_computation) fn original_encoded_input(
+    pub(in crate::domain_computation) fn original_material_input(
+        &self,
+    ) -> Option<(
+        &worth_query_declaration::facade::application_operation::ApplicationCanonicalInput,
+        &'static str,
+        [u8; 32],
+    )> {
+        self.core.original_material_input()
+    }
+    pub(in crate::domain_computation) fn original_retained_input(
         &self,
     ) -> Option<&std::sync::Arc<dyn std::any::Any + Send + Sync>> {
-        self.core.original_encoded_input()
+        self.core.original_retained_input()
     }
 
     #[inline]

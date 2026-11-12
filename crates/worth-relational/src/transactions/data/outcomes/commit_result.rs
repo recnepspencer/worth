@@ -1,5 +1,6 @@
+mod seal;
 use crate::diagnostics::data::RelationalDiagnosticArtifact;
-use crate::history::data::CanonicalCommitEnvelope;
+use crate::history::data::{CanonicalCommitEnvelope, SharedCanonicalCommitEnvelope};
 use crate::performance::data::RuntimeComplexityCounters;
 use crate::publication::bundle::PublicationStatus;
 use crate::publication::patch::data::PublishedAuthoritativeRecordPatch;
@@ -65,7 +66,7 @@ pub struct CommitPhaseTiming {
 pub struct CommitPublication {
     pub(crate) source_effects: Option<crate::mvcc::RelationalCoupledAuthoredSourceEffects>,
     pub diagnostics: Vec<RelationalDiagnosticArtifact>,
-    pub envelope: Arc<CanonicalCommitEnvelope>,
+    pub envelope: SharedCanonicalCommitEnvelope,
     pub patch_position: crate::publication::patch::data::PatchStreamPosition,
     pub aspect_evaluation_traces: Vec<AspectEvaluationTrace>,
     pub aspect_emission_traces: Vec<AspectEmissionTrace>,
@@ -108,6 +109,8 @@ pub struct CommitExecution {
 /// ```
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct CommitResult {
+    snapshot_release: Arc<crate::runtime::PublishedSnapshotReleaseObservation>,
+    semantic_result: Arc<crate::transactions::data::RelationalCommitSemanticResult>,
     outcome: CommitOutcome,
     summary: CommitSummary,
     structural_summary: CommitStructuralSummary,
@@ -159,41 +162,22 @@ impl CommitOutcome {
 }
 
 impl CommitResult {
+    pub(crate) fn snapshot_release_observation(
+        &self,
+    ) -> &Arc<crate::runtime::PublishedSnapshotReleaseObservation> {
+        &self.snapshot_release
+    }
+    /// The same immutable original semantic value sealed in this publication.
+    pub fn semantic_result(&self) -> &crate::transactions::data::RelationalCommitSemanticResult {
+        &self.semantic_result
+    }
+
     /// Seals one authoritative commit result together with the create-reference
     /// correspondence produced by that same commit execution.
     ///
     /// The commit pipeline is the sole minter of the sealed input. Every result
     /// axis remains private so no caller can detach or replace part of the
     /// authoritative association after construction.
-    pub(crate) fn from_authoritative_commit(
-        seal: crate::authority::commit::CommitResultSeal,
-    ) -> Self {
-        let (
-            outcome,
-            summary,
-            structural_summary,
-            schema_summary,
-            publication,
-            validation,
-            execution,
-            created_entities,
-            created_relations,
-            late_interruption,
-        ) = seal.into_parts();
-        Self {
-            outcome,
-            summary,
-            structural_summary,
-            schema_summary,
-            publication,
-            validation,
-            execution,
-            created_entities,
-            created_relations,
-            late_interruption,
-        }
-    }
-
     pub fn outcome(&self) -> &CommitOutcome {
         &self.outcome
     }
@@ -395,3 +379,5 @@ impl CommitResult {
 }
 
 mod authored_source;
+#[cfg(test)]
+mod snapshot_cleanup_tests;

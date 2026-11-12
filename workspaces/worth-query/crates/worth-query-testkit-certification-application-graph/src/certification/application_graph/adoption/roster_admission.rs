@@ -5,7 +5,7 @@
 //! unclaimed, and refuses a program that claims a rule this host never
 //! installed. Both refusals happen through the ordinary public install entry.
 
-pub use worth_query_host::facade::application_installation::WorthQueryInMemoryApplicationDenial;
+pub use worth_query_host::facade::application_installation::WorthQueryApplicationPreparationDenial;
 pub use worth_query_host::facade::declaration::application_program::ApplicationProgramDefinition;
 pub use worth_query_host::facade::domain::WorthQueryProgramSupportDenial;
 

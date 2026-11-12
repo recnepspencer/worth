@@ -126,7 +126,7 @@ where
             })?;
         let execution = &phase_request;
 
-        let basis = self.graph.with_runtime_mut(execution, |runtime| {
+        let basis = self.graph.with_runtime(execution, |runtime| {
             let identity = runtime.main_branch_identity();
             runtime
                 .observe_branch(&identity)
@@ -190,7 +190,7 @@ where
         WorthQueryCompletedInvariantProjection<Schema, Output>,
         WorthQueryInvariantProjectionDenial,
     > {
-        let snapshot = self.graph.with_runtime_mut(execution, |runtime| {
+        let snapshot = self.graph.with_runtime(execution, |runtime| {
             runtime
                 .snapshots()
                 .snapshot_for_observation(&basis.observation())

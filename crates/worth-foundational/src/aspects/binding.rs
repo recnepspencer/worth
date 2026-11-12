@@ -47,6 +47,19 @@ impl AspectBinding {
         }
     }
 
+    /// Heap storage allocated by cloning this binding, excluding its inline value.
+    pub fn clone_allocation_bytes(&self) -> usize {
+        match self {
+            Self::EntityField { field } | Self::RelationField { field } => field.as_str().len(),
+            Self::RelationSourceEndpoint
+            | Self::RelationTargetEndpoint
+            | Self::StructuralRegion
+            | Self::StructuralPartition
+            | Self::StructuralFacet
+            | Self::LifecycleTransition => 0,
+        }
+    }
+
     pub fn owned_allocation_capacity_bytes(&self) -> usize {
         match self {
             Self::EntityField { field } | Self::RelationField { field } => {

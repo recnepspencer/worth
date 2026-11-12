@@ -1,3 +1,4 @@
+use super::denial::branch_transition_denial;
 use super::*;
 
 #[test]

@@ -94,7 +94,7 @@ fn empty_struct_refusal(kind: u32, identity: u64, required: usize, optional: usi
             .get(&id)
             .unwrap()
             .extra()
-            .authoritative_aspect_state
+            .authoritative_aspect_state()
             .is_some());
     }
     let before_history = runtime.history().commit_envelopes_snapshot();
@@ -197,8 +197,8 @@ fn empty_struct_refusal(kind: u32, identity: u64, required: usize, optional: usi
         assert_eq!(current.kind_id(), old.kind_id());
         assert_eq!(current.generation(), old.generation());
         assert_eq!(
-            current.extra().authoritative_aspect_state,
-            old.extra().authoritative_aspect_state
+            current.extra().authoritative_aspect_state(),
+            old.extra().authoritative_aspect_state()
         );
         assert_eq!(
             after_partition
@@ -228,8 +228,8 @@ fn empty_struct_refusal(kind: u32, identity: u64, required: usize, optional: usi
     assert_eq!(current.generation(), old.generation());
     assert_eq!(current.extra().endpoints, old.extra().endpoints);
     assert_eq!(
-        current.extra().authoritative_aspect_state,
-        old.extra().authoritative_aspect_state
+        current.extra().authoritative_aspect_state(),
+        old.extra().authoritative_aspect_state()
     );
     assert_eq!(
         runtime.history().commit_envelopes_snapshot(),

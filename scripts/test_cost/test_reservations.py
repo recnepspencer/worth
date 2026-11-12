@@ -4,9 +4,42 @@ import tomllib
 import unittest
 
 from reservations import configuration, original_reservations, recommended
+from workspace import nextest_configuration_source
 
 
 class MeasuredReservationsTests(unittest.TestCase):
+    def test_nested_workspace_inherits_repository_ci_deadline_in_generated_config(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            (root / '.config').mkdir()
+            (root / '.config/nextest.toml').write_text(
+                '[profile.ci]\nslow-timeout={period="60s",terminate-after=10,grace-period="0s"}\n')
+            manifest = root / 'workspaces/query/Cargo.toml'
+            output = root / 'generated.toml'
+            configuration(nextest_configuration_source(root, manifest), output,
+                          'ci', {}, root / 'account.py')
+            actual = tomllib.loads(output.read_text())
+            self.assertEqual(actual['profile']['ci']['slow-timeout'],
+                             {'period': '60s', 'terminate-after': 10, 'grace-period': '0s'})
+            self.assertEqual(actual['profile']['ci']['scripts'][0]['run-wrapper'], 'test-cost')
+
+    def test_nested_workspace_retains_its_own_deadline_instead_of_repository_policy(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            (root / '.config').mkdir()
+            (root / '.config/nextest.toml').write_text(
+                '[profile.ci]\nslow-timeout={period="60s",terminate-after=10}\n')
+            local = root / 'workspaces/store/.config'
+            local.mkdir(parents=True)
+            (local / 'nextest.toml').write_text(
+                '[profile.ci]\nslow-timeout={period="30s",terminate-after=4}\n')
+            output = root / 'generated.toml'
+            configuration(nextest_configuration_source(root, local.parent / 'Cargo.toml'),
+                          output, 'ci', {}, root / 'account.py')
+            actual = tomllib.loads(output.read_text())
+            self.assertEqual(actual['profile']['ci']['slow-timeout'],
+                             {'period': '30s', 'terminate-after': 4})
+
     def test_recommendation_uses_peak_observed_cpu_parallelism_without_a_timing_gate(self):
         rows = [dict(binary='court', test='claim', cpu_seconds=cpu, wall_seconds=2,
                      reserved_slots=8, accounting='complete') for cpu in (1, 5)]

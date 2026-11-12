@@ -8,8 +8,8 @@ fn meaning(family: &str, source_scope: EntityId) -> RequiredOutputPublicationMea
         .unwrap(),
         family: family.into(),
         source_scope,
-        source_partition: [0; 32],
-        source_epoch: [1; 32],
+        source_partition: worth_foundational::CanonicalDigestId::new([0; 32]),
+        source_epoch: worth_foundational::CanonicalDigestId::new([1; 32]),
     }
 }
 fn role(

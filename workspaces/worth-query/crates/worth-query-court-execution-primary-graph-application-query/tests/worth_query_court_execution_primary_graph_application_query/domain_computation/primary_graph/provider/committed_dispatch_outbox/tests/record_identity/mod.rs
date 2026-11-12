@@ -13,7 +13,7 @@ fn unrelated_identical_row_cannot_make_owner_mapping_ambiguous() {
     let record = record_for(5);
     (*provider
         .graph_for_test())
-        .with_runtime_mut_for_test(request_execution, |runtime| {
+        .with_runtime_for_test(request_execution, |runtime| {
             let (intent, pending) =
             worth_query_execution::court_doors_for_test::domain_computation::application_aftermath::external_effect::outbox::bind_dispatch_outbox_create_intent(
                 Some((*(*provider.graph_for_test()).layout_for_test()).provider_dispatch_outbox_for_test()),
@@ -100,7 +100,7 @@ fn another_committed_record_ref_cannot_substitute_for_the_bound_outbox() {
     let first = record_for(61);
     let second = record_for(62);
     let (first_binding, second_binding, commit, runtime_id) =
-        (*provider.graph_for_test()).with_runtime_mut_for_test(execution, |runtime| {
+        (*provider.graph_for_test()).with_runtime_for_test(execution, |runtime| {
             let intent = |record: &WorthQueryDispatchOutboxRecord| {
                 dispatch_outbox_create_intent(
                     Some((*(*provider.graph_for_test()).layout_for_test()).provider_dispatch_outbox_for_test()),

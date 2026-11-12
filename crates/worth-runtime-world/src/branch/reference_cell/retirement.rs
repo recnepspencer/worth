@@ -23,16 +23,21 @@ impl ProductBranchReferenceCell {
     /// Stop every future movement through this cell and capture its exact final
     /// commit at the same linearization point. The identity clone is prepared
     /// before product-head custody moves out of the active image.
-    pub(crate) fn retire(&self) -> ProductBranchReferenceRetirement {
+    pub(crate) fn retire(
+        &self,
+    ) -> Result<ProductBranchReferenceRetirement, super::ProductBranchReferenceCellDenial> {
         let mut current = self.state.write();
+        if let Some(denial) = current.movement.denial() {
+            return Err(denial);
+        }
         let retired_head = current.snapshot.selected_commit().clone();
         let mut released_protection = current.protection.take();
         if let Some(protection) = released_protection.as_mut() {
             protection.seat_history(false);
         }
-        ProductBranchReferenceRetirement {
+        Ok(ProductBranchReferenceRetirement {
             retired_head,
             released_protection,
-        }
+        })
     }
 }

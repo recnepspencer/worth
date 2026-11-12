@@ -12,59 +12,1380 @@ obligations, external custody and corrections. A retry after a lost response
 returns the original occurrence. Nothing an application was told is committed
 depends on process memory, orderly close or application-owned byte transport.
 
-This milestone is delivered in ten numbered phases. Each phase states its own
-requirements, design, required tests, oracle extension, documentation and exit
-criteria. The cross-cutting decisions below bind every phase. D17 decides how
-each invariant is enforced and where each new type lives.
+This milestone is delivered in two tracks:
+- a **happy track** (H3–H10), with every application-visible capability working across a graceful close and reopen;
+- a **cleanup track** (C1–C5), with crash and fault recovery, cost bounds and certification.
 
-## Phase map
+Both tracks finish inside this milestone. The ten numbered phases below still state the requirements, design, tests, oracle, documentation and exit criteria. **Delivery tracks** decides which track each requirement and test belongs to, and when it lands. The cross-cutting decisions below bind every phase. D17 decides how each invariant is enforced and where each new type lives.
 
-| Phase | Name | Depends on | Lands |
-|---|---|---|---|
-| 1 | State survival audit | — | Landing 1 |
-| 2 | Store capacity, single writer and incarnation | — | Landing 1 |
-| 3 | Application home and host lifecycle | 2 | Landing 2 |
-| 4 | Durable occurrences and original-result retry | 3 | Landing 2 |
-| 5 | Signal and Bridge authored state; mixed publication | 4 | Landing 3 |
-| 6 | Programs, adoption and build identity | 4 | Landing 3 |
-| 7 | Workflows, conditional and long-running work | 5, 6 | Landing 3 |
-| 8 | External dispatch and custody | 4, 7 | Landing 3 |
-| 9 | Correction and original-owner advancement | 4, 6, 7 | Landing 3 |
-| 10 | Public cutover and milestone certification | 1–9 | Landing 3; closes the milestone |
+## Delivery tracks
 
-**Parallel work and landing order.**
+**Authority.** Where a decision or phase section conflicts with this section on *timing* or *track*, this section governs. It never weakens a requirement. It only says whether the requirement is proven before the happy landing or before the milestone closes.
 
-- Phases whose dependencies have landed may be built in parallel, but only
-  where their write scopes do not overlap.
-- Phases 5 to 10 integrate on one milestone integration branch. Each phase
-  merges into that branch when its own reviewer approves and its Tier-2 run
-  on the branch is green. A phase built in parallel merges the current
-  integration branch first.
+### Landings
 
-**Landing rule.** The milestone reaches master in three landings:
-
-| Landing | Contents | Why it is a separate landing |
+| Landing | Contents | State |
 |---|---|---|
-| 1 | Phases 1–2 | Store foundations and the audit. Nothing is visible to applications. |
-| 2 | Phases 3–4 | The first application-visible durability: a home through the host, with original-result retry. Phases 3 and 4 cannot land apart, because a home that recovered graph state but not World occurrences would silently lose application history. |
-| 3 | Phases 5–10 | One broad cutover. Signal, programs, workflows, dispatch and correction become durable, and the interim paths are deleted in the same landing. |
+| 1 | Phases 1–2 | Landed |
+| 2a: the first happy landing | H3–H5 and the coherent H6–H9 slices already merged; every other partial surface refuses with a typed reason | Integration branch `codex/m3-host-home`; final gate waits for H5 LANDED |
+| 2b: the remaining happy landing | Complete H6–H10 and remove each corresponding temporary refusal | After landing 2a |
+| 3: the cleanup landing | C1–C5; closes the milestone | After landing 2b |
 
-- A landing reaches master only after its exit criteria hold and the
-  coordinator certifies it at the final gate.
-- Between landings 2 and 3, a directory home refuses every family that Phases
-  5–9 support (D15), and the interim checkpoint door (D13) serves those
-  families' callers. Master is never left half-recovered.
-- Within the landing-3 integration branch, each phase lifts its own refusals
-  as it merges.
+- **Landing 2a reaches master** after H5 LANDED, a reviewed batch merge, green affected Tier-2 lanes, one green final Tier-3 run and the coordinator's final certification. Its coherence ledger names a graceful court for every Supported surface and a typed, before-effect refusal court for every Refused surface. No PARTIAL row reaches master. Landing 2b completes the remaining happy requirements under the same coherence rule.
+  - A CLEANUP court that is red at that moment leaves the tree, with its restore reference listed under its C item ("Moved courts").
+  - It is never `#[ignore]`d, gated or weakened.
+- **Phases 5–9 lift their own D15 refusals** only for the families their merged graceful courts prove. The ledger ties each temporary H6–H9 family refusal to the H-phase that removes it in landing 2b; C-track refusals retain their C-phase removal obligation. H10 deletes `UnsupportedDurableFamily`.
+- **Consumers may build on landing 2a's Supported surfaces.** They support graceful close and reopen, and a kill between operations. Its Refused surfaces stop with their named typed reason. After an unclean kill, open refuses with a typed reason (D18).
 
-**Format stability.** An artifact format defined in a phase is final for the
-milestone. Later phases add new artifacts or new tagged entries in an
-extensible list the earlier phase declared; they do not change an existing
-format. A phase that must change a landed format states which development
-homes stop opening. Under clean cutover they refuse with a typed reason and
-are never migrated.
+### The happy constraint (track H)
+
+A home is closed gracefully, or killed while no operation is executing (a *quiescent kill*). It is then reopened any number of times, in a fresh process, under the same or a changed application build identity.
+
+Each reopen:
+- recovers every owner's full acknowledged state;
+- answers every retry of an admitted key with its original occurrence or its typed no-effect posture, never with a second effect;
+- never reissues a committed identity;
+- serves only after its D8 typestate steps complete.
+
+Open custody retained at close is readmitted as recovered custody (D5 and D11 below), and work continues on it.
+
+**D18 (new, track H only): an unclean open refuses.** When the journal tail holds an associated owner effect with neither an occurrence nor a disposition, open refuses before service with `UncleanRecoveryUnsupported`. The refusal names the owner and the effect, and the tail scan finds it. It never guesses a fate. C5 deletes this refusal once C1 recovers that case.
+
+### Decision splits
+
+| Decision | Track H | Track C |
+|---|---|---|
+| D4 | Owner publication order; product movement as its own step | `Indeterminate` fates |
+| D5 | Association fields; disposition before live; recovered custody across graceful reopen (integration's recovered-custody service) | `OpenAttempt`; reconciliation after an unclean kill; pending settlement |
+| D8 | All typestate steps; refused openings expose no service | — |
+| D11 | Close as written; `CloseRefused { posture }`; retained custody readmitted at reopen | — |
+| D12 | The checkpoint is taken **only at a quiesced close** (no executing attempt, no external obligation); the explicit application checkpoint is allowed under the same condition | Automatic threshold triggers; exact Native component obligations under concurrency; the cross-owner capture cut while attempts execute; proportional reopen and backing budgets |
+| D13 | One interim door (`WorthQueryInterimCheckpointRestore`), frozen callers, no `in_memory` names, the authenticated World-original section | Deleting the door (C5) |
+| D14 | — | All of it |
+| D16 | Plan, intent, step-body fence, carrier, stable identity allocation, Host transition request, final promotion and binding | Resume from the first nondurable step; `TransitionPlanDrift`/`TransitionPending`; discard tombstones; kill courts |
+| D1–D3, D6, D7, D9, D10, D15, D17 | In full | — |
+
+- **Format stability is relaxed for track C.** A cleanup item may change a format landed in track H. The old format then refuses with a typed reason and is never migrated.
+- **Track H keeps clean cutover.** No compatibility shims.
+
+### Track H items
+
+Each H item's proof is its phase's graceful journeys, plus the graceful oracle.
+
+- **H3 (Phase 3): Home and host lifecycle.**
+  - One application home through the host open call. `RelationalStoreHome` and every `in_memory*` path are deleted.
+  - Newness, `initial_state` and `discard_home`.
+  - Descriptor binding and rebuild; D16's track-H scope.
+  - The Empty Signal/Bridge seed basics.
+  - Contention, incarnation fencing and close settlement; the frozen callers.
+  - The Memory suites; D18.
+  - **Graceful oracle:** port the M2 `relational_home` oracle, plus a minimal memory-only reference host with `DurableIdentityCorrespondence`. It compares owner state after graceful close/reopen and quiescent kills, with no fault injection.
+- **H4 (Phase 4): Durable occurrences and original-result retry.**
+  - World artifacts and home-scoped identity; durable before live; rebuild from tails.
+  - Artifact v3 association and the semantic result; the D9 receipts table.
+  - Deleting the evidence authority, `CommittedReceiptNotRetained` and the Server caches.
+  - Intent drift and affinity refusals.
+  - The decisive journey, retry refusals, receipt fields and concurrent same-key retries.
+  - History with no identity collision; Server restart.
+  - Released keys keep their meaning across reopen.
+- **H5 (Phase 5): Signal and Bridge authored state; mixed publication.**
+  - The authored/derived split and codec; the wasm port; artifacts and association.
+  - Identities and foreign-owner refusal; multi-branch readmission.
+  - The evidence tag; Bridge and stale-under-build; R2–R5.
+- **H6 (Phase 6): Programs, adoption and build identity.**
+  - Support lifecycle; activation on every branch.
+  - Adoption custody across graceful reopen; build identity.
+  - Retirement; unrostered and changed builds. This restores the producer directory court.
+- **H7 (Phase 7): Workflows, conditional operations and long-running work.**
+  - Workflow records and resume across reopen; transition dispositions.
+  - The managed cleanup obligation; R9 durable and process-local.
+  - The temporal key; managed and owned-async custody; the R7 route table.
+- **H8 (Phase 8): External dispatch and custody.**
+  - Outbox rebind; the attempt recorded before the call; `PayloadRejected`.
+  - Inbound custody and dedup; recovery-handle claims; rebuilt indexes.
+  - Deleting `StoreCapabilityRequired`; R13.
+  - An outstanding dispatch across a graceful close.
+- **H9 (Phase 9): Correction and original-owner advancement.** Phase 9's graceful paths, with every kill read as a close or a quiescent kill; durable history and branch retirement belong to C2.
+  - Durable original-interpretation membership is published at the acknowledged
+    World-open seam and jointly readmitted in
+    `application_installation/home_preparation/world/custody.rs`. Its funded
+    terminal disposal uses the protected World checkpoint source route in
+    `durability/checkpoint/original_observation.rs`, for released unpublished
+    originals only. Disposal of retired and inherited occurrences, together
+    with the durable history and branch retirement protocol, belongs to C2.
+    `AuthoritativeDurableHistory` and `DurableBranchPublicationRequired` are
+    Refused rows on track H. H6 keeps original-meaning
+    interpretations process-local and counts each retained meaning once; it
+    transfers none to durable membership.
+- **H10 (Phase 10): Public cutover.**
+  - Callers and examples on the open call. They run on their genuine main thread under the default stack in the dev profile. Entry-point stack growth through `stacker::maybe_grow` satisfies this main-thread requirement.
+  - The guides; deleting `UnsupportedDurableFamily`.
+  - A graceful full journey across every family.
+  - Documentation that states plainly that crash recovery is not yet certified.
+
+### Track C items
+
+- **C1: Crash core.**
+  - `OpenAttempt`; reconciliation; recovered publication after an unclean kill.
+  - Exact Native components; lazy discovery; unresolved fates and `ProvenNoEffect`.
+  - Transition resume and drift; discard completion and tombstones.
+  - The Phase 3 refusal matrix; the damaged descriptor; M2 unresolved forks.
+  - Crashes between commit and product movement; the release-kill case.
+- **C2: Cost and bounds.**
+  - Automatic checkpoint triggers; the cross-owner capture cut.
+  - Proportional reopen and request-funded cold materialization. The funding already done on P-A's branch lands here.
+  - Backing and work budgets; growth courts.
+  - Durable World history and branch retirement, including disposal of retired
+    and inherited occurrences. Track H retains funded disposal of released
+    unpublished originals.
+  - Close maintenance's 60-second wall-clock deadline is a timing trigger.
+    Graceful-close courts must not depend on it; never raise the deadline or
+    retry until green to certify them.
+  - **A frame and future size budget lane.** No `worth_*` function frame over a declared debug-profile ceiling, measured from the compiled binaries' unwind metadata. Reduce the large-frame census found on 2026-11-06 to that ceiling.
+- **C3: Owner crash cases for Phases 5–9.**
+  - Crashes between owner effects; damaged frames and basis mismatch; mixed kills.
+  - Adoption killed at each stage; mid-step workflow kills; R9 `Indeterminate`.
+  - Crashes after dispatch; R14; disappearance mid-dispatch.
+  - Split completion under a true kill; discarding derived caches (D14).
+- **C4: The court oracle.** The adversarial constraint in full:
+  - the media sweep, kills at every durable I/O boundary, and recovery interruption;
+  - the build and derived dimensions;
+  - the injected-fault and interrupted-publication courts held in the cleanup ledgers.
+- **C5: Retirement and certification.**
+  - Delete the D13 door and the D18 refusal.
+  - Boundary gates at zero; re-audit; no deleted callers.
+  - Tier 3 and the cumulative oracle; milestone certification.
+
+### Moved courts
+
+Cleanup courts moved out of the tree are listed under their C item, with `restore from <sha>:<path>`. Existing entries:
+- **C1:** the three transition-source recovery courts. They are listed in D16 under "Cleanup track: moved courts".
+- **C2 (cost and bounds): exact deduplicated physical accounting of nested persistent aspect backing.** No court has left the tree yet; the claim moved. Pending: 24 exact-accounting and cost-equality courts are still red after the master merge and are not yet classified court by court (exact-equality courts move here with a restore reference; bound-at-least-actual courts stay and must pass); and the full-inventory totals (`RecordArena::allocation_inventory`, `PartitionState::allocation_inventory`, the fork-materialized total in `branch/root.rs`) still saturate instead of refusing, which is open repair work until the coordinator accepts it as C2. `restore from 171d380829:crates/worth-relational/src/inspection/mvcc/sharing_authoritative_byte_metrics.rs` (lines 6–11, 25–28) and `restore from 171d380829:crates/worth-relational/src/inspection/mvcc/sharing_byte_metric_scope.rs` (lines 7–11, inspection version 6). Claim: `unique_physical_*` sums each distinct allocation exactly once, and shared payloads keep node and value granularity, including persistent aspect nodes and admitted values shared between distinct Extra carriers. Inspection version 7 reports that backing as a checked per-carrier upper bound that may count shared structure once per holder, and refuses an unrepresentable bound with a typed overflow. C2 supplies an allocation visitor that sees through shared nodes and values, restores the exact wording under a new version, and adds the court: two Extras sharing one aspect map contribute the shared backing once, and the rows sum to an allocator-observed union. C2 also makes full region inventories and reclamation counters refuse an unrepresentable bound instead of saturating.
+- **C2:** `reclose_before_any_image_demand_keeps_the_selections_the_image_carried`
+  (restore from `10d117085f:crates/worth-relational/src/tests/durability/medium/complete_index_selections.rs`).
+  Restore its carried-only fixture mode from
+  `10d117085f:crates/worth-relational/src/tests/durability/medium/cold_index_fixture.rs`.
+  C2 owns `a deferred index image is not read on re-close`. The correctness
+  claim that selections survive re-close is already covered through public
+  owners by Query's `reopening/reclose.rs`; no deferral observer is added here.
+- **Phase 6 / H6:** the producer directory court (Phase 6, Required tests).
+  - H5 note: a Directory Home with installed producers now refuses at preparation with `ProducerCleanupCustody` (family table: phase 7), because Query refuses Home retirement while producers are installed. Restoring the producer directory court needs that retirement lift (or an earlier family) first.
+- **C1:** the recovered Signal-only and mixed original continuation after an unclean reopen (`recovered_owners` court). It never landed: D18 refuses that reopen (proven by `owner_evidence/unclean_signal.rs`). Preserved without activation; restore the source from `a3e8d0fd340aedddaa6398d3ec874d198692799f:plans/database-foundation/moved-courts/c1/recovered_owners.rs.txt` into its original court path when C1 supports that continuation.
+- **C1:** `process::host::durable_retry::fate_reopening::cancellation_after_native_effect_retains_key_across_kill_and_reopen` and its retained-writer/reader helpers. D18 (`d27064d826`) deliberately refuses this unresolved owner-effect reopen before service; the court expects service and original continuation. Restore the named court and helpers from `f15ff306ecec9ca4a67be1091269d8d10898ab81:workspaces/worth-query/crates/worth-query-court-query-decl-host/tests/worth_query_court_query_decl_host/process/host/durable_retry/fate_reopening.rs`. The independent proven-no-effect quiescent-reopen court remains active.
+
+- **C1: Native effect before World disposition (D18).** The following complete
+  `process::application::world_durable_release` originals require unclean
+  recovery before their later graceful assertions. D18 refuses that first open;
+  no kill is substituted by close and no successful recovery is claimed here.
+  Restore each complete original and its unchanged prefix-capable child at C1:
+  - `killed_native_effect_reopens_original_world_custody_releases_and_reopens_again`:
+    restore `22e638d638:workspaces/worth-store/crates/worth-store-court-application/tests/worth_store_court_application/process/application/world_durable_release/mod.rs`.
+  - `a_native_fork_from_a_released_predecessor_reopens_before_another_checkpoint`:
+    restore `22e638d638:workspaces/worth-store/crates/worth-store-court-application/tests/worth_store_court_application/process/application/world_durable_release/native_transitions.rs`.
+  - `killed_native_after_two_publications_recovers_exact_unpublished_predecessor`:
+    restore `22e638d638:workspaces/worth-store/crates/worth-store-court-application/tests/worth_store_court_application/process/application/world_durable_release/published_predecessor.rs`.
+  - `released_native_effect_preserves_history_and_allows_a_fresh_edit_after_graceful_reopen`:
+    restore `22e638d638:workspaces/worth-store/crates/worth-store-court-application/tests/worth_store_court_application/process/application/world_durable_release/graceful_source.rs`.
+  Their Native receipt/source, unchanged predecessor, subsequent fork/tail and
+  checkpoint, incarnation fencing and released-original assertions all remain
+  obligations in those preserved originals. Live durable release currently
+  refuses `ReopenRequired`, and D18 refuses the unclean Native-effect receiver;
+  no no-effect court claims to prove that Native receipt continuation.
+  The active `unclean` and `unclean/quiescent` controls retain typed before-service
+  refusal, the prefix-capable child, quiescent kill, graceful close and a fresh
+  publication. `world_original_state` separately protects acknowledged published
+  state and no-effect released state across graceful reopen and further editing.
+
+Courts held out under D13 are listed the same way, under the H item whose Home capability they need. The second master merge (`171d380829`) brought in Query cold journeys that reach `WorthQueryInterimCheckpointRestore` from outside the frozen caller list, directly or through a shared reopen fixture. D13's list only shrinks, and Directory Home refuses their producers until the phases below land, so each court is deleted from the tree and returns through the Directory Home open, never through the interim door. The assertions move intact.
+
+- **Phase 6 / H6** (also needs H5 producer admission). All `restore from 171d380829:`.
+  - `workspaces/worth-query/crates/worth-query-court-decl-host-owned-codec-transition/` (whole crate) with its fixture `workspaces/worth-query/crates/worth-query-testkit-certification-canonical/src/certification/application_graph/source_owned_transition.rs` and its two `mod`/`pub use` lines. Also needs D16's Host transition request. Claim (`same_route_codec_retirement_covers_the_source_owned_origin`): a source-owned V1 output crosses an authenticated same-route codec transition with authored payload, source identity and original bytes preserved; the codec-retired route reopens; ordinary source deletion removes both publication and presence rows and stays removed across reopen; an independent branch produces a fresh V2 output and preserves it on edit.
+  - Under `workspaces/worth-query/crates/worth-query-court-decl-host/tests/worth_query_court_decl_host/certification/document_history/owned_outputs/`:
+    - `world.rs`: `restore_changed_build`, `restore_same_build`, `restore_program_checkpoint` (the shared cold fixture).
+    - `cold_selection.rs` (whole file): `cold_same_build_selection_retains_both_families_without_contacts`, `worker_only_cold_same_build_selection_retains_both_families_without_contacts`, `cold_role_outside_the_selected_publication_refuses_without_effect`, `worker_only_cold_refusal_keeps_data_without_native_custody`. Claim: same-build cold selection reuses both families with zero producer and source-projection contacts; a role outside the selected publication refuses with the original source, producer and family and no effect; the refusal outlives host teardown without retaining Native custody.
+    - `build_change.rs` (whole file): `changed_build_contacts_only_the_family_whose_publication_is_still_old`, `worker_only_changed_build_regenerates_only_the_old_family`. Claim: under a changed build, navigation reruns only the family whose publication is still old (value 2001, one contact).
+    - `hierarchy/cold_parent/{mod,fixture,program,corruption,meaning}.rs` (whole directory): `corrupt_non_leaf_parent_lineage_refuses_without_effect`, `changed_discovery_build_runs_real_parent_fallback_and_discovers_its_new_child`, `a_cold_two_family_model_edit_succeeds_the_current_owned_publications`, and the `worker_only_` twin of each. Claim: wrong cold parent lineage refuses atomically as `OutputPublicationCorrespondence` naming source, family and producer; a changed discovery build runs the real parent fallback and discovers its new child; a cold two-family model edit succeeds the current owned publications.
+    - `predecessor/courts.rs`: `cold_reopen_reports_unavailable_instead_of_substituting_current_values`; `predecessor/foreign.rs` (whole file): `an_old_foreign_value_is_not_a_current_dependency_and_current_output_reopens`. Claim: after cold reopen a predecessor read reports `PredecessorBasisUnavailable` and never substitutes a current value; a historical foreign value never becomes a current output dependency.
+  - A restored court reaches its doors through the landed H capability (the Directory Home open); the frozen caller lists never grow, so any caller row a restored court would need requires a fresh boundary ruling. Rows removed with these courts (`tools/boundary-check/config/control-callers.txt`, owner `workspaces/worth-query/crates/worth-query-execution/`): `owned_codec_transition.rs`, `build_change.rs`, `cold_selection.rs`, `hierarchy/cold_parent/corruption.rs`, `hierarchy/cold_parent/meaning.rs`. Restoring the codec-transition court crate also restores its `court-frontier-splits.toml` entry.
+- **Phase 9 / H9** (also needs H5 producer admission and H6 required-output custody; every journey executes a correction-bound Create, Retire or Edit). All `restore from 171d380829:workspaces/worth-query/crates/worth-query-court-decl-host-authored-ownership/tests/authored_ownership/<path>`.
+  - Shared fixtures: `coupled/history.rs` (`reopen`, `try_reopen`, `retire_sentinel`, `require_unique_edge_ownership`), `native_checkpoint_tamper.rs`, `co_checkpoint_tamper.rs`.
+  - `co_history.rs`: `corrupt_recorded_co_anchor_refuses_at_the_real_closure_owner_with_its_source_subject`. Claim: after retire and reverse, a cold-corrupted recorded co-anchor refuses at the authored-closure owner as `CorruptPublication` naming the source, leaves unrelated records readable, and the clean twin admits the same candidate.
+  - `cold_owned_revision.rs`: `an_ordinary_body_revision_settles_after_checkpoint_and_cold_reopen` (with private `reopen`, `edit`, `limits`; the `RequiredProgram` fixture stays in the tree). Claim: a performed source revision settles its required body before capture; after reopen the next revision settles, removes output 103 and exposes 104.
+  - `coupled/multi.rs`: `each_coupled_writer_owns_only_its_own_business_edges_even_with_a_shared_endpoint` and the `if MODE == 15` block of `two_bodies`. Claim: two writers of one coupled publication; a historical twin claiming the same recorded edge makes retirement refuse as `CorruptPublication` naming the source with a usable sentinel; clean history admits the candidate.
+  - `current_roster.rs`: `dropped_added_and_repointed_current_routes_refuse_after_real_frame_admission`, `a_pre_roster_store_cannot_be_read_as_empty_current_ownership`. Claim: roster changes 0/1/2 refuse during reopen with the exact owned-recovery subject; change 9 survives frame admission and fails the first ordinary mutation as `CorruptCurrentOwnership` with no record loss; a pre-roster store refuses as `UnsupportedLegacySemantics`.
+  - `coherent_roster.rs`: `coherent_whole_roster_and_route_drops_and_both_digest_corruptions_refuse_typed`. Claim: coherent whole-roster and route drops and both digest corruptions refuse typed, at reopen or at the first cold custody use, never as an opened fence.
+  - `current_history.rs`: `published_owned_history_cannot_replace_missing_current_presence_on_either_route_door`. `current_fence.rs`: `ordinary_source_edit_head_preserves_warm_and_cold_fence_decisions`. Claim: published history cannot stand in for missing current presence on either route door; warm and cold fence refusals are identical.
+  - `content/courts.rs`: `coupled_writers_read_and_publish_their_actual_content_across_checkpoint_and_correction`, `a_closed_owned_publication_restores_content_and_retains_it_after_checkpoint`. Claim: coupled writers decode and publish their actual Native content across a cold boundary and a correction; a restored owned publication keeps its content after reopen.
+  - `coupled/history_seams.rs`: `cold_coupled_history_refuses_an_authored_anchor_adopted_by_an_earlier_publication`, `cold_coupled_restoration_refuses_an_owner_whose_preceding_publication_has_no_live_member`. `coupled/owner_set_history.rs`: `cold_retirement_owner_roster_is_recomputed_from_preceding_facts`, `cold_restoration_owner_roster_is_recomputed_from_preceding_facts`. Claim: cold historical headers cannot adopt an authored anchor or lose a surviving writer; dropped, added or repointed group rosters refuse as `CorruptPublication` naming the recomputed owner.
+  - `parameter_inverse/adjacency_gap.rs`: `recorded_support_refuses_uncovered_native_adjacency_with_its_exact_relation_and_kind`. Claim: recorded correction support refuses uncovered Native adjacency as `IncompleteAdjacencyHistory` with the exact commit, relation and kind.
+  - `relation_splice/checkpoint.rs`: `coupled_stage_retirement_reuses_native_writer_custody_after_checkpoint_reopen`. Claim: after reopen, the next stage retirement drives the cold Preserve directly with one producer contact.
+  - A restored court reaches its doors through the landed H capability; the frozen caller lists never grow, so any caller row a restored court would need requires a fresh boundary ruling. Rows removed with these courts (`control-callers.txt`): owner `crates/worth-relational/` for `coherent_roster.rs`, `current_history.rs`, `current_roster.rs`; owner `workspaces/worth-query/crates/worth-query-execution/` for `coherent_roster.rs`, `current_history.rs`, `parameter_inverse/adjacency_gap.rs`.
+  - The Native subclaims of these courts (co-anchor closure, duplicate coupled-edge custody, current-roster corruption, codec-retirement semantics) are track H and are rebuilt as Native-owned courts through existing Native issuance; they never stand in for the Query journeys above.
+
+### Landing 2a restored-header cleanup campaigns
+
+- **C4:** restore the complete `669ac9fcd4:crates/worth-court-relational-certification/tests/worth_court_relational_certification/relational/restoration_header/` tree:
+  `mod.rs`, `cascade.rs`, `restoration.rs`, `scope.rs`, `journey.rs`, and
+  `journey/publication.rs`, with its same-SHA `relational/mod.rs` mount.
+  Preserve every individual corruption, actual source/subject, typed refusal,
+  exact detail, affected-record identity, unchanged current basis, lawful twin,
+  restored history, deliberate unwind and history-movement/commit-survival
+  observation. The ordinary source/realization retirement and full restoration
+  positives remain active in `relational/authored_retirement`. The complete
+  genuine co-anchor journey and every existing setup assertion remain active
+  under `authored_retirement/co_anchors/{journey.rs,journey/publication.rs}`;
+  its ordinary court preserves fresh restored anchor/co-anchor identities,
+  their exact handoff into the next retirement, repeated lawful inverse
+  admission and unchanged current basis. It adds no corruption door/caller.
+- **C2:** restore `restoration_header_is_validated_once_and_work_grows_linearly`
+  and `public_create_grow_retire_restore_relation_scale_report` from
+  `669ac9fcd4:crates/worth-court-relational-certification/tests/worth_court_relational_certification/cost/relational/restoration_header.rs`,
+  including its complete same-SHA `restoration_header/{journey.rs,republication.rs}`
+  fixtures and `cost/relational/mod.rs` mount. Preserve all three scale axes,
+  once/repeated validation equality, strict monotonic work, linear differences,
+  and the actual 10-publication/720-relation create/grow/retire/undo workload.
+- **C4:** restore `missing_restoration_entity_mapping_is_refused_before_origin_lookup`
+  from that same cost file, with the complete genuine journey above and its
+  exact missing-entity refusal before origin lookup. It is an injected copied
+  roster defect, not a cost assertion.
+- Restore the complete same-SHA control closure for these campaigns:
+  `crates/worth-relational/src/history/authority/corruption_court.rs` and
+  `corruption_court/header.rs`, their authority/history/facade exports,
+  `history/data/canonical_commit_envelope/required_output_origin/{header_corruption.rs,header_work.rs}`
+  and their parent mounts, and the original begin/finish observation wrapper in
+  `required_output_origin/restoration_header.rs`. Restore the exact original
+  three `control-callers.txt` rows only through the governing boundary ruling;
+  no replacement caller was added at move-out. Ordinary validation retains its
+  full indexed algorithm, original charging, outcomes and caller signature.
+
+Landing 2a adapter closure (lane P-A, merged at `e4d3b01c8d`) moved these Native durability roots out, each with its restore reference:
+
+#### C4 - Injected faults
+
+Integration protocol restoration refresh (same per-claim disposition; no retired campaign is remounted):
+- `22e638d638e724fc2ca3947a583f43c45b56990f:crates/worth-relational/src/durability/authority/runtime_rebuild/checkpoint_restore/reuse_tests.rs`
+- `22e638d638e724fc2ca3947a583f43c45b56990f:crates/worth-relational/src/durability/log/native_checkpoint_codec/kind_authentication_tests.rs`
+- `22e638d638e724fc2ca3947a583f43c45b56990f:crates/worth-relational/src/history/commit/envelope_residency_tests.rs`
+- `22e638d638e724fc2ca3947a583f43c45b56990f:crates/worth-relational/src/storage/residency/cross_region_forgery_tests.rs`
+- `22e638d638e724fc2ca3947a583f43c45b56990f:crates/worth-relational/src/tests/durability/contracts/derived_index_checkpoint/artifact_affinity.rs`
+- `22e638d638e724fc2ca3947a583f43c45b56990f:crates/worth-relational/src/tests/durability/contracts/semantic_result/custom_versions.rs`
+- `22e638d638e724fc2ca3947a583f43c45b56990f:crates/worth-relational/src/tests/support/durability/canonical_commit_frame.rs`
+Restore the complete same-SHA `crates/worth-relational/src` tree, including original parent mounts, fixture/control/support/producer and reconstruction-lane dependencies. Preserve every original assertion/input/contrast and genuinely owned source boundary when migrating the campaign; never revive runtime_attachment discovery. These references retain integration revisions to the already moved private cost/fault families. Ordinary source functionality remains in the public counterparts.
+
+
+Custom enforcement decision corruption retains its full original campaign:
+- C4 full original semantic_result_preserves_custom_enforcement_version_distinct_from_aggregate_request, including callback tuple indices, exact decision rewrite, outer reseal and ValidationMismatch refusal: `f9a53a5d17e01562d503b39b4627252bb63d8639:crates/worth-relational/src/tests/durability/contracts/semantic_result/custom_versions.rs`, with OnePlannedEntity in that file, original semantic_result.rs/contracts/mod.rs parents and `f9a53a5d17e01562d503b39b4627252bb63d8639:crates/worth-relational/src/tests/support/durability/canonical_commit_frame.rs`.
+
+Each restore includes the complete immutable shared fixture/control trees `f9a53a5d17e01562d503b39b4627252bb63d8639:crates/worth-relational/src/tests/support.rs`, `f9a53a5d17e01562d503b39b4627252bb63d8639:crates/worth-relational/src/tests/support`, plus direct owner/canonical/control ancestors from `f9a53a5d17e01562d503b39b4627252bb63d8639:crates/worth-relational/src`. Preserve complete original claims/arming/observations when restoring through genuinely owned source boundaries; never revive the runtime-discovery adapter. Copy these exact entries into the spec before removing original roots.
+
+
+The original rewrite/reseal setup in
+`durability_contract_replays_merge_from_typed_authority_when_diagnostics_are_absent`
+retains its complete callback and all original guards: restore from
+`622f101e99a3bda26132bebf19c2f3c318a7b6f3:crates/worth-relational/src/tests/durability/contracts/merge_replay_continuity.rs`,
+with the same-SHA `tests/support.rs`, complete `tests/support` tree and exact
+`history/data/canonical_commit_envelope` owner/control closure recorded in C2.
+Its actual ordinary source readmission/typed-authority/whole-DATA counterpart is
+`durable_publication/checkpoint_merge_continuity.rs`. Never revive the retired
+runtime-discovery adapter to restore the original rewritten source campaign.
+
+
+Additional orphan control closure for the moved transition/publication campaigns:
+restore `86e84dc5cd:crates/worth-relational/src/branch/transition/publication_pause_for_test.rs`
+with its fields, initialization, arming door and pause call in same-SHA
+`branch/transition/durable_step.rs`. Restore the complete local scripted-answer
+fixture from same-SHA `tests/support/durable_medium.rs` and
+`tests/support/durable_medium/{scripted_publication,journal,transition_journal,transition_contents}.rs`.
+These controls lost every arming caller with the moved C4 roots. Their complete
+original behavior remains required on restoration through genuine owned media;
+the ordinary next-position/sequence and identical-retry rules stay live unchanged.
+
+
+Remaining pure cleanup roots (per-claim Landing 2a disposition):
+
+- C4: `branch_root_image_versions_refuse_before_restoration_and_current_recovers`,
+  introduced on the authorized integration base: restore the complete unsupported
+  version mutation/refusal/current-format control from
+  `22e638d638e724fc2ca3947a583f43c45b56990f:crates/worth-relational/src/tests/durability/contracts/branch_root_checkpoint/unsupported_root_version.rs`,
+  its same-SHA `branch_root_checkpoint.rs` parent and complete
+  `crates/worth-relational/src` fixture/codec/authority closure. This is the original
+  private malformed-plan campaign; ordinary current-format public recovery
+  remains mounted in `checkpoint_branch_targets.rs`.
+
+
+- `durability_contract_failure_missing_authoritative_parent_closure_is_explicit`: `restore from 86e84dc5cd738882bf50fced389fc7deaa31567f:crates/worth-relational/src/tests/durability/contracts/rejected_and_parent_closure.rs`.
+- `durable_fork_and_source_commit_complete_without_deferral` (also retains its original C2 cost/custody guards): `restore from 86e84dc5cd738882bf50fced389fc7deaa31567f:crates/worth-relational/src/tests/durability/medium/branch_transition_races.rs`.
+- `durable_fork_and_source_archive_complete_in_lock_order` (also retains its original C2 cost/custody guards): `restore from 86e84dc5cd738882bf50fced389fc7deaa31567f:crates/worth-relational/src/tests/durability/medium/branch_transition_races.rs`.
+- `durable_fork_waits_for_another_branch_commit` (also retains its original C2 cost/custody guards): `restore from 86e84dc5cd738882bf50fced389fc7deaa31567f:crates/worth-relational/src/tests/durability/medium/branch_transition_races.rs`.
+- `memory_commit_waits_behind_a_transition_without_consuming_its_candidate` (also retains its original C2 cost/custody guards): `restore from 86e84dc5cd738882bf50fced389fc7deaa31567f:crates/worth-relational/src/tests/durability/medium/branch_transition_races.rs`.
+- `divergent_mirror_partition_rebuilds_cross_partition_adjacency_after_reuse` (also retains its original C2 cost/custody guards): `restore from 86e84dc5cd738882bf50fced389fc7deaa31567f:crates/worth-relational/src/durability/authority/runtime_rebuild/checkpoint_restore_tests.rs`.
+- `equal_image_cannot_bypass_global_contract_readmission`: `restore from 86e84dc5cd738882bf50fced389fc7deaa31567f:crates/worth-relational/src/durability/authority/runtime_rebuild/checkpoint_restore_tests.rs`.
+- `forged_cross_region_kind_commitment_is_refused_before_member_reads`: `restore from 86e84dc5cd738882bf50fced389fc7deaa31567f:crates/worth-relational/src/durability/log/native_checkpoint_codec/kind_authentication_tests.rs`.
+- `an_indexed_envelope_storage_failure_is_typed_and_sticky`: `restore from 86e84dc5cd738882bf50fced389fc7deaa31567f:crates/worth-relational/src/history/commit/envelope_residency_tests.rs`.
+- `replay_commit_reports_strategy_executor_unavailable_when_recovered_runtime_lacks_executor`: `restore from 86e84dc5cd738882bf50fced389fc7deaa31567f:crates/worth-relational/src/commit_strategies/facade_tests/replay_recovery_failures.rs`.
+- `replay_commit_reports_strategy_execution_failure_when_recovered_executor_rejects`: `restore from 86e84dc5cd738882bf50fced389fc7deaa31567f:crates/worth-relational/src/commit_strategies/facade_tests/replay_recovery_failures.rs`.
+- `restore_refuses_unknown_fields_before_publishing_any_model_state`: `restore from 86e84dc5cd738882bf50fced389fc7deaa31567f:crates/worth-relational/src/durability/log/native_checkpoint_codec/inspection/tests.rs`.
+- `rehashed_cross_region_kind_forgery_is_refused_by_the_canonical_root`: `restore from 86e84dc5cd738882bf50fced389fc7deaa31567f:crates/worth-relational/src/storage/residency/cross_region_forgery_tests.rs`.
+- `refused_durable_publication_leaves_no_replacement_lineage_behind`: `restore from 86e84dc5cd738882bf50fced389fc7deaa31567f:crates/worth-relational/src/tests/lineage/resolution.rs`.
+- `managed_fork_refusal_and_success_drop_lookup_outside_native_coordination` (also retains its original C2 cost/custody guards): `restore from 86e84dc5cd738882bf50fced389fc7deaa31567f:crates/worth-relational/src/branch/coordination/managed_fork_cleanup.rs`.
+- `fintech_recovery_refuses_a_damaged_checkpoint_instead_of_losing_truth`: `restore from 86e84dc5cd738882bf50fced389fc7deaa31567f:crates/worth-relational/src/tests/domains/fintech/workflows/persistence/checkpoint_fallback.rs`.
+  Restore each root's complete same-SHA parent/descendant fixture and control
+  closure, including its original local medium script and owner units; migrate
+  the source boundary through genuine owned media without reviving the retired
+  runtime-discovery adapter. All original guards remain required.
+
+  The inert lock-order control is deleted completely. Restore its full arming,
+  observations, fields and call sites from `f9f15bf8c8:crates/worth-relational/src/runtime/state/subsystems/canonical_publication_routes/lifecycle_order_control.rs`,
+  with the same-SHA `canonical_publication_routes.rs` owner and its
+  `canonical_publication_routes/{branch_transition_stream,checkpoint_admission}.rs`
+  call sites when restoring the original lock-order campaigns.
+
+
+- Associated-original missing-route and dropped-unrelated-body campaign parts:
+  `associated_effects_refuse_memory_and_absent_settlement_evidence` and
+  `associated_effects_discover_cold_subject_without_reading_unrelated_history`:
+  `restore from 0615dd733c:crates/worth-relational/src/tests/durability/contracts/associated_effects.rs`.
+  Restore the exact route removal / unrelated-artifact deletion and their
+  original refusals or successful selected-body guards with `perform` fixture.
+- `native_custody_correction_enumerates_known_orphan_and_unrelated_association_metadata`,
+  actual three-body deletion followed by successful metadata enumeration:
+  `restore from 0615dd733c:crates/worth-relational/src/tests/durability/contracts/associated_effects_discovery.rs`.
+- `caller_association_survives_embedded_checkpoint_and_refuses_old_semantics`,
+  both original `CHK13`/`CHK14` mutations and exact `UnsupportedLegacySemantics`:
+  `restore from 0615dd733c:crates/worth-relational/src/tests/durability/contracts/caller_association.rs`.
+  The positive actual embedded original association/re-encoding assertion stays
+  as a genuine Memory owner codec unit.
+- `recorded_component_checkpoint_readmits_cold_canonical_predecessor_and_successor`,
+  `recorded_component_checkpoint_readmits_original_empty_predecessor`, and
+  `recorded_original_retirement_preserves_both_leases_across_busy_and_stop`,
+  injected unrelated-artifact deletion parts:
+  `restore from 0615dd733c:crates/worth-relational/src/tests/durability/contracts/recorded_component_checkpoint.rs`.
+  Restore complete same-SHA `original_custody`/original capture/recovery fixtures
+  and successful selected readmission guards, coordinated with C2's physical
+  custody/release portions. Public ordinary readmission is separately retained.
+
+
+- `refused_durable_transition_returns_its_authority_and_moves_nothing` and
+  `unresolved_durable_transition_installs_nothing_and_names_its_fate`:
+  `restore from e4d3b01c8d:crates/worth-relational/src/durability/authority/checkpoint_transition/tests.rs`.
+  C4 retains the actual ProvenNoEffect/Indeterminate scripts, exact original
+  offered fate, authority return/retry and no-effect guards with the same-SHA
+  `recovered_world`, `candidate`, `main_basis` fixtures. Restore without the
+  deleted local provider/discovery adapters. Ordinary transition ownership
+  remains covered through `checkpoint_successor_authority.rs` public courts.
+
+
+- `checkpoint_recovery_rejects_foreign_branch_target_substitution`: `restore from f9f15bf8c8:crates/worth-relational/src/tests/durability/contracts/branch_root_checkpoint/foreign_targets.rs`.
+- `tail_recovery_rejects_foreign_branch_target_substitution`: `restore from f9f15bf8c8:crates/worth-relational/src/tests/durability/contracts/branch_root_checkpoint/foreign_targets.rs`.
+- `checkpoint_recovery_rejects_missing_exact_branch_root_artifact`: `restore from f9f15bf8c8:crates/worth-relational/src/tests/durability/contracts/branch_root_checkpoint.rs`.
+- `checkpoint_recovery_rejects_root_artifact_without_commit_envelope`: `restore from f9f15bf8c8:crates/worth-relational/src/tests/durability/contracts/branch_root_checkpoint.rs`.
+- `checkpoint_recovery_rejects_duplicate_commit_envelopes_before_root_readmission`: `restore from f9f15bf8c8:crates/worth-relational/src/tests/durability/contracts/branch_root_checkpoint.rs`.
+- `checkpoint_recovery_rejects_duplicate_global_partition_images`: `restore from f9f15bf8c8:crates/worth-relational/src/tests/durability/contracts/branch_root_checkpoint.rs`.
+- `checkpoint_recovery_rejects_duplicate_branch_root_partition_images`: `restore from f9f15bf8c8:crates/worth-relational/src/tests/durability/contracts/branch_root_checkpoint.rs`.
+- `checkpoint_rejects_previous_branch_root_format_before_readmission`: `restore from f9f15bf8c8:crates/worth-relational/src/tests/durability/contracts/branch_root_content_binding.rs`.
+- `checkpoint_rejects_altered_root_content_with_recomputed_image_digest`: `restore from f9f15bf8c8:crates/worth-relational/src/tests/durability/contracts/branch_root_content_binding.rs`.
+- `checkpoint_rejects_omitted_root_partition_with_recomputed_image_digest`: `restore from f9f15bf8c8:crates/worth-relational/src/tests/durability/contracts/branch_root_content_binding.rs`.
+- `checkpoint_rejects_same_commit_truth_root_relabeling`: `restore from f9f15bf8c8:crates/worth-relational/src/tests/durability/contracts/branch_root_content_binding.rs`.
+- `checkpoint_rejects_same_commit_schema_root_relabeling`: `restore from f9f15bf8c8:crates/worth-relational/src/tests/durability/contracts/branch_root_content_binding.rs`.
+- `tail_rejects_same_commit_root_descriptor_substitution`: `restore from f9f15bf8c8:crates/worth-relational/src/tests/durability/contracts/branch_root_content_binding.rs`.
+- `checkpoint_owner_root_is_stable_across_fingerprint_symbol_ids`: `restore from f9f15bf8c8:crates/worth-relational/src/tests/durability/contracts/branch_root_content_binding.rs`.
+- `recovery_rejects_a_missing_branch_root_schema_carrier`: `restore from f9f15bf8c8:crates/worth-relational/src/tests/durability/contracts/branch_root_schema_binding.rs`.
+- `recovery_rejects_a_tampered_branch_root_schema_carrier`: `restore from f9f15bf8c8:crates/worth-relational/src/tests/durability/contracts/branch_root_schema_binding.rs`.
+- `recovery_rejects_a_schema_carrier_swapped_between_exact_roots`: `restore from f9f15bf8c8:crates/worth-relational/src/tests/durability/contracts/branch_root_schema_binding.rs`.
+- `checkpoint_rejects_later_shared_root_cell_with_relabeled_schema_root`: `restore from f9f15bf8c8:crates/worth-relational/src/tests/durability/contracts/branch_root_shared_target_binding.rs`.
+- `checkpoint_rejects_later_shared_root_cell_with_relabeled_truth_root`: `restore from f9f15bf8c8:crates/worth-relational/src/tests/durability/contracts/branch_root_shared_target_binding.rs`.
+- `a_deleting_checkpoint_cell_requires_its_retired_name`: `restore from f9f15bf8c8:crates/worth-relational/src/tests/durability/contracts/branch_transition/checkpoint_state.rs`.
+- `every_transition_fate_preserves_the_durable_before_live_boundary`: `restore from f9f15bf8c8:crates/worth-relational/src/tests/durability/contracts/branch_transition/fates.rs`.
+- `an_unresolved_commit_also_blocks_branch_transitions_with_its_original_fate`: `restore from f9f15bf8c8:crates/worth-relational/src/tests/durability/contracts/branch_transition/fates.rs`.
+- `a_damaged_transition_frame_is_refused_at_the_medium_read`: `restore from f9f15bf8c8:crates/worth-relational/src/tests/durability/contracts/branch_transition/tampering.rs`.
+- `a_sequence_gap_and_invalid_follows_positions_are_refused`: `restore from f9f15bf8c8:crates/worth-relational/src/tests/durability/contracts/branch_transition/tampering.rs`.
+- `a_commit_carrying_an_unknown_branch_cell_cannot_replace_its_missing_fork`: `restore from f9f15bf8c8:crates/worth-relational/src/tests/durability/contracts/branch_transition/tampering.rs`.
+- `durability_contract_damaged_checkpoint_refuses_rather_than_shortening_history`: `restore from f9f15bf8c8:crates/worth-relational/src/tests/durability/contracts/checkpoint_recovery/checkpoint_fallback.rs`.
+- `durability_contract_recovery_fails_closed_without_exact_branch_cells`: `restore from f9f15bf8c8:crates/worth-relational/src/tests/durability/contracts/checkpoint_recovery.rs`.
+- `durability_contract_recovery_rejects_branch_cell_target_without_catalog_artifact`: `restore from f9f15bf8c8:crates/worth-relational/src/tests/durability/contracts/checkpoint_recovery.rs`.
+- `durability_contract_recovery_rejects_tail_checkpoint_drift_before_mutation`: `restore from f9f15bf8c8:crates/worth-relational/src/tests/durability/contracts/checkpoint_recovery.rs`.
+- `legacy_index_affinity_is_checked_before_replacing_a_live_recovery_target`: `restore from f9f15bf8c8:crates/worth-relational/src/tests/durability/contracts/derived_index_checkpoint/artifact_affinity.rs`.
+- `envelope_index_affinity_requires_admission_before_installation`: `restore from f9f15bf8c8:crates/worth-relational/src/tests/durability/contracts/derived_index_checkpoint/artifact_affinity.rs`.
+- `digest_valid_unissued_scoped_branch_denies_without_replacing_target_state`: `restore from f9f15bf8c8:crates/worth-relational/src/tests/durability/contracts/derived_index_checkpoint/scoped_affinity.rs`.
+- `checkpoint_index_artifact_missing_payload_denies_before_recovery`: `restore from f9f15bf8c8:crates/worth-relational/src/tests/durability/contracts/derived_index_checkpoint.rs`.
+- `checkpoint_recovery_denies_a_digest_valid_foreign_generation_affinity`: `restore from f9f15bf8c8:crates/worth-relational/src/tests/durability/contracts/derived_index_checkpoint.rs`.
+- `contradictory_descriptor_version_refuses_before_recovery_or_owner_effects`: `restore from f9f15bf8c8:crates/worth-relational/src/tests/durability/contracts/descriptor_continuity.rs`.
+- `durability_contract_failure_descriptor_canonical_basis_version_mismatch_is_explicit`: `restore from f9f15bf8c8:crates/worth-relational/src/tests/durability/contracts/descriptor_continuity.rs`.
+- `recovery_rejects_one_sided_fork_provenance_in_checkpoint`: `restore from f9f15bf8c8:crates/worth-relational/src/tests/durability/contracts/fork_provenance_checkpoint.rs`.
+- `recovery_rejects_mismatched_fork_provenance_identity_in_checkpoint`: `restore from f9f15bf8c8:crates/worth-relational/src/tests/durability/contracts/fork_provenance_checkpoint.rs`.
+- `recovery_rejects_one_sided_fork_provenance_in_tail`: `restore from f9f15bf8c8:crates/worth-relational/src/tests/durability/contracts/fork_provenance_checkpoint.rs`.
+- `tail_created_lineage_allocator_exhaustion_denies_before_replay`: `restore from f9f15bf8c8:crates/worth-relational/src/tests/durability/contracts/lineage_allocator_denials.rs`.
+- `live_lineage_allocator_exhaustion_denies_before_public_effects`: `restore from f9f15bf8c8:crates/worth-relational/src/tests/durability/contracts/lineage_allocator_denials.rs`.
+- `tail_created_lineage_regression_below_checkpoint_high_water_denies`: `restore from f9f15bf8c8:crates/worth-relational/src/tests/durability/contracts/lineage_artifact_recovery/lineage_regression.rs`.
+- `tail_lineage_event_regression_below_checkpoint_high_water_denies`: `restore from f9f15bf8c8:crates/worth-relational/src/tests/durability/contracts/lineage_artifact_recovery/lineage_regression.rs`.
+- `checkpoint_duplicate_lineage_event_ids_deny`: `restore from f9f15bf8c8:crates/worth-relational/src/tests/durability/contracts/lineage_artifact_recovery.rs`.
+- `tail_duplicate_lineage_event_ids_deny`: `restore from f9f15bf8c8:crates/worth-relational/src/tests/durability/contracts/lineage_artifact_recovery.rs`.
+- `checkpoint_and_tail_lineage_event_id_collision_denies`: `restore from f9f15bf8c8:crates/worth-relational/src/tests/durability/contracts/lineage_artifact_recovery.rs`.
+- `tail_lineage_commit_and_branch_cross_splices_deny`: `restore from f9f15bf8c8:crates/worth-relational/src/tests/durability/contracts/lineage_artifact_recovery.rs`.
+- `checkpoint_lineage_commit_cross_splice_denies`: `restore from f9f15bf8c8:crates/worth-relational/src/tests/durability/contracts/lineage_artifact_recovery.rs`.
+- `replay_and_durable_lineage_payload_conflict_denies`: `restore from f9f15bf8c8:crates/worth-relational/src/tests/durability/contracts/lineage_artifact_recovery.rs`.
+- `checkpoint_lineage_node_deletion_denies_before_installation`: `restore from f9f15bf8c8:crates/worth-relational/src/tests/durability/contracts/lineage_artifact_recovery.rs`.
+- `checkpoint_lineage_node_remap_denies_before_installation`: `restore from f9f15bf8c8:crates/worth-relational/src/tests/durability/contracts/lineage_artifact_recovery.rs`.
+- `checkpoint_lineage_node_swap_denies_before_installation`: `restore from f9f15bf8c8:crates/worth-relational/src/tests/durability/contracts/lineage_artifact_recovery.rs`.
+- `checkpoint_duplicate_lineage_entity_mapping_denies_before_installation`: `restore from f9f15bf8c8:crates/worth-relational/src/tests/durability/contracts/lineage_artifact_recovery.rs`.
+- `tail_lineage_event_allocator_exhaustion_denies_before_replay`: `restore from f9f15bf8c8:crates/worth-relational/src/tests/durability/contracts/lineage_event_allocator_recovery.rs`.
+- `unresolved_durable_publication_blocks_descendants_and_recovers_last_checkpoint`: `restore from f9f15bf8c8:crates/worth-relational/src/tests/durability/contracts/lineage_event_allocator_recovery.rs`.
+- `multi_event_reservation_exhaustion_denies_before_public_effects`: `restore from f9f15bf8c8:crates/worth-relational/src/tests/durability/contracts/lineage_event_allocator_recovery.rs`.
+- `native_field_text_missing_tail_dictionary_refuses_without_target_or_source_effect`: `restore from f9f15bf8c8:crates/worth-relational/src/tests/durability/contracts/managed_field_text/missing_dictionary.rs`.
+- `native_field_text_prior_checkpoint_format_refuses_before_managed_text`: `restore from f9f15bf8c8:crates/worth-relational/src/tests/durability/contracts/managed_field_text.rs`.
+- `durability_contract_rejects_parent_order_tampering_at_source_admission`: `restore from f9f15bf8c8:crates/worth-relational/src/tests/durability/contracts/merge_replay_continuity.rs`.
+- `durability_contract_does_not_reconstruct_missing_merge_authority_from_diagnostics`: `restore from f9f15bf8c8:crates/worth-relational/src/tests/durability/contracts/merge_replay_continuity.rs`.
+- `corrupt_native_checkpoint_is_denied_without_publishing_recovered_state`: `restore from f9f15bf8c8:crates/worth-relational/src/tests/durability/contracts/native_checkpoint.rs`.
+- `tail_replay_rejects_canonical_allocation_targeting_a_live_slot`: `restore from f9f15bf8c8:crates/worth-relational/src/tests/durability/contracts/record_allocation_recovery.rs`.
+- `tail_replay_rejects_missing_canonical_allocation_evidence`: `restore from f9f15bf8c8:crates/worth-relational/src/tests/durability/contracts/record_allocation_recovery.rs`.
+- `tail_replay_gap_admission_cannot_replace_a_different_canonical_effect`: `restore from f9f15bf8c8:crates/worth-relational/src/tests/durability/contracts/record_allocation_recovery.rs`.
+- `metadata_only_merge_rejects_unconsumable_allocation_evidence`: `restore from f9f15bf8c8:crates/worth-relational/src/tests/durability/contracts/record_allocation_recovery.rs`.
+- `recorded_component_checkpoint_refuses_chk15_before_source_admission`: `restore from f9f15bf8c8:crates/worth-relational/src/tests/durability/contracts/recorded_component_checkpoint.rs`.
+- `semantic_result_bulk_malformed_correspondence_refuses_after_frame_reseal`: `restore from f9f15bf8c8:crates/worth-relational/src/tests/durability/contracts/semantic_result/bulk.rs`.
+- `durability_contract_recovery_rejects_tail_target_without_immutable_artifact`: `restore from f9f15bf8c8:crates/worth-relational/src/tests/durability/contracts/tail_checkpoint_validation.rs`.
+- `a_refused_publication_was_offered_to_the_medium_and_moved_nothing_live`: `restore from f9f15bf8c8:crates/worth-relational/src/tests/durability/medium/durable_before_live.rs`.
+- `a_refused_position_is_not_consumed`: `restore from f9f15bf8c8:crates/worth-relational/src/tests/durability/medium/durable_before_live.rs`.
+- `fork_against_checkpoint_capture` (also holds a C2 cost/residency assertion): `restore from f9f15bf8c8:crates/worth-relational/src/tests/durability/medium/lifecycle_lock_order.rs`.
+- `fork_against_runtime_fork` (also holds a C2 cost/residency assertion): `restore from f9f15bf8c8:crates/worth-relational/src/tests/durability/medium/lifecycle_lock_order.rs`.
+- `fork_against_reclamation` (also holds a C2 cost/residency assertion): `restore from f9f15bf8c8:crates/worth-relational/src/tests/durability/medium/lifecycle_lock_order.rs`.
+- `archive_against_checkpoint_capture` (also holds a C2 cost/residency assertion): `restore from f9f15bf8c8:crates/worth-relational/src/tests/durability/medium/lifecycle_lock_order.rs`.
+- `archive_against_runtime_fork` (also holds a C2 cost/residency assertion): `restore from f9f15bf8c8:crates/worth-relational/src/tests/durability/medium/lifecycle_lock_order.rs`.
+- `archive_against_reclamation` (also holds a C2 cost/residency assertion): `restore from f9f15bf8c8:crates/worth-relational/src/tests/durability/medium/lifecycle_lock_order.rs`.
+- `checkpoint_registry_is_readable_while_a_fork_is_durable_not_yet_live`: `restore from f9f15bf8c8:crates/worth-relational/src/tests/durability/medium/lifecycle_lock_order.rs`.
+- `an_artifact_whose_frame_is_damaged_is_refused_at_the_read`: `restore from f9f15bf8c8:crates/worth-relational/src/tests/durability/medium/recovery_refusals.rs`.
+- `an_artifact_that_does_not_readmit_refuses_as_corrupt`: `restore from f9f15bf8c8:crates/worth-relational/src/tests/durability/medium/recovery_refusals.rs`.
+- `a_gap_in_the_journal_refuses_as_non_contiguous`: `restore from f9f15bf8c8:crates/worth-relational/src/tests/durability/medium/recovery_refusals.rs`.
+- `a_repeated_entry_refuses_as_non_contiguous`: `restore from f9f15bf8c8:crates/worth-relational/src/tests/durability/medium/recovery_refusals.rs`.
+- `a_tail_that_does_not_continue_from_the_checkpoint_refuses`: `restore from f9f15bf8c8:crates/worth-relational/src/tests/durability/medium/recovery_refusals.rs`.
+- `a_checkpoint_filed_under_the_wrong_position_refuses_as_corrupt`: `restore from f9f15bf8c8:crates/worth-relational/src/tests/durability/medium/recovery_refusals.rs`.
+- `a_damaged_checkpoint_refuses_as_corrupt`: `restore from f9f15bf8c8:crates/worth-relational/src/tests/durability/medium/recovery_refusals.rs`.
+  These refusal courts and the `branch_transition/tampering.rs` courts were the only readers of the frame
+  refusal carried by `TestRecoverySourceRefusal` (`tests/support/durable_medium.rs`); its variants are
+  unit-only now, and a restore re-adds the `Commit`/`Transition` frame-refusal payloads.
+- `a_durable_publisher_waits_for_the_reservation_instead_of_deferring` (also holds a C2 cost/residency assertion): `restore from f9f15bf8c8:crates/worth-relational/src/tests/durability/medium/reservation_wait.rs`.
+- `a_cancelled_waiter_stops_before_any_effect` (also holds a C2 cost/residency assertion): `restore from f9f15bf8c8:crates/worth-relational/src/tests/durability/medium/reservation_wait.rs`.
+- `an_unresolved_publication_installs_nothing_and_refuses_every_later_commit_alike`: `restore from f9f15bf8c8:crates/worth-relational/src/tests/durability/medium/unresolved_fate.rs`.
+- `reopening_resolves_an_absent_unresolved_commit_as_never_committed`: `restore from f9f15bf8c8:crates/worth-relational/src/tests/durability/medium/unresolved_fate.rs`.
+- `reopening_resolves_a_present_unresolved_commit_as_committed_exactly_once`: `restore from f9f15bf8c8:crates/worth-relational/src/tests/durability/medium/unresolved_fate.rs`.
+  C4 owns each of these durability contract/medium roots under Landing 2a's
+  per-claim disposition. Restore each root's same-SHA fixture closure (parent
+  module helpers, `tests/support/durability.rs` and the original local medium
+  controls) as recorded per root in
+  `target/lane-evidence/landing2a-durability-contract-claim-disposition.md`.
+  This is relocation with the original assertions, scripted fates and no-effect
+  oracles, not retirement or weakened evidence. Restore over genuine owned
+  media; do not revive the removed runtime-discovery adapter.
+  The `cfg(test)` owner control hooks that only these moved roots called were
+  removed with them and restore from the same SHA (paths under
+  `crates/worth-relational/src/`): `durability/data/branch_root_schema_images.rs::corrupt_schema_root_for_test`, `durability/migration/readmitted_canonical_commit.rs::envelope_mut_for_test`, `history/data/canonical_commit_envelope.rs::rebuild_lineage_basis_for_test`, `history/data/canonical_record_allocation.rs::new`, `history/retention/owner.rs::retired_branch_binding_count`, `indexes/access/pinning/definition_inventory.rs::definitions_snapshot`, `lineage/data/artifacts/checkpoint_artifact.rs::nodes_mut`, `runtime/state/subsystems/canonical_publication_routes/lifecycle_order_control.rs::LifecycleSnapshotPause`, `runtime/state/subsystems/canonical_publication_routes/lifecycle_order_control.rs::await_admission`, `runtime/state/subsystems/canonical_publication_routes/lifecycle_order_control.rs::await_transition_lifecycle_contact_for_test`, `runtime/state/subsystems/canonical_publication_routes/lifecycle_order_control.rs::pause_exclusive_snapshot_for_test`, `runtime/state/subsystems/canonical_publication_routes/lifecycle_order_control.rs::release`, `runtime/state/subsystems/canonical_publication_routes/lifecycle_order_control.rs::transition_lifecycle_contacts_for_test`, `runtime/state/subsystems/history_retention.rs::retired_branch_binding_count`, `runtime/state/subsystems/lineage.rs::event_count`, `runtime/state/subsystems/lineage.rs::node_count`.
+
+- `compile_execution_ready_merge_plan_rejects_missing_source_record`: `restore from f9f15bf8c8:crates/worth-relational/src/tests/history/milestone_7c_phase_a/compilation_denials.rs`.
+- `verify_prepared_merge_execution_rejects_corrupted_compiled_plan`: `restore from f9f15bf8c8:crates/worth-relational/src/tests/history/milestone_7c_phase_a/compilation_denials.rs`.
+- `verify_prepared_merge_execution_rejects_schema_semantic_drift`: `restore from f9f15bf8c8:crates/worth-relational/src/tests/history/milestone_7c_phase_a/prepared_merge_verification.rs`.
+- `verify_prepared_merge_execution_rejects_merge_base_drift`: `restore from f9f15bf8c8:crates/worth-relational/src/tests/history/milestone_7c_phase_a/prepared_merge_verification.rs`.
+- `derive_merge_commit_mutation_plan_does_not_rely_on_raw_lowered_record_arrays`: `restore from f9f15bf8c8:crates/worth-relational/src/tests/history/milestone_7c_phase_d.rs`.
+- `authoritative_merge_execution_certification_rejects_metadata_reference_movement`: `restore from f9f15bf8c8:crates/worth-relational/src/tests/history/milestone_7c_phase_g/stale_prepared_merge_denials.rs`.
+- `authoritative_merge_execution_certification_rejects_schema_semantic_drift_after_planning`: `restore from f9f15bf8c8:crates/worth-relational/src/tests/history/milestone_7c_phase_g/stale_prepared_merge_denials.rs`.
+- `compile_rejects_corrupted_non_executable_resolution_class`: `restore from f9f15bf8c8:crates/worth-relational/src/tests/history/milestone_7d_phase_b/executable_admission.rs`.
+- `promoted_deleted_on_both_sides_compiles_to_an_explicit_executable_record_variant`: `restore from f9f15bf8c8:crates/worth-relational/src/tests/history/milestone_7d_phase_c.rs`.
+- `promoted_deleted_on_both_sides_derives_zero_mutation_intent_execution_plan`: `restore from f9f15bf8c8:crates/worth-relational/src/tests/history/milestone_7d_phase_c.rs`.
+- `promoted_deleted_on_both_sides_executes_through_authoritative_merge_publication`: `restore from f9f15bf8c8:crates/worth-relational/src/tests/history/milestone_7d_phase_c.rs`.
+- `deleted_on_both_sides_prepared_merge_rejects_schema_semantic_drift`: `restore from f9f15bf8c8:crates/worth-relational/src/tests/history/milestone_7d_phase_d/prepared_merge_denials.rs`.
+  C4 owns the original claim under Landing2a's per-claim disposition.
+  Restore each named root's same-SHA owning fixture/module imports and private
+  control references recorded in `target/lane-evidence/landing2a-history-compiler-claim-disposition.md`.
+  This is relocation with its original guard assertions, not retirement or
+  weakened evidence. Restore with genuine owned inputs, without reviving the
+  removed local provider/discovery adapters.
+  The `cfg(test)` plan-mutation hooks only these merge roots called were removed
+  with them. Restore `execution_ready_plan_mut_for_test`,
+  `authority_binding_mut_for_test`, `bound_executable_plan_mut_for_test` and
+  `replace_bound_plan_and_mutation_plan_for_test` from
+  `f9f15bf8c8:crates/worth-relational/src/merge/data/execution/test_support.rs`,
+  and `compile_execution_ready_merge_plan_for_test` and
+  `replace_bound_merge_plan_for_test` from
+  `f9f15bf8c8:crates/worth-relational/src/merge/execution/mod.rs`.
+
+
+- `retained_merge_strategy_witness_live_authority_denies_internal_forged_strategy_truth`: `restore from 26cc5a58f2:crates/worth-relational/src/tests/history/milestone_7e_phase_i/mod.rs`.
+  C4 owns this injected typed-summary/witness or stored-original fault; restore
+  the same-SHA `fixtures.rs` beside the root, preserving exact denials.
+- `merge_support_inspection_witness_denies_inconsistent_retained_proof_authority`: `restore from 26cc5a58f2:crates/worth-relational/src/tests/history/milestone_7e_phase_l/mod.rs`.
+  C4 owns this injected typed-summary/witness or stored-original fault; restore
+  the same-SHA `fixtures.rs` beside the root, preserving exact denials.
+- `merge_collaboration_truth_denies_cross_family_witness_mismatch`: `restore from 26cc5a58f2:crates/worth-relational/src/tests/history/milestone_7e_phase_m/mod.rs`.
+  C4 owns this injected typed-summary/witness or stored-original fault; restore
+  the same-SHA `fixtures.rs` and `drift_support.rs` beside the root, preserving exact denials.
+- `merge_collaboration_truth_denies_summary_only_and_planner_shortcuts`: `restore from 26cc5a58f2:crates/worth-relational/src/tests/history/milestone_7e_phase_m/mod.rs`.
+  C4 owns this injected typed-summary/witness or stored-original fault; restore
+  the same-SHA `fixtures.rs` and `drift_support.rs` beside the root, preserving exact denials.
+
+- Disconnected-graph half of `merge_branch_basis_denial_happens_before_planning_for_missing_or_disconnected_branches`:
+  `restore from 45b6e87a0a:crates/worth-relational/src/tests/history/milestone_7e_phase_a.rs`.
+  Restore `graft_disconnected_branch_head` from that file. C4 owns its forged
+  receipt/cell/graph installation and exact missing-base/binding denials. The
+  ordinary missing-source half now observes shipping owner binding publicly.
+- `replay_rebuild_denies_summary_and_packet_drift`:
+  `restore from 45b6e87a0a:crates/worth-relational/src/tests/history/milestone_7e_phase_e/replay_drift.rs`.
+  Restore its parent fixture from the same SHA. This injects summary/packet drift
+  and checks the private consistency predicate; it never actually ran a rebuild.
+  C4 must retain the exact fault assertions without reviving runtime attachment.
+
+- `residency_failure_matrix_nonhead_merge_history_covers_every_door_and_class`:
+  `restore from 9addca7179:crates/worth-relational/src/tests/durability/medium/cold_merge_history_matrix/exhaustive.rs`.
+  Moved under the coordinator's 2026-11-09 merge-parent ruling. C4 owns the
+  cold-read fault matrix for merge history (every door and cause). Its original
+  fixture, door dispatch and cold provider are retained at the same restore SHA
+  in the parent `cold_merge_history_matrix.rs`, `cold_merge_history_fixture.rs`,
+  `cold_recovery_fixture.rs`, `cold_read_matrix.rs`, `cold_source.rs` and
+  `cold_source/protected_reads.rs`. This is relocation, not retirement or
+  weakened fault assertions.
+
+- C4: the original local-medium checkpoint corruption injection in
+  `fintech_failure_injection_helpers_cover_savepoints_replay_and_checkpoint_corruption`:
+  restore full original from `bbbce86edd7a7e843ecd1e44a8d3ffbfca2cf52f:crates/worth-relational/src/tests/domains/fintech/workflows/persistence.rs`.
+  Restore same-SHA `tests/domains/fintech/failure_injection/{mod.rs,durability.rs}`,
+  `fixture` (complete tree), `scenarios.rs`, `actions/recovery.rs`, owning module parents,
+  `tests/support.rs`, complete `tests/support` and direct production/control closure
+  under `crates/worth-relational/src`. Preserve the actual checkpoint damage and
+  `damage_filed_checkpoint == true` assertion through genuine owned storage;
+  never revive runtime_attachment. The original savepoint/replay checks remain
+  mounted as `fintech_failure_injection_keeps_savepoint_and_replay_refusals`.
+
+#### C2 - Cost and bounds: backing and work budgets
+
+- C2: complete private campaigns
+  `selected_ack_partial_transfer_preserves_later_cells_and_resumes_same_capture`
+  and `selected_ack_exposes_backed_data_before_retirement_and_releases_holds_only_on_completion`:
+  restore `22e638d638e724fc2ca3947a583f43c45b56990f:crates/worth-relational/src/durability/data/native_checkpoint/tests/selected_ack.rs`.
+  Restore both delayed-selection variants
+  `native_custody_correction_delayed_canonical_selection_retains_actual_root_and_interrupted_ack`
+  and `native_custody_correction_delayed_empty_selection_retains_actual_schema_and_interrupted_ack`
+  from the same immutable SHA at
+  `crates/worth-relational/src/durability/data/native_checkpoint/component_custody/tests.rs`.
+  Each restore includes its full original body and helper, same-SHA parent mounts,
+  Native checkpoint/canonical publication/region placement/catalog/custody/retirement
+  owners and controls, direct runtime/history/schema ancestors, `tests/support.rs`
+  and COMPLETE `tests/support` tree under `crates/worth-relational/src`.
+  Preserve exact one-unit/C+regions work windows, all per-cell placement and
+  source `same_owner`/Arc identities, acknowledged catalog frontiers, Weak/census,
+  original root/schema/Full-read and capture-release/reclamation assertions.
+  Restore through actual Home-owned capture, physical selection and ACK;
+  never revive fixed-generation selection or runtime_attachment discovery.
+  Functional Home counterparts stay mounted: selected observer-drop/history/mutation
+  recovery, pending selected DATA catalog delta, and both retained Empty/canonical
+  original-schema/entity-read journeys through pending ACK/recovery/reopen/advancement.
+  The Query original-attempt interrupted-ACK restart court stays mounted too.
+
+
+- C2: exact `branch_transition_artifacts(...).next().is_none()` in
+  `completing_an_older_capture_cannot_replace_the_compacted_transition_basis`.
+  Restore the complete original at `bbbce86edd7a7e843ecd1e44a8d3ffbfca2cf52f:crates/worth-relational/src/durability/authority/checkpoint_concurrency_tests.rs`,
+  same-SHA parent mounts, checkpoint_capture/checkpointing/append owners,
+  checkpoint catalog and branch-transition state/control closure, `tests/support.rs`
+  and complete `tests/support` tree under `crates/worth-relational/src`.
+  Restore the actual durable compaction and original capture/coverage/budgets
+  through genuine owned storage; never revive runtime_attachment. The complete
+  private catalog-ordering counterpart stays mounted as
+  `older_checkpoint_completion_keeps_the_newest_transition_basis` on Memory.
+  Actual Home stale-capture/selected-generation proof remains separately mounted.
+
+
+Integration protocol restoration refresh (same per-claim disposition; no retired campaign is remounted):
+- `22e638d638e724fc2ca3947a583f43c45b56990f:crates/worth-relational/src/durability/authority/runtime_rebuild/checkpoint_restore_tests.rs`
+- `22e638d638e724fc2ca3947a583f43c45b56990f:crates/worth-relational/src/durability/authority/runtime_rebuild/checkpoint_restore/reuse_tests.rs`
+- `22e638d638e724fc2ca3947a583f43c45b56990f:crates/worth-relational/src/history/commit/artifact_tests.rs`
+- `22e638d638e724fc2ca3947a583f43c45b56990f:crates/worth-relational/src/history/commit/envelope_residency_tests.rs`
+- `22e638d638e724fc2ca3947a583f43c45b56990f:crates/worth-relational/src/runtime/state/subsystems/services/symbol_table/reservations/tests.rs`
+Restore the complete same-SHA `crates/worth-relational/src` tree, including original parent mounts, fixture/control/support/producer and reconstruction-lane dependencies. Preserve every original assertion/input/contrast and genuinely owned source boundary when migrating the campaign; never revive runtime_attachment discovery. These references retain integration revisions to the already moved private cost/fault families. Ordinary source functionality remains in the public counterparts.
+
+
+Generation selection private counter remainder:
+Generation case retains original two pre-recovery and two post-recovery definitions, nonreuse identity/generation inequalities, pinned old vs new field values, exact observed generation and candidate entity ids. Only exact generation_payload_reads delta1 and history_inventory_entries delta0 leave the functional case for C2; no public cost proxy. Complete immutable original at `14b6075657193d0f74ce944beab6124b5dec7b3c:crates/worth-relational/src/tests/query/indexes/generation_identity_recovery.rs`, plus same-SHA indexes/mod.rs, tests/support.rs, complete tests/support tree and complete `crates/worth-relational/src` implementation/control closure, preserving original counters/arming/input contrasts when restored through genuine owned source infrastructure; never restore runtime_attachment.
+
+
+Fresh admission private source/root/schema custody remainder:
+Full original fresh_source_keeps_actual_runtime_root_and_installed_schema_for_complete including source_plan, all root/schema/source Arc identities, retained-empty/schema registry assertions, unused constraints and wrong receipts at `5d37a209ee227fdef639cbec2c438d82396a7209:crates/worth-relational/src/durability/authority/fresh_source/tests.rs`; restore same-SHA fresh_source.rs/directory, tests/support.rs and complete tests/support tree, direct durability/runtime/schema control/source ancestors. Preserve original arming/observations; never restore runtime_attachment discovery. This is a C2 split under the coordinator per-claim ruling.
+
+
+Pinned-reader restoration private remainders:
+
+Full original native_restore_work_counts_revised_history_sibling_roots_and_partition_images and divergent_sibling_is_not_reused_as_the_storage_mirror including shares_first_generation/shares_partition_generation: `5b18804fbd34c814d69aefd527653b11e3d2da59:crates/worth-relational/src/durability/authority/runtime_rebuild/checkpoint_restore_tests.rs`. Restore the same-SHA runtime_rebuild.rs and runtime_rebuild directory, `crates/worth-relational/src/tests/support.rs`, complete tests/support tree, and direct durability/history/runtime source/control ancestors. Preserve every section/work/directory/partition and pointer comparison, complete original arming/observations. Restore through genuinely source-owned infrastructure; never resurrect runtime_attachment discovery.
+
+
+Capture, dictionary and lineage private remainders:
+
+All these original roots and fixtures are unchanged at f9a53a5d17e01562d503b39b4627252bb63d8639:
+
+- C2 full original native_checkpoint_retains_all_admitted_capture_owners_and_restores_editable_truth, including zero/cancel/retained-grant pressure and every owner/charge/pointer/section assertion: `f9a53a5d17e01562d503b39b4627252bb63d8639:crates/worth-relational/src/tests/durability/contracts/native_checkpoint/allocation.rs` with request() in that file and its original native_checkpoint.rs/contracts/mod.rs parents.
+- C2 full original unpublished_client_keys_leave_checkpoint_dictionary_equal_and_published_keys_restore, including before/after symbol and record frontiers, all image equality/normalization and actual symbol demand/membership: `f9a53a5d17e01562d503b39b4627252bb63d8639:crates/worth-relational/src/tests/durability/contracts/native_checkpoint/speculative_symbols.rs`, same original parents.
+- C2 full original checkpoint_restore_protects_published_lineage_identities_in_each_lane and inflight_tail_replay_resumes_after_the_largest_durable_lineage_values, including RestoreLane/discard_after_a_durable_anchor, exact live/discarded/recovered frontiers, cold directory/empty nodes, and tail_log.len()==1: `f9a53a5d17e01562d503b39b4627252bb63d8639:crates/worth-relational/src/tests/durability/medium/lineage_frontiers.rs` and original medium/mod.rs parent.
+
+Each restore includes the complete immutable shared fixture/control trees `f9a53a5d17e01562d503b39b4627252bb63d8639:crates/worth-relational/src/tests/support.rs`, `f9a53a5d17e01562d503b39b4627252bb63d8639:crates/worth-relational/src/tests/support`, plus direct owner/canonical/control ancestors from `f9a53a5d17e01562d503b39b4627252bb63d8639:crates/worth-relational/src`. Preserve complete original claims/arming/observations when restoring through genuinely owned source boundaries; never revive the runtime-discovery adapter. Copy these exact entries into the spec before removing original roots.
+
+Index, merge, bulk and empty-head private remainders:
+
+All original nine roots are unchanged at622f101e99a3bda26132bebf19c2f3c318a7b6f3. Use that immutable revision for every referenced tree; no moving HEAD is a restore authority.
+
+- C2, `checkpoint_index_artifact_survives_tail_replay_without_envelope_caches`: exact `derived_index_artifacts.is_empty()` and `derived_index_checkpoint_format == 2`, restore from `622f101e99a3bda26132bebf19c2f3c318a7b6f3:crates/worth-relational/src/tests/durability/contracts/derived_index_checkpoint.rs`. Fixture closure is its original name_index/build/build_on_branch definitions in that same file, its original `contracts/mod.rs` parent, and the immutable support tree below.
+- C2/C4, `durability_contract_replays_merge_from_typed_authority_when_diagnostics_are_absent`: exact populated-versus-omitted authoritative_nested_bytes comparison and original rewrite_commit_envelope callback/resealed frame, restore from `622f101e99a3bda26132bebf19c2f3c318a7b6f3:crates/worth-relational/src/tests/durability/contracts/merge_replay_continuity.rs`. Fixture closure is the original `contracts/mod.rs` parent, support tree below (especially durable_medium/tamper.rs), and `622f101e99a3bda26132bebf19c2f3c318a7b6f3:crates/worth-relational/src/history/data/canonical_commit_envelope/control_allocation.rs` with its same-SHA parent module. Restore the complete callback, including authority take/restore and empty-diagnostic assertion, rather than a no-op or count proxy.
+- C2, `semantic_result_bulk_entities_and_relations_seal_and_readmit_original_bindings`: actual readmitted envelope symbol_texts dictionary contains bulk-input-00 under original PreferInterned producer, restore from `622f101e99a3bda26132bebf19c2f3c318a7b6f3:crates/worth-relational/src/tests/durability/contracts/semantic_result/bulk.rs`. Fixture closure includes publication() in that file, `622f101e99a3bda26132bebf19c2f3c318a7b6f3:crates/worth-relational/src/tests/durability/contracts/semantic_result.rs`, its original parent and immutable support tree below.
+- C2, `durability_contract_empty_checkpoint_restores_a_live_retained_head`: exact head_installs == 1, restore from `622f101e99a3bda26132bebf19c2f3c318a7b6f3:crates/worth-relational/src/tests/durability/contracts/checkpoint_recovery/empty_head.rs`. Fixture closure is `622f101e99a3bda26132bebf19c2f3c318a7b6f3:crates/worth-relational/src/tests/durability/contracts/checkpoint_recovery.rs`, its original parent and immutable support tree below.
+
+Shared exact fixture/control trees: `622f101e99a3bda26132bebf19c2f3c318a7b6f3:crates/worth-relational/src/tests/durability/contracts/mod.rs`, `622f101e99a3bda26132bebf19c2f3c318a7b6f3:crates/worth-relational/src/tests/support.rs`, and `622f101e99a3bda26132bebf19c2f3c318a7b6f3:crates/worth-relational/src/tests/support` (complete runtime/schema/records/aspect/history/owner-input/durability/local-medium descendants). All production owner controls and direct parents come from the same immutable `622f101e99a3bda26132bebf19c2f3c318a7b6f3:crates/worth-relational/src` tree. On restoration migrate source boundaries through genuine owned media, preserving every original assertion and arming/observation/control closure; never revive runtime-discovery adapter authority. These original private claims remain required at their restoration courts; their nine public functional counterparts stay mounted.
+
+
+- Exact old-layout portion of `memory_frame_preserves_original_payload_and_scalar_tuple_observations`:
+  `restore from 86e84dc5cd:crates/worth-relational/src/history/commit/envelope_residency/memory_publication_tests.rs`.
+  Restore the original complete OldBacking (both variants and order), OldState,
+  OldCell, original Memory construction/drop diagnostic and both exact size
+  assertions with the same-SHA parent type imports. The functional original
+  Memory payload length, digest, real backing and full-frame/payload distinction
+  remain in the mounted genuine owner unit. Never delete the Journal variant
+  to fit a smaller layout oracle; this physical comparison belongs to C2.
+
+
+Remaining pure cleanup roots (per-claim Landing 2a disposition):
+
+- C4: `branch_root_image_versions_refuse_before_restoration_and_current_recovers`,
+  introduced on the authorized integration base: restore the complete unsupported
+  version mutation/refusal/current-format control from
+  `22e638d638e724fc2ca3947a583f43c45b56990f:crates/worth-relational/src/tests/durability/contracts/branch_root_checkpoint/unsupported_root_version.rs`,
+  its same-SHA `branch_root_checkpoint.rs` parent and complete
+  `crates/worth-relational/src` fixture/codec/authority closure. This is the original
+  private malformed-plan campaign; ordinary current-format public recovery
+  remains mounted in `checkpoint_branch_targets.rs`.
+
+
+- `positioned_agreement_uses_original_work_budget_and_preserves_authoritative_digest`: `restore from 86e84dc5cd738882bf50fced389fc7deaa31567f:crates/worth-relational/src/tests/durability/contracts/canonical_commit_artifact.rs`.
+- `native_custody_correction_last_actual_capture_abandonment_releases_shared_root_custody`: `restore from 86e84dc5cd738882bf50fced389fc7deaa31567f:crates/worth-relational/src/durability/data/native_checkpoint/component_custody/tests.rs`.
+- `equal_exact_root_reuses_the_readmitted_partition_substrate`: `restore from 86e84dc5cd738882bf50fced389fc7deaa31567f:crates/worth-relational/src/durability/authority/runtime_rebuild/checkpoint_restore_tests.rs`.
+- `native_custody_correction_cross_lane_acquire_release_has_one_actual_capture_cut`: `restore from 86e84dc5cd738882bf50fced389fc7deaa31567f:crates/worth-relational/src/history/retention/component_cut_tests.rs`.
+- `native_custody_correction_current_lane_inventory_is_collected_inside_actual_cut`: `restore from 86e84dc5cd738882bf50fced389fc7deaa31567f:crates/worth-relational/src/history/retention/component_cut_tests.rs`.
+- `an_indexed_envelope_remains_cold_until_explicit_readmission_and_loads_once`: `restore from 86e84dc5cd738882bf50fced389fc7deaa31567f:crates/worth-relational/src/history/commit/envelope_residency_tests.rs`.
+- `relinking_other_envelopes_preserves_an_index_even_while_its_body_is_in_flight`: `restore from 86e84dc5cd738882bf50fced389fc7deaa31567f:crates/worth-relational/src/history/commit/envelope_residency_tests.rs`.
+- `settlement_releases_a_journal_flight_but_preserves_memory_history_and_position`: `restore from 86e84dc5cd738882bf50fced389fc7deaa31567f:crates/worth-relational/src/history/commit/envelope_residency_tests.rs`.
+- `positioned_demand_owns_its_result_across_journal_settlement`: `restore from 86e84dc5cd738882bf50fced389fc7deaa31567f:crates/worth-relational/src/history/commit/envelope_residency_tests.rs`.
+- `journal_publication_keeps_journal_placement_without_memory_frame`: `restore from 86e84dc5cd738882bf50fced389fc7deaa31567f:crates/worth-relational/src/history/commit/envelope_residency/memory_publication_tests.rs`.
+- `canonical_artifact_accounting_excludes_nested_diagnostic_perturbation`: `restore from 86e84dc5cd738882bf50fced389fc7deaa31567f:crates/worth-relational/src/history/commit/artifact_tests.rs`.
+- `populated_derived_index_artifacts_only_change_the_optional_cache_lane`: `restore from 86e84dc5cd738882bf50fced389fc7deaa31567f:crates/worth-relational/src/history/commit/artifact_tests.rs`.
+- `strategy_input_clone_retains_only_its_original_decoded_bytes_grant`: `restore from 86e84dc5cd738882bf50fced389fc7deaa31567f:crates/worth-relational/src/history/commit/artifact_tests/strategy_readmission.rs`.
+- `strategy_descriptor_clone_retains_only_its_original_decoded_locator_grant`: `restore from 86e84dc5cd738882bf50fced389fc7deaa31567f:crates/worth-relational/src/history/commit/artifact_tests/strategy_readmission.rs`.
+- `shared_readmitted_envelope_clones_keep_the_original_allocation_and_grant_until_last_drop`: `restore from 86e84dc5cd738882bf50fced389fc7deaa31567f:crates/worth-relational/src/history/commit/artifact_tests/shared_readmission.rs`.
+- `actual_weak_position_retains_only_the_fixed_original_control_bill_until_last_drop`: `restore from 86e84dc5cd738882bf50fced389fc7deaa31567f:crates/worth-relational/src/history/commit/artifact_tests/shared_readmission.rs`.
+- `embedded_checkpoint_preserves_ignored_unknown_nested_fields_without_retaining_their_heaps`: `restore from 86e84dc5cd738882bf50fced389fc7deaa31567f:crates/worth-relational/src/history/commit/artifact_tests/shared_readmission.rs`.
+- `result_snapshot_cleanup_registry_contention_preserves_exact_cell_and_competing_task`: `restore from 86e84dc5cd738882bf50fced389fc7deaa31567f:crates/worth-relational/src/runtime/state/subsystems/visibility/snapshot_handles/published_registry/original_cleanup/tests.rs`.
+- `checkpoint_recovery_preserves_abandoned_symbol_identity_frontiers`: `restore from 86e84dc5cd738882bf50fced389fc7deaa31567f:crates/worth-relational/src/runtime/state/subsystems/services/symbol_table/reservations/tests.rs`.
+- `seeking_past_an_acknowledged_index_prefix_never_demands_its_journal_bodies`: `restore from 86e84dc5cd738882bf50fced389fc7deaa31567f:crates/worth-relational/src/durability/canonical_commit_artifact/retained_export/skip_tests.rs`.
+- `structural_identity_recovery_preserves_current_evidence_and_queries`: `restore from 86e84dc5cd738882bf50fced389fc7deaa31567f:crates/worth-relational/src/tests/inspection/structural_identity.rs`.
+- `complexity_budget_schema_transition_classification_is_changed_atom_bounded`: `restore from 86e84dc5cd738882bf50fced389fc7deaa31567f:crates/worth-relational/src/tests/complexity/contracts/commit_budgets/schema_continuity_boundaries.rs`.
+- `complexity_budget_subscriber_resume_continuity_is_boundary_local`: `restore from 86e84dc5cd738882bf50fced389fc7deaa31567f:crates/worth-relational/src/tests/complexity/contracts/commit_budgets/schema_continuity_boundaries.rs`.
+- `complexity_budget_milestone5_closeout_keeps_schema_cdc_and_recovery_boundary_local`: `restore from 86e84dc5cd738882bf50fced389fc7deaa31567f:crates/worth-relational/src/tests/complexity/contracts/commit_budgets/schema_continuity_boundaries.rs`.
+- `complexity_budget_merge_planning_reports_request_shaped_work`: `restore from 86e84dc5cd738882bf50fced389fc7deaa31567f:crates/worth-relational/src/tests/complexity/contracts/merge_budgets.rs`.
+- `complexity_budget_merge_execution_reports_admitted_records_and_emitted_mutations`: `restore from 86e84dc5cd738882bf50fced389fc7deaa31567f:crates/worth-relational/src/tests/complexity/contracts/merge_budgets.rs`.
+  Restore each root's complete same-SHA parent/descendant fixture and control
+  closure, including its original local medium script and owner units; migrate
+  the source boundary through genuine owned media without reviving the retired
+  runtime-discovery adapter. All original guards remain required.
+
+  The merge execution root's four public semantic assertions remain in
+  `merge_source_copy_identity.rs::source_only_merge_emits_one_new_entity_with_an_independent_identity`.
+  C2 restores its full original cost/contract campaign and fixture closure.
+
+
+B2 schema/history consumer split (coordinator per-claim Landing 2a ruling):
+
+- `durability_contract_recovery_rebuilds_branch_head_root_obligations` — restore from `df2420390ecdbf870bbc47384ba45bddee5c5359:crates/worth-relational/src/tests/durability/contracts/retention_inspection_store.rs`: exact active-snapshot and branch pin census.
+- `durability_contract_recovery_preserves_inspection_truth_bundle` — restore from `df2420390ecdbf870bbc47384ba45bddee5c5359:crates/worth-relational/src/tests/durability/contracts/retention_inspection_store.rs`: retention_summary and record_retention fields of the complete original bundle; keep all original producer and inspection helpers.
+- `tail_replay_consumes_canonical_reused_record_allocation` — restore from `df2420390ecdbf870bbc47384ba45bddee5c5359:crates/worth-relational/src/tests/durability/contracts/record_allocation_recovery.rs`: exact reclaim limit, one reusable slot, same local slot and incremented generation; public current/historical truth is ported.
+- `durability_certification_recovery_authority_continuity_is_explained_and_counted` — restore from `df2420390ecdbf870bbc47384ba45bddee5c5359:crates/worth-relational/src/tests/durability/contracts/descriptor_continuity.rs`: exact digest-parity and mismatch counters, alongside original diagnostic producer.
+- `durable_recovery_and_schema_mismatch_test` — restore from `df2420390ecdbf870bbc47384ba45bddee5c5359:crates/worth-relational/src/tests/durability/contracts/schema_transition_continuity.rs`: actual recovered digest-parity work counter; all semantic descriptor and refusal assertions stay public.
+- `native_field_text_checkpoint_then_tail_recovers_exact_json_after_original_owners_drop` — restore from `df2420390ecdbf870bbc47384ba45bddee5c5359:crates/worth-relational/src/tests/durability/contracts/managed_field_text.rs`: exact Symbol representation, charged managed payload and System client-key custody; retain read_exact and original request policy closure.
+
+- Fixture closure for `recorded_original_retirement_preserves_both_leases_across_busy_and_stop`:
+  `restore from 0615dd733c:crates/worth-relational/src/history/retention/lane/retained_release/tests.rs`
+  (`assert_recovered_cut_and_lane_busy`), with its same-SHA exact re-export lines
+  in `history/retention/mod.rs`, `history/retention/lane.rs`, and
+  `history/retention/lane/retained_release.rs`. Its final caller moved to C2;
+  the other external-cut fixture remains live. The original source tests above
+  also reference the same-SHA local-medium `head`, `transition_head`,
+  `drop_artifact` and journal `remove` fixtures. Restore those physical/fault
+  observations through the actual owner/provider, without reviving adapters.
+
+- Associated-original checkpoint metadata/body nonresidency portions:
+  `associated_effects_discover_cold_subject_without_reading_unrelated_history`
+  (`restore from 0615dd733c:crates/worth-relational/src/tests/durability/contracts/associated_effects.rs`)
+  and `native_custody_correction_enumerates_known_orphan_and_unrelated_association_metadata`
+  (`restore from 0615dd733c:crates/worth-relational/src/tests/durability/contracts/associated_effects_discovery.rs`).
+  C2 preserves the exact per-cell before/after resident census, with original
+  same-SHA fixture closure. Actual metadata/semantic-result behavior stays in
+  public `association_checkpoint_journeys.rs`.
+- `caller_association_bounds_and_rebinding_refuse_without_retaining_publication`
+  (pending allocation/route census) and
+  `caller_association_survives_cold_checkpoint_history_and_journal_tail`
+  (selected directory, journal absence and cold-body posture):
+  `restore from 0615dd733c:crates/worth-relational/src/tests/durability/contracts/caller_association.rs`.
+  Restore original `propose`/`publish` fixture closure for those physical claims.
+  Wire/bounds and embedded original codec remain Native value units; all public
+  binding and cold original-frame equality remains in `caller_association_journeys.rs`.
+- `recorded_component_checkpoint_readmits_cold_canonical_predecessor_and_successor`
+  and `recorded_component_checkpoint_readmits_original_empty_predecessor`,
+  private resident/cold-root and full physical-root demand portions;
+  `recorded_component_checkpoint_omits_released_components_and_plain_observations`
+  (whole retained-root census) and
+  `recorded_original_retirement_preserves_both_leases_across_busy_and_stop`
+  (whole private pin/release/stop accounting campaign):
+  `restore from 0615dd733c:crates/worth-relational/src/tests/durability/contracts/recorded_component_checkpoint.rs`.
+  Restore `original_custody`, `Original`, capture/recovery and retirement fixtures
+  at the same SHA. C2 must supply honest public pin/allocation observations;
+  never revive the local provider adapters. The Canonical/Empty original
+  descriptors, readable snapshots after maintenance, semantic result,
+  historical-currentness refusal and no-republication guards stay public in
+  `recorded_original_checkpoint_journeys.rs`. The actual unrelated-body deletion
+  remains a C4 component of this original campaign, as listed below.
+- `a_recovered_runtime_publishes_its_next_commit_at_the_next_position`,
+  original/reopened cold-source allocation pointer identity only:
+  `restore from 0615dd733c:crates/worth-relational/src/tests/durability/medium/recovered_publication.rs`.
+  Public source bytes/limits and actual recovered originals, receipt/coverage,
+  no recovery publication, next ID/parent/position and second reopen remain in
+  `medium_recovered_continuation.rs`.
+- `checkpoint_size_tracks_branch_state_not_covered_transitions`, manifest
+  growth bound and covered resident-log release portions:
+  `restore from 0615dd733c:crates/worth-relational/src/tests/durability/contracts/branch_transition/checkpoint_state.rs`.
+  Restore both exact 32-branch lifecycle scripts, 64/128 counts, captured
+  sequences, empty covered logs and `through_archive_and_pending_deletion <= direct + 32`.
+  The same lifecycle inputs and exact recovered sequence continuation stay
+  public in `checkpoint_transition_continuation.rs`.
+
+
+- `checkpoint_recovery_readmits_shared_root_once_for_sibling_heads`, physical
+  single image and exact readmitted Root pointer sharing:
+  `restore from e4d3b01c8d:crates/worth-relational/src/tests/durability/contracts/branch_root_checkpoint.rs`.
+  C2 restores the original fixture closure; the two readable branch contents
+  and equal admitted targets remain public in `checkpoint_branch_targets.rs`.
+- `durability_contract_checkpoint_tail_recovery_preserves_post_checkpoint_commits`,
+  exact retained envelope census and original partition-image backing pointer:
+  `restore from e4d3b01c8d:crates/worth-relational/src/tests/durability/contracts/checkpoint_recovery.rs`.
+  C2 restores these original allocation assertions; exact checkpoint/tail
+  coverage, receipts and old envelope readability remain in public
+  `checkpoint_tail_and_indexes.rs`.
+- `acknowledged_transition_admits_only_its_exact_successor_and_releases_snapshot`,
+  `foreign_recovery_and_foreign_candidate_are_refused_before_effects`, and
+  `moved_source_and_stale_candidate_cannot_extend_recovery_lineage`, private
+  published/preparation snapshot-handle census portions only:
+  `restore from e4d3b01c8d:crates/worth-relational/src/durability/authority/checkpoint_transition/tests.rs`.
+  Restore the original same-SHA fixture closure for C2 allocation/custody
+  observation. All exact public authority admission/refusal/retry and unchanged
+  descriptors/counts remain in `checkpoint_successor_authority.rs`.
+
+
+- `controlled_resident_cell_keeps_exact_charge_until_last_real_weak` and
+  `controlled_resident_cell_refuses_exact_control_before_any_new_arc`:
+  `restore from f9f15bf8c8:crates/worth-relational/src/storage/residency/cell/resident_full/tests.rs`.
+  These two assert the exact request-funded charge of `resident_for_request`
+  (exact accounting, C2 by the sharing-bound ruling). The constructor is live:
+  the master merge made the Full `PreparedResidentRegion::initial`
+  (`storage/residency/region_initialization.rs`) its production caller, so C2
+  restores these roots against that producer's bound.
+- The Full region courts are not moved. On the live producer
+  `PreparedResidentRegion::initial`,
+  `controlled_full_region_matches_current_kind_preimages_and_truth` and
+  `controlled_full_commitment_clone_retains_only_its_actual_node_backing` stay in
+  `storage/residency/region_publication/full/tests.rs` and must pass.
+  `PreparedResidentRegion::initial_for_request` had no production caller and was
+  deleted with the 32 Native dead-code diagnostics
+  (`target/lane-evidence/landing2a-dead-code-deletion-notes.md`).
+
+- Instrumentation half of `execute_prepared_merge_reports_execution_counters_and_structural_summary`: `restore from f9f15bf8c8:crates/worth-relational/src/tests/history/milestone_7c_phase_e/execution_counters_diagnostics.rs`.
+- Instrumentation half of `execute_prepared_merge_records_attempt_without_success_on_failure`: `restore from f9f15bf8c8:crates/worth-relational/src/tests/history/milestone_7c_phase_e/failure_attempt_diagnostics.rs`.
+- Instrumentation half of `native_merge_touches_only_changed_revision_and_both_index_membership_keys`: `restore from f9f15bf8c8:crates/worth-relational/src/tests/history/milestone_7d_phase_d/merge_descriptive_touches.rs`.
+- Instrumentation half of `built_in_monotonic_counter_merge_is_auto_resolved_with_inline_value_and_recovery_parity`: `restore from f9f15bf8c8:crates/worth-relational/src/tests/history/milestone_7d_phase_d/monotonic_counter_resolution.rs`.
+- Instrumentation half of `disjoint_rewire_neighborhoods_do_not_escalate_to_topology_region_conflict`: `restore from f9f15bf8c8:crates/worth-relational/src/tests/history/milestone_7d_phase_d/topology_local_rewire.rs`.
+- Instrumentation half of `topology_region_conflict_detection_reports_bounded_neighborhood_counters`: `restore from f9f15bf8c8:crates/worth-relational/src/tests/history/milestone_7d_phase_d/topology_region.rs`.
+  Each of these roots is split under Landing 2a's per-claim disposition. Its
+  public semantic claim is ported to the certification court
+  (`relational/durable_publication/merge_*`); C2 owns only the exact
+  instrumentation-counter, complexity-delta or private resident-Root assertions
+  named for the root in
+  `target/lane-evidence/landing2a-history-compiler-claim-disposition.md`.
+  Restore the whole original root and its same-SHA fixtures, with genuine owned
+  inputs and without reviving the removed runtime-discovery adapter.
+
+- `branch_roots_with_one_schema_deduplicate_the_durable_carrier`: `restore from f9f15bf8c8:crates/worth-relational/src/tests/durability/contracts/branch_root_schema_binding.rs`.
+- `replay_reads_only_the_gap_after_its_checkpoint`: `restore from f9f15bf8c8:crates/worth-relational/src/tests/durability/contracts/branch_transition/reconstruction.rs`.
+- `durability_tail_replay_releases_each_commit_snapshot_beyond_live_capacity`: `restore from f9f15bf8c8:crates/worth-relational/src/tests/durability/contracts/checkpoint_recovery.rs`.
+- `deleted_branch_reader_retains_only_its_exact_scoped_generation`: `restore from f9f15bf8c8:crates/worth-relational/src/tests/durability/contracts/derived_index_checkpoint/deleted_branch_reader.rs`.
+- `historical_reader_from_live_head_survives_head_retirement`: `restore from f9f15bf8c8:crates/worth-relational/src/tests/durability/contracts/derived_index_checkpoint/historical_reader.rs`.
+- `reclamation_and_checkpoint_keep_sibling_head_generation`: `restore from f9f15bf8c8:crates/worth-relational/src/tests/durability/contracts/derived_index_checkpoint.rs`.
+- `repeated_edits_checkpoint_only_the_live_index_payload`: `restore from f9f15bf8c8:crates/worth-relational/src/tests/durability/contracts/derived_index_checkpoint.rs`.
+- `reclamation_keeps_a_pinned_old_reader_until_release`: `restore from f9f15bf8c8:crates/worth-relational/src/tests/durability/contracts/derived_index_checkpoint.rs`.
+- `repeated_closed_branches_leave_no_latest_generation_residue`: `restore from f9f15bf8c8:crates/worth-relational/src/tests/durability/contracts/derived_index_checkpoint.rs`.
+- `repeated_global_same_basis_builds_reclaim_duplicates_but_keep_pinned_root`: `restore from f9f15bf8c8:crates/worth-relational/src/tests/durability/contracts/global_generation_reclamation.rs`.
+- `native_field_text_checkpoint_readmission_denial_keeps_bytes_and_target_root_intact`: `restore from f9f15bf8c8:crates/worth-relational/src/tests/durability/contracts/managed_field_text.rs`.
+- `repeated_native_captures_do_not_retain_checkpoint_images`: `restore from f9f15bf8c8:crates/worth-relational/src/tests/durability/contracts/native_checkpoint.rs`.
+- `synthetic_native_restore_and_image_digest_benchmark`: `restore from f9f15bf8c8:crates/worth-relational/src/tests/durability/contracts/native_checkpoint_restore_benchmark.rs`.
+- `checkpoint_restores_burned_append_frontier_beyond_all_retained_roots`: `restore from f9f15bf8c8:crates/worth-relational/src/tests/durability/contracts/record_allocation_recovery.rs`.
+- `recovery_releases_orphaned_append_reservation_without_reusing_its_gap`: `restore from f9f15bf8c8:crates/worth-relational/src/tests/durability/contracts/record_allocation_recovery.rs`.
+- `recovery_returns_orphaned_reclaimed_reservation_to_reuse`: `restore from f9f15bf8c8:crates/worth-relational/src/tests/durability/contracts/record_allocation_recovery.rs`.
+- `durability_contract_branch_heads_do_not_mutate_legacy_record_pins`: `restore from f9f15bf8c8:crates/worth-relational/src/tests/durability/contracts/retention_inspection_store.rs`.
+- `embedded_restore_allocation_grows_linearly_in_relation_bearing_regions`: `restore from f9f15bf8c8:crates/worth-relational/src/tests/durability/medium/embedded_cost.rs`.
+- `an_attachment_the_medium_moved_out_of_publishes_nothing`: `restore from f9f15bf8c8:crates/worth-relational/src/tests/durability/medium/single_owner.rs`.
+  C2 owns each of these durability contract/medium roots under Landing 2a's
+  per-claim disposition. Restore each root's same-SHA fixture closure (parent
+  module helpers, `tests/support/durability.rs` and the original local medium
+  controls) as recorded per root in
+  `target/lane-evidence/landing2a-durability-contract-claim-disposition.md`.
+  This is relocation with the original assertions, scripted fates and no-effect
+  oracles, not retirement or weakened evidence. Restore over genuine owned
+  media; do not revive the removed runtime-discovery adapter.
+
+- `verify_prepared_merge_execution_does_not_increment_planning_counters`: `restore from f9f15bf8c8:crates/worth-relational/src/tests/history/milestone_7c_phase_a/verification_counters.rs`.
+- `verify_prepared_merge_execution_reports_verification_counters_without_planning_work`: `restore from f9f15bf8c8:crates/worth-relational/src/tests/history/milestone_7c_phase_a/verification_counters.rs`.
+- `unrelated_relation_additions_do_not_inflate_topology_region_detection_counters`: `restore from f9f15bf8c8:crates/worth-relational/src/tests/history/milestone_7d_phase_d/topology_local_rewire/neighborhood_detection.rs`.
+  C2 owns the original claim under Landing2a's per-claim disposition.
+  Restore each named root's same-SHA owning fixture/module imports and private
+  control references recorded in `target/lane-evidence/landing2a-history-compiler-claim-disposition.md`.
+  This is relocation with its original guard assertions, not retirement or
+  weakened evidence. Restore with genuine owned inputs, without reviving the
+  removed local provider/discovery adapters.
+
+
+The following adapter-dependent Native performance campaigns move to C2 under
+Landing 2a's cost/growth disposition. Their assertions and durable posture are
+preserved at the restore references. Restore each root's descendant modules
+from the same SHA and its shared imports from `tests/performance_profiles.rs`;
+the exact mount closures and metric/scale evidence are recorded in
+`target/lane-evidence/landing2a-performance-claim-disposition.md`. The thirteen
+campaigns outside the adapter closure remain unchanged in this tree.
+
+Campaign-only fixtures removed with those roots also restore from `ee7aef9014`:
+`tests/performance_profiles/measurement_support.rs`, `dense_patch_record_count`
+in `tests/performance_profiles/invariant_support.rs`, `PerfMetricValue::is_null`
+in `tests/performance_metrics.rs`, the ten performance adapters/exports in
+`tests/domains/fintech/mod.rs`, and the two Chip variants/arms of
+`PerfDiagnosticsPolicy` in `tests/support/runtime.rs` (paths relative to
+`crates/worth-relational/src/`). Remaining shared fixtures and all ordinary
+Fintech scenarios remain. C2 must restore these claims with actual owned durable
+media through the public testkit, preserving the claims without reviving the
+retired runtime-discovery adapters.
+
+- `perf_artifact_recoverability_matrix`: `restore from ee7aef9014:crates/worth-relational/src/tests/performance_profiles/artifact_recoverability_matrix.rs`.
+- `perf_chip_simulator_matrix`: `restore from ee7aef9014:crates/worth-relational/src/tests/performance_profiles/chip_simulator_matrix/mod.rs`.
+- `perf_commit_delta_matrix`: `restore from ee7aef9014:crates/worth-relational/src/tests/performance_profiles/commit_delta_matrix.rs`.
+- `perf_durability_append_matrix`: `restore from ee7aef9014:crates/worth-relational/src/tests/performance_profiles/durability_append_matrix.rs`.
+- `perf_geometry_kernel_matrix`: `restore from ee7aef9014:crates/worth-relational/src/tests/performance_profiles/geometry_kernel_matrix/mod.rs`.
+- `perf_hot_cold_path_matrix`: `restore from ee7aef9014:crates/worth-relational/src/tests/performance_profiles/hot_cold_path_matrix/mod.rs`.
+- `perf_index_parity_matrix`: `restore from ee7aef9014:crates/worth-relational/src/tests/performance_profiles/index_parity_matrix.rs`.
+- `perf_merge_lineage_matrix`: `restore from ee7aef9014:crates/worth-relational/src/tests/performance_profiles/merge_lineage_matrix/mod.rs`.
+- `perf_recoverability_policy_matrix`: `restore from ee7aef9014:crates/worth-relational/src/tests/performance_profiles/recoverability_policy_matrix.rs`.
+- `perf_replay_recovery_matrix`: `restore from ee7aef9014:crates/worth-relational/src/tests/performance_profiles/replay_recovery_matrix.rs`.
+- `perf_sustained_load_matrix`: `restore from ee7aef9014:crates/worth-relational/src/tests/performance_profiles/sustained_load_matrix/mod.rs`.
+- `perf_workflow_matrix`: `restore from ee7aef9014:crates/worth-relational/src/tests/performance_profiles/workflow_matrix/mod.rs`.
+
+- `request_root_refusal_preserves_original_and_releases_partial_backing`:
+  `restore from 2a51552fc5:crates/worth-relational/src/branch/root_tests/request.rs`.
+  Moved under the coordinator's 2026-11-09 Landing 2a ruling, not retired or
+  weakened. It proves the specific unchanged-root replacement allocation refuses
+  at controller + `size_of(root)` - 1, releases partial backing, preserves the
+  original, and honours cancellation. C2 must provide the public
+  allocation-refusal observation before restoring this claim.
+
+- `publication_cost_distinguishes_new_and_reused_schema_authority`: `restore from b736be6f47:crates/worth-relational/src/branch/root_tests.rs`.
+- `replay_pin_of_a_cold_partition_is_typed_and_has_no_effect`: `restore from b736be6f47:crates/worth-relational/src/tests/durability/medium/cold_isolation.rs`.
+- `resident_pin_custody_refuses_unread_mirror_frames_after_exact_source_admission`: `restore from b736be6f47:crates/worth-relational/src/tests/durability/medium/cold_pins.rs`.
+- `selected_branch_views_preserve_cold_probe_and_demand`: `restore from b736be6f47:crates/worth-relational/src/tests/durability/medium/cold_invariants.rs`.
+  These courts retain private physical pin actions/counts, resident-only probe
+  state, or exact publication/materialization accounting. Restore the original
+  claims in C2 through its honest allocation/residency observation; they are not
+  retired. Public semantic read/failure courts remain in the happy tree.
+
+- C2: the Graph and Divergence subcases of
+  `residency_failure_matrix_lineage_event_doors_preserve_every_failure_class`:
+  restore from `ea2ffee250:crates/worth-relational/src/tests/durability/medium/cold_lineage_event_matrix.rs`
+  and `ea2ffee250:crates/worth-relational/src/tests/durability/medium/cold_lineage_event_matrix/exhaustive.rs`.
+  These collectors exist only under cfg(test), with no shipping public door.
+  Seven distinct shipping owner paths, plus the two original aspect-access
+  forwarding aliases mapped to their identical public delegates, retain their full
+  typed-refusal, repair/stickiness, no-publication and frontier assertions in
+  the external cold-residency court.
+- C2: private zero-resident-node/event preconditions from the lineage fixture
+  helpers used by the migrated concurrent and integrity courts: restore from
+  `ea2ffee250:crates/worth-relational/src/tests/durability/medium/cold_lineage_fixture.rs`
+  and `ea2ffee250:crates/worth-relational/src/tests/durability/medium/cold_lineage_event_fixture.rs`.
+  The external courts preserve zero physical reads at reopen and all original
+  public result, byte-integrity, concurrency and source-custody assertions.
+
+- C2: the removed `resident_replay_pins` resident-only fixture hook:
+  `restore from ea2ffee250:crates/worth-relational/src/visibility/pins/pin_authority/replay_pins.rs`.
+  Its only callers were the already-moved private pin courts; the shipping
+  funded `demand_replay_pins` and its resident implementation remain unchanged.
+
+- C2: the exact cached-Head/absent-per-runtime-dictionary preparation window in
+  `metadata_pin_refuses_shared_head_until_its_runtime_has_the_aspect_meanings`:
+  `restore from 427700edd0:crates/worth-relational/src/tests/durability/medium/cold_metadata_pins.rs`.
+  Preserve private `demand_region_head_cached`, its no-read assertion and the
+  original `SymbolsNotResident` refusal. Its public read/pin suffix is retained
+  as `fork_metadata_pin_after_public_head_read_preserves_original_aspect_revision`.
+- C2: the two direct Cold residency probes in
+  `residency_retained_kind_demands_only_its_cold_head_and_preserves_damage`:
+  `restore from 427700edd0:crates/worth-relational/src/tests/durability/medium/cold_materialization_doors.rs`.
+  Preserve the before-kind Head-Cold and after-kind Full-Cold observations.
+  Actual suspension, retained kind and typed storage refusal remain in
+  `retained_kind_after_public_suspension_preserves_kind_and_storage_refusal`.
+  Original fixture dependency: `restore from 427700edd0:crates/worth-relational/src/tests/durability/medium/cold_current_fixture.rs`.
+  These private claims are moved, not retired; a public I/O count is not their
+  physical residency/dictionary observation.
+
+
+- C2: resident node/event cardinalities, exact per-runtime event-index population,
+  and query-index nonmutation from the mixed lineage courts:
+  `restore from 81d41f5575:crates/worth-relational/src/tests/durability/medium/cold_lineage_events.rs`
+  and `restore from 81d41f5575:crates/worth-relational/src/tests/durability/medium/cold_lineage_nodes.rs`.
+  Keep all zero/unchanged/admitted count, absent-node and shared-page warmup
+  assertions; the external lineage semantics, point guards and capture-row
+  courts retain original resolution/digest, member noninterference, sticky
+  typed failures, public frontier/offer invariance and serialized row coverage.
+  Original zero-node/zero-event preparation also belongs to C2:
+  `restore from 81d41f5575:crates/worth-relational/src/tests/durability/medium/cold_lineage_event_fixture.rs`.
+  The capture's exact no-load/shared-index preparation and no member-read suffix
+  are resident-state/cost claims; C2 restores them, not a public semantic proxy.
+- C2: Graph/Divergence subcases and the exact retry-resident-node predicate in
+  `residency_failure_matrix_lineage_doors_preserve_every_failure_class`:
+  `restore from 81d41f5575:crates/worth-relational/src/tests/durability/medium/cold_lineage_matrix/exhaustive.rs`
+  with node-door setup in `cold_lineage_nodes.rs` above. Seven shipping doors
+  keep all six failure classes and original successful/sticky/retry/publication
+  consequences in the external node matrix. The fixture's resident-zero setup:
+  `restore from 81d41f5575:crates/worth-relational/src/tests/durability/medium/cold_lineage_fixture.rs`.
+- C2: exact zero-node observation after cold mirror refusal in
+  `lineage_point_guard_preserves_a_cold_mirror_head_failure`:
+  `restore from 81d41f5575:crates/worth-relational/src/tests/durability/medium/cold_observation_reads.rs`.
+  Public historical inspection preserves the live mirror-lineage helper's exact
+  typed/sticky refusal; the paired retained-observation court preserves all four
+  original exact-root guards and no publication effects.
+- C2: physical replay pin counts, direct historical-root Full/cold-mirror probes,
+  replay-retention census, private cache diagnostics and exact cache-clear window:
+  `restore from 81d41f5575:crates/worth-relational/src/tests/durability/medium/cold_pins.rs`.
+  Public paired courts are `replay_pinning_preserves_sticky_mirror_refusal_without_publication`
+  and `replay_retention_releases_original_references_without_cold_reads`.
+  Keep C2's exact source-state/pinned-record setup and failed-installation census.
+- C2: one-pin/zero-pin census in `concurrent_replay_references_share_one_physical_pin_set`:
+  `restore from 81d41f5575:crates/worth-relational/src/tests/durability/medium/replay_pin_concurrency.rs`.
+  Its public two eight-worker retain/release phases, all return values and final
+  false release remain in `concurrent_replay_references_release_each_original_reference_once`.
+- C2: exact discarded-round materialization and adjacency-lease counters, including
+  resets and accepted-round equality, in
+  `discarded_visibility_rounds_settle_only_accepted_materialization_and_leases`:
+  `restore from 81d41f5575:crates/worth-relational/src/tests/durability/medium/cold_visibility_round_counters.rs`.
+  Public cold/warm nonempty result equality and actual additional carrier reads
+  remain in `partially_cold_visibility_reads_preserve_nonempty_warm_results`.
+  All these private assertions move to C2; none is retired or weakened.
+
+- C2: now-uncalled resident-node fixture probe used by the moved node matrix:
+  `restore from 81d41f5575:crates/worth-relational/src/runtime/state/subsystems/lineage.rs`.
+  Restore its cfg(test) `LineageSubsystem::node` only with the actual resident
+  assertions above; the shipping counted semantic node read remains unchanged.
+
+
+- C2: exact Weak canonical-body lifetimes, resident envelope/payload census and
+  private reclamation setup in the three mixed envelope-lifetime courts:
+  `restore from 1403ddb275:crates/worth-relational/src/tests/durability/medium/cold_envelope_lifetime.rs`.
+  Originals: `settled_live_nonhead_envelopes_release_only_when_a_durable_copy_exists`,
+  `released_live_history_remains_in_external_capture_and_retained_recovery`,
+  `recovered_nonhead_tail_envelopes_release_their_actual_journal_backed_bodies`.
+  Public counterparts retain original patch readability in memory/durable cases,
+  all original commit identities after both recovery routes, the <32 source-read
+  bound, zero initial tail-source reads and receipt equality. Public reclamation
+  and the original <4 retired-root observation stay in the happy tree.
+- C2: provisional packet/slot-scan/materialization counter snapshots and exact
+  accepted-round equality in `invariant_storage_refusal_is_sticky_and_does_not_settle_provisional_counts`
+  and `cold_and_warm_invariant_reads_settle_one_round_of_evidence`:
+  `restore from 1403ddb275:crates/worth-relational/src/tests/durability/medium/cold_invariants.rs`.
+  The paired public invariant courts keep every nonempty/result-equality,
+  typed-refusal, first/warm/sticky I/O, selected-History noninterference and
+  no-publication assertion, including the unchanged third Head/Full court.
+- C2: exact private dictionary snapshot and provisional packet/scan counters in
+  `candidate_invariant_discovery_refuses_stickily_without_publishing_round_effects`,
+  Main-Full/remote-Cold probes and arena-slot floor in the candidate fixture,
+  plus exact abandoned-allocation slot comparisons/headroom/settled counters in
+  `a_region_retry_spends_the_applied_draft_identity_and_settles_one_round`:
+  `restore from 1403ddb275:crates/worth-relational/src/tests/durability/medium/cold_candidates.rs`.
+  Its paired failure court preserves Validation/Candidate/Commit refusals,
+  sticky I/O and original diagnostic Vec equality through the public owner;
+  its paired successful court preserves both changed-entity observations,
+  actual created record values and <24 source reads. Public diagnostic contents
+  are not moved to C2. Source recipe remains mounted for its remaining callers.
+- C2: exact Cold/Resident Head probes and physical occupied-slot/generation
+  enumeration in `head_probes_admit_each_forks_shared_region_without_reading_history`
+  and `cold_forks_edit_existing_ring_records_in_both_orders_and_checkpoint`:
+  `restore from 1403ddb275:crates/worth-relational/src/tests/durability/medium/cold_fork_edits.rs`.
+  Public paired courts keep missing-History Head name reads in both fork orders,
+  both edit orders, exact updated/deleted entity values, real relation creation,
+  standalone checkpoint/recovery, partition4 relation count>=2 and per-ID
+  effective relation equality. These private subclaims move, not retire.
+
+- C2: private per-runtime interner absence in current-scan cells of
+  `residency_failure_matrix_full_read_subjects_cover_every_door_and_class`:
+  `restore from 8283728aff:crates/worth-relational/src/tests/durability/medium/cold_read_matrix/exhaustive.rs`.
+  The public counterpart keeps all 47 doors, three subjects, six causes, exact
+  refusal/retry behavior, target reads, current-scan history noninterference and
+  publication invariance. The existing request-funded version read is now public.
+- C2: exact receiver dictionary absence/admission/resolved text in
+  `every_full_read_door_admits_its_runtime_dictionary_or_preserves_page_damage`:
+  `restore from 8283728aff:crates/worth-relational/src/tests/durability/medium/cold_symbol_read_doors.rs`.
+  All original public success/refusal, sticky I/O, Head identity and frontier
+  observations remain in `full_read_doors_preserve_history_symbol_refusals_and_current_head`.
+- C2: private Full/Head probes, metadata-history length, dictionary contents and
+  <400 entry bound, and shared-Full/receiver-cold preparation in
+  `head_symbols_never_cover_full_history_or_inherit_its_page_damage`:
+  `restore from 14e282569e:crates/worth-relational/src/tests/durability/medium/cold_symbol_view_levels.rs`.
+  Public paired court retains actual current field identity, Full typed refusal,
+  sticky/no-extra-I/O retry, unchanged Head, historical values and frontier.
+  Public history entries do not replace the private metadata-history claim.
+- C2: private exact-basis representation assertion `view.is_exact_basis()` in
+  `residency_failure_matrix_index_doors_preserve_every_failure_class`:
+  `restore from 14e282569e:crates/worth-relational/src/tests/durability/medium/cold_index_matrix.rs`.
+  Public issued-version equality, all 14 doors/six causes, no-load generation
+  residency, exact generation/entry equality, successor bounds, reservation
+  counters and publication/I/O assertions remain in the public matrix.
+- C2: exact resident interner text and cold-envelope cache probes in
+  `historical_index_reconstruction_uses_the_old_value_and_full_cold_history` and
+  its `assert_cold` preparation:
+  `restore from 14e282569e:crates/worth-relational/src/tests/durability/medium/cold_historical_index_matrix.rs`;
+  matrix cold-envelope assertion:
+  `restore from 14e282569e:crates/worth-relational/src/tests/durability/medium/cold_historical_index_matrix/exhaustive.rs`.
+  Both public counterparts preserve genuine old source/rows, generation bounds,
+  all five targets/six causes, exact unconsulted-envelope reads, reservation
+  counters and no publication. The actual single carried MVCC root is checked
+  against an issued main observation; an old receipt is not inferred to be a root.
+- C2: whole private allocation/inventory court
+  `residency_cold_index_frontier_prevents_reissue_before_any_image_demand`:
+  `restore from 8283728aff:crates/worth-relational/src/tests/durability/medium/cold_index_frontier.rs`.
+  Restore all four actual IndexSubsystem reserve/publish/frontier/inventory
+  sequences with their zero/positive source reads. Public actual builds retain
+  monotonic generations and the original <old+16 bound; they do not stand in for
+  these private allocator actions. No claim is retired.
+
+- C2 (2026-11-09 Landing2a move ruling, not retirement): exact mirror-Head
+  residency preparation, capture layer/input bounds and >=2 consolidation
+  count in `checkpoint_restart_cycles_preserve_full_reads_and_retention`:
+  `restore from 3fa8da0cb4:crates/worth-relational/src/tests/durability/medium/checkpoint_restart_bound.rs`.
+  Its public counterpart preserves three initial updates, 32 iterations, both
+  genuine recoveries per iteration, selected-root and mirror Head exclusion,
+  exact selected New/Carried membership (unselected bytes disappear), retention
+  and exact record comparison. It does not claim to reproduce private Head-only
+  preparation or prove repeated consolidation.
+- C2: shared merge fixture's exact resident dictionary absence in
+  `recovered_shape`, used by the two basic merge courts and member/index matrices:
+  `restore from 3fa8da0cb4:crates/worth-relational/src/tests/durability/medium/cold_merges.rs`.
+  Public counterparts retain all typed refusals/retries, source reuse, effects,
+  adopted/changed counts, memory-reference records and exact index key/entity
+  parity. Functional contributing-commit provenance remains HAPPY in the two
+  separate merge-history courts; it is not moved with this dictionary claim.
+- C2: exact receiver dictionary snapshot equality and provisional preparation
+  packet/invariant slot-scan work accounting in
+  `residency_failure_matrix_remote_invariant_heads_cover_every_preparation_door_and_class`:
+  `restore from 3fa8da0cb4:crates/worth-relational/src/tests/durability/medium/cold_preparation_failure_matrix/exhaustive.rs`.
+  Restore original Main Full/remote Cold/floor setup with it from
+  `restore from 3fa8da0cb4:crates/worth-relational/src/tests/durability/medium/cold_candidates.rs`.
+  Both public matrices retain Validation/Candidate/Commit, all six causes,
+  diagnostics Vec equality, sticky/transient I/O, publication effects
+  and exact History noninterference. Public outcomes do not replace private work.
+- C2: private accepted-round adjacency lease/materialization counter equality in
+  `projection_adjacency_discovery_settles_only_one_accepted_round`, plus exact
+  resident dictionary text resolution in the incoming-door fixture:
+  `restore from 3fa8da0cb4:crates/worth-relational/src/tests/durability/medium/cold_projection_adjacency_matrix.rs`.
+  Public counterpart `cold_and_warm_projection_adjacency_reads_preserve_actual_edges`
+  retains genuine cold/warm nine-door reads and adds warm no-I/O. The public
+  nine-door/six-subject/six-cause matrix retains all current/historical, callbacks,
+  exact failures/retries, unconsulted sources and publication assertions. The
+  two genuine index DATA readers include audit-retained edges, never Live-only
+  replacements. Exact private work accounting stays with this C2 original.
+- C2: exact interner absence before/after anchor read in
+  `the_remote_ring_label_stays_cold_until_its_incoming_edge_is_read`, and private
+  dictionary resolution in its real paged-edge preparation:
+  `restore from 3fa8da0cb4:crates/worth-relational/src/tests/durability/medium/cold_ring_dictionary.rs`.
+  Restore the exact original physical shape from
+  `restore from 3fa8da0cb4:crates/worth-relational/src/tests/durability/medium/cold_isolation.rs`.
+  Public counterpart preserves incoming-edge typed refusal and proves the actual
+  page is unconsulted before/after anchor read, then physically demanded.
+- C2: exact resident dictionary snapshot equality in
+  `cold_symbol_buckets_refuse_each_preparation_door_without_journal_effects_and_stay_damaged`,
+  and arena spent-slot/floor/+16 headroom plus <population/2 resident-dictionary
+  assertions in `a_cold_symbol_probe_spends_the_abandoned_record_identity_and_reads_only_touched_buckets`:
+  `restore from 3fa8da0cb4:crates/worth-relational/src/tests/durability/medium/cold_symbols.rs`.
+  Matrix dictionary equality:
+  `restore from 3fa8da0cb4:crates/worth-relational/src/tests/durability/medium/cold_symbol_failure_matrix/exhaustive.rs`.
+  Preserve original 600 client-key entities plus selected collision key. Public
+  counterparts keep all five doors including Preview, all six causes, exact
+  diagnostics/effects/sticky/retry behavior and successful actual relation with
+  original <16 source reads. Public successful case is named
+  `cold_symbol_publication_reads_only_touched_buckets`, not a spent-slot claim.
+- C2: exact resident symbol absence and private direct Full-warming preparation in
+  `cold_head_warm_and_full_warm_uniqueness_reuse_the_original_paged_field_identity`:
+  `restore from 3fa8da0cb4:crates/worth-relational/src/tests/durability/medium/cold_unique_symbols.rs`.
+  Public counterpart keeps all three warmth postures (actual public snapshot
+  Full read), original producer-admitted symbol identity, exact public duplicate
+  conflict payload equality and all frontier/offers/reservation assertions.
+- C2: resident dictionary inventory/demand/resolution loop and exact private
+  root warming in `a_reserved_candidate_published_after_another_branch_checkpoint_keeps_its_pages`:
+  `restore from 3fa8da0cb4:crates/worth-relational/src/tests/durability/medium/cold_reserved_checkpoint.rs`.
+  Public counterpart keeps exact reservation/publication order, both actual
+  selected captures and ACKs, original member membership, reopen/record survival,
+  exact counted lineage-node equality, public Full record demand and emitted
+  nonempty lineage directory. No root, mutable constructor or counter is exposed.
+
+Merging lane P-A into the integration branch (2026-11-10) moved the private halves of
+three integration courts whose in-source fixture P-A retired. Their public halves keep
+the same test names in the cold-residency court
+(`cold_residency/index_selection_reads.rs`):
+
+- C2: the `mutable` private index snapshot/install loop and the check that capture does
+  not admit the carried image, in
+  `cold_checkpoint_preserves_carried_index_selection_and_reads_postings_without_a_full_warmup`:
+  `restore from 8283728aff:crates/worth-relational/src/tests/durability/medium/cold_index_selections.rs`
+  (fixture: `restore from 8283728aff:crates/worth-relational/src/tests/durability/medium/cold_index_fixture.rs`).
+- C2: the private Complete codec checks (artifact format version, empty artifacts, roots
+  beside bases, exact bindings and `readmit`) in
+  `complete_checkpoint_saves_the_selection_carried_to_its_current_root` and
+  `reclose_before_any_image_demand_keeps_the_selections_the_image_carried`:
+  `restore from 8283728aff:crates/worth-relational/src/tests/durability/medium/complete_index_selections.rs`.
+- The two `resident_full` C2 charge courts above, restored from `f9f15bf8c8`, target
+  `resident_for_request`, which the integration branch's production region constructor
+  `PreparedResidentRegion::initial(lane, request, partition, symbols)` calls; restore them
+  against that signature. The Full region courts were not moved:
+  `controlled_full_region_matches_current_kind_preimages_and_truth` and
+  `controlled_full_commitment_clone_retains_only_its_actual_node_backing` stay in
+  `storage/residency/region_publication/full/tests.rs` with the v3 kind-commitment oracle
+  (`full/tests/kind_oracle.rs`) and its src-court baseline row.
+
+The integration branch's cleanup ledgers (`merge-cleanup-reds.md`, `merge-families.md`) become entries here when their courts leave the tree before landing 2.
+
+### Batch 1 Relational cleanup moves
+
+The following original claims move under Delivery tracks; mixed courts retain their independent happy semantics. No claim is retired.
+
+- **C4** `content_cold_envelope_preserves_a_literal_version_refusal_without_poisoning_history`: `restore from 9ed22bccaa:crates/worth-court-relational-certification/tests/worth_court_relational_certification/content/cold_envelope.rs`. Injected literal content-version corruption, independent outer reseal, repeated refusal and cold-cell retry behavior.
+- **C2** `content_durable_artifact_cancellation_after_original_allocation_never_calls_medium`: `restore from 9ed22bccaa:crates/worth-court-relational-certification/tests/worth_court_relational_certification/content/durable_publication.rs`. Cancellation is triggered by observing an 8 MiB allocation increase; all assertions protect the C2 original-backed cancellation/refund boundary, not an independent already-cancelled ordinary journey.
+- **C2** `content_durable_artifact_memory_refuses_before_the_medium_and_selected_commit`: `restore from 9ed22bccaa:crates/worth-court-relational-certification/tests/worth_court_relational_certification/content/durable_publication.rs`. Finite artifact-memory refusal and no-effect/refund posture.
+- **C2** `content_durable_artifact_original_work_exhaustion_is_exact_and_pre_effect`: `restore from 9ed22bccaa:crates/worth-court-relational-certification/tests/worth_court_relational_certification/content/durable_publication.rs`. Exact original work ceiling, pre-effect exhaustion and final available-memory equality.
+- **C2** `original_kind_custody_survives_successor_basis_checkpoint_tail_and_reopen`: `restore from 9ed22bccaa:crates/worth-court-relational-certification/tests/worth_court_relational_certification/content/historical_kind/custody.rs`. Original-request retained funding, equality across reopen and exact final refund; carry the related original-budget/retained-basis lifetime setup into the restored C2 court.
+- **C2** `a_reused_relation_slot_keeps_retention_readmission_valid`: `restore from 9ed22bccaa:crates/worth-court-relational-certification/tests/worth_court_relational_certification/content/historical_kind/retention_roundtrip.rs`. Both tests in this file require durable retirement, slot reuse and retention across cold reopen; the latest durable-history/branch-retirement ruling places this protocol in C2.
+- **C2** `mixed_retirement_replacement_reuse_and_cold_roundtrips_keep_region_integrity`: `restore from 9ed22bccaa:crates/worth-court-relational-certification/tests/worth_court_relational_certification/content/historical_kind/retention_roundtrip.rs`. Seeded mixed retirement/replacement/reuse campaign and cold recapture. Shares the file with row 5; move the file once, listing both original tests.
+- **C4** `content_controlled_journal_seed_admits_the_canonical_omitted_history_tail`: `restore from 9ed22bccaa:crates/worth-court-relational-certification/tests/worth_court_relational_certification/content/journal_recovery.rs`. Controlled removal of authored-index history plus reseal/admission counterpart; the entire generated omission world is the C4 claim.
+- **C4** `content_decoded_journal_omission_refuses_before_selecting_a_root`: `restore from 9ed22bccaa:crates/worth-court-relational-certification/tests/worth_court_relational_certification/content/journal_recovery.rs`. Injected missing journal content with resealed frame and no selected-root effect.
+- **C2** `content_original_field_capture_charges_real_aspect_count_and_key_bytes`: `restore from 9ed22bccaa:crates/worth-court-relational-certification/tests/worth_court_relational_certification/content/preimage_work.rs`. Variable aspect/key-width growth matrix, binary-searched work threshold and scope refund measurements.
+- **C4** `content_corruption_refuses_even_after_an_independent_outer_digest_repair`: `restore from 9ed22bccaa:crates/worth-court-relational-certification/tests/worth_court_relational_certification/content/recovery.rs`. Injected inner content corruption with independently repaired outer digest.
+- **C2** `cold_selected_index_refresh_preserves_budget_gate_and_reads_head_without_history`: `restore from 9ed22bccaa:crates/worth-court-relational-certification/tests/worth_court_relational_certification/relational/cold_index_refresh.rs`. The one test specifically arms missing historical material and probes head-only refresh and reconstruction budgets. Its successful projection assertions are the positive counterpart in this C2 world, not an unperturbed graceful Home proof.
+- **C4** `required_catalog_delta_survives_all_projections_and_rejects_missing_or_older_format`: `restore from 9ed22bccaa:crates/worth-court-relational-certification/tests/worth_court_relational_certification/relational/durable_publication/index_catalog.rs`. Move the hostile assert_malformed_deltas invocation and its wire.rs helper/mutation matrix alongside row 20.
+- **C4** `valid_delta_shape_still_refuses_source_identity_gap_and_conflicting_overlap`: `restore from 9ed22bccaa:crates/worth-court-relational-certification/tests/worth_court_relational_certification/relational/durable_publication/index_catalog/wire.rs`. All wire.rs behavior is hostile catalog-delta mutation/resealing, including assert_malformed_deltas called by mixed row 19. Move the helper and this test together.
+- **C4** `semantic_result_is_required_even_after_a_corrupt_frame_is_resealed`: `restore from 9ed22bccaa:crates/worth-court-relational-certification/tests/worth_court_relational_certification/relational/durable_publication/semantic_result.rs`. Deleted semantic image after resealing. The unchanged-frame counterpart belongs with this C4 negative; the separate semantic_result_preserves_original_create_bindings_and_validation_meaning court stays HAPPY.
+- **C2** `shared_history_custody_refuses_unfunded_admission_then_survives_until_the_last_basis_drops`: `restore from 9ed22bccaa:crates/worth-court-relational-certification/tests/worth_court_relational_certification/relational/durable_publication/source_initial_inputs/checkpoint_admission/cold_materialization/shared_custody.rs`. One funding-exhaustion/shared-hold-lifetime court. Successful reads are the positive counterpart to funded custody admission; there is no independent source-value assertion in this file.
+- **C2** `checkpoint_image_roots_build_cold_and_incremental_indexes_without_canonical_body_reads`: `restore from 9ed22bccaa:crates/worth-court-relational-certification/tests/worth_court_relational_certification/relational/durable_publication/source_initial_inputs/checkpoint_admission/indexes.rs`. Cold-slot allowances, exact zero/slot counters and no-canonical-body-read cost claim; move associated constrained refresh scenarios.
+- **C4** `checkpoint_image_records_original_required_output_membership_with_logical_basis`: `restore from 9ed22bccaa:crates/worth-court-relational-certification/tests/worth_court_relational_certification/relational/durable_publication/source_initial_inputs/checkpoint_admission/required_outputs.rs`. Mutate the root publication variant byte and expect InvalidProjectedMeaning.
+- **C2** `cold_complete_recapture_preserves_original_index_generations_and_live_tail`: `restore from 9ed22bccaa:crates/worth-court-relational-certification/tests/worth_court_relational_certification/relational/durable_publication/source_initial_inputs/cold_indexes.rs`. Exact original derived-cache generation byte preservation in subsequent Complete captures, including the stale generations() tuple parser.
+- **C2** `entity_boundary_refuses_wrong_model_kind_and_original_request_limits`: `restore from 9ed22bccaa:crates/worth-court-relational-certification/tests/worth_court_relational_certification/relational/relational_certification/history_ownership/entity_boundary.rs`. Metered boundary backing, work-ceiling traversal and zero-memory refusal. Shared positive setup may be used by both separated courts.
+- **C4** `graph_selection_preserves_corrupt_cold_relation_material_as_a_typed_refusal`: `restore from 9ed22bccaa:crates/worth-court-relational-certification/tests/worth_court_relational_certification/relational/relational_certification/history_ownership/graph_boundary.rs`. Warm endpoints only to force the later damaged relation read; the independent cold ownership/graph positive courts remain. All target assertions concern injected integrity failure.
+- **C2** `graph_relation_preparation_retains_its_funding_and_cannot_reset_the_entity_meter`: `restore from 9ed22bccaa:crates/worth-court-relational-certification/tests/worth_court_relational_certification/relational/relational_certification/history_ownership/graph_resources.rs`. Entity-versus-relation retained funding, final refunds, and cannot-reset-the-entity-meter work bound.
+- **C4** `selected_publication_keeps_original_ids_under_fresh_commit_and_cold_current_custody`: `restore from 9ed22bccaa:crates/worth-court-relational-certification/tests/worth_court_relational_certification/relational/relational_certification/history_ownership/historical_publication.rs`. Only require_unknown_origin_refusal and its historical_artifact.rs tamper helper subclaim move.
+- **C4** `missing_cold_ownership_edge_material_refuses_with_its_real_partition`: `restore from 9ed22bccaa:crates/worth-court-relational-certification/tests/worth_court_relational_certification/relational/relational_certification/history_ownership/mod.rs`. Warm endpoint preparation then deliberately lose unread region members; all target assertions concern the typed missing-material refusal and its partition.
+- **C2** `ownership_observation_preserves_work_and_memory_refusals`: `restore from 9ed22bccaa:crates/worth-court-relational-certification/tests/worth_court_relational_certification/relational/relational_certification/history_ownership/mod.rs`. Warm ordinary owner read is the resource-denial counterpart; the independent cold_model_ownership_demands_cross_partition_endpoints_and_edges HAPPY court already retains this same positive owner result. Move only this budget-refusal function; keep that sibling.
+- **C4** `missing_cold_publication_material_refuses_at_its_actual_custody_partition`: `restore from 9ed22bccaa:crates/worth-court-relational-certification/tests/worth_court_relational_certification/relational/relational_certification/history_ownership/publication_membership.rs`. Warm output read selects which remaining material to delete; all target assertions concern the injected missing-custody refusal and real partition.
+- **C4** `rehashed_selection_artifacts_refuse_wrong_source_identity_predecessor_and_mixed_profiles`: `restore from 9ed22bccaa:crates/worth-court-relational-certification/tests/worth_court_relational_certification/relational/relational_certification/owner_service_completion/retained_entity_selection/provenance.rs`. One rehashed provenance/profile fault matrix with private byte mutation helpers. Unchanged readmission/head assertions establish the matrix counterpart and no-effect posture.
+- **C2** `unfunded_validated_proposal_backing_refuses_and_releases_original_custody`: `restore from 9ed22bccaa:crates/worth-court-relational-certification/tests/worth_court_relational_certification/relational/validated_proposal_memory.rs`. Owner-layout-specific finite-budget refusal and exact refund/no-effect.
+- **C2** `one_work_account_bounds_each_entry_with_its_original_canonical_evidence`: `restore from 9ed22bccaa:crates/worth-relational/src/authority/commit/pipeline/request_checkpoints/work_account.rs`. Exact common work account and one-unit-short denial across entries.
+- **C2** `one_work_account_bounds_the_same_proposal_on_every_entry`: `restore from 9ed22bccaa:crates/worth-relational/src/authority/commit/pipeline/request_checkpoints/work_account.rs`. Equal SDK work settlement and shared one-unit-short ceilings across entries.
+- **C2** `selected_ack_exposes_backed_data_before_retirement_and_releases_holds_only_on_completion`: `restore from 9ed22bccaa:crates/worth-relational/src/durability/data/native_checkpoint/tests/selected_ack.rs`. Interrupted/work-limited partial ACK, publication while ACK is pending, old read/capture hold retention and exact terminal retirement. Keep shared setup/observations in the restored C2 case.
+- **C4** `forged_cross_region_kind_commitment_is_refused_before_member_reads`: `restore from 9ed22bccaa:crates/worth-relational/src/durability/log/native_checkpoint_codec/kind_authentication_tests.rs`. Four forged kind/directory/count dimensions; all target assertions concern refusal before region reads.
+- **C2** `canonical_artifact_accounting_excludes_nested_diagnostic_perturbation`: `restore from 9ed22bccaa:crates/worth-relational/src/history/commit/artifact_tests.rs`. Pure allocation accounting and diagnostic-size invariance. canonical_payload_bytes() returns u64, so even lines 243-247 compare size, not payload contents. No independent H semantic assertion identified.
+- **C2** `memory_frame_quota_and_cancel_refuse_before_position_or_head`: `restore from 9ed22bccaa:crates/worth-relational/src/history/commit/envelope_residency/memory_publication_tests.rs`. Independent finite frame-size quote, one-byte-short capacity refusal, exact requested bill and charged-memory refund; move the frame quota campaign.
+- **C2** `clearing_reconstructed_last_aspect_retains_no_state_bill`: `restore from 9ed22bccaa:crates/worth-relational/src/history/data/codec_retirement_closure/payload_reconstruction/tests/optional_output.rs`. Storage-footprint quote and exact zero retained-state bill/refund assertions.
+- **C2** `funded_extra_refuses_copy_and_replacement_before_growth`: `restore from 9ed22bccaa:crates/worth-relational/src/storage/substrate/record_arena/values/tests.rs`. Finite copy/replacement admission, exact retained bill, and funding lifetime after clone. The state-presence check is the positive counterpart of that custody claim.
+- **C2** `repeated_dag_reachability_reuses_scratch_under_the_same_finite_policy`: `restore from 9ed22bccaa:crates/worth-relational/src/validation/engine/tests/acyclicity_resources.rs`. 128-node repeated-reachability workload under fixed 1MiB/4M policy, live-scratch budget reuse and final exact refund. Underlying current memory-denial cause remains unknown.
+- **C4** `checkpoint_restore_rejects_incomplete_field_revision_column`: `restore from 9ed22bccaa:crates/worth-relational/src/visibility/materialization/read_records/projection/field_revisions/restore_tests.rs`. Intentionally shorten field_revisions SoA column and reseal root; require typed corruption refusal and diagnostic. Recovery already refuses CorruptCheckpoint at generic arena column-length check; detail substring expectation is stale.
+- **C2 metadata accompanying already moved private courts**: `runtime.merge.topology_region_detection` and `runtime.merge.execution_verification`, `restore from 73ce80ebfc:crates/worth-relational/src/performance/data/complexity_contract_inventory.rs`. Their only registered proof bodies moved with P-A; do not publish them as Verified until C2 restores the actual counter/verification evidence. Other contracts keep their actual registered proofs. The proof registry checker remains unchanged.
+- **C2 source-unit claim closures**: `controlled_field_lowering_refuses_before_copy_and_preserves_typed_causes` (its finite lowerer/readmitter phase-admission block) and `controlled_field_lowering_releases_scratch_before_retaining_small_patch` (all private exact/backing/peak assertions), `restore from 73ce80ebfc:crates/worth-relational/src/authority/mutation/intents/field_authoring_candidate/tests.rs`; restore the same-SHA `tests/storage_footprint.rs` and `tests/fixture.rs`. Original winner, typed cancellation/zero-memory refusal, scalar/struct content and portable wire-copy assertions remain in their semantic unit courts.
+- **C2** `cleared_entity_and_relation_extras_keep_only_their_fixed_original_bills`: `restore from 73ce80ebfc:crates/worth-relational/src/storage/substrate/record_arena/values/tests/optional_output_funding.rs`, with its same-SHA parent fixtures. This is the exact private EntityExtra/RelationExtra bill and last-drop campaign. The independent optional reconstruction semantics remain in their own unit court with a lawful optional contract.
+
+### Root final-partition cleanup moves
+
+These claim-level moves preserve the independent H assertions named below. The original red run remains red; fixture repairs alone do not certify the masked claims.
+
+- **C2** `checkpoint_stage_charges_the_documented_rate_for_each_encoded_byte`: `restore from 73ce80ebfc:crates/worth-court-relational-certification/tests/worth_court_relational_certification/cost/relational/checkpoint_stage.rs`. Exact checkpoint bytes, per-byte charge, scope count, consult ordinals or memory-boundary campaign. The independent typed work/memory/cancellation refusals, successful counterpart, and unchanged publication remain in checkpoint_refusals_preserve_request_custody_and_publication. Restore same-SHA checkpoint_stage/fixture.rs for original byte-walk support.
+- **C2** `checkpoint_capture_sets_up_exactly_one_stage_whatever_the_row_count`: `restore from 73ce80ebfc:crates/worth-court-relational-certification/tests/worth_court_relational_certification/cost/relational/checkpoint_stage.rs`. Exact checkpoint bytes, per-byte charge, scope count, consult ordinals or memory-boundary campaign. The independent typed work/memory/cancellation refusals, successful counterpart, and unchanged publication remain in checkpoint_refusals_preserve_request_custody_and_publication. Restore same-SHA checkpoint_stage/fixture.rs for original byte-walk support.
+- **C2** `empty_checkpoint_work_ceiling_bounds_the_whole_capture`: `restore from 73ce80ebfc:crates/worth-court-relational-certification/tests/worth_court_relational_certification/cost/relational/checkpoint_stage.rs`. Exact checkpoint bytes, per-byte charge, scope count, consult ordinals or memory-boundary campaign. The independent typed work/memory/cancellation refusals, successful counterpart, and unchanged publication remain in checkpoint_refusals_preserve_request_custody_and_publication. Restore same-SHA checkpoint_stage/fixture.rs for original byte-walk support.
+- **C2** `empty_checkpoint_memory_boundary_is_its_bytes_plus_one_stage`: `restore from 73ce80ebfc:crates/worth-court-relational-certification/tests/worth_court_relational_certification/cost/relational/checkpoint_stage.rs`. Exact checkpoint bytes, per-byte charge, scope count, consult ordinals or memory-boundary campaign. The independent typed work/memory/cancellation refusals, successful counterpart, and unchanged publication remain in checkpoint_refusals_preserve_request_custody_and_publication. Restore same-SHA checkpoint_stage/fixture.rs for original byte-walk support.
+- **C2** `fixed_kind_read_is_flat_in_unrelated_regions_and_history`: `restore from 73ce80ebfc:crates/worth-court-relational-certification/tests/worth_court_relational_certification/cost/relational/kind_directory/cold.rs`. Cold I/O and packet-query work growth; retain exact kind IDs and query results at the same region/history workloads, using same-SHA kind_directory/query.rs for restore.
+- **C2** `lazy_pin_and_fixed_read_do_not_grow_with_unrelated_regions_or_history`: `restore from 73ce80ebfc:crates/worth-court-relational-certification/tests/worth_court_relational_certification/cost/relational/lazy_pin.rs`. Member-growth, pin-I/O/symbol residency, and exact reuse-count assertions; retain selected entity/symbol/text, relation ID, and repeated read semantics at the original workloads.
+- **C2** `wide_frontier_does_not_escalate_to_unreached_regions`: `restore from 73ce80ebfc:crates/worth-court-relational-certification/tests/worth_court_relational_certification/cost/relational/lazy_pin.rs`. Member-growth, pin-I/O/symbol residency, and exact reuse-count assertions; retain selected entity/symbol/text, relation ID, and repeated read semantics at the original workloads.
+- **C4** `lazy_pin_and_fixed_read_do_not_grow_with_unrelated_regions_or_history`: `restore from 73ce80ebfc:crates/worth-court-relational-certification/tests/worth_court_relational_certification/cost/relational/lazy_pin.rs`. Injected damaged and unavailable source subcampaign, original helper lines197-269. Restore same-SHA cold_checkpoint.rs.
+- **C2** `equal_payload_jumps_charge_the_same_receiving_owner_work_at_near_and_distant_history_nodes`: `restore from 73ce80ebfc:crates/worth-court-relational-certification/tests/worth_court_relational_certification/cost/relational/relational_certification/retained_entity_selection.rs`. Charged-work, peak-memory, copy/route counter equality across retained-history distances; H keeps both published selected values and retained current value.
+- **C2** `count_only_read_does_not_grow_with_model`: `restore from 73ce80ebfc:crates/worth-court-relational-certification/tests/worth_court_relational_certification/cost/relational/snapshot_counts.rs`. Measured count-only I/O and model/history growth bounds; retain independent authored cardinalities and whole-row agreement at the same workloads.
+- **C2** `count_only_read_does_not_grow_with_history`: `restore from 73ce80ebfc:crates/worth-court-relational-certification/tests/worth_court_relational_certification/cost/relational/snapshot_counts.rs`. Measured count-only I/O and model/history growth bounds; retain independent authored cardinalities and whole-row agreement at the same workloads.
+- **C2** `renewed_cell_symbol_admission_is_flat_in_model`: `restore from 73ce80ebfc:crates/worth-court-relational-certification/tests/worth_court_relational_certification/cost/relational/symbol_admission.rs`. Symbol-admission phase/accounting and model/history work bounds; retain full/non-full cardinality and measured-next-value readback at the original workloads.
+- **C2** `renewed_cell_symbol_admission_is_flat_in_history`: `restore from 73ce80ebfc:crates/worth-court-relational-certification/tests/worth_court_relational_certification/cost/relational/symbol_admission.rs`. Symbol-admission phase/accounting and model/history work bounds; retain full/non-full cardinality and measured-next-value readback at the original workloads.
+- **C2** `a_fixed_edit_does_not_pay_the_previous_large_edit_again`: `restore from 73ce80ebfc:crates/worth-court-relational-certification/tests/worth_court_relational_certification/cost/relational/symbol_admission.rs`. Previous-bulk-size versus fixed-edit symbol-admission work growth campaign, including both native and declared input text. No independent final-value oracle was present.
+- **C2** `cold_inline_bytes_head_refuses_after_member_read_then_retains_exact_payload_through_edit`: `restore from 73ce80ebfc:crates/worth-court-relational-certification/tests/worth_court_relational_certification/cost/relational/source_initial_inputs/checkpoint_admission/cold_materialization/byte_payloads.rs`. Injected memory-room pressure, small/large denial, retained-backing and final-owner funding assertions. H keeps real reads, exact scalar/Struct bytes and historical adjacency at 8 and64KiB payloads.
+- **C2** `cold_inline_bytes_history_refuses_after_read_then_retries_full_with_exact_old_values`: `restore from 73ce80ebfc:crates/worth-court-relational-certification/tests/worth_court_relational_certification/cost/relational/source_initial_inputs/checkpoint_admission/cold_materialization/byte_payloads.rs`. Injected memory-room pressure, small/large denial, retained-backing and final-owner funding assertions. H keeps real reads, exact scalar/Struct bytes and historical adjacency at 8 and64KiB payloads.
+- **C2** `forked_topology_write_copies_only_touched_regions`: `restore from 73ce80ebfc:crates/worth-court-relational-branch-reference-compile-time/tests/worth_court_relational_branch_reference_compile_time/oracle/relational/relational_certification/root_branch_copy_on_write/mod.rs`. All exact locators/root sharing, physical dedup/copy/accounting and unrelated-branch cost assertions. H keeps independent baseline and rewire oracle plus ancestor/sibling branch observations.
+- **C2** `prove_named_delta_cow`: `restore from 73ce80ebfc:crates/worth-court-relational-branch-reference-compile-time/tests/worth_court_relational_branch_reference_compile_time/support/relational_certification/ordinary_context/root_named_delta_cow/declarations.rs`. Exact region/copy/allocation and unrelated cost assertions used by the eight named-delta campaign; H retains original eight independent semantic oracle comparisons. Restore same-SHA oracle/.../root_named_delta_cow/mod.rs and helpers.
+- **C2** `production_write_footprints_report_exact_records_and_local_publication_cost`: `restore from 73ce80ebfc:crates/worth-court-relational-branch-reference-compile-time/tests/worth_court_relational_branch_reference_compile_time/cost/relational/relational_certification/root_cost_scale_axes/publication/mod.rs`. Exact physical publication counters/allocation and scale/path sharing. H keeps actual production patch-record counts at1,64,4096 authored records and baseline oracle; restore same-SHA direct helper closure.
+
+- **C2 fixture closure** for the moved selected-member funding/retirement and byte-pressure claims: `restore from 73ce80ebfc:crates/worth-court-relational-certification/tests/worth_court_relational_certification/relational/durable_publication/source_initial_inputs/selected_source.rs` and its same-SHA `selected_source/custody.rs`. Remove their now-unreachable pressure variant and custody-control owner; retained read and retirement ports forward to the real medium.
+
+### Landing 2a composition of previously moved Root claims
+
+- **C2:** the original-account invoice remainder of
+  `equivalent_proposal_entries_preserve_mutation_results` is preserved at
+  `restore from a98ed66840:crates/worth-relational/src/authority/commit/pipeline/request_checkpoints/work_account.rs`.
+  The same mutation and successor-version comparisons remain in the happy tree;
+  measured positive/bounded work belongs with the existing C2 account courts.
+- **C4:** H5's updated `forged_cross_region_kind_commitment_is_refused_before_region_payload_reads`
+  remains deferred with its original cross-region corruption claim:
+  `restore from a98ed66840:crates/worth-relational/src/durability/log/native_checkpoint_codec/kind_authentication_tests.rs`.
+  It complements the existing `9ed22bccaa` restore entry; merging H5 does not
+  resurrect a deliberately deferred corruption court.
+
+### Landing 2a private fixture funding splits
+
+The following complete original funding campaigns remain C2 obligations. Their
+independent value semantics stay active in the same owning source modules;
+these splits do not claim equivalent funding coverage from a related public court.
+
+- **C2:** `extracted_content_snapshot_retains_original_request_bill_until_last_clone`;
+  restore `669ac9fcd4:crates/worth-relational/src/content/schema/retention_tests.rs`.
+  Preserve extracted-versus-projection charge, serialization with original custody,
+  clone ownership and final refund. The value serialization court stays on H.
+- **C2:** `exact_readmission_retains_original_compiler_funding_until_last_child`;
+  restore `669ac9fcd4:crates/worth-relational/src/branch/root_schema/readmission/tests.rs`.
+  Preserve zero-budget refusal/refund, exact compiler quote, escaped-plan child and
+  parent/registry/final-child drop sequence. Declared kind/plan counts and authority
+  equality remain on H through configuration-owned exact readmission.
+- **C2:** `controlled_patricia_refuses_exact_leaf_and_late_parent_and_refunds_children`
+  and `escaped_patricia_leaf_keeps_only_its_original_allocation_grant`, including
+  `controller_memory`; restore
+  `669ac9fcd4:crates/worth-relational/src/storage/substrate/digest_index/funding_tests.rs`.
+  Preserve both failure positions and typed fields, controlled/uncontrolled digest
+  equality, allocation ownership and exact refunds. Five-node topology, escaped
+  leaf shape and original key remain active private value evidence.
+
+### Landing 2a historical handler-key custody split
+
+- **C2:** restore the complete original
+  `historical_key_aliases_retain_and_refund_the_original_authoring_payment`,
+  `refused_normalization_never_yields_historical_keys_or_a_retained_bill`, and
+  their two-allowance `reads` fixture from
+  `669ac9fcd4:workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/invariant_projection/operation_reader/decision_reads/expected_keys/historical_retention_tests.rs`.
+  Preserve normalization charging, historical conversion/alias custody, exact
+  zero-memory error category and every refund observation. Active H evidence
+  separately exercises the exact handler-only 1/2 allowance contrast through
+  the already permitted public normalizer court
+  `conflicting_handler_adjacencies_keep_the_strongest_allowance`; the private
+  value court `historical_conversion_and_aliases_preserve_exact_handler_keys`
+  exercises actual conversion and aliases with the complete expected key.
+  Neither H court claims funding coverage or a public historical-conversion door.
+
+### Landing 2a selected-payload funding split
+
+- **C2:** restore the complete original
+  `669ac9fcd4:crates/worth-relational/src/storage/substrate/record_arena/values/tests/historical_selection_funding.rs`
+  and its `mod historical_selection_funding` mount under values/tests.rs.
+  Preserve both entity/relation kinds, absent/existing targets, zero-budget
+  request denial, unchanged slot counts, zero charge/refund, distinct allocation
+  identity, exact payload equality, reachable bounds, latest-history carrier,
+  retained-bill contrast and every source/target/installed drop observation.
+  Its source fixture closure is the original parent values/tests.rs `patch`,
+  `extra`, `expected` and `request` functions at the same SHA. Active private H
+  courts exercise the same production selection kernel, retain both payload
+  kinds and target postures, and verify latest-history carrier and retained
+  values after source and target drop. They do not claim funding coverage.
+
+### Landing 2a exact Home-step invoice campaign
+
+- **C2:** restore the complete
+  `home_step_body_and_candidate_share_the_original_work_ceiling` campaign and
+  `trial` fixture from
+  `0890a7800a:workspaces/worth-store/crates/worth-store-court-application/tests/worth_store_court_application/process/application/no_pending_owners/transition_indexes/work_account.rs`.
+  Restore its same-SHA `mod work_account` mount in `transition_indexes.rs`, the
+  COMPLETE `transition_indexes/` fixture tree (including `target.rs`),
+  `no_pending_owners/transition_opening.rs` and its child fixture closure, and all
+  referenced parent imports, actual Home transition-plan/step-grant/World-open/
+  Native preparation owners and work-account controls. Preserve the actual SDK
+  invoice, exact and one-unit-short requests in both wrapped/unwrapped forms,
+  typed WorkExhausted, discarded candidate and unchanged Native basis assertions.
+  Restore through the current genuine Home and index-maintenance budget contract;
+  never revive an obsolete signature or fabricate original-step/source admission.
+  Ordinary transition/index and step-affinity courts remain active under H.
+
+### Landing 2a Memory invoice and deferred complexity proofs
+
+- **C2:** restore the complete
+  `memory_original_frame_survives_export_checkpoint_and_last_alias` campaign
+  from `0890a7800a:crates/worth-relational/src/history/commit/envelope_residency/memory_publication_tests.rs`.
+  Restore its same-SHA `envelope_residency.rs` mount, full
+  `history/commit/envelope_residency/` tree, canonical-artifact/immutable-byte
+  owners and `crates/worth-relational/src/tests/support.rs` with its complete
+  support tree. Preserve every original payload charge, no-extra-charge export,
+  exact retained bill, alias lifetime and zero-after-last-drop assertion.
+  The active H counterpart keeps original-frame identity, exact bytes before
+  and after checkpoint, and usable exported bytes after runtime and alias drops.
+- **C2:** the four complexity declarations `runtime.schema_transition.classification`,
+  `runtime.subscriber_resume.continuity`, `runtime.merge.planning`, and
+  `runtime.merge.execution_commit` are explicitly Debt while their complete
+  proof campaigns above are moved out. Restore their Verified declarations and
+  original proof lists from
+  `0890a7800a:crates/worth-relational/src/performance/data/complexity_contract_inventory.rs`
+  together with the already recorded complete schema-continuity and merge
+  campaigns at `86e84dc5cd738882bf50fced389fc7deaa31567f`, including their exact
+  original same-SHA fixture, parent, implementation and counter/control closure.
+  Restore the universal nonempty-proof assertion from
+  `0890a7800a:crates/worth-relational/src/tests/complexity/contracts/commit_budgets/contract_registry.rs`
+  when those proofs are registered again. No moved proof is represented as
+  currently executed or verified; every remaining named proof must still name
+  a registered test and every Verified declaration must have proof.
+
+### Landing 2a foreign-node injection campaign
+
+- **C4:** restore the complete `ordered_chain_foreign_node_owner_cannot_enter_a_birth_edit`
+  wrapper from `0890a7800a6b1a3d4becef3299915c0bf5aec4bd:workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/managed_index/maintained/court/prefix_growth/ordered_chain.rs`
+  and its full `events/chain/foreign_node.rs` body and `events/chain.rs` module
+  mount/imports/append/principal closure from the same immutable managed_index
+  tree. Restore the complete enclosing maintained/events/court/prefix-growth
+  mounts, `events/court.rs` and `court/fixture.rs`, and the genuine events schema,
+  query, shape, paths, prefix, rule, composition, authoring, history, mutation,
+  plain, `maintained/nested/edit.rs`, registered host construction and directly
+  used authentication/resource fixtures at that SHA.
+  The original receiver-owned `observed_root` and `foreign_node` fields, genuine
+  provider build-root observation and update-time foreign lookup are at
+  `3656bb1cc3dc7449efed2f4788b8c5d0f362a502:workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/managed_index/prefix.rs`
+  with its complete same-SHA `prefix/` child closure. Use the current shared
+  `prefix_observation.rs`, `prefix_provider.rs` and children and execution
+  managed-index Node issuance/edit/validation, controls/stops and provider-failure
+  owners from `0890a7800a6b1a3d4becef3299915c0bf5aec4bd` as the surviving owner
+  reference. Adapt these restoration sources to current genuine contracts;
+  never overwrite landed owners with historical replicated providers or retired
+  construction routes. Preserve the actual unrelated U node, arm/disarm, exact
+  Controlled(ForeignNode) failure chain, unchanged head and A contents, and the
+  lawful cleared-arm append producing E with x/e. The original retry uses a new
+  idempotency key; it does not prove same-key retry or rollback after effects.
+  Ordinary foreign-Source-slot and current Node validation evidence stays active.
+  The optional-aspect provider receiver, watch and complete Source campaigns stay
+  active under H through their actual borrowed SourceRows; they are not C2/C4 moves.
+
+### Parallel work
+
+H items whose dependencies have merged may be built in parallel where their write scopes do not overlap. Each one merges into the integration branch when its reviewer approves and its Tier-2 run there is green. A C item may start before landing 2 only where the coordinator assigns it and it does not slow an H item.
+
+### Verification tiers by track
+
+| Track | What runs |
+|---|---|
+| H | Tiers 1–2 as below, plus the graceful oracle when the diff reaches its subject |
+| C | Adds the crash oracle at Tier 2 |
+| Tier 3 (the full matrix and the exhaustive cumulative oracle) | At landing 3 |
 
 ## Adversarial constraint
+
+The cleanup track certifies this constraint. The happy track meets the graceful constraint in Delivery tracks.
 
 A home is killed at any durable I/O boundary of any supported operation. That
 includes every owner's publication, product movement, program transitions,
@@ -118,8 +1439,11 @@ outside `worth-contracts`. The ruling has three parts:
 - **`worth-store-application`** may depend on the owner crates whose ports it
   implements: Relational, World, Signal, Bridge, and the Query crates that
   define Query-owned artifacts. It must never depend on `worth-query-host`.
-- **`worth-store-application-oracle`** (D14) may depend on `worth-query-host`
-  and `worth-store-application`. No production crate may depend on it.
+- **`worth-store-testkit-application-oracle`** (D14) is the fixture/reference
+  library and may depend on `worth-query-host` and `worth-store-application`.
+  It has no tests or integration target. `worth-store-court-application` is
+  the canonical standard-harness leaf containing assertions and child-process
+  reexecution. No production crate may depend on either package.
 
 **Build cost.** From now on, the Store workspace builds the Query, World and
 Signal stacks for its application crates, and the host builds the Store
@@ -226,6 +1550,13 @@ Continuing or releasing custody publishes a `RuntimeWorldCustodyDisposition`
 to `world.custody` before its live effect. Released custody therefore never
 reappears on reopen. Open custody is carried in World's checkpoint section
 (D12). Nothing is folded silently into a new root or re-executed.
+
+For Phases 3–4, abandoning a live directory preparation retains its actual
+Query/World custody and answers `ReopenRequired`; it does not grant live
+no-effect release. Completed Native recovery and complete associated-effect
+reconciliation establish the recovered fate. The exact authority, next-action
+and production-court contract is in
+[Shared durable owner contracts](milestone-3-durable-owner-contracts.md#live-abandonment-and-recovered-disposition).
 
 **D6. Durable, home-scoped identities.**
 
@@ -428,7 +1759,8 @@ with this path.
   step and product movement is a Store publication, so Store's mutation seams
   interrupt every owner boundary.
 - **Oracle location.** The host oracle lives in
-  `worth-store-application-oracle`. Its children re-execute the test binary,
+  `worth-store-court-application`, using the fixture/reference library
+  `worth-store-testkit-application-oracle`. Court children re-execute the test binary,
   as Milestone 2's relational_home children do, and run the real production
   host.
 - **Derived-state door.** Discarding derived state uses a sealed certification
@@ -436,13 +1768,19 @@ with this path.
   `control-callers.txt`.
 - **Owner unit courts.** Owners outside Store use `cfg(test)` in-crate media.
   Those are not a second durable path.
-- **The oracle's identity rule.** The memory-only reference host and the home
-  issue home-scoped identities from the same initial frontiers in the same
-  order (D6). Comparison covers only durable identities. Identities consumed
-  by attempts that never became durable are not part of the prefix. After each
-  reopen, the reference's issuers are reset to the recovered frontiers before
-  the script continues, so later identities compare exactly. Process-local
-  identities are excluded from comparison.
+- **The oracle's identity rule.** The reference is the ordinary MemoryOnly
+  host, issuing normal ephemeral identities without a durable binding,
+  Home-scoped identity, frontier snapshot or reset. One typed run-wide
+  `DurableIdentityCorrespondence` bijection relates Home durable identities
+  to reference identities across every reopen. Its `admit(home, reference)`
+  refuses either a Home identity mapped to a second reference identity or a
+  reference identity reached from a second Home identity. Admit identities
+  only when they first appear in compared durable graph state, occurrences,
+  custody, product heads or idempotency outcomes. Process-local identities and
+  identities consumed by attempts that never became durable stay out.
+  Identity meaning is compared by correspondence, which needs no durable
+  reference. The separate required test that identities issued after reopen
+  never collide with recovered ones remains unchanged.
 - **Seeds and lanes.** A failing seed reproduces deterministically. Focused
   lanes run a small seed range. A scheduled lane runs the broad campaign under
   a stated time and memory budget.
@@ -512,6 +1850,23 @@ The supported development workflow is:
   - Opening a tombstoned location refuses with `DiscardPending` until
     `discard_home` completes.
 
+**Cleanup track: moved courts.** The following transition-source recovery
+courts leave the happy-path tree under the M3 track split. Restore and migrate
+them against real Store Home/World authority; do not ignore or gate them.
+
+- `transition_source_recovers_the_exact_durable_prefix_and_original_planning_root`: Recovers the exact durable transition prefix and original planning root, keeps that historical root distinct from the current execution basis, and readmits successor schema version 2.
+  `restore from 34edd18ff6:crates/worth-court-relational-certification/tests/worth_court_relational_certification/process/home_program_transition_source.rs`. Migration needs catalog-grant access before
+  cutover and a replacement for the expected-zero prefix scenario, because
+  zero-step plans are prohibited.
+- `transition_source_reads_its_planning_predecessor_from_the_selected_admission_image`: Reads the original planning predecessor from the selected admission image, preserving one predecessor row and two current rows after the durable migration tail.
+  `restore from 34edd18ff6:crates/worth-court-relational-certification/tests/worth_court_relational_certification/process/home_program_transition_source.rs`. Migration needs catalog-grant access before
+  cutover and a replacement for the expected-zero prefix scenario, because
+  zero-step plans are prohibited.
+- `transition_source_refuses_a_missing_or_foreign_prefix_before_runtime_cutover`: Refuses a missing or foreign prefix with a typed refusal before runtime cutover; the receiver remains empty.
+  `restore from 34edd18ff6:crates/worth-court-relational-certification/tests/worth_court_relational_certification/process/home_program_transition_source.rs`. Migration needs catalog-grant access before
+  cutover and a replacement for the expected-zero prefix scenario, because
+  zero-step plans are prohibited.
+
 **D17. Type-enforced invariants, placed by the vocabulary rule.**
 
 The decisions above are invariants. Each one is enforced by the compiler
@@ -572,9 +1927,11 @@ invariant comes from.
   retained decision (R9) or recovery step is exhaustive, with no `_` arm, so
   that adding a variant lists every site to update.
 - **One meaning per name** (law 10). Names are unique and greppable.
-- **Enforcement or a named test.** Every invariant in this specification is
-  either compiler-enforced or covered by a test named after its requirement,
-  such as `d4_live_cutover_requires_durable_commit`.
+- **Enforcement or a traced test.** Every invariant in this specification is
+  either compiler-enforced or covered by a test whose name states the
+  behaviour, such as `live_cutover_requires_durable_commit` (iteration law 16:
+  no milestone, decision or ticket ids in names). Each phase's requirement map
+  traces requirement ids to those tests.
 - **Explicit over clever.** Explicit, repetitive code is acceptable. An
   abstraction is acceptable only when it shares semantic authority, lifecycle,
   failure topology and cost class (law 12).
@@ -739,6 +2096,9 @@ include every resolution tagged with it.
 
   The phase's first deliverable is a per-kind table naming the route each run
   kind takes.
+  The [Phase 7 custody routes](milestone-3-long-running-custody.md) select those
+  routes and inventory every retained conditional decision. They distinguish
+  existing lifecycle contracts from the durable consumers still to implement.
 - **R8 (Phase 6).** General required-output custody is a durable obligation in
   `query.obligations`. That covers `DemandRecord` performed obligations and
   prerequisites, and `SourceCustody`. Ready outputs remain derived.
@@ -877,7 +2237,8 @@ home.
 - Create `worth-store-application` and apply the D1 boundary ruling.
 - Delete `RelationalStoreHome`. Its tests and the Milestone 2 relational_home
   oracle move to the application home's Relational section in
-  `worth-store-application-oracle`.
+  `worth-store-court-application`, using
+  `worth-store-testkit-application-oracle` for shared authored fixtures.
 - Record the measured build-time impact on every lane in the phase evidence
   (D1).
 
@@ -1047,7 +2408,8 @@ use memory-only homes or the interim checkpoint path, as the audit lists.
 - **Memory-only.** Memory-only mode passes its existing semantic suites through
   the new call.
 
-**Oracle extension.** `worth-store-application-oracle` covers home open,
+**Oracle extension.** `worth-store-court-application`, using the shared
+`worth-store-testkit-application-oracle` library, covers home open,
 initialization, reopen, program transition, automatic checkpoint and close.
 That includes the media sweep and process kills at every Store seam of each,
 and recovery interruption at every stage.
@@ -1497,10 +2859,13 @@ build guide and Host README must explain this distinction and use the real facad
 **Oracle extension**
 
 - **Reference and script.** A memory-only host running the same program
-  executes a seeded host script. The script covers keyed and unkeyed
-  mutations, response loss, branch creation, product movement on several
+  executes a seeded host script. The script covers keyed mutations, including
+  distinct keys, same-key retries, changed-intent retries and concurrent same-key
+  retries; response loss, branch creation, product movement on several
   branches, settlement failure, custody continue and release, caller
   abandonment, and checkpoints. Every seed in the tested range generates.
+  Application mutations require an idempotency key by contract (build §5.3), so
+  there is no unkeyed route to exercise.
 - **Interruption points.** The oracle interrupts at every durable boundary:
   - before commitment;
   - after durable Relational publication;
@@ -1678,6 +3043,14 @@ changed build identity is an oracle dimension rather than a single case.
 
 **Required tests**
 
+- **Producer directory build identity.** Restore
+  `directory_changed_build_reuses_original_output_until_new_implementation_is_demanded`
+  (restore from `5358b31d3083dc88eea961af716e948f759eac96:workspaces/worth-query/crates/worth-query-court-decl-host-package-archive-replay-application-graph/tests/worth_query_court_decl_host_package_archive_replay_application_graph/certification/application_graph/producer_predicate_checkpoint/changed_build.rs`): produce under A, reuse the
+  original accepted output under A with its equivalence and ownership checks,
+  reopen under B without producer execution, then regenerate only on demand
+  while keeping the original entities. The filesystem court is moved out of
+  the Phase 3+4 tree until the Phase 6 authored Signal owner is available;
+  its uncommitted restoration has been removed without gating or weakening it.
 - **Retirement survives restart.** Retire support, kill, reopen: the status is
   still Retired, and interpretation refuses where the retirement requires it.
 - **Adoption resumes.** Adoption interrupted at each stage across a kill

@@ -1,5 +1,8 @@
 use std::sync::Arc;
 use std::sync::Mutex;
+mod attachment;
+mod home_retirement;
+pub(in crate::domain_computation) use home_retirement::RetiringRelationalSource;
 
 use worth_relational::facade::runtime::RelationalRuntime;
 use worth_runtime_bridge::facade::RelationalBridgeBranchHeadLease;
@@ -20,7 +23,7 @@ pub enum WorthQueryRelationalSourceInstallationDenial {
 #[doc(hidden)]
 #[derive(Clone)]
 pub struct WorthQueryRelationalSourceOwner {
-    runtime: Arc<Mutex<RelationalRuntime>>,
+    runtime: worth_relational::facade::change_source::RelationalRuntimeHandle,
     pub(in crate::domain_computation) runtime_instance_id: u64,
     pub(super) source: RuntimeBridgeRelationalSource,
     pub(super) bridge_head: Arc<Mutex<Option<RelationalBridgeBranchHeadLease>>>,
@@ -57,10 +60,21 @@ impl WorthQueryRelationalSourceOwner {
         invalidation_owner: Arc<crate::domain_computation::primary_graph::SourceInvalidationOwner>,
     ) -> Result<Self, WorthQueryRelationalSourceInstallationDenial> {
         let runtime_instance_id = runtime.main_branch_identity().runtime_instance_id();
-        let runtime = Arc::new(Mutex::new(runtime));
+        let runtime = Arc::new(runtime);
         let source =
-            RuntimeBridgeRelationalSource::for_shared_graph_role(Arc::clone(&runtime), graph_role)
+            RuntimeBridgeRelationalSource::for_graph_role(Arc::clone(&runtime), graph_role)
                 .map_err(WorthQueryRelationalSourceInstallationDenial::BridgeConfiguration)?;
+        let runtime =
+            worth_relational::facade::change_source::RelationalRuntimeHandle::immutable(runtime);
+        Self::from_registered_handle(runtime, source, runtime_instance_id, invalidation_owner)
+    }
+
+    fn from_registered_handle(
+        runtime: worth_relational::facade::change_source::RelationalRuntimeHandle,
+        source: RuntimeBridgeRelationalSource,
+        runtime_instance_id: u64,
+        invalidation_owner: Arc<crate::domain_computation::primary_graph::SourceInvalidationOwner>,
+    ) -> Result<Self, WorthQueryRelationalSourceInstallationDenial> {
         let pending = source
             .begin_canonical_envelope_subscription()
             .map_err(WorthQueryRelationalSourceInstallationDenial::CompanionRegistration)?;
@@ -70,6 +84,9 @@ impl WorthQueryRelationalSourceOwner {
         let read_acquisitions = Arc::new(std::sync::atomic::AtomicU64::new(0));
         let bridge_lock_observations = {
             let count = Arc::clone(&read_acquisitions);
+            // Home attachment shares Bridge's handle, so this listener also
+            // observes Query acquisitions. Ordinary handles are immutable and
+            // acquire no runtime mutex. Register once per actual handle slot.
             Arc::new(Mutex::new(vec![source
                 .observe_runtime_locks_for_test(move || {
                     count.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
@@ -88,17 +105,8 @@ impl WorthQueryRelationalSourceOwner {
         })
     }
 
-    fn lock_runtime(&self) -> std::sync::MutexGuard<'_, RelationalRuntime> {
-        let runtime = self
-            .runtime
-            .lock()
-            .unwrap_or_else(std::sync::PoisonError::into_inner);
-        self.read_acquisitions
-            .fetch_add(1, std::sync::atomic::Ordering::SeqCst);
-        runtime
-    }
     pub(super) fn lock_is_held_for_test(&self) -> bool {
-        self.runtime.try_lock().is_err()
+        self.runtime.is_locked_for_test()
     }
     pub(super) fn lock_acquisitions_for_test(&self) -> u64 {
         self.read_acquisitions
@@ -127,14 +135,15 @@ impl WorthQueryRelationalSourceOwner {
 
     /// Returns exact snapshot custody to its issuing owner. This is release,
     /// not a source read: even a refused advancement must settle retained facts.
-    /// Mutex poison cannot prevent physical custody release after caller unwind.
+    /// Release borrows the same actual Native owner after caller unwind.
     #[doc(hidden)]
     pub fn release_query_snapshot(
         &self,
         snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
     ) {
-        let mut runtime = self.lock_runtime();
-        crate::relational_snapshot_release::release_query_snapshot(&mut runtime, snapshot);
+        self.runtime.with_runtime(|runtime| {
+            crate::relational_snapshot_release::release_query_snapshot(runtime, snapshot)
+        });
     }
 
     pub(in crate::domain_computation) fn release_component_basis(
@@ -144,55 +153,25 @@ impl WorthQueryRelationalSourceOwner {
         worth_relational::facade::branch::RelationalBranchRetentionReleaseReceipt,
         worth_relational::facade::branch::RelationalBranchRetentionReleaseDenial,
     > {
-        let runtime = self.lock_runtime();
-        runtime.release_component_basis(retention)
+        self.runtime
+            .with_runtime(|runtime| runtime.release_component_basis(retention))
     }
 
     /// Metadata read: fixed-size counters, without row traversal or request work.
     pub(in crate::domain_computation) fn custom_invariant_candidate_input_counters(
         &self,
     ) -> worth_relational::facade::runtime::RelationalCandidateInputCounters {
-        self.lock_runtime()
-            .custom_invariant_candidate_input_counters()
+        self.runtime
+            .with_runtime(|runtime| runtime.custom_invariant_candidate_input_counters())
     }
 
     pub fn with_runtime<T>(
         &self,
-        // Required caller request proves custody for this callback.
         _execution: &worth_execution::ExecutionRequest<'_, '_>,
         read: impl FnOnce(&RelationalRuntime) -> T,
     ) -> T {
-        let runtime = self.lock_runtime();
         super::read_observation::record_read_for_test();
-        read(&runtime)
-    }
-
-    pub fn with_runtime_mut<T>(
-        &self,
-        // Required caller request proves custody for this callback.
-        _execution: &worth_execution::ExecutionRequest<'_, '_>,
-        mutate: impl FnOnce(&mut RelationalRuntime) -> T,
-    ) -> T {
-        let mut runtime = self.lock_runtime();
-        super::read_observation::record_read_for_test();
-        mutate(&mut runtime)
-    }
-
-    pub(crate) fn with_runtime_mut_unwind_isolated<T>(
-        &self,
-        // Required caller request proves custody for this callback.
-        _execution: &worth_execution::ExecutionRequest<'_, '_>,
-        mutate: impl FnOnce(&mut RelationalRuntime) -> T,
-    ) -> T {
-        let mut runtime = self.lock_runtime();
-        super::read_observation::record_read_for_test();
-        let outcome =
-            std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| mutate(&mut runtime)));
-        drop(runtime);
-        match outcome {
-            Ok(value) => value,
-            Err(payload) => std::panic::resume_unwind(payload),
-        }
+        self.runtime.with_runtime(read)
     }
 
     pub fn bridge_source(&self) -> RuntimeBridgeRelationalSource {

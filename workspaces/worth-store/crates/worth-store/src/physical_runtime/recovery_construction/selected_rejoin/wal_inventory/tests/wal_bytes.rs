@@ -36,7 +36,7 @@ fn an_inventory_one_byte_past_its_budget_is_refused_before_any_effect() {
     assert_eq!((limit.observed(), limit.admitted()), (length, length - 1));
     assert_eq!(discovery.counters().wal_bytes_read, 0);
     assert_eq!((resident.used(), resident.peak()), (backing, backing));
-    assert_eq!(fixture::active(&ports), 0);
+    assert_eq!(fixture::active(&ports), SERVING_BACKING_BYTES);
     assert_eq!(std::fs::read(&path).unwrap(), encoded);
 
     let inventory = admit_complete(

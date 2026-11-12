@@ -18,7 +18,6 @@ fn discarded_ordering_stays_cold_after_native_checkpoint_restore_then_rebuilds()
         .replay()
         .canonical_commit_envelope(execution, committed.commit_id)
         .unwrap()
-        .map(|envelope| envelope.as_ref().clone())
         .unwrap();
     assert!(
         envelope.derived_index_artifacts().is_empty(),
@@ -47,11 +46,7 @@ fn discarded_ordering_stays_cold_after_native_checkpoint_restore_then_rebuilds()
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
         .unwrap();
-    let mut restored = durable_runtime_with_index_field_aspects();
-    crate::tests::support::bind_durable_medium(
-        &mut restored,
-        crate::tests::support::attached_test_medium(runtime).attachment(),
-    );
+    let mut restored = certification_index_runtime();
     let recovered = restored
         .durability_recovery()
         .restore_native_checkpoint(execution, &checkpoint)

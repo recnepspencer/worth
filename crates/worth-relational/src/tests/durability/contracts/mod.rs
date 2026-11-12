@@ -1,53 +1,26 @@
-mod adjacency_checkpoint;
-mod branch_and_aspect_history;
-mod branch_root_checkpoint;
-mod branch_root_content_binding;
 mod branch_root_schema_binding;
-mod branch_root_shared_target_binding;
 mod branch_transition;
-mod canonical_artifact_neutrality;
+mod caller_association;
 mod canonical_commit_artifact;
 mod checkpoint_recovery;
-mod declared_schema_binding;
-mod derived_index_checkpoint;
 mod descriptor_continuity;
-mod fork_provenance_checkpoint;
-mod fork_tail_after_source_moved;
-mod global_generation_reclamation;
-mod lineage_allocator_denials;
-mod lineage_artifact_recovery;
-mod lineage_event_allocator_recovery;
 mod managed_field_text;
-mod merge_replay_continuity;
 mod native_checkpoint;
-mod native_checkpoint_restore_benchmark;
-mod record_allocation_recovery;
 mod rejected_and_parent_closure;
-mod retention_inspection_store;
-mod schema_transition_continuity;
-mod tail_checkpoint_validation;
+mod semantic_result;
 
-use crate::diagnostics::data::RelationalDiagnosticValue;
-use crate::facade::diagnostics::{DiagnosticCode, DiagnosticsScope};
+use crate::facade::diagnostics::DiagnosticCode;
 use crate::facade::durability::{
-    RecoveryAuthorityContinuityCheck, RecoveryAuthorityContinuityMismatch, RecoveryAuthorityParity,
-    RecoveryFailureClass, RecoveryPlan, RecoveryVerificationMode, RecoveryVerificationOutcome,
-    RelationIntegrityContractFamily,
+    RecoveryAuthorityContinuityMismatch, RecoveryFailureClass, RecoveryVerificationMode,
 };
 use crate::facade::history::BranchId;
 use crate::facade::identity::KindId;
-use crate::facade::indexes::{
-    DerivedIndexBuildRequest, DerivedIndexDefinition, DerivedIndexId, DerivedIndexKind,
-};
 use crate::facade::lineage::LineageEventKind;
-use crate::facade::merge::{MergeExecutionRequest, MergeIntent};
-use crate::facade::replay::ReplayVerificationLayer;
 use crate::facade::runtime::RelationalRuntimeApi;
-use crate::facade::schema::{DescriptorCanonicalBasisVersion, DescriptorSemanticsVersion};
+use crate::facade::schema::DescriptorSemanticsVersion;
 use crate::facade::schema::{
-    EntityKindRegistration, HistoricalInterpretationSensitivity, KindAspectContractDeclarations,
-    ProposedSchemaTransition, RelationalSchemaRegistry, SchemaDiffAtom, SchemaDiffDetail,
-    SchemaElementKind, SchemaElementRef, SchemaId, SchemaPublicationImpact,
+    HistoricalInterpretationSensitivity, ProposedSchemaTransition, SchemaDiffAtom,
+    SchemaDiffDetail, SchemaElementKind, SchemaElementRef, SchemaId, SchemaPublicationImpact,
     SchemaReconciliationPolicy, SchemaStratum, SchemaSubscriberImpact, SchemaVersionId,
 };
 use crate::facade::transactions::TransactionCommitError;
@@ -96,17 +69,4 @@ fn schema_transition_for_subscriber_impact(
             _ => crate::schema::data::SubscriberBoundaryVisibility::NotVisible,
         })],
     }
-}
-
-fn verified_at_digest_parity_value() -> RelationalDiagnosticValue {
-    RelationalDiagnosticValue::object([
-        (
-            "parity",
-            RelationalDiagnosticValue::string("VerifiedAtLayer"),
-        ),
-        (
-            "verification_layer",
-            RelationalDiagnosticValue::string("DigestParity"),
-        ),
-    ])
 }

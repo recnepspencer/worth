@@ -10,6 +10,6 @@ impl WorthQueryApplicationOutputLineage {
         crate::domain_computation::primary_graph::application_checkpoint::facts::FactPayload,
         &super::super::SealedNativeOutputWitness,
     )> {
-        Self::checkpoint_facts_for_receipt(self, receipt)
+        Self::checkpoint_facts_for_publication(self, receipt.into())
     }
 }

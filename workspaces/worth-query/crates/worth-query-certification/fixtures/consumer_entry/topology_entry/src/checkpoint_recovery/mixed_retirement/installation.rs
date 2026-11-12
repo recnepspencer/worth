@@ -26,7 +26,7 @@ pub(super) fn install(
         .validated_program()
         .expect("the checkpoint program is complete");
     match checkpoint {
-        Some(checkpoint) => application_installation::in_memory_program_from_checkpoint(
+        Some(checkpoint) => application_installation::WorthQueryInterimCheckpointRestore::program(
             program,
             declaration,
             configuration,

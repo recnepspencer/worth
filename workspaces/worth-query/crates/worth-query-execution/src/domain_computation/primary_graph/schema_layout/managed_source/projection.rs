@@ -6,6 +6,7 @@ use worth_query_declaration::facade::application_query::{
 use worth_relational::facade::runtime::ManagedIndexSourceProjectionRoute;
 
 pub(super) fn lower(
+    sources: super::super::source_registration::SourceRegistration<'_>,
     mut registry: RelationalSchemaRegistry,
     source: &ErasedApplicationQueryDefinition,
     identity: &DerivedRelationIdentity,
@@ -64,14 +65,17 @@ pub(super) fn lower(
             version: identity.version,
             name: format!("{}::projection::{name}", identity.name),
         };
-        registry = registry
-            .register_derived_relations(vec![DerivedRelationDefinitionParts {
-                identity: route_identity.clone(),
-                from: parent.into(),
-                to: endpoint.into(),
-                nodes,
-                laws: None,
-            }])
+        registry = sources
+            .derived(
+                registry,
+                vec![DerivedRelationDefinitionParts {
+                    identity: route_identity.clone(),
+                    from: parent.into(),
+                    to: endpoint.into(),
+                    nodes,
+                    laws: None,
+                }],
+            )
             .map_err(|_| unsupported(source.name()))?;
         let path = registry
             .derived_relation(&route_identity)

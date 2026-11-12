@@ -189,7 +189,7 @@ mod tests {
                 .entity_arena
                 .aspect_versions_at_mut(entity.slot_index())
                 .expect("test entity aspect version slot is materialized");
-            versions.clear();
+            *versions = Default::default();
             versions.insert(crate::symbols::data::Symbol(41), 7);
         }
 

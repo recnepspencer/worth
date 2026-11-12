@@ -2,7 +2,59 @@ use worth_relational::facade::branch::{AdmittedRelationalBranchBasis, Relational
 use worth_relational::facade::history::RelationalCommitIdentity;
 use worth_relational::facade::transactions::CommitResult;
 
-use super::{CompositeRelationalOwnerResult, CompositeRelationalOwnerResultKind};
+use super::{
+    CompositeOwnerExecutionResults, CompositeRelationalOwnerResult,
+    CompositeRelationalOwnerResultKind,
+};
+
+impl CompositeOwnerExecutionResults {
+    /// A terminal no-effect release requires the actual closed owner result.
+    pub(crate) fn release_original_component(
+        &self,
+    ) -> Result<
+        Option<(
+            &worth_relational::facade::history::RelationalCommitReceipt,
+            &AdmittedRelationalBranchBasis,
+        )>,
+        (),
+    > {
+        match &self.relational.result {
+            CompositeRelationalOwnerResultKind::RetainedExact
+            | CompositeRelationalOwnerResultKind::Forked { .. } => Ok(None),
+            CompositeRelationalOwnerResultKind::Published {
+                settlement: Some(receipt),
+                successor_basis: Some(basis),
+                ..
+            } => Ok(Some((receipt, basis))),
+            CompositeRelationalOwnerResultKind::Published {
+                settlement: None, ..
+            }
+            | CompositeRelationalOwnerResultKind::Published {
+                successor_basis: None,
+                ..
+            }
+            | CompositeRelationalOwnerResultKind::SettlementRequired { .. }
+            | CompositeRelationalOwnerResultKind::DurabilityUnresolved { .. } => Err(()),
+        }
+    }
+    /// Absence is coherent only for a leg that creates no commit snapshot.
+    pub(crate) fn result_for_snapshot_cleanup(
+        &self,
+    ) -> Result<Option<std::sync::Arc<CommitResult>>, ()> {
+        match &self.relational.result {
+            CompositeRelationalOwnerResultKind::RetainedExact
+            | CompositeRelationalOwnerResultKind::Forked { .. } => Ok(None),
+            CompositeRelationalOwnerResultKind::Published {
+                settlement: Some(_),
+                result: Some(result),
+                ..
+            } => Ok(Some(result.clone())),
+            CompositeRelationalOwnerResultKind::Published { .. }
+            | CompositeRelationalOwnerResultKind::SettlementRequired { .. }
+            | CompositeRelationalOwnerResultKind::DurabilityUnresolved { .. } => Err(()),
+        }
+    }
+}
 
 impl CompositeRelationalOwnerResult {
     pub(crate) fn retained() -> Self {
@@ -19,7 +71,7 @@ impl CompositeRelationalOwnerResult {
         Self {
             result: CompositeRelationalOwnerResultKind::Published {
                 commit_identity,
-                successor_basis,
+                successor_basis: Some(successor_basis),
                 settlement: Some(result.outcome().commit.clone()),
                 result: Some(result),
             },
@@ -44,7 +96,7 @@ impl CompositeRelationalOwnerResult {
         Self {
             result: CompositeRelationalOwnerResultKind::SettlementRequired {
                 commit_identity,
-                successor_basis,
+                successor_basis: Some(successor_basis),
             },
         }
     }
@@ -57,7 +109,7 @@ impl CompositeRelationalOwnerResult {
         Self {
             result: CompositeRelationalOwnerResultKind::Published {
                 commit_identity,
-                successor_basis,
+                successor_basis: Some(successor_basis),
                 settlement: Some(receipt),
                 result: None,
             },
@@ -73,7 +125,7 @@ impl CompositeRelationalOwnerResult {
         Self {
             result: CompositeRelationalOwnerResultKind::Forked {
                 fork,
-                successor_basis,
+                successor_basis: Some(successor_basis),
             },
         }
     }

@@ -1,7 +1,6 @@
 use super::BridgeSealedRuntimeAssembly;
 use crate::diagnostics::causal_envelope::{
-    BridgeCausalEnvelopeDenial, BridgeCausalExplanationEnvelope,
-    BridgeConditionalCausalEnvelopeRequest,
+    BridgeCausalExplanationEnvelope, BridgeConditionalCausalEnvelopeRequest,
 };
 
 impl BridgeSealedRuntimeAssembly {

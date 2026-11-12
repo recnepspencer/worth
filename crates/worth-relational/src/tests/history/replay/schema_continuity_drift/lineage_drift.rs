@@ -62,6 +62,7 @@ fn replay_contract_reports_schema_lineage_drift_at_summary_layer_when_digest_is_
     let outcome = txn.commit(execution, &runtime).unwrap();
 
     assert!(runtime.history_authority().tamper_commit_envelope_for_test(
+        execution,
         outcome.commit.commit_id,
         |envelope| {
             if let Some(descriptor) = envelope.schema_reconciliation_descriptor.as_mut() {

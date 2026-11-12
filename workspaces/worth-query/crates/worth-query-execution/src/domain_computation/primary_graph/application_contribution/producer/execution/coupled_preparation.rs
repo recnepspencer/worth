@@ -181,7 +181,7 @@ where
         );
     let report = match prepared_handler {
         Ok(handler) => handler.run(runtime, &identities),
-        Err(report) => report,
+        Err(report) => report.into_uncompleted_report(),
     };
     if let Some(stop) = source_query.take_control_failure() {
         return Err(super::denial::request_admission_rejected(stop));

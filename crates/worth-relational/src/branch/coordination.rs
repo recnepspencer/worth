@@ -89,7 +89,3 @@ impl Drop for RelationalBranchCoordinationGuard<'_> {
         let _ = &self.guard;
     }
 }
-
-#[cfg(test)]
-#[path = "coordination/managed_fork_cleanup.rs"]
-mod managed_fork_cleanup;

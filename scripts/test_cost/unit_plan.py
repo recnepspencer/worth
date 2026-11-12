@@ -123,10 +123,76 @@ def inputs(command, cwd, environment, manifests=()):
                           if Path(path).is_file() else None for path in manifests}}
 
 
+def checked_test_roots(command, graph):
+    if command[1] not in ('check', 'clippy'):
+        return ()
+    explicit_example = any(argument == '--example' or argument.startswith('--example=')
+                           for argument in command)
+    if '--tests' in command and not explicit_example and not any(flag in command for flag in
+            ('--all-targets', '--lib', '--bins', '--examples', '--benches')):
+        return graph['roots']
+    if '--all-targets' not in command and '--tests' not in command:
+        return ()
+    # Cargo erases the harness bit in a check graph. A target's normal stage
+    # can be a dependency; its checked test stage is a leaf root. Examples
+    # marked test=true also have ordinary and cfg(test) checks, even when their
+    # executable uses harness=false. Preserve both declared
+    # stages, including an otherwise identical pair with no incoming edges.
+    incoming = {edge['index'] for row in graph['units'] for edge in row['dependencies']}
+    groups = {}
+    for index, row in enumerate(graph['units']):
+        kinds = set(row['target']['kind'])
+        library = bool(kinds & {'lib', 'rlib', 'dylib', 'cdylib', 'staticlib', 'proc-macro'})
+        if row['mode'] == 'check' and (library or row['target']['kind'] in (['bin'], ['example'])):
+            key = digest({key: value for key, value in row.items() if key != 'dependencies'})
+            groups.setdefault(key, []).append(index)
+    harnesses = []
+    cargo_arguments = command[:command.index('--')] if '--' in command else command
+    only_test_binaries = '--tests' in cargo_arguments and not any(
+        argument in ('--all-targets', '--bins', '--bin') or argument.startswith('--bin=')
+        for argument in cargo_arguments)
+    ordinary_examples = {
+        argument.split('=', 1)[1] if argument.startswith('--example=') else cargo_arguments[index + 1]
+        for index, argument in enumerate(cargo_arguments)
+        if argument.startswith('--example=') or argument == '--example'
+    }
+    only_test_examples = '--tests' in cargo_arguments and not any(
+        argument in ('--all-targets', '--examples') for argument in cargo_arguments)
+    for indices in groups.values():
+        if len(indices) == 1 and (only_test_binaries or only_test_examples):
+            index = indices[0]
+            row = graph['units'][index]
+            # --tests includes test-enabled examples that were not explicitly
+            # selected for an ordinary stage. Their harness is a singleton.
+            test_selection = ((row['target']['kind'] == ['bin'] and only_test_binaries)
+                or (row['target']['kind'] == ['example'] and only_test_examples
+                    and row['target']['name'] not in ordinary_examples))
+            if (test_selection and row['target'].get('test', False)
+                    and index in graph['roots'] and index not in incoming):
+                harnesses.append(index)
+        if len(indices) != 2:
+            continue
+        leaves = [index for index in indices if index in graph['roots'] and index not in incoming]
+        if len(leaves) == 1:
+            harnesses.extend(leaves)
+        elif len(leaves) == 2:
+            first, second = (graph['units'][index]['dependencies'] for index in indices)
+            if first == second:
+                harnesses.append(leaves[1])
+            elif all(edge in second for edge in first) and len(first) < len(second):
+                harnesses.append(leaves[1])
+            elif all(edge in first for edge in second) and len(second) < len(first):
+                harnesses.append(leaves[0])
+            else:
+                raise CompilerUnitRefusal('checked target stages have no unique dependency/harness split')
+    return harnesses
+
+
 def declare(command, cwd, environment, observed):
     try:
         graph = json.loads(observed)
-        units = declarations(graph)
+        test_roots = checked_test_roots(command, graph)
+        units = declarations(graph, checked_test_roots=test_roots)
     except (KeyError, TypeError, ValueError) as error:
         raise CompilerUnitRefusal(f'could not declare required compiler units: {error}') from error
     contract = inputs(command, cwd, environment, manifest_paths(command, cwd, graph))

@@ -1,5 +1,6 @@
 use std::path::{Path, PathBuf};
 use std::process::{Child, Command};
+use worth_foundational::CanonicalDigestId;
 
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
@@ -24,8 +25,8 @@ pub(super) struct Request {
     pub role: Role,
     pub root: PathBuf,
     pub report: PathBuf,
-    pub scenario: [u8; 32],
-    pub run: [u8; 32],
+    pub scenario: CanonicalDigestId,
+    pub run: CanonicalDigestId,
 }
 
 pub(super) fn spawn(request: &Request) -> Child {
@@ -62,8 +63,8 @@ pub(super) fn execute(request: &Request) -> Value {
     }
     let report = read_report(&request.report);
     assert_eq!(report["process_id"], pid);
-    assert_eq!(report["scenario"], hex(request.scenario));
-    assert_eq!(report["run"], hex(request.run));
+    assert_eq!(report["scenario"], hex(request.scenario.bytes()));
+    assert_eq!(report["run"], hex(request.run.bytes()));
     assert_eq!(report["protocol_version"], 1);
     assert_eq!(
         report["role"],
@@ -92,8 +93,8 @@ pub(super) fn emit(request: &Request, payload: Value) {
         "protocol_version": 1,
         "process_id": std::process::id(),
         "executable_sha256": hex(executable_sha256(&std::env::current_exe().unwrap()).unwrap()),
-        "scenario": hex(request.scenario),
-        "run": hex(request.run),
+        "scenario": hex(request.scenario.bytes()),
+        "run": hex(request.run.bytes()),
         "role": match request.role {
             Role::PendingProducer => "pending-obligation-producer",
             Role::Editor(_) => "physical-work-artifact-editor",

@@ -9,6 +9,7 @@ mod assessment;
 mod captured_input;
 mod evidence_dependency;
 mod fact_custody;
+mod home_readmission;
 mod indexes;
 mod instance;
 pub(crate) mod layout;

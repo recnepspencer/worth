@@ -1,29 +1,25 @@
 //! One rule evaluator consumes the real installed Native Source loan.
 use super::super::{prefix, query, schema::*};
-
+use crate::application_invariant_acceptance::managed_index::maintained::{
+    rule_observation::StagedSourceObservation, source_observation::SourceObservation,
+};
+use crate::application_invariant_acceptance::managed_index::prefix_observation;
 use std::sync::{Arc, Mutex};
 use worth_query_decl::facade::application_query::ApplicationManagedIndexBinding;
 use worth_query_host::facade::application_invariants::*;
 pub(crate) struct Calls {
-    pub records: Mutex<Vec<Record>>,
+    pub records: Mutex<Vec<StagedSourceObservation<query::ItemRow>>>,
     pub after_first_observation: Mutex<Option<Box<dyn FnOnce() + Send>>>,
-    provider: Arc<prefix::Calls>,
+    provider: Arc<prefix_observation::Calls>,
 }
 impl Calls {
-    pub(crate) fn new(provider: Arc<prefix::Calls>) -> Self {
+    pub(crate) fn new(provider: Arc<prefix_observation::Calls>) -> Self {
         Self {
             records: Mutex::new(Vec::new()),
             after_first_observation: Mutex::new(None),
             provider,
         }
     }
-}
-#[derive(Debug)]
-pub(crate) struct Record {
-    pub scope: (u32, u64, u32),
-    pub before: Option<Vec<query::ItemRow>>,
-    pub after: Vec<query::ItemRow>,
-    pub updates_before_callback: usize,
 }
 pub(crate) struct Rule {
     index: WorthQueryApplicationInvariantManagedIndexBinding<Catalog, prefix::PrefixIndex>,
@@ -81,26 +77,36 @@ impl Rule {
             .iter()
             .chain(std::iter::once(&after))
             .flat_map(|rows| rows.iter())
-            .try_fold(size_of::<Record>() as u64, |bytes, row| {
-                bytes.checked_add(
-                    (size_of::<query::ItemRow>() + row.identity.capacity() + row.name.capacity())
-                        as u64,
-                )
-            })
+            .try_fold(
+                size_of::<StagedSourceObservation<query::ItemRow>>() as u64,
+                |bytes, row| {
+                    bytes.checked_add(
+                        (size_of::<query::ItemRow>()
+                            + row.identity.capacity()
+                            + row.name.capacity()) as u64,
+                    )
+                },
+            )
             .ok_or(WorthQueryApplicationInvariantError::Allocation)?;
         if !budget.claim_result(bytes) {
             return Err(WorthQueryApplicationInvariantError::Stopped);
         }
-        self.calls.records.lock().unwrap().push(Record {
-            scope: (
-                id.partition_value(),
-                id.local_slot_value(),
-                id.generation_value(),
-            ),
-            before,
-            after,
-            updates_before_callback,
-        });
+        self.calls
+            .records
+            .lock()
+            .unwrap()
+            .push(StagedSourceObservation {
+                source: SourceObservation {
+                    scope: (
+                        id.partition_value(),
+                        id.local_slot_value(),
+                        id.generation_value(),
+                    ),
+                    before,
+                    after,
+                },
+                updates_before_callback,
+            });
         if let Some(observe) = self.calls.after_first_observation.lock().unwrap().take() {
             observe();
         }

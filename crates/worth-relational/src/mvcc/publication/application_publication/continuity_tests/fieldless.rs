@@ -139,7 +139,7 @@ fn fieldless_birth_incidence_survives_warm_no_data_preserve_and_cold_readmission
         assert!(row.is_live());
         assert_eq!(row.generation(), id.generation_value());
         assert_eq!(row.kind_id(), Some(KindId(1)));
-        assert!(row.extra().authoritative_aspect_state.is_none());
+        assert!(row.extra().authoritative_aspect_state().is_none());
     }
     let readmitted = cold
         .readmit_required_output_publication(

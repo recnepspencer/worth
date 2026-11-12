@@ -6,6 +6,15 @@ use crate::physical_runtime::{
 };
 
 impl ServingPhysicalRuntime {
+    pub(in crate::physical_runtime) fn owns_reader(&self, reader: &PhysicalRecordReader) -> bool {
+        reader.store == self.store_identity()
+            && reader.generation == self.parts.core.lifecycle_generation()
+            && std::sync::Weak::ptr_eq(
+                &reader.runtime,
+                &std::sync::Arc::downgrade(&self.parts.work_runtime),
+            )
+    }
+
     pub(in crate::physical_runtime) fn recovery_retained_record_reader(
         &self,
     ) -> Result<Option<PhysicalRecordReader>, PhysicalReadProtectionDenial> {
@@ -37,6 +46,19 @@ impl ServingPhysicalRuntime {
     pub fn records(&self) -> Result<PhysicalRecordReader, PhysicalReadProtectionDenial> {
         let (current_root, protection) = self.parts.publication.capture_read_root()?;
         Ok(self.reader_from_captured_root(current_root, protection))
+    }
+
+    /// Admit one actual protected reader without waiting for any capture lock.
+    /// A refusal installs nothing. Liveness is checked before installation;
+    /// accepted custody is returned even if the request stops immediately after.
+    /// The caller must retain that reader before its next fallible consultation.
+    pub fn try_records_for_checkpoint(
+        &self,
+        request: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> Result<PhysicalRecordReader, crate::physical_runtime::PhysicalCheckpointReadProtectionDenial>
+    {
+        let (root, protection) = self.parts.publication.try_capture_read_root(request)?;
+        Ok(self.reader_from_captured_root(root, protection))
     }
 
     /// Consumes an already captured root without selecting a newer root.

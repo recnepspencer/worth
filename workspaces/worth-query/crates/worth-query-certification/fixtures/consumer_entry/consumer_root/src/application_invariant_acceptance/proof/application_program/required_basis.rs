@@ -168,7 +168,7 @@ pub(super) fn joined_required_root_discovers_at_its_own_publication(
         .composite_commit()
         .ordinal();
     drop(third);
-    let mut recovered = request
+    let first_recovery = request
         .advanced()
         .recover_required_outputs::<ConsumerProgram, ConsumerRequiredSharedRoot>(
             &world.application,
@@ -177,6 +177,16 @@ pub(super) fn joined_required_root_discovers_at_its_own_publication(
             controls,
         )
         .expect("the exact later source publication recovers");
+    let mut recovered = request
+        .advanced()
+        .recover_required_outputs::<ConsumerProgram, ConsumerRequiredSharedRoot>(
+            &world.application,
+            &receipt,
+            PlanarOutputDemand::new("remote-b"),
+            controls,
+        )
+        .expect("the same original source admits a retained recovery join");
+    drop(first_recovery);
     let third_settled = settle(|| {
         match recovered
             .advance(&world.application, &request)
@@ -212,4 +222,9 @@ pub(super) fn joined_required_root_discovers_at_its_own_publication(
             .ordinal()
             >= third_commit
     );
+}
+
+#[test]
+fn recovering_a_later_performed_source_joins_the_retained_root_without_reexecution() {
+    joined_required_root_discovers_at_its_own_publication(&crate::installed_schema());
 }

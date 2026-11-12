@@ -21,9 +21,13 @@ type SelectedRootTopologyEntry = (
 mod base_image_accessors;
 mod command;
 mod derivation;
+mod expectation_accessors;
+mod expectation_storage;
 mod frame_identity;
 mod identity;
 mod publication_accessors;
+pub use expectation_storage::RecoveryPublicationExpectation;
+pub(crate) use expectation_storage::{ExpectationBacking, ExpectationPayload};
 mod publication_candidate;
 mod publication_types;
 mod resident_storage;
@@ -31,7 +35,9 @@ mod source_inventory;
 mod staging_cost;
 
 use super::{PlanningMemoryDenial, PlanningResidentAllowance};
-pub(crate) use derivation::{derive_execution_basis, requires_successor_candidate};
+pub(crate) use derivation::{
+    derive_execution_basis, requires_successor_candidate, ExecutionBasis, ExecutionBasisState,
+};
 pub(crate) use publication_candidate::verified_historical_release_transition;
 pub(crate) use publication_candidate::CandidateMaterializationCost;
 pub(crate) use publication_types::RecoveryReleaseTopologyProof;
@@ -173,8 +179,9 @@ pub struct RecoveryStagingRedoStep {
     prior: RecoveryPageObservation,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, PartialEq, Eq)]
 pub struct RecoveryPublicationPlan {
+    expectation_backing: ExpectationBacking,
     store: StableStoreIdentity,
     checkpoint: Option<PhysicalCheckpointIdentity>,
     source_generation: u64,
@@ -186,21 +193,6 @@ pub struct RecoveryPublicationPlan {
     recovered_root: DurablePhysicalRootManifest,
     referenced_artifacts: Box<[RecordArtifactFile]>,
     candidates: Box<[RecoveryPublicationCandidateArtifact]>,
-    created_artifacts: Box<[RecordArtifactFile]>,
-    release_topology: Option<RecoveryReleaseTopologyProof>,
-}
-
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct RecoveryPublicationExpectation {
-    store: StableStoreIdentity,
-    checkpoint: Option<PhysicalCheckpointIdentity>,
-    source_generation: u64,
-    staging_generation: u64,
-    plan_identity: [u8; 32],
-    root_protocol: worth_store::physical_runtime::RecoveryRootProtocolPublicationPlan,
-    current_selector: worth_store_physical_format::DurableRootSelector,
-    recovered_root: DurablePhysicalRootManifest,
-    referenced_artifacts: Box<[RecordArtifactFile]>,
     created_artifacts: Box<[RecordArtifactFile]>,
     release_topology: Option<RecoveryReleaseTopologyProof>,
 }

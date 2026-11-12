@@ -199,3 +199,6 @@ pub(in crate::domain_computation::primary_graph) fn collect_granular_invalidatio
         coverage,
     }
 }
+#[cfg(test)]
+#[path = "delivery_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;

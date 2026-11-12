@@ -5,7 +5,8 @@ fn prefix_count_matches_an_independent_scan_after_mixed_edits_and_shape_changes(
     for seed in 1_u64..=8 {
         let mut random = seed;
         let mut values = vec![None; 64];
-        let mut previous = SharedColumn::from(values.clone());
+        let mut previous: SharedColumn<StorageAllocation<Option<usize>>> =
+            SharedColumn::from(values.clone());
         let mut presence = 0;
         for step in 0..256 {
             random = random.wrapping_mul(6364136223846793005).wrapping_add(1);

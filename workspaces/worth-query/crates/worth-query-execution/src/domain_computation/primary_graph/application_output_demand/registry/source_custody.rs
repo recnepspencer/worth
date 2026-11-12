@@ -23,6 +23,7 @@ use std::cmp::Ordering;
 use worth_runtime_world::facade::CompositeCommitIdentity;
 
 mod owned_affinity;
+mod recorded_replay;
 mod reservation_control;
 mod retention;
 pub use reservation_control::{
@@ -90,7 +91,7 @@ impl WorthQueryOutputDemandRegistry {
         let custody = state
             .source_custody
             .get_mut(receipt.committed_product_publication().composite_commit())
-            .filter(|custody| custody.retired.is_none())
+            .filter(|custody| custody.retired.is_none() && !custody.completed)
             .filter(|custody| custody.root_kind == PreparedOutputRootKind::Required(root_type))
             .filter(|custody| {
                 custody

@@ -4,34 +4,30 @@ use crate::entry::{
 };
 use crate::orchestration::recovery_budget::RecoveryAllowance;
 use crate::progression::{
-    derive_execution_basis, requires_successor_candidate, CandidateMaterializationCost,
-    ExecutionBasisDenial, PlanningMemoryDenial, PlanningResidentAllowance, RecoveryPublicationPlan,
-    RecoveryQuiescencePlan, RecoveryStagingLayoutPlan,
+    derive_execution_basis, requires_successor_candidate, ExecutionBasis, ExecutionBasisDenial,
+    ExecutionBasisState, PlanningMemoryDenial, PlanningResidentAllowance,
 };
 
 use super::super::context::PlanningContext;
 use super::super::manifest_entry_budget::ManifestEntryBudget;
-use super::super::resolved_basis::ResolvedPlanningBasis;
+use super::super::resolved_basis::ResolvedPlanningState;
 use super::super::successor_candidate_observation;
 
 #[cfg(test)]
 #[path = "execution_basis/candidate_limit_tests.rs"]
 mod candidate_limit_tests;
 
-pub(super) struct ExecutionProducts {
-    pub(super) staging: RecoveryStagingLayoutPlan,
-    pub(super) publication: RecoveryPublicationPlan,
-    pub(super) quiescence: RecoveryQuiescencePlan,
-    pub(super) candidate_materialization: CandidateMaterializationCost,
-    pub(super) planning_construction_peak: u64,
-}
-
 pub(super) fn derive(
     mut context: PlanningContext,
-    basis: &mut ResolvedPlanningBasis,
-) -> Result<(PlanningContext, ExecutionProducts), PhysicalRecoveryOutcome> {
+    basis: &mut ResolvedPlanningState,
+) -> Result<(PlanningContext, ExecutionBasis), PhysicalRecoveryOutcome> {
     let retained_memory_bytes = super::super::resident_memory::live_bytes(&context, basis)
-        .and_then(|bytes| bytes.checked_add(std::mem::size_of::<ExecutionProducts>() as u64))
+        .and_then(|bytes| {
+            bytes.checked_add(
+                (std::mem::size_of::<ExecutionBasis>() + std::mem::size_of::<ExecutionBasisState>())
+                    as u64,
+            )
+        })
         .and_then(|bytes| {
             bytes.checked_add(std::mem::size_of::<
                 Option<crate::progression::RecoveryObservedSuccessorCandidate>,
@@ -60,7 +56,7 @@ pub(super) fn derive(
             )
             .past(observed);
             return Err(context.cost_denial_block(
-                basis.planning_counters().with_peak_recovery_bytes(observed),
+                basis.planning_counters_at_peak(observed),
                 worth_store_recovery_physics::RecoveryPlanCostDenial::RecoveryMemoryBytes,
                 limit,
             ));
@@ -70,7 +66,7 @@ pub(super) fn derive(
         }
     };
     let Some(historical_consumed) = basis.historical_consumed.as_ref() else {
-        return Err(context.redo_block(basis.planning_counters(), None));
+        return Err(context.redo_block(basis.planning_counters_at_peak(allowance.peak()), None));
     };
     let candidate_required = match requires_successor_candidate(
         &context.selection,
@@ -79,7 +75,9 @@ pub(super) fn derive(
         historical_consumed,
     ) {
         Ok(required) => required,
-        Err(_) => return Err(context.redo_block(basis.planning_counters(), None)),
+        Err(_) => {
+            return Err(context.redo_block(basis.planning_counters_at_peak(allowance.peak()), None))
+        }
     };
     let successor_candidate = if candidate_required {
         let remaining_observation_bytes = context
@@ -125,9 +123,7 @@ pub(super) fn derive(
                 };
                 let artifact = format!("{:?}", denial.artifact());
                 return Err(context.successor_candidate_block(
-                    basis
-                        .planning_counters()
-                        .with_peak_recovery_bytes(required_peak),
+                    basis.planning_counters_at_peak(required_peak),
                     &artifact,
                     limit,
                     denial,
@@ -137,14 +133,7 @@ pub(super) fn derive(
     } else {
         None
     };
-    let (
-        staging,
-        publication,
-        quiescence,
-        candidate_materialization,
-        root_protocol_counters,
-        planning_construction_peak,
-    ) = match derive_execution_basis(
+    let execution = match derive_execution_basis(
         context.authority.media.store_identity(),
         &context.selection,
         &basis.sample,
@@ -171,9 +160,7 @@ pub(super) fn derive(
         }) => {
             return Err(context.block_with_planning_attempt_denial(
                 crate::entry::PhysicalRecoveryBlockKind::RedoPlanning,
-                basis
-                    .planning_counters()
-                    .with_peak_recovery_bytes(allowance.peak()),
+                basis.planning_counters_at_peak(allowance.peak()),
                 "publication-candidate-allocation",
                 None,
                 crate::entry::PhysicalRecoveryPlanningDenial::PublicationCandidateAllocation {
@@ -188,7 +175,7 @@ pub(super) fn derive(
         }) => {
             return Err(context.block_with_planning_attempt_denial(
                 crate::entry::PhysicalRecoveryBlockKind::RedoPlanning,
-                basis.planning_counters(),
+                basis.planning_counters_at_peak(allowance.peak()),
                 "execution-image-allocation",
                 None,
                 crate::entry::PhysicalRecoveryPlanningDenial::ExecutionImageAllocation {
@@ -204,7 +191,7 @@ pub(super) fn derive(
             )
             .past(observed);
             return Err(context.cost_denial_block(
-                basis.planning_counters().with_peak_recovery_bytes(observed),
+                basis.planning_counters_at_peak(observed.max(allowance.peak())),
                 worth_store_recovery_physics::RecoveryPlanCostDenial::RecoveryMemoryBytes,
                 limit,
             ));
@@ -216,7 +203,7 @@ pub(super) fn derive(
             )
             .past(observed);
             return Err(context.cost_denial_block(
-                basis.planning_counters(),
+                basis.planning_counters_at_peak(allowance.peak()),
                 worth_store_recovery_physics::RecoveryPlanCostDenial::StagingBytes,
                 limit,
             ));
@@ -228,7 +215,7 @@ pub(super) fn derive(
             )
             .past(observed);
             return Err(context.cost_denial_block(
-                basis.planning_counters(),
+                basis.planning_counters_at_peak(allowance.peak()),
                 worth_store_recovery_physics::RecoveryPlanCostDenial::DirtyFrames,
                 limit,
             ));
@@ -237,7 +224,7 @@ pub(super) fn derive(
             let artifact = format!("{:?}", denial.artifact());
             return Err(context.block_with_planning_attempt_denial(
                 crate::entry::PhysicalRecoveryBlockKind::PageAdmission,
-                basis.planning_counters(),
+                basis.planning_counters_at_peak(allowance.peak()),
                 &artifact,
                 None,
                 crate::entry::PhysicalRecoveryPlanningDenial::SuccessorCandidate(denial),
@@ -249,23 +236,18 @@ pub(super) fn derive(
             counters,
         }) => {
             context.record_staged_selector_route(counters);
-            return Err(context.root_protocol_block(basis.planning_counters(), artifact, denial));
+            return Err(context.root_protocol_block(
+                basis.planning_counters_at_peak(allowance.peak()),
+                artifact,
+                denial,
+            ));
         }
         Err(ExecutionBasisDenial::Invalid) => {
-            return Err(context.redo_block(basis.planning_counters(), None));
+            return Err(context.redo_block(basis.planning_counters_at_peak(allowance.peak()), None));
         }
     };
-    context.record_staged_selector_route(root_protocol_counters);
-    Ok((
-        context,
-        ExecutionProducts {
-            staging,
-            publication,
-            quiescence,
-            candidate_materialization,
-            planning_construction_peak,
-        },
-    ))
+    context.record_staged_selector_route(execution.state().root_protocol_counters);
+    Ok((context, execution))
 }
 
 fn candidate_limit(

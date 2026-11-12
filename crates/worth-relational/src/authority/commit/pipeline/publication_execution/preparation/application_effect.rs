@@ -5,7 +5,7 @@ pub(super) fn unchanged(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     changed: &[RecordRef],
     adjacency: &[crate::authority::mutation::AdjacencyDelta],
-    envelope: &crate::history::data::CanonicalCommitEnvelope,
+    envelope: &crate::history::data::CanonicalCommitEnvelopeBody,
     symbols: &crate::runtime::PendingSymbolMeanings,
     merge_base: &[crate::history::data::CommitId],
     merge_parents: &[crate::history::data::BranchId],

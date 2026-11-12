@@ -63,36 +63,24 @@ fn cancelled_bootstrap_is_no_contact_and_inspection_waits_for_complete_root() {
     );
 }
 #[test]
-fn close_admission_excludes_bootstrap_before_component_acquisition() {
+fn close_refuses_busy_admission_then_excludes_bootstrap() {
     let (fixture, owner) = empty_world();
     let engine = owner.root.clone();
+    let policy = crate::test_execution_policy::serial_request();
+    let request = worth_execution::ExecutionRequest::serial(&policy);
     let ledger = engine.state.operation.state.lock().unwrap();
-    let closer = engine.clone();
-    let close = std::thread::spawn(move || closer.close());
-    super::admission_race::wait_until_close_is_admitting(&engine);
-    let port = owner.lifecycle_port();
-    let intent = fixture.bootstrap_intent();
-    let bootstrap = std::thread::spawn(move || port.bootstrap_root(intent));
-    drop(ledger);
-    drop(close.join().unwrap().unwrap());
-    match bootstrap.join().unwrap() {
-        Err(_) => {}
-        Ok(RuntimeWorldBootstrapOutcome::NoEffect(value)) => assert_eq!(
-            value.cause(),
-            RuntimeWorldBootstrapNoEffectCause::OwnerUnavailable
-        ),
-        Ok(other) => panic!("closed World admitted bootstrap: {other:?}"),
-    }
     assert_eq!(
-        engine
-            .state
-            .retention
-            .cost_snapshot()
-            .owner_acquisition_contacts(),
-        0
+        engine.close(&request).unwrap_err(),
+        RuntimeWorldCloseDenial::Busy
     );
-    assert_eq!(engine.state.history.len(), 0);
+    drop(ledger);
+    drop(engine.close(&request).unwrap());
+    assert!(owner
+        .lifecycle_port()
+        .bootstrap_root(fixture.bootstrap_intent())
+        .is_err());
 }
+
 #[test]
 fn cancellation_and_owner_loss_during_pin_acquisition_never_expose_a_root() {
     use std::time::Duration;
@@ -122,7 +110,11 @@ fn cancellation_and_owner_loss_during_pin_acquisition_never_expose_a_root() {
         );
         assert!(inspection.history_snapshot().is_err());
         assert_eq!(
-            engine.close().unwrap_err(),
+            engine
+                .close(&worth_execution::ExecutionRequest::serial(
+                    &crate::test_execution_policy::serial_request()
+                ))
+                .unwrap_err(),
             RuntimeWorldCloseDenial::AlreadyClosing
         );
         if lose_owner {

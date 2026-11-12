@@ -168,6 +168,7 @@ impl PoolInner {
         state.accounting.finish_loading();
         self.changed.notify_all();
         Ok(PhysicalFrameLease {
+            armed: true,
             owner: Arc::clone(self),
             key,
             bytes,

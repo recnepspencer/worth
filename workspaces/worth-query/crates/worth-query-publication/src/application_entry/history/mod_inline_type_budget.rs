@@ -1,0 +1,7 @@
+//! Unit-only layout evidence; constructs no runtime, proof or authority.
+
+pub(crate) fn collect(census: &mut crate::inline_type_sizes::Census) {
+    super::denial::inline_type_budget::collect(census);
+    super::edit::inline_type_budget::collect(census);
+    super::group::inline_type_budget::collect(census);
+}

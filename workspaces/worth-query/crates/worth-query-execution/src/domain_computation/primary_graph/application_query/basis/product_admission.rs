@@ -57,7 +57,7 @@ pub(super) fn admit_selected_permission_basis_with_native_access<Schema>(
             "primary graph",
         )
     })?;
-    let live = native.with_runtime_mut(
+    let live = native.with_runtime(
         graph,
         execution,
         || {

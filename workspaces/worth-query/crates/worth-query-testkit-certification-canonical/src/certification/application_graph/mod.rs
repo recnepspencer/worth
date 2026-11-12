@@ -6,6 +6,3 @@ pub mod canonical_identity;
 pub mod canonical_transition;
 #[path = "canonical_value.rs"]
 pub mod canonical_value;
-
-#[path = "source_owned_transition.rs"]
-pub mod source_owned_transition;

@@ -3,18 +3,22 @@ use super::{
     SharedColumn,
 };
 use crate::storage::substrate::{
-    StorageAllocation, StorageAllocationObservation, StorageAllocationVisitor,
+    StorageAllocation, StorageAllocationVisitor, StoredValueObservation,
 };
 
-impl<T: Clone> SharedColumn<T> {
+impl<T: super::StoredValue> SharedColumn<T> {
     pub(crate) fn visit_allocations(
         &self,
         ancestor_unique: bool,
         visitor: &mut dyn StorageAllocationVisitor,
-        value: &mut dyn FnMut(&T, StorageAllocationObservation, &mut dyn StorageAllocationVisitor),
+        value: &mut dyn FnMut(&T::Value, StoredValueObservation, &mut dyn StorageAllocationVisitor),
     ) {
         if let Some(default) = &self.default {
-            value(default, default.observation(ancestor_unique), visitor);
+            value(
+                default.value(),
+                StoredValueObservation::new(default, ancestor_unique),
+                visitor,
+            );
         }
         if let Some(root) = &self.root {
             visit_node(root, ancestor_unique, visitor, value);
@@ -22,16 +26,15 @@ impl<T: Clone> SharedColumn<T> {
     }
 }
 
-fn visit_node<T: Clone>(
+fn visit_node<T: super::StoredValue>(
     node: &StorageAllocation<ColumnNode<T>>,
     ancestor_unique: bool,
     visitor: &mut dyn StorageAllocationVisitor,
-    value: &mut dyn FnMut(&T, StorageAllocationObservation, &mut dyn StorageAllocationVisitor),
+    value: &mut dyn FnMut(&T::Value, StoredValueObservation, &mut dyn StorageAllocationVisitor),
 ) {
     let mut allocation = node.observation(ancestor_unique);
     if let ColumnStorage::Page(values) = &node.storage {
-        allocation.bytes +=
-            (values.capacity() * std::mem::size_of::<Option<StorageAllocation<T>>>()) as u64;
+        allocation.bytes += (values.capacity() * std::mem::size_of::<Option<T>>()) as u64;
     }
     if !visitor.visit(allocation) {
         return;
@@ -39,7 +42,11 @@ fn visit_node<T: Clone>(
     match &node.storage {
         ColumnStorage::Page(values) => {
             for entry in values.iter().flatten() {
-                value(entry, entry.observation(allocation.unique), visitor);
+                value(
+                    entry.value(),
+                    StoredValueObservation::new(entry, allocation.unique),
+                    visitor,
+                );
             }
         }
         ColumnStorage::Branch(children) => {

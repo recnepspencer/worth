@@ -303,6 +303,7 @@ impl PoolInner {
         self.changed.notify_all();
         Ok(DirtyPhysicalFrame {
             lease: Some(PhysicalFrameLease {
+                armed: true,
                 owner: Arc::clone(self),
                 key,
                 bytes,

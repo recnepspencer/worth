@@ -32,7 +32,7 @@ impl PartialEq for CanonicalRequiredOutputCodecRetirement {
 }
 impl Eq for CanonicalRequiredOutputCodecRetirement {}
 
-impl CanonicalCommitEnvelope {
+impl CanonicalCommitEnvelopeBody {
     pub(crate) fn codec_retirement_headers_valid(&self) -> bool {
         self.required_output_codec_retirements
             .iter()

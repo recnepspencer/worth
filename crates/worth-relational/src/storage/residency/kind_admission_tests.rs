@@ -113,11 +113,12 @@ fn normalization_preserves_literal_peer_claims_and_refuses_conflicting_kinds() {
         Err(Cause::IntegrityMismatch)
     );
     assert_eq!(
-        kind_commitment::digest(
+        *kind_commitment::digest(
             &crate::storage::substrate::maintenance::ReconstructionLane::oracle(),
             &[]
         )
-        .unwrap(),
+        .unwrap()
+        .bytes(),
         [
             124, 141, 64, 135, 143, 11, 198, 95, 76, 148, 197, 94, 181, 204, 245, 140, 200, 172,
             222, 42, 127, 107, 104, 209, 141, 141, 153, 139, 97, 85, 161, 41
@@ -217,4 +218,50 @@ fn digest_work_refusal_keeps_the_exact_value_checkpoint_cause() {
     );
     // No graph traversal precedes the one-byte empty MessagePack digest write.
     assert_eq!(calls, vec![(0, 65_536), (1, 0)]);
+}
+
+#[test]
+fn historical_kind_reconstruction_preserves_original_work_stop_and_releases_scratch() {
+    use crate::execution::RelationalExecutionDenialCause as Stop;
+    use crate::storage::substrate::maintenance::{MaintenanceRefusal, ReconstructionLane};
+    use kind_admission::maintained::{preserve_original_stop, KindMaintenanceError};
+    let lane = ReconstructionLane::oracle();
+    let budget = SerialMemoryBudget::new(Some(1 << 20));
+    let mut partition = peer_partition();
+    let before = kind_projection::canonical_history(&lane, &partition).unwrap();
+    let mut scratch = None;
+    let result = kind_admission::normalize_value(
+        &lane,
+        &mut partition,
+        &mut |units, bytes| {
+            if units > 0 {
+                return Err(Cause::SourceUnavailable);
+            }
+            scratch = Some(budget.reserve(bytes).unwrap());
+            Ok(())
+        },
+        &mut |_, _| panic!("refused traversal may not acquire retained result custody"),
+    );
+    assert_eq!(result, Err(Cause::SourceUnavailable));
+    for result in [Err(Cause::SourceUnavailable), Ok(())] {
+        assert!(matches!(
+            preserve_original_stop(
+                result,
+                Some(MaintenanceRefusal::Execution(Stop::WorkExhausted))
+            ),
+            Err(KindMaintenanceError::Admission(
+                MaintenanceRefusal::Execution(Stop::WorkExhausted)
+            ))
+        ));
+    }
+    assert_eq!(
+        kind_projection::canonical_history(&lane, &partition).unwrap(),
+        before
+    );
+    assert!(
+        budget.charged_memory_bytes() > 0,
+        "the real scratch reservation preceded work refusal"
+    );
+    drop(scratch);
+    assert_eq!(budget.charged_memory_bytes(), 0);
 }

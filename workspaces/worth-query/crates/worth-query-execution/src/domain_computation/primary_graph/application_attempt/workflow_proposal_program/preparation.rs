@@ -2,7 +2,7 @@ use crate::domain_computation::authorization::WorthQueryOperationAuthorizationRe
 use crate::domain_computation::primary_graph::WorthQueryAdvancementPhase;
 use worth_query_declaration::facade::{
     application_program::ApplicationWorkflowSpec,
-    application_schema::{ApplicationOperationMarkerIdentity, ApplicationStructuredValueBinding},
+    application_schema::ApplicationOperationMarkerIdentity,
 };
 use worth_query_installation::facade::{
     ApplicationSchema, WorthQueryInstalledApplicationWorkflowSpec,
@@ -184,18 +184,7 @@ impl WorthQueryWorkflowProposalAdapter {
         };
         let execution = &phase_request;
 
-        runtime.resolve_workflow_proposal_replay(
-            execution,
-            admission,
-            idempotency,
-            instance,
-            Operation::IDENTIFIER.to_owned(),
-            <Operation::InputBinding as ApplicationStructuredValueBinding>::IDENTITY
-                .as_str()
-                .to_owned(),
-            *idempotency.intent_identity(),
-            idempotency.source_identity(),
-        )
+        runtime.resolve_workflow_proposal_replay(execution, admission, idempotency, instance)
     }
 
     #[allow(clippy::too_many_arguments)]

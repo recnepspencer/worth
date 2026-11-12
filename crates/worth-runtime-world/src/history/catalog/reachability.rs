@@ -6,6 +6,7 @@ use crate::identity::CompositeCommitIdentity;
 use super::counters::{lock_counters, HistoryCatalogCountersHandle};
 use super::denial::CompositeHistoryCatalogDenial;
 
+mod close_retirement;
 mod frontier;
 mod installed_children;
 mod record;

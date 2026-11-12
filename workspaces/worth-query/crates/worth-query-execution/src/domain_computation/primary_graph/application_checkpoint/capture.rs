@@ -40,26 +40,12 @@ where
         &self,
         phase: &super::super::WorthQueryAdvancementPhase<'_>,
     ) -> Result<WorthQueryApplicationCheckpoint, WorthQueryCheckpointCaptureDenial> {
-        let policy = WorthQueryCheckpointCapturePolicy::SystemAllocation;
-        let execution = phase.execution_request_for(&self.runtime.product_runtime)?;
-        self.runtime
-            .primary_provider
-            .graph
-            .with_runtime(&execution, |runtime| {
-                runtime
-                    .durability_authority()
-                    .native_checkpoint(&execution, policy)
-                    .map_err(WorthQueryCheckpointCaptureDenial::from)
-                    .and_then(|native| {
-                        WorthQueryApplicationCheckpoint::encode(
-                            native,
-                            self.publication(),
-                            &[],
-                            policy,
-                        )
-                        .map(|(checkpoint, _)| checkpoint)
-                    })
-            })
+        self.capture_checkpoint_sections(
+            phase,
+            WorthQueryCheckpointCapturePolicy::SystemAllocation,
+            false,
+        )
+        .map(|(checkpoint, _)| checkpoint)
     }
 
     pub fn capture_application_checkpoint(
@@ -84,6 +70,21 @@ where
         ),
         WorthQueryCheckpointCaptureDenial,
     > {
+        self.capture_checkpoint_sections(phase, policy, true)
+    }
+
+    fn capture_checkpoint_sections(
+        &self,
+        phase: &super::super::WorthQueryAdvancementPhase<'_>,
+        policy: WorthQueryCheckpointCapturePolicy<'_, '_>,
+        with_outputs: bool,
+    ) -> Result<
+        (
+            WorthQueryApplicationCheckpoint,
+            WorthQueryApplicationCheckpointSectionBytes,
+        ),
+        WorthQueryCheckpointCaptureDenial,
+    > {
         policy.check_live()?;
         let occurrence = self.runtime.product_runtime.default_occurrence;
         let lane = self
@@ -99,88 +100,146 @@ where
                 native_priors::capture_denial("checkpoint product occurrence cannot be admitted")
             })?;
         let execution = phase.execution_request_for(&self.runtime.product_runtime)?;
-        self.runtime
-            .primary_provider
-            .graph
-            .with_runtime(&execution, |runtime| {
-                policy.check_live()?;
-                runtime
-                    .durability_authority()
-                    .native_checkpoint(&execution, policy)
-                    .map_err(WorthQueryCheckpointCaptureDenial::from)
-                    .and_then(|checkpoint| {
-                        let accepted = self.runtime.output_demands.accepted_checkpoint_records();
-
-                        let lineage = self
-                            .runtime
-                            .primary_provider
-                            .graph
-                            .output_lineage
-                            .lock()
-                            .unwrap_or_else(std::sync::PoisonError::into_inner);
-                        // Native prior custody is required; cached reuse facts are
-                        // best effort. Admit the locators before optional encoding
-                        // can consume this checkpoint's remaining allowance.
-                        let priors = lineage
-                            .checkpoint_prior_outputs(
-                                &execution,
-                                self.runtime.authority_identity().as_u64(),
-                                &self.installed_schema.binding_identity(),
-                                occurrence,
-                                lease.observation().reference_generation().get(),
-                            )
-                            .map_err(|denial| denial.into_capture_denial())?;
-                        let mut accepted = native_priors::merge(
-                            &lineage,
-                            accepted,
-                            self.runtime.recovered_outputs.iter().map(|accepted| {
-                                (
-                                    accepted.checkpoint.clone(),
-                                    accepted.correspondence.binding_type(),
+        let execution = match policy {
+            WorthQueryCheckpointCapturePolicy::SystemAllocation => execution,
+            WorthQueryCheckpointCapturePolicy::Execution(lease) => {
+                worth_execution::ExecutionRequest::leased(lease)
+            }
+        };
+        let mut answer = None;
+        let stage = execution.run_native_with_checkpoint(|_| {
+            answer = Some(self.runtime.primary_provider.graph.with_runtime(
+                &execution,
+                |runtime| {
+                    policy.check_live()?;
+                    runtime
+                        .durability_authority()
+                        .capture_interim_checkpoint(&execution, policy)
+                        .map_err(WorthQueryCheckpointCaptureDenial::from)
+                        .and_then(|(checkpoint, admission)| {
+                            let port = self
+                                .runtime
+                                .product_runtime
+                                .interim_checkpoint_port()
+                                .ok_or(
+                                    WorthQueryCheckpointCaptureDenial::OriginalAuthorityUnavailable,
+                                )?;
+                            let world = port
+                                .capture(
+                                    &execution,
+                                    lease.observation(),
+                                    &admission,
+                                    super::interim_transport::application_binding(
+                                        self.publication(),
+                                    ),
                                 )
-                            }),
-                            priors,
-                        )?;
-                        for (identity, source) in &mut accepted {
-                            policy.check_live()?;
-                            let Some(source) = source else {
-                                continue;
-                            };
-                            // A mismatch or unsupported fact kind leaves no reusable
-                            // payload. Neither the query footprint nor the digest can
-                            // reconstruct a producer's original decision reads.
-                            identity.producer_facts = match source {
-                                AcceptedCheckpointFactSource::Committed(receipt) => {
-                                    lineage.checkpoint_facts_for_receipt(receipt).and_then(
-                                        |(facts, witness)| output_facts::encode(&facts, witness),
-                                    )
-                                }
-                                AcceptedCheckpointFactSource::Stable(stable) => stable
-                                    .checkpoint_source_facts()
-                                    .and_then(|facts| facts::encode(&facts)),
+                                .map_err(|cause| {
+                                    WorthQueryCheckpointCaptureDenial::WorldOriginals(Box::new(
+                                        cause,
+                                    ))
+                                })?;
+                            if !with_outputs {
+                                return WorthQueryApplicationCheckpoint::encode_captured(
+                                    checkpoint,
+                                    admission,
+                                    world,
+                                    self.publication(),
+                                    &[],
+                                    &execution,
+                                    policy,
+                                );
                             }
-                            .map(std::sync::Arc::new);
-                            identity.producer_fact_wire_version =
-                                if identity.producer_facts.is_some() {
-                                    facts::WIRE_VERSION
-                                } else {
-                                    0
+                            let accepted =
+                                self.runtime.output_demands.accepted_checkpoint_records();
+
+                            let lineage = self
+                                .runtime
+                                .primary_provider
+                                .graph
+                                .output_lineage
+                                .lock()
+                                .unwrap_or_else(std::sync::PoisonError::into_inner);
+                            // Native prior custody is required; cached reuse facts are
+                            // best effort. Admit the locators before optional encoding
+                            // can consume this checkpoint's remaining allowance.
+                            let priors = lineage
+                                .checkpoint_prior_outputs(
+                                    &execution,
+                                    self.runtime.authority_identity().as_u64(),
+                                    &self.installed_schema.binding_identity(),
+                                    occurrence,
+                                    lease.observation().reference_generation().get(),
+                                )
+                                .map_err(|denial| denial.into_capture_denial())?;
+                            let mut accepted = native_priors::merge(
+                                &lineage,
+                                accepted,
+                                self.runtime.recovered_outputs.iter().map(|accepted| {
+                                    (
+                                        accepted.checkpoint.clone(),
+                                        accepted.correspondence.binding_type(),
+                                    )
+                                }),
+                                priors,
+                            )?;
+                            for (identity, source) in &mut accepted {
+                                policy.check_live()?;
+                                let Some(source) = source else {
+                                    continue;
                                 };
-                        }
-                        let mut accepted_outputs = accepted
-                            .into_iter()
-                            .map(|(identity, _)| identity)
-                            .collect::<Vec<_>>();
-                        accepted_outputs.sort_by(|left, right| left.canonical_cmp(right));
-                        accepted_outputs.dedup();
-                        drop(lineage);
-                        WorthQueryApplicationCheckpoint::encode(
-                            checkpoint,
-                            self.publication(),
-                            &accepted_outputs,
-                            policy,
-                        )
-                    })
-            })
+                                // A mismatch or unsupported fact kind leaves no reusable
+                                // payload. Neither the query footprint nor the digest can
+                                // reconstruct a producer's original decision reads.
+                                identity.producer_facts = match source {
+                                    AcceptedCheckpointFactSource::Committed(receipt) => lineage
+                                        .checkpoint_facts_for_publication((&*receipt).into())
+                                        .and_then(|(facts, witness)| {
+                                            output_facts::encode(&facts, witness)
+                                        }),
+                                    AcceptedCheckpointFactSource::Recovered(publication) => lineage
+                                        .checkpoint_facts_for_publication(publication.view())
+                                        .and_then(|(facts, witness)| {
+                                            output_facts::encode(&facts, witness)
+                                        }),
+                                    AcceptedCheckpointFactSource::Stable(stable) => stable
+                                        .checkpoint_source_facts()
+                                        .and_then(|facts| facts::encode(&facts)),
+                                }
+                                .map(std::sync::Arc::new);
+                                identity.producer_fact_wire_version =
+                                    if identity.producer_facts.is_some() {
+                                        facts::WIRE_VERSION
+                                    } else {
+                                        0
+                                    };
+                            }
+                            let mut accepted_outputs = accepted
+                                .into_iter()
+                                .map(|(identity, _)| identity)
+                                .collect::<Vec<_>>();
+                            accepted_outputs.sort_by(|left, right| left.canonical_cmp(right));
+                            accepted_outputs.dedup();
+                            drop(lineage);
+                            WorthQueryApplicationCheckpoint::encode_captured(
+                                checkpoint,
+                                admission,
+                                world,
+                                self.publication(),
+                                &accepted_outputs,
+                                &execution,
+                                policy,
+                            )
+                        })
+                },
+            ));
+        });
+        match (stage, answer) {
+            (Ok(_), Some(answer)) => answer,
+            (Ok(_), None) => unreachable!("the checkpoint stage produced its answer"),
+            (Err(cause), Some(Err(inner))) if worth_relational::facade::transactions::RelationalExecutionDenialCause::from(cause)
+                == worth_relational::facade::transactions::RelationalExecutionDenialCause::NestedStopped => Err(inner),
+            (Err(cause), _) => Err(WorthQueryCheckpointCaptureDenial::from(
+                worth_relational::facade::durability::RelationalNativeCheckpointCaptureDenial::Request(cause.into()))),
+        }
     }
 }

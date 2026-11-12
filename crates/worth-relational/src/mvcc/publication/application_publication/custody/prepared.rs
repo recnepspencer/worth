@@ -150,7 +150,7 @@ impl RelationalPreparedOutputPublications {
         }
         Some(RelationalPerformedOutputPublications {
             prepared: self,
-            envelope: Arc::clone(envelope),
+            envelope: envelope.clone().into_arc(),
         })
     }
 }

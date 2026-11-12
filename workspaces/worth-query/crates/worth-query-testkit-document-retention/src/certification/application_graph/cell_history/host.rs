@@ -99,8 +99,8 @@ pub fn install_cells(cells: &[(u64, u64, u64)], retained_steps: u64) -> Host {
     .expect("the ordinary cell-bearing application installs")
 }
 
-pub(super) fn limits(retained_steps: u64) -> WorthQueryInMemoryApplicationLimits {
-    WorthQueryInMemoryApplicationLimits::new(
+pub(super) fn limits(retained_steps: u64) -> WorthQueryApplicationLimits {
+    WorthQueryApplicationLimits::new(
         world_resources(
             retained_steps + 64,
             64 * 1024 * 1024,

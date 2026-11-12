@@ -1,3 +1,4 @@
+use worth_foundational::CanonicalDigestId;
 use worth_proof::{
     AdmitRecipeTransition, AuthorityMarker, AuthorityWitness, CapabilityMarker, CapabilityWitness,
     ContextualTransition, LowerRecipeTransition, Recipe, RecipeResolutionContext,
@@ -8,7 +9,7 @@ use super::{PhysicalSimulationPlan, SimulationPlanDenial};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 struct SimulationPlanResolutionBasis {
-    digest: [u8; 32],
+    digest: CanonicalDigestId,
     canonical_basis_entry_count: u32,
 }
 
@@ -22,7 +23,7 @@ pub(crate) fn admit_simulation_plan(
     plan: PhysicalSimulationPlan,
 ) -> Result<PhysicalSimulationPlan, SimulationPlanDenial> {
     let basis = SimulationPlanResolutionBasis {
-        digest: *plan.identity().digest_bytes(),
+        digest: CanonicalDigestId::new(*plan.identity().digest_bytes()),
         canonical_basis_entry_count: plan.identity().canonical_basis_entry_count(),
     };
     require_resolution_basis(&basis)?;
@@ -52,7 +53,7 @@ pub(crate) fn admit_simulation_plan(
 fn require_resolution_basis(
     basis: &SimulationPlanResolutionBasis,
 ) -> Result<(), SimulationPlanDenial> {
-    if basis.digest == [0; 32] || basis.canonical_basis_entry_count == 0 {
+    if *basis.digest.bytes() == [0; 32] || basis.canonical_basis_entry_count == 0 {
         return Err(SimulationPlanDenial::ProofProgressionSkipped);
     }
     Ok(())

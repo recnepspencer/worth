@@ -11,6 +11,13 @@ use worth_relational::facade::transactions::WorkerIntentBatch;
 use super::RealReferenceFixture;
 
 impl RealReferenceFixture {
+    /// Borrow the fixture's actual Native owner for authenticated cleanup.
+    pub(crate) fn relational_runtime(
+        &self,
+    ) -> &worth_relational::facade::runtime::RelationalRuntime {
+        &self._relational_runtime
+    }
+
     pub(crate) fn reserve_relational_fork_target(
         &self,
         target: &str,

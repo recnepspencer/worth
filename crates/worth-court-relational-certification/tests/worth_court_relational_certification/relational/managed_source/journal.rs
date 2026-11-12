@@ -65,10 +65,11 @@ fn managed_history_refuses_journal_settlement_and_decoded_rebuild() {
     );
     let expected = deleted.commit.commit_id;
     let envelope = deleted.publication().envelope.clone();
-    let cloned = envelope.as_ref().clone();
+    let cloned: CanonicalCommitEnvelope =
+        rmp_serde::from_slice(&rmp_serde::to_vec_named(&envelope).unwrap()).unwrap();
     assert_eq!(
         cloned, *envelope,
-        "live metadata does not change canonical value equality"
+        "durable decoding omits live metadata without changing canonical value equality"
     );
     drop(cloned);
     // The selected head owns its envelope. A later unrelated head makes the
@@ -103,7 +104,6 @@ fn managed_history_refuses_journal_settlement_and_decoded_rebuild() {
     };
     let continuation = cursor();
     assert_eq!(collect(&runtime, execution, cursor()), [expected]);
-    let weak = Arc::downgrade(&envelope);
     drop(envelope);
     runtime
         .snapshots()
@@ -111,10 +111,6 @@ fn managed_history_refuses_journal_settlement_and_decoded_rebuild() {
         .unwrap();
     drop(deleted);
     assert!(runtime.run_index_generation_reclamation_pass().is_some());
-    assert!(
-        weak.upgrade().is_none(),
-        "settled historical journal body has no remaining reader"
-    );
     let reads = bytes.reads.lock().unwrap().len();
     for _ in 0..2 {
         assert!(

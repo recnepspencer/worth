@@ -4,7 +4,7 @@
 
 use super::prepared_currentness::grants_named;
 use super::*;
-use crate::BankMutationCommitOutcome;
+use crate::estate_progression::delegation::command_courts::CommandCourtOutcome;
 
 #[test]
 fn a_delegation_that_does_not_read_its_child_id_stales_then_is_denied() {
@@ -45,7 +45,7 @@ fn a_delegation_that_does_not_read_its_child_id_stales_then_is_denied() {
     assert!(
         matches!(
             retry,
-            WorthQueryApplicationCommitOutcome::AlreadyCommitted(_)
+            WorthQueryApplicationCommitOutcome::RecoveredCommitted(_)
         ),
         "a retry of the committed delegation replays: {retry:?}"
     );
@@ -66,7 +66,7 @@ fn a_revoked_child_id_cannot_be_delegated_again() {
         &request_scope(),
     )
     .expect("the child delegates");
-    assert!(matches!(delegated, BankMutationCommitOutcome::Committed(_)));
+    assert!(matches!(delegated, CommandCourtOutcome::Committed(_)));
     let revoked = crate::estate_progression::delegation::command_courts::complete_revocation(
         &fixture.runtime,
         &specialist,
@@ -78,7 +78,7 @@ fn a_revoked_child_id_cannot_be_delegated_again() {
         &request_scope(),
     )
     .expect("the child's status changes under the unique id");
-    assert!(matches!(revoked, BankMutationCommitOutcome::Committed(_)));
+    assert!(matches!(revoked, CommandCourtOutcome::Committed(_)));
 
     let again = commit(
         &fixture,

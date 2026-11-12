@@ -6,8 +6,11 @@ fn notify_death_compensation_consumes_its_exact_handle_contract() {
     compensate_world
         .transport
         .under(FaultScript::CommitThenLoseResponse, PATIENT);
-    let receipt = compensate_world.commit_notification(82);
-    let handle = compensate_world.open_recovery(&receipt);
+    let receipt_closed = compensate_world.commit_notification(82);
+    let receipt = receipt_closed
+        .live_receipt()
+        .expect("fresh source retains its full native owner");
+    let handle = compensate_world.open_recovery(receipt);
     let specialist = compensate_world.fixture.authenticate_specialist();
     let action = compensate_world.specialist_action();
     let admitted = compensate_world
@@ -25,8 +28,11 @@ fn notify_death_reconciliation_consumes_its_exact_handle_contract() {
     reconcile_world
         .transport
         .under(FaultScript::CommitThenLoseResponse, PATIENT);
-    let receipt = reconcile_world.commit_notification(81);
-    let handle = reconcile_world.open_recovery(&receipt);
+    let receipt_closed = reconcile_world.commit_notification(81);
+    let receipt = receipt_closed
+        .live_receipt()
+        .expect("fresh source retains its full native owner");
+    let handle = reconcile_world.open_recovery(receipt);
     let specialist = reconcile_world.fixture.authenticate_specialist();
     let action = reconcile_world.specialist_action();
     let admitted = reconcile_world

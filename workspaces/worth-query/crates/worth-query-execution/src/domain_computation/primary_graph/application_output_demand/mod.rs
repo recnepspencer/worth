@@ -14,9 +14,16 @@ pub use original_outputs::{
     WorthQueryCompletedOriginalReadOutputs, WorthQueryOriginalReadOutputDenial,
 };
 mod currentness;
+mod source_replay;
+pub use source_replay::WorthQueryOutputSourceReplay;
+mod publication;
 pub use completed_outputs::WorthQueryCompletedRequiredOutputs;
 pub use completed_read::WorthQueryCompletedReadOutputs;
 pub(in crate::domain_computation::primary_graph) use currentness::CurrentOwnedRouteDenial;
+pub use publication::WorthQueryRecoveredProducerPublication;
+pub(in crate::domain_computation::primary_graph) use publication::{
+    OutputPublicationView, RecoveredProducerOutputFacts,
+};
 mod fulfilled_root;
 pub use fulfilled_root::WorthQueryFulfilledRequiredRoot;
 mod readiness_delivery;
@@ -86,3 +93,6 @@ pub(in crate::domain_computation::primary_graph) use registry::join_observation:
 
 pub use registry::WorthQueryDiscoveredRetentionControlDenial;
 pub use registry::WorthQueryDiscoveredRetentionReservationForTest;
+#[cfg(test)]
+#[path = "mod_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;

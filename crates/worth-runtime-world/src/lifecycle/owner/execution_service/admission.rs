@@ -51,8 +51,10 @@ where
         }
         self.state
             .bridge
+            .as_ref()
+            .expect("serving World owns correspondence")
             .compare_current_exact(attempt.predecessor_basis().correspondence_basis())
-            .map_err(|_| NoEffectCause::CorrespondenceRebindRequired)?;
+            .map_err(NoEffectCause::CorrespondenceAdmissionDenied)?;
         // The exact product cell is rechecked last, immediately before the
         // first owner effect, so a concurrent product publication cannot make
         // this attempt appear current after its earlier checks passed.

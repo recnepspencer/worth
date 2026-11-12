@@ -19,7 +19,7 @@ fn a_held_read_keeps_only_its_own_commit_until_it_is_released() {
     );
     assert_eq!(read_at(runtime, branch, &held), 2);
     assert!(
-        !selectable(runtime, branch, &detached),
+        !recorded_is_retained(runtime, branch, &detached),
         "a replay answer holds no history, so its retired commit is unavailable"
     );
 
@@ -71,19 +71,29 @@ fn inspection_of_a_retired_commit_fails_closed_and_its_replay_still_answers() {
     commit(&host, branch, 1, key);
 
     let replayed = replay(&host, branch, 1, key);
-    assert!(selectable(runtime, branch, &replayed));
+    assert!(recorded_is_retained(runtime, branch, &replayed));
 
     commit(&host, branch, 2, 0x2710_0302);
     commit(&host, branch, 3, 0x2710_0303);
     assert!(
-        !selectable(runtime, branch, &replayed),
+        !recorded_is_retained(runtime, branch, &replayed),
         "inspection of a retired commit is unavailable"
     );
     match set_retention(&host, branch, 1, key).expect("the replay settles") {
-        WorthQueryApplicationMutationOutcome::AlreadyCommitted(receipt) => assert_eq!(
-            receipt, replayed,
-            "a retired commit's replay answers its own receipt from evidence"
-        ),
+        WorthQueryApplicationMutationOutcome::RecoveredCommitted(receipt) => {
+            assert_eq!(receipt.commit_reference(), replayed.commit_reference());
+            assert_eq!(receipt.outcome_identity(), replayed.outcome_identity());
+            assert_eq!(
+                receipt.idempotency_key_identity(),
+                replayed.idempotency_key_identity()
+            );
+            assert_eq!(receipt.new_product_head(), replayed.new_product_head());
+            assert_eq!(receipt.attempt_identity(), replayed.attempt_identity());
+            assert_eq!(
+                receipt.semantic_result().semantic(),
+                replayed.semantic_result().semantic()
+            );
+        }
         other => panic!("a retired commit's replay never commits again: {other:?}"),
     }
     assert_eq!(

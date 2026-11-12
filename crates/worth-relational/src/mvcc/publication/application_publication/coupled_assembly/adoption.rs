@@ -24,7 +24,7 @@ impl BoundAuthoredCoupling {
                 for intent in commands
                     .merged_intents
                     .iter()
-                    .chain(&candidate.commands.merged_intents)
+                    .chain(&candidate.commands.plan().merged_intents)
                 {
                     checkpoint(
                         context,
@@ -36,7 +36,9 @@ impl BoundAuthoredCoupling {
             })
             .map_err(custody::execution_stop)?
             .0?;
-        if !candidate.identity.same_proposal_sequence(identity) || candidate.commands != *commands {
+        if !candidate.identity.same_proposal_sequence(identity)
+            || candidate.commands.plan() != commands
+        {
             return Err(
                 part::reject(Cause::ForeignCoupledOwner, self.owners.source.subject()).into(),
             );

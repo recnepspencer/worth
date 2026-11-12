@@ -8,6 +8,8 @@ use std::sync::{Arc, Weak};
 pub(crate) struct RetainedCanonicalPosition {
     position: PatchStreamPosition,
     envelope: Weak<CanonicalCommitEnvelope>,
+    // LAST: release the actual Weak before its shared fixed allocation bill.
+    _control_allocation: Option<Arc<crate::history::data::CanonicalEnvelopeControlAllocation>>,
 }
 impl RetainedCanonicalPosition {
     /// The sealed input binds this exact body allocation to its position.
@@ -15,6 +17,7 @@ impl RetainedCanonicalPosition {
         Self {
             position: commit.position(),
             envelope: Arc::downgrade(commit.canonical_arc()),
+            _control_allocation: commit.envelope().control_allocation.clone(),
         }
     }
     pub(crate) fn position(&self) -> PatchStreamPosition {
@@ -75,13 +78,13 @@ mod tests {
                 .pop()
                 .unwrap()
         };
-        let copy = Arc::new(sealed.envelope().clone());
+        let copy = Arc::new(sealed.envelope().copy_original_for_test(execution));
         let admitted = CanonicalPositionAdmission::equivalent(&sealed, copy.clone()).unwrap();
         let rebound = PositionedCanonicalCommit::admit(admitted);
         assert_eq!(rebound.position(), sealed.position());
         assert!(Arc::ptr_eq(rebound.canonical_arc(), &copy));
-        let mut different = copy.as_ref().clone();
-        different.commit.commit_id.0 += 1;
+        let mut different = copy.copy_original_for_test(execution);
+        different.body_mut_for_test().commit.commit_id.0 += 1;
         assert!(CanonicalPositionAdmission::equivalent(&sealed, Arc::new(different)).is_err());
     }
 }

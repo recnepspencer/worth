@@ -13,6 +13,7 @@ struct RelationalBranchRootIdentityCounters {
     next_schema_authority_id: AtomicU64,
     next_region_id: AtomicU64,
     next_reachability_id: AtomicU64,
+    _memory: Option<worth_execution::ExecutionMemoryReservation>,
 }
 
 impl Default for RelationalBranchRootIdentityIssuer {
@@ -23,12 +24,29 @@ impl Default for RelationalBranchRootIdentityIssuer {
                 next_schema_authority_id: AtomicU64::new(1),
                 next_region_id: AtomicU64::new(1),
                 next_reachability_id: AtomicU64::new(1),
+                _memory: None,
             }),
         }
     }
 }
 
 impl RelationalBranchRootIdentityIssuer {
+    pub(crate) fn for_request(
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> Result<Self, RelationalBranchRootCaptureDenial> {
+        let memory =
+            super::reserve_arc_memory::<RelationalBranchRootIdentityCounters>(Some(execution))?;
+        Ok(Self {
+            counters: Arc::new(RelationalBranchRootIdentityCounters {
+                next_root_id: AtomicU64::new(1),
+                next_schema_authority_id: AtomicU64::new(1),
+                next_region_id: AtomicU64::new(1),
+                next_reachability_id: AtomicU64::new(1),
+                _memory: memory,
+            }),
+        })
+    }
+
     pub(super) fn next_reachability_id(&self) -> u64 {
         self.counters.next_reachability_id.load(Ordering::Relaxed)
     }
@@ -138,6 +156,7 @@ impl RelationalBranchRootIdentityIssuer {
                 next_reachability_id: AtomicU64::new(
                     self.counters.next_reachability_id.load(Ordering::Relaxed),
                 ),
+                _memory: None,
             }),
         }
     }

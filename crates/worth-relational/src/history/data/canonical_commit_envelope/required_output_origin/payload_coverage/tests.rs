@@ -1,12 +1,13 @@
 //! Malformed twins start from actual native Create artifacts; none mints custody.
 use super::*;
+use crate::history::data::CanonicalCommitEnvelopeBody;
 use crate::identity::data::KindId;
 use crate::tests::support::*;
 use worth_execution::{ExecutionRequest, ExecutionWorkCeiling};
 
 fn validate(
     execution: &ExecutionRequest<'_, '_>,
-    envelope: &CanonicalCommitEnvelope,
+    envelope: &CanonicalCommitEnvelopeBody,
     id: EntityId,
     plan: &LoweredAspectContractPlan,
     payload: Option<&AuthoritativeRecordAspectState>,
@@ -46,34 +47,50 @@ fn classified_empty_birth_refuses_missing_or_corrupt_native_create_evidence() {
         .expect("fixture root has admitted Full custody")
         .unwrap();
     let row = partition.entity_arena.get(&id).unwrap();
-    let payload = row.extra().authoritative_aspect_state.as_ref();
+    let payload = row.extra().authoritative_aspect_state();
     assert!(payload.is_none());
     assert!(validate(execution, envelope, id, plan, payload).is_ok());
 
-    let mut missing_allocation = envelope.as_ref().clone();
-    missing_allocation.record_allocations.clear();
-    let mut duplicate_allocation = envelope.as_ref().clone();
+    let mut missing_allocation = envelope.copy_original_for_test(execution);
+    missing_allocation
+        .body_mut_for_test()
+        .record_allocations
+        .clear();
+    let mut duplicate_allocation = envelope.copy_original_for_test(execution);
     duplicate_allocation
+        .body_mut_for_test()
         .record_allocations
         .push(envelope.record_allocations[0].clone());
-    let mut missing_create = envelope.as_ref().clone();
-    missing_create.patch.authoritative_record_patches.clear();
-    let mut duplicate_create = envelope.as_ref().clone();
+    let mut missing_create = envelope.copy_original_for_test(execution);
+    missing_create
+        .body_mut_for_test()
+        .patch
+        .authoritative_record_patches
+        .clear();
+    let mut duplicate_create = envelope.copy_original_for_test(execution);
     duplicate_create
+        .body_mut_for_test()
         .patch
         .authoritative_record_patches
         .push(envelope.patch.authoritative_record_patches[0].clone());
-    let mut updated = envelope.as_ref().clone();
-    updated.patch.authoritative_record_patches[0].structural_change =
-        RecordStructuralChange::Updated;
-    let mut missing_schema = envelope.as_ref().clone();
-    missing_schema.schema_authority.entity_kinds.clear();
-    let mut wrong_kind = envelope.as_ref().clone();
-    wrong_kind.schema_authority.entity_kinds[0].kind_id = KindId(99);
-    let mut wrong_revision = envelope.as_ref().clone();
-    wrong_revision.schema_authority.entity_kinds[0]
-        .aspect_plan_revision
-        .0 ^= 1;
+    let mut updated = envelope.copy_original_for_test(execution);
+    updated
+        .body_mut_for_test()
+        .patch
+        .authoritative_record_patches[0]
+        .structural_change = RecordStructuralChange::Updated;
+    let mut missing_schema = envelope.copy_original_for_test(execution);
+    let mut parts = (*missing_schema.schema_authority).clone();
+    parts.entity_kinds.clear();
+    missing_schema.body_mut_for_test().schema_authority = parts.into();
+    let mut wrong_kind = envelope.copy_original_for_test(execution);
+    let mut parts = (*wrong_kind.schema_authority).clone();
+    parts.entity_kinds[0].kind_id = KindId(99);
+    wrong_kind.body_mut_for_test().schema_authority = parts.into();
+    let mut wrong_revision = envelope.copy_original_for_test(execution);
+    let mut parts = (*wrong_revision.schema_authority).clone();
+    parts.entity_kinds[0].aspect_plan_revision.0 ^= 1;
+    wrong_revision.body_mut_for_test().schema_authority = parts.into();
     for corrupt in [
         missing_allocation,
         duplicate_allocation,
@@ -89,8 +106,12 @@ fn classified_empty_birth_refuses_missing_or_corrupt_native_create_evidence() {
             Err(OutputPayloadCoverageFailure::Corrupt(_))
         ));
     }
-    let mut opaque = envelope.as_ref().clone();
-    opaque.patch.authoritative_record_patches[0].contains_opaque_aspect = true;
+    let mut opaque = envelope.copy_original_for_test(execution);
+    opaque
+        .body_mut_for_test()
+        .patch
+        .authoritative_record_patches[0]
+        .contains_opaque_aspect = true;
     assert!(matches!(
         validate(execution, &opaque, id, plan, payload),
         Err(OutputPayloadCoverageFailure::Unsupported(
@@ -128,7 +149,7 @@ fn classified_nonempty_birth_cannot_use_empty_storage_or_lose_operation_coverage
         .expect("fixture root has admitted Full custody")
         .unwrap();
     let row = partition.entity_arena.get(&id).unwrap();
-    let payload = row.extra().authoritative_aspect_state.as_ref().unwrap();
+    let payload = row.extra().authoritative_aspect_state().unwrap();
     assert!(validate(execution, envelope, id, plan, Some(payload)).is_ok());
     assert!(matches!(
         validate(execution, envelope, id, plan, None),
@@ -143,8 +164,12 @@ fn classified_nonempty_birth_cannot_use_empty_storage_or_lose_operation_coverage
         .contains("reason=empty-payload-with-operations"));
     assert!(error.detail().contains("operation_ordinal=0"));
     assert_eq!(error.context().affected_records, [RecordRef::Entity(id)]);
-    let mut omitted_operation = envelope.as_ref().clone();
-    omitted_operation.patch.authoritative_record_patches[0].authoritative_patch =
+    let mut omitted_operation = envelope.copy_original_for_test(execution);
+    omitted_operation
+        .body_mut_for_test()
+        .patch
+        .authoritative_record_patches[0]
+        .authoritative_patch =
         crate::publication::patch::data::PublishedAuthoritativePatch::empty();
     assert!(matches!(
         validate(execution, &omitted_operation, id, plan, Some(payload)),
@@ -157,8 +182,12 @@ fn classified_nonempty_birth_cannot_use_empty_storage_or_lose_operation_coverage
             UnsupportedPayload::EmptyWithBindings { .. }
         ))
     ));
-    let mut opaque = envelope.as_ref().clone();
-    opaque.patch.authoritative_record_patches[0].contains_opaque_aspect = true;
+    let mut opaque = envelope.copy_original_for_test(execution);
+    opaque
+        .body_mut_for_test()
+        .patch
+        .authoritative_record_patches[0]
+        .contains_opaque_aspect = true;
     assert!(matches!(
         validate(execution, &opaque, id, plan, Some(payload)),
         Err(OutputPayloadCoverageFailure::Unsupported(

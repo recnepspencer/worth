@@ -5,7 +5,7 @@ use crate::domain_computation::primary_graph::output_lineage::current_output::re
 pub(super) fn verify<Schema, Family>(
     application: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-    runtime: &mut worth_relational::facade::runtime::RelationalRuntime,
+    runtime: &worth_relational::facade::runtime::RelationalRuntime,
     selected: &crate::domain_computation::primary_graph::WorthQuerySelectedProductOperation<
         '_,
         Schema,

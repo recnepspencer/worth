@@ -22,6 +22,10 @@ pub(crate) struct RelationalResidencyLease<Level> {
 }
 
 impl<Level> RelationalResidencyLease<Level> {
+    pub(super) fn retire_native(&self) {
+        self.custody.retire_native();
+    }
+
     pub(super) fn into_owned_contents(self) -> crate::storage::overlay::PartitionState {
         let Self {
             custody, region, ..
@@ -104,11 +108,13 @@ impl<Level> RelationalResidencyLease<Level> {
             self.head_symbol_admission_identity()
         };
         symbols.demand_region_symbols_incremental(execution, identity, None, || {
-            let captured = super::required_symbols::CapturedSymbolRequirements::capture(
-                lane,
-                &self.region.partition,
-                full,
-            );
+            let captured =
+                super::required_symbols::CapturedSymbolRequirements::capture_for_request(
+                    lane,
+                    &self.region.partition,
+                    full,
+                    execution,
+                )?;
             let required = captured
                 .get(full)
                 .expect("the actual resident lease supplies its complete requested closure");

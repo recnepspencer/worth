@@ -11,8 +11,10 @@ use crate::physical_runtime::{
     RuntimeIdentity,
 };
 
+mod capture;
 mod reclaim_guard;
 mod retained_snapshot;
+mod retirement;
 mod terminal_head_hold;
 pub(in crate::physical_runtime) use terminal_head_hold::TerminalHeadNoReaderOrRecoveryHold;
 
@@ -92,64 +94,6 @@ impl RootProtectionRegistry {
         })
     }
 
-    /// Called only while the authoritative current-root mutex is held.
-    pub(in crate::physical_runtime) fn capture(
-        self: &Arc<Self>,
-        root: &DurablePhysicalRootManifest,
-    ) -> Result<PhysicalRootReadLease, PhysicalReadProtectionDenial> {
-        let mut state = self
-            .state
-            .lock()
-            .unwrap_or_else(|poisoned| poisoned.into_inner());
-        let lifecycle = self.lifecycle.snapshot();
-        if state.revoked || lifecycle.phase != ObservedLifecyclePhase::RecordServing {
-            return Err(PhysicalReadProtectionDenial::Revoked);
-        }
-        let slot = state
-            .free
-            .ok_or(PhysicalReadProtectionDenial::ProtectionLimit)?;
-        let key = root.root_cell();
-        state.index_probes = state.index_probes.saturating_add(1);
-        let (visited, present) = state.roots.contains(&root.generation());
-        state.examined_entries = state.examined_entries.saturating_add(visited);
-        let fresh = !present;
-        if fresh && state.roots.len() >= self.policy.roots().get() as usize {
-            return Err(PhysicalReadProtectionDenial::RetainedRootLimit);
-        }
-        state.index_probes = state.index_probes.saturating_add(1);
-        let tail = fresh.then(|| inline_tail(root)).flatten();
-        {
-            let protected = state
-                .roots
-                .entry(root.generation())
-                .or_insert_with(|| ProtectedRoot {
-                    manifest: root.clone(),
-                    acquisitions: 0,
-                });
-            assert_eq!(
-                &protected.manifest, root,
-                "one root cell cannot name competing root contents"
-            );
-            protected.acquisitions += 1;
-        }
-        if let Some(tail) = tail {
-            *state.inline_tails.entry(tail).or_insert(0) += 1;
-        }
-        state.free = state.slots[slot].next_free;
-        state.slots[slot] = RegistrationSlot {
-            root: Some(key),
-            owners: 1,
-            next_free: None,
-        };
-        state.live += 1;
-        state.acquisitions = state.acquisitions.saturating_add(1);
-        Ok(PhysicalRootReadLease::new(
-            Arc::clone(self),
-            slot,
-            PhysicalProtectedRootObservation::new(self.runtime, lifecycle.generation, key),
-        ))
-    }
-
     pub(super) fn share(&self, slot: usize, root: RootPublicationCell) {
         let mut state = self
             .state
@@ -172,6 +116,10 @@ impl RootProtectionRegistry {
             .state
             .lock()
             .unwrap_or_else(|poisoned| poisoned.into_inner());
+        Self::release_registered(&mut state, slot, root);
+    }
+
+    fn release_registered(state: &mut Registrations, slot: usize, root: RootPublicationCell) {
         let entry = &mut state.slots[slot];
         assert_eq!(
             entry.root,
@@ -222,10 +170,29 @@ impl RootProtectionRegistry {
         &self,
         binding: PhysicalProtectedRootObservation,
     ) -> Result<(), PhysicalReadProtectionDenial> {
-        let state = self
-            .state
-            .lock()
-            .unwrap_or_else(|poisoned| poisoned.into_inner());
+        let state = self.state.lock().unwrap_or_else(|error| error.into_inner());
+        self.require_live_state(&state, binding)
+    }
+
+    pub(super) fn try_require_live(
+        &self,
+        binding: PhysicalProtectedRootObservation,
+    ) -> Result<(), crate::physical_runtime::PhysicalCheckpointReadProtectionDenial> {
+        use crate::physical_runtime::PhysicalCheckpointReadProtectionDenial as Failure;
+        let state = match self.state.try_lock() {
+            Ok(state) => state,
+            Err(std::sync::TryLockError::Poisoned(error)) => error.into_inner(),
+            Err(std::sync::TryLockError::WouldBlock) => return Err(Failure::Busy),
+        };
+        self.require_live_state(&state, binding)
+            .map_err(Failure::Protection)
+    }
+
+    fn require_live_state(
+        &self,
+        state: &Registrations,
+        binding: PhysicalProtectedRootObservation,
+    ) -> Result<(), PhysicalReadProtectionDenial> {
         let lifecycle = self.lifecycle.snapshot();
         if state.revoked
             || lifecycle.phase != ObservedLifecyclePhase::RecordServing

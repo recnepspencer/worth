@@ -314,3 +314,6 @@ impl ProgramOutputRecord {
         }
     }
 }
+#[cfg(test)]
+#[path = "program_output_settlement_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;

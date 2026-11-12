@@ -22,6 +22,12 @@ pub struct WorthQueryPrimaryGraphCommittedApplication {
 }
 
 impl WorthQueryPrimaryGraphCommittedApplication {
+    pub(in crate::domain_computation::primary_graph) fn publication_for_home_retirement(
+        &mut self,
+    ) -> &mut crate::domain_computation::primary_graph::WorthQueryCommittedProductPublication {
+        &mut self.committed_product_publication
+    }
+
     pub(super) fn from_publication(
         seal: super::WorthQueryCommittedApplicationPublicationSeal,
     ) -> Self {
@@ -101,15 +107,6 @@ impl WorthQueryPrimaryGraphCommittedApplication {
         crate::domain_computation::execution_runtime::product_world::WorthQueryCommitHistoryHold,
     > {
         self.committed_product_publication.take_history()
-    }
-
-    /// Keeps this copy's commit in World history for as long as it lives:
-    /// the fresh caller's receipt holds what its own commit published.
-    pub(in crate::domain_computation::primary_graph) fn hold_history(
-        &mut self,
-        hold: crate::domain_computation::execution_runtime::product_world::WorthQueryCommitHistoryHold,
-    ) {
-        self.committed_product_publication.hold_history(hold);
     }
 
     pub(in crate::domain_computation::primary_graph) fn seal_aftermath_causality(

@@ -82,7 +82,7 @@ fn ordinary_and_advanced_retry_share_typed_denials_and_exhaustion() {
                 panic!("required retry proposal did not publish");
             };
             assert_eq!(performed.node_path(), *expected);
-            assert!(!performed.replayed());
+            assert!(performed.receipt().changed_record_count() > 0);
         }
     }
     let WorkflowProgressOutcome::Completed(advanced_terminal) =

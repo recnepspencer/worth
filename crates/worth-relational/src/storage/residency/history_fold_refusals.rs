@@ -12,7 +12,13 @@ fn an_undeclared_base_is_refused_before_its_payload_is_read() {
     let fixture = region_with_history();
     let request = crate::test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&request);
-    let head = region_load::load_head(&fixture.cold, execution, 1 << 24).unwrap();
+    let head = region_load::load_head(
+        &fixture.cold,
+        fixture.cold.source.as_ref().unwrap(),
+        execution,
+        1 << 24,
+    )
+    .unwrap();
     let (mut cold, source) = encode_layer(&fixture.cold, &fixture.source, &head.partition);
     cold.history_members = Arc::default();
     let cell = RelationalRegionResidency::cold(cold).unwrap();
@@ -33,11 +39,23 @@ fn shared_row_bases_cannot_expand_beyond_the_original_read_limit() {
     let fixture = region_with_history();
     let request = crate::test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&request);
-    let head = region_load::load_head(&fixture.cold, execution, 1 << 24).unwrap();
-    let mut complete = region_load::load_full(&fixture.cold, &head, execution, 1 << 24)
-        .unwrap()
-        .partition
-        .clone();
+    let head = region_load::load_head(
+        &fixture.cold,
+        fixture.cold.source.as_ref().unwrap(),
+        execution,
+        1 << 24,
+    )
+    .unwrap();
+    let mut complete = region_load::load_full(
+        &fixture.cold,
+        fixture.cold.source.as_ref().unwrap(),
+        &head,
+        execution,
+        1 << 24,
+    )
+    .unwrap()
+    .partition
+    .clone();
     let slot = fixture.entity.slot_index();
     let extra = complete
         .entity_arena
@@ -70,7 +88,7 @@ fn shared_row_bases_cannot_expand_beyond_the_original_read_limit() {
         partition_id: cold.partition_id,
         schema_carrier_digest: cold.schema_carrier_digest,
         row_index: 0,
-        kind_commitment: cold.kind_authority.history,
+        kind_commitment: *cold.kind_authority.history.bytes(),
     };
     let per_row = image.entities[0]
         .earlier

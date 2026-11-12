@@ -26,35 +26,9 @@ impl RuntimeWorldClockSource for FixedClock {
 
 type TestOwner = RuntimeWorldOwnerRoot<(), (), (), (), ()>;
 
-fn budgets(live_branches: u64) -> RuntimeWorldBudgets {
-    RuntimeWorldBudgets::install(RuntimeWorldBudgetInstallation {
-        branches: RuntimeWorldBranchBudgetInstallation {
-            live_product_branches: live_branches,
-        },
-        history: RuntimeWorldHistoryBudgetInstallation {
-            retained_composite_commits: 8,
-            history_metadata_bytes: 4096,
-        },
-        observations: RuntimeWorldObservationBudgetInstallation {
-            active_observations: 8,
-        },
-        publication: RuntimeWorldPublicationBudgetInstallation {
-            active_publication_attempts: 4,
-        },
-        recovery: RuntimeWorldRecoveryBudgetInstallation {
-            retained_product_unpublished_records: 2,
-            retained_partial_metadata_bytes: 4096,
-        },
-        retention: RuntimeWorldRetentionBudgetInstallation {
-            unique_exact_component_pins: 8,
-            in_flight_pin_acquisition_reservations: 8,
-        },
-        custody: RuntimeWorldCustodyBudgetInstallation {
-            owner_created_component_custody_records: 2,
-        },
-    })
-    .expect("branch test budgets")
-}
+#[path = "retirement_tests/capacity_profile.rs"]
+mod capacity_profile;
+use capacity_profile::budgets;
 
 /// Reuse on both owners: the child selects the same component commit the
 /// source already names, with no owner movement at all.
@@ -127,6 +101,10 @@ pub(super) fn create_reused_branch(
     )
     .expect("exact reuse is admitted")
     {
+        RuntimeWorldBranchCreationOutcome::NoEffect(_)
+        | RuntimeWorldBranchCreationOutcome::ReleasedOriginal(_) => {
+            panic!("memory creation cannot return a Home publication fate")
+        }
         RuntimeWorldBranchCreationOutcome::Performed(observation) => observation,
         RuntimeWorldBranchCreationOutcome::ProductUnpublished(_) => {
             panic!("exact reuse did not produce a branch observation")
@@ -189,12 +167,14 @@ pub(super) fn owner_lifecycles(
     (
         owner
             .state
-            .relational
+            .relational_services()
             .lifecycle_port()
             .owner_lifecycle_observation(),
         owner
             .state
             .signal
+            .memory_services()
+            .expect("memory-only retirement fixture")
             .lifecycle_port()
             .owner_lifecycle_observation(),
     )
@@ -291,12 +271,14 @@ fn branch_capacity_denies_before_identity_or_retention_work_for_fork_input() {
 
     let relational_lifecycle = owner
         .state
-        .relational
+        .relational_services()
         .lifecycle_port()
         .owner_lifecycle_observation();
     let signal_lifecycle = owner
         .state
         .signal
+        .memory_services()
+        .expect("memory-only retirement fixture")
         .lifecycle_port()
         .owner_lifecycle_observation();
     assert!(matches!(
@@ -316,7 +298,7 @@ fn branch_capacity_denies_before_identity_or_retention_work_for_fork_input() {
     assert_eq!(
         owner
             .state
-            .relational
+            .relational_services()
             .lifecycle_port()
             .owner_lifecycle_observation(),
         relational_lifecycle
@@ -325,6 +307,8 @@ fn branch_capacity_denies_before_identity_or_retention_work_for_fork_input() {
         owner
             .state
             .signal
+            .memory_services()
+            .expect("memory-only retirement fixture")
             .lifecycle_port()
             .owner_lifecycle_observation(),
         signal_lifecycle

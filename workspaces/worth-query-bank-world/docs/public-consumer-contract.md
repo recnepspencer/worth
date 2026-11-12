@@ -501,9 +501,28 @@ postures are `AcceptedPending`, `AlreadyAccepted`, `Performed`, and
 The rail retains immutable signed bytes through bounded retry and reports
 exhausted obligations for reconciliation. HTTPS installation requires pinned
 Bank TLS trust plus a distinct pinned Bank ACK key. Both rail delivery and
-Query accepted custody are process-local; orderly rail close
-reports unresolved obligations, while forced process death has no persistence
-promise.
+Query accepted rail custody are process-local; orderly rail close reports
+unresolved obligations. This rail/workflow contract does not promise persistence
+of those owners after forced process death.
+
+## Relational-only persistence boundary
+
+A supported Relational-only application opened through Host
+`WorthQueryApplicationHomeRequest` at `Directory(path)` can reopen its journal-only
+Home after process death. The same original mutation key, intent and product
+affinity can resolve to `RecoveredCommitted` without executing the business
+handler again. A fresh opener needs fresh authenticated authority and newly
+issued selectors, capabilities and sessions; old live handles refuse with typed
+`StaleIncarnation`. Use the owning Directory close path for orderly shutdown.
+See [install or reopen](../../../docs/build-an-application.md#4-install-or-reopen).
+
+This is a platform contract for supported Relational-only flows. The current Bank
+composition uses the process-local installation path and includes producers,
+conditionals and workflow/rail owners. It does not acquire this Directory
+persistence contract. Its response-loss and user-node restart controls do not
+prove Bank-server process-death recovery. Installing an unsupported authored
+Signal/Bridge seed in a Directory refuses with `UnsupportedSeed`; do not switch
+to MemoryOnly and report the flow as durable.
 
 ## Request and continuation handling
 
@@ -534,7 +553,8 @@ The local host handoff `take_released_cleanup` transfers original uncommitted ev
 with an exact installed-runtime keeper after lawful physical release. Reply loss
 before host receipt returns the evidence through a reserved transport slot.
 See [owning HTTP commands](http-owning-money.md#estate-effects-and-native-cleanup-custody)
-for current wire and host usage. Abandonment has no disposal or crash-durability promise.
+for current wire and host usage. Abandonment does not certify disposal or
+persistence of those transport and native-cleanup owners.
 
 
 ## Guarded payment operation ownership

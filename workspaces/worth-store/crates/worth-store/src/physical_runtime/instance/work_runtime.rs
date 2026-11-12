@@ -251,3 +251,6 @@ fn deny_batch_before_effect(
             .collect(),
     )
 }
+#[cfg(test)]
+#[path = "work_runtime_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;

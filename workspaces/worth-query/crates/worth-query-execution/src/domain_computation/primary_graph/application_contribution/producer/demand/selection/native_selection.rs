@@ -225,7 +225,7 @@ impl<Schema: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRunti
                     Family::IDENTITY,
                 )
             })?;
-            let current = native.with_runtime_mut(
+            let current = native.with_runtime(
                 graph,
                 execution,
                 || {

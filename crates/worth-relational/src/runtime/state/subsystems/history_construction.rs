@@ -5,6 +5,33 @@ use std::sync::Arc;
 use super::RelationalBranchBasisRegistryMetrics;
 
 impl HistorySubsystem {
+    pub(crate) fn set_runtime_instance_id(
+        &mut self,
+        runtime_instance_id: u64,
+    ) -> Result<(), crate::branch::RelationalBranchObservationConstructionDenial> {
+        let metrics = Arc::new(RelationalBranchBasisRegistryMetrics::default());
+        self.record_branch_population_scan();
+        // Complete every fallible identity rebind before replacing live cells.
+        let cells = self
+            .branch_cells
+            .values()
+            .into_iter()
+            .map(|cell| {
+                let mut rebound = cell.rebind_runtime(runtime_instance_id)?;
+                rebound.bind_basis_registry_metrics(Arc::clone(&metrics));
+                Ok((rebound.identity().branch_id().clone(), rebound))
+            })
+            .collect::<Result<_, crate::branch::RelationalBranchObservationConstructionDenial>>()?;
+        self.branch_cells.restore_all(cells);
+        self.runtime_instance_id = runtime_instance_id;
+        self.basis_registry_metrics = metrics;
+        self.try_reset_retention_owner(runtime_instance_id)
+            .map_err(|_| {
+                crate::branch::RelationalBranchObservationConstructionDenial::RetentionUnavailable
+            })?;
+        Ok(())
+    }
+
     pub(crate) fn detached_owner_snapshot(
         &self,
     ) -> Result<Self, crate::runtime::RelationalRuntimeForkDenial> {
@@ -63,10 +90,6 @@ impl HistorySubsystem {
             .try_reset_retention_owner(snapshot.runtime_instance_id)
             .map_err(|_| crate::runtime::RelationalRuntimeForkDenial::CanonicalInventoryInvalid)?;
         Ok(snapshot)
-    }
-
-    pub(crate) fn restore_detached_recovery_snapshot(&mut self, snapshot: Self) {
-        *self = snapshot;
     }
 }
 

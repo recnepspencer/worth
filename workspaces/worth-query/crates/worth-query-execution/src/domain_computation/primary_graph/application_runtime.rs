@@ -1,5 +1,5 @@
 use crate::equality_type_id::EqualityTypeId as TypeId;
-use std::sync::atomic::{AtomicU32, AtomicU64};
+use std::sync::atomic::AtomicU64;
 use std::sync::Arc;
 use worth_query_installation::facade::{ApplicationSchema, WorthQueryInstalledApplicationSchema};
 
@@ -24,12 +24,23 @@ mod certification_controls;
 mod certification_cost;
 pub(crate) mod certification_managed_index;
 mod conditional_cleanup;
+mod home_retirement;
+mod oracle_observation;
+mod provider_session_preparation;
+pub(in crate::domain_computation::primary_graph) use home_retirement::RetiringPrimaryGraphRuntime;
+pub use home_retirement::{WorthQueryHomeRetirementDenial, WorthQueryHomeRetirementOwner};
+pub use oracle_observation::{
+    WorthQueryOracleHistoryPageForTest, WorthQueryOracleOccurrenceForTest,
+    WorthQueryOracleSignalMovementForTest,
+};
+mod durable_admission;
 mod execution_memory;
 pub(crate) mod external_dispatch_attempt;
 mod mutation_partition;
 mod teardown;
 pub use execution_memory::WorthQueryExecutionLeaseDenial;
 pub(crate) mod inbound_occurrence;
+
 pub(crate) mod inbound_publication;
 pub use certification_cost::{
     WorthQueryCertificationApplicationWork, WorthQueryCertificationCostObservation,
@@ -47,13 +58,14 @@ pub use inbound_occurrence::{
     WorthQueryInboundSourcePosture, WorthQueryInboundTerminalObservation,
     WorthQueryInboundVerifierHandle, WorthQueryInboundVerifierInstallationDenial,
 };
+pub use inbound_publication::PerformedInstalledTransportCompletion;
+pub use inbound_publication::WorthQueryPerformedInboundCompletion;
+pub use inbound_publication::WorthQueryUnpublishedInboundCompletion;
 pub(in crate::domain_computation::primary_graph) use inbound_publication::{
     InstalledTransportCompletion, InstalledTransportPendingReason, InstalledTransportResumeOutcome,
-    PerformedInstalledTransportCompletion,
 };
 pub(in crate::domain_computation) use inbound_publication::{
     WorthQueryInboundPublicationDenial, WorthQueryInboundPublicationOutcome,
-    WorthQueryPerformedInboundCompletion, WorthQueryUnpublishedInboundCompletion,
 };
 mod derived_relation;
 mod graph_participation;
@@ -118,12 +130,11 @@ pub(in crate::domain_computation) use external_dispatch_attempt::{
 /// }
 /// ```
 pub struct WorthQueryPrimaryGraphApplicationRuntime<Schema> {
+    // Cleanup custody precedes the core and its dependent typed registries.
+    pub(super) conditional_cleanup: conditional_cleanup::ConditionalRuntimeCleanup<Schema>,
     pub(in crate::domain_computation) installed_schema:
         WorthQueryInstalledApplicationSchema<Schema>,
     pub(in crate::domain_computation) runtime: WorthQueryApplicationRuntimeCore,
-    pub(super) conditional_operations: std::sync::Mutex<
-        super::conditional_operation::WorthQueryConditionalOperationRegistry<Schema>,
-    >,
     post_conditional_teardown: teardown::ApplicationPostConditionalTeardown,
     pub(super) mutation_handlers: super::handler::InstalledMutationHandlerRegistry<Schema>,
     pub(super) mutation_projection:
@@ -139,8 +150,6 @@ pub struct WorthQueryPrimaryGraphApplicationRuntime<Schema> {
     pub(super) signing_owners: std::sync::Mutex<std::collections::BTreeMap<worth_query_declaration::facade::application_program::ApplicationProgramRevision, worth_query_admission::facade::authentication_event::WorthQueryAuthenticationEventSigningOwner<Schema>>>,
     pub(super) installed_conditionals:
         super::application_contribution::WorthQueryInstalledApplicationConditionalRegistry<Schema>,
-    pub(super) installed_resources:
-        super::application_resource::installation::InstalledResourceRegistry<Schema>,
     pub(super) managed_indexes: super::application_query::managed_index::ManagedIndexProviderCatalog<Schema>,
     workflow_teardown: teardown::ApplicationWorkflowTeardown,
 }
@@ -335,3 +344,35 @@ pub(in crate::domain_computation::primary_graph) use operation_control::{
 };
 
 mod court_doors_for_test;
+#[cfg(test)]
+#[path = "application_runtime_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;
+
+#[cfg(test)]
+fn collect_owned_inline_type_sizes(census: &mut crate::inline_type_sizes::Census) {
+    {
+        let mut owner = census.owner::<WorthQueryPrimaryGraphApplicationRuntime<()>>("workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_runtime.rs", "WorthQueryPrimaryGraphApplicationRuntime", 128 * 1024);
+        owner.field::<conditional_cleanup::ConditionalRuntimeCleanup<()>>("conditional_cleanup");
+        owner.field::<WorthQueryInstalledApplicationSchema<()>>("installed_schema");
+        owner.field::<WorthQueryApplicationRuntimeCore>("runtime");
+        owner.field::<teardown::ApplicationPostConditionalTeardown>("post_conditional_teardown");
+        owner.field::<super::handler::InstalledMutationHandlerRegistry<()>>("mutation_handlers");
+        owner.field::<super::WorthQueryApplicationInvariantProjectionAuthority<()>>(
+            "mutation_projection",
+        );
+        owner.field::<super::application_contribution::WorthQueryInstalledApplicationProducerRegistry<()>>("installed_producers");
+        owner.field::<teardown::ApplicationOutputTeardown>("output_teardown");
+        owner.field::<std::collections::HashSet<TypeId>>("program_required_bindings");
+        owner.field::<std::collections::HashSet<TypeId>>("program_required_operations");
+        owner.field::<std::collections::HashSet<TypeId>>("workflow_guarded_operations");
+        owner.field::<Option<super::program_occurrence::WorthQueryInstalledProgramSupport<()>>>(
+            "program_support",
+        );
+        owner.field::<std::sync::Mutex<std::collections::BTreeMap<worth_query_declaration::facade::application_program::ApplicationProgramRevision, worth_query_admission::facade::authentication_event::WorthQueryAuthenticationEventSigningOwner<()>>>>("signing_owners");
+        owner.field::<super::application_contribution::WorthQueryInstalledApplicationConditionalRegistry<()>>("installed_conditionals");
+        owner.field::<super::application_query::managed_index::ManagedIndexProviderCatalog<()>>(
+            "managed_indexes",
+        );
+        owner.field::<teardown::ApplicationWorkflowTeardown>("workflow_teardown");
+    }
+}

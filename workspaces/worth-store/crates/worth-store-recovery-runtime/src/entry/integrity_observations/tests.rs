@@ -14,7 +14,8 @@ use worth_store::physical_runtime::{
 };
 use worth_store_physical_integrity::PhysicalByteRange;
 
-const ORIGINAL: u64 = 16 << 10;
+const SERVING: u64 = PhysicalRecoveryCoordinationCapacity::serving_evidence_backing_bytes();
+const ORIGINAL: u64 = SERVING + (16 << 10);
 
 #[test]
 fn observation_arc_is_prefunded_and_public_clones_keep_one_real_native_owner() {
@@ -28,7 +29,7 @@ fn observation_arc_is_prefunded_and_public_clones_keep_one_real_native_owner() {
     let first_slot_bytes = std::mem::size_of::<PhysicalRecoveryWalIntegrityObservation>() as u64;
     let held = coordination
         .certification_begin_recovery_allocation(
-            NonZeroU64::new(ORIGINAL - arc_bytes - first_slot_bytes + 1).unwrap(),
+            NonZeroU64::new(ORIGINAL - SERVING - arc_bytes - first_slot_bytes + 1).unwrap(),
         )
         .unwrap();
     let before = observer.snapshot().for_dimension(dimension);
@@ -87,7 +88,7 @@ fn observation_arc_is_prefunded_and_public_clones_keep_one_real_native_owner() {
     let sealed = observer.snapshot().for_dimension(dimension);
     assert_eq!(sealed.admissions(), sealing_before.admissions());
     assert_eq!(sealed.admitted_units(), sealing_before.admitted_units());
-    assert_eq!(sealed.active_units(), expected);
+    assert_eq!(sealed.active_units(), SERVING + expected);
     let clone = owner.clone();
     assert_eq!(clone, owner);
     assert_eq!(clone.wal().as_ptr(), owner.wal().as_ptr());

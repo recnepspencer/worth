@@ -18,7 +18,7 @@ use worth_query_host::facade::{
 };
 
 fn restore(checkpoint: WorthQueryApplicationCheckpoint) -> host::OutputHost {
-    in_memory_rostered_program_from_checkpoint(
+    WorthQueryInterimCheckpointRestore::rostered_program(
         program::validated::<OutputProgram>(),
         WorthQueryApplicationProgramRoster::new().support(program::validated::<program::Program>()),
         NumericSchema::declaration().unwrap(),

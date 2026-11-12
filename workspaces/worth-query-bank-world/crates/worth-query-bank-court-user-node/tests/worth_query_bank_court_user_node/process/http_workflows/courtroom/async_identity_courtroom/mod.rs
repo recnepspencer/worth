@@ -1,5 +1,9 @@
 pub(crate) use worth_query_bank_testkit_courtroom::facade::async_identity_courtroom::*;
 
+#[expect(
+    clippy::disallowed_methods,
+    reason = "This process court owns the Tokio executor for its real transport and shutdown boundary."
+)]
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 #[ignore = "needs Docker: cargo test --manifest-path workspaces/worth-query-bank-world/Cargo.toml -p worth-query-bank-court-user-node --test worth_query_bank_court_user_node process::http_workflows::courtroom::async_identity_courtroom::real_browser_identity_admits_and_real_revocation_fails_closed -- --ignored --exact"]
 async fn real_browser_identity_admits_and_real_revocation_fails_closed() {

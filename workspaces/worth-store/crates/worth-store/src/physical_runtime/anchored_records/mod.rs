@@ -45,6 +45,17 @@ mod failure;
 mod frame;
 mod member;
 mod member_read;
+mod member_stream;
+pub use member_stream::AnchoredRecordMemberStream;
+mod payload_stream;
+pub use payload_stream::AnchoredRecordPayloadStream;
+mod read_membership;
+pub use read_membership::{
+    AnchoredRecordReadMembership, AnchoredRecordReadRetirement, AnchoredRecordReadRetirementDenial,
+    AnchoredRecordReadRetirementProgress, RetiredAnchoredRecordReadMembership,
+};
+mod protected_membership;
+pub use protected_membership::AnchoredRecordProtectedMembership;
 mod membership;
 pub(in crate::physical_runtime) mod publication;
 mod read;

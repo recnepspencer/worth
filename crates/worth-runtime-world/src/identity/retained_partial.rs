@@ -9,6 +9,10 @@ pub struct ProductUnpublishedOwnerEffectsIdentity {
 }
 
 impl ProductUnpublishedOwnerEffectsIdentity {
+    /// Descriptive original occurrence ordinal; it cannot issue custody.
+    pub const fn ordinal(&self) -> u64 {
+        self.ordinal
+    }
     pub(super) const fn issued(owner: RuntimeWorldOwnerIdentity, ordinal: u64) -> Self {
         Self { owner, ordinal }
     }

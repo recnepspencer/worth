@@ -23,9 +23,7 @@ use crate::recovery::{
     ProductUnpublishedRetentionPosture,
 };
 
-use super::publication::{
-    prepare_relational, ready_from_prepared, setup, setup_with_relational_source, TestOwner,
-};
+use super::publication::{prepare_relational, ready_from_prepared, setup, TestOwner};
 
 /// One resolved race: the winner's product head, and the retained record the
 /// loser produced against it.
@@ -44,16 +42,6 @@ pub(super) fn resolve_one_race(
     late: CompositeLateCancellationPosture,
 ) -> ResolvedRace {
     race_from(execution, setup(), late)
-}
-
-/// The same race, run against an owner that has already completed one ordinary
-/// publication. The completed attempt released its exact component custody, so
-/// the registry carries a zero-count entry no live holder still names.
-pub(super) fn resolve_one_race_after_a_completed_publication(
-    execution: &worth_execution::ExecutionRequest<'_, '_>,
-    late: CompositeLateCancellationPosture,
-) -> ResolvedRace {
-    race_from(execution, setup_with_relational_source(execution), late)
 }
 
 fn race_from(

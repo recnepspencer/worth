@@ -35,8 +35,9 @@ pub use super::application_attempt::{
     WorthQueryApplicationEffectEntity, WorthQueryApplicationEffectProgram,
     WorthQueryApplicationEffectProgramBuilder, WorthQueryApplicationIdempotencyBinding,
     WorthQueryApplicationIdempotencyResolution, WorthQueryApplicationIdempotencyResolutionDenial,
-    WorthQueryApplicationIdempotencyResolutionDenialKind, WorthQueryApplicationManagedCleanup,
-    WorthQueryApplicationManagedCleanupFailure, WorthQueryApplicationNoEffect,
+    WorthQueryApplicationIdempotencyResolutionDenialKind, WorthQueryApplicationLandedCommit,
+    WorthQueryApplicationManagedCleanup, WorthQueryApplicationManagedCleanupFailure,
+    WorthQueryApplicationManagedCleanupReceipt, WorthQueryApplicationNoEffect,
     WorthQueryApplicationNoEffectCause, WorthQueryApplicationOutputEntity,
     WorthQueryApplicationOutputFamilyEntry, WorthQueryApplicationOutputPosture,
     WorthQueryApplicationOutputProjectionDenial, WorthQueryApplicationReadAttempt,
@@ -45,14 +46,15 @@ pub use super::application_attempt::{
     WorthQueryApplicationTypedOutputCorrespondence, WorthQueryApplicationUncommitted,
     WorthQueryApplicationUnobservedWrite, WorthQueryApplicationUnresolvedCommitEvidence,
     WorthQueryApprovedElevation, WorthQueryCapabilityRevocationProgram,
+    WorthQueryCleanupDispatchDenial, WorthQueryCleanupDispatchPosture,
     WorthQueryCommittedProductPublication, WorthQueryCompleteApplicationReadSet,
-    WorthQueryDelegationActivationProgram, WorthQueryElevationApprovalOutcome,
-    WorthQueryElevationApprovalProgram, WorthQueryElevationCloseOutcome,
-    WorthQueryElevationCloseProgram, WorthQueryElevationClosureKind,
-    WorthQueryElevationRequestOutcome, WorthQueryElevationRequestProgram,
-    WorthQueryExternalDispatchAttemptDenial, WorthQueryExternalDispatchPreparationDenial,
-    WorthQueryExternalRedispatchDenial, WorthQueryExternalTransportInstallationDenial,
-    WorthQueryHistoricalApplicationCommit, WorthQueryMandatoryReview,
+    WorthQueryDelegationActivationProgram, WorthQueryDurableDispatchRecordDenial,
+    WorthQueryElevationApprovalOutcome, WorthQueryElevationApprovalProgram,
+    WorthQueryElevationCloseOutcome, WorthQueryElevationCloseProgram,
+    WorthQueryElevationClosureKind, WorthQueryElevationRequestOutcome,
+    WorthQueryElevationRequestProgram, WorthQueryExternalDispatchAttemptDenial,
+    WorthQueryExternalDispatchPreparationDenial, WorthQueryExternalRedispatchDenial,
+    WorthQueryExternalTransportInstallationDenial, WorthQueryMandatoryReview,
     WorthQueryMandatoryReviewOutcome, WorthQueryMandatoryReviewProgram,
     WorthQueryMutationPreconditionComparisonEvidence, WorthQueryObservedApplicationRelation,
     WorthQueryOrdinaryApplicationRead, WorthQueryProjectedApplicationMutation,
@@ -63,7 +65,7 @@ pub use super::application_attempt::{
 pub use super::application_checkpoint::{
     WorthQueryApplicationCheckpoint, WorthQueryApplicationCheckpointSectionBytes,
     WorthQueryCheckpointCaptureDenial, WorthQueryCheckpointCapturePolicy,
-    WorthQueryNativeCheckpointSectionBytes,
+    WorthQueryInterimCheckpointOrigin, WorthQueryNativeCheckpointSectionBytes,
 };
 pub use super::application_contribution::{
     bound_advancement_requests_on_this_thread_for_test,
@@ -125,7 +127,8 @@ pub use super::application_entry::mutation::{
     HandlerResult, MutationHandlerExecutionDenial, OperationHandler,
     WorthQueryCompletedMutationCandidate, WorthQueryDecisionPlan,
     WorthQueryMutationHandlerExecutionReport, WorthQueryMutationHandlerProjectionWork,
-    WorthQueryMutationHandlerWork,
+    WorthQueryMutationHandlerWork, WorthQueryOperationDurableCapability,
+    WorthQueryOperationHomeRetirementDenial, WorthQueryOperationHomeRetirementProgress,
 };
 pub use super::application_output_demand::{
     WorthQueryDiscoveredRetentionControlDenial, WorthQueryDiscoveredRetentionReservationForTest,
@@ -206,17 +209,18 @@ pub use super::application_runtime::{
     WorthQueryCertificationCostObservation, WorthQueryCertificationCostRuntimeExt,
     WorthQueryCertificationCostScope, WorthQueryCertificationWorldHistory,
     WorthQueryCertificationWorldRetention, WorthQueryCorrelatedInboundOccurrence,
-    WorthQueryExecutionLeaseDenial, WorthQueryInboundAdmissionDenial,
-    WorthQueryInboundAuthenticatedPermanentDenial, WorthQueryInboundCleanupReport,
-    WorthQueryInboundCostObservation, WorthQueryInboundIndexRepairDenial,
-    WorthQueryInboundMaintenanceReport, WorthQueryInboundPendingReason,
-    WorthQueryInboundPermanentDenialKind, WorthQueryInboundReceipt,
+    WorthQueryExecutionLeaseDenial, WorthQueryHomeRetirementDenial, WorthQueryHomeRetirementOwner,
+    WorthQueryInboundAdmissionDenial, WorthQueryInboundAuthenticatedPermanentDenial,
+    WorthQueryInboundCleanupReport, WorthQueryInboundCostObservation,
+    WorthQueryInboundIndexRepairDenial, WorthQueryInboundMaintenanceReport,
+    WorthQueryInboundPendingReason, WorthQueryInboundPermanentDenialKind, WorthQueryInboundReceipt,
     WorthQueryInboundReceiptPosture, WorthQueryInboundSourceControlDenial,
     WorthQueryInboundSourcePosture, WorthQueryInboundTerminalObservation,
     WorthQueryInboundVerifierHandle, WorthQueryInboundVerifierInstallationDenial,
-    WorthQueryPrimaryGraphApplicationRuntime, WorthQueryRuleReadableCollectionLifecycleForTest,
-    WorthQueryStorageRetentionDenial, WorthQueryStorageRetentionProgress,
-    WorthQueryStorageRetentionStop,
+    WorthQueryOracleHistoryPageForTest, WorthQueryOracleOccurrenceForTest,
+    WorthQueryOracleSignalMovementForTest, WorthQueryPrimaryGraphApplicationRuntime,
+    WorthQueryRuleReadableCollectionLifecycleForTest, WorthQueryStorageRetentionDenial,
+    WorthQueryStorageRetentionProgress, WorthQueryStorageRetentionStop,
 };
 pub use super::authenticated_principal::{
     WorthQueryApplicationPrincipalIdentity, WorthQueryAuthenticatedPrincipal,
@@ -272,6 +276,10 @@ pub use super::index_refresh::{
 };
 pub use super::invariant_installation::{
     WorthQueryApplicationInvariantFactories, WorthQueryApplicationInvariantSchemaResolver,
+};
+pub use super::provider::{
+    WorthQueryRecoveredAftermathCausality, WorthQueryRecoveredApplicationCommitReceipt,
+    WorthQueryRecoveredDispatchOutbox, WorthQueryReleasedApplicationEffect,
 };
 mod decision_read;
 pub use super::merge_unique_values::{
@@ -355,4 +363,5 @@ pub use authorization::*;
 pub use operation_body::*;
 
 mod checkpoint_inspection;
+pub use super::application_attempt::WorthQueryManagedPhaseStorageForTest;
 pub use checkpoint_inspection::*;

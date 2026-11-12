@@ -173,7 +173,13 @@ where
             | WorthQueryRetainedConditionalDecision::Deferred(_)
             | WorthQueryRetainedConditionalDecision::OperationControlStopped(_, _)
             | WorthQueryRetainedConditionalDecision::OperationTerminalFailure(_, _)
-            | WorthQueryRetainedConditionalDecision::OperationProductUnpublished(_, _)
+            | WorthQueryRetainedConditionalDecision::OperationProductUnpublished(
+                _,
+                _,
+                _,
+            )
+            | WorthQueryRetainedConditionalDecision::OperationPreparationPending(_, _)
+            | WorthQueryRetainedConditionalDecision::OperationPreparationRefused(_, _)
             | WorthQueryRetainedConditionalDecision::OperationCommitted(_)
             | WorthQueryRetainedConditionalDecision::OperationAlreadyCommitted(_)
             | WorthQueryRetainedConditionalDecision::Failed(_)

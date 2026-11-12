@@ -100,13 +100,13 @@ fn genuine_whole_clear_can_leave_a_live_member_without_stored_payload() {
         .unwrap();
     let cleared = partition.entity_arena.get(&ids[0]).unwrap();
     assert!(cleared.is_live());
-    assert!(cleared.extra().authoritative_aspect_state.is_none());
+    assert!(cleared.extra().authoritative_aspect_state().is_none());
     assert!(partition
         .entity_arena
         .get(&ids[1])
         .unwrap()
         .extra()
-        .authoritative_aspect_state
+        .authoritative_aspect_state()
         .is_some());
     runtime
         .readmit_required_output_publication(
@@ -205,8 +205,7 @@ fn cold_succession_applies_partial_field_clear_without_requiring_a_full_rewrite(
         let row = partition.entity_arena.get(id).unwrap();
         let payload = row
             .extra()
-            .authoritative_aspect_state
-            .as_ref()
+            .authoritative_aspect_state()
             .unwrap()
             .get(contract.key())
             .unwrap();

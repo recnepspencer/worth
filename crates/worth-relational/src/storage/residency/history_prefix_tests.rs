@@ -10,7 +10,13 @@ fn a_head_history_prefix_survives_reset_and_reuse_until_its_rows_are_suspended()
     let fixture = region_with_history();
     let request = crate::test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&request);
-    let head = region_load::load_head(&fixture.cold, execution, 1 << 24).unwrap();
+    let head = region_load::load_head(
+        &fixture.cold,
+        fixture.cold.source.as_ref().unwrap(),
+        execution,
+        1 << 24,
+    )
+    .unwrap();
     let mut arena = head.partition.entity_arena.clone();
     let slot = fixture.entity.slot_index();
     let physical = arena.physical_index(slot).unwrap();
@@ -23,7 +29,7 @@ fn a_head_history_prefix_survives_reset_and_reuse_until_its_rows_are_suspended()
     );
     assert_eq!(prefix.row_index, physical);
     let source: Arc<dyn RelationalDurableColdSource> = fixture.source.clone();
-    assert!(Arc::ptr_eq(&prefix.source, &source));
+    assert!(Arc::ptr_eq(&prefix.source().unwrap(), &source));
 
     arena
         .retire(slot, VersionId(1_000))
@@ -78,7 +84,13 @@ fn sparse_adoption_preserves_the_source_history_row_when_the_physical_row_change
     let fixture = region_with_history();
     let request = crate::test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&request);
-    let head = region_load::load_head(&fixture.cold, execution, 1 << 24).unwrap();
+    let head = region_load::load_head(
+        &fixture.cold,
+        fixture.cold.source.as_ref().unwrap(),
+        execution,
+        1 << 24,
+    )
+    .unwrap();
     let slot = fixture.entity.slot_index();
     let selected = BTreeSet::from([slot]);
     let mut overlay = head
@@ -110,7 +122,10 @@ fn sparse_adoption_preserves_the_source_history_row_when_the_physical_row_change
     assert_eq!(adopted.member, prefix.member);
     assert_eq!(adopted.row_index, prefix.row_index);
     assert_eq!(adopted.history_opening.id(), prefix.history_opening.id());
-    assert!(Arc::ptr_eq(&adopted.source, &prefix.source));
+    assert!(Arc::ptr_eq(
+        &adopted.source().unwrap(),
+        &prefix.source().unwrap()
+    ));
     assert_eq!(destination.metadata_history[adopted_row].len(), 1);
     assert_eq!(fixture.source.history_reads.load(Ordering::SeqCst), 0);
 }
@@ -120,7 +135,13 @@ fn a_prefix_carries_its_authenticated_slot_opening_and_accounts_for_its_owner() 
     let fixture = region_with_history();
     let request = crate::test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&request);
-    let head = region_load::load_head(&fixture.cold, execution, 1 << 24).unwrap();
+    let head = region_load::load_head(
+        &fixture.cold,
+        fixture.cold.source.as_ref().unwrap(),
+        execution,
+        1 << 24,
+    )
+    .unwrap();
     let physical = head
         .partition
         .entity_arena
@@ -171,7 +192,13 @@ fn capture_preserves_a_cold_basis_and_full_admission_replaces_it_with_complete_r
     let fixture = region_with_history();
     let request = crate::test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&request);
-    let head = region_load::load_head(&fixture.cold, execution, 1 << 24).unwrap();
+    let head = region_load::load_head(
+        &fixture.cold,
+        fixture.cold.source.as_ref().unwrap(),
+        execution,
+        1 << 24,
+    )
+    .unwrap();
     let symbols = fixture.cold.symbols.interner_snapshot();
     let layered = capture_region_members(
         &crate::storage::substrate::maintenance::ReconstructionLane::oracle(),
@@ -187,7 +214,14 @@ fn capture_preserves_a_cold_basis_and_full_admission_replaces_it_with_complete_r
         .members(layered.history.0)
         .contains(&fixture.cold.history));
     assert_eq!(fixture.source.history_reads.load(Ordering::SeqCst), 0);
-    let full = region_load::load_full(&fixture.cold, &head, execution, 1 << 24).unwrap();
+    let full = region_load::load_full(
+        &fixture.cold,
+        fixture.cold.source.as_ref().unwrap(),
+        &head,
+        execution,
+        1 << 24,
+    )
+    .unwrap();
     assert!(full
         .partition
         .entity_arena

@@ -67,8 +67,8 @@ where
                 &phase, program, &identities.borrow(), source, execution.allocation_policy(),
             );
             let outcome = match outcome.landed() {
-                Ok((receipt, false)) => crate::application_entry::WorthQueryApplicationMutationOutcome::Committed { receipt, result },
-                Ok((receipt, true)) => crate::application_entry::WorthQueryApplicationMutationOutcome::AlreadyCommitted(receipt),
+                Ok(worth_query_execution::facade::primary_graph::WorthQueryApplicationLandedCommit::Live { receipt }) => crate::application_entry::WorthQueryApplicationMutationOutcome::Committed { receipt, result },
+                Ok(worth_query_execution::facade::primary_graph::WorthQueryApplicationLandedCommit::Recovered(receipt)) => crate::application_entry::WorthQueryApplicationMutationOutcome::RecoveredCommitted(receipt),
                 Err(custody) => crate::application_entry::WorthQueryApplicationMutationOutcome::Commit(custody),
             };
             Ok(erase::<Schema, Binding>(outcome))

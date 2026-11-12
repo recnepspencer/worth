@@ -18,9 +18,9 @@ pub struct WorthQueryApplicationRuntimeCore {
     pub(in crate::domain_computation::primary_graph) basis_leases:
         super::super::application_query::resource_lifecycle::WorthQueryApplicationBasisRegistry,
     pub(in crate::domain_computation::primary_graph) granular_invalidation: super::super::WorthQueryGranularInvalidationInstallation,
-    pub(crate) primary_provider: std::sync::Arc<WorthQueryPrimaryGraphProvider>,
+    pub(crate) primary_provider: super::super::provider::PrimaryProviderCustody,
     pub(in crate::domain_computation::primary_graph) primary_graph_authority:
-        Option<worth_query_installation::facade::WorthQueryInstalledGraphParticipationAuthority>,
+        Option<home_retirement::PrimaryGraphParticipationCustody>,
 
     pub(in crate::domain_computation::primary_graph) source_meanings:
         Option<super::super::application_query::observed_source::source_identity::WorthQueryObservedSourceMeaningRegistry>,
@@ -40,13 +40,15 @@ pub struct WorthQueryApplicationRuntimeCore {
         inbound_publication::InstalledTransportCompletionCustody,
     >,
     pub(super) inbound_maintenance_turn: AtomicU64,
+    pub(in crate::domain_computation) dispatch_journal:
+        crate::domain_computation::application_aftermath::dispatch_journal::WorthQueryDispatchJournal,
     pub(crate) recovery_handles: Arc<WorthQueryRecoveryHandleRegistry>,
     pub(in crate::domain_computation::primary_graph) output_producer_routes:
         super::super::application_contribution::WorthQueryInstalledOutputProducerRoutes,
     pub(in crate::domain_computation::primary_graph) output_readiness_routes:
         super::super::application_contribution::WorthQueryInstalledOutputReadinessRoutes,
     pub(in crate::domain_computation::primary_graph) next_output_producer_attempt: AtomicU64,
-    pub(in crate::domain_computation::primary_graph) next_application_mutation_partition: AtomicU32,
+    pub(in crate::domain_computation::primary_graph) mutation_partitions: mutation_partition::ApplicationMutationPartitions,
     pub(in crate::domain_computation::primary_graph) output_demands: super::super::application_output_demand::WorthQueryOutputDemandRegistry,
     pub(in crate::domain_computation::primary_graph) recovered_outputs: super::super::application_output_demand::WorthQueryRecoveredOutputs,
     pub(in crate::domain_computation::primary_graph) workflow_coverage:

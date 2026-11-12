@@ -12,10 +12,10 @@ where
         request: &WorthQueryApplicationRequest<'_, '_, '_, S>,
     ) -> Result<
         Option<
-            worth_query_execution::facade::domain_computation::WorthQueryDirectRunCleanupReceipt,
+            worth_query_execution::facade::primary_graph::WorthQueryApplicationManagedCleanupReceipt,
         >,
         WorthQueryApplicationOutputDemandDenial,
-    > {
+    >{
         if request.branch != self.branch {
             return Err(WorthQueryApplicationOutputDemandDenial::FreshRequestMismatch);
         }

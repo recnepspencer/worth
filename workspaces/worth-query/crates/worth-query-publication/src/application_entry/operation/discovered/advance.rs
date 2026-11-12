@@ -84,7 +84,9 @@ where
         }
         match &self.state {
             State::Initial => self.advance_source(phase, request),
-            State::Replay(_) => self.advance_replay(phase, request),
+            State::ReplayRetained(_) | State::ReplayRecorded(_) => {
+                self.advance_replay(phase, request)
+            }
             State::Unpublished(_) => self.advance_partial(phase, request),
             State::Retention(_) => self.advance_retention(phase, request),
             State::Performed(_) => self.advance_start(phase, request),

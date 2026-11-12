@@ -3,8 +3,9 @@ use crate::diagnostics::data::{
     DeterminismExpectation, DiagnosticsArtifactKind, DiagnosticsScope, RelationalDiagnosticArtifact,
 };
 use crate::history::data::{
-    BranchId, CanonicalCommitAuthorityKind, CanonicalCommitEnvelope, CommitId,
-    RelationalCommitReceipt, RelationalDescriptiveTouchGraph,
+    BranchId, CanonicalCommitAuthorityKind, CanonicalCommitEnvelopeBody,
+    CanonicalCommitEnvelopeDraft, CommitId, RelationalCommitReceipt,
+    RelationalDescriptiveTouchGraph,
 };
 use crate::identity::data::VersionId;
 use crate::indexes::data::DerivedIndexArtifacts;
@@ -22,7 +23,7 @@ use crate::transactions::data::{MergedCommitPlan, TransactionId};
 pub(crate) fn canonical_schema_envelope_input(
     registry: &RelationalSchemaRegistry,
     transition: Option<LoweredSchemaTransitionPlan>,
-) -> CanonicalCommitEnvelope {
+) -> CanonicalCommitEnvelopeBody {
     let continuation = transition
         .as_ref()
         .map(|t| t.continuation_descriptor.clone());
@@ -41,8 +42,9 @@ pub(crate) fn canonical_schema_envelope_input(
             t.reconciliation_descriptor,
         )
     });
-    CanonicalCommitEnvelope::new(
+    CanonicalCommitEnvelopeDraft::new(
         Default::default(),
+        crate::history::data::CanonicalIndexDefinitionDelta::prepared(1, 1, Vec::new(), None),
         RelationalCommitReceipt {
             commit_id: CommitId(2),
             version_id: VersionId(2),
@@ -85,4 +87,5 @@ pub(crate) fn canonical_schema_envelope_input(
         reconciliation,
         crate::schema::data::runtime_descriptor_semantics_policy().current_write_version(),
     )
+    .into_body()
 }

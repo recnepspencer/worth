@@ -60,7 +60,7 @@ fn second_real_overlay_is_rejected_without_orphaning_the_first_overlay() {
             };
             let running = start_managed_application_commit(phase, &world.application, prepared)
                 .unwrap_or_else(|outcome| panic!("overlay fixture must start: {outcome:?}"));
-            let (_coupled_outputs, admission, _lease, provider_attempt, outcome_identity, _workflow_settlement_publication, mut authorization, idempotency, mut running, mutation_run, attempt_basis, aftermath_causality,) = running.into_parts_for_test();
+            let (_coupled_outputs, admission, _lease, provider_attempt, outcome_identity, _workflow_settlement_publication, mut authorization, idempotency, mut running, mutation_run, attempt_basis, aftermath_causality, _completion_storage,) = running.into_parts_for_test();
             let admitted_session = admit_provider_session(
                 execution,
                 &mut running,

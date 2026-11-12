@@ -1,11 +1,26 @@
+mod checkpoint_commit_index;
+pub(crate) use checkpoint_commit_index::{CanonicalIndexSource, CheckpointCommitIndex};
+mod checkpoint_roots;
+pub(crate) use checkpoint_roots::{
+    CheckpointRoots, PreparedCheckpointRoot, PreparedCheckpointRoots, RelationalCheckpointRoot,
+};
+mod complete_native_checkpoint;
+pub use complete_native_checkpoint::CompleteRelationalNativeCheckpoint;
+pub(in crate::durability) use native_checkpoint::OriginalCheckpointRead;
 mod branch_lifecycle_images;
 mod branch_root_schema_images;
 mod checkpoint_coverage;
 mod checkpoint_directory;
-pub(crate) use checkpoint_directory::RelationalCheckpointDirectory;
+pub(crate) use checkpoint_directory::{
+    CheckpointDirectoryAdmission, CheckpointDirectoryRetirement, NativeCheckpointDirectoryEdge,
+    NativeDirectoryRetirementHandoff, PreparedCheckpointDirectory, RelationalCheckpointDirectory,
+};
 mod checkpoint_images;
 mod checkpoint_manifest;
 mod checkpoint_member;
+mod checkpoint_member_list;
+mod record_identity_image;
+pub(crate) use checkpoint_member_list::CapturedCheckpointMembers;
 mod checkpoint_page;
 pub(crate) use checkpoint_page::RelationalCheckpointPage;
 mod checkpoint_restore_work;
@@ -67,3 +82,24 @@ pub use checkpoint_inspection::{
     CheckpointRecordFrontier, CheckpointRecordIdentity, NativeCheckpointModelBytes,
     RelationalCheckpointInspection,
 };
+
+pub(crate) use branch_root_schema_images::DurableSchemaDeclarationMemory;
+
+mod checkpoint_index_definitions;
+pub(crate) use checkpoint_index_definitions::CheckpointIndexDefinitions;
+mod checkpoint_lineage_basis;
+pub(crate) use checkpoint_lineage_basis::CheckpointLineageBasis;
+
+mod checkpoint_pages;
+pub(crate) use checkpoint_pages::CheckpointPages;
+
+mod checkpoint_symbol_buckets;
+pub(crate) use checkpoint_symbol_buckets::CheckpointSymbolBuckets;
+
+mod checkpoint_lineage_event_pages;
+pub(crate) use checkpoint_lineage_event_pages::{
+    CheckpointLineageEventPages, CheckpointLineageEventPagesBuilder,
+};
+
+mod checkpoint_schema_images;
+pub(crate) use checkpoint_schema_images::CheckpointSchemaImages;

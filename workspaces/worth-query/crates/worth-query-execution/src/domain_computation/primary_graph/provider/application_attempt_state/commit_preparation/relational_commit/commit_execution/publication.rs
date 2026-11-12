@@ -33,7 +33,7 @@ pub(super) struct WorthQueryPublishedApplicationCommit {
 pub(super) fn publish(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     provider: &WorthQueryPrimaryGraphProvider,
-    runtime: &mut worth_relational::facade::runtime::RelationalRuntime,
+    runtime: &worth_relational::facade::runtime::RelationalRuntime,
     committed: WorthQueryCommittedApplicationSession,
     evidence: super::super::WorthQueryPrimaryGraphCommitEvidence,
     predicate: &mut Option<PredicatePreparationOwner>,
@@ -59,7 +59,7 @@ pub(super) fn publish(
 fn publish_retained(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     provider: &WorthQueryPrimaryGraphProvider,
-    runtime: &mut worth_relational::facade::runtime::RelationalRuntime,
+    runtime: &worth_relational::facade::runtime::RelationalRuntime,
     mut committed: WorthQueryCommittedApplicationSession,
     evidence: super::super::WorthQueryPrimaryGraphCommitEvidence,
     predicate: &mut Option<PredicatePreparationOwner>,
@@ -93,7 +93,7 @@ fn publish_retained(
 
 fn prepare_pending(
     provider: &WorthQueryPrimaryGraphProvider,
-    runtime: &mut worth_relational::facade::runtime::RelationalRuntime,
+    runtime: &worth_relational::facade::runtime::RelationalRuntime,
     committed: WorthQueryCommittedApplicationSession,
     evidence: super::super::WorthQueryPrimaryGraphCommitEvidence,
 ) -> WorthQueryPendingApplicationPublication {

@@ -1,5 +1,4 @@
 use serde::{Deserialize, Serialize};
-use sha2::{Digest, Sha256};
 use worth_foundational::facade::{AspectBinding, AspectContract, PortableAspectContract};
 
 use crate::config::data::{CascadeDeletePolicy, CrossContextPolicy};
@@ -12,11 +11,21 @@ use crate::schema::data::{
 };
 
 const ROOT_SCHEMA_IMAGE_VERSION: u16 = 1;
+mod allocation;
+pub(crate) use allocation::DurableSchemaDeclarationMemory;
+mod capture_memory;
+#[cfg(test)]
+mod capture_tests;
+mod digest;
 mod encoding;
+mod owner;
 mod registrations;
 
-#[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
-pub(crate) struct DurableBranchRootSchemaImage {
+#[derive(Debug, Clone)]
+pub(crate) struct DurableBranchRootSchemaImage(std::sync::Arc<SchemaImageData>);
+
+#[derive(Debug, Deserialize)]
+struct SchemaImageData {
     format_version: u16,
     carrier_digest: [u8; 32],
     schema_root: [u8; 32],
@@ -30,6 +39,8 @@ pub(crate) struct DurableBranchRootSchemaImage {
     derived_relations: Vec<crate::derived_relation::DerivedRelationDefinitionParts>,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     projected_member_domains: Vec<crate::projected_member_domain::ProjectedMemberDomainParts>,
+    #[serde(skip)]
+    _memory: Option<worth_execution::ExecutionMemoryReservation>,
     content_formats: crate::content::RelationalContentSchemaSnapshot,
 }
 
@@ -68,96 +79,63 @@ struct DurableDeclaredAspectBinding {
 }
 
 impl DurableBranchRootSchemaImage {
-    pub(crate) fn capture(
-        authority: &crate::branch::RelationalBranchRootSchemaAuthority,
-    ) -> Result<Self, rmp_serde::encode::Error> {
-        let registry = authority.registry();
-        let entity_registrations = registry
-            .entity_kinds
-            .values()
-            .map(DurableEntitySchemaRegistration::capture)
-            .collect();
-        let relation_registrations = registry
-            .relation_kinds
-            .values()
-            .map(DurableRelationSchemaRegistration::capture)
-            .collect();
-        let mut image = Self {
-            format_version: ROOT_SCHEMA_IMAGE_VERSION,
-            carrier_digest: [0; 32],
-            schema_root: registry.authority_digest_bytes(),
-            descriptor_semantics_version: authority.descriptor_semantics_version(),
-            entity_registrations,
-            relation_registrations,
-            derived_relations: registry.derived_parts(),
-            projected_member_domains: registry.projected_domain_parts(),
-            content_formats: registry.content_formats.snapshot(),
-            retained_aspect_contracts: authority
-                .retained_aspect_contracts()
-                .iter()
-                .map(PortableAspectContract::from_contract)
-                .collect(),
-        };
-        image.carrier_digest = image.recompute_digest()?;
-        Ok(image)
+    pub(crate) fn carrier_digest(&self) -> [u8; 32] {
+        self.0.carrier_digest
     }
 
-    pub(crate) const fn carrier_digest(&self) -> [u8; 32] {
-        self.carrier_digest
+    pub(crate) fn schema_root(&self) -> [u8; 32] {
+        self.0.schema_root
     }
 
-    pub(crate) const fn schema_root(&self) -> [u8; 32] {
-        self.schema_root
-    }
-
-    pub(crate) const fn descriptor_semantics_version(&self) -> DescriptorSemanticsVersion {
-        self.descriptor_semantics_version
-    }
-
-    #[cfg(test)]
-    pub(crate) fn corrupt_schema_root_for_test(&mut self) {
-        self.schema_root[0] ^= 0x80;
+    pub(crate) fn descriptor_semantics_version(&self) -> DescriptorSemanticsVersion {
+        self.0.descriptor_semantics_version
     }
 
     pub(crate) fn readmit_registry(
         &self,
     ) -> Result<(RelationalSchemaRegistry, Vec<AspectContract>), String> {
-        if self.format_version != ROOT_SCHEMA_IMAGE_VERSION {
+        if self.0.format_version != ROOT_SCHEMA_IMAGE_VERSION {
             return Err(format!(
                 "unsupported branch-root schema image version `{}`",
-                self.format_version
+                self.0.format_version
             ));
         }
         let digest = self
+            .0
             .recompute_digest()
             .map_err(|error| format!("schema carrier encoding failed: {error}"))?;
-        if digest != self.carrier_digest {
+        if digest != self.0.carrier_digest {
             return Err("branch-root schema carrier digest mismatch".to_owned());
         }
         require_canonical_kind_order(
-            self.entity_registrations.iter().map(|entry| entry.kind_id),
+            self.0
+                .entity_registrations
+                .iter()
+                .map(|entry| entry.kind_id),
             "entity",
         )?;
-        require_canonical_contract_order(&self.retained_aspect_contracts)?;
+        require_canonical_contract_order(&self.0.retained_aspect_contracts)?;
         require_canonical_kind_order(
-            self.relation_registrations
+            self.0
+                .relation_registrations
                 .iter()
                 .map(|entry| entry.kind_id),
             "relation",
         )?;
         let mut registry = RelationalSchemaRegistry::new();
-        for registration in &self.entity_registrations {
+        for registration in &self.0.entity_registrations {
             registry = registry
                 .register_entity_kind(registration.readmit()?)
                 .map_err(|error| format!("entity schema readmission denied: {error:?}"))?;
         }
         registry = registry
-            .register_projected_member_domains(self.projected_member_domains.clone())
+            .register_projected_member_domains(self.0.projected_member_domains.clone())
             .map_err(|error| format!("projected domain readmission denied: {error:?}"))?;
-        if registry.projected_domain_parts() != self.projected_member_domains {
+        if registry.projected_domain_parts() != self.0.projected_member_domains {
             return Err("branch-root projected domains are not canonical".to_owned());
         }
         let relations = self
+            .0
             .relation_registrations
             .iter()
             .map(DurableRelationSchemaRegistration::readmit)
@@ -165,23 +143,25 @@ impl DurableBranchRootSchemaImage {
         registry = crate::schema::source_catalog::install(
             registry,
             relations,
-            self.derived_relations
+            self.0
+                .derived_relations
                 .iter()
                 .cloned()
                 .map(crate::schema::source_catalog::DerivedCatalogEntry::Meaning),
         )
         .map_err(|denial| format!("source catalog readmission denied: {denial:?}"))?;
-        if registry.derived_parts() != self.derived_relations {
+        if registry.derived_parts() != self.0.derived_relations {
             return Err("branch-root derived definitions are not canonical".to_owned());
         }
         registry.content_formats = crate::content::RelationalContentFormatRegistry::from_recorded(
-            self.content_formats.clone(),
+            self.0.content_formats.clone(),
         )
         .map_err(|cause| format!("content declarations refused: {cause:?}"))?;
-        if registry.authority_digest_bytes() != self.schema_root {
+        if registry.authority_digest_bytes() != self.0.schema_root {
             return Err("branch-root schema authority digest mismatch".to_owned());
         }
         let retained_aspect_contracts = self
+            .0
             .retained_aspect_contracts
             .iter()
             .map(|contract| {
@@ -191,28 +171,6 @@ impl DurableBranchRootSchemaImage {
             })
             .collect::<Result<Vec<_>, _>>()?;
         Ok((registry, retained_aspect_contracts))
-    }
-
-    fn recompute_digest(&self) -> Result<[u8; 32], rmp_serde::encode::Error> {
-        let encoded = rmp_serde::to_vec(&(
-            self.format_version,
-            self.schema_root,
-            self.descriptor_semantics_version,
-            &self.entity_registrations,
-            &self.relation_registrations,
-            &self.retained_aspect_contracts,
-        ))?;
-        let mut digest = Sha256::new();
-        digest.update(b"worth.relational.branch-root-schema-image.v1\0");
-        digest.update(encoded);
-        crate::derived_relation::canonical::update_digest(&mut digest, &self.derived_relations);
-        crate::projected_member_domain::canonical::update_digest(
-            &mut digest,
-            &self.projected_member_domains,
-        );
-        digest.update(b"worth.native.content-schema-carrier.v1\0");
-        digest.update(rmp_serde::to_vec(&self.content_formats)?);
-        Ok(digest.finalize().into())
     }
 }
 

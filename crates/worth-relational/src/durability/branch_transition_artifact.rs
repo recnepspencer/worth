@@ -15,7 +15,7 @@
 //! | 58..66 | payload length (`u64`)                       |
 //! | 66..   | payload: MessagePack named map               |
 //!
-//! The payload is `{sequence, follows, transition}`. Both header fields are
+//! Version 3 requires `{sequence, follows, schema_carrier, caller_association, transition}`. Both header fields are
 //! inside the digested payload, so a rewritten header cannot pass
 //! readmission.
 
@@ -54,6 +54,17 @@ pub struct RelationalBranchTransitionArtifact {
 }
 
 impl RelationalBranchTransitionArtifact {
+    /// Bounded version eligibility only, never frame or payload admission.
+    pub fn preflight_frame_version(
+        prefix: &[u8],
+    ) -> Result<(), RelationalBranchTransitionArtifactFrameRefusal> {
+        frame::validate_frame_version(prefix)
+    }
+
+    pub const PROTOCOL: worth_foundational::facade::BoundaryProtocolIdentity =
+        worth_foundational::facade::BoundaryProtocolIdentity::new(
+            "worth.relational.branch-transition",
+        );
     /// The artifact format version this build writes and readmits. Bytes
     /// carrying any other version are refused, never reinterpreted.
     pub const FORMAT_VERSION: u16 = frame::FORMAT_VERSION;
@@ -66,7 +77,13 @@ impl RelationalBranchTransitionArtifact {
     pub fn from_untrusted_bytes(
         bytes: impl Into<Box<[u8]>>,
     ) -> Result<Self, RelationalBranchTransitionArtifactFrameRefusal> {
-        let bytes = ExecutionImmutableBytes::from_external_bytes(Arc::new(bytes.into()));
+        Self::from_owned_bytes(ExecutionImmutableBytes::from_external_bytes(Arc::new(
+            bytes.into(),
+        )))
+    }
+    pub(crate) fn from_owned_bytes(
+        bytes: ExecutionImmutableBytes,
+    ) -> Result<Self, RelationalBranchTransitionArtifactFrameRefusal> {
         let (header, _) = BranchTransitionArtifactHeader::verify(bytes.bytes())?;
         Ok(Self { bytes, header })
     }

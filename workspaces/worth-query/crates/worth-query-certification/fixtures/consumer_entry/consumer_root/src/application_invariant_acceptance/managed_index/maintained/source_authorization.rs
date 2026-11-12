@@ -1,5 +1,6 @@
 //! A protected Source feeds Public current-only Parents through both real modes.
 use super::{prefix, protected::access, query as ordinary, schema::*};
+use crate::application_invariant_acceptance::managed_index::prefix_observation;
 use std::sync::Arc;
 use worth_query_decl::facade::{application_query::*, application_schema::*, *};
 use worth_query_host::facade::{application_contribution::*, primary_graph::*};
@@ -160,8 +161,8 @@ worth_query_query_binding!(pub CompletedBinding for FindCompleted, schema Catalo
 
 #[derive(Clone, Default)]
 pub(super) struct Configuration {
-    pub native: Arc<prefix::Calls>,
-    pub completed: Arc<prefix::Calls>,
+    pub native: Arc<prefix_observation::Calls>,
+    pub completed: Arc<prefix_observation::Calls>,
 }
 pub(super) fn configure(
     config: Configuration,
@@ -177,4 +178,46 @@ pub(super) fn configure(
         .install()?;
     setup.handler::<expectation::NativeBinding, _>(super::mutation::Handler)?;
     setup.handler::<expectation::CompletedBinding, _>(super::mutation::Handler)
+}
+
+impl
+    crate::application_invariant_acceptance::managed_index::prefix_provider::PrefixSourceIndex<
+        Catalog,
+    > for NativeIndex
+{
+    fn with_name<R>(
+        row: &WorthQueryManagedIndexSourceRow<'_, Catalog, Self>,
+        visitor: impl FnOnce(&str) -> R,
+    ) -> Result<R, WorthQueryManagedIndexTextReadDenial> {
+        row.with_text(ordinary::name(), visitor)
+    }
+    #[cfg(test)]
+    fn inspect_text(
+        calls: &prefix_observation::Calls,
+        row: &WorthQueryManagedIndexSourceRow<'_, Catalog, Self>,
+    ) -> Result<(), crate::application_invariant_acceptance::managed_index::prefix_provider::Stop>
+    {
+        prefix::text_read::inspect(calls, row)
+    }
+}
+
+impl
+    crate::application_invariant_acceptance::managed_index::prefix_provider::PrefixSourceIndex<
+        Catalog,
+    > for CompletedIndex
+{
+    fn with_name<R>(
+        row: &WorthQueryManagedIndexSourceRow<'_, Catalog, Self>,
+        visitor: impl FnOnce(&str) -> R,
+    ) -> Result<R, WorthQueryManagedIndexTextReadDenial> {
+        row.with_text(ordinary::name(), visitor)
+    }
+    #[cfg(test)]
+    fn inspect_text(
+        calls: &prefix_observation::Calls,
+        row: &WorthQueryManagedIndexSourceRow<'_, Catalog, Self>,
+    ) -> Result<(), crate::application_invariant_acceptance::managed_index::prefix_provider::Stop>
+    {
+        prefix::text_read::inspect(calls, row)
+    }
 }

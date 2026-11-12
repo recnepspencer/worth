@@ -117,16 +117,6 @@
         "ExecutionRequest",
         "SerialRequest"
       ],
-      "source": "crates/worth-relational/src/branch/coordination/managed_fork_cleanup.rs",
-      "test": "managed_fork_refusal_and_success_drop_lookup_outside_native_coordination",
-      "audit": "Query 9.19 master alignment private-owner placement ruling, 2026-10-30; plans/WORTH-query/milestone-9.19-master-alignment-plan.md.",
-      "private_subject": "Private Native coordination guard exclusion and actual fork lookup destruction on refusal/success."
-    },
-    {
-      "constructors": [
-        "ExecutionRequest",
-        "SerialRequest"
-      ],
       "source": "crates/worth-relational/src/mvcc/publication/companion/cell/managed_source/cache_retirement.rs",
       "test": "managed_cache_retirement_defers_last_opaque_drop_beyond_native_guards",
       "audit": "Query 9.19 master alignment private-owner placement ruling, 2026-10-30; plans/WORTH-query/milestone-9.19-master-alignment-plan.md.",
@@ -509,6 +499,1143 @@
       "test": "genuine_node_churn_keeps_live_backing_bounded_without_reusing_issued_ids",
       "audit": "Query 9.19 live-directory private-owner placement approved by independent qa-tests reviewer, 2026-10-31; plans/WORTH-query/milestone-9.19-live-directory-plan.md.",
       "private_subject": "Actual descriptive NodeLineage/NodeWriter4096-issue churn with two live nodes, old and sibling IDs, original SDK final lookup/edit work and grant release; existing parent reserves namespace, no Source/read authority synthesized."
+    },
+    {
+      "source": "workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_installation/home_preparation/world/tests.rs",
+      "test": "domain_computation::primary_graph::application_installation::home_preparation::world::tests::refused_home_world_attachment_retains_nonempty_provider_instances",
+      "constructors": [
+        "WorthQueryProductRuntime::install",
+        "prepare_home_program",
+        "WorthQueryExecutionInstallationAuthority::prepare_primary_graph_with_relational_runtime_and_invariants",
+        "worth_relational::facade::runtime::RelationalRuntimeApi::builder",
+        "managed_bridge::install_application_bridge"
+      ],
+      "audit": "Coordinator exact private-owner placement ruling against reviewed b28aba574d, 2026-10-31; only the named nonempty provider-catalog refusal unit and its observed runtime root are admitted.",
+      "private_subject": "The actual Home attachment preflight is exercised with a genuine Native/Bridge/memory World, then its private HomeWorldAttachmentCustody::Prepared payload and bootstrap.managed_indexes catalog are inspected. The cfg(test)-only configured_instances_for_test observer compares the actual configured executor Arc data pointers; the real provider Drop proves exactly-once release when that same retained preparation is dropped. External placement would require a new production catalog/failure-payload observer or weaken the ownership oracle. No public workflow or fixture-wide root exemption is added."
+    },
+    {
+      "source": "crates/worth-relational/src/branch/root_physical_linkage_tests.rs",
+      "test": "branch::root_physical_linkage_tests::equal_envelope_bytes_cannot_replace_exact_physical_catalog_custody",
+      "constructors": [
+        "worth_execution::ExecutionRequest::serial",
+        "crate::test_execution_policy::serial_request"
+      ],
+      "audit": "Coordinator exact private-owner placement ruling against Native 137c0f1255, 2026-10-31; fifteen public workflows are migrated to the existing certification court; this entry covers only its named private unit.",
+      "private_subject": "Mutates private RelationalBranchRoot.committed and canonical envelope body to distinguish identical serialized bytes from the exact physical catalog custody; public descriptions cannot create or substitute that custody."
+    },
+    {
+      "source": "crates/worth-relational/src/capabilities/history/tests.rs",
+      "test": "capabilities::history::tests::committed_version_outside_closure_ignores_closure_members_and_detects_external_predecessor",
+      "constructors": [
+        "worth_execution::ExecutionRequest::serial",
+        "crate::test_execution_policy::serial_request"
+      ],
+      "audit": "Coordinator exact private-owner placement ruling against Native 137c0f1255, 2026-10-31; fifteen public workflows are migrated to the existing certification court; this entry covers only its named private unit.",
+      "private_subject": "Exercises the local history trait/default methods with exact predicate envelopes built through private draft/body_mut_for_test mutation. Moving these units would require a public sealed-envelope mutation door."
+    },
+    {
+      "source": "crates/worth-relational/src/capabilities/history/tests.rs",
+      "test": "capabilities::history::tests::patch_stream_source_resolves_commit_envelopes_from_positions",
+      "constructors": [
+        "worth_execution::ExecutionRequest::serial",
+        "crate::test_execution_policy::serial_request"
+      ],
+      "audit": "Coordinator exact private-owner placement ruling against Native 137c0f1255, 2026-10-31; fifteen public workflows are migrated to the existing certification court; this entry covers only its named private unit.",
+      "private_subject": "Exercises the local history trait/default methods with exact predicate envelopes built through private draft/body_mut_for_test mutation. Moving these units would require a public sealed-envelope mutation door."
+    },
+    {
+      "source": "crates/worth-relational/src/capabilities/history/tests.rs",
+      "test": "capabilities::history::tests::patch_stream_source_exposes_exact_position_windows",
+      "constructors": [
+        "worth_execution::ExecutionRequest::serial",
+        "crate::test_execution_policy::serial_request"
+      ],
+      "audit": "Coordinator exact private-owner placement ruling against Native 137c0f1255, 2026-10-31; fifteen public workflows are migrated to the existing certification court; this entry covers only its named private unit.",
+      "private_subject": "Exercises the local history trait/default methods with exact predicate envelopes built through private draft/body_mut_for_test mutation. Moving these units would require a public sealed-envelope mutation door."
+    },
+    {
+      "source": "crates/worth-relational/src/durability/data/native_checkpoint/component_custody/tests.rs",
+      "test": "durability::data::native_checkpoint::component_custody::tests::native_custody_correction_delayed_canonical_selection_retains_actual_root_and_interrupted_ack",
+      "constructors": [
+        "worth_execution::ExecutionRequest::serial",
+        "crate::test_execution_policy::serial_request",
+        "worth_execution::SerialRequest::from_memory"
+      ],
+      "audit": "Coordinator exact private-owner placement ruling against Native 137c0f1255, 2026-10-31; fifteen public workflows are migrated to the existing certification court; this entry covers only its named private unit.",
+      "private_subject": "Observes actual private basis.inner, weak original root/observation allocation lifetime, root schema authority and root demand through the runtime's private symbol service across selection, interrupted acknowledgement or final capture abandonment. Public descriptions cannot prove actual read-custody lifetime."
+    },
+    {
+      "source": "crates/worth-relational/src/durability/data/native_checkpoint/component_custody/tests.rs",
+      "test": "durability::data::native_checkpoint::component_custody::tests::native_custody_correction_delayed_empty_selection_retains_actual_schema_and_interrupted_ack",
+      "constructors": [
+        "worth_execution::ExecutionRequest::serial",
+        "crate::test_execution_policy::serial_request",
+        "worth_execution::SerialRequest::from_memory"
+      ],
+      "audit": "Coordinator exact private-owner placement ruling against Native 137c0f1255, 2026-10-31; fifteen public workflows are migrated to the existing certification court; this entry covers only its named private unit.",
+      "private_subject": "Observes actual private basis.inner, weak original root/observation allocation lifetime, root schema authority and root demand through the runtime's private symbol service across selection, interrupted acknowledgement or final capture abandonment. Public descriptions cannot prove actual read-custody lifetime."
+    },
+    {
+      "source": "crates/worth-relational/src/durability/data/native_checkpoint/component_custody/tests.rs",
+      "test": "durability::data::native_checkpoint::component_custody::tests::native_custody_correction_last_actual_capture_abandonment_releases_shared_root_custody",
+      "constructors": [
+        "worth_execution::ExecutionRequest::serial",
+        "crate::test_execution_policy::serial_request"
+      ],
+      "audit": "Coordinator exact private-owner placement ruling against Native 137c0f1255, 2026-10-31; fifteen public workflows are migrated to the existing certification court; this entry covers only its named private unit.",
+      "private_subject": "Observes actual private basis.inner, weak original root/observation allocation lifetime, root schema authority and root demand through the runtime's private symbol service across selection, interrupted acknowledgement or final capture abandonment. Public descriptions cannot prove actual read-custody lifetime."
+    },
+    {
+      "source": "crates/worth-relational/src/durability/log/native_checkpoint_codec/manifest_validation/components/tests.rs",
+      "test": "durability::log::native_checkpoint_codec::manifest_validation::components::tests::recorded_component_checkpoint_header_tamper_refuses_without_defaults_or_foreign_binding",
+      "constructors": [
+        "worth_execution::ExecutionRequest::serial",
+        "crate::test_execution_policy::serial_request"
+      ],
+      "audit": "Coordinator exact private-owner placement ruling against Native 137c0f1255, 2026-10-31; fifteen public workflows are migrated to the existing certification court; this entry covers only its named private unit.",
+      "private_subject": "Mutates private CheckpointWire required manifest/header fields and calls the internal decoder. Exposing mutable admitted checkpoint wire would add an authority bypass solely for a test."
+    },
+    {
+      "source": "crates/worth-relational/src/history/data/canonical_commit_envelope/tests.rs",
+      "test": "history::data::canonical_commit_envelope::tests::envelope_touched_record_refs_include_patch_and_existing_record_intents",
+      "constructors": [
+        "worth_execution::ExecutionRequest::serial",
+        "crate::test_execution_policy::serial_request"
+      ],
+      "audit": "Coordinator exact private-owner placement ruling against Native 137c0f1255, 2026-10-31; fifteen public workflows are migrated to the existing certification court; this entry covers only its named private unit.",
+      "private_subject": "Tests the envelope owner's touch/filter/legacy-map semantics using private draft construction and body_mut_for_test mutation of the exact produced envelope. No public sealed-envelope setter is added."
+    },
+    {
+      "source": "crates/worth-relational/src/history/data/canonical_commit_envelope/tests.rs",
+      "test": "history::data::canonical_commit_envelope::tests::committed_record_changes_for_target_filters_to_matching_record",
+      "constructors": [
+        "worth_execution::ExecutionRequest::serial",
+        "crate::test_execution_policy::serial_request"
+      ],
+      "audit": "Coordinator exact private-owner placement ruling against Native 137c0f1255, 2026-10-31; fifteen public workflows are migrated to the existing certification court; this entry covers only its named private unit.",
+      "private_subject": "Tests the envelope owner's touch/filter/legacy-map semantics using private draft construction and body_mut_for_test mutation of the exact produced envelope. No public sealed-envelope setter is added."
+    },
+    {
+      "source": "crates/worth-relational/src/history/data/canonical_commit_envelope/tests.rs",
+      "test": "history::data::canonical_commit_envelope::tests::named_envelope_wire_preserves_exact_touch_graph_and_defaults_old_missing_graph_unavailable",
+      "constructors": [
+        "worth_execution::ExecutionRequest::serial",
+        "crate::test_execution_policy::serial_request"
+      ],
+      "audit": "Coordinator exact private-owner placement ruling against Native 137c0f1255, 2026-10-31; fifteen public workflows are migrated to the existing certification court; this entry covers only its named private unit.",
+      "private_subject": "Tests the envelope owner's touch/filter/legacy-map semantics using private draft construction and body_mut_for_test mutation of the exact produced envelope. No public sealed-envelope setter is added."
+    },
+    {
+      "source": "crates/worth-relational/src/history/retention/component_cut_tests.rs",
+      "test": "history::retention::component_cut_tests::native_custody_correction_cross_lane_acquire_release_has_one_actual_capture_cut",
+      "constructors": [
+        "worth_execution::ExecutionRequest::serial",
+        "crate::test_execution_policy::serial_request"
+      ],
+      "audit": "Coordinator exact private-owner placement ruling against Native 137c0f1255, 2026-10-31; fifteen public workflows are migrated to the existing certification court; this entry covers only its named private unit.",
+      "private_subject": "Accesses the actual private retention owner, external_cut lock, capture-pause receiver, branch cells and checkpoint_components supplier to prove membership and current-lane collection share the same capture cut. Public output sets cannot prove the synchronization boundary."
+    },
+    {
+      "source": "crates/worth-relational/src/history/retention/component_cut_tests.rs",
+      "test": "history::retention::component_cut_tests::native_custody_correction_current_lane_inventory_is_collected_inside_actual_cut",
+      "constructors": [
+        "crate::tests::support::durable_runtime_with_test_schema"
+      ],
+      "audit": "Coordinator exact private-owner placement ruling against Native 137c0f1255, 2026-10-31; fifteen public workflows are migrated to the existing certification court; this entry covers only its named private unit.",
+      "private_subject": "Accesses the actual private retention owner, external_cut lock, capture-pause receiver, branch cells and checkpoint_components supplier to prove membership and current-lane collection share the same capture cut. Public output sets cannot prove the synchronization boundary."
+    },
+    {
+      "source": "crates/worth-relational/src/tests/durability/contracts/associated_effects.rs",
+      "test": "tests::durability::contracts::associated_effects::associated_effects_refuse_memory_and_absent_settlement_evidence",
+      "constructors": [
+        "worth_execution::ExecutionRequest::serial",
+        "crate::test_execution_policy::serial_request",
+        "crate::tests::support::runtime_with_test_schema",
+        "crate::tests::support::durable_runtime_with_test_schema"
+      ],
+      "audit": "Coordinator exact private-owner placement ruling against Native 137c0f1255, 2026-10-31; fifteen public workflows are migrated to the existing certification court; this entry covers only its named private unit.",
+      "private_subject": "Removes the private canonical publication route to distinguish missing settlement evidence, or observes actual private selected/unrelated envelope residency before and after associated-effect discovery/readmission. The two public source-read/lifetime workflows move to the existing court."
+    },
+    {
+      "source": "crates/worth-relational/src/tests/durability/contracts/associated_effects.rs",
+      "test": "tests::durability::contracts::associated_effects::associated_effects_discover_cold_subject_without_reading_unrelated_history",
+      "constructors": [
+        "worth_execution::ExecutionRequest::serial",
+        "crate::test_execution_policy::serial_request",
+        "crate::tests::support::runtime_with_test_schema",
+        "crate::tests::support::durable_runtime_with_test_schema"
+      ],
+      "audit": "Coordinator exact private-owner placement ruling against Native 137c0f1255, 2026-10-31; fifteen public workflows are migrated to the existing certification court; this entry covers only its named private unit.",
+      "private_subject": "Removes the private canonical publication route to distinguish missing settlement evidence, or observes actual private selected/unrelated envelope residency before and after associated-effect discovery/readmission. The two public source-read/lifetime workflows move to the existing court."
+    },
+    {
+      "source": "crates/worth-relational/src/tests/durability/contracts/associated_effects_discovery.rs",
+      "test": "tests::durability::contracts::associated_effects_discovery::native_custody_correction_enumerates_known_orphan_and_unrelated_association_metadata",
+      "constructors": [
+        "worth_execution::ExecutionRequest::serial",
+        "crate::test_execution_policy::serial_request"
+      ],
+      "audit": "Coordinator exact private-owner placement ruling against Native 137c0f1255, 2026-10-31; fifteen public workflows are migrated to the existing certification court; this entry covers only its named private unit.",
+      "private_subject": "Inspects the actual private catalog envelope-residency cells for all three known/orphan/unrelated associations, proving metadata enumeration does not materialize any missing historical body. Public enumeration output alone cannot establish cold residency."
+    },
+    {
+      "source": "crates/worth-relational/src/tests/durability/contracts/caller_association.rs",
+      "test": "tests::durability::contracts::caller_association::caller_association_bounds_and_rebinding_refuse_without_retaining_publication",
+      "constructors": [
+        "worth_execution::ExecutionRequest::serial",
+        "crate::test_execution_policy::serial_request",
+        "crate::tests::support::runtime_with_test_schema",
+        "crate::tests::support::durable_runtime_with_test_schema"
+      ],
+      "audit": "Coordinator exact private-owner placement ruling against Native 137c0f1255, 2026-10-31; fifteen public workflows are migrated to the existing certification court; this entry covers only its named private unit.",
+      "private_subject": "Tests private pending canonical-route/record-identity inventory, internal checkpoint decode and required association fields, or actual cold body placement/residency. These local owner observations must not become public pending-state mutation or codec doors."
+    },
+    {
+      "source": "crates/worth-relational/src/tests/durability/contracts/caller_association.rs",
+      "test": "tests::durability::contracts::caller_association::caller_association_survives_embedded_checkpoint_and_refuses_old_semantics",
+      "constructors": [
+        "worth_execution::ExecutionRequest::serial",
+        "crate::test_execution_policy::serial_request",
+        "crate::tests::support::runtime_with_test_schema",
+        "crate::tests::support::durable_runtime_with_test_schema"
+      ],
+      "audit": "Coordinator exact private-owner placement ruling against Native 137c0f1255, 2026-10-31; fifteen public workflows are migrated to the existing certification court; this entry covers only its named private unit.",
+      "private_subject": "Tests private pending canonical-route/record-identity inventory, internal checkpoint decode and required association fields, or actual cold body placement/residency. These local owner observations must not become public pending-state mutation or codec doors."
+    },
+    {
+      "source": "crates/worth-relational/src/tests/durability/contracts/caller_association.rs",
+      "test": "tests::durability::contracts::caller_association::caller_association_survives_cold_checkpoint_history_and_journal_tail",
+      "constructors": [
+        "worth_execution::ExecutionRequest::serial",
+        "crate::test_execution_policy::serial_request",
+        "crate::tests::support::runtime_with_test_schema",
+        "crate::tests::support::durable_runtime_with_test_schema"
+      ],
+      "audit": "Coordinator exact private-owner placement ruling against Native 137c0f1255, 2026-10-31; fifteen public workflows are migrated to the existing certification court; this entry covers only its named private unit.",
+      "private_subject": "Tests private pending canonical-route/record-identity inventory, internal checkpoint decode and required association fields, or actual cold body placement/residency. These local owner observations must not become public pending-state mutation or codec doors."
+    },
+    {
+      "source": "crates/worth-relational/src/tests/durability/contracts/recorded_component_checkpoint.rs",
+      "test": "tests::durability::contracts::recorded_component_checkpoint::recorded_component_checkpoint_readmits_cold_canonical_predecessor_and_successor",
+      "constructors": [
+        "worth_execution::ExecutionRequest::serial",
+        "crate::test_execution_policy::serial_request",
+        "crate::tests::support::durable_runtime_with_test_schema"
+      ],
+      "audit": "Coordinator exact private-owner placement ruling against Native 137c0f1255, 2026-10-31; fifteen public workflows are migrated to the existing certification court; this entry covers only its named private unit.",
+      "private_subject": "Inspects private cold root/component pin custody or the internal decoded checkpoint manifest's omitted released/plain-observation entries, and exercises the internal decoder's CHK15 pre-source refusal. The three public missing-source/successor/body-alone workflows move to the existing court."
+    },
+    {
+      "source": "crates/worth-relational/src/tests/durability/contracts/recorded_component_checkpoint.rs",
+      "test": "tests::durability::contracts::recorded_component_checkpoint::recorded_component_checkpoint_readmits_original_empty_predecessor",
+      "constructors": [
+        "worth_execution::ExecutionRequest::serial",
+        "crate::test_execution_policy::serial_request",
+        "crate::tests::support::durable_runtime_with_test_schema"
+      ],
+      "audit": "Coordinator exact private-owner placement ruling against Native 137c0f1255, 2026-10-31; fifteen public workflows are migrated to the existing certification court; this entry covers only its named private unit.",
+      "private_subject": "Inspects private cold root/component pin custody or the internal decoded checkpoint manifest's omitted released/plain-observation entries, and exercises the internal decoder's CHK15 pre-source refusal. The three public missing-source/successor/body-alone workflows move to the existing court."
+    },
+    {
+      "source": "crates/worth-relational/src/tests/durability/contracts/recorded_component_checkpoint.rs",
+      "test": "tests::durability::contracts::recorded_component_checkpoint::recorded_component_checkpoint_omits_released_components_and_plain_observations",
+      "constructors": [
+        "worth_execution::ExecutionRequest::serial",
+        "crate::test_execution_policy::serial_request",
+        "crate::tests::support::durable_runtime_with_test_schema"
+      ],
+      "audit": "Coordinator exact private-owner placement ruling against Native 137c0f1255, 2026-10-31; fifteen public workflows are migrated to the existing certification court; this entry covers only its named private unit.",
+      "private_subject": "Inspects private cold root/component pin custody or the internal decoded checkpoint manifest's omitted released/plain-observation entries, and exercises the internal decoder's CHK15 pre-source refusal. The three public missing-source/successor/body-alone workflows move to the existing court."
+    },
+    {
+      "source": "crates/worth-relational/src/tests/durability/contracts/recorded_component_checkpoint.rs",
+      "test": "tests::durability::contracts::recorded_component_checkpoint::recorded_component_checkpoint_refuses_chk15_before_source_admission",
+      "constructors": [
+        "worth_execution::ExecutionRequest::serial",
+        "crate::test_execution_policy::serial_request",
+        "crate::tests::support::durable_runtime_with_test_schema"
+      ],
+      "audit": "Coordinator exact private-owner placement ruling against Native 137c0f1255, 2026-10-31; fifteen public workflows are migrated to the existing certification court; this entry covers only its named private unit.",
+      "private_subject": "Inspects private cold root/component pin custody or the internal decoded checkpoint manifest's omitted released/plain-observation entries, and exercises the internal decoder's CHK15 pre-source refusal. The three public missing-source/successor/body-alone workflows move to the existing court."
+    },
+    {
+      "source": "crates/worth-relational/src/tests/durability/contracts/semantic_result.rs",
+      "test": "tests::durability::contracts::semantic_result::semantic_result_discovery_must_be_present_in_each_actual_index_entry",
+      "constructors": [
+        "worth_execution::ExecutionRequest::serial",
+        "crate::test_execution_policy::serial_request"
+      ],
+      "audit": "Coordinator exact private-owner placement ruling against Native 137c0f1255, 2026-10-31; fifteen public workflows are migrated to the existing certification court; this entry covers only its named private unit.",
+      "private_subject": "Obtains the actual private catalog envelope residency and journal index, then removes the required association_discovery field from that typed entry's wire. The public semantic producer and raw-frame admission workflows move to the existing court."
+    },
+    {
+      "source": "crates/worth-relational/src/tests/durability/contracts/semantic_result/bulk.rs",
+      "test": "tests::durability::contracts::semantic_result::bulk::semantic_result_bulk_entities_and_relations_seal_and_readmit_original_bindings",
+      "constructors": [
+        "worth_execution::ExecutionRequest::serial",
+        "crate::test_execution_policy::serial_request",
+        "crate::facade::runtime::RelationalRuntimeApi::builder"
+      ],
+      "audit": "Coordinator exact private-owner placement ruling against Native 137c0f1255, 2026-10-31; fifteen public workflows are migrated to the existing certification court; this entry covers only its named private unit.",
+      "private_subject": "The positive proof inspects the original private symbol_texts dictionary; the negative mutates private typed created_relations correspondence before resealing the outer frame. Public descriptions or a new semantic mutator cannot substitute these owner checks."
+    },
+    {
+      "source": "crates/worth-relational/src/tests/durability/contracts/semantic_result/bulk.rs",
+      "test": "tests::durability::contracts::semantic_result::bulk::semantic_result_bulk_malformed_correspondence_refuses_after_frame_reseal",
+      "constructors": [
+        "worth_execution::ExecutionRequest::serial",
+        "crate::test_execution_policy::serial_request",
+        "crate::facade::runtime::RelationalRuntimeApi::builder"
+      ],
+      "audit": "Coordinator exact private-owner placement ruling against Native 137c0f1255, 2026-10-31; fifteen public workflows are migrated to the existing certification court; this entry covers only its named private unit.",
+      "private_subject": "The positive proof inspects the original private symbol_texts dictionary; the negative mutates private typed created_relations correspondence before resealing the outer frame. Public descriptions or a new semantic mutator cannot substitute these owner checks."
+    },
+    {
+      "source": "crates/worth-relational/src/tests/durability/contracts/semantic_result/custom_versions.rs",
+      "test": "tests::durability::contracts::semantic_result::custom_versions::semantic_result_preserves_custom_enforcement_version_distinct_from_aggregate_request",
+      "constructors": [
+        "worth_execution::ExecutionRequest::serial",
+        "crate::test_execution_policy::serial_request"
+      ],
+      "audit": "Coordinator exact private-owner placement ruling against Native 137c0f1255, 2026-10-31; fifteen public workflows are migrated to the existing certification court; this entry covers only its named private unit.",
+      "private_subject": "Pairs independently captured genuine custom-enforcement callback versions with a private typed semantic validation-decision contradiction before frame resealing. Exposing semantic validation mutation would create a forbidden authority door."
+    },
+    {
+      "source": "crates/worth-relational/src/transactions/data/outcomes/commit_result/snapshot_cleanup_tests.rs",
+      "test": "transactions::data::outcomes::commit_result::snapshot_cleanup_tests::native_custody_correction_result_cleanup_is_explicit_idempotent_and_keeps_external_read",
+      "constructors": [
+        "worth_execution::ExecutionRequest::serial",
+        "crate::test_execution_policy::serial_request"
+      ],
+      "audit": "Coordinator exact private-owner placement ruling against Native 137c0f1255, 2026-10-31; fifteen public workflows are migrated to the existing certification court; this entry covers only its named private unit.",
+      "private_subject": "Observes the private published registration count and actual closeout/transfer, or alters the sealed result's private outcome.snapshot pairing using two genuinely admitted handles. Public release results do not prove the private registration invariant and must not gain a pairing mutator."
+    },
+    {
+      "source": "crates/worth-relational/src/transactions/data/outcomes/commit_result/snapshot_cleanup_tests.rs",
+      "test": "transactions::data::outcomes::commit_result::snapshot_cleanup_tests::native_custody_correction_result_release_cell_tracks_public_release_closeout_and_transfer",
+      "constructors": [
+        "worth_execution::ExecutionRequest::serial",
+        "crate::test_execution_policy::serial_request"
+      ],
+      "audit": "Coordinator exact private-owner placement ruling against Native 137c0f1255, 2026-10-31; fifteen public workflows are migrated to the existing certification court; this entry covers only its named private unit.",
+      "private_subject": "Observes the private published registration count and actual closeout/transfer, or alters the sealed result's private outcome.snapshot pairing using two genuinely admitted handles. Public release results do not prove the private registration invariant and must not gain a pairing mutator."
+    },
+    {
+      "source": "crates/worth-relational/src/transactions/data/outcomes/commit_result/snapshot_cleanup_tests.rs",
+      "test": "transactions::data::outcomes::commit_result::snapshot_cleanup_tests::native_custody_correction_result_cleanup_refuses_foreign_and_private_altered_pairing",
+      "constructors": [
+        "worth_execution::ExecutionRequest::serial",
+        "crate::test_execution_policy::serial_request"
+      ],
+      "audit": "Coordinator exact private-owner placement ruling against Native 137c0f1255, 2026-10-31; fifteen public workflows are migrated to the existing certification court; this entry covers only its named private unit.",
+      "private_subject": "Observes the private published registration count and actual closeout/transfer, or alters the sealed result's private outcome.snapshot pairing using two genuinely admitted handles. Public release results do not prove the private registration invariant and must not gain a pairing mutator."
+    },
+    {
+      "source": "crates/worth-signal/src/branch/owner_services/basis_port/tests/recorded_initial_root.rs",
+      "test": "branch::owner_services::basis_port::tests::recorded_initial_root::recorded_initial_empty_root_readmits_through_a_new_actual_owner",
+      "constructors": [
+        "crate::data::graph::SignalGraph::new"
+      ],
+      "audit": "Coordinator exact private-owner placement ruling, 2026-10-31; actual owner-port transfer is private and no public test door is added.",
+      "private_subject": "The local seal helper invokes pub(crate) SignalRuntime::owner_port_slots to transfer the actual graph into sealed owner services. The test drops that actual owner, checks its retained port refuses, and readmits the serialized root through a new actual owner. External placement would require exposing the owner-port transfer; separate Home court journeys exercise public composition."
+    },
+    {
+      "source": "crates/worth-signal/src/branch/owner_services/basis_port/tests/recorded_initial_root.rs",
+      "test": "branch::owner_services::basis_port::tests::recorded_initial_root::initial_empty_root_requires_untouched_producer_origin_and_exact_meaning",
+      "constructors": [
+        "crate::data::graph::SignalGraph::new"
+      ],
+      "audit": "Coordinator exact private-owner placement ruling, 2026-10-31; actual origin mutation and branch-cell advancement stay with their owner.",
+      "private_subject": "Uses pub(crate) rollback_created_nodes to prove that a graph returned to empty still lacks untouched producer origin; seals via pub(crate) owner_port_slots and invokes the existing private advance_exact helper on the original owner cell to prove stale recorded-root refusal. Exporting these mutations or replacing them with public descriptor comparisons would weaken the owner proof."
+    },
+    {
+      "source": "crates/worth-relational/src/branch/basis_registry/retirement_tests.rs",
+      "test": "branch::basis_registry::retirement_tests::result_snapshot_cleanup_basis_registry_contention_keeps_original_lease",
+      "constructors": [
+        "crate::tests::support::runtime_with_test_schema"
+      ],
+      "audit": "Coordinator exact private-owner placement ruling against d36ec2140736, 2026-10-31; fresh native_result_cleanup_source_review approved only these original-result retirement units, no public workflow or new factory audience.",
+      "private_subject": "Holds the actual private retained-state mutex and inspects its issued key, registration identity, OnceLock lease extraction and retirement/disarm state. This proves contention preserves the original owner lease, not a public snapshot description."
+    },
+    {
+      "source": "crates/worth-relational/src/history/retention/lane/retirement/tests.rs",
+      "test": "history::retention::lane::retirement::tests::result_snapshot_cleanup_lane_contention_keeps_original_obligation",
+      "constructors": [
+        "crate::tests::support::runtime_with_test_schema"
+      ],
+      "audit": "Coordinator exact private-owner placement ruling against d36ec2140736, 2026-10-31; fresh native_result_cleanup_source_review approved only these original-result retirement units, no public workflow or new factory audience.",
+      "private_subject": "Holds the actual private lane mutex and compares the original obligation id, retained root inventory and terminal/disarmed state through Busy and retry; external placement would require a new owner-mutation test door."
+    },
+    {
+      "source": "crates/worth-relational/src/runtime/state/subsystems/visibility/snapshot_handles/published_registry/original_cleanup/tests.rs",
+      "test": "runtime::state::subsystems::visibility::snapshot_handles::published_registry::original_cleanup::tests::result_snapshot_cleanup_registry_contention_preserves_exact_cell_and_competing_task",
+      "constructors": [
+        "crate::tests::support::durable_runtime_with_test_schema",
+        "crate::test_execution_policy::serial_request",
+        "worth_execution::ExecutionRequest::serial"
+      ],
+      "audit": "Coordinator exact private-owner placement ruling against d36ec2140736, 2026-10-31; fresh native_result_cleanup_source_review approved only these original-result retirement units, no public workflow or new factory audience.",
+      "private_subject": "Holds the actual published registry and original release-cell phase mutexes, observes exact removal/capacity once, and joins a competing task with real closeout. A Weak is derived from the original issued binding root without an extra retained test root/basis; head movement/deletion/reclamation preserves it while pending, and actual retirement plus reclamation expires that same Weak."
+    },
+    {
+      "source": "crates/worth-relational/src/transactions/data/outcomes/commit_result/snapshot_cleanup_tests.rs",
+      "test": "transactions::data::outcomes::commit_result::snapshot_cleanup_tests::result_snapshot_cleanup_refuses_an_actual_admitted_runtime_copy",
+      "constructors": [
+        "crate::tests::support::durable_runtime_with_test_schema",
+        "crate::test_execution_policy::serial_request",
+        "worth_execution::ExecutionRequest::serial",
+        "crate::runtime::RelationalRuntime::admitted"
+      ],
+      "audit": "Coordinator exact private-owner placement ruling against d36ec2140736, 2026-10-31; fresh native_result_cleanup_source_review approved only these original-result retirement units, no public workflow or new factory audience.",
+      "private_subject": "Constructs the real private admitted runtime view from its original state binding and admission guard, proving that matching owner/state metadata without authentic Owner tenure cannot advance original-result retirement. No counterfeit public runtime or mutable extraction door is introduced."
+    },
+    {
+      "source": "crates/worth-runtime-world/src/branch/retirement_tests/observation_budget/unrestricted.rs",
+      "test": "lifecycle::owner::branch_service::tests::observation_budget::unrestricted::no_policy_world_keeps_distinct_originals_history_and_final_drop_custody",
+      "constructors": [
+        "worth_execution::ExecutionRequest::serial",
+        "crate::test_execution_policy::serial_request",
+        "crate::branch::reference_test_fixture::real_fixture",
+        "fixture.owner_inputs",
+        "TestOwner::new"
+      ],
+      "audit": "Coordinator exact private-owner placement against reviewed World 49973bf522 + corrected 7edd46a74a + getter d7625a7ccd, 2026-10-31; fresh world_request_close_source_review approved only the named private oracles. The public-only close/bootstrap workflow moved to the existing World court; no new factory audience or additional root class is granted.",
+      "private_subject": "Directly reserves actual private publication/recovery slots, inspects observation/component/history/branch ledgers, retains the real retention owner across final World Drop, and proves independent original observations survive close. Public descriptions cannot supply these ledgers or final-owner oracle."
+    },
+    {
+      "source": "crates/worth-runtime-world/src/history/catalog/reachability/close_retirement.rs",
+      "test": "history::catalog::reachability::close_retirement::tests::head_close_tail_busy_is_atomic_and_success_disarms_original_drop",
+      "constructors": [
+        "worth_execution::ExecutionRequest::serial",
+        "crate::test_execution_policy::serial_request",
+        "fixture::installed_root",
+        "fixture::install_ordinary",
+        "ProductBranchReferenceCell::new"
+      ],
+      "audit": "Coordinator exact private-owner placement against reviewed World 49973bf522 + corrected 7edd46a74a + getter d7625a7ccd, 2026-10-31; fresh world_request_close_source_review approved only the named private oracles. The public-only close/bootstrap workflow moved to the existing World court; no new factory audience or additional root class is granted.",
+      "private_subject": "Holds the actual private target and dirty-tail record mutexes and snapshots direct/seated/frontier/counter state. Exercises the real cell through component-pair success, history Busy and original Stop, then the same cell retry and disarmed Drop without a second decrement."
+    },
+    {
+      "source": "crates/worth-runtime-world/src/lifecycle/close/drain.rs",
+      "test": "lifecycle::close::drain::tests::close_finish_busy_retains_same_root_task_and_original_report",
+      "constructors": [
+        "worth_execution::ExecutionRequest::serial",
+        "crate::test_execution_policy::serial_request",
+        "owner",
+        "crate::branch::reference_test_fixture::real_fixture",
+        "RuntimeWorldOwnerRoot::new"
+      ],
+      "audit": "Coordinator exact private-owner placement against reviewed World 49973bf522 + corrected 7edd46a74a + getter d7625a7ccd, 2026-10-31; fresh world_request_close_source_review approved only the named private oracles. The public-only close/bootstrap workflow moved to the existing World court; no new factory audience or additional root class is granted.",
+      "private_subject": "Invokes private admit/drain_heads/finish_report, retains the exact Root-owned close.progress Arc and stored report address, and holds the actual lifecycle mutex while finish and normal close return Busy. No reconstruction or blocking restoration can satisfy this oracle."
+    },
+    {
+      "source": "crates/worth-runtime-world/src/lifecycle/close/drain.rs",
+      "test": "lifecycle::close::drain::tests::close_poison_retains_actual_task_and_never_restores_serving",
+      "constructors": [
+        "worth_execution::ExecutionRequest::serial",
+        "crate::test_execution_policy::serial_request",
+        "owner",
+        "crate::branch::reference_test_fixture::real_fixture",
+        "RuntimeWorldOwnerRoot::new"
+      ],
+      "audit": "Coordinator exact private-owner placement against reviewed World 49973bf522 + corrected 7edd46a74a + getter d7625a7ccd, 2026-10-31; fresh world_request_close_source_review approved only the named private oracles. The public-only close/bootstrap workflow moved to the existing World court; no new factory audience or additional root class is granted.",
+      "private_subject": "Poisons the actual private close-task mutex, verifies typed CloseProgressPoisoned and the identical retained task Arc, and inspects the private Closing state. External placement would require a new production task/poison control."
+    },
+    {
+      "source": "crates/worth-runtime-world/src/lifecycle/owner/operation/preparation_tests/creation.rs",
+      "test": "lifecycle::owner::operation::preparation_tests::creation::closed_owner_rejects_creation_preparation_without_consuming_capacity",
+      "constructors": [
+        "worth_execution::ExecutionRequest::serial",
+        "crate::test_execution_policy::serial_request",
+        "setup",
+        "setup_with_custody",
+        "setup_with_fixture",
+        "RuntimeWorldOwnerRoot::new"
+      ],
+      "audit": "Coordinator exact private-owner placement against reviewed World 49973bf522 + corrected 7edd46a74a + getter d7625a7ccd, 2026-10-31; fresh world_request_close_source_review approved only the named private oracles. The public-only close/bootstrap workflow moved to the existing World court; no new factory audience or additional root class is granted.",
+      "private_subject": "Exercises private RuntimeWorldPreparationService::prepare_creation and reservation_counts, distinguishing availability-before-intent lowering and proving history/recovery/pin/publication capacities and operation accounting remain unchanged."
+    },
+    {
+      "source": "crates/worth-runtime-world/src/lifecycle/owner_tests.rs",
+      "test": "lifecycle::owner::tests::closed_owner_rejects_preparation_without_consuming_capacity",
+      "constructors": [
+        "worth_execution::ExecutionRequest::serial",
+        "crate::test_execution_policy::serial_request",
+        "crate::branch::reference_test_fixture::real_fixture",
+        "RuntimeWorldOwnerRoot::new"
+      ],
+      "audit": "Coordinator exact private-owner placement against reviewed World 49973bf522 + corrected 7edd46a74a + getter d7625a7ccd, 2026-10-31; fresh world_request_close_source_review approved only the named private oracles. The public-only close/bootstrap workflow moved to the existing World court; no new factory audience or additional root class is granted.",
+      "private_subject": "Calls private prepare_publication after close and compares actual history, recovery, unique-pin/acquisition and publication reservation ledgers; the separate public-only close/bootstrap workflow is no longer in this source file."
+    },
+    {
+      "source": "crates/worth-runtime-world/src/lifecycle/owner_tests.rs",
+      "test": "lifecycle::owner::tests::owner_reservation_owns_all_real_capacity_and_drops_it_as_one_attempt",
+      "constructors": [
+        "worth_execution::ExecutionRequest::serial",
+        "crate::test_execution_policy::serial_request",
+        "crate::branch::reference_test_fixture::real_fixture",
+        "RuntimeWorldOwnerRoot::new"
+      ],
+      "audit": "Coordinator exact private-owner placement against reviewed World 49973bf522 + corrected 7edd46a74a + getter d7625a7ccd, 2026-10-31; fresh world_request_close_source_review approved only the named private oracles. The public-only close/bootstrap workflow moved to the existing World court; no new factory audience or additional root class is granted.",
+      "private_subject": "Retains the real private publication reservation, checks every actual capacity and operation ledger through close refusal and exact reservation destruction, then proves all those owner ledgers release together."
+    },
+    {
+      "source": "crates/worth-runtime-world/src/lifecycle/owner_tests/admission_race.rs",
+      "test": "lifecycle::owner::tests::admission_race::admitted_attempt_refuses_close_and_closed_owner_refuses_a_new_attempt",
+      "constructors": [
+        "worth_execution::ExecutionRequest::serial",
+        "crate::test_execution_policy::serial_request",
+        "setup",
+        "TestOwner::new"
+      ],
+      "audit": "Coordinator exact private-owner placement against reviewed World 49973bf522 + corrected 7edd46a74a + getter d7625a7ccd, 2026-10-31; fresh world_request_close_source_review approved only the named private oracles. The public-only close/bootstrap workflow moved to the existing World court; no new factory audience or additional root class is granted.",
+      "private_subject": "Uses private RuntimeWorldPreparationService::prepare_publication and its real reservation lifecycle; actual admitted work refuses close and the same private prepare entry refuses after closure. It claims sequential exclusion, not the removed queued-mutex race."
+    },
+    {
+      "source": "crates/worth-runtime-world/src/lifecycle/owner_tests/bootstrap_boundary.rs",
+      "test": "lifecycle::owner::tests::bootstrap_boundary::close_refuses_busy_admission_then_excludes_bootstrap",
+      "constructors": [
+        "worth_execution::ExecutionRequest::serial",
+        "crate::test_execution_policy::serial_request",
+        "empty_world",
+        "RuntimeWorldOwner::builder"
+      ],
+      "audit": "Coordinator exact private-owner placement against reviewed World 49973bf522 + corrected 7edd46a74a + getter d7625a7ccd, 2026-10-31; fresh world_request_close_source_review approved only the named private oracles. The public-only close/bootstrap workflow moved to the existing World court; no new factory audience or additional root class is granted.",
+      "private_subject": "Holds the actual private operation mutex during nonwaiting close, proving Busy leaves the original owner available; after releasing that exact guard, close excludes bootstrap. No blanket approval is given to unrelated public workflows in the file."
+    },
+    {
+      "source": "crates/worth-runtime-world/src/lifecycle/owner/execution_service/tests/public_ports.rs",
+      "test": "lifecycle::owner::execution_service::tests::public_ports::query_home_selection_never_downgrades_an_unavailable_root_to_memory",
+      "constructors": [
+        "public_world",
+        "RuntimeWorldOwner::builder"
+      ],
+      "audit": "Coordinator exact private-owner placement against reviewed World 49973bf522 + corrected 7edd46a74a + getter d7625a7ccd, 2026-10-31; fresh world_request_close_source_review approved only the named private oracles. The public-only close/bootstrap workflow moved to the existing World court; no new factory audience or additional root class is granted.",
+      "private_subject": "Controls the actual private close contract through Closing/Closed, retains the same Root after public-owner loss, and checks owner capacity while exercising the read-only getter. This distinguishes genuine memory from unavailable ownership without a new production close-state test door."
+    },
+    {
+      "source": "crates/worth-runtime-world/src/branch/reference_test_fixture/owner_inputs.rs",
+      "test": "branch::reference_test_fixture::owner_inputs::RealReferenceFixture::relational_runtime",
+      "constructors": [
+        "real_fixture",
+        "real_fixture_with_relational_runtime",
+        "worth_relational::facade::runtime::RelationalRuntimeApi::builder().build()"
+      ],
+      "audit": "Coordinator exact private-owner placement against reviewed World 6bce98ad1b, 2026-10-31; world_result_cleanup_consumer_source_review approved this immutable fixture accessor and the three named private cleanup units only.",
+      "private_subject": "Immutably borrows the actual fixture-owned private _relational_runtime Arc allocation to authenticate cleanup. This accessor creates no runtime, reconstructed identity, or authority; existing ExecutionRequest and SerialRequest root uses remain unchanged. The inventory names the accessor method, not an additional test or public factory audience."
+    },
+    {
+      "source": "crates/worth-runtime-world/src/lifecycle/close/result_snapshots/tests.rs",
+      "test": "lifecycle::close::result_snapshots::tests::result_cleanup_initialization_stop_and_current_refusals_keep_original_custody",
+      "constructors": [
+        "published",
+        "crate::branch::reference_test_fixture::real_fixture",
+        "RuntimeWorldOwner::builder",
+        "crate::test_execution_policy::serial_request",
+        "worth_execution::ExecutionRequest::serial",
+        "worth_relational::facade::runtime::RelationalRuntimeApi::builder"
+      ],
+      "audit": "Coordinator exact private-owner placement against reviewed World 6bce98ad1b, 2026-10-31; only this named unit and its local published/drive support are admitted.",
+      "private_subject": "Inspects the actual owner lifecycle mutex, task.current.original Arc identity, retained observer, and unchanged cursor/counts across original stop and foreign-owner refusal, plus private malformed receipt-only Published classification. External placement would require new task/cursor/custody controls or weaken these private oracles. Public bootstrap/publication/close workflow is setup, not an additional source-court family."
+    },
+    {
+      "source": "crates/worth-runtime-world/src/lifecycle/close/result_snapshots/tests.rs",
+      "test": "lifecycle::close::result_snapshots::tests::result_cleanup_lost_observer_rejoins_same_cell_and_observes_complete_before_late_stop",
+      "constructors": [
+        "published",
+        "crate::branch::reference_test_fixture::real_fixture",
+        "RuntimeWorldOwner::builder",
+        "crate::test_execution_policy::serial_request",
+        "worth_execution::ExecutionRequest::serial",
+        "RelationalBranchBasisPort::begin_commit_result_snapshot_cleanup"
+      ],
+      "audit": "Coordinator exact private-owner placement against reviewed World 6bce98ad1b, 2026-10-31; only this named unit and its local published/drive support are admitted.",
+      "private_subject": "Controls the original current-result Arc and absent observer, observes genuine original Native release-cell completion, same-cell rejoin, AlreadyReleased count, and immediate terminal state before late stop. No synthetic progress or public observer-loss door is introduced."
+    },
+    {
+      "source": "crates/worth-runtime-world/src/history/catalog/result_snapshot_cleanup.rs",
+      "test": "history::catalog::result_snapshot_cleanup::tests::result_cleanup_cursor_refuses_catalog_busy_missing_and_unpopulated_reserved_slot",
+      "constructors": [
+        "RuntimeWorldOwnerConstructionContract::new",
+        "RuntimeWorldBudgets::without_policy_limits",
+        "RuntimeWorldHistoryCatalogContract::installed",
+        "CompositeHistoryCatalog::new",
+        "RuntimeWorldOwnerConstructionContract::issuer_mut().composite_commit",
+        "Arc::new(OnceLock::new())"
+      ],
+      "audit": "Coordinator exact private-owner placement against reviewed World 6bce98ad1b, 2026-10-31; explicit named private inventory is required although this unit adds no root baseline row.",
+      "private_subject": "Controls the actual catalog mutex, private ordered-ID index and entries map, intentionally unpopulated reservation then missing indexed entry, and unchanged original frontier/ID. The identity is genuinely owner-issued; intentionally incomplete custody is the negative subject. External placement would require public corruption controls or weaken the oracle."
+    },
+    {
+      "source": "crates/worth-relational/src/change_source/runtime_handle/memory_close/tests.rs",
+      "test": "change_source::runtime_handle::memory_close::tests::memory_terminal_close_refuses_admitted_tenure_and_retains_actual_inflight_operation",
+      "constructors": [
+        "crate::tests::support::runtime_with_test_schema",
+        "crate::test_execution_policy::serial_request",
+        "worth_execution::ExecutionRequest::serial",
+        "crate::runtime::RelationalRuntime::admitted"
+      ],
+      "audit": "Coordinator exact private-owner placement against Native Memory close work based on 54c554e29c, 2026-10-31; fresh native_memory_terminal_source_review approved only these four named private oracles. Public workflows reside in the existing certification court; no new control or factory audience is admitted.",
+      "private_subject": "Builds an authentic admitted runtime from the original state binding and real operation guard, distinguishes actual Owner tenure, and checks private phase.sealed plus the same admission binding through refusal and terminalization. No fabricated in-flight count or Arc-count authority is used; external placement would require a new tenure/phase mutation door."
+    },
+    {
+      "source": "crates/worth-relational/src/runtime/state/subsystems/visibility/cache/memory_close/tests.rs",
+      "test": "runtime::state::subsystems::visibility::cache::memory_close::tests::memory_terminal_close_cache_contention_preserves_exact_and_historical_allocations",
+      "constructors": [
+        "crate::tests::support::runtime_with_test_schema",
+        "crate::tests::support::create_entity_outcome",
+        "crate::test_execution_policy::serial_request",
+        "worth_execution::ExecutionRequest::serial",
+        "HistoricalVisibilityBasis::resolve"
+      ],
+      "audit": "Coordinator exact private-owner placement against Native Memory close work based on 54c554e29c, 2026-10-31; only this named cache-owner unit and its actual observed root class are admitted.",
+      "private_subject": "Holds the actual canonical cache.states write guard, inspects same-entry Option(state)/Option(retirement), derives a Historical basis from the genuine original commit, checks retained real old-root Weak identity, and proves retired entries cannot be read as a synthetic serving basis. These oracles require private cache/state access; no population fixture exemption or new public control is granted."
+    },
+    {
+      "source": "crates/worth-relational/src/history/retention/head_cell/memory_close_tests.rs",
+      "test": "history::retention::head_cell::memory_close_tests::memory_terminal_close_head_contention_retires_actual_token_without_dropping_root",
+      "constructors": [
+        "crate::tests::support::runtime_with_test_schema",
+        "crate::test_execution_policy::serial_request",
+        "worth_execution::ExecutionRequest::serial"
+      ],
+      "audit": "Coordinator exact private-owner placement against Native Memory close work based on 54c554e29c, 2026-10-31; only this named head-token unit and its actual observed root class are admitted.",
+      "private_subject": "Holds the actual private head obligation mutex, checks the same owner-issued token.is_live before and after nonwaiting retirement, and compares the authentic head-root Weak through explicit unbudgeted reclamation. External placement would require exposing token or cell mutation; a diagnostic count cannot replace these custody oracles."
+    },
+    {
+      "source": "crates/worth-relational/src/runtime/state/runtime_state/publication_lifecycle/memory_close_tests.rs",
+      "test": "runtime::state::runtime_state::publication_lifecycle::memory_close_tests::memory_terminal_close_publication_registry_contention_preserves_admission",
+      "constructors": [
+        "crate::tests::support::runtime_with_test_schema",
+        "crate::test_execution_policy::serial_request",
+        "worth_execution::ExecutionRequest::serial"
+      ],
+      "audit": "Coordinator exact private-owner placement against Native Memory close work based on 54c554e29c, 2026-10-31; only this named publication-registry unit and its actual observed root class are admitted.",
+      "private_subject": "Holds the actual publication.lifecycle.candidates mutex to force genuine preflight contention, then observes the same actual lifecycle admission before irreversible cleanup and after terminalization. No new test hook, invented candidate population, or public release authority is introduced."
+    },
+    {
+      "source": "workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/provider/application_attempt_state/commit_preparation/relational_commit/commit_execution/tests.rs",
+      "test": "domain_computation::primary_graph::provider::application_attempt_state::commit_preparation::relational_commit::commit_execution::tests::refuse_duplicate_before_world",
+      "constructors": [
+        "native_work::prepare_before_native",
+        "WorthQueryPrimaryGraphProvider::reserve_query_before_world",
+        "durable::commit",
+        "WorthQueryApplicationIdempotencyBinding::new"
+      ],
+      "audit": "Coordinator exact private-owner placement against the fresh directory_query_preparation_source_review and query_preparation_pending_boundary_review approvals, 2026-10-31; only this helper and its one named authentic driver are admitted. The single baseline row is the actual observed ExecutionRequest class.",
+      "private_subject": "Consumes the SAME genuine unprepared Query produced by the ordinary installed/authenticated program pipeline after the existing per-runtime cfg(test) fault is taken. Stages a real competing entry, invokes the production durable helper with that original work, and proves exact neutral refusal before any World constructor, winner Busy/Drift precedence and loser noninterference. The exact winning guard is disposed once before returning the opaque losing refusal. The changed intent is descriptive negative-test data, never authority. This is Memory owner-local early-admission evidence, not Directory publication or a general held-resource retry guarantee."
+    },
+    {
+      "source": "workspaces/worth-store/crates/worth-store-application/src/tests/world_section/readmission.rs",
+      "test": "world_section::readmission::tests::empty_world_requires_its_actual_native_recovery_authority_before_construction",
+      "constructors": [
+        "native_home",
+        "recipe",
+        "tempfile::tempdir",
+        "admitted_home_binding",
+        "ApplicationBuildIdentity::parse",
+        "ApplicationHomeRequest::new",
+        "RelationalRuntimeApi::builder().resolve",
+        "SerialRequest::from_memory",
+        "ExecutionRequest::serial/in_scope",
+        "recover_home",
+        "admit_home",
+        "readmit_relational",
+        "SignalGraph::new",
+        "SignalRuntime::builder",
+        "RuntimeWorldOwner::builder",
+        "attach_bridge",
+        "RuntimeBridgeBuilder::new",
+        "BridgeMappingRegistration::new",
+        "BridgeMappingId::from_stable_name",
+        "TruthPatchScope::for_target",
+        "MappingSelector::exact",
+        "AspectKey::new",
+        "TruthPatchTargetSelector::authoritative_aspect",
+        "SnapshotReadContract::scalar",
+        "SignalInvalidationScope::from_stable_name",
+        "world_recovery_authority",
+        "readmit_world_home"
+      ],
+      "audit": "Coordinator exact private-owner placement against fresh world_recovered_inventory_reopen_source_review approval, 2026-10-31. The identical unit moved into the existing Store test band as a cfg(test) child of its original readmission owner; only this exact test file receives the existing world-home and native-world-readmission caller classes. No unobserved Store source-court baseline row or production-file identifier exemption is added.",
+      "private_subject": "Uses two real filesystem Homes and genuine Native readmission authorities, the actual private original world_slot.medium Arc, and real Bridge/Signal composition. Foreign live Native A with authority B and genuinely empty World journals must refuse before World construction; the same-runtime counterpart succeeds without inventing a root. Arc identity and actual Home closure remain observable. Replacing the consumer with ordinary discovery was executed and failed at the exact foreign-runtime assertion, then the restored and relocated case passed. Physical test-band placement preserves logical private access and adds no public control, synthetic medium, authority vector or count."
+    },
+    {
+      "source": "workspaces/worth-store/crates/worth-store-relational/src/cold_source/member_custody/retirement_tests.rs",
+      "test": "cold_source::member_custody::retirement_tests::selected_directory_guard_retirement_preserves_partial_custody_and_cold_reads",
+      "constructors": [
+        "directory::directory",
+        "cold_source::test_store::initialize",
+        "physical_record_journeys::media",
+        "RelationalSchemaRegistry::new",
+        "RelationalRuntimeApi::builder().build_durable",
+        "StoreJournalMedium::new",
+        "ordinary branch transactions",
+        "RelationalDurableCheckpointSource::new",
+        "external member capture",
+        "section::checkpoint::prepare_captured",
+        "AnchoredRecordPublication::new",
+        "RelationalDurableRecoverySource::new",
+        "recovery_plan_from_source",
+        "recover_with_authority"
+      ],
+      "audit": "Exact governing Iteration Law 2 exception in milestone-3-home-lifecycle.md; source-only Native f016da56de imported as 0074654aee, fresh cold_member_retirement_source_qa APPROVE and actual filesystem controls passed. No unobserved other-team Store baseline root or public extraction door is added.",
+      "private_subject": "The genuine original registered guard, actual registry lock/counts, partial cursor and detached Serving field are private. The exact shared retirement_tests/directory.rs child produces filesystem media, real schema/ordinary commits, captured and anchored checkpoint members and production recovery, then observes actual cold data/history and unchanged checkpoint generation. The named test proves Busy/partial-stop preservation, independent readers and final detached provider ownership. This local registration proof grants no NativeClosed or Home/D11 certification."
+    },
+    {
+      "source": "workspaces/worth-store/crates/worth-store-relational/src/cold_source/member_custody/retirement_tests.rs",
+      "test": "cold_source::member_custody::retirement_tests::issued_source_identity_refuses_fake_and_switched_sources_before_callbacks",
+      "constructors": [
+        "directory::directory",
+        "cold_source::test_store::initialize",
+        "RelationalRuntimeApi::builder().build_durable",
+        "StoreJournalMedium::new",
+        "ordinary branch transactions",
+        "section::checkpoint::prepare_captured",
+        "AnchoredRecordPublication::new",
+        "RelationalDurableRecoverySource::new",
+        "recovery_plan_from_source",
+        "recover_with_authority",
+        "StoreColdSource::new",
+        "StoreColdSource::retain_custody_owner",
+        "negative-only FalseComplete"
+      ],
+      "audit": "The same exact three-test governing exception and private directory.rs fixture as the preceding entry; fresh source/proof QA approved. The negative provider cannot supply successful custody or bytes. No family-wide runtime-root exemption is granted.",
+      "private_subject": "Exercises issuance-Weak data identity before either provider callback or local-share consumption, and refusal when switching sources after real partial progress. FalseComplete falsely offers Complete but neither callback may execute. Direct validation of a genuine registered guard independently proves same-Serving/different-registry refusal and negative-only foreign Serving substitution, restored before Drop. Actual provider owners and remaining registry state remain retained. The fixture's private construction is shared only by the three named tests."
+    },
+    {
+      "source": "workspaces/worth-store/crates/worth-store-relational/src/cold_source/member_custody/retirement_tests.rs",
+      "test": "cold_source::member_custody::retirement_tests::shared_local_retirement_preserves_other_owners_and_unbudgeted_drop_retires_only_remaining_suffix",
+      "constructors": [
+        "directory::directory",
+        "cold_source::test_store::initialize",
+        "RelationalRuntimeApi::builder().build_durable",
+        "StoreJournalMedium::new",
+        "ordinary branch transactions",
+        "section::checkpoint::prepare_captured",
+        "AnchoredRecordPublication::new",
+        "RelationalDurableRecoverySource::new",
+        "recovery_plan_from_source",
+        "recover_with_authority",
+        "retain_members",
+        "into_retirement"
+      ],
+      "audit": "The same exact three-test governing exception and private directory.rs fixture; no additional named test, runtime door or Store baseline row. Actual controls and fresh source QA passed at the source checkpoint.",
+      "private_subject": "Observes the genuine local shared-token release without falsely asserting all registration counts vanished, remaining-suffix-only unbudgeted Drop, independent actual cold-read obligations, retained physical protection after source loss, and final Serving detach for an originally empty registration while its disarmed opaque guard remains alive. Native Arc/payload ownership fences and certification-only observer compilation separately qualify those boundaries. No successful bounded whole-runtime or physical close is inferred."
+    },
+    {
+      "source": "crates/worth-relational/src/history/retention/lane/retained_release/tests.rs",
+      "test": "history::retention::lane::retained_release::tests::assert_external_cut_and_lane_busy",
+      "constructors": [],
+      "audit": "Coordinator exact owner-private cfg(test) assertion placement ruling, 2026-11-01; only the named helper and its named SDK-leaf caller are admitted. Original request/runtime/task are borrowed; no SDK or runtime constructors, production getter, guard return, or factory audience are added. Exact caller: change_source::retained_observation::retirement::tests::retained_observation_original_cut_and_lane_busy_retry_same_request.",
+      "private_subject": "Holds the actual original external-cut and lane gates locally, invokes the same task, and checks original counters/obligations/root multiplicities without exposing a gate. Genuine basis and request come only from the named caller."
+    },
+    {
+      "source": "crates/worth-relational/src/branch/basis_registry/retirement/tests.rs",
+      "test": "branch::basis_registry::retirement::tests::assert_original_registry_busy",
+      "constructors": [],
+      "audit": "Coordinator exact owner-private cfg(test) assertion placement ruling, 2026-11-01; only the named helper and its named SDK-leaf caller are admitted. Original request/runtime/task are borrowed; no SDK or runtime constructors, production getter, guard return, or factory audience are added. Exact caller: change_source::retained_observation::retirement::tests::retained_observation_registry_busy_retries_after_original_observation_release.",
+      "private_subject": "Holds the real original basis registry gate after unique-inner extraction, proves repeat Busy preserves the exact registration and metrics, then permits once-only removal. No synthetic entry or replacement authority is installed."
+    },
+    {
+      "source": "crates/worth-relational/src/branch/basis_registry/retirement/tests.rs",
+      "test": "branch::basis_registry::retirement::tests::assert_pruned_original_registration",
+      "constructors": [
+        "RelationalBranchBasisRegistry::readmit_retained"
+      ],
+      "audit": "Coordinator exact owner-private cfg(test) assertion placement ruling, 2026-11-01; only the named helper and its named SDK-leaf caller are admitted. Original request/runtime/task are borrowed; no SDK or runtime constructors, production getter, guard return, or factory audience are added. Exact caller: change_source::retained_observation::retirement::tests::retained_observation_original_prune_is_not_decremented_twice.",
+      "private_subject": "Ordinary readmission genuinely prunes the original expired Weak between task stages; final advancement preserves the already-decremented real metrics and completes the same lease idempotently."
+    },
+    {
+      "source": "crates/worth-relational/src/branch/basis_registry/retirement/tests.rs",
+      "test": "branch::basis_registry::retirement::tests::assert_successor_registration_preserved",
+      "constructors": [
+        "RelationalRuntime::observe_branch"
+      ],
+      "audit": "Coordinator exact owner-private cfg(test) assertion placement ruling, 2026-11-01; only the named helper and its named SDK-leaf caller are admitted. Original request/runtime/task are borrowed; no SDK or runtime constructors, production getter, guard return, or factory audience are added. Exact caller: change_source::retained_observation::retirement::tests::retained_observation_successor_registration_and_metrics_survive_original_retirement.",
+      "private_subject": "The borrowed genuine owner admits an actual successor after the original Weak expires. Verify exact successor identity and real entries.len versus metrics, original-task noninterference, and final successor release to zero. No hand-inserted positive registration is used."
+    },
+    {
+      "source": "crates/worth-runtime-bridge/src/relational_source/runtime_source/observation_bindings/retirement/tests.rs",
+      "test": "relational_source::runtime_source::observation_bindings::retirement::tests::assert_observation_busy_and_indexes",
+      "constructors": [],
+      "audit": "Coordinator exact owner-private cfg(test) placement ruling, 2026-11-01; only the named assertion helper and original court caller are admitted. Helpers borrow genuine source/task/request/basis, construct no runtime or SDK request, and return no authority/guard. Observed borrowed-type classifications are exact file rows, not a family exemption. Exact court caller: relational_source::bridge_snapshot_reader_tests::retirement::bridge_lease_retirement_actual_busy_keeps_both_commit_indexes_consistent.",
+      "private_subject": "Holds the actual observation-index mutex and checks repeat Busy without changes, then verifies both original by-snapshot and by-commit indexes, retained removed metadata and the original now-empty set after actual point removal."
+    },
+    {
+      "source": "crates/worth-runtime-bridge/src/relational_source/runtime_source/observation_bindings/retirement/tests.rs",
+      "test": "relational_source::runtime_source::observation_bindings::retirement::tests::assert_observation_index_refusals",
+      "constructors": [],
+      "audit": "Coordinator exact owner-private cfg(test) placement ruling, 2026-11-01; only the named assertion helper and original court caller are admitted. Helpers borrow genuine source/task/request/basis, construct no runtime or SDK request, and return no authority/guard. Observed borrowed-type classifications are exact file rows, not a family exemption. Exact court caller: relational_source::bridge_snapshot_reader_tests::retirement::bridge_lease_retirement_missing_or_inconsistent_original_index_refuses_owned.",
+      "private_subject": "Negative-only corruption temporarily moves the SAME original private row or commit membership out of its real index, observes typed refusal before effects, then restores those SAME original values. No synthetic successful registration or reconstructed authority is inserted."
+    },
+    {
+      "source": "crates/worth-runtime-bridge/src/relational_source/runtime_source/branch_head_bindings/retirement/tests.rs",
+      "test": "relational_source::runtime_source::branch_head_bindings::retirement::tests::assert_wrapped_successor_survives_abandonment",
+      "constructors": [
+        "RuntimeBridgeRelationalSource::bind_branch_head_basis_for_bridge"
+      ],
+      "audit": "Coordinator exact owner-private cfg(test) placement ruling, 2026-11-01; only the named assertion helper and original court caller are admitted. Helpers borrow genuine source/task/request/basis, construct no runtime or SDK request, and return no authority/guard. Observed borrowed-type classifications are exact file rows, not a family exemption. Exact court caller: relational_source::bridge_snapshot_reader_tests::retirement::bridge_lease_retirement_wrapped_head_successor_survives_abandonment.",
+      "private_subject": "Negative-only boundary scheduling sets the ORIGINAL existing next_binding_id to MAX, then issues genuine max and wrapped-zero heads via the public source and admitted basis. Original zero-task abandonment and superseded max-task completion must preserve the real wrapped successor, distinguished by its owner-issued snapshot identity. No fake lease, new counter, Native runtime construction or production mutation door is added."
+    },
+    {
+      "source": "crates/worth-relational/src/change_source/runtime_handle/alias_retirement/tests.rs",
+      "test": "change_source::runtime_handle::alias_retirement::tests::immutable_alias_retirement_keeps_owner_serving_and_original_slot_until_reclaim",
+      "constructors": [
+        "runtime_with_test_schema",
+        "RelationalRuntimeHandle::immutable"
+      ],
+      "audit": "Coordinator exact private original-handle/slot/tenure placement ruling, 2026-11-01; only this named Native owner unit and observed exact file classes are admitted. Existing genuine owner fixture is reused; no new runtime constructor, source factory or public test getter is added.",
+      "private_subject": "Borrows the genuine original Native owner while retiring its exact local immutable handle. Private original lock-observation-slot Weak identity remains live until opaque alias-data reclaim; real subsequent Native publication proves admission was never stopped. Actual Runtime Arc unwrap and ordinary owner close complete while the passive alias metadata remains held."
+    },
+    {
+      "source": "crates/worth-relational/src/change_source/runtime_handle/alias_retirement/tests.rs",
+      "test": "change_source::runtime_handle::alias_retirement::tests::immutable_alias_retirement_rejects_same_state_cached_identity_and_foreign_owner",
+      "constructors": [
+        "runtime_with_test_schema",
+        "owner_binding().admit",
+        "RelationalRuntime::admitted",
+        "RelationalRuntimeHandle::immutable"
+      ],
+      "audit": "Coordinator exact private original-handle/slot/tenure placement ruling, 2026-11-01; only this named Native owner unit and observed exact file classes are admitted. Existing genuine owner fixture is reused; no new runtime constructor, source factory or public test getter is added.",
+      "private_subject": "Creates an actual admitted runtime handle through the genuine owner-issued operation over the same state/cached runtime ID, then proves it is not the original owning runtime pointee. Private original handle/slot identity survives refusal. A genuinely foreign owner also refuses. No fake Owner tenure or positive owner witness is constructed."
+    },
+    {
+      "source": "crates/worth-relational/src/change_source/runtime_handle/alias_retirement/tests.rs",
+      "test": "change_source::runtime_handle::alias_retirement::tests::immutable_alias_retirement_shared_and_stopped_refusals_preserve_original_handle",
+      "constructors": [
+        "runtime_with_test_schema",
+        "RelationalRuntimeHandle::shared",
+        "RelationalRuntimeHandle::immutable"
+      ],
+      "audit": "Coordinator exact private original-handle/slot/tenure placement ruling, 2026-11-01; only this named Native owner unit and observed exact file classes are admitted. Existing genuine owner fixture is reused; no new runtime constructor, source factory or public test getter is added.",
+      "private_subject": "Inspects exact private Shared/Immutable Arc identity and original observation slot after unsupported Shared or original-request stop. Returned handles are the same inputs, before effects; ordinary unbudgeted disposal and genuine original owner closure remain separate."
+    },
+    {
+      "source": "crates/worth-relational/src/tests/transactions/core/replay_copy_custody.rs",
+      "test": "tests::transactions::core::replay_copy_custody::replay_input_copy_refuses_before_growth",
+      "constructors": [
+        "ExecutionRequest::serial",
+        "SerialRequest::from_memory",
+        "crate::tests::support::runtime_with_test_schema"
+      ],
+      "audit": "Coordinator exact owner-private copy-custody placement ruling, 2026-11-01, against governing ea81886ea1. Only this named unit and observed exact ExecutionRequest/SerialRequest file row are admitted. Existing genuine Native owner fixture is reused; no new runtime factory, private gate helper, getter or family-wide audience is introduced.",
+      "private_subject": "Calls the genuine private stage_recovered_intents operation on an owner-issued fresh transaction and observes its private input roster, exact zero-budget refusal and unchanged real branch observation. No synthetic prepared state or factory is substituted."
+    },
+    {
+      "source": "crates/worth-relational/src/tests/transactions/core/replay_copy_custody.rs",
+      "test": "tests::transactions::core::replay_copy_custody::replay_validation_keeps_normalized_copy_after_inputs_drop",
+      "constructors": [
+        "ExecutionRequest::serial",
+        "SerialRequest::from_memory",
+        "crate::tests::support::runtime_with_test_schema"
+      ],
+      "audit": "Coordinator exact owner-private copy-custody placement ruling, 2026-11-01, against governing ea81886ea1. Only this named unit and observed exact ExecutionRequest/SerialRequest file row are admitted. Existing genuine Native owner fixture is reused; no new runtime factory, private gate helper, getter or family-wide audience is introduced.",
+      "private_subject": "Moves the SAME private proposal.prepared.merged_plan whole owner out of consuming genuine validation; every other proposal/index/prepared owner dies before the budget oracle, so only that real independent plan can retain its own bill. Whole owner disposal must refund to zero; no bare funded extraction or test getter."
+    },
+    {
+      "source": "crates/worth-relational/src/tests/transactions/core/replay_copy_custody.rs",
+      "test": "tests::transactions::core::replay_copy_custody::normalized_small_output_does_not_retain_large_input_bill",
+      "constructors": [
+        "ExecutionRequest::serial",
+        "SerialRequest::from_memory",
+        "crate::tests::support::runtime_with_test_schema"
+      ],
+      "audit": "Coordinator exact owner-private copy-custody placement ruling, 2026-11-01, against governing ea81886ea1. Only this named unit and observed exact ExecutionRequest/SerialRequest file row are admitted. Existing genuine Native owner fixture is reused; no new runtime factory, private gate helper, getter or family-wide audience is introduced.",
+      "private_subject": "Inspects the actual private accepted normalized plan after genuine raw client-key interning. The smaller Symbol representation must release the independently copied large raw input charge instead of retaining a shared peak ticket."
+    },
+    {
+      "source": "crates/worth-relational/src/tests/transactions/core/replay_copy_custody.rs",
+      "test": "tests::transactions::core::replay_copy_custody::interrupted_copy_round_restores_original_transaction",
+      "constructors": [
+        "ExecutionRequest::serial",
+        "SerialRequest::from_memory",
+        "crate::tests::support::runtime_with_test_schema"
+      ],
+      "audit": "Coordinator exact owner-private copy-custody placement ruling, 2026-11-01, against governing ea81886ea1. Only this named unit and observed exact ExecutionRequest/SerialRequest file row are admitted. Existing genuine Native owner fixture is reused; no new runtime factory, private gate helper, getter or family-wide audience is introduced.",
+      "private_subject": "Invokes the actual private preparation restoration round and normalizer, then cancels the original request. Private original transaction batches and cached-plan state must be restored, abandoned-copy funding released and real branch unchanged. No public control door is added."
+    },
+    {
+      "source": "crates/worth-relational/src/tests/transactions/core/replay_copy_custody.rs",
+      "test": "tests::transactions::core::replay_copy_custody::merge_copy_funds_headers_without_rebilling_shared_leaves",
+      "constructors": [
+        "ExecutionRequest::serial",
+        "SerialRequest::from_memory",
+        "crate::tests::support::runtime_with_test_schema"
+      ],
+      "audit": "Coordinator exact owner-private copy-custody placement ruling, 2026-11-01, against governing ea81886ea1. Only this named unit and observed exact ExecutionRequest/SerialRequest file row are admitted. Existing genuine Native owner fixture is reused; no new runtime factory, private gate helper, getter or family-wide audience is introduced.",
+      "private_subject": "Produces actual merge authority through existing genuine prepare/execute workflow, then invokes the private reconstructed merge-plan copy owner. Exact intrinsic row/ancestor backing identity must remain shared while new independent headers/intents retain a separate original-budget bill until this owner drops."
+    },
+    {
+      "source": "crates/worth-relational/src/history/commit/envelope_residency/memory_publication_tests.rs",
+      "test": "history::commit::envelope_residency::memory_publication_tests::memory_original_frame_survives_export_checkpoint_and_last_alias",
+      "constructors": [
+        "runtime_with_test_schema",
+        "create_entity_outcome"
+      ],
+      "audit": "Coordinator exact private Memory-original-frame owner placement ruling against b9575d36de and corrected scalar-observation ruling9a602c9a1c. Only this named owner unit and exact ExecutionRequest/SerialRequest file row are admitted. Existing genuine producer fixtures/prepare-publication ports are reused; no new Runtime factory, authority getter, validator bypass or Noop is authorized.",
+      "private_subject": "Uses the genuine Memory producer and existing public artifact export/checkpoint, observes SAME private residency/frame backing and final alias refund; no reconstructed original or fake performed proof."
+    },
+    {
+      "source": "crates/worth-relational/src/history/commit/envelope_residency/memory_publication_tests.rs",
+      "test": "history::commit::envelope_residency::memory_publication_tests::memory_frame_quota_and_cancel_refuse_before_position_or_head",
+      "constructors": [
+        "runtime_with_test_schema",
+        "create_entity_outcome",
+        "test_owner_begin_transaction_for_main",
+        "prepare_validated_proposal"
+      ],
+      "audit": "Coordinator exact private Memory-original-frame owner placement ruling against b9575d36de and corrected scalar-observation ruling9a602c9a1c. Only this named owner unit and exact ExecutionRequest/SerialRequest file row are admitted. Existing genuine producer fixtures/prepare-publication ports are reused; no new Runtime factory, authority getter, validator bypass or Noop is authorized.",
+      "private_subject": "Uses an actual validated/prepared proposal and real compare_and_publish; independent reference encoding/public controller calibration identifies the entered frame buffer refusal while actual head/basis/position remain unchanged. Cancellation is a separate genuine invocation; no claim that the consumed failed proposal is reusable."
+    },
+    {
+      "source": "crates/worth-relational/src/history/commit/envelope_residency/memory_publication_tests.rs",
+      "test": "history::commit::envelope_residency::memory_publication_tests::memory_frame_layout_preserves_scalar_tuple_observations",
+      "constructors": [
+        "runtime_with_test_schema",
+        "create_entity_outcome"
+      ],
+      "audit": "Coordinator exact private Memory-original-frame owner placement ruling against b9575d36de and corrected scalar-observation ruling9a602c9a1c. Only this named owner unit and exact ExecutionRequest/SerialRequest file row are admitted. Existing genuine producer fixtures/prepare-publication ports are reused; no new Runtime factory, authority getter, validator bypass or Noop is authorized.",
+      "private_subject": "Observes exact existing tuple length/digest and actual Memory cell/backing layouts after genuine publication; old tuple encoder stays byte-exact and no raw tuple/map substitution is made."
+    },
+    {
+      "source": "crates/worth-relational/src/history/commit/envelope_residency/memory_publication_tests.rs",
+      "test": "history::commit::envelope_residency::memory_publication_tests::journal_publication_keeps_journal_placement_without_memory_frame",
+      "constructors": [
+        "durable_runtime_with_test_schema",
+        "attached_test_medium"
+      ],
+      "audit": "Coordinator exact private Memory-original-frame owner placement ruling against b9575d36de and corrected scalar-observation ruling9a602c9a1c. Only this named owner unit and exact ExecutionRequest/SerialRequest file row are admitted. Existing genuine producer fixtures/prepare-publication ports are reused; no new Runtime factory, authority getter, validator bypass or Noop is authorized.",
+      "private_subject": "Uses the genuine durable runtime and attached medium to inspect actual Journal placement and absence of Memory-only retained frame; preserves the existing original Journal route."
+    },
+    {
+      "source": "workspaces/worth-store/crates/worth-store-relational/src/section/checkpoint/journal_tests.rs",
+      "test": "section::checkpoint::journal_tests::journal_checkpoint_selection_rehomes_covered_history_and_preserves_uncovered_tail",
+      "constructors": [
+        "test_store::initialize",
+        "StoreJournalMedium::new",
+        "RelationalRuntimeApi::builder",
+        "runtime"
+      ],
+      "audit": "Coordinator exact real Store/Native composition-root placement ruling for strict CHK18 against b95b013237 and controlled custody6505a75d09. Only this named filesystem journey and observed ExecutionRequest/SerialRequest/RelationalRuntime file row are admitted. Existing real FS/StoreJournalMedium/runtime builder chain is reused; no fake original source, Noop, validator bypass or family-wide runtime factory audience. The journey is placed under the actual section/checkpoint owner to reuse private production admission without widening production helpers; only the existing cfg(test) physical initialization helper receives this exact additional crate-local caller. The local runtime helper has only this exact named journey as its caller; both producer and fresh reader use the real StoreJournalMedium and original source.",
+      "private_subject": "Actual producer frames and physical home selection/EOF receipt drive the original native capture ACK and fresh recovery. Covered journal records are made genuinely inaccessible in fixture family extents, checkpoint member bytes remain intact, and nonempty tails use their original journal. Source identity, original pending subject and full artifact/root predicates stay real; this is not Complete/Home2 evidence."
+    },
+    {
+      "source": "crates/worth-relational/src/durability/data/native_checkpoint/tests/selected_ack.rs",
+      "test": "durability::data::native_checkpoint::tests::selected_ack::selected_ack_partial_transfer_preserves_later_cells_and_resumes_same_capture",
+      "constructors": [
+        "durable_runtime_with_test_schema",
+        "attached_test_medium",
+        "create_entity_outcome",
+        "create_entity"
+      ],
+      "audit": "Coordinator exact original-checkpoint-owner child placement ruling for strict CHK18 against b95b013237 and6505a75d09. Only these two named owner controls and the exact ExecutionRequest/SerialRequest leaf are admitted. Existing genuine producer medium/runtime helpers are reused; no replacement operation, new Runtime factory, production test getter, Noop or performed-authority fabrication.",
+      "private_subject": "Genuine external-member capture and its original publication Arc transfer only frozen covered cells; a real work stop retains the same captured operation and later cells stay untouched before successful resume."
+    },
+    {
+      "source": "crates/worth-relational/src/durability/data/native_checkpoint/tests/selected_ack.rs",
+      "test": "durability::data::native_checkpoint::tests::selected_ack::selected_ack_exposes_backed_data_before_retirement_and_releases_holds_only_on_completion",
+      "constructors": [
+        "durable_runtime_with_test_schema",
+        "attached_test_medium",
+        "create_entity_outcome",
+        "create_entity"
+      ],
+      "audit": "Coordinator exact original-checkpoint-owner child placement ruling for strict CHK18 against b95b013237 and6505a75d09. Only these two named owner controls and the exact ExecutionRequest/SerialRequest leaf are admitted. Existing genuine producer medium/runtime helpers are reused; no replacement operation, new Runtime factory, production test getter, Noop or performed-authority fabrication.",
+      "private_subject": "Actual captured directory becomes available as data before displaced original read/member retirement completes; interrupted ACK retains the same original publication and component obligations until final completion. A real definition registered after the last covered canonical commit makes the captured frontier strictly newer; while ACK is stopped after data exposure, a genuine later canonical commit must still declare that pending definition. Only completed original ACK advances accepted catalog coverage."
+    },
+    {
+      "source": "workspaces/worth-store/crates/worth-store-relational/src/section/checkpoint/journal_tests/complete.rs",
+      "test": "section::checkpoint::journal_tests::complete::genuine_complete_section_retains_capture_and_resumes_same_selection_ack",
+      "constructors": [
+        "section",
+        "runtime",
+        "test_store::initialize"
+      ],
+      "audit": "Root exact owner-child ruling for genuine Complete Section preparation. Only this leaf and these two tests may reuse journal_tests::runtime and the existing physical component initialization fixture. No new Runtime factory, source replacement, authority getter, Noop, validator bypass or broader family audience.",
+      "private_subject": "Real original Store journal producer and declared home.checkpoint anchor exercise distinct Complete preparation and the same selected ACK retries."
+    },
+    {
+      "source": "workspaces/worth-store/crates/worth-store-relational/src/section/checkpoint/journal_tests/complete.rs",
+      "test": "section::checkpoint::journal_tests::complete::weak_complete_preparation_preserves_close_stop_resume_and_owner_loss",
+      "constructors": [
+        "section",
+        "runtime",
+        "test_store::initialize"
+      ],
+      "audit": "Root exact owner-child ruling for genuine Complete Section preparation. Only this leaf and these two tests may reuse journal_tests::runtime and the existing physical component initialization fixture. No new Runtime factory, source replacement, authority getter, Noop, validator bypass or broader family audience.",
+      "private_subject": "Actual Native retained-custody close refusal, stopped original request, idle weak clones, resumed owner and lost owner distinguish the genuine weak service lifecycle."
+    },
+    {
+      "source": "crates/worth-relational/src/runtime/state/subsystems/canonical_publication_routes/branch_transition_stream/schema_inputs/tests.rs",
+      "test": "runtime::state::subsystems::history::canonical_publication_routes::branch_transition_stream::schema_inputs::tests::original_empty_schemas_survive_archived_installation_and_stream_replacement",
+      "constructors": [
+        "runtime_with_test_schema"
+      ],
+      "audit": "Root exact existing transition-stream owner-child ruling. These four controls reuse the existing genuine Native runtime fixture only in this leaf. Original schema Arcs and actual construction/install/archive producers remain the subject. Public controller calibration and concrete owner layouts protect request denial and refund; no new Runtime factory, private Execution control audience, authority getter or Complete qualification.",
+      "private_subject": "Producer-original Empty/transition DATA lifetime through same-source replacement and coverage, fresh receiver seed discard, request-funded capture roster, and pre-effect transition backing admission."
+    },
+    {
+      "source": "crates/worth-relational/src/runtime/state/subsystems/canonical_publication_routes/branch_transition_stream/schema_inputs/tests.rs",
+      "test": "runtime::state::subsystems::history::canonical_publication_routes::branch_transition_stream::schema_inputs::tests::fresh_recovery_receiver_discards_only_its_unobserved_construction_seed",
+      "constructors": [
+        "runtime_with_test_schema"
+      ],
+      "audit": "Root exact existing transition-stream owner-child ruling. These four controls reuse the existing genuine Native runtime fixture only in this leaf. Original schema Arcs and actual construction/install/archive producers remain the subject. Public controller calibration and concrete owner layouts protect request denial and refund; no new Runtime factory, private Execution control audience, authority getter or Complete qualification.",
+      "private_subject": "Producer-original Empty/transition DATA lifetime through same-source replacement and coverage, fresh receiver seed discard, request-funded capture roster, and pre-effect transition backing admission."
+    },
+    {
+      "source": "crates/worth-relational/src/runtime/state/subsystems/canonical_publication_routes/branch_transition_stream/schema_inputs/tests.rs",
+      "test": "runtime::state::subsystems::history::canonical_publication_routes::branch_transition_stream::schema_inputs::tests::original_schema_capture_retains_exact_roster_and_refuses_before_copy",
+      "constructors": [
+        "runtime_with_test_schema"
+      ],
+      "audit": "Root exact existing transition-stream owner-child ruling. These four controls reuse the existing genuine Native runtime fixture only in this leaf. Original schema Arcs and actual construction/install/archive producers remain the subject. Public controller calibration and concrete owner layouts protect request denial and refund; no new Runtime factory, private Execution control audience, authority getter or Complete qualification.",
+      "private_subject": "Producer-original Empty/transition DATA lifetime through same-source replacement and coverage, fresh receiver seed discard, request-funded capture roster, and pre-effect transition backing admission."
+    },
+    {
+      "source": "crates/worth-relational/src/runtime/state/subsystems/canonical_publication_routes/branch_transition_stream/schema_inputs/tests.rs",
+      "test": "runtime::state::subsystems::history::canonical_publication_routes::branch_transition_stream::schema_inputs::tests::transition_backing_refusal_precedes_archive_and_retains_its_own_grant",
+      "constructors": [
+        "runtime_with_test_schema"
+      ],
+      "audit": "Root exact existing transition-stream owner-child ruling. These four controls reuse the existing genuine Native runtime fixture only in this leaf. Original schema Arcs and actual construction/install/archive producers remain the subject. Public controller calibration and concrete owner layouts protect request denial and refund; no new Runtime factory, private Execution control audience, authority getter or Complete qualification.",
+      "private_subject": "Producer-original Empty/transition DATA lifetime through same-source replacement and coverage, fresh receiver seed discard, request-funded capture roster, and pre-effect transition backing admission."
+    },
+    {
+      "source": "crates/worth-relational/src/storage/residency/checkpoint_capture/complete/tests.rs",
+      "test": "storage::residency::checkpoint_capture::complete::tests::complete_full_reg6_matches_prior_nontrivial_head_and_history_bytes",
+      "constructors": [
+        "build_runtime"
+      ],
+      "audit": "Root exact owner-child ruling: these controls use only the existing AspectSchemaFixture::build_runtime support factory to produce genuine published Struct and endpoint history; no new Runtime factory or audience outside this leaf. Controlled Full emission is compared with prior whole encoded bytes, actual request ACK and independently retained public SDK byte custody.",
+      "private_subject": "Original Full REG6 head/history wire equivalence, same-operation request/Busy ACK, and final byte alias refund."
+    },
+    {
+      "source": "crates/worth-relational/src/storage/residency/checkpoint_capture/complete/tests.rs",
+      "test": "storage::residency::checkpoint_capture::complete::tests::complete_region_ack_busy_and_stop_preserve_original_binding_then_refund",
+      "constructors": [
+        "build_runtime"
+      ],
+      "audit": "Root exact owner-child ruling: these controls use only the existing AspectSchemaFixture::build_runtime support factory to produce genuine published Struct and endpoint history; no new Runtime factory or audience outside this leaf. Controlled Full emission is compared with prior whole encoded bytes, actual request ACK and independently retained public SDK byte custody.",
+      "private_subject": "Original Full REG6 head/history wire equivalence, same-operation request/Busy ACK, and final byte alias refund."
+    },
+    {
+      "source": "crates/worth-relational/src/storage/residency/checkpoint_capture/complete/tests.rs",
+      "test": "storage::residency::checkpoint_capture::complete::tests::complete_region_emitted_byte_alias_retains_only_its_actual_grant",
+      "constructors": [
+        "build_runtime"
+      ],
+      "audit": "Root exact owner-child ruling: these controls use only the existing AspectSchemaFixture::build_runtime support factory to produce genuine published Struct and endpoint history; no new Runtime factory or audience outside this leaf. Controlled Full emission is compared with prior whole encoded bytes, actual request ACK and independently retained public SDK byte custody.",
+      "private_subject": "Original Full REG6 head/history wire equivalence, same-operation request/Busy ACK, and final byte alias refund."
+    },
+    {
+      "source": "crates/worth-relational/src/durability/authority/checkpoint_components/complete/tests.rs",
+      "test": "durability::authority::checkpoint_components::complete::tests::complete_component_capture_keeps_exact_external_cut_without_new_basis",
+      "constructors": [
+        "runtime_with_test_schema"
+      ],
+      "audit": "Root exact owner-child ruling: this named control reuses only the listed existing genuine Native fixture. No new Runtime factory, source replacement, authority getter, widened Execution control audience or Complete/Closed promotion. Component cut assertion borrows real owners and returns descriptive projection only.",
+      "private_subject": "Actual configuration/publication freeze and external_cut winner; genuine original component obligations with no new basis issuance; original request before roster growth and final hold refund."
+    },
+    {
+      "source": "crates/worth-relational/src/durability/authority/checkpoint_components/complete/tests.rs",
+      "test": "durability::authority::checkpoint_components::complete::tests::complete_component_capture_refuses_original_roster_before_effects",
+      "constructors": [
+        "runtime_with_test_schema"
+      ],
+      "audit": "Root exact owner-child ruling: this named control reuses only the listed existing genuine Native fixture. No new Runtime factory, source replacement, authority getter, widened Execution control audience or Complete/Closed promotion. Component cut assertion borrows real owners and returns descriptive projection only.",
+      "private_subject": "Actual configuration/publication freeze and external_cut winner; genuine original component obligations with no new basis issuance; original request before roster growth and final hold refund."
+    },
+    {
+      "source": "crates/worth-relational/src/durability/authority/checkpoint_components/complete/tests.rs",
+      "test": "durability::authority::checkpoint_components::complete::tests::complete_component_holds_keep_actual_read_obligations_until_drop",
+      "constructors": [
+        "runtime_with_test_schema"
+      ],
+      "audit": "Root exact owner-child ruling: this named control reuses only the listed existing genuine Native fixture. No new Runtime factory, source replacement, authority getter, widened Execution control audience or Complete/Closed promotion. Component cut assertion borrows real owners and returns descriptive projection only.",
+      "private_subject": "Actual configuration/publication freeze and external_cut winner; genuine original component obligations with no new basis issuance; original request before roster growth and final hold refund."
+    },
+    {
+      "source": "crates/worth-relational/src/durability/authority/checkpoint_complete/tests/empty_schema.rs",
+      "test": "durability::authority::checkpoint_complete::tests::empty_schema::complete_empty_archive_and_initial_installation_preserve_unused_original_schema",
+      "constructors": [
+        "runtime_with_test_schema"
+      ],
+      "audit": "Root exact owner-child ruling: this named control reuses only the listed existing genuine Native fixture. No new Runtime factory, source replacement, authority getter, widened Execution control audience or Complete/Closed promotion. Component cut assertion borrows real owners and returns descriptive projection only.",
+      "private_subject": "Genuine Empty birth/install/archive producer authority, unused full schema constraint and explicit recovered-original absence refusal."
+    },
+    {
+      "source": "crates/worth-relational/src/durability/authority/checkpoint_complete/tests/empty_schema.rs",
+      "test": "durability::authority::checkpoint_complete::tests::empty_schema::complete_refuses_recovered_empty_without_original_birth_authority",
+      "constructors": [
+        "durable_runtime_with_test_schema"
+      ],
+      "audit": "Root exact owner-child ruling: this named control reuses only the listed existing genuine Native fixture. No new Runtime factory, source replacement, authority getter, widened Execution control audience or Complete/Closed promotion. Component cut assertion borrows real owners and returns descriptive projection only.",
+      "private_subject": "Genuine Empty birth/install/archive producer authority, unused full schema constraint and explicit recovered-original absence refusal."
+    },
+    {
+      "source": "crates/worth-relational/src/durability/authority/checkpoint_complete/tests/request_control.rs",
+      "test": "durability::authority::checkpoint_complete::tests::request_control::complete_original_request_denial_and_cancel_preserve_original_empty_source",
+      "constructors": [
+        "runtime_with_test_schema"
+      ],
+      "audit": "Root exact owner-child ruling: this named control reuses only the listed existing genuine Native fixture. No new Runtime factory, source replacement, authority getter, widened Execution control audience or Complete/Closed promotion. Component cut assertion borrows real owners and returns descriptive projection only.",
+      "private_subject": "Public weak Complete request denial, cancellation, original Root preservation and retry."
+    },
+    {
+      "source": "crates/worth-relational/src/durability/authority/checkpoint_complete/tests/pinned_delete.rs",
+      "test": "durability::authority::checkpoint_complete::tests::pinned_delete::complete_fold_matches_original_relation_delete_with_snapshot_and_replay_pins",
+      "constructors": [
+        "durable_runtime_with_test_schema"
+      ],
+      "audit": "Root exact owner-child ruling: this named control reuses only the listed existing genuine Native fixture. No new Runtime factory, source replacement, authority getter, widened Execution control audience or Complete/Closed promotion. Component cut assertion borrows real owners and returns descriptive projection only.",
+      "private_subject": "Genuine relation deletion with live original snapshot/replay holds; decoded reconstructed lifecycle and original axes compared against actual producer."
+    },
+    {
+      "source": "crates/worth-relational/src/durability/authority/checkpoint_complete/tests/partial_aspect_update.rs",
+      "test": "durability::authority::checkpoint_complete::tests::partial_aspect_update::complete_preserves_partial_update_without_demanding_untouched_aspect_reference",
+      "constructors": [
+        "durable_runtime_with_test_schema"
+      ],
+      "audit": "Root exact owner-child ruling: this named control reuses only the listed existing genuine Native fixture. No new Runtime factory, source replacement, authority getter, widened Execution control audience or Complete/Closed promotion. Component cut assertion borrows real owners and returns descriptive projection only.",
+      "private_subject": "Genuine partial field update omits untouched aspect reference; actual Complete fold preserves independent original lifecycle and full axes."
+    },
+    {
+      "source": "crates/worth-relational/src/durability/authority/fresh_source/tests.rs",
+      "test": "durability::authority::fresh_source::tests::fresh_source_keeps_actual_runtime_root_and_installed_schema_for_complete",
+      "constructors": [
+        "durable_runtime_with_test_schema"
+      ],
+      "audit": "Root exact owner-child ruling: reuses the existing genuine durable Native fixture and original request. Private root/schema pointer and producer-input observations cannot be moved to an external court without adding authority/observer reach. No new Runtime factory, source replacement, recovered-authority constructor, Complete promotion or physical Closed claim. Real filesystem Store/Host composition is proved separately.",
+      "private_subject": "Same actual initial runtime/root/schema/source pointers and decoded full otherwise-unused installation constraint through first Complete capture."
+    },
+    {
+      "source": "crates/worth-relational/src/durability/authority/fresh_source/tests.rs",
+      "test": "durability::authority::fresh_source::tests::fresh_source_refuses_foreign_and_nonempty_actual_sources_without_rebuild",
+      "constructors": [
+        "durable_runtime_with_test_schema"
+      ],
+      "audit": "Root exact owner-child ruling: reuses the existing genuine durable Native fixture and original request. Private root/schema pointer and producer-input observations cannot be moved to an external court without adding authority/observer reach. No new Runtime factory, source replacement, recovered-authority constructor, Complete promotion or physical Closed claim. Real filesystem Store/Host composition is proved separately.",
+      "private_subject": "Actual foreign provider/runtime and nonempty canonical source deny before original owner replacement or fresh admission."
+    },
+    {
+      "source": "crates/worth-relational/src/durability/authority/fresh_source/tests.rs",
+      "test": "durability::authority::fresh_source::tests::fresh_receipt_refuses_actual_movement_and_preserves_original_cancellation",
+      "constructors": [
+        "durable_runtime_with_test_schema"
+      ],
+      "audit": "Root exact owner-child ruling: reuses the existing genuine durable Native fixture and original request. Private root/schema pointer and producer-input observations cannot be moved to an external court without adding authority/observer reach. No new Runtime factory, source replacement, recovered-authority constructor, Complete promotion or physical Closed claim. Real filesystem Store/Host composition is proved separately.",
+      "private_subject": "Actual subsequent publication invalidates initial-root validation; original cancellation remains typed without rebuilding the owner."
+    },
+    {
+      "source": "crates/worth-relational/src/durability/authority/fresh_source/tests.rs",
+      "test": "durability::authority::fresh_source::tests::fresh_source_refuses_real_selected_empty_checkpoint",
+      "constructors": [
+        "durable_runtime_with_test_schema"
+      ],
+      "audit": "Root exact owner-child ruling: reuses the existing genuine durable Native fixture and original request. Private root/schema pointer and producer-input observations cannot be moved to an external court without adding authority/observer reach. No new Runtime factory, source replacement, recovered-authority constructor, Complete promotion or physical Closed claim. Real filesystem Store/Host composition is proved separately.",
+      "private_subject": "Real selected Empty checkpoint is not fresh source evidence even with no canonical/transition tail."
     }
   ]
 }

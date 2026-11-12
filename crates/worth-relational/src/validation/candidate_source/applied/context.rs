@@ -6,14 +6,24 @@ pub(in crate::validation::candidate_source) struct SourcePreparationContext<'a> 
     pub runtime: &'a RelationalPreparationRuntime,
     pub selected: SelectedRelationalBranchRead<'a>,
     pub proposal: &'a crate::mvcc::RelationalMutationProposalIdentity,
+    pub records: &'a [RecordRef],
 }
 impl SourcePreparationContext<'_> {
     pub(super) fn affected_groups(&self) -> Vec<&SourcePreparationGroup> {
+        if self.runtime.home_target.is_some() {
+            return self
+                .runtime
+                .schema_contract_runtime
+                .custom_invariant_registries
+                .all_source_groups()
+                .iter()
+                .collect();
+        }
         let before = InvariantStateView::new(&self.selected, self.selected.version_id());
         let overlay = OverlayStateView::new(&self.selected, self.draft.state());
         let after = InvariantStateView::new(&overlay, self.proposal.proposed_version_id());
         let mut kinds = Vec::new();
-        for record in &self.draft.outcome.effect.publication.changed_records {
+        for record in self.records {
             let RecordRef::Entity(id) = record else {
                 continue;
             };

@@ -87,12 +87,15 @@ fn every_commit_family_evaluates_once_and_publication_reuses_the_result() {
             .unwrap(),
         );
     }
-    let runtime = builder.build().unwrap();
+    let medium = worth_testkit_relational::durable_medium::TestDurableMedium::new();
+    let runtime = builder.build_durable(medium.attachment()).unwrap();
     let host = worth_testkit_relational::shared_relational_certification_test_execution_policy::serial_request();
     let execution = ExecutionRequest::serial(&host);
     let (_, basis) = runtime
         .observe_branch(&runtime.main_branch_identity())
         .unwrap();
+    // The version this proposal was observed against, read from its own basis.
+    let predecessor = basis.observation().version_id();
     let mut tx = runtime
         .begin_branch_transaction(
             &basis,
@@ -128,6 +131,65 @@ fn every_commit_family_evaluates_once_and_publication_reuses_the_result() {
         panic!("accepted state must publish")
     };
     let committed = runtime.settle_performed_publication(performed).unwrap();
+    let semantic = committed.semantic_result();
+    assert_eq!(
+        semantic.validation().len(),
+        1,
+        "one actual aggregate is recorded"
+    );
+    let meaning = &semantic.validation()[0];
+    let live = &committed.validation().invariant_executions()[0];
+    assert_eq!(
+        meaning.metadata.execution_point,
+        InvariantExecutionPoint::ProposedState
+    );
+    assert_eq!(meaning.metadata.version, live.metadata().version_id());
+    assert_eq!(
+        meaning.metadata.current_version,
+        live.metadata().current_version_id()
+    );
+    assert_eq!(meaning.metadata.version, committed.commit.version_id);
+    assert_eq!(meaning.metadata.current_version, predecessor);
+    assert_eq!(
+        serde_json::to_value(meaning.metadata.observation_kind).unwrap(),
+        "Committed"
+    );
+    for point in points {
+        let check = meaning
+            .checks
+            .iter()
+            .find(|check| check.execution_point == point && check.custom_provenance.is_some())
+            .unwrap();
+        let provenance = check.custom_provenance.as_ref().unwrap();
+        let observation = if point == InvariantExecutionPoint::CommitBoundary {
+            "Committed"
+        } else {
+            assert!(matches!(
+                point,
+                InvariantExecutionPoint::MutationSensitive
+                    | InvariantExecutionPoint::SnapshotPublication
+            ));
+            "Speculative"
+        };
+        assert_eq!(
+            serde_json::to_value(provenance.observation_kind).unwrap(),
+            observation
+        );
+        assert_eq!(provenance.version, committed.commit.version_id);
+        assert_eq!(provenance.current_version, predecessor);
+    }
+    let artifact = medium
+        .offered()
+        .pop()
+        .expect("actual durable original frame");
+    let readmitted =
+        worth_relational::facade::durability::RelationalCanonicalCommitArtifact::readmit(
+            artifact.as_bytes(),
+            &execution,
+        )
+        .unwrap();
+    assert_eq!(readmitted.envelope().semantic_result(), semantic);
+
     let mut after = calls.lock().unwrap().clone();
     after.sort();
     assert_eq!(

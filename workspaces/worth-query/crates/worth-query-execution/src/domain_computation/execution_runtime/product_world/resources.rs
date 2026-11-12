@@ -163,3 +163,6 @@ pub(crate) fn test_product_world_resources_with_history_limit_for_test(
 }
 
 mod court_doors_for_test;
+#[cfg(test)]
+#[path = "resources_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;

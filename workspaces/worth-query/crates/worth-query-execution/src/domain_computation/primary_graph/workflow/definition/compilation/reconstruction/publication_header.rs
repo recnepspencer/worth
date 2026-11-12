@@ -4,13 +4,11 @@ use worth_relational::facade::runtime::{
     AdjacencyStructuralRevisionDenial, RelationalAdjacencyDirection,
 };
 
-use super::{
-    exact_adjacent, exact_text, exact_u64, observed_optional_text, observed_text,
-    WorkflowDefinitionCompilationPosture,
-};
+use super::WorkflowDefinitionCompilationPosture;
+pub(super) mod recorded;
 use crate::domain_computation::primary_graph::workflow::definition::compilation::publication_binding::WorkflowDefinitionPublicationRevisions;
 use crate::domain_computation::primary_graph::application_attempt::{
-    PublishedWorkflowDefinitionRef, WorthQueryApplicationAdjacencyDirection,
+    PublishedWorkflowDefinitionRef,
     WorthQueryApplicationAttemptDenial, WorthQueryApplicationObservedFact,
 };
 use crate::domain_computation::primary_graph::workflow::schema::WorthQueryWorkflowLayout;
@@ -127,60 +125,34 @@ pub(super) fn observe_publication_header(
     expected_lineage: Option<EntityId>,
 ) -> Result<ObservedWorkflowPublicationHeader, WorthQueryApplicationAttemptDenial> {
     let definition = published.entity_id();
-    let mut facts = vec![WorthQueryApplicationObservedFact::Entity {
-        entity_id: definition,
-        kind: layout.definition.entity_kind,
-    }];
-    exact_text(
-        execution,
-        runtime,
-        snapshot,
-        definition,
-        layout.definition.entity_kind,
-        &layout.definition.content_identity,
-        &published.content_identity().to_string(),
-        &mut facts,
-    )?;
-    // Publication provenance is immutable; adoption records a carriage
-    // beside it, and the latest carriage names the executing revision.
-    let published_under = observed_text(
-        execution,
-        runtime,
-        snapshot,
-        definition,
-        layout.definition.entity_kind,
-        &layout.definition.program_revision,
-        &mut facts,
-    )?;
-    let carried_to = observed_optional_text(
-        execution,
-        runtime,
-        snapshot,
-        definition,
-        layout.definition.entity_kind,
-        &layout.definition.carried_revision,
-        &mut facts,
-    )?;
-    if carried_to.unwrap_or(published_under) != program_revision.to_string() {
+    let recorded = recorded::observe(execution, runtime, snapshot, layout, definition)?;
+    if &recorded.content != published.content_identity() {
+        return Err(super::denial(
+            "workflow definition content identity changed",
+        ));
+    }
+    // Recorded provenance remains DATA. Only this executable wrapper compares
+    // it against the caller's genuinely installed program and vocabulary.
+    if recorded
+        .carried_to
+        .unwrap_or(recorded.published_under)
+        .bytes()
+        != program_revision.as_bytes()
+    {
         return Err(super::denial(
             "workflow definition field does not match installed support",
         ));
     }
-    let lineage = exact_adjacent(
-        execution,
-        runtime,
-        snapshot,
-        layout.lineage_definition_relation,
-        definition,
-        WorthQueryApplicationAdjacencyDirection::Incoming,
-        2,
-        &mut facts,
-    )?;
+    let lineage = recorded.lineage;
     if expected_lineage.is_some_and(|expected| lineage != expected) {
         return Err(super::denial(
             "cached workflow publication binding is stale",
         ));
     }
+    if recorded.spec != expected_spec {
+        return Err(super::denial("workflow definition vocabulary changed"));
+    }
+    let mut facts = recorded.facts;
     if matches!(posture, WorkflowDefinitionCompilationPosture::Current) {
         facts.push(
             WorthQueryApplicationObservedFact::WorkflowDefinitionCurrent {
@@ -191,29 +163,6 @@ pub(super) fn observe_publication_header(
             },
         );
     }
-    facts.push(WorthQueryApplicationObservedFact::Entity {
-        entity_id: lineage,
-        kind: layout.lineage.entity_kind,
-    });
-    exact_text(
-        execution,
-        runtime,
-        snapshot,
-        lineage,
-        layout.lineage.entity_kind,
-        &layout.lineage.spec,
-        expected_spec,
-        &mut facts,
-    )?;
-    exact_u64(execution,
-        runtime,
-        snapshot,
-        lineage,
-        layout.lineage.entity_kind,
-        &layout.lineage.protocol_version,
-        crate::domain_computation::primary_graph::workflow::schema::version::WORKFLOW_FACT_PROTOCOL_VERSION,
-        &mut facts,
-    )?;
     Ok(ObservedWorkflowPublicationHeader {
         definition,
         lineage,

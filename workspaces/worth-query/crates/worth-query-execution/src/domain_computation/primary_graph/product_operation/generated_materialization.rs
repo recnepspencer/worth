@@ -220,3 +220,6 @@ impl std::fmt::Debug for WorthQueryGeneratedOutputSuspensionFailure {
 }
 
 mod court_doors_for_test;
+#[cfg(test)]
+#[path = "generated_materialization_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;

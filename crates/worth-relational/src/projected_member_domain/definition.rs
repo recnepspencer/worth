@@ -31,6 +31,22 @@ pub struct ProjectedMemberDomainParts {
     pub cases: Vec<String>,
 }
 impl ProjectedMemberDomainParts {
+    pub(crate) fn clone_allocation_bytes(
+        &self,
+        control: crate::schema::SchemaCompilationControl<'_, '_>,
+    ) -> Result<usize, crate::execution::RelationalExecutionDenialCause> {
+        let mut bytes = control.checked_bytes(self.identity.name_bytes().and_then(|names| {
+            self.cases
+                .len()
+                .checked_mul(size_of::<String>())
+                .and_then(|storage| names.checked_add(storage))
+        }))?;
+        for case in &self.cases {
+            bytes = control.checked_bytes(bytes.checked_add(case.len()))?;
+        }
+        Ok(bytes)
+    }
+
     pub(crate) fn owned_bytes(&self) -> usize {
         self.identity
             .owned_bytes()

@@ -1,6 +1,8 @@
 use std::sync::Arc;
 
-use worth_runtime_bridge::facade::BridgeSealedRuntimeAssembly;
+use crate::domain_computation::primary_graph::managed_bridge::conditional_owner::{
+    ConditionalOwner, ConditionalOwnerObservation,
+};
 
 use super::WorthQueryProductRuntime;
 
@@ -11,25 +13,25 @@ use super::WorthQueryProductRuntime;
 pub struct WorthQueryProductSharedRoot {
     pub(super) owner_identity: worth_runtime_world::facade::RuntimeWorldOwnerIdentity,
     product_identity: Arc<super::runtime::WorthQueryProductRootIdentity>,
-    pub(super) bridge: std::sync::Weak<std::sync::RwLock<BridgeSealedRuntimeAssembly>>,
+    pub(super) bridge: ConditionalOwnerObservation,
 }
 
 impl WorthQueryProductSharedRoot {
-    pub(crate) fn new(
+    pub(in crate::domain_computation) fn new(
         product: WorthQueryProductRuntime,
-        bridge: Arc<std::sync::RwLock<BridgeSealedRuntimeAssembly>>,
+        bridge: ConditionalOwner,
     ) -> Self {
         Self {
             owner_identity: product.owner.owner_identity(),
             product_identity: product.root_identity(),
-            bridge: Arc::downgrade(&bridge),
+            bridge: bridge.downgrade(),
         }
     }
 
     #[doc(hidden)]
     pub fn is_same_root_as(&self, candidate: &Self) -> bool {
         Arc::ptr_eq(&self.product_identity, &candidate.product_identity)
-            && std::sync::Weak::ptr_eq(&self.bridge, &candidate.bridge)
+            && self.bridge.shares_original(&candidate.bridge)
     }
 
     #[doc(hidden)]

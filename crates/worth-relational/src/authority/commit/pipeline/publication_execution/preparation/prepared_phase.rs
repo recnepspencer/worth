@@ -7,6 +7,9 @@ pub(in crate::authority::commit::pipeline::publication_execution) struct Prepare
         crate::runtime::PendingRecordAllocations,
     pub(in crate::authority::commit::pipeline::publication_execution) symbol_meanings:
         crate::runtime::PreparedSymbolPublication,
+    // Keep the same symbol-owner share until this prepared phase is consumed.
+    pub(in crate::authority::commit::pipeline::publication_execution) _candidate_symbols:
+        crate::runtime::RuntimeSymbolTable,
     pub(in crate::authority::commit::pipeline::publication_execution) mirror_publication:
         crate::storage::PreparedMirrorPublication,
     pub(in crate::authority::commit::pipeline::publication_execution) prepared_history:
@@ -66,6 +69,11 @@ pub(in crate::authority::commit::pipeline::publication_execution) struct Prepare
 }
 
 impl PreparedPublicationPhase {
+    pub(in crate::authority::commit::pipeline::publication_execution) fn caller_association(
+        &self,
+    ) -> Option<crate::mvcc::RelationalCallerAssociation> {
+        self.prepared_history.caller_association().cloned()
+    }
     pub(in crate::authority::commit::pipeline::publication_execution) fn canonical_envelope(
         &self,
     ) -> &Arc<crate::history::data::CanonicalCommitEnvelope> {

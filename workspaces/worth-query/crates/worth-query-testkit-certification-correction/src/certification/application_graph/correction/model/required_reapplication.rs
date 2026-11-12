@@ -186,7 +186,7 @@ fn run_in(application: host::OutputHost) {
         .unwrap();
     let WorthQueryRequiredCorrectionPreparation::Settled(
         WorthQueryApplicationPerformedMutationOutcome::NotPerformed(
-            WorthQueryApplicationMutationOutcome::AlreadyCommitted(replayed),
+            WorthQueryApplicationMutationOutcome::RecoveredCommitted(replayed),
         ),
     ) = retry
     else {

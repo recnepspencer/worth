@@ -4,6 +4,9 @@ use super::RuntimeWorldOwnerRoot;
 
 #[derive(Debug)]
 pub enum RuntimeWorldOwnedAsyncRequestAdmissionDenial {
+    StaleIncarnation,
+    OwnerUnavailable,
+    DurablePublicationRequired,
     ForeignOwner,
     RelationalSourceMismatch,
     NoCommittedSource,
@@ -20,6 +23,9 @@ pub enum RuntimeWorldOwnedAsyncRevalidationDenial {
 
 #[derive(Debug)]
 pub enum RuntimeWorldOwnedAsyncManagedRevalidationDenial {
+    StaleIncarnation,
+    OwnerUnavailable,
+    DurablePublicationRequired,
     ForeignOwner,
     RelationalSourceMismatch,
     NoCommittedSource,
@@ -28,6 +34,8 @@ pub enum RuntimeWorldOwnedAsyncManagedRevalidationDenial {
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 enum RuntimeWorldOwnedAsyncProductValidationDenial {
+    StaleIncarnation,
+    DurablePublicationRequired,
     ForeignOwner,
     RelationalSourceMismatch,
     NoCommittedSource,
@@ -78,6 +86,12 @@ where
         let truth = self
             .validate_owned_async_product(observation, relational_source)
             .map_err(|cause| match cause {
+                RuntimeWorldOwnedAsyncProductValidationDenial::StaleIncarnation => {
+                    RuntimeWorldOwnedAsyncManagedRevalidationDenial::StaleIncarnation
+                }
+                RuntimeWorldOwnedAsyncProductValidationDenial::DurablePublicationRequired => {
+                    RuntimeWorldOwnedAsyncManagedRevalidationDenial::DurablePublicationRequired
+                }
                 RuntimeWorldOwnedAsyncProductValidationDenial::ForeignOwner => {
                     RuntimeWorldOwnedAsyncManagedRevalidationDenial::ForeignOwner
                 }
@@ -202,6 +216,18 @@ where
         observation: &ProductBranchObservation,
         relational_source: &worth_runtime_bridge::facade::RelationalBridgeObservationLease,
     ) -> Result<(), RuntimeWorldOwnedAsyncProductValidationDenial> {
+        match self
+            .owner_identity()
+            .admit_incarnation(observation.owner_identity())
+        {
+            Err(worth_proof::HomeIncarnationDenial::StaleIncarnation) => {
+                return Err(RuntimeWorldOwnedAsyncProductValidationDenial::StaleIncarnation)
+            }
+            Err(worth_proof::HomeIncarnationDenial::ForeignHome) | Ok(()) => {}
+        }
+        if self.state.durable.is_some() {
+            return Err(RuntimeWorldOwnedAsyncProductValidationDenial::DurablePublicationRequired);
+        }
         if observation.owner_identity() != self.owner_identity() {
             return Err(RuntimeWorldOwnedAsyncProductValidationDenial::ForeignOwner);
         }
@@ -216,6 +242,12 @@ fn request_product_denial(
     denial: RuntimeWorldOwnedAsyncProductValidationDenial,
 ) -> RuntimeWorldOwnedAsyncRequestAdmissionDenial {
     match denial {
+        RuntimeWorldOwnedAsyncProductValidationDenial::StaleIncarnation => {
+            RuntimeWorldOwnedAsyncRequestAdmissionDenial::StaleIncarnation
+        }
+        RuntimeWorldOwnedAsyncProductValidationDenial::DurablePublicationRequired => {
+            RuntimeWorldOwnedAsyncRequestAdmissionDenial::DurablePublicationRequired
+        }
         RuntimeWorldOwnedAsyncProductValidationDenial::ForeignOwner => {
             RuntimeWorldOwnedAsyncRequestAdmissionDenial::ForeignOwner
         }

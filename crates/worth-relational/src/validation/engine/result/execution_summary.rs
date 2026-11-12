@@ -38,8 +38,21 @@ impl InvariantExecutionSummary {
 
     /// The same classification for whole-result and incremental reduction.
     pub(crate) fn observe(&mut self, result: &InvariantCheckResult) {
+        self.observe_meaning(
+            result.execution_point,
+            result.failure_effect,
+            &result.verdict,
+        );
+    }
+
+    pub(crate) fn observe_meaning(
+        &mut self,
+        execution_point: crate::validation::data::InvariantExecutionPoint,
+        failure_effect: InvariantFailureEffect,
+        verdict: &InvariantVerdict,
+    ) {
         self.result_count += 1;
-        match &result.verdict {
+        match verdict {
             InvariantVerdict::Pass | InvariantVerdict::NotApplicable => {}
             InvariantVerdict::Advisory { .. } => self.advisory_count += 1,
             InvariantVerdict::Violation(violation) => {
@@ -53,7 +66,7 @@ impl InvariantExecutionSummary {
                         self.custom_panic_count += 1;
                     }
                 }
-                let first = match result.failure_effect {
+                let first = match failure_effect {
                     InvariantFailureEffect::BlockCommit => Some(&mut self.blocking_failure),
                     InvariantFailureEffect::BlockPublication => Some(&mut self.publication_failure),
                     InvariantFailureEffect::AuditOnly => None,
@@ -62,8 +75,8 @@ impl InvariantExecutionSummary {
                     && first.is_none()
                 {
                     *first = Some(InvariantFailure::new(
-                        result.execution_point,
-                        result.failure_effect,
+                        execution_point,
+                        failure_effect,
                         violation.clone(),
                     ));
                 }

@@ -24,7 +24,7 @@ use super::{SignalConditionalExecutionPort, SignalRetainedExecutionBasis};
 
 pub(in crate::branch::owner_services) struct SignalConditionalExecutionSlot {
     pub(in crate::branch::owner_services) partition:
-        crate::data::graph::storage::evaluation_partition::SignalEvaluationPartition,
+        Box<crate::data::graph::storage::evaluation_partition::SignalEvaluationPartition>,
 }
 
 pub(in crate::branch::owner_services) struct SignalConditionalEvaluationState {
@@ -331,4 +331,7 @@ impl SignalConditionalServiceCompletion {
     }
 }
 
+#[cfg(test)]
+#[path = "execution_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;
 mod request_execution;

@@ -15,7 +15,21 @@ fn external_consumers_cannot_forge_or_duplicate_runtime_authority() {
         "E0308",
         &["PhysicalRuntimeAdmission", "RuntimeIdentity"],
     ).expect("prebuilt semantic compiler denial");
-    worth_testkit_compiler::denied(concat!(env!("CARGO_MANIFEST_DIR"), "/tests/worth_store_court_store_replication_physical_record_journeys_physical_work/sources/worth_store/physical_runtime_authority/internal_composition_construction_is_sealed.rs")).expect("prebuilt compiler denial");
+    let composition = concat!(env!("CARGO_MANIFEST_DIR"), "/tests/worth_store_court_store_replication_physical_record_journeys_physical_work/sources/worth_store/physical_runtime_authority/internal_composition_construction_is_sealed.rs");
+    for obligation in [
+        "field `declared_root` of struct `PhysicalRuntimeAdmission` is private",
+        "field `core` of struct `AdmittedPhysicalRuntime` is private",
+        "field `serving` of struct `InstalledCapabilityStatus` is private",
+    ] {
+        worth_testkit_compiler::certification_semantic_denial(composition, "E0451", &[obligation])
+            .expect("each actual composition owner keeps its construction field private");
+    }
+    worth_testkit_compiler::certification_uncoded_semantic_denial(
+        composition,
+        "is private",
+        &["type `physical_runtime::runtime::PhysicalRuntimeCore` is private"],
+    )
+    .expect("the actual physical runtime core type stays private");
     worth_testkit_compiler::certification_semantic_denial(
         concat!(env!("CARGO_MANIFEST_DIR"), "/tests/worth_store_court_store_replication_physical_record_journeys_physical_work/sources/worth_store/physical_runtime_authority/internal_runtime_topology_is_sealed.rs"),
         "E0603",

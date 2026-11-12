@@ -245,7 +245,7 @@ pub mod contract;
 #[path = "review/mod.rs"]
 pub mod review;
 #[path = "value_bindings/mod.rs"]
-mod value_bindings;
+pub(crate) mod value_bindings;
 
 pub use crate::domain_computation::primary_graph::tests::fixture::schema_types::storage_model::{
     CapabilityElevation, CapabilityElevationApprover, CapabilityElevationClosedAt,

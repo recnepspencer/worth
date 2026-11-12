@@ -9,11 +9,14 @@ use crate::entry::{
     PhysicalRecoveryPublicationSettlement, PhysicalRecoveryPublicationSettlementLedger,
 };
 use crate::progression::{
-    NamespaceDurablePhysicalRecovery, NamespaceDurableState, RecoveryPublicationExpectation,
-    RecoveryPublicationPlan, StagedPhysicalRecovery,
+    NamespaceDurablePayload, NamespaceDurablePhysicalRecovery, NamespaceDurableState,
+    RecoveryPublicationExpectation, RecoveryPublicationPlan, StagedPhysicalRecovery,
+    StagedRecoveryState,
 };
 
-pub(super) struct PublicationState {
+pub(crate) struct PublicationPayload {
+    pub(crate) reopened_backing: crate::progression::ReopenedBacking,
+    namespace_backing: crate::progression::NamespaceDurableBacking,
     authority: AdmittedPlatformAuthority,
     coordination: super::super::RecoveryCoordination,
     selection: crate::orchestration::ResidentSourceSelection,
@@ -35,9 +38,22 @@ pub(super) struct PublicationState {
     staging_settlements: crate::entry::PhysicalRecoveryStagingSettlementLedger,
 }
 
+pub(super) struct PublicationState {
+    backing: PublicationStateBacking,
+}
+mod storage;
+pub(crate) use storage::PublicationStateBacking;
+
 impl PublicationState {
+    const fn data(&self) -> &PublicationPayload {
+        self.backing.payload()
+    }
+
     pub(super) fn from_staged(staged: StagedPhysicalRecovery) -> (Self, RecoveryPublicationPlan) {
-        let StagedPhysicalRecovery {
+        let StagedRecoveryState {
+            reopened_backing,
+            publication_backing,
+            namespace_backing,
             authority,
             coordination,
             selection,
@@ -57,9 +73,11 @@ impl PublicationState {
             closed,
             staging_counters,
             staging_settlements,
-        } = staged;
+        } = staged.into_state();
         (
-            Self {
+            publication_backing.finish(PublicationPayload {
+                reopened_backing,
+                namespace_backing,
                 authority,
                 coordination,
                 selection,
@@ -78,7 +96,7 @@ impl PublicationState {
                 closed,
                 staging: staging_counters,
                 staging_settlements,
-            },
+            }),
             publication,
         )
     }
@@ -86,47 +104,49 @@ impl PublicationState {
     pub(super) const fn media(
         &self,
     ) -> &worth_store::physical_runtime::AdmittedRecoveryFilesystemMedia {
-        &self.authority.media
+        &self.data().authority.media
     }
 
     /// Whether the dead runtime left obligations that only recovery's own
     /// root-protocol publication can settle. A damaged listing is reported by
     /// cleanup, which refuses it.
     pub(super) fn prior_effects_unproven(&self) -> bool {
-        self.coordination
+        self.data()
+            .coordination
             .owner()
             .prior_physical_work_obligations(
-                &self.authority.media,
+                &self.data().authority.media,
                 crate::cleanup::MAXIMUM_PRIOR_OBLIGATIONS,
             )
             .is_ok_and(|obligations| crate::cleanup::requires_republication(&obligations))
     }
 
     pub(super) const fn planned_effects(&self) -> u64 {
-        self.quiescence.publication_commands()
+        self.data().quiescence.publication_commands()
     }
 
     pub(super) fn execute(
         &self,
         command: PhysicalRecoveryPublicationCommand,
     ) -> PhysicalRecoveryPublicationCommandOutcome {
-        self.coordination
+        self.data()
+            .coordination
             .owner()
-            .execute_publication_command(&self.authority.media, command)
+            .execute_publication_command(&self.data().authority.media, command)
     }
 
     pub(super) fn is_ready(&self) -> bool {
-        self.coordination.is_ready()
+        self.data().coordination.is_ready()
     }
 
     pub(super) fn publish_preexisting(
         self,
         expectation: RecoveryPublicationExpectation,
     ) -> Result<NamespaceDurablePhysicalRecovery, PhysicalRecoveryOutcome> {
-        let selected = self.selection.root().selected();
+        let selected = self.data().selection.root().selected();
         if self.planned_effects() != 0
-            || self.closed.artifact_count() != 0
-            || self.closed.byte_count() != 0
+            || self.data().closed.artifact_count() != 0
+            || self.data().closed.byte_count() != 0
             || expectation.current_selector() != selected.selector()
             || expectation.recovered_root() != selected.manifest()
             || !self.is_ready()
@@ -146,31 +166,33 @@ impl PublicationState {
         counters: PhysicalRecoveryPublicationCounters,
         settlement: PhysicalRecoveryPublicationSettlement,
     ) -> NamespaceDurablePhysicalRecovery {
-        NamespaceDurablePhysicalRecovery::new(
-            NamespaceDurableState {
-                authority: self.authority,
-                coordination: self.coordination,
-                selection: self.selection,
-                custody: self.custody,
-                verified_selected_tier_custody: self.verified_selected_tier_custody,
-                discovery_counters: self.discovery,
-                root_protocol_denials: self.root_protocol_denials,
-                integrity: self.integrity,
-                integrity_trace: self.integrity_trace,
-                freshness: self.freshness,
-                fates: self.fates,
-                planning_counters: self.planning,
-                root_protocol_counters: self.root_protocol_counters,
-                base: self.base,
-                quiescence: self.quiescence,
-                closed: self.closed,
-                staging_counters: self.staging,
-                staging_settlements: self.staging_settlements,
+        let data = self.backing.into_payload();
+        data.namespace_backing.finish(NamespaceDurablePayload {
+            reopened_backing: data.reopened_backing,
+            state: NamespaceDurableState {
+                authority: data.authority,
+                coordination: data.coordination,
+                selection: data.selection,
+                custody: data.custody,
+                verified_selected_tier_custody: data.verified_selected_tier_custody,
+                discovery_counters: data.discovery,
+                root_protocol_denials: data.root_protocol_denials,
+                integrity: data.integrity,
+                integrity_trace: data.integrity_trace,
+                freshness: data.freshness,
+                fates: data.fates,
+                planning_counters: data.planning,
+                root_protocol_counters: data.root_protocol_counters,
+                base: data.base,
+                quiescence: data.quiescence,
+                closed: data.closed,
+                staging_counters: data.staging,
+                staging_settlements: data.staging_settlements,
             },
             expectation,
-            counters,
-            PhysicalRecoveryPublicationSettlementLedger::new(settlement),
-        )
+            publication_counters: counters,
+            publication_settlement: PhysicalRecoveryPublicationSettlementLedger::new(settlement),
+        })
     }
 
     pub(super) fn block_invalid(self) -> PhysicalRecoveryOutcome {
@@ -199,11 +221,12 @@ impl PublicationState {
         denial: Option<PhysicalRecoveryPublicationDenial>,
         settlement: Option<PhysicalRecoveryPublicationSettlement>,
     ) -> PhysicalRecoveryOutcome {
-        assert!(self.coordination.shutdown_is_quiescent());
-        let store = self.authority.media.store_identity();
-        let session_identity = self.authority.session.identity();
-        let recovery_effects = self.authority.media.recovery_effect_count();
-        let AdmittedPlatformAuthority { media, session, .. } = self.authority;
+        let data = self.backing.into_payload();
+        assert!(data.coordination.shutdown_is_quiescent());
+        let store = data.authority.media.store_identity();
+        let session_identity = data.authority.session.identity();
+        let recovery_effects = data.authority.media.recovery_effect_count();
+        let AdmittedPlatformAuthority { media, session, .. } = data.authority;
         drop(media);
         session.block();
         PhysicalRecoveryOutcome::Blocked(Box::new(PhysicalRecoveryBlock::new(
@@ -213,14 +236,14 @@ impl PublicationState {
             store,
             session_identity,
             PhysicalRecoveryBlockEvidence {
-                counters: self.discovery,
-                source_denials: self.root_protocol_denials,
-                integrity_observations: self.integrity.into_observations(),
-                integrity_trace: self.integrity_trace,
-                planning_counters: Some(self.planning),
-                root_protocol_counters: Some(self.root_protocol_counters),
-                staging_counters: Some(self.staging),
-                staging_settlements: Some(self.staging_settlements),
+                counters: data.discovery,
+                source_denials: data.root_protocol_denials,
+                integrity_observations: data.integrity.into_observations(),
+                integrity_trace: data.integrity_trace,
+                planning_counters: Some(data.planning),
+                root_protocol_counters: Some(data.root_protocol_counters),
+                staging_counters: Some(data.staging),
+                staging_settlements: Some(data.staging_settlements),
                 publication_counters: Some(counters),
                 publication_denial: denial,
                 publication_settlements: settlement
@@ -236,11 +259,12 @@ impl PublicationState {
         counters: PhysicalRecoveryPublicationCounters,
         settlement: PhysicalRecoveryPublicationSettlement,
     ) -> PhysicalRecoveryOutcome {
-        assert!(self.coordination.shutdown_is_quiescent());
-        let store = self.authority.media.store_identity();
-        let session_identity = self.authority.session.identity();
-        let recovery_effects = self.authority.media.recovery_effect_count();
-        let AdmittedPlatformAuthority { media, session, .. } = self.authority;
+        let data = self.backing.into_payload();
+        assert!(data.coordination.shutdown_is_quiescent());
+        let store = data.authority.media.store_identity();
+        let session_identity = data.authority.session.identity();
+        let recovery_effects = data.authority.media.recovery_effect_count();
+        let AdmittedPlatformAuthority { media, session, .. } = data.authority;
         drop(media);
         session.publication_indeterminate();
         PhysicalRecoveryOutcome::PublicationIndeterminate(Box::new(
@@ -249,12 +273,15 @@ impl PublicationState {
                 session_identity,
                 counters,
                 PhysicalRecoveryPublicationSettlementLedger::new(settlement),
-                self.root_protocol_denials,
-                self.root_protocol_counters,
+                data.root_protocol_denials,
+                data.root_protocol_counters,
                 recovery_effects,
             )
-            .with_integrity_observations(self.integrity.into_observations())
-            .with_integrity_trace(self.integrity_trace),
+            .with_integrity_observations(data.integrity.into_observations())
+            .with_integrity_trace(data.integrity_trace),
         ))
     }
 }
+#[cfg(test)]
+#[path = "state_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;

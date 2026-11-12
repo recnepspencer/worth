@@ -154,7 +154,7 @@ impl<Schema: ApplicationSchema + 'static, Operation>
                         .ok_or(Cause::ContextUnavailable)?,
                     self.reader
                         .native
-                        .committed_runtime_mut()
+                        .committed_runtime()
                         .ok_or(Cause::ContextUnavailable)?,
                 )
                 .map_err(|cause| {

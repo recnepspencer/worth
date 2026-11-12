@@ -33,7 +33,7 @@ fn cold_cross_region_predecessor_is_demanded_before_a_disconnect_is_judged() {
         World::empty_runtime(0),
     );
     assert!(
-        source.reads.lock().unwrap().is_empty(),
+        source.region_read_count() == 0,
         "setup must leave record regions cold"
     );
     let before = world
@@ -61,7 +61,7 @@ fn cold_cross_region_predecessor_is_demanded_before_a_disconnect_is_judged() {
         "the cold indirect source must participate in the actual judged witness"
     );
     assert!(
-        !source.reads.lock().unwrap().is_empty(),
+        source.region_read_count() > 0,
         "the original request must demand the relevant regions"
     );
     assert_eq!(

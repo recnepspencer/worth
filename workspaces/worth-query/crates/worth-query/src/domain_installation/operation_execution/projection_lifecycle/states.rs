@@ -348,3 +348,6 @@ pub(super) fn mint_current_proof<L: BasisOperationLane>(
 pub(super) fn lifecycle_authority() -> AuthorityWitness<WorthQueryProjectionLifecycleAuthority> {
     AuthorityWitness::from_authority_marker(WorthQueryProjectionLifecycleAuthority { _private: () })
 }
+#[cfg(test)]
+#[path = "states_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;

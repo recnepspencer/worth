@@ -7,6 +7,28 @@ pub(in crate::domain_computation) struct OriginalProgramMeaning {
 }
 
 impl<Schema> WorthQueryInstalledProgramSupport<Schema> {
+    pub(in crate::domain_computation::primary_graph) fn readmit_original_meaning(
+        &self,
+        original: &worth_runtime_world::facade::WorldOriginalStateObservation<'_>,
+    ) -> Result<
+        Arc<OriginalProgramMeaning>,
+        super::support_lifecycle::journal::QueryProgramSupportDenial,
+    > {
+        let program = self
+            .native_programs
+            .iter()
+            .find(|program| program.revision().as_bytes() == original.program_revision().bytes())
+            .ok_or(
+                super::support_lifecycle::journal::QueryProgramSupportDenial::SupportUnavailable,
+            )?;
+        let interpretation = self
+            .lifecycle
+            .readmit_original_interpretation(program.revision(), original)?;
+        Ok(Arc::new(OriginalProgramMeaning {
+            program: Arc::clone(program),
+            interpretation,
+        }))
+    }
     pub(in crate::domain_computation::primary_graph) fn retain_original_meaning(
         &self,
         revision: &ApplicationProgramRevision,
@@ -24,6 +46,15 @@ impl<Schema> WorthQueryInstalledProgramSupport<Schema> {
 }
 
 impl OriginalProgramMeaning {
+    pub(in crate::domain_computation::primary_graph) fn acknowledge_membership(
+        &self,
+        receiver: &super::support_lifecycle::WorthQueryProgramSupportLifecycle,
+        opened: &worth_runtime_world::facade::WorldOpenedPublicationAttempt,
+        request: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> Result<(), super::support_lifecycle::journal::QueryProgramSupportDenial> {
+        receiver.transfer_original_interpretation(&self.interpretation, opened, request)
+    }
+
     pub(in crate::domain_computation::primary_graph) fn action_inventory(
         &self,
     ) -> worth_query_installation::facade::WorthQueryInstalledActionInventory<'_> {

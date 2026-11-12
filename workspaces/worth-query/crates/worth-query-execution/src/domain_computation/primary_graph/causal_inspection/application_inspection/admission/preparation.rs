@@ -98,12 +98,7 @@ where
 }
 
 #[allow(clippy::too_many_arguments)]
-pub(in crate::domain_computation::primary_graph::causal_inspection::application_inspection) fn start<
-    'a,
-    'storage,
-    Schema: ApplicationSchema,
-    Scope,
->(
+pub(super) fn start<'a, 'storage, Schema: ApplicationSchema, Scope>(
     runtime: &'a WorthQueryPrimaryGraphApplicationRuntime<Schema>,
     execution: &ExecutionRequest<'_, '_>,
     selected: &WorthQuerySelectedProductOperation<'_, Schema>,

@@ -160,7 +160,7 @@ impl CellHistory {
         let capture_elapsed = start.elapsed().as_micros();
         peak::report("checkpoint-capture-and-transport", allocation);
         println!("cell cold capture_transport_samples=1 capture_transport_us={} live={} retained_steps={} checkpoint_payload_bytes={}",
-            capture_elapsed, self.live, self.receipts.len(), bytes.len());
+            capture_elapsed, self.live, self.receipts.len(), bytes.bytes().len());
         let history = self.receipts.len() as u64;
         let Self { host, receipts, .. } = self;
         drop(receipts);

@@ -5,11 +5,12 @@ impl RecordContentIndex {
         &mut self,
         lane: &ReconstructionLane<'_>,
         work: &mut ReconstructionWork<'_, '_>,
+        request: super::super::request_admission::Request<'_, '_, '_>,
         arena: &RecordArena<K>,
-        symbols: &StringInterner,
+        symbols: &dyn crate::symbols::data::SymbolTextLookup,
         extra: impl Fn(
             &K::Extra,
-            &StringInterner,
+            &dyn crate::symbols::data::SymbolTextLookup,
             &mut ReconstructionWork<'_, '_>,
         ) -> Result<[u8; 32], PartitionContentDigestError>,
     ) -> Result<u64, PartitionContentDigestError>
@@ -34,14 +35,12 @@ impl RecordContentIndex {
             let old_bytes = cached.as_ref().map_or(0, DigestIndex::allocation_bytes);
             let (history, count) = match cached {
                 Some(carried) => (carried, 0),
-                None => super::super::record_history::rebuild(lane, work, arena, slot)?,
+                None => super::super::record_history::rebuild(lane, work, request, arena, slot)?,
             };
             hashed += count + 1;
-            work.prepare(
-                arena.aspect_versions[physical].len() as u64,
-                (arena.aspect_versions[physical].len() * size_of::<(&str, u64)>()) as u64,
-            )?;
-            let versions = resolve_aspect_versions(&arena.aspect_versions[physical], symbols)?;
+            work.prepare(arena.aspect_versions[physical].len() as u64, 0)?;
+            let versions =
+                super::resolve_aspect_versions(&arena.aspect_versions[physical], symbols, request)?;
             let digest = super::super::admission::hash_controlled(
                 b"record",
                 &(
@@ -73,16 +72,23 @@ impl RecordContentIndex {
         )?;
         entries.sort_unstable_by_key(|(slot, _)| *slot);
         histories.sort_unstable_by_key(|(slot, _)| *slot);
-        let (units, bytes) = DigestIndex::construction_quote(entries.len())
+        let (units, _) = DigestIndex::construction_quote(entries.len())
             .ok_or(PartitionContentDigestError::AllocationAccountingOverflow)?;
-        work.prepare(units, bytes)?;
-        self.records = DigestIndex::from_sorted_entries(lane, &entries);
-        work.prepare(
-            histories.len() as u64,
-            SharedMap::<u64, DigestIndex>::construction_allocation_bound(histories.len())
-                .ok_or(PartitionContentDigestError::AllocationAccountingOverflow)?,
-        )?;
-        self.histories = SharedMap::from_sorted_unique(histories);
+        work.prepare(units, 0)?;
+        self.records = DigestIndex::from_sorted_entries_for_request(lane, &entries, request)?;
+        work.prepare(histories.len() as u64, 0)?;
+        for (slot, history) in histories {
+            match request {
+                Some(request) => {
+                    self.histories
+                        .insert_for_request(slot, history, request)
+                        .map_err(PartitionContentDigestError::Request)?;
+                }
+                None => {
+                    self.histories.insert(slot, history);
+                }
+            }
+        }
         for (bitset, index, domain) in [
             (
                 &arena.live_bitset,
@@ -108,16 +114,17 @@ impl RecordContentIndex {
                 ));
                 hashed += 1;
             }
-            let (units, bytes) = DigestIndex::construction_quote(entries.len())
+            let (units, _) = DigestIndex::construction_quote(entries.len())
                 .ok_or(PartitionContentDigestError::AllocationAccountingOverflow)?;
-            work.prepare(units, bytes)?;
-            *index = DigestIndex::from_sorted_entries(lane, &entries);
+            work.prepare(units, 0)?;
+            *index = DigestIndex::from_sorted_entries_for_request(lane, &entries, request)?;
         }
         Ok(hashed)
     }
     pub(in crate::storage::overlay::partition_content) fn from_history_frontiers<K: RecordKind>(
         _lane: &ReconstructionLane<'_>,
         work: &mut ReconstructionWork<'_, '_>,
+        request: super::super::request_admission::Request<'_, '_, '_>,
         frontiers: &[(u64, HistoryAppendFrontier)],
         arena: &RecordArena<K>,
     ) -> Result<Self, PartitionContentDigestError>
@@ -135,12 +142,12 @@ impl RecordContentIndex {
         }
         let mut result = Self::default();
         for (slot, frontier) in frontiers {
-            let (units, bytes) = DigestIndex::construction_quote(
+            let (units, _) = DigestIndex::construction_quote(
                 frontier.siblings.len().checked_add(1).ok_or_else(invalid)?,
             )
             .ok_or_else(invalid)?;
-            work.prepare(units, bytes)?;
-            let history = DigestIndex::from_append_frontier(frontier).ok_or_else(invalid)?;
+            work.prepare(units, 0)?;
+            let history = DigestIndex::from_append_frontier_using(frontier, request)?;
             let metadata = arena
                 .metadata_history_at(usize::try_from(*slot).map_err(|_| invalid())?)
                 .ok_or_else(invalid)?;
@@ -161,8 +168,21 @@ impl RecordContentIndex {
                 .histories
                 .adoption_allocation_bound()
                 .ok_or_else(invalid)?;
-            work.prepare(result.histories.navigation_work_bound() as u64, bytes)?;
-            result.histories.insert(*slot, history);
+            work.prepare(
+                result.histories.navigation_work_bound() as u64,
+                if request.is_some() { 0 } else { bytes },
+            )?;
+            match request {
+                Some(request) => {
+                    result
+                        .histories
+                        .insert_for_request(*slot, history, request)
+                        .map_err(PartitionContentDigestError::Request)?;
+                }
+                None => {
+                    result.histories.insert(*slot, history);
+                }
+            }
         }
         Ok(result)
     }

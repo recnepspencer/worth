@@ -5,7 +5,9 @@ impl PublishedCommitExecution {
     pub(in crate::authority::commit::pipeline) fn into_parts(
         self,
     ) -> (
-        super::super::execution_admission::AdmittedCommitState,
+        super::super::phase_backing::CommitPhaseBacking<
+            super::super::execution_admission::AdmittedCommitState,
+        >,
         crate::transactions::data::CommitStructuralSummary,
         Vec<crate::validation::engine::InvariantExecutionResult>,
         crate::identity::data::VersionId,

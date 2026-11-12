@@ -4,7 +4,7 @@ use bank_domain::{
     proposals::BankIdempotencyKey,
     schema::{BankSchema, EstateMutationResult},
 };
-use bank_server::{BankApplication, BankCommitReceipt};
+use bank_server::{BankApplication, BankClosedSourceCompletion};
 use worth_query_decl::facade::{
     application_operation::{ApplicationMutationBinding, ApplicationMutationIntent},
     application_program::ApplicationSourceCompletion,
@@ -51,13 +51,7 @@ pub enum EstateSourceCommandOutcome<I: ApplicationMutationIntent<BankSchema>, A>
         >,
         denial: WorthQueryOperationCloseDenial,
     },
-    Fresh {
-        receipt: BankCommitReceipt,
-        result: EstateMutationResult,
-    },
-    Recovered {
-        receipt: BankCommitReceipt,
-    },
+    Closed(BankClosedSourceCompletion<EstateMutationResult>),
 }
 
 // One close attempt only. Native progress/refusal/terminal is returned unchanged;
@@ -73,17 +67,9 @@ where
     let WorthQuerySourceOnlyAdvance::Completed(completed) = advance else {
         return EstateSourceCommandOutcome::Native(advance);
     };
-    let fresh = match completed.evidence() {
-        WorthQuerySourceCompletion::Fresh { result, .. } => Some(*result),
-        WorthQuerySourceCompletion::Recovered { .. } => None,
-    };
     match completed.close_with_evidence(request) {
         Ok(closed) => {
-            let receipt = BankCommitReceipt::from_closed_source(closed);
-            match fresh {
-                Some(result) => EstateSourceCommandOutcome::Fresh { receipt, result },
-                None => EstateSourceCommandOutcome::Recovered { receipt },
-            }
+            EstateSourceCommandOutcome::Closed(BankClosedSourceCompletion::from_query(closed))
         }
         Err((completed, denial)) => EstateSourceCommandOutcome::CloseRefused { completed, denial },
     }

@@ -278,11 +278,12 @@ fn reverse_after_disjoint_and_replay() {
         .prepare()
         .unwrap();
     let WorthQueryApplicationCorrectionPreparation::Settled(
-        WorthQueryApplicationMutationOutcome::AlreadyCommitted(replayed),
+        WorthQueryApplicationMutationOutcome::RecoveredCommitted(replayed),
     ) = retry
     else {
         panic!("an exact retry must replay before after-image compatibility or inverse derivation");
     };
+    assert!(receipt.matches_recorded_original(&replayed));
     assert_eq!(replayed.commit_reference(), receipt.commit_reference());
     assert_eq!(
         host::read(&host),

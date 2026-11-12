@@ -68,6 +68,12 @@ where
         }
     };
     let (authority, disposition) = match outcome {
+        BankEstateElevationCloseOutcome::ProductPreparationPending(_)
+        | BankEstateElevationCloseOutcome::ProductPreparationRefused(_) => {
+            // Drop returns any checkout to its original Query registry; no
+            // recovery, no-effect proof or handler retry is authorized here.
+            return (revocation_denied(Some(request_id), indeterminate())).into();
+        }
         BankEstateElevationCloseOutcome::CleanupRequired(custody) => {
             return super::super::native_route::NativeRouteResult::Cleanup {
                 owner,
@@ -93,8 +99,13 @@ where
         BankEstateElevationCloseOutcome::Closed(authority) => {
             (authority, BankHttpCommitDisposition::Committed)
         }
-        BankEstateElevationCloseOutcome::AlreadyClosed(authority) => {
-            (authority, BankHttpCommitDisposition::AlreadyCommitted)
+        BankEstateElevationCloseOutcome::RecoveredCommitted { receipt, approved } => {
+            registry.restore_approved(&request.token, approved);
+            return BankHttpElevationRevocationOutcome::Recorded {
+                request_id,
+                commit: super::super::mutation_custody::describe_recorded(&receipt),
+            }
+            .into();
         }
         BankEstateElevationCloseOutcome::Stale { approved, .. } => {
             registry.restore_approved(&request.token, approved);

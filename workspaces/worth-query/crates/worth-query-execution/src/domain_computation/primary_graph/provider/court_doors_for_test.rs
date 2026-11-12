@@ -69,3 +69,18 @@ impl WorthQueryPrimaryGraphProvider {
         &self.teardown_sentinel
     }
 }
+
+impl WorthQueryPrimaryGraphProvider {
+    #[doc(hidden)]
+    pub fn resolve_idempotency_binding_at_product_for_test(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        binding: crate::domain_computation::primary_graph::WorthQueryApplicationIdempotencyBinding,
+        product: &crate::domain_computation::execution_runtime::product_world::WorthQueryProductPublicationBinding,
+    ) -> Result<
+        super::WorthQueryProviderIdempotencyResolution,
+        super::WorthQueryProviderIdempotencyResolutionDenial,
+    > {
+        self.resolve_idempotency_binding_at_product(execution, binding, product)
+    }
+}

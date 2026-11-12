@@ -22,32 +22,47 @@ impl PreparedTouchedRecords {
 
         allocation_policy: ExecutionAllocationPolicy<'_, '_>,
     ) -> Result<Self, WorthQueryProviderSessionCommitStop> {
+        Self::prepare_retained(candidate, allocation_policy)
+            .map_err(TouchedRecordsPreparationDenial::into_memory_stop)
+    }
+
+    pub(super) fn prepare_retained(
+        candidate: &PreparedRelationalCommitCandidate,
+        allocation_policy: ExecutionAllocationPolicy<'_, '_>,
+    ) -> Result<Self, TouchedRecordsPreparationDenial> {
         candidate
-            .with_prepared_changed_records(|exact| Self::from_records(exact, allocation_policy))
-            .unwrap_or_else(|| {
-                Err(WorthQueryProviderSessionCommitStop::PreEffectDenied(
-                    super::failure(
-                        "native candidate no longer retains its prepared changed records",
-                    ),
-                ))
+            .with_prepared_changed_records(|exact| {
+                Self::from_records_retained(exact, allocation_policy)
             })
+            .unwrap_or_else(|| Err(TouchedRecordsPreparationDenial::ChangedRecordsUnavailable))
     }
 
     pub(in crate::domain_computation::primary_graph::provider) fn from_records(
         exact: &[RecordRef],
         allocation_policy: ExecutionAllocationPolicy<'_, '_>,
     ) -> Result<Self, WorthQueryProviderSessionCommitStop> {
+        Self::from_records_retained(exact, allocation_policy)
+            .map_err(TouchedRecordsPreparationDenial::into_memory_stop)
+    }
+    fn from_records_retained(
+        exact: &[RecordRef],
+        allocation_policy: ExecutionAllocationPolicy<'_, '_>,
+    ) -> Result<Self, TouchedRecordsPreparationDenial> {
         let mut records = ExecutionArrayBuilder::allocate(exact.len(), allocation_policy)
-            .map_err(allocation_denied)?;
+            .map_err(TouchedRecordsPreparationDenial::Allocation)?;
         for record in exact {
             records
                 .push(WorthQueryTouchedRecordIdentity::from_commit_record(
                     record.clone(),
                 ))
-                .map_err(allocation_denied)?;
+                .map_err(TouchedRecordsPreparationDenial::Allocation)?;
         }
         Ok(Self {
-            records: Arc::new(records.seal().map_err(allocation_denied)?),
+            records: Arc::new(
+                records
+                    .seal()
+                    .map_err(TouchedRecordsPreparationDenial::Allocation)?,
+            ),
         })
     }
 
@@ -73,15 +88,25 @@ impl PreparedTouchedRecords {
     }
 }
 
-fn allocation_denied(
-    denial: worth_execution::ExecutionAllocationDenial,
-) -> WorthQueryProviderSessionCommitStop {
-    WorthQueryProviderSessionCommitStop::PreEffectDenied(
-        crate::domain_computation::WorthQueryProviderSessionFailure::allocation_denied(
-            denial,
-            "completed touched-record backing",
-        ),
-    )
+#[derive(Debug)]
+pub(super) enum TouchedRecordsPreparationDenial {
+    Allocation(worth_execution::ExecutionAllocationDenial),
+    ChangedRecordsUnavailable,
+}
+impl TouchedRecordsPreparationDenial {
+    pub(super) fn into_memory_stop(self) -> WorthQueryProviderSessionCommitStop {
+        WorthQueryProviderSessionCommitStop::PreEffectDenied(match self {
+            Self::Allocation(cause) => {
+                crate::domain_computation::WorthQueryProviderSessionFailure::allocation_denied(
+                    cause,
+                    "application touched records",
+                )
+            }
+            Self::ChangedRecordsUnavailable => {
+                super::failure("native candidate no longer retains its prepared changed records")
+            }
+        })
+    }
 }
 
 mod court_doors_for_test;

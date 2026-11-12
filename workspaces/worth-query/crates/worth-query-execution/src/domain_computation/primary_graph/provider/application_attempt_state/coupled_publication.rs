@@ -112,15 +112,19 @@ impl WorthQueryPrimaryGraphProvider {
                 scope.local_slot(),
                 scope.generation(),
             ),
-            source_partition: idempotency
-                .source_partition_identity()
-                .ok_or_else(unavailable)?,
-            source_epoch: attempt
-                .coupled_preparation()
-                .ok_or_else(unavailable)?
-                .completion
-                .source()
-                .checkpoint_identity(),
+            source_partition: worth_foundational::CanonicalDigestId::new(
+                idempotency
+                    .source_partition_identity()
+                    .ok_or_else(unavailable)?,
+            ),
+            source_epoch: worth_foundational::CanonicalDigestId::new(
+                attempt
+                    .coupled_preparation()
+                    .ok_or_else(unavailable)?
+                    .completion
+                    .source()
+                    .checkpoint_identity(),
+            ),
         };
         let batch = staged.batch().clone();
         let content = staged.content_attachments().clone();

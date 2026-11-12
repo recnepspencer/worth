@@ -21,7 +21,7 @@ impl<S: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRuntime<S>
             .primary_graph()
             .expect("installed primary graph")
             .integration_handle();
-        handle.with_query_runtime_mut(&execution, |runtime, _| {
+        handle.with_query_runtime(&execution, |runtime, _| {
             runtime.retention().run_pass(&execution)
                 .map(|actual| (actual.entity_reclaimed, actual.relation_reclaimed))
                 .map_err(|cause| crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenial::relational_read_stopped(cause, "actor retention"))

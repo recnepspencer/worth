@@ -18,9 +18,7 @@ use super::super::WorthQueryRetainedCapabilityAuthorization;
 
 mod diagnostic;
 mod diagnostic_preparation;
-pub(in crate::domain_computation) use diagnostic_preparation::{
-    prepare_application_diagnostic_governance, DiagnosticPreparationDenial,
-};
+pub(in crate::domain_computation) use diagnostic_preparation::prepare_application_diagnostic_governance;
 mod field_admission;
 mod governance;
 mod influence;
@@ -121,3 +119,5 @@ pub(crate) mod binding;
 pub(in crate::domain_computation) use binding::WorthQueryApplicationGovernanceBinding;
 
 pub use diagnostic::DiagnosticComparisonDenial;
+
+pub use diagnostic_preparation::DiagnosticPreparationDenial;

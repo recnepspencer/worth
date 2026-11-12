@@ -4,7 +4,7 @@ use super::*;
 pub(super) fn reacquire_current_committed_output<Schema>(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
-    receipt: &WorthQueryApplicationCommitReceipt,
+    receipt: crate::domain_computation::primary_graph::application_output_demand::OutputPublicationView<'_>,
 ) -> Result<Option<WorthQueryProductObservationLease>, WorthQueryOutputDemandDenial>
 where
     Schema: worth_query_installation::facade::ApplicationSchema,
@@ -29,7 +29,7 @@ where
         .output_lineage
         .lock()
         .unwrap_or_else(std::sync::PoisonError::into_inner)
-        .current_output_matches_receipt(
+        .current_output_matches_publication(
             runtime.runtime.authority_identity().as_u64(),
             &runtime.installed_schema.binding_identity(),
             observation,

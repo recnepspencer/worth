@@ -149,6 +149,9 @@ where
                 | WorthQuerySourceCompletion::Recovered { receipt, .. } => {
                     super::recovery::inbound_without_recovery(receipt)
                 }
+                // Recorded metadata owns no dispatch. Its actual collection
+                // cleanup still passes through close_cleanup below.
+                WorthQuerySourceCompletion::Recorded { .. } => false,
             })
         {
             return Err(WorthQueryOperationCloseDenial::NativeObligationRetained);
@@ -182,3 +185,6 @@ impl<
         self.source.release_cleanup(request)
     }
 }
+#[cfg(test)]
+#[path = "advance_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;

@@ -20,13 +20,19 @@ pub(super) enum ErasedAuthorizationBasis {
         binding: WorthQueryElevationRequestBinding,
     },
     ElevationApproval {
-        binding: WorthQueryElevationApprovalBinding,
+        binding: Box<WorthQueryElevationApprovalBinding>,
+        // Release physical backing before its original-request reservation.
+        _binding_memory: Option<worth_execution::ExecutionMemoryReservation>,
     },
     ElevationClose {
-        binding: WorthQueryElevationCloseBinding,
+        binding: Box<WorthQueryElevationCloseBinding>,
+        // Release physical backing before its original-request reservation.
+        _binding_memory: Option<worth_execution::ExecutionMemoryReservation>,
     },
     MandatoryReview {
-        binding: WorthQueryMandatoryReviewBinding,
+        binding: Box<WorthQueryMandatoryReviewBinding>,
+        // Release physical backing before its original-request reservation.
+        _binding_memory: Option<worth_execution::ExecutionMemoryReservation>,
     },
 }
 

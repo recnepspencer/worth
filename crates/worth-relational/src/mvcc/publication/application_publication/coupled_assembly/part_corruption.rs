@@ -131,7 +131,7 @@ impl RelationalAuthoredCoupledCandidate<'_> {
             let foreign = worth_proof::InstalledApplicationPublicationOwner::fresh();
             let admission = foreign.admit_required_output(
                 predecessor.origin.producer.clone(),
-                predecessor.origin.dependency_identity,
+                *predecessor.origin.dependency_identity.bytes(),
             );
             publication = RequiredOutputPublication::Birth {
                 admission,
@@ -155,7 +155,8 @@ impl RelationalAuthoredCoupledCandidate<'_> {
             let envelope = self
                 .runtime
                 .history
-                .canonical_envelope(older)
+                .demand_canonical_envelope(execution, older)
+                .map_err(custody::execution_stop)?
                 .ok_or_else(missing)?;
             let origin = execution
                 .run_native_with_checkpoint(|context| {

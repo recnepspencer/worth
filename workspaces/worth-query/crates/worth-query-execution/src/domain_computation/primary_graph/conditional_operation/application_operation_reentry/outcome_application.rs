@@ -25,6 +25,18 @@ pub(super) fn apply_reentry_outcome<Clock, Input>(
     counts: &mut WorthQueryTemporalReentryCounts,
 ) {
     match outcome {
+        WorthQueryTemporalReentryOutcome::ProductPreparationPending(pending) => {
+            wake.decision = WorthQueryRetainedConditionalDecision::OperationPreparationPending(
+                evidence, pending,
+            );
+            counts.indeterminate += 1;
+        }
+        WorthQueryTemporalReentryOutcome::ProductPreparationRefused(refused) => {
+            wake.decision = WorthQueryRetainedConditionalDecision::OperationPreparationRefused(
+                evidence, refused,
+            );
+            counts.failed += 1;
+        }
         WorthQueryTemporalReentryOutcome::CleanupRequired(cleanup) => {
             wake.decision = WorthQueryRetainedConditionalDecision::OperationCleanupRequired(
                 evidence,
@@ -40,9 +52,11 @@ pub(super) fn apply_reentry_outcome<Clock, Input>(
             counts.failed += 1;
         }
         WorthQueryTemporalReentryOutcome::ProductUnpublished(unpublished) => {
+            let cause = unpublished.cause();
             wake.decision = WorthQueryRetainedConditionalDecision::OperationProductUnpublished(
                 evidence,
                 unpublished.into_recovery(),
+                cause,
             );
             counts.failed += 1;
         }

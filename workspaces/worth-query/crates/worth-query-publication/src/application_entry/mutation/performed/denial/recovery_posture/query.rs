@@ -76,6 +76,7 @@ pub(super) fn authorization_posture(
         | AuthorizationKind::Refused(AuthorizationRefusal::ForeignPhase)
         | AuthorizationKind::Refused(AuthorizationRefusal::ExpiredAuthentication)
         | AuthorizationKind::Refused(AuthorizationRefusal::ForeignRuntime)
+        | AuthorizationKind::Refused(AuthorizationRefusal::StaleIncarnation)
         | AuthorizationKind::Refused(AuthorizationRefusal::StaleInstalledSchema)
         | AuthorizationKind::Refused(AuthorizationRefusal::StaleInstalledOperation)
         | AuthorizationKind::Refused(AuthorizationRefusal::StalePrincipal)

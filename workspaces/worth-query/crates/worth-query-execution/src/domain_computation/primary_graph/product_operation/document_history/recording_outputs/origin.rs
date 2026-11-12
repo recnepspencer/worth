@@ -16,7 +16,7 @@ impl WorthQueryHistoryRecordingOutputOrigin {
         model: super::super::HistoryModelIdentity,
         reserved: &WorthQueryDocumentHistoryReservation,
         candidate: crate::basis::WorthQueryProductBranch,
-        source: &WorthQueryApplicationCommitReceipt,
+        intent: WorthQueryApplicationIdempotencyBinding,
         profile: &WorthQueryHistoryOutputProfile,
         observation: Arc<WorthQueryApplicationReadObservation>,
         root_posture: Option<WorthQueryOutputSettlementPosture>,
@@ -38,11 +38,8 @@ impl WorthQueryHistoryRecordingOutputOrigin {
             node: reserved.record.node,
             candidate,
             expected: reserved.expected.clone(),
-            intent: source.idempotency_binding(),
-            source: source
-                .committed_product_publication()
-                .composite_commit()
-                .clone(),
+            intent,
+            source: observation.product_observation().selected_commit().clone(),
             observation,
             profile: profile.clone(),
             root_posture,

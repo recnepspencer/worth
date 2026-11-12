@@ -176,7 +176,7 @@ impl PhysicalRecoveryCoordination {
 
     /// Binding evidence is retained once beside the same checkpoint backing.
     pub fn owned_recovery_heap_bytes(&self) -> Option<u64> {
-        match &self.checkpoint_selection {
+        let selected = match &self.checkpoint_selection {
             RecoveryCheckpointSelection::Selected {
                 shared, binding, ..
             } => binding
@@ -185,7 +185,12 @@ impl PhysicalRecoveryCoordination {
             RecoveryCheckpointSelection::Unobserved | RecoveryCheckpointSelection::Absent => {
                 Some(0)
             }
-        }
+        }?;
+        selected.checked_add(
+            self.serving_custody_backing
+                .as_ref()
+                .map_or(Some(0), |backing| backing.owned_heap_bytes())?,
+        )
     }
 }
 

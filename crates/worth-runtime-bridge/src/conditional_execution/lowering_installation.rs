@@ -38,16 +38,18 @@ impl BridgeOwnedSignalRuntime {
             admitted.signal_branch_identity.clone(),
             &signal_contract,
         );
-        let lowering = self.build_installed_lowering(
+        let lowering = Self::build_installed_lowering(
+            &self.bridge,
             registry_key,
-            admitted.request.contract,
-            admitted.request.location,
+            Arc::new(admitted.request.location),
             Arc::from(correspondences),
             admitted.semantic_observation_plan,
             signal_contract,
             definition_custody,
             admitted.request.providers,
             admitted.provider_admission,
+            None,
+            None,
             counters,
         );
         self.owned_conditional_targets
@@ -99,7 +101,7 @@ impl BridgeOwnedSignalRuntime {
         );
         let retained_bytes = super::retention::definition_candidate_retained_bytes(
             &signal_branch_identity,
-            &contract,
+            provider_admission.contract(),
             &location,
             &providers,
             projection_basis.len(),
@@ -128,13 +130,15 @@ impl BridgeOwnedSignalRuntime {
             )?;
         let (authority, projection) =
             super::lowering_authority::mint_bridge_conditional_lowering_identity(projection_basis);
+        debug_assert_eq!(provider_admission.contract(), &contract);
+        let contract = Arc::clone(provider_admission.shared_contract());
         let lowering = Arc::new(BridgeInstalledConditionalLowering {
             bridge_runtime_key: self.bridge.signal_runtime_key,
             registry_key: key,
             _authority: authority,
             projection,
             contract,
-            location,
+            location: Arc::new(location),
             correspondences: Arc::clone(&correspondences),
             semantic_observation_plan,
             signal_contract: Default::default(),
@@ -144,6 +148,7 @@ impl BridgeOwnedSignalRuntime {
             provider_admission,
             lease: Arc::new(super::liveness::BridgeConditionalLoweringLease::issue()),
             _definition_retention: Some(definition_retention),
+            _authored_source: None,
             counters,
         });
         lowering.reserve_signal_port();
@@ -184,11 +189,10 @@ impl BridgeOwnedSignalRuntime {
     }
 
     #[allow(clippy::too_many_arguments)]
-    fn build_installed_lowering(
-        &self,
+    pub(super) fn build_installed_lowering(
+        bridge: &crate::facade::RuntimeBridge,
         registry_key: super::lowering_registry::BridgeConditionalLoweringKey,
-        contract: super::BridgeConditionalContract,
-        location: super::BridgeConditionalLocation,
+        location: Arc<super::BridgeConditionalLocation>,
         correspondences: Arc<[BridgeInstalledSemanticCorrespondence]>,
         semantic_observation_plan: Option<
             super::semantic_observation_plan::BridgeConditionalSemanticObservationPlan,
@@ -199,12 +203,15 @@ impl BridgeOwnedSignalRuntime {
         >,
         providers: super::BridgeConditionalProviderSet,
         provider_admission: super::provider_admission::BridgeConditionalProviderAdmission,
+        definition_retention: Option<Arc<super::retention::BridgeRetentionReservation>>,
+        authored_source: Option<Arc<super::authored_section::BridgeReadmittedDefinitionSource>>,
         counters: BridgeInstalledConditionalLoweringCounters,
     ) -> Arc<BridgeInstalledConditionalLowering> {
+        let contract = Arc::clone(provider_admission.shared_contract());
         let (authority, projection) =
             super::lowering_authority::mint_bridge_conditional_lowering_identity(
                 super::lowering_identity::installed_lowering_identity(
-                    self.bridge.signal_runtime_key,
+                    bridge.signal_runtime_key,
                     registry_key.branch(),
                     &signal_contract,
                     contract.identity(),
@@ -212,7 +219,7 @@ impl BridgeOwnedSignalRuntime {
                 ),
             );
         let lowering = Arc::new(BridgeInstalledConditionalLowering {
-            bridge_runtime_key: self.bridge.signal_runtime_key,
+            bridge_runtime_key: bridge.signal_runtime_key,
             registry_key,
             _authority: authority,
             projection,
@@ -226,7 +233,8 @@ impl BridgeOwnedSignalRuntime {
             providers,
             provider_admission,
             lease: Arc::new(super::liveness::BridgeConditionalLoweringLease::issue()),
-            _definition_retention: None,
+            _definition_retention: definition_retention,
+            _authored_source: authored_source,
             counters,
         });
         if let Some(custody) = definition_custody {

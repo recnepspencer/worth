@@ -75,23 +75,24 @@ impl Context {
                 )
                 .unwrap()
                 .into_parts_for_test();
-            let candidate = graph
-                .integration_handle_for_test()
-                .with_runtime_mut_for_test(&execution, |runtime| {
-                    let mut transaction = runtime
+            let candidate =
+                graph
+                    .integration_handle_for_test()
+                    .with_runtime_for_test(&execution, |runtime| {
+                        let mut transaction = runtime
                         .begin_branch_transaction(
                             product.relational_basis_for_test(),
                             worth_relational::facade::mvcc::RelationalTransactionIntent::ordinary(),
                         )
                         .unwrap();
-                    transaction
-                        .push_batch(
-                            WorkerIntentBatch::new("rewrite-protected-output").push(mutation),
-                            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-                        )
-                        .unwrap();
-                    runtime.prepare_branch_transaction(&execution, transaction)
-                });
+                        transaction
+                            .push_batch(
+                                WorkerIntentBatch::new("rewrite-protected-output").push(mutation),
+                                worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+                            )
+                            .unwrap();
+                        runtime.prepare_branch_transaction(&execution, transaction)
+                    });
             let Err(TransactionCommitError::Conflict { error, .. }) = candidate else {
                 panic!("protected output change {index} passed preparation")
             };

@@ -56,9 +56,9 @@ fn listing_count_unknown_name_and_type_drift_precede_roster_admission_under_pres
         ));
         assert_eq!(discovery.counters().wal_bytes_read, 0);
         assert_eq!(discovery.counters().bytes_read, 0);
-        assert_eq!(active(&ports), held.bytes());
+        assert_eq!(active(&ports), SERVING_BACKING_BYTES + held.bytes());
         drop(held);
-        assert_eq!(active(&ports), 0);
+        assert_eq!(active(&ports), SERVING_BACKING_BYTES);
         assert_eq!(discovery.finish().recovery_effect_count(), 0);
     }
 }
@@ -99,7 +99,7 @@ fn enlarged_and_shortened_lengths_precede_payload_admission_under_pressure() {
         }
         assert_eq!(discovery.counters().wal_bytes_read, 0);
         assert_eq!(discovery.counters().bytes_read, 0);
-        assert_eq!(active(&ports), held.bytes());
+        assert_eq!(active(&ports), SERVING_BACKING_BYTES + held.bytes());
         drop(held);
         std::fs::write(wal.join(FIRST), [17; PAYLOAD]).unwrap();
         let window = coordination.begin_source_read_allocation().unwrap();
@@ -107,10 +107,13 @@ fn enlarged_and_shortened_lengths_precede_payload_admission_under_pressure() {
             panic!("restored exact file must match the same mechanical selection");
         };
         assert_eq!(observed.artifacts()[0].bytes(), Some(&[17; PAYLOAD][..]));
-        assert_eq!(active(&ports), observed.charged_bytes());
+        assert_eq!(
+            active(&ports),
+            SERVING_BACKING_BYTES + observed.charged_bytes()
+        );
         drop(observed);
         drop(window);
-        assert_eq!(active(&ports), 0);
+        assert_eq!(active(&ports), SERVING_BACKING_BYTES);
         assert_eq!(discovery.finish().recovery_effect_count(), 0);
     }
 }
@@ -140,7 +143,10 @@ fn healthy_selected_length_preserves_native_payload_denial_then_retry() {
     } if name == FIRST && requested == PAYLOAD && *required == ORIGINAL + PAYLOAD as u64 && *admitted == ORIGINAL)
     );
     assert_eq!(discovery.counters().wal_bytes_read, 0);
-    assert_eq!(active(&ports), held.bytes() + failure.charged_bytes());
+    assert_eq!(
+        active(&ports),
+        SERVING_BACKING_BYTES + held.bytes() + failure.charged_bytes()
+    );
     drop(failure);
     drop(held);
     let window = coordination.begin_source_read_allocation().unwrap();
@@ -148,10 +154,13 @@ fn healthy_selected_length_preserves_native_payload_denial_then_retry() {
         panic!("native release must make the unchanged healthy file readable");
     };
     assert_eq!(observed.artifacts()[0].bytes(), Some(&[17; PAYLOAD][..]));
-    assert_eq!(active(&ports), observed.charged_bytes());
+    assert_eq!(
+        active(&ports),
+        SERVING_BACKING_BYTES + observed.charged_bytes()
+    );
     drop(observed);
     drop(window);
-    assert_eq!(active(&ports), 0);
+    assert_eq!(active(&ports), SERVING_BACKING_BYTES);
     assert_eq!(discovery.finish().recovery_effect_count(), 0);
 }
 

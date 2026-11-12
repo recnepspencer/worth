@@ -1,5 +1,6 @@
 //! Cold query execution must demand the regions its actual plan reaches.
 use super::*;
+use worth_relational::facade::identity::PartitionId;
 use worth_relational::facade::{query::*, transactions::RecordRef};
 
 #[test]
@@ -41,7 +42,7 @@ fn cold_explicit_scan_and_traversal_keep_their_selected_rows() {
             .read_truth()
             .pin_read_capability(&handle, &[], &request)
             .unwrap();
-        assert!(source.reads.lock().unwrap().is_empty());
+        assert_eq!(source.region_read_count(), 0);
         let mut packet = PlannedQueryPacket::explicit_targets(
             "cold selected query",
             read.query_context().clone(),

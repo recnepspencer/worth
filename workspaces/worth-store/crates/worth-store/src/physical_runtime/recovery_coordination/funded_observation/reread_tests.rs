@@ -13,7 +13,9 @@ use worth_store_buffer_pool::{
     PhysicalOperationAllocationScope as Scope, PhysicalResidencyDimension as Dimension,
 };
 
-const ORIGINAL: u64 = 16 << 10;
+const SERVING_BACKING_BYTES: u64 =
+    crate::physical_runtime::record_serving::PreparedRecoveredCustodyBacking::required_bytes();
+const ORIGINAL: u64 = SERVING_BACKING_BYTES + (16 << 10);
 
 #[cfg(windows)]
 #[test]
@@ -25,7 +27,10 @@ fn borrowed_checkpoint_denies_payload_before_read_then_retains_exact_native_back
     std::fs::write(&path, input).unwrap();
     let ports = coordination.residency.ports().clone();
     let held = ports
-        .begin_operation(Scope::Recovery, NonZeroU64::new(ORIGINAL - 4096).unwrap())
+        .begin_operation(
+            Scope::Recovery,
+            NonZeroU64::new(ORIGINAL - SERVING_BACKING_BYTES - 4096).unwrap(),
+        )
         .unwrap();
     let mut window = PhysicalRecoveryReadAllocation::for_coordination(&coordination).unwrap();
     let mut observation = media.bounded_record_observation(2, ORIGINAL).unwrap();
@@ -105,7 +110,10 @@ fn borrowed_head_reread_denies_native_address_backing_then_retries_and_retains_b
     let ports = coordination.residency.ports().clone();
     let observer = ports.allocation_events();
     let held = ports
-        .begin_operation(Scope::Recovery, NonZeroU64::new(ORIGINAL - 1).unwrap())
+        .begin_operation(
+            Scope::Recovery,
+            NonZeroU64::new(ORIGINAL - SERVING_BACKING_BYTES - 1).unwrap(),
+        )
         .unwrap();
     let mut window = PhysicalRecoveryReadAllocation::for_coordination(&coordination).unwrap();
     let mut observation = media.bounded_record_observation(4, 4096).unwrap();
@@ -167,7 +175,7 @@ fn borrowed_head_reread_denies_native_address_backing_then_retries_and_retains_b
     assert_eq!(range.owned_heap_bytes(), Some(11));
     assert_eq!(
         ports.counters().active_operation_bytes_for(Scope::Recovery),
-        75
+        SERVING_BACKING_BYTES + 75
     );
     drop(window);
     drop(coordination);

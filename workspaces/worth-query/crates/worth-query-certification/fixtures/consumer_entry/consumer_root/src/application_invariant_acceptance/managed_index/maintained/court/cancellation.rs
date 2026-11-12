@@ -1,9 +1,10 @@
 //! Original-request cancellation releases partial staged backing.
 use super::*;
+use crate::application_invariant_acceptance::managed_index::prefix_observation;
 pub(super) fn run(
     world: &host::Host,
     principal: &WorthQueryAuthenticatedExternalPrincipal<super::super::schema::Catalog>,
-    provider: &Arc<prefix::Calls>,
+    provider: &Arc<prefix_observation::Calls>,
     rules: &Arc<rule::Calls>,
 ) {
     let cancellation = WorthQueryCancellationSource::new();

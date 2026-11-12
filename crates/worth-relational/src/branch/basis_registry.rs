@@ -1,6 +1,17 @@
 use std::collections::HashMap;
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::{Arc, Mutex, Weak};
+mod retirement;
+mod snapshot_shape;
+pub(crate) use retirement::RelationalBasisRegistryRetirementCustody;
+#[cfg(test)]
+pub(crate) use retirement::{
+    assert_original_registry_busy, assert_pruned_original_registration,
+    assert_successor_registration_preserved,
+};
+use snapshot_shape::RetainedBasisSnapshotShape;
+#[cfg(test)]
+mod retirement_tests;
 
 use crate::history::data::BranchId;
 
@@ -34,6 +45,12 @@ impl From<&RelationalBranchBasisDescriptor> for RelationalRetainedBasisKey {
     }
 }
 
+pub(crate) enum RelationalRetainedBasisSnapshotStop<Payment> {
+    Payment(Payment),
+    Buffer(worth_execution::ExecutionRequestArrayDenial),
+    Changed,
+}
+
 /// Weak owner index for exact admitted roots.
 ///
 /// The index does not retain a root by itself. An admitted basis, observation,
@@ -65,14 +82,24 @@ struct RelationalRetainedBasisEntry {
 }
 
 #[derive(Debug)]
-pub(super) struct RelationalBasisRegistryLease {
+pub(crate) struct RelationalBasisRegistryLease {
     registry: Weak<Mutex<RelationalRetainedBasisState>>,
     metrics: Weak<RelationalBranchBasisRegistryMetrics>,
     key: RelationalRetainedBasisKey,
     registration_id: u64,
+    retired: bool,
 }
 
 impl RelationalBranchBasisRegistry {
+    pub(crate) fn try_memory_empty(&self) -> Result<bool, ()> {
+        match self.retained.try_lock() {
+            Ok(value) => Ok(value.entries.is_empty()),
+            Err(std::sync::TryLockError::Poisoned(error)) => {
+                Ok(error.into_inner().entries.is_empty())
+            }
+            Err(std::sync::TryLockError::WouldBlock) => Err(()),
+        }
+    }
     pub(crate) fn with_metrics(metrics: Arc<RelationalBranchBasisRegistryMetrics>) -> Self {
         Self {
             retained: Arc::new(Mutex::new(RelationalRetainedBasisState::default())),
@@ -124,20 +151,67 @@ impl RelationalBranchBasisRegistry {
             metrics: Arc::downgrade(&self.metrics),
             key: key.clone(),
             registration_id,
+            retired: false,
         };
         if let Err(uninstalled) = basis.inner.registry_lease.set(lease) {
             std::mem::forget(uninstalled);
             return Err(super::RelationalBranchBasisDenial::OwnerFailure);
         }
-        retained.entries.insert(
+        let replaced = retained.entries.insert(
             key,
             RelationalRetainedBasisEntry {
                 registration_id,
                 basis: Arc::downgrade(&basis.inner),
             },
         );
+        if replaced.is_some() {
+            self.metrics.record_remove();
+        }
         self.metrics.record_insert();
         Ok(basis)
+    }
+
+    /// Pay and allocate without the registry lock. Copy only Weak DATA under it;
+    /// upgrades, strong-owner drops and projections happen after the lock is gone.
+    pub(crate) fn snapshot_retained_for_request<E>(
+        &self,
+        request: &worth_execution::ExecutionRequest<'_, '_>,
+        pay_scan: impl FnOnce(usize) -> Result<(), E>,
+    ) -> Result<
+        worth_execution::ExecutionArray<Weak<AdmittedRelationalBranchBasisInner>>,
+        RelationalRetainedBasisSnapshotStop<E>,
+    > {
+        use RelationalRetainedBasisSnapshotStop as Stop;
+        let paid = {
+            let retained = self
+                .retained
+                .lock()
+                .unwrap_or_else(|error| error.into_inner());
+            RetainedBasisSnapshotShape {
+                elements: retained.entries.len(),
+                buckets: retained.entries.capacity(),
+            }
+        };
+        pay_scan(paid.buckets).map_err(Stop::Payment)?;
+        let mut entries =
+            worth_execution::ExecutionRequestArrayBuilder::allocate(*request, paid.elements)
+                .map_err(Stop::Buffer)?;
+        {
+            let retained = self
+                .retained
+                .lock()
+                .unwrap_or_else(|error| error.into_inner());
+            if !paid.covers(RetainedBasisSnapshotShape {
+                elements: retained.entries.len(),
+                buckets: retained.entries.capacity(),
+            }) {
+                return Err(Stop::Changed);
+            }
+            for entry in retained.entries.values() {
+                entries.push(entry.basis.clone()).map_err(Stop::Buffer)?;
+            }
+        }
+        entries.seal().map_err(Stop::Buffer)
     }
 
     pub(crate) fn readmit_retained(
@@ -198,23 +272,49 @@ impl RelationalBranchBasisRegistryMetrics {
 
 impl Drop for RelationalBasisRegistryLease {
     fn drop(&mut self) {
+        if self.retired {
+            return;
+        }
         let Some(registry) = self.registry.upgrade() else {
             return;
         };
         let mut retained = registry
             .lock()
             .unwrap_or_else(|poisoned| poisoned.into_inner());
-        let Some(metrics) = self.metrics.upgrade() else {
-            return;
+        self.remove_original(&mut retained);
+    }
+}
+
+impl RelationalBasisRegistryLease {
+    pub(crate) fn try_retire(&mut self) -> bool {
+        use std::sync::TryLockError;
+        if self.retired {
+            return true;
+        }
+        let Some(registry) = self.registry.upgrade() else {
+            self.retired = true;
+            return true;
         };
-        metrics.record_lookup();
-        let matches_registration = retained
-            .entries
-            .get(&self.key)
-            .is_some_and(|entry| entry.registration_id == self.registration_id);
-        if matches_registration {
-            retained.entries.remove(&self.key);
-            metrics.record_remove();
+        let mut retained = match registry.try_lock() {
+            Ok(guard) => guard,
+            Err(TryLockError::Poisoned(error)) => error.into_inner(),
+            Err(TryLockError::WouldBlock) => return false,
+        };
+        self.remove_original(&mut retained);
+        self.retired = true;
+        true
+    }
+    fn remove_original(&self, retained: &mut RelationalRetainedBasisState) {
+        if let Some(metrics) = self.metrics.upgrade() {
+            metrics.record_lookup();
+            if retained
+                .entries
+                .get(&self.key)
+                .is_some_and(|entry| entry.registration_id == self.registration_id)
+            {
+                retained.entries.remove(&self.key);
+                metrics.record_remove();
+            }
         }
     }
 }

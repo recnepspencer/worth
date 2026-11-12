@@ -346,3 +346,13 @@ impl WorthQueryRuntimeBuilder {
         self
     }
 }
+#[cfg(test)]
+#[path = "builder_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;
+
+#[cfg(test)]
+fn record_owned_runtime_field_sizes(owner: &mut crate::inline_type_sizes::Owner<'_>) {
+    owner
+        .field::<Option<worth_runtime_bridge::facade::RuntimeBridge>>("conditional_runtime_bridge");
+    owner.field::<Option<Box<worth_signal::facade::SignalGraph>>>("conditional_signal_graph");
+}

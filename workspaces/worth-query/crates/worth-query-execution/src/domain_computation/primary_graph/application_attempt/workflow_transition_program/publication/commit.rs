@@ -1,5 +1,7 @@
 use crate::domain_computation::primary_graph::WorthQueryAdvancementPhase;
 use worth_foundational::facade::{AspectValue, InternedString};
+#[path = "commit/completion.rs"]
+mod completion;
 #[path = "commit/transition_lookup.rs"]
 mod transition_lookup;
 pub(in crate::domain_computation::primary_graph::application_attempt) use transition_lookup::transition_entity_in_receipt;
@@ -166,6 +168,16 @@ where
             .map_or(idempotency, |identity| {
                 idempotency.bind_workflow_support(identity)
             });
+        let completion = completion::WorkflowAdvanceCompletion {
+            transition_identity,
+            transition_identity_locator,
+            node_path,
+            terminal,
+            assessment,
+            approval,
+            operation_receipt_identity,
+            progress_update,
+        };
         let outcome = self.compare_and_commit_application_for_program_action(
             execution,
             phase,
@@ -175,50 +187,7 @@ where
             crate::domain_computation::application_aftermath::ApplicationCommitCausality::Ordinary,
             crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
         );
-        let projected = match outcome.landed() {
-            Ok((receipt, replayed)) => {
-                self.runtime
-                    .primary_provider
-                    .graph
-                    .with_runtime(execution, |runtime| {
-                        project(
-                            execution,
-                            runtime,
-                            receipt,
-                            transition_identity,
-                            transition_identity_locator,
-                            node_path,
-                            terminal,
-                            assessment,
-                            approval,
-                            operation_receipt_identity,
-                            replayed,
-                        )
-                    })
-            }
-            Err(uncommitted) => WorkflowProgressOutcome::Application(uncommitted),
-        };
-        if let (Some(progress_update), WorkflowProgressOutcome::Completed(performed)) =
-            (progress_update, &projected)
-        {
-            let committed_revision = performed.receipt().commit_reference().version_id;
-            let progress_key = progress_update.key();
-            let _ = self
-                .runtime
-                .primary_provider
-                .graph
-                .with_workflow_instance_progress_mut(progress_key, |retention| {
-                    progress_update.apply(
-                        retention,
-                        committed_revision,
-                        performed.transition(),
-                        performed
-                            .assessment_evidence()
-                            .map(|evidence| evidence.evidence()),
-                    )
-                });
-        }
-        projected
+        completion.finish(self, execution, outcome)
     }
 }
 

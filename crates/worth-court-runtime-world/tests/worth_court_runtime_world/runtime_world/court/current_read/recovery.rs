@@ -72,7 +72,15 @@ fn genuine_performed_native_custody_can_be_adopted_after_control_moves() {
     assert_eq!(grain(&court, &execution, &current_now), "9");
     let handle = effects.recovery_handle();
     drop(effects);
-    let cleanup = recovery.release_effects(&handle, 0).unwrap();
+    let (_original, cleanup) = recovery
+        .release_effects(
+            &execution,
+            &handle,
+            0,
+            court.observe_recovery_original(&execution, &handle),
+        )
+        .unwrap()
+        .into_parts();
     assert!(cleanup.owner_retirement_work().is_empty());
     drop((done.consume(), moved_control));
 }

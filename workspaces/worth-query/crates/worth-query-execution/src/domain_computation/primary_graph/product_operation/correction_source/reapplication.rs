@@ -55,6 +55,16 @@ where
         maximum_history,
         maximum_results,
     )?;
+    if target
+        .application()
+        .runtime
+        .product_runtime
+        .is_directory_home()
+    {
+        return Err(Denial::DurableStateAdmission(
+            crate::domain_computation::execution_runtime::product_world::WorthQueryDurableStateAdmissionDenial::UnsupportedCorrectionReapplication,
+        ));
+    }
     let selected =
         target.select_alternative_ancestry(phase, &alternative.selected, maximum_history)?;
     let active = alternative
@@ -82,16 +92,12 @@ where
         required_root,
     )?;
     let workflow = super::preparation::prepare_workflow::<S, C>(target, phase, source)?;
-    let retained = source
+    let (bytes, identity) = source
         .occurrence()
-        .commit_evidence()
-        .original_authority()
-        .retained_governed_input_carrier()
-        .ok_or(Denial::SemanticMaterialUnavailable)?;
-    let input = retained
-        .encoded_input::<<C::Source as ApplicationMutationBinding<S>>::InputBinding>()
-        .ok_or(Denial::UnsupportedSourceMeaning)?
-        .clone();
+        .input()
+        .ok_or(Denial::UnsupportedSourceMeaning)?;
+    let input =
+        super::material::recorded_input::recover_bytes(bytes, identity, C::recover_source_input)?;
     let scope =
         <<C::Source as ApplicationMutationBinding<S>>::Input as ApplicationMutationInputScope<
             S,

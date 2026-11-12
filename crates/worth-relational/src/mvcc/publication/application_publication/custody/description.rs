@@ -44,7 +44,7 @@ pub(super) fn require<'a>(
     roles: impl ExactSizeIterator<Item = RecordedRequiredOutputRole<'a>> + Clone,
 ) -> Result<Result<(), EntityId>, TransactionCommitError> {
     if origin.producer != producer
-        || &origin.dependency_identity != dependency
+        || origin.dependency_identity.bytes() != dependency
         || &origin.meaning != meaning
         || roles.len() != origin.members.len()
     {

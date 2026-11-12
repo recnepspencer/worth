@@ -59,7 +59,7 @@ pub(crate) fn validate(
                     .entity_arena
                     .metadata_history_at(slot)
                     .and_then(|history| history.len().checked_sub(1).and_then(|i| history.get(i)))
-                    .and_then(|m| m.authoritative_aspect_state.as_ref())
+                    .and_then(|m| m.authoritative_aspect_state())
                     .and_then(|s| record::fields(s, aspect))
                     .ok_or_else(|| damaged(partition))?;
                 let bad = |source| corrupt(publication, source, id);

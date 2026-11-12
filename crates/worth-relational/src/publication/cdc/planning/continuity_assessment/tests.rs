@@ -20,7 +20,7 @@ fn unsupported_continuation_failure_counts_current_boundary_when_no_prior_proof_
     let outcome = create_entity_outcome(execution, &runtime, "a");
     let fingerprint = SchemaBoundaryFingerprint::new([7_u8; 32]);
     let envelopes = vec![envelope_with_continuation(
-        outcome.envelope().clone(),
+        outcome.envelope().copy_original_for_test(execution),
         outcome.patch_position(),
         fingerprint,
         SchemaContinuationClassification::ContinueWithContractUpgrade,
@@ -60,7 +60,7 @@ fn unsupported_continuation_failure_deduplicates_boundary_already_present_in_pri
     let outcome = create_entity_outcome(execution, &runtime, "a");
     let fingerprint = SchemaBoundaryFingerprint::new([9_u8; 32]);
     let envelopes = vec![envelope_with_continuation(
-        outcome.envelope().clone(),
+        outcome.envelope().copy_original_for_test(execution),
         outcome.patch_position(),
         fingerprint,
         SchemaContinuationClassification::ContinueWithContractUpgrade,
@@ -100,19 +100,20 @@ fn envelope_with_continuation(
     fingerprint: SchemaBoundaryFingerprint,
     continuation: SchemaContinuationClassification,
 ) -> crate::history::data::PositionedCanonicalCommit {
-    envelope.schema_continuation_descriptor = Some(SchemaContinuationDescriptor::new(
-        fingerprint,
-        SchemaBridgeDescriptor::new(
+    envelope.body_mut_for_test().schema_continuation_descriptor =
+        Some(SchemaContinuationDescriptor::new(
             fingerprint,
-            DescriptorSemanticsVersion::default(),
-            DescriptorCanonicalBasisVersion::default(),
-            continuation,
-            SchemaBridgeabilityClassification::SubscriberVisible,
-            HistoricalInterpretationSensitivity::NotSensitive,
-            vec![SchemaStratum::PublicationContract],
-        ),
-        1,
-    ));
+            SchemaBridgeDescriptor::new(
+                fingerprint,
+                DescriptorSemanticsVersion::default(),
+                DescriptorCanonicalBasisVersion::default(),
+                continuation,
+                SchemaBridgeabilityClassification::SubscriberVisible,
+                HistoricalInterpretationSensitivity::NotSensitive,
+                vec![SchemaStratum::PublicationContract],
+            ),
+            1,
+        ));
     crate::history::data::PositionedCanonicalCommit::for_test(
         position,
         std::sync::Arc::new(envelope),

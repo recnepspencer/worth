@@ -246,10 +246,7 @@ fn historical_relation_kind_reads_follow_visible_metadata_not_current_slot_kind(
             partition_id,
             kind_id: KindId(21),
             version_id: VersionId(1),
-            extra: RelationExtra {
-                endpoints: Some(first_endpoints),
-                authoritative_aspect_state: None,
-            },
+            extra: RelationExtra::from_unbudgeted_parts(Some(first_endpoints), None),
         });
     relation_arena
         .retire(slot, VersionId(2))
@@ -262,10 +259,7 @@ fn historical_relation_kind_reads_follow_visible_metadata_not_current_slot_kind(
         partition_id,
         kind_id: KindId(22),
         version_id: VersionId(3),
-        extra: RelationExtra {
-            endpoints: Some(second_endpoints),
-            authoritative_aspect_state: None,
-        },
+        extra: RelationExtra::from_unbudgeted_parts(Some(second_endpoints), None),
     });
     assert_eq!(reused_generation, 2);
 

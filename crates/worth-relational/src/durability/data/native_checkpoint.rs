@@ -1,9 +1,15 @@
 use std::sync::Arc;
 use worth_execution::ExecutionImmutableBytes;
 
+mod component_custody;
+mod publication_binding;
+mod region_publications;
+use region_publications::CapturedRegionPublications;
 mod roster_corruption;
 #[cfg(test)]
 mod tests;
+use component_custody::ComponentCaptureCustody;
+pub(in crate::durability) use component_custody::OriginalCheckpointRead;
 
 /// Opaque native bytes for one complete Relational recovery checkpoint.
 ///
@@ -14,13 +20,17 @@ mod tests;
 /// Clones share immutable byte backing and retain the same selected region;
 /// they do not clone or confer recovery authority.
 pub struct RelationalNativeCheckpoint {
+    component_custody: ComponentCaptureCustody,
     bytes: ExecutionImmutableBytes,
     region: std::ops::Range<usize>,
     captured_sections: Option<NativeCheckpointSectionBytes>,
     captured_coverage: Option<NativeCheckpointCoverage>,
-    members: Arc<[super::RelationalCheckpointMember]>,
-    publications: Arc<[crate::storage::residency::RelationalCheckpointRegionPublication]>,
+    members: super::CapturedCheckpointMembers,
+    publications: CapturedRegionPublications,
     manifest_publication: Option<crate::runtime::RelationalCheckpointManifestPublication>,
+    canonical_publication:
+        Option<crate::durability::checkpoint_history::publication::CanonicalCheckpointPublication>,
+    publication: Option<Arc<crate::durability::medium::CheckpointPublication>>,
 }
 
 /// What a captured checkpoint covers: its last commit position and its last
@@ -47,6 +57,7 @@ pub struct NativeCheckpointSectionBytes {
 impl Clone for RelationalNativeCheckpoint {
     fn clone(&self) -> Self {
         Self {
+            component_custody: self.component_custody.clone(),
             bytes: self.bytes.clone(),
             region: self.region.clone(),
             captured_sections: self.captured_sections,
@@ -54,6 +65,8 @@ impl Clone for RelationalNativeCheckpoint {
             members: self.members.clone(),
             publications: self.publications.clone(),
             manifest_publication: self.manifest_publication.clone(),
+            canonical_publication: self.canonical_publication.clone(),
+            publication: self.publication.clone(),
         }
     }
 }
@@ -80,13 +93,16 @@ impl RelationalNativeCheckpoint {
         let bytes = bytes.into();
         let region = 0..bytes.len();
         Self {
+            component_custody: ComponentCaptureCustody::default(),
             bytes: ExecutionImmutableBytes::from_external_bytes(Arc::new(bytes)),
             region,
             captured_sections: None,
             captured_coverage: None,
-            members: Arc::from([]),
-            publications: Arc::from([]),
+            members: Default::default(),
+            publications: Default::default(),
             manifest_publication: None,
+            canonical_publication: None,
+            publication: None,
         }
     }
 
@@ -101,13 +117,16 @@ impl RelationalNativeCheckpoint {
             return Err("native checkpoint byte region is out of bounds");
         }
         Ok(Self {
+            component_custody: ComponentCaptureCustody::default(),
             bytes,
             region,
             captured_sections: None,
             captured_coverage: None,
-            members: Arc::from([]),
-            publications: Arc::from([]),
+            members: Default::default(),
+            publications: Default::default(),
             manifest_publication: None,
+            canonical_publication: None,
+            publication: None,
         })
     }
 
@@ -118,35 +137,151 @@ impl RelationalNativeCheckpoint {
     /// Members to publish atomically with the manifest. Inline artifacts also
     /// expose their selected members; their bytes already contain the same set.
     pub fn members(&self) -> &[super::RelationalCheckpointMember] {
-        &self.members
+        self.members.entries()
+    }
+
+    pub(crate) fn with_component_holds(
+        mut self,
+        holds: Vec<crate::branch::AdmittedRelationalBranchBasis>,
+    ) -> Self {
+        self.component_custody = ComponentCaptureCustody::new(holds);
+        self
+    }
+
+    pub(in crate::durability) fn with_complete_component_holds(
+        mut self,
+        holds: crate::durability::authority::checkpoint_components::CompleteComponentHolds,
+        region_cells: worth_execution::ExecutionArray<
+            Arc<crate::storage::residency::RelationalRegionResidency>,
+        >,
+        original: Option<OriginalCheckpointRead>,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> Result<Self, super::RelationalNativeCheckpointCaptureDenial> {
+        self.component_custody =
+            ComponentCaptureCustody::prepare_for_request(holds, region_cells, original, execution)
+                .map_err(super::RelationalNativeCheckpointCaptureDenial::Request)?;
+        Ok(self)
+    }
+
+    pub(crate) fn retains_reconstructed_regions(&self) -> Result<bool, ()> {
+        self.component_custody.retains_reconstructed_regions()
+    }
+
+    pub(crate) fn release_component_holds(&self) {
+        self.component_custody.release();
     }
 
     pub(crate) fn with_captured_members(
         mut self,
-        members: Vec<super::RelationalCheckpointMember>,
+        members: super::CapturedCheckpointMembers,
     ) -> Self {
-        self.members = members.into();
+        self.members = members;
         self
     }
 
-    /// Confirm that the manifest and its complete member set were selected in
-    /// one durable publication. The home calls this only after that decision,
-    /// even if its subsequent physical checkpoint is interrupted.
-    pub fn acknowledge_publication(&self) {
-        if let Some(publication) = &self.manifest_publication {
-            publication.acknowledge();
+    /// Ask the attached medium about this original capture, then acknowledge
+    /// its actual selection. Progress remains owned across caller interruption.
+    pub fn acknowledge_selected(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        context: &mut worth_execution::MapKernelContext<'_, '_>,
+    ) -> Result<(), crate::durability::medium::RelationalCheckpointAcknowledgementDenial> {
+        self.publication.as_ref().ok_or(crate::durability::medium::RelationalCheckpointAcknowledgementDenial::CaptureNotBound)?
+            .advance(execution,context)
+    }
+
+    /// Observe this capture's historical progress without advancing it.
+    /// Unbound decoded bytes have no progress; an active driver returns Busy.
+    pub fn acknowledgement_progress(
+        &self,
+    ) -> Result<
+        Option<crate::durability::medium::RelationalCheckpointAcknowledgementProgress>,
+        crate::durability::medium::RelationalCheckpointAcknowledgementDenial,
+    > {
+        self.publication
+            .as_ref()
+            .map(|owner| owner.progress())
+            .transpose()
+    }
+
+    pub fn publication_subject(
+        &self,
+    ) -> Option<&crate::durability::medium::OpaqueCapturedCheckpointSubject> {
+        self.publication
+            .as_ref()
+            .map(|publication| publication.subject())
+    }
+
+    /// Admission of an adapter's actual read source precedes physical effects.
+    /// This does not certify selection or mint acknowledgement authority.
+    pub fn validate_publication_source(
+        &self,
+        source: &Arc<dyn crate::durability::medium::RelationalDurableColdSource>,
+    ) -> Result<(), crate::durability::medium::RelationalCheckpointAcknowledgementDenial> {
+        use crate::durability::medium::RelationalCheckpointAcknowledgementDenial as Denial;
+        if self.publication.is_none() {
+            return Err(Denial::CaptureNotBound);
         }
-        for publication in self.publications.iter() {
-            publication.acknowledge();
+        if !self
+            .manifest_publication
+            .as_ref()
+            .is_some_and(|publication| publication.source_matches(source))
+        {
+            return Err(Denial::ForeignSource);
         }
+        self.manifest_publication
+            .as_ref()
+            .expect("validated bound capture")
+            .validate_coverage()?;
+        Ok(())
+    }
+
+    pub(crate) fn canonical_publication(
+        &self,
+    ) -> Option<&crate::durability::checkpoint_history::publication::CanonicalCheckpointPublication>
+    {
+        self.canonical_publication.as_ref()
+    }
+    pub(crate) fn with_canonical_publication(
+        mut self,
+        publication: Option<
+            crate::durability::checkpoint_history::publication::CanonicalCheckpointPublication,
+        >,
+    ) -> Self {
+        self.canonical_publication = publication;
+        self
+    }
+
+    pub(crate) fn manifest_publication(
+        &self,
+    ) -> Option<&crate::runtime::RelationalCheckpointManifestPublication> {
+        self.manifest_publication.as_ref()
+    }
+    pub(crate) fn region_publications(
+        &self,
+    ) -> &[crate::storage::residency::RelationalCheckpointRegionPublication] {
+        self.publications.entries()
     }
 
     pub(crate) fn with_region_publications(
         mut self,
         publications: Vec<crate::storage::residency::RelationalCheckpointRegionPublication>,
     ) -> Self {
-        self.publications = publications.into();
+        self.publications = CapturedRegionPublications::from_ordinary(publications);
         self
+    }
+
+    pub(in crate::durability) fn with_complete_region_publications(
+        mut self,
+        count: usize,
+        publications: impl IntoIterator<
+            Item = crate::storage::residency::RelationalCheckpointRegionPublication,
+        >,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> Result<Self, super::RelationalNativeCheckpointCaptureDenial> {
+        self.publications =
+            CapturedRegionPublications::capture_for_request(count, publications, execution)?;
+        Ok(self)
     }
 
     pub(crate) fn with_manifest_publication(
@@ -171,11 +306,14 @@ impl RelationalNativeCheckpoint {
     ) -> Self {
         let region = 0..bytes.len();
         Self {
+            component_custody: ComponentCaptureCustody::default(),
             bytes,
             region,
-            members: Arc::from([]),
-            publications: Arc::from([]),
+            members: Default::default(),
+            publications: Default::default(),
             manifest_publication: None,
+            canonical_publication: None,
+            publication: None,
             captured_sections: Some(sections),
             captured_coverage: Some(NativeCheckpointCoverage {
                 position,

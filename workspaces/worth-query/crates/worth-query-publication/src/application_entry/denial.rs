@@ -116,6 +116,12 @@ impl std::error::Error for WorthQueryApplicationRequestQueryDenial {}
 /// The kind of a `WorthQueryApplicationRequestMutationDenial`, without its detail.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryApplicationRequestMutationDenialKind {
+    DurableStateAdmission(
+        worth_query_execution::facade::product::WorthQueryDurableStateAdmissionDenial,
+    ),
+    DurableBindingAdmission(
+        worth_query_installation::facade::WorthQueryApplicationOperationInstallationDenialKind,
+    ),
     /// Request admission refused before any application effect.
     ExecutionRequest(
         worth_query_execution::facade::application_contribution::WorthQueryAdvancementDenial,
@@ -131,6 +137,7 @@ pub enum WorthQueryApplicationRequestMutationDenialKind {
     /// The provider could not resolve the key yet: its snapshot or retention
     /// capacity is in use, or it could not answer. Nothing took effect.
     IdempotencyUnavailable,
+    OriginalEffectReleased,
     /// Execution refused pending-publication recovery while resolving this key.
     IdempotencyExecutionDenied(
         Result<
@@ -144,13 +151,10 @@ pub enum WorthQueryApplicationRequestMutationDenialKind {
     /// The admission that resolved the key belongs to another runtime or
     /// schema binding, or has no product to resolve against.
     IdempotencyForeignAdmission,
-    /// The key is recorded with the same intent, and that commit took effect,
-    /// but this runtime no longer holds its receipt. Retrying the same request
-    /// cannot commit it again.
-    IdempotencyReceiptNotRetained,
     /// The key's recorded intent was written by an earlier encoding that
     /// cannot be checked against this request.
     IdempotencyIntentUnverifiable,
+    IdempotencyPreparationBusy,
     Identity,
     InputCapture,
     /// The handler ran and refused, or its projection, read attempt or
@@ -272,6 +276,14 @@ impl WorthQueryApplicationRequestMutationDenial {
             Self::Handler(MutationHandlerExecutionDenial::HandlerNotInstalled) => {
                 WorthQueryApplicationRequestMutationDenialKind::HandlerNotInstalled
             }
+            Self::Handler(MutationHandlerExecutionDenial::DurableStateAdmission(cause)) => {
+                WorthQueryApplicationRequestMutationDenialKind::DurableStateAdmission(*cause)
+            }
+            Self::Handler(MutationHandlerExecutionDenial::DurableBindingAdmission(cause)) => {
+                WorthQueryApplicationRequestMutationDenialKind::DurableBindingAdmission(
+                    cause.kind(),
+                )
+            }
             Self::ExecutionRequest(cause) => {
                 WorthQueryApplicationRequestMutationDenialKind::ExecutionRequest(*cause)
             }
@@ -315,6 +327,8 @@ const fn idempotency_kind(
     use WorthQueryApplicationIdempotencyResolutionDenialKind as Resolution;
     use WorthQueryApplicationRequestMutationDenialKind as Request;
     match kind {
+        Resolution::OriginalEffectReleased => Request::OriginalEffectReleased,
+        Resolution::PreparationBusy => Request::IdempotencyPreparationBusy,
         Resolution::ExecutionDenied(kind) => Request::IdempotencyExecutionDenied(kind),
         Resolution::Authorization(kind) => Request::Authorization(kind),
         Resolution::ForeignAdmission => Request::IdempotencyForeignAdmission,
@@ -324,7 +338,6 @@ const fn idempotency_kind(
         Resolution::RetentionIdentityExhausted | Resolution::SnapshotIdentityExhausted => {
             Request::IdempotencyIdentityExhausted
         }
-        Resolution::CommittedReceiptNotRetained { .. } => Request::IdempotencyReceiptNotRetained,
         Resolution::RecordedIntentUnverifiable => Request::IdempotencyIntentUnverifiable,
     }
 }
@@ -364,3 +377,6 @@ mod advancement_tests {
         }
     }
 }
+#[cfg(test)]
+#[path = "denial_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;

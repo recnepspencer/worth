@@ -10,12 +10,16 @@ pub(crate) mod correction;
 #[test]
 fn a_cancellation_stays_blocked_after_rail_completion_without_inbound() {
     let ready = ReadyPaymentWorld::new("cancel-in-owner-custody", FaultScript::Succeed);
-    ready
+    let performed = ready
         .perform()
         .into_performed()
         .expect("the payment commits into rail custody");
     assert_in_owner_custody(cancel(&ready, "approved-payment:cancel:in-custody"));
-    owner_remains_pending(&ready, "approved-payment:operation:accept:before-cancel");
+    owner_remains_pending(
+        &ready,
+        &performed,
+        "approved-payment:operation:accept:before-cancel",
+    );
     assert_in_owner_custody(cancel(&ready, "approved-payment:cancel:without-inbound"));
     assert_eq!(ready.rail.completed_effect_count(), 1);
 }
@@ -34,7 +38,7 @@ fn a_cancellation_prepared_before_the_rail_takes_the_payment_goes_stale() {
             &key("approved-payment:cancel:early"),
         )
         .expect("nothing is in the rail owner's custody yet");
-    ready
+    let _performed = ready
         .perform()
         .into_performed()
         .expect("the payment commits into rail custody");
@@ -54,7 +58,7 @@ fn a_cancellation_prepared_before_the_rail_takes_the_payment_goes_stale() {
 #[test]
 fn a_migration_stays_blocked_after_rail_completion_without_inbound() {
     let ready = ReadyPaymentWorld::new("migrate-in-owner-custody", FaultScript::Succeed);
-    ready
+    let performed = ready
         .perform()
         .into_performed()
         .expect("the payment commits into rail custody");
@@ -72,11 +76,23 @@ fn a_migration_stays_blocked_after_rail_completion_without_inbound() {
         }
         other => panic!("expected definition publication, got {other:?}"),
     };
-    // The fixture's own publication replays to name the running definition.
-    let source = publish(
-        WorkflowDefinitionExpectedPredecessor::Absent,
-        "approved-payment:definition",
-    );
+    let source = match workflow
+        .publish_definition(
+            ready.authority.clone(),
+            WorkflowDefinitionExpectedPredecessor::Absent,
+            &key("approved-payment:definition"),
+        )
+        .expect("the fixture's original definition remains inspectable")
+    {
+        WorkflowDefinitionPublicationOutcome::RecoveredCommitted(data) => {
+            worth_query_bank_testkit_server::facade::recorded_commit_axes::assert_agrees(
+                &data,
+                ready.definition.receipt(),
+            );
+            ready.definition.definition().clone()
+        }
+        other => panic!("expected recorded original definition, got {other:?}"),
+    };
     let successor = publish(
         WorkflowDefinitionExpectedPredecessor::Published(source),
         "approved-payment:definition:successor",
@@ -102,7 +118,11 @@ fn a_migration_stays_blocked_after_rail_completion_without_inbound() {
         ),
         other => panic!("a payment in owner custody must refuse migration: {other:?}"),
     }
-    owner_remains_pending(&ready, "approved-payment:operation:accept:before-migrate");
+    owner_remains_pending(
+        &ready,
+        &performed,
+        "approved-payment:operation:accept:before-migrate",
+    );
     match migrate("approved-payment:migrate:without-inbound") {
         Err(BankApprovedPaymentWorkflowError::InstanceMigration(
             WorthQueryWorkflowInstancePreparationDenial::InstancePreparation(
@@ -121,7 +141,7 @@ fn a_migration_stays_blocked_after_rail_completion_without_inbound() {
 #[test]
 fn adoption_leaves_a_payment_the_rail_holds_with_no_disposition() {
     let ready = ReadyPaymentWorld::new("adopt-in-owner-custody", FaultScript::Succeed);
-    ready
+    let _performed = ready
         .perform()
         .into_performed()
         .expect("the payment commits into rail custody");

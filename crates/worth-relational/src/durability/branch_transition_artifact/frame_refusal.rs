@@ -7,15 +7,24 @@ use super::RelationalBranchTransitionArtifactDigest;
 #[non_exhaustive]
 pub enum RelationalBranchTransitionArtifactFrameRefusal {
     /// The bytes end before the fixed-width header does.
-    TruncatedHeader { available: usize },
+    TruncatedHeader {
+        available: usize,
+    },
     /// The leading bytes are not the artifact magic.
     UnrecognizedMagic,
     /// The frame names an artifact format version this build does not read.
-    UnsupportedVersion { found: u16, supported: u16 },
+    UnsupportedVersion(worth_foundational::facade::BoundaryProtocolUnsupportedVersion),
+    InvalidVersion,
     /// Fewer payload bytes follow the header than it declares.
-    TruncatedPayload { declared: u64, available: u64 },
+    TruncatedPayload {
+        declared: u64,
+        available: u64,
+    },
     /// More bytes follow the header than the declared payload.
-    TrailingBytes { declared: u64, available: u64 },
+    TrailingBytes {
+        declared: u64,
+        available: u64,
+    },
     /// The payload does not hash to the digest the header records.
     DigestMismatch {
         recorded: RelationalBranchTransitionArtifactDigest,
@@ -33,10 +42,8 @@ impl std::fmt::Display for RelationalBranchTransitionArtifactFrameRefusal {
             Self::UnrecognizedMagic => {
                 formatter.write_str("bytes are not a branch transition artifact")
             }
-            Self::UnsupportedVersion { found, supported } => write!(
-                formatter,
-                "branch transition artifact version {found} is unsupported; this build reads {supported}"
-            ),
+            Self::UnsupportedVersion(reason) => write!(formatter, "branch transition artifact version {} is unsupported ({:?})", reason.produced().get(), reason.posture()),
+            Self::InvalidVersion => formatter.write_str("branch transition artifact version zero is invalid"),
             Self::TruncatedPayload {
                 declared,
                 available,

@@ -14,8 +14,10 @@ use crate::schema::data::RelationalSchemaRegistry;
 use crate::transactions::data::RecordRef;
 use crate::validation::data::{StructuralReadError, StructuralRelationView};
 
+mod home_target;
 mod ordered_birth;
 mod projections;
+pub(super) use home_target::discover_home_target;
 
 /// Support includes negative inverse reads. Scope discovery does not depend
 /// on public sessions, retained provider roots, or positive query matches.

@@ -1,0 +1,192 @@
+//! Kill only after the actual Native publication reaches physical durability.
+use super::*;
+
+#[test]
+fn original_world_attempt_child() {
+    let Some(location) = std::env::var_os(LOCATION) else {
+        return;
+    };
+    let markers = std::path::PathBuf::from(std::env::var_os(MARKERS).unwrap());
+    let request = crate::workload::serial_request();
+    let execution = ExecutionRequest::serial(&request);
+    let fixture = open(std::path::Path::new(&location), &execution);
+    let bootstrap = fixture.bootstrap_root(&execution);
+    let cancellation = RuntimeWorldCancellationSource::new();
+    let prefix = match std::env::var(PREFIX).as_deref() {
+        Ok("two") => 2,
+        Err(_) => 0,
+        _ => panic!("unknown real publication prefix"),
+    };
+    let mut expected = bootstrap.product_branch().clone();
+    drop(bootstrap);
+    for round in 0..prefix {
+        let prepared = fixture.prepare_publication(
+            &execution,
+            expected.clone(),
+            crate::batches::create(round),
+            &cancellation.token(),
+        );
+        let mut performed = fixture
+            .publish(&execution, prepared, &cancellation.token())
+            .consume();
+        expected = performed.take_successor_observation().unwrap();
+    }
+    std::fs::write(markers.join("handler-runs"), "1").unwrap();
+    let prepared = fixture.prepare_publication(
+        &execution,
+        expected.clone(),
+        crate::batches::create(prefix),
+        &cancellation.token(),
+    );
+    // These are the actual issued values, never inferred from equal counters.
+    let original = format!(
+        "{}\n{}\n{}\n{}\n{}\n{}\n{:?}\n{:?}\n",
+        prepared.attempt_identity().ordinal(),
+        prepared.reserved_commit_identity().ordinal(),
+        prepared.unpublished_recovery_handle().identity().ordinal(),
+        expected.selected_commit().ordinal(),
+        expected.lifecycle_incarnation().ordinal(),
+        expected.branch_identity().name().as_str(),
+        fixture.home.home_identity(),
+        fixture.home.incarnation(),
+    );
+    std::fs::write(markers.join("original"), original).unwrap();
+    // Bootstrap, durable Open and the one Native preparation have completed.
+    // There is no further World publication before Native canonical publish.
+    let gate = fixture.home.physical_serving_for_test()
+        .certification_pause_physical_mutation_at(
+            worth_store::physical_runtime::certification::CertificationPhysicalMutationCheckpoint::AfterRootReplacement
+        );
+    let publication = fixture.home.world().publication_port();
+    let token = cancellation.token();
+    std::thread::scope(|scope| {
+        let worker = scope.spawn(|| {
+            let request = crate::workload::serial_request();
+            let execution = ExecutionRequest::serial(&request);
+            let mut outcome =
+                publication.execute_durable_without_signal(execution, prepared, &token);
+            loop {
+                match outcome {
+                    WorldDurablePublicationOutcome::Performed(performed) => {
+                        drop(performed.consume());
+                        return Ok(());
+                    }
+                    WorldDurablePublicationOutcome::Pending(pending) => {
+                        outcome = pending.advance(&execution);
+                    }
+                    other => {
+                        return Err(format!(
+                            "actual Native/World publication refused: {other:?}"
+                        ))
+                    }
+                }
+            }
+        });
+        assert!(crate::process_kill::await_mutation_seam(
+            &gate,
+            &worker,
+            std::time::Instant::now() + crate::killed_child::PARK_DEADLINE
+        ));
+        let inspection = fixture.home.world().inspection_port();
+        assert_eq!(
+            inspection.history_snapshot().unwrap().installed_commits(),
+            prefix + 1
+        );
+        assert_eq!(
+            inspection
+                .performed_publication_page(None, maximum())
+                .unwrap()
+                .rows()
+                .len(),
+            prefix
+        );
+        assert_eq!(expected.reference_generation().get(), prefix as u64);
+        crate::killed_child::announce(
+            &markers.join("ready"),
+            b"Native durable; World occurrence absent",
+        );
+        crate::killed_child::park();
+    });
+}
+
+#[test]
+fn pending_bootstrap_survives_original_request_unwind_and_installs_only_its_selected_root() {
+    let directory = tempfile::tempdir().unwrap();
+    let request = crate::workload::serial_request();
+    let execution = ExecutionRequest::serial(&request);
+    let fixture = open(directory.path(), &execution);
+    let cancellation = worth_execution::CancellationSource::new();
+    cancellation.cancel();
+    let stopped = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::new(None),
+        cancellation.token(),
+        None,
+    );
+    assert!(matches!(
+        fixture.begin_bootstrap_root(&ExecutionRequest::serial(&stopped)),
+        WorldDurableBootstrapOutcome::Refused(_)
+    ));
+    assert_eq!(
+        fixture.home.world().lifecycle_observation(),
+        RuntimeWorldOwnerLifecycleObservation::Open
+    );
+    let gate = fixture.home.physical_serving_for_test()
+        .certification_pause_physical_mutation_at(
+            worth_store::physical_runtime::certification::CertificationPhysicalMutationCheckpoint::AfterRootReplacement
+        );
+    let abandoned = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+        let original_request = crate::workload::serial_request();
+        let original = ExecutionRequest::serial(&original_request);
+        assert!(matches!(
+            fixture.begin_bootstrap_root(&original),
+            WorldDurableBootstrapOutcome::Pending
+        ));
+        assert!(
+            gate.await_arrival(),
+            "the original accepted World journal publication reached its actual seam"
+        );
+        panic!("unwind the original request after accepted bootstrap publication");
+    }));
+    assert!(abandoned.is_err());
+    assert!(
+        matches!(
+            fixture.begin_bootstrap_root(&execution),
+            WorldDurableBootstrapOutcome::Refused(_)
+        ),
+        "a competing begin cannot replace the same retained bootstrap"
+    );
+    gate.release();
+    let port = fixture.home.world().publication_port();
+    let backstop = std::time::Instant::now() + std::time::Duration::from_secs(30);
+    let performed = loop {
+        match port.advance_durable_bootstrap_root(&execution) {
+            WorldDurableBootstrapOutcome::Performed(performed) => break performed,
+            WorldDurableBootstrapOutcome::Pending => {
+                assert!(std::time::Instant::now() < backstop);
+                std::thread::sleep(std::time::Duration::from_millis(1));
+            }
+            other => panic!("same selected bootstrap refused: {other:?}"),
+        }
+    };
+    assert_eq!(
+        performed.product_branch().branch_identity().name().as_str(),
+        "Original World Root"
+    );
+    assert_eq!(performed.product_branch().reference_generation().get(), 0);
+    assert_eq!(
+        fixture
+            .home
+            .world()
+            .inspection_port()
+            .history_snapshot()
+            .unwrap()
+            .installed_commits(),
+        1
+    );
+    assert!(matches!(
+        fixture.begin_bootstrap_root(&execution),
+        WorldDurableBootstrapOutcome::Refused(_)
+    ));
+    drop(performed);
+    close(fixture.home, &execution);
+}

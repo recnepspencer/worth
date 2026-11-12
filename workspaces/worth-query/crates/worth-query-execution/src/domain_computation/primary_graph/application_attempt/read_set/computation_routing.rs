@@ -332,7 +332,7 @@ pub(in crate::domain_computation::primary_graph) use layout::CheckedCallShape;
 pub(in crate::domain_computation::primary_graph) use ranges::NativeCallCarriage;
 mod reattribution;
 mod reuse;
-pub(in crate::domain_computation::primary_graph::application_attempt::read_set) use layout::CheckedReadLayout;
+
 pub(in crate::domain_computation::primary_graph) use reuse::NativeReadRefresh;
 pub(crate) mod index;
 pub(crate) mod sealed;
@@ -347,3 +347,5 @@ impl worth_execution::ChargedBytes for ComputationRead {
 }
 
 mod court_doors_for_test;
+
+pub use layout::{CheckedReadLayout, SealedReadLayout};

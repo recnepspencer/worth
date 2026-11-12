@@ -1,9 +1,12 @@
+use worth_query_execution::court_doors_for_test::domain_computation::application_aftermath::external_effect::dispatch::dispatch_external_effect;
 pub use worth_query_execution::court_doors_for_test::domain_computation::application_aftermath::external_effect::correlation::ExternalEffectCorrelationBasis;
 pub use worth_query_execution::facade::domain_computation::ExternalEffectCorrelationIdentity;
+pub use worth_query_execution::facade::domain_computation::ExternalEffectNoEffectCause;
 pub use worth_query_execution::facade::domain_computation::ExternalEffectPosture;
 pub use worth_query_execution::facade::domain_computation::ExternalEffectPostureKind;
 pub use worth_query_execution::facade::domain_computation::ExternalRailTransportFault;
 pub use worth_query_execution::facade::domain_computation::WorthQueryDispatchOutboxRecord;
+pub use worth_query_execution::facade::domain_computation::WorthQueryExternalDispatchPostureKind;
 pub use worth_query_execution::facade::domain_computation::WorthQueryExternalDispatchRequest;
 pub use worth_query_execution::facade::domain_computation::WorthQueryExternalEffectTransport;
 pub use worth_query_execution::facade::domain_computation::WorthQueryExternalTransportOutcome;
@@ -33,6 +36,7 @@ fn completed_dispatch_has_four_distinct_exact_predecessors() {
     let dispatch = worth_query_execution::court_doors_for_test::domain_computation::application_aftermath::external_effect::dispatch::dispatch_external_effect(
         &FixedTransport(WorthQueryExternalTransportOutcome::Completed),
         admitted_from_fresh_runtime(7),
+        || {},
     )
     .unwrap();
     let ladder = dispatch.causal_ladder();
@@ -77,7 +81,6 @@ fn transport_faults_never_fabricate_owner_observation_or_completion() {
         WorthQueryExternalTransportOutcome::Disconnected,
         WorthQueryExternalTransportOutcome::LostResponse,
         WorthQueryExternalTransportOutcome::DuplicateAcknowledgement,
-        WorthQueryExternalTransportOutcome::Rejected,
     ]
     .into_iter()
     .enumerate()
@@ -85,12 +88,42 @@ fn transport_faults_never_fabricate_owner_observation_or_completion() {
         let dispatch = worth_query_execution::court_doors_for_test::domain_computation::application_aftermath::external_effect::dispatch::dispatch_external_effect(
             &FixedTransport(outcome),
             admitted_from_fresh_runtime(index as u64 + 9),
+            || {},
         )
         .unwrap();
         assert!(!dispatch.is_external_completion());
         assert!(dispatch.causal_ladder().observation().is_none());
         assert_eq!(dispatch.canonical_work().digest_derivations(), 3);
     }
+}
+
+#[test]
+fn a_rejected_payload_is_proven_no_effect_and_never_unresolved() {
+    let dispatch = worth_query_execution::court_doors_for_test::domain_computation::application_aftermath::external_effect::dispatch::dispatch_external_effect(
+        &FixedTransport(WorthQueryExternalTransportOutcome::Rejected),
+        admitted_from_fresh_runtime(31),
+        || {},
+    )
+    .unwrap();
+    assert_eq!(
+        dispatch.posture().kind(),
+        WorthQueryExternalDispatchPostureKind::ProvenNoEffect
+    );
+    let proof = dispatch
+        .posture()
+        .proven_no_effect()
+        .expect("the external owner's rejection is its own proof");
+    assert_eq!(proof.cause(), ExternalEffectNoEffectCause::PayloadRejected);
+    assert_eq!(proof.attempt_posture(), dispatch.causal_ladder().attempt());
+    assert_eq!(
+        dispatch.fault(),
+        None,
+        "proven no effect is not an unresolved transport fault"
+    );
+    assert!(dispatch.posture().classification().is_none());
+    assert_eq!(dispatch.canonical_work().digest_derivations(), 3);
+    assert!(!dispatch.is_external_completion());
+    assert!(dispatch.causal_ladder().observation().is_none());
 }
 
 #[test]
@@ -110,6 +143,7 @@ fn unsupported_protocol_version_preserves_exact_external_owner_causality() {
             WorthQueryExternalTransportOutcome::UnsupportedProtocolVersion(unsupported),
         ),
         admitted_from_fresh_runtime(10),
+        || {},
     )
     .unwrap();
 
@@ -133,11 +167,13 @@ fn distinct_attempt_ordinals_produce_distinct_attempt_identities() {
     let first = worth_query_execution::court_doors_for_test::domain_computation::application_aftermath::external_effect::dispatch::dispatch_external_effect(
         &FixedTransport(WorthQueryExternalTransportOutcome::LostResponse),
         first_admitted,
+        || {},
     )
     .unwrap();
     let second = worth_query_execution::court_doors_for_test::domain_computation::application_aftermath::external_effect::dispatch::dispatch_external_effect(
         &FixedTransport(WorthQueryExternalTransportOutcome::Completed),
         second_admitted,
+        || {},
     )
     .unwrap();
     assert_eq!(
@@ -166,11 +202,13 @@ fn equal_attempt_ordinals_in_distinct_query_runtimes_cannot_collide() {
     let first = worth_query_execution::court_doors_for_test::domain_computation::application_aftermath::external_effect::dispatch::dispatch_external_effect(
         &FixedTransport(WorthQueryExternalTransportOutcome::LostResponse),
         first_admitted,
+        || {},
     )
     .unwrap();
     let second = worth_query_execution::court_doors_for_test::domain_computation::application_aftermath::external_effect::dispatch::dispatch_external_effect(
         &FixedTransport(WorthQueryExternalTransportOutcome::LostResponse),
         second_admitted,
+        || {},
     )
     .unwrap();
 
@@ -192,11 +230,13 @@ fn identical_values_at_distinct_record_identities_have_distinct_causal_roots() {
     let first = worth_query_execution::court_doors_for_test::domain_computation::application_aftermath::external_effect::dispatch::dispatch_external_effect(
         &FixedTransport(WorthQueryExternalTransportOutcome::LostResponse),
         first_admitted,
+        || {},
     )
     .unwrap();
     let second = worth_query_execution::court_doors_for_test::domain_computation::application_aftermath::external_effect::dispatch::dispatch_external_effect(
         &FixedTransport(WorthQueryExternalTransportOutcome::LostResponse),
         second_admitted,
+        || {},
     )
     .unwrap();
 
@@ -286,3 +326,5 @@ fn correlation_digest_restore_is_exact() {
 
 #[path = "protocol_stability/mod.rs"]
 pub mod protocol_stability;
+
+mod rejection_time;

@@ -27,7 +27,7 @@ impl RelationalRegionResidency {
         }
         let resident = {
             let state = self.state.lock().unwrap_or_else(|error| error.into_inner());
-            match &*state {
+            match &**state {
                 ResidencyState::Head { region } | ResidencyState::Full(region) => {
                     Some(region.clone())
                 }
@@ -43,7 +43,16 @@ impl RelationalRegionResidency {
                     .ok_or_else(|| self.failure(Cause::SourceUnavailable))?;
                 // No serving-state transition and no raw-head cache retention:
                 // the oracle drops this authenticated input after its read.
-                region_load::load_head(cold, execution, 1 << 30)?
+                let source = {
+                    let state = self.state.lock().unwrap_or_else(|error| error.into_inner());
+                    state
+                        .physical
+                        .as_ref()
+                        .and_then(|physical| physical.source())
+                        .cloned()
+                        .ok_or_else(|| self.failure(Cause::SourceUnavailable))?
+                };
+                region_load::load_head(cold, &source, execution, 1 << 30)?
             }
         };
         Ok(ReconstructedRegionHead {

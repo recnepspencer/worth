@@ -31,7 +31,8 @@ pub use identity::{
     ApplicationEditEnvelopeKey, ApplicationEditIntentIdentity, ApplicationEditStageIdentity,
     ApplicationEditStageIntent, ApplicationEncodedInput, ApplicationEncodedMutationKey,
     ApplicationMutationIdentities, ApplicationMutationIdentityAdmittedDenial,
-    ApplicationMutationIdentityDenial, ApplicationOwnedMutationIdentities, ApplicationSharedInput,
+    ApplicationMutationIdentityDenial, ApplicationOwnedMutationIdentities,
+    ApplicationRetainedInput, ApplicationRetainedInputDenial, ApplicationSharedInput,
     ApplicationValueIdentityDomain, CanonicalEncodingCharge,
 };
 pub use input_scope::ApplicationMutationInputScope;

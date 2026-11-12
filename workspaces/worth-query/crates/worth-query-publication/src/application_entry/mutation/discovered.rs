@@ -207,7 +207,7 @@ where
     // Classify the already-produced native evidence; this invokes no handler or publication.
     if let WorthQueryApplicationMutationOutcome::Commit(worth_query_execution::facade::primary_graph::WorthQueryApplicationUncommitted::CleanupRequired(required)) = outcome {
         let (outcome, cleanup) = required.into_parts();
-        return WorthQueryApplicationDiscoveredMutationOutcome::CleanupRequired { cleanup, outcome: Box::new(discovered_outcome::<Schema, Intent, Program, Root>(discovery, WorthQueryApplicationMutationOutcome::Commit(outcome), source)) };
+        return WorthQueryApplicationDiscoveredMutationOutcome::CleanupRequired { cleanup, outcome: Box::new(discovered_outcome::<Schema, Intent, Program, Root>(discovery, WorthQueryApplicationMutationOutcome::from_commit_outcome(outcome), source)) };
     }
     let outcome = match outcome {
         WorthQueryApplicationMutationOutcome::Commit(worth_query_execution::facade::primary_graph::WorthQueryApplicationUncommitted::ProductUnpublished(partial)) => {
@@ -221,6 +221,8 @@ where
     };
     if matches!(&outcome, WorthQueryApplicationMutationOutcome::Commit(
         worth_query_execution::facade::primary_graph::WorthQueryApplicationUncommitted::Indeterminate(_)
+        | worth_query_execution::facade::primary_graph::WorthQueryApplicationUncommitted::ProductPreparationPending(_)
+        | worth_query_execution::facade::primary_graph::WorthQueryApplicationUncommitted::ProductPreparationRefused(_)
 ))
         && let Some(preparation) = source.take_unpublished() {
             return WorthQueryApplicationDiscoveredMutationOutcome::Blocked(super::performed_source::WorthQueryBlockedProgramSource { _preparation: preparation, payload: discovery, outcome });

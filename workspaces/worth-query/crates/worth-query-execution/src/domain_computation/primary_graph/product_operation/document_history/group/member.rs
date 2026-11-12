@@ -1,12 +1,17 @@
 //! A member can execute only on its group's original candidate and exact intent.
+use super::super::source_evidence::WorthQueryHistorySourceEvidence;
 use super::*;
 use crate::domain_computation::primary_graph::{
     WorthQueryApplicationCommitReceipt, WorthQueryCompletedRequiredOutputs,
+    WorthQueryRecoveredApplicationCommitReceipt,
 };
 
 enum MemberCompletion<'a> {
-    Source,
-    RequiredOutputs(&'a WorthQueryCompletedRequiredOutputs),
+    Source(WorthQueryHistorySourceEvidence<'a>),
+    RequiredOutputs {
+        receipt: &'a WorthQueryApplicationCommitReceipt,
+        completed: &'a WorthQueryCompletedRequiredOutputs,
+    },
 }
 
 impl<'runtime, S: ApplicationSchema, H: ApplicationHistoryBinding<S>>
@@ -77,7 +82,29 @@ impl<'runtime, S: ApplicationSchema, H: ApplicationHistoryBinding<S>>
         candidate: &WorthQueryExpectedProductBranch<'runtime, S>,
         receipt: &WorthQueryApplicationCommitReceipt,
     ) -> Result<(), WorthQueryDocumentHistoryDenial> {
-        self.capture_member(phase, group, candidate, receipt, MemberCompletion::Source)
+        self.capture_member(
+            phase,
+            group,
+            candidate,
+            MemberCompletion::Source(WorthQueryHistorySourceEvidence::Live(receipt)),
+        )
+    }
+
+    /// Fresh history admission compares the original owner's recorded endpoints.
+    pub fn capture_history_group_original_member(
+        &self,
+        phase: &WorthQueryAdvancementPhase<'_>,
+        _access: &WorthQueryProgramPublicationAccess,
+        group: &mut WorthQueryDocumentHistoryGroupReservation,
+        candidate: &WorthQueryExpectedProductBranch<'runtime, S>,
+        receipt: &WorthQueryRecoveredApplicationCommitReceipt,
+    ) -> Result<(), WorthQueryDocumentHistoryDenial> {
+        self.capture_member(
+            phase,
+            group,
+            candidate,
+            MemberCompletion::Source(WorthQueryHistorySourceEvidence::Recorded(receipt)),
+        )
     }
 
     /// The original complete-set proof binds the member's endpoint, including
@@ -95,8 +122,7 @@ impl<'runtime, S: ApplicationSchema, H: ApplicationHistoryBinding<S>>
             phase,
             group,
             candidate,
-            receipt,
-            MemberCompletion::RequiredOutputs(completed),
+            MemberCompletion::RequiredOutputs { receipt, completed },
         )
     }
 
@@ -105,7 +131,6 @@ impl<'runtime, S: ApplicationSchema, H: ApplicationHistoryBinding<S>>
         phase: &WorthQueryAdvancementPhase<'_>,
         group: &mut WorthQueryDocumentHistoryGroupReservation,
         candidate: &WorthQueryExpectedProductBranch<'runtime, S>,
-        receipt: &WorthQueryApplicationCommitReceipt,
         completion: MemberCompletion<'_>,
     ) -> Result<(), WorthQueryDocumentHistoryDenial> {
         use WorthQueryDocumentHistoryDenial as Denial;
@@ -114,10 +139,13 @@ impl<'runtime, S: ApplicationSchema, H: ApplicationHistoryBinding<S>>
             .members
             .get(group.completed.len())
             .ok_or(Denial::GroupMemberMismatch)?;
-        if !group.scopes[group.completed.len()].matches_receipt(receipt)
-            || receipt.idempotency_binding().canonical_key() != expected.canonical_key()
-            || !receipt.idempotency_binding().has_same_intent(*expected)
-        {
+        let source = match &completion {
+            MemberCompletion::Source(source) => *source,
+            MemberCompletion::RequiredOutputs { receipt, .. } => {
+                WorthQueryHistorySourceEvidence::Live(receipt)
+            }
+        };
+        if !source.matches(&group.scopes[group.completed.len()], *expected) {
             return Err(Denial::ReceiptMismatch);
         }
         if !std::ptr::eq(self.application(), candidate.application())
@@ -140,15 +168,7 @@ impl<'runtime, S: ApplicationSchema, H: ApplicationHistoryBinding<S>>
                 )
             })
             .unwrap_or_else(|| initial.clone());
-        let movement = receipt
-            .committed_product_publication()
-            .original_movement()
-            .ok_or(Denial::ReceiptMismatch)?;
-        if previous
-            != WorthQueryProductBranchReadIdentity::from_reference_snapshot(
-                movement.old_product_head(),
-            )
-        {
+        if !source.follows(&previous) {
             return Err(Denial::ReceiptMismatch);
         }
         let selected = self
@@ -157,11 +177,8 @@ impl<'runtime, S: ApplicationSchema, H: ApplicationHistoryBinding<S>>
             .select(phase)
             .map_err(Denial::CandidateSelection)?;
         let captured = match completion {
-            MemberCompletion::Source => {
-                if !receipt
-                    .committed_product_publication()
-                    .is_selected_at(selected.product().observation())
-                {
+            MemberCompletion::Source(source) => {
+                if !source.is_selected_at(selected.product().observation()) {
                     return Err(Denial::ReceiptMismatch);
                 }
                 CapturedMember {
@@ -169,7 +186,7 @@ impl<'runtime, S: ApplicationSchema, H: ApplicationHistoryBinding<S>>
                     root_posture: None,
                 }
             }
-            MemberCompletion::RequiredOutputs(completed) => {
+            MemberCompletion::RequiredOutputs { receipt, completed } => {
                 let retained = completed.retained_output();
                 if !completed.matches_source(receipt)
                     || retained.branch_incarnation() != candidate.branch().occurrence()

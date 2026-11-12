@@ -77,7 +77,8 @@ pub(super) fn eligible_registrations<'state>(
             let access = registration.access_contract();
             let has_declared_applicability = !access.affected_entity_kinds.is_empty()
                 || !access.affected_relation_kinds.is_empty();
-            let unrelated = registration.managed_sources.is_empty()
+            let unrelated = runtime.home_target.is_none()
+                && registration.managed_sources.is_empty()
                 && has_declared_applicability
                 && touched_kinds
                     .get_or_init(|| {

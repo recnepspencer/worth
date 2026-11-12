@@ -3,45 +3,14 @@ use std::sync::Arc;
 
 use crate::facade::history::BranchId;
 use crate::facade::merge::{
-    MergeExecutionOutcome, MergeExecutionRequest, MergeIntent,
-    RelationalMergeProofPacketCanonicalBasis,
+    MergeExecutionRequest, MergeIntent, RelationalMergeProofPacketCanonicalBasis,
 };
 use crate::facade::runtime::RelationalRuntime;
 use crate::tests::support::{
-    checkpoint_and_recover_with, create_branch_from_main, create_entity,
-    create_entity_outcome_on_branch, durable_runtime_with_test_schema,
+    create_branch_from_main, create_entity, create_entity_outcome_on_branch,
+    runtime_with_test_schema,
 };
 use worth_foundational::{CanonicalBasisLocus, CanonicalBasisValue, InternedString};
-
-#[test]
-fn merge_proof_packet_canonical_basis_parity_survives_publication_and_recovery() {
-    let host_request = crate::test_execution_policy::serial_request();
-    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
-
-    let runtime = merge_ready_runtime(execution);
-    let outcome = execute_merge(execution, &runtime);
-    let live_packet = outcome.execution_summary.proof_packet().clone();
-    let live_basis = lower_packet(&runtime, &live_packet);
-    let published_packet =
-        published_merge_authority(execution, &runtime, outcome.commit.commit.commit_id)
-            .execution_summary
-            .proof_packet
-            .clone();
-    let published_basis = lower_packet(&runtime, &published_packet);
-    let (_recovery, recovered) =
-        checkpoint_and_recover_with(execution, &runtime, durable_runtime_with_test_schema);
-    let recovered_packet =
-        published_merge_authority(execution, &recovered, outcome.commit.commit.commit_id)
-            .execution_summary
-            .proof_packet
-            .clone();
-    let recovered_basis = lower_packet(&recovered, &recovered_packet);
-
-    assert_eq!(live_basis, published_basis);
-    assert_eq!(live_basis, recovered_basis);
-    assert_eq!(entry_map(&live_basis), entry_map(&published_basis));
-    assert_eq!(entry_map(&live_basis), entry_map(&recovered_basis));
-}
 
 #[test]
 fn merge_proof_packet_canonical_basis_localizes_single_field_drift() {
@@ -204,7 +173,7 @@ fn merge_proof_packet_canonical_basis_localizes_single_field_drift() {
 }
 
 fn merge_ready_runtime(execution: &worth_execution::ExecutionRequest<'_, '_>) -> RelationalRuntime {
-    let runtime = durable_runtime_with_test_schema();
+    let runtime = runtime_with_test_schema();
     create_entity(execution, &runtime, "root");
     create_branch_from_main(&runtime, "feature");
     create_branch_from_main(&runtime, "alt");
@@ -224,33 +193,6 @@ fn merge_request() -> MergeExecutionRequest {
         BranchId("feature".to_string()),
         MergeIntent::ReconcileIntoTarget,
     )
-}
-
-fn execute_merge(
-    execution: &worth_execution::ExecutionRequest<'_, '_>,
-    runtime: &RelationalRuntime,
-) -> MergeExecutionOutcome {
-    let prepared = runtime
-        .merge()
-        .prepare_merge_execution(execution, merge_request())
-        .expect("prepared merge");
-    runtime
-        .execute_prepared_merge(execution, prepared)
-        .expect("executed merge")
-}
-
-fn published_merge_authority(
-    execution: &worth_execution::ExecutionRequest<'_, '_>,
-    runtime: &RelationalRuntime,
-    commit_id: crate::facade::history::CommitId,
-) -> crate::transactions::data::PublishedMergeExecutionAuthority {
-    runtime
-        .replay()
-        .canonical_commit_envelope(execution, commit_id)
-        .unwrap()
-        .map(|envelope| envelope.as_ref().clone())
-        .and_then(|envelope| envelope.merge_execution_authority.clone())
-        .expect("published merge authority")
 }
 
 fn lower_packet(

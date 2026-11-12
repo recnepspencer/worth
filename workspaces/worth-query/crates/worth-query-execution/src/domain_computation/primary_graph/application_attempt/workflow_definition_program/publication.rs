@@ -140,12 +140,11 @@ impl PublishedWorkflowDefinitionRef {
 }
 
 /// A workflow definition publication that landed: the published definition, its commit
-/// receipt, and whether the idempotency key replayed an already-landed commit.
+/// receipt from this actual publication.
 #[derive(Debug)]
 pub struct PerformedWorkflowDefinitionPublication {
     definition: PublishedWorkflowDefinitionRef,
     receipt: super::super::WorthQueryApplicationCommitReceipt,
-    replayed: bool,
 }
 
 impl PerformedWorkflowDefinitionPublication {
@@ -156,10 +155,6 @@ impl PerformedWorkflowDefinitionPublication {
     pub const fn receipt(&self) -> &super::super::WorthQueryApplicationCommitReceipt {
         &self.receipt
     }
-
-    pub const fn replayed(&self) -> bool {
-        self.replayed
-    }
 }
 
 /// What executing a workflow definition publication produced. `ProjectionDenied` means the
@@ -167,8 +162,9 @@ impl PerformedWorkflowDefinitionPublication {
 /// published content identity, so no reference was projected.
 #[derive(Debug)]
 pub enum WorkflowDefinitionPublicationOutcome {
+    RecoveredCommitted(crate::domain_computation::primary_graph::provider::WorthQueryRecoveredApplicationCommitReceipt),
     Published(PerformedWorkflowDefinitionPublication),
-    /// The commit did not land. A landed commit, first or replayed, is the
+    /// The commit did not land. A fresh landed commit is the
     /// performed variant.
     Application(WorthQueryApplicationUncommitted),
     ProjectionDenied(super::super::WorthQueryApplicationCommitReceipt),
@@ -230,12 +226,12 @@ where
             crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
         );
         match outcome.landed() {
-            Ok((receipt, replayed)) => project_published(
+            Ok(crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationLandedCommit::Live { receipt }) => project_published(
                 receipt,
                 content_identity,
                 &content_identity_locator,
-                replayed,
-            ),
+                ),
+            Ok(crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationLandedCommit::Recovered(receipt)) => WorkflowDefinitionPublicationOutcome::RecoveredCommitted(receipt),
             Err(uncommitted) => WorkflowDefinitionPublicationOutcome::Application(uncommitted),
         }
     }
@@ -245,7 +241,6 @@ fn project_published(
     receipt: super::super::WorthQueryApplicationCommitReceipt,
     content_identity: ApplicationWorkflowDefinitionContentIdentity,
     locator: &worth_foundational::facade::AspectFieldLocator,
-    replayed: bool,
 ) -> WorkflowDefinitionPublicationOutcome {
     let expected = AspectValue::String(InternedString::Raw(content_identity.to_string()));
     let candidates = receipt
@@ -262,7 +257,6 @@ fn project_published(
     WorkflowDefinitionPublicationOutcome::Published(PerformedWorkflowDefinitionPublication {
         definition,
         receipt,
-        replayed,
     })
 }
 

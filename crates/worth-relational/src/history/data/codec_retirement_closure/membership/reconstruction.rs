@@ -3,11 +3,11 @@ use super::super::reserve;
 use super::{
     charge, writes, Arc, CanonicalCommitEnvelope, EntityId, ExecutionResourceLease,
     MapKernelContext, OutputOriginHistory, OwnedValidatedOutputOrigins, RecordRef,
-    RecordStructuralChange, RelationalRuntime, Stop,
+    RecordStructuralChange, Stop,
 };
 use crate::history::data::canonical_commit_envelope::CanonicalOutputPublication;
 pub(in crate::history::data::codec_retirement_closure) fn reconstruct(
-    runtime: &RelationalRuntime,
+    runtime: &crate::history::data::codec_retirement_closure::history_request::RuntimeHistoryRequest<'_, '_, '_>,
     selected: &OwnedValidatedOutputOrigins,
     id: EntityId,
     plan: &crate::schema::data::LoweredAspectContractPlan,
@@ -32,7 +32,7 @@ pub(in crate::history::data::codec_retirement_closure) fn reconstruct(
 /// Canonical producer patches supply expected bytes; their maintenance gaps
 /// are validated by the enclosing semantic pass rather than recursively replayed.
 pub(in crate::history::data::codec_retirement_closure) fn reconstruct_canonical_payload(
-    runtime: &RelationalRuntime,
+    runtime: &crate::history::data::codec_retirement_closure::history_request::RuntimeHistoryRequest<'_, '_, '_>,
     selected: &OwnedValidatedOutputOrigins,
     id: EntityId,
     plan: &crate::schema::data::LoweredAspectContractPlan,
@@ -56,7 +56,7 @@ pub(in crate::history::data::codec_retirement_closure) fn reconstruct_canonical_
 
 #[allow(clippy::too_many_arguments)]
 fn reconstruct_chain(
-    runtime: &RelationalRuntime,
+    runtime: &crate::history::data::codec_retirement_closure::history_request::RuntimeHistoryRequest<'_, '_, '_>,
     selected: &OwnedValidatedOutputOrigins,
     id: EntityId,
     plan: &crate::schema::data::LoweredAspectContractPlan,
@@ -79,7 +79,7 @@ fn reconstruct_chain(
         .iter()
         .find(|member| member.id == id)
         .ok_or("publication omits exact member")?;
-    let bound = runtime.history.catalog_len();
+    let bound = runtime.runtime.history.catalog_len();
     let _chain_memory = reserve(
         lease,
         bound
@@ -145,7 +145,8 @@ fn reconstruct_chain(
             }
             CanonicalOutputPublication::HistoricalSelection { .. } => {
                 current = super::super::historical_selection::antecedent(
-                    runtime,
+                    runtime.runtime,
+                    &runtime.execution(),
                     &current,
                     current_origin,
                     validated_history,
@@ -158,7 +159,8 @@ fn reconstruct_chain(
                 let previous = validated_history
                     .by_commit(
                         predecessor,
-                        &mut |commit| runtime.history.canonical_envelope(commit),
+                        &mut |commit| runtime.commit(commit),
+                        &runtime.execution(),
                         context,
                     )?
                     .ok_or("publication predecessor history missing")?;

@@ -139,22 +139,23 @@ fn checked_application_rule_charges_its_exact_work_and_refuses_one_unit_short() 
     assert_eq!(exact.contacts, [0, 1, 1, authored_work as usize]);
     assert_eq!(exact.publications, 1);
     let short = run_case(true, true, Some(exact_ceiling - 1), false);
-    let WorthQueryApplicationCommitOutcome::Denied(denial) = short.outcome else {
+    let WorthQueryApplicationCommitOutcome::ProductUnpublished(unpublished) = short.outcome else {
         panic!(
-            "one unit short must be a typed stop: {:?}, {:?}",
-            short.outcome, short.opening
+            "the final original-capture stop must retain the actual Native effect: {:?}",
+            short.outcome
         );
     };
-    assert!(
-        matches!(
-            denial.kind(),
-            WorthQueryApplicationCommitDenialKind::ExecutionResource {
-                denial: Resource::WorkExhausted,
-                ..
-            }
-        ),
-        "{denial:?}"
+    assert_eq!(
+        unpublished.cause(),
+        worth_runtime_world::facade::ProductUnpublishedCause::OriginalObservationStopped(
+            worth_relational::facade::transactions::RelationalExecutionDenialCause::WorkExhausted
+        )
     );
+    assert_eq!(unpublished.owner_effect_count(), 1);
+    assert!(unpublished
+        .next_actions()
+        .contains(&worth_runtime_world::facade::ProductUnpublishedNextAction::Inspect));
+    assert!(unpublished.live_obligation_count() > 0);
     assert_eq!(short.publications, 0);
     assert_eq!(short.contacts[0], 0);
 }

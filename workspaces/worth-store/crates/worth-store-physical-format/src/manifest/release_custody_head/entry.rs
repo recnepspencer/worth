@@ -1,4 +1,5 @@
 use crate::{PersistedRecordIdentity, ReleasedDropPredecessorV1};
+use worth_foundational::CanonicalDigestId;
 
 use super::ReleaseCustodyHeadDenial;
 use crate::manifest::durable_root_routing::{decode_identity, encode_identity};
@@ -32,12 +33,12 @@ impl ReleaseCustodyHeadKeyV1 {
 pub struct ReleaseCustodyHeadEntryV1 {
     key: ReleaseCustodyHeadKeyV1,
     descriptor_record: PersistedRecordIdentity,
-    descriptor_frame_sha256: [u8; 32],
+    descriptor_frame_sha256: CanonicalDigestId,
     manifest_record: PersistedRecordIdentity,
-    manifest_frame_sha256: [u8; 32],
+    manifest_frame_sha256: CanonicalDigestId,
     reservation_record: PersistedRecordIdentity,
-    reservation_frame_sha256: [u8; 32],
-    source_basis_digest: [u8; 32],
+    reservation_frame_sha256: CanonicalDigestId,
+    source_basis_digest: CanonicalDigestId,
     predecessor: Option<ReleasedDropPredecessorV1>,
     source_root_generation: u64,
     cumulative_dropped: u64,
@@ -79,12 +80,12 @@ impl ReleaseCustodyHeadEntryV1 {
         Ok(Self {
             key,
             descriptor_record,
-            descriptor_frame_sha256,
+            descriptor_frame_sha256: CanonicalDigestId::new(descriptor_frame_sha256),
             manifest_record,
-            manifest_frame_sha256,
+            manifest_frame_sha256: CanonicalDigestId::new(manifest_frame_sha256),
             reservation_record,
-            reservation_frame_sha256,
-            source_basis_digest,
+            reservation_frame_sha256: CanonicalDigestId::new(reservation_frame_sha256),
+            source_basis_digest: CanonicalDigestId::new(source_basis_digest),
             predecessor,
             source_root_generation,
             cumulative_dropped,
@@ -98,22 +99,22 @@ impl ReleaseCustodyHeadEntryV1 {
         self.descriptor_record
     }
     pub const fn descriptor_frame_sha256(self) -> [u8; 32] {
-        self.descriptor_frame_sha256
+        *self.descriptor_frame_sha256.bytes()
     }
     pub const fn manifest_record(self) -> PersistedRecordIdentity {
         self.manifest_record
     }
     pub const fn manifest_frame_sha256(self) -> [u8; 32] {
-        self.manifest_frame_sha256
+        *self.manifest_frame_sha256.bytes()
     }
     pub const fn reservation_record(self) -> PersistedRecordIdentity {
         self.reservation_record
     }
     pub const fn reservation_frame_sha256(self) -> [u8; 32] {
-        self.reservation_frame_sha256
+        *self.reservation_frame_sha256.bytes()
     }
     pub const fn source_basis_digest(self) -> [u8; 32] {
-        self.source_basis_digest
+        *self.source_basis_digest.bytes()
     }
     pub const fn predecessor(self) -> Option<ReleasedDropPredecessorV1> {
         self.predecessor
@@ -132,12 +133,12 @@ impl ReleaseCustodyHeadEntryV1 {
         *target = [0; ENTRY_BYTES];
         encode_key(self.key, (&mut target[..KEY_BYTES]).try_into().unwrap());
         encode_identity(&mut target[24..48], self.descriptor_record);
-        target[48..80].copy_from_slice(&self.descriptor_frame_sha256);
+        target[48..80].copy_from_slice(self.descriptor_frame_sha256.bytes());
         encode_identity(&mut target[80..104], self.manifest_record);
-        target[104..136].copy_from_slice(&self.manifest_frame_sha256);
+        target[104..136].copy_from_slice(self.manifest_frame_sha256.bytes());
         encode_identity(&mut target[136..160], self.reservation_record);
-        target[160..192].copy_from_slice(&self.reservation_frame_sha256);
-        target[192..224].copy_from_slice(&self.source_basis_digest);
+        target[160..192].copy_from_slice(self.reservation_frame_sha256.bytes());
+        target[192..224].copy_from_slice(self.source_basis_digest.bytes());
         if let Some(prior) = self.predecessor {
             target[224] = 1;
             encode_identity(&mut target[232..256], prior.descriptor_record());

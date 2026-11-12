@@ -43,7 +43,7 @@ pub(crate) fn relational_runtime_with_intent_strategy() -> RelationalRuntime {
 
 pub(crate) fn create_entity(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-    runtime: &mut RelationalRuntime,
+    runtime: &RelationalRuntime,
     name: &str,
     branch: BranchId,
 ) -> worth_relational::facade::identity::EntityId {

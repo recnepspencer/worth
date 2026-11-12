@@ -13,7 +13,7 @@ pub fn snapshot(runtime: &RelationalRuntime) -> SnapshotHandle {
 
 pub fn change_label(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-    runtime: &mut RelationalRuntime,
+    runtime: &RelationalRuntime,
     entity: EntityId,
     locator: worth_foundational::facade::AspectFieldLocator,
 ) {

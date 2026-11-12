@@ -152,10 +152,7 @@ impl<'a, 'run, 'phase, S: ApplicationSchema> CoupledApplicationAssembly<'a, 'run
         root: crate::domain_computation::primary_graph::application_attempt::WorthQueryProviderProgressionOutcome,
     ) -> crate::domain_computation::primary_graph::application_attempt::WorthQueryProviderProgressionOutcome{
         use crate::domain_computation::primary_graph::application_attempt::WorthQueryProviderProgressionOutcome as Progression;
-        use crate::domain_computation::primary_graph::{
-            WorthQueryApplicationCommitOutcome as Outcome,
-            WorthQueryApplicationUncommitted as Uncommitted,
-        };
+        use crate::domain_computation::primary_graph::WorthQueryApplicationUncommitted as Uncommitted;
         let unpublished = match &root {
             Progression::ProductUnpublished(value) => Some(value),
             _ => None,
@@ -165,13 +162,10 @@ impl<'a, 'run, 'phase, S: ApplicationSchema> CoupledApplicationAssembly<'a, 'run
             let Some(CoupledWriterStage::Prepared(prepared)) = writer.stage else {
                 unreachable!("whole candidate prepares each writer before World")
             };
-            let terminal = prepared.terminal_binding();
             let completion = prepared.completion();
             let provider = &self.application.runtime.primary_provider;
             let effected = unpublished.is_some()
-                || provider
-                    .observe_completed_application_for_session(&terminal)
-                    .is_some()
+                || prepared.has_original_completion()
                 || provider
                     .inspect_pending_application_idempotency(
                         self.before.observation().lifecycle_incarnation(),
@@ -189,21 +183,18 @@ impl<'a, 'run, 'phase, S: ApplicationSchema> CoupledApplicationAssembly<'a, 'run
                 self.retain_abort_outcome(prepared.abort(execution, self.phase, self.application));
                 continue;
             };
-            let uncommitted = match outcome {
-                Outcome::Committed(receipt) | Outcome::AlreadyCommitted(receipt) => {
-                    completion.complete(receipt);
+            let uncommitted = match outcome.landed() {
+                Ok(landed) => {
+                    completion.complete(landed);
                     continue;
                 }
-                Outcome::ProductUnpublished(_) => continue,
-                other => match other.landed() {
-                    Err(failure) => failure,
-                    Ok(_) => unreachable!("only an uncommitted participant outcome remains"),
-                },
+                Err(Uncommitted::ProductUnpublished(_)) => continue,
+                Err(failure) => failure,
             };
             failure = Some(match (failure.take(), uncommitted) {
                 (Some(prior), Uncommitted::CleanupRequired(cleanup)) => {
                     let (_, cleanup) = cleanup.into_parts();
-                    Uncommitted::CleanupRequired(crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationCleanupRequired::from_parts(prior, cleanup))
+                    Uncommitted::CleanupRequired(crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationCleanupRequired::from_parts(prior.into(), cleanup))
                 }
                 (Some(prior), _) => prior,
                 (None, failure) => failure,

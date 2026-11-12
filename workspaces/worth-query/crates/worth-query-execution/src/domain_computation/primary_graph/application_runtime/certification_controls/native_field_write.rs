@@ -58,7 +58,7 @@ where
                 .primary_graph()
                 .expect("the application retains its primary graph");
             let handle = graph.integration_handle();
-            let candidate = handle.with_query_runtime_mut(&execution, |runtime, layout| {
+            let candidate = handle.with_query_runtime(&execution, |runtime, layout| {
                 let locator = layout
                     .field_locator(field.entity(), field.aspect(), field.field())
                     .expect("the native field is installed")
@@ -96,7 +96,7 @@ where
             };
             let published = performed.commit().basis().relational_basis().clone();
             drop(performed.consume());
-            handle.with_runtime_mut(&execution, |runtime| {
+            handle.with_runtime(&execution, |runtime| {
                 let observation = published.observation();
                 let head = observation
                     .commit_receipt()

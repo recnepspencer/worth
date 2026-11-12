@@ -10,14 +10,18 @@ fn a_step_is_refused_once_the_deadline_is_reached_but_its_replay_answers() {
         WorkflowProposalOutcome::Published(performed) => performed,
         other => panic!("a proposal before the deadline did not publish: {other:?}"),
     };
-    assert!(!proposal.replayed());
 
     time.advance(Duration::from_millis(1));
     warm_and_cold(&application, |state| {
         match propose_instance(&application, instance.clone(), 93_002) {
-            Ok(WorkflowProposalOutcome::Published(replay)) => {
-                assert!(replay.replayed(), "the {state} retry replays");
-                assert_eq!(replay.transition(), proposal.transition());
+            Ok(WorkflowProposalOutcome::RecoveredCommitted(replay)) => {
+                crate::recorded_receipt::assert_agrees(&replay, proposal.receipt());
+                assert!(replay
+                    .semantic_result()
+                    .semantic()
+                    .created_entities()
+                    .iter()
+                    .any(|entry| entry.assigned == proposal.transition()));
             }
             other => panic!("the {state} retry after the deadline must replay: {other:?}"),
         }
@@ -27,8 +31,7 @@ fn a_step_is_refused_once_the_deadline_is_reached_but_its_replay_answers() {
             "the {state} next step is refused at the deadline itself",
         );
     });
-    let ended = cancelled(cancel_instance(&application, instance, 93_004));
-    assert!(!ended.replayed(), "an overdue instance still cancels");
+    let _ended = cancelled(cancel_instance(&application, instance, 93_004));
 }
 
 #[test]
@@ -88,20 +91,36 @@ fn an_approval_or_back_after_the_deadline_is_refused() {
             "the {state} approval is refused",
         );
     });
-    let ended = cancelled(cancel_instance(&application, instance, 93_211));
-    assert!(!ended.replayed());
+    let _ended = cancelled(cancel_instance(&application, instance, 93_211));
 }
 
 #[test]
 fn a_step_performed_in_time_replays_after_the_deadline() {
     let (time, application, _, instance) = deadline_instance(93_700);
-    let (proposal, required, _) = approval_requirement(&application, instance.clone(), 93_700);
-    approve(&application, &instance, &required, &proposal, 93_710);
+    let proposal = match propose_instance(&application, instance.clone(), 93_702).unwrap() {
+        WorkflowProposalOutcome::Published(performed) => performed.proposal().clone(),
+        other => panic!("the original proposal performs before the deadline: {other:?}"),
+    };
+    let (required, _, join) =
+        super::journey::approval_requirement_after_proposal(&application, instance.clone(), 93_700);
+    let approval = match approve_instance(
+        &application,
+        instance.clone(),
+        &required,
+        &proposal,
+        WorkflowApprovalDecision::Approve,
+        93_710,
+    )
+    .unwrap()
+    {
+        WorkflowProgressOutcome::Completed(performed) => performed,
+        other => panic!("the original approval performs before the deadline: {other:?}"),
+    };
     time.advance(DEADLINE);
     warm_and_cold(&application, |state| {
         match advance_instance(&application, instance.clone(), 93_707) {
-            Ok(WorkflowProgressOutcome::Completed(replay)) => {
-                assert!(replay.replayed(), "the {state} advance retry replays")
+            Ok(WorkflowProgressOutcome::RecoveredCommitted(replay)) => {
+                crate::recorded_receipt::assert_agrees(&replay, join.receipt());
             }
             other => panic!("the {state} advance retry must replay: {other:?}"),
         }
@@ -113,8 +132,8 @@ fn a_step_performed_in_time_replays_after_the_deadline() {
             WorkflowApprovalDecision::Approve,
             93_710,
         ) {
-            Ok(WorkflowProgressOutcome::Completed(replay)) => {
-                assert!(replay.replayed(), "the {state} approval retry replays")
+            Ok(WorkflowProgressOutcome::RecoveredCommitted(replay)) => {
+                crate::recorded_receipt::assert_agrees(&replay, approval.receipt());
             }
             other => panic!("the {state} approval retry must replay: {other:?}"),
         }
@@ -189,8 +208,7 @@ fn a_successor_keeps_the_earlier_deadline_and_an_overdue_source_cannot_migrate()
         ELAPSED,
         "nor by continuing on a fork",
     );
-    let ended = cancelled(cancel_instance(&application, successor, 93_422));
-    assert!(!ended.replayed());
+    let _ended = cancelled(cancel_instance(&application, successor, 93_422));
 }
 
 /// Trusted time that cannot be read admits nothing: authorization refuses a

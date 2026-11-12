@@ -18,7 +18,7 @@ impl RelationalCurrentOutputAdoption {
     }
 
     pub fn dependency_identity(&self) -> &[u8; 32] {
-        &self.selected.dependency_identity
+        self.selected.dependency_identity.bytes()
     }
 
     pub fn meaning(&self) -> &crate::mvcc::RequiredOutputPublicationMeaning {

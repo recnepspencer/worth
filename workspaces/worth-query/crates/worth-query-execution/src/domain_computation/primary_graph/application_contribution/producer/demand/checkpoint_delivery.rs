@@ -13,11 +13,15 @@ use crate::domain_computation::primary_graph::application_output_demand::{
     WorthQueryOutputDemandInterest, WorthQueryPendingOutputDelivery as Delivery,
 };
 use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime;
+mod publication;
+mod recovered;
 mod selected;
+mod selected_binding;
+use selected_binding::SelectedDeliveryBinding;
 mod unpublished;
 
 pub struct PreparedSelectedDelivery<'a> {
-    lowering: &'a std::sync::Arc<worth_runtime_bridge::facade::BridgeInstalledConditionalLowering>,
+    lowering: SelectedDeliveryBinding<'a>,
     ordinal: usize,
     preserved: bool,
 }
@@ -69,7 +73,7 @@ where
                 self.deliver_output_checkpoint_with_finish(
                     phase,
                     producer_identity,
-                    receipt,
+                    receipt.into(),
                     delivery,
                     ready_backing,
                     false,
@@ -95,7 +99,7 @@ where
                     execution,
                     phase,
                     producer_identity,
-                    &receipt,
+                    (&receipt).into(),
                     delivery.as_ref(),
                     &ready_backing,
                 ) {
@@ -130,6 +134,17 @@ where
                 )?;
                 Ok(true)
             }
+            checkpoint @ (Checkpoint::RecoveredPublished { .. }
+            | Checkpoint::RecoveredDelivered { .. }) => self.advance_recovered_checkpoint(
+                execution,
+                phase,
+                producer_identity,
+                checkpoint,
+                None,
+                |checkpoint, denial| {
+                    self.finish_output_checkpoint(interest, claim, checkpoint, denial, returned)
+                },
+            ),
             Checkpoint::Ready(_) => unreachable!("ready output opens reads without a claim"),
         }
     }
@@ -139,7 +154,7 @@ where
         phase: &WorthQueryAdvancementPhase<'_>,
 
         producer_identity: &str,
-        receipt: crate::domain_computation::primary_graph::WorthQueryApplicationCommitReceipt,
+        receipt: publication::Publication,
         delivery: Delivery,
         ready_backing: crate::domain_computation::primary_graph::application_output_demand::PreparedReadyBacking,
         selected: bool,
@@ -155,24 +170,10 @@ where
             .primary_provider
             .take_delayed_output_readiness_delivery()
         {
-            return finish(
-                Checkpoint::Published {
-                    receipt,
-                    delivery,
-                    ready_backing,
-                },
-                None,
-            );
+            return finish(receipt.published(delivery, ready_backing), None);
         }
         let Delivery::Change(change) = delivery else {
-            return finish(
-                Checkpoint::Delivered {
-                    receipt,
-                    delivery: None,
-                    ready_backing,
-                },
-                None,
-            );
+            return finish(receipt.delivered(None, ready_backing), None);
         };
         let (lowering, ordinal) = if let Some(prepared) = prepared.as_ref() {
             (prepared.lowering, prepared.ordinal)
@@ -182,12 +183,29 @@ where
                 .output_readiness_routes
                 .get(producer_identity)
                 .expect("installation requires one readiness route for every output producer");
-            (&route.lowering, route.delivery_dependency_ordinal)
+            (
+                SelectedDeliveryBinding::Installed(&route.lowering),
+                route.delivery_dependency_ordinal,
+            )
         };
         let root = self
             .granular_invalidation_installation()
             .retain_product_shared_root();
-        let outcome = root.deliver_performed_relational_change(phase, lowering, ordinal, change);
+        let owner = self.runtime.bridge.conditional();
+        let binding = match lowering.admit_signal_basis(&owner, change.signal_basis()) {
+            Ok(binding) => binding,
+            Err(cause) => {
+                return finish(
+                    receipt.published(Delivery::Change(change), ready_backing),
+                    Some(denial(
+                        WorthQueryOutputDemandDenialKind::BridgeConditional(Box::new(cause.kind())),
+                        cause.detail().to_owned(),
+                    )),
+                )
+            }
+        };
+        drop(owner);
+        let outcome = root.deliver_performed_relational_change(phase, &binding, ordinal, change);
         let delivered = match outcome {
             Ok(crate::domain_computation::execution_runtime::product_world::WorthQueryPerformedRelationalProductChangeDeliveryOutcome::Success(delivered)) => delivered,
             Ok(outcome) => {
@@ -204,7 +222,7 @@ where
                 };
                 let kind = WorthQueryOutputDemandDenialKind::CorrespondenceDelivery(Box::new(posture));
                 return finish(
-                    Checkpoint::Published { receipt, delivery: Delivery::Change(change), ready_backing },
+                    receipt.published(Delivery::Change(change), ready_backing),
                     Some(denial(kind, detail)),
                 );
             }
@@ -225,11 +243,7 @@ where
                 ) };
                 let failure = denial(kind, detail);
                 return finish(
-                    Checkpoint::Published {
-                        receipt,
-                        delivery: Delivery::Change(cause.into_change()),
-                        ready_backing,
-                    },
+                    receipt.published(Delivery::Change(cause.into_change()), ready_backing),
                     Some(failure),
                 );
             }
@@ -243,7 +257,7 @@ where
                     .get(producer_identity)
                     .expect("readiness route retains its installed producer")
                     .executor
-                    .preserved_readiness_output(&receipt)
+                    .preserved_readiness_output(receipt.view())
             };
             let counters = delivered.counters();
             let exact_noop = delivered.truth_targets_admitted() == 0
@@ -254,11 +268,7 @@ where
                 && counters.failed_deliveries() == 0;
             if !preserved || !exact_noop {
                 return finish(
-                    Checkpoint::Delivered {
-                        receipt,
-                        delivery: Some(delivered),
-                        ready_backing,
-                    },
+                    receipt.delivered(Some(delivered), ready_backing),
                     Some(denial(
                         WorthQueryOutputDemandDenialKind::SchedulingRejected,
                         if selected {
@@ -272,14 +282,7 @@ where
                 );
             }
         }
-        finish(
-            Checkpoint::Delivered {
-                receipt,
-                delivery: Some(delivered),
-                ready_backing,
-            },
-            None,
-        )
+        finish(receipt.delivered(Some(delivered), ready_backing), None)
     }
 
     fn finish_output_checkpoint(

@@ -122,13 +122,10 @@ where
         let Some(Phase::Forking(state)) = self.phase.as_mut() else {
             unreachable!()
         };
-        if let Some(recovery) = state.recovery.take()
-            && let Err(next) = recovery.release()
-        {
-            state.recovery = Some(next);
+        if let Err(cause) = ForkRecovery::release_in_request(&mut state.recovery, request) {
             return WorthQueryHistoryEditAdvance::Refused {
                 edit: self,
-                denial: WorthQueryHistoryEditDenial::ForkRecovery,
+                denial: cause,
             };
         }
         let runtime = self.document.owner.application();

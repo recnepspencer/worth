@@ -78,12 +78,14 @@ impl ValidatedRelationalProposal {
         member_kinds: &[KindId],
     ) -> Result<ValidatedRelationMutationFootprint, TransactionCommitError> {
         let fragments = &self
+            .state
             .proposed_mutation
             .outcome
             .effect
             .publication
             .patch_fragments;
         let restoration = self
+            .state
             .required_output_publication
             .as_ref()
             .and_then(|admission| admission.publication.authored_restoration());
@@ -139,7 +141,7 @@ impl ValidatedRelationalProposal {
         execution.run_native_with_checkpoint(|context| {
             if let Some(restoration) = restoration {
                 for (original, target) in restoration.entities.iter().take(anchors) {
-                    let created = &self.proposed_mutation.outcome.created_entities;
+                    let created = &self.state.proposed_mutation.outcome.created_entities;
                     checkpoint(context, created.resolve_work_bound(target).ok_or_else(|| stop(crate::execution::RelationalExecutionDenialCause::ChargedBytesOverflow))?).map_err(stop)?;
                     let actual = created.resolve(target).ok_or_else(|| crate::mvcc::origin_denial("authored inverse anchor has no actual allocation"))?;
                     restored_entities.push((*original, actual));
@@ -150,25 +152,25 @@ impl ValidatedRelationalProposal {
                 if !(members.is_empty() && member_kinds.is_empty())
                     && let RecordRef::Entity(entity) = fragment.target
                     && fragment.structural_change == crate::publication::patch::data::RecordStructuralChange::Created {
-                    let partition = self.proposed_mutation.state.get_current_partition(entity.partition_id);
+                    let partition = self.state.proposed_mutation.state.get_current_partition(entity.partition_id);
                     if let Some(kind) = partition.as_ref().and_then(|partition| partition.entity_arena().get(&entity)).filter(|row| row.is_live()).and_then(|row| row.kind_id()) {
                         self.project_restored_member(entity, kind, members, member_kinds, &mut restored_entities, &mut member_refusal, context)?;
                     }
                 }
                 let RecordRef::Relation(relation) = fragment.target else { continue; };
-                if let Some(admission) = &self.required_output_publication
+                if let Some(admission) = &self.state.required_output_publication
                     && let crate::mvcc::RequiredOutputPublication::CoupledAuthored { group } = &admission.publication
                 {
                     checkpoint(context, group.authored_records.len() as u64).map_err(stop)?;
                     if !group.authored_records.contains(&fragment.target) { continue; }
                 }
-                let before_partition = self.prepared.selected_branch_state.get_current_partition(relation.partition_id);
+                let before_partition = self.state.prepared.selected_branch_state.get_current_partition(relation.partition_id);
                 let before_row = before_partition.as_ref().and_then(|partition| partition.relation_arena().get(&relation));
                 let kind = before_row.as_ref().and_then(|row| row.kind_id()).or_else(|| fragment.relation_birth.as_ref().map(|birth| birth.kind));
                 checkpoint(context, kinds.len() as u64).map_err(stop)?;
                 let Some(kind) = kind.filter(|kind| kinds.contains(kind)) else { continue; };
                 let before = before_row.filter(|row| row.is_live()).and_then(|row| row.extra().endpoints.as_ref().map(|ends| (ends.source, ends.target)));
-                let after_partition = self.proposed_mutation.state.get_current_partition(relation.partition_id);
+                let after_partition = self.state.proposed_mutation.state.get_current_partition(relation.partition_id);
                 let after = after_partition.as_ref().and_then(|partition| partition.relation_arena().get(&relation))
                     .filter(|row| row.is_live()).and_then(|row| row.extra().endpoints.as_ref().map(|ends| (ends.source, ends.target)));
                 let after = if matches!(fragment.structural_change, crate::publication::patch::data::RecordStructuralChange::Deleted | crate::publication::patch::data::RecordStructuralChange::RetainedForAudit) { None } else { after };
@@ -178,7 +180,7 @@ impl ValidatedRelationalProposal {
                 if !relations.iter().any(|old: &ValidatedRelationMutation| old.relation == relation) {
                     let allocated_endpoint = match (before, after) {
                         (None, Some((source, target))) => {
-                            let created = &self.proposed_mutation.outcome.created_entities;
+                            let created = &self.state.proposed_mutation.outcome.created_entities;
                             created.creation_reference(source, || checkpoint(context, 1).map_err(stop))?.is_some()
                                 || created.creation_reference(target, || checkpoint(context, 1).map_err(stop))?.is_some()
                         }

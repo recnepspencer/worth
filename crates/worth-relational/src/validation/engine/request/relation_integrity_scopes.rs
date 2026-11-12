@@ -8,6 +8,7 @@ use crate::storage::overlay::CurrentPartitionAccess;
 use crate::transactions::data::{EntityReference, MergedCommitPlan};
 
 mod candidate_sources;
+mod home_target;
 mod incidence_collection;
 mod owned_graph;
 mod planned_incidence;
@@ -25,6 +26,7 @@ pub(super) struct RelationScopeState<'state> {
 
 pub(super) fn prepare_relation_integrity_scopes(
     semantic_plan: Option<RelationalSemanticPlan<'_>>,
+    whole_home_target: bool,
     state: RelationScopeState<'_>,
     requirements: BTreeMap<KindId, RelationScopeRequirement>,
     performance: &crate::performance::PerformanceAccess<'_>,
@@ -49,6 +51,9 @@ pub(super) fn prepare_relation_integrity_scopes(
             accumulator.collect_owned_graph(selection)?;
         }
         accumulator.collect_plan(plan.commands())?;
+    }
+    if whole_home_target {
+        accumulator.collect_home_target_source()?;
     }
     accumulator.check_live()?;
     accumulator.scan_touched_relations()?;

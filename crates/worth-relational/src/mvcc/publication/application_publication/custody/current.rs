@@ -40,7 +40,12 @@ pub(super) fn readmit(
         .run_native_with_checkpoint(|context| {
             super::description::charge(context, origin, producer, meaning, roles.len())?;
             let kind = installed.source_scope_ownership.scope_kind(producer);
-            if !kind.is_some_and(|kind| owner_matches(installed, basis, &roster, origin, kind)) {
+            if !kind.is_some_and(|kind| owner_matches(installed, basis, &roster, origin, kind))
+                || origin.producer != producer
+                || origin.dependency_identity.bytes() != dependency
+                || &origin.meaning != meaning
+                || roles.len() != origin.members.len()
+            {
                 return Err(refuse(meaning.source_scope));
             }
             super::description::require(

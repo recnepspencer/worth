@@ -88,9 +88,15 @@ impl ReservedBranchCreationAttempt {
         }
     }
 
-    #[cfg(test)]
     pub(crate) const fn identity(&self) -> &CompositePublicationAttemptIdentity {
         &self.identity
+    }
+
+    pub(crate) fn reserved_commit_identity(&self) -> crate::identity::CompositeCommitIdentity {
+        self.custody.reserved_commit_identity()
+    }
+    pub(crate) fn recovery_handle(&self) -> crate::recovery::ProductUnpublishedRecoveryHandle {
+        self.custody.unpublished_recovery_handle()
     }
 
     pub(crate) const fn source(&self) -> &ProductBranchObservation {

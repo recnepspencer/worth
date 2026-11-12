@@ -9,6 +9,7 @@ use worth_query_topology_entry::{
     TopologySchemaBinding,
 };
 
+#[cfg(test)]
 pub(super) fn seed_cycles<Schema: TopologySchemaBinding>(
     phase: &WorthQueryBootstrapAdvancementPhase<'_>,
     graph: &mut WorthQueryPrimaryGraphBootstrap<Schema>,

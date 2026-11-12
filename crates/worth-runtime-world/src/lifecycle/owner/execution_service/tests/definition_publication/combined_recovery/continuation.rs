@@ -66,6 +66,11 @@ fn signal_movement_recovery_adopts_both_original_results_after_activation_refusa
             crate::facade::RuntimeWorldPublicationOutcome::ProductUnpublished(partial) => partial,
             other => panic!("real Signal movement must retain original result: {other:?}"),
         };
+        let original_receipt = partial
+            .component_results()
+            .relational_settlement()
+            .unwrap()
+            .clone();
         let handle = partial.recovery_handle();
         assert_eq!(
             partial.cause(),
@@ -145,7 +150,18 @@ fn signal_movement_recovery_adopts_both_original_results_after_activation_refusa
         fixture
             .owner
             .recovery_port()
-            .release_effects(&handle, 0)
+            .release_effects(
+                &execution,
+                &handle,
+                0,
+                Some(
+                    fixture
+                        ._relational
+                        .durability_authority()
+                        .observe_memory_commit(&execution, &original_receipt)
+                        .unwrap(),
+                ),
+            )
             .unwrap();
         drop(publication.consume());
     }

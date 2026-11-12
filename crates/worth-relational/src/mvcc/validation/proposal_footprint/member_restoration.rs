@@ -40,8 +40,8 @@ impl ValidatedRelationalProposal {
     ) -> Result<(), TransactionCommitError> {
         use crate::execution::request_stage::checkpoint;
         let state = crate::validation::engine::state_view::InvariantStateView::new(
-            &self.proposed_mutation.state,
-            self.evidence.proposed_version(),
+            &self.state.proposed_mutation.state,
+            self.state.evidence.proposed_version(),
         );
         let mut in_family = false;
         for member in members {

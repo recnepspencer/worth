@@ -50,7 +50,7 @@ impl<'scope, 'authority> ExecutionAllocationPolicy<'scope, 'authority> {
 
     /// Capture controls from the same allocation owner as its funding. A
     /// builder keeps this exact status after its calling scope has returned.
-    pub(super) fn status(
+    pub(in super::super) fn status(
         self,
         quote: Option<u64>,
     ) -> Result<Option<ExecutionLeaseStatus>, ExecutionAllocationDenial> {

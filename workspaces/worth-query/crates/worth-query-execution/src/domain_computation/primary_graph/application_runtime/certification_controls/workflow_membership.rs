@@ -26,7 +26,7 @@ where
             .primary_graph()
             .expect("the application retains its primary graph")
             .integration_handle();
-        let candidate = handle.with_query_runtime_mut(&execution, |runtime, layout| {
+        let candidate = handle.with_query_runtime(&execution, |runtime, layout| {
             let relation_kind = layout.workflow().definition_node_relation;
             let membership = runtime
                 .read_truth()

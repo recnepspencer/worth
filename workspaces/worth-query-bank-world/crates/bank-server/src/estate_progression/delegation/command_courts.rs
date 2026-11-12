@@ -1,7 +1,7 @@
 //! Existing semantic courts consume real owning completion, never resubmit a retained intent.
 use crate::{
-    BankApplication, BankAuthenticatedPrincipal, BankCommitDenialKind, BankCommitDenialStage,
-    BankCommitReceipt, BankEstateProgressionDenial, BankIdentityRuntime, BankMutationCommitOutcome,
+    BankApplication, BankAuthenticatedPrincipal, BankClosedCapabilityCommand, BankCommitDenialKind,
+    BankCommitDenialStage, BankEstateProgressionDenial, BankIdentityRuntime,
 };
 use bank_domain::{estate::EstateAction, proposals::BankIdempotencyKey, schema::BankSchema};
 use worth_query_host::facade::{
@@ -15,13 +15,24 @@ use worth_query_host::facade::{
     },
 };
 
+/// A semantic court retains the native close owner, including every outstanding obligation.
+#[derive(Debug)]
+pub(crate) enum CommandCourtOutcome {
+    Committed(BankClosedCapabilityCommand),
+    RecoveredCommitted(BankClosedCapabilityCommand),
+    Denied {
+        kind: BankCommitDenialKind,
+        stage: BankCommitDenialStage,
+    },
+}
+
 pub(crate) fn complete_delegation(
     runtime: &BankIdentityRuntime,
     principal: &BankAuthenticatedPrincipal,
     action: EstateAction,
     key: &BankIdempotencyKey,
     request: &WorthQueryRequestScope,
-) -> Result<BankMutationCommitOutcome, BankEstateProgressionDenial> {
+) -> Result<CommandCourtOutcome, BankEstateProgressionDenial> {
     let command = runtime
         .retain_estate_capability_delegation(principal, action, key.clone(), request)
         .map_err(|(_input, _key, _prepare, denial)| map_delegation_denial(denial))?;
@@ -34,7 +45,7 @@ pub(crate) fn complete_revocation(
     action: EstateAction,
     key: &BankIdempotencyKey,
     request: &WorthQueryRequestScope,
-) -> Result<BankMutationCommitOutcome, BankEstateProgressionDenial> {
+) -> Result<CommandCourtOutcome, BankEstateProgressionDenial> {
     let command = runtime
         .retain_estate_capability_revocation(principal, action, key.clone(), request)
         .map_err(|(_input, _key, _prepare, denial)| map_revocation_denial(denial))?;
@@ -47,7 +58,7 @@ fn complete<'runtime, D>(
     request: &WorthQueryRequestScope,
     mut command: WorthQueryCapabilityCommand<'runtime, BankSchema, BankApplication, D>,
     map: impl Fn(D) -> BankEstateProgressionDenial,
-) -> Result<BankMutationCommitOutcome, BankEstateProgressionDenial> {
+) -> Result<CommandCourtOutcome, BankEstateProgressionDenial> {
     loop {
         match command.advance(&runtime.request(principal, request)) {
             Advance::Progress(next) => command = next,
@@ -58,11 +69,11 @@ fn complete<'runtime, D>(
                     .unwrap_or_else(|(_owner, _denial)| {
                         panic!("native command close must release actual custody")
                     });
-                let receipt = BankCommitReceipt::from_closed_capability_command(closed);
+                let receipt = BankClosedCapabilityCommand::from_query(closed);
                 return Ok(if fresh {
-                    BankMutationCommitOutcome::Committed(receipt)
+                    CommandCourtOutcome::Committed(receipt)
                 } else {
-                    BankMutationCommitOutcome::AlreadyCommitted(receipt)
+                    CommandCourtOutcome::RecoveredCommitted(receipt)
                 });
             }
             Advance::Refused {
@@ -77,7 +88,7 @@ fn complete<'runtime, D>(
                 Denial::Native(denial) => {
                     let denial = map(denial);
                     if matches!(denial, BankEstateProgressionDenial::IdempotencyIntentDrift) {
-                        Ok(BankMutationCommitOutcome::Denied {
+                        Ok(CommandCourtOutcome::Denied {
                             kind: BankCommitDenialKind::IdempotencyIntentDrift,
                             stage: BankCommitDenialStage::Idempotency,
                         })
@@ -159,4 +170,67 @@ fn map_revocation_denial(
         Query::Preparation(denial) => denial,
         other => panic!("unexpected new native command denial: {other:?}"),
     }
+}
+
+/// Recorded retry agrees with the independently held original performed command.
+pub(crate) fn assert_original_receipt(
+    original: &BankClosedCapabilityCommand,
+    retry: &BankClosedCapabilityCommand,
+) {
+    let live = original
+        .completion()
+        .receipt()
+        .expect("original command performed");
+    let data = retry
+        .recorded_receipt()
+        .expect("retry retains durable receipt data");
+    assert!(
+        retry.live_receipt().is_none(),
+        "recorded data is not Bank live authority"
+    );
+    assert_eq!(live.commit_reference(), data.commit_reference());
+    assert_eq!(live.outcome_identity(), Some(data.outcome_identity()));
+    assert_eq!(live.changed_record_count(), data.changed_record_count());
+    assert_eq!(live.emitted_effect_count(), data.emitted_effect_count());
+    assert_eq!(
+        live.idempotency_binding().key_identity(),
+        data.idempotency_key_identity()
+    );
+    let (before, after) = (live.basis_descriptor(), data.basis_descriptor());
+    assert_eq!(before.descriptor_version(), after.descriptor_version());
+    assert_eq!(before.branch_id(), after.branch_id());
+    assert_eq!(before.posture(), after.posture());
+    assert_eq!(
+        before.reference().generation(),
+        after.reference().generation()
+    );
+    match (
+        before.reference().target().as_basis(),
+        after.reference().target().as_basis(),
+    ) {
+        (Some(left), Some(right)) => {
+            assert_eq!(left.selected_commit_id(), right.selected_commit_id());
+            assert_eq!(left.version_id(), right.version_id());
+            assert_eq!(left.parent_commit_ids(), right.parent_commit_ids());
+            assert_eq!(left.roots(), right.roots());
+        }
+        (None, None) => {}
+        (Some(_), None) | (None, Some(_)) => panic!("original target kind changed"),
+    }
+    assert_eq!(
+        live.basis_descriptor().truth_version(),
+        data.basis_descriptor().truth_version()
+    );
+    assert_eq!(
+        live.basis_descriptor().schema_commitment(),
+        data.basis_descriptor().schema_commitment()
+    );
+    assert_eq!(
+        live.basis_descriptor().visibility_commitment(),
+        data.basis_descriptor().visibility_commitment()
+    );
+    assert_eq!(
+        live.recorded_output_settlement(),
+        data.exact_output_settlement()
+    );
 }

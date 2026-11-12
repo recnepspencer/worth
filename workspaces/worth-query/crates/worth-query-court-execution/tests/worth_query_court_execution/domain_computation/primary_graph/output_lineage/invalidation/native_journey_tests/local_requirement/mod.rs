@@ -131,7 +131,7 @@ fn local_full_verification_requirement_overrides_a_clean_actor_row() {
         &identity,
         FullVerificationReason::NativeRevisionUnavailable,
     );
-    handle.with_runtime_mut_for_test(request_execution, |runtime| {
+    handle.with_runtime_for_test(request_execution, |runtime| {
         write_field(request_execution, runtime, entity, status, "closed")
     });
     let (after_handle, after) = handle.with_runtime(request_execution, snapshot);
@@ -182,7 +182,7 @@ fn local_full_verification_requirement_overrides_a_clean_actor_row() {
         })
         .expect("the fixture read owns its installed host call");
     assert_eq!(result, Ok(ConsumedOutputVerification::ChangedDirectFact(0)));
-    handle.with_runtime_mut_for_test(request_execution, |runtime| {
+    handle.with_runtime_for_test(request_execution, |runtime| {
         runtime
             .snapshots()
             .release_snapshot(&before_handle)

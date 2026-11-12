@@ -2,10 +2,7 @@
 use super::*;
 mod envelope;
 mod history;
-use crate::facade::{
-    BridgeConditionalDecisionReentryRequest, BridgeInstalledConditionalLowering,
-    BridgeSealedRuntimeAssembly,
-};
+use crate::facade::{BridgeInstalledConditionalLowering, BridgeSealedRuntimeAssembly};
 
 #[test]
 fn envelope_private_associations_retain_only_the_original_native_observation() {

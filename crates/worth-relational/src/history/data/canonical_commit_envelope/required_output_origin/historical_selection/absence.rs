@@ -19,7 +19,7 @@ impl PartialEq for CanonicalHistoricalOutputAbsence {
     }
 }
 impl Eq for CanonicalHistoricalOutputAbsence {}
-impl CanonicalCommitEnvelope {
+impl CanonicalCommitEnvelopeBody {
     pub(crate) fn historical_absent_routes(
         &self,
     ) -> impl Iterator<Item = &CanonicalHistoricalOutputAbsence> {

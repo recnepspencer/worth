@@ -89,14 +89,7 @@ pub fn install() -> Host {
 pub fn install_worker_only() -> Host {
     install_with(worker_limits())
 }
-pub(super) fn worker_limits() -> WorthQueryInMemoryApplicationLimits {
-    worker_limits_with_clock(
-        worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system(),
-    )
-}
-pub(super) fn worker_limits_with_clock(
-    clock: worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock,
-) -> WorthQueryInMemoryApplicationLimits {
+pub(super) fn worker_limits() -> WorthQueryApplicationLimits {
     use worth_query_host::facade::runtime::*;
     let world =
         worth_query_testkit_document_retention::facade::document_world_resources::world_resources(
@@ -110,17 +103,17 @@ pub(super) fn worker_limits_with_clock(
             DeterminismContract::CanonicalBitwise,
             std::num::NonZeroUsize::new(8).unwrap(),
         ));
-    WorthQueryInMemoryApplicationLimits::new(
+    WorthQueryApplicationLimits::new(
         world,
         WorthQueryApplicationQueryResourceProfile::new(std::num::NonZeroUsize::new(128).unwrap()),
         SignalConditionalEvaluationBudget::development(),
     )
 }
-fn install_with(limits: WorthQueryInMemoryApplicationLimits) -> Host {
+fn install_with(limits: WorthQueryApplicationLimits) -> Host {
     install_program::<program::Program>(limits)
 }
 pub(super) fn install_program<P>(
-    limits: WorthQueryInMemoryApplicationLimits,
+    limits: WorthQueryApplicationLimits,
 ) -> WorthQueryProgramApplicationRuntime<Schema, P>
 where
     P: ApplicationProgramDefinition<Schema, Contributions = (Contribution,)>,
@@ -129,7 +122,7 @@ where
     install_program_with_value::<P>(limits, 1)
 }
 pub(super) fn install_program_with_value<P>(
-    limits: WorthQueryInMemoryApplicationLimits,
+    limits: WorthQueryApplicationLimits,
     initial_value: u64,
 ) -> WorthQueryProgramApplicationRuntime<Schema, P>
 where
@@ -140,7 +133,7 @@ where
 }
 /// Seed an independent model for cross-document demand-correspondence courts.
 pub(super) fn install_program_with_other_model<P>(
-    limits: WorthQueryInMemoryApplicationLimits,
+    limits: WorthQueryApplicationLimits,
     initial_value: u64,
     other_value: Option<u64>,
 ) -> WorthQueryProgramApplicationRuntime<Schema, P>

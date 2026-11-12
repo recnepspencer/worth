@@ -30,7 +30,7 @@ where
         ConnectionBinding<Schema, Connection>:
             WorthQueryApplicationDependentOutputConnection<Schema, RootDemand = ParentDemand>,
     {
-        let phase_request = match phase.execution_request_for(&self.backing.runtime.runtime.product_runtime) {
+        let phase_request = match phase.execution_request_for(&self.backing.runtime().runtime.product_runtime) {
             Ok(request) => request,
             Err(cause) => return Err(crate::domain_computation::primary_graph::WorthQueryOutputDemandDenial::new(crate::domain_computation::primary_graph::WorthQueryOutputDemandDenialKind::ExecutionRequest(cause.into()), "output-demand-phase")),
         };
@@ -39,7 +39,7 @@ where
         let artifact = self.validate_dependent_output_parent::<ParentDemand, Connection>(parent)?;
         let limits = self
             .backing
-            .runtime
+            .runtime()
             .output_demand_resource_profile()
             .constrain(limits);
         let selected_source = source
@@ -59,7 +59,7 @@ where
             ));
         }
         self.backing
-            .runtime
+            .runtime()
             .admit_dependent_output_demand::<Family<Schema, ConnectionDemand<Schema, Connection>>>(
                 execution,
                 source,

@@ -51,8 +51,8 @@ fn authored_cascade_corruption_names_the_mismatching_publications_source() {
                     .unwrap(),
                     family: producer.into(),
                     source_scope: source,
-                    source_partition: [0; 32],
-                    source_epoch: [1; 32],
+                    source_partition: worth_foundational::CanonicalDigestId::new([0; 32]),
+                    source_epoch: worth_foundational::CanonicalDigestId::new([1; 32]),
                 },
                 roles: vec![RequiredOutputRoleTarget {
                     role: "output".into(),

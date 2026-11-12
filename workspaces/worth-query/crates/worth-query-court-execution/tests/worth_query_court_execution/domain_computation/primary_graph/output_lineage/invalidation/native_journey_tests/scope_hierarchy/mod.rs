@@ -63,7 +63,7 @@ pub fn run(
     let identity = locator(i.entity(), i.aspect(), i.field());
     let status = locator(s.entity(), s.aspect(), s.field());
     let label = locator(l.entity(), l.aspect(), l.field());
-    handle.with_runtime_mut_for_test(execution, |runtime| {
+    handle.with_runtime_for_test(execution, |runtime| {
         let refs: Vec<_> = (0..(siblings + 1) * DEPTH).map(|n| CreatedEntityRef {
             partition_id: PartitionId::main(), kind_id: kind,
             client_key: ClientKey::raw(format!("scope-tree-{n}")),

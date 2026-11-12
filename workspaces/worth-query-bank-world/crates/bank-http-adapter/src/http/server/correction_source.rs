@@ -45,7 +45,13 @@ mod tests {
         });
         let description: BankHttpCorrectionSource = serde_json::from_value(wire.clone()).unwrap();
         let native = WorthQueryCorrectionSourceCoordinates::from(description);
-        assert_eq!((native.world_owner(), native.world_commit()), (7, 19));
+        assert_eq!(
+            (native.world_owner(), native.world_commit()),
+            (
+                worth_foundational::WorldOwnerCoordinate::MemoryOnly { observation: 7 },
+                19
+            )
+        );
         assert_eq!(native.relational().branch_id.0, "product:fork");
         assert_eq!(native.relational().commit_id.0, 23);
         assert_eq!(native.relational().version_id.0, 29);

@@ -5,7 +5,6 @@ use crate::leased_preparation::ordinary_context::support::{
 use worth_execution::{ExecutionAllocationPolicy, ExecutionRequest};
 use worth_relational::facade::{
     identity::{EntityId, KindId, PartitionId, RelationId},
-    indexes::DerivedIndexMaintenanceBudget,
     mvcc::{
         BranchBoundRelationalTransaction, PreparedRelationalCommitCandidate,
         RelationalPublicationOutcome, RelationalTransactionIntent,
@@ -114,13 +113,6 @@ pub(super) fn relation_between(
         .relation_id;
     runtime.snapshots().release_snapshot(&snapshot).unwrap();
     relation
-}
-pub(super) fn budget() -> DerivedIndexMaintenanceBudget {
-    DerivedIndexMaintenanceBudget {
-        maximum_work_units: None,
-        maximum_cold_record_slots: Some(0),
-        maximum_derived_rows: None,
-    }
 }
 #[derive(Clone, Copy, Debug)]
 pub(super) struct Work {

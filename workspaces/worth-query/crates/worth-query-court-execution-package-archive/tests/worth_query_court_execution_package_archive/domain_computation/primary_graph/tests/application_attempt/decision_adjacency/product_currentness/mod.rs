@@ -199,7 +199,7 @@ fn unrelated_adjacency_growth_preserves_prepared_decision_facts() {
             idempotency(34, 34),
             worth_execution::ExecutionAllocationPolicy::SystemAllocation
         ),
-        WorthQueryApplicationCommitOutcome::AlreadyCommitted(_)
+        WorthQueryApplicationCommitOutcome::RecoveredCommitted(_)
     ));
     assert_eq!(commit_count(), baseline + 2);
 }

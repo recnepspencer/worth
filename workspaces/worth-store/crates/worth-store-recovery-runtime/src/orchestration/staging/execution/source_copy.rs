@@ -6,8 +6,8 @@ pub(super) fn execute(
     input: &mut RecoveryStagingInput,
     progress: &mut ExecutionProgress,
 ) -> Result<(), StagingExecution> {
-    for index in 0..input.staging.source_copies().len() {
-        let recipe = input.staging.source_copies()[index];
+    for index in 0..input.state().staging.source_copies().len() {
+        let recipe = input.state().staging.source_copies()[index];
         let source = recipe.intent().source().arena_range();
         let coordinate = RecordFrameCoordinate::new(
             RecordArtifactFile::ExtentArena {
@@ -18,19 +18,21 @@ pub(super) fn execute(
         )
         .ok_or_else(|| invalid(progress))?;
         let observed = read(input, progress, coordinate)?;
+        let store = input.state().authority.media.store_identity();
+        let format = input.state().authority.record_format;
         let mut cursor = SourceCopyCursor::open(
-            input.authority.media.store_identity(),
-            input.authority.record_format,
+            store,
+            format,
             recipe,
             &observed,
-            &mut input.integrity_trace,
+            input.integrity_trace_mut(),
         )
         .map_err(|_| invalid(progress))?;
         drop(observed);
         while let Some(coordinate) = cursor.source_coordinate().map_err(|_| invalid(progress))? {
             let observed = read(input, progress, coordinate)?;
             let (destination, bytes) = cursor
-                .transform(&observed, &mut input.integrity_trace)
+                .transform(&observed, input.integrity_trace_mut())
                 .map_err(|_| invalid(progress))?;
             drop(observed);
             write(input, progress, destination, &bytes)?;
@@ -48,12 +50,13 @@ fn read(
 ) -> Result<worth_store::physical_runtime::ObservedRecoveryArtifact, StagingExecution> {
     progress.counters.commands_submitted += 1;
     let completed = input
+        .state()
         .coordination
         .owner()
         .execute_source_copy_read(
-            &input.authority.media,
+            &input.state().authority.media,
             coordinate,
-            u64::from(input.authority.record_format.page_size().bytes()),
+            u64::from(input.state().authority.record_format.page_size().bytes()),
         )
         .map_err(|_| invalid(progress))?;
     progress.counters.commands_settled += 1;
@@ -70,8 +73,8 @@ fn write(
     let ordinal = progress.settlements.len() as u64;
     let declaration = PhysicalRecoveryStagingCommand::new(
         ordinal,
-        input.publication.plan_identity(),
-        input.staging.staging_generation(),
+        input.state().publication.plan_identity(),
+        input.state().staging.staging_generation(),
         coordinate.artifact(),
         coordinate.offset(),
         bytes,
@@ -79,11 +82,12 @@ fn write(
     )
     .ok_or_else(|| invalid(progress))?;
     let outcome = input
+        .state()
         .coordination
         .owner()
-        .execute_staging_command(&input.authority.media, declaration);
+        .execute_staging_command(&input.state().authority.media, declaration);
     record_command_outcome(progress, ordinal, outcome)?;
-    if matches!(input.cancellation,super::super::RecoveryStagingCancellation::AfterSettledCommands(settled)
+    if matches!(input.state().cancellation,super::super::RecoveryStagingCancellation::AfterSettledCommands(settled)
         if settled==progress.settlements.len() as u64)
     {
         return Err(failed(

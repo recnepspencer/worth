@@ -43,7 +43,7 @@ pub(in crate::domain_computation::primary_graph::product_operation::correction_s
                 .runtime
                 .primary_provider
                 .graph
-                .with_runtime_mut(&execution, |runtime| {
+                .with_runtime(&execution, |runtime| {
                     observation.history_impact(runtime, &execution, occurrence)
                 })
                 .map_err(denial)?;

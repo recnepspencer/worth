@@ -179,7 +179,10 @@ fn run_periodic_authority_work(
         .map(|interval| (step + 1).is_multiple_of(interval))
         .unwrap_or(false)
     {
-        crate::tests::support::checkpoint_durably(execution, runtime).unwrap();
+        runtime
+            .durability_authority()
+            .checkpoint(execution)
+            .unwrap();
         operations.push(ScenarioOperation::DurableCheckpoint);
     }
 

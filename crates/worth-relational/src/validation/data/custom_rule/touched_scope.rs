@@ -1,4 +1,6 @@
 mod planned_records;
+mod touched_ids;
+pub use touched_ids::{InvariantEntityIds, InvariantPartitionIds, InvariantRelationIds};
 
 pub use planned_records::{
     CustomInvariantTouchedSummary, PlannedRelationEndpointUpdate, StructuralCountView,
@@ -88,9 +90,9 @@ impl TouchedStructuralSet {
 
     pub(crate) fn provenance_summary(&self) -> CustomInvariantTouchedSummary {
         CustomInvariantTouchedSummary {
-            visible_entity_ids: self.visible_entity_ids.clone(),
-            visible_relation_ids: self.visible_relation_ids.clone(),
-            touched_partition_ids: self.touched_partitions.clone(),
+            visible_entity_ids: self.visible_entity_ids.clone().into(),
+            visible_relation_ids: self.visible_relation_ids.clone().into(),
+            touched_partition_ids: self.touched_partitions.clone().into(),
             planned_entity_delete_count: self.planned_entity_deletes.len(),
             planned_entity_create_count: self.planned_entity_creates.len(),
             planned_relation_create_count: self.planned_relation_creates.len(),

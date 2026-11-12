@@ -53,6 +53,28 @@ pub(crate) struct RelationalPendingSettlementReservation {
 }
 
 impl RelationalPublicationSettlementRegistry {
+    pub(super) fn close_custody(&self) -> super::RelationalPublicationRegistryCustody {
+        let records = self.records();
+        super::RelationalPublicationRegistryCustody::observed(
+            records.len(),
+            records.keys().next().map(|commit| commit.0),
+        )
+    }
+
+    pub(super) fn try_close_custody(&self) -> super::RelationalPublicationRegistryCustody {
+        let records = match self.records.try_lock() {
+            Ok(records) => records,
+            Err(std::sync::TryLockError::Poisoned(error)) => error.into_inner(),
+            Err(std::sync::TryLockError::WouldBlock) => {
+                return super::RelationalPublicationRegistryCustody::ContactHeld
+            }
+        };
+        super::RelationalPublicationRegistryCustody::observed(
+            records.len(),
+            records.keys().next().map(|commit| commit.0),
+        )
+    }
+
     /// Reserve capacity and install one pending record before the publication
     /// critical section.
     pub(crate) fn reserve(
@@ -142,6 +164,10 @@ impl RelationalPublicationSettlementRegistry {
 }
 
 impl RelationalPendingSettlementReservation {
+    pub(crate) fn install_prepared_indexes(&mut self) {
+        self.record.install_prepared_indexes();
+    }
+
     /// Successful movement authorizes the already-installed record against its
     /// exact positioned canonical commit and disarms pre-effect cleanup. After
     /// this returns, the commit is recovery-addressable by identity alone.

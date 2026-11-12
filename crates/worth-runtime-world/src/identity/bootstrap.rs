@@ -15,4 +15,7 @@ impl RuntimeWorldBootstrapAttemptIdentity {
     pub const fn owner_identity(&self) -> RuntimeWorldOwnerIdentity {
         self.owner
     }
+    pub const fn ordinal(&self) -> u64 {
+        self.ordinal
+    }
 }

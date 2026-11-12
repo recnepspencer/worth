@@ -1,5 +1,6 @@
 //! Corrupt only original selection evidence; the fresh request remains lawful.
 use super::*;
+use crate::application_invariant_acceptance::managed_index::prefix_observation;
 
 #[test]
 fn retained_watch_coordinates_refuse_refresh_and_keep_original_custody() {
@@ -7,7 +8,7 @@ fn retained_watch_coordinates_refuse_refresh_and_keep_original_custody() {
 }
 
 fn journey() {
-    let calls = Arc::new(prefix::Calls::default());
+    let calls = Arc::new(prefix_observation::Calls::default());
     let world = host::install_watch(calls.clone(), Arc::new(rule::Calls::new(calls)));
     let scope = authentication::request_scope();
     let principal = authentication::block_on(
@@ -29,7 +30,7 @@ fn journey() {
         .query(find("B", "later"))
         .watch_index::<prefix::PrefixIndex>()
         .unwrap();
-    let calls = Arc::new(prefix::Calls::default());
+    let calls = Arc::new(prefix_observation::Calls::default());
     let foreign_world = host::install_watch(calls.clone(), Arc::new(rule::Calls::new(calls)));
     let foreign_principal = authentication::block_on(
         authentication::admit(foreign_world.installed_schema()).authenticate(

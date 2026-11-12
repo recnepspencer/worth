@@ -2,7 +2,7 @@
 
 use worth_store_recovery_physics::VerifiedPendingWalReleaseCustody;
 
-use super::{PlanningContext, ResolvedPlanningBasis};
+use super::{PlanningContext, ResolvedPlanningState};
 use crate::orchestration::planning::selected_source_inventory::ResidentAllowance;
 
 #[path = "ordered.rs"]
@@ -16,7 +16,7 @@ pub(in crate::orchestration::planning::completion::blob_reclaim::selected_releas
 /// walk, which alone replays its release-custody head effect.
 pub(super) fn attach(
     context: PlanningContext,
-    basis: &mut ResolvedPlanningBasis,
+    basis: &mut ResolvedPlanningState,
     claim: &mut VerifiedPendingWalReleaseCustody,
     resident: &mut ResidentAllowance,
 ) -> Result<PlanningContext, crate::entry::PhysicalRecoveryOutcome> {

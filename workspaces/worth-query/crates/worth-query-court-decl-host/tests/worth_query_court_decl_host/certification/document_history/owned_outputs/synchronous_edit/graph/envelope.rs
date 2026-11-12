@@ -63,34 +63,18 @@ fn exercise(worker: bool) {
             )
             .unwrap()
     });
-    let Outcome::AlreadyCommitted(replayed) = replay else {
-        panic!("envelope replay was not AlreadyCommitted")
+    let Outcome::RecoveredCommitted(replayed) = replay else {
+        panic!("envelope replay was not RecoveredCommitted")
     };
-    // Replays retain the same committed meaning and carry Recovered terminal
-    // custody, rather than the live execution's one-use governed input.
-    assert_eq!(
-        replayed.terminal().kind(),
-        WorthQueryApplicationCommitTerminalKind::Recovered
-    );
-    assert_eq!(
-        receipt.receipt().terminal().kind(),
-        WorthQueryApplicationCommitTerminalKind::Executed
-    );
+    // D1675/D1676: canonical owner readmission carries durable meaning,
+    // never reconstructed live session custody or per-stage results.
     assert_eq!(
         replayed.commit_reference(),
         receipt.receipt().commit_reference()
     );
     assert_eq!(
-        replayed.committed_product_publication(),
-        receipt.receipt().committed_product_publication()
-    );
-    assert_eq!(
         replayed.outcome_identity(),
         receipt.receipt().outcome_identity()
-    );
-    assert_eq!(
-        replayed.output_correspondence(),
-        receipt.receipt().output_correspondence()
     );
     assert_eq!(
         replayed.changed_record_count(),
@@ -100,16 +84,26 @@ fn exercise(worker: bool) {
         replayed.emitted_effect_count(),
         receipt.receipt().emitted_effect_count()
     );
+    let recorded_generation = match replayed.new_product_head() {
+        worth_query_host::facade::primary_graph::RecordedProductBranchReference::Home(head) => {
+            head.generation().get()
+        }
+        worth_query_host::facade::primary_graph::RecordedProductBranchReference::Memory(head) => {
+            head.generation()
+        }
+    };
     assert_eq!(
-        replayed
-            .committed_changes()
-            .entity_changes()
-            .collect::<Vec<_>>(),
+        recorded_generation,
         receipt
             .receipt()
-            .committed_changes()
-            .entity_changes()
-            .collect::<Vec<_>>()
+            .committed_product_publication()
+            .product_generation()
+            .get()
+    );
+    eprintln!(
+        "recovered commit={:?}; recorded head={:?}",
+        replayed.commit_reference().commit_id,
+        replayed.new_product_head()
     );
     assert_eq!(
         published.published_rows.len() + published.omitted_publications,
@@ -118,11 +112,11 @@ fn exercise(worker: bool) {
     assert_eq!(courts::native_head(&host), head);
 }
 #[test]
-fn one_stage_envelope_commits_once_and_replays_the_whole_receipt() {
+fn one_stage_envelope_commits_once_and_recovers_committed_meaning() {
     exercise(false);
 }
 #[test]
-fn one_stage_envelope_commits_once_and_replays_the_whole_receipt_worker() {
+fn one_stage_envelope_commits_once_and_recovers_committed_meaning_worker() {
     exercise(true);
 }
 #[test]

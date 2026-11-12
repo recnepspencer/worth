@@ -2,7 +2,7 @@
 use crate::domain_computation::primary_graph::tests::authorization::capability_elevation::request_transition::*;
 
 #[test]
-fn equivalent_request_retry_recovers_the_same_authoritative_commit() {
+fn equivalent_request_retry_recovers_original_data_without_elevation_authority() {
     let world = request_world();
     let request = live_scope();
     {
@@ -62,13 +62,14 @@ fn equivalent_request_retry_recovers_the_same_authoritative_commit() {
             .application
             .compare_and_commit_elevation_request(retry, idempotency(73, 73));
         let recovered = match retry_outcome {
-            WorthQueryElevationRequestOutcome::AlreadyRequested(recovered) => recovered,
+            WorthQueryElevationRequestOutcome::RecoveredCommitted(recovered) => recovered,
             unexpected => {
                 panic!("equivalent request retry must recover the original commit: {unexpected:?}")
             }
         };
-        assert!(recovered
-            .commit_receipt()
-            .is_same_authoritative_commit(original.commit_receipt()));
+        worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::recorded_receipt::assert_original(
+            &recovered,
+            original.commit_receipt(),
+        );
     }
 }

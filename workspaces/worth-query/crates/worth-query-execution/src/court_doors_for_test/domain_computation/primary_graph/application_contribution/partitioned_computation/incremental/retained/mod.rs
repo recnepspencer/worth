@@ -3,3 +3,5 @@ pub use crate::domain_computation::primary_graph::application_contribution::part
 pub use crate::domain_computation::primary_graph::application_contribution::partitioned_computation::incremental::retained::RetainedPartition;
 pub use crate::domain_computation::primary_graph::application_contribution::partitioned_computation::incremental::retained::RetainedPartitions;
 pub use crate::domain_computation::primary_graph::application_contribution::partitioned_computation::incremental::retained::SealedComputationRun;
+
+pub use crate::domain_computation::primary_graph::application_contribution::partitioned_computation::incremental::retained::CompletedComputationRun;

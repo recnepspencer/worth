@@ -74,11 +74,11 @@ fn two_distinct_roots_hold_the_whole_native_read_without_the_owner_lock() {
         }).unwrap();
         let request = ExecutionRequest::leased(&lease);
         let acquisitions = owner_probe.acquisitions_for_test();
-        owner_probe.with_owner_lock_for_test(&request, || assert!(owner_probe.is_locked_for_test()));
-        assert_eq!(owner_probe.acquisitions_for_test() - acquisitions, 1);
+        owner_probe.with_owner_borrow_for_test(&request, || owner_probe.count_bridge_lock_for_test(&request));
+        assert_eq!(owner_probe.acquisitions_for_test(), acquisitions, "nested Query and Bridge reads need no runtime mutex");
         let before_bridge = owner_probe.acquisitions_for_test();
         owner_probe.count_bridge_lock_for_test(&request);
-        assert_eq!(owner_probe.acquisitions_for_test() - before_bridge, 2, "Query basis lookup and cloned Bridge handle both acquire the owner");
+        assert_eq!(owner_probe.acquisitions_for_test(), before_bridge, "Query and Bridge share the same immutable Native owner");
 
         let access = roots.iter().map(|root| {
             WorthQueryApplicationQueryAccessContext::new(&principal, root)
@@ -102,8 +102,8 @@ fn two_distinct_roots_hold_the_whole_native_read_without_the_owner_lock() {
         );
         let before_release = owner_probe.acquisitions_for_test();
         witness.release_native_snapshot_for_test();
-        assert_eq!(owner_probe.acquisitions_for_test() - before_release, 1, "a real snapshot release acquires the same owner");
-        witness.with_native_owner_lock_for_test(&request, || assert!(owner_probe.is_locked_for_test()));
+        assert_eq!(owner_probe.acquisitions_for_test(), before_release, "snapshot release borrows the same immutable Native owner");
+        witness.with_native_owner_borrow_for_test(&request, || owner_probe.count_bridge_lock_for_test(&request));
         let mut pins = Default::default();
         let reads_before = worth_query_execution::facade::domain_computation::installed_source_reads_on_this_thread_for_test();
 

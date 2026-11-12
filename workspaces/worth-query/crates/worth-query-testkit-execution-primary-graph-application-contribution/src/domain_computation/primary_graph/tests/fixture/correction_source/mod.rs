@@ -1,4 +1,5 @@
 //! Real typed source capture, correction derivation and ordinary owner publication.
+pub mod inverse_observation;
 use crate::domain_computation::primary_graph::tests::fixture::authorization_world_installation::AuthorizationWorld;
 use crate::domain_computation::primary_graph::tests::fixture::Account;
 use crate::domain_computation::primary_graph::tests::fixture::IdentityExecutionSchema;

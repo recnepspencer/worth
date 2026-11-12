@@ -110,14 +110,16 @@ pub fn assert_publication_credit(replay: bool, publish: bool) {
                     .unwrap();
                 let permission = record.attach_successor_for_test(permission, &a).unwrap();
                 if publish {
-                    let outcome = if replay {
-                        WorthQueryApplicationCommitOutcome::AlreadyCommitted(receipt)
+                    if replay {
+                        let recovered = worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::recorded_receipt::read_original_in_phase(world, &receipt, &phase);
+                        let denial = commit_receipt("actual publication", WorthQueryApplicationCommitOutcome::RecoveredCommitted(recovered))
+                            .expect_err("original receipt data cannot pay fresh publication credit");
+                        assert!(denial.recovered_publication().is_some());
                     } else {
-                        WorthQueryApplicationCommitOutcome::Committed(receipt)
-                    };
-                    let publication = commit_receipt("actual publication", outcome)
-                        .unwrap_or_else(|_| panic!("receipt retained"));
-                    record.publication_for_test(permission, publication, |member| member.performed_for_test());
+                        let publication = commit_receipt("actual publication", WorthQueryApplicationCommitOutcome::Committed(receipt))
+                            .unwrap_or_else(|_| panic!("fresh receipt retains actual publication"));
+                        record.publication_for_test(permission, publication, |member| member.performed_for_test());
+                    }
                 }
                 assert!(
                     record.reinspection_for_test(&a, inspected).unwrap().is_none(),

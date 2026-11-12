@@ -16,3 +16,9 @@ pub mod predecode_admission;
 pub mod terminal_failures;
 #[path = "typed_invariant_refusal/mod.rs"]
 pub mod typed_invariant_refusal;
+
+pub mod cleanup_dispatch;
+
+pub mod query_preparation_refusal;
+
+pub mod recorded_recovery_status;

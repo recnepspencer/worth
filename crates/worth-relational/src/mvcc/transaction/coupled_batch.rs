@@ -4,7 +4,7 @@ use crate::{
     authority::mutation::MutationApplyDenial,
     runtime::{PendingSymbolMeanings, RelationalPreparationRuntime},
     symbols::data::ClientKeySymbolPolicy,
-    transactions::data::{MutationIntent, TransactionCommitError, WorkerIntentBatch},
+    transactions::data::{TransactionCommitError, WorkerIntentBatch},
 };
 use worth_execution::{ExecutionAllocationPolicy, ExecutionRequest};
 impl BranchBoundRelationalTransaction {
@@ -37,6 +37,8 @@ impl BranchBoundRelationalTransaction {
                             )
                         })?;
                 }
+                self.overlay.reserve_cache_replacement(&raw, execution)?;
+                let mut normalized = Vec::with_capacity(raw.len());
                 for text in raw {
                     crate::execution::request_stage::checkpoint(
                         context,
@@ -44,8 +46,10 @@ impl BranchBoundRelationalTransaction {
                     )
                     .map_err(request_stop)?;
                     let symbol = symbols.reserve(&text)?;
-                    self.overlay.normalized_client_keys.insert(text, symbol);
+                    normalized.push((text, symbol));
                 }
+                self.overlay.normalized_client_keys =
+                    self.overlay.normalized_client_keys.replaced(normalized);
                 Ok::<_, MutationApplyDenial>(())
             })
             .map_err(request_stop)?
@@ -57,7 +61,7 @@ impl BranchBoundRelationalTransaction {
         execution: &ExecutionRequest<'_, '_>,
         runtime: &RelationalPreparationRuntime,
         mut batches: Vec<WorkerIntentBatch>,
-    ) -> Result<Vec<MutationIntent>, TransactionCommitError> {
+    ) -> Result<super::OwnedNormalizedPlan, TransactionCommitError> {
         let allocation = execution.allocation_policy();
         let policy = runtime.config.identity.client_key_symbol_policy;
         let mut normalized = Ok(());
@@ -73,28 +77,8 @@ impl BranchBoundRelationalTransaction {
             Vec::new()
         });
         normalized.map_err(|cause| TransactionCommitError::conflict(cause.into_conflict()))?;
-        let mut intents = Vec::new();
-        execution
-            .run_native_with_checkpoint(|context| {
-                for batch in &batches {
-                    for intent in &batch.intents {
-                        crate::execution::request_stage::checkpoint(
-                            context,
-                            intent.owned_allocation_capacity_bytes().saturating_add(1),
-                        )
-                        .map_err(request_stop)?;
-                        intents.try_reserve(1).map_err(|_| {
-                            request_stop(
-                                crate::execution::RelationalExecutionDenialCause::AllocationFailed,
-                            )
-                        })?;
-                        intents.push(intent.clone());
-                    }
-                }
-                Ok::<_, TransactionCommitError>(())
-            })
-            .map_err(request_stop)?
-            .0?;
+        let intents =
+            super::OwnedNormalizedPlan::copy_batches(self.transaction_id(), &batches, execution)?;
         for batch in batches {
             self.push_batch(batch, allocation)
                 .map_err(|cause| TransactionCommitError::conflict(cause.into_conflict()))?;

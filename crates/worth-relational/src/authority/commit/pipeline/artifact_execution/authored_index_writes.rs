@@ -17,6 +17,7 @@ use worth_foundational::facade::{AspectKey, FieldKey};
 
 pub(super) fn prepare(
     runtime: &RelationalPreparationRuntime,
+    catalog: &crate::runtime::CapturedIndexDefinitionCatalog,
     selected: &SelectedRelationalBranchState,
     working: &WorkingState,
     plan: RelationalSemanticPlan<'_>,
@@ -24,7 +25,12 @@ pub(super) fn prepare(
     supported: bool,
     execution: ExecutionRequest<'_, '_>,
 ) -> Result<Evidence, crate::transactions::data::TransactionCommitError> {
-    if !supported {
+    if !supported
+        || runtime
+            .recovered_authored_index_writes
+            .as_ref()
+            .is_some_and(Evidence::is_unavailable)
+    {
         return Ok(Evidence::default());
     }
     crate::execution::phase_observation::run(
@@ -32,7 +38,15 @@ pub(super) fn prepare(
         "authored_index_writes",
         || {
             let prepare = |execution: ExecutionRequest<'_, '_>| {
-                prepare_evidence(runtime, selected, working, plan, allocations, execution)
+                prepare_evidence(
+                    runtime,
+                    catalog,
+                    selected,
+                    working,
+                    plan,
+                    allocations,
+                    execution,
+                )
             };
             let evidence = match (
                 super::super::request_lease(&execution),
@@ -44,7 +58,22 @@ pub(super) fn prepare(
                     .and_then(std::convert::identity),
                 _ => prepare(execution),
             };
-            evidence.map_err(crate::runtime::authored_write_commit_denial)
+            let evidence = evidence.map_err(crate::runtime::authored_write_commit_denial)?;
+            if runtime
+                .recovered_authored_index_writes
+                .as_ref()
+                .is_some_and(|original| original != &evidence)
+            {
+                return Err(
+                    crate::transactions::data::TransactionCommitError::publication(
+                        crate::publication::data::PublicationError::new(
+                            crate::publication::bundle::PublicationStage::BundleAssembly,
+                            "recovered authored index writes disagree with original source",
+                        ),
+                    ),
+                );
+            }
+            Ok(evidence)
         },
         |cause| crate::runtime::authored_write_commit_denial(Denial::Execution(cause)),
     )
@@ -52,6 +81,7 @@ pub(super) fn prepare(
 
 fn prepare_evidence(
     runtime: &RelationalPreparationRuntime,
+    catalog: &crate::runtime::CapturedIndexDefinitionCatalog,
     selected: &SelectedRelationalBranchState,
     working: &WorkingState,
     plan: RelationalSemanticPlan<'_>,
@@ -59,17 +89,16 @@ fn prepare_evidence(
     execution: ExecutionRequest<'_, '_>,
 ) -> Result<Evidence, Denial> {
     crate::history::run_authored_write_stage(execution, |context| {
-        let catalog = runtime.index_definitions.snapshot();
         let output = funding::Output::new(execution, context)?;
-        if !catalog.has_entity_field_indexes() {
+        if !catalog.catalog.has_entity_field_indexes() {
             // The actual installed catalog proves complete-empty membership
             // independently of record residency. Missing data never makes this proof.
-            return Ok(output.finish(catalog.coverage()));
+            return Ok(output.finish(catalog.coverage));
         }
         let mut builder = projection::Projection {
             execution,
             runtime,
-            catalog: &catalog,
+            catalog,
             unavailable: false,
             selected,
             working,
@@ -86,7 +115,7 @@ fn prepare_evidence(
         if builder.unavailable {
             Ok(Evidence::default())
         } else {
-            Ok(builder.output.finish(catalog.coverage()))
+            Ok(builder.output.finish(catalog.coverage))
         }
     })
 }

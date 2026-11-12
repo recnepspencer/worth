@@ -137,7 +137,7 @@ fn unpublished_claim_resumes_its_native_owner_after_fresh_admission_and_native_d
     assert_eq!(registration.claim.data.input, loaded.input(1205));
     assert!(matches!(
         registration.evidence,
-        WorthQuerySourceCompletion::Recovered { .. }
+        WorthQuerySourceCompletion::Recorded { .. }
     ));
     let claims = host
         .request(&fresh.principal, fresh.scope)

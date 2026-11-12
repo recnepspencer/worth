@@ -11,7 +11,7 @@ impl<Schema: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRunti
             .runtime
             .retain_primary_graph_integration_handle()
             .expect("installed primary graph");
-        graph.with_runtime_mut(&execution, |runtime| {
+        graph.with_runtime(&execution, |runtime| {
             for index in graph.primary_index_ids.iter() {
                 runtime
                     .index_authority()
@@ -42,7 +42,7 @@ impl<Schema: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRunti
             .runtime
             .retain_primary_graph_integration_handle()
             .expect("installed primary graph");
-        Ok(graph.with_query_runtime_mut(&execution, |runtime, layout| {
+        Ok(graph.with_query_runtime(&execution, |runtime, layout| {
             let index = layout
                 .equality_selector_index(field.entity(), field.aspect(), field.field())
                 .expect("installed equality field");
@@ -74,7 +74,7 @@ impl<Schema: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRunti
             .runtime
             .retain_primary_graph_integration_handle()
             .expect("installed primary graph");
-        Ok(graph.with_query_runtime_mut(&execution, |runtime, layout| {
+        Ok(graph.with_query_runtime(&execution, |runtime, layout| {
             let index = layout
                 .equality_selector_index(field.entity(), field.aspect(), field.field())
                 .expect("installed equality field");

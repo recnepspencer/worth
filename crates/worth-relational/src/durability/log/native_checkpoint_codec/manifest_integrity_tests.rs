@@ -5,7 +5,7 @@ use crate::tests::support::*;
 fn shared_members_with_inconsistent_leaf_facts_refuse_the_manifest() {
     let host = crate::test_execution_policy::serial_request();
     let execution = worth_execution::ExecutionRequest::serial(&host);
-    let runtime = durable_runtime_with_test_schema();
+    let runtime = runtime_with_test_schema();
     create_entity_in_partition(
         &execution,
         &runtime,
@@ -44,17 +44,28 @@ fn shared_members_with_inconsistent_leaf_facts_refuse_the_manifest() {
         .position(|leaf| leaf.head == first.head && leaf.history == first.history)
         .expect("shared first partition");
     for mutation in 0..4 {
-        let mut forged = manifest.clone();
-        let leaf = &mut forged.roots[1].regions[shared];
+        let mut forged = manifest.ordinary_owned_draft();
+        let original = &manifest.roots[1];
+        let mut regions = original.regions.clone();
+        let leaf = &mut regions[shared];
         match mutation {
             0 => leaf.content_digest[0] ^= 1,
             1 => leaf.entity_slots += 1,
             2 => leaf.relation_slots += 1,
             _ => leaf.unavailable_records += 1,
         }
+        let mut roots = manifest.roots.iter().cloned().collect::<Vec<_>>();
+        roots[1] = crate::durability::data::RelationalCheckpointRoot::from_ordinary_parts(
+            original.commit_id,
+            original.recorded_components.clone(),
+            original.schema_carrier_digest,
+            regions,
+            original.content.clone(),
+        );
+        forged.roots = crate::durability::data::CheckpointRoots::from_ordinary(roots);
         let failure = validate(
             &crate::storage::substrate::maintenance::ReconstructionLane::oracle(),
-            &forged,
+            &forged.seal_ordinary(),
         )
         .unwrap_err();
         assert_eq!(

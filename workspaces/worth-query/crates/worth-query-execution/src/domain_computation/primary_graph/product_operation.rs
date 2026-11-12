@@ -42,7 +42,8 @@ pub use branches::{
     WorthQueryExpectedProductBranch, WorthQueryExpectedProductBranchAdoptionDenial,
     WorthQueryExpectedProductBranchAdoptionFailure, WorthQueryExpectedProductBranchCloseFailure,
     WorthQueryExpectedProductBranchFork, WorthQueryOwnedProductHead,
-    WorthQueryOwnedProductHeadCloseFailure,
+    WorthQueryOwnedProductHeadCloseFailure, WorthQueryProductBranchInventory,
+    WorthQueryProductBranchInventoryDenial,
 };
 pub use cleanup::{
     WorthQueryApplicationProductBranchCleanup, WorthQueryApplicationProductBranchCleanupDenial,
@@ -103,3 +104,6 @@ pub use transaction::{
     WorthQueryAdmittedChange, WorthQueryAppliedProductTransaction, WorthQueryProductTransaction,
     WorthQueryProductTransactionCommitError,
 };
+#[cfg(test)]
+#[path = "product_operation_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;

@@ -27,13 +27,13 @@ use worth_store_physical_format::{
 };
 
 use super::super::context::PlanningContext;
-use super::super::resolved_basis::ResolvedPlanningBasis;
+use super::super::resolved_basis::ResolvedPlanningState;
 use super::historical_publication;
 use record::selected_record;
 
-pub(super) fn verify(
+pub(super) fn verify_wal_drops(
     mut context: PlanningContext,
-    basis: &mut ResolvedPlanningBasis,
+    basis: &mut ResolvedPlanningState,
 ) -> Result<PlanningContext, crate::entry::PhysicalRecoveryOutcome> {
     for index in 0..basis.redo.projections().len() {
         let projection = &basis.redo.projections()[index];
@@ -281,6 +281,13 @@ pub(super) fn verify(
             return Err(context.redo_block(basis.planning_counters(), None));
         }
     }
+    Ok(context)
+}
+
+pub(super) fn verify_selected_custody(
+    mut context: PlanningContext,
+    basis: &mut ResolvedPlanningState,
+) -> Result<PlanningContext, crate::entry::PhysicalRecoveryOutcome> {
     context = selected_release_gate::verify(context, basis)?;
     let context = manifest_residue::verify(context, basis)?;
     post_verification::admit(context, basis)

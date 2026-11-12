@@ -5,19 +5,30 @@ use super::{BridgeInstalledConditionalLowering, BridgeOwnedSignalRuntime};
 /// Weak observation of the concrete Bridge and Signal resources owned by one
 /// conditional runtime at the instant the probe is acquired.
 pub struct BridgeConditionalRuntimeLifecycleProbe {
-    signal_graph: Option<worth_signal::facade::SignalGraphLifecycleProbe>,
-    conditional_port: Option<super::signal_port::BridgeConditionalSignalPort>,
-    providers: Vec<Weak<BridgeInstalledConditionalLowering>>,
-    managed_clocks: Vec<Weak<()>>,
-    retention: Weak<super::retention::BridgeRetentionLedger>,
+    pub(super) signal_graphs: Vec<worth_signal::facade::SignalGraphLifecycleProbe>,
+    pub(super) conditional_port: Option<super::signal_port::BridgeConditionalSignalPort>,
+    pub(super) providers: Vec<Weak<BridgeInstalledConditionalLowering>>,
+    pub(super) managed_clocks: Vec<Weak<()>>,
+    pub(super) retention: Vec<Weak<super::retention::BridgeRetentionLedger>>,
 }
 
 impl BridgeConditionalRuntimeLifecycleProbe {
+    /// An observation with no retained or live owner resources.
+    pub fn closed() -> Self {
+        Self {
+            signal_graphs: Vec::new(),
+            conditional_port: None,
+            providers: Vec::new(),
+            managed_clocks: Vec::new(),
+            retention: Vec::new(),
+        }
+    }
+
     pub fn live_signal_graph_count(&self) -> usize {
-        self.signal_graph
-            .as_ref()
-            .is_some_and(worth_signal::facade::SignalGraphLifecycleProbe::is_live)
-            .into()
+        self.signal_graphs
+            .iter()
+            .filter(|graph| graph.is_live())
+            .count()
     }
 
     pub fn live_provider_count(&self) -> usize {
@@ -43,7 +54,15 @@ impl BridgeConditionalRuntimeLifecycleProbe {
     pub fn bridge_conditional_retention(
         &self,
     ) -> Option<super::retention::BridgeConditionalRetentionObservation> {
-        self.retention.upgrade().map(|ledger| ledger.observation())
+        if self.retention.is_empty() {
+            return None;
+        }
+        let observations: Option<Vec<_>> = self
+            .retention
+            .iter()
+            .map(|ledger| ledger.upgrade().map(|ledger| ledger.observation()))
+            .collect();
+        super::retention::BridgeConditionalRetentionObservation::checked_sum(&observations?)
     }
 }
 
@@ -73,18 +92,25 @@ impl BridgeOwnedSignalRuntime {
             })
             .collect();
         BridgeConditionalRuntimeLifecycleProbe {
-            signal_graph: Some(self.signal_graph_lifecycle_probe.clone()),
+            signal_graphs: vec![self.signal_graph_lifecycle_probe.clone()],
             conditional_port: self.signal_services.as_ref().map(
                 super::service_binding::BridgeSignalServiceBinding::conditional_extension_port,
             ),
             providers,
             managed_clocks,
-            retention: Arc::downgrade(&self.retention),
+            retention: vec![Arc::downgrade(&self.retention)],
         }
     }
 
     /// Releases conditional resources while Runtime World retains the sealed owner.
     pub fn close_conditional_resources(&mut self) {
+        worth_execution::run_with_execution_stack(|| {
+            self.close_conditional_resources_on_execution_stack()
+        })
+    }
+
+    #[inline(never)]
+    fn close_conditional_resources_on_execution_stack(&mut self) {
         self.retention.close();
         let mut lowerings = self
             .conditional_lowerings

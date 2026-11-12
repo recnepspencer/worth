@@ -19,6 +19,7 @@ pub enum WorthQueryPrimaryGraphFault {
     UndeclaredApplicationTouch,
     PanickedPendingApplicationPublication,
     TightIndexMaintenanceBudget,
+    DuplicateQueryPreparationSlot,
 }
 
 pub trait WorthQueryPrimaryGraphFaultPort: Send + Sync {
@@ -125,6 +126,7 @@ const fn fault_mask(fault: WorthQueryPrimaryGraphFault) -> u16 {
         WorthQueryPrimaryGraphFault::UndeclaredApplicationTouch => 1 << 6,
         WorthQueryPrimaryGraphFault::PanickedPendingApplicationPublication => 1 << 8,
         WorthQueryPrimaryGraphFault::TightIndexMaintenanceBudget => 1 << 13,
+        WorthQueryPrimaryGraphFault::DuplicateQueryPreparationSlot => 1 << 14,
     }
 }
 

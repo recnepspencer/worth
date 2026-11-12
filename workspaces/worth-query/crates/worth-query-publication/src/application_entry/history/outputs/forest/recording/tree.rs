@@ -22,7 +22,7 @@ where
     retained: Option<Arc<WorthQueryRetainedRecordingOutputTree>>,
     read_cleanup: Option<worth_query_execution::facade::primary_graph::WorthQueryOutputReadCleanup>,
     managed_cleanup: Option<(
-        worth_query_execution::facade::primary_graph::WorthQueryApplicationUncommitted,
+        worth_query_execution::facade::primary_graph::WorthQueryApplicationCommitOutcome,
         worth_query_execution::facade::primary_graph::WorthQueryApplicationManagedCleanup,
     )>,
     terminal: bool,

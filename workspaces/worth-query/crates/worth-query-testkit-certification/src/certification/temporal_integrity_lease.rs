@@ -38,6 +38,7 @@ impl Drop for Restore {
 pub struct Case {
     pub outcome: Result<Outcome<AmendTemporalDenial, AmendTemporalResult>, RequestDenial>,
     pub work: Vec<u64>,
+    _application: ExampleApplication,
 }
 pub fn run(leased: bool, ceiling: Option<u64>, cancel: bool) -> Case {
     let _observation = worth_query_execution::facade::primary_graph::WorthQueryExecutionObservation::install_on_this_thread();
@@ -78,7 +79,11 @@ pub fn run(leased: bool, ceiling: Option<u64>, cancel: bool) -> Case {
     bound(None);
     place(Placement::Serial);
     app.runtime.close_conditional_runtime().unwrap();
-    Case { outcome, work }
+    Case {
+        outcome,
+        work,
+        _application: app,
+    }
 }
 pub fn committed(case: &Case) -> u64 {
     let Ok(Outcome::Committed { receipt, result }) = &case.outcome else {

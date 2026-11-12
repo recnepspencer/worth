@@ -1,6 +1,6 @@
 //! Fresh capability/READ proofs precede every root lookup or callback.
 use super::super::super::authentication;
-use super::super::{host, prefix};
+use super::super::host;
 use super::{
     access,
     coordinates::Coordinates,
@@ -8,6 +8,7 @@ use super::{
     provider::{BoxIndex, Calls},
     query, status,
 };
+use crate::application_invariant_acceptance::managed_index::prefix_observation;
 use std::sync::Arc;
 use worth_query_host::facade::{
     application_entry::*, application_installation::*, primary_graph::*,
@@ -47,7 +48,10 @@ fn governed_box_provider_rechecks_real_scope_and_revoked_grant_before_callbacks(
 }
 fn run() {
     let calls = Arc::new(Calls::default());
-    let world = host::install_boxes(Arc::new(prefix::Calls::default()), Arc::clone(&calls));
+    let world = host::install_boxes(
+        Arc::new(prefix_observation::Calls::default()),
+        Arc::clone(&calls),
+    );
     let scope = authentication::request_scope();
     let adapter = authentication::admit(world.installed_schema());
     let principal = authentication::block_on(adapter.authenticate(
@@ -229,7 +233,10 @@ fn run() {
         geometry::expected(source.rows(), Coordinates::new(0, 0, 4, 4))
     );
     let other_calls = Arc::new(Calls::default());
-    let other = host::install_boxes(Arc::new(prefix::Calls::default()), Arc::clone(&other_calls));
+    let other = host::install_boxes(
+        Arc::new(prefix_observation::Calls::default()),
+        Arc::clone(&other_calls),
+    );
     let other_adapter = authentication::admit(other.installed_schema());
     let other_principal = authentication::block_on(other_adapter.authenticate(
         authentication::LocalCredential::issued_for_model_owner(),
@@ -256,14 +263,14 @@ fn run() {
     assert_eq!(index.lifecycle(), WorthQueryManagedIndexLifecycle::Ready);
     let version_calls = Arc::new(Calls::default());
     let incompatible = host::try_install(
-        Arc::new(prefix::Calls::default()),
+        Arc::new(prefix_observation::Calls::default()),
         Arc::clone(&version_calls),
         true,
     )
     .err()
     .expect("genuinely incompatible executable version");
     assert!(
-        matches!(incompatible,WorthQueryInMemoryApplicationDenial::Contributions(ref cause) if cause.kind()==WorthQueryPrimaryGraphInstallationDenialKind::ManagedIndexProviderMeaningMismatch)
+        matches!(incompatible,WorthQueryApplicationPreparationDenial::Contributions(ref cause) if cause.kind()==WorthQueryPrimaryGraphInstallationDenialKind::ManagedIndexProviderMeaningMismatch)
     );
     assert_eq!(version_calls.totals(), (0, 0, 0));
     let before_head = request

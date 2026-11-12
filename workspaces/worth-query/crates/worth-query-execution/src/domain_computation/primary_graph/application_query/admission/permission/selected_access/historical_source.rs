@@ -67,7 +67,7 @@ impl<'a, S: ApplicationSchema, P, I, E> SelectedIssuedAccessRoot<'a, S, P, I, E>
                 subject,
             )
         })?;
-        native.with_runtime_mut(
+        native.with_runtime(
             graph,
             execution,
             || {

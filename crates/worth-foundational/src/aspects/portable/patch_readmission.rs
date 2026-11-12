@@ -1,5 +1,3 @@
-use std::collections::BTreeSet;
-
 use serde::{Deserialize, Serialize};
 use worth_proof::TransitionOutcome;
 
@@ -9,8 +7,17 @@ use super::{
 };
 use crate::aspects::{
     validate_aspect_value, AbsenceLaw, AspectContract, AspectMask, AuthoritativeRecordAspectPatch,
-    CanonicalFieldPath, MutationMask,
+    CanonicalFieldPath, FieldLevelAspectPatch, MutationMask,
 };
+
+mod storage_bounds;
+#[cfg(test)]
+mod tests;
+
+pub(super) struct OperationKeyOrdinal<'a> {
+    key: &'a crate::aspects::AspectKey,
+    ordinal: usize,
+}
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum PortablePatchReadmissionPurpose {
@@ -35,20 +42,43 @@ fn readmit_patch(
     purpose: PortablePatchReadmissionPurpose,
     contracts: &impl PortableAspectContractLookup,
 ) -> Result<AuthoritativeRecordAspectPatch, PortableAspectReadmissionDenial> {
-    let mut admitted = AuthoritativeRecordAspectPatch::empty();
-    let mut touched = BTreeSet::new();
-    for operation in candidate.into_operations() {
-        let key = operation.basis().key().clone();
-        if !touched.insert(key.clone()) {
+    let duplicate = first_duplicate(candidate.operations());
+    let mut admitted = Vec::with_capacity(candidate.operations().len());
+    for (ordinal, operation) in candidate.into_operations().into_iter().enumerate() {
+        if Some(ordinal) == duplicate {
             return Err(PortableAspectReadmissionDenial::DuplicateAspectOperation(
-                key,
+                operation.basis().key().clone(),
             ));
         }
         let contract = contract_for_readmission(operation.basis(), contracts)?;
         let next = admit_operation(operation, &contract, purpose)?;
-        admitted = transition_result(AuthoritativeRecordAspectPatch::combine(admitted, next))?;
+        admitted.push(next);
     }
-    Ok(admitted)
+    Ok(AuthoritativeRecordAspectPatch::from_disjoint_patches(
+        admitted,
+    ))
+}
+
+fn first_duplicate(operations: &[PortableAspectPatchOperation]) -> Option<usize> {
+    let mut keys = Vec::with_capacity(operations.len());
+    keys.extend(
+        operations
+            .iter()
+            .enumerate()
+            .map(|(ordinal, operation)| OperationKeyOrdinal {
+                key: operation.basis().key(),
+                ordinal,
+            }),
+    );
+    keys.sort_unstable_by(|left, right| {
+        left.key
+            .cmp(right.key)
+            .then(left.ordinal.cmp(&right.ordinal))
+    });
+    keys.windows(2)
+        .filter(|pair| pair[0].key == pair[1].key)
+        .map(|pair| pair[1].ordinal)
+        .min()
 }
 
 fn admit_operation(
@@ -59,17 +89,18 @@ fn admit_operation(
     match operation {
         PortableAspectPatchOperation::SetWhole { value, .. } => {
             let validated = transition_value(validate_aspect_value(contract, value), contract)?;
-            transition_result(AuthoritativeRecordAspectPatch::whole_aspect(
-                [validated],
-                [],
-            ))
+            let value = validated.into_parts().into_parts().0;
+            Ok(AuthoritativeRecordAspectPatch {
+                whole_aspect_sets: Box::new([value]),
+                ..AuthoritativeRecordAspectPatch::empty()
+            })
         }
         PortableAspectPatchOperation::ClearWhole { .. } => {
             admit_whole_clear(contract, purpose)?;
-            transition_result(AuthoritativeRecordAspectPatch::whole_aspect(
-                [],
-                [contract.clone()],
-            ))
+            Ok(AuthoritativeRecordAspectPatch {
+                whole_aspect_clears: Box::new([contract.clone()]),
+                ..AuthoritativeRecordAspectPatch::empty()
+            })
         }
         PortableAspectPatchOperation::PatchFields {
             selected_fields,
@@ -87,14 +118,19 @@ fn admit_operation(
             let mask = AspectMask::<MutationMask>::new(
                 selected_fields.into_iter().map(CanonicalFieldPath::single),
             );
-            transition_result(AuthoritativeRecordAspectPatch::field_level(
-                contract,
-                &mask,
+            let mut sets = Vec::with_capacity(field_sets.len());
+            sets.extend(
                 field_sets
                     .into_iter()
                     .map(PortableAspectFieldSet::into_parts),
-                field_clears,
-            ))
+            );
+            let patch =
+                FieldLevelAspectPatch::from_owned_fields(contract, &mask, sets, field_clears)
+                    .map_err(PortableAspectReadmissionDenial::PatchConstruction)?;
+            Ok(AuthoritativeRecordAspectPatch {
+                field_patches: Box::new([patch]),
+                ..AuthoritativeRecordAspectPatch::empty()
+            })
         }
     }
 }
@@ -135,17 +171,6 @@ fn transition_value(
                 key: contract.key().clone(),
                 denial,
             })
-        }
-    }
-}
-
-fn transition_result<T>(
-    outcome: TransitionOutcome<T, crate::aspects::AuthoritativePatchConstructionDenial>,
-) -> Result<T, PortableAspectReadmissionDenial> {
-    match outcome {
-        TransitionOutcome::Success(value) => Ok(value),
-        TransitionOutcome::Denied(denial) => {
-            Err(PortableAspectReadmissionDenial::PatchConstruction(denial))
         }
     }
 }

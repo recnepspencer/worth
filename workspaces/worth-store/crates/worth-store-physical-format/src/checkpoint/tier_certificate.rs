@@ -3,6 +3,7 @@
 //! before accepting a fold and must bind this record to the selected checkpoint.
 
 use sha2::{Digest, Sha256};
+use worth_foundational::CanonicalDigestId;
 
 use super::identity::{decode_identity, encode_identity};
 use super::PhysicalCheckpointIdentity;
@@ -25,8 +26,8 @@ pub enum TierEpochCheckpointCertificateDenial {
 pub struct TierEpochWalFrameWitnessV1 {
     lsn_start: u64,
     lsn_end_exclusive: u64,
-    identity_digest: [u8; 32],
-    payload_digest: [u8; 32],
+    identity_digest: CanonicalDigestId,
+    payload_digest: CanonicalDigestId,
 }
 
 impl TierEpochWalFrameWitnessV1 {
@@ -43,8 +44,8 @@ impl TierEpochWalFrameWitnessV1 {
             .then_some(Self {
                 lsn_start,
                 lsn_end_exclusive,
-                identity_digest,
-                payload_digest,
+                identity_digest: CanonicalDigestId::new(identity_digest),
+                payload_digest: CanonicalDigestId::new(payload_digest),
             })
     }
 
@@ -55,17 +56,17 @@ impl TierEpochWalFrameWitnessV1 {
         self.lsn_end_exclusive
     }
     pub const fn identity_digest(self) -> [u8; 32] {
-        self.identity_digest
+        *self.identity_digest.bytes()
     }
     pub const fn payload_digest(self) -> [u8; 32] {
-        self.payload_digest
+        *self.payload_digest.bytes()
     }
 
     fn encode_into(self, bytes: &mut Vec<u8>) {
         bytes.extend_from_slice(&self.lsn_start.to_le_bytes());
         bytes.extend_from_slice(&self.lsn_end_exclusive.to_le_bytes());
-        bytes.extend_from_slice(&self.identity_digest);
-        bytes.extend_from_slice(&self.payload_digest);
+        bytes.extend_from_slice(self.identity_digest.bytes());
+        bytes.extend_from_slice(self.payload_digest.bytes());
     }
 
     fn decode(bytes: &[u8], cursor: &mut usize) -> Option<Self> {
@@ -82,8 +83,8 @@ impl TierEpochWalFrameWitnessV1 {
 pub struct TierEpochCheckpointCertificateV1 {
     checkpoint: PhysicalCheckpointIdentity,
     root_generation: u64,
-    root_sha256: [u8; 32],
-    anchor: [u8; 32],
+    root_sha256: CanonicalDigestId,
+    anchor: CanonicalDigestId,
     intent: TierEpochActivationV1,
     intent_frame: TierEpochWalFrameWitnessV1,
     completed_frame: TierEpochWalFrameWitnessV1,
@@ -121,8 +122,8 @@ impl TierEpochCheckpointCertificateV1 {
         Ok(Self {
             checkpoint,
             root_generation,
-            root_sha256,
-            anchor,
+            root_sha256: CanonicalDigestId::new(root_sha256),
+            anchor: CanonicalDigestId::new(anchor),
             intent,
             intent_frame,
             completed_frame,
@@ -146,8 +147,8 @@ impl TierEpochCheckpointCertificateV1 {
         encode_identity(&mut identity, self.checkpoint);
         bytes.extend_from_slice(&identity);
         bytes.extend_from_slice(&self.root_generation.to_le_bytes());
-        bytes.extend_from_slice(&self.root_sha256);
-        bytes.extend_from_slice(&self.anchor);
+        bytes.extend_from_slice(self.root_sha256.bytes());
+        bytes.extend_from_slice(self.anchor.bytes());
         bytes.extend_from_slice(&self.intent.encode_fixed());
         self.intent_frame.encode_into(&mut bytes);
         self.completed_frame.encode_into(&mut bytes);
@@ -197,10 +198,10 @@ impl TierEpochCheckpointCertificateV1 {
         self.root_generation
     }
     pub const fn root_sha256(self) -> [u8; 32] {
-        self.root_sha256
+        *self.root_sha256.bytes()
     }
     pub const fn anchor(self) -> [u8; 32] {
-        self.anchor
+        *self.anchor.bytes()
     }
     pub const fn intent(self) -> TierEpochActivationV1 {
         self.intent

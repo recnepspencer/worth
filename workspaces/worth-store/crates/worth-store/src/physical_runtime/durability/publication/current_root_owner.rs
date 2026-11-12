@@ -360,3 +360,13 @@ impl CompletedPhysicalRootPublication {
         self.root_planning_observation
     }
 }
+#[cfg(test)]
+#[path = "current_root_owner_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;
+
+#[cfg(test)]
+fn record_read_protection_inline_size(owner: &mut crate::inline_type_sizes::Owner<'_>) {
+    owner.field::<std::sync::Arc<crate::physical_runtime::stability::RootProtectionRegistry>>(
+        "read_protection",
+    );
+}

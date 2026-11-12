@@ -2,6 +2,8 @@
 /// no product reference moved.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryGeneratedOutputPublicationNoEffectCause {
+    StaleIncarnation,
+    DurableOpenRequired,
     /// The caller request refused admission before owner contact.
     ExecutionRequest(worth_execution::WorkCeilingDenial),
     /// The product head moved from the expected head.
@@ -17,6 +19,10 @@ pub enum WorthQueryGeneratedOutputPublicationNoEffectCause {
     CurrentReadDependency(worth_runtime_world::facade::CurrentProductReadDependencyDenial),
     /// The bridge correspondence moved from the prepared basis; prepare again.
     CorrespondenceRebindRequired,
+    /// Bridge's exact pre-effect admission refusal, including transient postures.
+    CorrespondenceAdmissionDenied(
+        worth_runtime_bridge::facade::RuntimeWorldCorrespondenceAdmissionDenial,
+    ),
     /// The product reference has no generation left to advance to.
     ReferenceGenerationExhausted,
     /// A publication capacity limit was reached.
@@ -55,6 +61,12 @@ const fn map_cause(
 ) -> WorthQueryGeneratedOutputPublicationNoEffectCause {
     use worth_runtime_world::facade::NoEffectCause as WorldCause;
     match cause {
+        WorldCause::StaleIncarnation => {
+            WorthQueryGeneratedOutputPublicationNoEffectCause::StaleIncarnation
+        }
+        WorldCause::DurableOpenRequired => {
+            WorthQueryGeneratedOutputPublicationNoEffectCause::DurableOpenRequired
+        }
         WorldCause::ExecutionRequest(cause) => {
             WorthQueryGeneratedOutputPublicationNoEffectCause::ExecutionRequest(cause)
         }
@@ -75,6 +87,9 @@ const fn map_cause(
         }
         WorldCause::CorrespondenceRebindRequired => {
             WorthQueryGeneratedOutputPublicationNoEffectCause::CorrespondenceRebindRequired
+        }
+        WorldCause::CorrespondenceAdmissionDenied(cause) => {
+            WorthQueryGeneratedOutputPublicationNoEffectCause::CorrespondenceAdmissionDenied(cause)
         }
         WorldCause::ReferenceGenerationExhausted => {
             WorthQueryGeneratedOutputPublicationNoEffectCause::ReferenceGenerationExhausted
@@ -112,5 +127,31 @@ mod tests {
             ),
             WorthQueryGeneratedOutputPublicationNoEffectCause::CurrentReadDependency(dependency)
         );
+    }
+
+    #[test]
+    fn correspondence_admission_preserves_its_exact_bridge_cause() {
+        use worth_runtime_bridge::facade::RuntimeWorldCorrespondenceAdmissionDenial as Bridge;
+        for cause in [
+            Bridge::AuthoredOwnerUnavailable,
+            Bridge::AuthoredBranchUnavailable {
+                signal_graph_instance_id: 17,
+            },
+            Bridge::InstalledGenerationDrift {
+                expected_generation: 2,
+                actual_generation: 3,
+            },
+        ] {
+            assert_eq!(
+                map_cause(
+                    worth_runtime_world::facade::NoEffectCause::CorrespondenceAdmissionDenied(
+                        cause
+                    )
+                ),
+                WorthQueryGeneratedOutputPublicationNoEffectCause::CorrespondenceAdmissionDenied(
+                    cause
+                )
+            );
+        }
     }
 }

@@ -13,7 +13,15 @@ impl StructuralRelationView<'_> {
         self.derived_admissions = Default::default();
         let version = self.aggregate_read_parts().0.version_id();
         self.structural_source = Some((
-            runtime.selected_registry.clone(),
+            if committed {
+                runtime
+                    .prior_registry
+                    .as_ref()
+                    .unwrap_or(&runtime.selected_registry)
+                    .clone()
+            } else {
+                runtime.selected_registry.clone()
+            },
             InvariantSourceAffinity {
                 observation: observation.observation_identity(),
                 committed,

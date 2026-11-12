@@ -86,7 +86,7 @@ impl WorthQueryOutputDemandSettlement {
     where
         Schema: worth_query_installation::facade::ApplicationSchema,
     {
-        let WorthQueryAcceptedOutputAuthority::Committed(receipt) = &completion.authority else {
+        let Some(receipt) = completion.authority.publication_view() else {
             return Err(WorthQueryOutputDemandDenial::new(
                 WorthQueryOutputDemandDenialKind::ForeignSettlement,
                 "committed settlement requires its actual Ready completion",
@@ -111,12 +111,34 @@ impl WorthQueryOutputDemandSettlement {
             })?;
         Ok(Arc::new(Self {
             _original_delivery_memory: None,
-            posture: WorthQueryOutputSettlementPosture::Performed,
+            posture: match &completion.authority {
+                WorthQueryAcceptedOutputAuthority::Committed(_) => {
+                    WorthQueryOutputSettlementPosture::Performed
+                }
+                WorthQueryAcceptedOutputAuthority::Recovered(_) => {
+                    WorthQueryOutputSettlementPosture::RecoveredPerformed
+                }
+                WorthQueryAcceptedOutputAuthority::Stable(_)
+                | WorthQueryAcceptedOutputAuthority::Restored(_) => {
+                    unreachable!("actual performed evidence checked")
+                }
+            },
             runtime_authority: runtime.runtime.authority_identity().as_u64(),
             schema_binding: runtime.installed_schema.binding_identity(),
             producer_identity: producer_identity.to_owned().into(),
             output_family_identity: output_family_identity.to_owned(),
-            receipt: Some(SettlementReceiptCustody::Owned(receipt.clone())),
+            receipt: Some(match &completion.authority {
+                WorthQueryAcceptedOutputAuthority::Committed(receipt) => {
+                    SettlementReceiptCustody::Owned(receipt.clone())
+                }
+                WorthQueryAcceptedOutputAuthority::Recovered(publication) => {
+                    SettlementReceiptCustody::Recovered(publication.clone())
+                }
+                WorthQueryAcceptedOutputAuthority::Stable(_)
+                | WorthQueryAcceptedOutputAuthority::Restored(_) => {
+                    unreachable!("actual performed evidence checked")
+                }
+            }),
             stable: None,
             output_correspondence: receipt.retain_output_correspondence(),
             restored_source: None,
@@ -174,10 +196,17 @@ impl WorthQueryOutputDemandSettlement {
         Ok(original)
     }
 
+    pub(in crate::domain_computation::primary_graph) fn publication_view(
+        &self,
+    ) -> Option<super::OutputPublicationView<'_>> {
+        self.receipt
+            .as_ref()
+            .and_then(SettlementReceiptCustody::publication_view)
+    }
     pub fn application_commit_receipt(&self) -> Option<&WorthQueryApplicationCommitReceipt> {
         self.receipt
             .as_ref()
-            .map(SettlementReceiptCustody::as_receipt)
+            .and_then(SettlementReceiptCustody::as_receipt)
     }
 
     pub const fn is_stably_reused(&self) -> bool {
@@ -295,7 +324,7 @@ where
                 "restored stable output requires native re-evidence",
             ));
         }
-        let selected = match settlement.application_commit_receipt() {
+        let selected = match settlement.publication_view() {
             Some(receipt) => self
                 .on_branch(receipt.product_branch())
                 .select_with_request(execution)
@@ -315,8 +344,8 @@ where
             .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner);
 
-        let facts = match settlement.application_commit_receipt() {
-            Some(receipt) => lineage.source_facts_for_receipt(
+        let facts = match settlement.publication_view() {
+            Some(receipt) => lineage.source_facts_for_publication(
                 self.runtime.authority_identity().as_u64(),
                 &self.installed_schema.binding_identity(),
                 selected.product().observation(),

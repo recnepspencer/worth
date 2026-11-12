@@ -13,8 +13,8 @@ pub(crate) use creation::WorthQuerySourceProgramResolver;
 pub use creation::{WorthQueryProductBranchCreateError, WorthQueryProductBranchFork};
 pub(super) use creation_recovery::map_recovery_denial;
 pub use creation_recovery::{
-    WorthQueryProductBranchCreationRecovery, WorthQueryProductBranchCreationRecoveryCause,
-    WorthQueryProductBranchCreationRecoveryFailure,
+    WorthQueryProductBranchCreationContinuation, WorthQueryProductBranchCreationRecovery,
+    WorthQueryProductBranchCreationRecoveryCause, WorthQueryProductBranchCreationRecoveryFailure,
     WorthQueryProductBranchCreationRecoveryInspection,
     WorthQueryProductBranchCreationRecoveryNextAction,
     WorthQueryProductBranchCreationRecoveryRelease,
@@ -31,3 +31,6 @@ pub use read_identity::WorthQueryProductBranchReadIdentity;
 pub use selection::WorthQueryProductBranch;
 
 pub(crate) use read_position::WorthQueryProductBranchReadPosition;
+#[cfg(test)]
+#[path = "mod_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;

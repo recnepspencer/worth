@@ -2,7 +2,7 @@
 use super::*;
 
 pub(super) fn memory_bound(
-    runtime: &crate::runtime::RelationalPreparationRuntime,
+    catalog: &crate::runtime::CapturedIndexDefinitionCatalog,
     selected: &crate::branch::SelectedRelationalBranchState,
     working: &crate::runtime::WorkingState,
     deltas: &[CanonicalRecordAspectDelta],
@@ -31,8 +31,8 @@ pub(super) fn memory_bound(
                 bytes = bytes.saturating_add(field_bytes)
                     .saturating_add(binding.aspect_key.owned_allocation_capacity_bytes() as u64)
                     .saturating_add(size_of::<worth_foundational::facade::FieldKey>() as u64);
-                runtime.index_definitions.with_field(&binding.aspect_key, field, |definitions| {
-                    for definition in definitions {
+                catalog.catalog.with_field(&binding.aspect_key, field, |definitions| {
+                    for definition in definitions.iter().filter(|definition| definition.index_id.0 < catalog.next_index_id) {
                         if !index::targets_field(binding, &delta.target, field, definition) { continue; }
                         let locator = match (&delta.target, &definition.kind) {
                             (RecordRef::Entity(_), DerivedIndexKind::EntityField { field_locator })

@@ -14,6 +14,7 @@ pub enum WorthQueryProductBranchAdmissionDenial {
 /// Why a selected product basis could not be admitted for a read.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryProductBranchAdmissionRefusalKind {
+    DurableBranchPublicationRequired,
     ExpectedDescriptionVersionUnsupported {
         supported: u16,
         actual: u16,
@@ -26,6 +27,7 @@ pub enum WorthQueryProductBranchAdmissionRefusalKind {
     OwnerUnavailable,
     /// The branch token or observation belongs to a different runtime.
     ForeignOwner,
+    StaleIncarnation,
     /// The product branch has been retired.
     RetiredBranch,
     /// The branch changed lifecycle incarnation between selection and admission.

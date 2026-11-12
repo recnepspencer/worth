@@ -1,12 +1,10 @@
-pub(in crate::domain_computation::primary_graph) use fact::{
-    SourceReadAuthorization, SourceReadAuthorizationKey,
-};
+pub use fact::SourceReadAuthorization;
+pub use fact::SourceReadAuthorizationKey;
 mod output_field_capture;
 pub use fact::IndexedSelectionReobserveDenial;
-pub(in crate::domain_computation::primary_graph) use fact::SourcePublicationRead;
-pub(in crate::domain_computation::primary_graph) use fact::{
-    ManagedSourceRead, ManagedSourceReadKey,
-};
+pub(in crate::domain_computation::primary_graph) use fact::ManagedSourceRead;
+pub use fact::ManagedSourceReadKey;
+pub use fact::SourcePublicationRead;
 pub use output_field_capture::{OutputFieldCaptureFailure, StoreDenial};
 mod capability_revocation_program;
 pub(crate) mod commit_authority_binding;
@@ -33,7 +31,7 @@ mod elevation_lifecycle_facts;
 mod elevation_request_outcome;
 mod elevation_request_program;
 pub(crate) mod fact;
-mod idempotency;
+pub(super) mod idempotency;
 mod idempotency_resolution;
 mod mandatory_review_outcome;
 mod mandatory_review_program;
@@ -41,6 +39,7 @@ mod mandatory_review_replay;
 pub(crate) mod migration;
 pub(crate) mod observation;
 pub(in crate::domain_computation::primary_graph) use observation::observe_aspect_presence;
+
 pub(in crate::domain_computation::primary_graph) use observation::{
     observe_aspect_absence, observe_field_from_view_admitted, observe_field_value_borrowed,
     WorthQueryApplicationFieldObservation,
@@ -61,6 +60,7 @@ mod signed_selection;
 mod signing_lifecycle;
 pub(in crate::domain_computation::primary_graph) use read_set::request_liveness::check_request_live;
 pub(in crate::domain_computation) use read_set::CompletedHandlerFactBoundary;
+
 pub(in crate::domain_computation::primary_graph) use read_set::FactRoutes;
 pub(in crate::domain_computation::primary_graph) use read_set::{
     observe_admitted_fact, CheckedCallShape, CompletedDecisionReuseProof,
@@ -77,6 +77,7 @@ pub(crate) mod snapshot_lease;
 pub(crate) mod workflow_deadline;
 mod workflow_definition_program;
 pub(crate) mod workflow_instance_observation;
+
 pub(in crate::domain_computation::primary_graph) use workflow_instance_observation::WorkflowStepAllowance;
 pub(crate) mod workflow_instance_program;
 mod workflow_proposal_program;
@@ -99,15 +100,16 @@ pub use compare_and_commit::{
     WorthQueryApplicationCommitDenialKind, WorthQueryApplicationCommitDenialStage,
     WorthQueryApplicationCommitOutcome, WorthQueryApplicationCommitPublicationSource,
     WorthQueryApplicationCommitReceipt, WorthQueryApplicationCommitRecoveryKind,
-    WorthQueryApplicationCommittedChanges, WorthQueryApplicationManagedCleanup,
-    WorthQueryApplicationManagedCleanupFailure, WorthQueryApplicationNoEffect,
+    WorthQueryApplicationCommittedChanges, WorthQueryApplicationLandedCommit,
+    WorthQueryApplicationManagedCleanup, WorthQueryApplicationManagedCleanupFailure,
+    WorthQueryApplicationManagedCleanupReceipt, WorthQueryApplicationNoEffect,
     WorthQueryApplicationNoEffectCause, WorthQueryApplicationStaleAttempt,
     WorthQueryApplicationUncommitted, WorthQueryApplicationUnresolvedCommitEvidence,
+    WorthQueryCleanupDispatchDenial, WorthQueryCleanupDispatchPosture,
     WorthQueryCommittedProductPublication,
 };
 pub(in crate::domain_computation::primary_graph) use compare_and_commit::{
-    WorthQueryCommittedReceiptProjection, WorthQueryPendingApplicationCommitReceipt,
-    WorthQueryProgramActivationUnresolved,
+    WorthQueryCommittedReceiptProjection, WorthQueryProgramActivationUnresolved,
 };
 pub use delegation_activation_program::WorthQueryDelegationActivationProgram;
 pub use denial::{
@@ -161,7 +163,7 @@ pub use idempotency::{
 pub use idempotency_resolution::WorthQueryGuardedWorkflowOperationCustody;
 pub use idempotency_resolution::{
     WorthQueryApplicationIdempotencyResolution, WorthQueryApplicationIdempotencyResolutionDenial,
-    WorthQueryApplicationIdempotencyResolutionDenialKind, WorthQueryHistoricalApplicationCommit,
+    WorthQueryApplicationIdempotencyResolutionDenialKind,
 };
 pub(super) use mandatory_review_outcome::reviewed_outcome;
 pub use mandatory_review_outcome::{WorthQueryMandatoryReviewOutcome, WorthQueryReviewedElevation};
@@ -179,8 +181,9 @@ pub(in crate::domain_computation) use provider_execution::{
     WorthQueryRegisteredProviderAttempt,
 };
 pub use provider_execution::{
-    WorthQueryExternalDispatchAttemptDenial, WorthQueryExternalDispatchPreparationDenial,
-    WorthQueryExternalRedispatchDenial, WorthQueryExternalTransportInstallationDenial,
+    WorthQueryDurableDispatchRecordDenial, WorthQueryExternalDispatchAttemptDenial,
+    WorthQueryExternalDispatchPreparationDenial, WorthQueryExternalRedispatchDenial,
+    WorthQueryExternalTransportInstallationDenial,
 };
 pub use provider_recomparison::WorthQueryMutationPreconditionComparisonEvidence;
 pub use read_phase::{WorthQueryOrdinaryApplicationRead, WorthQueryProjectedApplicationMutation};
@@ -233,7 +236,14 @@ pub(in crate::domain_computation::primary_graph) use read_set::CompletedReadScop
 
 pub(in crate::domain_computation::primary_graph) use compare_and_commit::MaterializedCommittedField;
 
+pub use compare_and_commit::WorthQueryPendingApplicationCommitReceipt;
+
+pub(in crate::domain_computation) use compare_and_commit::RetainedOriginalCleanupCommit;
 pub(in crate::domain_computation::primary_graph) use provider_execution::ReadmittedCommitProgram;
+pub use provider_execution::WorthQueryManagedPhaseStorageForTest;
+#[cfg(test)]
+#[path = "mod_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;
 
 pub(crate) mod coupled_outputs;
 

@@ -304,6 +304,7 @@ pub mod public_membership;
 #[path = "public_scoped/mod.rs"]
 pub mod public_scoped;
 
+mod home_read;
 pub use account_summary::{
     account_summary_definition, governed_account_summary_definition,
     ordered_account_summary_definition, scoped_account_summary_definition,

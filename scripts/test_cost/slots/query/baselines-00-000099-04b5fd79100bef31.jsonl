@@ -1,0 +1,27 @@
+{"count": 26, "kind": "leaf"}
+{"binary": "worth-query-publication", "slots": 1, "test": "application_authorization::boundary_evidence::tests::publication_identity_depends_only_on_closed_axes_and_profile"}
+{"binary": "worth-query-publication", "slots": 1, "test": "application_authorization::boundary_evidence::tests::successful_governed_outcomes_remain_distinct_from_denials"}
+{"binary": "worth-query-publication", "slots": 1, "test": "application_entry::demand::request::tests::default_controls_preserve_host_policy_and_explicit_controls_narrow_it"}
+{"binary": "worth-query-publication", "slots": 1, "test": "application_entry::denial::advancement_tests::mutation_handler_opening_refusal_keeps_the_typed_kind"}
+{"binary": "worth-query-publication", "slots": 1, "test": "application_entry::denial::idempotency_kind_tests::every_idempotency_cause_keeps_its_own_request_kind"}
+{"binary": "worth-query-publication", "slots": 1, "test": "application_entry::mutation::performed::denial::recovery_posture::query::content_tests::content_inconsistency_is_terminal_in_both_query_receivers"}
+{"binary": "worth-query-publication", "slots": 1, "test": "application_entry::mutation::performed::denial::recovery_posture::query::currency_request_tests::currency_request_ceilings_keep_master_terminal_posture"}
+{"binary": "worth-query-publication", "slots": 1, "test": "application_entry::mutation::performed::denial::recovery_posture::query::tests::an_unadmitted_input_is_terminal_at_both_query_recovery_entries"}
+{"binary": "worth-query-publication", "slots": 1, "test": "application_entry::mutation::performed::denial::recovery_posture::query::tests::expression_context_incompleteness_requires_fresh_admission_not_terminal_shape_failure"}
+{"binary": "worth-query-publication", "slots": 1, "test": "application_entry::mutation::performed::denial::recovery_posture::query::tests::missing_or_invalid_workflow_actor_evidence_is_terminal_for_same_source_recovery"}
+{"binary": "worth-query-publication", "slots": 1, "test": "application_entry::mutation::performed::denial::recovery_posture::query::tests::nested_world_capacity_is_retryable_but_foreign_authority_is_terminal"}
+{"binary": "worth-query-publication", "slots": 1, "test": "application_entry::mutation::recorded_replay::tests::only_the_steps_execution_stop_leaves_the_answer_to_the_funded_call"}
+{"binary": "worth-query-publication", "slots": 1, "test": "application_entry::mutation::recovery::cancellation_spelling::authorization_interruption_uses_the_opening_cause"}
+{"binary": "worth-query-publication", "slots": 1, "test": "application_entry::mutation::recovery::interruption::tests::signing_lifecycle_observation_does_not_hide_native_request_stops"}
+{"binary": "worth-query-publication", "slots": 1, "test": "application_entry::query::managed_index::completion::tests::managed_lifecycle_completed_cleanup_survives_the_actual_final_request_poll"}
+{"binary": "worth-query-publication", "slots": 1, "test": "application_entry::query::managed_index::completion::tests::managed_lifecycle_pre_effect_interruption_never_becomes_completed_success"}
+{"binary": "worth-query-publication", "slots": 1, "test": "application_entry::workflow::operation::binding_denial_tests::binding_denial_retains_advancement_and_original_actor_causes"}
+{"binary": "worth-query-publication", "slots": 1, "test": "domain_computation::application_result::disclosure::identity_tests::structural_identity_changes_for_each_public_axis_only"}
+{"binary": "worth-query-publication", "slots": 1, "test": "domain_computation::application_result::terminal_release::aggregate_tests::aggregate_requires_every_terminal_release_axis"}
+{"binary": "worth-query-publication", "slots": 1, "test": "inline_type_sizes::owned_carriers_stay_within_declared_inline_ceilings"}
+{"binary": "worth-query-testkit-installed-operation-fixture", "slots": 1, "test": "setup_observation::tests::canonical_named_fields_ignore_declaration_order_but_preserve_values_and_types"}
+{"binary": "worth-query-testkit-installed-operation-fixture", "slots": 1, "test": "setup_observation::tests::complete_observations_keep_binary_builder_and_every_construction"}
+{"binary": "worth-query-testkit-installed-operation-fixture", "slots": 1, "test": "setup_observation::tests::disabled_observation_does_not_construct_inputs"}
+{"binary": "worth-query-testkit-installed-operation-fixture", "slots": 1, "test": "setup_observation::tests::duplicate_names_refuse_without_writing_a_construction"}
+{"binary": "worth-query-testkit-installed-operation-fixture", "slots": 1, "test": "setup_observation::tests::length_prefixes_disambiguate_field_boundaries"}
+{"binary": "worth-query-testkit-installed-operation-fixture", "slots": 1, "test": "setup_observation::tests::output_failure_is_an_io_result_and_missing_identity_does_not_write"}

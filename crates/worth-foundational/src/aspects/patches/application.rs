@@ -20,6 +20,9 @@ impl AuthoritativeRecordAspectPatch {
         Option<AuthoritativeRecordAspectStateArtifact>,
         AuthoritativePatchApplicationDenial,
     > {
+        if state.is_none() && self.whole_aspect_sets.is_empty() && self.field_patches.is_empty() {
+            return TransitionOutcome::success(None);
+        }
         let next_state = match state {
             Some(state) => self.apply_to_state(state),
             None => self.apply_to_absent_state(),
@@ -58,15 +61,15 @@ impl AuthoritativeRecordAspectPatch {
     ) -> Result<AuthoritativeRecordAspectState, AuthoritativePatchApplicationDenial> {
         let mut entries = state.aspects().clone();
 
-        for cleared_key in self.whole_aspect_clears.keys() {
+        for cleared_key in self.whole_aspect_clears() {
             entries.remove(cleared_key);
         }
 
-        for (set_key, set_value) in &self.whole_aspect_sets {
+        for (set_key, set_value) in self.whole_aspect_sets() {
             entries.insert(set_key.clone(), set_value.clone());
         }
 
-        for field_patch in self.field_patches.values() {
+        for field_patch in self.field_patches.iter() {
             let updated_entry = apply_field_patch_to_entry(&entries, field_patch)?;
             entries.insert(field_patch.key().clone(), updated_entry);
         }
@@ -77,7 +80,7 @@ impl AuthoritativeRecordAspectPatch {
     fn apply_to_absent_state(
         &self,
     ) -> Result<AuthoritativeRecordAspectState, AuthoritativePatchApplicationDenial> {
-        if let Some(field_patch) = self.field_patches.values().next() {
+        if let Some(field_patch) = self.field_patches.iter().next() {
             return Err(
                 AuthoritativePatchApplicationDenial::MissingAspectForFieldPatch(
                     field_patch.key().clone(),
@@ -88,8 +91,7 @@ impl AuthoritativeRecordAspectPatch {
             CanonicalAspectStateMap::from_canonical_entries(
                 self.whole_aspect_sets
                     .iter()
-                    .map(|(key, value)| (key.clone(), value.clone()))
-                    .collect(),
+                    .map(|value| (value.key().clone(), value.clone())),
             ),
         ))
     }

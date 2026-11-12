@@ -1,4 +1,5 @@
 use super::super::*;
+use super::execution_storage::{ExecutionBasis, ExecutionBasisBacking, ExecutionBasisState};
 use super::pending::PendingProjectionBasis;
 use sha2::Digest;
 
@@ -18,16 +19,7 @@ pub(super) fn seal(
     maximum_manifest_entries: u64,
     maximum_staging_bytes: u64,
     allowance: &mut PlanningResidentAllowance,
-) -> Result<
-    (
-        RecoveryStagingLayoutPlan,
-        RecoveryPublicationPlan,
-        RecoveryQuiescencePlan,
-        CandidateMaterializationCost,
-        crate::entry::PhysicalRecoveryRootProtocolCounters,
-    ),
-    ExecutionBasisDenial,
-> {
+) -> Result<ExecutionBasis, ExecutionBasisDenial> {
     let basis_identity = super::super::identity::plan_identity(
         store,
         pending.checkpoint,
@@ -121,7 +113,10 @@ pub(super) fn seal(
     let staging_generation = pending.staging_generation;
     drop(pending);
     allowance.release(discarded_pending_bytes);
+    let expectation_backing = ExpectationBacking::prepare(allowance)?;
+    let backing = ExecutionBasisBacking::prepare(allowance)?;
     let publication = RecoveryPublicationPlan {
+        expectation_backing,
         store,
         checkpoint,
         source_generation,
@@ -147,12 +142,16 @@ pub(super) fn seal(
         expected_live_commands_after_close: 0,
         expected_live_media_handles_after_close: 0,
     };
-    Ok((
-        staging,
-        publication,
-        quiescence,
-        materialization_cost,
-        root_protocol_counters,
+    Ok(backing.finish(
+        ExecutionBasisState {
+            staging,
+            publication,
+            quiescence,
+            candidate_materialization: materialization_cost,
+            root_protocol_counters,
+            planning_construction_peak: 0,
+        },
+        allowance,
     ))
 }
 

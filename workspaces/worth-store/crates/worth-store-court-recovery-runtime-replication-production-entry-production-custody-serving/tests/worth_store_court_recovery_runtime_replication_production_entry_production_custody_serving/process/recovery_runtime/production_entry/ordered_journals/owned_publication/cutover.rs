@@ -18,7 +18,11 @@ pub(super) fn start(
     OrderedJournalPublicationOperation,
     OrderedJournalPublicationRecovery,
 ) {
-    let request = SerialRequest::from_memory(memory.clone(), cancellation.token(), deadline);
+    let request = SerialRequest::from_memory(
+        memory.clone(),
+        cancellation.token(),
+        deadline.map(|instant| worth_execution::MonotonicClock::system().deadline_at(instant)),
+    );
     let mut retained = None;
     ExecutionRequest::serial(&request)
         .run_native_with_checkpoint(|context| {

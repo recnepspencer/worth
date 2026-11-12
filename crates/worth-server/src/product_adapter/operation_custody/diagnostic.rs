@@ -168,6 +168,7 @@ fn authorization_code(reason: WorthQueryOperationAuthorizationRefusalKind) -> &'
         ForeignPhase => "foreign_phase",
         ExpiredAuthentication => "expired_authentication",
         ForeignRuntime => "foreign_runtime",
+        StaleIncarnation => "stale_incarnation",
         StaleInstalledSchema => "stale_installed_schema",
         StaleInstalledOperation => "stale_installed_operation",
         StalePrincipal => "stale_principal",

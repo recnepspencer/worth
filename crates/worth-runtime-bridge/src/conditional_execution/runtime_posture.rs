@@ -6,9 +6,7 @@ impl BridgeOwnedSignalRuntime {
     }
 
     pub fn active_semantic_dependency_count(&self) -> usize {
-        self.bridge
-            .semantic_dependency_registry
-            .authoritative_count()
+        self.bridge.semantic_dependency_registry.admitted_count()
     }
 
     pub fn revoke_conditional_liveness(&self) {

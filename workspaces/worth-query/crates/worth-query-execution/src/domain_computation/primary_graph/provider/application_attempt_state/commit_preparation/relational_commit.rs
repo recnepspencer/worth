@@ -36,7 +36,7 @@ pub(super) fn commit_owner_validated(
     crate::domain_computation::WorthQueryProviderSessionCommitStop,
 > {
     let request = prepared.attempt.affinity().publication_request().clone();
-    let completed = commit_execution::commit(
+    let committed = commit_execution::commit(
         execution,
         provider,
         prepared,
@@ -64,30 +64,43 @@ pub(super) fn commit_owner_validated(
             (stop, _) => stop,
         }
     })?;
-    let mut committed = match completed {
-        commit_execution::ApplicationCommitExecution::Committed(committed) => committed,
-        commit_execution::ApplicationCommitExecution::AdoptionPrepared(adoption) => {
-            return Ok(crate::domain_computation::WorthQueryProviderCommitCompletion::OutputAdoptionPrepared(adoption));
+    match committed {
+        commit_execution::ApplicationCommitExecution::Committed(committed) => {
+            finish_owner_validated(execution, provider, committed)
+                .map(crate::domain_computation::WorthQueryProviderCommitCompletion::Committed)
         }
-    };
+        commit_execution::ApplicationCommitExecution::AdoptionPrepared(adoption) => Ok(
+            crate::domain_computation::WorthQueryProviderCommitCompletion::OutputAdoptionPrepared(
+                adoption,
+            ),
+        ),
+    }
+}
+
+#[inline(never)]
+fn finish_owner_validated(
+    execution: worth_execution::ExecutionRequest<'_, '_>,
+    provider: &WorthQueryPrimaryGraphProvider,
+    mut committed: commit_execution::WorthQueryCommittedApplicationSession,
+) -> Result<
+    crate::domain_computation::WorthQueryProviderTerminalDescription,
+    crate::domain_computation::WorthQueryProviderSessionCommitStop,
+> {
     let evidence = evidence_seal::seal(&execution, provider, &mut committed);
     let mut predicate = committed.take_predicate_preparation();
     let mut retired = crate::domain_computation::primary_graph::application_query::derived_view::PredicatePreparationRetirement::default();
-    provider
-        .graph
-        .with_runtime_mut_unwind_isolated(&execution, |runtime| {
-            committed
-                .publish_and_encode(
-                    &execution,
-                    provider,
-                    runtime,
-                    evidence,
-                    &mut predicate,
-                    &mut retired,
-                )
-                .map(crate::domain_computation::WorthQueryProviderCommitCompletion::Committed)
-                .map_err(crate::domain_computation::WorthQueryProviderSessionCommitStop::Denied)
-        })
+    provider.graph.with_runtime(&execution, |runtime| {
+        committed
+            .publish_and_encode(
+                &execution,
+                provider,
+                runtime,
+                evidence,
+                &mut predicate,
+                &mut retired,
+            )
+            .map_err(crate::domain_computation::WorthQueryProviderSessionCommitStop::Denied)
+    })
 }
 
 /// The recovered World movement rejoins the same evidence and pending
@@ -97,27 +110,36 @@ pub(in crate::domain_computation::primary_graph::provider) fn publish_recovered(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     provider: &WorthQueryPrimaryGraphProvider,
     mut committed: commit_execution::WorthQueryCommittedApplicationSession,
+    producer_memory: Option<Option<worth_execution::ExecutionMemoryReservation>>,
+    retain: impl FnOnce(Option<std::sync::Arc<crate::domain_computation::primary_graph::application_output_demand::RecoveredProducerOutputFacts>>),
 ) -> Result<
     crate::domain_computation::WorthQueryProviderTerminalDescription,
     crate::domain_computation::WorthQueryProviderSessionFailure,
 > {
     let evidence = evidence_seal::seal(execution, provider, &mut committed);
+    let facts =
+        producer_memory.map(|memory| committed.retain_recovered_producer_facts(&evidence, memory));
+    retain(facts);
     let mut predicate = committed.take_predicate_preparation();
     let mut retired = crate::domain_computation::primary_graph::application_query::derived_view::PredicatePreparationRetirement::default();
-    provider
-        .graph
-        .with_runtime_mut_unwind_isolated(execution, |runtime| {
-            committed.publish_and_encode(
-                execution,
-                provider,
-                runtime,
-                evidence,
-                &mut predicate,
-                &mut retired,
-            )
-        })
+    provider.graph.with_runtime(execution, |runtime| {
+        committed.publish_and_encode(
+            execution,
+            provider,
+            runtime,
+            evidence,
+            &mut predicate,
+            &mut retired,
+        )
+    })
 }
 
 pub(in crate::domain_computation::primary_graph) use evidence_seal::{
     PreparedRebaseDenial, PreparedSourceFactRebase,
 };
+
+pub(in crate::domain_computation) use commit_execution::QueryPreparingApplicationCommit;
+pub(in crate::domain_computation::primary_graph::provider) use commit_execution::RetainedQueryDurablePreparation;
+#[cfg(test)]
+#[path = "relational_commit_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;

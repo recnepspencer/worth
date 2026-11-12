@@ -219,8 +219,10 @@ where
                 ),
             family: demand.family.into(),
             source_scope: root,
-            source_partition: partition,
-            source_epoch: source.checkpoint_identity(),
+            source_partition: worth_foundational::facade::CanonicalDigestId::new(partition),
+            source_epoch: worth_foundational::facade::CanonicalDigestId::new(
+                source.checkpoint_identity(),
+            ),
         };
         graph.with_runtime(execution, |native| match Binding::OWNERSHIP {
             worth_foundational::facade::ProducerPublicationOwnership::SourceScopeCascade => native

@@ -1,0 +1,66 @@
+//! Receiver-owned controls used only by the closed native component courts.
+use super::{PreparedRelationalSection, RelationalSectionCheckpointDenial, RelationalStoreSection};
+use std::sync::Arc;
+use worth_relational::facade::{
+    durability::RelationalNativeCheckpoint,
+    runtime::{
+        RelationalRuntime, RelationalRuntimeConstructionDenial, RelationalRuntimeDefinition,
+    },
+};
+use worth_store::physical_runtime::{AdmittedRecordPlacementPolicy, ServingPhysicalRuntime};
+
+impl RelationalStoreSection {
+    pub fn prepare_captured_complete_checkpoint_for_test(
+        &self,
+        checkpoint: Option<
+            worth_relational::facade::durability::CompleteRelationalNativeCheckpoint,
+        >,
+        home: worth_foundational::facade::HomeIdentity,
+        world_through: [u64; 3],
+        world_digest: [u8; 32],
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        observe_capture: Option<&dyn Fn(&RelationalNativeCheckpoint)>,
+    ) -> Result<super::CapturedHomeRelationalSection, RelationalSectionCheckpointDenial> {
+        self.capture_complete_home_checkpoint(
+            checkpoint,
+            home,
+            world_through,
+            world_digest,
+            execution,
+            observe_capture,
+        )
+    }
+
+    pub fn attach_with_read_observer_for_test(
+        definition: RelationalRuntimeDefinition,
+        serving: Arc<ServingPhysicalRuntime>,
+        placement: AdmittedRecordPlacementPolicy,
+        checkpoint_selection: Arc<dyn super::RelationalCheckpointSelectionSource>,
+        observer: impl Fn(
+                worth_relational::facade::publication::PatchStreamPosition,
+                crate::RelationalStoreColdReadCounters,
+            ) + Send
+            + Sync
+            + 'static,
+    ) -> Result<Self, RelationalRuntimeConstructionDenial> {
+        let source = crate::cold_source::StoreColdSource::new_with_commit_read_observer(
+            serving.clone(),
+            observer,
+        );
+        Self::attach_with_source(definition, serving, placement, source, checkpoint_selection)
+    }
+
+    /// Replace native cells to dispute foreign carried-member placement. This
+    /// cannot mint an application owner or any recovery-stage proof.
+    pub fn replace_runtime_for_test(&mut self, runtime: RelationalRuntime) {
+        self.runtime = Arc::new(runtime);
+    }
+
+    pub fn prepare_captured_checkpoint_for_test(
+        &self,
+        checkpoint: RelationalNativeCheckpoint,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> Result<PreparedRelationalSection, RelationalSectionCheckpointDenial> {
+        super::checkpoint::prepare_captured(&self.cold_source, checkpoint, execution)
+    }
+}

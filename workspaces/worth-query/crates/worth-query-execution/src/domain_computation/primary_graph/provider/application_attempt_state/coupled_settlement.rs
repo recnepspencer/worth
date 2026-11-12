@@ -8,6 +8,7 @@ impl super::super::WorthQueryPrimaryGraphProvider {
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         terminal: &crate::domain_computation::provider_session::WorthQueryProviderSessionTerminalBinding,
+        original: &crate::domain_computation::primary_graph::provider::OriginalCompletionReceiver,
         session: WorthQueryProviderSessionView<'_>,
         product: &crate::domain_computation::execution_runtime::product_world::WorthQueryProductPublicationBinding,
         unpublished: Option<&crate::domain_computation::WorthQueryProductUnpublishedApplication>,
@@ -26,13 +27,10 @@ impl super::super::WorthQueryPrimaryGraphProvider {
                 Err(cause) => Stop::Denied(crate::domain_computation::WorthQueryProviderSessionFailure::new(crate::domain_computation::WorthQueryProviderSessionDenialKind::ProviderRejected, crate::domain_computation::WorthQueryProviderSessionProtocolStage::Commit, format!("group World recovery could not be inspected: {cause:?}"), Default::default())),
             });
         }
-        if self
-            .observe_completed_application_for_session(terminal)
-            .is_none()
-        {
+        if !original.has_completion(terminal) {
             let mut retired = crate::domain_computation::primary_graph::application_query::derived_view::PredicatePreparationRetirement::default();
             self.graph
-                .with_runtime_mut_unwind_isolated(execution, |runtime| {
+                .with_runtime(execution, |runtime| {
                     self.resume_pending_application_publication(
                         execution,
                         runtime,
@@ -42,13 +40,14 @@ impl super::super::WorthQueryPrimaryGraphProvider {
                 })
                 .map_err(Stop::Denied)?;
         }
-        self.observe_completed_application_for_session(terminal)
-            .ok_or_else(|| {
-                Stop::Denied(super::super::session_commit::provider_failure(
+        if !original.has_completion(terminal) {
+            return Err(Stop::Denied(
+                super::super::session_commit::provider_failure(
                     crate::domain_computation::WorthQueryProviderSessionProtocolStage::Commit,
                     "performed group has no exact participant receipt",
-                ))
-            })?;
+                ),
+            ));
+        }
         Ok(WorthQueryProviderTerminalDescription::new(
             "prepared participant completed in the shared World publication",
         )

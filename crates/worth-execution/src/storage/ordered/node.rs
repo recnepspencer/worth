@@ -29,6 +29,63 @@ pub(crate) fn cell_bytes<K, V>() -> Result<u64, Denial> {
         .checked_add(arc_bytes::<Node<K, V>>()?)
         .ok_or(Denial::CapacityOverflow)
 }
+pub(super) fn detached_bytes<K, V>(entry: &Entry<K, V>) -> Result<Option<u64>, Denial> {
+    entry
+        .bytes
+        .map(|n| {
+            n.checked_add(arc_bytes::<Node<K, V>>()?)
+                .ok_or(Denial::CapacityOverflow)
+        })
+        .transpose()
+}
+/// Both original cell owners are admitted before either allocation is made.
+pub(super) fn prepared_copy<K: Copy, V: Copy>(
+    key: K,
+    value: V,
+    source: &dyn super::funding::FundingSource,
+) -> Result<Arc<Node<K, V>>, Denial> {
+    prepared_owned(key, value, source)
+}
+
+/// Move native payload custody through the same admitted path funding owner.
+pub(super) fn prepared_owned<K, V>(
+    key: K,
+    value: V,
+    source: &dyn super::funding::FundingSource,
+) -> Result<Arc<Node<K, V>>, Denial> {
+    let funding = PathFunding::admit(source, cell_bytes::<K, V>()?)?;
+    let entry = Entry::owned_native(key, value, &funding)?;
+    build(entry, None, None, &funding)
+}
+
+/// Refresh a moved, uniquely owned cell without creating accounting knowledge
+/// for a node that previously had none. Its allocation and grant never move apart.
+pub(super) fn refresh<K, V>(node: &mut Node<K, V>) {
+    node.height = height(&node.left).max(height(&node.right)) + 1;
+    node.count = node
+        .left
+        .as_ref()
+        .map_or(0, |n| n.count)
+        .checked_add(node.right.as_ref().map_or(0, |n| n.count))
+        .and_then(|n| n.checked_add(1))
+        .expect("unique edit preflights total addressable cardinality");
+    node.bytes = match (
+        node.bytes,
+        node.entry.bytes,
+        node.left.as_ref().map_or(Some(0), |n| n.bytes),
+        node.right.as_ref().map_or(Some(0), |n| n.bytes),
+    ) {
+        (Some(_), Some(entry), Some(left), Some(right)) => Some(
+            arc_bytes::<Node<K, V>>()
+                .expect("existing node layout remains valid")
+                .checked_add(entry)
+                .and_then(|n| n.checked_add(left))
+                .and_then(|n| n.checked_add(right))
+                .expect("unique edit preflights total retained bytes"),
+        ),
+        _ => None,
+    };
+}
 pub(super) struct EntryPlan<'a, K, V> {
     key: &'a K,
     value: &'a V,

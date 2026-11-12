@@ -157,7 +157,7 @@ pub fn persist_as_the_retired_code_did(
         .clone();
     graph
         .integration_handle_for_test()
-        .with_runtime_mut_for_test(execution, |runtime| {
+        .with_runtime_for_test(execution, |runtime| {
             let head = main_head(runtime);
             let retired = runtime
                 .index_authority()

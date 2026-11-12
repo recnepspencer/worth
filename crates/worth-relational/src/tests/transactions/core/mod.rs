@@ -61,4 +61,5 @@ mod struct_field_patch_authority;
 mod transaction_resource_budgets;
 mod visibility_aspect_versions;
 
+mod replay_copy_custody;
 mod staging_allocation_custody;

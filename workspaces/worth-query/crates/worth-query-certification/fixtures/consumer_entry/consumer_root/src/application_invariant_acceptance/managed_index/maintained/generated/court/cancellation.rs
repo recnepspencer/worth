@@ -1,11 +1,12 @@
 //! Cancel the original request after the first real rule consumes staged roots.
 use super::*;
+use crate::application_invariant_acceptance::managed_index::prefix_observation;
 use std::sync::atomic::AtomicBool;
 use worth_query_host::facade::admission::authenticated_principal::*;
 
 pub(super) fn reject(
     world: &host::Host,
-    provider: &Arc<prefix::Calls>,
+    provider: &Arc<prefix_observation::Calls>,
     rules: &Arc<rule::Calls>,
     suspended: WorthQuerySuspendedGeneratedOutput,
 ) -> WorthQuerySuspendedGeneratedOutput {
@@ -50,7 +51,7 @@ pub(super) fn reject(
         "original cancellation prevents the second rule callback"
     );
     assert!(
-        records[0].before.is_none(),
+        records[0].source.before.is_none(),
         "the logical reuse grant never opens unavailable committed Source"
     );
     suspended

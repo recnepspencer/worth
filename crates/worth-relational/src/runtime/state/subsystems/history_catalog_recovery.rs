@@ -11,54 +11,17 @@ use crate::history::RelationalCommitCatalog;
 
 use super::HistorySubsystem;
 
-impl HistorySubsystem {
-    pub(crate) fn install_recovered_canonical_inventory(
-        &mut self,
-        execution: &worth_execution::ExecutionRequest<'_, '_>,
-        commits: Vec<Arc<crate::history::data::PositionedCanonicalCommit>>,
-        symbols: &crate::symbols::data::StringInterner,
-    ) -> Result<(), RelationalHistoryRecoveryDenial> {
-        self.with_ledger_mut(|ledger| {
-            ledger.patch_stream_index.extend(
-                commits
-                    .iter()
-                    .map(|commit| (commit.position(), commit.envelope().commit.commit_id)),
-            );
-            for commit in &commits {
-                ledger
-                    .commit_catalog
-                    .synchronize_recovered_envelope(commit)
-                    .map_err(|denial| {
-                        format!("recovered canonical catalog synchronization denied: {denial:?}")
-                    })?;
-            }
-            ledger.commit_envelopes = commits
-                .iter()
-                .map(|commit| {
-                    let id = commit.commit.commit_id;
-                    let artifact = ledger.commit_catalog.get(id).ok_or_else(|| {
-                        "recovered canonical inventory has no catalog entry".to_owned()
-                    })?;
-                    Ok((id, artifact.envelope_residency()))
-                })
-                .collect::<Result<_, String>>()?;
-            Ok::<_, String>(())
-        })?;
-        let admitted = commits
-            .iter()
-            .map(|commit| (commit.commit.commit_id, Arc::clone(commit)))
-            .collect();
-        self.rebuild_catalog_with_live_roots_and_descriptors(
-            execution,
-            &std::collections::BTreeMap::new(),
-            &std::collections::BTreeMap::new(),
-            &admitted,
-            symbols,
-        )?;
-        self.rebuild_recovered_canonical_routes(commits)
-            .map_err(|detail| RelationalHistoryRecoveryDenial::Invalid(detail.to_owned()))
-    }
+#[path = "history_catalog_recovery/checkpoint_root.rs"]
+mod checkpoint_root;
+#[cfg(test)]
+#[path = "history_catalog_recovery/court_catalog.rs"]
+mod court_catalog;
+#[path = "history_catalog_recovery/inventory.rs"]
+mod inventory;
+#[path = "history_catalog_recovery/source_binding.rs"]
+mod source_binding;
 
+impl HistorySubsystem {
     pub(super) fn rebuild_catalog_with_live_roots(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
@@ -92,7 +55,7 @@ impl HistorySubsystem {
     ) -> Result<(), RelationalHistoryRecoveryDenial> {
         let mut roots = additional_roots.clone();
         let mut cells = self.branch_cells.take_all();
-        let replacements = (|| {
+        let replacements = (|| -> Result<_, RelationalHistoryRecoveryDenial> {
             let mut replacements = Vec::new();
             for cell in cells.values() {
                 let Some(root) = cell.root() else {
@@ -112,6 +75,18 @@ impl HistorySubsystem {
                 let commit_id = root
                     .commit_id()
                     .ok_or_else(|| "live recovery root has no commit identity".to_owned())?;
+                if self.is_readmitted_checkpoint_root(&root)? {
+                    if roots
+                        .get(&commit_id)
+                        .is_some_and(|actual| !Arc::ptr_eq(actual, &root))
+                    {
+                        return Err("recovery carries competing checkpoint root owners"
+                            .to_owned()
+                            .into());
+                    }
+                    roots.insert(commit_id, root);
+                    continue;
+                }
                 let canonical = self.recorded_commit_envelope(commit_id).ok_or_else(|| {
                     format!("live recovery root `{}` has no envelope", commit_id.0)
                 })?;
@@ -119,12 +94,14 @@ impl HistorySubsystem {
                     Arc::clone(existing)
                 } else if root.links_envelope(&canonical) {
                     Arc::clone(&root)
-                } else if let Some(source) = admitted.get(&commit_id) {
-                    root.readmit_canonical_envelope(execution, source, symbols)
-                        .map_err(RelationalHistoryRecoveryDenial::from)?
                 } else {
-                    root.relink_canonical_envelope(execution, canonical, symbols)
-                        .map_err(RelationalHistoryRecoveryDenial::from)?
+                    let original = self.original_for_envelope(execution, &canonical)?;
+                    if let Some(source) = admitted.get(&commit_id) {
+                        root.readmit_canonical_envelope(execution, source, original, symbols)
+                    } else {
+                        root.relink_canonical_envelope(execution, original, symbols)
+                    }
+                    .map_err(RelationalHistoryRecoveryDenial::Root)?
                 };
                 if !Arc::ptr_eq(&root, &canonical_root) {
                     replacements.push((
@@ -199,6 +176,11 @@ impl HistorySubsystem {
                     descriptors.get(&commit_id),
                 )
                 .map_err(|denial| format!("recovered catalog root linkage denied: {denial:?}"))?;
+            let artifact = artifact.prepare_catalog_owner(execution).map_err(|cause| {
+                RelationalHistoryRecoveryDenial::Root(
+                    crate::branch::RelationalBranchRootCaptureDenial::Request(cause),
+                )
+            })?;
             catalog
                 .append_preencoded_recovery(artifact)
                 .map_err(|denial| format!("recovered catalog root linkage denied: {denial:?}"))?;
@@ -207,7 +189,7 @@ impl HistorySubsystem {
         Ok(())
     }
 
-    pub(super) fn readmit_replayed_root_descriptor(
+    pub(crate) fn readmit_replayed_root_descriptor(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         commit_id: crate::history::data::CommitId,
@@ -289,7 +271,7 @@ impl HistorySubsystem {
     pub(crate) fn record_recovered_commit(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
-        envelope: &CanonicalCommitEnvelope,
+        envelope: &Arc<CanonicalCommitEnvelope>,
         allow_reconstructed_replacement: bool,
         advance_branch_currentness: bool,
         symbols: &crate::symbols::data::StringInterner,
@@ -311,17 +293,14 @@ impl HistorySubsystem {
             }
             self.rebuild_catalog_with_live_roots(execution, symbols)?;
         } else if catalog_artifact.is_none() {
+            let artifact =
+                self.prepare_catalog_artifact_for_envelope(execution, Arc::clone(envelope), None)?;
             self.with_ledger_mut(|ledger| {
                 ledger
                     .commit_catalog
-                    .append_envelope(Arc::new(envelope.clone()))
+                    .install_source_recovery(None, artifact)
             })
-            .map_err(|denial| {
-                format!(
-                    "recovery commit artifact could not be admitted for commit {}: {denial:?}",
-                    envelope.commit.commit_id.0
-                )
-            })?;
+            .map_err(RelationalHistoryRecoveryDenial::Catalog)?;
         }
         self.require_recovered_branch(&envelope.branch_context)?;
         if !advance_branch_currentness {
@@ -357,16 +336,5 @@ impl HistorySubsystem {
                 .map_err(|denial| format!("recovered branch reference denied: {denial:?}"))?;
         }
         Ok(())
-    }
-
-    #[cfg(test)]
-    pub(crate) fn replace_catalog_from_legacy_for_test(&self) {
-        let mut catalog = RelationalCommitCatalog::default();
-        for envelope in self.recorded_commit_envelopes() {
-            catalog
-                .append_envelope(envelope)
-                .expect("test envelopes retain ordered unique parentage");
-        }
-        self.install_commit_catalog(catalog);
     }
 }

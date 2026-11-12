@@ -7,6 +7,10 @@ use worth_query_admission::facade::authenticated_principal::WorthQueryAuthentica
 enum DecisionQueryPreparationStop {
     MissingProduct,
     Product(crate::basis::WorthQueryProductBranchAdmissionDenial),
+    #[allow(
+        dead_code,
+        reason = "The typed diagnostic or custody payload stays owned through return and Drop; this owner does not inspect it"
+    )]
     Native(worth_relational::facade::mvcc::CompanionPreflightStop),
 }
 impl std::fmt::Display for DecisionQueryPreparationStop {
@@ -115,7 +119,7 @@ impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
             allocation,
         ) {
             Ok(prepared) => prepared.run(self, identities),
-            Err(report) => report,
+            Err(report) => report.into_uncompleted_report(),
         }
     }
     /// An authored stage retains C authorization while its ordinary readers
@@ -193,7 +197,7 @@ impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
             allocation,
         ) {
             Ok(prepared) => prepared.run(self, identities),
-            Err(report) => report,
+            Err(report) => report.into_uncompleted_report(),
         };
         if let Some(cause) = access.take_control_failure() {
             return refused(MutationHandlerExecutionDenial::Handler(

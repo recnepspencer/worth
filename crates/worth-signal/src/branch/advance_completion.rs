@@ -60,3 +60,6 @@ impl std::fmt::Debug for SignalBranchAdvanceCompletion {
             .finish()
     }
 }
+#[cfg(test)]
+#[path = "advance_completion_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;

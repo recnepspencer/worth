@@ -15,7 +15,7 @@ use crate::domain_computation::{
     WorthQueryProvisionalOverlayEvidence, WorthQueryProvisionalOverlayEvidenceView,
 };
 
-pub(super) trait WorthQueryErasedDecisionFactProvider: Send + Sync {
+pub(super) trait WorthQueryErasedDecisionFactProvider: std::any::Any + Send + Sync {
     fn observe(
         &self,
         session: crate::domain_computation::WorthQueryProviderSessionView<'_>,
@@ -32,7 +32,9 @@ pub(super) trait WorthQueryErasedDecisionFactProvider: Send + Sync {
     ) -> Result<WorthQueryDecisionFactComparisonEvidence, WorthQueryDecisionReadSetFailure>;
 }
 
-pub(super) trait WorthQueryErasedProvisionalGraphProvider: Send + Sync {
+pub(super) trait WorthQueryErasedProvisionalGraphProvider:
+    std::any::Any + Send + Sync
+{
     fn stage(
         &self,
         session: crate::domain_computation::WorthQueryProviderSessionView<'_>,
@@ -47,7 +49,9 @@ pub(super) trait WorthQueryErasedProvisionalGraphProvider: Send + Sync {
     ) -> Result<(), WorthQueryProvisionalFailure>;
 }
 
-pub(super) trait WorthQueryErasedInvariantExecutionProvider: Send + Sync {
+pub(super) trait WorthQueryErasedInvariantExecutionProvider:
+    std::any::Any + Send + Sync
+{
     fn load(
         &self,
         session: crate::domain_computation::WorthQueryProviderSessionView<'_>,

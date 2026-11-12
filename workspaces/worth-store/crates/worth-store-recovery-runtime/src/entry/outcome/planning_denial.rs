@@ -15,6 +15,14 @@ pub use ordered_release::{
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum PhysicalRecoveryPlanningDenial {
+    ResolvedStateAllocation {
+        requested_bytes: u64,
+        cause: std::collections::TryReserveError,
+    },
+    PlannedStateAllocation {
+        requested_bytes: u64,
+        cause: std::collections::TryReserveError,
+    },
     PublicationCandidateAllocation {
         requested_bytes: u64,
         cause: std::collections::TryReserveError,
@@ -38,3 +46,6 @@ pub enum PhysicalRecoveryPlanningDenial {
     SuccessorCandidate(super::super::PhysicalRecoverySuccessorCandidateDenial),
     Cost(RecoveryPlanCostDenial),
 }
+#[cfg(test)]
+#[path = "planning_denial_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;

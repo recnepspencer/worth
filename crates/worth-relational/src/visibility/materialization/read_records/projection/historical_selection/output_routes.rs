@@ -114,7 +114,7 @@ impl RelationalHistoricalSelectionRead {
         execution: &ExecutionRequest<'_, '_>,
         family: &str,
         source: crate::identity::data::EntityId,
-        partition: [u8; 32],
+        partition: worth_foundational::facade::CanonicalDigestId,
     ) -> Result<
         Option<&crate::mvcc::RequiredOutputPublicationMeaning>,
         RelationalHistoricalSelectionReadDenial,

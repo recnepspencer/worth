@@ -21,6 +21,12 @@ use crate::data::trace::RuntimeArtifactState;
 #[derive(Deserialize)]
 struct FlatNodeFields {
     #[serde(default)]
+    declared_dependencies: Option<crate::data::dependency::CanonicalDependencies>,
+    #[serde(default)]
+    conditional_definition: Option<
+        std::sync::Arc<crate::data::conditional_execution::SignalConditionalContractDefinition>,
+    >,
+    #[serde(default)]
     tombstoned: bool,
     #[serde(default)]
     conditional_contract_generation: u64,
@@ -62,6 +68,8 @@ impl<'de> Deserialize<'de> for NodeEntry {
         let fields = FlatNodeFields::deserialize(deserializer)?;
         Ok(Self {
             definition: NodeDefinitionData {
+                conditional_definition: fields.conditional_definition,
+                declared_dependencies: fields.declared_dependencies,
                 tombstoned: fields.tombstoned,
                 conditional_contract_generation: fields.conditional_contract_generation,
                 conditional_contract_occurrence: fields.conditional_contract_occurrence,

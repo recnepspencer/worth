@@ -61,6 +61,13 @@ fn admit_execution_basis(
 
     counters.checked_reservation();
     let reservation = reserve_intent(runtime, &intent, &counters)?;
+    let storage = crate::source::OriginalLoweringStorage::reserve(execution).map_err(|cause| {
+        denial(
+            BridgeExecutionBasisDenialKind::ExecutionDenied(cause.into()),
+            format!("original request refused immutable lowering storage: {cause:?}"),
+            &counters,
+        )
+    })?;
     counters.materialized_truth();
     let observation = runtime
         .materialize_truth_view_observation(planned, execution)
@@ -73,10 +80,12 @@ fn admit_execution_basis(
         })?;
 
     let lowered = match &step_contract {
-        Some(contract) => {
-            managed_execution_declaration(intent.identity().as_str(), contract.deadline_nanos())
-        }
-        None => atomic_execution_declaration(intent.identity().as_str()),
+        Some(contract) => managed_execution_declaration(
+            intent.identity().as_str(),
+            contract.deadline_nanos(),
+            storage,
+        ),
+        None => atomic_execution_declaration(intent.identity().as_str(), storage),
     }
     .map_err(|error| {
         denial(

@@ -48,6 +48,23 @@ struct BridgeExactConditionalBasisClaim {
 }
 
 impl BridgeConditionalLoweringRegistry {
+    pub(in crate::conditional_execution) fn reserve_owned_slot(
+        &mut self,
+        key: BridgeConditionalLoweringKey,
+    ) -> bool {
+        match self.slots.entry(key) {
+            std::collections::btree_map::Entry::Vacant(slot) => {
+                slot.insert(BridgeConditionalLoweringSlot::Claimed);
+                true
+            }
+            std::collections::btree_map::Entry::Occupied(_) => false,
+        }
+    }
+    pub(super) fn is_empty_for_home_stop(&self) -> bool {
+        self.slots.is_empty()
+            && self.reserved_exact_basis_slots == 0
+            && self.exact_basis.is_empty_for_home_stop()
+    }
     pub(super) fn install(
         &mut self,
         key: BridgeConditionalLoweringKey,

@@ -1,4 +1,5 @@
 //! Branch-qualified transaction preparation and publication surface.
+pub use crate::mvcc::{RelationalCallerAssociation, RelationalCallerAssociationRefusal};
 
 pub use crate::mvcc::{
     AuthoredOwnedMemberKind, BranchBoundRelationalTransaction, CompanionBranchCell,
@@ -15,8 +16,9 @@ pub use crate::mvcc::{
     PreparedRelationalCommitCandidate, PreparedRelationalRecordChange,
     PreparedRelationalRelationEndpoints, PublicationCompanionPreflight,
     PublicationCompanionRegistration, PublicationCompanionRegistrationPort,
-    PublicationCompanionRegistrationStop, PublishRelationalCommit, RecordedMemberRestoration,
-    RecordedMemberRestorationRefusal, RecordedRequiredOutputRole, RelationalBranchObservation,
+    PublicationCompanionRegistrationStop, PublicationCompanionRetirementDenial,
+    PublishRelationalCommit, RecordedMemberRestoration, RecordedMemberRestorationRefusal,
+    RecordedRequiredOutputRole, RelationalBranchObservation,
     RelationalBranchTransactionAdmissionDenial, RelationalCancellationSource,
     RelationalCancellationToken, RelationalCurrentOutputAdoption,
     RelationalInstalledApplicationPublicationAuthority, RelationalInterruptionBoundary,
@@ -35,7 +37,8 @@ pub use crate::mvcc::{
     RelationalTransactionReadDenial, RelationalTransactionReadLocus,
     RelationalTransactionRelationRead, RelationalTransactionRelationValue,
     RelationalTransactionStagedMutations, RelationalTransactionStagingDenial,
-    RelationalTransactionWriteLocus, ReservedCompanionBranchCell, StaleRelationalBranchObservation,
+    RelationalTransactionWriteLocus, ReservedCompanionBranchCell,
+    RetiredPublicationCompanionRegistration, StaleRelationalBranchObservation,
     ValidatedEntityStructTouch, ValidatedMutationFootprint, ValidatedMutationFootprintNotRequested,
     ValidatedMutationFootprintProjection, ValidatedMutationFootprintWork, ValidatedMutationTouch,
     ValidatedMutationTouchProjectionError, ValidatedMutationTouchProjectionWork,

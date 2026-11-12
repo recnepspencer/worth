@@ -1,7 +1,11 @@
+use super::MergeWitnessRows;
 use serde::de::Error as _;
 use serde::{Deserialize, Deserializer, Serialize};
 use sha2::{Digest, Sha256};
+use std::io::Write;
 use std::sync::Arc;
+
+use super::correspondence_witness::{lowercase_sha256, CorrespondenceHashWriter};
 
 use super::schema_reconciliation_witness_rows::RelationalSchemaReconciliationWitnessRow;
 
@@ -9,11 +13,18 @@ use super::schema_reconciliation_witness_rows::RelationalSchemaReconciliationWit
 pub struct RelationalSchemaReconciliationWitness {
     request_digest: String,
     branch_basis_digest: String,
-    rows: Arc<[RelationalSchemaReconciliationWitnessRow]>,
+    rows: MergeWitnessRows<RelationalSchemaReconciliationWitnessRow>,
     witness_digest: String,
 }
 
 impl RelationalSchemaReconciliationWitness {
+    pub(crate) fn retain_rows_memory(
+        &self,
+        memory: Option<worth_execution::ExecutionMemoryReservation>,
+    ) -> Result<(), Option<worth_execution::ExecutionMemoryReservation>> {
+        self.rows.retain_decoded_memory(memory)
+    }
+
     pub(crate) fn retained(
         request_digest: String,
         branch_basis_digest: String,
@@ -24,7 +35,7 @@ impl RelationalSchemaReconciliationWitness {
         Self {
             request_digest,
             branch_basis_digest,
-            rows,
+            rows: rows.into(),
             witness_digest,
         }
     }
@@ -50,7 +61,7 @@ impl RelationalSchemaReconciliationWitness {
 struct RelationalSchemaReconciliationWitnessWire {
     request_digest: String,
     branch_basis_digest: String,
-    rows: Arc<[RelationalSchemaReconciliationWitnessRow]>,
+    rows: MergeWitnessRows<RelationalSchemaReconciliationWitnessRow>,
     witness_digest: String,
 }
 
@@ -94,18 +105,19 @@ fn schema_reconciliation_witness_digest(
     branch_basis_digest: &str,
     rows: &[RelationalSchemaReconciliationWitnessRow],
 ) -> String {
-    let mut bytes = Vec::new();
-    bytes.extend_from_slice(b"worth.relational.merge.schema_reconciliation_witness.v1");
-    bytes.extend_from_slice(request_digest.as_bytes());
-    bytes.extend_from_slice(branch_basis_digest.as_bytes());
-    bytes.extend_from_slice(rows.len().to_string().as_bytes());
-    for row in rows {
-        bytes.extend_from_slice(
-            &rmp_serde::to_vec_named(row).expect(/* Proof: The serialized value contains only closed native scalar, sequence, map and derived-Serialize record fields; encoding uses an in-memory Vec/hash writer, with no user serializer or fallible I/O. */ "schema reconciliation witness row must encode"),
-        );
+    let mut digest = Sha256::new();
+    digest.update(b"worth.relational.merge.schema_reconciliation_witness.v1");
+    digest.update(request_digest.as_bytes());
+    digest.update(branch_basis_digest.as_bytes());
+    {
+        let mut writer = CorrespondenceHashWriter(&mut digest);
+        write!(&mut writer, "{}", rows.len()).expect("hash writing cannot fail");
+        for row in rows {
+            rmp_serde::encode::write_named(&mut writer, row)
+                .expect("closed native schema reconciliation row must encode");
+        }
     }
-    let digest = Sha256::digest(bytes);
-    digest.iter().map(|byte| format!("{byte:02x}")).collect()
+    lowercase_sha256(digest.finalize().into())
 }
 
 fn digest_is_lowercase_sha256_hex(value: &str) -> bool {

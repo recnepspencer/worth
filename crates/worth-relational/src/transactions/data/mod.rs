@@ -6,6 +6,16 @@ mod commit_log;
 mod intents;
 mod mutation_planning;
 mod outcomes;
+pub use outcomes::{
+    RecoveredRelationalSemanticResult, RelationalCommitPublicationMeaning,
+    RelationalCommitSemanticResult, RelationalCommitSemanticResultRefusal,
+    RelationalCommitStructuralMeaning, RelationalCreatedEndpoint,
+    RelationalCreatedEntityCorrespondence, RelationalCreatedEntityKey,
+    RelationalCreatedRelationCorrespondence, RelationalCreatedRelationKey,
+    RelationalInvariantCheckMeaning, RelationalInvariantCustomProvenanceMeaning,
+    RelationalInvariantDecisionMeaning, RelationalInvariantExecutionMeaning,
+    RelationalInvariantMetadataMeaning, RelationalInvariantProofScopeMeaning,
+};
 mod primitives;
 
 pub(crate) use aspect_field_patch::validate_planned_aspect_field_locator;
@@ -66,4 +76,8 @@ pub use primitives::{
     LineageSafeBulkMutationBatch, NamingStableBulkMutationBatch, PlannedBulkMutationBatch,
     PlannedLineageTransition, ProvenanceCompleteBulkMutationBatch, RecordRef, RelationIdentity,
     RelationScope, RelationSpec, SavepointId, TransactionId, WorkerIntentBatch,
+};
+
+pub(crate) use outcomes::{
+    ValidationLeafMemory, ValidationReadmissionMemory, ValidationTouchedMemory,
 };

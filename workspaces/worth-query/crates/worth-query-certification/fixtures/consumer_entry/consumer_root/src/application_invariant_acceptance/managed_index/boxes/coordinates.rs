@@ -2,7 +2,9 @@
 use worth_query_consumer_values::{Box2, Box2Coordinates};
 use worth_query_decl::facade::application_schema::*;
 
-#[derive(Clone, Copy, Debug, Eq, PartialEq, worth_foundational::facade::WorthValue)]
+#[derive(
+    Clone, Copy, Debug, Eq, PartialEq, worth_foundational::facade::WorthValue, serde::Deserialize,
+)]
 pub struct Coordinates {
     pub lower_x: i64,
     pub lower_y: i64,

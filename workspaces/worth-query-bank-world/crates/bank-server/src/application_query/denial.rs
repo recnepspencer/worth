@@ -48,55 +48,7 @@ pub struct BankApplicationQueryLaneDenial<Kind> {
     authorization: Option<BankAuthorizationDenial>,
 }
 
-#[derive(Clone, Debug, Eq, PartialEq)]
-pub enum BankApplicationOutputSettlementDenialKind {
-    WorldRecovery(worth_query_host::facade::primary_graph::RuntimeWorldRecoveryDenial),
-    RecoveryPublication(worth_query_host::facade::primary_graph::NoEffectCause),
-    PublicationReceipt(worth_query_host::facade::primary_graph::WorthQueryApplicationIdempotencyResolutionDenialKind),
-    CurrentControlBusy,
-    RetainedVerificationFactUnavailable(Box<WorthQueryOutputDemandDenialKind>),
-    SettlementProvenance(worth_query_host::facade::primary_graph::WorthQueryOutputSettlementProvenanceDenial),
-    ManagedIndexSourceDenied,
-    ManagedCleanupRequired(worth_query_host::facade::primary_graph::WorthQueryMutationCleanupFailureKind),
-    RelationalExecution(worth_query_host::facade::primary_graph::RelationalExecutionDenialCause),
-    BridgeConditional(Box<worth_query_host::facade::primary_graph::BridgeConditionalDenialKind>),
-    CorrespondenceDelivery(Box<worth_query_host::facade::primary_graph::BridgeCorrespondenceDeliveryStop>),
-    ProductDelivery(Box<worth_query_host::facade::product::WorthQueryPerformedRelationalProductChangeDeliveryDenialKind>),
-    ExecutionRequest(
-        worth_query_host::facade::application_contribution::WorthQueryAdvancementDenial,
-    ),
-    SourceQueryInstallation(BankApplicationQueryInstallationDenialKind),
-    SourcePrincipal(WorthQueryPrincipalResolutionDenialKind),
-    SourceScope(BankEntityResolutionDenialKind),
-    SourceQueryAdmission(BankApplicationQueryAdmissionDenialKind),
-    SourceQueryExecution(BankApplicationOneShotDenialKind),
-    ForeignSource,
-    MissingApplicableProducer,
-    AmbiguousApplicableProducer,
-    ProducerUnavailable,
-    ProducerDomainDenied,
-    RequestAuthorization(BankAuthorizationDenialKind),
-    ProductSelection(BankProductSelectionDenialKind),
-    SchedulingRejected,
-    SchedulingDeferred,
-    PublicationStale,
-    NoEffect,
-    Superseded,
-    Cancelled,
-    TimedOut,
-    WorkBudgetExceeded,
-    RetentionBudgetExceeded,
-    PublicationCapacityExceeded,
-    ForeignDemand,
-    RequiredSuccessorStateUnavailable,
-    ForeignSettlement,
-    RetainedBasisUnavailable,
-    Closed,
-    DuplicatePerformedSource,
-    IncompleteDependencyCoverage,
-    ManagedSourceExpansionUnsupported,
-    UnobservedWrite(worth_query_host::facade::primary_graph::WorthQueryApplicationUnobservedWrite),
-}
+pub use output_settlement::BankApplicationOutputSettlementDenialKind;
 
 impl<Kind> BankApplicationQueryLaneDenial<Kind>
 where
@@ -306,6 +258,7 @@ impl BankApplicationQueryDenial {
         ))
     }
 
+    /// Adapt the original owned live admission refusal through the Bank cause mapping.
     pub fn from_live_open(denial: WorthQueryApplicationLiveOpenDenial) -> Self {
         Self::LiveOpen(BankApplicationQueryLaneDenial::from_query(
             live(denial.kind()),

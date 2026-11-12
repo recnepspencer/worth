@@ -12,8 +12,21 @@ fn replacing_a_prefix_in_either_direction_reseeds_only_the_selected_history() {
     let fixture = region_with_history();
     let request = crate::test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&request);
-    let first = region_load::load_head(&fixture.cold, execution, 1 << 24).unwrap();
-    let full = region_load::load_full(&fixture.cold, &first, execution, 1 << 24).unwrap();
+    let first = region_load::load_head(
+        &fixture.cold,
+        fixture.cold.source.as_ref().unwrap(),
+        execution,
+        1 << 24,
+    )
+    .unwrap();
+    let full = region_load::load_full(
+        &fixture.cold,
+        fixture.cold.source.as_ref().unwrap(),
+        &first,
+        execution,
+        1 << 24,
+    )
+    .unwrap();
     let mut later = full.partition.clone();
     let slot = fixture.entity.slot_index();
     let extra = later.entity_arena.get_slot(slot).unwrap().extra().clone();
@@ -22,11 +35,17 @@ fn replacing_a_prefix_in_either_direction_reseeds_only_the_selected_history() {
         .apply_extra_update(slot, extra, VersionId(2_000))
         .expect("fixture slot is materialized");
     let (other_cold, other_source) = recapture(&fixture.cold, &later);
-    let second = region_load::load_head(&other_cold, execution, 1 << 24).unwrap();
+    let second = region_load::load_head(
+        &other_cold,
+        other_cold.source.as_ref().unwrap(),
+        execution,
+        1 << 24,
+    )
+    .unwrap();
     let symbols = fixture.cold.symbols.interner_snapshot();
     let selected = BTreeSet::from([slot]);
     let journal = PartitionMutationJournal {
-        entity_slots: selected.clone(),
+        entity_slots: selected.iter().copied().collect(),
         ..Default::default()
     };
     let mut head = first.partition.clone();
@@ -76,8 +95,21 @@ fn removing_a_prefix_discards_its_opaque_tree_before_rematerialization() {
     let fixture = region_with_history();
     let request = crate::test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&request);
-    let head = region_load::load_head(&fixture.cold, execution, 1 << 24).unwrap();
-    let full = region_load::load_full(&fixture.cold, &head, execution, 1 << 24).unwrap();
+    let head = region_load::load_head(
+        &fixture.cold,
+        fixture.cold.source.as_ref().unwrap(),
+        execution,
+        1 << 24,
+    )
+    .unwrap();
+    let full = region_load::load_full(
+        &fixture.cold,
+        fixture.cold.source.as_ref().unwrap(),
+        &head,
+        execution,
+        1 << 24,
+    )
+    .unwrap();
     let symbols = fixture.cold.symbols.interner_snapshot();
     assert_eq!(
         head.partition.authoritative_content_digest(&symbols),
@@ -85,7 +117,7 @@ fn removing_a_prefix_discards_its_opaque_tree_before_rematerialization() {
     );
     let slot = fixture.entity.slot_index();
     let journal = PartitionMutationJournal {
-        entity_slots: BTreeSet::from([slot]),
+        entity_slots: [slot].into_iter().collect(),
         ..Default::default()
     };
     let mut written = head.partition.clone();
@@ -124,8 +156,21 @@ fn an_adopted_opening_is_independent_of_the_destination_physical_row() {
     let fixture = region_with_history();
     let request = crate::test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&request);
-    let head = region_load::load_head(&fixture.cold, execution, 1 << 24).unwrap();
-    let full = region_load::load_full(&fixture.cold, &head, execution, 1 << 24).unwrap();
+    let head = region_load::load_head(
+        &fixture.cold,
+        fixture.cold.source.as_ref().unwrap(),
+        execution,
+        1 << 24,
+    )
+    .unwrap();
+    let full = region_load::load_full(
+        &fixture.cold,
+        fixture.cold.source.as_ref().unwrap(),
+        &head,
+        execution,
+        1 << 24,
+    )
+    .unwrap();
     let symbols = fixture.cold.symbols.interner_snapshot();
     let mut destination = head.partition.clone();
     destination.entity_arena = EntityArena::with_capacity(0);
@@ -177,8 +222,21 @@ fn relation_adoption_and_append_publication_the_independent_entity_prefixes() {
     let fixture = region_with_history();
     let request = crate::test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&request);
-    let first = region_load::load_head(&fixture.cold, execution, 1 << 24).unwrap();
-    let full = region_load::load_full(&fixture.cold, &first, execution, 1 << 24).unwrap();
+    let first = region_load::load_head(
+        &fixture.cold,
+        fixture.cold.source.as_ref().unwrap(),
+        execution,
+        1 << 24,
+    )
+    .unwrap();
+    let full = region_load::load_full(
+        &fixture.cold,
+        fixture.cold.source.as_ref().unwrap(),
+        &first,
+        execution,
+        1 << 24,
+    )
+    .unwrap();
     let mut later = full.partition.clone();
     let slot = fixture.relation.slot_index();
     let extra = later.relation_arena.get_slot(slot).unwrap().extra().clone();
@@ -187,11 +245,12 @@ fn relation_adoption_and_append_publication_the_independent_entity_prefixes() {
         .apply_extra_update(slot, extra, VersionId(2_000))
         .expect("fixture slot is materialized");
     let (cold, source) = recapture(&fixture.cold, &later);
-    let second = region_load::load_head(&cold, execution, 1 << 24).unwrap();
+    let second =
+        region_load::load_head(&cold, cold.source.as_ref().unwrap(), execution, 1 << 24).unwrap();
     let symbols = fixture.cold.symbols.interner_snapshot();
     let selected = BTreeSet::from([slot]);
     let journal = PartitionMutationJournal {
-        relation_slots: selected.clone(),
+        relation_slots: selected.iter().copied().collect(),
         ..Default::default()
     };
     let mut head = first.partition.clone();
@@ -275,7 +334,7 @@ pub(super) fn recapture(
             kind_authority: members.kind_authority,
             live_counts: super::LiveRecordCounts::from_partition(partition),
             content_digest: commitment.digest(partition.partition_id),
-            source: source.clone(),
+            source: Some(source.clone()),
             ..cold.clone()
         },
         source,

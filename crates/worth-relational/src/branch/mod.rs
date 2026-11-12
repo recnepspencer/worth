@@ -1,3 +1,8 @@
+mod record_advance;
+pub use basis::{
+    RelationalBranchBasisRetirement, RelationalBranchBasisRetirementDenial,
+    RelationalBranchBasisRetirementProgress, RetiredRelationalBranchBasis,
+};
 mod authority;
 mod basis;
 mod basis_admission_identity;
@@ -10,8 +15,15 @@ mod basis_identity_validation;
 mod basis_observation;
 mod basis_readmission;
 mod basis_registry;
+pub(crate) use basis_registry::RelationalRetainedBasisSnapshotStop;
+#[cfg(test)]
+pub(crate) use basis_registry::{
+    assert_original_registry_busy, assert_pruned_original_registration,
+    assert_successor_registration_preserved,
+};
 mod basis_retention;
 mod canonical_runtime_frame;
+pub(crate) mod checkpoint_visibility;
 mod coordination;
 mod fork;
 mod fork_port;
@@ -23,6 +35,7 @@ mod lifecycle;
 mod materialization;
 mod model_ownership;
 mod owner_services;
+mod recorded_basis;
 pub use model_ownership::{
     observe_candidate_custody_reads, RelationalCandidateCustodyReads, RelationalModelOwnership,
     RelationalModelOwnershipConflict, RelationalModelOwnershipDenial,
@@ -31,23 +44,32 @@ pub use model_ownership::{
     RelationalOwnedModelOutputRoute, RelationalOwnedModelPublicationRead,
     RelationalOwnedModelPublishedRoute, RelationalOwnedModelSelectionDenial,
 };
-mod record_advance;
 mod reference;
 pub use record_advance::{
     RelationalRecordAdvanceDenial, RelationalRecordAdvanceLimits,
     RelationalRecordAdvanceObservation,
 };
+pub use recorded_basis::{
+    ObservedRelationalMemoryComponent, RecordedRelationalCanonicalComponent,
+    RecordedRelationalComponentReference, RecordedRelationalComponentTarget,
+    RelationalRecordedComponentRefusal,
+};
+pub(crate) use reference::CheckpointComponentCellSource;
 mod reference_publication_cell;
 mod reference_state;
 mod registry;
+pub(crate) use registry::RelationalSourceRootSlot;
 mod root;
 mod root_checkpoint;
 mod root_partition_access;
 mod root_region;
 mod root_regions;
 pub(crate) use root::{
-    RelationalRootAllocationVisitor, RelationalRootAuthoritativeAllocationObservation,
-    RelationalRootRegionObservation,
+    retained_compilation_tree_bytes, RelationalBranchVisibilityCommitment,
+    RelationalOriginalRootCommitEvidence, RelationalRootAllocationVisitor,
+    RelationalRootAuthoritativeAllocationObservation, RelationalRootCommitEvidence,
+    RelationalRootRegionObservation, RetainedRelationalAspectPlans,
+    RetainedRelationalSchemaRegistry,
 };
 pub(crate) use root_regions::RelationalPartitionVisit;
 mod root_runtime_access;
@@ -67,11 +89,11 @@ pub use authority::{
     RelationalBranchPublicationAuthority, RelationalBranchPublicationAuthorityMarker,
     RelationalForkSourceAuthority, RelationalForkSourceAuthorityMarker,
 };
-pub(crate) use basis::AdmittedRelationalBranchBasisInner;
 pub use basis::{
     AdmittedRelationalBranchBasis, RelationalBranchBasisDescriptor, RelationalBranchBasisPosture,
     ResolvedRelationalBasisDescriptor, RELATIONAL_BRANCH_BASIS_DESCRIPTOR_VERSION,
 };
+pub(crate) use basis::{AdmittedRelationalBranchBasisInner, CheckpointComponentDescriptorView};
 pub use basis_admission_identity::RelationalBranchBasisAdmissionIdentity;
 pub use basis_counters::RelationalBranchBasisCostCounters;
 pub use basis_denial::{RelationalBranchBasisDenial, RelationalBranchBasisMismatchAxis};
@@ -79,12 +101,13 @@ pub(crate) use basis_observation::{
     descriptor_for_cell, issue_admitted_relational_branch_basis_with_retention,
 };
 pub(crate) use basis_registry::{
-    RelationalBranchBasisRegistry, RelationalBranchBasisRegistryMetrics,
+    RelationalBasisRegistryRetirementCustody, RelationalBranchBasisRegistry,
+    RelationalBranchBasisRegistryMetrics,
 };
 pub(crate) use canonical_runtime_frame::{CANONICAL_RUNTIME_INSTANCE_ID, CANONICAL_TRANSACTION_ID};
 pub use coordination::RelationalBranchCoordinationCellId;
 pub(crate) use coordination::RelationalBranchCoordinationGuard;
-pub use fork::{RelationalForkDenial, RelationalForkOutcome};
+pub use fork::{RelationalAssociatedFork, RelationalForkDenial, RelationalForkOutcome};
 pub use fork_port::RelationalForkPort;
 pub use fork_source_basis::{AdmittedRelationalForkSourceBasis, RelationalForkSourceDescriptor};
 pub use identity::{RelationalBranchIdentity, RelationalBranchIdentityDenial};
@@ -104,8 +127,12 @@ pub use materialization::{
 };
 pub use owner_services::{
     RelationalBranchBasisPort, RelationalBranchLifecyclePort,
-    RelationalBranchTransactionAdmissionPort, RelationalMaterializationPort,
+    RelationalBranchTransactionAdmissionPort, RelationalCommitResultSnapshotCleanup,
+    RelationalCommitResultSnapshotCleanupDenial, RelationalCommitResultSnapshotCleanupPending,
+    RelationalCommitResultSnapshotCleanupProgress, RelationalCommitResultSnapshotRelease,
+    RelationalCommitResultSnapshotReleaseDenial, RelationalMaterializationPort,
     RelationalOwnerLifecycleObservation, RelationalOwnerServicePorts,
+    RelationalOwnerServiceRetirementDenial, RetiredRelationalOwnerServicePorts,
 };
 pub use reference::RelationalBranchCellDenial;
 pub use reference::{
@@ -121,7 +148,9 @@ pub(crate) use reference_publication_cell::RelationalBranchPublicationStateGuard
 pub use reference_state::RelationalBranchReferenceState;
 pub use registry::RelationalForkTargetReservation;
 pub(crate) use registry::{
-    RelationalBranchReferenceRegistry, RelationalForkTargetReservationDenial,
+    CheckpointBranchMetadata, CheckpointBranchMetadataCaptureDenial,
+    CheckpointBranchMetadataFields, RelationalBranchReferenceRegistry,
+    RelationalForkTargetReservationDenial,
 };
 pub use root::RelationalRootCorrectnessIndex;
 pub(crate) use root::{
@@ -132,18 +161,19 @@ pub(crate) use root::{
 pub(crate) use root_checkpoint::{RelationalBranchRootCheckpoint, RelationalRootRegionCheckpoint};
 pub(crate) use root_regions::{
     RelationalPersistentRegionAllocationKind, RelationalPersistentRegionSet,
+    RelationalRegionSourceWalk, RelationalRegionSourceWalkProgress,
 };
 pub(crate) use root_selection::SelectedRelationalBranchState;
 pub(crate) use sharing_cost_cell::RelationalBranchSharingCostCell;
 pub use target::{RelationalBranchRootDescriptor, RelationalBranchTarget};
 pub(crate) use transition::{
     LiveBranchTransitionStep, RelationalBranchTransitionDenial,
-    RelationalBranchTransitionDurableStep, ReplayedBranchTransitionDivergence,
-    ReplayedBranchTransitionStep,
+    RelationalBranchTransitionDurableStep, RelationalTransitionPublication,
+    ReplayedBranchTransitionDivergence, ReplayedBranchTransitionStep,
 };
 pub use transition::{
     PositionedBranchTransition, RelationalBranchTransition, RelationalBranchTransitionSequence,
-    RelationalBranchTransitionStop,
+    RelationalBranchTransitionStop, RelationalCommittedTransitionEvidence,
 };
 pub use version::RelationalBranchVersion;
 
@@ -156,5 +186,8 @@ mod basis_registry_scale_tests;
 
 mod symbol_read;
 pub(crate) use symbol_read::SymbolAdmittedRootRead;
+#[cfg(test)]
+#[path = "mod_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;
 
 pub(crate) use model_ownership::validate_candidate_ownership;

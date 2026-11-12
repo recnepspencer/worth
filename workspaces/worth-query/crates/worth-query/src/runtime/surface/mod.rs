@@ -158,3 +158,6 @@ pub use unified_inspection_result::WorthQueryUnifiedInspectionResult;
 pub use verified_assumption_set::{
     WorthQueryVerificationReadSetBreadth, WorthQueryVerifiedAssumptionSet,
 };
+#[cfg(test)]
+#[path = "mod_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;

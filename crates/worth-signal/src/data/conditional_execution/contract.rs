@@ -16,110 +16,13 @@ use lowering::{
     installed_output_equivalence_identity, lower_artifact_reuse, lower_comparator, lower_condition,
 };
 
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub enum SignalConditionalCondition {
-    Always,
-    AspectFilter(AspectMask),
-    DeltaThreshold(SignalDeltaThresholdContract),
-    OnDemand,
-    RuntimePredicate,
-    TemporalWake,
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum SignalThresholdValueFamily {
-    Integer,
-    Float32,
-    Float64,
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum SignalThresholdComparisonDomain {
-    AbsoluteDifference,
-    RelativeRatio,
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum SignalThresholdBoundary {
-    Inclusive,
-    Exclusive,
-}
-
-/// Signal-owned, lossless threshold meaning installed by the lowering owner.
-/// The runtime predicate identity remains opaque, while this contract retains
-/// the typed semantic parameters that identity is authorized to evaluate.
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct SignalDeltaThresholdContract {
-    threshold: worth_foundational::facade::AspectValue,
-    unit_identity: String,
-    value_family: SignalThresholdValueFamily,
-    comparison_domain: SignalThresholdComparisonDomain,
-    boundary: SignalThresholdBoundary,
-}
-
-impl SignalDeltaThresholdContract {
-    pub fn new(
-        threshold: worth_foundational::facade::AspectValue,
-        unit_identity: impl Into<String>,
-        value_family: SignalThresholdValueFamily,
-        comparison_domain: SignalThresholdComparisonDomain,
-        boundary: SignalThresholdBoundary,
-    ) -> Self {
-        Self {
-            threshold,
-            unit_identity: unit_identity.into(),
-            value_family,
-            comparison_domain,
-            boundary,
-        }
-    }
-
-    pub fn threshold(&self) -> &worth_foundational::facade::AspectValue {
-        &self.threshold
-    }
-
-    pub fn unit_identity(&self) -> &str {
-        &self.unit_identity
-    }
-
-    pub const fn value_family(&self) -> SignalThresholdValueFamily {
-        self.value_family
-    }
-
-    pub const fn comparison_domain(&self) -> SignalThresholdComparisonDomain {
-        self.comparison_domain
-    }
-
-    pub const fn boundary(&self) -> SignalThresholdBoundary {
-        self.boundary
-    }
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum SignalConditionalVersionComparator {
-    Exact,
-    Tolerance(u64),
-    OutputIdentity,
-    RuntimeResolved,
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum SignalConditionalArtifactReuse {
-    NotReusable,
-    DependencyAndOutputEquivalent,
-    OutputEquivalent,
-    RuntimeResolved,
-}
-
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct SignalConditionalContractDefinition {
-    pub condition: SignalConditionalCondition,
-    pub dependency_aspects: AspectMask,
-    pub trigger_aspects: AspectMask,
-    pub dependency_comparator: SignalConditionalVersionComparator,
-    pub output_comparator: SignalConditionalVersionComparator,
-    pub artifact_reuse: SignalConditionalArtifactReuse,
-}
+mod authored_definition;
+pub use authored_definition::{
+    SignalConditionalArtifactReuse, SignalConditionalCondition,
+    SignalConditionalContractDefinition, SignalConditionalVersionComparator,
+    SignalDeltaThresholdContract, SignalThresholdBoundary, SignalThresholdComparisonDomain,
+    SignalThresholdValueFamily,
+};
 
 #[derive(Debug, Clone)]
 pub enum SignalConditionalArtifactReusePolicy {
@@ -181,7 +84,7 @@ pub struct InstalledSignalConditionalContract {
     generation: u64,
     occurrence: u64,
     condition: EvaluationCondition,
-    semantic_condition: SignalConditionalCondition,
+    authored_definition: std::sync::Arc<SignalConditionalContractDefinition>,
     dependency_aspects: AspectMask,
     trigger_aspects: AspectMask,
     dependency_comparator: VersionComparatorPolicy,
@@ -227,8 +130,12 @@ impl InstalledSignalConditionalContract {
         &self.condition
     }
 
+    pub fn authored_definition(&self) -> &SignalConditionalContractDefinition {
+        &self.authored_definition
+    }
+
     pub fn semantic_condition(&self) -> &SignalConditionalCondition {
-        &self.semantic_condition
+        &self.authored_definition.condition
     }
 
     pub fn dependency_comparator(&self) -> &VersionComparatorPolicy {
@@ -327,3 +234,6 @@ impl SignalConditionalServiceContractBinding {
             && std::sync::Arc::ptr_eq(&self.authority, &contract.authority)
     }
 }
+#[cfg(test)]
+#[path = "contract_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;

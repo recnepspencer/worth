@@ -4,6 +4,7 @@ mod mirror_state;
 mod partition_edition;
 mod residency_demand;
 mod resident_target;
+mod source_retirement;
 use mirror_state::{CurrentMirror, MirrorRegion};
 pub(crate) use residency_demand::MirrorResidencyDemandBinding;
 pub(crate) use resident_target::ResidentMirrorTarget;

@@ -3,6 +3,7 @@ use crate::{
     PhysicalScenarioActorRole, PhysicalSimulationPlan, RecoveryOutcomeKind,
     RecoveryOutcomeObservation,
 };
+use worth_foundational::CanonicalDigestId;
 use worth_store_physical_isolation::{
     CheckpointInterlockEvidenceOrigin, CheckpointInterlockFoundationalEvidence,
 };
@@ -16,11 +17,11 @@ const FRESH_RUNTIME_RECOVERY_YIELDPOINT: &str = "fresh-runtime-replay-open";
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct PhysicalIsolationCheckpointPublicationRecoveryOutcomeLaneOutput {
-    pub(super) checkpoint_plan_identity: [u8; 32],
-    pub(super) checkpoint_schedule_identity: [u8; 32],
+    pub(super) checkpoint_plan_identity: CanonicalDigestId,
+    pub(super) checkpoint_schedule_identity: CanonicalDigestId,
     pub(super) checkpoint_origin: CheckpointInterlockEvidenceOrigin,
-    pub(super) recovery_plan_identity: [u8; 32],
-    pub(super) recovery_schedule_identity: [u8; 32],
+    pub(super) recovery_plan_identity: CanonicalDigestId,
+    pub(super) recovery_schedule_identity: CanonicalDigestId,
     pub(super) recovery_actor_step_index: usize,
     observation: RecoveryOutcomeObservation,
 }
@@ -57,7 +58,7 @@ impl PhysicalIsolationCheckpointPublicationRecoveryOutcomeLaneOutput {
         expected_origin: &CheckpointInterlockEvidenceOrigin,
         evidence: CheckpointInterlockFoundationalEvidence,
     ) -> Result<Self, ObservationDenial> {
-        if checkpoint_schedule.identity().digest_bytes() != &binding.schedule_identity {
+        if checkpoint_schedule.identity().digest_bytes() != binding.schedule_identity.bytes() {
             return Err(ObservationDenial::CheckpointPublicationLaneScheduleMismatch);
         }
         require_evidence_origin_matches(expected_origin, evidence.origin())?;
@@ -88,8 +89,12 @@ impl PhysicalIsolationCheckpointPublicationRecoveryOutcomeLaneOutput {
             checkpoint_plan_identity: binding.plan_identity,
             checkpoint_schedule_identity: binding.schedule_identity,
             checkpoint_origin: expected_origin.clone(),
-            recovery_plan_identity: *recovery.recovery_plan.identity().digest_bytes(),
-            recovery_schedule_identity: *recovery.recovery_schedule.identity().digest_bytes(),
+            recovery_plan_identity: CanonicalDigestId::new(
+                *recovery.recovery_plan.identity().digest_bytes(),
+            ),
+            recovery_schedule_identity: CanonicalDigestId::new(
+                *recovery.recovery_schedule.identity().digest_bytes(),
+            ),
             recovery_actor_step_index: recovery.recovery_actor_step_index,
             observation,
         })

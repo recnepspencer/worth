@@ -5,7 +5,7 @@ pub use worth_query_host::facade::{
     application_contribution::{
         WorthQueryApplicationContribution, WorthQueryApplicationContributionSetup,
     },
-    application_installation::{in_memory, WorthQueryInMemoryApplicationDenial},
+    application_installation::{in_memory, WorthQueryApplicationPreparationDenial},
     declaration::application_schema::*,
     primary_graph::{
         WorthQueryPrimaryGraphInstallationDenial, WorthQueryPrimaryGraphInstallationDenialKind,

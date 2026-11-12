@@ -1,4 +1,8 @@
 use std::sync::Arc;
+mod retained_retirement;
+mod retirement;
+pub(crate) use retained_retirement::RelationalRetainedObservationShares;
+pub(crate) use retirement::RelationalObservationRetirement;
 
 use crate::branch::{
     AdmittedRelationalBranchBasis, AdmittedRelationalBranchBasisInner,
@@ -17,6 +21,9 @@ pub struct RelationalBranchObservation {
 }
 
 impl AdmittedRelationalBranchBasis {
+    pub(crate) fn into_observation(self) -> RelationalBranchObservation {
+        RelationalBranchObservation { inner: self.inner }
+    }
     pub fn observation(&self) -> RelationalBranchObservation {
         RelationalBranchObservation {
             inner: Arc::clone(&self.inner),
@@ -86,7 +93,7 @@ impl RelationalBranchObservation {
     }
 
     pub fn commit_receipt(&self) -> Option<&crate::history::data::RelationalCommitReceipt> {
-        self.canonical_commit().map(|envelope| &envelope.commit)
+        self.inner.root.commit_receipt()
     }
 
     pub fn canonical_patch(

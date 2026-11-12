@@ -74,3 +74,6 @@ impl SignalEvaluationPartition {
         self.pending_unwind.take()
     }
 }
+#[cfg(test)]
+#[path = "unwind_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;

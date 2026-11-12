@@ -9,5 +9,5 @@ pub use artifacts::{
     RelationalDiagnosticsEntry, RelationalDiagnosticsFacade,
 };
 pub use diagnostic_value_terms::aspect_shape_diagnostic_value;
-pub use fields::{RelationalDiagnosticFields, RelationalDiagnosticValue};
+pub use fields::{DiagnosticObjectFields, RelationalDiagnosticFields, RelationalDiagnosticValue};
 pub use profiles::RelationalDiagnosticsProfile;

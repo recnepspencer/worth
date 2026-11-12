@@ -1,8 +1,7 @@
 use super::super::{
     WorthQueryApplicationCommitDenial, WorthQueryApplicationCommitDenialStage,
-    WorthQueryApplicationCommitOutcome, WorthQueryApplicationCommitReceipt,
-    WorthQueryApplicationNoEffect, WorthQueryApplicationStaleAttempt,
-    WorthQueryPendingApplicationCommitReceipt,
+    WorthQueryApplicationCommitOutcome, WorthQueryApplicationNoEffect,
+    WorthQueryApplicationStaleAttempt, WorthQueryPendingApplicationCommitReceipt,
 };
 use crate::domain_computation::provider_session::WorthQueryMutationGraphWorkCompletion;
 
@@ -10,10 +9,13 @@ pub enum WorthQueryProviderProgressionOutcome {
     CoupledFailure(super::super::WorthQueryApplicationUncommitted),
     ProductStale(crate::domain_computation::WorthQueryProductStaleApplication),
     ProductUnpublished(crate::domain_computation::WorthQueryProductUnpublishedApplication),
+    ProductPreparationPending(crate::domain_computation::WorthQueryProductPreparationPending),
+    ProductPreparationRefused(crate::domain_computation::WorthQueryProductPreparationRefused),
+
     NoEffect(WorthQueryApplicationNoEffect),
     OutputAdopted(crate::domain_computation::primary_graph::output_lineage::executed_adoption::PendingExecutedOutputAdoption),
     Committed(WorthQueryPendingApplicationCommitReceipt),
-    AlreadyCommitted(WorthQueryApplicationCommitReceipt),
+    RecoveredCommitted(crate::domain_computation::primary_graph::provider::WorthQueryRecoveredApplicationCommitReceipt),
     Stale(WorthQueryApplicationStaleAttempt),
     Cancelled,
     TimedOut,
@@ -28,23 +30,40 @@ impl WorthQueryProviderProgressionOutcome {
         self,
         completion: WorthQueryMutationGraphWorkCompletion,
     ) -> Option<WorthQueryApplicationCommitOutcome> {
-        match self {
-            Self::OutputAdopted(adoption) => adoption
-                .complete(completion)
-                .map(WorthQueryApplicationCommitOutcome::OutputAdopted),
-            Self::Committed(receipt) => Some(WorthQueryApplicationCommitOutcome::Committed(
-                receipt.complete(completion)?,
-            )),
-            Self::AlreadyCommitted(receipt) => {
-                Some(WorthQueryApplicationCommitOutcome::AlreadyCommitted(
-                    receipt.with_retry_cleanup(completion)?,
-                ))
+        Some(match self {
+            Self::CoupledFailure(outcome) => outcome.into(),
+            Self::ProductStale(stale) => WorthQueryApplicationCommitOutcome::ProductStale(stale),
+            Self::ProductUnpublished(unpublished) => {
+                WorthQueryApplicationCommitOutcome::ProductUnpublished(unpublished)
             }
-            uncommitted => match uncommitted.into_uncommitted() {
-                Ok(outcome) => Some(outcome.into()),
-                Err(_) => unreachable!("performed cases were handled with their actual completion"),
-            },
-        }
+            Self::ProductPreparationPending(owner) => {
+                WorthQueryApplicationCommitOutcome::ProductPreparationPending(owner)
+            }
+            Self::ProductPreparationRefused(owner) => {
+                WorthQueryApplicationCommitOutcome::ProductPreparationRefused(owner)
+            }
+            Self::OutputAdopted(adoption) => {
+                return adoption
+                    .complete(completion)
+                    .map(WorthQueryApplicationCommitOutcome::OutputAdopted)
+            }
+            Self::NoEffect(no_effect) => WorthQueryApplicationCommitOutcome::NoEffect(no_effect),
+            Self::Committed(receipt) => {
+                WorthQueryApplicationCommitOutcome::Committed(receipt.complete(completion)?)
+            }
+            Self::RecoveredCommitted(receipt) => {
+                WorthQueryApplicationCommitOutcome::RecoveredCommitted(receipt)
+            }
+            Self::Stale(stale) => WorthQueryApplicationCommitOutcome::Stale(stale),
+            Self::Cancelled => WorthQueryApplicationCommitOutcome::Cancelled,
+            Self::TimedOut => WorthQueryApplicationCommitOutcome::TimedOut,
+            Self::Denied(denial) => WorthQueryApplicationCommitOutcome::Denied(denial),
+            Self::Aborted => WorthQueryApplicationCommitOutcome::Aborted,
+            Self::Deferred(deferred) => WorthQueryApplicationCommitOutcome::Deferred(deferred),
+            Self::Indeterminate(evidence) => {
+                WorthQueryApplicationCommitOutcome::Indeterminate(evidence)
+            }
+        })
     }
     /// Move unpublished business evidence without issuing graph-work completion.
     pub(in crate::domain_computation::primary_graph) fn into_uncommitted(
@@ -56,6 +75,8 @@ impl WorthQueryProviderProgressionOutcome {
             Self::ProductStale(stale) => Uncommitted::ProductStale(stale),
             Self::ProductUnpublished(value) => Uncommitted::ProductUnpublished(value),
             Self::NoEffect(value) => Uncommitted::NoEffect(value),
+            Self::ProductPreparationPending(value) => Uncommitted::ProductPreparationPending(value),
+            Self::ProductPreparationRefused(value) => Uncommitted::ProductPreparationRefused(value),
             Self::Stale(value) => Uncommitted::Stale(value),
             Self::Cancelled => Uncommitted::Cancelled,
             Self::TimedOut => Uncommitted::TimedOut,
@@ -65,7 +86,7 @@ impl WorthQueryProviderProgressionOutcome {
             Self::Indeterminate(value) => Uncommitted::Indeterminate(value),
             published @ (Self::OutputAdopted(_)
             | Self::Committed(_)
-            | Self::AlreadyCommitted(_)) => return Err(published),
+            | Self::RecoveredCommitted(_)) => return Err(published),
         })
     }
 }

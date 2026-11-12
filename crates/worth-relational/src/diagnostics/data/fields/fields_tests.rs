@@ -163,3 +163,138 @@ fn diagnostic_struct_value(value: &RelationalDiagnosticValue) -> Option<&StructA
         _ => None,
     }
 }
+
+#[test]
+fn diagnostic_object_wire_preserves_prior_map_in_named_compact_and_terminal_encodings() {
+    use std::collections::BTreeMap;
+    #[derive(serde::Serialize, serde::Deserialize)]
+    enum LegacyValue {
+        Null,
+        Bool(bool),
+        Unsigned(u64),
+        Signed(i64),
+        String(String),
+        CanonicalBytes(Vec<u8>),
+        Array(Vec<LegacyValue>),
+        Object(BTreeMap<String, LegacyValue>),
+    }
+    let old = LegacyValue::Object(BTreeMap::from([
+        (
+            "z-λ".into(),
+            LegacyValue::Array(vec![
+                LegacyValue::Null,
+                LegacyValue::Bool(true),
+                LegacyValue::Signed(-9),
+                LegacyValue::CanonicalBytes(vec![0, 255]),
+                LegacyValue::Object(BTreeMap::from([(
+                    "inner".into(),
+                    LegacyValue::String("value".into()),
+                )])),
+            ]),
+        ),
+        ("a".into(), LegacyValue::Unsigned(7)),
+    ]));
+    let value = RelationalDiagnosticValue::object([
+        (
+            "z-λ",
+            RelationalDiagnosticValue::array([
+                RelationalDiagnosticValue::Null,
+                RelationalDiagnosticValue::Bool(true),
+                RelationalDiagnosticValue::Signed(-9),
+                RelationalDiagnosticValue::CanonicalBytes(vec![0, 255]),
+                RelationalDiagnosticValue::object([(
+                    "inner",
+                    RelationalDiagnosticValue::string("value"),
+                )]),
+            ]),
+        ),
+        ("a", RelationalDiagnosticValue::Unsigned(7)),
+    ]);
+    let empty_old = LegacyValue::Object(BTreeMap::new());
+    let empty =
+        RelationalDiagnosticValue::object(std::iter::empty::<(&str, RelationalDiagnosticValue)>());
+    for (old, value) in [(old, value.clone()), (empty_old, empty)] {
+        let named = rmp_serde::to_vec_named(&old).unwrap();
+        let compact = rmp_serde::to_vec(&old).unwrap();
+        assert_eq!(rmp_serde::to_vec_named(&value).unwrap(), named);
+        assert_eq!(rmp_serde::to_vec(&value).unwrap(), compact);
+        for bytes in [named, compact] {
+            assert_eq!(
+                rmp_serde::from_slice::<RelationalDiagnosticValue>(&bytes).unwrap(),
+                value
+            );
+        }
+    }
+    let fields = RelationalDiagnosticFields::from(value);
+    assert_eq!(
+        serde_json::to_value(fields).unwrap(),
+        serde_json::json!({"a": 7, "z-λ": [null, true, -9, "00ff", {"inner": "value"}]})
+    );
+}
+
+#[test]
+fn diagnostic_object_map_decode_preserves_last_duplicate_value_and_sorted_keys() {
+    use serde::{ser::SerializeMap, Serialize, Serializer};
+    use std::collections::BTreeMap;
+    struct DuplicateMap;
+    impl Serialize for DuplicateMap {
+        fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
+            let mut map = serializer.serialize_map(Some(4))?;
+            for (key, value) in [("z", 1), ("a", 2), ("z", 3), ("a", 4)] {
+                map.serialize_entry(key, &RelationalDiagnosticValue::Unsigned(value))?;
+            }
+            map.end()
+        }
+    }
+    for bytes in [
+        rmp_serde::to_vec_named(&DuplicateMap).unwrap(),
+        rmp_serde::to_vec(&DuplicateMap).unwrap(),
+    ] {
+        let old: BTreeMap<String, RelationalDiagnosticValue> =
+            rmp_serde::from_slice(&bytes).unwrap();
+        let actual: super::DiagnosticObjectFields = rmp_serde::from_slice(&bytes).unwrap();
+        assert_eq!(
+            actual.iter().collect::<Vec<_>>(),
+            old.iter().collect::<Vec<_>>()
+        );
+        assert_eq!(
+            actual.keys().map(String::as_str).collect::<Vec<_>>(),
+            ["a", "z"]
+        );
+        assert_eq!(
+            actual.get("z"),
+            Some(&RelationalDiagnosticValue::Unsigned(3))
+        );
+    }
+}
+
+#[test]
+fn diagnostic_object_owned_construction_moves_first_key_and_last_value_and_clones_independently() {
+    use super::DiagnosticObjectFields;
+    use std::collections::BTreeMap;
+    let mut first = String::with_capacity(128);
+    first.push_str("duplicate");
+    let first_address = first.as_ptr();
+    let fields = DiagnosticObjectFields::from_iter([
+        ("z".into(), RelationalDiagnosticValue::Null),
+        (first, RelationalDiagnosticValue::Unsigned(1)),
+        (
+            "duplicate".into(),
+            RelationalDiagnosticValue::string("last"),
+        ),
+    ]);
+    assert_eq!(fields.keys().next().unwrap().as_ptr(), first_address);
+    assert_eq!(
+        fields.get("duplicate"),
+        Some(&RelationalDiagnosticValue::string("last"))
+    );
+    assert!(fields.get("missing").is_none());
+    let cloned = fields.clone();
+    assert_eq!(cloned, fields);
+    assert_ne!(cloned.keys().next().unwrap().as_ptr(), first_address);
+    let map = BTreeMap::from_iter(fields);
+    let map_key_address = map.keys().next().unwrap().as_ptr();
+    let moved = DiagnosticObjectFields::from(map);
+    assert_eq!(moved.keys().next().unwrap().as_ptr(), map_key_address);
+    assert_eq!(moved, cloned);
+}

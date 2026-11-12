@@ -147,6 +147,12 @@ impl WorthQueryExecutionRuntime {
         self.primary_graph.as_ref()
     }
 
+    pub(in crate::domain_computation) fn primary_graph_mut(
+        &mut self,
+    ) -> Option<&mut WorthQueryPrimaryGraph> {
+        self.primary_graph.as_mut()
+    }
+
     pub const fn application_query_resource_profile(
         &self,
     ) -> WorthQueryApplicationQueryResourceProfile {
@@ -222,3 +228,6 @@ pub enum WorthQueryExecutionInstallationCommitDenial {
 }
 
 mod court_doors_for_test;
+#[cfg(test)]
+#[path = "runtime_root_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;

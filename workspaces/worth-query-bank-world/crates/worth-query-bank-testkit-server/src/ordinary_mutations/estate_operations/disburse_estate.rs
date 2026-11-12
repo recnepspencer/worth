@@ -51,7 +51,7 @@ pub fn assert_equivalent_retry(
     fixture: &DisbursementFixture,
     specialist: &BankAuthenticatedPrincipal,
     key: &BankIdempotencyKey,
-    committed: &BankCommitReceipt,
+    committed: &bank_server::BankClosedSourceCompletion<bank_domain::schema::EstateMutationResult>,
 ) {
     let retry = {
         let closing_actor = specialist;
@@ -68,16 +68,20 @@ pub fn assert_equivalent_retry(
         };
         assert!(matches!(
             done.evidence(),
-            worth_query_host::facade::application_entry::WorthQuerySourceCompletion::Recovered { .. }
+            worth_query_host::facade::application_entry::WorthQuerySourceCompletion::Recorded { .. }
         ));
-        bank_server::BankCommitReceipt::from_closed_source(
+        bank_server::BankClosedSourceCompletion::from_query(
             done.close_with_evidence(&closing_request)
                 .unwrap_or_else(|(_, cause)| panic!("source close: {cause:?}")),
         )
     };
     let recovered = retry;
-    assert_eq!(committed.aftermath(), recovered.aftermath());
-    assert_admission_derives_the_request_identities_once(&recovered);
+    super::external_effect_dispatch::publication_assertions::assert_recovered_commit_axes(
+        committed, &recovered,
+    );
+    assert_admission_derives_the_request_identities_once(
+        committed.live_receipt().expect("original live evidence"),
+    );
 }
 
 pub fn assert_authoritative_activity(fixture: &DisbursementFixture) {

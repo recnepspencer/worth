@@ -67,7 +67,7 @@ where
         self.validate_derived_artifact_demand::<Connection, Demand>()?;
         Ok(self
             .backing
-            .runtime
+            .runtime()
             .output_demand_resource_profile()
             .constrain(limits))
     }

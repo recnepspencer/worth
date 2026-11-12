@@ -152,7 +152,7 @@ impl ValidatedRelationalProposal {
                 },
             );
         }
-        let plan = self.prepared.plan.view();
+        let plan = self.state.prepared.plan.view();
         let validated_intents = &plan.commands().merged_intents;
         let mut targets = Vec::new();
         let mut work = ValidatedMutationFootprintWork::default();

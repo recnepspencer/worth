@@ -86,6 +86,8 @@ where
     }
     let extension = WorthQueryCommitExtension {
         envelope: None,
+        transport_intent: request.transport_intent,
+        transport_key: request.transport_key,
         source: pending_source
             .as_ref()
             .map(|pending| pending.bound_source()),

@@ -242,7 +242,7 @@ fn ordinary_mutation_preserves_leased_backing_typed_refusals_and_replay_before_a
         .into_parts();
     let replayed_commit = match replay.expect("recorded retry precedes physical admission") {
         Outcome::AlreadyCommitted(replayed) => replayed.commit_reference().commit_id,
-        Outcome::PreviouslyCommitted(replayed) => replayed.commit_id(),
+        Outcome::RecoveredCommitted(replayed) => replayed.commit_reference().commit_id,
         _ => panic!("retry must report the original recorded commit"),
     };
     assert_eq!(replayed_commit, receipt.commit_reference().commit_id);

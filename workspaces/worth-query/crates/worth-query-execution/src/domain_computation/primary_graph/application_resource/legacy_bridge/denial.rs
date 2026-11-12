@@ -7,6 +7,9 @@ use worth_runtime_bridge::facade::{
 /// Existing diagnostic audience; cloning this denial never clones custody.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum WorthQueryOwnedAsyncRuntimeDenial {
+    StaleIncarnation,
+    OwnerUnavailable,
+    DurablePublicationRequired,
     ForeignRuntime,
     SuccessorRuntime,
     ProductSelectionMismatch,

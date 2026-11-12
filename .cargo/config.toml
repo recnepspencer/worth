@@ -34,8 +34,10 @@ rustflags = [
 linker = "scripts/macos_linker"
 
 # Keep the compiler's safety/windowing flags above when choosing LLVM's linker.
+# The wrapper forwards to rust-lld unchanged and raises every PDB's page size,
+# so a large test binary's debug information can exceed 4 GiB.
 [target.x86_64-pc-windows-msvc]
-linker = "rust-lld"
+linker = "scripts/windows_linker.cmd"
 
 [alias]
 inner = "nextest run --lib --no-fail-fast --locked"

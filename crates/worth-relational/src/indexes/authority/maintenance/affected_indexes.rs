@@ -5,7 +5,7 @@ use crate::indexes::data::{DerivedIndexId, DerivedIndexMaintenanceDenialKind as 
 use std::collections::BTreeSet;
 
 pub(super) fn select(
-    indexes: &crate::runtime::IndexingSubsystem,
+    routes: &crate::indexes::data::InstalledIndexRouting,
     change: &crate::storage::substrate::maintenance::CommitChange,
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     changes: &ChangedRecords,
@@ -13,12 +13,6 @@ pub(super) fn select(
     after: &IndexRootView,
     work: &mut MaintenanceWork,
 ) -> Result<BTreeSet<DerivedIndexId>, Denial> {
-    let schema = after.root().schema_authority().authority_digest();
-    let routes = indexes
-        .definition_read_binding()
-        .snapshot()
-        .routing(schema)
-        .ok_or(Denial::ColdReconstructionRequired)?;
     if let Some(touches) = change.touches() {
         use crate::history::data::RelationalDescriptiveTouch as Touch;
         let mut indexes = BTreeSet::new();

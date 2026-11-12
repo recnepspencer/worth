@@ -19,6 +19,7 @@ pub fn application_checkpoint_restores_fresh_editable_authority(
             clock_control,
             contacts,
             install_route: true,
+            definition_only: false,
         },),
         ApplicationBuildIdentity::parse("11111111-1111-1111-1111-111111111111").unwrap(),
         checkpoint_limits(),
@@ -57,7 +58,7 @@ pub fn application_checkpoint_restores_fresh_editable_authority(
     let (installation_predicate, _) = Predicate::controlled(restored_contacts.clone());
     let (definition_predicate, _) = Predicate::controlled(restored_contacts.clone());
     let (clock_source, clock_control) = ClockSource::due();
-    let restored = application_installation::in_memory_program_from_checkpoint(
+    let restored = application_installation::WorthQueryInterimCheckpointRestore::program(
         validated_program(),
         TemporalHostSchema::declaration().unwrap(),
         (TemporalContributionConfiguration {
@@ -67,6 +68,7 @@ pub fn application_checkpoint_restores_fresh_editable_authority(
             clock_control,
             contacts: restored_contacts,
             install_route: true,
+            definition_only: false,
         },),
         ApplicationBuildIdentity::parse("11111111-1111-1111-1111-111111111111").unwrap(),
         checkpoint_limits(),
@@ -80,7 +82,9 @@ pub fn application_checkpoint_restores_fresh_editable_authority(
         restore_work.native_bytes_read,
         Some(sections.native_bytes())
     );
-    assert!(restore_work.native_envelopes_readmitted.unwrap_or_default() > 0);
+    assert_eq!(restore_work.native_envelopes_readmitted, Some(0));
+    assert!(sections.native_admission_bytes() > 0);
+    assert!(sections.world_original_bytes() > 0);
     assert!(restore_work.root_images_verified > 0);
     assert!(restore_work.branch_cells_readmitted > 0);
     assert_eq!(
@@ -194,6 +198,7 @@ pub fn application_checkpoint_denies_corrupt_incompatible_and_forged_bytes() {
             clock_control,
             contacts,
             install_route: true,
+            definition_only: false,
         },),
         ApplicationBuildIdentity::parse("11111111-1111-1111-1111-111111111111").unwrap(),
         checkpoint_limits(),
@@ -259,14 +264,14 @@ pub fn application_checkpoint_denies_corrupt_incompatible_and_forged_bytes() {
         ),
         (
             forged_commit,
-            Kind::CheckpointRecoveryRejected,
-            "omitted its claimed bootstrap commit",
+            Kind::InterimCheckpointCaptureOriginMissing,
+            "requires its actual capture origin",
         ),
         (
             unsupported_version,
             Kind::UnsupportedCheckpointFormat {
                 observed: u16::MAX,
-                supported: 13,
+                supported: 14,
             },
             "format 65535 is unsupported",
         ),
@@ -301,7 +306,7 @@ pub fn checkpoint_bytes_are_denied(
     let (installation_predicate, _) = Predicate::controlled(contacts.clone());
     let (definition_predicate, _) = Predicate::controlled(contacts.clone());
     let (clock_source, clock_control) = ClockSource::due();
-    let denial = match application_installation::in_memory_program_from_checkpoint(
+    let denial = match application_installation::WorthQueryInterimCheckpointRestore::program(
         validated_program(),
         TemporalHostSchema::declaration().unwrap(),
         (TemporalContributionConfiguration {
@@ -311,6 +316,7 @@ pub fn checkpoint_bytes_are_denied(
             clock_control,
             contacts,
             install_route: true,
+            definition_only: false,
         },),
         ApplicationBuildIdentity::parse("11111111-1111-1111-1111-111111111111").unwrap(),
         checkpoint_limits(),
@@ -319,7 +325,7 @@ pub fn checkpoint_bytes_are_denied(
         Err(denial) => denial,
         Ok(_) => panic!("corrupt checkpoint bytes cannot publish an application"),
     };
-    let application_installation::WorthQueryInMemoryApplicationDenial::Graph(denial) = denial
+    let application_installation::WorthQueryApplicationPreparationDenial::Graph(denial) = denial
     else {
         panic!("corrupt checkpoint must be denied during graph recovery: {denial:?}")
     };
@@ -328,8 +334,8 @@ pub fn checkpoint_bytes_are_denied(
     assert_eq!(observed_contacts.snapshot(), (0, 0, 0, 0));
 }
 
-pub fn checkpoint_limits() -> WorthQueryInMemoryApplicationLimits {
-    WorthQueryInMemoryApplicationLimits::new(
+pub fn checkpoint_limits() -> WorthQueryApplicationLimits {
+    WorthQueryApplicationLimits::new(
         product_world_resources(1_024),
         runtime::WorthQueryApplicationQueryResourceProfile::new(
             std::num::NonZeroUsize::new(128).expect("concurrent graph work is non-zero"),

@@ -221,7 +221,7 @@ fn active_custody_identity_repair_settles_only_the_recorded_relational_commit() 
     let mut custody = register_attempt(attempt);
     let performed = match owner
         .state
-        .relational
+        .relational_services()
         .publication_port()
         .compare_and_publish(execution, candidate)
     {
@@ -281,21 +281,21 @@ fn active_custody_identity_repair_settles_only_the_recorded_relational_commit() 
 }
 
 #[test]
-fn active_custody_close_counts_reserved_history_before_any_inspection() {
+fn active_custody_close_refuses_reserved_history_before_any_inspection() {
     let (_fixture, owner, expected) = setup();
     let custody = register_settlement(settled(execute_with_empty_signal(
         &owner,
         prepare_signal(&owner, &expected, None),
     )));
     drop(custody);
-    let report = owner
-        .close()
-        .expect("complete abandonment releases close admission");
-    let rows = report.retained_records();
-    assert_eq!(rows.len(), 1);
-    assert_eq!(rows[0].cause(), ProductUnpublishedCause::CallerAbandoned);
-    assert_eq!(rows[0].live_component_obligations(), 2);
-    assert_eq!(rows[0].live_composite_obligations(), 2);
+    assert_eq!(
+        owner
+            .close(&worth_execution::ExecutionRequest::serial(
+                &crate::test_execution_policy::serial_request()
+            ))
+            .unwrap_err(),
+        crate::lifecycle::RuntimeWorldCloseDenial::UnresolvedBusinessCustody
+    );
     assert_eq!(owner.state.history.reserved_len(), 1);
     let handle = owner.recovery_handles().pop().unwrap();
     assert!(owner.cleanup_recovery_handle(&handle).is_some());

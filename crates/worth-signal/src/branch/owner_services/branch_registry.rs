@@ -1,3 +1,4 @@
+mod initial_empty_stop;
 use std::collections::BTreeMap;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex, MutexGuard};
@@ -313,3 +314,6 @@ impl From<SignalOwnerAdmissionMismatch> for SignalBranchRegistryDenial {
 
 #[cfg(test)]
 use super::branch_execution_cell::SignalBranchCellAdmissionDenial;
+#[cfg(test)]
+#[path = "branch_registry_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;

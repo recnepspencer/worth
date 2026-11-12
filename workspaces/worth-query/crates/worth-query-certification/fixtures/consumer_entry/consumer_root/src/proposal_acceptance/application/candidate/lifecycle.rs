@@ -77,7 +77,8 @@ impl<'host> Staging<'host> {
         for evidence in &mut self.completed {
             match evidence {
                 WorthQuerySourceCompletion::Fresh { retained, .. }
-                | WorthQuerySourceCompletion::Recovered { retained, .. } => {
+                | WorthQuerySourceCompletion::Recovered { retained, .. }
+                | WorthQuerySourceCompletion::Recorded { retained, .. } => {
                     drop(retained.take());
                 }
             }

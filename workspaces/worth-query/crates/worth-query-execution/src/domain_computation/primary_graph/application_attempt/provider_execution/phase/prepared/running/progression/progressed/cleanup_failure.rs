@@ -4,20 +4,36 @@ use crate::domain_computation::primary_graph::application_attempt::provider_exec
     recovery_evidence::unknown_commit_recovery_evidence,
 };
 use crate::domain_computation::primary_graph::{
-    WorthQueryApplicationCommitDenialKind as Kind, WorthQueryApplicationUncommitted as Outcome,
+    WorthQueryApplicationCommitDenialKind as Kind, WorthQueryApplicationCommitOutcome as Outcome,
 };
 use crate::domain_computation::{
     WorthQueryProviderSessionDenialKind as Session, WorthQueryProviderSessionFailure,
     WorthQueryProviderSessionProtocolStage,
 };
 
-pub(super) fn cleanup_failed_outcome(outcome: Progression) -> Outcome {
-    match outcome {
-        Progression::CoupledFailure(outcome) => outcome,
+pub(super) fn cleanup_failed_outcome(outcome: Progression, receiver: &crate::domain_computation::primary_graph::provider::OriginalCompletionReceiver) -> (
+    Outcome, Option<crate::domain_computation::primary_graph::application_attempt::RetainedOriginalCleanupCommit>,
+){
+    let evidence = match outcome {
+        Progression::CoupledFailure(outcome) => outcome.into(),
+        Progression::Committed(original) => {
+            let retained = receiver.retain_cleanup(original);
+            return (cleanup_indeterminate(), Some(retained));
+        }
+        Progression::RecoveredCommitted(receipt) => Outcome::RecoveredCommitted(receipt),
+        Progression::ProductPreparationPending(owner) => Outcome::ProductPreparationPending(owner),
+        Progression::ProductPreparationRefused(owner) => Outcome::ProductPreparationRefused(owner),
         Progression::ProductUnpublished(unpublished) => Outcome::ProductUnpublished(unpublished),
         Progression::ProductStale(stale) => Outcome::ProductStale(stale),
         Progression::NoEffect(no_effect) => Outcome::NoEffect(no_effect),
         Progression::Denied(denial) => match denial.kind() {
+            Kind::OriginalEffectReleased => Outcome::Denied(denial),
+            Kind::IdempotencyPreparationBusy => {
+                let Outcome::Indeterminate(evidence) = cleanup_indeterminate() else {
+                    unreachable!()
+                };
+                Outcome::Indeterminate(evidence.with_preparation_busy())
+            }
             Kind::Content(cause) => cleanup_execution_indeterminate(Ok(Session::Content(cause))),
             Kind::ContentInconsistency => {
                 cleanup_execution_indeterminate(Ok(Session::ContentInconsistency))
@@ -69,8 +85,8 @@ pub(super) fn cleanup_failed_outcome(outcome: Progression) -> Outcome {
             | Kind::CandidateIdentityExhausted
             | Kind::IndexMaintenanceBudgetExceeded
             | Kind::IndexGenerationIdentityExhausted
+            | Kind::IdempotencyForeignAffinity
             | Kind::IdempotencyIntentDrift
-            | Kind::IdempotencyReceiptNotRetained { .. }
             | Kind::IdempotencyIntentUnverifiable
             | Kind::MutationBindingMismatch
             | Kind::MutationInputMismatch
@@ -97,6 +113,7 @@ pub(super) fn cleanup_failed_outcome(outcome: Progression) -> Outcome {
             | Kind::ProgramNotActiveOnOccurrence { .. }
             | Kind::ProgramSupportRetired
             | Kind::ProgramActivationUnresolved
+            | Kind::StaleIncarnation
             | Kind::CorrectionContextMismatch
             | Kind::CorrectionIdentityMismatch => cleanup_indeterminate(),
         },
@@ -110,12 +127,11 @@ pub(super) fn cleanup_failed_outcome(outcome: Progression) -> Outcome {
             crate::domain_computation::WorthQueryProviderSessionControlStopKind::TimedOut,
         )),
         Progression::OutputAdopted(_)
-        | Progression::Committed(_)
-        | Progression::AlreadyCommitted(_)
         | Progression::Stale(_)
         | Progression::Aborted
         | Progression::Deferred(_) => cleanup_indeterminate(),
-    }
+    };
+    (evidence, None)
 }
 
 // The existing unresolved evidence already holds a provider-session kind.

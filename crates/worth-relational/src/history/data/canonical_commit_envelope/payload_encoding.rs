@@ -1,87 +1,119 @@
-//! Canonical payload v3 references admitted schema by digest. Transitions carry material.
-use super::CanonicalCommitEnvelope;
+//! The single v4 tuple projection of complete Original owner truth.
+use super::{CanonicalCommitEnvelope, CanonicalCommitEnvelopeBody};
+
+const ORIGINAL_ROOT_PAYLOAD_DOMAIN: &str = "worth.relational.original-root.v4";
+
 impl CanonicalCommitEnvelope {
-    pub(super) fn write_authoritative_payload<W: std::io::Write>(
+    #[cfg(test)]
+    pub(crate) fn encode_authoritative_payload(&self) -> Result<Vec<u8>, rmp_serde::encode::Error> {
+        let mut bytes = Vec::new();
+        self.write_authoritative_payload(&mut bytes)?;
+        Ok(bytes)
+    }
+
+    /// Emit the same complete tuple used by Original root ownership and visibility.
+    /// Carried schema identity is ordinary; transitions additionally retain material.
+    pub(crate) fn write_authoritative_payload<W: std::io::Write>(
         &self,
         writer: &mut W,
     ) -> Result<(), rmp_serde::encode::Error> {
+        let CanonicalCommitEnvelopeBody {
+            content,
+            index_definition_delta,
+            caller_association,
+            required_output_codec_retirements,
+            required_output_origin,
+            producer_cascade_retirement,
+            authored_cascade_retirement,
+            authored_cascade_restoration,
+            coupled_authored_publication,
+            historical_output_selection,
+            required_output_materialization,
+            authored_index_writes,
+            commit,
+            branch_context,
+            branch_cell_checkpoint,
+            authority_kind,
+            strategy_artifacts,
+            merge_execution_authority,
+            merge_parent_branches,
+            merge_base_commits,
+            schema_version,
+            schema_authority,
+            merged_plan,
+            symbol_texts,
+            revision_symbol_references,
+            record_allocations,
+            patch,
+            descriptive_touches,
+            diagnostics_summary,
+            lineage,
+            derived_index_artifacts: _,
+            schema_transition,
+            schema_continuation_descriptor,
+            schema_reconciliation_descriptor,
+            descriptor_semantics_version,
+        } = &self.body;
         let identity_and_authority = (
-            &self.commit,
-            &self.branch_context,
-            &self.branch_cell_checkpoint,
-            &self.authority_kind,
-            &self.strategy_artifacts,
-            &self.merge_execution_authority,
-            &self.merge_parent_branches,
-            &self.merge_base_commits,
+            commit,
+            branch_context,
+            branch_cell_checkpoint,
+            authority_kind,
+            strategy_artifacts,
+            merge_execution_authority,
+            merge_parent_branches,
+            merge_base_commits,
+            index_definition_delta,
+            caller_association,
         );
-        let canonical_semantics = (
-            &self.required_output_origin,
-            &self.authored_cascade_retirement,
-            &self.authored_cascade_restoration,
-            &self.required_output_materialization,
-            &self.schema_version,
-            &(
-                self.schema_authority.digest(),
-                self.schema_transition
-                    .as_ref()
-                    .map(|_| &self.schema_authority),
+        let publications = (
+            required_output_codec_retirements,
+            required_output_origin,
+            producer_cascade_retirement,
+            authored_cascade_retirement,
+            authored_cascade_restoration,
+            coupled_authored_publication,
+            historical_output_selection,
+            required_output_materialization,
+            authored_index_writes,
+        );
+        let schema = (
+            schema_version,
+            (
+                worth_foundational::facade::CanonicalDigestId::new(schema_authority.digest()),
+                schema_transition.as_ref().map(|_| schema_authority),
             ),
-            &self.merged_plan,
-            &self.record_allocations,
-            &self.patch,
-            &self.descriptive_touches,
-            &self.lineage,
-            &self.schema_transition,
-            &self.schema_continuation_descriptor,
-            &self.schema_reconciliation_descriptor,
-            &self.descriptor_semantics_version,
+            schema_transition,
+            schema_continuation_descriptor,
+            schema_reconciliation_descriptor,
+            descriptor_semantics_version,
         );
-        if let Some(selection) = &self.historical_output_selection {
-            return rmp_serde::encode::write_named(
-                writer,
-                &(
-                    identity_and_authority,
-                    canonical_semantics,
-                    &self.authored_index_writes,
-                    selection,
-                ),
-            );
-        }
-        if let Some(group) = &self.coupled_authored_publication {
-            return rmp_serde::encode::write_named(
-                writer,
-                &(
-                    identity_and_authority,
-                    canonical_semantics,
-                    &self.authored_index_writes,
-                    group,
-                ),
-            );
-        }
-        if let Some(event) = &self.producer_cascade_retirement {
-            return rmp_serde::encode::write_named(
-                writer,
-                &(
-                    identity_and_authority,
-                    canonical_semantics,
-                    &self.authored_index_writes,
-                    event,
-                ),
-            );
-        }
-        if self.authored_index_writes.is_unavailable() {
-            rmp_serde::encode::write_named(writer, &(identity_and_authority, canonical_semantics))
-        } else {
-            rmp_serde::encode::write_named(
-                writer,
-                &(
-                    identity_and_authority,
-                    canonical_semantics,
-                    &self.authored_index_writes,
-                ),
-            )
-        }
+        let records = (
+            content,
+            merged_plan,
+            symbol_texts,
+            revision_symbol_references,
+            record_allocations,
+            patch,
+            descriptive_touches,
+            lineage,
+            (
+                diagnostics_summary.scope,
+                diagnostics_summary.kind,
+                diagnostics_summary.determinism,
+            ),
+        );
+        rmp_serde::encode::write_named(
+            writer,
+            &(
+                ORIGINAL_ROOT_PAYLOAD_DOMAIN,
+                identity_and_authority,
+                publications,
+                schema,
+                records,
+                self.semantic_result(),
+            ),
+        )
     }
 }
 

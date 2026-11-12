@@ -1,5 +1,5 @@
 //! HTTP projection of the managed receiver's original owned denial.
-mod native_source;
+pub(super) mod native_source;
 use super::*;
 pub(super) fn managed_index(
     cause: &worth_query_host::facade::primary_graph::WorthQueryManagedIndexDenial,
@@ -38,11 +38,14 @@ pub(super) fn managed_index(
     }
 }
 
-fn source(
+pub(super) fn source(
     cause: &worth_query_host::facade::primary_graph::WorthQuerySourceExpectationDenial,
 ) -> BankHttpDenial {
     use worth_query_host::facade::admission::authenticated_principal::WorthQueryRequestInterruption;
 
+    if let Some(authorization) = cause.authorization_denial() {
+        return authorization_denial(authorization.kind().into());
+    }
     if let Some(stop) = cause.retention_interruption() {
         return match stop {
             WorthQueryRequestInterruption::Cancelled => cancelled(),
@@ -58,7 +61,7 @@ fn source(
     }
 }
 
-fn allocation(
+pub(super) fn allocation(
     cause: &worth_query_host::facade::runtime::ExecutionAllocationDenial,
 ) -> BankHttpDenial {
     match cause.classify() {
@@ -81,21 +84,6 @@ pub(in crate::http::server) fn work(
         runtime::ExecutionRequestArrayDenial as Storage,
     };
     match cause {
-        Work::Controlled(Stop::Projection(cause)) => {
-            use worth_query_host::facade::primary_graph::WorthQueryApplicationProjectionDenialKind as Projection;
-            match cause.kind() {
-                Projection::ValueDecode(cause) => value_decode(cause),
-                Projection::DomainProjectionRejected => permission_denied(),
-                Projection::FieldNotProjected
-                | Projection::FieldContractMismatch
-                | Projection::FieldTypeMismatch
-                | Projection::FieldOmitted
-                | Projection::RelationNotProjected
-                | Projection::RelationContractMismatch
-                | Projection::RelationCardinalityMismatch
-                | Projection::RelationOmitted => internal_denied(),
-            }
-        }
         Work::Controlled(Stop::Content(cause)) => {
             crate::http::server::relational_execution_denial::content(*cause)
         }
@@ -103,14 +91,6 @@ pub(in crate::http::server) fn work(
             crate::http::server::relational_execution_denial::denial(*cause)
         }
         Work::Controlled(Stop::NativeSource(cause)) => native_source::walk(*cause),
-        Work::Controlled(Stop::OrderedStorage(cause)) => {
-            use worth_query_host::facade::runtime::ExecutionOrderedMapDenial as Ordered;
-            match cause {
-                Ordered::Request(cause) => crate::http::server::advancement_denial::request(*cause),
-                Ordered::Allocation(cause) => allocation(cause),
-                Ordered::CapacityOverflow => internal_denied(),
-            }
-        }
         Work::Controlled(
             Stop::IncrementalUnavailable
             | Stop::SourceStructureUnavailable
@@ -135,6 +115,10 @@ pub(in crate::http::server) fn work(
             crate::http::server::advancement_denial::request(*stop)
         }
         Work::Controlled(Stop::Storage(Storage::Allocation(cause))) => allocation(cause),
+        Work::Controlled(Stop::OrderedStorage(cause)) => ordered_storage(cause),
+        Work::Controlled(Stop::Projection(cause)) => {
+            projection(bank_server::BankApplicationProjectionDenialKind::from_query(cause.kind()))
+        }
         Work::Controlled(Stop::ValueDecode(cause)) => value_decode(*cause),
         Work::Controlled(Stop::NodeCapacityExceeded) => exhausted(),
         Work::Controlled(
@@ -146,6 +130,41 @@ pub(in crate::http::server) fn work(
             | Stop::CapacityOverflow,
         ) => internal_denied(),
         Work::Provider(_) => unavailable(),
+    }
+}
+
+fn ordered_storage(
+    cause: &worth_query_host::facade::runtime::ExecutionOrderedMapDenial,
+) -> BankHttpDenial {
+    use worth_query_host::facade::runtime::ExecutionOrderedMapDenial as Denial;
+    match cause {
+        Denial::Request(cause) => crate::http::server::advancement_denial::request(*cause),
+        Denial::Allocation(cause) => allocation(cause),
+        Denial::CapacityOverflow => internal_denied(),
+    }
+}
+pub(super) fn native_admission(
+    cause: &worth_query_host::facade::primary_graph::CompanionPreflightStop,
+) -> BankHttpDenial {
+    use worth_query_host::facade::primary_graph::{
+        CompanionPreflightStop as Denial, RelationalOperationInterruption as Stop,
+    };
+    match cause {
+        Denial::Execution(cause) => {
+            crate::http::server::relational_execution_denial::denial(*cause)
+        }
+        Denial::Interrupted(cause) => match cause.interruption() {
+            Stop::Cancelled => cancelled(),
+            Stop::TimedOut => deadline(),
+        },
+        Denial::ManagedSourceChanged
+        | Denial::SelectedSourceMismatch
+        | Denial::SelectedPositionUnavailable { .. }
+        | Denial::RegistrationChanged => stale(),
+        Denial::ManagedSourceNotPrepared | Denial::TopologyPending => unavailable(),
+        Denial::ForeignCell
+        | Denial::WorkCounterOverflow
+        | Denial::PreparationMemoryCounterOverflow => internal_denied(),
     }
 }
 
@@ -165,6 +184,43 @@ mod tests {
             (MapKernelStop::DeadlineElapsed, Kind::DeadlineExceeded),
         ] {
             let cause = Work::Controlled(Stop::Request(WorkCeilingDenial::Stopped(stop)));
+            assert_eq!(work(&cause), BankHttpDenial::new(expected, Next::Retry));
+        }
+    }
+    #[test]
+    fn native_source_work_and_access_failures_keep_distinct_instructions() {
+        use worth_query_host::facade::primary_graph::{
+            StructuralReadError as Read, StructuralWalkDenialKind as Native,
+        };
+        for (cause, expected) in [
+            (
+                Read::WorkBudgetExceeded,
+                BankHttpDenial::new(Kind::ResourceExhausted, Next::NarrowRequest),
+            ),
+            (
+                Read::OutsideDeclaredAccess,
+                BankHttpDenial::new(Kind::InternalDenied, Next::None),
+            ),
+            (
+                Read::RecordUnavailable,
+                BankHttpDenial::new(Kind::Unavailable, Next::Retry),
+            ),
+        ] {
+            let cause = Work::Controlled(Stop::NativeSource(Native::Read(cause)));
+            assert_eq!(work(&cause), expected);
+        }
+    }
+    #[test]
+    fn native_managed_callback_interruptions_keep_their_http_action() {
+        use worth_query_host::facade::{
+            application_invariants::CustomInvariantInterruption as Interruption,
+            primary_graph::StructuralWalkDenialKind as Native,
+        };
+        for (stop, expected) in [
+            (Interruption::Cancelled, Kind::Cancelled),
+            (Interruption::DeadlineElapsed, Kind::DeadlineExceeded),
+        ] {
+            let cause = Work::Controlled(Stop::NativeSource(Native::Interrupted(stop)));
             assert_eq!(work(&cause), BankHttpDenial::new(expected, Next::Retry));
         }
     }

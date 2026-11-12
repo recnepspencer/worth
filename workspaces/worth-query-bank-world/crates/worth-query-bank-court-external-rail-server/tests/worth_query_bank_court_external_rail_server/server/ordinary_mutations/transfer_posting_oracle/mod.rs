@@ -189,7 +189,7 @@ fn public_transfer_posts_thirty_once_from_one_hundred_to_zero() {
     };
     assert!(matches!(
         replay.evidence(),
-        worth_query_host::facade::application_entry::WorthQuerySourceCompletion::Recovered { .. }
+        worth_query_host::facade::application_entry::WorthQuerySourceCompletion::Recorded { .. }
     ));
     assert!(replay.close(&request).is_ok());
     let worth_query_host::facade::application_entry::WorthQuerySourceOnlyAdvance::Terminal(drift) =

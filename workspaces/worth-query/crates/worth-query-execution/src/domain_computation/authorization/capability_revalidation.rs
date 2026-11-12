@@ -214,7 +214,7 @@ where
             })?;
         let observed = graph
             .integration_handle()
-            .with_runtime_mut(execution, |runtime| {
+            .with_runtime(execution, |runtime| {
                 let snapshot = security.snapshot_handle();
 
                 self.runtime
@@ -333,7 +333,7 @@ where
             })?;
         graph
             .integration_handle()
-            .with_runtime_mut(execution, |runtime| {
+            .with_runtime(execution, |runtime| {
                 let snapshot = security.snapshot_handle();
 
                 WorthQueryCapabilityRevalidationObservation::new(

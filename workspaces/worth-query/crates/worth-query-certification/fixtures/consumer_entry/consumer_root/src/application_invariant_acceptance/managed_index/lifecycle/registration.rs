@@ -1,5 +1,7 @@
 //! Real registrations grow beside a fixed public query and fixed World/Native data.
 use super::*;
+use crate::application_invariant_acceptance::managed_index::prefix_alias_input;
+use crate::application_invariant_acceptance::managed_index::prefix_observation;
 use worth_execution::{
     CancellationSource, ExecutionWorkCeiling, SerialMemoryBudget, SerialRequest,
 };
@@ -21,7 +23,7 @@ fn retained_registrations_have_indexed_query_and_repeated_open_work() {
     run(indexed_lookup);
 }
 fn indexed_lookup() {
-    let calls = Arc::new(prefix::Calls::default());
+    let calls = Arc::new(prefix_observation::Calls::default());
     let world = host::install(Arc::clone(&calls));
     // Build the entire finite World topology before measuring anything. Growing
     // registrations below changes neither scope-resolution data nor branch lookup.
@@ -214,8 +216,8 @@ fn indexed_lookup() {
     reopened.close();
 }
 
-fn alias(directory: &str) -> query::FindPrefixAlias {
-    query::FindPrefixAlias {
+fn alias(directory: &str) -> prefix_alias_input::FindPrefixAlias {
+    prefix_alias_input::FindPrefixAlias {
         directory: directory.into(),
         prefix: "al".into(),
     }
@@ -226,7 +228,7 @@ fn distinct_parent_bindings_to_one_query_keep_independent_registrations() {
     run(parent_binding_twins);
 }
 fn parent_binding_twins() {
-    let calls = Arc::new(prefix::Calls::default());
+    let calls = Arc::new(prefix_observation::Calls::default());
     let world = host::install(Arc::clone(&calls));
     let scope = authentication::request_scope();
     let principal = authenticate(&world, &scope);

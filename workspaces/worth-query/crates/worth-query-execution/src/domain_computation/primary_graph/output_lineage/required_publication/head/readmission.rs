@@ -70,8 +70,8 @@ impl SelectedRequiredPublicationHead {
                         scope.local_slot(),
                         scope.generation(),
                     ),
-                    source_partition: partition,
-                    source_epoch: prior.source_epoch,
+                    source_partition: worth_foundational::CanonicalDigestId::new(partition),
+                    source_epoch: worth_foundational::CanonicalDigestId::new(prior.source_epoch),
                 };
                 &cold
             }
@@ -121,8 +121,8 @@ impl SelectedRequiredPublicationHead {
                         scope.local_slot(),
                         scope.generation(),
                     ),
-                    source_partition: partition,
-                    source_epoch: prior.source_epoch,
+                    source_partition: worth_foundational::CanonicalDigestId::new(partition),
+                    source_epoch: worth_foundational::CanonicalDigestId::new(prior.source_epoch),
                 };
                 runtime
                     .readmit_required_output_publication(

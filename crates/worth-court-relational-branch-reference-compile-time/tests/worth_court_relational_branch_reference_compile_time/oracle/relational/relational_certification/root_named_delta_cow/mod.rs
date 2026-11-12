@@ -2,7 +2,7 @@
 pub(crate) use {worth_testkit_relational::relational_certification::ordinary_context::world::supply_chain::semantic_key::BranchLabel, worth_testkit_relational::relational_certification::ordinary_context::world::supply_chain::scenario_delta_vocabulary::DeltaId, crate::relational_certification::ordinary_context::root_named_delta_cow::prove_named_delta_cow};
 
 #[test]
-fn every_supply_chain_delta_shares_payloads_within_its_declared_partition_footprint() {
+fn every_supply_chain_delta_matches_its_independent_selected_branch_oracle() {
     let host_request =
         worth_testkit_relational::shared_relational_certification_test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);

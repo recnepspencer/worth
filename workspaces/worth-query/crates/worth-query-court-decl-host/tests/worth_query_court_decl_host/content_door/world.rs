@@ -136,26 +136,33 @@ pub fn install_with_projection(
         host_limits(WorthQueryAdmissionClock::system()),
         |_, graph, installed| {
             projection = Some(graph.retain_invariant_projection_authority());
-            graph.bind_principal(
-                &installed.principal_binding(Actor::reference()).unwrap(),
-                WorthQueryApplicationPrincipalKey::new("operator").unwrap(),
-                1,
-                operator_identity(),
-                WorthQueryPrincipalMappingStatus::Enabled,
-            )?;
-            graph.bind_entity(
-                WorthQueryApplicationEntitySeed::new(
-                    Record::reference(),
-                    WorthQueryApplicationEntityKey::new("record").unwrap(),
-                )
-                .field(Key::at("Key"), "record".to_owned()),
-            )?;
-            Ok(())
+            seed(graph, installed)
         },
     )
     .unwrap();
     (host, projection.unwrap())
 }
+pub fn seed(
+    graph: &mut WorthQueryPrimaryGraphBootstrap<Schema>,
+    installed: &worth_query_host::facade::domain::WorthQueryInstalledApplicationSchema<Schema>,
+) -> Result<(), WorthQueryPrimaryGraphInstallationDenial> {
+    graph.bind_principal(
+        &installed.principal_binding(Actor::reference()).unwrap(),
+        WorthQueryApplicationPrincipalKey::new("operator").unwrap(),
+        1,
+        operator_identity(),
+        WorthQueryPrincipalMappingStatus::Enabled,
+    )?;
+    graph.bind_entity(
+        WorthQueryApplicationEntitySeed::new(
+            Record::reference(),
+            WorthQueryApplicationEntityKey::new("record").unwrap(),
+        )
+        .field(Key::at("Key"), "record".to_owned()),
+    )?;
+    Ok(())
+}
+
 pub fn try_edit(
     host: &Host,
     mode: u64,
@@ -227,7 +234,7 @@ pub fn restore(
     checkpoint: WorthQueryApplicationCheckpoint,
     calls: std::sync::Arc<source::Calls>,
 ) -> Host {
-    in_memory_program_from_checkpoint(
+    WorthQueryInterimCheckpointRestore::program(
         ApplicationProgramAuthoring::<Schema, Program>::begin()
             .validated_program()
             .unwrap(),

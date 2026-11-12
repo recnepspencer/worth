@@ -5,15 +5,7 @@ use worth_query_decl::facade::{
 };
 use worth_query_host::facade::primary_graph::*;
 
-#[derive(Clone, Debug, serde::Serialize)]
-pub enum Edit {
-    Retire,
-    Create,
-}
-#[derive(Clone, Debug, serde::Serialize)]
-pub struct Replace {
-    pub edit: Edit,
-}
+use crate::application_invariant_acceptance::managed_index::directory_edit::{Edit, Replace};
 #[derive(Debug)]
 pub struct Changed;
 #[derive(Debug)]

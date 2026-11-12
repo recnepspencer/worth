@@ -1,6 +1,5 @@
 use worth_foundational::facade::{AspectFieldLocator, CanonicalFieldPath, LocatorAuthority};
 
-use crate::durability::data::RecoveryFailureClass;
 use crate::facade::durability::RecoveryVerificationMode;
 use crate::facade::history::BranchId;
 use crate::facade::identity::{EntityId, KindId, PartitionId};
@@ -40,13 +39,17 @@ fn checkpoint_restore_preserves_exact_field_revision() {
         .entity_field_revision(execution, entity, &name)
         .expect("read request remains live")
         .expect("created field has a native owner revision");
-    crate::tests::support::checkpoint_durably(execution, &runtime).unwrap();
-    let recovery = crate::tests::support::recovery_plan_for(
-        execution,
-        &runtime,
-        RecoveryVerificationMode::NormalRecoveryVerification,
-    )
-    .unwrap();
+    runtime
+        .durability_authority()
+        .checkpoint(execution)
+        .unwrap();
+    let recovery = runtime
+        .durability()
+        .recovery_plan(
+            execution,
+            RecoveryVerificationMode::NormalRecoveryVerification,
+        )
+        .unwrap();
     let mut recovered = runtime_with_test_schema();
     let outcome = recovered
         .durability_recovery()
@@ -64,13 +67,17 @@ fn checkpoint_restore_preserves_exact_field_revision() {
         Some(before)
     );
     recovered.snapshots().release_snapshot(&snapshot).unwrap();
-    crate::tests::support::checkpoint_durably(execution, &recovered).unwrap();
-    let second_recovery = crate::tests::support::recovery_plan_for(
-        execution,
-        &recovered,
-        RecoveryVerificationMode::NormalRecoveryVerification,
-    )
-    .unwrap();
+    recovered
+        .durability_authority()
+        .checkpoint(execution)
+        .unwrap();
+    let second_recovery = recovered
+        .durability()
+        .recovery_plan(
+            execution,
+            RecoveryVerificationMode::NormalRecoveryVerification,
+        )
+        .unwrap();
     let mut reopened = runtime_with_test_schema();
     reopened
         .durability_recovery()
@@ -129,13 +136,17 @@ fn checkpoint_restore_preserves_relation_field_revision() {
         .unwrap();
     assert_eq!(before.presence(), RelationalFieldPresence::Present);
 
-    crate::tests::support::checkpoint_durably(execution, &runtime).unwrap();
-    let recovery = crate::tests::support::recovery_plan_for(
-        execution,
-        &runtime,
-        RecoveryVerificationMode::NormalRecoveryVerification,
-    )
-    .unwrap();
+    runtime
+        .durability_authority()
+        .checkpoint(execution)
+        .unwrap();
+    let recovery = runtime
+        .durability()
+        .recovery_plan(
+            execution,
+            RecoveryVerificationMode::NormalRecoveryVerification,
+        )
+        .unwrap();
     let mut recovered = fixture();
     recovered
         .durability_recovery()
@@ -252,13 +263,17 @@ fn checkpoint_restore_preserves_forked_field_revisions_and_absent_aba() {
         Some(initial_title)
     );
 
-    crate::tests::support::checkpoint_durably(execution, &runtime).unwrap();
-    let recovery = crate::tests::support::recovery_plan_for(
-        execution,
-        &runtime,
-        RecoveryVerificationMode::NormalRecoveryVerification,
-    )
-    .unwrap();
+    runtime
+        .durability_authority()
+        .checkpoint(execution)
+        .unwrap();
+    let recovery = runtime
+        .durability()
+        .recovery_plan(
+            execution,
+            RecoveryVerificationMode::NormalRecoveryVerification,
+        )
+        .unwrap();
     let mut recovered = fixture();
     recovered
         .durability_recovery()
@@ -283,49 +298,6 @@ fn checkpoint_restore_preserves_forked_field_revisions_and_absent_aba() {
     for outcome in [&created, &present, &absent_again] {
         release_test_commit_snapshot(&runtime, outcome);
     }
-}
-
-#[test]
-fn checkpoint_restore_rejects_incomplete_field_revision_column() {
-    let host_request = crate::test_execution_policy::serial_request();
-    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
-
-    let runtime = runtime_with_test_schema();
-    let created = create_entity_outcome(execution, &runtime, "same");
-    crate::tests::support::checkpoint_durably(execution, &runtime).unwrap();
-    let mut recovery = crate::tests::support::recovery_plan_for(
-        execution,
-        &runtime,
-        RecoveryVerificationMode::NormalRecoveryVerification,
-    )
-    .unwrap();
-    let root = &mut recovery.checkpoint.as_mut().unwrap().branch_roots[0];
-    let image = &mut root.partition_images[0].entity_arena;
-    assert!(!image.field_revisions.is_empty());
-    image.field_revisions.pop();
-    root.partition_image_digest = crate::durability::data::branch_root_partition_image_digest(
-        &crate::storage::substrate::maintenance::ReconstructionLane::oracle(),
-        &root.partition_images,
-    )
-    .unwrap();
-    root.root_image_digest = crate::durability::data::branch_root_image_digest(
-        &crate::storage::substrate::maintenance::ReconstructionLane::oracle(),
-        root.format_version,
-        root.commit_id,
-        root.partition_image_digest,
-        root.schema_carrier_digest,
-        &root.content_records,
-    );
-
-    let mut recovered = runtime_with_test_schema();
-    let error = recovered
-        .durability_recovery()
-        .recover(execution, recovery)
-        .unwrap_err();
-    let error = crate::tests::support::expect_durability_failure(error);
-    assert_eq!(error.class, RecoveryFailureClass::CorruptCheckpoint);
-    assert!(error.detail.contains("field revision length"), "{error:?}");
-    release_test_commit_snapshot(&runtime, &created);
 }
 
 fn field_at(

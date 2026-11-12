@@ -62,12 +62,27 @@ impl CapturedCheckpointBasis {
         let _lineage_event_leases = std::mem::take(&mut self.lineage_event_leases);
         let carried_index_image = self.carried_index_image;
         let roots = std::mem::take(&mut self.branch_roots);
+        let recorded_components = self.recorded_components.clone();
+        let empty_component_schemas = self.empty_component_schemas.clone();
+        let component_holds = std::mem::take(&mut self.component_holds);
         let mirror = std::mem::take(&mut self.partitions);
         let mirror_schema = self.mirror_schema_authority.clone();
         // With storage sources removed, this constructs metadata only. The
         // memory checkpoint door alone materializes its selected substrate.
         let journal_index = std::mem::take(&mut self.journal_index);
         let envelope_cells = std::mem::take(&mut self.envelope_cells);
+        let mut captured_cells = worth_execution::ExecutionOrderedMap::default();
+        for cell in envelope_cells {
+            if let Some(position) = cell.captured_position() {
+                captured_cells
+                    .insert_cloned_native_for_request(&position, &cell, *execution)
+                    .map_err(|cause| {
+                        crate::durability::checkpoint_history::capture::capture_stop(
+                            crate::durability::checkpoint_history::capture::map_stop(cause),
+                        )
+                    })?;
+            }
+        }
         let metadata = self.build_checkpoint_image(execution)?;
         let mut captured =
             crate::storage::substrate::maintenance::ReconstructionLane::enter_reconstruction(
@@ -77,20 +92,25 @@ impl CapturedCheckpointBasis {
                         &metadata,
                         policy,
                         prior.as_ref().map(|prior| &prior.manifest),
-                        placement,
                         journal_index,
                         control,
+                        |position| {
+                            captured_cells
+                                .get(&position)
+                                .ok_or_else(|| {
+                                    corrupt("original Memory canonical cell unavailable")
+                                })?
+                                .original_memory_payload_digest(execution)
+                                .map_err(
+                                    crate::durability::checkpoint_history::capture::capture_stop,
+                                )
+                        },
                     )
                 },
             )?;
+        captured.component_holds = component_holds;
         captured.append_lineage_events(event_rows, policy)?;
-        captured.envelope_cells = envelope_cells
-            .into_iter()
-            .filter_map(|cell| {
-                cell.journal_index()
-                    .map(|entry| (entry.position, cell.clone()))
-            })
-            .collect();
+        captured.envelope_cells = captured_cells;
         captured.cold_source = placement
             .publication_source()
             .or_else(|| prior.as_ref().map(|prior| prior.source.clone()))
@@ -114,7 +134,10 @@ impl CapturedCheckpointBasis {
                 RelationalCheckpointMember::Carried { locator },
             );
         }
-        let mut schemas = BTreeMap::new();
+        let mut schemas = empty_component_schemas
+            .into_iter()
+            .map(|image| (image.carrier_digest(), image))
+            .collect::<BTreeMap<_, _>>();
         let mut history_dependencies = BTreeMap::new();
         for root in roots {
             policy.check_live()?;
@@ -151,17 +174,24 @@ impl CapturedCheckpointBasis {
                     insert_member(&mut captured, member);
                 }
             }
-            captured.manifest.roots.push(RelationalCheckpointRoot {
-                commit_id: root.commit_id(),
-                schema_carrier_digest: schema_digest,
-                regions: leaves,
-                content: crate::durability::checkpoints::content::capture(
-                    execution,
-                    root.content(),
-                    &mut captured.members,
-                    current_members.as_ref(),
-                )?,
-            });
+            captured
+                .manifest
+                .roots
+                .push_ordinary(RelationalCheckpointRoot::from_ordinary_parts(
+                    root.commit_id(),
+                    recorded_components
+                        .get(&root.commit_id())
+                        .cloned()
+                        .ok_or_else(|| corrupt("root lacks exact component observations"))?,
+                    schema_digest,
+                    leaves,
+                    crate::durability::checkpoints::content::capture(
+                        execution,
+                        root.content(),
+                        &mut captured.members,
+                        current_members.as_ref(),
+                    )?,
+                ));
         }
         if let Some(schema) = mirror_schema {
             let image = DurableBranchRootSchemaImage::capture(&schema)
@@ -201,26 +231,28 @@ impl CapturedCheckpointBasis {
         if let Some(prior) = &prior
             && carry_metadata
         {
-            let mut symbols = prior.manifest.symbols.clone();
-            symbols.append(&mut captured.manifest.symbols);
+            let mut symbols = prior.manifest.symbols.ordinary_owned_copy();
+            symbols.extend(captured.manifest.symbols.ordinary_owned_copy());
             symbols.sort_by_key(|page| (page.range(), page.first));
-            captured.manifest.symbols = symbols;
+            captured.manifest.symbols = CheckpointPages::from_ordinary(symbols);
             let mut buckets = prior
                 .manifest
                 .symbol_buckets
                 .iter()
                 .map(|bucket| (bucket.bucket, bucket.pages.clone()))
                 .collect::<BTreeMap<_, _>>();
-            for bucket in std::mem::take(&mut captured.manifest.symbol_buckets) {
+            for bucket in captured.manifest.symbol_buckets.ordinary_owned_copy() {
                 buckets
                     .entry(bucket.bucket)
                     .or_default()
                     .extend(bucket.pages);
             }
-            captured.manifest.symbol_buckets = buckets
-                .into_iter()
-                .map(|(bucket, pages)| RelationalCheckpointSymbolBucket { bucket, pages })
-                .collect();
+            captured.manifest.symbol_buckets = CheckpointSymbolBuckets::from_ordinary(
+                buckets
+                    .into_iter()
+                    .map(|(bucket, pages)| RelationalCheckpointSymbolBucket { bucket, pages })
+                    .collect(),
+            );
             for bucket in &prior.manifest.symbol_buckets {
                 for locator in &bucket.pages {
                     insert_member(
@@ -229,9 +261,10 @@ impl CapturedCheckpointBasis {
                     );
                 }
             }
-            let mut event_pages = prior.manifest.lineage_events.clone();
-            event_pages.append(&mut captured.manifest.lineage_events);
-            captured.manifest.lineage_events = event_pages;
+            let mut event_pages = prior.manifest.lineage_events.ordinary_owned_copy();
+            event_pages.extend(captured.manifest.lineage_events.ordinary_owned_copy());
+            captured.manifest.lineage_events =
+                CheckpointLineageEventPages::from_ordinary(event_pages);
             for page in &prior.manifest.lineage_events {
                 insert_member(
                     &mut captured,
@@ -240,10 +273,10 @@ impl CapturedCheckpointBasis {
                     },
                 );
             }
-            let mut lineage = prior.manifest.lineage.clone();
-            lineage.append(&mut captured.manifest.lineage);
+            let mut lineage = prior.manifest.lineage.ordinary_owned_copy();
+            lineage.extend(captured.manifest.lineage.ordinary_owned_copy());
             lineage.sort_by_key(|page| (page.range(), page.first));
-            captured.manifest.lineage = lineage;
+            captured.manifest.lineage = CheckpointPages::from_ordinary(lineage);
             for page in prior.manifest.symbols.iter().chain(&prior.manifest.lineage) {
                 insert_member(
                     &mut captured,
@@ -275,7 +308,8 @@ impl CapturedCheckpointBasis {
             .commits
             .last()
             .map(|entry| entry.commit.version_id);
-        captured.manifest.schemas = schemas.into_values().collect();
+        captured.manifest.schemas =
+            CheckpointSchemaImages::from_ordinary(schemas.into_values().collect());
         captured.manifest.history_dependencies = history_dependencies
             .into_iter()
             .map(|(member, bases)| RelationalCheckpointHistoryDependency { member, bases })
@@ -286,6 +320,7 @@ impl CapturedCheckpointBasis {
             )
             .map_err(|cause| corrupt(format!("captured history dependencies: {cause:?}")))?;
         captured.validate_lineage_events()?;
+        crate::durability::checkpoint_history::capture::capture(&mut captured, execution)?;
         Ok(captured)
     }
 }

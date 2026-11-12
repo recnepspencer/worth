@@ -1,15 +1,16 @@
 //! Hot completion custody for an already performed coupled producer.
 use super::*;
 use crate::domain_computation::primary_graph::{
-    application_query, WorthQueryOutputDemandDenial, WorthQueryOutputDemandDenialKind,
+    application_attempt::WorthQueryApplicationLandedCommit,
+    application_query::AppliedSourcePublication, WorthQueryApplicationCommitReceipt,
 };
 use crate::domain_computation::primary_graph::{
-    application_query::AppliedSourcePublication, WorthQueryApplicationCommitReceipt,
+    application_query, WorthQueryOutputDemandDenial, WorthQueryOutputDemandDenialKind,
 };
 #[derive(Clone)]
 pub struct CoupledOutputCompletion {
     source: AppliedSourcePublication,
-    receipt: Arc<worth_execution::ExecutionArray<OnceLock<WorthQueryApplicationCommitReceipt>>>,
+    receipt: Arc<worth_execution::ExecutionArray<OnceLock<WorthQueryApplicationLandedCommit>>>,
 }
 impl CoupledOutputCompletion {
     pub(in crate::domain_computation::primary_graph) fn prepare(
@@ -34,7 +35,9 @@ impl CoupledOutputCompletion {
         &self,
         settlement: &Arc<RecordedSettlementIdentity>,
     ) -> Option<WorthQueryApplicationCommitReceipt> {
-        let receipt = self.receipt[0].get()?;
+        let WorthQueryApplicationLandedCommit::Live { receipt } = self.receipt[0].get()? else {
+            return None;
+        };
         receipt
             .exact_output_settlement()
             .filter(|identity| Arc::ptr_eq(identity, settlement))?;
@@ -57,7 +60,7 @@ impl CoupledOutputCompletion {
     }
     pub(in crate::domain_computation::primary_graph) fn complete(
         &self,
-        receipt: WorthQueryApplicationCommitReceipt,
+        receipt: WorthQueryApplicationLandedCommit,
     ) {
         assert!(
             self.receipt[0].set(receipt).is_ok(),

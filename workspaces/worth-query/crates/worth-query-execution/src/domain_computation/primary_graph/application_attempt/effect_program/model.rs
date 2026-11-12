@@ -194,6 +194,13 @@ impl WorthQueryApplicationCreationPartition {
 impl<Schema, Operation, Input, Scope>
     WorthQueryApplicationEffectProgram<Schema, Operation, Input, Scope>
 {
+    pub(in crate::domain_computation::primary_graph) fn refuse_stale_home_authority(
+        &self,
+        current: worth_runtime_world::facade::RuntimeWorldOwnerIdentity,
+    ) -> Result<(), crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenial>
+    {
+        self.read_set.admission.refuse_stale_home_authority(current)
+    }
     pub(in crate::domain_computation::primary_graph) fn belongs_to_application(
         &self,
         runtime_authority: crate::domain_computation::execution_runtime::WorthQueryRuntimeAuthorityIdentity,
@@ -245,3 +252,6 @@ impl<S, O, I, C> WorthQueryApplicationEffectProgram<S, O, I, C> {
         self
     }
 }
+#[cfg(test)]
+#[path = "model_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;

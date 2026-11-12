@@ -23,14 +23,24 @@ pub(crate) struct CanonicalCoupledParticipant {
     pub(crate) origin: Arc<CanonicalRequiredOutputOrigin>,
     pub(crate) retirement: Option<Arc<CanonicalProducerRetirement>>,
 }
-#[derive(Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub(crate) struct CanonicalCoupledAuthoredPublication {
     pub(crate) sources: CanonicalCoupledAuthoredSources,
     pub(crate) participants: Vec<CanonicalCoupledParticipant>,
     #[serde(skip)]
     pub(crate) live_inputs: crate::history::data::LivePublicationInputs,
+    #[serde(skip)]
+    pub(crate) _decoded_memory: Option<Arc<worth_execution::ExecutionMemoryReservation>>,
 }
 impl CanonicalCoupledAuthoredPublication {
+    pub(crate) fn participant_decode_storage(capacity: usize) -> Option<u64> {
+        u64::try_from(
+            std::alloc::Layout::array::<CanonicalCoupledParticipant>(capacity)
+                .ok()?
+                .size(),
+        )
+        .ok()
+    }
     pub(crate) fn output_origins(
         &self,
     ) -> impl Iterator<Item = &Arc<CanonicalRequiredOutputOrigin>> {
@@ -52,7 +62,7 @@ impl CanonicalCoupledAuthoredPublication {
     }
 }
 
-impl CanonicalCommitEnvelope {
+impl CanonicalCommitEnvelopeBody {
     pub(crate) fn authored_source_retirement(&self) -> Option<&Arc<CanonicalAuthoredRetirement>> {
         self.authored_cascade_retirement.as_ref().or_else(|| {
             match &self.coupled_authored_publication.as_ref()?.sources {
@@ -77,9 +87,9 @@ impl CanonicalCommitEnvelope {
 
 #[allow(clippy::too_many_arguments)]
 pub(super) fn install(
-    envelope: &mut CanonicalCommitEnvelope,
+    envelope: &mut CanonicalCommitEnvelopeBody,
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-    runtime: &crate::runtime::RelationalPreparationRuntime,
+    runtime: &crate::history::data::canonical_commit_envelope::required_output_origin::history_request::PreparationRuntimeRequest<'_, '_, '_>,
     basis: &AdmittedRelationalBranchBasis,
     created: &CommitCreatedEntityBindings,
     created_relations: &CommitCreatedRelationBindings,
@@ -182,6 +192,7 @@ pub(super) fn install(
             });
         }
         let event = CanonicalCoupledAuthoredPublication {
+            _decoded_memory: None,
             sources,
             participants,
             live_inputs,
@@ -217,10 +228,15 @@ pub(super) fn install(
                 ),
             ),
             &mut |commit| runtime.history.canonical_envelope(commit),
-            &mut |version| runtime.history.canonical_envelope_for_version(version),
+            &mut |version, context| {
+                runtime
+                    .history
+                    .canonical_envelope_for_version(version, context)
+            },
             runtime.history.canonical_catalog_len(),
             lease,
             validated_history,
+            &runtime.history.execution(),
             context,
         )
         .map_err(super::installation::relation_stop)?;
@@ -229,7 +245,7 @@ pub(super) fn install(
 }
 
 fn restrict(
-    envelope: &mut CanonicalCommitEnvelope,
+    envelope: &mut CanonicalCommitEnvelopeBody,
     full: &[crate::publication::patch::data::PublishedAuthoritativeRecordPatch],
     records: &[RecordRef],
     state: &WorkingState,
@@ -257,3 +273,11 @@ fn restrict(
     envelope.patch.authoritative_record_patches = selected;
     Ok(())
 }
+
+// Live input pins and decode backing are transient custody, not publication meaning.
+impl PartialEq for CanonicalCoupledAuthoredPublication {
+    fn eq(&self, other: &Self) -> bool {
+        self.sources == other.sources && self.participants == other.participants
+    }
+}
+impl Eq for CanonicalCoupledAuthoredPublication {}

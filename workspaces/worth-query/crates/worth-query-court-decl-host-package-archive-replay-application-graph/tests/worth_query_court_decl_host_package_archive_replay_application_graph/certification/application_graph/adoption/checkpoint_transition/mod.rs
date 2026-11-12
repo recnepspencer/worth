@@ -25,7 +25,7 @@ fn checkpoint_transition_target_rule_rejects_retained_predecessor_only_value() {
     assert_eq!(sections.accepted_output_count(), 0);
     drop(host);
     let mut authored = false;
-    let denial = installation::in_memory_rostered_program_from_checkpoint_with_transition(
+    let denial = installation::WorthQueryInterimCheckpointRestore::rostered_program_with_transition(
         validated_second_program(),
         installation::WorthQueryApplicationProgramRoster::new()
             .support(validated_first_program())
@@ -92,7 +92,7 @@ fn checkpoint_transition_target_rule_accepts_complete_retained_and_created_state
         })
         .expect("installed host call opens");
     drop(host);
-    let migrated = installation::in_memory_rostered_program_from_checkpoint_with_transition(
+    let migrated = installation::WorthQueryInterimCheckpointRestore::rostered_program_with_transition(
         validated_second_program(),
         installation::WorthQueryApplicationProgramRoster::new()
             .support(validated_first_program())

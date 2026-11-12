@@ -4,6 +4,7 @@ use crate::{mvcc::RelationalAuthoredRestoration, transactions::data::*};
 type Error = ValidatedMutationTouchProjectionError;
 fn plan(proposal: &ValidatedRelationalProposal) -> Option<&RelationalAuthoredRestoration> {
     proposal
+        .state
         .required_output_publication
         .as_ref()?
         .publication
@@ -16,16 +17,33 @@ pub(super) fn validate(
     let Some(restoration) = plan(proposal) else {
         return Ok(());
     };
+    let validate = || validate_candidate(proposal, execution, restoration);
+    match (
+        crate::authority::commit::pipeline::request_lease(execution),
+        proposal.state.commit_work_budget.as_ref(),
+    ) {
+        (Some(_), Some(budget)) => budget
+            .run_stage(*execution, validate)
+            .map_err(|cause| collection::execution(cause.into()))?,
+        _ => validate(),
+    }
+}
+fn validate_candidate(
+    proposal: &ValidatedRelationalProposal,
+    execution: &ExecutionRequest<'_, '_>,
+    restoration: &RelationalAuthoredRestoration,
+) -> Result<(), Error> {
     let result =
         execution.in_scope(|lease| {
             worth_execution::ExecutionWorkCeiling::new(execution.work_ceiling())
                 .run_with_checkpoint(lease, None, |context| {
                     crate::history::data::validate_authored_restoration_candidate(
-                        proposal.validation_input.basis(),
-                        &proposal.proposed_mutation.state,
-                        &proposal.proposed_mutation.outcome.created_entities,
-                        &proposal.proposed_mutation.outcome.created_relations,
+                        proposal.state.validation_input.basis(),
+                        &proposal.state.proposed_mutation.state,
+                        &proposal.state.proposed_mutation.outcome.created_entities,
+                        &proposal.state.proposed_mutation.outcome.created_relations,
                         restoration,
+                        lease,
                         context,
                     )
                 })
@@ -61,7 +79,7 @@ pub(super) fn owns_create(
     };
     match intent {
         MutationIntent::Create(CreateIntent::EntityAspects(spec)) => {
-            let created = &proposal.proposed_mutation.outcome.created_entities;
+            let created = &proposal.state.proposed_mutation.outcome.created_entities;
             let target = CreatedEntityRef {
                 partition_id: spec.partition_id,
                 kind_id: spec.kind_id,
@@ -93,7 +111,7 @@ pub(super) fn owns_create(
             }
         }
         MutationIntent::Create(CreateIntent::RelationAspects(spec)) => {
-            let created = &proposal.proposed_mutation.outcome.created_relations;
+            let created = &proposal.state.proposed_mutation.outcome.created_relations;
             let target = CreatedRelationRef {
                 partition_id: spec.partition_id,
                 kind_id: spec.kind_id,

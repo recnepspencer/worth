@@ -66,7 +66,9 @@ pub enum BankEstateProgressionDenial {
 pub enum BankRecoveryDenialKind {
     AdmissionAuthorization(crate::BankAuthorizationDenialKind),
     CompletionExecutionRequest(worth_query_host::facade::application_contribution::WorthQueryAdvancementDenial),
+    DurableStateAdmission(worth_query_host::facade::product::WorthQueryDurableStateAdmissionDenial),
     RecoveryNotAdmitted,
+    StaleIncarnation,
     RecoveryAlreadyMinted,
     SchemaMismatch,
     BranchMismatch,
@@ -114,6 +116,7 @@ pub enum BankRecoveryDenialKind {
     AdmissionDeadlineExceeded,
     AdmissionAuthenticationExpired,
     DisclosureAdmissionRequired,
+    ProvenNoEffect(worth_foundational::facade::ExternalEffectNoEffectCause),
     UnresolvedExternalPosture,
 }
 
@@ -135,7 +138,9 @@ impl BankRecoveryDenial {
                 crate::BankAuthorizationDenial::from_kind(cause, 0).kind(),
             ),
             Query::CompletionExecutionRequest(cause) => Bank::CompletionExecutionRequest(cause),
+            Query::DurableStateAdmission(cause) => Bank::DurableStateAdmission(cause),
             Query::RecoveryNotAdmitted => Bank::RecoveryNotAdmitted,
+            Query::StaleIncarnation => Bank::StaleIncarnation,
             Query::RecoveryAlreadyMinted => Bank::RecoveryAlreadyMinted,
             Query::SchemaMismatch => Bank::SchemaMismatch,
             Query::BranchMismatch => Bank::BranchMismatch,
@@ -189,6 +194,7 @@ impl BankRecoveryDenial {
             Query::AdmissionDeadlineExceeded => Bank::AdmissionDeadlineExceeded,
             Query::AdmissionAuthenticationExpired => Bank::AdmissionAuthenticationExpired,
             Query::DisclosureAdmissionRequired => Bank::DisclosureAdmissionRequired,
+            Query::ProvenNoEffect(cause) => Bank::ProvenNoEffect(cause),
             Query::UnresolvedExternalPosture => Bank::UnresolvedExternalPosture,
         };
         Self { kind }

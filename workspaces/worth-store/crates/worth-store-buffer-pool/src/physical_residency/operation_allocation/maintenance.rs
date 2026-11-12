@@ -29,6 +29,7 @@ impl MaintenanceAllocationGrant {
     ) -> Self {
         Self {
             operation: OperationAllocationGrant {
+                armed: true,
                 owner,
                 scope: PhysicalOperationAllocationScope::Maintenance,
                 bytes,

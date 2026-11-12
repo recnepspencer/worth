@@ -4,7 +4,7 @@ use std::sync::Arc;
 use worth_foundational::facade::ApplicationBuildIdentity;
 use worth_query_execution::facade::application_installation::in_memory_program;
 use worth_query_execution::facade::application_installation::WorthQueryApplicationCheckpoint;
-use worth_query_execution::facade::application_installation::WorthQueryInMemoryApplicationLimits;
+use worth_query_execution::facade::application_installation::WorthQueryApplicationLimits;
 use worth_query_execution::facade::application_installation::WorthQueryProgramApplicationRuntime;
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub struct OptionalSchema;
@@ -279,8 +279,8 @@ pub fn install<Schema: BirthSchema + ApplicationSchemaComposition<Contributions 
     .unwrap()
 }
 
-pub fn limits<Schema: BirthSchema>() -> WorthQueryInMemoryApplicationLimits {
-    WorthQueryInMemoryApplicationLimits::new(
+pub fn limits<Schema: BirthSchema>() -> WorthQueryApplicationLimits {
+    WorthQueryApplicationLimits::new(
         worth_query_execution::court_doors_for_test::domain_computation::execution_runtime::product_world::resources::test_product_world_resources(worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system()),
         Default::default(),
         worth_signal::facade::runtime::SignalConditionalEvaluationBudget::development(),
@@ -300,7 +300,7 @@ pub fn restore_with_projection<
     Application<Schema>,
     WorthQueryApplicationInvariantProjectionAuthority<Schema>,
 ) {
-    worth_query_execution::facade::application_installation::in_memory_program_from_checkpoint_with_projection(
+    worth_query_execution::facade::application_installation::WorthQueryInterimCheckpointRestore::program_with_projection(
         ApplicationProgramAuthoring::<Schema, Program<Schema>>::begin()
             .with_schema(&Schema::declaration().unwrap())
             .validated_program()

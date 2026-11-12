@@ -39,7 +39,8 @@ impl super::super::WorthQueryOutputDemandRegistry {
                     && &stable.idempotency_key_identity() == idempotency_key
                     && std::ptr::eq(stable.output_correspondence().as_ref(), correspondence)
             }
-            super::super::WorthQueryAcceptedOutputAuthority::Restored(_) => false,
+            super::super::WorthQueryAcceptedOutputAuthority::Restored(_)
+            | super::super::WorthQueryAcceptedOutputAuthority::Recovered(_) => false,
         }
     }
 

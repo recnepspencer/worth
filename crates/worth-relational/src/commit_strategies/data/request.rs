@@ -2,6 +2,8 @@ use std::sync::Arc;
 
 use serde::{Deserialize, Serialize};
 
+mod canonical_bytes;
+
 use super::{
     CommitStrategyDescriptorDigest, CommitStrategyId, CommitStrategySemanticName,
     PersistentArtifactName, StrategyInputSchemaName, StrategyInputSchemaVersion,
@@ -55,16 +57,19 @@ impl NativeStrategyCommitRequest {
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct CanonicalStrategyInputDigest(pub [u8; 32]);
 
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Clone, Serialize, Deserialize)]
 pub struct CanonicalStrategyInputArtifact {
     schema_name: StrategyInputSchemaName,
     schema_version: StrategyInputSchemaVersion,
     canonical_bytes: Arc<[u8]>,
     digest: CanonicalStrategyInputDigest,
     artifact_name: PersistentArtifactName,
+    // Last: original bytes drop before their cold readmission admission.
+    #[serde(skip)]
+    canonical_bytes_memory: Option<Arc<worth_execution::ExecutionMemoryReservation>>,
 }
 
 impl CanonicalStrategyInputArtifact {
@@ -81,6 +86,7 @@ impl CanonicalStrategyInputArtifact {
             canonical_bytes,
             digest,
             artifact_name,
+            canonical_bytes_memory: None,
         }
     }
 
@@ -150,4 +156,16 @@ pub enum StrategyCommitRequestError {
     UnknownStrategyName {
         strategy_name: CommitStrategySemanticName,
     },
+}
+
+impl Serialize for CanonicalStrategyInputDigest {
+    fn serialize<S: serde::Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
+        worth_foundational::CanonicalDigestId::new(self.0).serialize(serializer)
+    }
+}
+impl<'de> Deserialize<'de> for CanonicalStrategyInputDigest {
+    fn deserialize<D: serde::Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
+        worth_foundational::CanonicalDigestId::deserialize(deserializer)
+            .map(|digest| Self(*digest.bytes()))
+    }
 }

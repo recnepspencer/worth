@@ -89,9 +89,15 @@ where
                 return self.terminal(Denial::NativeTerminal);
             }
             WorthQueryApplicationDiscoveredMutationOutcome::NotPerformed(
+                WorthQueryApplicationMutationOutcome::RecoveredCommitted(receipt),
+            ) => {
+                self.state = State::ReplayRecorded(receipt);
+                Progress::SourceReplayObserved
+            }
+            WorthQueryApplicationDiscoveredMutationOutcome::NotPerformed(
                 WorthQueryApplicationMutationOutcome::AlreadyCommitted(receipt),
             ) => {
-                self.state = State::Replay(receipt);
+                self.state = State::ReplayRetained(receipt);
                 Progress::SourceReplayObserved
             }
             WorthQueryApplicationDiscoveredMutationOutcome::NotPerformed(outcome) => {

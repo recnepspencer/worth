@@ -59,9 +59,9 @@ fn admitted_opening_refuses_the_owned_maps_declared_reservation() {
     let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let probe = phased_workflow::fold_executor::ComputeProbe::new();
-    // The fixture's start stage has an empty payload. Its exact map reservation
-    // is derived below; the frontier owns a larger Words payload, independently
-    // of its zero-work declaration. No measured or fitted budget is used.
+    // Fund the owner's immutable lowering for start plus the empty start map.
+    // The later frontier declares a larger Words payload independently of its
+    // zero Work. Every grant comes from the owning layout, never a sampled peak.
     let bytes = super::reservation::start_reservation(request_execution, &probe);
     let mut workspace = Policy {
         memory: Some(bytes),
@@ -96,6 +96,7 @@ fn admitted_opening_refuses_the_owned_maps_declared_reservation() {
                 phase.checked_execution_request_for(&owner).unwrap(),
                 sample_run.prepare_frontier_computation(declaration),
             );
+            // The lowering body funds start only; the map sees no retained body.
             (map, bytes - root - scope)
         })
         .unwrap();

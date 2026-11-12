@@ -34,7 +34,14 @@ pub(super) fn compose(
                 return Ok(());
             };
             let _copies_memory = reserve(execution, quote_copies(context, transaction.batches())?)?;
-            let composed = compose_batches(context, transaction.batches(), &groups, state, plans)?;
+            let composed = compose_batches(
+                execution,
+                context,
+                transaction.batches(),
+                &groups,
+                state,
+                plans,
+            )?;
             let mut targets = Vec::new();
             targets.try_reserve_exact(groups.len()).map_err(|_| {
                 custody::execution_stop(
@@ -197,6 +204,7 @@ fn disjoint_groups(
     Ok(repeated.then_some(groups))
 }
 fn compose_batches(
+    execution: &ExecutionRequest<'_, '_>,
     context: &mut worth_execution::MapKernelContext<'_, '_>,
     batches: &[WorkerIntentBatch],
     groups: &BTreeMap<Entity, Patches>,
@@ -205,6 +213,7 @@ fn compose_batches(
 ) -> Result<Vec<WorkerIntentBatch>, TransactionCommitError> {
     let mut fields = BTreeMap::<Entity, BTreeMap<_, _>>::new();
     let mut portable = super::disjoint_aspect_patches::collect(
+        execution,
         context,
         batches,
         |entity| groups[&entity].repeated && groups[&entity].portable,

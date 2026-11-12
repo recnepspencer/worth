@@ -1,5 +1,3 @@
-#[cfg(test)]
-pub(crate) use application_contribution::with_test_advancement;
 mod content;
 pub(in crate::domain_computation) use content::retention_checkpoint;
 pub use content::{
@@ -31,6 +29,8 @@ pub(in crate::domain_computation) use application_output_demand::RequiredOutputE
 pub use application_output_demand::WorthQueryCompletedReadOutputs;
 pub use application_output_demand::WorthQueryCompletedRequiredOutputs;
 pub use application_output_demand::WorthQueryFulfilledRequiredRoot;
+pub use application_output_demand::WorthQueryOutputSourceReplay;
+pub use application_output_demand::WorthQueryRecoveredProducerPublication;
 pub use application_output_demand::{
     WorthQueryCompletedOriginalReadOutputs, WorthQueryOriginalReadOutputDenial,
 };
@@ -143,10 +143,13 @@ pub use product_operation::WorthQueryHistoryRootOutputRead;
 pub(crate) mod program_occurrence;
 pub(in crate::domain_computation) use program_occurrence::OriginalProgramMeaning;
 pub(crate) mod provider;
+pub(crate) mod retained_correction;
 pub(in crate::domain_computation) use application_attempt::retained_decision_facts::StorageControl;
 pub(in crate::domain_computation::primary_graph) use provider::OutstandingDispatchInFlightLease;
 pub(in crate::domain_computation) use provider::PrimaryDecisionReadSetComparison;
+pub(in crate::domain_computation) use provider::QueryPreparingApplicationCommit;
 pub(in crate::domain_computation) use provider::RegisteredPrimaryRead;
+pub use retained_correction::WorthQueryCorrectionRetentionDenial;
 pub(crate) mod component_selection;
 mod request_local;
 pub(crate) mod resolution;
@@ -167,38 +170,40 @@ pub(in crate::domain_computation) use application_attempt::precondition_binding:
 pub(in crate::domain_computation) use application_attempt::precondition_binding::bind_mutation_preconditions;
 pub(in crate::domain_computation) use application_attempt::precondition_binding::EmptyMutationPreconditionAdmissionStop;
 pub(in crate::domain_computation) use application_attempt::precondition_binding::WorthQueryBoundMutationPreconditions;
-pub(in crate::domain_computation) use application_attempt::WorthQueryApplicationSnapshotLease;
-pub(in crate::domain_computation) use application_attempt::WorthQueryApplicationSnapshotLeaseDenial;
-pub(in crate::domain_computation) use application_attempt::WorthQueryApplicationSnapshotRelease;
-pub(in crate::domain_computation) use exact_basis_access::WorthQueryExactBasisSnapshotDenial;
-pub(in crate::domain_computation) use application_attempt::WorthQueryApplicationObservedFact;
-pub(in crate::domain_computation) use application_query::observed_source::WorthQuerySourceExpectationKind;
 pub(in crate::domain_computation) use application_attempt::progression_denied;
 pub(in crate::domain_computation) use application_attempt::WorthQueryApplicationAttemptAffinity;
 pub(in crate::domain_computation) use application_attempt::WorthQueryApplicationAttemptBasis;
+pub(in crate::domain_computation) use application_attempt::WorthQueryApplicationObservedFact;
+pub(in crate::domain_computation::primary_graph) use application_attempt::WorthQueryApplicationOutputCorrespondence;
+pub(in crate::domain_computation) use application_attempt::WorthQueryApplicationSnapshotLease;
+pub(in crate::domain_computation) use application_attempt::WorthQueryApplicationSnapshotLeaseDenial;
+pub(in crate::domain_computation) use application_attempt::WorthQueryApplicationSnapshotRelease;
+pub(crate) use application_attempt::WorthQueryPerformedExternalRedispatchSeal;
 pub(in crate::domain_computation) use application_attempt::WorthQueryPreparedApplicationProviderAttempt;
 pub(in crate::domain_computation) use application_attempt::WorthQueryProviderAttemptRegistrationContext;
 pub(in crate::domain_computation) use application_attempt::WorthQueryProviderProgressionOutcome;
 pub(in crate::domain_computation) use application_attempt::WorthQueryRegisteredProviderAttempt;
 pub(crate) use application_attempt::WorthQueryRetainedGovernedInput;
-pub(in crate::domain_computation::primary_graph) use application_attempt::WorthQueryApplicationOutputCorrespondence;
-pub(crate) use application_attempt::WorthQueryPerformedExternalRedispatchSeal;
-pub(crate) use provider::{WorthQueryRetainedPreImageSeal, WorthQueryRetainedRelationPreImageSeal};
-pub(crate) use provider::WorthQueryPrimaryGraphProvider;
+pub(in crate::domain_computation) use application_branch::primary_relational_branch_id;
+pub(in crate::domain_computation) use application_branch::primary_truth_branch_identity;
+pub(in crate::domain_computation) use application_query::observed_source::WorthQuerySourceExpectationKind;
+pub(in crate::domain_computation) use exact_basis_access::WorthQueryExactBasisSnapshotDenial;
 pub(in crate::domain_computation) use provider::ApplicationFactTable;
 pub(in crate::domain_computation) use provider::CompletedApplicationFacts;
 pub(in crate::domain_computation) use provider::WorthQueryPrimaryGraphApplicationDecisionFact;
+pub(crate) use provider::WorthQueryPrimaryGraphProvider;
+pub(crate) use provider::WorthQueryPrimaryLogicalGraph;
 pub(in crate::domain_computation) use provider::WorthQueryUnpublishedIdempotencyDisposition;
-pub(in crate::domain_computation) use application_branch::primary_relational_branch_id;
-pub(in crate::domain_computation) use application_branch::primary_truth_branch_identity;
+pub(crate) use provider::{WorthQueryRetainedPreImageSeal, WorthQueryRetainedRelationPreImageSeal};
+
 pub(crate) use application_query::WorthQueryApplicationQueryControls;
 pub(in crate::domain_computation) use crate::domain_computation::application_aftermath::external_effect::WorthQueryAdmittedExternalDispatchAttempt;
 pub(in crate::domain_computation) use application_runtime::WorthQueryExternalDispatchAttemptOrdinal;
-pub(in crate::domain_computation) use application_runtime::WorthQueryPerformedInboundCompletion;
-pub(in crate::domain_computation) use application_runtime::WorthQueryUnpublishedInboundCompletion;
+pub use application_runtime::WorthQueryPerformedInboundCompletion;
+pub use application_runtime::WorthQueryUnpublishedInboundCompletion;
 pub(in crate::domain_computation::primary_graph) use application_runtime::InstalledTransportCompletion;
 pub(in crate::domain_computation::primary_graph) use application_runtime::InstalledTransportResumeOutcome;
-pub(in crate::domain_computation::primary_graph) use application_runtime::PerformedInstalledTransportCompletion;
+pub use application_runtime::PerformedInstalledTransportCompletion;
 pub(in crate::domain_computation) use application_runtime::WorthQueryInstalledTransportCompletionBinding;
 pub(in crate::domain_computation) use entity_resolution::WorthQueryEntityResolutionTruth;
 pub(in crate::domain_computation) use entity_resolution::WorthQueryObservedScopeSelector;
@@ -220,6 +225,8 @@ pub(in crate::domain_computation) use application_contribution::SealedComputatio
 
 pub(in crate::domain_computation) use application_contribution::observe_discarded;
 
+#[cfg(test)]
+pub(crate) use application_contribution::with_test_advancement;
 pub(crate) use application_contribution::TestHostRequest;
 
 pub use application_contribution::with_bootstrap_advancement;
@@ -237,3 +244,9 @@ pub(crate) mod causal_inspection;
 mod record_reservations;
 
 pub(crate) mod source_disclosure;
+pub(in crate::domain_computation) use provider::QueryDurablePreparationGuard;
+
+pub use derived_source::DerivedSourceObservation;
+#[cfg(test)]
+#[path = "mod_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;

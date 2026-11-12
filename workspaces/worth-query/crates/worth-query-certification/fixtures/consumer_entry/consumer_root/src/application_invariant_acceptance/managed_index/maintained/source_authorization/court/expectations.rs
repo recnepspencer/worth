@@ -159,10 +159,17 @@ fn separately_admitted_source_reads_keep_semantic_identity_for_retained_replay()
         assert!(
             matches!(
                 replayed,
-                WorthQueryApplicationMutationOutcome::AlreadyCommitted(_)
+                WorthQueryApplicationMutationOutcome::RecoveredCommitted(_)
             ),
             "{replayed:?}"
         );
+        // D9 preserves the exact original meaning without another live receipt/result.
+        assert!(committed
+            .receipt()
+            .unwrap()
+            .matches_recorded_original(replayed.recovered_receipt().unwrap()));
+        assert!(replayed.receipt().is_none());
+        assert!(replayed.result().is_none());
         assert_eq!(
             request.retain_current_read().unwrap().selected_commit(),
             head.selected_commit()

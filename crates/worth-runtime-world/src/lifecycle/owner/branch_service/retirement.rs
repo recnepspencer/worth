@@ -15,6 +15,22 @@ where
         &self,
         observed: &ProductBranchObservation,
     ) -> Result<ProductBranchRetirementReport, RuntimeWorldBranchRetirementDenial> {
+        if let Err(cause) = self
+            .owner_identity()
+            .admit_incarnation(observed.owner_identity())
+        {
+            return Err(match cause {
+                worth_proof::HomeIncarnationDenial::ForeignHome => {
+                    RuntimeWorldBranchRetirementDenial::OwnerUnavailable
+                }
+                worth_proof::HomeIncarnationDenial::StaleIncarnation => {
+                    RuntimeWorldBranchRetirementDenial::StaleIncarnation
+                }
+            });
+        }
+        if self.state.durable.is_some() {
+            return Err(RuntimeWorldBranchRetirementDenial::DurableBranchPublicationRequired);
+        }
         let branch = observed.branch_identity();
         if observed.owner_identity() != self.owner_identity() {
             return Err(RuntimeWorldBranchRetirementDenial::OwnerUnavailable);

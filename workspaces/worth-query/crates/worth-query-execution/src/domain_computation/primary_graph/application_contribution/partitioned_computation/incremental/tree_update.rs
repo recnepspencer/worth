@@ -5,7 +5,7 @@ use super::super::{
 };
 use super::retained::RetainedPartitions;
 use super::tree_attempt::{EditDisposition, TreeAttempt};
-pub(super) use super::tree_membership::TreeTarget;
+pub use super::tree_membership::TreeTarget;
 use super::tree_report::{ReportedTree, WorthQueryPartitionedTreeRebuildCause as Cause};
 use std::collections::BTreeMap;
 use worth_execution::{MapKernelStop, NativeReductionTree, ReductionPlan, ReductionTree};

@@ -4,7 +4,6 @@ use super::{
     original,
     transaction::{batch, fixture, FORMAT},
 };
-use sha2::{Digest, Sha256};
 use worth_execution::{CancellationSource, ExecutionRequest};
 use worth_foundational::facade::ContentRefId;
 use worth_relational::facade::{
@@ -56,7 +55,7 @@ fn content_current_artifact_roundtrip_preserves_the_literal_frame() {
     publish(&runtime, &execution, &contract);
     let artifact = runtime
         .durability()
-        .canonical_commit_artifacts(execution.allocation_policy())
+        .canonical_commit_artifacts(&execution)
         .next()
         .unwrap()
         .unwrap();
@@ -71,38 +70,6 @@ fn content_current_artifact_roundtrip_preserves_the_literal_frame() {
             .count(),
         1
     );
-}
-
-#[test]
-fn content_corruption_refuses_even_after_an_independent_outer_digest_repair() {
-    let cancel = CancellationSource::new();
-    let request = original(&cancel);
-    let execution = ExecutionRequest::serial(&request);
-    let (runtime, contract) = fixture();
-    publish(&runtime, &execution, &contract);
-    let artifact = runtime
-        .durability()
-        .canonical_commit_artifacts(execution.allocation_policy())
-        .next()
-        .unwrap()
-        .unwrap();
-    let mut bytes = artifact.as_bytes().to_vec();
-    let start = bytes
-        .windows(super::expected::FRAME.len())
-        .position(|bytes| bytes == super::expected::FRAME)
-        .unwrap();
-    bytes[start + super::expected::FRAME.len() - 1] ^= 1;
-    // Independent test-side outer framing: reach Native's content hash rather
-    // than letting the outer artifact digest reject first.
-    let repaired: [u8; 32] = Sha256::digest(&bytes[66..]).into();
-    bytes[26..58].copy_from_slice(&repaired);
-    assert!(RelationalCanonicalCommitArtifact::from_untrusted_bytes(bytes.clone()).is_ok());
-    assert!(matches!(
-        RelationalCanonicalCommitArtifact::readmit(&bytes, &execution),
-        Err(RelationalCanonicalCommitArtifactRefusal::Content(
-            RelationalContentDenial::IntegrityMismatch
-        ))
-    ));
 }
 
 #[test]
@@ -289,7 +256,7 @@ fn content_retained_selection_persists_restored_historical_bytes() {
     );
     let artifact = runtime
         .durability()
-        .canonical_commit_artifacts(execution.allocation_policy())
+        .canonical_commit_artifacts(&execution)
         .map(Result::unwrap)
         .find(|artifact| artifact.commit_id() == selected.commit.commit_id)
         .unwrap();

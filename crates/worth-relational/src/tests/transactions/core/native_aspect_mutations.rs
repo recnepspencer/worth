@@ -7,10 +7,9 @@ use crate::facade::transactions::{
 };
 use crate::tests::support::*;
 use worth_foundational::facade::{
-    aspects, AbsenceLaw, AspectEquivalenceBasis, AspectEvolutionPolicy, AspectIdentity,
-    AspectMaskContract, AspectValue, ContractValidatedAspectValueView, ContractValidationInput,
+    AspectValue, ContractValidatedAspectValueView, ContractValidationInput,
     PortableAspectContractBasis, PortableAspectPatchOperation, PortableRecordAspectPatch,
-    ScalarAspectType, StructAspectValue,
+    StructAspectValue,
 };
 
 #[test]

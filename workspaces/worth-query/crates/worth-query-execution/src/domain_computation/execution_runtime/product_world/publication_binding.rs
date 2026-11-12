@@ -1,5 +1,6 @@
 use worth_runtime_world::facade::{
-    ProductBranchObservation, RuntimeWorldPublicationPort, RuntimeWorldRecoveryPort,
+    ProductBranchObservation, RuntimeWorldObservationPort, RuntimeWorldPublicationPort,
+    RuntimeWorldRecoveryPort,
 };
 
 use std::sync::Arc;
@@ -10,11 +11,12 @@ use super::runtime::WorthQueryProductRootIdentity;
 /// ports cannot extend the root's admission lifetime or choose a different head.
 #[derive(Clone)]
 pub struct WorthQueryProductPublicationBinding {
+    program_source: BranchProgramSourceCache,
     pub(super) adoption_preparation: Arc<super::adoption_preparation::AdoptionPreparationControl>,
     observation: ProductBranchObservation,
     publication: RuntimeWorldPublicationPort<(), (), (), (), ()>,
-    observation_port: worth_runtime_world::facade::RuntimeWorldObservationPort,
     recovery: RuntimeWorldRecoveryPort,
+    observation_port: RuntimeWorldObservationPort,
     clock: crate::domain_computation::execution_runtime::product_world::WorthQueryProductWorldClock,
     root_identity: Arc<WorthQueryProductRootIdentity>,
 }
@@ -24,12 +26,14 @@ impl WorthQueryProductPublicationBinding {
         adoption_preparation: Arc<super::adoption_preparation::AdoptionPreparationControl>,
         observation: ProductBranchObservation,
         publication: RuntimeWorldPublicationPort<(), (), (), (), ()>,
-        observation_port: worth_runtime_world::facade::RuntimeWorldObservationPort,
         recovery: RuntimeWorldRecoveryPort,
+        observation_port: RuntimeWorldObservationPort,
         clock: crate::domain_computation::execution_runtime::product_world::WorthQueryProductWorldClock,
         root_identity: Arc<WorthQueryProductRootIdentity>,
+        branch_program_owner: Option<Arc<worth_proof::InstalledBranchProgramSourceOwner>>,
     ) -> Self {
         Self {
+            program_source: BranchProgramSourceCache::for_owner(branch_program_owner),
             adoption_preparation,
             observation,
             publication,
@@ -38,12 +42,6 @@ impl WorthQueryProductPublicationBinding {
             clock,
             root_identity,
         }
-    }
-
-    pub(in crate::domain_computation) fn observation_port(
-        &self,
-    ) -> &worth_runtime_world::facade::RuntimeWorldObservationPort {
-        &self.observation_port
     }
 
     pub(crate) fn observation(&self) -> &ProductBranchObservation {
@@ -56,6 +54,10 @@ impl WorthQueryProductPublicationBinding {
 
     pub(crate) fn recovery(&self) -> RuntimeWorldRecoveryPort {
         self.recovery.clone()
+    }
+
+    pub(in crate::domain_computation) fn observation_port(&self) -> &RuntimeWorldObservationPort {
+        &self.observation_port
     }
 
     pub(crate) fn root_identity(&self) -> Arc<WorthQueryProductRootIdentity> {
@@ -86,12 +88,15 @@ impl super::WorthQueryProductRuntime {
             Arc::clone(&self.adoption_preparation),
             observation,
             self.owner.publication_port(),
-            self.owner.observation_port(),
             self.owner.recovery_port(),
+            self.owner.observation_port(),
             self.clock.clone(),
             self.root_identity(),
+            self.branch_program_source_owner.clone(),
         )
     }
 }
 
 mod court_doors_for_test;
+mod selected_program;
+use selected_program::BranchProgramSourceCache;

@@ -1,5 +1,3 @@
-use std::sync::Arc;
-
 use crate::branch::AdmittedRelationalBranchBasis;
 use crate::history::data::{
     BranchId, MergeBaseSelectionRule, RelationalMergeBranchBasis, RelationalMergeBranchBasisDenial,
@@ -64,8 +62,8 @@ impl<'runtime> HistoryAccess<'runtime> {
             merge_base: ResolvedMergeBase {
                 rule: MergeBaseSelectionRule::MaxCommitIdCommonAncestor,
                 commit: merge_base,
-                supporting_left_ancestors: Arc::from(left_ancestors),
-                supporting_right_ancestors: Arc::from(right_ancestors),
+                supporting_left_ancestors: left_ancestors.into(),
+                supporting_right_ancestors: right_ancestors.into(),
             },
         })
     }

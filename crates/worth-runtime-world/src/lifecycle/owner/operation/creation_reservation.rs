@@ -73,9 +73,8 @@ where
         cancellation: &RuntimeWorldCancellationToken,
         deadline: Option<RuntimeWorldInstant>,
     ) -> Result<LoweredBranchCreationPlan, RuntimeWorldBranchAdmissionDenial> {
-        if source.owner_identity() != self.owner_identity() {
-            return Err(RuntimeWorldBranchAdmissionDenial::ForeignOwner);
-        }
+        self.owner_identity()
+            .admit_branch_authority(source.owner_identity())?;
         if !self.is_open_and_bootstrapped_for_creation() {
             return Err(RuntimeWorldBranchAdmissionDenial::OwnerUnavailable);
         }
@@ -113,7 +112,7 @@ where
             reserved_component_pin_pair,
             reserved_successor_observation: _,
             reserved_publication_capacity,
-        } = reserve_publication_resources(self, &source, &commit_identity, None, false)
+        } = reserve_publication_resources(self, &source, &commit_identity, None, false, None)
             .map_err(map_reservation_cause)?;
         let relational_custody = reserve_custody(
             self,

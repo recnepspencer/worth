@@ -10,6 +10,8 @@ use worth_query_host::facade::primary_graph::{
 pub enum BankCommitDenialKind {
     ContentInconsistency,
     Content(worth_query_host::facade::primary_graph::RelationalContentRejection),
+    OriginalEffectReleased,
+    IdempotencyPreparationBusy,
     DomainValueRejected,
     StorageUnavailable(worth_query_host::facade::primary_graph::RelationalStorageUnavailable),
     ExecutionResource {
@@ -37,15 +39,14 @@ pub enum BankCommitDenialKind {
     SnapshotIdentityExhausted,
     CandidateIdentityExhausted,
     IdempotencyIntentDrift,
-    /// The key is recorded with the same intent and that commit took effect,
-    /// but the runtime no longer holds its receipt, as after a restore.
-    IdempotencyReceiptNotRetained,
+    IdempotencyForeignAffinity,
     /// The key's recorded intent was written by an earlier encoding that
     /// cannot be checked against this request.
     IdempotencyIntentUnverifiable,
     MutationBindingMismatch,
     MutationInputMismatch,
     CorrectionContextMismatch,
+    StaleIncarnation,
     CorrectionIdentityMismatch,
     OperationBodyExecutionRequired,
     UnobservedWrite,
@@ -106,6 +107,8 @@ pub(crate) const fn denial_kind(
     match kind {
         Query::ContentInconsistency => BankCommitDenialKind::ContentInconsistency,
         Query::Content(cause) => BankCommitDenialKind::Content(cause),
+        Query::OriginalEffectReleased => BankCommitDenialKind::OriginalEffectReleased,
+        Query::IdempotencyPreparationBusy => BankCommitDenialKind::IdempotencyPreparationBusy,
         Query::DomainValueRejected => BankCommitDenialKind::DomainValueRejected,
         Query::StorageUnavailable(failure) => BankCommitDenialKind::StorageUnavailable(failure),
         Query::ExecutionResource {
@@ -148,12 +151,11 @@ pub(crate) const fn denial_kind(
         Query::SnapshotIdentityExhausted => BankCommitDenialKind::SnapshotIdentityExhausted,
         Query::CandidateIdentityExhausted => BankCommitDenialKind::CandidateIdentityExhausted,
         Query::IdempotencyIntentDrift => BankCommitDenialKind::IdempotencyIntentDrift,
-        Query::IdempotencyReceiptNotRetained { .. } => {
-            BankCommitDenialKind::IdempotencyReceiptNotRetained
-        }
+        Query::IdempotencyForeignAffinity => BankCommitDenialKind::IdempotencyForeignAffinity,
         Query::IdempotencyIntentUnverifiable => BankCommitDenialKind::IdempotencyIntentUnverifiable,
         Query::MutationBindingMismatch => BankCommitDenialKind::MutationBindingMismatch,
         Query::MutationInputMismatch => BankCommitDenialKind::MutationInputMismatch,
+        Query::StaleIncarnation => BankCommitDenialKind::StaleIncarnation,
         Query::CorrectionContextMismatch => BankCommitDenialKind::CorrectionContextMismatch,
         Query::CorrectionIdentityMismatch => BankCommitDenialKind::CorrectionIdentityMismatch,
         Query::OperationBodyExecutionRequired => {
@@ -231,6 +233,13 @@ pub(crate) const fn denial_stage(
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn released_original_commit_refusal_keeps_its_terminal_meaning() {
+        assert_eq!(
+            denial_kind(WorthQueryApplicationCommitDenialKind::OriginalEffectReleased),
+            BankCommitDenialKind::OriginalEffectReleased
+        );
+    }
 
     #[test]
     fn execution_resource_retains_its_kind_location_and_memory_level() {

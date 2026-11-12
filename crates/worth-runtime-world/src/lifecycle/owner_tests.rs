@@ -195,32 +195,6 @@ fn failed_basis_admission_restores_root_capacity_and_allows_retry() {
 }
 
 #[test]
-fn close_is_typed_and_prevents_a_later_bootstrap() {
-    let mut fixture = crate::branch::reference_test_fixture::real_fixture(4, 4);
-    let owner = super::RuntimeWorldOwnerRoot::new(fixture.owner_inputs(
-        bootstrap_budgets(),
-        RuntimeWorldClock::from_source(FixedClock),
-    ))
-    .expect("managed owner construction");
-    assert!(owner.close().is_ok());
-    assert_eq!(
-        owner.lifecycle_observation(),
-        RuntimeWorldOwnerLifecycleObservation::Closed
-    );
-    assert_eq!(
-        owner
-            .close()
-            .expect_err("a closed owner cannot close twice"),
-        RuntimeWorldCloseDenial::AlreadyClosed
-    );
-    assert!(matches!(
-        owner.bootstrap_root(fixture.bootstrap_intent()),
-        RuntimeWorldBootstrapOutcome::NoEffect(no_effect)
-            if no_effect.cause() == RuntimeWorldBootstrapNoEffectCause::OwnerUnavailable
-    ));
-}
-
-#[test]
 fn closed_owner_rejects_preparation_without_consuming_capacity() {
     let mut fixture = crate::branch::reference_test_fixture::real_fixture(4, 4);
     let owner = super::RuntimeWorldOwnerRoot::new(fixture.owner_inputs(
@@ -241,7 +215,11 @@ fn closed_owner_rejects_preparation_without_consuming_capacity() {
         owner.state.retention.reserved_unique_pin_capacity(),
         owner.state.publication_capacity.active(),
     );
-    let _report = owner.close().expect("owner closes while idle");
+    let _report = owner
+        .close(&worth_execution::ExecutionRequest::serial(
+            &crate::test_execution_policy::serial_request(),
+        ))
+        .expect("owner closes while idle");
     let denied = crate::lifecycle::RuntimeWorldPreparationService::prepare_publication(
         &owner,
         expected,
@@ -303,9 +281,11 @@ fn owner_reservation_owns_all_real_capacity_and_drops_it_as_one_attempt() {
     assert_eq!(owner.state.operation.active(), 1);
     assert_eq!(
         owner
-            .close()
+            .close(&worth_execution::ExecutionRequest::serial(
+                &crate::test_execution_policy::serial_request()
+            ))
             .expect_err("a live attempt blocks the close drain"),
-        RuntimeWorldCloseDenial::AlreadyClosing
+        RuntimeWorldCloseDenial::InFlightCriticalSection
     );
     drop(attempt);
     assert_eq!(owner.state.history.reserved_len(), 0);

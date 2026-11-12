@@ -140,7 +140,7 @@ impl RelationalNativeCheckpoint {
                     lane, execution, &checkpoint, policy, &mut control,
                 ))?;
                 let (bytes, sections, members, _) =
-                    codec::encode_captured(captured, policy, placement, &mut control)?;
+                    codec::encode_captured(captured.seal_ordinary(), execution, policy, placement, &mut control)?;
                 Ok::<_, RelationalNativeCheckpointCaptureDenial>((bytes, sections, members))
             })());
         });

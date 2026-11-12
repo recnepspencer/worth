@@ -8,8 +8,8 @@ use crate::document_retention_model::{
 use worth_query_host::facade::application_contribution::WorthQueryBootstrapAdvancementPhase;
 use worth_query_host::facade::application_installation::ApplicationBuildIdentity;
 use worth_query_host::facade::application_installation::{
-    in_memory_rostered_program, in_memory_rostered_program_from_checkpoint,
-    WorthQueryApplicationCheckpoint, WorthQueryApplicationProgramRoster,
+    in_memory_rostered_program, WorthQueryApplicationCheckpoint,
+    WorthQueryApplicationProgramRoster, WorthQueryInterimCheckpointRestore,
 };
 use worth_query_host::facade::domain::WorthQueryInstalledApplicationSchema;
 use worth_query_host::facade::{declaration, primary_graph};
@@ -38,7 +38,7 @@ pub fn publish_monitor(
 pub fn restore(
     checkpoint: WorthQueryApplicationCheckpoint,
 ) -> crate::document_retention_model::MixedApplication {
-    let application = in_memory_rostered_program_from_checkpoint(
+    let application = WorthQueryInterimCheckpointRestore::rostered_program(
         crate::program::validated_program(),
         roster(),
         DocumentRetentionSchema::declaration().expect("the same neutral schema validates"),

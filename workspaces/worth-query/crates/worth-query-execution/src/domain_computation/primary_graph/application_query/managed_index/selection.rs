@@ -126,8 +126,16 @@ pub(super) struct ManagedSelectionLease<'parent, 'request, 'authority> {
 /// It describes opening coverage; fresh requests still admit every later READ.
 pub(in crate::domain_computation::primary_graph::application_query) struct MaintainedWatchSelection
 {
+    #[allow(
+        dead_code,
+        reason = "The typed diagnostic or custody payload stays owned through return and Drop; this owner does not inspect it"
+    )]
     pub(in crate::domain_computation::primary_graph::application_query) association:
         WorthQueryInstalledManagedIndexParent,
+    #[allow(
+        dead_code,
+        reason = "The typed diagnostic or custody payload stays owned through return and Drop; this owner does not inspect it"
+    )]
     pub(in crate::domain_computation::primary_graph::application_query) scope: EntityId,
     // Keeps the immutable Native source backing alive after the selection loan ends.
     native_custody: Option<Arc<worth_relational::facade::runtime::ManagedIndexSourceObservation>>,

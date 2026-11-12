@@ -14,7 +14,7 @@ impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
             .runtime
             .primary_provider
             .graph
-            .with_runtime_mut(&execution, |runtime| {
+            .with_runtime(&execution, |runtime| {
                 runtime.place_symbol_pages_cold_for_test(&execution)
             }))
     }

@@ -88,10 +88,9 @@ fn v1_ordering_runtime(
         CascadeDeletePolicy::CascadeDeleteRelations,
     )
     .build_registry();
-    let medium = TestDurableMedium::new();
     let runtime = RelationalRuntimeApi::builder()
         .schema_registry(v1_registry)
-        .build_durable(medium.attachment())
+        .build()
         .expect("valid native runtime configuration");
     let parent = changed_entities(&create_entity_outcome(execution, &runtime, "parent"))[0];
     let alpha = changed_entities(&create_entity_outcome(execution, &runtime, "alpha"))[0];
@@ -175,14 +174,17 @@ fn transition_checkpoint_and_recover(
     );
     assert!(v2_build.failed_indexes.is_empty());
 
-    crate::tests::support::checkpoint_durably(execution, &runtime)
+    runtime
+        .durability_authority()
+        .checkpoint(execution)
         .expect("checkpoint preserves both schema-qualified generations");
-    let plan = crate::tests::support::recovery_plan_for(
-        execution,
-        &runtime,
-        RecoveryVerificationMode::NormalRecoveryVerification,
-    )
-    .unwrap();
+    let plan = runtime
+        .durability()
+        .recovery_plan(
+            execution,
+            RecoveryVerificationMode::NormalRecoveryVerification,
+        )
+        .unwrap();
     let mut recovered = RelationalRuntimeApi::builder()
         .schema_registry(v2_registry)
         .build()

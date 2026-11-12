@@ -1,3 +1,6 @@
+mod sealed_root;
+pub(crate) use sealed_root::SignalSealedOwnerRoot;
+mod initial_empty_stop;
 use super::owner_metadata::SignalOwnerMetadata;
 use super::{
     SignalBranchCellState, SignalBranchExecutionCell, SignalBranchRegistry,
@@ -20,6 +23,7 @@ pub(super) mod fork_destination;
 pub(super) mod fork_reservation;
 mod inspection;
 mod output_retention;
+pub(super) mod recorded_initial_root;
 mod retention;
 #[path = "owner/retention_preflight.rs"]
 mod retention_preflight;
@@ -55,6 +59,7 @@ where
 {
     runtime_instance_id: u64,
     definition_basis: u64,
+    initial_empty_root: std::sync::OnceLock<recorded_initial_root::InitialEmptyRootWitness>,
     next_branch_id: AtomicU64,
     lifecycle: Arc<SignalOwnerLifecycleState>,
     registry: Arc<SignalBranchRegistry<SignalBranchCellState<D, I, T>>>,
@@ -67,6 +72,8 @@ where
     selected_branch_id: SignalBranchId,
     pub(super) metadata: SignalOwnerMetadata<D, I, T>,
     counters: Arc<SignalOwnerServiceCounters>,
+    // Release admission after the actual canonical owner fields are destroyed.
+    _durable_admission: Option<crate::durability::SignalDurableOwnerAdmission>,
 }
 
 pub(crate) use root::SignalOwnerRoot;
@@ -80,11 +87,15 @@ where
     fn from_partition(
         runtime_instance_id: u64,
         definition_basis: u64,
-        partition: SignalOwnerPartition<D, I, T>,
+        schema_commitment: String,
+        mut partition: SignalOwnerPartition<D, I, T>,
         basis_registry: SignalBranchBasisRegistry,
         conditional_budget: crate::runtime_policy::SignalConditionalEvaluationBudget,
         temporal_budget: crate::runtime_policy::SignalConditionalTemporalBudget,
     ) -> Arc<Self> {
+        let initial_empty_branch = partition.initial_empty_branch();
+        let mut readmitted_coordinates = partition.take_readmitted_coordinates();
+        let durable_admission = partition.take_durable_owner_admission();
         let (metadata, next_branch_id, retention, selected_branch_id, cells) =
             partition.into_parts();
         assert!(
@@ -104,6 +115,7 @@ where
         let owner = Arc::new(Self {
             runtime_instance_id,
             definition_basis,
+            initial_empty_root: std::sync::OnceLock::new(),
             next_branch_id: AtomicU64::new(next_branch_id),
             lifecycle,
             registry,
@@ -122,6 +134,7 @@ where
             selected_branch_id,
             metadata: SignalOwnerMetadata::new(metadata, runtime_instance_id, lifecycle_identity),
             counters,
+            _durable_admission: durable_admission,
         });
         let admission = owner
             .admit()
@@ -133,14 +146,18 @@ where
                 .registry
                 .reserve_named(&admission, branch_id, handle.name.clone())
                 .and_then(|reservation| {
-                    reservation.install(SignalBranchCellState::new(
+                    let mut state = SignalBranchCellState::new(
                         handle,
                         runtime_instance_id,
                         definition_basis,
                         state,
                         head_generation,
                         restore_snapshot_id,
-                    ))
+                    );
+                    if let Some(descriptor) = readmitted_coordinates.remove(&branch_id) {
+                        state.install_durable_coordinates(descriptor);
+                    }
+                    reservation.install(state)
                 })
                 .expect("validated owner partition installs each live branch exactly once");
             owner.basis_registry.rebind_cell_incarnation(
@@ -150,7 +167,11 @@ where
                 0,
                 cell.incarnation().get(),
             );
+            if initial_empty_branch == Some(branch_id) {
+                owner.install_initial_empty_witness(&admission, &cell, &schema_commitment);
+            }
         }
+        debug_assert!(readmitted_coordinates.is_empty());
         drop(admission);
         owner
     }
@@ -298,3 +319,6 @@ where
         self.lifecycle.reach_operation_boundary(boundary);
     }
 }
+#[cfg(test)]
+#[path = "owner_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;

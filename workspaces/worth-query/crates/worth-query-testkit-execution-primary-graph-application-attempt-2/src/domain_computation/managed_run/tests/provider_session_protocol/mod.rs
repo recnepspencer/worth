@@ -268,10 +268,9 @@ pub fn staged_session<'run>(
         running
             .admit_provider_execution_plan(graph)
             .expect("plan admission should succeed")
-            .readmit(&installed_fixture_phase)
+            .admit_session(&installed_fixture_phase)
+            .and_then(|(grant, receiver)| grant.prepare(receiver, &installed_fixture_phase))
     }
-    .expect("plan readmission should succeed")
-    .prepare()
     .expect("session preparation should succeed")
     .bind_reads_and_effects()
 }

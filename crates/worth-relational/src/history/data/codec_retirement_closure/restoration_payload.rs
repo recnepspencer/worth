@@ -3,15 +3,12 @@ use super::{charge, CodecRetirementClosureStop as Stop};
 use crate::history::data::canonical_commit_envelope::{
     OutputOriginHistory, OwnedValidatedOutputOrigins,
 };
-use crate::{
-    history::data::CommitId, identity::data::EntityId, runtime::RelationalRuntime,
-    transactions::data::RecordRef,
-};
+use crate::{history::data::CommitId, identity::data::EntityId, transactions::data::RecordRef};
 use worth_execution::{ExecutionResourceLease, MapKernelContext};
 
 #[allow(clippy::too_many_arguments)]
 pub(super) fn validate_member(
-    runtime: &RelationalRuntime,
+    runtime: &crate::history::data::codec_retirement_closure::history_request::RuntimeHistoryRequest<'_, '_, '_>,
     current: &OwnedValidatedOutputOrigins,
     id: EntityId,
     retirement: CommitId,
@@ -28,7 +25,7 @@ pub(super) fn validate_member(
     let origin = current.output_origin_for_entity(id, context)?;
     charge(
         context,
-        event.entities.len() + runtime.history.catalog_len(),
+        event.entities.len() + runtime.runtime.history.catalog_len(),
     )?;
     let old = event
         .entities
@@ -39,14 +36,16 @@ pub(super) fn validate_member(
     let retired = validated_history
         .by_commit(
             retirement,
-            &mut |commit| runtime.history.canonical_envelope(commit),
+            &mut |commit| runtime.commit(commit),
+            &runtime.execution(),
             context,
         )?
         .ok_or("original retirement unavailable")?;
     let original = validated_history
         .by_commit(
             predecessor,
-            &mut |commit| runtime.history.canonical_envelope(commit),
+            &mut |commit| runtime.commit(commit),
+            &runtime.execution(),
             context,
         )?
         .ok_or("original producer unavailable")?;
@@ -115,7 +114,7 @@ pub(super) fn validate_member(
 /// Compare the whole inverse roster to its exact recorded retirement before
 /// any single member can be treated as a restored producer birth.
 pub(super) fn validate_groups(
-    runtime: &RelationalRuntime,
+    runtime: &crate::history::data::codec_retirement_closure::history_request::RuntimeHistoryRequest<'_, '_, '_>,
     current: &OwnedValidatedOutputOrigins,
     validated_history: &mut OutputOriginHistory,
     context: &mut MapKernelContext<'_, '_>,
@@ -124,11 +123,12 @@ pub(super) fn validate_groups(
     let Some(event) = current.authored_source_restoration() else {
         return Ok(());
     };
-    charge(context, runtime.history.catalog_len())?;
+    charge(context, runtime.runtime.history.catalog_len())?;
     let retired = validated_history
         .by_commit(
             event.retirement,
-            &mut |commit| runtime.history.canonical_envelope(commit),
+            &mut |commit| runtime.commit(commit),
+            &runtime.execution(),
             context,
         )?
         .ok_or("restoration retirement absent")?;
@@ -194,11 +194,12 @@ pub(super) fn validate_groups(
         {
             return Err("restoration changes producer provenance or membership".into());
         }
-        charge(context, runtime.history.catalog_len())?;
+        charge(context, runtime.runtime.history.catalog_len())?;
         let live = validated_history
             .by_commit(
                 predecessor,
-                &mut |commit| runtime.history.canonical_envelope(commit),
+                &mut |commit| runtime.commit(commit),
+                &runtime.execution(),
                 context,
             )?
             .ok_or("restoration live predecessor absent")?;
@@ -259,7 +260,7 @@ pub(super) fn validate_groups(
 
 #[allow(clippy::too_many_arguments)]
 pub(super) fn validate_relation(
-    runtime: &RelationalRuntime,
+    runtime: &crate::history::data::codec_retirement_closure::history_request::RuntimeHistoryRequest<'_, '_, '_>,
     current: &OwnedValidatedOutputOrigins,
     id: crate::identity::data::RelationId,
     retirement: CommitId,
@@ -280,7 +281,7 @@ pub(super) fn validate_relation(
     }
     charge(
         context,
-        event.relations.len() + runtime.history.catalog_len(),
+        event.relations.len() + runtime.runtime.history.catalog_len(),
     )?;
     let old = event
         .relations
@@ -291,7 +292,8 @@ pub(super) fn validate_relation(
     let original = validated_history
         .by_commit(
             predecessor,
-            &mut |commit| runtime.history.canonical_envelope(commit),
+            &mut |commit| runtime.commit(commit),
+            &runtime.execution(),
             context,
         )?
         .ok_or("restored edge predecessor absent")?;
@@ -323,42 +325,52 @@ pub(super) fn validate_relation(
         .iter()
         .find(|edge| edge.id == id)
         .ok_or("restored edge absent")?;
-    let patch = crate::authority::mutation::intents::relation_endpoint_candidate::append_authoritative_endpoints(
-        patch, Some(plan), edge.source, edge.target);
-    let expected = match readmit_portable_record_aspect_patch(
-        patch,
-        PortablePatchReadmissionPurpose::RecordCreation,
-        &|key: &AspectKey| plan.contract_for(key),
-    ) {
-        worth_proof::TransitionOutcome::Success(patch) => patch,
-        worth_proof::TransitionOutcome::Denied(_) => {
-            return Err("restored edge original contract differs".into())
+    let candidate =
+        crate::authority::mutation::intents::relation_endpoint_candidate::append_portable_in_scope(
+            &patch,
+            plan,
+            edge.source,
+            edge.target,
+            lease,
+            context,
+        )
+        .map_err(Stop::Request)?;
+    candidate.compare(|patch| {
+        let expected = match readmit_portable_record_aspect_patch(
+            patch,
+            PortablePatchReadmissionPurpose::RecordCreation,
+            &|key: &AspectKey| plan.contract_for(key),
+        ) {
+            worth_proof::TransitionOutcome::Success(patch) => patch,
+            worth_proof::TransitionOutcome::Denied(_) => {
+                return Err("restored edge original contract differs".into())
+            }
+        };
+        let expected = match expected.apply_to_optional(None) {
+            worth_proof::TransitionOutcome::Success(state) => {
+                state.map(|state| state.into_parts().into_parts().0)
+            }
+            worth_proof::TransitionOutcome::Denied(_) => {
+                return Err("restored edge original payload differs".into())
+            }
+        };
+        let actual = current
+            .patch
+            .authoritative_record_patches
+            .iter()
+            .find(|patch| patch.target == RecordRef::Relation(id))
+            .ok_or("restored edge patch absent")?;
+        let actual = super::payload_reconstruction::apply(
+            None,
+            &actual.authoritative_patch,
+            plan,
+            true,
+            lease,
+            context,
+        )?;
+        if expected.as_ref() != actual.state.as_ref() {
+            return Err("restoration changed original edge payload".into());
         }
-    };
-    let expected = match expected.apply_to_optional(None) {
-        worth_proof::TransitionOutcome::Success(state) => {
-            state.map(|state| state.into_parts().into_parts().0)
-        }
-        worth_proof::TransitionOutcome::Denied(_) => {
-            return Err("restored edge original payload differs".into())
-        }
-    };
-    let actual = current
-        .patch
-        .authoritative_record_patches
-        .iter()
-        .find(|patch| patch.target == RecordRef::Relation(id))
-        .ok_or("restored edge patch absent")?;
-    let actual = super::payload_reconstruction::apply(
-        None,
-        &actual.authoritative_patch,
-        plan,
-        true,
-        lease,
-        context,
-    )?;
-    if expected.as_ref() != actual.state.as_ref() {
-        return Err("restoration changed original edge payload".into());
-    }
-    Ok(())
+        Ok(())
+    })
 }

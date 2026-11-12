@@ -185,7 +185,9 @@ where
 }
 
 fn visible_at_version<M: HistoricalMetadata + Clone>(
-    history: &crate::storage::substrate::SharedColumn<M>,
+    history: &crate::storage::substrate::SharedColumn<
+        crate::storage::substrate::StorageAllocation<M>,
+    >,
     version_id: VersionId,
 ) -> bool {
     let bound = VersionBound::new(version_id);

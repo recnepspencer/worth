@@ -1,16 +1,25 @@
 mod aspect_history;
+mod association_discovery;
+pub use association_discovery::RelationalAssociationDiscovery;
+pub(crate) mod recorded_json_allocation;
 mod replay_retention_denial;
+pub use recorded_json_allocation::RecordedRelationalJsonHeapQuote;
 pub use replay_retention_denial::RelationalReplayRetentionDenial;
 mod branch_creation;
+mod caller_association;
 mod canonical_commit_allocation;
 mod canonical_commit_envelope;
+pub use caller_association::{RelationalCallerAssociation, RelationalCallerAssociationRefusal};
 pub(crate) use canonical_commit_envelope::{
     validate_authored_restoration_candidate, OutputOriginHistory,
 };
 mod codec_retirement_closure;
 pub(crate) use codec_retirement_closure::{historical_producer_antecedent, source_scope_closure};
 mod codec_retirement_preservation;
-pub(crate) use canonical_commit_envelope::CanonicalCoupledAuthoredSources;
+pub(crate) use canonical_commit_envelope::{
+    CanonicalCoupledAuthoredPublication, CanonicalCoupledAuthoredSources,
+    CanonicalHistoricalOutputSelection,
+};
 pub(crate) use codec_retirement_closure::select_owned_scope_dependent;
 pub(crate) use codec_retirement_closure::OwnedScopeDependentSelection;
 pub(crate) use codec_retirement_closure::{
@@ -46,31 +55,35 @@ pub use aspect_history::{
     LineageAspectHistory, LineageAspectHistoryQueryResult, LineageAspectResolutionDigest,
 };
 pub use branch_creation::{BranchCreateError, BranchCreateErrorClass};
-pub(crate) use canonical_commit_envelope::CanonicalOutputPublication;
+#[cfg(test)]
+pub(crate) use canonical_commit_envelope::EmbeddedCheckpointEnvelopeRef;
 pub(crate) use canonical_commit_envelope::{
     AuthoritativeArtifactEnvelopeRef, CanonicalAuthoredIndexWrite, CanonicalAuthoredIndexWrites,
-    CommittedRecordChange, EmbeddedCheckpointEnvelopeRef,
+    CanonicalIndexDefinitionDelta, CommittedRecordChange,
 };
 pub(crate) use canonical_commit_envelope::{
-    CanonicalCodecRetirementKind, CanonicalRequiredOutputCodecRetirement,
+    CanonicalAuthoredRestoration, CanonicalAuthoredRetirement, CanonicalCodecRetirementKind,
+    CanonicalOutputMember, CanonicalProducerRetirement, CanonicalRequiredOutputCodecRetirement,
     CanonicalRequiredOutputMaterialization, CanonicalRequiredOutputMaterializationRecord,
-    CanonicalRequiredOutputOrigin,
+    CanonicalRequiredOutputOrigin, CanonicalRequiredOutputRelation,
 };
 pub use canonical_commit_envelope::{
     CanonicalCommitAuthorityKind, CanonicalCommitEnvelope, CanonicalOwnedGraphSelection,
     CanonicalRetainedEntitySelection, RelationalDescriptiveTouch, RelationalDescriptiveTouchGraph,
-    RelationalDescriptiveTouchPrecision, RelationalReplayRecord, RelationalTouchAdjacencyDirection,
-    ReplaySchemaVersion,
+    RelationalDescriptiveTouchPrecision, RelationalIntroducedSchemaObservation,
+    RelationalOriginalInputObservation, RelationalReplayRecord, RelationalTouchAdjacencyDirection,
+    ReplaySchemaVersion, SharedCanonicalCommitEnvelope,
 };
 pub(crate) use canonical_commit_envelope::{
-    CanonicalOutputMember, CanonicalRequiredOutputRelation,
+    CanonicalCommitEnvelopeBody, CanonicalCommitEnvelopeDraft, CanonicalEnvelopeReadmissionMemory,
+    CanonicalOutputPublication,
 };
 pub use canonical_record_allocation::RecordAllocationClass;
 pub(crate) use canonical_record_allocation::{CanonicalRecordAllocation, RecordAllocationOrigin};
 pub use committed_version::CommittedVersionSummary;
 pub use merge_branch_basis::{
-    MergeBaseSelectionRule, RelationalMergeBranchBasis, RelationalMergeBranchBasisDenial,
-    ResolvedMergeBase,
+    MergeBaseSelectionRule, MergeBasisAncestors, RelationalMergeBranchBasis,
+    RelationalMergeBranchBasisDenial, ResolvedMergeBase,
 };
 #[cfg(test)]
 pub use merge_branch_basis_foundational::{
@@ -218,7 +231,17 @@ pub struct MergeInspection {
     pub can_merge: bool,
 }
 
-pub(crate) use canonical_commit_envelope::{CanonicalEnvelopeWire, PositionedEnvelopeSeed};
+pub(crate) use canonical_commit_envelope::{CanonicalEnvelopeSeed, CanonicalEnvelopeWire};
 
+pub(crate) use canonical_commit_envelope::{
+    CodecDeclarationsReadmissionMemory, StrategyReadmissionMemory,
+};
+
+pub(crate) use canonical_commit_envelope::EnvelopeProjection;
+
+pub(crate) use canonical_commit_envelope::CanonicalEnvelopeControlAllocation;
 pub(crate) use canonical_commit_envelope::LiveManagedSourceHistory;
 pub(crate) use canonical_commit_envelope::{AppliedPublicationInputAccess, LivePublicationInputs};
+#[cfg(test)]
+#[path = "mod_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;

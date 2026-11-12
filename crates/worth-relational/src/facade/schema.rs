@@ -4,7 +4,9 @@ pub use crate::derived_relation::{
     DerivedRelationGraphLaws, DerivedRelationHandle, DerivedRelationIdentity, DerivedRelationLaw,
     DerivedRelationLawViolation, DerivedRelationMinimumReachability, DerivedRelationNode,
 };
-pub use crate::graph_member::{NativeMemberDomain, NativeMemberKey, ProjectedMemberCoordinate};
+pub use crate::graph_member::{
+    NativeMemberDomain, NativeMemberKey, ProjectedMemberCoordinate, ProjectedMemberStorage,
+};
 pub use crate::projected_member_domain::{
     ObservedProjectedMember, ProjectedMemberCaseHandle, ProjectedMemberDomainDenial,
     ProjectedMemberDomainHandle, ProjectedMemberDomainIdentity, ProjectedMemberDomainParts,
@@ -35,7 +37,7 @@ pub use crate::schema::data::{
     RelationIntegrityPlanCatalog, RelationIntegrityPlanRevision, RelationKindRegistration,
     RelationalAspectChangeKind, RelationalSchemaRegistry, SchemaAuthoritySnapshot,
     SchemaAuthoritySnapshotParts, SchemaBoundaryFingerprint, SchemaBridgeDescriptor,
-    SchemaBridgeabilityClassification, SchemaContinuationAdmissionObservation,
+    SchemaBridgeabilityClassification, SchemaChangeText, SchemaContinuationAdmissionObservation,
     SchemaContinuationClassification, SchemaContinuationDescriptor, SchemaDiffAtom,
     SchemaDiffDetail, SchemaElementKind, SchemaElementRef, SchemaId, SchemaLineageArtifact,
     SchemaLineageOrderingSemantics, SchemaPublicationImpact, SchemaReconciliationClassification,

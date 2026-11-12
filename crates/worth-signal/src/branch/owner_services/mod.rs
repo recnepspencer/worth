@@ -3,6 +3,14 @@
 //! This module exposes the frozen public vocabulary and assembles the private
 //! synchronization and capacity kernel consumed by later service phases.
 
+mod initial_empty_stop;
+mod owner_stop_denial;
+pub use initial_empty_stop::{
+    PreparedInitialEmptySignalStop, SignalInitialEmptyStopRefused,
+    StoppedInitialEmptySignalAllocation,
+};
+pub use owner_stop_denial::SignalOwnerStopDenial;
+
 mod admission_table;
 mod basis_port;
 mod branch_cell_state;
@@ -14,10 +22,21 @@ mod compatibility;
 pub(crate) mod conditional_execution;
 mod counters;
 mod definition_publication_port;
+mod durable_branch_handle;
+mod durable_source_port;
 mod lifecycle_observation;
 mod lifecycle_port;
-mod lifecycle_state;
+pub(crate) mod lifecycle_state;
 mod mutation_port;
+pub use durable_branch_handle::SignalDurableBranchHandle;
+pub(crate) mod durable_publication;
+pub use durable_publication::{
+    SignalDurableAdvanceCompletion, SignalDurableAdvanceDenial, SignalDurableAdvanceDriveRefusal,
+    SignalDurableAdvanceOutput, SignalDurableAdvanceProgress, SignalDurableAdvanceTask,
+    SignalDurableBranchMutationPort, SignalDurableForkResult, SignalDurableOwnerEffect,
+    SignalDurableTransactionResult,
+};
+pub use durable_source_port::{SignalDurableBranchSourcePort, SignalDurableSourceDenial};
 mod operation_control;
 pub(super) mod owner;
 mod owner_metadata;
@@ -74,7 +93,9 @@ pub(in crate::branch) use lifecycle_state::{
     SignalOwnerOperationAdmission,
 };
 pub use mutation_port::{SignalBranchForkReservation, SignalBranchMutationPort};
-pub(crate) use owner::{SignalOwner, SignalOwnerRoot, DEFAULT_MAXIMUM_LIVE_SIGNAL_BRANCHES};
+pub(crate) use owner::{
+    SignalOwner, SignalOwnerRoot, SignalSealedOwnerRoot, DEFAULT_MAXIMUM_LIVE_SIGNAL_BRANCHES,
+};
 
 pub use cancellation::{SignalOwnerCancellationSource, SignalOwnerCancellationToken};
 pub use counters::SignalOwnerServiceCostSnapshot;
@@ -90,5 +111,8 @@ pub use owner::SignalOwnerServiceIssuanceDenial;
 pub use service_ports::SignalOwnerServicePorts;
 pub use unavailable::SignalOwnerUnavailable;
 
+#[cfg(test)]
+#[path = "mod_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;
 #[cfg(test)]
 mod tests;

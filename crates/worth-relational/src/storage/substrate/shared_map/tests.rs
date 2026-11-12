@@ -5,7 +5,7 @@ use std::collections::BTreeMap;
 proptest! {
     #[test]
     fn persistent_edits_match_an_independent_ordered_map(actions in prop::collection::vec((0u16..200, any::<bool>(), any::<u64>()), 0..500)) {
-        let mut map = SharedMap::new();
+        let mut map = SharedMap::<u16,u64>::new();
         let mut expected = BTreeMap::new();
         for (key, insert, value) in actions {
             let retained = map.clone();
@@ -26,7 +26,7 @@ proptest! {
     }
 }
 
-fn assert_balanced<K: Ord + Copy, V: Clone>(
+fn assert_balanced<K: Ord + Copy, V: StoredValue>(
     root: &Option<Arc<node::MapNode<K, V>>>,
 ) -> (usize, usize) {
     let Some(node) = root else { return (0, 0) };
@@ -51,7 +51,7 @@ fn cold_sorted_construction_matches_ordered_map_and_remains_mutable() {
             .map(|key| (key, key + 1))
             .collect::<Vec<_>>();
         let expected = values.iter().copied().collect::<BTreeMap<_, _>>();
-        let mut map = SharedMap::from_sorted_unique(values);
+        let mut map = SharedMap::<u64, u64>::from_sorted_unique(values);
         assert!(map.iter().eq(expected.iter()));
         assert_balanced(&map.root);
         map.insert(10_000, 10_001);
@@ -92,7 +92,7 @@ fn replacing_and_removing_retained_values_never_clone_displaced_payloads() {
         }
     }
     let clones = Arc::new(AtomicUsize::new(0));
-    let mut map: SharedMap<_, _> = (0..1024)
+    let mut map: SharedMap<_, crate::storage::substrate::StorageAllocation<Counted>> = (0..1024)
         .map(|key| (key, Counted(clones.clone())))
         .collect();
     let retained = map.clone();
@@ -109,7 +109,8 @@ fn replacing_and_removing_retained_values_never_clone_displaced_payloads() {
 
 #[test]
 fn targeted_mutation_does_not_change_a_retained_map() {
-    let mut map: SharedMap<_, _> = (0..10_000).map(|key| (key, key.to_string())).collect();
+    let mut map: SharedMap<_, crate::storage::substrate::StorageAllocation<String>> =
+        (0..10_000).map(|key| (key, key.to_string())).collect();
     let retained = map.clone();
     map.get_mut(&5_000).unwrap().push('!');
     assert_eq!(retained.get(&5_000).unwrap(), "5000");
@@ -122,8 +123,70 @@ fn targeted_mutation_does_not_change_a_retained_map() {
 }
 
 #[test]
+fn inline_header_footprints_remove_only_actual_header_arcs() {
+    use crate::identity::data::{KindId, RelationId};
+    use crate::storage::partition::AdjacencySet;
+    use crate::storage::substrate::{
+        visit_inline_value, StorageAllocationObservation, StorageAllocationVisitor,
+    };
+    type Header = SharedMap<RelationId, ()>;
+    #[derive(Default)]
+    struct Inventory(Vec<StorageAllocationObservation>);
+    impl StorageAllocationVisitor for Inventory {
+        fn visit(&mut self, value: StorageAllocationObservation) -> bool {
+            self.0.push(value);
+            true
+        }
+    }
+    fn inventory<K: Ord + Copy, V: StoredValue>(map: &SharedMap<K, V>) -> Inventory {
+        let mut found = Inventory::default();
+        map.visit_allocations(true, &mut found, &mut visit_inline_value);
+        found
+    }
+    let old_kind = Arc::<MapNode<KindId, Arc<Header>>>::layout_bytes();
+    let new_kind = Arc::<MapNode<KindId, Header>>::layout_bytes();
+    let kind_header = Arc::<Header>::layout_bytes();
+    let old_kind_map: SharedMap<KindId, Arc<Header>> =
+        [(KindId(7), Header::default())].into_iter().collect();
+    let new_kind_map: SharedMap<KindId, Header> =
+        [(KindId(7), Header::default())].into_iter().collect();
+    let old = inventory(&old_kind_map);
+    let new = inventory(&new_kind_map);
+    assert_eq!(old.0.len(), 2);
+    assert_eq!(new.0.len(), 1);
+    assert_eq!(
+        old.0.iter().map(|owner| owner.bytes).sum::<u64>(),
+        old_kind + kind_header
+    );
+    assert_eq!(new.0.iter().map(|owner| owner.bytes).sum::<u64>(), new_kind);
+    assert!(new_kind < old_kind + kind_header);
+    let old_slot = Arc::<MapNode<usize, Arc<AdjacencySet>>>::layout_bytes();
+    let new_slot = Arc::<MapNode<usize, AdjacencySet>>::layout_bytes();
+    let slot_header = Arc::<AdjacencySet>::layout_bytes();
+    let policy = crate::config::data::AdjacencyPolicy {
+        backend: crate::config::data::AdjacencyBackend::InlineSmallDegreeAdjacency,
+        small_degree_inline_capacity: 4,
+    };
+    let old_slot_map: SharedMap<usize, Arc<AdjacencySet>> =
+        [(11, AdjacencySet::new(&policy))].into_iter().collect();
+    let new_slot_map: SharedMap<usize, AdjacencySet> =
+        [(11, AdjacencySet::new(&policy))].into_iter().collect();
+    let old = inventory(&old_slot_map);
+    let new = inventory(&new_slot_map);
+    assert_eq!(old.0.len(), 2);
+    assert_eq!(new.0.len(), 1);
+    assert_eq!(
+        old.0.iter().map(|owner| owner.bytes).sum::<u64>(),
+        old_slot + slot_header
+    );
+    assert_eq!(new.0.iter().map(|owner| owner.bytes).sum::<u64>(), new_slot);
+    assert!(new_slot < old_slot + slot_header);
+    eprintln!("kind header: old node {old_kind} + header Arc {kind_header}, inline node {new_kind}; adjacency header: old node {old_slot} + header Arc {slot_header}, inline node {new_slot}");
+}
+
+#[test]
 fn suffix_seek_matches_an_independent_ordered_filter() {
-    let values: SharedMap<_, _> = (0..128_u64)
+    let values: SharedMap<u64, u64> = (0..128_u64)
         .filter(|key| key % 3 != 0)
         .map(|key| (key, key * 7))
         .collect();

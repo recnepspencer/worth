@@ -14,7 +14,7 @@ use worth_store_physical_format::{
 use worth_store_physical_integrity::{PhysicalArtifactScope, PhysicalByteRange};
 
 use super::super::manifest_entry_budget::{EntryAdmission, ManifestEntryBudget};
-use super::super::{context::PlanningContext, resolved_basis::ResolvedPlanningBasis};
+use super::super::{context::PlanningContext, resolved_basis::ResolvedPlanningState};
 use super::historical_publication::{self, HistoricalFailure};
 
 // BlobSessionDeclarationV1's fixed 108-byte payload plus its 48-byte envelope.
@@ -22,7 +22,7 @@ const DECLARATION_FRAME_BYTES: u64 = (BLOB_RECORD_HEADER_BYTES + 108) as u64;
 
 pub(super) fn verify(
     mut context: PlanningContext,
-    basis: &mut ResolvedPlanningBasis,
+    basis: &mut ResolvedPlanningState,
 ) -> Result<PlanningContext, crate::entry::PhysicalRecoveryOutcome> {
     for index in 0..basis.redo.projections().len() {
         let projection = &basis.redo.projections()[index];

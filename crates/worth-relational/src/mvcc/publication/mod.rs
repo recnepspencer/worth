@@ -2,6 +2,7 @@ pub(crate) use application_publication::BoundAuthoredCoupling;
 pub(crate) use application_publication::CoupledSource;
 mod application_publication;
 mod authority;
+mod caller_association;
 mod preparation_denial;
 pub use application_publication::RelationalInstalledApplicationPublicationAuthority;
 pub(crate) use application_publication::{origin_denial, RequiredOutputPublicationAdmission};
@@ -55,7 +56,8 @@ pub use companion::{
     PreparedCompanionBranchCell, PreparedCompanionDerivedRoot, PreparedPublicationCompanionEffect,
     PublicationCompanionPreflight, PublicationCompanionRegistration,
     PublicationCompanionRegistrationPort, PublicationCompanionRegistrationStop,
-    RelationalPublicationCompanion, ReservedCompanionBranchCell,
+    PublicationCompanionRetirementDenial, RelationalPublicationCompanion,
+    ReservedCompanionBranchCell, RetiredPublicationCompanionRegistration,
 };
 pub use outcome::{
     PerformedRelationalCommit, PublishRelationalCommit, RelationalPublicationDeferred,
@@ -72,5 +74,8 @@ pub(crate) use application_publication::{native_birth_fixture, native_meaning_fi
 
 #[cfg(test)]
 pub(crate) use application_publication::native_roles_fixture;
+#[cfg(test)]
+#[path = "mod_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;
 
 pub(crate) use application_publication::require_graph_coverage;

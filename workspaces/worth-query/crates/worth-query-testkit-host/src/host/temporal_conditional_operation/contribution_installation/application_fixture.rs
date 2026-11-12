@@ -16,13 +16,14 @@ pub fn installed_application() -> application_installation::WorthQueryProgramApp
         clock_control,
         contacts: contacts.clone(),
         install_route: true,
+        definition_only: false,
     };
     application_installation::in_memory_program(
         validated_program(),
         TemporalHostSchema::declaration().unwrap(),
         (configuration,),
         ApplicationBuildIdentity::parse("11111111-1111-1111-1111-111111111111").unwrap(),
-        WorthQueryInMemoryApplicationLimits::new(
+        WorthQueryApplicationLimits::new(
             product_world_resources(1_024),
             runtime::WorthQueryApplicationQueryResourceProfile::new(
                 std::num::NonZeroUsize::new(128).expect("concurrent graph work is non-zero"),

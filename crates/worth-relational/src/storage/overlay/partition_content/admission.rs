@@ -19,6 +19,10 @@ pub(super) fn hash_controlled(
     // byte bounds; integer widths and digest-byte entropy are representation,
     // not different native operations. Every write still polls the request.
     work.prepare(1, 0)?;
+    crate::execution::phase_observation::hash_bytes(
+        crate::execution::phase_observation::HashPurpose::PartitionValue,
+        b"worth.relational.partition-value.v2\0".len() + 8 + domain.len(),
+    );
     let mut hash = Sha256::new();
     hash.update(b"worth.relational.partition-value.v2\0");
     hash.update((domain.len() as u64).to_be_bytes());
@@ -48,6 +52,10 @@ impl std::io::Write for AdmittedHashWriter<'_, '_, '_> {
                 "original content reconstruction request stopped",
             ));
         }
+        crate::execution::phase_observation::hash_bytes(
+            crate::execution::phase_observation::HashPurpose::PartitionValue,
+            bytes.len(),
+        );
         self.hash.update(bytes);
         Ok(bytes.len())
     }

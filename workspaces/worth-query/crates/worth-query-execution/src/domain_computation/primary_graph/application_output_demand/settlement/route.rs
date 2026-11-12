@@ -37,15 +37,15 @@ impl WorthQueryOutputDemandSettlement {
         if let Some(receipt) = self.application_commit_receipt() {
             return receipt.principal_scope().scope() == scope
                 && receipt.idempotency_binding().source_partition_identity()
-                    == Some(expected.source_partition);
+                    == Some(*expected.source_partition.bytes());
         }
         if let Some(stable) = &self.stable {
             return stable.exact_settlement().source().scope == scope
-                && stable.source_partition_identity() == Some(expected.source_partition);
+                && stable.source_partition_identity() == Some(*expected.source_partition.bytes());
         }
         self.restored_source.as_ref().is_some_and(|restored| {
             restored.source_scope == scope
-                && restored.origin.partition() == expected.source_partition
+                && restored.origin.partition() == *expected.source_partition.bytes()
         })
     }
 }

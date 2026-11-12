@@ -11,14 +11,14 @@ pub use crate::aspects::{
     AspectEvolutionClassifiedContractArtifact, AspectEvolutionClassifiedContracts,
     AspectEvolutionKind, AspectEvolutionPolicy, AspectEvolutionVerdict,
     AspectFrontDoorConstructionDenial, AspectIdentity, AspectKey, AspectMask, AspectMaskContract,
-    AspectMaskContractFrontDoor, AspectPatchFrontDoor, AspectShape, AspectValidationFrontDoor,
-    AspectValidationInputStep, AspectValuePosture, AspectVocabularyFrontDoor, AspectsFrontDoor,
-    AuthoritativeAspectChangeKind, AuthoritativePatchApplicationDenial,
-    AuthoritativePatchConstructionDenial, AuthoritativeRecordAspectPatch,
-    AuthoritativeRecordAspectState, AuthoritativeRecordAspectStateAdmitted,
-    AuthoritativeRecordAspectStateArtifact, AuthoritativeStateAdmissionDenial,
-    AuthoritativeStateFrontDoor, CanonicalAspectStateMap, CanonicalFieldPath,
-    ContractValidatedAspectArtifact, ContractValidatedAspectValue,
+    AspectMaskContractFrontDoor, AspectPatchFrontDoor, AspectPatchStorageBounds, AspectShape,
+    AspectValidationFrontDoor, AspectValidationInputStep, AspectValuePosture,
+    AspectVocabularyFrontDoor, AspectsFrontDoor, AuthoritativeAspectChangeKind,
+    AuthoritativePatchApplicationDenial, AuthoritativePatchConstructionDenial,
+    AuthoritativeRecordAspectPatch, AuthoritativeRecordAspectState,
+    AuthoritativeRecordAspectStateAdmitted, AuthoritativeRecordAspectStateArtifact,
+    AuthoritativeStateAdmissionDenial, AuthoritativeStateFrontDoor, CanonicalAspectStateMap,
+    CanonicalFieldPath, ContractValidatedAspectArtifact, ContractValidatedAspectValue,
     ContractValidatedAspectValueView, ContractValidationDenial, ContractValidationInput,
     DiagnosticMask, DiagnosticMaskFrontDoor, FieldDeclaration, FieldKey, FieldLevelAspectPatch,
     FieldLevelPatchBuilder, FieldRequirement, MaskAdmissibilityDenial, MutationMask,
@@ -27,7 +27,8 @@ pub use crate::aspects::{
     PortableAspectFieldSet, PortableAspectPatchOperation, PortableAspectReadmissionDenial,
     PortablePatchReadmissionPurpose, PortableRecordAspectPatch, PortableRecordAspectState,
     PortableRecordAspectStateEntry, ProjectionMask, ProjectionMaskFrontDoor, ReferenceAspectType,
-    StructAspectShape, StructAspectValue, StructAspectValueConstructionDenial, StructFieldBuilder,
+    StructAspectShape, StructAspectValue, StructAspectValueConstructionDenial,
+    StructAspectValueSortedFieldsDenied, StructAspectValueStorageBounds, StructFieldBuilder,
     StructFieldsFrontDoor, StructValueBuilder, TruthPartitionRole, WholeAspectPatchBuilder,
 };
 pub use crate::boundary::{
@@ -394,6 +395,44 @@ pub use crate::diagnostics::{
     FoundationalReportArtifactKind, FoundationalSummaryArtifactKind,
     FoundationalSupportReportArtifactKind,
 };
+pub use crate::durability::{
+    ApplicationHomeBinding, ApplicationHomeBindingDescriptionDenial,
+    AuthoredProviderReconstructionDenial, BridgeAuthoredProviderDescription,
+    BridgeAuthoredProviderDescriptions, BridgeConditionalProviderRole,
+    BridgeSemanticClaimReference, CheckpointAdmissionCut, CheckpointAdmissionScope,
+    CheckpointProductBindingIdentity, CompositeAttemptAssociation,
+    CompositeAttemptAssociationOwnerMismatch, DiagnosticRecordAbsence, DiagnosticRecordReadDenial,
+    DispatchAttemptIdentity, DurableArtifactRetention, DurableCompositeCommitIdentity,
+    DurableCompositePublicationAttemptIdentity, DurableIdentity, DurableOwnerFamily,
+    DurableProductBranchIdentity, DurableProductBranchIncarnation, DurableProductBranchNameDenial,
+    DurableProductBranchReference, DurableProductReferenceGeneration,
+    DurableProductReferenceOwnerMismatch, DurableProductUnpublishedOwnerEffectsIdentity,
+    DurableQueryOutputSettlement, DurableSignalAdmissionIdentity, DurableSignalBranchIdentity,
+    DurableSignalCellIncarnation, DurableSignalConditionalDefinitionOccurrence,
+    DurableSignalConditionalOccurrence, DurableSignalGeneration, DurableSignalNodeIdentity,
+    DurableSignalOwnerIdentity, DurableSignalSnapshotIdentity, DurableStateFamily,
+    DurableWorldBootstrapAttemptIdentity, DurableWorldOwnerIdentity, ExternalEffectNoEffectCause,
+    HomeIdentity, HomeIdentityDenial, HomeIncarnation, HomeIncarnationExhausted,
+    HomeProgramBinding, HomeProgramRevisionBoundary, HomeProgramTransitionBodyDigest,
+    HomeProgramTransitionCaller, HomeProgramTransitionCallerDenial,
+    HomeProgramTransitionCatalogDigest, HomeProgramTransitionDescriptionDenial,
+    HomeProgramTransitionIdentity, HomeProgramTransitionInstallationBinding,
+    HomeProgramTransitionPlanDescription, HomeProgramTransitionPlanDigest,
+    HomeProgramTransitionProgramStep, HomeProgramTransitionSchemaCarrierDigest,
+    HomeProgramTransitionSchemaDigest, HomeProgramTransitionStepAssociation,
+    HomeProgramTransitionStepRole, HomeProgramTransitionTargetMeaning,
+    MemoryProductBranchReference, NativeCheckpointBranchObservation,
+    NativeCheckpointBranchReference, NativeCheckpointBranchTarget,
+    ProgramSupportObligationIdentity, ProgramSupportObligationKind, ProgramSupportStatus,
+    RecordedCompositePublicationAttemptIdentity, RecordedProductBranchReference, RetentionClass,
+    SignalBranchAdvanceIdentity, SignalBranchAdvanceReference, SignalBranchEffectKind,
+    SignalConditionalDefinitionOwnerMismatch, SignalDefinitionProjectionOutcome,
+    SignalDefinitionTransitionIdentity, SignalDefinitionTransitionReference, SignalDurableJournal,
+    SignalOwnerSlotIdentity, UncleanRecoveryUnsupported, UnsupportedDurableOwnerTag,
+    WorkflowEndingActorDecodeDenial, WorkflowEndingActorProvenance, WorldDurableJournal,
+    WorldOwnerCoordinate, WorldOwnerSlotIdentity,
+};
+pub use crate::durable_publication::DurablePublicationFate;
 pub use crate::execution::{
     DeterminismContract, EquivalenceContractId, ExecutionBudget, ExecutionFallbackCause,
     ExecutionPhysicalReport, ExecutionPosture, ExecutionReport, ExecutionRequestPolicy,
@@ -718,3 +757,8 @@ pub use crate::value_shape::{
 pub use worth_value_shape_derive::{ChargedBytes, WorthValue};
 
 pub use crate::projected_candidate_content::ProjectedCandidateContentV1;
+
+pub use crate::durability::{
+    CorrectionMaterialPinIdentity, CorrectionMaterialPinOwner, CorrectionMaterialPinTerminal,
+    WorldOriginalFate,
+};

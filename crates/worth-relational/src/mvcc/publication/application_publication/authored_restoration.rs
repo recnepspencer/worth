@@ -66,3 +66,6 @@ impl RelationalAuthoredRestoration {
             .map_err(super::custody::execution_stop)
     }
 }
+#[cfg(test)]
+#[path = "authored_restoration_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;

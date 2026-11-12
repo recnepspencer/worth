@@ -95,7 +95,7 @@ fn effect_verification_scratch_requires_native_capacity_before_media_read() {
     let mut discovery = media.bounded_discovery(64, 2 << 20).unwrap();
     let scratch = effect.verification_additional_peak_bytes(format).unwrap();
     let held = window
-        .reserve_owned(window.recovery_byte_limit() - 1)
+        .reserve_owned(window.recovery_byte_limit() - crate::physical_runtime::record_serving::PreparedRecoveredCustodyBacking::required_bytes() - 1)
         .unwrap();
     let denied = observe_effect_nodes(&mut discovery, &mut window, &effect, 11, format, scratch);
     assert!(matches!(denied, Err(Denial::Resident(_))));

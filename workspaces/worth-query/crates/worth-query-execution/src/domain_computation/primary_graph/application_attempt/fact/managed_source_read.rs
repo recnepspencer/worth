@@ -24,9 +24,10 @@ pub struct ManagedSourceReadKey {
 }
 #[derive(Clone, Copy, Debug, Eq, Ord, PartialEq, PartialOrd)]
 pub(in crate::domain_computation::primary_graph) struct ManagedInfluenceOrigin {
-    pub parameters: [u8; 32],
-    pub audience: [u8; 32],
-    pub content: worth_foundational::facade::ProjectedCandidateContentV1,
+    pub(in crate::domain_computation::primary_graph) parameters: [u8; 32],
+    pub(in crate::domain_computation::primary_graph) audience: [u8; 32],
+    pub(in crate::domain_computation::primary_graph) content:
+        worth_foundational::facade::ProjectedCandidateContentV1,
 }
 
 #[derive(Clone)]

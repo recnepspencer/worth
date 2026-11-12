@@ -40,8 +40,6 @@ pub(in crate::domain_computation) struct WorthQueryElevationCloseDraft {
     closed_at: AspectValue,
     closed_at_field: AspectFieldLocator,
     closed_status: AspectValue,
-    revoked_status: AspectValue,
-    expired_status: AspectValue,
     approved_status: AspectValue,
     elevation_entity: String,
     status_field: AspectFieldLocator,
@@ -101,6 +99,9 @@ where
         Input: ApplicationCapabilityRequest<Schema, Capability>,
         Input: 'static,
     {
+        if let Err(denial) = access.refuse_stale_incarnation(self) {
+            return Err(close_denial(approved, denial));
+        }
         let execution = match phase.execution_request_for(&self.runtime.product_runtime) {
             Ok(execution) => execution,
             Err(_) => return Err(close_denial(approved, crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenial::new(crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenialKind::Refused(AuthorizationRefusal::ForeignPhase), "phase-custody"))),
@@ -143,6 +144,9 @@ where
         Input: ApplicationCapabilityRequest<Schema, Capability>,
         Input: 'static,
     {
+        if let Err(denial) = access.refuse_stale_incarnation(self) {
+            return Err(close_denial(approved, denial));
+        }
         let draft = match bind_close(self, &approved, &access, operation) {
             Ok(draft) => draft,
             Err(denial) => return Err(close_denial(approved, denial)),
@@ -159,7 +163,7 @@ where
             Err(denial) => return Err(close_denial(approved, denial)),
         };
         admission
-            .bind_elevation_close(draft.bind(approved))
+            .bind_elevation_close(execution, draft.bind(approved))
             .map_err(|(denial, binding)| close_denial(binding.into_approved(), denial))
     }
 }
@@ -207,8 +211,6 @@ where
         closed_at,
         closed_at_field: lifecycle.lifecycle.closed_at.clone(),
         closed_status,
-        revoked_status: lifecycle.lifecycle.revoked.clone(),
-        expired_status: lifecycle.lifecycle.expired.clone(),
         approved_status: lifecycle.lifecycle.approved.clone(),
         elevation_entity: definition.status().entity().to_string(),
         status_field: lifecycle.lifecycle.status.clone(),

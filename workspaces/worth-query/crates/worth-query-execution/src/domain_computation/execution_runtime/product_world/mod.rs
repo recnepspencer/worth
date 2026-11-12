@@ -1,5 +1,8 @@
 pub(crate) mod activation;
 mod admission;
+mod durable_admission;
+mod incarnation;
+pub use durable_admission::WorthQueryDurableStateAdmissionDenial;
 mod application_publication;
 mod bootstrap;
 pub(crate) mod branch_close;
@@ -7,6 +10,9 @@ mod clock;
 mod conditional_recovery;
 mod creation;
 mod history;
+mod home_attachment;
+mod maintenance;
+pub use maintenance::WorthQueryHomeMaintenance;
 mod installation_denial;
 mod owned_async;
 pub(crate) mod owner_cleanup;
@@ -19,14 +25,19 @@ pub(crate) mod resources;
 mod retirement;
 mod runtime;
 mod shared_root;
+mod signal_lifecycle;
 mod source_head;
 mod source_installation;
 mod source_owner;
+mod world_ports;
 
 pub(crate) use branch_close::WorthQueryProductBranchCloseScope;
 pub use branch_close::{WorthQueryProductBranchCloseDenial, WorthQueryProductBranchCloseReceipt};
 pub use clock::WorthQueryProductWorldClock;
-pub use creation::WorthQueryProductBranchCreationDenial;
+pub use creation::{
+    WorthQueryProductBranchCreationDenial, WorthQueryProductBranchCreationNoEffect,
+    WorthQueryProductBranchCreationOutcome, WorthQueryProductBranchCreationRelease,
+};
 pub use installation_denial::WorthQueryProductRuntimeInstallationDenial;
 pub(crate) use owner_cleanup::{
     OwnerCleanupRetirements, WorthQueryProductRetentionFollower, WorthQueryRetiredProductOccurrence,
@@ -41,6 +52,7 @@ pub(crate) use receipt::{
     WorthQueryCommitHistoryHold, WorthQueryProductPublicationReceipt,
     WorthQueryReservedProductPublicationReceipt,
 };
+
 pub use relational_publication::{
     WorthQueryPerformedRelationalProductChange,
     WorthQueryPerformedRelationalProductChangeDeliveryDenial,
@@ -49,7 +61,7 @@ pub use relational_publication::{
 };
 pub(crate) use request_control::{
     prepare_conditional_publication, publish_conditional_definition,
-    WorthQueryPreparedProductPublication,
+    WorthQueryPreparedProductPublication, WorthQueryProductPublicationRequestControl,
 };
 
 pub(crate) use resources::test_product_world_resources_with_history_limit_for_test;
@@ -58,6 +70,7 @@ pub use runtime::WorthQueryProductRuntime;
 #[doc(hidden)]
 pub use shared_root::WorthQueryProductSharedRoot;
 pub use source_installation::WorthQueryProductRelationalInstallation;
+pub(in crate::domain_computation) use source_owner::RetiringRelationalSource;
 pub use source_owner::{
     WorthQueryRelationalSourceInstallationDenial, WorthQueryRelationalSourceOwner,
 };
@@ -76,3 +89,6 @@ pub(crate) mod read_lock_probe;
 pub(in crate::domain_computation) use read_lock_probe::ReadLockProbeForTest;
 
 pub(in crate::domain_computation) use resources::test_product_world_resources;
+#[cfg(test)]
+#[path = "mod_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;

@@ -16,7 +16,7 @@ pub fn finish_application_commit<Schema>(
     phase: &WorthQueryAdvancementPhase<'_>,
 
     application: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
-    progressed: WorthQueryProgressedApplicationCommit,
+    progressed: super::super::completion_storage::CompletedApplicationCommit,
 ) -> WorthQueryApplicationCommitOutcome
 where
     Schema: ApplicationSchema,
@@ -27,7 +27,7 @@ pub(super) fn finish_coupled_application_commit<Schema: ApplicationSchema>(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     phase: &WorthQueryAdvancementPhase<'_>,
     application: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
-    progressed: WorthQueryProgressedApplicationCommit,
+    progressed: super::super::completion_storage::CompletedApplicationCommit,
 ) -> WorthQueryApplicationCommitOutcome {
     finish_application_commit_with_delivery(execution, phase, application, progressed, false)
 }
@@ -35,17 +35,18 @@ fn finish_application_commit_with_delivery<Schema: ApplicationSchema>(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     phase: &WorthQueryAdvancementPhase<'_>,
     application: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
-    progressed: WorthQueryProgressedApplicationCommit,
+    progressed: super::super::completion_storage::CompletedApplicationCommit,
     delivers_product: bool,
 ) -> WorthQueryApplicationCommitOutcome {
     let WorthQueryProgressedApplicationCommit {
+        original_completion,
         outcome,
         workflow_settlement_publication,
         lease,
         running,
         cleanup,
         request,
-    } = progressed;
+    } = progressed.consume();
     let terminal = terminal_for(&outcome);
     let snapshot_release = lease.release_custody();
     application
@@ -60,10 +61,17 @@ fn finish_application_commit_with_delivery<Schema: ApplicationSchema>(
     ) {
         Ok(completion) => completion,
         Err(failure) => {
-            let evidence = cleanup_failure::cleanup_failed_outcome(outcome);
-            return WorthQueryApplicationCommitOutcome::CleanupRequired(Box::new(
-                crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationCleanupRequired::new(evidence, failure, application.runtime.product_runtime.clone(), application.runtime.bridge.conditional_operations()),
-            ));
+            let (evidence, original) =
+                cleanup_failure::cleanup_failed_outcome(outcome, &original_completion);
+            return WorthQueryApplicationCommitOutcome::CleanupRequired(
+                original_completion.cleanup_envelope().fill(
+                    evidence,
+                    failure,
+                    application.runtime.product_runtime.clone(),
+                    original,
+                    application.runtime.bridge.conditional_operations(),
+                ),
+            );
         }
     };
     let committed = outcome.finish(completion).unwrap_or_else(|| {
@@ -88,7 +96,7 @@ const fn terminal_for(
     match outcome {
         WorthQueryProviderProgressionOutcome::OutputAdopted(_)
         | WorthQueryProviderProgressionOutcome::Committed(_)
-        | WorthQueryProviderProgressionOutcome::AlreadyCommitted(_)
+        | WorthQueryProviderProgressionOutcome::RecoveredCommitted(_)
         | WorthQueryProviderProgressionOutcome::Stale(_)
         | WorthQueryProviderProgressionOutcome::ProductStale(_)
         | WorthQueryProviderProgressionOutcome::NoEffect(_) => {
@@ -101,6 +109,8 @@ const fn terminal_for(
         WorthQueryProviderProgressionOutcome::CoupledFailure(_)
         | WorthQueryProviderProgressionOutcome::Denied(_)
         | WorthQueryProviderProgressionOutcome::ProductUnpublished(_)
+        | WorthQueryProviderProgressionOutcome::ProductPreparationPending(_)
+        | WorthQueryProviderProgressionOutcome::ProductPreparationRefused(_)
         | WorthQueryProviderProgressionOutcome::Deferred(_)
         | WorthQueryProviderProgressionOutcome::Aborted
         | WorthQueryProviderProgressionOutcome::Indeterminate(_) => {

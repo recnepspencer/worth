@@ -1,3 +1,9 @@
+mod durable_fork;
+pub use durable_fork::{SignalCompositeForkBinding, SignalDurableForkReservation};
+pub use owner_services::{
+    PreparedInitialEmptySignalStop, SignalInitialEmptyStopRefused, SignalOwnerStopDenial,
+    StoppedInitialEmptySignalAllocation,
+};
 mod advance_completion;
 pub use advance_completion::SignalBranchAdvanceCompletion;
 mod advancement;
@@ -13,6 +19,10 @@ mod managed_reference;
 mod merge;
 pub(crate) mod owner_services;
 mod readmission;
+mod recorded_initial_root;
+pub use recorded_initial_root::{
+    AdmittedSignalInitialEmptyRoot, RecordedSignalInitialEmptyRoot, SignalInitialEmptyRootRefusal,
+};
 mod reference;
 mod restoration;
 mod retention;
@@ -115,3 +125,11 @@ pub use snapshot_reconstruction::{
     SignalBranchSnapshotReconstructionDenial, SignalBranchSnapshotReconstructionOutcome,
 };
 pub use target::{SignalBranchTarget, SignalBranchTargetConstructionDenial};
+
+pub use retention::{
+    RetiredSignalBranchRetention, SignalBranchRetentionRetirement,
+    SignalBranchRetentionRetirementDenial, SignalBranchRetentionRetirementProgress,
+};
+#[cfg(test)]
+#[path = "mod_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;

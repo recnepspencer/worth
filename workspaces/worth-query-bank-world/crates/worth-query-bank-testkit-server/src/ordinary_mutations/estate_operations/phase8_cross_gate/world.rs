@@ -64,11 +64,17 @@ pub fn cross_gate_world_with_clock_and_grant_validity(
 }
 
 impl CrossGateWorld {
-    pub fn commit_notification(&self, identity: u8) -> BankCommitReceipt {
+    pub fn commit_notification(
+        &self,
+        identity: u8,
+    ) -> bank_server::BankClosedSourceCompletion<bank_domain::schema::EstateMutationResult> {
         self.commit_with(idempotency(identity))
     }
 
-    pub fn commit_second_notification(&self, identity: u8) -> BankCommitReceipt {
+    pub fn commit_second_notification(
+        &self,
+        identity: u8,
+    ) -> bank_server::BankClosedSourceCompletion<bank_domain::schema::EstateMutationResult> {
         {
             let source_actor = &self.fixture.authenticate_specialist();
             let source_scope = &request_scope();
@@ -111,11 +117,14 @@ impl CrossGateWorld {
             let closed_source = source_completed
                 .close_with_evidence(&source_request)
                 .unwrap_or_else(|(_, cause)| panic!("lawful native source close: {cause:?}"));
-            bank_server::BankCommitReceipt::from_closed_source(closed_source)
+            bank_server::BankClosedSourceCompletion::from_query(closed_source)
         }
     }
 
-    pub fn commit_with(&self, binding: BankIdempotencyKey) -> BankCommitReceipt {
+    pub fn commit_with(
+        &self,
+        binding: BankIdempotencyKey,
+    ) -> bank_server::BankClosedSourceCompletion<bank_domain::schema::EstateMutationResult> {
         self.commit_with_source(binding).0
     }
 
@@ -123,7 +132,7 @@ impl CrossGateWorld {
         &self,
         binding: BankIdempotencyKey,
     ) -> (
-        BankCommitReceipt,
+        bank_server::BankClosedSourceCompletion<bank_domain::schema::EstateMutationResult>,
         worth_query_host::facade::primary_graph::WorthQueryRecordedCorrectionSource,
     ) {
         {
@@ -170,7 +179,7 @@ impl CrossGateWorld {
                 .close_with_evidence(&source_request)
                 .unwrap_or_else(|(_, cause)| panic!("lawful native source close: {cause:?}"));
             (
-                bank_server::BankCommitReceipt::from_closed_source(closed_source),
+                bank_server::BankClosedSourceCompletion::from_query(closed_source),
                 source,
             )
         }

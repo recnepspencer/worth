@@ -1,5 +1,5 @@
 mod async_declaration;
-pub(crate) use async_declaration::validate_lineage_runtime;
+pub(crate) use async_declaration::{validate_lineage_runtime, OriginalLoweringStorage};
 mod capabilities;
 mod contracts;
 mod counters;
@@ -86,3 +86,6 @@ pub use row_set::{
     BridgeMaterializedRowSetDigest, BridgeRowIdentity, BridgeRowSetMaterializationError,
 };
 pub use validation::ValidatedSourceDeclaration;
+#[cfg(test)]
+#[path = "mod_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;

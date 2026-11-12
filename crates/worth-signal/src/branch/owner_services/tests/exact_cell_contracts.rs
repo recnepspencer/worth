@@ -167,6 +167,10 @@ fn snapshot_reservation_restores_capacity_after_denial_drop_and_unwind() {
         .lookup_cell(&admission, branch.id)
         .expect("target cell is live");
 
+    // The fixture's real initial observation already contacted this cell.
+    // Reserving capacity must add no further contact or movement.
+    let before_reservation = cell.cost_snapshot();
+
     let reservation = owner
         .metadata
         .reserve_snapshot(&admission, &cell)
@@ -179,7 +183,7 @@ fn snapshot_reservation_restores_capacity_after_denial_drop_and_unwind() {
             }
         )
     ));
-    assert_eq!(cell.cost_snapshot(), Default::default());
+    assert_eq!(cell.cost_snapshot(), before_reservation);
     drop(reservation);
 
     let unwind = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {

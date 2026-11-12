@@ -51,12 +51,28 @@ impl<'de: 'a, 'a> Deserialize<'de> for SymbolTextWire<'a> {
     }
 }
 impl SymbolSnapshotWire<'_> {
+    pub(crate) fn roster_storage_bytes(capacity: usize) -> Option<usize> {
+        std::alloc::Layout::array::<(Symbol, SymbolTextWire<'_>)>(capacity)
+            .ok()
+            .map(|layout| layout.size())
+    }
+
     pub(crate) fn readmit(
         self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<SymbolTableSnapshot, RelationalFieldTextAdmissionDenial> {
-        let mut ids = std::collections::BTreeMap::new();
-        let mut values = std::collections::BTreeMap::new();
+        let bytes = self
+            .entries
+            .len()
+            .checked_mul(size_of::<(Symbol, &str)>())
+            .and_then(|bytes| u64::try_from(bytes).ok())
+            .ok_or(RelationalFieldTextAdmissionDenial::Request(
+                crate::execution::RelationalExecutionDenialCause::ChargedBytesOverflow,
+            ))?;
+        let _validation_memory = execution
+            .reserve_retained_memory(bytes)
+            .map_err(|cause| RelationalFieldTextAdmissionDenial::Request(cause.into()))?;
+        let mut meanings = Vec::with_capacity(self.entries.len());
         for (symbol, text) in &self.entries {
             execution
                 .check_live()
@@ -65,18 +81,27 @@ impl SymbolSnapshotWire<'_> {
                 SymbolTextWire::System(text) => text.as_ref(),
                 SymbolTextWire::Managed(text) => text,
             };
-            if symbol.0 == 0
-                || symbol.0 == u32::MAX
-                || ids.insert(*symbol, raw).is_some_and(|prior| prior != raw)
-                || values
-                    .insert(raw, *symbol)
-                    .is_some_and(|prior| prior != *symbol)
-            {
+            if symbol.0 == 0 || symbol.0 == u32::MAX {
                 return Err(RelationalFieldTextAdmissionDenial::InvalidSymbolDictionary);
             }
+            meanings.push((*symbol, raw));
         }
-        drop((ids, values));
-        let mut entries = Vec::new();
+        meanings.sort_unstable_by_key(|entry| entry.0);
+        if meanings
+            .windows(2)
+            .any(|pair| pair[0].0 == pair[1].0 && pair[0].1 != pair[1].1)
+        {
+            return Err(RelationalFieldTextAdmissionDenial::InvalidSymbolDictionary);
+        }
+        meanings.sort_unstable_by(|left, right| left.1.cmp(right.1));
+        if meanings
+            .windows(2)
+            .any(|pair| pair[0].1 == pair[1].1 && pair[0].0 != pair[1].0)
+        {
+            return Err(RelationalFieldTextAdmissionDenial::InvalidSymbolDictionary);
+        }
+        drop(meanings);
+        let mut entries = Vec::with_capacity(self.entries.len());
         for (symbol, text) in self.entries {
             execution
                 .check_live()

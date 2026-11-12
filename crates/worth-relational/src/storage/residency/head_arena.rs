@@ -1,9 +1,8 @@
 //! Current records can be inspected without lending their historical columns.
 use crate::identity::data::{RecordId, VersionId};
-use crate::storage::data::RelationalFieldRevision;
-use crate::storage::substrate::{RecordArena, RecordKind, SlotView};
-use crate::symbols::data::Symbol;
-use std::collections::BTreeMap;
+use crate::storage::substrate::{
+    AspectVersions, FieldRevisions, RecordArena, RecordKind, SlotView,
+};
 
 pub(crate) struct RelationalRecordHeadArenaView<'lease, K: RecordKind> {
     arena: &'lease RecordArena<K>,
@@ -32,13 +31,10 @@ impl<'lease, K: RecordKind> RelationalRecordHeadArenaView<'lease, K> {
     pub(crate) fn contains_live_id(&self, id: &RecordId<K::Domain>) -> bool {
         self.arena.contains_live_id(id)
     }
-    pub(crate) fn aspect_versions_at(&self, slot: usize) -> Option<&'lease BTreeMap<Symbol, u64>> {
+    pub(crate) fn aspect_versions_at(&self, slot: usize) -> Option<&'lease AspectVersions> {
         self.arena.aspect_versions_at(slot)
     }
-    pub(crate) fn field_revisions_at(
-        &self,
-        slot: usize,
-    ) -> Option<&'lease BTreeMap<(Symbol, Symbol), RelationalFieldRevision>> {
+    pub(crate) fn field_revisions_at(&self, slot: usize) -> Option<&'lease FieldRevisions> {
         self.arena.field_revisions_at(slot)
     }
 

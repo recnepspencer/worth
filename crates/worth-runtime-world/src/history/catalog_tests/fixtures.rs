@@ -120,10 +120,10 @@ pub(super) fn linear_history(
         correspondence,
     )
     .unwrap();
-    let retention = crate::retention::RuntimeWorldRetentionOwner::from_component_services(
+    let retention = crate::retention::RuntimeWorldRetentionOwner::new(
         authority.owner_identity(),
-        inputs.relational(),
-        inputs.signal(),
+        inputs.relational().basis_port(),
+        inputs.signal().basis_port(),
         inputs.budgets().unique_exact_component_pins(),
         inputs.budgets().in_flight_pin_acquisition_reservations(),
         inputs.budgets().active_observations(),

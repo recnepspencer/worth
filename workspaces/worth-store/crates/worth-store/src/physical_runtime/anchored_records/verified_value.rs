@@ -7,6 +7,9 @@
 //! chunks without being retained, so a damaged length can neither allocate
 //! nor be mistaken for absence. Cost is O(record bytes).
 
+mod stream;
+pub(super) use stream::AnchoredValueStream;
+
 use sha2::{Digest, Sha256};
 use worth_store_physical_format::{PersistedRecordIdentity, RecordAnchor};
 
@@ -39,6 +42,7 @@ pub(super) struct VerifiedAnchoredValue {
     pub(super) members: Vec<AnchoredRecordMemberLocator>,
     /// Present exactly when the payload was retained.
     pub(super) payload: Option<Vec<u8>>,
+    pub(super) memory: Option<worth_execution::ExecutionMemoryReservation>,
 }
 
 /// Reads and verifies the record `anchor` selects for `name`.
@@ -48,37 +52,53 @@ pub(super) fn read_verified(
     anchor: RecordAnchor,
     retention: PayloadRetention,
 ) -> Result<VerifiedAnchoredValue, Failure> {
-    let mut session = open(reader, anchor.record())?;
-    let mut record_digest = Sha256::new();
-    let mut header_bytes = [0; HEADER_BYTES];
-    require_filled(&mut session, &mut header_bytes)?;
-    record_digest.update(header_bytes);
-    let header = AnchoredRecordHeader::decode(&header_bytes, name.anchor(), anchor.generation())
-        .map_err(Failure::Damaged)?;
-    if let PayloadRetention::Retain { maximum_bytes } = retention
-        && (header.payload_bytes > maximum_bytes || usize::try_from(header.payload_bytes).is_err())
-    {
-        return Err(Failure::LimitExceeded {
-            payload_bytes: header.payload_bytes,
-        });
+    read_verified_admitted(reader, name, anchor, retention, None)
+}
+
+pub(super) fn read_verified_membership(
+    reader: &PhysicalRecordReader,
+    name: AnchoredRecordName,
+    anchor: RecordAnchor,
+    request: &worth_execution::ExecutionRequest<'_, '_>,
+) -> Result<VerifiedAnchoredValue, Failure> {
+    read_verified_admitted(
+        reader,
+        name,
+        anchor,
+        PayloadRetention::DigestOnly,
+        Some(request),
+    )
+}
+
+fn read_verified_admitted(
+    reader: &PhysicalRecordReader,
+    name: AnchoredRecordName,
+    anchor: RecordAnchor,
+    retention: PayloadRetention,
+    request: Option<&worth_execution::ExecutionRequest<'_, '_>>,
+) -> Result<VerifiedAnchoredValue, Failure> {
+    let limit = match retention {
+        PayloadRetention::Retain { maximum_bytes } => Some(maximum_bytes),
+        PayloadRetention::DigestOnly => None,
+    };
+    let mut stream = AnchoredValueStream::open(reader, name, anchor, limit, request)?;
+    let mut retained = match retention {
+        PayloadRetention::Retain { .. } => {
+            Some(Vec::with_capacity(stream.header.payload_bytes as usize))
+        }
+        PayloadRetention::DigestOnly => None,
+    };
+    let mut scratch = [0; PAYLOAD_CHUNK_BYTES];
+    loop {
+        let count = stream.read_next(request, &mut scratch)?;
+        if count == 0 {
+            break;
+        }
+        if let Some(payload) = &mut retained {
+            payload.extend_from_slice(&scratch[..count]);
+        }
     }
-    let members = read_member_table(&mut session, &header, &mut record_digest)?;
-    let (payload, payload_sha256) =
-        read_payload(&mut session, &header, retention, &mut record_digest)?;
-    if fill(&mut session, &mut [0; 1])? != 0 {
-        return Err(Failure::Damaged(AnchoredRecordDamage::TrailingBytes));
-    }
-    if <[u8; 32]>::from(record_digest.finalize()) != anchor.record_payload_sha256() {
-        return Err(Failure::Damaged(AnchoredRecordDamage::RecordDigestMismatch));
-    }
-    header
-        .verify_payload_digest(payload_sha256)
-        .map_err(Failure::Damaged)?;
-    Ok(VerifiedAnchoredValue {
-        header,
-        members,
-        payload,
-    })
+    Ok(stream.into_verified(retained))
 }
 
 /// Reads exactly `header.member_count` table entries in bounded chunks.
@@ -86,11 +106,21 @@ fn read_member_table(
     session: &mut RecordReadSession,
     header: &AnchoredRecordHeader,
     record_digest: &mut Sha256,
+    request: Option<&worth_execution::ExecutionRequest<'_, '_>>,
 ) -> Result<Vec<AnchoredRecordMemberLocator>, Failure> {
-    let mut members = Vec::new();
+    let mut members = if request.is_some() {
+        Vec::with_capacity(header.member_count as usize)
+    } else {
+        Vec::new()
+    };
     let mut remaining = header.member_count as usize;
-    let mut chunk = vec![0; TABLE_CHUNK_MEMBERS * ANCHORED_RECORD_MEMBER_LOCATOR_BYTES];
+    let mut chunk = [0; TABLE_CHUNK_MEMBERS * ANCHORED_RECORD_MEMBER_LOCATOR_BYTES];
     while remaining > 0 {
+        if let Some(request) = request {
+            request.check_live().map_err(|stop| {
+                Failure::Execution(worth_execution::WorkCeilingDenial::Stopped(stop))
+            })?;
+        }
         let entries = remaining.min(TABLE_CHUNK_MEMBERS);
         let bytes = &mut chunk[..entries * ANCHORED_RECORD_MEMBER_LOCATOR_BYTES];
         require_filled(session, bytes)?;
@@ -105,34 +135,6 @@ fn read_member_table(
         remaining -= entries;
     }
     Ok(members)
-}
-
-/// Reads the payload through both digests, keeping it only when retained.
-fn read_payload(
-    session: &mut RecordReadSession,
-    header: &AnchoredRecordHeader,
-    retention: PayloadRetention,
-    record_digest: &mut Sha256,
-) -> Result<(Option<Vec<u8>>, [u8; 32]), Failure> {
-    let mut payload_digest = Sha256::new();
-    let mut retained = match retention {
-        PayloadRetention::Retain { .. } => Some(Vec::with_capacity(header.payload_bytes as usize)),
-        PayloadRetention::DigestOnly => None,
-    };
-    let mut chunk = vec![0; PAYLOAD_CHUNK_BYTES];
-    let mut remaining = header.payload_bytes;
-    while remaining > 0 {
-        let length = remaining.min(PAYLOAD_CHUNK_BYTES as u64) as usize;
-        let bytes = &mut chunk[..length];
-        require_filled(session, bytes)?;
-        record_digest.update(&*bytes);
-        payload_digest.update(&*bytes);
-        if let Some(payload) = retained.as_mut() {
-            payload.extend_from_slice(bytes);
-        }
-        remaining -= length as u64;
-    }
-    Ok((retained, payload_digest.finalize().into()))
 }
 
 /// Fills `buffer` exactly or refuses the record as truncated.

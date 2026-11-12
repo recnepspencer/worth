@@ -19,7 +19,7 @@ fn roster_growth_denies_before_allocation_then_moves_and_releases_exact_capacity
     let blocker = ports
         .begin_operation(
             Scope::Recovery,
-            NonZeroU64::new(fixture::ORIGINAL - initial_bytes + 1).unwrap(),
+            NonZeroU64::new(fixture::ORIGINAL - SERVING_BACKING_BYTES - initial_bytes + 1).unwrap(),
         )
         .unwrap();
     let before = observer.snapshot().for_dimension(dimension);
@@ -35,7 +35,10 @@ fn roster_growth_denies_before_allocation_then_moves_and_releases_exact_capacity
     assert_eq!(after.admissions(), before.admissions());
     assert_eq!(after.admitted_units(), before.admitted_units());
     assert_eq!(after.denials(), before.denials() + 1);
-    assert_eq!(fixture::active(&ports), blocker.bytes());
+    assert_eq!(
+        fixture::active(&ports),
+        SERVING_BACKING_BYTES + blocker.bytes()
+    );
     drop(blocker);
     let mut roster = WalRoster::<u64>::with_capacity(&coordination, 2).unwrap();
     roster.push_reserved(17);
@@ -43,11 +46,12 @@ fn roster_growth_denies_before_allocation_then_moves_and_releases_exact_capacity
     let old_pointer = roster.as_ptr();
     let old_bytes = (roster.capacity() * size_of::<u64>()) as u64;
     let next_bytes = (4 * size_of::<u64>()) as u64;
-    assert_eq!(fixture::active(&ports), old_bytes);
+    assert_eq!(fixture::active(&ports), SERVING_BACKING_BYTES + old_bytes);
     let held = ports
         .begin_operation(
             Scope::Recovery,
-            NonZeroU64::new(fixture::ORIGINAL - old_bytes - next_bytes + 1).unwrap(),
+            NonZeroU64::new(fixture::ORIGINAL - SERVING_BACKING_BYTES - old_bytes - next_bytes + 1)
+                .unwrap(),
         )
         .unwrap();
     let before = observer.snapshot().for_dimension(dimension);
@@ -82,7 +86,7 @@ fn roster_growth_denies_before_allocation_then_moves_and_releases_exact_capacity
     assert_eq!(roster.capacity(), 4);
     assert_eq!(roster.len(), 2, "retained spare capacity is still charged");
     assert_eq!(roster.charged_bytes(), retained);
-    assert_eq!(fixture::active(&ports), retained);
+    assert_eq!(fixture::active(&ports), SERVING_BACKING_BYTES + retained);
     let after = observer.snapshot().for_dimension(dimension);
     assert_eq!(after.admitted_units() - before.admitted_units(), next_bytes);
     assert_eq!(after.released_units() - before.released_units(), old_bytes);

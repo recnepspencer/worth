@@ -113,3 +113,28 @@ fn shared_handler_and_computation_reads_keep_exact_keys_not_just_cardinality() {
         "same count cannot close another key set"
     );
 }
+
+#[test]
+fn conflicting_handler_adjacencies_keep_the_strongest_allowance() {
+    let mut reads = DecisionReads::default();
+    let mut expected = None;
+    for maximum_work_units in [1, 2] {
+        let key = WorthQueryApplicationFactKey::Adjacency {
+            relation: "historical-retention".into(),
+            anchor: EntityId::new(PartitionId::main(), 1, 0),
+            direction: WorthQueryApplicationAdjacencyDirection::Outgoing,
+            maximum_work_units,
+        };
+        expected = Some(key.clone());
+        reads.record(key, DecisionReadOutcome::Observed);
+    }
+    let original = worth_query_testkit_execution_primary_graph_application_attempt_2::test_request_policy::serial_request();
+    let (keys, _) = reads
+        .into_expected_for_test(&worth_execution::ExecutionRequest::serial(&original))
+        .ok()
+        .unwrap();
+    assert_eq!(
+        keys.iter_for_test().cloned().collect::<Vec<_>>(),
+        [expected.unwrap()]
+    );
+}

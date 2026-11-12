@@ -1,6 +1,8 @@
 //! Real public empty entrants, unchanged-candidate refinement and exact close.
 use super::super::authoring::Edit;
 use super::*;
+use crate::application_invariant_acceptance::managed_index::prefix_alias_input;
+use crate::application_invariant_acceptance::managed_index::prefix_observation;
 mod coordinates;
 mod race;
 mod recovery;
@@ -27,7 +29,7 @@ fn run() {
     );
 }
 fn journey() {
-    let calls = Arc::new(prefix::Calls::default());
+    let calls = Arc::new(prefix_observation::Calls::default());
     let rules = Arc::new(rule::Calls::new(calls.clone()));
     let world = host::install_watch(calls.clone(), rules);
     let scope = authentication::request_scope();
@@ -92,7 +94,7 @@ fn journey() {
         .next_watch(&mut entrant)
         .is_err());
     assert!(request
-        .query(query::FindPrefixAlias {
+        .query(prefix_alias_input::FindPrefixAlias {
             directory: "A".into(),
             prefix: "later".into()
         })

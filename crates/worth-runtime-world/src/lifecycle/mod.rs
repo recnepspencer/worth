@@ -1,12 +1,24 @@
+mod home_program_binding;
+pub use home_program_binding::{PreparedWorldHomeProgramBinding, WorldHomeProgramBindingDenial};
 mod clock;
+pub(crate) mod interim_checkpoint;
+pub use interim_checkpoint::{
+    CapturedWorldInterimAdmission, CapturedWorldInterimOrigin, WorldInterimCheckpointPort,
+    WorldInterimCheckpointRefusal,
+};
 mod close;
+pub(crate) use close::{checkpoint_close_step, RecoveredCloseReceipt};
 pub mod owner;
+pub(crate) use owner::WorldDurableCreationCustody;
 mod owner_inputs;
 mod ports;
 
 pub use clock::{RuntimeWorldClock, RuntimeWorldClockSource, RuntimeWorldInstant};
 pub use close::{
-    RuntimeWorldCloseDenial, RuntimeWorldCloseReport, RuntimeWorldRetainedRecordReport,
+    RuntimeWorldCloseDenial, RuntimeWorldCloseReport, RuntimeWorldPreCloseAdmission,
+    RuntimeWorldRecoveredCustodyReport, RuntimeWorldResultSnapshotCleanup,
+    RuntimeWorldResultSnapshotCleanupDenial, RuntimeWorldResultSnapshotCleanupProgress,
+    RuntimeWorldResultSnapshotCleanupReport, RuntimeWorldRetainedRecordReport,
 };
 pub use owner::{
     PreparedWorldRelationalCutover, RuntimeWorldOwnedAsyncManagedRevalidationDenial,
@@ -28,11 +40,17 @@ mod execution;
 pub use execution::{RuntimeWorldBuildDenial, RuntimeWorldExecutionPlacement};
 mod public_owner;
 mod service_ports;
-pub use builder::{MissingRuntimeWorldInput, RuntimeWorldOwnerBuilder};
+pub use builder::{
+    MissingRuntimeWorldInput, RuntimeWorldOwnerBuilder, RuntimeWorldUnboundHomeBuilder,
+};
 pub use public_owner::RuntimeWorldOwner;
 pub use service_ports::*;
 
-pub use ports::RuntimeWorldBranchCreationOutcome;
+pub use ports::{
+    RuntimeWorldBranchCreationCompletion, RuntimeWorldBranchCreationNoEffect,
+    RuntimeWorldBranchCreationOutcome, RuntimeWorldBranchCreationRelease,
+    RuntimeWorldHomeBranchCreationRequest,
+};
 
 mod service_denial;
 pub use service_denial::RuntimeWorldServiceDenial;
@@ -42,6 +60,7 @@ pub(crate) mod operation_control_for_test;
 pub use operation_control_for_test::{
     RuntimeWorldOperationControlForTest, RuntimeWorldPerformedPublicationObservationForTest,
     RuntimeWorldProductComparePauseForTest, RuntimeWorldProductCurrentnessPauseForTest,
+    RuntimeWorldRecoveredDispositionObservationForTest,
 };
 
 #[cfg(test)]
@@ -51,3 +70,19 @@ mod read_observation;
 pub use read_observation::{
     world_branch_reads_on_this_thread_for_test, RuntimeWorldReadObservation,
 };
+
+pub use close::{
+    RetiredRuntimeWorldHome, RuntimeWorldHomeRetirement, RuntimeWorldHomeRetirementDenial,
+    RuntimeWorldHomeRetirementProgress,
+};
+
+mod authored_signal;
+pub(crate) use authored_signal::PreparedWorldSignalFork;
+pub use authored_signal::WorldSignalForkPreparationDenial;
+pub use authored_signal::{
+    RuntimeWorldAuthoredSignalAttachment, RuntimeWorldAuthoredSignalAttachmentDenial,
+};
+
+mod signal_services;
+
+pub use builder::RuntimeWorldAuthoredHomeBuilder;

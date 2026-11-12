@@ -8,7 +8,7 @@ use worth_query_execution::facade::domain_computation::HandlerExecutionDenial;
 use worth_query_execution::facade::domain_computation::HandlerResult;
 use worth_query_execution::facade::domain_computation::OperationHandler;
 
-#[derive(Clone, Debug, Eq, PartialEq, serde::Serialize)]
+#[derive(Clone, Debug, Eq, PartialEq, serde::Serialize, serde::Deserialize)]
 pub struct LabelEdit {
     pub status: String,
     pub label: String,
@@ -61,6 +61,13 @@ impl ApplicationDeclaredOperation<IdentityExecutionSchema> for EditLabel {
 
 pub struct LabelHandler;
 impl OperationHandler<IdentityExecutionSchema, LabelBinding> for LabelHandler {
+    fn declared_durable_capabilities() -> Option<&'static [worth_query_execution::facade::primary_graph::WorthQueryOperationDurableCapability]>{
+        use worth_query_execution::facade::primary_graph::WorthQueryOperationDurableCapability as Capability;
+        Some(&[
+            Capability::RelationalMutation,
+            Capability::RetainedCorrectionMaterial,
+        ])
+    }
     fn decide(
         &self,
         input: &LabelEdit,

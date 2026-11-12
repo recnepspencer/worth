@@ -137,9 +137,21 @@ impl BridgeConditionalContract {
     pub(in crate::conditional_execution) fn retained_heap_bytes(
         &self,
     ) -> Result<u64, super::retention::BridgeRetentionDenial> {
+        let condition = match &self.condition {
+            BridgeConditionalCondition::DeltaThreshold(threshold) => threshold
+                .owned_allocation_capacity_bytes()
+                .and_then(|bytes| u64::try_from(bytes).ok())
+                .ok_or(super::retention::BridgeRetentionDenial::BytesExhausted)?,
+            BridgeConditionalCondition::Always
+            | BridgeConditionalCondition::AspectFiltered
+            | BridgeConditionalCondition::OnDemand
+            | BridgeConditionalCondition::RuntimePredicate
+            | BridgeConditionalCondition::TemporalWake => 0,
+        };
         super::retention::sum(&[
             super::retention::arc_slice_charge::<u8>(self.identity.len())?,
             super::retention::array_charge::<usize>(self.condition_dependency_ordinals.capacity())?,
+            condition,
         ])
     }
 
@@ -192,3 +204,8 @@ impl BridgeConditionalContract {
                 .all(|ordinal| *ordinal < self.dependency_count)
     }
 }
+#[cfg(test)]
+#[path = "semantic_contract_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;
+#[cfg(test)]
+mod retained_charge_tests;

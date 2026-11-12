@@ -39,6 +39,18 @@ impl<Schema> Default for InstalledResourceRegistry<Schema> {
 }
 
 impl<Schema> InstalledResourceRegistry<Schema> {
+    pub(in crate::domain_computation::primary_graph) fn preflight_home_retirement(
+        &self,
+    ) -> Result<(), super::super::WorthQueryHomeRetirementDenial> {
+        if self.entries.is_empty() {
+            Ok(())
+        } else {
+            Err(super::super::WorthQueryHomeRetirementDenial::Unsupported(
+                super::super::WorthQueryHomeRetirementOwner::InstalledResources,
+            ))
+        }
+    }
+
     pub(in crate::domain_computation::primary_graph) fn cleanup_retained(&self) -> bool {
         self.entries
             .iter()

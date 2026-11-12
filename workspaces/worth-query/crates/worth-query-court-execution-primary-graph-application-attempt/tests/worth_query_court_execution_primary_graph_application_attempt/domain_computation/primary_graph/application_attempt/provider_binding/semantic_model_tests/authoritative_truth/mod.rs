@@ -36,11 +36,11 @@ pub fn compile_committed_observations(
     alpha: &AspectFieldLocator,
     beta: &AspectFieldLocator,
 ) -> CommittedObservationWorld {
-    let mut runtime = crate::domain_computation::primary_graph::application_attempt::provider_binding::semantic_model_tests::authoritative_truth::schema::fixture_runtime();
-    let entities = commit_entities(execution, &mut runtime, alpha, beta);
+    let runtime = crate::domain_computation::primary_graph::application_attempt::provider_binding::semantic_model_tests::authoritative_truth::schema::fixture_runtime();
+    let entities = commit_entities(execution, &runtime, alpha, beta);
     let decoy_relation = commit_relation(
         execution,
-        &mut runtime,
+        &runtime,
         RelationSeed {
             batch: "provider-effect-decoy-relation",
             key: "decoy-edge",
@@ -50,7 +50,7 @@ pub fn compile_committed_observations(
     );
     let relation_commit = commit_relation(
         execution,
-        &mut runtime,
+        &runtime,
         RelationSeed {
             batch: "provider-effect-observed-relation",
             key: "observed-edge",
@@ -80,11 +80,11 @@ pub fn compile_committed_observations(
         locators,
     );
     worth_query_execution::court_doors_for_test::relational_snapshot_release::release_query_snapshot(
-        &mut runtime,
+        &runtime,
         &relation_commit.snapshot,
     );
     worth_query_execution::court_doors_for_test::relational_snapshot_release::release_query_snapshot(
-        &mut runtime,
+        &runtime,
         &decoy_relation.snapshot,
     );
     CommittedObservationWorld {
@@ -112,7 +112,7 @@ pub fn created_relation(
 
 pub fn commit_entities(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-    runtime: &mut RelationalRuntime,
+    runtime: &RelationalRuntime,
     alpha: &AspectFieldLocator,
     beta: &AspectFieldLocator,
 ) -> CommittedEntities {
@@ -184,7 +184,7 @@ pub fn issued_entity(
 
 pub fn commit_relation(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-    runtime: &mut RelationalRuntime,
+    runtime: &RelationalRuntime,
     seed: RelationSeed<'_>,
 ) -> worth_relational::facade::transactions::CommitResult {
     commit(
@@ -213,7 +213,7 @@ pub struct RelationSeed<'a> {
 
 pub fn commit<const N: usize>(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-    runtime: &mut RelationalRuntime,
+    runtime: &RelationalRuntime,
     name: &str,
     intents: [MutationIntent; N],
 ) -> worth_relational::facade::transactions::CommitResult {

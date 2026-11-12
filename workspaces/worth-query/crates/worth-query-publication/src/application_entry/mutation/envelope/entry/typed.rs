@@ -132,8 +132,8 @@ where
         let binding = candidate.extension.apply(WorthQueryApplicationIdempotencyBinding::for_mutation_identities(&candidate.identities));
         let commit = program.compare_and_commit_selected_edit_envelope::<R, I::Binding>(phase, &worth_query_execution::publication_boundary::program_publication_access(), &owner, captured, binding, execution.allocation_policy());
         match commit.landed() {
-            Ok((receipt, true)) => Ok(WorthQueryEditEnvelopeOutcome::AlreadyCommitted(receipt)),
-            Ok((receipt, false)) => {
+            Ok(worth_query_execution::facade::primary_graph::WorthQueryApplicationLandedCommit::Recovered(receipt)) => Ok(WorthQueryEditEnvelopeOutcome::RecoveredCommitted(receipt)),
+            Ok(worth_query_execution::facade::primary_graph::WorthQueryApplicationLandedCommit::Live { receipt }) => {
                 *values[ordinal].lock().unwrap_or_else(std::sync::PoisonError::into_inner) = Some(Box::new(RetainedAuthoredStageResult { result: candidate.result, identity: stage_identity, receipt: Some(receipt.clone()) }));
                 let results = values.into_iter().map(|value| value.lock().unwrap_or_else(std::sync::PoisonError::into_inner).take().expect("every committed authored stage retained its result")).collect();
                 Ok(WorthQueryEditEnvelopeOutcome::Committed(WorthQueryEditEnvelopeReceipt { receipt, results, brand }))
@@ -169,8 +169,8 @@ fn settled<D: Send + 'static, R: 'static>(
             WorthQueryEditEnvelopeOutcome::AlreadyCommitted(receipt)
         }
         Outcome::IdempotencyIntentDrift => WorthQueryEditEnvelopeOutcome::IdempotencyIntentDrift,
-        Outcome::PreviouslyCommitted(receipt) => {
-            WorthQueryEditEnvelopeOutcome::PreviouslyCommitted(receipt)
+        Outcome::RecoveredCommitted(receipt) => {
+            WorthQueryEditEnvelopeOutcome::RecoveredCommitted(receipt)
         }
         Outcome::Commit(cause) => WorthQueryEditEnvelopeOutcome::Uncommitted(cause),
         Outcome::Cancelled => WorthQueryEditEnvelopeOutcome::Cancelled { stage },

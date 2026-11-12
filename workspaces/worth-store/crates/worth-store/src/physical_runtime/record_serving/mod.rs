@@ -25,7 +25,10 @@ pub(in crate::physical_runtime) mod work_semantics;
 pub(in crate::physical_runtime) use access::locate::assert_actual_lifecycle_manifest_denial_maps_without_damage;
 #[cfg(feature = "certification-test-authority")]
 pub use access::locate::CertificationPhysicalReadCallPauseGate;
-pub use access::locate::{PhysicalRecordReader, RecordReadCancellation, RecordReadSession};
+pub use access::locate::{
+    PhysicalRecordReadRetirementDenial, PhysicalRecordReader, RecordReadCancellation,
+    RecordReadSession,
+};
 pub use access::read_observation::{
     RecordReadDenial, RecordReadError, RecordReadLimits, RecordReadObservation,
     RecordReadWorkDenial, StalePhysicalRecordPlacement,
@@ -67,8 +70,10 @@ pub use admission::residency_policy::{
 };
 pub use admission::RecoveredPhysicalCheckpointCustody;
 pub(in crate::physical_runtime) use admission::VerifiedRecoveredCheckpointCustody;
+#[cfg(feature = "recovery-runtime-owner")]
 pub(in crate::physical_runtime) use admission::{
-    GenerationZeroNoReleaseCustody, RecoveredNoReleaseCustody,
+    GenerationZeroNoReleaseCustody, PreparedRecoveredCustodyBacking, RecoveredNoReleaseCustody,
+    RecoveredReleaseCustody,
 };
 pub use arena::{
     ArenaAllocationDenial, ArenaEvacuationThreshold, ExtentArenaCapacity, ExtentArenaPolicyDenial,
@@ -144,11 +149,11 @@ pub use publication::{
     PhysicalManifestCapacityTransition, PhysicalMutationAdmissionDisposition,
     PhysicalMutationPreparationDeferred, PhysicalMutationPreparationDenial,
     PhysicalMutationPreparationFailure, PhysicalMutationPreparationOutcome,
-    PhysicalMutationPreparationRebindRequired, PhysicalMutationPreparationStale,
-    PhysicalMutationPreparationSuccess, PhysicalMutationResourceShape,
-    PhysicalPreSealCancellationDenial, PhysicalPreSealCancellationOutcome,
-    PhysicalRecordSubmission, PlannedInlineRewriteArtifact, PreparedPhysicalMutation,
-    RootPublicationCandidatePlan, RootPublicationPlanningMembers,
+    PhysicalMutationPreparationRebindRequired, PhysicalMutationPreparationRefusal,
+    PhysicalMutationPreparationStale, PhysicalMutationPreparationSuccess,
+    PhysicalMutationResourceShape, PhysicalPreSealCancellationDenial,
+    PhysicalPreSealCancellationOutcome, PhysicalRecordSubmission, PlannedInlineRewriteArtifact,
+    PreparedPhysicalMutation, RootPublicationCandidatePlan, RootPublicationPlanningMembers,
 };
 pub use publication::{
     PhysicalExtentCopyPhase, PhysicalExtentCopyProgress, PhysicalExtentCopyResolutionProgress,
@@ -282,3 +287,6 @@ mod tests {
         assert_eq!(fixed_limits.current_root_entries(), 185);
     }
 }
+#[cfg(test)]
+#[path = "mod_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;

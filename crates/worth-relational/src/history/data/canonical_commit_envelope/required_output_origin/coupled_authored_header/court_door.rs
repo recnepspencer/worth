@@ -10,8 +10,7 @@ impl CanonicalCommitEnvelope {
         len: usize,
         context: &mut MapKernelContext<'_, '_>,
     ) -> Result<(), Stop> {
-        let mut envelope = self.clone();
-        let event = envelope
+        let event = self
             .coupled_authored_publication
             .as_ref()
             .expect("a recorded edit envelope");
@@ -26,12 +25,12 @@ impl CanonicalCommitEnvelope {
                 retirement: part.retirement.clone(),
             })
             .collect();
-        envelope.coupled_authored_publication =
-            Some(Arc::new(CanonicalCoupledAuthoredPublication {
-                sources: CanonicalCoupledAuthoredSources::Stages(sources[..len].to_vec()),
-                participants,
-                live_inputs: Default::default(),
-            }));
-        envelope.validate_output_origins(context).map(|_| ())
+        let cut = CanonicalCoupledAuthoredPublication {
+            sources: CanonicalCoupledAuthoredSources::Stages(sources[..len].to_vec()),
+            participants,
+            live_inputs: Default::default(),
+            _decoded_memory: None,
+        };
+        self.validate_coupled_authored_header(&cut, context)
     }
 }

@@ -60,7 +60,7 @@ impl WorthQueryOutputDemandInterest {
         if record.interests == 1
             && record.held_successor.is_none()
             && matches!(&record.state, DemandState::Output(output)
-                if matches!(&output.checkpoint, Some(WorthQueryOutputCheckpoint::Published { .. } | WorthQueryOutputCheckpoint::Delivered { .. }))
+                if matches!(&output.checkpoint, Some(WorthQueryOutputCheckpoint::Published { .. } | WorthQueryOutputCheckpoint::RecoveredPublished { .. } | WorthQueryOutputCheckpoint::Delivered { .. } | WorthQueryOutputCheckpoint::RecoveredDelivered { .. }))
                     || matches!(&output.checkpoint, Some(WorthQueryOutputCheckpoint::PublicationPending { owner, .. }) if !owner.is_closed())
                     || matches!(output.advancement(), WorthQueryOutputAdvancement::Claimed(_)
                         | WorthQueryOutputAdvancement::Stopped { interrupted_claim: Some(_), .. }))

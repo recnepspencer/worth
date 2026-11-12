@@ -1,3 +1,4 @@
+#![cfg_attr(test, allow(clippy::disallowed_methods))]
 //! Query execution proofs grouped by their product frontier.
 #![recursion_limit = "256"]
 // Allocation-count courts measure through the one binary-wide stats allocator.

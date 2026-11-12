@@ -53,6 +53,8 @@ pub enum WorthQueryConditionalExecutionTerminal {
 /// Why processing a due wake ended as it did, when a specific cause is known.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum WorthQueryConditionalExecutionCause {
+    /// The original World reason accompanying the retained owner effects.
+    ProductUnpublished(worth_runtime_world::facade::ProductUnpublishedCause),
     /// The original domain evidence or evaluation failure, retained unchanged.
     CustomInvariant(crate::domain_computation::WorthQueryCustomInvariantDenial),
     ManagedCleanupRequired(crate::domain_computation::WorthQueryMutationCleanupFailureKind),

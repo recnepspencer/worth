@@ -1,3 +1,4 @@
+mod presence;
 use super::builder::{MissingRuntimeWorldInput, RuntimeWorldOwnerBuilder};
 use super::service_ports::{
     RuntimeWorldBranchPort, RuntimeWorldLifecyclePort, RuntimeWorldObservationPort,
@@ -17,6 +18,8 @@ where
     Ctx: Send + Sync + 'static,
     T: Copy + Ord + Send + Sync + 'static,
 {
+    // Presence relinquishes admission before the ordinary Root field is dropped.
+    pub(super) presence: presence::PublicWorldPresence,
     pub(super) root: Arc<RuntimeWorldOwnerRoot<D, I, E, Ctx, T>>,
 }
 impl RuntimeWorldOwner<(), (), (), (), ()> {
@@ -39,6 +42,77 @@ where
     Ctx: Send + Sync + 'static,
     T: Copy + Ord + Send + Sync + 'static,
 {
+    pub(in crate::lifecycle) fn from_root(root: RuntimeWorldOwnerRoot<D, I, E, Ctx, T>) -> Self {
+        let root = Arc::new(root);
+        Self {
+            presence: presence::PublicWorldPresence::new(&root),
+            root,
+        }
+    }
+
+    /// Initialize constant-size cleanup custody after this actual owner sealed.
+    pub fn result_snapshot_cleanup_after_close(
+        &self,
+        request: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> Result<
+        super::RuntimeWorldResultSnapshotCleanup,
+        super::RuntimeWorldResultSnapshotCleanupDenial,
+    > {
+        use super::RuntimeWorldResultSnapshotCleanupDenial as Denial;
+        request.consult().map_err(Denial::Stopped)?;
+        let state = &self.root.state;
+        let operation = state.operation.state.try_lock().map_err(|_| Denial::Busy)?;
+        let close = state.close.try_lock().map_err(|_| Denial::Busy)?;
+        if !self.root.owner_is_present() {
+            return Err(Denial::OwnerUnavailable);
+        }
+        if close.state() != super::close::RuntimeWorldCloseState::Closed {
+            return Err(Denial::CloseNotCompleted);
+        }
+        if operation.active != 0
+            || operation.recovery_active != 0
+            || state
+                .custody
+                .try_unresolved_closed_custody(state.durable.is_some())
+                .map_err(|_| Denial::Busy)?
+        {
+            return Err(Denial::InconsistentSealedCatalog);
+        }
+        state
+            .recovery
+            .try_close_recovered_count(state.durable.is_some(), request)
+            .map_err(|cause| match cause {
+                super::RuntimeWorldCloseDenial::Busy => Denial::Busy,
+                super::RuntimeWorldCloseDenial::Stopped(cause) => {
+                    Denial::Stopped(worth_execution::WorkCeilingDenial::Stopped(cause))
+                }
+                super::RuntimeWorldCloseDenial::Execution(cause) => Denial::Stopped(cause),
+                super::RuntimeWorldCloseDenial::CloseNotCompleted
+                | super::RuntimeWorldCloseDenial::OwnerUnavailable
+                | super::RuntimeWorldCloseDenial::PublicationFrontierChanged
+                | super::RuntimeWorldCloseDenial::UnresolvedBusinessCustody
+                | super::RuntimeWorldCloseDenial::CleanupRequired
+                | super::RuntimeWorldCloseDenial::DurableCreationPending { .. }
+                | super::RuntimeWorldCloseDenial::RecoveredNativeRetirement(_)
+                | super::RuntimeWorldCloseDenial::CloseProgressPoisoned
+                | super::RuntimeWorldCloseDenial::CloseProgressInvariant
+                | super::RuntimeWorldCloseDenial::ReportAllocationFailed
+                | super::RuntimeWorldCloseDenial::UndeliveredPublication
+                | super::RuntimeWorldCloseDenial::AlreadyClosing
+                | super::RuntimeWorldCloseDenial::AlreadyClosed
+                | super::RuntimeWorldCloseDenial::InFlightCriticalSection
+                | super::RuntimeWorldCloseDenial::DurablePublicationUnsettled => {
+                    Denial::InconsistentSealedCatalog
+                }
+            })?;
+        let frontier = state.history.try_result_snapshot_cleanup_frontier()?;
+        Ok(super::RuntimeWorldResultSnapshotCleanup::from_closed_owner(
+            state.relational_services().basis_port(),
+            state.history.clone(),
+            frontier,
+        ))
+    }
+
     pub fn admit_managed_owned_async_request(
         &self,
         bridge: &worth_runtime_bridge::facade::BridgeSealedRuntimeAssembly,
@@ -135,12 +209,13 @@ where
     pub(super) fn from_inputs(
         inputs: RuntimeWorldOwnerInputs<D, I, E, Ctx, T>,
     ) -> Result<Self, RuntimeWorldIdentityExhaustion> {
-        Ok(Self {
-            root: Arc::new(RuntimeWorldOwnerRoot::new(inputs)?),
-        })
+        Ok(Self::from_root(RuntimeWorldOwnerRoot::new(inputs)?))
     }
     pub fn owner_identity(&self) -> RuntimeWorldOwnerIdentity {
         self.root.owner_identity()
+    }
+    pub fn lifecycle_observation(&self) -> super::RuntimeWorldOwnerLifecycleObservation {
+        self.root.lifecycle_observation()
     }
 
     /// Borrow the authority installed by the host for request lease admission.
@@ -186,16 +261,13 @@ where
             self.root.clone();
         RuntimeWorldRecoveryPort::new(Arc::downgrade(&service))
     }
-}
-impl<D, I, E, Ctx, T> Drop for RuntimeWorldOwner<D, I, E, Ctx, T>
-where
-    D: Copy + Ord + std::fmt::Debug + Send + Sync + 'static,
-    I: Copy + Ord + Send + Sync + 'static,
-    E: Send + Sync + 'static,
-    Ctx: Send + Sync + 'static,
-    T: Copy + Ord + Send + Sync + 'static,
-{
-    fn drop(&mut self) {
-        self.root.release_public_owner();
+    /// Clone only a weak reference to the actual attached durable binding.
+    /// Capture remains available for stopped-but-owned close settlement.
+    pub fn checkpoint_port(&self) -> Option<crate::durability::WorldCheckpointPort> {
+        self.root
+            .state
+            .durable
+            .as_ref()
+            .map(crate::durability::WorldCheckpointPort::new)
     }
 }

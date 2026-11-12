@@ -6,8 +6,10 @@ pub(crate) mod node;
 mod plan;
 mod request;
 mod sorted;
+mod unique;
 use crate::{ChargedBytes, ExecutionAllocationDenial, ExecutionAllocationPolicy};
 use node::Link;
+pub use unique::{ExecutionOrderedMapCell, ExecutionOrderedMapUniqueDenial};
 
 /// A refused edit leaves the original root and every grant intact.
 #[derive(Clone, Debug, PartialEq, Eq)]

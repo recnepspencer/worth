@@ -16,6 +16,29 @@ impl PortableRecordAspectPatch {
         }
     }
 
+    /// Checked heap of an independent Clone, including nested owned data.
+    /// No source Vec/String spare capacity is copied or included.
+    pub fn clone_allocation_bytes(&self) -> Option<usize> {
+        self.clone_storage_bytes(false)
+    }
+
+    /// Cloned owned rosters plus shared immutable backing retained by their
+    /// independent successor. Source Vec/String spare capacity is not copied.
+    pub fn clone_retained_storage_bytes(&self) -> Option<usize> {
+        self.clone_storage_bytes(true)
+    }
+
+    fn clone_storage_bytes(&self, retain_shared: bool) -> Option<usize> {
+        let mut bytes =
+            std::alloc::Layout::array::<PortableAspectPatchOperation>(self.operations.len())
+                .ok()?
+                .size();
+        for operation in &self.operations {
+            bytes = bytes.checked_add(operation.clone_storage_bytes(retain_shared)?)?;
+        }
+        Some(bytes)
+    }
+
     pub fn operations(&self) -> &[PortableAspectPatchOperation] {
         &self.operations
     }
@@ -56,6 +79,54 @@ pub enum PortableAspectPatchOperation {
 }
 
 impl PortableAspectPatchOperation {
+    fn clone_storage_bytes(&self, retain_shared: bool) -> Option<usize> {
+        let basis = self.basis().key().as_str().len();
+        match self {
+            Self::SetWhole { value, .. } => basis.checked_add(if retain_shared {
+                value.clone_retained_storage_bytes()?
+            } else {
+                value.clone_allocation_bytes()?
+            }),
+            Self::ClearWhole { .. } => Some(basis),
+            Self::PatchFields {
+                selected_fields,
+                field_sets,
+                field_clears,
+                ..
+            } => {
+                let mut bytes = basis
+                    .checked_add(
+                        std::alloc::Layout::array::<FieldKey>(selected_fields.len())
+                            .ok()?
+                            .size(),
+                    )?
+                    .checked_add(
+                        std::alloc::Layout::array::<PortableAspectFieldSet>(field_sets.len())
+                            .ok()?
+                            .size(),
+                    )?
+                    .checked_add(
+                        std::alloc::Layout::array::<FieldKey>(field_clears.len())
+                            .ok()?
+                            .size(),
+                    )?;
+                for key in selected_fields.iter().chain(field_clears) {
+                    bytes = bytes.checked_add(key.as_str().len())?;
+                }
+                for field in field_sets {
+                    bytes = bytes.checked_add(field.field.as_str().len())?.checked_add(
+                        if retain_shared {
+                            field.value.clone_retained_storage_bytes()?
+                        } else {
+                            field.value.clone_allocation_bytes()?
+                        },
+                    )?;
+                }
+                Some(bytes)
+            }
+        }
+    }
+
     pub fn basis(&self) -> &PortableAspectContractBasis {
         match self {
             Self::SetWhole { basis, .. }

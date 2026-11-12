@@ -4,12 +4,17 @@ use super::WorthQueryApplicationCommitDeferred;
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryApplicationNoEffectCause {
+    StaleIncarnation,
+    DurableOpenRequired,
     ExecutionRequest(worth_execution::WorkCeilingDenial),
     OwnerDeniedBeforeEffect,
     /// The current control input failed its pre-effect condition; the write
     /// target did not become stale merely because this input changed.
     CurrentReadDependency(worth_runtime_world::facade::CurrentProductReadDependencyDenial),
     CorrespondenceRebindRequired,
+    CorrespondenceAdmissionDenied(
+        worth_runtime_bridge::facade::RuntimeWorldCorrespondenceAdmissionDenial,
+    ),
     ReferenceGenerationExhausted,
     CapacityExhausted,
     OwnerUnavailable,
@@ -75,7 +80,7 @@ pub use denial::{
 
 /// Every way an application compare-and-commit can end.
 ///
-/// `Committed` and `AlreadyCommitted` landed and carry the receipt. Every other
+/// Live and recovered committed outcomes carry distinct receipts. Every other
 /// variant did not land cleanly; see [`landed`](Self::landed) to split the two
 /// sides. `Indeterminate` may have moved the branch: it is unresolved, not
 /// failed, and does not call for a blind retry.
@@ -89,6 +94,9 @@ pub enum WorthQueryApplicationCommitOutcome {
     /// Some component owners moved, but the product head did not. Recover the
     /// product publication.
     ProductUnpublished(crate::domain_computation::WorthQueryProductUnpublishedApplication),
+    ProductPreparationPending(crate::domain_computation::WorthQueryProductPreparationPending),
+    ProductPreparationRefused(crate::domain_computation::WorthQueryProductPreparationRefused),
+
     /// Nothing was written. The cause says why.
     NoEffect(WorthQueryApplicationNoEffect),
     /// Actual producer execution retained its current output with fresh Query support;
@@ -96,9 +104,8 @@ pub enum WorthQueryApplicationCommitOutcome {
     OutputAdopted(crate::domain_computation::primary_graph::output_lineage::executed_adoption::WorthQueryApplicationOutputAdoption),
     /// This attempt committed; the receipt says what landed.
     Committed(super::WorthQueryApplicationCommitReceipt),
-    /// The idempotency key had already committed the same intent; the receipt is
-    /// the earlier commit's, and the change was not made again.
-    AlreadyCommitted(super::WorthQueryApplicationCommitReceipt),
+    /// Original durable meaning, with no live delivery or execution authority.
+    RecoveredCommitted(crate::domain_computation::primary_graph::provider::WorthQueryRecoveredApplicationCommitReceipt),
     /// The candidate's basis was stale at compare. Nothing was committed; re-read and
     /// retry.
     Stale(WorthQueryApplicationStaleAttempt),
@@ -124,10 +131,13 @@ impl WorthQueryApplicationCommitOutcome {
     /// typed terminal with its recovery custody intact.
     pub fn require_committed(self) -> Result<super::WorthQueryApplicationCommitReceipt, Self> {
         match self {
-            Self::Committed(receipt) | Self::AlreadyCommitted(receipt) => Ok(receipt),
+            Self::Committed(receipt) => Ok(receipt),
             other @ (Self::CleanupRequired(_)
+            | Self::RecoveredCommitted(_)
             | Self::ProductStale(_)
             | Self::ProductUnpublished(_)
+            | Self::ProductPreparationPending(_)
+            | Self::ProductPreparationRefused(_)
             | Self::NoEffect(_)
             | Self::OutputAdopted(_)
             | Self::Stale(_)
@@ -140,21 +150,25 @@ impl WorthQueryApplicationCommitOutcome {
         }
     }
 
-    /// Splits a landed commit from every terminal that did not land. The flag
-    /// is true when the landing replays an earlier commit of the same
-    /// idempotency.
+    /// Splits committed meaning from every unresolved or uncommitted terminal.
+    /// The result preserves the distinction between live and recovered receipts.
     pub fn landed(
         self,
-    ) -> Result<(super::WorthQueryApplicationCommitReceipt, bool), WorthQueryApplicationUncommitted>
-    {
+    ) -> Result<WorthQueryApplicationLandedCommit, WorthQueryApplicationUncommitted> {
         use WorthQueryApplicationUncommitted as Uncommitted;
         Err(match self {
-            Self::Committed(receipt) => return Ok((receipt, false)),
-            Self::AlreadyCommitted(receipt) => return Ok((receipt, true)),
+            Self::Committed(receipt) => {
+                return Ok(WorthQueryApplicationLandedCommit::Live { receipt })
+            }
+            Self::RecoveredCommitted(receipt) => {
+                return Ok(WorthQueryApplicationLandedCommit::Recovered(receipt))
+            }
             Self::CleanupRequired(cleanup) => Uncommitted::CleanupRequired(cleanup),
             Self::ProductStale(stale) => Uncommitted::ProductStale(stale),
             Self::ProductUnpublished(unpublished) => Uncommitted::ProductUnpublished(unpublished),
             Self::OutputAdopted(adoption) => Uncommitted::OutputAdopted(adoption),
+            Self::ProductPreparationPending(owner) => Uncommitted::ProductPreparationPending(owner),
+            Self::ProductPreparationRefused(owner) => Uncommitted::ProductPreparationRefused(owner),
             Self::NoEffect(no_effect) => Uncommitted::NoEffect(no_effect),
             Self::Stale(stale) => Uncommitted::Stale(stale),
             Self::Cancelled => Uncommitted::Cancelled,
@@ -167,6 +181,14 @@ impl WorthQueryApplicationCommitOutcome {
     }
 }
 
+/// A recovered observation cannot be passed to a door requiring live receipt
+/// custody. Both alternatives still describe an actual original commitment.
+#[derive(Debug)]
+pub enum WorthQueryApplicationLandedCommit {
+    Live { receipt: super::WorthQueryApplicationCommitReceipt },
+    Recovered(crate::domain_computation::primary_graph::provider::WorthQueryRecoveredApplicationCommitReceipt),
+}
+
 /// Every commit terminal except a landed commit. An outcome that reports its
 /// own landed shape carries this in place of the whole commit outcome, so each
 /// variant a caller matches can occur. `Indeterminate` means the landing is
@@ -176,6 +198,9 @@ pub enum WorthQueryApplicationUncommitted {
     CleanupRequired(Box<super::WorthQueryApplicationCleanupRequired>),
     ProductStale(crate::domain_computation::WorthQueryProductStaleApplication),
     ProductUnpublished(crate::domain_computation::WorthQueryProductUnpublishedApplication),
+    ProductPreparationPending(crate::domain_computation::WorthQueryProductPreparationPending),
+    ProductPreparationRefused(crate::domain_computation::WorthQueryProductPreparationRefused),
+
     NoEffect(WorthQueryApplicationNoEffect),
     OutputAdopted(crate::domain_computation::primary_graph::output_lineage::executed_adoption::WorthQueryApplicationOutputAdoption),
     Stale(WorthQueryApplicationStaleAttempt),
@@ -195,6 +220,8 @@ impl From<WorthQueryApplicationUncommitted> for WorthQueryApplicationCommitOutco
             Uncommitted::ProductStale(stale) => Self::ProductStale(stale),
             Uncommitted::ProductUnpublished(unpublished) => Self::ProductUnpublished(unpublished),
             Uncommitted::OutputAdopted(adoption) => Self::OutputAdopted(adoption),
+            Uncommitted::ProductPreparationPending(owner) => Self::ProductPreparationPending(owner),
+            Uncommitted::ProductPreparationRefused(owner) => Self::ProductPreparationRefused(owner),
             Uncommitted::NoEffect(no_effect) => Self::NoEffect(no_effect),
             Uncommitted::Stale(stale) => Self::Stale(stale),
             Uncommitted::Cancelled => Self::Cancelled,
@@ -218,6 +245,8 @@ pub struct WorthQueryApplicationUnresolvedCommitEvidence {
     stage: crate::domain_computation::provider_session::WorthQueryProviderSessionProtocolStage,
     detail: String,
     cleanup_failure: Option<WorthQueryApplicationManagedCleanupFailure>,
+    idempotency_read_denial:
+        Option<super::super::WorthQueryApplicationIdempotencyResolutionDenialKind>,
 }
 
 /// Additional managed cleanup evidence retained alongside the unresolved commit cause.
@@ -244,9 +273,21 @@ impl WorthQueryApplicationUnresolvedCommitEvidence {
             stage: failure.stage(),
             detail: failure.detail().to_owned(),
             cleanup_failure: None,
+            idempotency_read_denial: None,
         }
     }
 
+    pub(in crate::domain_computation::primary_graph) fn with_preparation_busy(mut self) -> Self {
+        self.idempotency_read_denial = Some(
+            super::super::WorthQueryApplicationIdempotencyResolutionDenialKind::PreparationBusy,
+        );
+        self
+    }
+    pub const fn idempotency_read_denial(
+        &self,
+    ) -> Option<super::super::WorthQueryApplicationIdempotencyResolutionDenialKind> {
+        self.idempotency_read_denial
+    }
     pub(in crate::domain_computation::primary_graph) fn with_read_stop(
         mut self,
         cause: Result<
@@ -291,3 +332,6 @@ impl WorthQueryApplicationUnresolvedCommitEvidence {
 }
 
 mod court_doors_for_test;
+#[cfg(test)]
+#[path = "commit_outcome_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;

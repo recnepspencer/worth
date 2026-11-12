@@ -14,6 +14,7 @@ mod streaming;
 
 pub(in crate::domain_computation::primary_graph) use canonical_key::AdmittedFactKey;
 pub(in crate::domain_computation) use control::StorageControl;
+
 pub(in crate::domain_computation::primary_graph) use storage::RetainedFactStore;
 
 pub type Slot<T> = RefCell<Option<RetainedFact<T>>>;

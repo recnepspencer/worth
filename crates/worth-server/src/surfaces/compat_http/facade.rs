@@ -14,10 +14,7 @@ use crate::{
     WorthServerSurfaceFamily,
 };
 
-use super::{
-    mutation_execution::WorthServerStoredCompatibilityMutation,
-    upload_execution::WorthServerStoredBinaryIngress,
-};
+use super::upload_execution::WorthServerStoredBinaryIngress;
 
 #[derive(Clone, Debug)]
 pub struct WorthServerCompatibilityFacade {
@@ -31,8 +28,6 @@ pub struct WorthServerCompatibilityFacade {
     pub(super) query_handoff: WorthServerQueryHandoffFacade,
     pub(super) responses: WorthServerResponseFacade,
     pub(super) operator_evidence: WorthServerOperatorEvidenceFacade,
-    pub(super) idempotency_store:
-        Arc<Mutex<HashMap<String, WorthServerStoredCompatibilityMutation>>>,
     pub(super) product_operation_retry_store:
         Arc<Mutex<HashMap<String, WorthServerStoredProductOperation>>>,
     pub(super) binary_ingress_store: Arc<Mutex<HashMap<String, WorthServerStoredBinaryIngress>>>,
@@ -50,8 +45,6 @@ pub(crate) struct WorthServerCompatibilityFacadeParts {
     pub(crate) query_handoff: WorthServerQueryHandoffFacade,
     pub(crate) responses: WorthServerResponseFacade,
     pub(crate) operator_evidence: WorthServerOperatorEvidenceFacade,
-    pub(crate) idempotency_store:
-        Arc<Mutex<HashMap<String, WorthServerStoredCompatibilityMutation>>>,
     pub(crate) product_operation_retry_store:
         Arc<Mutex<HashMap<String, WorthServerStoredProductOperation>>>,
     pub(crate) binary_ingress_store: Arc<Mutex<HashMap<String, WorthServerStoredBinaryIngress>>>,
@@ -71,7 +64,6 @@ impl WorthServerCompatibilityFacade {
             query_handoff,
             responses,
             operator_evidence,
-            idempotency_store,
             product_operation_retry_store,
             binary_ingress_store,
             counters,
@@ -87,7 +79,6 @@ impl WorthServerCompatibilityFacade {
             query_handoff,
             responses,
             operator_evidence,
-            idempotency_store,
             product_operation_retry_store,
             binary_ingress_store,
             counters,

@@ -1,10 +1,14 @@
 //! Preserve Native cold-recovery causes at the Query installation boundary.
 use super::*;
-pub(in crate::domain_computation::primary_graph::bootstrap) fn map_checkpoint_recovery_stop(
+pub(in crate::domain_computation::primary_graph) fn map_checkpoint_recovery_stop(
     stop: worth_relational::facade::durability::RelationalRecoveryStop,
 ) -> WorthQueryPrimaryGraphInstallationDenial {
     use worth_relational::facade::durability::RelationalRecoveryStop;
     let denial = match stop.clone() {
+        RelationalRecoveryStop::AdmissionImage(cause) => primary_graph_denial(
+            WorthQueryPrimaryGraphInstallationDenialKind::CheckpointRecoveryRejected,
+            format!("native checkpoint admission image refused: {cause:?}"),
+        ),
         RelationalRecoveryStop::Content(_) => primary_graph_denial(
             WorthQueryPrimaryGraphInstallationDenialKind::ContentAdmissionRejected,
             "native checkpoint content refused",

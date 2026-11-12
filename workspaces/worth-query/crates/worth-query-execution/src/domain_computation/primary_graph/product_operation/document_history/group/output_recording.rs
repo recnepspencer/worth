@@ -1,8 +1,9 @@
 //! A complete group chain lends its actual last receipt to final forest qualification.
+use super::super::source_evidence::WorthQueryHistorySourceEvidence;
 use super::*;
 use crate::domain_computation::primary_graph::{
-    WorthQueryApplicationCommitReceipt, WorthQueryCompletedRecordingOutputs,
-    WorthQueryCompletedRequiredOutputs, WorthQueryHistoryRecordingOutputOrigin,
+    WorthQueryCompletedRecordingOutputs, WorthQueryCompletedRequiredOutputs,
+    WorthQueryHistoryRecordingOutputOrigin,
 };
 impl<'runtime, S: ApplicationSchema, H: ApplicationHistoryBinding<S>>
     WorthQueryDocumentHistory<'runtime, S, H>
@@ -62,7 +63,7 @@ impl<'runtime, S: ApplicationSchema, H: ApplicationHistoryBinding<S>>
         _: &WorthQueryProgramPublicationAccess,
         group: &WorthQueryDocumentHistoryGroupReservation,
         candidate: &WorthQueryExpectedProductBranch<'runtime, S>,
-        source: &WorthQueryApplicationCommitReceipt,
+        source: WorthQueryHistorySourceEvidence<'_>,
         required: Option<&WorthQueryCompletedRequiredOutputs>,
         profile: &super::super::WorthQueryHistoryOutputProfile,
     ) -> Result<Arc<WorthQueryHistoryRecordingOutputOrigin>, WorthQueryDocumentHistoryDenial> {
@@ -72,25 +73,20 @@ impl<'runtime, S: ApplicationSchema, H: ApplicationHistoryBinding<S>>
             return Err(Denial::ForeignModel);
         }
         let last = group.completed.last().ok_or(Denial::GroupNotComplete)?;
-        if !group
-            .scopes
-            .last()
-            .is_some_and(|scope| scope.matches_receipt(source))
-            || !group.members.last().is_some_and(|meaning| {
-                meaning.canonical_key() == source.idempotency_binding().canonical_key()
-                    && meaning.has_same_intent(source.idempotency_binding())
-            })
-        {
+        let scope = group.scopes.last().ok_or(Denial::GroupNotComplete)?;
+        let meaning = *group.members.last().ok_or(Denial::GroupNotComplete)?;
+        if !source.matches(scope, meaning) {
             return Err(Denial::ReceiptMismatch);
         }
         match (last.root_posture, required) {
-            (None, None)
-                if source
-                    .committed_product_publication()
-                    .is_selected_at(last.endpoint.product_observation()) => {}
+            (None, None) if source.is_selected_at(last.endpoint.product_observation()) => {}
             (Some(posture), Some(required))
-                if required.matches_source(source)
-                    && required.root_posture() == posture
+                if match source {
+                    WorthQueryHistorySourceEvidence::Live(receipt) => {
+                        required.matches_source(receipt)
+                    }
+                    WorthQueryHistorySourceEvidence::Recorded(_) => false,
+                } && required.root_posture() == posture
                     && required.retained_output().product_observation()
                         == last.endpoint.product_observation() => {}
             _ => return Err(Denial::ReceiptMismatch),
@@ -111,7 +107,10 @@ impl<'runtime, S: ApplicationSchema, H: ApplicationHistoryBinding<S>>
             self.model.clone(),
             &group.reservation,
             candidate.branch(),
-            source,
+            match source {
+                WorthQueryHistorySourceEvidence::Live(receipt) => receipt.idempotency_binding(),
+                WorthQueryHistorySourceEvidence::Recorded(_) => meaning,
+            },
             profile,
             Arc::clone(&last.endpoint),
             last.root_posture,
@@ -146,13 +145,18 @@ impl<'runtime, S: ApplicationSchema, H: ApplicationHistoryBinding<S>>
         _: &WorthQueryProgramPublicationAccess,
         group: &mut WorthQueryDocumentHistoryGroupReservation,
         candidate: &WorthQueryExpectedProductBranch<'runtime, S>,
-        source: &WorthQueryApplicationCommitReceipt,
+        source: WorthQueryHistorySourceEvidence<'_>,
         required: Option<&WorthQueryCompletedRequiredOutputs>,
         completed: &WorthQueryCompletedRecordingOutputs,
     ) -> Result<(), WorthQueryDocumentHistoryDenial> {
         use WorthQueryDocumentHistoryDenial as Denial;
         self.validate_group_output_origin(group, candidate)?;
-        completed.require_source(&group.reservation, candidate, source, required)?;
+        let scope = group.scopes.last().ok_or(Denial::GroupNotComplete)?;
+        let meaning = *group.members.last().ok_or(Denial::GroupNotComplete)?;
+        if !source.matches(scope, meaning) {
+            return Err(Denial::ReceiptMismatch);
+        }
+        completed.require_source(&group.reservation, candidate, scope, source, required)?;
         let current = self
             .application()
             .on_branch(candidate.branch())

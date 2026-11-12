@@ -59,7 +59,8 @@ impl<S: ApplicationSchema> CoupledApplicationAssembly<'_, '_, '_, S> {
                 Uncommitted::CleanupRequired(failure) => {
                     let (_, cleanup) = failure.into_parts();
                     Uncommitted::CleanupRequired(WorthQueryApplicationCleanupRequired::from_parts(
-                        evidence, cleanup,
+                        evidence.into(),
+                        cleanup,
                     ))
                 }
                 failure => match evidence {

@@ -1,3 +1,4 @@
+mod authored_provider_contract;
 mod builder;
 mod comparison;
 mod compatibility;
@@ -6,6 +7,12 @@ mod condition_parameter;
 mod declaration;
 mod dependency;
 mod host_provider_contract;
+pub use authored_provider_contract::{
+    AuthoredProviderReconstructionDenial, BridgeAuthoredProviderDescription,
+    WorthQueryAuthoredHostConditionalOutputComparatorProvider,
+    WorthQueryAuthoredHostConditionalOutputVersionProvider,
+    WorthQueryAuthoredHostConditionalPredicateProvider,
+};
 mod location;
 mod markers;
 mod named_clock_contract;

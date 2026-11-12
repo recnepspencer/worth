@@ -109,7 +109,9 @@ fn assert_updating_record_denies_close_but_stays_named(
     );
     assert_eq!(
         owner
-            .close()
+            .close(&worth_execution::ExecutionRequest::serial(
+                &crate::test_execution_policy::serial_request()
+            ))
             .expect_err("an updating recovery record denies close"),
         RuntimeWorldCloseDenial::InFlightCriticalSection
     );
@@ -140,7 +142,9 @@ fn assert_settled_record_closes_only_after_cleanup(
     assert!(owner.cleanup_recovery_handle(handle).is_some());
     assert_eq!(owner.recovery_record_count(), 0);
     let _report = owner
-        .close()
+        .close(&worth_execution::ExecutionRequest::serial(
+            &crate::test_execution_policy::serial_request(),
+        ))
         .expect("cleanup removes the final recovery close obligation");
     assert_eq!(
         owner.lifecycle_observation(),

@@ -108,8 +108,12 @@ where
                         denial: Denial::NativeTerminal,
                     };
                 }
+                Ok(WorthQueryApplicationPerformedMutationOutcome::NotPerformed(WorthQueryApplicationMutationOutcome::RecoveredCommitted(receipt))) => {
+                    self.state = FixedState::ReplayRecorded(receipt);
+                    Progress::SourceReplayObserved
+                }
                 Ok(WorthQueryApplicationPerformedMutationOutcome::NotPerformed(WorthQueryApplicationMutationOutcome::AlreadyCommitted(receipt))) => {
-                    self.state = FixedState::Replay(receipt);
+                    self.state = FixedState::ReplayRetained(receipt);
                     Progress::SourceReplayObserved
                 }
                 Ok(WorthQueryApplicationPerformedMutationOutcome::NotPerformed(outcome)) => {

@@ -46,8 +46,8 @@ impl<'runtime, 'principal, 'scope>
                     newly_committed: false,
                 })
             }
-            WorthQueryApplicationMutationOutcome::PreviouslyCommitted(observation) => {
-                BankApprovedPaymentApplyOutcome::PreviouslyCommitted(observation)
+            WorthQueryApplicationMutationOutcome::RecoveredCommitted(observation) => {
+                BankApprovedPaymentApplyOutcome::RecoveredCommitted(observation)
             }
             WorthQueryApplicationMutationOutcome::IdempotencyIntentDrift => {
                 BankApprovedPaymentApplyOutcome::IdempotencyIntentDrift

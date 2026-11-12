@@ -34,11 +34,11 @@ impl WorthQueryBackendRelationalOwner {
     pub(super) fn execute_mutation<T, E>(
         &mut self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
-        mutate: impl FnOnce(&mut RelationalRuntime) -> Result<T, E>,
+        mutate: impl FnOnce(&RelationalRuntime) -> Result<T, E>,
     ) -> Result<Result<T, E>, WorthQueryPrimaryGraphIndexRefreshDenial> {
         match self {
             Self::Unpublished(runtime) => Ok(mutate(runtime)),
-            Self::ProductSource(owner) => Ok(owner.with_runtime_mut(execution, mutate)),
+            Self::ProductSource(owner) => Ok(owner.with_runtime(execution, mutate)),
             Self::PrimaryGraph(owner) => owner.execute_mutation(execution, mutate),
         }
     }
@@ -53,7 +53,7 @@ impl WorthQueryBackendRelationalOwner {
         Result<MergeExecutionOutcome, RelationalEffectExecutionFailure>,
         WorthQueryPrimaryGraphIndexRefreshDenial,
     > {
-        let unschematized = |runtime: &mut RelationalRuntime| {
+        let unschematized = |runtime: &RelationalRuntime| {
             execute_lowered_merge(
                 execution,
                 runtime,
@@ -63,7 +63,7 @@ impl WorthQueryBackendRelationalOwner {
         };
         match self {
             Self::Unpublished(runtime) => Ok(unschematized(runtime)),
-            Self::ProductSource(owner) => Ok(owner.with_runtime_mut(execution, unschematized)),
+            Self::ProductSource(owner) => Ok(owner.with_runtime(execution, unschematized)),
             Self::PrimaryGraph(owner) => owner.execute_merge(execution, declaration),
         }
     }

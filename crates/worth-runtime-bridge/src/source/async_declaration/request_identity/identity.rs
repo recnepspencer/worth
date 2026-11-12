@@ -296,3 +296,6 @@ impl AdmittedBridgeAsyncRequestIdentity {
         self.digest.as_ref()
     }
 }
+#[cfg(test)]
+#[path = "identity_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;

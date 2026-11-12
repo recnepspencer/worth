@@ -182,7 +182,7 @@ pub fn replace_elevation_resource(
         .kind_for_test();
     let handle = graph.integration_handle_for_test();
     let selected = world.selected_product(&(phase_custody).test_host_request_for_test());
-    let relation = handle.with_runtime_mut_for_test(execution, |runtime| {
+    let relation = handle.with_runtime_for_test(execution, |runtime| {
         let snapshot = selected.application_basis_for_test().snapshot_handle();
 
         runtime

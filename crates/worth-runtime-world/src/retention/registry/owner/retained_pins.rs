@@ -61,6 +61,7 @@ impl RetainedComponentPins {
         }
     }
 
+    #[cfg(test)]
     pub(super) fn by_declared_basis(
         &self,
     ) -> impl Iterator<Item = (&ExactComponentBasisKey, &PinEntry)> {

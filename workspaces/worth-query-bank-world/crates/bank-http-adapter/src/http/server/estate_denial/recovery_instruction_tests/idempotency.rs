@@ -2,14 +2,10 @@
 use super::*;
 
 #[test]
-fn a_committed_key_asks_for_a_refresh_and_an_unverifiable_one_for_the_operator() {
+fn an_unverifiable_recorded_intent_asks_for_the_operator() {
     use bank_server::BankEstateIdempotencyResolutionDenial as Idempotency;
-    assert_eq!(
-        estate_denial(BankEstateProgressionDenial::Idempotency(
-            Idempotency::CommittedReceiptNotRetained
-        )),
-        BankHttpDenial::new(Denial::Stale, Next::Refresh)
-    );
+    // The historical receipt-loss refusal was retired by 98b39a07bd:
+    // committed retries carry owner-read original data, never a missing receipt.
     assert_eq!(
         estate_denial(BankEstateProgressionDenial::Idempotency(
             Idempotency::RecordedIntentUnverifiable

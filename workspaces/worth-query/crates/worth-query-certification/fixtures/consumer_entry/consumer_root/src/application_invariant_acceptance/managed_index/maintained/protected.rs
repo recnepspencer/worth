@@ -1,13 +1,11 @@
 //! Protected Parent declarations reuse the actual grant and READ-policy owners.
-#[path = "../boxes/access.rs"]
-pub(crate) mod access;
+pub(super) mod access;
 #[cfg(test)]
 mod court;
 pub(super) mod expectation;
 mod page;
 mod query;
 mod seed;
-#[path = "../boxes/status.rs"]
 pub(super) mod status;
 use super::schema::Catalog;
 use worth_query_decl::facade::application_schema::*;

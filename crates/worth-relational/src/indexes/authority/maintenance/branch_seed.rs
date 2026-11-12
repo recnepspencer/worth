@@ -25,6 +25,7 @@ impl super::owner::IndexMaintenanceOwner<'_> {
             .indexes
             .maintenance_inputs_admitted(
                 index_id,
+                self.prepared_catalog(),
                 authoring,
                 request.source_commit_id,
                 version,

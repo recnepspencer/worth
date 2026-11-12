@@ -6,6 +6,7 @@ pub enum RuntimeWorldRecoveryRecordState {
     Active,
     Abandoned,
     Retained,
+    Recovered,
     Busy,
 }
 /// Descriptive page row. A busy update deliberately exposes no stale age.

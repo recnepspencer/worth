@@ -110,15 +110,31 @@ impl<Schema: ApplicationSchema + 'static> PendingResourceRegistry<Schema> {
         Ok(())
     }
 
+    pub(in crate::domain_computation::primary_graph) fn require_home_recovery_support(
+        &self,
+    ) -> Result<(), Denial> {
+        if self.entries.is_empty() {
+            Ok(())
+        } else {
+            Err(denial(
+                "resource pools require their later Home recovery phase",
+            ))
+        }
+    }
+
     /// The whole batch is the final graph mutation before seal. No unrelated
     /// raw-tick producer may already occupy this same Native temporal cell.
     pub(in crate::domain_computation::primary_graph) fn install(
         self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
-        builder: &mut worth_runtime_bridge::facade::BridgeConditionalRuntimeBuilder,
+        mut builder: Option<&mut worth_runtime_bridge::facade::BridgeConditionalRuntimeBuilder>,
         support: &worth_query_admission::facade::resource_admission::WorthQueryExecutionResourceSupportSnapshot,
     ) -> Result<InstalledResourceRegistry<Schema>, Denial> {
-        if !self.entries.is_empty() && builder.owned_async_declaration_count() != 0 {
+        if !self.entries.is_empty()
+            && builder
+                .as_ref()
+                .is_some_and(|builder| builder.owned_async_declaration_count() != 0)
+        {
             return Err(denial(
                 "resource pools cannot share a cell with raw owned-async clock producers",
             ));
@@ -126,6 +142,9 @@ impl<Schema: ApplicationSchema + 'static> PendingResourceRegistry<Schema> {
         let mut entries = Vec::new();
         let mut by_binding = HashMap::new();
         for pending in self.entries.into_values() {
+            let builder = builder.as_deref_mut().ok_or_else(|| denial(
+                "resource installation requires an unsealed Bridge; Home seed admission must precede it",
+            ))?;
             let (identity, resource) = pending.install(execution, builder, support)?;
             if by_binding.insert(identity, entries.len()).is_some() {
                 return Err(denial("duplicate installed resource binding type"));

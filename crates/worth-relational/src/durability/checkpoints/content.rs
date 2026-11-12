@@ -11,6 +11,7 @@ use crate::durability::log::native_checkpoint_codec::member_frame;
 use crate::durability::medium::{RelationalDurableColdSource, RelationalDurableMemberLocator};
 use std::collections::{BTreeMap, BTreeSet};
 use worth_execution::{ExecutionRequest, ExecutionRequestArrayBuilder};
+pub(crate) mod root_capture;
 
 pub(crate) fn capture(
     execution: &ExecutionRequest<'_, '_>,

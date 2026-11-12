@@ -101,6 +101,10 @@ impl InstalledSignalComparatorIdentity {
         self.role
     }
 
+    pub(crate) const fn node(&self) -> NodeId {
+        self.node
+    }
+
     pub(crate) fn is_same_installed_identity(&self, candidate: &Self) -> bool {
         self.graph_instance_id == candidate.graph_instance_id
             && self.node == candidate.node

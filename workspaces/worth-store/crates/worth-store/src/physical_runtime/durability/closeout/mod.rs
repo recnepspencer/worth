@@ -24,3 +24,6 @@ pub use recovery_allocation::PhysicalRecoveryAllocationAdmission;
 pub use residue::PhysicalArtifactResidueClassification;
 pub use root_basis::{PhysicalRecoveryRootBasis, PhysicalRootNamespaceDurabilityEvidence};
 pub use wal_tail::{PhysicalRecoveryWalSegment, PhysicalRecoveryWalTail};
+#[cfg(test)]
+#[path = "mod_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;

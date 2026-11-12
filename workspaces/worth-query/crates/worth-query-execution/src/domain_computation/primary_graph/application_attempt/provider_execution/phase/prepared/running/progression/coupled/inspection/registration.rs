@@ -27,6 +27,8 @@ where
         returned,
         cleanup,
         lease,
+        original_completion,
+        completion_storage,
     } = registered;
     let authority = typed
         .downcast_ref::<CoupledWriterAdmission<S, M>>()
@@ -43,11 +45,12 @@ where
         Ok(inspected) => inspected,
         Err(outcome) => {
             drop(typed);
-            return Err(progressed::finish_application_commit(
+            return Err(progressed::finish_coupled_application_commit(
                 execution,
                 phase,
                 application,
-                WorthQueryProgressedApplicationCommit {
+                completion_storage.complete(WorthQueryProgressedApplicationCommit {
+                    original_completion,
                     outcome,
                     workflow_settlement_publication: None,
                     lease,
@@ -56,7 +59,7 @@ where
                         .expect("closed inspection returned its actual run"),
                     cleanup,
                     request,
-                },
+                }),
             ));
         }
     };
@@ -72,6 +75,8 @@ where
             cleanup,
             lease,
             request,
+            original_completion,
+            completion_storage,
         },
     })
 }

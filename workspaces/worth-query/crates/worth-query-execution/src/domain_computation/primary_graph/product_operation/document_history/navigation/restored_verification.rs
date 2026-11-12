@@ -111,7 +111,9 @@ impl<S: ApplicationSchema> NavigationProgress<'_, S> {
                                 &execution,
                                 tree.family,
                                 tree.source_intent().source_subject(),
-                                tree.source_intent().source_partition(),
+                                worth_foundational::facade::CanonicalDigestId::new(
+                                    tree.source_intent().source_partition(),
+                                ),
                             )
                             .map_err(Denial::RestoredOutputRead)?
                             .is_none()

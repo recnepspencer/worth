@@ -4,18 +4,18 @@ use super::{
     SharedColumn, PAGE_LEN,
 };
 use crate::storage::substrate::{
-    StorageAllocation, StorageAllocationObservation, StorageAllocationVisitor,
+    StorageAllocation, StorageAllocationVisitor, StoredValueObservation,
 };
 
-impl<T: Clone> SharedColumn<T> {
+impl<T: super::StoredValue> SharedColumn<T> {
     pub(crate) fn visit_new_allocations(
         &self,
         previous: &Self,
         visitor: &mut dyn StorageAllocationVisitor,
         value: &mut dyn FnMut(
-            &T,
-            Option<&T>,
-            StorageAllocationObservation,
+            &T::Value,
+            Option<&T::Value>,
+            StoredValueObservation,
             &mut dyn StorageAllocationVisitor,
         ),
     ) {
@@ -23,12 +23,12 @@ impl<T: Clone> SharedColumn<T> {
             && previous
                 .default
                 .as_ref()
-                .is_none_or(|old| old.id() != default.id())
+                .is_none_or(|old| !old.same_storage(default))
         {
             value(
-                default,
-                previous.default.as_deref(),
-                default.observation(false),
+                default.value(),
+                previous.default.as_ref().map(super::StoredValue::value),
+                StoredValueObservation::new(default, false),
                 visitor,
             );
         }
@@ -58,16 +58,16 @@ impl<T: Clone> SharedColumn<T> {
     }
 }
 
-fn visit_node<T: Clone>(
+fn visit_node<T: super::StoredValue>(
     node: &StorageAllocation<ColumnNode<T>>,
     height: usize,
     start: usize,
     previous: &SharedColumn<T>,
     visitor: &mut dyn StorageAllocationVisitor,
     value: &mut dyn FnMut(
-        &T,
-        Option<&T>,
-        StorageAllocationObservation,
+        &T::Value,
+        Option<&T::Value>,
+        StoredValueObservation,
         &mut dyn StorageAllocationVisitor,
     ),
 ) {
@@ -79,8 +79,7 @@ fn visit_node<T: Clone>(
     }
     let mut allocation = node.observation(false);
     if let ColumnStorage::Page(values) = &node.storage {
-        allocation.bytes +=
-            (values.capacity() * std::mem::size_of::<Option<StorageAllocation<T>>>()) as u64;
+        allocation.bytes += (values.capacity() * std::mem::size_of::<Option<T>>()) as u64;
     }
     if !visitor.visit(allocation) {
         return;
@@ -92,11 +91,11 @@ fn visit_node<T: Clone>(
                     continue;
                 };
                 let old = previous.get_shared(start + offset);
-                if old.is_none_or(|old| old.id() != entry.id()) {
+                if old.is_none_or(|old| !old.same_storage(entry)) {
                     value(
-                        entry,
-                        old.map(StorageAllocation::as_ref),
-                        entry.observation(false),
+                        entry.value(),
+                        old.map(super::StoredValue::value),
+                        StoredValueObservation::new(entry, false),
                         visitor,
                     );
                 }

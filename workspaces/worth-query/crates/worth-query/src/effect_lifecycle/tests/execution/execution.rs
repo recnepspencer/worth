@@ -23,16 +23,16 @@ fn lowered_mutation_execution_runs_through_relational_strategy_authority() {
     let host_request = crate::test_execution_policy::serial_request();
     let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
-    let mut runtime = relational_runtime_with_intent_strategy();
+    let runtime = relational_runtime_with_intent_strategy();
     let entity_id = create_entity(
         request_execution,
-        &mut runtime,
+        &runtime,
         "before",
         BranchId("main".to_string()),
     );
     crate::runtime::fork_branch_from_exact_source(
         request_execution,
-        &mut runtime,
+        &runtime,
         BranchId("branch-a".to_string()),
         &BranchId("main".to_string()),
     )
@@ -48,7 +48,7 @@ fn lowered_mutation_execution_runs_through_relational_strategy_authority() {
     let executed = lowered
         .execute_with(
             request_execution,
-            EffectExecutionAuthority::relational(&mut runtime),
+            EffectExecutionAuthority::relational(&runtime),
         )
         .expect("lowered mutation should execute");
 
@@ -62,7 +62,7 @@ fn lowered_mutation_execution_runs_through_relational_strategy_authority() {
         executed.authority_owner(),
         executed.lowered().authority_owner()
     );
-    let snapshot = exact_branch_snapshot(&mut runtime, "main");
+    let snapshot = exact_branch_snapshot(&runtime, "main");
     let read_view = runtime
         .read_truth()
         .read_snapshot(&snapshot, request_execution)
@@ -82,23 +82,23 @@ fn lowered_merge_execution_runs_through_relational_merge_authority() {
     let host_request = crate::test_execution_policy::serial_request();
     let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
-    let mut runtime = relational_runtime_with_intent_strategy();
+    let runtime = relational_runtime_with_intent_strategy();
     create_entity(
         request_execution,
-        &mut runtime,
+        &runtime,
         "main",
         BranchId("main".to_string()),
     );
     crate::runtime::fork_branch_from_exact_source(
         request_execution,
-        &mut runtime,
+        &runtime,
         BranchId("candidate".to_string()),
         &BranchId("main".to_string()),
     )
     .expect("candidate branch should be created");
     create_entity(
         request_execution,
-        &mut runtime,
+        &runtime,
         "feature-only",
         BranchId("candidate".to_string()),
     );
@@ -109,7 +109,7 @@ fn lowered_merge_execution_runs_through_relational_merge_authority() {
     let executed = lowered
         .execute_with(
             request_execution,
-            EffectExecutionAuthority::crate_relational_without_application_schema(&mut runtime),
+            EffectExecutionAuthority::crate_relational_without_application_schema(&runtime),
         )
         .expect("lowered merge should execute");
 
@@ -138,7 +138,7 @@ fn lowered_writeback_execution_requires_bridge_authority() {
     let host_request = crate::test_execution_policy::serial_request();
     let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
-    let mut runtime = relational_runtime_with_intent_strategy();
+    let runtime = relational_runtime_with_intent_strategy();
     let lowered = scope_admitted_effect_plan(admitted_tenant_writeback_effect())
         .lower()
         .expect("writeback should lower");
@@ -146,7 +146,7 @@ fn lowered_writeback_execution_requires_bridge_authority() {
     let denial = lowered
         .execute_with(
             request_execution,
-            EffectExecutionAuthority::relational(&mut runtime),
+            EffectExecutionAuthority::relational(&runtime),
         )
         .expect_err("writeback execution should reject non-bridge authority");
     let denial = denial.denial().expect("authority rejection is a denial");
@@ -163,16 +163,16 @@ fn lowered_mutation_execution_rejects_bridge_host_override() {
     let host_request = crate::test_execution_policy::serial_request();
     let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
-    let mut runtime = relational_runtime_with_intent_strategy();
+    let runtime = relational_runtime_with_intent_strategy();
     let entity_id = create_entity(
         request_execution,
-        &mut runtime,
+        &runtime,
         "before",
         BranchId("main".to_string()),
     );
     crate::runtime::fork_branch_from_exact_source(
         request_execution,
-        &mut runtime,
+        &runtime,
         BranchId("branch-a".to_string()),
         &BranchId("main".to_string()),
     )

@@ -18,7 +18,7 @@ pub fn serial(token: CancellationToken) -> SerialRequest {
 
 #[test]
 fn cancelled_native_preparation_is_a_control_stop_not_no_kind() {
-    let mut runtime = RelationalRuntimeApi::builder()
+    let runtime = RelationalRuntimeApi::builder()
         .schema_registry(schema())
         .build()
         .expect("valid native runtime configuration");
@@ -30,7 +30,7 @@ fn cancelled_native_preparation_is_a_control_stop_not_no_kind() {
         .unwrap();
     assert_eq!(admitted.changed_records.len(), 1);
     worth_query_execution::court_doors_for_test::relational_snapshot_release::release_query_snapshot(
-        &mut runtime,
+        &runtime,
         &admitted.snapshot,
     );
     let pending = transaction(&runtime, "cancelled");
@@ -60,14 +60,14 @@ fn cancelled_relation_equality_is_a_control_stop_not_false() {
     use worth_relational::facade::transactions::RecordRef;
     use worth_relational::facade::transactions::RelationSpec;
     use worth_relational::facade::transactions::RelationalExecutionDenialCause as Cause;
-    let mut runtime = RelationalRuntimeApi::builder()
+    let runtime = RelationalRuntimeApi::builder()
         .schema_registry(schema())
         .build()
         .expect("valid native runtime configuration");
     let source = CancellationSource::new();
     let request = serial(source.token());
     let execution = ExecutionRequest::serial(&request);
-    let mut create_entity = |key| {
+    let create_entity = |key| {
         let committed = transaction(&runtime, key)
             .commit(&execution, &runtime)
             .unwrap();
@@ -75,7 +75,7 @@ fn cancelled_relation_equality_is_a_control_stop_not_false() {
             panic!("entity commit produced its entity");
         };
         worth_query_execution::court_doors_for_test::relational_snapshot_release::release_query_snapshot(
-            &mut runtime,
+            &runtime,
             &committed.snapshot,
         );
         entity
@@ -153,7 +153,7 @@ fn cancelled_relation_equality_is_a_control_stop_not_false() {
         Some(Err(Control::Cancelled))
     );
     worth_query_execution::court_doors_for_test::relational_snapshot_release::release_query_snapshot(
-        &mut runtime,
+        &runtime,
         &committed.snapshot,
     );
 }

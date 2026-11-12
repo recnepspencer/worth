@@ -1,4 +1,4 @@
-use crate::history::data::CanonicalCommitEnvelope;
+use crate::history::data::{CanonicalCommitEnvelope, CanonicalCommitEnvelopeBody};
 
 use super::errors::SchemaContinuityBundleIssue;
 
@@ -33,14 +33,21 @@ impl<'a> ValidatedSchemaContinuityBundle<'a> {
 pub fn validate_schema_continuity_bundle(
     envelope: &CanonicalCommitEnvelope,
 ) -> Result<ValidatedSchemaContinuityBundle<'_>, SchemaContinuityBundleIssue> {
+    validate_schema_continuity_body(envelope)?;
+    Ok(ValidatedSchemaContinuityBundle {
+        envelope,
+        transition: envelope.schema_transition.as_ref(),
+        continuation: envelope.schema_continuation_descriptor.as_ref(),
+        reconciliation: envelope.schema_reconciliation_descriptor.as_ref(),
+    })
+}
+
+pub(crate) fn validate_schema_continuity_body(
+    envelope: &CanonicalCommitEnvelopeBody,
+) -> Result<(), SchemaContinuityBundleIssue> {
     reject_incomplete_schema_continuity_bundle(envelope)?;
     let Some(transition) = &envelope.schema_transition else {
-        return Ok(ValidatedSchemaContinuityBundle {
-            envelope,
-            transition: None,
-            continuation: None,
-            reconciliation: None,
-        });
+        return Ok(());
     };
 
     let continuation = envelope
@@ -58,16 +65,11 @@ pub fn validate_schema_continuity_bundle(
     reject_envelope_schema_version_drift(envelope, transition, reconciliation)?;
     reject_historical_reinterpretation_violation(continuation)?;
 
-    Ok(ValidatedSchemaContinuityBundle {
-        envelope,
-        transition: Some(transition),
-        continuation: Some(continuation),
-        reconciliation: Some(reconciliation),
-    })
+    Ok(())
 }
 
 fn reject_incomplete_schema_continuity_bundle(
-    envelope: &CanonicalCommitEnvelope,
+    envelope: &CanonicalCommitEnvelopeBody,
 ) -> Result<(), SchemaContinuityBundleIssue> {
     let has_transition = envelope.schema_transition.is_some();
     let has_continuation = envelope.schema_continuation_descriptor.is_some();
@@ -102,7 +104,7 @@ fn reject_transition_descriptor_drift(
 }
 
 fn reject_descriptor_version_drift(
-    envelope: &CanonicalCommitEnvelope,
+    envelope: &CanonicalCommitEnvelopeBody,
     continuation: &crate::schema::data::SchemaContinuationDescriptor,
     reconciliation: &crate::schema::data::SchemaReconciliationDescriptor,
 ) -> Result<(), SchemaContinuityBundleIssue> {
@@ -147,7 +149,7 @@ fn reject_invalid_visible_bridge_proof(
 }
 
 fn reject_envelope_schema_version_drift(
-    envelope: &CanonicalCommitEnvelope,
+    envelope: &CanonicalCommitEnvelopeBody,
     transition: &crate::schema::data::SchemaTransitionArtifact,
     reconciliation: &crate::schema::data::SchemaReconciliationDescriptor,
 ) -> Result<(), SchemaContinuityBundleIssue> {

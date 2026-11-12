@@ -17,6 +17,7 @@ fn replay_reports_owner_create_event_drift_at_digest_layer() {
     let runtime = runtime_with_test_schema();
     let created = create_entity_outcome(execution, &runtime, "event-drift");
     assert!(runtime.history_authority().tamper_commit_envelope_for_test(
+        execution,
         created.commit.commit_id,
         |envelope| {
             envelope
@@ -48,6 +49,7 @@ fn replay_reports_owner_create_decision_drift_at_digest_layer() {
     let runtime = runtime_with_test_schema();
     let created = create_entity_outcome(execution, &runtime, "decision-drift");
     assert!(runtime.history_authority().tamper_commit_envelope_for_test(
+        execution,
         created.commit.commit_id,
         |envelope| {
             envelope
@@ -128,7 +130,10 @@ fn audit_replay_uses_checkpoint_owner_basis_when_tail_is_absent() {
 
     let runtime = runtime_with_test_schema();
     let created = create_entity_outcome(execution, &runtime, "checkpoint-basis");
-    crate::tests::support::checkpoint_durably(execution, &runtime).unwrap();
+    runtime
+        .durability_authority()
+        .checkpoint(execution)
+        .unwrap();
     assert!(runtime
         .durability_authority()
         .remove_durable_envelope_for_test(created.commit.commit_id));

@@ -356,3 +356,33 @@ pub use worth_query_installation::facade::{
 pub use worth_query_installation::worth_query_conditional_node;
 pub use worth_query_publication::facade as publication;
 pub use worth_query_publication::facade::application_entry;
+
+pub use crate::application_home::{
+    discard_home, ApplicationHomeQueryRootDenial, HomeCustodyReadmissionDenial,
+    NoHomeProgramTransition, QueryHomeProgramActivationDenial, UnadmittedHomeQueryCustodyRefused,
+    UnadmittedHomeQueryService, WorldCompositionRetained, WorthQueryApplicationHome,
+    WorthQueryApplicationHomeCheckpoint, WorthQueryApplicationHomeCheckpointDenial,
+    WorthQueryApplicationHomeCheckpointInspection,
+    WorthQueryApplicationHomeCheckpointJournalObservation,
+    WorthQueryApplicationHomeCheckpointLimits, WorthQueryApplicationHomeCloseOutcome,
+    WorthQueryApplicationHomeCloseRefused, WorthQueryApplicationHomeClosed,
+    WorthQueryApplicationHomeDiscardDenial, WorthQueryApplicationHomeLocation,
+    WorthQueryApplicationHomeOpenRefused, WorthQueryApplicationHomeOpeningCloseRefused,
+    WorthQueryApplicationHomeOpeningClosed, WorthQueryApplicationHomeRequest,
+    WorthQueryApplicationHomeTransitionRequired, WorthQueryHomeProgramTransition,
+    WorthQueryHomeProgramTransitionDenial, WorthQueryHomeProgramTransitionOpenPhase,
+    WorthQueryHomeProgramTransitionOpenRefused, WorthQueryHomeProgramTransitionPlan,
+    WorthQueryHomeProgramTransitionStep, WorthQueryWorkflowApplicationHome,
+    WorthQueryWorkflowHomeBindingRefused, WorthQueryWorkflowHomeCloseRefused,
+    WorthQueryWorkflowHomeClosed,
+};
+/// Relational DATA for a Home transition author. These values grant no step,
+/// initialization, publication or Native owner access.
+pub mod home_program_transition;
+
+pub use worth_foundational::facade::{
+    CanonicalDigestId, DurableOwnerFamily, UncleanRecoveryUnsupported,
+};
+
+/// Typed refusal from fresh authored-program installation before Home service.
+pub use worth_query_execution::facade::application_home_integration::QueryHomeSignalProgramPreparationDenial;

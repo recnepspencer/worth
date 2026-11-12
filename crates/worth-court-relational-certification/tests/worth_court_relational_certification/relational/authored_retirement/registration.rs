@@ -50,8 +50,8 @@ fn owned_publication_admission_requires_registered_storage_before_any_effect() {
         .unwrap(),
         family: "owned".into(),
         source_scope: source,
-        source_partition: [0; 32],
-        source_epoch: [1; 32],
+        source_partition: worth_foundational::facade::CanonicalDigestId::new([0; 32]),
+        source_epoch: worth_foundational::facade::CanonicalDigestId::new([1; 32]),
     };
     let deny = |error: TransactionCommitError| {
         let TransactionCommitError::Publication { error, .. } = error else {

@@ -8,7 +8,7 @@ use std::sync::Arc;
 type Successor<'a> = (usize, &'a Arc<CanonicalRequiredOutputOrigin>);
 
 pub(super) fn select<'a>(
-    candidate: &'a CanonicalCommitEnvelope,
+    candidate: &'a CanonicalCommitEnvelopeBody,
     scope: EntityId,
     scope_deleted: bool,
     writer: &mut Writer<'_, '_, '_, '_, '_>,

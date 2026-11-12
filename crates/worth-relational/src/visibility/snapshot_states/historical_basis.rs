@@ -36,6 +36,13 @@ enum HistoricalVisibilityCoverage {
 }
 
 impl HistoricalVisibilityBasis {
+    pub(super) fn take_retirement(
+        &mut self,
+    ) -> Option<crate::history::retention::RelationalHistoricalObservationRetirement> {
+        self.root
+            .take()
+            .map(crate::history::retention::RelationalHistoricalObservationRetirement::new)
+    }
     pub(crate) fn resolve_retained_commit(
         runtime: &RelationalRuntime,
         commit_id: crate::history::data::CommitId,

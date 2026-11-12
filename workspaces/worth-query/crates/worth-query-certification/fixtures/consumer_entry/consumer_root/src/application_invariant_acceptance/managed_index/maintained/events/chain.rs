@@ -2,7 +2,7 @@
 use super::super::super::super::authentication;
 use super::super::host;
 use super::court::fixture::*;
-use super::{authoring, history, prefix, query};
+use super::{history, prefix, query};
 use std::{
     collections::VecDeque,
     sync::{
@@ -50,7 +50,7 @@ pub(in super::super) fn growth(count: usize) -> u64 {
         publish(
             &world,
             &mut key,
-            authoring::Edit::Item {
+            crate::application_invariant_acceptance::managed_index::maintained::nested::edit::Edit::Item {
                 directory: "A".into(),
                 identity: id.clone(),
                 name: format!("match-{id}"),
@@ -232,7 +232,7 @@ pub(in super::super) fn eviction() {
     publish(
         &world,
         &mut key,
-        authoring::Edit::Name {
+        crate::application_invariant_acceptance::managed_index::maintained::nested::edit::Edit::Name {
             item: "x".into(),
             value: "changed-prefix".into(),
         },
@@ -373,6 +373,5 @@ pub(in super::super) fn foreign() {
 }
 
 pub(in super::super) mod evidence;
-pub(in super::super) mod foreign_node;
 
 pub(in super::super) mod retained_queries;

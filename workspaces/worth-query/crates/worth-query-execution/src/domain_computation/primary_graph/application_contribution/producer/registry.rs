@@ -11,6 +11,8 @@ pub(crate) mod checkpoint;
 mod codec_transition;
 mod coupled_selection;
 mod declaration;
+mod seal_refusal;
+pub(in crate::domain_computation::primary_graph) use seal_refusal::RefusedProducerSeal;
 
 use super::scheduling;
 use super::InstalledProducerExecutor;
@@ -127,6 +129,21 @@ impl<Schema> Default for WorthQueryInstalledApplicationProducerRegistry<Schema> 
         Self {
             entries: BTreeMap::new(),
             marker: PhantomData,
+        }
+    }
+}
+
+impl<Schema> WorthQueryInstalledApplicationProducerRegistry<Schema> {
+    pub(in crate::domain_computation::primary_graph) fn preflight_home_retirement(
+        &self,
+    ) -> Result<(), crate::domain_computation::primary_graph::WorthQueryHomeRetirementDenial> {
+        use crate::domain_computation::primary_graph::{
+            WorthQueryHomeRetirementDenial as Denial, WorthQueryHomeRetirementOwner as Owner,
+        };
+        if self.entries.is_empty() {
+            Ok(())
+        } else {
+            Err(Denial::Unsupported(Owner::InstalledProducers))
         }
     }
 }

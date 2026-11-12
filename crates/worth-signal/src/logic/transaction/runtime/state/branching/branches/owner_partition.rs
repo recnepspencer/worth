@@ -14,8 +14,12 @@ pub(crate) use close_cleanup::SignalOwnerMetadataCloseBatch;
 #[path = "owner_partition/retirement_receipts.rs"]
 mod retirement_receipts;
 pub(crate) use retirement_receipts::SignalOwnerRetirementCleanup;
+#[path = "owner_partition/initial_empty.rs"]
+mod initial_empty;
+mod readmission;
 #[path = "owner_partition/validation.rs"]
 mod validation;
+pub(crate) use readmission::SignalReadmittedCellSeed;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(in crate::logic::transaction::runtime) enum SignalOwnerPartitionDenial {
@@ -73,6 +77,8 @@ where
     retention: SignalBranchRetentionRegistry,
     selected_branch_id: SignalBranchId,
     cells: Vec<SignalOwnerCellSeed<D, I, T>>,
+    readmitted_coordinates: BTreeMap<SignalBranchId, crate::durability::SignalRecordedSourcePoint>,
+    durable_admission: Option<crate::durability::SignalDurableOwnerAdmission>,
 }
 
 impl<D, I, T> SignalOwnerMetadataState<D, I, T>
@@ -210,6 +216,8 @@ where
             retention,
             selected_branch_id,
             cells,
+            readmitted_coordinates: BTreeMap::new(),
+            durable_admission: None,
         }
     }
 
@@ -309,3 +317,6 @@ where
             && self.retention.is_none()
     }
 }
+#[cfg(test)]
+#[path = "owner_partition_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;

@@ -73,7 +73,7 @@ impl<S: ApplicationSchema + 'static, P: ApplicationProgramDefinition<S>>
         // Preserve the settled entrance's original refusal ordering and text.
         self.validate_parent_target::<C>(parent.target_feature)
             .map_err(ParentMeaningMismatch::settled)?;
-        if !parent.retained.belongs_to(&self.backing.runtime) {
+        if !parent.retained.belongs_to(self.backing.runtime()) {
             return Err(WorthQueryOutputDemandDenial::new(
                 Kind::ForeignSettlement,
                 "dependent output parent belongs to another installed application",

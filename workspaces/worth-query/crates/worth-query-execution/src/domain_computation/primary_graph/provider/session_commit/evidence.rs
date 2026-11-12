@@ -6,13 +6,14 @@ use worth_runtime_world::facade::CompositeCommitIdentity;
 
 use super::super::idempotency::WorthQueryIdempotencyLookupKey;
 use super::super::WorthQueryPrimaryGraphCommittedApplication;
-use crate::domain_computation::execution_runtime::product_world::WorthQueryCommitHistoryHold;
 mod correction_witness;
+mod home_retirement;
 
 /// Immutable owner evidence indexed by the Relational commit that produced it.
 #[derive(Default)]
 pub(in crate::domain_computation::primary_graph) struct WorthQueryCompletedCommitEvidenceStore {
     by_commit: BTreeMap<CommitId, WorthQueryPrimaryGraphCommittedApplication>,
+    home_retired_through: Option<CommitId>,
     by_dispatch_correlation: BTreeMap<
         crate::domain_computation::application_aftermath::ExternalEffectCorrelationIdentity,
         BTreeSet<CommitId>,
@@ -24,7 +25,6 @@ pub(in crate::domain_computation::primary_graph) struct WorthQueryCompletedCommi
     performed_by_world: BTreeMap<CompositeCommitIdentity, CommitId>,
     /// The World history hold each recorded commit's publication handed over,
     /// kept until that commit's own caller resolves its receipt and takes it.
-    fresh_history: BTreeMap<CommitId, WorthQueryCommitHistoryHold>,
     /// Evidence a retired product occurrence left on World commits history
     /// still retains, by World commit: a live fork may still correct them.
     inherited: BTreeMap<CompositeCommitIdentity, CommitId>,
@@ -105,7 +105,6 @@ impl WorthQueryCompletedCommitEvidenceStore {
         if self.performed_by_world.get(&world) == Some(&commit) {
             self.performed_by_world.remove(&world);
         }
-        self.fresh_history.remove(&commit);
         self.inherited.insert(world, commit);
     }
 
@@ -156,21 +155,7 @@ impl WorthQueryCompletedCommitEvidenceStore {
         if self.inherited.get(world) == Some(&commit) {
             self.inherited.remove(world);
         }
-        self.fresh_history.remove(&commit);
         Some(evidence)
-    }
-
-    /// Hands `evidence`'s commit's World history hold to its own caller.
-    pub(in crate::domain_computation::primary_graph::provider) fn claim_fresh_history(
-        &mut self,
-        evidence: &mut WorthQueryPrimaryGraphCommittedApplication,
-    ) {
-        if let Some(hold) = self
-            .fresh_history
-            .remove(&evidence.commit_reference().commit_id)
-        {
-            evidence.hold_history(hold);
-        }
     }
 
     pub(in crate::domain_computation::primary_graph) fn entry_count(&self) -> usize {
@@ -204,10 +189,9 @@ impl WorthQueryCompletedCommitEvidenceStore {
         &mut self,
         evidence: WorthQueryPrimaryGraphCommittedApplication,
     ) {
-        // Evidence outlives its commit's history, so it never protects it;
-        // the hold waits for the commit's own caller to take it.
+        // Derived evidence never retains the original caller's World history.
         let mut evidence = evidence;
-        let hold = evidence.take_history();
+        drop(evidence.take_history());
         let commit = evidence.commit_reference().commit_id;
         assert!(
             !self.by_commit.contains_key(&commit),
@@ -244,9 +228,6 @@ impl WorthQueryCompletedCommitEvidenceStore {
                     .or_default()
                     .insert(commit);
             }
-        }
-        if let Some(hold) = hold {
-            self.fresh_history.insert(commit, hold);
         }
         self.by_commit.insert(commit, evidence);
     }
@@ -285,35 +266,7 @@ impl WorthQueryCompletedCommitEvidenceStore {
             .cloned()
     }
 
-    pub(in crate::domain_computation::primary_graph) fn observe_session(
-        &self,
-        session: &crate::domain_computation::provider_session::WorthQueryProviderSessionTerminalBinding,
-    ) -> Option<WorthQueryPrimaryGraphCommittedApplication> {
-        let commit = self.by_session.get(&session.affinity_identity())?;
-        self.by_commit
-            .get(commit)?
-            .publication_members()
-            .find(|evidence| {
-                evidence
-                    .commit_evidence()
-                    .provider_session_binding()
-                    .same_session(session)
-            })
-            .cloned()
-    }
 
-    pub(in crate::domain_computation::primary_graph) fn observe_idempotency(
-        &self,
-        product: &super::super::WorthQueryProductIdempotencyAffinity,
-        binding: crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationIdempotencyBinding,
-    ) -> Option<(
-        crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationIdempotencyBinding,
-        WorthQueryPrimaryGraphCommittedApplication,
-    )>{
-        self.observe_lookup_key(&WorthQueryIdempotencyLookupKey::for_binding(
-            product, &binding,
-        ))
-    }
 
     pub(in crate::domain_computation::primary_graph) fn observe_lookup_key(
         &self,

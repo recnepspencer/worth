@@ -40,7 +40,7 @@ fn equal_version_snapshot_from_another_relational_runtime_is_rejected() {
 
             first_graph
                 .integration_handle_for_test()
-                .with_runtime_mut_for_test(&borrowed_execution, |_| {
+                .with_runtime_for_test(&borrowed_execution, |_| {
                     first_product
                         .application_basis_for_test()
                         .snapshot_handle()
@@ -60,7 +60,7 @@ fn equal_version_snapshot_from_another_relational_runtime_is_rejected() {
             );
             second_graph
                 .integration_handle_for_test()
-                .with_runtime_mut_for_test(&borrowed_execution, |runtime| {
+                .with_runtime_for_test(&borrowed_execution, |runtime| {
                     let snapshot = second_product
                         .application_basis_for_test()
                         .snapshot_handle();
@@ -129,9 +129,9 @@ fn rebuilt_index_generation_preserves_stable_entity_meaning() {
                 .and_then(|field| *field.equality_index_id_for_test())
                 .unwrap();
 
-            graph
-                .integration_handle_for_test()
-                .with_runtime_mut_for_test(&borrowed_execution, |runtime| {
+            graph.integration_handle_for_test().with_runtime_for_test(
+                &borrowed_execution,
+                |runtime| {
                     let head = runtime
                         .history()
                         .historical_latest_commit()
@@ -161,7 +161,8 @@ fn rebuilt_index_generation_preserves_stable_entity_meaning() {
                     truth
                         .validate_entity_freshness_for_test(execution, &identity)
                         .unwrap();
-                });
+                },
+            );
         })
         .expect("the fixture block owns its installed host call")
 }
@@ -183,7 +184,7 @@ let execution = &borrowed_execution;
 let selected = world.selected_product(
             &(host_custody.phase_for_application_for_test(&world.application)).test_host_request_for_test(),
         );
-        graph.integration_handle_for_test().with_runtime_mut_for_test(&borrowed_execution, |runtime| {
+        graph.integration_handle_for_test().with_runtime_for_test(&borrowed_execution, |runtime| {
         let snapshot = selected.application_basis_for_test().snapshot_handle();
         let truth = installed
             .at_snapshot_for_test( runtime, snapshot, WorthQueryPrincipalResolutionMode::Ordinary)

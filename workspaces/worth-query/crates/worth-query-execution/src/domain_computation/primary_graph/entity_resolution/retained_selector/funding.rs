@@ -26,7 +26,7 @@ impl ChargedBytes for Captured {
     }
 }
 
-fn bytes(description: &WorthQueryResolvedEntity) -> Option<u64> {
+fn bytes(description: &super::ScopeDescription) -> Option<u64> {
     std::mem::size_of::<WorthQueryObservedScopeSelector>()
         .checked_add(2 * std::mem::size_of::<usize>())?
         .checked_add(description.retained_capacity_bytes()?)?
@@ -61,7 +61,9 @@ impl WorthQueryObservedScopeSelector {
             .map_err(publication_execution_kind)?
             .0
             .map_err(|stop| publication_execution_kind(WorkCeilingDenial::Stopped(stop)))?;
-        let description = self.describe();
+        let description = self.describe().ok_or(Ok(
+            WorthQueryProviderSessionDenialKind::ForeignGraphAuthority,
+        ))?;
         Ok(inspect(&description))
     }
 }

@@ -14,7 +14,7 @@ use super::super::historical_publication::{observe_all_routes_of_root, RootRoute
 use super::head_predecessor::{checkpoint_head, extends_checkpoint_head};
 use super::{binding_matches, selected_blob_record};
 use crate::orchestration::planning::{
-    context::PlanningContext, resolved_basis::ResolvedPlanningBasis,
+    context::PlanningContext, resolved_basis::ResolvedPlanningState,
 };
 
 /// Minted only after the joined checkpoint head of the object is matched to
@@ -42,7 +42,7 @@ impl VerifiedCheckpointSourceAbsence {
 /// checkpoint source root frame, whichever later root the batch was built on.
 pub(super) fn authenticate(
     mut context: PlanningContext,
-    basis: &mut ResolvedPlanningBasis,
+    basis: &mut ResolvedPlanningState,
     descriptor: BlobReclaimDescriptorV2,
     source: ReleasedGenerationReclaimBasisV1,
     current_count: u16,

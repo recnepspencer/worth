@@ -204,7 +204,7 @@ fn five_admitted_envelopes_publish_original_json_and_keep_payer_until_last_nativ
                 })
                 .collect::<Vec<_>>();
             assert_eq!(symbols.len(), 5);
-            let pin = handle.with_runtime_mut_for_test(&execution, |runtime| {
+            let pin = handle.with_runtime_for_test(&execution, |runtime| {
                 let pin = runtime
                     .read_truth()
                     .pin_read_capability(&commit.snapshot, &[], &execution)
@@ -276,7 +276,7 @@ fn original_cancellation_reaches_query_native_receiving_before_any_dictionary_or
         let handle = (*world.application.runtime_for_test()).primary_graph_for_test().unwrap().integration_handle_for_test();
         // Open the real receiver while live. Cancellation occurs inside, with
         // no intervening outer with_runtime check or new callback/test control.
-        handle.with_runtime_mut_for_test(&execution, |runtime| {
+        handle.with_runtime_for_test(&execution, |runtime| {
             assert!(runtime.owner_component_services().basis_port().compare_current_exact(basis).is_ok());
             let before = runtime.snapshots().snapshot_for_observation(&basis.observation()).unwrap();
             let before_pin = runtime.read_truth().pin_read_capability(&before, &[], &observer).unwrap();

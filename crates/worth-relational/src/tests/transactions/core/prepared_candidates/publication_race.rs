@@ -190,8 +190,8 @@ fn publication_port_performs_one_exact_candidate_and_reports_the_loser_stale() {
             .replay()
             .canonical_commit_envelope(execution, performed.canonical_commit().commit.commit_id)
             .unwrap()
-            .map(|envelope| envelope.as_ref().clone()),
-        Some(performed.canonical_commit().clone()),
+            .as_deref(),
+        Some(performed.canonical_commit()),
         "the ordinary replay surface resolves the root-owned artifact"
     );
     assert_eq!(
@@ -199,8 +199,8 @@ fn publication_port_performs_one_exact_candidate_and_reports_the_loser_stale() {
             .replay()
             .canonical_commit_envelope(execution, performed.canonical_commit().commit.commit_id)
             .unwrap()
-            .map(|envelope| envelope.as_ref().clone()),
-        Some(performed.canonical_commit().clone()),
+            .as_deref(),
+        Some(performed.canonical_commit()),
         "replay input resolves the same canonical root-owned artifact"
     );
     assert_eq!(

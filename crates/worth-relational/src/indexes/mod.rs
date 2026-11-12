@@ -1,6 +1,9 @@
+mod retained_definition;
 pub(crate) use authority::{
     checkpoint_index_projections, verify_checkpoint_index_bases, CheckpointIndexProjections,
 };
+pub use retained_definition::RetainedDerivedIndexDefinition;
+pub(crate) use retained_definition::{IndexDefinitionBacking, RetainedIndexDefinitionMeaning};
 mod access;
 pub use access::{
     AppliedEntityFieldLookupDenial, AppliedEntityFieldLookupOutcome, AppliedEntityFieldMatch,
@@ -11,7 +14,11 @@ mod authority;
 #[cfg(test)]
 pub(crate) use authority::at_next_charges;
 pub(crate) use authority::AppliedFieldImage;
-pub(crate) use authority::{PreparedCandidateIndexPublication, PreparedForkIndexSelection};
+
+pub(crate) use authority::{
+    persistent_map_path_bytes, row_copy_bounds, PreparedCandidateIndexPublication,
+    PreparedForkIndexSelection,
+};
 pub mod data;
 mod projected_field_values;
 

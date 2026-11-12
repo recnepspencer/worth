@@ -21,7 +21,7 @@ where
                 FamilySourceQuery<Schema, Family>,
             > + 'static,
     FamilySourceQuery<Schema, Family>: 'static,
-    WorthQueryAdmittedOutputDemand<Schema, Family>: Send + Sync,
+    WorthQueryAdmittedOutputDemand<Schema, Family>: Send,
 {
     pub fn assert_born_stale_absence_for_test(
         &self,

@@ -9,107 +9,111 @@ use crate::entry::{
 };
 use crate::handoff::RecoveryOperationFateSet;
 
-use super::{NamespaceDurableState, RecoveryPublicationExpectation};
+use super::RecoveryPublicationExpectation;
 
 pub struct ReopenedPhysicalRecovery {
-    pub(crate) state: NamespaceDurableState<super::CustodyState>,
-    pub(crate) expectation: RecoveryPublicationExpectation,
-    pub(crate) publication_counters: PhysicalRecoveryPublicationCounters,
-    pub(crate) publication_settlement: PhysicalRecoveryPublicationSettlementLedger,
-    pub(crate) reopened: Option<CompletedPhysicalRecoveryFreshReopen>,
-    pub(crate) reopen_counters: PhysicalRecoveryReopenCounters,
+    backing: ReopenedBacking,
 }
+mod storage;
+pub(crate) use storage::{ReopenedBacking, ReopenedPayload};
 
 impl ReopenedPhysicalRecovery {
-    pub(crate) const fn new(
-        state: NamespaceDurableState<super::CustodyState>,
-        expectation: RecoveryPublicationExpectation,
-        publication_counters: PhysicalRecoveryPublicationCounters,
-        publication_settlement: PhysicalRecoveryPublicationSettlementLedger,
-        reopened: CompletedPhysicalRecoveryFreshReopen,
-        reopen_counters: PhysicalRecoveryReopenCounters,
-    ) -> Self {
-        Self {
-            state,
-            expectation,
-            publication_counters,
-            publication_settlement,
-            reopened: Some(reopened),
-            reopen_counters,
-        }
+    pub(crate) const fn payload(&self) -> &ReopenedPayload {
+        self.backing.payload()
+    }
+    pub(crate) fn into_handoff_parts(
+        self,
+    ) -> (
+        ReopenedPayload,
+        crate::orchestration::RecoveryHandoffBacking,
+    ) {
+        self.backing.into_handoff_parts()
+    }
+    pub(crate) fn payload_backing_bytes(&self) -> Option<u64> {
+        self.backing.payload_backing_bytes().ok()
+    }
+    pub(crate) fn backing_bytes(&self) -> Option<u64> {
+        self.backing.backing_bytes().ok()
+    }
+    #[cfg(feature = "certification-test-authority")]
+    pub(crate) fn retain_cleanup_media_handle_for_certification(&mut self) -> bool {
+        self.backing.retain_cleanup_media_handle_for_certification()
+    }
+    pub(crate) fn release_admitted_wal(&mut self) {
+        self.backing.release_admitted_wal();
     }
 
     pub fn store_identity(&self) -> StableStoreIdentity {
-        self.state.authority.media.store_identity()
+        self.payload().state.authority.media.store_identity()
     }
     pub const fn recovered_root(
         &self,
     ) -> &worth_store_physical_format::DurablePhysicalRootManifest {
-        self.reopened
+        self.payload()
+            .reopened
             .as_ref()
             .expect("fresh reopen remains present before cleanup entry")
             .root()
     }
     pub const fn reopen_counters(&self) -> PhysicalRecoveryReopenCounters {
-        self.reopen_counters
+        self.payload().reopen_counters
     }
     pub const fn fresh_reopen(&self) -> &CompletedPhysicalRecoveryFreshReopen {
-        self.reopened
+        self.payload()
+            .reopened
             .as_ref()
             .expect("fresh reopen remains present before cleanup entry")
     }
     pub const fn publication_expectation(&self) -> &RecoveryPublicationExpectation {
-        &self.expectation
+        &self.payload().expectation
     }
     pub const fn publication_counters(&self) -> PhysicalRecoveryPublicationCounters {
-        self.publication_counters
+        self.payload().publication_counters
     }
     pub const fn publication_settlement(&self) -> &PhysicalRecoveryPublicationSettlementLedger {
-        &self.publication_settlement
+        &self.payload().publication_settlement
     }
     pub const fn operation_fates(&self) -> &RecoveryOperationFateSet {
-        &self.state.fates
+        &self.payload().state.fates
     }
     pub const fn selected_sources(&self) -> &PhysicalSourceSelection {
-        self.state.selection.facts()
+        self.payload().state.selection.facts()
     }
     pub fn root_protocol_denials(&self) -> &[PhysicalRecoverySourceDenial] {
-        &self.state.root_protocol_denials
+        &self.payload().state.root_protocol_denials
     }
     pub fn wal_integrity_observations(
         &self,
     ) -> &[crate::entry::PhysicalRecoveryWalIntegrityObservation] {
-        self.state.integrity.observations().wal()
+        self.payload().state.integrity.observations().wal()
     }
     pub const fn planning_counters(&self) -> RecoveryPlanningCounters {
-        self.state.planning_counters
+        self.payload().state.planning_counters
     }
     pub const fn root_protocol_counters(
         &self,
     ) -> crate::entry::PhysicalRecoveryRootProtocolCounters {
-        self.state.root_protocol_counters
+        self.payload().state.root_protocol_counters
     }
     pub const fn staging_counters(&self) -> PhysicalRecoveryStagingCounters {
-        self.state.staging_counters
+        self.payload().state.staging_counters
     }
     pub const fn staging_settlements(&self) -> &PhysicalRecoveryStagingSettlementLedger {
-        &self.state.staging_settlements
+        &self.payload().state.staging_settlements
     }
     pub fn is_quiescent(&self) -> bool {
-        self.state.coordination.is_ready()
+        self.payload().state.coordination.is_ready()
     }
     pub const fn integrity_observation_count(&self) -> u64 {
-        self.state.integrity_trace.counters().attempted
+        self.payload().state.integrity_trace.counters().attempted
     }
 
     pub fn integrity_observations(&self) -> &[crate::PhysicalRecoveryIntegrityObservation] {
-        self.state.integrity_trace.observations()
+        self.payload().state.integrity_trace.observations()
     }
 
     pub(crate) fn take_fresh_reopen(&mut self) -> CompletedPhysicalRecoveryFreshReopen {
-        self.reopened
-            .take()
-            .expect("cleanup entry consumes fresh reopen exactly once")
+        self.backing.take_fresh_reopen()
     }
 
     /// Consumes the recovery-only runtime and returns the narrow Store-owned
@@ -156,28 +160,32 @@ impl ReopenedPhysicalRecovery {
 
     #[cfg(feature = "certification-test-authority")]
     pub fn certification_shift_cleanup_generation(&self) {
-        self.state
+        self.payload()
+            .state
             .coordination
             .shift_cleanup_generation_for_certification();
     }
 
     #[cfg(feature = "certification-test-authority")]
     pub fn certification_fail_cleanup_plan_admission(&self) {
-        self.state
+        self.payload()
+            .state
             .coordination
             .fail_cleanup_plan_admission_for_certification();
     }
 
     #[cfg(feature = "certification-test-authority")]
     pub fn certification_fail_cleanup_eligibility_after_read(&self) {
-        self.state
+        self.payload()
+            .state
             .coordination
             .fail_cleanup_eligibility_after_read_for_certification();
     }
 
     #[cfg(feature = "certification-test-authority")]
     pub fn certification_fail_cleanup_freshness_signal_settlement(&self) {
-        self.state
+        self.payload()
+            .state
             .coordination
             .fail_cleanup_freshness_signal_settlement_for_certification();
     }
@@ -187,28 +195,32 @@ impl ReopenedPhysicalRecovery {
         &self,
         stage: worth_store::physical_runtime::PhysicalRecoveryCleanupCommandStage,
     ) {
-        self.state
+        self.payload()
+            .state
             .coordination
             .fail_cleanup_scheduler_settlement_at_for_certification(stage);
     }
 
     #[cfg(feature = "certification-test-authority")]
     pub fn certification_defer_cleanup_background(&self) {
-        self.state
+        self.payload()
+            .state
             .coordination
             .defer_cleanup_background_for_certification();
     }
 
     #[cfg(feature = "certification-test-authority")]
     pub fn certification_substitute_cleanup_authorization(&self) {
-        self.state
+        self.payload()
+            .state
             .coordination
             .certification_substitute_cleanup_authorization();
     }
 
     #[cfg(feature = "certification-test-authority")]
     pub fn certification_leak_cleanup_media_handle(&self) {
-        self.state
+        self.payload()
+            .state
             .coordination
             .certification_leak_cleanup_media_handle();
     }

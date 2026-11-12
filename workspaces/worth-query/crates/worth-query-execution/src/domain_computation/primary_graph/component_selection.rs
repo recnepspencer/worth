@@ -17,9 +17,7 @@ mod currentness;
 mod key;
 mod origin;
 use super::projection_read_origin::ProjectionReadOrigin;
-pub(in crate::domain_computation::primary_graph) use key::{
-    ComponentSelectionKey, ComponentSelectionSubject,
-};
+pub(in crate::domain_computation::primary_graph) use key::ComponentSelectionSubject;
 use origin::ComponentSelectionOrigin;
 
 #[derive(Debug)]
@@ -174,3 +172,5 @@ impl PartialEq for ComponentSelection {
     }
 }
 impl Eq for ComponentSelection {}
+
+pub use key::ComponentSelectionKey;

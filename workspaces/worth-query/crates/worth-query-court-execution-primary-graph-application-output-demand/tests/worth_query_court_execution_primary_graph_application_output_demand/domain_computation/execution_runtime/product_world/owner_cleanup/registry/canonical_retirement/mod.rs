@@ -1,4 +1,5 @@
 //! Cleanup issuance never decides the release order of genuine occurrences.
+use worth_query_execution::facade::product::WorthQueryProductBranchCreationOutcome;
 use worth_query_execution::court_doors_for_test::domain_computation::execution_runtime::product_world::owner_cleanup::registry::CleanupScope;
 use worth_query_execution::court_doors_for_test::domain_computation::execution_runtime::product_world::owner_cleanup::registry::WorthQueryProductBranchOwnerCleanupRegistry;
 use worth_query_execution::court_doors_for_test::domain_computation::execution_runtime::product_world::owner_cleanup::WorthQueryRetiredProductOccurrence;
@@ -23,7 +24,7 @@ fn retirement_releases_in_branch_then_incarnation_order() {
             ),
         )
         .unwrap();
-        let RuntimeWorldBranchCreationOutcome::Performed(child) = runtime
+        let WorthQueryProductBranchCreationOutcome::Performed(child) = runtime
             .create_product_branch_for_test(
                 execution,
                 &root,

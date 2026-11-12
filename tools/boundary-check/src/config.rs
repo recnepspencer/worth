@@ -181,6 +181,7 @@ pub fn validate_policy(config: &toml::Value) -> Result<(), String> {
             }
             for key in [
                 "source_prefixes",
+                "exclude_sources",
                 "forbidden_target_prefixes",
                 "exclude_paths",
                 "forbidden_identifier_fragments",

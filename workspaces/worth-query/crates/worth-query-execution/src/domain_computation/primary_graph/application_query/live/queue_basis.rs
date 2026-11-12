@@ -44,7 +44,7 @@ pub(in crate::domain_computation::primary_graph::application_query) fn admit_liv
         .fork_managed_request_lane();
     admit_live_lower_execution_basis(
         &request_bridge,
-        &application.runtime.product_runtime.source,
+        application.runtime.product_runtime.source(),
         subject,
         &attempt_identity,
         buffer_capacity,
