@@ -171,6 +171,14 @@ fn an_ordinary_recorded_intent_keeps_its_pre_envelope_bytes() {
     let envelope = request.bind_edit_envelope(&key.intent(&[]).unwrap());
     assert!(envelope.intent_text().contains(":edit-envelope="));
     assert_eq!(
+        envelope.match_recorded_intent(&envelope.intent_text()),
+        Ok(super::WorthQueryRecordedIntentMatch::Same)
+    );
+    assert_eq!(
+        request.match_recorded_intent(&envelope.intent_text()),
+        Ok(super::WorthQueryRecordedIntentMatch::Drift)
+    );
+    assert_eq!(
         envelope.match_recorded_intent(&recorded),
         Ok(super::WorthQueryRecordedIntentMatch::Drift)
     );

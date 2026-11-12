@@ -54,6 +54,7 @@ pub(super) fn read(text: &str) -> Result<RecordedIntentObservation, &'static str
             | "workflow-support"
             | "workflow-client-key"
             | "workflow-approval"
+            | "edit-envelope"
             | "transport-intent" => {}
             _ => return Err(MALFORMED),
         }
