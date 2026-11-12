@@ -23,22 +23,6 @@ impl RelationalNativeCheckpoint {
             &RelationalCheckpointArtifactPolicy::Embedded,
         )
     }
-    pub(crate) fn corrupt_current_publication_roster_external_for_test(
-        &self,
-        execution: &worth_execution::ExecutionRequest<'_, '_>,
-        publication: CommitId,
-        change: u8,
-    ) -> Result<Self, RelationalRecoveryStop> {
-        self.corrupt_with_placement(
-            execution,
-            publication,
-            change,
-            &RelationalCheckpointArtifactPolicy::ExternalMembers {
-                current_members: &[],
-                source: None,
-            },
-        )
-    }
     fn corrupt_with_placement(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,

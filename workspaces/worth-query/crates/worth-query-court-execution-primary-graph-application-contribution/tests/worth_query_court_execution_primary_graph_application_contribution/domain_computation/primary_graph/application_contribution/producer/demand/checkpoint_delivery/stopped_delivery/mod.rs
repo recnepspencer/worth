@@ -112,7 +112,7 @@ fn a_terminal_delivery_stop_releases_the_head_with_a_peer_still_present() {
                 assert!(finish.finish_for_test(claim, checkpoint, denial.as_ref()).is_ok());
                 match denial { Some(stop) => Err(stop), None => Ok(WorthQueryOutputDemandAdvance::Pending) }
             }).err().expect("the foreign root refuses real delivery");
-        assert!(matches!(stop.kind(), WorthQueryOutputDemandDenialKind::ProductDelivery(ref cause) if **cause == DeliveryDenialKind::ForeignProductRoot));
+        assert!(matches!(stop.kind(), WorthQueryOutputDemandDenialKind::ProductDelivery(ref cause) if **cause == DeliveryDenialKind::ForeignProductRoot), "the actual typed delivery refusal was {stop:?}");
         assert_eq!(registry.publication_counts_for_registry_test(), (0, 0));
         assert!(matches!(registry.publication_head_selection_for_test(occurrence).unwrap(), PublicationHeadSelection::Live(_)));
         assert!(matches!(registry.begin_for_test(&peer), Admission::Failed(ref cause) if cause.kind() == stop.kind()));

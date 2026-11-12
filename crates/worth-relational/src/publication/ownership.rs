@@ -2,15 +2,11 @@
 mod certification;
 mod observation;
 pub use certification::CurrentOwnershipContactsForTest;
-mod cold_checkpoint_source;
-mod cold_pairing_court;
-mod locality_court;
-mod metadata_guard_court;
-pub use locality_court::CurrentOwnershipLocalityForTest;
 mod completion;
 pub(crate) mod corruption;
 mod evidence;
 mod merge_custody;
+mod metadata_guard_court;
 mod read;
 pub(crate) mod record;
 pub(crate) mod selection_pairing;

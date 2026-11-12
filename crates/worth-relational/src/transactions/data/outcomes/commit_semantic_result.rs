@@ -92,10 +92,31 @@ pub struct RelationalCommitPublicationMeaning {
     pub merge_parent_count: usize,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum RelationalCommitSemanticResultRefusal {
     MissingClientKeyText,
     ConflictingCreateCorrespondence,
+    CreateCardinalityOverflow,
+    RelationBirthMismatch {
+        assigned: crate::identity::data::RelationId,
+    },
+    DuplicateAssignedCreation {
+        record: crate::transactions::data::ExistingRecordTarget,
+    },
+    CreatedPatchMissing {
+        record: crate::transactions::data::ExistingRecordTarget,
+    },
+    OriginalEntityKeyMissing {
+        intent_ordinal: usize,
+        entity_ordinal: usize,
+    },
+    OriginalRelationKeyMissing {
+        intent_ordinal: usize,
+        relation_ordinal: usize,
+    },
+    BulkRelationArityMismatch {
+        intent_ordinal: usize,
+    },
     CreatePartitionMismatch,
     CreatedEndpointMissing,
     NonCanonicalCorrespondence,

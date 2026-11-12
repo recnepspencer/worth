@@ -182,6 +182,7 @@ impl<'runtime, S: ApplicationSchema, H: ApplicationHistoryBinding<S>>
             reserved,
             candidate.branch(),
             reserved.meaning,
+            source,
             profile,
             prepared.source,
             prepared.node.root_posture,

@@ -79,6 +79,9 @@ where
                 cancellation,
                 deadline,
                 Some(crate::publication::HomeTransitionOpenAssignment {
+                    // The admitted Home still executes A's transition even
+                    // when the exact selected predecessor already activates B.
+                    original_program_revision: binding.binding().program_revision(),
                     attempt: reservation.attempt.clone(),
                     association: crate::durability::encode_home_transition_association(
                         execution, plan, step, original,

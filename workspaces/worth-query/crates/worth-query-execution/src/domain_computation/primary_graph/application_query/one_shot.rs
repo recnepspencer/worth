@@ -191,11 +191,9 @@ pub fn map_authorized_read_denial(
             WorthQueryApplicationOneShotDenialKind::StalePrincipal,
             query.to_string(),
         ),
-        WorthQueryAuthorizedApplicationReadDenial::StaleScope
-        | WorthQueryAuthorizedApplicationReadDenial::StaleBasisScope => (
-            WorthQueryApplicationOneShotDenialKind::StaleScope,
-            query.to_string(),
-        ),
+        WorthQueryAuthorizedApplicationReadDenial::ScopeFreshness(cause) => {
+            return denial::scope_freshness_denial(cause, query);
+        }
         WorthQueryAuthorizedApplicationReadDenial::Authorization(denial) => {
             return authorization_denial(denial, query);
         }

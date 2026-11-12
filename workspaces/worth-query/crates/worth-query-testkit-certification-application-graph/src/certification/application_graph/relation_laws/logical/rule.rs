@@ -42,7 +42,6 @@ pub struct Root<L: LawPolicy> {
     pub committed: Option<(Entity<L>, Answer)>,
 }
 pub struct Rule<L: LawPolicy> {
-    pub observer: Option<observation::Observer>,
     pub node:
         WorthQueryApplicationInvariantEntityBinding<GraphSchema<L>, GraphNode<GraphSchema<L>>>,
     pub physical: WorthQueryApplicationInvariantRelationBinding<
@@ -75,7 +74,6 @@ pub fn resolve<L: LawPolicy>(
     resolver: &WorthQueryApplicationInvariantSchemaResolver<'_, GraphSchema<L>>,
 ) -> Result<Rule<L>, String> {
     Ok(Rule {
-        observer: L::logical_read_observer(),
         node: resolver
             .typed_entity(node::<GraphSchema<L>>())
             .ok_or("Node")?,
@@ -179,11 +177,8 @@ impl<L: LawPolicy> Rule<L> {
     ) -> Result<Vec<Root<L>>, WorthQueryApplicationInvariantError> {
         let proposed = planner.proposed();
         let committed = planner.committed();
-        // The default Logical policy exercises census; LocalLogical measures scoped reads.
-        if L::LOGICAL_CENSUS {
-            proposed.graph_components(&self.set).map_err(preparation)?;
-            committed.graph_components(&self.set).map_err(preparation)?;
-        }
+        proposed.graph_components(&self.set).map_err(preparation)?;
+        committed.graph_components(&self.set).map_err(preparation)?;
         let mut roots = Vec::new();
         for root in proposed
             .touched_entities_of(&self.node)
@@ -203,9 +198,6 @@ impl<L: LawPolicy> Rule<L> {
                 committed: old,
             });
         }
-        if let Some(observer) = &self.observer {
-            observer(false, planner.reads());
-        }
         Ok(roots)
     }
     pub fn judge(
@@ -216,10 +208,8 @@ impl<L: LawPolicy> Rule<L> {
     {
         let proposed = context.proposed();
         let committed = context.committed();
-        if L::LOGICAL_CENSUS {
-            proposed.graph_components(&self.set).map_err(execution)?;
-            committed.graph_components(&self.set).map_err(execution)?;
-        }
+        proposed.graph_components(&self.set).map_err(execution)?;
+        committed.graph_components(&self.set).map_err(execution)?;
         for root in roots {
             context.check_live().map_err(execution)?;
             assert_eq!(
@@ -229,9 +219,6 @@ impl<L: LawPolicy> Rule<L> {
             if let Some((old, answer)) = &root.committed {
                 assert_eq!(&self.inspect(&committed, old).map_err(execution)?, answer);
             }
-        }
-        if let Some(observer) = &self.observer {
-            observer(true, context.reads());
         }
         Ok(WorthQueryApplicationInvariantVerdict::Pass)
     }

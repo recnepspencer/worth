@@ -19,6 +19,7 @@ mod contribution;
 mod fresh_references;
 mod local_keys;
 mod part;
+mod part_apply;
 mod part_corruption;
 mod scoped_preparation;
 mod writer_custody;

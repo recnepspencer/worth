@@ -126,6 +126,7 @@ where
                 cancellation,
                 deadline,
                 Some(crate::publication::HomeTransitionOpenAssignment {
+                    original_program_revision: binding.binding().program_revision(),
                     attempt,
                     association: crate::durability::encode_home_transition_association(
                         request, plan, described, original,

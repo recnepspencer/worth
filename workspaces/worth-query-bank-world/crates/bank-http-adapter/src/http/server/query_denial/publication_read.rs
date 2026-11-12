@@ -25,7 +25,8 @@ pub(super) fn denial(cause: TransactionCommitError) -> BankHttpDenial {
                 CommitPreparationReason::SelectedBranchRoot(_) => stale(),
                 CommitPreparationReason::SymbolIdentityExhausted
                 | CommitPreparationReason::ProposalIdentityOrdinalExhausted
-                | CommitPreparationReason::ManagedIndexSource => operator(),
+                | CommitPreparationReason::ManagedIndexSource
+                | CommitPreparationReason::SemanticResult(_) => operator(),
             }
         }
         D::Conflict { error, .. } => conflict(error.class),

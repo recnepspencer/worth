@@ -75,7 +75,6 @@ pub(crate) struct ProductBranchReferenceCell {
 /// Why a reference movement could not replace the selected product head.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub(crate) enum ProductBranchReferenceCellDenial {
-    ControlledInterruption,
     MovementInFlight,
     RecoveryRequired,
     DurableSubjectMismatch,

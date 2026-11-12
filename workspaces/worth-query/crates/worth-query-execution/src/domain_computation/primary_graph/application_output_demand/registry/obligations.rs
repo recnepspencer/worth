@@ -216,9 +216,15 @@ impl super::WorthQueryAcceptedOutputAuthority {
             (Self::Committed(left), Self::Committed(right)) => {
                 left.is_same_authoritative_commit(right)
             }
+            (Self::Recovered(left), Self::Recovered(right)) => left.same_publication(right),
             (Self::Stable(left), Self::Stable(right)) => left.same_publication(right),
             (Self::Restored(left), Self::Restored(right)) => left.same_authority(right),
-            _ => false,
+            (Self::Committed(_), Self::Recovered(_) | Self::Stable(_) | Self::Restored(_))
+            | (Self::Recovered(_), Self::Committed(_) | Self::Stable(_) | Self::Restored(_))
+            | (Self::Stable(_), Self::Committed(_) | Self::Recovered(_) | Self::Restored(_))
+            | (Self::Restored(_), Self::Committed(_) | Self::Recovered(_) | Self::Stable(_)) => {
+                false
+            }
         }
     }
 }

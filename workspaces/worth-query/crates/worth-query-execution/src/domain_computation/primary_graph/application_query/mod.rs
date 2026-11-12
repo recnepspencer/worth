@@ -1,3 +1,5 @@
+mod scope_freshness;
+pub use scope_freshness::{WorthQueryScopeFreshnessCheck, WorthQueryScopeFreshnessDiagnostic};
 mod access_context;
 mod access_receipt;
 pub(crate) mod admission;

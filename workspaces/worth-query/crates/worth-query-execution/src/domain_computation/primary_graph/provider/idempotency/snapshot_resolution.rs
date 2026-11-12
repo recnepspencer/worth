@@ -107,7 +107,18 @@ fn locate_idempotency_entity(
             worth_relational::facade::indexes::BoundedEntityFieldLookupDenialKind::Execution(
                 cause,
             ) => idempotency_read_stop(cause),
-            _ => WorthQueryProviderIdempotencyResolutionDenial::Unavailable,
+            cause @ (worth_relational::facade::indexes::BoundedEntityFieldLookupDenialKind::InvalidCandidateLimit
+                | worth_relational::facade::indexes::BoundedEntityFieldLookupDenialKind::SnapshotUnavailable
+                | worth_relational::facade::indexes::BoundedEntityFieldLookupDenialKind::IndexNotInstalled
+                | worth_relational::facade::indexes::BoundedEntityFieldLookupDenialKind::WrongIndexKind
+                | worth_relational::facade::indexes::BoundedEntityFieldLookupDenialKind::ExactGenerationUnavailable
+                | worth_relational::facade::indexes::BoundedEntityFieldLookupDenialKind::CorruptIndexEntries
+                | worth_relational::facade::indexes::BoundedEntityFieldLookupDenialKind::StorageParityMismatch) => {
+                WorthQueryProviderIdempotencyResolutionDenial::NativeKeyLookup {
+                    index: context.layout.key_index_id,
+                    cause,
+                }
+            },
         })?;
     if lookup.overflowed() || lookup.candidate_entity_ids().len() > 1 {
         return Err(WorthQueryProviderIdempotencyResolutionDenial::Unavailable);

@@ -50,13 +50,12 @@ fn pause<Schema: ApplicationSchema + 'static>(
 A queued product delivery cannot outlive the advancement lending its phase.
 
 ```compile_fail,E0521
-use std::sync::Arc;
 use worth_query_execution::facade::{integration::WorthQueryProductSharedRoot, product::{WorthQueryPrimaryGraphApplicationRuntime, WorthQueryPerformedRelationalProductChange}};
 use worth_query_installation::facade::ApplicationSchema;
 use worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope;
 fn deliver<Schema: ApplicationSchema + 'static>(
     app: &WorthQueryPrimaryGraphApplicationRuntime<Schema>, scope: &WorthQueryRequestScope,
-    root: &WorthQueryProductSharedRoot, lowering: &Arc<worth_runtime_bridge::facade::BridgeInstalledConditionalLowering>,
+    root: &WorthQueryProductSharedRoot, lowering: &worth_runtime_bridge::facade::BridgeConditionalSignalBasisBinding,
     change: WorthQueryPerformedRelationalProductChange,
 ) {
     let mut queued_phase = None;
@@ -67,13 +66,12 @@ fn deliver<Schema: ApplicationSchema + 'static>(
 }
 ```
 ```
-use std::sync::Arc;
 use worth_query_execution::facade::{integration::WorthQueryProductSharedRoot, product::{WorthQueryPrimaryGraphApplicationRuntime, WorthQueryPerformedRelationalProductChange}};
 use worth_query_installation::facade::ApplicationSchema;
 use worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope;
 fn deliver<Schema: ApplicationSchema + 'static>(
     app: &WorthQueryPrimaryGraphApplicationRuntime<Schema>, scope: &WorthQueryRequestScope,
-    root: &WorthQueryProductSharedRoot, lowering: &Arc<worth_runtime_bridge::facade::BridgeInstalledConditionalLowering>,
+    root: &WorthQueryProductSharedRoot, lowering: &worth_runtime_bridge::facade::BridgeConditionalSignalBasisBinding,
     change: WorthQueryPerformedRelationalProductChange,
 ) {
     let _ = app.with_application_advancement(scope, |phase| {

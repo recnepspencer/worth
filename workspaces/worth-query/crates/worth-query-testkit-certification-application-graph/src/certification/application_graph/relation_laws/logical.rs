@@ -9,10 +9,6 @@ pub mod committed;
 pub mod court;
 #[path = "logical/handler.rs"]
 pub mod handler;
-#[path = "logical/locality.rs"]
-pub mod locality;
-#[path = "logical/observation.rs"]
-pub mod observation;
 #[path = "logical/operation.rs"]
 pub mod operation;
 #[path = "logical/rule.rs"]

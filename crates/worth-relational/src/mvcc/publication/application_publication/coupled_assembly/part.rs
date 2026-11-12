@@ -2,9 +2,8 @@
 use super::*;
 use crate::execution::request_stage::checkpoint;
 use crate::{
-    authority::commit::phases::prepare::prepare_authoritative_working_state_scope_for_base,
     publication::data::AuthoredRetirementRefusal as Cause,
-    transactions::data::{AuthoritativeApplyPlan, RecordRef, WorkerIntentBatch},
+    transactions::data::{RecordRef, WorkerIntentBatch},
 };
 
 pub(super) fn reject(
@@ -131,95 +130,16 @@ impl RelationalAuthoredCoupledCandidate<'_> {
                 execution.allocation_policy(),
             )
             .map_err(RelationalCoupledAssemblyFailure::from_apply)?;
-        let runtime = self
-            .runtime
-            .with_candidate_symbols(self.mutation.candidate_symbols());
-        let intents = self
-            .transaction
-            .normalized_intents_for_merge(&runtime, execution)?
-            .into_coupled_suffix(before, &self.mutation.outcome.created_entities, execution)?;
-        let read = self.pin_source(execution)?;
-        let root = read.resident_basis().root();
-        let plan = self.transaction.build_merged_plan_for_state(
-            &runtime,
-            root.as_ref(),
-            intents,
+        let super::part_apply::CompletedCoupledApply {
+            commands: plan,
+            state,
+            outcome,
+        } = super::part_apply::apply(
+            self,
             execution,
-        )?;
-        let deferred_edges = super::writer_custody::require(
-            execution,
-            &self.binding.owners,
-            Some(predecessor_origin.as_ref()),
-            plan.plan(),
-        )?;
-        let (_, mut state, _) = prepare_authoritative_working_state_scope_for_base(
-            &runtime,
-            root.as_ref(),
-            plan.plan(),
-            0,
-            None,
-        );
-        crate::aggregate_identity::guard::ordinary_plan(
-            execution,
-            runtime.commit_work_budget.as_ref(),
-            self.prepared.schema_authority.registry(),
-            &crate::validation::engine::state_view::InvariantStateView::new(
-                root.as_ref(),
-                self.identity.proposed_version_id(),
-            ),
-            &plan.plan().merged_intents,
-            None,
-        )?;
-        let config = crate::config::data::MutationConfig {
-            cascade_delete_policy: runtime.config.storage.cascade_delete_policy,
-            adjacency_policy: runtime.config.storage.adjacency_policy.clone(),
-            cross_context_policy: runtime.config.storage.cross_context_policy,
-        };
-        let _apply_memory = crate::mvcc::plan_copy_admission::reserve_copy(
-            execution,
-            crate::mvcc::plan_copy_admission::intent_bytes(&plan.plan().merged_intents),
-        )?;
-        let apply = AuthoritativeApplyPlan {
-            transaction_id: plan.plan().transaction_id,
-            version_id: self.identity.proposed_version_id(),
-            merged_intents: plan.plan().merged_intents.clone(),
-        };
-        let outcome = crate::authority::mutation::apply_plan_with_publication_edges(
-            execution,
-            &mut state,
-            &apply,
-            &config,
-            self.prepared.schema_authority.registry(),
-            self.prepared.schema_authority.aspect_plans(),
-            &mut self.mutation.identities.symbols,
-            crate::authority::mutation::BranchLocalDeleteAllowance::default(),
-            &mut self.mutation.identities.records,
-            crate::authority::commit::pipeline::request_lease(execution),
-            runtime.commit_work_budget.clone(),
-            Some(&deferred_edges),
-        )
-        .map_err(RelationalCoupledAssemblyFailure::from_apply)?;
-        let source = self
-            .identity
-            .source_interpretation()
-            .expect("owner-issued writer identity");
-        state.content = crate::authority::commit::phases::applied_mutation::content::prepare(
-            execution,
-            &runtime,
-            root.as_ref(),
-            &self.prepared.schema_authority,
+            before,
+            predecessor_origin.as_ref(),
             content,
-            &state,
-            &outcome.effect.publication.changed_records,
-            self.identity.proposed_version_id(),
-            source.restoration_content(),
-        )
-        .map_err(RelationalCoupledAssemblyFailure::from_apply)?;
-        crate::authority::mutation::apply_adjacency_deltas_for_request(
-            execution,
-            &mut state,
-            &outcome.effect.adjacency.deltas,
-            self.identity.proposed_version_id(),
         )?;
         let part = CoupledPublicationPart {
             publication,

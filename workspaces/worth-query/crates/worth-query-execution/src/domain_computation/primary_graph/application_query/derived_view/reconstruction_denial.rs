@@ -169,8 +169,7 @@ pub fn session(
             read @ (Read::Read(_)
             | Read::Authorization(_)
             | Read::StalePrincipal
-            | Read::StaleScope
-            | Read::StaleBasisScope),
+            | Read::ScopeFreshness(_)),
         ) => Denial::ReadDenied {
             root,
             denial: map_authorized_read_denial(read, plan.name),
