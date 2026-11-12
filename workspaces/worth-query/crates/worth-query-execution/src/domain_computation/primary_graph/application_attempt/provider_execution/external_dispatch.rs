@@ -177,7 +177,12 @@ where
         let committed = self
             .runtime
             .primary_provider
-            .committed_dispatch_outbox_for_binding(execution, handle.binding())
+            .committed_dispatch_outbox_for_binding(
+                execution,
+                handle.binding(),
+                &self.runtime.product_runtime.owner.observation_port(),
+                &self.runtime.product_runtime.owner.inspection_port(),
+            )
             .map_err(WorthQueryExternalRedispatchDenial::OwnerReadDenied)?;
         let Some(transport) = self.runtime.external_effect_transport.get() else {
             return Err(WorthQueryExternalRedispatchDenial::TransportNotInstalled);

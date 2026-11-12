@@ -1,5 +1,6 @@
 //! Pure frame and ledger laws; the custody owner's court drives real requests.
 mod inbound;
+mod recovery;
 mod source_controls;
 mod transport_binding;
 use super::*;

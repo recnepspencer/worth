@@ -38,7 +38,8 @@ fn receipt_recovery_and_dispatch_observation_share_the_exact_world_terminal() {
 
     let handle = world
         .application
-        .mint_recovery_handle(&receipt)
+        .with_host_advancement(|phase| world.application.mint_recovery_handle(&phase, &receipt))
+        .unwrap()
         .expect("the committed aftermath admits recovery");
     assert_eq!(handle.binding().committed_product_publication(), committed);
 }

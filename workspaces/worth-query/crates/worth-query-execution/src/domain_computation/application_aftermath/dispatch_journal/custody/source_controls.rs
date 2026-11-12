@@ -94,6 +94,7 @@ impl WorthQueryDispatchJournal {
             QueryDispatchRecord::SourceControl { .. } => Ok(()),
             QueryDispatchRecord::Attempt(_)
             | QueryDispatchRecord::Observation { .. }
+            | QueryDispatchRecord::Recovery(_)
             | QueryDispatchRecord::Inbound(_) => {
                 unreachable!("a source control intent records only a source control")
             }

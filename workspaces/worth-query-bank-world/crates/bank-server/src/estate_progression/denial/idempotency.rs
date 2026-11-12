@@ -43,7 +43,7 @@ pub(super) fn from_query(
 
 /// Each resolution cause keeps its own Bank cause; an authorization refusal
 /// keeps its exact kind and how many causes contributed to it.
-fn from_kind(
+pub(super) fn from_kind(
     kind: WorthQueryApplicationIdempotencyResolutionDenialKind,
     contributing_cause_count: usize,
 ) -> BankEstateIdempotencyResolutionDenial {

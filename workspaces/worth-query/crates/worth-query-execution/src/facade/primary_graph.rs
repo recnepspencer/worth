@@ -318,6 +318,7 @@ pub use crate::domain_computation::application_aftermath::{
     WorthQueryRecoveryHandleDenialKind, WorthQueryRecoveryInspectAuthority,
     WorthQueryRecoveryInspectionView, WorthQueryRecoveryReconcileAdmission,
     WorthQueryRecoverySafeRetryAdmission, WorthQueryRecoverySafeRetryDenial,
+    WorthQueryRecoverySourceDenial, WorthQueryRecoveryTransitionDenial,
 };
 pub use crate::domain_computation::primary_graph::output_lineage::{
     WorthQueryPriorOutputDenial, WorthQueryPriorOutputDenialKind,

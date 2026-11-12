@@ -82,6 +82,15 @@ impl WorthQueryCommittedDispatchOutboxReceiptSeal {
 }
 
 impl WorthQueryCommittedDispatchOutboxBinding {
+    pub(in crate::domain_computation::primary_graph) fn from_observed_original(
+        owner: &crate::domain_computation::primary_graph::WorthQueryCommittedDispatchOutboxObservation,
+    ) -> Self {
+        Self {
+            record: owner.record().clone(),
+            record_ref: owner.record_ref().clone(),
+        }
+    }
+
     pub(super) fn from_commit(
         pending: Option<&WorthQueryPendingDispatchOutbox>,
         committed: &CommitResult,

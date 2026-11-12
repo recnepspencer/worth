@@ -186,3 +186,28 @@ fn completion_execution_refusals_keep_the_cause_and_pending_category() {
         );
     }
 }
+
+#[test]
+fn original_read_refusals_preserve_idempotency_retry_and_authorization_causes() {
+    use super::BankEstateIdempotencyResolutionDenial as BankOriginal;
+    use worth_query_host::facade::primary_graph::{
+        WorthQueryApplicationIdempotencyResolutionDenialKind as Original,
+        WorthQueryOperationAuthorizationDenialKind as Authorization,
+        WorthQueryProviderSessionControlStopKind as Stop,
+    };
+    assert_eq!(
+        bank(Query::OriginalRead(Original::PreparationBusy)),
+        Bank::OriginalRead(BankOriginal::PreparationBusy)
+    );
+    assert_eq!(
+        bank(Query::OriginalRead(Original::ForeignAdmission)),
+        Bank::OriginalRead(BankOriginal::ForeignAdmission)
+    );
+    let mapped = bank(Query::OriginalRead(Original::Authorization(
+        Authorization::Stopped(Err(Stop::Cancelled)),
+    )));
+    let Bank::OriginalRead(BankOriginal::Authorization(cause)) = mapped else {
+        panic!("original authorization stays typed: {mapped:?}")
+    };
+    assert_eq!(cause.kind(), crate::BankAuthorizationDenialKind::Cancelled);
+}

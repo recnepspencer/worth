@@ -606,7 +606,7 @@ use worth_query_host::facade::publication::application_aftermath::{
     publish_recovery_support,
 };
 
-let handle = runtime.mint_recovery_handle(&commit_receipt)?;
+let handle = runtime.mint_recovery_handle(phase, &commit_receipt)?;
 
 let disclosure =
     runtime.admit_recovery_inspection_disclosure(&capability_access)?;
@@ -621,11 +621,12 @@ let published_support = publish_recovery_support(&inspection);
 let effect_authority =
     runtime.admit_recovery_effect_authority(&handle, &admitted_operation)?;
 let idempotency = runtime.resolve_admitted_application_idempotency(
+    phase,
     &admitted_operation,
     handle.binding().idempotency(),
 )?;
 let resolution =
-    resolve_recovery_handle(handle, &effect_authority, idempotency)?;
+    resolve_recovery_handle(phase, handle, &effect_authority, idempotency)?;
 ```
 
 Inspection borrows the live handle and returns descriptive, publishable state.
@@ -762,7 +763,7 @@ data: it grants no dispatch authority. A memory-only Home returns `None`,
 because its dispatch custody is process-local.
 
 A Directory Home retains dispatch and inbound-completion custody across graceful
-close and reopen. Recovery claims retain their separate support check. Close
+close and reopen. Recovery claims preserve their acknowledged lifecycle in the same Home. Close
 settles every retained observation before releasing the
 dispatch's local receipt-basis lease. Reopen readmits those same attempt
 identities and observations from `query.dispatch`; it never contacts the
@@ -783,7 +784,7 @@ while a contact is still in flight.
 Process death before an observation is recorded is not yet certified. A Home
 whose journal ends in an attempt with no recorded observation refuses to open,
 and `unclean_recovery_unsupported()` names the `Dispatch` owner and that
-effect. Recovery claims retain their own Directory admission requirement.
+effect. Recovery claim readmission still requires fresh original-source admission.
 
 ## Durable inbound custody on a Directory Home
 
@@ -849,3 +850,56 @@ pending steps; it neither contacts the transport again nor grants live release
 or continuation to the old recovery handle. A new mutation may answer
 `ProductBasisStale` until the original completion is recovered. This is the
 specified `ReopenRequired` route, not a crash-recovery certification.
+
+## Durable recovery claims on a Directory Home
+
+A recovery handle is live authority for one runtime incarnation. Its claim is a
+Home obligation in `query.dispatch`: original World occurrence, claim generation,
+expiry and terminal disposition survive a graceful close and reopen. Memory-only
+applications report `ProcessLocal`; Home-backed inspection and safe retry report
+`DurableHome`. A wire recovery token cannot readmit authority.
+
+Mint and terminal progression borrow the invoking runtime's actual advancement
+phase. After reopen, repeat the original intent and idempotency key under fresh
+request authorization. The mutation request's `with_recovery_in_program` lends
+the selected admission, its actual funded phase, idempotency binding and typed
+encoded request input without executing the handler. Pass those four values to
+`mint_admitted_recovery_handle` to acquire capability for
+the same live claim and original deadline. A second local acquisition refuses;
+terminal claims remain terminal. The original material and current principal,
+operation, scope, input and schema axes must still match. Old handles are fenced.
+
+Recovery pins keep their actual original material mandatory until the terminal
+record is acknowledged. A consuming transition that cannot acknowledge its
+record returns a typed refusal with the same live handle; retain it and retry
+under fresh request admission. Compensation and reconciliation return their
+existing admissions, not a claim that the external owner already changed its
+state. Safe retry still requires actual performed dispatch evidence. A recorded
+Completed observation cannot manufacture that evidence or contact a completed
+external effect again.
+
+Dropping a live Home handle performs no I/O and does not acknowledge disposal.
+The framework retains deferred disposition work. `maintain_recovery_claims` under
+a funded advancement, the next recovery-handle acquisition, or graceful close settles the
+original record and then releases the mandatory material pin. Pure status reads
+report the acknowledged journal fate. After close, obtain new capability from
+the newly opened Home; dropping an old incarnation's value cannot dispose the
+new incarnation's claim. An actual publication no-effect leaves the existing
+handle and claim retryable.
+
+These guarantees cover graceful close/reopen and the authorized quiescent
+ownership handoff. Crash recovery is not certified by this lane.
+
+A recovered claim whose original external completion is already acknowledged
+uses `settle_recorded_recovery_completion(phase, handle, admission)`. It checks
+the actual original outbox, dispatch history and any required canonical inbound
+terminal, then acknowledges the existing claim as Completed. It returns the
+binding without a new dispatch or Performed value. An unresolved original
+returns the same handle with `UnresolvedExternalPosture`; actual safe retry
+still needs fresh admission and a performed dispatch.
+
+For a pending or unresolved claim publication, retain the returned handle and
+fund `maintain_recovery_claims` to drive that original publication before another
+transition. Observe the acknowledged claim fate afterward: if settlement already
+made it terminal, the old handle cannot grant another transition. A pending
+record never grants effect authority merely because its bytes are retained.

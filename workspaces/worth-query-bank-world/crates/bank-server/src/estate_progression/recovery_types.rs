@@ -19,7 +19,8 @@ impl BankCommitRecoveryHandle {
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum BankRecoveryDurability {
-    StoreCapabilityRequired,
+    ProcessLocal,
+    DurableHome,
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -55,7 +56,7 @@ impl BankRecoveryInspection {
             PublishedAftermathPosture::Irreversible => BankRecoveryPosture::Irreversible,
         };
         Self {
-            durability: BankRecoveryDurability::StoreCapabilityRequired,
+            durability: match view.durability() { worth_query_host::facade::primary_graph::WorthQueryRecoveryDurabilityPosture::ProcessLocal => BankRecoveryDurability::ProcessLocal, worth_query_host::facade::primary_graph::WorthQueryRecoveryDurabilityPosture::DurableHome => BankRecoveryDurability::DurableHome },
             support_truth: BankRecoverySupportTruth::DegradedRecoveryReport,
             posture,
             work: crate::BankCommitCanonicalWorkEvidence::from_query(
@@ -204,7 +205,7 @@ impl BankRecoverySafeRetryReceipt {
         Self {
             external_completion: dispatch.is_external_completion(),
             fresh_attempt,
-            durability: BankRecoveryDurability::StoreCapabilityRequired,
+            durability: match admission.outbox_durability() { worth_query_host::facade::primary_graph::WorthQueryDispatchOutboxDurabilityPosture::ProcessLocal => BankRecoveryDurability::ProcessLocal, worth_query_host::facade::primary_graph::WorthQueryDispatchOutboxDurabilityPosture::DurableHome => BankRecoveryDurability::DurableHome },
         }
     }
 
@@ -271,3 +272,6 @@ pub(super) fn map_expiry(
 
 mod disposal;
 pub use disposal::{BankRecoveryDisposalDenial, BankRecoveryDisposalReceipt};
+
+mod transition;
+pub use transition::BankRecoveryTransitionDenial;

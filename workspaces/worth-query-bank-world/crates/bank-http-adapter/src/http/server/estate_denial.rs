@@ -53,6 +53,7 @@ pub(super) fn estate_denial(denial: BankEstateProgressionDenial) -> BankHttpDeni
             BankHttpNextAction::CorrectRequest,
         ),
         D::Recovery(denial) => recovery_denial(denial.kind()),
+        D::RecoveryTransition(denial) => recovery_denial(denial.kind()),
         D::Idempotency(denial) => idempotency_denial(denial),
         D::LifecycleProjection(_) => {
             BankHttpDenial::new(BankHttpDenialKind::Stale, BankHttpNextAction::Refresh)
@@ -104,6 +105,9 @@ fn recovery_denial(kind: BankRecoveryDenialKind) -> BankHttpDenial {
     use BankHttpNextAction as Next;
     use BankRecoveryDenialKind as Kind;
     let (denial, next) = match kind {
+        Kind::DurableClaimPublication => (Denial::Unavailable, Next::Retry),
+        Kind::RetainedMaterialUnavailable => (Denial::Unavailable, Next::ContactOperator),
+        Kind::OriginalRead(cause) => return idempotency_denial(cause),
         Kind::AdmissionAuthorization(cause) => return authorization_denial(cause),
         Kind::CompletionExecutionDenied { kind: worth_query_host::facade::primary_graph::WorthQueryProviderSessionDenialKind::Content(cause), .. } => return super::relational_execution_denial::denial(worth_query_host::facade::primary_graph::RelationalExecutionDenialCause::Content(cause)),
         Kind::CompletionExecutionDenied { kind: worth_query_host::facade::primary_graph::WorthQueryProviderSessionDenialKind::ContentInconsistency, .. } => (Denial::InternalDenied, Next::ContactOperator),

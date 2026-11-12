@@ -2,7 +2,7 @@
 
 use worth_query_installation::facade::InstalledCorrectionAuthority;
 
-use crate::domain_computation::managed_run::WorthQueryRecoveryResourceTerminal;
+use crate::domain_computation::managed_run::RecoveryClaimDisposition;
 
 use super::super::recovery_handle::{
     RelinquishOnDenial, WorthQueryRecoveryHandle, WorthQueryRecoveryHandleBinding,
@@ -29,9 +29,13 @@ impl WorthQueryRecoveryReconcileAdmission {
 /// authority. The returned admission is proof to proceed; this call changes
 /// nothing itself. On denial the handle is relinquished, not consumed.
 pub fn reconcile_recovery_handle(
+    phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
     handle: WorthQueryRecoveryHandle,
     authority: &WorthQueryRecoveryEffectAuthority,
-) -> Result<WorthQueryRecoveryReconcileAdmission, WorthQueryRecoveryHandleDenial> {
+) -> Result<
+    WorthQueryRecoveryReconcileAdmission,
+    super::super::recovery_handle::WorthQueryRecoveryTransitionDenial,
+> {
     let handle = handle.admit(|handle| {
         require_fresh_effect_authority(handle, authority)?;
         match handle.binding().installed_aftermath().authority() {
@@ -45,6 +49,6 @@ pub fn reconcile_recovery_handle(
         }
     })?;
     Ok(WorthQueryRecoveryReconcileAdmission {
-        binding: handle.consume(WorthQueryRecoveryResourceTerminal::Consumed)?,
+        binding: handle.consume(phase, RecoveryClaimDisposition::Consumed)?,
     })
 }

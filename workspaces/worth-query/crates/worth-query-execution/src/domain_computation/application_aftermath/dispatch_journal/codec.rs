@@ -7,6 +7,7 @@ const VERSION: BoundaryProtocolVersion = BoundaryProtocolVersion::new(1);
 const MAGIC: &[u8; 8] = b"WQDSP001";
 pub(super) const FRAME_ENVELOPE_BYTES: u64 = 8 + 4 + 16 + 8 + 32 + 8 + 32;
 mod inbound;
+mod recovery;
 mod source;
 pub(super) use inbound::accepted_retained_bytes;
 
@@ -25,6 +26,7 @@ pub(super) fn encode(
     bytes.extend_from_slice(&predecessor);
     bytes.extend_from_slice(&generation.get().to_le_bytes());
     match &record {
+        QueryDispatchRecord::Recovery(value) => recovery::encode(&mut bytes, value),
         QueryDispatchRecord::Inbound(value) => inbound::encode(&mut bytes, value),
         QueryDispatchRecord::SourceControl { source, posture } => {
             bytes.push(2);
@@ -172,6 +174,7 @@ pub(super) fn decode(
             source: CanonicalDigestId::new(reader.take()?),
             posture: read_source_control(reader.take::<1>()?[0])?,
         },
+        tag @ (7 | 8) => QueryDispatchRecord::Recovery(recovery::decode(tag, home, &mut reader)?),
         tag @ (3 | 4 | 5 | 6) => QueryDispatchRecord::Inbound(inbound::decode(tag, &mut reader)?),
         _ => return Err(Denial::MalformedFrame),
     };

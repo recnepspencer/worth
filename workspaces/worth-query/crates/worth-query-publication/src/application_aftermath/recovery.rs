@@ -13,7 +13,8 @@ pub enum WorthQueryPublishedRecoverySupportTruth {
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryPublishedRecoveryDurability {
-    StoreCapabilityRequired,
+    ProcessLocal,
+    DurableHome,
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]

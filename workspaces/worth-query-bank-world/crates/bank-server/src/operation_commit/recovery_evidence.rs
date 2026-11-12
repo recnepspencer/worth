@@ -30,9 +30,10 @@ impl BankCommitRecoveryEvidence {
 
     pub(crate) fn mint_recovery_handle(
         &self,
+        phase: &worth_query_host::facade::application_contribution::WorthQueryAdvancementPhase<'_>,
         runtime: &WorthQueryPrimaryGraphApplicationRuntime<BankSchema>,
     ) -> Result<WorthQueryRecoveryHandle, WorthQueryRecoveryHandleDenial> {
-        runtime.mint_recovery_handle(&self.execution)
+        runtime.mint_recovery_handle(phase, &self.execution)
     }
 
     pub(crate) fn recovery_claim_status(

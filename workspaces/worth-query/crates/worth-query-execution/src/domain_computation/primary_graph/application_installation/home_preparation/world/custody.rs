@@ -5,6 +5,7 @@ use worth_proof::CustodyReadmitted;
 
 #[derive(Debug)]
 pub enum QueryHomeCustodyReadmissionDenial {
+    RecoveryClaim(crate::domain_computation::application_aftermath::WorthQueryRecoveryHandleDenial),
     CorrectionMaterial(crate::facade::correction_material::QueryCorrectionMaterialDenial),
     ProgramSupport(crate::facade::program_support::QueryProgramSupportDenial),
     Activation(super::QueryHomeProgramActivationDenial),
@@ -127,7 +128,7 @@ impl<Schema: worth_query_installation::facade::ApplicationSchema + 'static, Prog
             .runtime()
             .runtime
             .primary_provider
-            .readmit_correction_material(material, &originals, execution)
+            .readmit_correction_material(std::sync::Arc::clone(&material), &originals, execution)
         {
             Ok(admission) => admission,
             Err(cause) => {
@@ -223,6 +224,34 @@ impl<Schema: worth_query_installation::facade::ApplicationSchema + 'static, Prog
         }
         if let Err(cause) = self.admit_original_custody(execution) {
             return Err(QueryHomeCustodyReadmissionRefused { query: self, cause });
+        }
+        if let Err(cause) = self
+            .runtime
+            .runtime()
+            .admit_recovery_claim_sources(&originals, execution)
+            .and_then(|()| self.runtime.runtime().settle_recovery_custody(execution))
+        {
+            return Err(QueryHomeCustodyReadmissionRefused {
+                query: self,
+                cause: QueryHomeCustodyReadmissionDenial::RecoveryClaim(cause),
+            });
+        }
+        match self
+            .runtime
+            .runtime()
+            .runtime
+            .primary_provider
+            .readmit_correction_material(material, &originals, execution)
+        {
+            Ok(admission) => {
+                self.correction_material_admission = std::sync::OnceLock::from(admission)
+            }
+            Err(cause) => {
+                return Err(QueryHomeCustodyReadmissionRefused {
+                    query: self,
+                    cause: QueryHomeCustodyReadmissionDenial::CorrectionMaterial(cause),
+                })
+            }
         }
         // Cold terminal ACK settlement may advance the journal after its first
         // fold. Admit the final exact prefix before the service witness escapes.

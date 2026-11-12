@@ -3,7 +3,7 @@ use super::WorthQueryRecoveryClaimStatus;
 use crate::domain_computation::primary_graph::{
     WorthQueryAdmittedApplicationOperation, WorthQueryAdvancementPhase,
     WorthQueryApplicationIdempotencyBinding, WorthQueryApplicationIdempotencyResolution,
-    WorthQueryApplicationIdempotencyResolutionDenial, WorthQueryPrimaryGraphApplicationRuntime,
+    WorthQueryPrimaryGraphApplicationRuntime,
 };
 use worth_query_installation::facade::ApplicationSchema;
 
@@ -15,23 +15,26 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         phase: &WorthQueryAdvancementPhase<'_>,
         admission: &WorthQueryAdmittedApplicationOperation<Schema, Operation, Input, Scope>,
         binding: WorthQueryApplicationIdempotencyBinding,
-    ) -> Result<
-        Option<WorthQueryRecoveryClaimStatus>,
-        WorthQueryApplicationIdempotencyResolutionDenial,
-    >
+    ) -> Result<Option<WorthQueryRecoveryClaimStatus>, super::WorthQueryRecoveryHandleDenial>
     where
         Input: Clone + Send + Sync + 'static,
     {
-        let read = self.resolve_admitted_application_idempotency(phase, admission, binding)?;
+        let read = self
+            .resolve_admitted_application_idempotency(phase, admission, binding)
+            .map_err(super::WorthQueryRecoveryHandleDenial::original)?;
         match read.into_resolution() {
             WorthQueryApplicationIdempotencyResolution::RecoveredCommitted(original) => {
-                let (claimed, terminal) = self.runtime.recovery_handles.recorded_claim_state(
-                    self.runtime
-                        .primary_provider
-                        .graph
-                        .relational_runtime_instance_id(),
-                    original.new_product_head(),
-                );
+                let (claimed, terminal) = self
+                    .runtime
+                    .recovery_handles
+                    .recorded_claim_state(
+                        self.runtime
+                            .primary_provider
+                            .graph
+                            .relational_runtime_instance_id(),
+                        original.new_product_head(),
+                    )
+                    .map_err(super::WorthQueryRecoveryHandleDenial::journal)?;
                 Ok(Some(super::mint::status_from_claim_state(
                     claimed, terminal,
                 )))

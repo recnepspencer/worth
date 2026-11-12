@@ -105,6 +105,11 @@ pub(in crate::domain_computation::primary_graph) struct MaterialReady {
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
 #[serde(tag = "record", deny_unknown_fields)]
 pub(in crate::domain_computation::primary_graph) enum MaterialRecord {
+    RecoveryPin {
+        identity: CorrectionMaterialPinIdentity,
+        original: DurableCompositePublicationAttemptIdentity,
+        class: RetentionClass,
+    },
     Capture {
         material: Box<MaterialCapture>,
     },
@@ -179,7 +184,7 @@ impl MaterialRecord {
         match self {
             Self::Capture { .. } => RetentionClass::MandatoryObligation,
             Self::Ready { .. } => RetentionClass::OptionalRetainedMaterial,
-            Self::Pin { class, .. } => *class,
+            Self::Pin { class, .. } | Self::RecoveryPin { class, .. } => *class,
             Self::Transfer { .. }
             | Self::Release { .. }
             | Self::DischargePreparation { .. }

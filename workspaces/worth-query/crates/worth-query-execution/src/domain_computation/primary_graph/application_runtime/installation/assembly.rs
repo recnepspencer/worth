@@ -130,10 +130,12 @@ where
     // re-check its own deadline, which is why no recovery transition takes a
     // clock argument (R8.31).
     let authorization_clock = std::sync::Arc::new(authorization_clock);
+    let dispatch_journal = std::sync::Arc::new(crate::domain_computation::application_aftermath::dispatch_journal::WorthQueryDispatchJournal::process_local());
     let recovery_handles = std::sync::Arc::new(
         crate::domain_computation::managed_run::WorthQueryRecoveryHandleRegistry::for_runtime(
             runtime_authority,
             std::sync::Arc::clone(&authorization_clock),
+            std::sync::Arc::downgrade(&dispatch_journal),
         ),
     );
     let installed_operations = installed_schema.installed_view().retain_operation_catalog();
@@ -180,7 +182,7 @@ where
             inbound_custody: std::sync::Arc::new(std::sync::Mutex::new(Default::default())),
             transport_completion_custody: std::sync::Mutex::new(Default::default()),
             inbound_maintenance_turn: std::sync::atomic::AtomicU64::new(0),
-            dispatch_journal: std::sync::Arc::new(crate::domain_computation::application_aftermath::dispatch_journal::WorthQueryDispatchJournal::process_local()),
+            dispatch_journal,
             recovery_handles,
             output_producer_routes,
             output_readiness_routes,

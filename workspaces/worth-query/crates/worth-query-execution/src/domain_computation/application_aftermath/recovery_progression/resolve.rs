@@ -15,7 +15,7 @@ use super::super::recovery_handle::{
     WorthQueryRecoveryHandleDenialKind,
 };
 use super::authority::{require_fresh_effect_authority, WorthQueryRecoveryEffectAuthority};
-use crate::domain_computation::managed_run::WorthQueryRecoveryResourceTerminal;
+use crate::domain_computation::managed_run::RecoveryClaimDisposition;
 
 /// Proof that an admitted graph idempotency read produced this resolution for
 /// a specific binding.
@@ -57,10 +57,14 @@ impl WorthQueryAdmittedIdempotencyRead {
 
 /// Resolve consumes the handle and returns the inherited resolution taxonomy.
 pub fn resolve_recovery_handle(
+    phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
     handle: WorthQueryRecoveryHandle,
     authority: &WorthQueryRecoveryEffectAuthority,
     admitted_read: WorthQueryAdmittedIdempotencyRead,
-) -> Result<WorthQueryApplicationIdempotencyResolution, WorthQueryRecoveryHandleDenial> {
+) -> Result<
+    WorthQueryApplicationIdempotencyResolution,
+    super::super::recovery_handle::WorthQueryRecoveryTransitionDenial,
+> {
     let handle = handle.admit(|handle| {
         require_fresh_effect_authority(handle, authority)?;
         if admitted_read.binding() != handle.binding().idempotency() {
@@ -75,20 +79,24 @@ pub fn resolve_recovery_handle(
     })?;
     if handle
         .binding()
-        .provider_posture()
-        .is_some_and(|posture| posture.kind() == WorthQueryExternalDispatchPostureKind::Unresolved)
+        .provider_posture_kind()
+        .is_some_and(|posture| posture == WorthQueryExternalDispatchPostureKind::Unresolved)
     {
         // Unresolved external posture stays unresolved — resolve must not
         // upgrade it. This one *consumes* rather than relinquishes on purpose:
         // authority, handle, and read were all correct, so resolve really ran.
         // It simply has no resolution to report. Retrying it would ask the same
         // question of the same unresolved posture (Q8.21-L11).
-        let _ = handle.consume(WorthQueryRecoveryResourceTerminal::Consumed)?;
-        return Err(WorthQueryRecoveryHandleDenial::new(
-            WorthQueryRecoveryHandleDenialKind::UnresolvedExternalPosture,
-        ));
+        let _ = handle.consume(phase, RecoveryClaimDisposition::Consumed)?;
+        return Err(
+            super::super::recovery_handle::WorthQueryRecoveryTransitionDenial::Terminal(
+                WorthQueryRecoveryHandleDenial::new(
+                    WorthQueryRecoveryHandleDenialKind::UnresolvedExternalPosture,
+                ),
+            ),
+        );
     }
-    let _ = handle.consume(WorthQueryRecoveryResourceTerminal::Consumed)?;
+    let _ = handle.consume(phase, RecoveryClaimDisposition::Consumed)?;
     Ok(admitted_read.into_resolution())
 }
 

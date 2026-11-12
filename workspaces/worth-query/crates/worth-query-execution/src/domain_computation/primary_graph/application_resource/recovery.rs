@@ -66,7 +66,12 @@ pub(super) fn require_unresolved<Schema: ApplicationSchema>(
     let original = runtime
         .runtime
         .primary_provider
-        .committed_dispatch_outbox_for_binding(execution, handle.binding())
+        .committed_dispatch_outbox_for_binding(
+            execution,
+            handle.binding(),
+            &runtime.runtime.product_runtime.owner.observation_port(),
+            &runtime.runtime.product_runtime.owner.inspection_port(),
+        )
         .map_err(ResourceCause::EffectOutbox)?;
     drop(original);
     Ok(())

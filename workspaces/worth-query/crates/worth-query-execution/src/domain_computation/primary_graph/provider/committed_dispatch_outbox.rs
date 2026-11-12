@@ -19,6 +19,7 @@ mod original_attempt;
 mod original_row;
 mod readmission;
 pub(super) mod recovered;
+mod recovery;
 pub(crate) mod restoration;
 mod work;
 
@@ -194,27 +195,6 @@ impl WorthQueryPrimaryGraphProvider {
             )
         })
         .map(Some)
-    }
-
-    pub(in crate::domain_computation::primary_graph) fn committed_dispatch_outbox_for_binding(
-        &self,
-        execution: &worth_execution::ExecutionRequest<'_, '_>,
-        binding: &crate::domain_computation::application_aftermath::WorthQueryRecoveryHandleBinding,
-    ) -> Result<WorthQueryCommittedDispatchOutboxObservation, Denial> {
-        let committed = binding.committed_dispatch_outbox().ok_or(Denial::Missing)?;
-        self.observe_held_original(
-            execution,
-            committed,
-            binding.commit_reference(),
-            binding.runtime_instance_id(),
-            binding.committed_product_publication(),
-        )
-        .map(|owner| {
-            WorthQueryCommittedDispatchOutboxObservation::seal(
-                owner,
-                binding.committed_product_publication().clone(),
-            )
-        })
     }
 
     fn observe_expected(

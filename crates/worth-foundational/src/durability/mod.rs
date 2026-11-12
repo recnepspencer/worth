@@ -98,3 +98,6 @@ pub use world_original_fate::WorldOriginalFate;
 
 mod unclean_recovery;
 pub use unclean_recovery::UncleanRecoveryUnsupported;
+
+mod recovery_claim;
+pub use recovery_claim::{DurableRecoveryClaimIdentity, RecoveryClaimDisposition};

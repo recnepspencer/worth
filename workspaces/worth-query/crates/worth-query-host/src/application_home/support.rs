@@ -105,7 +105,7 @@ pub const fn directory_family_support(family: DurableStateFamily) -> DirectoryFa
         | FixedOperationCustody
         | SignalResourceRequestCustody => DirectoryFamilySupport::RefusedUntil(7),
         RecoveryClaims | RecoveryClaimDispositions | RecoveryHandleCustody | BankRecoveryClaim => {
-            DirectoryFamilySupport::RefusedUntil(8)
+            DirectoryFamilySupport::Supported(8)
         }
         CorrectionPreImages | CorrectionGovernedInput | CorrectionOriginalMeaning => {
             DirectoryFamilySupport::Supported(9)

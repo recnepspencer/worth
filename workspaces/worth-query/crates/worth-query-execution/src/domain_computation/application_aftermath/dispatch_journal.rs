@@ -21,6 +21,7 @@ mod inbound;
 mod ledger;
 mod medium;
 mod read_limits;
+mod recovery;
 pub use custody::WorthQueryDispatchJournal;
 pub(in crate::domain_computation) use custody::{
     QueryInboundJournalAdmission, QueryInboundSourceControlObservation,
@@ -33,6 +34,9 @@ pub(in crate::domain_computation) use inbound::{
 pub use ledger::QueryDispatchCustody;
 use ledger::QueryDispatchLedger;
 pub use medium::{QueryDispatchMedium, QueryDispatchPublicationOutcome};
+pub(in crate::domain_computation) use recovery::{
+    QueryRecordedRecoveryClaim, QueryRecoveryClaim, QueryRecoveryRecord,
+};
 pub(in crate::domain_computation) use worth_proof::QueryDispatchCloseCustody;
 #[cfg(test)]
 mod tests;
@@ -71,6 +75,7 @@ struct QueryDispatchAttempt {
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 enum QueryDispatchRecord {
+    Recovery(QueryRecoveryRecord),
     Inbound(QueryInboundRecord),
     SourceControl {
         source: CanonicalDigestId,
@@ -87,6 +92,7 @@ enum QueryDispatchRecord {
 /// A requested record. An attempt's identity is assigned by the position that records it.
 #[derive(Clone, Debug, Eq, PartialEq)]
 enum QueryDispatchRecordIntent {
+    Recovery(QueryRecoveryRecord),
     Inbound(QueryInboundRecord),
     SourceControl {
         source: CanonicalDigestId,

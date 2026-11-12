@@ -13,7 +13,8 @@ pub(super) fn admit(
         .values()
         .filter_map(|row| match row.owner {
             CorrectionMaterialPinOwner::PreparedCommand { key } => Some(key),
-            CorrectionMaterialPinOwner::Publication { .. } => None,
+            CorrectionMaterialPinOwner::Publication { .. }
+            | CorrectionMaterialPinOwner::Recovery { .. } => None,
         })
         .collect::<std::collections::BTreeSet<_>>();
     if !prepared_keys.is_empty() {
@@ -59,7 +60,28 @@ pub(super) fn admit(
     }
     for row in catalog.pins.values() {
         request.consult().map_err(Denial::Execution)?;
-        let target = &row.prepared.target;
+        if let CorrectionMaterialPinOwner::Recovery { original } = row.owner {
+            if original != row.original {
+                return Err(Denial::PinOwnerMismatch);
+            }
+            let source = originals
+                .original_state(original)
+                .ok_or(Denial::OriginalMismatch)?;
+            if source.fate() != worth_foundational::facade::WorldOriginalFate::Published {
+                return Err(Denial::OriginalMismatch);
+            }
+            let (_, ready) = catalog
+                .material
+                .get(&original)
+                .ok_or(Denial::Unavailable)?
+                .available()?;
+            if ready.original != original {
+                return Err(Denial::OriginalMismatch);
+            }
+            continue;
+        }
+        let prepared = row.prepared()?;
+        let target = &prepared.target;
         let commit = DurableCompositeCommitIdentity::from_recorded(target.owner, target.commit);
         let head = originals
             .recorded_entry(commit)
@@ -78,8 +100,11 @@ pub(super) fn admit(
             return Err(Denial::TargetChanged);
         }
         match row.owner {
+            CorrectionMaterialPinOwner::Recovery { .. } => {
+                unreachable!("recovery source was joined above")
+            }
             CorrectionMaterialPinOwner::PreparedCommand { key } => {
-                if key != row.prepared.key {
+                if key != prepared.key {
                     return Err(Denial::PinOwnerMismatch);
                 }
             }

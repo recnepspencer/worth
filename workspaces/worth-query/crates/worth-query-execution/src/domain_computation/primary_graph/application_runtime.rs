@@ -36,6 +36,7 @@ mod durable_admission;
 mod execution_memory;
 pub(crate) mod external_dispatch_attempt;
 mod mutation_partition;
+mod recovery_custody;
 mod teardown;
 pub use execution_memory::WorthQueryExecutionLeaseDenial;
 pub(crate) mod inbound_occurrence;

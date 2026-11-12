@@ -4,6 +4,7 @@ use super::*;
 use std::sync::{Arc, Mutex, OnceLock};
 use worth_execution::ExecutionRequest;
 mod inbound_admission;
+mod recovery;
 mod settlement;
 mod source_controls;
 mod transport;
@@ -151,6 +152,7 @@ impl WorthQueryDispatchJournal {
             QueryDispatchRecord::Attempt(attempt) => Ok(attempt.identity),
             QueryDispatchRecord::Observation { .. }
             | QueryDispatchRecord::SourceControl { .. }
+            | QueryDispatchRecord::Recovery(_)
             | QueryDispatchRecord::Inbound(_) => {
                 unreachable!("an attempt intent encodes an attempt record")
             }

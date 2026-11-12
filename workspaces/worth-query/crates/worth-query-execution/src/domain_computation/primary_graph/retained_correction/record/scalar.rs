@@ -132,7 +132,7 @@ pub(super) fn validate(record: &MaterialRecord) -> Result<(), Denial> {
             location(&prepared.scope.location)?;
             scalar(&prepared.scope.value)?;
         }
-        MaterialRecord::Transfer { class, .. } => {
+        MaterialRecord::RecoveryPin { class, .. } | MaterialRecord::Transfer { class, .. } => {
             if *class != RetentionClass::MandatoryObligation {
                 return Err(Denial::RetentionClassMismatch);
             }

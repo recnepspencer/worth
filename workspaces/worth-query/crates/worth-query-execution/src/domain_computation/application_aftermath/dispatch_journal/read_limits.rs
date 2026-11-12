@@ -85,6 +85,7 @@ impl QueryDispatchReadLimits {
             QueryDispatchRecord::Inbound(
                 QueryInboundRecord::Acknowledged { .. } | QueryInboundRecord::Expired { .. },
             )
+            | QueryDispatchRecord::Recovery(_)
             | QueryDispatchRecord::SourceControl { .. }
             | QueryDispatchRecord::Attempt(_)
             | QueryDispatchRecord::Observation { .. } => Ok(()),

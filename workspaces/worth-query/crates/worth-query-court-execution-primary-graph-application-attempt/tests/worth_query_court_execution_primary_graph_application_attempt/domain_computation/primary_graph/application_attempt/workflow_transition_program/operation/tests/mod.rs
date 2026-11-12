@@ -134,7 +134,7 @@ pub fn recover(
 ) -> WorthQueryRecoverySafeRetryAdmission {
     let handle = world
         .application
-        .mint_recovery_handle(receipt)
+        .mint_recovery_handle(phase_custody, receipt)
         .expect("the committed receipt mints one recovery handle");
     let authority = world
         .application
@@ -144,6 +144,6 @@ pub fn recover(
         .application
         .redispatch_admitted_external_effect(phase_custody, &handle, &authority, admission)
         .expect("the handle's committed outbox is re-dispatched");
-    safe_retry_recovery_handle(handle, &authority, redispatch)
+    safe_retry_recovery_handle(phase_custody, handle, &authority, redispatch)
         .expect("completed re-dispatch mints the safe-retry proof")
 }

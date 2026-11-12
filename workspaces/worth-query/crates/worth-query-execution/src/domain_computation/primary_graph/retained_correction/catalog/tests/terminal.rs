@@ -173,3 +173,42 @@ fn released_unpublished_owner_discharges_only_its_publication_pin() {
         }
     );
 }
+
+#[test]
+fn a_recovery_material_pin_refuses_optional_expiry_until_its_original_use_is_released() {
+    let mut ledger = available();
+    let original = original(ledger.home, 1);
+    let identity = CorrectionMaterialPinIdentity::from_recorded(
+        ledger.home,
+        NonZeroU64::new(ledger.position + 1).unwrap(),
+    );
+    append(
+        &mut ledger,
+        MaterialRecord::RecoveryPin {
+            identity,
+            original,
+            class: RetentionClass::MandatoryObligation,
+        },
+    );
+    assert_eq!(ledger.pin_count(original), 1);
+    assert_eq!(
+        ledger.frame(
+            NonZeroU64::new(ledger.position + 1).unwrap(),
+            &MaterialRecord::Expire { original }
+        ),
+        Err(Denial::MaterialPinned)
+    );
+    append(
+        &mut ledger,
+        MaterialRecord::Release {
+            identity,
+            owner: CorrectionMaterialPinOwner::Recovery { original },
+            class: RetentionClass::OptionalRetainedMaterial,
+        },
+    );
+    append(&mut ledger, MaterialRecord::Expire { original });
+    assert_eq!(
+        ledger.material[&original].available().unwrap_err(),
+        Denial::RetainedMaterialExpired
+    );
+}

@@ -70,7 +70,8 @@ impl<'a> DispatchJournalDriver<'a> {
             PendingFate::Committed(
                 QueryDispatchRecord::Observation { .. }
                 | QueryDispatchRecord::SourceControl { .. }
-                | QueryDispatchRecord::Inbound(_),
+                | QueryDispatchRecord::Inbound(_)
+                | QueryDispatchRecord::Recovery(_),
             )
             | PendingFate::ProvenNoEffect
             | PendingFate::Absent => {}
@@ -200,6 +201,7 @@ impl<'a> DispatchJournalDriver<'a> {
                 }
                 QueryDispatchRecord::Attempt(_)
                 | QueryDispatchRecord::SourceControl { .. }
+                | QueryDispatchRecord::Recovery(_)
                 | QueryDispatchRecord::Inbound(_) => {}
             }
             state.pending = None;

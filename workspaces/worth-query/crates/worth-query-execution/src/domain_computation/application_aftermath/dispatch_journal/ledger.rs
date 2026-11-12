@@ -29,6 +29,7 @@ pub(super) struct QueryDispatchLedger {
     effects: BTreeMap<CanonicalDigestId, QueryDispatchCustody>,
     source_controls: BTreeMap<CanonicalDigestId, InboundSourceControl>,
     awaiting_observation: BTreeMap<DispatchAttemptIdentity, CanonicalDigestId>,
+    pub(super) recovery: super::recovery::QueryRecoveryLedger,
     pub(super) inbound: super::inbound::QueryInboundMessageLedger,
 }
 impl QueryDispatchLedger {
@@ -43,6 +44,7 @@ impl QueryDispatchLedger {
             source_controls: BTreeMap::new(),
             awaiting_observation: BTreeMap::new(),
             inbound: Default::default(),
+            recovery: Default::default(),
         }
     }
     pub(super) const fn position(&self) -> u64 {
@@ -97,6 +99,7 @@ impl QueryDispatchLedger {
             .checked_add(1)
             .ok_or(Denial::IdentityExhausted)?;
         let record = match intent {
+            QueryDispatchRecordIntent::Recovery(value) => QueryDispatchRecord::Recovery(value),
             QueryDispatchRecordIntent::Inbound(value) => QueryDispatchRecord::Inbound(value),
             QueryDispatchRecordIntent::SourceControl { source, posture } => {
                 QueryDispatchRecord::SourceControl { source, posture }
@@ -147,6 +150,9 @@ impl QueryDispatchLedger {
         self.validate(&frame.record, frame.position)?;
         let payload_digest = frame.payload_digest();
         match frame.record {
+            QueryDispatchRecord::Recovery(value) => {
+                self.recovery.fold(self.home, frame.position, value)
+            }
             QueryDispatchRecord::Inbound(value) => self.inbound.fold(value, frame.position),
             QueryDispatchRecord::SourceControl { source, posture } => {
                 self.source_controls.insert(source, posture);
@@ -189,6 +195,7 @@ impl QueryDispatchLedger {
     ) -> Result<(), QueryDispatchJournalDenial> {
         use QueryDispatchJournalDenial as Denial;
         match record {
+            QueryDispatchRecord::Recovery(value) => self.recovery.validate(self.home, value),
             QueryDispatchRecord::Inbound(value) => self.inbound.validate(value),
             QueryDispatchRecord::SourceControl { source, posture } => {
                 if self

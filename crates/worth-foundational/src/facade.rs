@@ -752,3 +752,5 @@ pub use crate::durability::{
     CorrectionMaterialPinIdentity, CorrectionMaterialPinOwner, CorrectionMaterialPinTerminal,
     WorldOriginalFate,
 };
+
+pub use crate::durability::{DurableRecoveryClaimIdentity, RecoveryClaimDisposition};

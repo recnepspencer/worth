@@ -126,7 +126,7 @@ impl WorthQueryCommittedProductPublication {
 
     /// Preserve original immutable identities without retaining physical history.
     /// This describes the copy; it does not retire the actual publication.
-    pub(in crate::domain_computation::primary_graph) fn descriptive(&self) -> Self {
+    pub(in crate::domain_computation) fn descriptive(&self) -> Self {
         if let PublicationCustody::Described(_) = &self.custody {
             return self.clone();
         }

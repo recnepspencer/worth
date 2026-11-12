@@ -6,7 +6,10 @@ use super::*;
 /// table.
 pub(super) fn every_kind() -> Vec<(Kind, Denial, Next)> {
     let listed = |kind: Kind| match kind {
-        Kind::AdmissionAuthorization(_)
+        Kind::DurableClaimPublication
+        | Kind::RetainedMaterialUnavailable
+        | Kind::OriginalRead(_)
+        | Kind::AdmissionAuthorization(_)
         | Kind::CompletionExecutionRequest(_)
         | Kind::DurableStateAdmission(_)
         | Kind::RecoveryNotAdmitted
@@ -55,6 +58,12 @@ pub(super) fn every_kind() -> Vec<(Kind, Denial, Next)> {
     let settling = (Denial::Unavailable, Next::Retry);
     let server_fault = (Denial::InternalDenied, Next::ContactOperator);
     [
+        (Kind::DurableClaimPublication, settling),
+        (Kind::RetainedMaterialUnavailable, (Denial::Unavailable, Next::ContactOperator)),
+        (Kind::OriginalRead(BankEstateIdempotencyResolutionDenial::PreparationBusy), settling),
+        (Kind::OriginalRead(BankEstateIdempotencyResolutionDenial::ProviderUnavailable), settling),
+        (Kind::OriginalRead(BankEstateIdempotencyResolutionDenial::ForeignAdmission), server_fault),
+        (Kind::OriginalRead(BankEstateIdempotencyResolutionDenial::ExecutionDenied(Err(worth_query_host::facade::primary_graph::WorthQueryProviderSessionControlStopKind::Cancelled))), (Denial::Cancelled, Next::Retry)),
         (Kind::AdmissionAuthorization(bank_server::BankAuthorizationDenialKind::InputNotAdmitted), server_fault),
         (Kind::AdmissionAuthorization(bank_server::BankAuthorizationDenialKind::Cancelled), (Denial::Cancelled, Next::Retry)),
         (Kind::AdmissionAuthorization(bank_server::BankAuthorizationDenialKind::DeadlineExceeded), (Denial::DeadlineExceeded, Next::Retry)),

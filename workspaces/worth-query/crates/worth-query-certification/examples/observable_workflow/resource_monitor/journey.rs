@@ -58,7 +58,10 @@ pub fn run() {
         panic!("actual recoverable effect commit: {outcome:?}")
     };
     assert_eq!(transport.calls.load(Ordering::SeqCst), 1);
-    let handle = runtime.mint_recovery_handle(&receipt).unwrap();
+    let handle = runtime
+        .with_host_advancement(|phase| runtime.mint_recovery_handle(&phase, &receipt))
+        .unwrap()
+        .unwrap();
     let original_identity = handle.opaque_wire_identity();
     let authority = super::authority::inspect(runtime, &handle, &actor, &scope, &original);
 
