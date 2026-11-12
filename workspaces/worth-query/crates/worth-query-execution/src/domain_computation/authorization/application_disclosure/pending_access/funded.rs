@@ -22,6 +22,7 @@ pub fn prepare_funded_pending_disclosure<Schema, Scope, Capability, Operation, I
     incarnation_refusal: impl FnOnce(
         crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenial,
     ) -> E,
+    missing_disclosure: impl FnOnce() -> E,
     execution: &ExecutionRequest<'_, '_>,
     memory: &mut Option<ExecutionMemoryReservation>,
     storage_stop: impl Fn(CaptureStop<RetainedStorageDenial>) -> E,
@@ -40,6 +41,7 @@ where
         validate_current_request,
         mismatch,
         incarnation_refusal,
+        missing_disclosure,
         |name, kind, value| {
             let copied = run_retained_stage(execution, memory, |context, memory| {
                 checkpoint(context, 1).map_err(MapKernelFailure::Stop)?;

@@ -164,7 +164,27 @@ fn discovered_owning_committed_retention_retry_preserves_fresh_result_and_source
             operation,
             progress: Progress::SourcePerformed,
         } => operation,
-        _ => panic!("fresh authorized retry promotes the same original source"),
+        Advance::Progress { progress, .. } => panic!(
+            "fresh authorized retry must report SourcePerformed; actual progress: {}",
+            match progress {
+                Progress::SourceUnpublished => "SourceUnpublished",
+                Progress::SourcePerformed => "SourcePerformed",
+                Progress::SourceReplayObserved => "SourceReplayObserved",
+                Progress::RegisteredOutputsRecovered => "RegisteredOutputsRecovered",
+                Progress::SourceRetentionDenied => "SourceRetentionDenied",
+                Progress::Recovery(_) => "Recovery",
+                Progress::SourcePromoted => "SourcePromoted",
+                Progress::OutputsStarted => "OutputsStarted",
+                Progress::OutputsPending => "OutputsPending",
+            }
+        ),
+        Advance::Refused { denial, .. } => panic!(
+            "fresh authorized retry must promote the same source; actual refusal: {denial:?}"
+        ),
+        Advance::Terminal { denial, .. } => panic!(
+            "fresh authorized retry must promote the same source; actual terminal denial: {denial:?}"
+        ),
+        Advance::Settled(_) => panic!("fresh authorized retry settled before source promotion"),
     };
     assert_eq!(
         request.retain_current_read().unwrap().selected_commit(),

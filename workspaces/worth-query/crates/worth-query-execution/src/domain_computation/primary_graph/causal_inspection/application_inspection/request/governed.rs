@@ -86,6 +86,13 @@ where
                 super::super::admission::InspectionAdmissionDenial::Capability(denial),
             )
         },
+        || {
+            InspectionCause::Admission(
+                super::super::admission::InspectionAdmissionDenial::Governance(
+                    crate::domain_computation::authorization::application_disclosure::WorthQueryApplicationQueryGovernanceDenialKind::CapabilityMismatch,
+                ),
+            )
+        },
         execution,
         memory,
         |cause| {
