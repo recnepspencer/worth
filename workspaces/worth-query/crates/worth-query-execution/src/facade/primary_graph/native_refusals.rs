@@ -14,6 +14,6 @@ pub use worth_relational::facade::runtime::{
 };
 pub use worth_relational::facade::transactions::{
     CommitExecutionDenial, CommitExecutionDenialKind, CommitPreparationReason,
-    CustomInvariantFailurePhase, ExistingRecordTarget, RelationalCommitSemanticResultRefusal,
-    ResultCustomInvariantFailureKind,
+    CustomInvariantFailurePhase, ExistingRecordTarget, RecordRef,
+    RelationalCommitSemanticResultRefusal, ResultCustomInvariantFailureKind,
 };
