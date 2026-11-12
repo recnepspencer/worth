@@ -175,6 +175,20 @@ where
         let Delivery::Change(change) = delivery else {
             return finish(receipt.delivered(None, ready_backing), None);
         };
+        let root = self
+            .granular_invalidation_installation()
+            .retain_product_shared_root();
+        if !root.accepts_performed_change(&change) {
+            return finish(
+                receipt.published(Delivery::Change(change), ready_backing),
+                Some(denial(
+                    WorthQueryOutputDemandDenialKind::ProductDelivery(Box::new(
+                        DeliveryDenialKind::ForeignProductRoot,
+                    )),
+                    "performed product change belongs to another application root",
+                )),
+            );
+        }
         let (lowering, ordinal) = if let Some(prepared) = prepared.as_ref() {
             (prepared.lowering, prepared.ordinal)
         } else {
@@ -188,9 +202,6 @@ where
                 route.delivery_dependency_ordinal,
             )
         };
-        let root = self
-            .granular_invalidation_installation()
-            .retain_product_shared_root();
         let owner = self.runtime.bridge.conditional();
         let binding = match lowering.admit_signal_basis(&owner, change.signal_basis()) {
             Ok(binding) => binding,
