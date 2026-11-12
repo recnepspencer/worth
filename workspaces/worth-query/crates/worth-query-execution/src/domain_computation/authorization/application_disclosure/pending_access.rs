@@ -45,8 +45,9 @@ where
         capability,
         validate_original_request,
         validate_current_request,
-        mismatch,
+        &mismatch,
         incarnation_refusal,
+        &mismatch,
         |name, kind, value| Ok((name.to_owned(), kind.to_owned(), value.clone(), ())),
     )
     .map(|(pending, ())| pending)
@@ -66,6 +67,7 @@ fn prepare_with_capture<Schema, Scope, Capability, Operation, Input, E, Capture>
     incarnation_refusal: impl FnOnce(
         crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenial,
     ) -> E,
+    missing_disclosure: impl FnOnce() -> E,
     capture: impl FnOnce(
         &str,
         &str,
@@ -104,7 +106,9 @@ where
         return Err(mismatch());
     }
     validate_current_request()?;
-    let disclosure_value = capability.disclosure_value().ok_or_else(&mismatch)?;
+    let disclosure_value = capability
+        .disclosure_value()
+        .ok_or_else(missing_disclosure)?;
     let (capability_name, capability_type, disclosure_value, capture) = capture(
         capability.capability_name(),
         capability.capability_type(),

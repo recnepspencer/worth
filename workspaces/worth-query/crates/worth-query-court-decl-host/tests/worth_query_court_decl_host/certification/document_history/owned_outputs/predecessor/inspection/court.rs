@@ -152,7 +152,8 @@ fn connected_inspection_borrows_authentic_old_keys_without_current_dependency_au
                 WorthQueryApplicationQueryGovernanceDenialKind::CapabilityMismatch
             ))
         ),
-        "the actual typed inspection refusal was {denied:?}"
+        "the actual typed inspection refusal was {denied:?}; owner: {:?}",
+        denied.owner_refusal()
     );
     assert!(
         denied.producer_connection_refusal().is_none(),
@@ -176,7 +177,8 @@ fn connected_inspection_borrows_authentic_old_keys_without_current_dependency_au
                 WorthQueryApplicationQueryGovernanceDenialKind::Required
             ))
         ),
-        "the actual typed inspection refusal was {denied:?}"
+        "the actual typed inspection refusal was {denied:?}; owner: {:?}",
+        denied.owner_refusal()
     );
     assert!(denied.producer_connection_refusal().is_none());
     // Genuine foreign capability custody cannot lend any fresh admitted role.

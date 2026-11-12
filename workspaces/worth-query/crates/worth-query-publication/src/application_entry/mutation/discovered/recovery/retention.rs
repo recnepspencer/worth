@@ -108,7 +108,15 @@ where
             self.check_recovery_liveness()?;
             match read.into_resolution() {
                 WorthQueryApplicationIdempotencyResolution::ReleasedOriginal(original) => Err(WorthQueryApplicationRecoveryRequestDenial::ReleasedOriginal(original)),
-                WorthQueryApplicationIdempotencyResolution::RecoveredCommitted(receipt) => Err(WorthQueryApplicationRecoveryRequestDenial::RecoveredCommitted(receipt)),
+                WorthQueryApplicationIdempotencyResolution::RecoveredCommitted(recorded) => {
+                    // Fresh owner evidence confirms the retained live publication;
+                    // it never creates a performed receipt or delivery witness.
+                    if failure.receipt.matches_recorded_original(&recorded) {
+                        Ok(failure.receipt.clone())
+                    } else {
+                        Err(mismatch())
+                    }
+                },
                 WorthQueryApplicationIdempotencyResolution::ProductUnpublished(_)
                 | WorthQueryApplicationIdempotencyResolution::ProductPreparationPending(_)
                 | WorthQueryApplicationIdempotencyResolution::IntentDrift

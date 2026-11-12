@@ -79,6 +79,9 @@ fn separately_admitted_rich_body_cannot_replace_scope_or_requested_families() {
                                     || require_request(&execution, &request),
                                     || InspectionAdmissionDenial::ForeignIssuedAccess,
                                     InspectionAdmissionDenial::Capability,
+                                    || InspectionAdmissionDenial::Governance(
+                                        worth_query_execution::facade::application_inspection::WorthQueryApplicationQueryGovernanceDenialKind::CapabilityMismatch,
+                                    ),
                                     &execution,
                                     memory,
                                     InspectionAdmissionDenial::Storage,
