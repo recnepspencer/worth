@@ -1,6 +1,8 @@
+#[cfg(not(target_os = "macos"))]
 use cap_fs_ext::OpenOptionsFollowExt;
+#[cfg(not(target_os = "macos"))]
 use cap_primitives::fs::FollowSymlinks;
-use cap_std::fs::{Dir, OpenOptions};
+use cap_std::fs::Dir;
 
 use super::super::artifact_tree_effects::{begin, open_directory, open_optional_directory};
 use super::path::ArtifactTreeRoot;
@@ -9,15 +11,19 @@ use super::{
 };
 use crate::filesystem_media::MediaOperationRole;
 
+#[derive(Clone, Copy)]
+pub(super) enum FileAccess {
+    ReadOnly,
+    ReadWrite,
+}
+
 impl ArtifactTreeMedia<'_> {
     pub(super) fn open_mutable_file(
         &self,
         directory: &Dir,
         file_name: &str,
     ) -> Result<cap_std::fs::File, ArtifactTreeFailure> {
-        let mut options = OpenOptions::new();
-        options.read(true).write(true).follow(FollowSymlinks::No);
-        self.open_file(directory, file_name, &options)
+        self.open_file(directory, file_name, FileAccess::ReadWrite)
     }
 
     pub(super) fn open_readable_file(
@@ -25,25 +31,23 @@ impl ArtifactTreeMedia<'_> {
         directory: &Dir,
         file_name: &str,
     ) -> Result<cap_std::fs::File, ArtifactTreeFailure> {
-        let mut options = OpenOptions::new();
-        options.read(true).follow(FollowSymlinks::No);
-        self.open_file(directory, file_name, &options)
+        self.open_file(directory, file_name, FileAccess::ReadOnly)
     }
 
     fn open_file(
         &self,
         directory: &Dir,
         file_name: &str,
-        options: &OpenOptions,
+        access: FileAccess,
     ) -> Result<cap_std::fs::File, ArtifactTreeFailure> {
-        self.open_file_with_backing(directory, file_name, options, ())
+        self.open_file_with_backing(directory, file_name, access, ())
     }
 
     pub(super) fn open_file_with_backing<B>(
         &self,
         directory: &Dir,
         file_name: &str,
-        options: &OpenOptions,
+        access: FileAccess,
         backing: B,
     ) -> Result<cap_std::fs::File, ArtifactTreeFailure> {
         let open = begin(self.owner, MediaOperationRole::OpenExisting, 0);
@@ -55,7 +59,17 @@ impl ArtifactTreeMedia<'_> {
                 &error,
             ));
         }
-        let result = directory.open_with(file_name, options);
+        #[cfg(not(target_os = "macos"))]
+        let result = {
+            let mut options = cap_std::fs::OpenOptions::new();
+            options
+                .read(true)
+                .write(matches!(access, FileAccess::ReadWrite))
+                .follow(FollowSymlinks::No);
+            directory.open_with(file_name, &options)
+        };
+        #[cfg(target_os = "macos")]
+        let result = super::native_component::file(directory, file_name, access);
         drop(backing);
         match result {
             Ok(file) => {

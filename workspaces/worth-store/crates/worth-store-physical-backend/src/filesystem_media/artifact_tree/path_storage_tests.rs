@@ -28,13 +28,18 @@ fn qualified_component_open_bounds_cover_unicode_growth_and_missing_file() {
         // requests include both phases, whereas open_bytes bounds their peak.
         // All fixture prefixes are either the whole name or its .wal stem.
         let stem = name.strip_suffix(".wal").unwrap_or(&name);
+        #[cfg(windows)]
         let uppercase = allocation_probe::allocated_bytes_during(|| {
             drop(stem.trim_end().to_uppercase());
         });
+        #[cfg(target_os = "macos")]
+        let uppercase = 0;
+        #[cfg(target_os = "macos")]
+        let _ = stem;
         assert!(uppercase as u64 <= bound);
         let mut opened = None;
         let requested = allocation_probe::allocated_bytes_during(|| {
-            opened = Some(directory.open(&name).unwrap());
+            opened = Some(component_read(&directory, &name).unwrap());
         });
         assert!(
             requested as u64 <= bound + uppercase as u64,
@@ -44,7 +49,7 @@ fn qualified_component_open_bounds_cover_unicode_growth_and_missing_file() {
         std::fs::remove_file(root.path().join(&name)).unwrap();
         let mut failed = None;
         let missing = allocation_probe::allocated_bytes_during(|| {
-            failed = Some(directory.open(&name));
+            failed = Some(component_read(&directory, &name));
         });
         assert_eq!(
             failed.unwrap().unwrap_err().kind(),
@@ -59,5 +64,20 @@ fn qualified_component_open_bounds_cover_unicode_growth_and_missing_file() {
             "component {} UTF-8 bytes: open {requested}, missing {missing}, disposed uppercase {uppercase}, peak bound {bound}",
             name.len()
         );
+    }
+}
+
+fn component_read(directory: &cap_std::fs::Dir, name: &str) -> std::io::Result<cap_std::fs::File> {
+    #[cfg(windows)]
+    {
+        directory.open(name)
+    }
+    #[cfg(target_os = "macos")]
+    {
+        super::super::native_component::file(
+            directory,
+            name,
+            super::super::media_open::FileAccess::ReadOnly,
+        )
     }
 }

@@ -80,7 +80,7 @@ impl ArtifactTreeReadAllocator for Storage {
     }
 }
 /// The ceiling of the head block the storage tests read.
-#[cfg(windows)]
+#[cfg(any(windows, target_os = "macos"))]
 fn head_ceiling() -> ArtifactCeiling {
     ArtifactCeiling::page(
         format(),
@@ -99,7 +99,7 @@ pub(super) fn storage(deny_path: Option<Boundary>, deny_payload: bool) -> Storag
     }
 }
 
-#[cfg(windows)]
+#[cfg(any(windows, target_os = "macos"))]
 #[test]
 fn record_path_and_open_denials_precede_payload_then_same_discovery_retries() {
     let address = RecordArtifactFile::ReleaseCustodyHeadBlock {
@@ -164,7 +164,7 @@ fn record_path_and_open_denials_precede_payload_then_same_discovery_retries() {
     }
 }
 
-#[cfg(windows)]
+#[cfg(any(windows, target_os = "macos"))]
 #[test]
 fn overflowing_record_range_precedes_rejecting_storage_and_same_discovery_retries() {
     let address = RecordArtifactFile::ExtentArena { arena: 1 };
@@ -235,7 +235,7 @@ fn overflowing_record_range_precedes_rejecting_storage_and_same_discovery_retrie
     assert_eq!(discovery.finish().recovery_effect_count(), 0);
 }
 
-#[cfg(windows)]
+#[cfg(any(windows, target_os = "macos"))]
 #[test]
 fn record_payload_denial_and_backed_range_preserve_exact_read_semantics() {
     let address = RecordArtifactFile::ExtentArena { arena: 1 };
@@ -277,7 +277,7 @@ fn record_payload_denial_and_backed_range_preserve_exact_read_semantics() {
     assert_eq!(discovery.finish().recovery_effect_count(), 0);
 }
 
-#[cfg(windows)]
+#[cfg(any(windows, target_os = "macos"))]
 #[test]
 fn checkpoint_and_fixed_slot_backed_reads_preserve_success_absence_and_counters() {
     let (_parent, _observer, mut discovery) = discovery(
@@ -335,7 +335,7 @@ fn checkpoint_and_fixed_slot_backed_reads_preserve_success_absence_and_counters(
     assert_eq!(discovery.finish().recovery_effect_count(), 0);
 }
 
-#[cfg(not(windows))]
+#[cfg(not(any(windows, target_os = "macos")))]
 #[test]
 fn unqualified_record_storage_rejects_before_address_or_payload_callbacks() {
     let (_parent, _observer, mut discovery) = discovery(|_| {}, 4, 64);

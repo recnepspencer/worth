@@ -41,13 +41,19 @@ pub fn is_supported(compiler: &str, inputs: &[(&str, String)], lock: &str) -> bo
     matches!(
         compiler,
         "rustc 1.94.0 (4a4ef493e 2026-03-02)" | "rustc 1.99.1 (58cf8f9c3 2026-10-13)"
-    ) && value("TARGET") == "x86_64-pc-windows-msvc"
-        && value("CARGO_CFG_TARGET_OS") == "windows"
+    ) && ((value("TARGET") == "x86_64-pc-windows-msvc"
+        && value("CARGO_CFG_TARGET_OS") == "windows")
+        || (value("TARGET") == "aarch64-apple-darwin"
+            && value("CARGO_CFG_TARGET_OS") == "macos"
+            && compiler == "rustc 1.99.1 (58cf8f9c3 2026-10-13)"
+            && pinned_registry_package(lock, "rustix", "1.1.5")
+            && pinned_registry_package(lock, "libc", "0.2.190")))
         && value("CARGO_CFG_TARGET_POINTER_WIDTH") == "64"
         && approved_flags(value("CARGO_ENCODED_RUSTFLAGS"))
         && compiler_cache::is_supported(
             value("RUSTC_WRAPPER"),
             value(compiler_cache::RELEASE_INPUT),
+            value("TARGET"),
         )
         && PROFILE_INPUTS[2..4]
             .iter()
@@ -136,6 +142,32 @@ mod tests {
     fn lock() -> String {
         [("cap-std", "4.0.2"), ("cap-fs-ext", "4.0.2"), ("cap-primitives", "4.0.2"), ("maybe-owned", "0.3.4")]
             .into_iter().map(|(name, version)| format!("[[package]]\nname = \"{name}\"\nversion = \"{version}\"\nsource = \"registry+https://github.com/rust-lang/crates.io-index\"\nchecksum = \"{}\"\n", "a".repeat(64))).collect()
+    }
+
+    #[test]
+    fn mac_native_profile_requires_the_exact_compiler_target_and_provider_composition() {
+        let mut inputs = vec![
+            ("CARGO_CFG_TARGET_OS", "macos".into()),
+            ("CARGO_CFG_TARGET_POINTER_WIDTH", "64".into()),
+            ("TARGET", "aarch64-apple-darwin".into()),
+        ];
+        let mut metadata = lock();
+        for (name, version) in [("rustix", "1.1.5"), ("libc", "0.2.190")] {
+            metadata.push_str(&format!("[[package]]\nname = \"{name}\"\nversion = \"{version}\"\nsource = \"registry+https://github.com/rust-lang/crates.io-index\"\nchecksum = \"{}\"\n", "a".repeat(64)));
+        }
+        let compiler = "rustc 1.99.1 (58cf8f9c3 2026-10-13)";
+        assert!(is_supported(compiler, &inputs, &metadata));
+        assert!(!is_supported(
+            "rustc 1.94.0 (4a4ef493e 2026-03-02)",
+            &inputs,
+            &metadata
+        ));
+        assert!(!is_supported(compiler, &inputs, &lock()));
+        inputs[2].1 = "x86_64-apple-darwin".into();
+        assert!(!is_supported(compiler, &inputs, &metadata));
+        inputs[2].1 = "aarch64-apple-darwin".into();
+        inputs.push(("CARGO_ENCODED_RUSTFLAGS", "--cfg=racy_asserts".into()));
+        assert!(!is_supported(compiler, &inputs, &metadata));
     }
 
     #[test]
