@@ -67,8 +67,9 @@ fn a_terminal_delivery_stop_releases_the_head_with_a_peer_still_present() {
     let registry = (*world.application.runtime_for_test()).output_demands_for_test();
     let scope = worth_query_execution::facade::domain_computation::WorthQueryOperationScopeEntityBinding::from_entity_for_test(root);
     let request = worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::schema_types::live_scope();
-    // Build a genuine lowering, with no dependencies. The foreign root is
-    // refused before this lowering or its compute can be used.
+    // This separately installed lowering does not belong to the receiver's live
+    // Bridge owner. The foreign Product root must refuse before either the
+    // lowering's admission or its compute can obscure the ownership mismatch.
     let mut builder = BridgeConditionalRuntimeBuilder::with_owned_signal_graph(
         (*(*world.application.runtime_for_test()).bridge_for_test())
             .ordinary_for_test()
