@@ -25,7 +25,7 @@ impl Cause {
             }
             Self::Source(cause) => match cause {
                 Read::SourceRead(cause) => Denial::OwnerReadDenied(*cause),
-                Read::ReadRequest(cause) => read_request(cause.clone()),
+                Read::ReadRequest(cause) => read_request(*cause),
                 Read::AmbiguousCorrelation
                 | Read::Malformed
                 | Read::CommitUnavailable
@@ -33,7 +33,7 @@ impl Cause {
             },
             Self::Terminal(cause) => match cause {
                 Index::SourceRead(cause) => Denial::OwnerReadDenied(*cause),
-                Index::ReadRequest(cause) => read_request(cause.clone()),
+                Index::ReadRequest(cause) => read_request(*cause),
                 Index::IndexUnavailable
                 | Index::ReconstructionWorkExhausted
                 | Index::WorldPairMismatch

@@ -48,12 +48,11 @@ impl WorthQueryDispatchJournal {
                 .transport_binding(owner.record().correlation().digest())
                 .cloned()
         });
-        if let Some(binding) = &binding {
-            if QueryInboundDispatchSource::from_owner(owner)? != binding.source
-                || owner.record().operation_slot() != Some(binding.operation.as_str())
-            {
-                return Err(QueryDispatchJournalDenial::MalformedFrame);
-            }
+        if let Some(binding) = &binding
+            && (QueryInboundDispatchSource::from_owner(owner)? != binding.source
+                || owner.record().operation_slot() != Some(binding.operation.as_str()))
+        {
+            return Err(QueryDispatchJournalDenial::MalformedFrame);
         }
         Ok(binding)
     }

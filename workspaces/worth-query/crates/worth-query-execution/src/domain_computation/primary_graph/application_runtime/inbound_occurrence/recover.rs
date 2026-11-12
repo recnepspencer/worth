@@ -111,7 +111,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             WorthQueryInboundPublicationClaim::Publishing => Err(Denial::PublicationInProgress),
             WorthQueryInboundPublicationClaim::Gone => Err(Denial::RecoveryUnavailable),
             WorthQueryInboundPublicationClaim::Terminal => {
-                self.release_retained_inbound_terminal(&execution, &accepted)?;
+                self.release_retained_inbound_terminal(execution, &accepted)?;
                 Ok(Posture::Performed)
             }
             WorthQueryInboundPublicationClaim::Unpublished => {
