@@ -36,6 +36,7 @@ GROUPS = {
 }
 
 CATEGORIES = ("process", "oracle", "cost", "determinism", "compile_fail")
+RECORD_ACCESS_COST = "application_schema::fragment::catalog::record_access::cost::"
 
 
 def ordinary_selection(manifest):
@@ -48,6 +49,8 @@ GROUPS["bank"] = ordinary_selection(BANK)
 
 
 def selected(suite, binary, name):
+    if lib_of("worth-query-declaration")(binary) and name.startswith(RECORD_ACCESS_COST):
+        return suite in ("query-cost", "query-scale")
     if "-court-" not in binary["package"]:
         return suite not in CATEGORY_SUITES
     category = next((c for c in CATEGORIES if name.startswith(c + "::")), None)
@@ -100,6 +103,11 @@ for prefix in ("query", "bank", "root"):
         suite = prefix + "-" + label
         CATEGORY_SUITES[suite] = category
         TEST_SUITES[suite] = (prefix, courts_only, 150, 1)
+
+# One private owner observation shares the existing cost family/build census.
+for suite in ("query-cost", "query-scale"):
+    TEST_SUITES[suite] = ("query", lambda binary: courts_only(binary) or
+                         lib_of("worth-query-declaration")(binary), 150, 1)
 
 
 def landing_suites(workspace):

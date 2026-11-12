@@ -11,6 +11,10 @@ use std::any::TypeId;
 use std::collections::{BTreeMap, BTreeSet};
 mod membership;
 use membership::member_key;
+#[cfg(test)]
+mod comparison_observation;
+#[cfg(test)]
+mod cost;
 
 #[derive(Clone, Debug, Eq, PartialEq, Ord, PartialOrd)]
 pub(crate) struct RecordAccess {
@@ -89,10 +93,14 @@ pub(in crate::application_schema) fn expand_record_access(
     members: &mut Vec<Member>,
     contributions: &mut [crate::application_schema::contribution::AuthoredApplicationSchemaContribution],
 ) -> Result<(), Denial> {
-    let mut indexed_members = members
-        .iter()
-        .filter_map(member_key)
-        .collect::<BTreeSet<_>>();
+    let mut indexed_members = {
+        #[cfg(test)]
+        let _scope = comparison_observation::enter(comparison_observation::Owner::Global);
+        members
+            .iter()
+            .filter_map(member_key)
+            .collect::<BTreeSet<_>>()
+    };
     let mut seen = BTreeSet::new();
     for request in requests {
         if !seen.insert(request) {
@@ -170,11 +178,7 @@ pub(in crate::application_schema) fn expand_record_access(
             contribution.expand_record(request, &expansion);
         }
         for member in expansion {
-            if indexed_members
-                .insert(member_key(&member).expect("expanded access has a field or aspect locus"))
-            {
-                members.push(member);
-            }
+            insert_global(&mut indexed_members, members, member);
         }
     }
     // A scalar write also carries the SDK's structural parent column. The
@@ -242,11 +246,7 @@ pub(in crate::application_schema) fn expand_record_access(
             for contribution in contributions.iter_mut() {
                 contribution.expand_member(&source, &member);
             }
-            if indexed_members
-                .insert(member_key(&member).expect("expanded access has a field or aspect locus"))
-            {
-                members.push(member);
-            }
+            insert_global(&mut indexed_members, members, member);
         }
     }
     Ok(())
@@ -283,8 +283,24 @@ fn columns(
 }
 
 fn insert(members: &mut BTreeMap<membership::MemberKey, Member>, member: Member) {
+    #[cfg(test)]
+    let _scope = comparison_observation::enter(comparison_observation::Owner::Local);
     members.insert(
         member_key(&member).expect("expanded access has a field or aspect locus"),
         member,
     );
+}
+
+fn insert_global(
+    indexed_members: &mut BTreeSet<membership::MemberKey>,
+    members: &mut Vec<Member>,
+    member: Member,
+) {
+    #[cfg(test)]
+    let _scope = comparison_observation::enter(comparison_observation::Owner::Global);
+    if indexed_members
+        .insert(member_key(&member).expect("expanded access has a field or aspect locus"))
+    {
+        members.push(member);
+    }
 }

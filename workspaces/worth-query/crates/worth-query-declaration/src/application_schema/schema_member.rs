@@ -50,7 +50,8 @@ pub enum ApplicationOperationProgramTarget {
     },
 }
 
-#[derive(Clone, Debug, Eq, PartialEq, Ord, PartialOrd)]
+#[derive(Clone, Debug, Eq, Ord, PartialOrd)]
+#[cfg_attr(not(test), derive(PartialEq))]
 pub enum ApplicationOperationDecisionReadTarget {
     ManagedIndex {
         parent: crate::application_query::ApplicationQueryBindingReference,
