@@ -70,7 +70,7 @@ fn borrowed_record_range_overflow_denies_before_address_or_payload_allocation() 
     assert!(media.bounded_record_observation(2, 0).is_ok());
 }
 
-#[cfg(windows)]
+#[cfg(any(windows, target_os = "macos"))]
 #[test]
 fn borrowed_record_reads_preserve_actual_head_bytes_ranges_and_absence() {
     let (root, media) = qualified();

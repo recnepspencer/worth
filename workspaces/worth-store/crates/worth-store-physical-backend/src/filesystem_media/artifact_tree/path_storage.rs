@@ -3,7 +3,7 @@ use super::ArtifactTreeMedia;
 use super::{path::validate_component, ArtifactTreeDirectory};
 
 pub(super) fn qualified() -> bool {
-    cfg!(windows) && env!("WORTH_STORE_MEDIA_PATH_PROFILE") == "qualified"
+    cfg!(any(windows, target_os = "macos")) && env!("WORTH_STORE_MEDIA_PATH_PROFILE") == "qualified"
 }
 
 #[cfg(feature = "recovery-runtime-owner")]
@@ -52,7 +52,13 @@ pub(super) fn open_bytes(component: &str) -> Option<u64> {
         return None;
     }
     validate_component(component).ok()?;
-    #[cfg(not(windows))]
+    #[cfg(target_os = "macos")]
+    {
+        // native_component constructs exactly one NUL-terminated buffer after
+        // this backing is admitted; safe openat borrows it without another copy.
+        u64::try_from(component.len().checked_add(1)?).ok()
+    }
+    #[cfg(not(any(windows, target_os = "macos")))]
     {
         None
     }
@@ -106,6 +112,10 @@ impl ArtifactTreeMedia<'_> {
     }
 }
 
-#[cfg(all(test, windows, feature = "recovery-runtime-owner"))]
+#[cfg(all(
+    test,
+    any(windows, target_os = "macos"),
+    feature = "recovery-runtime-owner"
+))]
 #[path = "path_storage_tests.rs"]
 mod tests;

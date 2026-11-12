@@ -22,6 +22,8 @@ mod listing_storage;
 mod media;
 mod media_open;
 mod metadata_read;
+#[cfg(target_os = "macos")]
+pub(super) mod native_component;
 mod new_artifact_write;
 mod path;
 mod path_admission;
