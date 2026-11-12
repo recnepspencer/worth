@@ -207,3 +207,5 @@ mod stages;
 mod stage_record_conflict;
 
 mod cold_candidate_pin;
+
+mod retry_custody;

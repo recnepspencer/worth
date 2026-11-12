@@ -12,16 +12,23 @@ pub struct World {
 }
 impl World {
     pub fn new(execution: &ExecutionRequest<'_, '_>, storage: bool, owns_source: bool) -> Self {
-        Self::with_status_field(execution, storage, owns_source, false)
+        Self::with_status_field(execution, storage, owns_source, false, None)
     }
     pub fn new_with_status(execution: &ExecutionRequest<'_, '_>) -> Self {
-        Self::with_status_field(execution, true, true, true)
+        Self::with_status_field(execution, true, true, true, None)
+    }
+    pub fn with_invariant(
+        execution: &ExecutionRequest<'_, '_>,
+        rule: CustomInvariantRegistration,
+    ) -> Self {
+        Self::with_status_field(execution, true, true, false, Some(rule))
     }
     fn with_status_field(
         execution: &ExecutionRequest<'_, '_>,
         storage: bool,
         owns_source: bool,
         with_status: bool,
+        rule: Option<CustomInvariantRegistration>,
     ) -> Self {
         let mut fixture = AspectSchemaFixture::with_default_declared_aspects(
             worth_relational::facade::config::CascadeDeletePolicy::RetainDanglingForAudit,
@@ -46,10 +53,13 @@ impl World {
         } else {
             fixture.build_registry()
         };
-        let mut runtime = RelationalRuntimeApi::builder()
-            .schema_registry(registry)
-            .build()
-            .unwrap();
+        let builder = RelationalRuntimeApi::builder().schema_registry(registry);
+        let builder = if let Some(rule) = rule {
+            builder.custom_invariant(rule)
+        } else {
+            builder
+        };
+        let mut runtime = builder.build().unwrap();
         let receipt = runtime
             .prepare_initial_schema_installation()
             .unwrap()
