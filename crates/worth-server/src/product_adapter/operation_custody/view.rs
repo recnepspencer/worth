@@ -208,6 +208,7 @@ fn full_commit(
         Full::ProductStale(_) => CommitPosture::ProductStale,
         Full::ProductUnpublished(_) => CommitPosture::ProductUnpublished,
         Full::NoEffect(_) => CommitPosture::NoEffect,
+        Full::OutputAdopted(_) => CommitPosture::OutputAdopted,
         Full::Stale(_) => CommitPosture::Stale,
         Full::Cancelled => CommitPosture::Cancelled,
         Full::TimedOut => CommitPosture::TimedOut,
