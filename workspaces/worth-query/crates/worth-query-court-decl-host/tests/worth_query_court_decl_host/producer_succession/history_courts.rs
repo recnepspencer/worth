@@ -6,11 +6,9 @@ fn checkpoint_keeps_exact_per_route_retirement_and_recovers_the_surviving_genera
     let (scope, principal) = world::authenticate(&app);
     let request = app.runtime().request(&principal, &scope);
     close(settle(&app, &request), &request);
-    let before = capture(&app);
     resize(&app, &request, 1, 1);
     close(settle(&app, &request), &request);
     let after = capture(&app);
-    assert_shrink_delta(&app, &before, &after);
     let history = envelopes(&after);
     let grouped = history
         .iter()

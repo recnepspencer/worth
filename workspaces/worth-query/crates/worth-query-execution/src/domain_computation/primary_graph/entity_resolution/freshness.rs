@@ -30,13 +30,19 @@ pub(super) fn validate<Schema, Entity>(
         identity.identity_value().clone(),
         2,
     )
-    .map_err(|rejected| super::map_index_denial(rejected.kind(), identity.entity_name()))?;
+    .map_err(|rejected| {
+        super::map_index_denial(rejected.kind(), identity.entity_name())
+            .with_native_lookup(identity.identity_index_id(), rejected.kind())
+    })?;
     super::interruption_control::cancel_before_lookup_for_test();
     let lookup = truth
         .relational
         .index_access()
         .execute_bounded_entity_field_lookup(request, parity(identity.resolution_mode()), execution)
-        .map_err(|rejected| super::map_index_denial(rejected.kind(), identity.entity_name()))?;
+        .map_err(|rejected| {
+            super::map_index_denial(rejected.kind(), identity.entity_name())
+                .with_native_lookup(identity.identity_index_id(), rejected.kind())
+        })?;
     if lookup.overflowed()
         || lookup.candidate_entity_ids().len() != 1
         || lookup.candidate_entity_ids()[0] != identity.entity_id()

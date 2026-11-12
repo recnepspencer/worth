@@ -7,7 +7,6 @@ use worth_query_host::facade::{
 };
 mod differential;
 mod identity_model;
-mod locality;
 mod union_find;
 mod world;
 type Member = WorthQueryInvariantEntityIdentity<CheckpointSchema, Body>;

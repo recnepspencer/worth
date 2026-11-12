@@ -95,10 +95,12 @@ where
             .as_ref()
             .ok_or(Refusal::NotHomeBound)?
             .clone();
-        let program_revision = source.program_revision();
-        let commitment =
-            crate::publication::world_branch_program_source_commitment(&expected, program_revision)
-                .map_err(Refusal::Durable)?;
+        let selected_source_program = source.program_revision();
+        let commitment = crate::publication::world_branch_program_source_commitment(
+            &expected,
+            selected_source_program,
+        )
+        .map_err(Refusal::Durable)?;
         binding
             .binding()
             .branch_program_source_authority()
@@ -134,9 +136,13 @@ where
                     Some(expected.clone()),
                 ))
             })?;
-        let (assigned, home_association) = match assigned {
-            Some(assigned) => (Some(assigned.attempt), Some(assigned.association)),
-            None => (None, None),
+        let (assigned, home_association, original_program_revision) = match assigned {
+            Some(assigned) => (
+                Some(assigned.attempt),
+                Some(assigned.association),
+                assigned.original_program_revision,
+            ),
+            None => (None, None, selected_source_program),
         };
         let identities =
             issue_publication_identities_for_attempt(self, assigned).map_err(|cause| {
@@ -179,7 +185,7 @@ where
                     identities.product_unpublished_identity.ordinal(),
                 ),
                 expected: WorldHeadInput::from_observation(&expected).map_err(Refusal::Durable)?,
-                program_revision,
+                program_revision: original_program_revision,
                 component_intent: match intent {
                     crate::publication::CompositeComponentIntent::RelationalOnly(_) => {
                         crate::durability::WorldOpenComponentIntent::RelationalOnly

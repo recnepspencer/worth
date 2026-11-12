@@ -30,6 +30,14 @@ where
     }
 
     pub fn advance(
+        self,
+        request: &WorthQueryApplicationRequest<'_, '_, '_, S>,
+    ) -> WorthQueryHistoryEditAdvance<Self> {
+        worth_execution::run_with_execution_stack(move || self.advance_on_execution_stack(request))
+    }
+
+    #[inline(never)]
+    fn advance_on_execution_stack(
         mut self,
         request: &WorthQueryApplicationRequest<'_, '_, '_, S>,
     ) -> WorthQueryHistoryEditAdvance<Self> {

@@ -49,17 +49,19 @@ impl PreparedResidentRegion {
         symbols: &RuntimeSymbolTable,
         change: Option<&crate::storage::substrate::maintenance::CommitChange>,
     ) -> Result<Self, RegionContentFailure> {
-        let absent = || {
+        let absent = |cause| {
             RegionContentFailure::Storage(RelationalStorageUnavailable {
                 subject: RelationalStorageSubject::Region(overlay.partition_id),
-                cause: RelationalStorageUnavailableCause::SourceUnavailable,
+                cause,
             })
         };
         let previous = basis
             .retention
             .capture_region()
             .map_err(RegionContentFailure::Storage)?
-            .ok_or_else(absent)?;
+            .ok_or_else(|| {
+                absent(RelationalStorageUnavailableCause::MissingResidentPublicationRegion)
+            })?;
         // Head custody can borrow a physically complete image already loaded
         // by another observer. Acquire its real Full witness before carrying
         // Full dictionary coverage; this branch never requests omitted history.
@@ -77,10 +79,14 @@ impl PreparedResidentRegion {
             .retention
             .admit_own_symbols(execution, symbols)
             .map_err(RegionContentFailure::from)?;
-        let prior_commitment = previous.commitment.as_ref().ok_or_else(absent)?;
+        let prior_commitment = previous.commitment.as_ref().ok_or_else(|| {
+            absent(RelationalStorageUnavailableCause::MissingResidentPublicationCommitment)
+        })?;
         let mut partition = previous.partition.clone();
         let copied_truth_bytes = partition.merge_overlay_from_owned(&mut overlay.clone(), journal);
-        let prior_kind = previous.kind_indexes.as_ref().ok_or_else(absent)?;
+        let prior_kind = previous.kind_indexes.as_ref().ok_or_else(|| {
+            absent(RelationalStorageUnavailableCause::MissingResidentPublicationKindIndexes)
+        })?;
         if prior_kind.commitment() != basis.kind_commitment {
             return Err(RegionContentFailure::Adjacency);
         }

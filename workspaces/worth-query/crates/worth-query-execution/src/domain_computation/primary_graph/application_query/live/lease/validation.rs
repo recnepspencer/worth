@@ -70,8 +70,7 @@ pub(super) fn open_read_denial(
             ),
             subject,
         ),
-        WorthQueryAuthorizedApplicationReadDenial::StaleScope
-        | WorthQueryAuthorizedApplicationReadDenial::StaleBasisScope => open_denial(
+        WorthQueryAuthorizedApplicationReadDenial::ScopeFreshness(_) => open_denial(
             WorthQueryApplicationLiveOpenDenialKind::Admission(
                 super::super::super::WorthQueryApplicationQueryAdmissionDenialKind::StaleScope,
             ),

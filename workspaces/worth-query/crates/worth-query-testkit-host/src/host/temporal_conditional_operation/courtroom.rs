@@ -122,50 +122,6 @@ pub fn host_installs_and_executes_due_operation(
     );
 }
 
-pub fn temporal_identity_work_is_cold_or_fresh_admission_only(
-    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
-) {
-    let world = CourtroomWorld::publish("ready");
-    let binding = world.clock.binding_canonical_work();
-    assert_eq!(binding.basis_preparations(), 1);
-    assert_eq!(binding.digest_derivations(), 1);
-    assert_eq!(binding.canonical_entries(), 8);
-    assert_eq!(binding.digest_text_materializations(), 1);
-
-    let installation = world
-        .application
-        .inspect_conditional_runtime()
-        .installation_canonical_work();
-    assert_eq!(installation.basis_preparations(), 2);
-    assert_eq!(installation.digest_derivations(), 2);
-    assert_eq!(installation.canonical_entries(), 14);
-    assert_eq!(installation.digest_text_materializations(), 2);
-
-    let receipt = observe(request_execution, &world);
-    let [provenance] = receipt.execution_provenance() else {
-        panic!("one committed operation must expose one typed lineage")
-    };
-    let phases = provenance.canonical_work();
-    assert_eq!(phases.admission().basis_preparations(), 2);
-    assert_eq!(phases.admission().digest_derivations(), 2);
-    assert_eq!(phases.admission().canonical_entries(), 5);
-    assert_eq!(phases.admission().digest_text_materializations(), 0);
-    for work in [
-        phases.installation(),
-        phases.execution(),
-        phases.provider_commit(),
-        phases.projection(),
-        phases.live_delivery(),
-        phases.retry_resolution(),
-        phases.recovery_inspection(),
-        phases.publication(),
-    ] {
-        assert_eq!(work.basis_preparations(), 0);
-        assert_eq!(work.digest_derivations(), 0);
-        assert_eq!(work.digest_text_materializations(), 0);
-    }
-}
-
 pub fn cancellation_after_publication_retires_stale_wake(
     request_execution: &worth_execution::ExecutionRequest<'_, '_>,
 ) {

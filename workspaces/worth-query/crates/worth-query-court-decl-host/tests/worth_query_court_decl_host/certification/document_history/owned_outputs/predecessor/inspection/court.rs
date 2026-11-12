@@ -145,12 +145,15 @@ fn connected_inspection_borrows_authentic_old_keys_without_current_dependency_au
         )
         .err()
         .expect("a genuine navigation grant cannot authorize source inspection metadata");
-    assert!(matches!(
-        denied.owner_refusal(),
-        Some(WorthQueryApplicationInspectionOwnerRefusal::Governance(
-            WorthQueryApplicationQueryGovernanceDenialKind::CapabilityMismatch
-        ))
-    ));
+    assert!(
+        matches!(
+            denied.owner_refusal(),
+            Some(WorthQueryApplicationInspectionOwnerRefusal::Governance(
+                WorthQueryApplicationQueryGovernanceDenialKind::CapabilityMismatch
+            ))
+        ),
+        "the actual typed inspection refusal was {denied:?}"
+    );
     assert!(
         denied.producer_connection_refusal().is_none(),
         "the independent source metadata gate precedes protected cause lookup"
@@ -166,12 +169,15 @@ fn connected_inspection_borrows_authentic_old_keys_without_current_dependency_au
         )
         .err()
         .expect("both diagnostics cannot replace either metadata admission");
-    assert!(matches!(
-        denied.owner_refusal(),
-        Some(WorthQueryApplicationInspectionOwnerRefusal::Governance(
-            WorthQueryApplicationQueryGovernanceDenialKind::Required
-        ))
-    ));
+    assert!(
+        matches!(
+            denied.owner_refusal(),
+            Some(WorthQueryApplicationInspectionOwnerRefusal::Governance(
+                WorthQueryApplicationQueryGovernanceDenialKind::Required
+            ))
+        ),
+        "the actual typed inspection refusal was {denied:?}"
+    );
     assert!(denied.producer_connection_refusal().is_none());
     // Genuine foreign capability custody cannot lend any fresh admitted role.
     let foreign = install();

@@ -324,13 +324,10 @@ live uniqueness checks. Fresh privileged SDK projections check actual generation
 membership, counts, incident lineage and merge resolution; they grant no ordinary
 publication authority.
 
-The [locality court](../../../worth-query-certification/fixtures/consumer_entry/topology_entry/src/checkpoint_recovery/component_islands/locality.rs)
-performs the same coupling-only split beside 10 and 10,000 real unrelated rings.
-It compares the original ordinary invariant's preparation/evaluation business
-reads; privileged oracle acquisition occurs afterwards. Native private metadata
-preparation and bootstrap work are outside that measurement.
-The fixture funds both populations with the same original accounted request
-policy so real bulk construction can finish; that ceiling is not a locality claim.
+The component-island locality growth campaign is deferred to C2. Its
+[restoration disposition](../../../../../../plans/database-foundation/milestone-3.md#c2-fixture-exact-work-island-growth-and-shared-process-memory-campaigns)
+preserves the original court and its population and measurement obligations;
+Landing 2a does not claim that growth proof.
 The existing compiled
 `invariant_reads` example still exercises the real geometry and access refusals.
 

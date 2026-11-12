@@ -16,6 +16,7 @@ pub enum CommitPreparationReason {
     SymbolIdentityExhausted,
     StorageUnavailable(crate::storage::data::RelationalStorageUnavailable),
     ManagedIndexSource,
+    SemanticResult(super::RelationalCommitSemanticResultRefusal),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -118,6 +119,16 @@ impl CommitPreparationError {
         &self.branch_id
     }
 
+    pub(crate) fn semantic_result(
+        branch_id: BranchId,
+        expected_version_id: VersionId,
+        cause: super::RelationalCommitSemanticResultRefusal,
+    ) -> Self {
+        let mut error = Self::proposal_identity_exhausted(branch_id, expected_version_id);
+        error.reason = CommitPreparationReason::SemanticResult(cause);
+        error
+    }
+
     pub(crate) fn managed_index_source(
         basis: &crate::branch::AdmittedRelationalBranchBasis,
         cause: crate::validation::candidate_source::ManagedIndexSourcePreparationDenial,
@@ -156,6 +167,9 @@ impl CommitPreparationError {
 
     pub fn detail(&self) -> String {
         match self.reason {
+            CommitPreparationReason::SemanticResult(cause) => {
+                format!("original semantic envelope refused: {cause:?}")
+            }
             CommitPreparationReason::ManagedIndexSource => format!(
                 "managed Source preparation refused: {:?}",
                 self.managed_source

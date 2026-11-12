@@ -11,6 +11,7 @@ impl OneShotDenialPayload {
     ) -> Self {
         Self {
             authorization_denial,
+            scope_freshness: None,
             query,
             subject,
             custody,
