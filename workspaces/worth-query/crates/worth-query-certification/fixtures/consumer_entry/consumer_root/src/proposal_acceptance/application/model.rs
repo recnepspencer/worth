@@ -12,7 +12,7 @@ pub struct Model<'host> {
     pub identity: ModelReference,
     pub target: TargetReference,
     pub(super) last_adoption: Option<super::candidate::AdoptionMetadata>,
-    pub(super) pending: Option<super::acceptance::Attempt<'host>>,
+    pub(super) pending: Option<Box<super::acceptance::Attempt<'host>>>,
 }
 #[derive(Debug)]
 pub enum CreationFailure<'host> {

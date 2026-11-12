@@ -81,7 +81,7 @@ fn unpublished_claim_resumes_its_native_owner_after_fresh_admission_and_native_d
     let Some(Attempt {
         phase: Phase::Claim(operation),
         ..
-    }) = &model.pending
+    }) = model.pending.as_deref()
     else {
         panic!("actual Claim operation remains in its original slot")
     };
@@ -117,7 +117,7 @@ fn unpublished_claim_resumes_its_native_owner_after_fresh_admission_and_native_d
     let Some(Attempt {
         phase: Phase::Claim(operation),
         ..
-    }) = &model.pending
+    }) = model.pending.as_deref()
     else {
         panic!("native drift cannot replace the original continuation")
     };
@@ -130,7 +130,7 @@ fn unpublished_claim_resumes_its_native_owner_after_fresh_admission_and_native_d
     let Some(Attempt {
         phase: Phase::Registered(registration),
         ..
-    }) = &model.pending
+    }) = model.pending.as_deref()
     else {
         panic!("original recovery supplies one actual registration")
     };

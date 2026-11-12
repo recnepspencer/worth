@@ -19,25 +19,25 @@ pub enum ResultFailure {
     Correspondence(recording::CorrespondenceFailure),
     Read(ResultReadFailure),
     Construction(ConstructionFailure),
-    Pending(ResultOperation),
+    Pending(Box<ResultOperation>),
     Refused {
-        operation: ResultOperation,
+        operation: Box<ResultOperation>,
         cause: WorthQuerySourceOnlyDenial,
     },
-    Terminal(ResultTerminal),
+    Terminal(Box<ResultTerminal>),
     RecordedObservation {
         original: StoredResult,
-        completed: ResultCompleted,
+        completed: Box<ResultCompleted>,
         cause: ResultReadFailure,
     },
     RecordedAdmission {
         original: StoredResult,
-        completed: ResultCompleted,
+        completed: Box<ResultCompleted>,
         cause: AdmissionFailure,
     },
     Close {
         original: StoredResult,
-        completed: ResultCompleted,
+        completed: Box<ResultCompleted>,
         cause: WorthQueryOperationCloseDenial,
     },
 }
@@ -130,16 +130,16 @@ impl Storage<'_> {
             .on_branch(self.branch());
         let completed = match operation.advance(&request) {
             WorthQuerySourceOnlyAdvance::Progress(operation) => {
-                return Err(ResultFailure::Pending(operation))
+                return Err(ResultFailure::Pending(Box::new(operation)))
             }
             WorthQuerySourceOnlyAdvance::Refused { operation, denial } => {
                 return Err(ResultFailure::Refused {
-                    operation,
+                    operation: Box::new(operation),
                     cause: denial,
                 })
             }
             WorthQuerySourceOnlyAdvance::Terminal(terminal) => {
-                return Err(ResultFailure::Terminal(terminal))
+                return Err(ResultFailure::Terminal(Box::new(terminal)))
             }
             WorthQuerySourceOnlyAdvance::Completed(completed) => completed,
         };
@@ -148,7 +148,7 @@ impl Storage<'_> {
             Err(cause) => {
                 return Err(ResultFailure::RecordedAdmission {
                     original,
-                    completed,
+                    completed: Box::new(completed),
                     cause,
                 })
             }
@@ -158,7 +158,7 @@ impl Storage<'_> {
             Err(cause) => {
                 return Err(ResultFailure::RecordedObservation {
                     original,
-                    completed,
+                    completed: Box::new(completed),
                     cause,
                 })
             }
@@ -167,7 +167,7 @@ impl Storage<'_> {
             Ok(_closed) => Ok(result),
             Err((completed, cause)) => Err(ResultFailure::Close {
                 original,
-                completed,
+                completed: Box::new(completed),
                 cause,
             }),
         }
