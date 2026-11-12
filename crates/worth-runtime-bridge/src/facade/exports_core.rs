@@ -1,3 +1,6 @@
+mod diagnostics;
+pub use diagnostics::*;
+
 pub use crate::adapter::{
     BridgeHistoricalLineageAuthority, BridgeHistoricalLineageRequest,
     BridgeHistoricalLineageTopology, BridgeHistoricalResolvedLineageIdentity,
@@ -97,63 +100,6 @@ pub use crate::correspondence::{
 };
 pub use crate::delivery::{
     BridgeDeliveryReceipt, BridgePreparedDeliveryRequest, BridgeSignalEvaluationRequest,
-};
-pub use crate::diagnostics::{
-    BridgeBulkPlanExplanation, BridgeCanonicalContinuityRecord,
-    BridgeCanonicalHistoricalEvaluationRecord, BridgeCanonicalMergeRecord,
-    BridgeCanonicalRouteRecord, BridgeCanonicalStructuralBranchComparisonRecord,
-    BridgeCanonicalStructuralRemapRecord, BridgeCausalDigestRefusal,
-    BridgeCausalEnvelopeAssemblyRequest, BridgeCausalEnvelopeConstructionStop,
-    BridgeCausalEnvelopeCounters, BridgeCausalEnvelopeDenial, BridgeCausalEnvelopeDenialKind,
-    BridgeCausalEnvelopeIdentity, BridgeCausalEnvelopeReceipt, BridgeCausalEvidenceBinding,
-    BridgeCausalEvidenceBindingClass, BridgeCausalEvidenceFamily, BridgeCausalEvidenceOwner,
-    BridgeCausalEvidenceReference, BridgeCausalEvidenceReferenceIdentity,
-    BridgeCausalExplanationEnvelope, BridgeCausalInspectionAdmissionSummary,
-    BridgeCausalInspectionAdmissionSummaryKind, BridgeConditionalCausalEnvelopeRequest,
-    BridgeContinuityExplanation, BridgeContinuityReplaySummary, BridgeContractDiagnosticsRecord,
-    BridgeDeliveredContinuityResult, BridgeDiagnosticsFacade, BridgeDiagnosticsHandle,
-    BridgeFailureClass, BridgeFailureEvidenceAttachment, BridgeFailureEvidenceAttachmentSet,
-    BridgeFailureLocalizationRequest, BridgeFailureRecord, BridgeHistoricalEvaluationCounters,
-    BridgeHistoricalEvaluationDecisionLog, BridgeHistoricalEvaluationExplanation,
-    BridgeHistoricalEvaluationFailureClass, BridgeHistoricalEvaluationFailureIdentity,
-    BridgeHistoricalEvaluationFailureRecord, BridgeHistoricalEvaluationRecord,
-    BridgeHistoricalEvaluationRecordIdentity, BridgeHistoricalEvaluationReplaySummary,
-    BridgeHistoricalMaterializationPath, BridgeLocalizedTemporalAsyncFailure,
-    BridgeLoweringDiagnosticsRecord, BridgeMappedWritebackFamilyInputExplanation,
-    BridgeMergeExplanation, BridgeMergeRecord, BridgeMergeRecordIdentity, BridgeMergeReplaySummary,
-    BridgePolicyExplanation, BridgePolicyExplanationRow, BridgePolicyRejectionExplanation,
-    BridgePreviewDiscardExplanation, BridgePreviewExecutionExplanation,
-    BridgePreviewPromotionExplanation, BridgePreviewReplayExplanation,
-    BridgeQueryObservationReportingInputDenial, BridgeQueryObservationReportingRequest,
-    BridgeQueryObservationReportingStop, BridgeReplayRecord, BridgeReplaySummary,
-    BridgeRouteExplanation, BridgeRouteExplanationEntry, BridgeRouteRecord,
-    BridgeRouteRecordEntityIdentity, BridgeRouteRecordEntry, BridgeRouteRecordMatch,
-    BridgeRouteSourceRecord, BridgeRoutingDiagnosticsRecord, BridgeSourceFailureExplanation,
-    BridgeSourceMaterializationExplanation, BridgeStreamCheckpointExplanation,
-    BridgeStreamReplayExplanation, BridgeStreamResumeSummary,
-    BridgeStructuralBranchComparisonExplanation, BridgeStructuralBranchComparisonRecord,
-    BridgeStructuralBranchComparisonReplaySummary, BridgeStructuralCounters,
-    BridgeStructuralRemapExplanation, BridgeStructuralRemapRecord,
-    BridgeStructuralRemapReplaySummary, BridgeTemporalAsyncFailureBundleComparison,
-    BridgeTemporalAsyncFailureClass, BridgeTemporalAsyncFailureCounters,
-    BridgeTemporalAsyncFailureLocalizationMatrix, BridgeTemporalAsyncFailureLocalizationRejection,
-    BridgeTemporalAsyncFailureLocalizationRejectionKind, BridgeTemporalAsyncFailureLocalizationRow,
-    BridgeTemporalAsyncFailureSubcode, BridgeTemporalAsyncOfflineDiagnosisBundleDraft,
-    BridgeTemporalAsyncOfflineDiagnosisBundleRejection,
-    BridgeTemporalAsyncOfflineDiagnosisBundleRejectionKind,
-    BridgeTemporalAsyncOfflineDiagnosisBundleSealed, BridgeWritebackAdmissionExplanation,
-    BridgeWritebackCandidateExplanation, BridgeWritebackExecutionExplanation,
-    BridgeWritebackLoopPreventionExplanation, BridgeWritebackMapperEnvelopeExplanation,
-    BridgeWritebackMapperExplanation, BridgeWritebackOutcomeExplanation,
-    BridgeWritebackReplayExplanation, BridgeWritebackReplayRecordExplanation,
-    BridgeWritebackStrategyCoherenceExplanation, BRIDGE_CANONICAL_CONTINUITY_RECORD_SCHEMA_V1,
-    BRIDGE_CANONICAL_HISTORICAL_EVALUATION_RECORD_SCHEMA_V1,
-    BRIDGE_CANONICAL_MERGE_RECORD_SCHEMA_V1, BRIDGE_CANONICAL_ROUTE_RECORD_SCHEMA_V3,
-    BRIDGE_CANONICAL_STRUCTURAL_BRANCH_COMPARISON_RECORD_SCHEMA_V1,
-    BRIDGE_CANONICAL_STRUCTURAL_REMAP_RECORD_SCHEMA_V1,
-};
-pub use crate::diagnostics::{
-    BridgeConditionalHistoryAvailability, BridgeConditionalHistoryDetail,
 };
 pub use crate::error::{
     BridgeBuildError, BridgeBuildErrorKind, BridgeContinuityError, BridgeContinuityErrorKind,
@@ -397,5 +343,3 @@ pub use crate::conditional_execution::BridgePreparedConditionalReconstitution;
 pub use crate::policy::BridgeConditionalRetentionBudget;
 
 pub use crate::correspondence::BridgeCorrespondenceSignalFailure;
-
-pub use crate::diagnostics::BridgeWritebackDiagnosticReference;
