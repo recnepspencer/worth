@@ -12,6 +12,13 @@ pub struct ApplicationHomeDispatchJournalOperation {
     journal: Arc<ApplicationHomeDispatchJournal>,
 }
 impl ApplicationHomeDispatchJournalOperation {
+    /// Receiver-owned stop at a prepared original, before any physical effect.
+    /// The ordinary Store endpoint still derives and issues its actual fate.
+    pub fn stop_next_prepared_publication_for_test(&self) {
+        self.journal
+            .journal
+            .stop_next_prepared_publication_for_test();
+    }
     pub(crate) fn issue(journal: &Arc<ApplicationHomeDispatchJournal>) -> Self {
         Self {
             journal: Arc::clone(journal),

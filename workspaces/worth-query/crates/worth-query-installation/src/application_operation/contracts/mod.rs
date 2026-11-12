@@ -1,7 +1,9 @@
 mod compilation;
 mod compiled_contract;
+mod managed_index_reads;
+pub use managed_index_reads::WorthQueryOperationManagedIndexReadView;
 mod emissions;
-mod graph_reads;
+pub(in crate::application_operation) mod graph_reads;
 mod graph_touches;
 mod invariant_compilation;
 mod signing_lifecycle;

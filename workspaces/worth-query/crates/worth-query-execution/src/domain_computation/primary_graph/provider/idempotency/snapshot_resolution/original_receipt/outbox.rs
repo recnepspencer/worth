@@ -32,6 +32,27 @@ impl WorthQueryRecoveredDispatchOutbox {
             installed,
         }
     }
+    pub(in crate::domain_computation::primary_graph::provider) fn readmitted_record(
+        &self,
+    ) -> Result<
+        crate::domain_computation::application_aftermath::WorthQueryDispatchOutboxRecord,
+        Denial,
+    > {
+        let installed = self.installed.as_ref().map_err(|cause| *cause)?;
+        let view = installed.installed_view();
+        let record = crate::domain_computation::application_aftermath::WorthQueryDispatchOutboxRecord::from_installed_contract(
+            self.fields.correlation,
+            view.contracts().external_effect(),
+            self.fields.payload.clone(),
+            self.fields.outcome_identity,
+        ).ok_or(Denial::RecordMismatch)?
+        .with_operation_slot(self.fields.operation_slot.as_deref().ok_or(Denial::NotAuthoritative)?);
+        if !record.matches_persisted_fields(&self.fields) {
+            return Err(Denial::RecordMismatch);
+        }
+        Ok(record)
+    }
+
     pub fn record_ref(&self) -> &RecordRef {
         &self.record_ref
     }

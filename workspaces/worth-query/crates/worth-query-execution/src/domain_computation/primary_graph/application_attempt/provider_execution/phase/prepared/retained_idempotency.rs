@@ -153,7 +153,9 @@ where
                 "pending publication execution refused",
             )),
         ),
-        Ok(Err(IdempotencyDenial::Unavailable)) => Some(denied(DenialStage::Idempotency)),
+        Ok(Err(IdempotencyDenial::Unavailable | IdempotencyDenial::NativeKeyLookup { .. })) => {
+            Some(denied(DenialStage::Idempotency))
+        }
         Ok(Err(IdempotencyDenial::ForeignAffinity)) => {
             Some(WorthQueryApplicationCommitOutcome::Denied(
                 WorthQueryApplicationCommitDenial::idempotency_foreign_affinity(),

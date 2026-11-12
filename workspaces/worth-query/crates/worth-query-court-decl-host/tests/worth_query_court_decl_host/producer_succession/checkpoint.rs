@@ -115,41 +115,6 @@ pub fn tamper_anchor(
     bytes[8..40].copy_from_slice(&checksum);
     installation::WorthQueryApplicationCheckpoint::from_untrusted_bytes(bytes.into_boxed_slice())
 }
-pub fn assert_shrink_delta(
-    app: &world::App,
-    before: &installation::WorthQueryApplicationCheckpoint,
-    after: &installation::WorthQueryApplicationCheckpoint,
-) {
-    app.with_host_advancement(|phase| {
-        let before = app
-            .runtime()
-            .inspect_application_checkpoint(&phase, before.bytes())
-            .unwrap();
-        let after = app
-            .runtime()
-            .inspect_application_checkpoint(&phase, after.bytes())
-            .unwrap();
-        let removed = before
-            .live_records
-            .difference(&after.live_records)
-            .filter(|record| !before.current_publication_records.contains(record))
-            .collect::<Vec<_>>();
-        let entities = removed
-            .iter()
-            .filter(|r| {
-                r.class == worth_relational::facade::durability::RecordAllocationClass::Entity
-            })
-            .count();
-        // Two generated sources, their two realizations, two GeneratedBy and two Realizes edges.
-        assert_eq!(
-            entities, 4,
-            "all retained roots: before={:?}, after={:?}",
-            before.live_records, after.live_records
-        );
-        assert_eq!(removed.len() - entities, 4);
-    })
-    .unwrap();
-}
 
 pub fn omit_leaf_publication(
     checkpoint: &installation::WorthQueryApplicationCheckpoint,

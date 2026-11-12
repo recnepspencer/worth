@@ -217,7 +217,7 @@ where
                 ),
             ))
         }
-        Ok(Err(IdempotencyDenial::Unavailable)) => {
+        Ok(Err(IdempotencyDenial::Unavailable | IdempotencyDenial::NativeKeyLookup { .. })) => {
             Some(progression_denied(DenialStage::Idempotency))
         }
         Ok(Err(IdempotencyDenial::ForeignAffinity)) => {

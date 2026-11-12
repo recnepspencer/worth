@@ -28,11 +28,8 @@ pub(crate) fn validate_operation_bodies(
         })?;
         if !members.iter().any(|member| matches!(member,
             ApplicationSchemaMember::Entity { entity } if entity == scope
-        )) || (body.scope_fields().is_empty() && !members.iter().any(|member| matches!(member,
-            ApplicationSchemaMember::OperationDecisionRead { operation: candidate, target:
-                crate::application_schema::ApplicationOperationDecisionReadTarget::Entity { entity } }
-                if candidate == operation && entity == scope
-        ))) {
+        )) || (body.scope_fields().is_empty() && !crate::application_schema::application_operation_decision_read_targets(members, operation)
+            .any(|target| matches!(target, crate::application_schema::ApplicationOperationDecisionReadTarget::Entity { entity } if entity == scope))) {
             return Err(ApplicationSchemaDeclarationDenial::decision_read_body_dependency(operation));
         }
         super::requirement::validate_requirements(operation, body, members)?;
@@ -213,11 +210,11 @@ pub(crate) fn validate_operation_bodies(
                     operation,
                 ));
             }
-            if !members.iter().any(|member| {
-                matches!(member,
-                ApplicationSchemaMember::OperationDecisionRead { operation: candidate, target }
-                    if candidate == operation && target == &step.decision_read())
-            }) {
+            if !crate::application_schema::operation_declares_decision_read(
+                members,
+                operation,
+                &step.decision_read(),
+            ) {
                 return Err(
                     ApplicationSchemaDeclarationDenial::decision_read_body_dependency(operation),
                 );

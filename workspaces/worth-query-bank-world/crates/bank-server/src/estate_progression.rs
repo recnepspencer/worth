@@ -53,6 +53,6 @@ pub use recovery_types::{
     BankRecoveryDisposalReceipt, BankRecoveryDurability, BankRecoveryExpiryDecision,
     BankRecoveryExpiryEvaluation, BankRecoveryIdempotencyResolution, BankRecoveryInspection,
     BankRecoveryPosture, BankRecoverySafeRetryDenial, BankRecoverySafeRetryReceipt,
-    BankRecoverySupportTruth, BankRecoveryTransitionReceipt,
+    BankRecoverySupportTruth, BankRecoveryTransitionDenial, BankRecoveryTransitionReceipt,
 };
 pub use release_estate::BankEstateReleaseProjectionDenial;

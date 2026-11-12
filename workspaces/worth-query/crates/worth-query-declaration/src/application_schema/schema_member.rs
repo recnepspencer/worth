@@ -50,7 +50,8 @@ pub enum ApplicationOperationProgramTarget {
     },
 }
 
-#[derive(Clone, Debug, Eq, PartialEq, Ord, PartialOrd)]
+#[derive(Clone, Debug, Eq, Ord, PartialOrd)]
+#[cfg_attr(not(test), derive(PartialEq))]
 pub enum ApplicationOperationDecisionReadTarget {
     ManagedIndex {
         parent: crate::application_query::ApplicationQueryBindingReference,
@@ -72,6 +73,13 @@ pub enum ApplicationOperationDecisionReadTarget {
 
 #[derive(Clone, Debug, Eq, PartialEq, Ord, PartialOrd)]
 pub enum ApplicationSchemaMember {
+    DecisionReadScope {
+        definition: super::ApplicationDecisionReadScopeMeaning,
+    },
+    OperationDecisionReadScope {
+        operation: String,
+        scope: String,
+    },
     ContentFormat {
         declaration: super::ApplicationContentFormatDeclaration,
     },

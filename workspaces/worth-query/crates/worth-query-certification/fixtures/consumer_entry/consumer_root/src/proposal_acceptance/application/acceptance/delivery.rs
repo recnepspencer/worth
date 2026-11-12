@@ -75,24 +75,24 @@ fn record(
                 Err(cause) => return (Delivery::Needed, Err(Failure::Correspondence(cause))),
             };
             return match storage.result_operation(caller, &input, key) {
-                Ok(owner) => (Delivery::Operation(owner), Ok(Event::Progress)),
+                Ok(owner) => (Delivery::Operation(Box::new(owner)), Ok(Event::Progress)),
                 Err(cause) => (Delivery::Needed, Err(Failure::Construction(cause))),
             };
         }
-        Delivery::Operation(owner) => match owner.advance(&request) {
+        Delivery::Operation(owner) => match (*owner).advance(&request) {
             WorthQuerySourceOnlyAdvance::Progress(owner) => {
-                return (Delivery::Operation(owner), Ok(Event::Progress))
+                return (Delivery::Operation(Box::new(owner)), Ok(Event::Progress))
             }
             WorthQuerySourceOnlyAdvance::Refused { operation, denial } => {
                 return (
-                    Delivery::Operation(operation),
+                    Delivery::Operation(Box::new(operation)),
                     Err(Failure::MetadataAdvance(denial)),
                 )
             }
             WorthQuerySourceOnlyAdvance::Terminal(owner) => {
-                return (Delivery::Terminal(owner), Ok(Event::Stopped))
+                return (Delivery::Terminal(Box::new(owner)), Ok(Event::Stopped))
             }
-            WorthQuerySourceOnlyAdvance::Completed(owner) => owner,
+            WorthQuerySourceOnlyAdvance::Completed(owner) => Box::new(owner),
         },
         Delivery::Completed(owner) => owner,
         Delivery::Terminal(owner) => return (Delivery::Terminal(owner), Ok(Event::Stopped)),
@@ -117,10 +117,10 @@ fn record(
             )
         }
     };
-    match completed.close(&request) {
+    match (*completed).close(&request) {
         Ok(_) => (Delivery::Written(result), Ok(Event::Progress)),
         Err((owner, cause)) => (
-            Delivery::Completed(owner),
+            Delivery::Completed(Box::new(owner)),
             Err(Failure::OperationClose(cause)),
         ),
     }

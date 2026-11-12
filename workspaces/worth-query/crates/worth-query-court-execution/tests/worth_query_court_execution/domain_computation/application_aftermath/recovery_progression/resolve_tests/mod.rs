@@ -35,8 +35,10 @@ fn foreign_admitted_idempotency_read_denies_distinctly() {
         WorthQueryApplicationIdempotencyResolution::Unseen,
     );
 
-    let denied = resolve_recovery_handle(handle_b, &authority_b, read_a)
-        .expect_err("foreign read must deny");
+    let denied = super::local_transition::in_phase(|phase| {
+        resolve_recovery_handle(&phase, handle_b, &authority_b, read_a)
+    })
+    .expect_err("foreign read must deny");
     assert_eq!(
         denied.kind(),
         WorthQueryRecoveryHandleDenialKind::ForeignIdempotencyRead
@@ -59,8 +61,10 @@ fn matching_admitted_idempotency_read_resolves() {
         WorthQueryApplicationIdempotencyResolution::Unseen,
     );
 
-    let resolution =
-        resolve_recovery_handle(handle, &authority, read).expect("matching read resolves");
+    let resolution = super::local_transition::in_phase(|phase| {
+        resolve_recovery_handle(&phase, handle, &authority, read)
+    })
+    .expect("matching read resolves");
     assert!(matches!(
         resolution,
         WorthQueryApplicationIdempotencyResolution::Unseen

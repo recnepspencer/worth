@@ -137,8 +137,7 @@ impl ProductUnpublishedOwnerEffects {
                     worth_relational::facade::durability::RelationalRecoveredPublicationCustody,
                 >,
             >()
-            + 4 * std::mem::size_of::<usize>()
-            + crate::publication::HomeTransitionEffectControlState::allocation_bytes();
+            + 4 * std::mem::size_of::<usize>();
         (if live > recovered { live } else { recovered })
             + super::catalog::ProductUnpublishedRecoveryCatalog::slot_metadata_charge_hint()
     }

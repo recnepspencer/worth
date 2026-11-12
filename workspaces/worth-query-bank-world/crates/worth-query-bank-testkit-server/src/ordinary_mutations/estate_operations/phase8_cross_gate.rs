@@ -62,8 +62,13 @@ pub fn assert_unresolved_recovery(
         .resolve_commit_recovery(handle, &specialist, action, &scope)
         .expect_err("unresolved stays unresolved");
     match denied {
-        BankEstateProgressionDenial::Recovery(d) => {
-            assert_eq!(d.kind(), BankRecoveryDenialKind::UnresolvedExternalPosture)
+        BankEstateProgressionDenial::RecoveryTransition(d) => {
+            assert_eq!(d.kind(), BankRecoveryDenialKind::UnresolvedExternalPosture);
+            let (_, retained) = d.into_parts();
+            assert!(
+                retained.is_none(),
+                "actual unresolved resolution consumed its claim"
+            );
         }
         other => panic!("expected unresolved posture denial, got {other:?}"),
     }
@@ -92,10 +97,7 @@ pub fn assert_recovery_publication(
         0
     );
     assert_eq!(second.recovery_inspection_work().basis_preparations(), 0);
-    assert_eq!(
-        first.durability(),
-        BankRecoveryDurability::StoreCapabilityRequired
-    );
+    assert_eq!(first.durability(), BankRecoveryDurability::ProcessLocal);
     assert_eq!(
         first.support_truth(),
         BankRecoverySupportTruth::DegradedRecoveryReport

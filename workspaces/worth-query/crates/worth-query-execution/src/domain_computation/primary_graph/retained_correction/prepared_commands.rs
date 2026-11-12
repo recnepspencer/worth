@@ -20,13 +20,11 @@ impl CorrectionMaterialOwner {
             if state.catalog.discharged.contains_key(&prepared.key) {
                 return Err(Denial::PreparationDischarged);
             }
-            if let Some((identity, pin)) = state
-                .catalog
-                .pins
-                .iter()
-                .find(|(_, pin)| pin.prepared.key == prepared.key)
-            {
-                if pin.original != original || *pin.prepared != prepared {
+            if let Some((identity, pin)) = state.catalog.pins.iter().find(|(_, pin)| {
+                pin.prepared()
+                    .is_ok_and(|snapshot| snapshot.key == prepared.key)
+            }) {
+                if pin.original != original || **pin.prepared()? != prepared {
                     return Err(Denial::PinIntentDrift);
                 }
                 match pin.owner {
@@ -34,7 +32,9 @@ impl CorrectionMaterialOwner {
                         return Ok(*identity)
                     }
                     Owner::PreparedCommand { .. } => return Err(Denial::OwnerUnavailable),
-                    Owner::Publication { .. } => return Err(Denial::PublicationPending),
+                    Owner::Publication { .. } | Owner::Recovery { .. } => {
+                        return Err(Denial::PublicationPending)
+                    }
                 }
             }
             Identity::from_recorded(
@@ -76,7 +76,7 @@ impl CorrectionMaterialOwner {
             .catalog
             .pins
             .iter()
-            .find(|(_, pin)| pin.prepared.key == key)
+            .find(|(_, pin)| pin.prepared().is_ok_and(|snapshot| snapshot.key == key))
         else {
             return Ok(None);
         };
@@ -85,10 +85,10 @@ impl CorrectionMaterialOwner {
         }
         match pin.owner {
             Owner::PreparedCommand { .. } if state.pins.contains(*identity) => {
-                Ok(Some((*identity, Arc::clone(&pin.prepared))))
+                Ok(Some((*identity, Arc::clone(pin.prepared()?))))
             }
             Owner::PreparedCommand { .. } => Err(Denial::OwnerUnavailable),
-            Owner::Publication { .. } => Err(Denial::PublicationPending),
+            Owner::Publication { .. } | Owner::Recovery { .. } => Err(Denial::PublicationPending),
         }
     }
     pub(in crate::domain_computation::primary_graph) fn transfer_prepared(
@@ -110,7 +110,7 @@ impl CorrectionMaterialOwner {
                 .pins
                 .get(&identity)
                 .ok_or(Denial::UnknownPin)?;
-            let snapshot = &pin.prepared;
+            let snapshot = pin.prepared()?;
             let expected = opened.expected_head();
             let source = expected.basis().relational_basis().observation();
             let input = authority
@@ -186,7 +186,7 @@ impl CorrectionMaterialOwner {
                 .get(&original)
                 .ok_or(Denial::MaterialNotReady)?;
             published.available()?;
-            if published.metadata.key != pin.prepared.key {
+            if published.metadata.key != pin.prepared()?.key {
                 return Err(Denial::OriginalMismatch);
             }
         }

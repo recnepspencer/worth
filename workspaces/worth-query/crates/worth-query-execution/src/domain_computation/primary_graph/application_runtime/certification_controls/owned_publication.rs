@@ -128,43 +128,6 @@ impl<S: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRuntime<S>
 
 impl<S: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRuntime<S> {
     #[doc(hidden)]
-    pub fn probe_current_ownership_locality_for_test(
-        &self,
-        branch: WorthQueryProductBranch,
-        owner: EntityId,
-        request: &WorthQueryRequestScope,
-        seed_fields: impl Fn(u64) -> worth_relational::facade::transactions::AspectFieldPatch,
-        value_fields: impl Fn(u64) -> worth_relational::facade::transactions::AspectFieldPatch,
-    ) -> Result<
-        worth_relational::facade::runtime::CurrentOwnershipLocalityForTest,
-        WorthQueryAdvancementDenial,
-    > {
-        self.with_application_advancement(request, |phase| {
-            let execution = phase.execution_request_for(&self.runtime.product_runtime)?;
-            let (_, product, _) = self
-                .on_branch(branch)
-                .select(&phase)
-                .expect("actual producer branch")
-                .into_parts();
-            let graph = self.runtime.primary_graph().expect("live Query graph");
-            Ok(graph
-                .integration_handle()
-                .with_runtime(&execution, |runtime| {
-                    runtime.probe_current_ownership_locality_for_test(
-                        &execution,
-                        product.relational_basis(),
-                        owner,
-                        seed_fields,
-                        value_fields,
-                    )
-                })
-                .expect("real cold ownership locality court"))
-        })?
-    }
-}
-
-impl<S: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRuntime<S> {
-    #[doc(hidden)]
     pub fn current_owned_aggregate_memberships_for_test(
         &self,
         branch: WorthQueryProductBranch,
@@ -234,40 +197,6 @@ impl<S: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRuntime<S>
             + 'static,
     ) -> impl Sized {
         crate::domain_computation::primary_graph::application_attempt::compare_and_commit::recording::install(self.runtime.authority_identity().as_u64(),Box::new(observer))
-    }
-}
-
-impl<S: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRuntime<S> {
-    #[doc(hidden)]
-    pub fn probe_cold_current_ownership_pairing_for_test(
-        &self,
-        branch: WorthQueryProductBranch,
-        owner: EntityId,
-        unrelated: EntityId,
-        request: &WorthQueryRequestScope,
-    ) -> Result<
-        Result<Vec<Result<(), TransactionCommitError>>, TransactionCommitError>,
-        WorthQueryAdvancementDenial,
-    > {
-        self.with_application_advancement(request, |phase| {
-            let execution = phase.execution_request_for(&self.runtime.product_runtime)?;
-            let (_, product, _) = self
-                .on_branch(branch)
-                .select(&phase)
-                .expect("actual Query producer branch")
-                .into_parts();
-            let graph = self.runtime.primary_graph().expect("actual Query graph");
-            Ok(graph
-                .integration_handle()
-                .with_runtime(&execution, |runtime| {
-                    runtime.probe_cold_current_ownership_pairing_for_test(
-                        &execution,
-                        product.relational_basis(),
-                        owner,
-                        unrelated,
-                    )
-                }))
-        })?
     }
 }
 

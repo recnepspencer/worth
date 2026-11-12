@@ -118,7 +118,7 @@ where
         let scope = self.request.scope.clone();
         runtime
             .with_application_advancement(&scope, |phase| {
-                let prepared = self.authorize_recovery(&phase, application)?;
+                let (prepared, _) = self.authorize_recovery(&phase, application)?;
                 self.check_recovery_liveness()?;
                 self.request
                     .application
@@ -146,7 +146,7 @@ where
         let scope = self.request.scope.clone();
         runtime
             .with_application_advancement(&scope, |phase| {
-                let prepared = self.authorize_recovery(&phase, application)?;
+                let (prepared, _) = self.authorize_recovery(&phase, application)?;
                 self.check_recovery_liveness()?;
                 self.read_recovery_idempotency(&phase, &prepared)
             })
@@ -159,7 +159,15 @@ where
             '_,
         >,
         application: &'application WorthQueryProgramApplicationRuntime<Schema, Program>,
-    ) -> Result<PreparedMutation<Schema, Intent::Binding>, WorthQueryApplicationRecoveryRequestDenial>
+    ) -> Result<
+        (
+            PreparedMutation<Schema, Intent::Binding>,
+            worth_query_declaration::facade::application_operation::ApplicationEncodedInput<
+                <Intent::Binding as ApplicationMutationBinding<Schema>>::InputBinding,
+            >,
+        ),
+        WorthQueryApplicationRecoveryRequestDenial,
+    >
     where
         Program: ApplicationProgramDefinition<Schema>,
     {
@@ -209,8 +217,10 @@ where
         // Bind the original source identity and partition for recovery matching.
         // The retained attempt already owns its source facts: do not consume the
         // pending expectation into a fresh candidate or invoke the handler.
-        super::authorization::prepare_selected(phase, self, &identities, staged, &selected)
-            .map_err(WorthQueryApplicationRecoveryRequestDenial::from)
+        let prepared =
+            super::authorization::prepare_selected(phase, self, &identities, staged, &selected)
+                .map_err(WorthQueryApplicationRecoveryRequestDenial::from)?;
+        Ok((prepared, identities.encoded_input()))
     }
 
     pub(in crate::application_entry) fn authorize_owning_recovery<Program>(
@@ -337,3 +347,5 @@ mod cancellation_spelling {
 #[cfg(test)]
 #[path = "recovery_inline_type_budget.rs"]
 pub(crate) mod inline_type_budget;
+
+mod claims;

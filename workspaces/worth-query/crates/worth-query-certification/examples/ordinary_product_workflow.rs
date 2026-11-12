@@ -1,5 +1,8 @@
 //! Run with `cargo run -p worth-query-certification --example ordinary_product_workflow`.
 
+#[path = "ordinary_product_workflow/installed_package.rs"]
+mod installed_package;
+
 pub use worth_query_testkit_certification::facade::certification::program_example_authority::product_workflow_support;
 
 use product_workflow_support::schema::AmendTemporalInput;
@@ -26,6 +29,7 @@ fn main() {
 
 fn run() {
     let mut application = ExampleApplication::publish("blocked");
+    installed_package::verify(&application);
     let scope = product_workflow_support::adapters::request_scope();
     let principal = principal(&application, &scope);
     let request = application.runtime.request(&principal, &scope);

@@ -152,11 +152,8 @@ impl WorthQueryCommittedProductPublication {
 
     /// Preserve original immutable identities without retaining physical history.
     /// This describes the copy; it does not retire the actual publication.
-    pub(in crate::domain_computation::primary_graph) fn descriptive(&self) -> Self {
-        if matches!(
-            &self.custody,
-            PublicationCustody::Described(_) | PublicationCustody::CoCommitted { .. }
-        ) {
+    pub(in crate::domain_computation) fn descriptive(&self) -> Self {
+        if let PublicationCustody::Described(_) = &self.custody {
             return self.clone();
         }
         let description = DescriptiveProductPublication {
@@ -381,3 +378,4 @@ impl PartialEq for WorthQueryCommittedProductPublication {
 impl Eq for WorthQueryCommittedProductPublication {}
 
 mod court_doors_for_test;
+mod readmitted;

@@ -12,13 +12,27 @@ mod serial {
     fn restoration_after_seeded_edits_rebuilds_fresh_state() {
         let _guard = checkpoint_recovery_test_guard();
         let seed = |graph: &mut Graph| differential::prefix::model().seed(graph);
-        let original = install(seed);
+        let policy = worth_foundational::ExecutionRequestPolicy::new(
+            worth_foundational::ExecutionPosture::Serial,
+            worth_foundational::DeterminismContract::CanonicalBitwise,
+            worth_foundational::ExecutionBudget::new(std::num::NonZeroUsize::MIN, None, None),
+        );
+        let original = installation::install_variant_with_observations::<false, TOTALS_WORK, 1, 0>(
+            None,
+            Default::default(),
+            0,
+            policy,
+            seed,
+        );
         let (model, _, mut history) = differential::prefix::run_with_history(&original);
-        let checkpoint = original.with_host_advancement(|phase| original.capture_application_checkpoint(&phase, worth_query_host::facade::application_installation::WorthQueryCheckpointCapturePolicy::SystemAllocation).unwrap()).expect("installed host call opens");
+        let checkpoint =
+            worth_query_testkit_host::facade::host::checkpoint_capture::capture(&original);
         drop(original);
-        let application = installation::install_configured::<false, TOTALS_WORK, 1>(
+        let application = installation::install_variant_with_observations::<false, TOTALS_WORK, 1, 0>(
             Some(checkpoint),
             Default::default(),
+            0,
+            policy,
             seed,
         );
         let fresh = history

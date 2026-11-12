@@ -8,8 +8,10 @@ impl<Schema: worth_query_installation::facade::ApplicationSchema>
     pub fn admit_external_dispatch_attempt_for_test(
         &self,
         committed: WorthQueryCommittedDispatchOutboxObservation,
-    ) -> Result<WorthQueryAdmittedExternalDispatchAttempt, WorthQueryExternalDispatchAdmissionDenial>
-    {
-        Self::admit_external_dispatch_attempt(self, committed)
+    ) -> Result<
+        WorthQueryAdmittedExternalDispatchAttempt<'static>,
+        WorthQueryExternalDispatchAdmissionDenial,
+    > {
+        Self::admit_external_dispatch_attempt(self, committed)?.admit_memory()
     }
 }

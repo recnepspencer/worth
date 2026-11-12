@@ -13,7 +13,9 @@ use crate::domain_computation::primary_graph::WorthQueryCommittedDispatchOutboxO
 
 mod acceptance;
 pub(crate) mod publication_permit;
+mod recorded_terminal;
 mod recovery;
+mod retirement;
 mod terminal_state;
 pub(in crate::domain_computation) use publication_permit::{
     WorthQueryTransportPublicationPermit, WorthQueryTransportPublicationPermitDenial,
@@ -39,36 +41,34 @@ impl MessageKey {
             message_identity: claims.message_identity,
         }
     }
-}
 
-/// Immutable accepted evidence retained by Query even if every caller drops
-/// its observer. Publication may borrow this but cannot change its meaning.
-pub struct WorthQueryAcceptedInboundOccurrence {
-    operation: String,
-    claims: WorthQueryInboundOccurrenceClaims,
-    owner: WorthQueryCommittedDispatchOutboxObservation,
-    signed_meaning_digest: [u8; 32],
-}
-
-impl WorthQueryAcceptedInboundOccurrence {
-    pub(in crate::domain_computation) fn claims(&self) -> &WorthQueryInboundOccurrenceClaims {
-        &self.claims
-    }
-
-    pub(in crate::domain_computation) fn operation(&self) -> &str {
-        &self.operation
-    }
-
-    pub(in crate::domain_computation) fn owner(
+    fn recorded(
         &self,
-    ) -> &WorthQueryCommittedDispatchOutboxObservation {
-        &self.owner
+    ) -> crate::domain_computation::application_aftermath::dispatch_journal::QueryInboundMessageKey
+    {
+        crate::domain_computation::application_aftermath::dispatch_journal::QueryInboundMessageKey {
+            audience: self.audience.clone(),
+            protocol: self.protocol.clone(),
+            source: self.source.clone(),
+            epoch: self.key_epoch,
+            message: self.message_identity,
+        }
     }
-
-    pub(in crate::domain_computation) fn signed_meaning_digest(&self) -> &[u8; 32] {
-        &self.signed_meaning_digest
+    fn from_recorded(
+        key: &crate::domain_computation::application_aftermath::dispatch_journal::QueryInboundMessageKey,
+    ) -> Self {
+        Self {
+            audience: key.audience.clone(),
+            protocol: key.protocol.clone(),
+            source: key.source.clone(),
+            key_epoch: key.epoch,
+            message_identity: key.message,
+        }
     }
 }
+
+mod accepted;
+pub use accepted::WorthQueryAcceptedInboundOccurrence;
 
 pub(in crate::domain_computation) enum WorthQueryInboundCustodyAdmission {
     New(Arc<WorthQueryAcceptedInboundOccurrence>, bool),
@@ -88,6 +88,7 @@ struct Usage {
 
 #[derive(Default)]
 pub(in crate::domain_computation) struct WorthQueryInboundCustody {
+    pub(in crate::domain_computation) durable_admission_cursor: u64,
     by_message: BTreeMap<MessageKey, CustodyEntry>,
     compact_terminal_messages: BTreeMap<MessageKey, CompactTerminalMessage>,
     by_correlation: BTreeMap<ExternalEffectCorrelationIdentity, MessageKey>,
@@ -96,6 +97,9 @@ pub(in crate::domain_computation) struct WorthQueryInboundCustody {
     compact_terminal_expiry: BTreeMap<String, BTreeMap<u64, BTreeSet<MessageKey>>>,
     pending_by_operation: BTreeMap<String, BTreeSet<ExternalEffectCorrelationIdentity>>,
     maintenance_cursor_by_operation: BTreeMap<String, ExternalEffectCorrelationIdentity>,
+    retired_message_terminals: Vec<Arc<WorthQueryInboundTerminalOwnerResult>>,
+    retired_terminal_receipts: Vec<Arc<WorthQueryInboundTerminalOwnerResult>>,
+    retired_entries: Vec<CustodyEntry>,
 }
 
 struct CompactTerminalMessage {

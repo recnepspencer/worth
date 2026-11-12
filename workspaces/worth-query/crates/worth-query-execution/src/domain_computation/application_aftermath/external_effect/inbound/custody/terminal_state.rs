@@ -66,7 +66,7 @@ impl WorthQueryInboundCustody {
         usage.publishing -= 1;
     }
 
-    pub(in crate::domain_computation) fn mark_terminal_release_complete(
+    pub(in crate::domain_computation) fn mark_terminal_provenance_released(
         &mut self,
         accepted: &Arc<WorthQueryAcceptedInboundOccurrence>,
     ) {
@@ -75,7 +75,20 @@ impl WorthQueryInboundCustody {
             .get_mut(&MessageKey::from_claims(accepted.claims()))
             .expect("terminal owner remains in custody");
         assert!(Arc::ptr_eq(&entry.accepted, accepted) && entry.terminal.is_some());
+        // ACK still belongs to maintenance after the one provenance release.
         entry.terminal_release_pending = false;
+    }
+
+    pub(in crate::domain_computation) fn mark_terminal_acknowledgement_complete(
+        &mut self,
+        accepted: &Arc<WorthQueryAcceptedInboundOccurrence>,
+    ) {
+        let entry = self
+            .by_message
+            .get_mut(&MessageKey::from_claims(accepted.claims()))
+            .expect("terminal owner remains in custody");
+        assert!(Arc::ptr_eq(&entry.accepted, accepted) && entry.terminal.is_some());
+        assert!(!entry.terminal_release_pending);
         if entry
             .terminal
             .as_ref()

@@ -19,9 +19,14 @@ use crate::domain_computation::primary_graph::{
 };
 
 pub(crate) mod in_flight;
+mod original;
+mod readmission;
+mod recorded_terminal;
+mod retirement;
 pub(in crate::domain_computation::primary_graph) use in_flight::{
     OutstandingDispatchInFlightLease, WorthQueryOutstandingInFlightDenial,
 };
+use original::OutstandingDispatchOriginal;
 
 #[derive(Clone, Default)]
 pub(super) struct OutstandingDispatchOwner {
@@ -42,8 +47,7 @@ struct OutstandingDispatchEntry {
     commit: Option<CommitId>,
     /// The performed World publication also keeps its commit in history until
     /// the dispatch's terminal is released.
-    performed_world:
-        Option<crate::domain_computation::primary_graph::WorthQueryCommittedProductPublication>,
+    original: Option<OutstandingDispatchOriginal>,
     in_flight: u64,
     terminal_world: Option<CompositeCommitIdentity>,
 }
@@ -78,25 +82,6 @@ pub(in crate::domain_computation::primary_graph) struct OutstandingDispatchReser
 }
 
 impl OutstandingDispatchOwner {
-    pub(super) fn preflight_home_retirement(
-        &self,
-    ) -> Result<(), super::super::WorthQueryHomeRetirementDenial> {
-        use super::super::{
-            WorthQueryHomeRetirementDenial as Denial, WorthQueryHomeRetirementOwner as Owner,
-        };
-        let entries = self
-            .entries
-            .try_lock()
-            .map_err(|_| Denial::Busy(Owner::GraphProvider))?;
-        if entries.by_correlation.is_empty()
-            && entries.counts.is_empty()
-            && entries.by_branch.is_empty()
-        {
-            Ok(())
-        } else {
-            Err(Denial::Busy(Owner::GraphProvider))
-        }
-    }
     pub(super) fn count_for_contract(&self, contract: &InstalledInboundOccurrenceContract) -> u64 {
         self.entries
             .lock()
@@ -142,7 +127,7 @@ impl OutstandingDispatchOwner {
                 branch: observation.branch_identity().clone(),
                 incarnation: observation.lifecycle_incarnation(),
                 commit: None,
-                performed_world: None,
+                original: None,
                 in_flight: 0,
                 terminal_world: None,
             },
@@ -230,10 +215,10 @@ impl OutstandingDispatchOwner {
             || entry.branch != *original_world.product_branch()
             || entry.incarnation != original_incarnation
             || entry.incarnation != original_world.product_incarnation()
-            || entry.performed_world.as_ref().is_none_or(|performed| {
-                performed.composite_commit() != original_world.composite_commit()
-                    || performed.publication_attempt() != original_world.publication_attempt()
-            })
+            || entry
+                .original
+                .as_ref()
+                .is_none_or(|source| !source.matches(original_world))
         {
             return Err(Denial::OriginalMismatch);
         }
@@ -254,7 +239,11 @@ impl OutstandingDispatchOwner {
         {
             return Err(Denial::CompletionWorldMismatch);
         }
-        if !basis_retention.has_mandatory(commit) {
+        let has_live_basis = entry
+            .original
+            .as_ref()
+            .is_some_and(OutstandingDispatchOriginal::has_live_basis);
+        if has_live_basis && !basis_retention.has_mandatory(commit) {
             return Err(Denial::ExactCommitUnavailable);
         }
         entry.terminal_world = Some(completed.commit().identity().clone());
@@ -267,7 +256,9 @@ impl OutstandingDispatchOwner {
             .expect("validated terminal correlation remains reserved");
         decrement(&mut entries.counts, &removed.contract);
         decrement(&mut entries.by_branch, &removed.incarnation);
-        basis_retention.release_mandatory(commit);
+        if has_live_basis {
+            basis_retention.release_mandatory(commit);
+        }
         Ok(())
     }
 
@@ -323,7 +314,7 @@ impl OutstandingDispatchReservation {
             "World performed the reserved incarnation"
         );
         entry.commit = Some(commit);
-        entry.performed_world = Some(publication.clone());
+        entry.original = Some(OutstandingDispatchOriginal::Performed(publication.clone()));
         self.committed = true;
     }
 }

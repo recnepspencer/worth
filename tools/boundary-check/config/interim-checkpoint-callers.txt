@@ -46,7 +46,6 @@ query-interim-checkpoint workspaces/worth-query/crates/worth-query-testkit-certi
 query-interim-checkpoint workspaces/worth-query/crates/worth-query-testkit-certification-operation/src/certification/application_graph/operation_body/output/portable.rs
 query-interim-checkpoint workspaces/worth-query/crates/worth-query-testkit-certification-operation/src/certification/application_graph/operation_body/persistence.rs
 query-interim-checkpoint workspaces/worth-query/crates/worth-query-testkit-certification-operation/src/certification/application_graph/operation_body/principal.rs
-query-interim-checkpoint workspaces/worth-query/crates/worth-query-testkit-certification/src/certification/execution_memory.rs
 query-interim-checkpoint workspaces/worth-query/crates/worth-query-testkit-document-retention/src/certification/application_graph/cell_history/checkpoint.rs
 query-interim-checkpoint workspaces/worth-query/crates/worth-query-testkit-document-retention/src/certification/application_graph/document_retention_model/host/checkpoint_restore.rs
 query-interim-checkpoint workspaces/worth-query/crates/worth-query-testkit-host/src/host/temporal_conditional_operation/contribution_installation/checkpoint.rs

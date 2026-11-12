@@ -5,7 +5,9 @@ use std::collections::BTreeMap;
 use worth_foundational::facade::{AspectValue, InternedString};
 use worth_relational::facade::{
     branch::AdmittedRelationalBranchBasis,
-    mvcc::{PreparedRelationalCommitCandidate, RelationalTransactionIntent},
+    mvcc::{
+        PreparedRelationalCommitCandidate, RelationalTransactionIntent, ValidatedRelationalProposal,
+    },
     transactions::{CreateIntent, EntitySpec, MutationIntent, RecordRef, WorkerIntentBatch},
 };
 
@@ -13,12 +15,15 @@ use super::WorthQueryPrimaryGraphProvider;
 use crate::domain_computation::application_aftermath::WorthQueryAcceptedInboundOccurrence;
 
 mod history_read;
+mod original_source;
 pub(crate) mod preparation_denial;
 mod read;
+mod recovered;
+mod source_read;
 mod transport;
+pub use read::WorthQueryInboundCompletionReadDenial;
 pub(in crate::domain_computation::primary_graph) use read::{
     WorthQueryCanonicalCompletionRow, WorthQueryCompletionProvenance,
-    WorthQueryInboundCompletionReadDenial,
 };
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -58,13 +63,12 @@ impl WorthQueryPrimaryGraphProvider {
     /// Prepares one Relational mutation at the exact World-admitted basis.
     /// The completion marker and occurrence consumption facts share one entity
     /// in the candidate World will publish; this does not independently commit.
-    pub(in crate::domain_computation::primary_graph) fn prepare_inbound_completion_candidate(
+    pub(in crate::domain_computation::primary_graph) fn validate_inbound_completion_proposal(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         basis: &AdmittedRelationalBranchBasis,
         accepted: &WorthQueryAcceptedInboundOccurrence,
-    ) -> Result<PreparedRelationalCommitCandidate, WorthQueryInboundCompletionPreparationDenial>
-    {
+    ) -> Result<ValidatedRelationalProposal, WorthQueryInboundCompletionPreparationDenial> {
         use WorthQueryInboundCompletionPreparationDenial as Denial;
         let RecordRef::Entity(original_entity) = accepted.owner().record_ref() else {
             return Err(Denial::OriginalOutboxNotAnEntity);
@@ -142,18 +146,48 @@ impl WorthQueryPrimaryGraphProvider {
             (layout.transport_attempt.clone(), string("")),
             (layout.transport_observation.clone(), string("")),
         ]);
-        self.prepare_completion_fields(execution, basis, *original_entity, &correlation, fields)
+        self.validate_completion_fields(execution, basis, *original_entity, &correlation, fields)
     }
 
-    fn prepare_completion_fields(
+    pub(in crate::domain_computation::primary_graph) fn prepare_completion_proposal(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        proposal: ValidatedRelationalProposal,
+    ) -> Result<PreparedRelationalCommitCandidate, WorthQueryInboundCompletionPreparationDenial>
+    {
+        self.graph.with_runtime(execution, |runtime| {
+            runtime
+                .prepare_validated_proposal(execution, proposal)
+                .map_err(|error| preparation_denial::preparation_denial(&error))
+        })
+    }
+
+    pub(in crate::domain_computation::primary_graph) fn prepare_opened_completion_proposal(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        open: worth_runtime_world::facade::WorldOpenedPublicationAttempt,
+        proposal: ValidatedRelationalProposal,
+    ) -> Result<
+        worth_runtime_world::facade::WorldPreparedPublicationWithoutSignal,
+        worth_runtime_world::facade::WorldNativePreparationRefusal,
+    > {
+        self.graph.with_runtime(execution, |runtime| {
+            // The actual opened phase follows validated completion source meaning.
+            // The receiver-owned control may stop this real request before Native.
+            self.application_attempt_operation_control
+                .after_source_publication_validation();
+            open.prepare_native(runtime, execution, proposal)
+        })
+    }
+
+    fn validate_completion_fields(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         basis: &AdmittedRelationalBranchBasis,
         original_entity: worth_relational::facade::identity::EntityId,
         correlation: &str,
         fields: BTreeMap<worth_foundational::facade::AspectFieldLocator, AspectValue>,
-    ) -> Result<PreparedRelationalCommitCandidate, WorthQueryInboundCompletionPreparationDenial>
-    {
+    ) -> Result<ValidatedRelationalProposal, WorthQueryInboundCompletionPreparationDenial> {
         use WorthQueryInboundCompletionPreparationDenial as Denial;
         let layout = self.graph.layout.provider_inbound_completion();
         let intent = MutationIntent::Create(CreateIntent::Entity(EntitySpec {
@@ -191,10 +225,7 @@ impl WorthQueryPrimaryGraphProvider {
                 let validated = transaction
                     .validate(execution, runtime)
                     .map_err(|error| preparation_denial::validation_denial(&error))?;
-                let candidate = runtime
-                    .prepare_validated_proposal(execution, validated)
-                    .map_err(|error| preparation_denial::preparation_denial(&error))?;
-                Ok(candidate)
+                Ok(validated)
             })();
             crate::relational_snapshot_release::release_query_snapshot(runtime, &before);
             result

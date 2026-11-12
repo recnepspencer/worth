@@ -112,7 +112,7 @@ fn explicit_maintenance_cold_and_optional_refinement_have_distinct_canonical_pre
         let identity = identity(definition);
         assert_eq!(
             identity.canonical_basis().payload().version().as_str(),
-            "worth-query-application-schema-v18"
+            "worth-query-application-schema-v19"
         );
         assert!(!identity.canonical_basis().payload().entries().iter().any(|entry|
             matches!(entry.locus(),worth_foundational::facade::CanonicalBasisLocus::Named(worth_foundational::facade::InternedString::Raw(name)) if name.contains("public-maintenance") || name.ends_with("refinement.present"))));

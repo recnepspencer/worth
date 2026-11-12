@@ -27,7 +27,7 @@ impl WorthQueryRecoveryHandleRegistry {
     pub fn mark_terminal_for_test(
         &self,
         slot: WorthQueryRecoveryRegistrySlot,
-        terminal: WorthQueryRecoveryResourceTerminal,
+        terminal: RecoveryClaimDisposition,
     ) -> bool {
         Self::mark_terminal(self, slot, terminal)
     }
@@ -79,7 +79,7 @@ impl WorthQueryRecoveryHandleRegistry {
     pub fn terminal_of_for_test(
         &self,
         slot: WorthQueryRecoveryRegistrySlot,
-    ) -> Option<WorthQueryRecoveryResourceTerminal> {
+    ) -> Option<RecoveryClaimDisposition> {
         Self::terminal_of(self, slot)
     }
 }
@@ -104,7 +104,8 @@ impl WorthQueryRecoveryHandleRegistry {
         &self,
         provider: u64,
         original: &worth_foundational::facade::RecordedProductBranchReference,
-    ) -> (bool, Option<WorthQueryRecoveryResourceTerminal>) {
+    ) -> (bool, Option<RecoveryClaimDisposition>) {
         self.recorded_claim_state(provider, original)
+            .expect("fixture-owned claim lookup")
     }
 }

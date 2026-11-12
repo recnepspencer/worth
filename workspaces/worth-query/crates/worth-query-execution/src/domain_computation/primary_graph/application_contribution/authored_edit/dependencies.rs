@@ -20,7 +20,7 @@ pub(in crate::domain_computation::primary_graph::application_contribution) fn ma
     S: ApplicationSchema,
 >(
     application: &WorthQueryPrimaryGraphApplicationRuntime<S>,
-    references: &[worth_query_declaration::facade::application_query::ApplicationQueryBindingReference],
+    references: worth_query_installation::facade::WorthQueryOperationManagedIndexReadView<'_>,
 ) -> Result<Vec<DeclaredQueryRead>, WorthQueryOutputDemandDenial> {
     references
         .iter()

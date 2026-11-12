@@ -27,6 +27,15 @@ mod capability_member_closure;
 mod component_set;
 mod contribution;
 mod decision_read_authoring;
+pub use decision_read_authoring::application_decision_read_scope_physical_targets;
+pub(crate) use decision_read_authoring::operation_declares_decision_read;
+pub use decision_read_authoring::{
+    application_operation_decision_read_targets, application_operation_derived_read_relations,
+};
+pub use decision_read_authoring::{
+    ApplicationDecisionReadScopeDefinition, ApplicationDecisionReadScopeMeaning,
+    ApplicationDecisionReadScopeRef,
+};
 mod declaration;
 mod declaration_denial;
 mod declared_operation;

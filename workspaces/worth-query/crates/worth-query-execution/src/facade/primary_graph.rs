@@ -202,13 +202,6 @@ pub use crate::domain_computation::primary_graph::{
     WorthQueryGranularInvalidationCoverage, WorthQueryGranularInvalidationDeliveryBatch,
     WorthQueryGranularInvalidationInstallation, WorthQueryGranularInvalidationObservation,
     WorthQueryGranularSourceReadBasis, WorthQueryGranularTransportMergeDenial,
-    WorthQueryInboundAdmissionDenial, WorthQueryInboundAuthenticatedPermanentDenial,
-    WorthQueryInboundCleanupReport, WorthQueryInboundCostObservation,
-    WorthQueryInboundIndexRepairDenial, WorthQueryInboundMaintenanceReport,
-    WorthQueryInboundPendingReason, WorthQueryInboundPermanentDenialKind, WorthQueryInboundReceipt,
-    WorthQueryInboundReceiptPosture, WorthQueryInboundSourceControlDenial,
-    WorthQueryInboundSourcePosture, WorthQueryInboundTerminalObservation,
-    WorthQueryInboundVerifierHandle, WorthQueryInboundVerifierInstallationDenial,
     WorthQueryInspectedOperationInvariantProjection, WorthQueryInvariantAggregate,
     WorthQueryInvariantAggregateDenial, WorthQueryInvariantAggregateDenialKind,
     WorthQueryInvariantDecisionPlanDenial, WorthQueryInvariantDecisionPlanDenialKind,
@@ -277,7 +270,8 @@ pub use crate::domain_computation::primary_graph::{
     WorthQueryRetainedBatchQueryAdmissionDenial, WorthQueryRetainedGeneratedOutputEntity,
     WorthQueryRetainedSnapshotRead, WorthQueryReviewedElevation,
     WorthQueryRuleReadableCollectionLifecycleForTest, WorthQueryRuntimeTimeSource,
-    WorthQueryRuntimeTimeSourceDenial, WorthQuerySelectedApplicationProducer,
+    WorthQueryRuntimeTimeSourceDenial, WorthQueryScopeFreshnessCheck,
+    WorthQueryScopeFreshnessDiagnostic, WorthQuerySelectedApplicationProducer,
     WorthQuerySelectedCorrectionAlternative, WorthQuerySelectedCorrectionSource,
     WorthQuerySelectedProductOperation, WorthQuerySelectedProgramInspection,
     WorthQuerySelectedProgramInspectionDenial, WorthQuerySourceExpectationDenial,
@@ -326,6 +320,7 @@ pub use crate::domain_computation::application_aftermath::{
     WorthQueryRecoveryHandleDenialKind, WorthQueryRecoveryInspectAuthority,
     WorthQueryRecoveryInspectionView, WorthQueryRecoveryReconcileAdmission,
     WorthQueryRecoverySafeRetryAdmission, WorthQueryRecoverySafeRetryDenial,
+    WorthQueryRecoverySourceDenial, WorthQueryRecoveryTransitionDenial,
 };
 pub use crate::domain_computation::primary_graph::output_lineage::{
     WorthQueryPriorOutputDenial, WorthQueryPriorOutputDenialKind,
@@ -395,3 +390,6 @@ pub use native_refusals::*;
 pub use crate::domain_computation::primary_graph::application_contribution::producer::synchronous_outputs::{SynchronousCaptureRetentionCountsForTest, SynchronousCaptureRetentionForTest, SynchronousDiscoveredOutputRoot, SynchronousOutputEdges};
 pub use crate::domain_computation::application_aftermath::dispatch_journal::{QueryDispatchCustody, QueryDispatchRecordedObservation, QueryDispatchUnresolvedCause};
 pub use crate::domain_computation::primary_graph::product_operation::document_history::WorthQueryHistorySourceEvidence;
+
+mod inbound_completion;
+pub use inbound_completion::*;

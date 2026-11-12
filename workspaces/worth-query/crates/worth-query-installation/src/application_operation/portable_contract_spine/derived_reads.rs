@@ -7,33 +7,38 @@ pub(super) fn append(
     operation: &str,
     reads: &mut Vec<ApplicationOperationDecisionReadTarget>,
 ) -> SpineResult<Vec<String>> {
-    let mut composite = Vec::new();
-    for member in members {
-        let ApplicationSchemaMember::OperationDerivedRead {
-            operation: declared,
+    let relations = members.iter().filter_map(|member| match member {
+        ApplicationSchemaMember::OperationDerivedRead {
+            operation: candidate,
             relation,
-        } = member
-        else {
-            continue;
-        };
-        if declared != operation {
-            continue;
-        }
+        } if candidate == operation => Some(relation.as_str()),
+        _ => None,
+    });
+    append_relations(members, relations, reads)
+}
+
+pub(super) fn append_relations<'a>(
+    members: &[ApplicationSchemaMember],
+    relations: impl Iterator<Item = &'a str>,
+    reads: &mut Vec<ApplicationOperationDecisionReadTarget>,
+) -> SpineResult<Vec<String>> {
+    let mut composite = Vec::new();
+    for relation in relations {
         let closure =
             application_derived_relation_source_closure(members, relation).map_err(|_| {
                 WorthQueryPortableOperationContractSpineDenialKind::InvalidDerivedSource
             })?;
         let aggregate_consumer = members.iter().any(|member| match member {
             ApplicationSchemaMember::DerivedComponentSet { definition } => {
-                definition.relation == *relation
+                definition.relation == relation
             }
             ApplicationSchemaMember::DerivedRelation { definition } => {
-                definition.parts().relation == *relation && definition.parts().laws.orbit
+                definition.parts().relation == relation && definition.parts().laws.orbit
             }
             _ => false,
         });
         if closure.has_extended_expression || aggregate_consumer {
-            composite.push(relation.clone());
+            composite.push(relation.to_owned());
         }
         for source in closure.physical {
             let from = source

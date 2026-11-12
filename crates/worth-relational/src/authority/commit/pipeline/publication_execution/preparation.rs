@@ -219,7 +219,13 @@ pub(super) fn prepare_publication_phase(
             canonical_commit_envelope
                 .seal(semantic_result)
                 .map_err(|refusal| {
-                    crate::mvcc::origin_denial(format!("semantic envelope seal: {refusal:?}"))
+                    TransactionCommitError::preparation(
+                        crate::transactions::data::CommitPreparationError::semantic_result(
+                            branch_id.clone(),
+                            version_id,
+                            refusal,
+                        ),
+                    )
                 })?;
         let canonical_commit_envelope = crate::execution::transaction_stage(
             execution,

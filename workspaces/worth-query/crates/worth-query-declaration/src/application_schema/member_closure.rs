@@ -16,6 +16,7 @@ use super::{
 mod decision_read_budgets;
 mod member_collections;
 mod principal_binding;
+mod shared_scopes;
 mod target_closure;
 
 use super::capability_member_closure::validate_application_capability_members;
@@ -37,6 +38,7 @@ pub(super) fn validate_member_closure(
 ) -> Result<(), ApplicationSchemaDeclarationDenial> {
     super::content::validation::validate(members)?;
     let index = ClosureIndex::new(members);
+    shared_scopes::validate(&index)?;
     for member in members {
         index.validate(member)?;
     }

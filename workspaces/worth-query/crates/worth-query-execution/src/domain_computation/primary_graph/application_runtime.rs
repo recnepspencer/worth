@@ -37,6 +37,7 @@ mod durable_admission;
 mod execution_memory;
 pub(crate) mod external_dispatch_attempt;
 mod mutation_partition;
+mod recovery_custody;
 mod teardown;
 pub use execution_memory::WorthQueryExecutionLeaseDenial;
 pub(crate) mod inbound_occurrence;
@@ -69,6 +70,7 @@ pub(in crate::domain_computation) use inbound_publication::{
 };
 mod derived_relation;
 mod graph_participation;
+mod installed_package_export;
 pub use derived_relation::WorthQueryRuleReadableCollectionLifecycleForTest;
 pub(in crate::domain_computation::primary_graph) mod installation;
 pub(crate) mod operation_control;
@@ -376,3 +378,5 @@ fn collect_owned_inline_type_sizes(census: &mut crate::inline_type_sizes::Census
         owner.field::<teardown::ApplicationWorkflowTeardown>("workflow_teardown");
     }
 }
+
+pub use inbound_publication::WorthQueryRecordedCompletionDenial;

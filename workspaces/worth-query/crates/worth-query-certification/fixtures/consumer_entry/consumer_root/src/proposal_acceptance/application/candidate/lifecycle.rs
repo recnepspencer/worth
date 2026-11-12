@@ -54,15 +54,15 @@ impl<'host> Staging<'host> {
             .on_branch(self.branch());
         if let Some(step) = self.step.take() {
             let refusal = match step {
-                Step::Pending(operation) => operation
+                Step::Pending(operation) => (*operation)
                     .close(&request)
-                    .map_err(|(owner, cause)| (Step::Pending(owner), cause)),
-                Step::Completed(completed) => completed
+                    .map_err(|(owner, cause)| (Step::Pending(Box::new(owner)), cause)),
+                Step::Completed(completed) => (*completed)
                     .close(&request)
-                    .map_err(|(owner, cause)| (Step::Completed(owner), cause)),
-                Step::Terminal(terminal) => terminal
+                    .map_err(|(owner, cause)| (Step::Completed(Box::new(owner)), cause)),
+                Step::Terminal(terminal) => (*terminal)
                     .close(&request)
-                    .map_err(|(owner, cause)| (Step::Terminal(owner), cause)),
+                    .map_err(|(owner, cause)| (Step::Terminal(Box::new(owner)), cause)),
             };
             if let Err((step, cause)) = refusal {
                 self.step = Some(step);

@@ -1,16 +1,12 @@
 pub(crate) use worth_query_testkit_certification_application_graph::facade::certification::application_graph::restored_primary_backend::*;
 
 #[test]
-fn the_first_production_write_after_restore_answers_as_before_the_capture() {
+fn restored_primary_backend_resumes_writes_from_the_same_captured_source() {
     let host_request =
         worth_query_testkit_host::facade::host::certification_support::execution_policy::serial_request();
     let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let host = publish_on_first_program();
-    let before = write_twice(
-        request_execution,
-        &host.granular_invalidation_installation(),
-    );
     let captured = ledger_position(
         request_execution,
         &host.granular_invalidation_installation(),
@@ -22,6 +18,21 @@ fn the_first_production_write_after_restore_answers_as_before_the_capture() {
                 .expect("the host captures")
         })
         .expect("installed host call opens");
+    // The backend authority deliberately declines after its Native commit.
+    // Capture the genuine coherent Host source first, then compare backend
+    // execution from that SAME source before and after its restoration.
+    let before = write_twice(
+        request_execution,
+        &host.granular_invalidation_installation(),
+    );
+    assert_eq!(
+        ledger_position(
+            request_execution,
+            &host.granular_invalidation_installation()
+        ),
+        captured.map(|position| PatchStreamPosition(position.0 + 2)),
+        "each baseline backend write commits exactly once from the captured source"
+    );
     drop(host);
 
     let restored = restore_on_first_program(

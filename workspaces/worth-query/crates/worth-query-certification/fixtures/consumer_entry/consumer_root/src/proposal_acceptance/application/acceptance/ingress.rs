@@ -60,11 +60,11 @@ impl<'host> Model<'host> {
         let operation = storage
             .claim_operation(caller, &loaded.input(key), key)
             .map_err(Failure::Construction)?;
-        self.pending = Some(Attempt {
+        self.pending = Some(Box::new(Attempt {
             loaded: loaded.clone(),
             key,
-            phase: Phase::Claim(operation),
-        });
+            phase: Phase::Claim(Box::new(operation)),
+        }));
         Ok(Event::Progress)
     }
     fn advance_pending(
@@ -73,8 +73,8 @@ impl<'host> Model<'host> {
         caller: &Caller<'_>,
     ) -> Result<Event, Failure> {
         let attempt = self.pending.take().expect("exclusive pending attempt");
-        let (pending, event) = attempt.advance(self, storage, caller);
-        self.pending = pending;
+        let (pending, event) = (*attempt).advance(self, storage, caller);
+        self.pending = pending.map(Box::new);
         event
     }
     pub fn inspect_attempt(

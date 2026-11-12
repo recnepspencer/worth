@@ -1,9 +1,7 @@
 //! Narrow provider facade over World-backed compact terminal evidence.
 
-use worth_runtime_world::facade::{
-    RuntimeWorldPerformedPublicationProtection, RuntimeWorldPublicationCursor,
-    RuntimeWorldPublicationFrontier,
-};
+use super::source::InboundTerminalSourcePage;
+use worth_runtime_world::facade::RuntimeWorldPerformedPublicationProtection;
 
 use super::{WorthQueryCanonicalInboundCompletion, WorthQueryInboundTerminalIndexDenial};
 use crate::domain_computation::application_aftermath::{
@@ -27,21 +25,21 @@ impl WorthQueryPrimaryGraphProvider {
         self.inbound_terminal_index.clear_pending(correlation);
     }
 
-    pub(in crate::domain_computation::primary_graph) fn inbound_reconstruction_cursor(
+    pub(in crate::domain_computation::primary_graph) fn inbound_reconstruction_page(
         &self,
-    ) -> (Option<RuntimeWorldPublicationCursor>, u64) {
-        self.inbound_terminal_index.reconstruction_cursor()
+        maximum: std::num::NonZeroUsize,
+    ) -> Result<InboundTerminalSourcePage, WorthQueryInboundTerminalIndexDenial> {
+        self.inbound_terminal_index.reconstruction_page(maximum)
     }
 
     pub(in crate::domain_computation::primary_graph) fn advance_inbound_reconstruction(
         &self,
         generation: u64,
-        frontier: &RuntimeWorldPublicationFrontier,
-        next: Option<RuntimeWorldPublicationCursor>,
+        next: Option<ExternalEffectCorrelationIdentity>,
         rows: impl IntoIterator<Item = WorthQueryCanonicalInboundCompletion>,
     ) -> Result<bool, WorthQueryInboundTerminalIndexDenial> {
         self.inbound_terminal_index
-            .advance_reconstruction(generation, frontier, next, rows)
+            .advance_reconstruction(generation, next, rows)
     }
 
     pub(in crate::domain_computation::primary_graph) fn abandon_inbound_reconstruction(&self) {
@@ -88,3 +86,15 @@ impl WorthQueryPrimaryGraphProvider {
 }
 
 mod court_doors_for_test;
+
+impl WorthQueryPrimaryGraphProvider {
+    pub(in crate::domain_computation::primary_graph) fn retain_readmitted_inbound_terminal(
+        &self,
+        sealed: WorthQueryCanonicalInboundCompletion,
+        world: worth_runtime_world::facade::WorldReadmittedPublication,
+        entity: worth_relational::facade::identity::EntityId,
+    ) -> Result<(), WorthQueryInboundTerminalIndexDenial> {
+        self.inbound_terminal_index
+            .retain_readmitted(sealed, world, entity)
+    }
+}

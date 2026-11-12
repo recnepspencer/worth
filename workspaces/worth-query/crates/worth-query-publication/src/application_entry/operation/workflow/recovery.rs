@@ -113,7 +113,7 @@ where
                 unreachable!()
             };
             return match worth_query_execution::facade::primary_graph::dispose_recovery_handle(
-                handle, &authority,
+                phase, handle, &authority,
             ) {
                 Ok(receipt) => {
                     self.recovery = WorkflowDispatchRecovery::Disposed(receipt);
@@ -143,7 +143,7 @@ where
                 source
                     .runtime
                     .runtime()
-                    .mint_recovery_handle(&receipt)
+                    .mint_recovery_handle(phase, &receipt)
                     .map_err(WorthQueryWorkflowEffectRecoveryDenial::Recovery)?,
             );
         }

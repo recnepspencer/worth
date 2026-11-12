@@ -65,10 +65,12 @@ pub(super) fn validate_principals(
             || !members.iter().any(|member| matches!(member, Member::Field { entity, aspect, field, value_type, scalar_family, unit: None, .. }
                 if entity == step.field().entity() && aspect == step.field().aspect() && field == step.field().field() && value_type == step.binding().as_str() && *scalar_family == step.scalar_family()))
         { return Err(denied()); }
-        if !members.iter().any(|member| {
-            matches!(member, Member::OperationDecisionRead { operation: candidate, target }
-            if candidate == operation && Some(target.clone()) == step.source_read())
-        }) {
+        let required = step.source_read();
+        if !crate::application_schema::application_operation_decision_read_targets(
+            members, operation,
+        )
+        .any(|target| Some(target) == required.as_ref())
+        {
             return Err(Denial::decision_read_body_dependency(operation));
         }
     }

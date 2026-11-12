@@ -7,6 +7,7 @@ use crate::domain_computation::execution_runtime::product_world::WorthQueryProdu
 use worth_runtime_world::facade::*;
 mod custody;
 mod dispatch_custody;
+mod inbound_custody;
 pub use crate::domain_computation::primary_graph::bootstrap::branch_activation_history::QueryHomeProgramActivationDenial;
 pub use custody::{QueryHomeCustodyReadmissionDenial, QueryHomeCustodyReadmissionRefused};
 #[cfg(test)]
@@ -140,11 +141,6 @@ where
                     home_world_denial(format!("Home branch inventory refused: {cause:?}"))
                 })?;
             for selected in branches.branches() {
-                self.bootstrap.readmit_home_branch_program(
-                    phase,
-                    selected,
-                    &self.state.support.roster,
-                )?;
                 home_attachment::readmit_home_branch_basis(
                     phase,
                     &self.services.provider,
@@ -285,3 +281,5 @@ pub(super) fn home_world_denial(
         detail,
     )
 }
+
+mod empty_originals;

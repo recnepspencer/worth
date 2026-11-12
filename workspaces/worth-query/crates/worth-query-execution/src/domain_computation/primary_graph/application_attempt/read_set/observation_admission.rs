@@ -156,52 +156,35 @@ pub(super) fn graph_reads_exactly_cover_fact_keys<'key>(
     contract: &WorthQueryOperationGraphReadContract,
     mut keys: impl Clone + Iterator<Item = &'key WorthQueryApplicationFactKey>,
 ) -> bool {
-    let mut expected = 0usize;
     for scope in contract.roles().iter().flat_map(|role| role.read_scopes()) {
-        let atomic_count = match scope {
-            WorthQueryOperationGraphReadScope::Components(_)
-            | WorthQueryOperationGraphReadScope::DerivedSource(_) => {
-                let count = keys
-                    .clone()
-                    .filter(|key| graph_read_scope_matches_key(scope, key))
-                    .count();
-                if count == 0 {
-                    return false;
-                }
-                count
-            }
-            WorthQueryOperationGraphReadScope::Entity(_)
-            | WorthQueryOperationGraphReadScope::Relation(_) => 1,
-            WorthQueryOperationGraphReadScope::NativeProjection(scope) => {
-                let Some(count) = scope.atomic_field_count() else {
-                    return false;
-                };
-                count
-            }
-        };
-        expected = match expected.checked_add(atomic_count) {
-            Some(expected) => expected,
-            None => return false,
-        };
-    }
-    // Presence is metadata of its exact admitted field, not another author-
-    // supplied read role. It still passes the same unique projection check.
-    expected
-        == keys
+        let actual = keys
             .clone()
             .filter(|key| !matches!(key, WorthQueryApplicationFactKey::AspectPresence { .. }))
-            .count()
-        && keys.all(|key| {
-            contract
-                .roles()
-                .iter()
-                .flat_map(|role| role.read_scopes())
-                .filter(|scope| graph_read_scope_matches_key(scope, key))
-                .count()
-                == 1
-        })
+            .filter(|key| graph_read_scope_matches_key(scope, key))
+            .count();
+        let covered = match scope {
+            WorthQueryOperationGraphReadScope::Components(_)
+            | WorthQueryOperationGraphReadScope::DerivedSource(_) => actual > 0,
+            WorthQueryOperationGraphReadScope::Entity(_)
+            | WorthQueryOperationGraphReadScope::Relation(_) => actual == 1,
+            WorthQueryOperationGraphReadScope::NativeProjection(scope) => scope
+                .atomic_field_count()
+                .is_some_and(|expected| actual == expected),
+        };
+        if !covered {
+            return false;
+        }
+    }
+    // Overlapping shared/inline declarations form a union. Each observed key
+    // still needs genuine installed coverage, and each declared leaf is complete.
+    keys.all(|key| {
+        contract
+            .roles()
+            .iter()
+            .flat_map(|role| role.read_scopes())
+            .any(|scope| graph_read_scope_matches_key(scope, key))
+    })
 }
-
 fn denial(
     kind: WorthQueryApplicationAttemptDenialKind,
     subject: impl Into<String>,

@@ -3646,8 +3646,38 @@ dependencies = [
 ]
 
 [[package]]
+name = "worth-harness"
+version = "0.1.0"
+dependencies = [
+ "serde",
+ "serde_json",
+]
+
+[[package]]
 name = "worth-proof"
 version = "0.1.0"
+
+[[package]]
+name = "worth-query"
+version = "0.1.0"
+dependencies = [
+ "arc-swap",
+ "serde",
+ "serde_json",
+ "sha2",
+ "worth-execution",
+ "worth-foundational",
+ "worth-proof",
+ "worth-query-admission",
+ "worth-query-declaration",
+ "worth-query-execution",
+ "worth-query-installation",
+ "worth-query-publication",
+ "worth-relational",
+ "worth-runtime-bridge",
+ "worth-schema-graph",
+ "worth-signal",
+]
 
 [[package]]
 name = "worth-query-admission"
@@ -3697,7 +3727,18 @@ dependencies = [
 name = "worth-query-bank-court-http-adapter"
 version = "0.1.0"
 dependencies = [
+ "axum",
+ "bank-domain",
+ "bank-external-rail",
+ "bank-http-adapter",
+ "ed25519-dalek",
+ "tokio",
+ "worth-foundational",
  "worth-query-bank-testkit-http-adapter",
+ "worth-query-bank-testkit-server",
+ "worth-query-decl",
+ "worth-query-host",
+ "worth-query-testkit-host",
 ]
 
 [[package]]
@@ -3917,6 +3958,22 @@ dependencies = [
 ]
 
 [[package]]
+name = "worth-query-testkit-host"
+version = "0.1.0"
+dependencies = [
+ "worth-execution",
+ "worth-foundational",
+ "worth-harness",
+ "worth-query",
+ "worth-query-admission",
+ "worth-query-decl",
+ "worth-query-declaration",
+ "worth-query-execution",
+ "worth-query-host",
+ "worth-relational",
+]
+
+[[package]]
 name = "worth-relational"
 version = "0.1.0"
 dependencies = [
@@ -3964,6 +4021,10 @@ dependencies = [
  "worth-runtime-bridge",
  "worth-signal",
 ]
+
+[[package]]
+name = "worth-schema-graph"
+version = "0.1.0"
 
 [[package]]
 name = "worth-signal"

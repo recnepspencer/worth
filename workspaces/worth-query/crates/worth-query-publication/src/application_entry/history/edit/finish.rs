@@ -59,6 +59,17 @@ where
     Mode<S, I, A>: WorthQueryHistoryOperationMode<S, I, P, A>,
 {
     pub fn finish(
+        self,
+        request: &WorthQueryApplicationRequest<'_, '_, '_, S>,
+    ) -> Result<
+        WorthQueryHistoryEditFinish<'runtime, S, H, I, P, A, Payload, Outputs>,
+        (Self, WorthQueryHistoryEditDenial),
+    > {
+        worth_execution::run_with_execution_stack(move || self.finish_on_execution_stack(request))
+    }
+
+    #[inline(never)]
+    fn finish_on_execution_stack(
         mut self,
         request: &WorthQueryApplicationRequest<'_, '_, '_, S>,
     ) -> Result<

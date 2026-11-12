@@ -88,15 +88,21 @@ fn install_no_reuse_with_build(
     // Window <= history is enforced by primary_graph/bootstrap/preparation.rs:91.
     let limits = support::limits(32, support::invalidation());
     if let Some(checkpoint) = checkpoint {
-        return application_installation::WorthQueryInterimCheckpointRestore::program(
-            program,
-            <NoReuseSchema as worth_query_decl::facade::application_schema::ApplicationSchema>::declaration().unwrap(),
-            configuration,
-            build_identity,
-            limits,
-            checkpoint,
+        return worth_query_host::facade::application_contribution::with_bootstrap_advancement(
+            support::observation::POPULATION_BOOTSTRAP_POLICY,
+            |phase| application_installation::WorthQueryInterimCheckpointRestore::rostered_program_in_advancement(
+                &phase,
+                program,
+                application_installation::WorthQueryApplicationProgramRoster::new(),
+                <NoReuseSchema as worth_query_decl::facade::application_schema::ApplicationSchema>::declaration().unwrap(),
+                configuration,
+                build_identity,
+                limits,
+                checkpoint,
+            ),
         )
-        .unwrap();
+        .expect("no-reuse reconstruction opens its original setup request")
+        .expect("the no-reuse checkpoint restores under its original serving policy");
     }
     application_installation::in_memory_program(
         program,

@@ -67,8 +67,9 @@ fn a_terminal_delivery_stop_releases_the_head_with_a_peer_still_present() {
     let registry = (*world.application.runtime_for_test()).output_demands_for_test();
     let scope = worth_query_execution::facade::domain_computation::WorthQueryOperationScopeEntityBinding::from_entity_for_test(root);
     let request = worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::schema_types::live_scope();
-    // Build a genuine lowering, with no dependencies. The foreign root is
-    // refused before this lowering or its compute can be used.
+    // This separately installed lowering does not belong to the receiver's live
+    // Bridge owner. The foreign Product root must refuse before either the
+    // lowering's admission or its compute can obscure the ownership mismatch.
     let mut builder = BridgeConditionalRuntimeBuilder::with_owned_signal_graph(
         (*(*world.application.runtime_for_test()).bridge_for_test())
             .ordinary_for_test()
@@ -112,7 +113,7 @@ fn a_terminal_delivery_stop_releases_the_head_with_a_peer_still_present() {
                 assert!(finish.finish_for_test(claim, checkpoint, denial.as_ref()).is_ok());
                 match denial { Some(stop) => Err(stop), None => Ok(WorthQueryOutputDemandAdvance::Pending) }
             }).err().expect("the foreign root refuses real delivery");
-        assert!(matches!(stop.kind(), WorthQueryOutputDemandDenialKind::ProductDelivery(ref cause) if **cause == DeliveryDenialKind::ForeignProductRoot));
+        assert!(matches!(stop.kind(), WorthQueryOutputDemandDenialKind::ProductDelivery(ref cause) if **cause == DeliveryDenialKind::ForeignProductRoot), "the actual typed delivery refusal was {stop:?}");
         assert_eq!(registry.publication_counts_for_registry_test(), (0, 0));
         assert!(matches!(registry.publication_head_selection_for_test(occurrence).unwrap(), PublicationHeadSelection::Live(_)));
         assert!(matches!(registry.begin_for_test(&peer), Admission::Failed(ref cause) if cause.kind() == stop.kind()));

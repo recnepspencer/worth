@@ -130,7 +130,6 @@ pub use readmission::{
 };
 pub(crate) use recovery_registry::{
     WorthQueryRecoveryHandleRegistry, WorthQueryRecoveryMintClaim, WorthQueryRecoveryRegistrySlot,
-    WorthQueryRecoveryResourceTerminal,
 };
 pub use yielded_observation::{
     WorthQueryYieldedCheckpointInspection, WorthQueryYieldedDirectRunInspection,
@@ -190,3 +189,5 @@ pub use yield_transition_counters::WorthQueryYieldTransitionCounters;
 #[path = "mod_inline_type_budget.rs"]
 pub(crate) mod inline_type_budget;
 mod test_phase_custody;
+
+pub use worth_foundational::facade::RecoveryClaimDisposition;

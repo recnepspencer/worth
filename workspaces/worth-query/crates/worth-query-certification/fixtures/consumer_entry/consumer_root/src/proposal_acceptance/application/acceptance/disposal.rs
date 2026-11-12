@@ -100,9 +100,9 @@ impl Model<'_> {
         let Some(attempt) = self.pending.take() else {
             return Ok(DisposalEvent::NothingPending);
         };
-        let Attempt { loaded, key, phase } = attempt;
+        let Attempt { loaded, key, phase } = *attempt;
         let (phase, event) = dispose(phase, host, caller, &loaded);
-        self.pending = phase.map(|phase| Attempt { loaded, key, phase });
+        self.pending = phase.map(|phase| Box::new(Attempt { loaded, key, phase }));
         event
     }
 }

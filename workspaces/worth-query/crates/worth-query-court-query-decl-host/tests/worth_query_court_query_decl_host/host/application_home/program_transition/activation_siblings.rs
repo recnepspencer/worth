@@ -6,7 +6,7 @@ fn fork(
 ) {
     let (_, scope) = super::super::pending_support::scope();
     let application = runtime.runtime();
-    application
+    let created = application
         .with_application_advancement(&scope, |phase| {
             application
                 .branches()
@@ -14,8 +14,44 @@ fn fork(
                 .components(|parts| parts.fork_relational().reuse_exact_signal_basis())
                 .create(&phase)
         })
-        .unwrap()
-        .unwrap_or_else(|cause| panic!("durable sibling creation: {cause:?}"));
+        .unwrap();
+    use worth_query_host::facade::product::{
+        WorthQueryProductBranchCreateError as Create,
+        WorthQueryProductBranchCreationContinuation as Continued,
+        WorthQueryProductBranchRecoveryDenial,
+    };
+    let mut original = match created {
+        Ok(_) => return,
+        Err(Create::ProductUnpublished(original)) => original,
+        Err(cause) => panic!("durable sibling creation: {cause:?}"),
+    };
+    let deadline = std::time::Instant::now() + std::time::Duration::from_secs(120);
+    loop {
+        assert!(
+            std::time::Instant::now() < deadline,
+            "the original sibling creation must settle"
+        );
+        let (_, scope) = super::super::pending_support::scope();
+        let answer = application
+            .with_application_advancement(&scope, |phase| original.continue_in_advancement(&phase))
+            .expect("the Home admits its original sibling continuation");
+        match answer {
+            Ok(Continued::Performed(_)) => return,
+            Ok(Continued::NoEffect(cause)) => panic!("the original sibling refused: {cause:?}"),
+            Ok(Continued::ReleasedOriginal(cause)) => {
+                panic!("the original sibling released: {cause:?}")
+            }
+            Err(failure) => {
+                assert_eq!(
+                    failure.denial(),
+                    WorthQueryProductBranchRecoveryDenial::Busy,
+                    "original sibling continuation: {failure:?}"
+                );
+                original = failure.into_recovery();
+                std::thread::yield_now();
+            }
+        }
+    }
 }
 
 #[test]

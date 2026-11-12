@@ -11,22 +11,37 @@
 //! no-effect allocates another generation at the same next position. The
 //! generation is correlation only; it is never attempt identity or authority.
 use std::collections::BTreeMap;
-use worth_foundational::facade::{CanonicalDigestId, DispatchAttemptIdentity, HomeIdentity};
+use worth_foundational::facade::{
+    CanonicalDigestId, DispatchAttemptIdentity, HomeIdentity, InboundSourceControl,
+};
 mod codec;
 mod custody;
 mod generation;
+mod inbound;
 mod ledger;
 mod medium;
+mod read_limits;
+mod recovery;
 pub use custody::WorthQueryDispatchJournal;
+pub(in crate::domain_computation) use custody::{
+    QueryInboundJournalAdmission, QueryInboundSourceControlObservation,
+};
 use generation::QueryDispatchPublicationGenerations;
+pub(in crate::domain_computation) use inbound::{
+    QueryInboundAcceptedMessage, QueryInboundDispatchSource, QueryInboundMessageKey,
+    QueryInboundRecord, QueryInboundRecordedMessage, QueryTransportBinding,
+};
 pub use ledger::QueryDispatchCustody;
 use ledger::QueryDispatchLedger;
 pub use medium::{QueryDispatchMedium, QueryDispatchPublicationOutcome};
+pub(in crate::domain_computation) use recovery::{
+    QueryRecordedRecoveryClaim, QueryRecoveryClaim, QueryRecoveryRecord,
+};
 pub(in crate::domain_computation) use worth_proof::QueryDispatchCloseCustody;
 #[cfg(test)]
 mod tests;
 
-pub const QUERY_DISPATCH_FRAME_MAX_BYTES: u64 = 149;
+pub const QUERY_DISPATCH_FIXED_RECORD_MAX_BYTES: u64 = 149;
 
 pub use worth_foundational::facade::ExternalEffectNoEffectCause;
 
@@ -58,8 +73,14 @@ struct QueryDispatchAttempt {
     correlation: CanonicalDigestId,
 }
 
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+#[derive(Clone, Debug, Eq, PartialEq)]
 enum QueryDispatchRecord {
+    Recovery(QueryRecoveryRecord),
+    Inbound(QueryInboundRecord),
+    SourceControl {
+        source: CanonicalDigestId,
+        posture: InboundSourceControl,
+    },
     /// Recorded before the external call; never a dispatch capability.
     Attempt(QueryDispatchAttempt),
     Observation {
@@ -69,8 +90,14 @@ enum QueryDispatchRecord {
 }
 
 /// A requested record. An attempt's identity is assigned by the position that records it.
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+#[derive(Clone, Debug, Eq, PartialEq)]
 enum QueryDispatchRecordIntent {
+    Recovery(QueryRecoveryRecord),
+    Inbound(QueryInboundRecord),
+    SourceControl {
+        source: CanonicalDigestId,
+        posture: InboundSourceControl,
+    },
     Attempt {
         correlation: CanonicalDigestId,
     },
@@ -113,8 +140,11 @@ impl QueryDispatchFrame {
     const fn record(&self) -> &QueryDispatchRecord {
         &self.record
     }
-    pub fn readmit(bytes: &[u8]) -> Result<Self, QueryDispatchJournalDenial> {
-        codec::decode(bytes)
+    pub fn readmit(
+        bytes: &[u8],
+        maximum_frame_bytes: u64,
+    ) -> Result<Self, QueryDispatchJournalDenial> {
+        codec::decode(bytes, maximum_frame_bytes)
     }
 }
 

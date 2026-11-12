@@ -90,6 +90,40 @@ fn portable_scope_initializer_requires_matching_declared_units() {
         },
     ];
     assert_eq!(validate_operation_bodies(&members), Ok(()));
+    let targets = members
+        .iter()
+        .filter_map(|member| match member {
+            ApplicationSchemaMember::OperationDecisionRead { operation, target }
+                if operation == "Set" =>
+            {
+                Some(target.clone())
+            }
+            _ => None,
+        })
+        .collect();
+    let definition =
+        crate::application_schema::ApplicationDecisionReadScopeMeaning::from_untrusted_parts(
+            targets,
+            Vec::new(),
+        )
+        .unwrap();
+    let mut shared = members.iter().filter(|member| !matches!(member, ApplicationSchemaMember::OperationDecisionRead { operation, .. } if operation == "Set")).cloned().collect::<Vec<_>>();
+    shared.push(ApplicationSchemaMember::OperationDecisionReadScope {
+        operation: "Set".into(),
+        scope: definition.identity().into(),
+    });
+    shared.push(ApplicationSchemaMember::DecisionReadScope { definition });
+    assert_eq!(validate_operation_bodies(&shared), Ok(()));
+    shared.retain(|member| {
+        !matches!(
+            member,
+            ApplicationSchemaMember::OperationDecisionReadScope { .. }
+        )
+    });
+    assert_eq!(
+        validate_operation_bodies(&shared),
+        Err(ApplicationSchemaDeclarationDenial::decision_read_body_dependency("Set"))
+    );
     let ApplicationSchemaMember::Field {
         canonical: None,
         unit,

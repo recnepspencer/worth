@@ -95,6 +95,7 @@ pub struct WorthQueryApplicationOneShotDenial {
 #[derive(Debug)]
 pub struct OneShotDenialPayload {
     authorization_denial: Option<Box<WorthQueryOperationAuthorizationDenial>>,
+    scope_freshness: Option<super::super::WorthQueryScopeFreshnessDiagnostic>,
     query: String,
     subject: String,
     custody: std::sync::OnceLock<worth_execution::ExecutionMemoryReservation>,
@@ -104,6 +105,7 @@ impl PartialEq for WorthQueryApplicationOneShotDenial {
     fn eq(&self, other: &Self) -> bool {
         self.kind == other.kind
             && self.payload.authorization_denial == other.payload.authorization_denial
+            && self.payload.scope_freshness == other.payload.scope_freshness
             && self.payload.query == other.payload.query
             && self.payload.subject == other.payload.subject
     }
@@ -119,8 +121,25 @@ pub fn denial(
         kind,
         payload: std::sync::Arc::new(OneShotDenialPayload {
             authorization_denial: None,
+            scope_freshness: None,
             query: query.into(),
             subject: subject.into(),
+            custody: std::sync::OnceLock::new(),
+        }),
+    }
+}
+
+pub fn scope_freshness_denial(
+    cause: super::super::WorthQueryScopeFreshnessDiagnostic,
+    query: &str,
+) -> WorthQueryApplicationOneShotDenial {
+    WorthQueryApplicationOneShotDenial {
+        kind: WorthQueryApplicationOneShotDenialKind::StaleScope,
+        payload: std::sync::Arc::new(OneShotDenialPayload {
+            authorization_denial: None,
+            scope_freshness: Some(cause),
+            query: query.to_owned(),
+            subject: query.to_owned(),
             custody: std::sync::OnceLock::new(),
         }),
     }
@@ -155,6 +174,7 @@ pub fn authorization_denial(
             query: query.to_owned(),
             subject: denial.subject().to_string(),
             authorization_denial: Some(Box::new(denial)),
+            scope_freshness: None,
             custody: std::sync::OnceLock::new(),
         }),
     }
@@ -178,6 +198,11 @@ impl WorthQueryApplicationOneShotDenial {
 
     pub fn subject(&self) -> &str {
         &self.payload.subject
+    }
+
+    /// The exact refused scope check, including the original Native lookup cause.
+    pub fn scope_freshness(&self) -> Option<&super::super::WorthQueryScopeFreshnessDiagnostic> {
+        self.payload.scope_freshness.as_ref()
     }
 
     pub fn authorization_denial(&self) -> Option<&WorthQueryOperationAuthorizationDenial> {
@@ -242,6 +267,7 @@ impl worth_execution::ChargedBytes for WorthQueryApplicationOneShotDenial {
     fn additional_charged_bytes(&self) -> u64 {
         let OneShotDenialPayload {
             authorization_denial,
+            scope_freshness,
             query,
             subject,
             custody: _,
@@ -251,6 +277,11 @@ impl worth_execution::ChargedBytes for WorthQueryApplicationOneShotDenial {
             .saturating_add((2 * std::mem::size_of::<usize>()) as u64)
             .saturating_add(query.capacity() as u64)
             .saturating_add(subject.capacity() as u64)
+            .saturating_add(
+                scope_freshness
+                    .as_ref()
+                    .map_or(0, |stop| stop.cause.additional_charged_bytes()),
+            )
             .saturating_add(authorization_denial.as_ref().map_or(0, |denial| {
                 // Box<T>'s implementation counts its allocation and T's payload.
                 denial.additional_charged_bytes()

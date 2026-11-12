@@ -29,9 +29,11 @@ impl WorthQueryRecoveryHandle {
     #[doc(hidden)]
     pub fn consume_for_test(
         self,
-        terminal: WorthQueryRecoveryResourceTerminal,
-    ) -> Result<WorthQueryRecoveryHandleBinding, WorthQueryRecoveryHandleDenial> {
-        Self::consume(self, terminal)
+        phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+        terminal: RecoveryClaimDisposition,
+    ) -> Result<WorthQueryRecoveryHandleBinding, super::super::WorthQueryRecoveryTransitionDenial>
+    {
+        Self::consume(self, phase, terminal)
     }
 }
 

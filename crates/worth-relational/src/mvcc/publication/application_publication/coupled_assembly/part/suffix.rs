@@ -103,8 +103,15 @@ impl RelationalAuthoredCoupledCandidate<'_> {
             .with_candidate_symbols(self.mutation.candidate_symbols());
         let intents = self
             .transaction
-            .push_normalized_coupled_batches(execution, &runtime, batches)?
-            .into_coupled_suffix(0, &self.mutation.outcome.created_entities, execution)?;
+            .push_normalized_coupled_batches(execution, &runtime, batches)?;
+        // Preserve master's original relation correspondence before prefix-created
+        // endpoints are lowered, for either producer or authored-stage suffixes.
+        let originals = crate::transactions::data::CoupledOriginalRelationCreates::capture(
+            execution,
+            &intents.plan().merged_intents,
+        )?;
+        let intents =
+            intents.into_coupled_suffix(0, &self.mutation.outcome.created_entities, execution)?;
         let read = self.pin_source(execution)?;
         let root = read.resident_basis().root();
         let plan = self.transaction.build_merged_plan_for_state(
@@ -149,7 +156,7 @@ impl RelationalAuthoredCoupledCandidate<'_> {
             version_id: self.identity.proposed_version_id(),
             merged_intents: plan.plan().merged_intents.clone(),
         };
-        let outcome = crate::authority::mutation::apply_plan_with_publication_edges(
+        let mut outcome = crate::authority::mutation::apply_plan_with_publication_edges(
             execution,
             &mut state,
             &apply,
@@ -164,6 +171,12 @@ impl RelationalAuthoredCoupledCandidate<'_> {
             Some(&deferred_edges),
         )
         .map_err(RelationalCoupledAssemblyFailure::from_apply)?;
+        outcome.created_relations = originals.complete(
+            execution,
+            outcome.created_relations,
+            &self.mutation.outcome.created_entities,
+            self.mutation.candidate_symbols().interner(),
+        )?;
         let interpretation = self
             .identity
             .source_interpretation()

@@ -54,6 +54,10 @@ pub struct WorthQueryApplicationIdempotencyResolutionDenial {
     // Authorization detail is present only on that refusal. Keep its owned
     // causes out of every downstream error's stack representation.
     authorization: Option<Box<WorthQueryOperationAuthorizationDenial>>,
+    native_key_lookup: Option<(
+        worth_relational::facade::indexes::DerivedIndexId,
+        worth_relational::facade::indexes::BoundedEntityFieldLookupDenialKind,
+    )>,
 }
 
 impl WorthQueryApplicationIdempotencyResolutionDenial {
@@ -61,6 +65,7 @@ impl WorthQueryApplicationIdempotencyResolutionDenial {
         Self {
             kind: WorthQueryApplicationIdempotencyResolutionDenialKind::OriginalEffectReleased,
             authorization: None,
+            native_key_lookup: None,
         }
     }
 
@@ -83,6 +88,7 @@ impl WorthQueryApplicationIdempotencyResolutionDenial {
                 denial.kind(),
             ),
             authorization: Some(Box::new(denial)),
+            native_key_lookup: None,
         }
     }
 
@@ -90,6 +96,7 @@ impl WorthQueryApplicationIdempotencyResolutionDenial {
         Self {
             kind: WorthQueryApplicationIdempotencyResolutionDenialKind::ForeignAdmission,
             authorization: None,
+            native_key_lookup: None,
         }
     }
 
@@ -97,10 +104,33 @@ impl WorthQueryApplicationIdempotencyResolutionDenial {
         Self {
             kind: WorthQueryApplicationIdempotencyResolutionDenialKind::ProviderUnavailable,
             authorization: None,
+            native_key_lookup: None,
         }
     }
 
+    /// The exact Native index refusal, when the provider could not locate the key.
+    pub const fn native_key_lookup(
+        &self,
+    ) -> Option<(
+        worth_relational::facade::indexes::DerivedIndexId,
+        worth_relational::facade::indexes::BoundedEntityFieldLookupDenialKind,
+    )> {
+        self.native_key_lookup
+    }
+
     pub(in crate::domain_computation::primary_graph) fn from_provider(denial: Provider) -> Self {
+        let native_key_lookup = match denial {
+            Provider::NativeKeyLookup { index, cause } => Some((index, cause)),
+            Provider::ForeignAffinity
+            | Provider::PreparationBusy
+            | Provider::ActiveSnapshotCapacityExhausted { .. }
+            | Provider::RetentionCapacityExhausted
+            | Provider::RetentionIdentityExhausted
+            | Provider::SnapshotIdentityExhausted
+            | Provider::RecordedIntentUnverifiable
+            | Provider::ExecutionDenied(_)
+            | Provider::Unavailable => None,
+        };
         let kind = match denial {
             Provider::ForeignAffinity => WorthQueryApplicationIdempotencyResolutionDenialKind::ForeignAdmission,
             Provider::ExecutionDenied(kind) => WorthQueryApplicationIdempotencyResolutionDenialKind::ExecutionDenied(kind),
@@ -119,7 +149,7 @@ impl WorthQueryApplicationIdempotencyResolutionDenial {
                 WorthQueryApplicationIdempotencyResolutionDenialKind::SnapshotIdentityExhausted
             }
             Provider::PreparationBusy => WorthQueryApplicationIdempotencyResolutionDenialKind::PreparationBusy,
-            Provider::Unavailable => {
+            Provider::NativeKeyLookup { .. } | Provider::Unavailable => {
                 WorthQueryApplicationIdempotencyResolutionDenialKind::ProviderUnavailable
             }
             Provider::RecordedIntentUnverifiable => {
@@ -129,6 +159,7 @@ impl WorthQueryApplicationIdempotencyResolutionDenial {
         Self {
             kind,
             authorization: None,
+            native_key_lookup,
         }
     }
 }

@@ -6,6 +6,7 @@ use crate::domain_computation::primary_graph::{
 };
 use worth_execution::ExecutionRequest;
 use worth_query_installation::facade::ApplicationSchema;
+mod inbound;
 mod participation;
 pub(in crate::domain_computation::primary_graph) use participation::PrimaryGraphParticipationCustody;
 
@@ -27,6 +28,7 @@ pub enum WorthQueryHomeRetirementOwner {
 
 #[derive(Debug)]
 pub enum WorthQueryHomeRetirementDenial {
+    RecoveryCustody(crate::domain_computation::application_aftermath::WorthQueryRecoveryHandleDenial),
     CorrectionRetention(super::super::WorthQueryCorrectionRetentionDenial),
     CorrectionMaterial(crate::facade::correction_material::QueryCorrectionMaterialDenial),
     Busy(WorthQueryHomeRetirementOwner),
@@ -62,6 +64,8 @@ pub(in crate::domain_computation::primary_graph) struct RetiringPrimaryGraphRunt
 }
 enum QueryRetirementStage {
     Handlers,
+    InboundCustody,
+    TransportCustody,
     Participation,
     InstalledConditionals,
     Provider,
@@ -81,6 +85,8 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         request
             .consult()
             .map_err(WorthQueryHomeRetirementDenial::Execution)?;
+        self.settle_recovery_custody(request)
+            .map_err(WorthQueryHomeRetirementDenial::RecoveryCustody)?;
         self.mutation_handlers.preflight_home_retirement(request)?;
         self.conditional_cleanup
             .preflight_home_retirement(request)?;
@@ -93,6 +99,25 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             .dispatch_journal
             .settle_for_close(request)
             .map_err(WorthQueryHomeRetirementDenial::DispatchCustody)?;
+        if self.runtime.dispatch_journal.is_durable() {
+            self.runtime
+                .primary_provider
+                .protect_dispatch_originals_for_close(
+                    request,
+                    &self.runtime.product_runtime.owner.inspection_port(),
+                )?;
+        }
+        let transport = self
+            .runtime
+            .transport_completion_custody
+            .try_lock()
+            .map_err(|_| {
+                WorthQueryHomeRetirementDenial::Busy(
+                    WorthQueryHomeRetirementOwner::PublicationReceipts,
+                )
+            })?
+            .preflight_home_retirement(request, &self.runtime.dispatch_journal)?;
+        self.preflight_inbound_home_retirement(request)?;
         self.preflight_supplied_home_owners()?;
         self.runtime
             .primary_graph_authority
@@ -101,7 +126,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             .preflight(&self.runtime.primary_provider)?;
         self.runtime
             .primary_provider
-            .preflight(request, dispatch_custody)?;
+            .preflight(request, dispatch_custody, &transport)?;
         self.mutation_projection
             .preflight_home_retirement(request)?;
         self.runtime
@@ -136,16 +161,14 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
     }
 
     fn preflight_supplied_home_owners(&mut self) -> Result<(), WorthQueryHomeRetirementDenial> {
-        use WorthQueryHomeRetirementDenial::{Busy, Unsupported};
+        use WorthQueryHomeRetirementDenial::Busy;
         use WorthQueryHomeRetirementOwner as Owner;
-        let verifiers = self
-            .runtime
+        self.runtime
             .inbound_verifiers
             .get_mut()
             .map_err(|_| Busy(Owner::InboundVerifiers))?;
-        if !verifiers.is_empty() {
-            return Err(Unsupported(Owner::InboundVerifiers));
-        }
+        // Verifiers borrow the original journal weakly. Their Home-level source
+        // facts are settled above; supplied mechanisms remain inert with this runtime.
         // The supplied transport holds no Home custody. Exclusive retirement
         // access means no contact is executing, and the dispatch journal has
         // just settled: every recorded attempt owns its durable observation.
@@ -207,6 +230,28 @@ impl<Schema: ApplicationSchema> RetiringPrimaryGraphRuntime<Schema> {
                 .runtime
                 .mutation_handlers
                 .advance_home_retirement(&mut self.handlers, request)?,
+            QueryRetirementStage::InboundCustody => self
+                .runtime
+                .runtime
+                .inbound_custody
+                .try_lock()
+                .map_err(|_| {
+                    WorthQueryHomeRetirementDenial::Busy(
+                        WorthQueryHomeRetirementOwner::PublicationReceipts,
+                    )
+                })?
+                .advance_home_retirement(request, native)?,
+            QueryRetirementStage::TransportCustody => self
+                .runtime
+                .runtime
+                .transport_completion_custody
+                .try_lock()
+                .map_err(|_| {
+                    WorthQueryHomeRetirementDenial::Busy(
+                        WorthQueryHomeRetirementOwner::PublicationReceipts,
+                    )
+                })?
+                .advance_home_retirement(request, native)?,
             QueryRetirementStage::Participation => self
                 .runtime
                 .runtime
@@ -275,7 +320,9 @@ impl<Schema: ApplicationSchema> RetiringPrimaryGraphRuntime<Schema> {
         };
         if progress == Progress::Complete {
             self.stage = match self.stage {
-                QueryRetirementStage::Handlers => QueryRetirementStage::Participation,
+                QueryRetirementStage::Handlers => QueryRetirementStage::InboundCustody,
+                QueryRetirementStage::InboundCustody => QueryRetirementStage::TransportCustody,
+                QueryRetirementStage::TransportCustody => QueryRetirementStage::Participation,
                 QueryRetirementStage::Participation => QueryRetirementStage::InstalledConditionals,
                 QueryRetirementStage::InstalledConditionals => QueryRetirementStage::Provider,
                 QueryRetirementStage::Provider => QueryRetirementStage::Projection,

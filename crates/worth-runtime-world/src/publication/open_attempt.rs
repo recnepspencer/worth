@@ -60,7 +60,8 @@ impl WorldOpenAttemptOriginal {
     }
 }
 impl WorldPendingOpenAttempt {
-    /// Keep this same submitted original; no owner effect or physical fate is inferred.
+    /// Transfer this same pending original into the World's retained catalog.
+    /// Its durable fate remains unresolved until owner settlement decides it.
     pub fn retain(self) -> crate::recovery::ProductUnpublishedOwnerEffects {
         self.original.custody.retain_open()
     }

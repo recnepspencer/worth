@@ -188,7 +188,7 @@ fn manifest_is_rejected_before_allocation_when_version_or_budget_is_invalid() {
     let exported = fixture().export_typed_records().unwrap();
     let unsupported = manifest_from(
         exported.manifest(),
-        WorthQueryPortablePackageManifestVersion::new(2),
+        WorthQueryPortablePackageManifestVersion::new(1),
         exported.manifest().record_count(),
         exported.manifest().logical_export_bytes(),
         family_counts(exported.manifest()),

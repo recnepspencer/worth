@@ -109,7 +109,7 @@ impl RelationalCommitSemanticResult {
             .created_entities
             .len()
             .checked_add(self.created_relations.len())
-            .ok_or(Refusal::ConflictingCreateCorrespondence)?;
+            .ok_or(Refusal::CreateCardinalityOverflow)?;
         let mut records = Vec::with_capacity(count);
         for created in &self.created_entities {
             if created.key.partition != created.assigned.partition_id {
@@ -133,20 +133,43 @@ impl RelationalCommitSemanticResult {
             let target = resolve(&created.key.target).ok_or(Refusal::CreatedEndpointMissing)?;
             records.push(RecordRef::Relation(created.assigned));
             let birth = created_patch(&RecordRef::Relation(created.assigned))
-                .and_then(|patch| patch.relation_birth);
+                .ok_or(Refusal::CreatedPatchMissing {
+                    record: crate::transactions::data::ExistingRecordTarget::Relation(
+                        created.assigned,
+                    ),
+                })?
+                .relation_birth;
             if birth.is_none_or(|birth| {
                 birth.kind != created.key.kind || birth.source != source || birth.target != target
             }) {
-                return Err(Refusal::ConflictingCreateCorrespondence);
+                return Err(Refusal::RelationBirthMismatch {
+                    assigned: created.assigned,
+                });
             }
         }
         records.sort_unstable();
-        if records.windows(2).any(|pair| pair[0] == pair[1])
-            || records.iter().any(|record| created_patch(record).is_none())
+        if let Some(pair) = records.windows(2).find(|pair| pair[0] == pair[1]) {
+            return Err(Refusal::DuplicateAssignedCreation {
+                record: record_target(&pair[0]),
+            });
+        }
+        if let Some(record) = records
+            .iter()
+            .find(|record| created_patch(record).is_none())
         {
-            return Err(Refusal::ConflictingCreateCorrespondence);
+            return Err(Refusal::CreatedPatchMissing {
+                record: record_target(record),
+            });
         }
         creations::validate_original_keys(self, envelope)?;
         Ok(())
+    }
+}
+
+fn record_target(record: &RecordRef) -> crate::transactions::data::ExistingRecordTarget {
+    use crate::transactions::data::ExistingRecordTarget;
+    match record {
+        RecordRef::Entity(id) => ExistingRecordTarget::Entity(*id),
+        RecordRef::Relation(id) => ExistingRecordTarget::Relation(*id),
     }
 }

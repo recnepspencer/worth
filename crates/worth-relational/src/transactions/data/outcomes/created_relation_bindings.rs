@@ -1,5 +1,7 @@
 use std::collections::BTreeMap;
+mod coupled;
 mod semantic;
+pub(crate) use coupled::CoupledOriginalRelationCreates;
 
 use crate::identity::data::{EntityId, KindId, PartitionId, RelationId};
 #[cfg(test)]

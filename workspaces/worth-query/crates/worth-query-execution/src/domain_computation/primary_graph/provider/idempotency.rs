@@ -67,6 +67,10 @@ pub enum WorthQueryProviderIdempotencyResolutionDenial {
             crate::domain_computation::WorthQueryProviderSessionControlStopKind,
         >,
     ),
+    NativeKeyLookup {
+        index: worth_relational::facade::indexes::DerivedIndexId,
+        cause: worth_relational::facade::indexes::BoundedEntityFieldLookupDenialKind,
+    },
     Unavailable,
 }
 

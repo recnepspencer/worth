@@ -77,7 +77,9 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             .application_branch_commit_lane_for_occurrence(incarnation);
 
         let _coordination = lane.enter();
-        let binding = match self.resolve_installed_transport_completion_binding(owner) {
+        let binding = match self
+            .admit_installed_transport_completion_binding(&publication_execution, owner)
+        {
             Ok(binding) => binding,
             Err(_) => {
                 return RecoveryProgress::Pending(prior, None, Pending::ProductRecoveryRequired)

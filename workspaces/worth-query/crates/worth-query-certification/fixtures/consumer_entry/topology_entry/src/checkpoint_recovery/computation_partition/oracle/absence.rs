@@ -33,8 +33,14 @@ mod serial {
     fn checkpoint_absence_rebuilds_every_owner_call_like_fresh() {
         let _guard = checkpoint_recovery_test_guard();
         let profile = WorthQueryOutputDemandResourceProfile::standard();
-        let application =
-            installation::install_configured::<false, TOTALS_WORK, 1>(None, profile, seed);
+        let policy = worth_foundational::ExecutionRequestPolicy::new(
+            worth_foundational::ExecutionPosture::Serial,
+            worth_foundational::DeterminismContract::CanonicalBitwise,
+            worth_foundational::ExecutionBudget::new(std::num::NonZeroUsize::MIN, None, None),
+        );
+        let application = installation::install_variant_with_observations::<false, TOTALS_WORK, 1, 0>(
+            None, profile, 0, policy, seed,
+        );
         let (scope, principal) = authenticate(&application);
         let request = application.request(&principal, &scope);
         let (_, first) = demand(&request, &application);
@@ -42,9 +48,11 @@ mod serial {
         let checkpoint =
             worth_query_testkit_host::facade::host::checkpoint_capture::capture(&application);
         drop(application);
-        let application = installation::install_configured::<false, TOTALS_WORK, 1>(
+        let application = installation::install_variant_with_observations::<false, TOTALS_WORK, 1, 0>(
             Some(checkpoint),
             profile,
+            0,
+            policy,
             seed,
         );
         let (scope, principal) = authenticate(&application);
@@ -75,7 +83,9 @@ mod serial {
             },
             "restore: printing a Full cause cannot conceal old calls"
         );
-        let fresh = installation::install_configured::<false, TOTALS_WORK, 1>(None, profile, seed);
+        let fresh = installation::install_variant_with_observations::<false, TOTALS_WORK, 1, 0>(
+            None, profile, 0, policy, seed,
+        );
         let (fresh_scope, fresh_principal) = authenticate(&fresh);
         let fresh_request = fresh.request(&fresh_principal, &fresh_scope);
         edit(

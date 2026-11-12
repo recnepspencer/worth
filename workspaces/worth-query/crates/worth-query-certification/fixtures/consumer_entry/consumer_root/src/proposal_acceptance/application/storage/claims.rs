@@ -25,19 +25,19 @@ pub enum ClaimReadFailure {
 pub enum ClaimFailure {
     Admission(AdmissionFailure),
     Construction(ConstructionFailure),
-    Pending(ClaimOperation),
+    Pending(Box<ClaimOperation>),
     Refused {
-        operation: ClaimOperation,
+        operation: Box<ClaimOperation>,
         cause: WorthQuerySourceOnlyDenial,
     },
-    Terminal(ClaimTerminal),
+    Terminal(Box<ClaimTerminal>),
     RegisteredObservation {
         input: AttemptInput,
-        completed: ClaimCompleted,
+        completed: Box<ClaimCompleted>,
         cause: ClaimReadFailure,
     },
     Close {
-        completed: ClaimCompleted,
+        completed: Box<ClaimCompleted>,
         cause: WorthQueryOperationCloseDenial,
     },
 }
@@ -84,16 +84,16 @@ impl Storage<'_> {
             .on_branch(self.branch());
         let completed = match operation.advance(&request) {
             WorthQuerySourceOnlyAdvance::Progress(operation) => {
-                return Err(ClaimFailure::Pending(operation))
+                return Err(ClaimFailure::Pending(Box::new(operation)))
             }
             WorthQuerySourceOnlyAdvance::Refused { operation, denial } => {
                 return Err(ClaimFailure::Refused {
-                    operation,
+                    operation: Box::new(operation),
                     cause: denial,
                 })
             }
             WorthQuerySourceOnlyAdvance::Terminal(terminal) => {
-                return Err(ClaimFailure::Terminal(terminal))
+                return Err(ClaimFailure::Terminal(Box::new(terminal)))
             }
             WorthQuerySourceOnlyAdvance::Completed(completed) => completed,
         };
@@ -102,7 +102,7 @@ impl Storage<'_> {
             Err(cause) => {
                 return Err(ClaimFailure::RegisteredObservation {
                     input,
-                    completed,
+                    completed: Box::new(completed),
                     cause,
                 })
             }
@@ -112,7 +112,10 @@ impl Storage<'_> {
                 reference,
                 evidence,
             }),
-            Err((completed, cause)) => Err(ClaimFailure::Close { completed, cause }),
+            Err((completed, cause)) => Err(ClaimFailure::Close {
+                completed: Box::new(completed),
+                cause,
+            }),
         }
     }
     pub(in crate::proposal_acceptance::application) fn read_claim(

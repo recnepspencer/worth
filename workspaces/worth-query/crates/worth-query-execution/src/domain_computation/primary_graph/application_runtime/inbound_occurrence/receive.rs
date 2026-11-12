@@ -81,6 +81,7 @@ pub enum WorthQueryInboundAdmissionDenial {
 
 mod admit;
 mod denial;
+mod home_acceptance;
 mod phases;
 mod progress_error;
 mod receipt;
@@ -156,14 +157,10 @@ where
                     ));
                 }
                 WorthQueryInboundPublicationClaim::Unpublished => {
-                    if self.inbound_source_posture_for_operation(accepted.operation())
-                        == Some(WorthQueryInboundSourcePosture::Revoked)
+                    if let Some(denial) =
+                        self.inbound_source_consumption_denial(accepted.operation())
                     {
-                        return self.accepted_progress_error(
-                            &accepted,
-                            envelope,
-                            WorthQueryInboundAdmissionDenial::SourceRevoked,
-                        );
+                        return self.accepted_progress_error(&accepted, envelope, denial);
                     }
                     let result = self.progress_unpublished_inbound_occurrence(
                         phase,
@@ -173,7 +170,9 @@ where
                     return self.accepted_progress_result(&accepted, envelope, result);
                 }
                 WorthQueryInboundPublicationClaim::Terminal => {
-                    if let Err(denial) = self.release_retained_inbound_terminal(&accepted) {
+                    if let Err(denial) =
+                        self.release_retained_inbound_terminal(execution, &accepted)
+                    {
                         return self.accepted_progress_error(&accepted, envelope, denial);
                     }
                     return Ok(WorthQueryInboundReceipt::from_accepted(

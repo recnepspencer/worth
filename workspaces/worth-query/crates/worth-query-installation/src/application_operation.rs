@@ -48,13 +48,14 @@ pub use conditional_provider::{
     WorthQueryBoundHostOutputVersion, WorthQueryInstalledHostConditionalProvider,
 };
 pub use conditional_temporal::WorthQueryInstalledTemporalConditionalOperation;
+pub(crate) use contracts::graph_reads::install_portable_graph_reads as install_shared_read_scopes;
 pub use contracts::{
     WorthQueryCompiledApplicationOperationContracts, WorthQueryInstalledApplicationEffectEmission,
     WorthQueryInstalledSigningLifecycleRule, WorthQueryOperationEmissionContract,
-    APPLICATION_AUTHORIZATION_FACT_FAMILY, APPLICATION_DECISION_FACT_FAMILY,
-    APPLICATION_EXECUTION_ACCESS_PRODUCT_FAMILY, APPLICATION_EXECUTION_ALLOCATOR_FAMILY,
-    APPLICATION_EXECUTION_PROVIDER_FAMILY, APPLICATION_EXECUTION_SAFE_POINT_FAMILY,
-    APPLICATION_INVARIANT_SLOT,
+    WorthQueryOperationManagedIndexReadView, APPLICATION_AUTHORIZATION_FACT_FAMILY,
+    APPLICATION_DECISION_FACT_FAMILY, APPLICATION_EXECUTION_ACCESS_PRODUCT_FAMILY,
+    APPLICATION_EXECUTION_ALLOCATOR_FAMILY, APPLICATION_EXECUTION_PROVIDER_FAMILY,
+    APPLICATION_EXECUTION_SAFE_POINT_FAMILY, APPLICATION_INVARIANT_SLOT,
 };
 pub use denial::{
     WorthQueryApplicationOperationInstallationDenial,
@@ -65,7 +66,7 @@ pub(crate) use installed::WorthQueryOperationAftermathInstallationSource;
 pub(in crate::application_operation) use installed::WorthQuerySealedOperationContractCompilation;
 pub(crate) use portable_contract_spine::{
     compile_portable_operation_contract_record, compile_portable_operation_contract_records,
-    WorthQueryPortableOperationContractSpineDenialKind,
+    compile_shared_read_scopes, WorthQueryPortableOperationContractSpineDenialKind,
 };
 
 pub use installed::{

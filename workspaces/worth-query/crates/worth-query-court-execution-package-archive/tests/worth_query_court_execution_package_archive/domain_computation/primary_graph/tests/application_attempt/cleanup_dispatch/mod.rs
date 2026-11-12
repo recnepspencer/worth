@@ -145,7 +145,10 @@ fn failed_cleanup_keeps_the_original_first_send_after_derived_windows_are_discar
         .unwrap();
     assert!(world
         .application
-        .mint_cleanup_recovery_handle(&copy)
+        .with_host_advancement(|phase| world
+            .application
+            .mint_cleanup_recovery_handle(&phase, &copy))
+        .unwrap()
         .is_err());
     assert_eq!(transport.contacts.load(Ordering::SeqCst), 0);
     world
@@ -201,7 +204,12 @@ fn lost_original_dispatch_retains_its_exact_recovery_binding_without_another_fir
         .unwrap();
     let handle = world
         .application
-        .mint_cleanup_recovery_handle(&cleanup)
+        .with_host_advancement(|phase| {
+            world
+                .application
+                .mint_cleanup_recovery_handle(&phase, &cleanup)
+        })
+        .unwrap()
         .unwrap();
     assert_eq!(
         handle.binding().commit_reference(),
@@ -241,7 +249,12 @@ fn transport_unwind_cannot_restore_original_first_send_eligibility() {
         .unwrap();
     let handle = world
         .application
-        .mint_cleanup_recovery_handle(&cleanup)
+        .with_host_advancement(|phase| {
+            world
+                .application
+                .mint_cleanup_recovery_handle(&phase, &cleanup)
+        })
+        .unwrap()
         .unwrap();
     assert_eq!(
         handle.binding().commit_reference(),

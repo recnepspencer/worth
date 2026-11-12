@@ -26,18 +26,20 @@ pub(super) fn install(
         .validated_program()
         .expect("the checkpoint program is complete");
     match checkpoint {
-        Some(checkpoint) => application_installation::WorthQueryInterimCheckpointRestore::program(
-            program,
-            declaration,
-            configuration,
-            ApplicationBuildIdentity::parse("11111111-1111-1111-1111-111111111111").unwrap(),
-            support::limits(
-                32,
-                // Window <= history is enforced by primary_graph/bootstrap/preparation.rs:91.
-                support::invalidation(),
+        Some(checkpoint) => worth_query_host::facade::application_contribution::with_bootstrap_advancement(
+            support::observation::POPULATION_BOOTSTRAP_POLICY,
+            |phase| application_installation::WorthQueryInterimCheckpointRestore::rostered_program_in_advancement(
+                &phase,
+                program,
+                application_installation::WorthQueryApplicationProgramRoster::new(),
+                declaration,
+                configuration,
+                ApplicationBuildIdentity::parse("11111111-1111-1111-1111-111111111111").unwrap(),
+                support::limits(32, support::invalidation()),
+                checkpoint,
             ),
-            checkpoint,
         )
+        .expect("mixed reconstruction opens its original setup request")
         .expect("the checkpoint restores"),
         None => application_installation::in_memory_program(
             program,

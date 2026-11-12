@@ -153,3 +153,21 @@ the real typed selection boundary before provider, clock or row contact. It does
 not reconstruct custody from a receipt, slot ordinal or display digest. Missing
 original scope similarly retains the old obligation rather than assigning it to
 a same-name successor.
+
+## External work across graceful Home reopen
+
+A supported Directory Home records an external dispatch attempt before contact
+and preserves its recorded outcome, original correlation and idempotency
+association across graceful close/reopen. Unknown external effects remain
+unresolved until the external owner's admitted procedure establishes their fate.
+Payload rejection is recorded as proven no effect.
+
+Install fresh transport and inbound verifier owners after opening. Authenticated
+callback custody, duplicate detection and terminal acknowledgement are durable.
+Recovery handles require fresh original-input admission after reopen, retain the
+original claim and deadline, and use the actual original World/Native sources.
+See [application aftermath and recovery](../execution/application-aftermath-and-recovery.md).
+
+The Bank rail integration covers a separate actual rail process and its
+independent consequence ledger. It does not make the external party durable.
+Crash interruption of dispatch or callback publication remains uncertified.

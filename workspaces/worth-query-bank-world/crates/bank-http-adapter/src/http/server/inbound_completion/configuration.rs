@@ -35,17 +35,24 @@ impl BankRailCompletionServerInstallation {
         })
     }
 
-    pub(super) fn estate_verifier(&self) -> super::BankRailCompletionVerifier {
-        super::BankRailCompletionVerifier::new(
-            self.rail_verifying_key,
-            self.audience.clone(),
-            self.source.clone(),
-            self.key_epoch,
-            self.maximum_clock_skew_seconds,
-            BoundaryProtocolIdentity::new("bank.estate.death-notification"),
-            BoundaryProtocolVersion::new(1),
+    /// Returns the pinned Bank verifier for an embedded Host's estate route.
+    pub fn estate_verifier(
+        &self,
+    ) -> std::sync::Arc<
+        dyn worth_query_host::facade::primary_graph::WorthQueryInboundOccurrenceVerifier,
+    > {
+        std::sync::Arc::new(
+            super::BankRailCompletionVerifier::new(
+                self.rail_verifying_key,
+                self.audience.clone(),
+                self.source.clone(),
+                self.key_epoch,
+                self.maximum_clock_skew_seconds,
+                BoundaryProtocolIdentity::new("bank.estate.death-notification"),
+                BoundaryProtocolVersion::new(1),
+            )
+            .expect("validated rail completion installation"),
         )
-        .expect("validated rail completion installation")
     }
 
     pub(super) fn payment_verifier(&self) -> super::BankRailCompletionVerifier {

@@ -20,18 +20,26 @@ impl WorthQueryInboundCustody {
         envelope: &[u8],
         owner: WorthQueryCommittedDispatchOutboxObservation,
     ) -> WorthQueryInboundCustodyAdmission {
-        if let Some(duplicate) = self.duplicate(operation, &claims, envelope) {
+        self.accept_retained(operation, contract, claims, envelope.len() as u64, owner)
+    }
+
+    pub(in crate::domain_computation) fn accept_retained(
+        &mut self,
+        operation: &str,
+        contract: &InstalledInboundOccurrenceContract,
+        claims: WorthQueryInboundOccurrenceClaims,
+        envelope_bytes: u64,
+        owner: WorthQueryCommittedDispatchOutboxObservation,
+    ) -> WorthQueryInboundCustodyAdmission {
+        if let Some(duplicate) = self.duplicate(operation, &claims, &[]) {
             return duplicate;
         }
         let correlation = *owner.record().correlation();
         if self.by_correlation.contains_key(&correlation) {
             return WorthQueryInboundCustodyAdmission::CorrelationAlreadyOwned;
         }
-        let Some(bytes) = envelope
-            .len()
-            .checked_add(owner.record().payload().len())
-            .and_then(|bytes| bytes.checked_add(256))
-            .and_then(|bytes| u64::try_from(bytes).ok())
+        let Some((bytes, next_count, next_bytes)) =
+            self.admitted_message_capacity(operation, contract, &claims, envelope_bytes, &owner)
         else {
             return WorthQueryInboundCustodyAdmission::CapacityExhausted;
         };
@@ -40,25 +48,25 @@ impl WorthQueryInboundCustody {
             .entry(operation.to_owned())
             .or_default();
         let limits = contract.limits();
-        let Some(next_count) = usage.count.checked_add(1) else {
-            return WorthQueryInboundCustodyAdmission::CapacityExhausted;
-        };
-        let Some(next_bytes) = usage.bytes.checked_add(bytes) else {
-            return WorthQueryInboundCustodyAdmission::CapacityExhausted;
-        };
-        if next_count > limits.maximum_accepted_occurrences.get()
-            || next_bytes > limits.maximum_accepted_bytes.get()
-        {
-            return WorthQueryInboundCustodyAdmission::CapacityExhausted;
-        }
         let publish_now = usage.publishing < limits.maximum_concurrent_publications.get();
         let message = MessageKey::from_claims(&claims);
         let signed_meaning_digest = claims.signed_meaning_digest;
         let accepted = Arc::new(WorthQueryAcceptedInboundOccurrence {
             operation: operation.to_owned(),
             claims,
-            owner,
+            owner: if owner
+                .committed_product_publication()
+                .product_branch()
+                .owner_identity()
+                .durable()
+                .is_some()
+            {
+                owner.into_descriptive()
+            } else {
+                owner
+            },
             signed_meaning_digest,
+            preparation_denial: std::sync::Mutex::new(None),
         });
         usage.count = next_count;
         usage.bytes = next_bytes;
@@ -87,5 +95,68 @@ impl WorthQueryInboundCustody {
             },
         );
         WorthQueryInboundCustodyAdmission::New(accepted, publish_now)
+    }
+}
+
+impl WorthQueryInboundCustody {
+    pub(in crate::domain_computation) fn preflight_message(
+        &self,
+        operation: &str,
+        contract: &InstalledInboundOccurrenceContract,
+        claims: &WorthQueryInboundOccurrenceClaims,
+        envelope_bytes: u64,
+        owner: &WorthQueryCommittedDispatchOutboxObservation,
+    ) -> Result<(), WorthQueryInboundCustodyAdmission> {
+        if let Some(existing) = self.duplicate(operation, claims, &[]) {
+            return Err(existing);
+        }
+        if self
+            .by_correlation
+            .contains_key(owner.record().correlation())
+        {
+            return Err(WorthQueryInboundCustodyAdmission::CorrelationAlreadyOwned);
+        }
+        self.admitted_message_capacity(operation, contract, claims, envelope_bytes, owner)
+            .map(|_| ())
+            .ok_or(WorthQueryInboundCustodyAdmission::CapacityExhausted)
+    }
+
+    pub(super) fn admitted_message_capacity(
+        &self,
+        operation: &str,
+        contract: &InstalledInboundOccurrenceContract,
+        claims: &WorthQueryInboundOccurrenceClaims,
+        envelope_bytes: u64,
+        owner: &WorthQueryCommittedDispatchOutboxObservation,
+    ) -> Option<(u64, u64, u64)> {
+        use crate::domain_computation::application_aftermath::dispatch_journal::QueryInboundAcceptedMessage;
+        let bytes = if owner
+            .committed_product_publication()
+            .product_branch()
+            .owner_identity()
+            .durable()
+            .is_some()
+        {
+            QueryInboundAcceptedMessage::retained_bytes(
+                operation,
+                claims,
+                envelope_bytes,
+                &owner.commit_reference().branch_id.0,
+            )?
+        } else {
+            envelope_bytes
+                .checked_add(owner.record().payload().len() as u64)?
+                .checked_add(256)?
+        };
+        let (count, retained) = self.usage_for_operation(operation);
+        let next_count = count.checked_add(1)?;
+        let next_bytes = retained.checked_add(bytes)?;
+        let limits = contract.limits();
+        if next_count > limits.maximum_accepted_occurrences.get()
+            || next_bytes > limits.maximum_accepted_bytes.get()
+        {
+            return None;
+        }
+        Some((bytes, next_count, next_bytes))
     }
 }

@@ -282,7 +282,7 @@ fn decode_program_target(
     })
 }
 
-fn write_decision_read_target(
+pub(super) fn write_decision_read_target(
     output: &mut dyn BinaryEncodingSink,
     target: &ApplicationOperationDecisionReadTarget,
 ) -> Result<(), Denial> {
@@ -307,7 +307,7 @@ fn write_decision_read_target(
     }
 }
 
-fn decode_decision_read_target(
+pub(super) fn decode_decision_read_target(
     input: &mut BinaryInput<'_>,
 ) -> Result<ApplicationOperationDecisionReadTarget, Denial> {
     Ok(match input.u16()? {

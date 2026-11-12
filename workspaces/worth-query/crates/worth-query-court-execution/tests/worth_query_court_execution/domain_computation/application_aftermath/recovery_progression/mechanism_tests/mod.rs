@@ -29,8 +29,10 @@ pub fn authority(handle: &WorthQueryRecoveryHandle) -> WorthQueryRecoveryEffectA
 fn recorded_inverse_handle_denies_compensation_from_its_own_mechanism() {
     let handle = probe_handle(worth_query_testkit_execution_primary_graph_application_attempt::domain_computation::application_aftermath::aftermath_schema_fixture::freeze_account());
     let authority = authority(&handle);
-    let denied = compensate_recovery_handle(handle, &authority)
-        .expect_err("recorded inverse is not compensation");
+    let denied = super::local_transition::in_phase(|phase| {
+        compensate_recovery_handle(&phase, handle, &authority)
+    })
+    .expect_err("recorded inverse is not compensation");
     assert_eq!(
         denied.kind(),
         WorthQueryRecoveryHandleDenialKind::CompensationNotAdmitted
@@ -41,8 +43,10 @@ fn recorded_inverse_handle_denies_compensation_from_its_own_mechanism() {
 fn runtime_alone_handle_denies_reconciliation_from_its_own_authority() {
     let handle = probe_handle(worth_query_testkit_execution_primary_graph_application_attempt::domain_computation::application_aftermath::aftermath_schema_fixture::freeze_account());
     let authority = authority(&handle);
-    let denied = reconcile_recovery_handle(handle, &authority)
-        .expect_err("runtime-alone authority is not reconciliation");
+    let denied = super::local_transition::in_phase(|phase| {
+        reconcile_recovery_handle(&phase, handle, &authority)
+    })
+    .expect_err("runtime-alone authority is not reconciliation");
     assert_eq!(
         denied.kind(),
         WorthQueryRecoveryHandleDenialKind::ReconciliationNotAdmitted

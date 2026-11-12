@@ -35,12 +35,31 @@ pub enum WorthQueryDurableDispatchRecordDenial {
 /// runtime is memory-only and its custody is process-local. Exactly one
 /// observation follows: the one the contact reports, or, if the contact
 /// unwinds first, the truthful unknown outcome.
-pub(super) struct DurableDispatchContact<'journal> {
+pub(in crate::domain_computation) struct DurableDispatchContact<'journal> {
     journal: &'journal WorthQueryDispatchJournal,
     attempt: Option<DispatchAttemptIdentity>,
+    correlation: worth_foundational::facade::CanonicalDigestId,
+    contact_started: std::sync::atomic::AtomicBool,
 }
 
 impl DurableDispatchContact<'_> {
+    pub(super) fn is_recorded(&self) -> bool {
+        self.attempt.is_some()
+    }
+    pub(in crate::domain_computation) fn recorded_attempt(&self) -> DispatchAttemptIdentity {
+        self.attempt
+            .expect("recorded contact owns its actual attempt")
+    }
+    pub(in crate::domain_computation) fn correlation(
+        &self,
+    ) -> &worth_foundational::facade::CanonicalDigestId {
+        &self.correlation
+    }
+    pub(super) fn mark_contact_started(&self) {
+        self.contact_started
+            .store(true, std::sync::atomic::Ordering::Release);
+    }
+
     /// The journal owner makes the observation durable on the invoking
     /// request and retains it across any refusal, including that request
     /// having stopped; graceful close refuses until it is recorded.
@@ -63,9 +82,18 @@ impl Drop for DurableDispatchContact<'_> {
             // No physical work while unwinding: the next settlement records it.
             self.journal.retain_observation(
                 attempt,
-                QueryDispatchRecordedObservation::Unresolved(
-                    QueryDispatchUnresolvedCause::UnknownProviderOutcome,
-                ),
+                if self
+                    .contact_started
+                    .load(std::sync::atomic::Ordering::Acquire)
+                {
+                    QueryDispatchRecordedObservation::Unresolved(
+                        QueryDispatchUnresolvedCause::UnknownProviderOutcome,
+                    )
+                } else {
+                    QueryDispatchRecordedObservation::ProvenNoEffect(
+                        worth_foundational::facade::ExternalEffectNoEffectCause::ContactNotStarted,
+                    )
+                },
             );
         }
     }
@@ -100,7 +128,12 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         } else {
             None
         };
-        Ok(DurableDispatchContact { journal, attempt })
+        Ok(DurableDispatchContact {
+            journal,
+            attempt,
+            correlation: *record.correlation().digest(),
+            contact_started: std::sync::atomic::AtomicBool::new(false),
+        })
     }
 
     /// The latest custody this Home's dispatch journal durably records for
@@ -163,7 +196,7 @@ pub(super) fn recorded_observation(
     }
 }
 
-fn attempt_record_denial(
+pub(super) fn attempt_record_denial(
     cause: QueryDispatchJournalDenial,
 ) -> WorthQueryExternalDispatchPreparationDenial {
     use QueryDispatchJournalDenial as Journal;

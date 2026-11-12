@@ -2,7 +2,7 @@
 
 use worth_query_installation::facade::InstalledCorrectionMechanism;
 
-use crate::domain_computation::managed_run::WorthQueryRecoveryResourceTerminal;
+use crate::domain_computation::managed_run::RecoveryClaimDisposition;
 
 use super::super::recovery_handle::{
     RelinquishOnDenial, WorthQueryRecoveryHandle, WorthQueryRecoveryHandleBinding,
@@ -30,9 +30,13 @@ impl WorthQueryRecoveryCompensateAdmission {
 /// compensating change itself. On denial the handle is relinquished, not
 /// consumed.
 pub fn compensate_recovery_handle(
+    phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
     handle: WorthQueryRecoveryHandle,
     authority: &WorthQueryRecoveryEffectAuthority,
-) -> Result<WorthQueryRecoveryCompensateAdmission, WorthQueryRecoveryHandleDenial> {
+) -> Result<
+    WorthQueryRecoveryCompensateAdmission,
+    super::super::recovery_handle::WorthQueryRecoveryTransitionDenial,
+> {
     let handle = handle.admit(|handle| {
         require_fresh_effect_authority(handle, authority)?;
         match handle.binding().installed_aftermath().mechanism() {
@@ -45,6 +49,6 @@ pub fn compensate_recovery_handle(
         }
     })?;
     Ok(WorthQueryRecoveryCompensateAdmission {
-        binding: handle.consume(WorthQueryRecoveryResourceTerminal::Consumed)?,
+        binding: handle.consume(phase, RecoveryClaimDisposition::Consumed)?,
     })
 }

@@ -19,7 +19,7 @@ mod scope_identity_tests;
 
 use contract_encoding::{encode_contract, encode_resources};
 
-const RULE_VERSION: &str = "worth-query-installed-graph-obligations-v3";
+const RULE_VERSION: &str = "worth-query-installed-graph-obligations-v4";
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct WorthQueryInstalledGraphObligationSetIdentity(CanonicalDigestId);

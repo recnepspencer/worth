@@ -11,13 +11,15 @@ mod identity;
 mod identity_derivation;
 pub(crate) mod inbound;
 mod observation;
+mod recorded_completion;
+pub(in crate::domain_computation) use recorded_completion::RecordedCompletionCausality;
 pub(crate) mod outbox;
 mod posture;
 mod proven_no_effect;
 mod transport;
 
 pub use causal_event::ExternalEffectPosture;
-pub(in crate::domain_computation) use causal_event::WorthQueryAdmittedExternalDispatchAttempt;
+pub(crate) mod dispatch_admission;
 pub use classification::{ExternalEffectClassification, ExternalRailTransportFault};
 pub use correlation::{
     derive_external_effect_correlation_identity, ExternalEffectCorrelationBasis,
@@ -29,6 +31,7 @@ pub use dispatch::{
     WorthQueryExternalDispatchPostureKind, WorthQueryExternalEffectCausalLadder,
     WorthQueryExternalEffectDispatch,
 };
+pub(in crate::domain_computation) use dispatch_admission::WorthQueryAdmittedExternalDispatchAttempt;
 pub use identity::{ExternalEffectCausalLink, ExternalEffectPostureIdentity};
 pub(in crate::domain_computation) use inbound::{
     WorthQueryAcceptedInboundOccurrence, WorthQueryInboundCustody,

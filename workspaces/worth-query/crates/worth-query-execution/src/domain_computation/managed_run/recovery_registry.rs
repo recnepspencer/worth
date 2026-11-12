@@ -11,30 +11,36 @@ use std::sync::{Arc, Mutex};
 
 use crate::domain_computation::execution_runtime::WorthQueryRuntimeAuthorityIdentity;
 use crate::domain_computation::runtime_time::WorthQueryRuntimeClock;
+use worth_foundational::facade::RecoveryClaimDisposition;
 use worth_runtime_world::facade::CompositeCommitIdentity;
 
 /// Authoritative commit identity claimed exactly once for recovery minting.
 #[derive(Clone, Debug, Eq, Hash, PartialEq)]
-pub struct WorthQueryRecoveryMintClaim {
-    provider_runtime_instance_id: u64,
-    world_owner: worth_foundational::facade::WorldOwnerCoordinate,
-    commit_ordinal: u64,
+pub enum WorthQueryRecoveryMintClaim {
+    Home(worth_foundational::facade::DurableCompositeCommitIdentity),
+    Memory {
+        provider_runtime_instance_id: u64,
+        world_owner: u64,
+        commit_ordinal: u64,
+    },
 }
-
 impl WorthQueryRecoveryMintClaim {
     pub(crate) fn new(
         provider_runtime_instance_id: u64,
         product_commit: CompositeCommitIdentity,
     ) -> Self {
-        Self {
-            provider_runtime_instance_id,
-            world_owner: match product_commit.owner_identity().durable() {
-                Some(owner) => worth_foundational::facade::WorldOwnerCoordinate::Home { owner },
-                None => worth_foundational::facade::WorldOwnerCoordinate::MemoryOnly {
-                    observation: product_commit.owner_identity().get(),
-                },
+        match product_commit.owner_identity().durable() {
+            Some(owner) => Self::Home(
+                worth_foundational::facade::DurableCompositeCommitIdentity::from_recorded(
+                    owner,
+                    product_commit.ordinal(),
+                ),
+            ),
+            None => Self::Memory {
+                provider_runtime_instance_id,
+                world_owner: product_commit.owner_identity().get(),
+                commit_ordinal: product_commit.ordinal(),
             },
-            commit_ordinal: product_commit.ordinal(),
         }
     }
 }
@@ -42,38 +48,6 @@ impl WorthQueryRecoveryMintClaim {
 /// The receipt's authoritative commit identity was already claimed.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub struct WorthQueryRecoveryMintAlreadyClaimed;
-
-/// Terminal fate recorded when a live recovery resource leaves the registry.
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub enum WorthQueryRecoveryResourceTerminal {
-    Consumed,
-    /// Safe retry observed external completion before consuming the handle.
-    Completed,
-    Expired,
-    Disposed,
-    ForceTerminated,
-    /// The handle left without a transition because the attempt was denied.
-    ///
-    /// Distinct from `Disposed` on purpose. Disposal is a decision â€” the holder
-    /// chose to end recovery. Relinquishment is a non-event: authority was
-    /// wrong or stale, nothing was consumed, and the commit is exactly as
-    /// recoverable as it was a moment earlier. Only this fate releases the
-    /// authoritative mint claim (Q8.21-L11).
-    Relinquished,
-}
-
-impl worth_proof::TerminalState for WorthQueryRecoveryResourceTerminal {
-    fn label(&self) -> &'static str {
-        match self {
-            Self::Consumed => "consumed",
-            Self::Completed => "completed",
-            Self::Expired => "expired",
-            Self::Disposed => "disposed",
-            Self::ForceTerminated => "force-terminated",
-            Self::Relinquished => "relinquished",
-        }
-    }
-}
 
 /// Opaque registry slot. Not a public recovery identity and not Clone on the
 /// handle path — only the registry retains membership.
@@ -92,9 +66,11 @@ struct RecoveryRegistryState {
     /// Which live slot holds which claim, so a relinquished attempt can give
     /// its claim back. Only `register_once` adds; every exit path removes.
     claims_by_slot: HashMap<WorthQueryRecoveryRegistrySlot, WorthQueryRecoveryMintClaim>,
-    terminal_by_claim: HashMap<WorthQueryRecoveryMintClaim, WorthQueryRecoveryResourceTerminal>,
+    terminal_by_claim: HashMap<WorthQueryRecoveryMintClaim, RecoveryClaimDisposition>,
     live: BTreeMap<WorthQueryRecoveryRegistrySlot, ()>,
-    terminated: HashMap<WorthQueryRecoveryRegistrySlot, WorthQueryRecoveryResourceTerminal>,
+    durable: HashMap<WorthQueryRecoveryRegistrySlot, crate::domain_computation::application_aftermath::dispatch_journal::QueryRecordedRecoveryClaim>,
+    deferred: std::collections::BTreeMap<worth_foundational::facade::DurableRecoveryClaimIdentity, DeferredRecoveryDisposition>,
+    terminated: HashMap<WorthQueryRecoveryRegistrySlot, RecoveryClaimDisposition>,
 }
 
 impl RecoveryRegistryState {
@@ -107,6 +83,8 @@ impl RecoveryRegistryState {
             claims_by_slot: HashMap::new(),
             terminal_by_claim: HashMap::new(),
             live: BTreeMap::new(),
+            durable: HashMap::new(),
+            deferred: Default::default(),
             terminated: HashMap::new(),
         }
     }
@@ -125,6 +103,7 @@ pub struct WorthQueryRecoveryHandleRegistry {
     runtime_authority: WorthQueryRuntimeAuthorityIdentity,
     clock: Arc<WorthQueryRuntimeClock>,
     state: Mutex<RecoveryRegistryState>,
+    journal: std::sync::Weak<crate::domain_computation::application_aftermath::dispatch_journal::WorthQueryDispatchJournal>,
 }
 
 impl std::fmt::Debug for WorthQueryRecoveryHandleRegistry {
@@ -141,10 +120,12 @@ impl WorthQueryRecoveryHandleRegistry {
     pub(crate) fn for_runtime(
         runtime_authority: WorthQueryRuntimeAuthorityIdentity,
         clock: Arc<WorthQueryRuntimeClock>,
+        journal: std::sync::Weak<crate::domain_computation::application_aftermath::dispatch_journal::WorthQueryDispatchJournal>,
     ) -> Self {
         Self {
             runtime_authority,
             clock,
+            journal,
             state: Mutex::new(RecoveryRegistryState::new()),
         }
     }
@@ -154,6 +135,7 @@ impl WorthQueryRecoveryHandleRegistry {
         Self::for_runtime(
             WorthQueryRuntimeAuthorityIdentity::mint_for_test(),
             Arc::new(WorthQueryRuntimeClock::system()),
+            std::sync::Weak::new(),
         )
     }
 
@@ -187,12 +169,15 @@ impl WorthQueryRecoveryHandleRegistry {
     pub(crate) fn claim_state(
         &self,
         claim: &WorthQueryRecoveryMintClaim,
-    ) -> (bool, Option<WorthQueryRecoveryResourceTerminal>) {
+    ) -> Result<(bool, Option<RecoveryClaimDisposition>), crate::domain_computation::application_aftermath::dispatch_journal::QueryDispatchJournalDenial>{
+        if let Some(recorded) = self.journal_claim_state(claim)? {
+            return Ok(recorded);
+        }
         let state = self.state.lock().expect("recovery registry lock");
-        (
+        Ok((
             state.claimed_commits.contains(claim),
             state.terminal_by_claim.get(claim).copied(),
-        )
+        ))
     }
 
     /// Retire a slot *without* consuming the recovery it stands for.
@@ -219,6 +204,15 @@ impl WorthQueryRecoveryHandleRegistry {
         }
         if let Some(claim) = state.claims_by_slot.remove(&slot) {
             state.claimed_commits.remove(&claim);
+        }
+        if let Some(recorded) = state.durable.remove(&slot) {
+            state
+                .deferred
+                .entry(recorded.identity)
+                .or_insert(DeferredRecoveryDisposition {
+                    recorded,
+                    terminal: RecoveryClaimDisposition::Relinquished,
+                });
         }
         true
     }
@@ -271,7 +265,7 @@ impl WorthQueryRecoveryHandleRegistry {
     pub(crate) fn mark_terminal(
         &self,
         slot: WorthQueryRecoveryRegistrySlot,
-        terminal: WorthQueryRecoveryResourceTerminal,
+        terminal: RecoveryClaimDisposition,
     ) -> bool {
         let mut state = self.state.lock().expect("recovery registry lock");
         if state.live.remove(&slot).is_some() {
@@ -281,6 +275,12 @@ impl WorthQueryRecoveryHandleRegistry {
             // claim back.
             if let Some(claim) = state.claims_by_slot.remove(&slot) {
                 state.terminal_by_claim.insert(claim, terminal);
+            }
+            if let Some(recorded) = state.durable.remove(&slot) {
+                state
+                    .deferred
+                    .entry(recorded.identity)
+                    .or_insert(DeferredRecoveryDisposition { recorded, terminal });
             }
             state.terminated.insert(slot, terminal);
             true
@@ -292,7 +292,7 @@ impl WorthQueryRecoveryHandleRegistry {
     pub(crate) fn terminal_of(
         &self,
         slot: WorthQueryRecoveryRegistrySlot,
-    ) -> Option<WorthQueryRecoveryResourceTerminal> {
+    ) -> Option<RecoveryClaimDisposition> {
         self.state
             .lock()
             .expect("recovery registry lock")
@@ -313,3 +313,6 @@ impl WorthQueryRecoveryHandleRegistry {
 
 mod court_doors_for_test;
 mod recorded_observation;
+
+mod durable;
+pub(in crate::domain_computation) use durable::DeferredRecoveryDisposition;

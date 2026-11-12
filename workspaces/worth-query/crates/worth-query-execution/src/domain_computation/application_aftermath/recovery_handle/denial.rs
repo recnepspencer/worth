@@ -6,6 +6,9 @@
 /// cannot collapse into one shared string or enum.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryRecoveryHandleDenialKind {
+    DurableClaimPublication,
+    RetainedMaterialUnavailable,
+    OriginalRead(crate::domain_computation::primary_graph::WorthQueryApplicationIdempotencyResolutionDenialKind),
     CompletionExecutionRequest(
         crate::domain_computation::primary_graph::WorthQueryAdvancementDenial,
     ),
@@ -110,14 +113,58 @@ pub enum WorthQueryRecoveryHandleDenialKind {
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct WorthQueryRecoveryHandleDenial {
     kind: WorthQueryRecoveryHandleDenialKind,
+    source: Option<std::sync::Arc<WorthQueryRecoverySourceDenial>>,
 }
 
 impl WorthQueryRecoveryHandleDenial {
     pub const fn new(kind: WorthQueryRecoveryHandleDenialKind) -> Self {
-        Self { kind }
+        Self { kind, source: None }
     }
 
     pub const fn kind(&self) -> WorthQueryRecoveryHandleDenialKind {
         self.kind
+    }
+}
+
+/// Exact owning refusal retained alongside its caller-level recovery classification.
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub enum WorthQueryRecoverySourceDenial {
+    Journal(crate::domain_computation::application_aftermath::dispatch_journal::QueryDispatchJournalDenial),
+    Material(crate::domain_computation::application_aftermath::correction_material::QueryCorrectionMaterialDenial),
+    Original(crate::domain_computation::primary_graph::WorthQueryApplicationIdempotencyResolutionDenial),
+}
+impl WorthQueryRecoveryHandleDenial {
+    pub fn source(&self) -> Option<&WorthQueryRecoverySourceDenial> {
+        self.source.as_deref()
+    }
+    pub(crate) fn journal(
+        cause: crate::domain_computation::application_aftermath::dispatch_journal::QueryDispatchJournalDenial,
+    ) -> Self {
+        Self {
+            kind: WorthQueryRecoveryHandleDenialKind::DurableClaimPublication,
+            source: Some(std::sync::Arc::new(
+                WorthQueryRecoverySourceDenial::Journal(cause),
+            )),
+        }
+    }
+    pub(crate) fn material(
+        cause: crate::domain_computation::application_aftermath::correction_material::QueryCorrectionMaterialDenial,
+    ) -> Self {
+        Self {
+            kind: WorthQueryRecoveryHandleDenialKind::RetainedMaterialUnavailable,
+            source: Some(std::sync::Arc::new(
+                WorthQueryRecoverySourceDenial::Material(cause),
+            )),
+        }
+    }
+    pub(crate) fn original(
+        cause: crate::domain_computation::primary_graph::WorthQueryApplicationIdempotencyResolutionDenial,
+    ) -> Self {
+        Self {
+            kind: WorthQueryRecoveryHandleDenialKind::OriginalRead(cause.kind()),
+            source: Some(std::sync::Arc::new(
+                WorthQueryRecoverySourceDenial::Original(cause),
+            )),
+        }
     }
 }

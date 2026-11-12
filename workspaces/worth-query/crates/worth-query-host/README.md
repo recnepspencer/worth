@@ -203,6 +203,14 @@ original Query owner. Close retains its inert supplier custody until explicit
 remains usable; closing the Home does not revoke that service. A retained
 program-runtime alias still refuses close with `Busy(ProgramRuntime)`.
 
+Dispatch and inbound-completion custody survive graceful close. Reopen retains
+accepted messages, their original audience, pending completion and acknowledged
+deduplication meaning. Supply fresh verifier and transport configuration, then
+use inbound maintenance to continue retained work. Recorded completed transport
+observations continue without contacting the rail again. Expiring an
+acknowledged message preserves the canonical completion. Crash recovery is not
+yet certified; remote exactly-once remains governed by the external contract.
+
 Dispose of a development directory with
 `discard_home(WorthQueryApplicationHomeLocation::Directory(path))` only when its
 lease is free. Discard destroys its data; it is separate from close. A held lease
@@ -1111,3 +1119,12 @@ the same configured owner. This is not a filesystem-close claim.
 Workflow-bearing Directory execution and reopen qualification remain pending
 H5's cutoff and structural workflow readmission. Configuration after open does
 not supply a transition's target executable vocabulary retroactively.
+
+A completion with a live durable `ProductUnpublished` original requires Home
+reopen. Owning close can refuse while preserving the same serving Home; end
+that Home's ownership and open the directory through Host. Readmission retains
+the actual original Native effect. Advance its maintenance across physical
+pending steps; it neither contacts the transport again nor grants live release
+or continuation to the old recovery handle. A new mutation may answer
+`ProductBasisStale` until the original completion is recovered. This is the
+specified `ReopenRequired` route, not a crash-recovery certification.

@@ -32,7 +32,6 @@ mod binding_denial;
 pub(in crate::domain_computation::primary_graph) mod branch_activation_history;
 mod checkpoint;
 pub(in crate::domain_computation::primary_graph) mod checkpoint_transition;
-mod home_activation;
 pub(super) mod home_publication;
 mod initial_installation;
 mod managed_source_initialization;

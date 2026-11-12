@@ -40,7 +40,6 @@ pub(crate) struct WorldProductMovementPermit {
     cell: ProductBranchReferenceCell,
     subject: WorldDurableArtifact,
     armed: bool,
-    control: Option<Arc<crate::publication::HomeTransitionEffectControlState>>,
 }
 impl ProductBranchReferenceCell {
     pub(crate) fn begin_durable_movement(
@@ -74,34 +73,10 @@ impl ProductBranchReferenceCell {
             cell: self.clone(),
             subject,
             armed: true,
-            control: None,
         })
     }
 }
 impl WorldProductMovementPermit {
-    pub(crate) fn bind_home_transition_control(
-        &mut self,
-        control: Option<Arc<crate::publication::HomeTransitionEffectControlState>>,
-    ) {
-        self.control = control;
-    }
-
-    pub(super) fn refuse_head_movement(&self) -> bool {
-        self.control.as_ref().is_some_and(|control| {
-            control
-                .fire(crate::publication::WorldHomeTransitionEffectInterruption::RefuseHeadMovement)
-        })
-    }
-
-    pub(super) fn after_committed(&self) {
-        if self.control.as_ref().is_some_and(|control| {
-            control.fire(
-                crate::publication::WorldHomeTransitionEffectInterruption::UnwindAfterHeadMovement,
-            )
-        }) {
-            panic!("receiver interrupted the original continuation after its committed head swap");
-        }
-    }
     /// Retain the actual witness before materialization or any other work that
     /// could unwind. No caller-provided fate is accepted here.
     pub(crate) fn acknowledge(&mut self, witness: DurablyCommitted<ActualWorldPublication>) {

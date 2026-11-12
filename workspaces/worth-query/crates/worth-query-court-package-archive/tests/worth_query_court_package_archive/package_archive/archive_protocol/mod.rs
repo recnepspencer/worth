@@ -26,4 +26,5 @@ pub(crate) mod release_envelope;
 
 pub(crate) mod repository_contract;
 
+mod shared_decision_reads;
 pub(crate) mod signing_payload;

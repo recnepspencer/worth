@@ -33,7 +33,28 @@ pub(crate) fn graph_reads_exactly_match_targets(
 ) -> bool {
     let unique = targets.iter().collect::<BTreeSet<_>>();
     unique.len() == targets.len()
-        && installed_atomic_read_count(contract) == targets.len()
+        && contract
+            .roles()
+            .iter()
+            .flat_map(|role| role.read_scopes())
+            .all(|scope| {
+                let count = match scope {
+                    WorthQueryOperationGraphReadScope::Entity(_)
+                    | WorthQueryOperationGraphReadScope::Relation(_) => Some(1),
+                    WorthQueryOperationGraphReadScope::NativeProjection(scope) => {
+                        scope.atomic_field_count()
+                    }
+                    WorthQueryOperationGraphReadScope::Components(_)
+                    | WorthQueryOperationGraphReadScope::DerivedSource(_) => None,
+                };
+                count.is_some_and(|count| {
+                    targets
+                        .iter()
+                        .filter(|target| read_scope_admits_target(scope, target))
+                        .count()
+                        == count
+                })
+            })
         && targets
             .iter()
             .all(|target| graph_reads_admit_target(contract, target))
@@ -76,23 +97,6 @@ pub(crate) fn application_contract_contains_program_targets(
         && targets
             .iter()
             .all(|target| application_contract_admits_program_target(contracts, target))
-}
-
-fn installed_atomic_read_count(contract: &WorthQueryOperationGraphReadContract) -> usize {
-    contract
-        .roles()
-        .iter()
-        .flat_map(|role| role.read_scopes())
-        .try_fold(0usize, |count, scope| match scope {
-            WorthQueryOperationGraphReadScope::Components(_)
-            | WorthQueryOperationGraphReadScope::DerivedSource(_) => None,
-            WorthQueryOperationGraphReadScope::Entity(_)
-            | WorthQueryOperationGraphReadScope::Relation(_) => count.checked_add(1),
-            WorthQueryOperationGraphReadScope::NativeProjection(scope) => scope
-                .atomic_field_count()
-                .and_then(|fields| count.checked_add(fields)),
-        })
-        .unwrap_or(usize::MAX)
 }
 
 fn read_scope_admits_target(

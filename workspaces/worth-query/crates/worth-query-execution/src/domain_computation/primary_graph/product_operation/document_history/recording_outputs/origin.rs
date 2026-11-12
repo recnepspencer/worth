@@ -17,6 +17,7 @@ impl WorthQueryHistoryRecordingOutputOrigin {
         reserved: &WorthQueryDocumentHistoryReservation,
         candidate: crate::basis::WorthQueryProductBranch,
         intent: WorthQueryApplicationIdempotencyBinding,
+        source: super::super::source_evidence::WorthQueryHistorySourceEvidence<'_>,
         profile: &WorthQueryHistoryOutputProfile,
         observation: Arc<WorthQueryApplicationReadObservation>,
         root_posture: Option<WorthQueryOutputSettlementPosture>,
@@ -28,6 +29,21 @@ impl WorthQueryHistoryRecordingOutputOrigin {
             (std::mem::size_of::<Self>() + 2 * std::mem::size_of::<usize>()) as u64,
         )
         .map_err(Denial::Recording)?;
+        // The authored source and its completed output endpoint can be different
+        // publications. Preserve source identity from the validated receipt.
+        let (intent, source) = match source {
+            super::super::source_evidence::WorthQueryHistorySourceEvidence::Live(receipt) => (
+                receipt.idempotency_binding(),
+                receipt
+                    .committed_product_publication()
+                    .composite_commit()
+                    .clone(),
+            ),
+            super::super::source_evidence::WorthQueryHistorySourceEvidence::Recorded(_) => (
+                intent,
+                observation.product_observation().selected_commit().clone(),
+            ),
+        };
         Ok(Arc::new(Self {
             recipes: super::super::discovery_recipes::HistoryDiscoveryRecipeRecorder::new(
                 execution,
@@ -39,7 +55,7 @@ impl WorthQueryHistoryRecordingOutputOrigin {
             candidate,
             expected: reserved.expected.clone(),
             intent,
-            source: observation.product_observation().selected_commit().clone(),
+            source,
             observation,
             profile: profile.clone(),
             root_posture,

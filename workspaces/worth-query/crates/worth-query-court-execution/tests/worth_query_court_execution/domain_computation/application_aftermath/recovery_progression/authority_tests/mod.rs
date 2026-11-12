@@ -7,7 +7,7 @@ use worth_query_execution::facade::domain_computation::WorthQueryRecoveryInspect
 use worth_query_execution::facade::domain_computation::WorthQueryRecoveryHandle;
 use worth_query_testkit_execution_primary_graph_application_attempt_2::domain_computation::application_aftermath::recovery_handle::binding::WorthQueryRecoveryHandleBindingAxisProbe;
 use worth_query_execution::facade::domain_computation::WorthQueryRecoveryHandleDenialKind;
-use worth_query_execution::court_doors_for_test::domain_computation::managed_run::recovery_registry::WorthQueryRecoveryResourceTerminal;
+use worth_foundational::facade::RecoveryClaimDisposition;
 
 pub fn probe_handle_with_runtime_instance(runtime_instance_id: u64) -> WorthQueryRecoveryHandle {
     probe_handle_expiring_at(runtime_instance_id, u64::MAX)
@@ -30,20 +30,19 @@ fn concurrent_force_termination_cannot_be_reported_as_a_consumed_transition() {
     let handle = probe_handle_with_runtime_instance(91);
     let registry = handle.registry_arc_for_test();
     let slot = handle.registry_slot_for_test();
-    assert!(
-        registry.mark_terminal_for_test(slot, WorthQueryRecoveryResourceTerminal::ForceTerminated)
-    );
+    assert!(registry.mark_terminal_for_test(slot, RecoveryClaimDisposition::ForceTerminated));
 
-    let denied = handle
-        .consume_for_test(WorthQueryRecoveryResourceTerminal::Consumed)
-        .expect_err("force termination wins the terminal race");
+    let denied = super::local_transition::in_phase(|phase| {
+        handle.consume_for_test(&phase, RecoveryClaimDisposition::Consumed)
+    })
+    .expect_err("force termination wins the terminal race");
     assert_eq!(
         denied.kind(),
         WorthQueryRecoveryHandleDenialKind::AlreadyTerminal
     );
     assert_eq!(
         registry.terminal_of_for_test(slot),
-        Some(WorthQueryRecoveryResourceTerminal::ForceTerminated)
+        Some(RecoveryClaimDisposition::ForceTerminated)
     );
     registry.assert_no_live_handles_for_test();
 }

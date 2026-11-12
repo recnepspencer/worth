@@ -24,9 +24,8 @@ impl WorthQueryCanonicalInboundCompletion {
     ) -> bool {
         let owner = evidence.committed();
         let record = owner.record();
-        let dispatch = evidence.dispatch();
         if record.inbound() != Some(binding.contract())
-            || !dispatch.matches_committed_owner(binding.runtime(), owner)
+            || !evidence.matches_committed_owner(binding.runtime(), owner)
             || self.correlation != *record.correlation()
             || self.original_relational_commit != *owner.commit_reference()
             || self.original_world_commit
@@ -49,12 +48,11 @@ impl WorthQueryCanonicalInboundCompletion {
     pub(super) fn seal_transport(terminal: &PerformedInstalledTransportCompletion) -> Option<Self> {
         let evidence = terminal.evidence();
         let original = evidence.committed();
-        let dispatch = evidence.dispatch();
         let binding = terminal.binding();
         let record = original.record();
         let contract = record.inbound()?;
         if contract != binding.contract()
-            || !dispatch.matches_committed_owner(binding.runtime(), original)
+            || !evidence.matches_committed_owner(binding.runtime(), original)
             || original
                 .committed_product_publication()
                 .product_incarnation()
@@ -76,7 +74,7 @@ impl WorthQueryCanonicalInboundCompletion {
         {
             return None;
         }
-        let observed = dispatch.causal_ladder().observation()?;
+        let observed = evidence.observation_identity()?;
         Some(Self {
             correlation: *record.correlation(),
             operation: binding.operation().to_owned(),
@@ -86,8 +84,8 @@ impl WorthQueryCanonicalInboundCompletion {
             message_identity: None,
             signed_meaning_digest: None,
             provenance: WorthQueryCompletionProvenance::InstalledTransportCompletion {
-                attempt_identity: *dispatch.causal_ladder().attempt().identity().bytes(),
-                observation_identity: *observed.identity().bytes(),
+                attempt_identity: *evidence.attempt_identity().bytes(),
+                observation_identity: *observed.bytes(),
             },
             correlation_family: record.correlation_family().as_str().to_owned(),
             protocol_identity: record.protocol_identity().clone(),

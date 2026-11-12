@@ -59,7 +59,7 @@ fn overlap(
         .flat_map(|contract| contract.touches())
     {
         for contract in &reader.contracts {
-            for read in contract.reads() {
+            for read in contract.reads().iter() {
                 if contract.may_intersect(read, write) {
                     return Some(DeclaredEditDependency {
                         writer: writer.subject.clone(),

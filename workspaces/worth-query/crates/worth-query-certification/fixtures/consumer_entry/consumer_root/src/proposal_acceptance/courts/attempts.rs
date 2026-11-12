@@ -180,7 +180,7 @@ fn stable_claim_binds_ordered_input_and_records_only_the_actual_adoption() {
     let author_request = host
         .request(&author.principal, author.scope)
         .on_branch(storage.branch());
-    terminal
+    (*terminal)
         .close(&author_request)
         .unwrap_or_else(|(_, cause)| panic!("close cross-principal terminal: {cause:?}"));
     let another = storage.claim(&model, &reviewer, &loaded, 805).unwrap();

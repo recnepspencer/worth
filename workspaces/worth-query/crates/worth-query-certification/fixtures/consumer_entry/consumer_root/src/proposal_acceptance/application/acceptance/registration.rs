@@ -9,20 +9,23 @@ pub(super) fn advance<'host>(
 ) -> (Option<Phase<'host>>, Result<Event, Failure>) {
     let request = storage.request(caller);
     let completed = match phase {
-        Phase::Claim(operation) => match operation.advance(&request) {
+        Phase::Claim(operation) => match (*operation).advance(&request) {
             WorthQuerySourceOnlyAdvance::Progress(owner) => {
-                return (Some(Phase::Claim(owner)), Ok(Event::Progress))
+                return (Some(Phase::Claim(Box::new(owner))), Ok(Event::Progress))
             }
             WorthQuerySourceOnlyAdvance::Refused { operation, denial } => {
                 return (
-                    Some(Phase::Claim(operation)),
+                    Some(Phase::Claim(Box::new(operation))),
                     Err(Failure::MetadataAdvance(denial)),
                 )
             }
             WorthQuerySourceOnlyAdvance::Terminal(owner) => {
-                return (Some(Phase::ClaimTerminal(owner)), Ok(Event::Stopped))
+                return (
+                    Some(Phase::ClaimTerminal(Box::new(owner))),
+                    Ok(Event::Stopped),
+                )
             }
-            WorthQuerySourceOnlyAdvance::Completed(owner) => owner,
+            WorthQuerySourceOnlyAdvance::Completed(owner) => Box::new(owner),
         },
         Phase::ClaimCompleted(owner) => owner,
         _ => unreachable!("registration phases"),
@@ -36,13 +39,13 @@ pub(super) fn advance<'host>(
             )
         }
     };
-    match completed.close_with_evidence(&request) {
+    match (*completed).close_with_evidence(&request) {
         Ok((_closed, evidence)) => (
             Some(Phase::Registered(Registration { claim, evidence })),
             Ok(Event::Progress),
         ),
         Err((owner, cause)) => (
-            Some(Phase::ClaimCompleted(owner)),
+            Some(Phase::ClaimCompleted(Box::new(owner))),
             Err(Failure::OperationClose(cause)),
         ),
     }
