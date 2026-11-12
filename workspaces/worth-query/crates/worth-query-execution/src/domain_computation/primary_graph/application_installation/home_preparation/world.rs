@@ -141,11 +141,6 @@ where
                     home_world_denial(format!("Home branch inventory refused: {cause:?}"))
                 })?;
             for selected in branches.branches() {
-                self.bootstrap.readmit_home_branch_program(
-                    phase,
-                    selected,
-                    &self.state.support.roster,
-                )?;
                 home_attachment::readmit_home_branch_basis(
                     phase,
                     &self.services.provider,
