@@ -87,13 +87,30 @@ def child_environment():
     return value
 
 
+def retain_recommendations(output, directory, telemetry, head, baseline, known, *, complete_inventory=False):
+    """Retain observed recommendations at their caller-owned destination.
+
+    A run-local destination is diagnostic output, never automatic promotion into
+    committed scheduling policy. Legacy callers keep their cumulative directory.
+    """
+    observed = read_lane(telemetry)
+    retain_slots(directory, observed['cpu'], head, str(telemetry), baseline,
+                 known if complete_inventory else None)
+    (output / 'recommendations.json').write_text(
+        json.dumps(load_slots(directory, known=known), indent=2) + '\n', encoding='utf-8')
+
+
 def execute(repository, workspace, lanes, output, profile='dev', expression=None,
             partition=None, nextest_profile='ci', cargo_runner=None, queries=None, build_only=False,
-            include_docs=False, native_selection=None, documentation_packages=None):
+            include_docs=False, native_selection=None, documentation_packages=None, recommendation_directory=None):
     repository, output = Path(repository).resolve(), Path(output).resolve()
     selection = native_selection if native_selection is not None else getattr(queries, 'build_selection', None)
     if selection is not None and output == repository / 'target/test-cost' / workspace:
         output /= 'focused'
+    if recommendation_directory is not None:
+        recommendation_directory = Path(recommendation_directory).resolve()
+        if recommendation_directory == output or not recommendation_directory.is_relative_to(output):
+            raise ValueError('run-local recommendations must be inside this run output')
     environment = (cargo_runner.environment if cargo_runner is not None and
                    cargo_runner.environment is not None else child_environment())
     validate_environment(environment)
@@ -162,7 +179,6 @@ def execute(repository, workspace, lanes, output, profile='dev', expression=None
     reservation_path = output / 'reservations.json'
     reservation_path.write_text(json.dumps(reservations, indent=2) + '\n', encoding='utf-8')
     generated = output / 'nextest.toml'
-    previous_path = output / 'recommendations.json'
     slot_directory = repository / 'scripts/test_cost/slots' / workspace
     known = {row['binary'] + '\n' + row['test'] for row in inventory(discovered)}
     previous = load_slots(slot_directory, known=known)
@@ -224,12 +240,11 @@ def execute(repository, workspace, lanes, output, profile='dev', expression=None
             '--build-seconds', str(build_seconds), '--wall-seconds', str(time.perf_counter() - started)],
            manifest.parent, output / 'telemetry.log')
     telemetry = runner.logs[-1]
-    observed = read_lane(telemetry)
     baseline = original_reservations(config, nextest_profile, discovered, lambda index, query:
         json.loads((output / 'build' / f'reservation-{index}.json').read_text(encoding='utf-8')))
-    retain_slots(slot_directory, observed['cpu'], read_lane(runner.logs[0])['headers']['HEAD'],
-                 str(telemetry), baseline, known if workspace_inventory else None)
-    previous_path.write_text(json.dumps(load_slots(slot_directory, known=known), indent=2) + '\n', encoding='utf-8')
+    retain_recommendations(output, recommendation_directory if recommendation_directory is not None else slot_directory,
+                           telemetry, read_lane(runner.logs[0])['headers']['HEAD'], baseline, known,
+                           complete_inventory=workspace_inventory)
     logs = [(path.stem + '-' + str(index), path) for index, path in enumerate(runner.logs)]
     result = collect(manifest, repository, logs, complete, requested, source_packages=source_scope)
     result['native_build_scope'] = native_scope
