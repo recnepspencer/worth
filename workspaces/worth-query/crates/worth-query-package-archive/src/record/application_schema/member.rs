@@ -12,6 +12,7 @@ mod authorization;
 mod capability;
 mod component_set;
 mod coupled_outputs;
+mod decision_read_scope;
 mod derived_component_set;
 mod derived_relation;
 mod document_history;
@@ -64,7 +65,8 @@ pub(super) fn require_encoding_contract(
     }
     if matches!(
         member,
-        ApplicationSchemaMember::ManagedIndex { .. }
+        ApplicationSchemaMember::DecisionReadScope { .. }
+            | ApplicationSchemaMember::ManagedIndex { .. }
             | ApplicationSchemaMember::ApplicationHistory { .. }
             | ApplicationSchemaMember::InvariantManagedIndexSource { .. }
             | ApplicationSchemaMember::ApplicationInvariant { .. }
@@ -102,6 +104,10 @@ pub(super) fn write(
     }
     output.u16(member_tag(member))?;
     match member {
+        ApplicationSchemaMember::DecisionReadScope { .. }
+        | ApplicationSchemaMember::OperationDecisionReadScope { .. } => {
+            decision_read_scope::write(output, member)
+        }
         ApplicationSchemaMember::ApplicationHistory { definition } => {
             document_history::write(output, definition)
         }
@@ -193,6 +199,7 @@ pub(super) fn decode(
     budget: &mut RecordDecodeAttempt,
 ) -> Result<ApplicationSchemaMember, Denial> {
     match input.u16()? {
+        tag @ 55..=56 => decision_read_scope::decode(tag, input, budget),
         51 => document_history::decode(input, budget),
         49 => invariant_source::decode(input, budget),
         50 => Ok(ApplicationSchemaMember::ScalarAspectField {
@@ -236,6 +243,8 @@ pub(super) fn decode(
 
 pub(super) fn member_tag(member: &ApplicationSchemaMember) -> u16 {
     match member {
+        ApplicationSchemaMember::DecisionReadScope { .. } => 55,
+        ApplicationSchemaMember::OperationDecisionReadScope { .. } => 56,
         ApplicationSchemaMember::ContentFormat { .. } => 52,
         ApplicationSchemaMember::Field { content_format: Some(_), frame: Some(_), .. } => 54,
         ApplicationSchemaMember::Field { content_format: Some(_), .. } => 53,

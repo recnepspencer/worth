@@ -1,7 +1,7 @@
 pub(crate) use worth_query_testkit_package_archive::facade::package_archive::archive_protocol::package_root_record::*;
 
 #[test]
-fn version_eighteen_package_root_frames_match_and_decode_the_frozen_vectors() {
+fn version_nineteen_package_root_frames_match_and_decode_the_frozen_vectors() {
     for (version, originals) in [
         (9_u16, VERSION_NINE_PACKAGE_ROOT_FRAMES_HEX),
         (6_u16, VERSION_SIX_PACKAGE_ROOT_FRAMES_HEX),
@@ -35,9 +35,9 @@ fn version_eighteen_package_root_frames_match_and_decode_the_frozen_vectors() {
         })
         .collect::<Vec<_>>()
         .join("|");
-    assert_eq!(encoded, VERSION_EIGHTEEN_PACKAGE_ROOT_FRAMES_HEX);
+    assert_eq!(encoded, VERSION_NINETEEN_PACKAGE_ROOT_FRAMES_HEX);
 
-    let independent_frames = VERSION_EIGHTEEN_PACKAGE_ROOT_FRAMES_HEX
+    let independent_frames = VERSION_NINETEEN_PACKAGE_ROOT_FRAMES_HEX
         .split('|')
         .map(decode_hex)
         .collect::<Vec<_>>();

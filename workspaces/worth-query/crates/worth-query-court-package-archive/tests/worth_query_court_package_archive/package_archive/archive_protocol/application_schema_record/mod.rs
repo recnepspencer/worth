@@ -2,7 +2,7 @@ pub(crate) use worth_query_testkit_package_archive::facade::package_archive::arc
 mod document_history;
 
 #[test]
-fn version_eighteen_minimal_application_schema_matches_the_frozen_vector() {
+fn version_nineteen_minimal_application_schema_matches_the_frozen_vector() {
     for (version, originals) in [
         (9_u16, VERSION_NINE_MINIMAL_SCHEMA_HEX),
         (6_u16, VERSION_SIX_MINIMAL_SCHEMA_HEX),
@@ -28,11 +28,11 @@ fn version_eighteen_minimal_application_schema_matches_the_frozen_vector() {
     let exported = schema_package().export_typed_records().unwrap();
     let schema = schema_view(&exported);
     let bytes = encode_record_frame(schema, WorthQueryPackageArchiveLimits::DEFAULT).unwrap();
-    assert_eq!(encode_hex(&bytes), VERSION_EIGHTEEN_MINIMAL_SCHEMA_HEX);
-    assert_eq!(u16::from_be_bytes(bytes[0..2].try_into().unwrap()), 18);
+    assert_eq!(encode_hex(&bytes), VERSION_NINETEEN_MINIMAL_SCHEMA_HEX);
+    assert_eq!(u16::from_be_bytes(bytes[0..2].try_into().unwrap()), 19);
     assert_eq!(u16::from_be_bytes(bytes[2..4].try_into().unwrap()), 8);
 
-    let frozen = decode_hex(VERSION_EIGHTEEN_MINIMAL_SCHEMA_HEX);
+    let frozen = decode_hex(VERSION_NINETEEN_MINIMAL_SCHEMA_HEX);
     let mut decoder =
         WorthQueryPackageArchiveRecordDecoder::new(WorthQueryPackageArchiveLimits::DEFAULT);
     let decoded = decoder.decode_frame(&frozen).unwrap();

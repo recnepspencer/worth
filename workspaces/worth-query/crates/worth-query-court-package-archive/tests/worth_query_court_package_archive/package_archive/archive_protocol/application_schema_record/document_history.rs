@@ -23,7 +23,7 @@ fn header_offset(bytes: &[u8]) -> usize {
 
 #[test]
 fn frozen_history_frame_preserves_exact_declaration_without_installing_a_runtime() {
-    let original = decode_hex(DOCUMENT_HISTORY_HEX);
+    let original = current_frame();
     for (tag, domain) in [
         (1, ApplicationHistoryModelDomain::WholeComposite),
         (2, ApplicationHistoryModelDomain::ScopeEntityRecord),
@@ -105,7 +105,7 @@ fn frozen_history_frame_preserves_exact_declaration_without_installing_a_runtime
 
 #[test]
 fn history_frame_rejects_unsupported_headers_and_duplicate_meaning_without_committing_work() {
-    let original = decode_hex(DOCUMENT_HISTORY_HEX);
+    let original = current_frame();
     let offset = header_offset(&original);
     for field in [2, 4] {
         let mut bytes = original.clone();
@@ -141,7 +141,7 @@ fn history_frame_rejects_unsupported_headers_and_duplicate_meaning_without_commi
 
 #[test]
 fn history_frame_depth_and_entry_limits_preserve_the_original_decoder_on_refusal() {
-    let bytes = decode_hex(DOCUMENT_HISTORY_HEX);
+    let bytes = current_frame();
     let defaults = WorthQueryPackageArchiveLimits::DEFAULT;
     for (limits, kind) in [
         (
@@ -165,4 +165,11 @@ fn history_frame_depth_and_entry_limits_preserve_the_original_decoder_on_refusal
     WorthQueryPackageArchiveRecordDecoder::new(defaults)
         .decode_frame(&bytes)
         .unwrap();
+}
+
+fn current_frame() -> Vec<u8> {
+    let mut bytes = decode_hex(DOCUMENT_HISTORY_HEX);
+    assert_eq!(&bytes[..2], &18_u16.to_be_bytes());
+    bytes[..2].copy_from_slice(&19_u16.to_be_bytes());
+    bytes
 }

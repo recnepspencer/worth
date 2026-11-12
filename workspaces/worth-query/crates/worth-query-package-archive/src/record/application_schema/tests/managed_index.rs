@@ -17,7 +17,7 @@ worth_query_declaration::worth_query_value_binding!(pub ProbeBinding for Probe {
     canonical: ValueDecodeBounds::new(1024, 512, 4, 4),
 });
 
-fn definition() -> ErasedApplicationManagedIndexDefinition {
+pub(super) fn definition() -> ErasedApplicationManagedIndexDefinition {
     ErasedApplicationManagedIndexDefinition::from_untrusted_parts(
         WorthQueryPortableManagedIndexParts {
             semantic_version: 1,
