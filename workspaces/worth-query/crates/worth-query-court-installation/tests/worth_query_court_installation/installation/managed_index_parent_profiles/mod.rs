@@ -11,6 +11,7 @@ use worth_query_installation::facade::{
 mod decision_read;
 pub(crate) mod model;
 pub(crate) mod queries;
+mod typed_lookup;
 
 #[derive(worth_foundational::facade::WorthValue)]
 pub struct Probe {
