@@ -132,6 +132,8 @@ fn connected_inspection_borrows_authentic_old_keys_without_current_dependency_au
     );
     report.close();
     // Query metadata and both diagnostics cannot lend the independent source metadata policy.
+    // Master refuses the mismatched issued access at fresh admission, before
+    // binding it into inspection governance or looking up any protected cause.
     let denied = request
         .inspect::<output::Binding>(&after)
         .why_observed()
@@ -145,12 +147,15 @@ fn connected_inspection_borrows_authentic_old_keys_without_current_dependency_au
         )
         .err()
         .expect("a genuine navigation grant cannot authorize source inspection metadata");
-    assert!(matches!(
+    assert!(
+        matches!(
+            denied.owner_refusal(),
+            Some(WorthQueryApplicationInspectionOwnerRefusal::ForeignIssuedAccess)
+        ),
+        "actual inspection owner refusal: {:?}; resource: {:?}",
         denied.owner_refusal(),
-        Some(WorthQueryApplicationInspectionOwnerRefusal::Governance(
-            WorthQueryApplicationQueryGovernanceDenialKind::CapabilityMismatch
-        ))
-    ));
+        denied.resource_refusal()
+    );
     assert!(
         denied.producer_connection_refusal().is_none(),
         "the independent source metadata gate precedes protected cause lookup"
