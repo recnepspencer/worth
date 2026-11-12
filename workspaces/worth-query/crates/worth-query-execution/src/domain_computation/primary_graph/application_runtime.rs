@@ -69,6 +69,7 @@ pub(in crate::domain_computation) use inbound_publication::{
 };
 mod derived_relation;
 mod graph_participation;
+mod installed_package_export;
 pub use derived_relation::WorthQueryRuleReadableCollectionLifecycleForTest;
 pub(in crate::domain_computation::primary_graph) mod installation;
 pub(crate) mod operation_control;

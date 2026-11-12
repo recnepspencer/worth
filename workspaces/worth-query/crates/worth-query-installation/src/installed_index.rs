@@ -11,6 +11,8 @@ mod conditional_application_operation;
 mod construction;
 mod decision_read_scopes;
 mod denial;
+mod export;
+pub use export::WorthQueryInstalledPackageExportDenial;
 mod index_identity;
 mod rebuild_report;
 mod relation;

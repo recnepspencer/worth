@@ -19,3 +19,5 @@ mod route_degree;
 mod materialization;
 
 mod root_retirement;
+
+mod installed_export;

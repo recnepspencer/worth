@@ -322,10 +322,10 @@ pub mod facade {
     };
     pub use crate::installed_index::WorthQueryCurrentRetainedMutationBinding;
     pub use crate::installed_index::{
-        WorthQueryInstalledPackageAuthority, WorthQueryInstalledPackageIndex,
-        WorthQueryInstalledPackageIndexCounters, WorthQueryInstalledPackageIndexDenial,
-        WorthQueryInstalledPackageIndexDenialKind, WorthQueryInstalledPackageIndexRebuildReport,
-        WorthQueryInstalledPackageIndexRelation,
+        WorthQueryInstalledPackageAuthority, WorthQueryInstalledPackageExportDenial,
+        WorthQueryInstalledPackageIndex, WorthQueryInstalledPackageIndexCounters,
+        WorthQueryInstalledPackageIndexDenial, WorthQueryInstalledPackageIndexDenialKind,
+        WorthQueryInstalledPackageIndexRebuildReport, WorthQueryInstalledPackageIndexRelation,
     };
     pub use crate::installed_index::{
         WorthQueryPrincipalBindingValidationAdmissionStop, WorthQueryValidatedPrincipalBinding,
