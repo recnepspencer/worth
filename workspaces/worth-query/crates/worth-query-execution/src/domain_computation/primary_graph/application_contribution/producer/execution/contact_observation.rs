@@ -7,7 +7,7 @@ thread_local! {
 }
 type LiveScalars = ([u8; 32], Option<[bool; 4]>);
 thread_local! {
-    static LIVE_COMPLETIONS: RefCell<BTreeMap<(u64, &'static str, EntityId), LiveScalars>> = const { RefCell::new(BTreeMap::new()) };
+    static LIVE_COMPLETIONS: RefCell<BTreeMap<(u64, String, EntityId), LiveScalars>> = const { RefCell::new(BTreeMap::new()) };
 }
 fn observing() -> bool {
     if !crate::domain_computation::execution_observation::is_installed() {
@@ -41,7 +41,7 @@ pub(in crate::domain_computation::primary_graph::application_contribution) fn re
 >(
     application: &super::WorthQueryPrimaryGraphApplicationRuntime<S>,
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-    producer: &'static str,
+    producer: &str,
     root: EntityId,
     receipt: &crate::domain_computation::primary_graph::WorthQueryApplicationCommitReceipt,
     before: &crate::basis::WorthQueryProductBranchLease,
@@ -70,7 +70,7 @@ pub(in crate::domain_computation::primary_graph::application_contribution) fn re
         records.borrow_mut().insert(
             (
                 application.runtime.authority_identity().as_u64(),
-                producer,
+                producer.to_owned(),
                 root,
             ),
             (*receipt.idempotency_binding().key_identity(), origins),
@@ -101,8 +101,12 @@ impl<Schema>
                     *runtime == self.runtime.authority_identity().as_u64()
                 })
                 .map(|(address @ (_, producer, root), key)| {
-                    let committed = LIVE_COMPLETIONS
-                        .with(|records| records.borrow().get(address).map(|(key, _)| *key));
+                    let committed = LIVE_COMPLETIONS.with(|records| {
+                        records
+                            .borrow()
+                            .get(&(address.0, address.1.to_owned(), address.2))
+                            .map(|(key, _)| *key)
+                    });
                     (*producer, *root, *key, committed)
                 })
                 .collect()
@@ -114,7 +118,7 @@ impl<Schema>
     #[doc(hidden)]
     pub fn coupled_producer_origins_on_this_thread_for_test(
         &self,
-    ) -> Vec<(&'static str, EntityId, [bool; 4])> {
+    ) -> Vec<(String, EntityId, [bool; 4])> {
         LIVE_COMPLETIONS.with(|records| {
             records
                 .borrow()
@@ -123,7 +127,7 @@ impl<Schema>
                     *runtime == self.runtime.authority_identity().as_u64()
                 })
                 .filter_map(|((_, producer, root), (_, origins))| {
-                    origins.map(|origins| (*producer, *root, origins))
+                    origins.map(|origins| (producer.clone(), *root, origins))
                 })
                 .collect()
         })

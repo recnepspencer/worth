@@ -187,7 +187,7 @@ impl<'a, 'run, 'phase, S: ApplicationSchema> CoupledApplicationAssembly<'a, 'run
                 Ok(landed) => {
                     if let crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationLandedCommit::Live { receipt } = &landed {
                         execution::contact_observation::record_live_completion(
-                            self.application, execution, writer.producer.declaration.identity,
+                            self.application, execution, &writer.producer.declaration.identity,
                             completion.source().root(), receipt, self.before,
                             match &root { Progression::Committed(receipt) => Some(receipt.original_publication()), _ => None },
                         );
