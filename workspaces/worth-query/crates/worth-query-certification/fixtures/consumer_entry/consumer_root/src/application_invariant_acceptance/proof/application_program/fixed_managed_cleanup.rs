@@ -9,9 +9,9 @@ use worth_query_host::facade::{
         WorthQueryOperationAdvance as Advance, WorthQueryOperationCloseDenial,
     },
     primary_graph::{
-        BridgeExecutionBasisFinalizationFailureKind, WorthQueryApplicationCommitOutcome as C,
-        WorthQueryApplicationManagedCleanupReceipt, WorthQueryApplicationUncommitted as U,
-        WorthQueryCleanupDispatchPosture, WorthQueryManagedRunCleanupFailureKind,
+        BridgeExecutionBasisFinalizationFailureKind, WorthQueryApplicationManagedCleanupReceipt,
+        WorthQueryApplicationUncommitted as U, WorthQueryCleanupDispatchPosture,
+        WorthQueryExecutionObservation, WorthQueryManagedRunCleanupFailureKind,
         WorthQueryMutationCleanupFailure, WorthQueryMutationCleanupFailureKind,
         WorthQueryPrincipalResolutionMode, WorthQueryProductBranchAdmissionDenial,
         WorthQueryProductBranchAdmissionRefusalKind,
@@ -263,8 +263,7 @@ fn terminal_court(interference: Interference) {
 }
 
 #[test]
-fn fixed_producer_cleanup_survives_diagnostic_drop_and_refused_release() {
-    use worth_query_host::facade::application_entry::WorthQueryOperationProgress as Progress;
+fn synchronous_coupled_publication_cleanup_survives_diagnostic_drop_and_refused_release() {
     let mut world = installation::install(&crate::installed_schema());
     let request_runtime = world.application.clone();
     let constructing = std::mem::replace(&mut world.application, request_runtime);
@@ -305,55 +304,36 @@ fn fixed_producer_cleanup_survives_diagnostic_drop_and_refused_release() {
             .unwrap_or_else(|(_, cause)| panic!("descriptor: {cause:?}"))
     };
     drop(constructing);
-    let operation = match operation.advance(&request) {
-        Advance::Progress {
-            operation,
-            progress: Progress::SourcePerformed,
-        } => operation,
-        _ => panic!("the source really commits before arming producer cleanup"),
-    };
-    let mut operation = Some(operation);
-    let mut operation = loop {
-        match operation.take().unwrap().advance(&request) {
-            Advance::Progress {
-                operation: next,
-                progress: Progress::OutputsStarted,
-            } => break next,
-            Advance::Progress {
-                operation: next, ..
-            } => operation = Some(next),
-            Advance::Refused { denial, .. } | Advance::Terminal { denial, .. } => {
-                panic!("pre-producer admission: {denial:?}")
-            }
-            Advance::Settled(_) => panic!("outputs have not yet run"),
-        }
-    };
-    let before_producer = request
+    let before_publication = request
         .retain_current_read()
         .unwrap()
         .selected_commit()
         .clone();
+    let _observation = WorthQueryExecutionObservation::install_on_this_thread();
     let _cleanup = world
         .application
         .schedule_next_managed_cleanup_on_worker_for_test()
         .unwrap();
-    let mut terminal = loop {
-        match operation.advance(&request) {
-            Advance::Progress {
-                operation: next, ..
-            } => operation = next,
-            Advance::Terminal { operation, denial } => {
-                drop(denial);
-                break operation;
-            }
-            Advance::Refused { denial, .. } => panic!("producer cleanup refused: {denial:?}"),
-            Advance::Settled(_) => panic!("injected real producer cleanup cannot settle"),
+    // The source and required outputs perform together in this initial advance.
+    let mut terminal = match operation.advance(&request) {
+        Advance::Terminal { operation, denial } => {
+            drop(denial);
+            operation
+        }
+        Advance::Refused { denial, .. } => panic!("coupled cleanup refused: {denial:?}"),
+        Advance::Progress { .. } => {
+            panic!("initial coupled publication continued without terminal cleanup")
+        }
+        Advance::Settled(_) => {
+            panic!("initial coupled publication settled without terminal cleanup")
         }
     };
     let original_runs = failed_runs(terminal.managed_cleanup_failures());
     assert!(matches!(
-        terminal.producer_native_outcome(),
-        Some(C::Indeterminate(_))
+        terminal.native_outcome(),
+        Some(WorthQueryApplicationMutationOutcome::Commit(
+            U::Indeterminate(_)
+        ))
     ));
     let head = request
         .retain_current_read()
@@ -361,8 +341,15 @@ fn fixed_producer_cleanup_survives_diagnostic_drop_and_refused_release() {
         .selected_commit()
         .clone();
     assert_ne!(
-        head, before_producer,
-        "the real producer published before native cleanup failed"
+        head, before_publication,
+        "the real coupled publication landed before native cleanup failed"
+    );
+    let producer_contacts = world
+        .application
+        .producer_contacts_on_this_thread_for_test();
+    assert!(
+        producer_contacts > 0,
+        "actual required outputs performed with the source"
     );
     let cancellation = worth_query_host::facade::admission::authenticated_principal::WorthQueryCancellationSource::new();
     cancellation.cancel();
@@ -389,9 +376,17 @@ fn fixed_producer_cleanup_survives_diagnostic_drop_and_refused_release() {
         &head
     );
     assert_eq!(planar_source_adjustment_contacts(&input), (1, 1));
+    assert_eq!(
+        world
+            .application
+            .producer_contacts_on_this_thread_for_test(),
+        producer_contacts
+    );
     assert!(matches!(
-        terminal.producer_native_outcome(),
-        Some(C::Indeterminate(_))
+        terminal.native_outcome(),
+        Some(WorthQueryApplicationMutationOutcome::Commit(
+            U::Indeterminate(_)
+        ))
     ));
     assert!(matches!(
         terminal.close(&request),
