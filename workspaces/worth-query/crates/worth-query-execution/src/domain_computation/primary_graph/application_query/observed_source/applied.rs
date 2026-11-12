@@ -35,6 +35,9 @@ pub(in crate::domain_computation::primary_graph) struct AppliedSourcePublication
 }
 
 impl AppliedSourcePublication {
+    pub(in crate::domain_computation::primary_graph) fn root(&self) -> EntityId {
+        self.meaning.footprint().root
+    }
     pub(in crate::domain_computation::primary_graph) fn checkpoint_identity(&self) -> [u8; 32] {
         self.meaning.checkpoint_identity().bytes()
     }

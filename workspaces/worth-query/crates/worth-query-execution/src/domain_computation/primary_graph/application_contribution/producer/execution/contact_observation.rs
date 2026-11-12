@@ -5,6 +5,10 @@ thread_local! { static ENTRIES: RefCell<BTreeMap<(u64, EntityId), u64>> = const 
 thread_local! {
     static COUPLED_KEYS: RefCell<BTreeMap<(u64, &'static str, EntityId), [u8; 32]>> = const { RefCell::new(BTreeMap::new()) };
 }
+type LiveScalars = ([u8; 32], Option<[bool; 4]>);
+thread_local! {
+    static LIVE_COMPLETIONS: RefCell<BTreeMap<(u64, &'static str, EntityId), LiveScalars>> = const { RefCell::new(BTreeMap::new()) };
+}
 fn observing() -> bool {
     if !crate::domain_computation::execution_observation::is_installed() {
         return false;
@@ -29,6 +33,50 @@ pub(super) fn record_coupled_key(
         });
     }
 }
+/// D1699: copy scalars only from the actual performing writer's Live path.
+/// No receipt, publication, source custody or authority survives this call.
+/// Current and prior observations come from the real owner, never an inferred ID.
+pub(in crate::domain_computation::primary_graph::application_contribution) fn record_live_completion<
+    S: worth_query_installation::facade::ApplicationSchema,
+>(
+    application: &super::WorthQueryPrimaryGraphApplicationRuntime<S>,
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    producer: &'static str,
+    root: EntityId,
+    receipt: &crate::domain_computation::primary_graph::WorthQueryApplicationCommitReceipt,
+    before: &crate::basis::WorthQueryProductBranchLease,
+    original: Option<
+        &crate::domain_computation::primary_graph::WorthQueryCommittedProductPublication,
+    >,
+) {
+    if !observing() {
+        return;
+    }
+    let origins = application
+        .on_branch(before.product_branch())
+        .select_with_request(execution)
+        .ok()
+        .and_then(|selected| {
+            let publication = receipt.committed_product_publication();
+            let described = publication.descriptive();
+            Some([
+                publication.co_committed_at(selected.product().observation()),
+                described.co_committed_at(selected.product().observation()),
+                publication.co_committed_at(before.observation()),
+                publication == &original?.descriptive(),
+            ])
+        });
+    LIVE_COMPLETIONS.with(|records| {
+        records.borrow_mut().insert(
+            (
+                application.runtime.authority_identity().as_u64(),
+                producer,
+                root,
+            ),
+            (*receipt.idempotency_binding().key_identity(), origins),
+        );
+    });
+}
 pub(super) fn record(runtime: u64, root: EntityId) {
     if !observing() {
         return;
@@ -45,14 +93,38 @@ impl<Schema>
     #[doc(hidden)]
     pub fn coupled_producer_keys_on_this_thread_for_test(
         &self,
-    ) -> Vec<(&'static str, EntityId, [u8; 32])> {
+    ) -> Vec<(&'static str, EntityId, [u8; 32], Option<[u8; 32]>)> {
         COUPLED_KEYS.with(|keys| {
             keys.borrow()
                 .iter()
                 .filter(|((runtime, _, _), _)| {
                     *runtime == self.runtime.authority_identity().as_u64()
                 })
-                .map(|((_, producer, root), key)| (*producer, *root, *key))
+                .map(|(address @ (_, producer, root), key)| {
+                    let committed = LIVE_COMPLETIONS
+                        .with(|records| records.borrow().get(address).map(|(key, _)| *key));
+                    (*producer, *root, *key, committed)
+                })
+                .collect()
+        })
+    }
+    /// Actual Live origin observations: current, described-current, prior, and
+    /// exact descriptive equality with the root source's publication.
+    /// Only graph.rs reads this passive scalar view.
+    #[doc(hidden)]
+    pub fn coupled_producer_origins_on_this_thread_for_test(
+        &self,
+    ) -> Vec<(&'static str, EntityId, [bool; 4])> {
+        LIVE_COMPLETIONS.with(|records| {
+            records
+                .borrow()
+                .iter()
+                .filter(|((runtime, _, _), _)| {
+                    *runtime == self.runtime.authority_identity().as_u64()
+                })
+                .filter_map(|((_, producer, root), (_, origins))| {
+                    origins.map(|origins| (*producer, *root, origins))
+                })
                 .collect()
         })
     }
@@ -85,4 +157,5 @@ fn clear_observations() {
     CLEANUP_REGISTERED.with(|registered| registered.set(false));
     ENTRIES.with(|entries| entries.borrow_mut().clear());
     COUPLED_KEYS.with(|keys| keys.borrow_mut().clear());
+    LIVE_COMPLETIONS.with(|records| records.borrow_mut().clear());
 }

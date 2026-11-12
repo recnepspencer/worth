@@ -1,5 +1,5 @@
 use crate::domain_computation::primary_graph::WorthQueryAdvancementPhase;
-mod contact_observation;
+pub(in crate::domain_computation::primary_graph::application_contribution) mod contact_observation;
 mod current_control;
 pub(in crate::domain_computation::primary_graph::application_contribution::producer) use current_control::{select_history_control, select_invocation_control};
 use std::sync::Arc;

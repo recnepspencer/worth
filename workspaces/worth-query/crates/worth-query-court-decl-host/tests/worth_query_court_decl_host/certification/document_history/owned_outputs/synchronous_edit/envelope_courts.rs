@@ -164,12 +164,13 @@ fn exercise(worker: bool) {
                         WorthQueryProgramOutputOperationAdvance::Pending(next) => operation = next,
                         WorthQueryProgramOutputOperationAdvance::Settled(settled) => {
                             settled.deliver_current(&request).unwrap();
-                            let expected = canonical_keys.iter().find(|(producer, _, _)|
+                            let expected = canonical_keys.iter().find(|(producer, _, _, _)|
                                 *producer == $family::initial::Producer::IDENTITY
                             ).expect("the real canonical owner observed this producer");
-                            let receipt = settled.settlement().root_receipt()
-                                .expect("the actual completed coupled producer receipt");
-                            assert_eq!(receipt.idempotency_binding().key_identity(), &expected.2,
+                            assert!(settled.settlement().root_receipt().is_none(),
+                                "master's Stable reuse grants no original live receipt");
+                            let committed = expected.3.expect("observed the actual performing Live writer");
+                            assert_eq!(&committed, &expected.2,
                                 "the committed producer key equals its input-derived canonical owner output");
                             settled
                                 .close(&request)
@@ -207,4 +208,44 @@ fn four_authored_parts_have_one_commit_and_their_own_results() {
 #[test]
 fn four_authored_parts_have_one_commit_and_their_own_results_worker() {
     exercise(true);
+}
+
+/// A refused envelope cannot fabricate completion observations, and an observer
+/// lifetime cannot lend stale values to the next installed observer.
+#[test]
+fn no_live_performing_writer_leaves_no_committed_key_observation() {
+    let observation = WorthQueryExecutionObservation::install_on_this_thread();
+    let host: WorthQueryProgramApplicationRuntime<Schema, fixture::Program> = world::install_configured(
+        host_limits(worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system()),
+        2, None, world::Configuration { envelope_records: true, ..Default::default() },
+    );
+    let scope = request_scope();
+    let principal = authenticate_operator(host.installed_schema(), &scope);
+    let request = host.request(&principal, &scope);
+    let before = courts::native_head(&host);
+    let outcome = request
+        .edit_envelope()
+        .stage::<fixture::ModelTree, _>(fixture::model::Intent {
+            key: "a".into(),
+            value: 3,
+            key_derived_target: false,
+        })
+        .stage::<fixture::ModelTree, _>(fixture::model::Intent {
+            key: "a".into(),
+            value: 4,
+            key_derived_target: false,
+        })
+        .idempotency("no-performing-live-writer".to_owned())
+        .execute_performed::<fixture::Program>(&host, ExecutionAllocationPolicy::SystemAllocation)
+        .unwrap();
+    assert!(matches!(outcome, Outcome::CyclicStages(_)));
+    assert_eq!(courts::native_head(&host), before);
+    assert!(host
+        .coupled_producer_keys_on_this_thread_for_test()
+        .is_empty());
+    drop(observation);
+    let _next_observation = WorthQueryExecutionObservation::install_on_this_thread();
+    assert!(host
+        .coupled_producer_keys_on_this_thread_for_test()
+        .is_empty());
 }

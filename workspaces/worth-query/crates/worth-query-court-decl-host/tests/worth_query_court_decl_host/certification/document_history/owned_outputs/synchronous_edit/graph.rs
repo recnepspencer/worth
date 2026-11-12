@@ -35,10 +35,6 @@ fn exercise(worker: bool, value: u64) {
     let request = host.request(&principal, &scope);
     let contacts = host.producer_contacts_on_this_thread_for_test();
     let before = courts::native_head(&host).0;
-    let before_read=host.with_host_advancement(|phase| {
-        worth_query_host::facade::application_entry::WorthQueryApplicationReadObservation::retain_on_branch(
-            &phase,host.runtime(),host.current_world()).unwrap()
-    }).unwrap();
     let performed = request
         .advanced()
         .mutate(edit::Intent {
@@ -109,19 +105,42 @@ fn exercise(worker: bool, value: u64) {
         .unwrap_or_else(|cause| panic!("{:?}", cause.denial()))
         .into_parts();
     let mut settled = false;
-    let mut member_receipt = None;
+
     for _ in 0..128 {
         if let WorthQueryApplicationProgramOutputProgress::Settled(done) =
             outputs.advance(&host, &request).unwrap()
         {
-            member_receipt = done.root_receipt().cloned();
+            assert!(
+                done.root_receipt().is_none(),
+                "Stable reuse carries no live receipt"
+            );
             settled = true;
             break;
         }
     }
     assert!(settled, "current required outputs must settle");
-    let member = member_receipt.expect("actual completed coupled producer receipt");
-    let described = source_receipt.descriptive_copy();
+    let origins = host.coupled_producer_origins_on_this_thread_for_test();
+    assert_eq!(
+        origins.len(),
+        expected_contacts as usize - contacts as usize
+    );
+    for (producer, root, [current, described_current, before, same_commit]) in origins {
+        eprintln!("actual Live origin runtime scoped to host, producer={producer}, root={root:?}");
+        assert!(
+            same_commit,
+            "both describe the same commit, without the same origin posture"
+        );
+        assert!(
+            current,
+            "the performing member owns its actual current group origin"
+        );
+        assert!(
+            !described_current,
+            "a description alone cannot mint a group origin"
+        );
+        assert!(!before, "a real group origin cannot name another endpoint");
+    }
+
     assert_eq!(
         member.committed_product_publication(),
         described.committed_product_publication(),
