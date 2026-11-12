@@ -144,12 +144,16 @@ fn terminal(cancel: bool) {
             CommitExecutionDenialKind::Cause(RelationalExecutionDenialCause::Cancelled)
         );
     } else {
-        let TransactionCommitError::Publication { error, .. } = err else {
+        let TransactionCommitError::Conflict { error, .. } = err else {
             panic!("actual invariant refusal: {err:?}")
         };
-        let violation = error.invariant_violation().expect("installed rule refusal");
+        let ConflictClass::InvariantViolation { fields, .. } = error.class else {
+            panic!("installed rule refusal: {error:?}")
+        };
         assert!(
-            matches!(&violation.fields, InvariantViolationFields::CustomInvariantViolation { identity, refusal: CustomInvariantRefusal::Empty } if identity == &rule_identity())
+            matches!(fields, InvariantViolationFields::CustomInvariantViolation {
+            identity, refusal: CustomInvariantRefusal::Empty
+        } if identity == rule_identity())
         );
     }
     assert_eq!(producer.calls.get(), 1, "the handler never reruns");
