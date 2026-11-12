@@ -112,7 +112,7 @@ pub(super) fn optional_identity(
     else {
         return Ok(None);
     };
-    let Some(text) = (&value).raw_text() else {
+    let Some(text) = value.raw_text() else {
         return Err(denial(
             "workflow operation receipt identity has the wrong type",
         ));

@@ -52,6 +52,7 @@ pub(in crate::domain_computation::primary_graph) fn publish_application_runtime_
     bindings: Vec<
         Box<dyn super::super::conditional_operation::WorthQueryPendingConditionalOperation<Schema>>,
     >,
+    definitions: Vec<Box<dyn crate::domain_computation::primary_graph::conditional_operation::PendingDefinitionDeclaration>>,
     output_readiness: Vec<
         Box<dyn super::super::application_contribution::PendingOutputReadiness<Schema>>,
     >,
@@ -70,10 +71,18 @@ where
         expected_conditional_bindings,
         &bindings,
         output_readiness.len(),
+        definitions.len(),
     )?;
     let authorized = publication_preparation::authorize(phase, prepared)
         .map_err(super::super::conditional_operation::publication_denial)?;
-    conditional_publication::publish(phase, authorized, bindings, output_readiness, producers)
+    conditional_publication::publish(
+        phase,
+        authorized,
+        bindings,
+        definitions,
+        output_readiness,
+        producers,
+    )
 }
 pub(super) struct PublishedApplicationGraph<Bridge> {
     runtime: WorthQueryExecutionRuntime,

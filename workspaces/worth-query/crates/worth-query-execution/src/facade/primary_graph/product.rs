@@ -17,6 +17,7 @@ pub use worth_foundational::facade::{
     RecordedProductBranchReference, WorldOwnerCoordinate,
 };
 
+pub use worth_runtime_bridge::facade::RuntimeWorldCorrespondenceAdmissionDenial;
 pub use worth_runtime_world::facade::{
     CompositeAncestorSelectionDenial, CompositeCommitIdentity, CompositeHistoryCatalogDenial,
     CompositePublicationAttemptIdentity, NoEffectCause, ProductBranchAncestorSelectionDenial,

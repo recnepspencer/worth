@@ -17,4 +17,13 @@ pub(in crate::application_invariant_acceptance) trait PrefixSourceIndex<S: Appli
         calls: &Calls,
         row: &WorthQueryManagedIndexSourceRow<'_, S, Self>,
     ) -> Result<(), Stop>;
+    #[cfg(test)]
+    fn observe_update(
+        _calls: &Calls,
+        _before: &WorthQueryManagedIndexSourceRows<'_, S, Self>,
+        _after: &WorthQueryManagedIndexSourceRows<'_, S, Self>,
+        _changes: &[WorthQueryManagedIndexSourceChange],
+    ) -> Result<(), Stop> {
+        Ok(())
+    }
 }

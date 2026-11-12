@@ -115,6 +115,7 @@ fn empty_nested_source_then_convergent_paths_match_ordinary_and_proposed_reads()
 
 mod controls;
 mod influence;
+mod optional_aspect;
 mod retirement;
 
 #[test]

@@ -22,6 +22,11 @@ where
     S: ApplicationSchema,
     I: ApplicationManagedIndexBinding<S>,
 {
+    fn inspect_pages(
+        &self,
+        nodes: &(dyn Any + Send + Sync),
+        inspection: &mut nodes::pages::inspection::PageInspection,
+    ) -> Result<(), WorthQueryManagedIndexStop>;
     fn installed(&self) -> &WorthQueryInstalledManagedIndex<S, I>;
     fn coverage_authority(&self) -> &worth_proof::ManagedIndexCoverageAuthority;
     fn realized_authority(&self) -> worth_proof::RealizedFootprintAuthority;
@@ -78,6 +83,17 @@ where
     I: ApplicationManagedIndexBinding<S>,
     P: WorthQueryManagedIndexProvider<S, I>,
 {
+    fn inspect_pages(
+        &self,
+        nodes: &(dyn Any + Send + Sync),
+        inspection: &mut nodes::pages::inspection::PageInspection,
+    ) -> Result<(), WorthQueryManagedIndexStop> {
+        let backing = nodes
+            .downcast_ref::<node_backing::ProviderNodeBacking<S, I, P>>()
+            .ok_or(WorthQueryManagedIndexStop::ForeignNode)?;
+        backing.nodes.inspect_pages(inspection);
+        Ok(())
+    }
     fn installed(&self) -> &WorthQueryInstalledManagedIndex<S, I> {
         &self.installed
     }
@@ -170,7 +186,7 @@ where
                             let summary = provider_result(
                                 execution,
                                 control,
-                                self.provider.node_summary(*node, control),
+                                self.provider.node_summary(node, control),
                             )?;
                             let sources =
                                 WorthQueryManagedIndexSummarySources::new(&context, ordinal);

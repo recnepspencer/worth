@@ -28,11 +28,15 @@ pub use crate::domain_computation::primary_graph::{
     WorthQueryApplicationInvariantFactories, WorthQueryApplicationInvariantSchemaResolver,
 };
 pub use worth_foundational::facade::AspectValue;
+/// Original cascade policy carried by endpoint-deletion refusals.
+pub use worth_relational::facade::config::CascadeDeletePolicy;
 /// Native kind identity carried as law-refusal diagnostics, without graph authority.
 pub use worth_relational::facade::identity::KindId;
 pub use worth_relational::facade::identity::{EntityId, RelationId};
 /// Original native contract identity and law parameters carried by typed refusals.
-pub use worth_relational::facade::schema::{ContractId, SymmetryMode, UniquenessScope};
+pub use worth_relational::facade::schema::{
+    ContractId, EndpointDeletionIntegrityMode, SymmetryMode, UniquenessScope,
+};
 /// Original proposed or committed endpoints carried by relation-law denials.
 pub use worth_relational::facade::transactions::{EntityReference, RelationCardinalityBoundary};
 
@@ -43,3 +47,6 @@ pub use worth_relational::facade::runtime::CustomInvariantLeaseBudget;
 pub use worth_execution::{MemoryLimitDenial, MemoryLimitLevel};
 /// Direction of traversal relative to a stored relation's source and target.
 pub use worth_foundational::facade::RelationDirection;
+
+// Typed immutable content shared by the public reader doors.
+pub use crate::domain_computation::primary_graph::{AdmittedContent, ContentReadDenial};

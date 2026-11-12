@@ -44,7 +44,7 @@ impl WorthQueryObservedScopeSelector {
         };
         let path = fields
             .iter()
-            .map(|key| FieldKey::new(key))
+            .map(FieldKey::new)
             .collect::<Option<Vec<_>>>()
             .ok_or(D::MalformedFrame)?;
         let locator = AspectFieldLocator::new(

@@ -22,11 +22,18 @@ pub(super) fn advance(
             let World::Prepared(prepared) = take_world(guard, Call::Publication) else {
                 unreachable!()
             };
-            product.publication().execute_durable_without_signal(
-                execution,
-                prepared,
-                guard.preparation_mut().control.cancellation(),
-            )
+            match prepared {
+                QueryPreparedWorldPublication::Relational(prepared) => {
+                    product.publication().execute_durable_without_signal(
+                        execution,
+                        prepared,
+                        guard.preparation_mut().control.cancellation(),
+                    )
+                }
+                QueryPreparedWorldPublication::WithSignal(prepared) => {
+                    super::authored_definition::publish(execution, guard, &product, prepared)
+                }
+            }
         } else {
             let World::PendingPublication(pending) = take_world(guard, Call::PublicationAdvance)
             else {

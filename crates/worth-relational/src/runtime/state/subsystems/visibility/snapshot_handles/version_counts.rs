@@ -6,6 +6,29 @@ pub(super) struct VersionCounts<V> {
     counts: BTreeMap<V, usize>,
 }
 
+impl<V: Ord> VersionCounts<V> {
+    pub(super) fn new() -> Self {
+        Self {
+            counts: BTreeMap::new(),
+        }
+    }
+    pub(super) fn insert(&mut self, version: V) {
+        *self.counts.entry(version).or_default() += 1;
+    }
+    pub(super) fn remove(&mut self, version: &V) {
+        if let Some(count) = self.counts.get_mut(version) {
+            if *count == 1 {
+                self.counts.remove(version);
+            } else {
+                *count -= 1;
+            }
+        }
+    }
+    pub(super) fn oldest(&self) -> Option<&V> {
+        self.counts.first_key_value().map(|(version, _)| version)
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -83,27 +106,5 @@ mod tests {
                 "oldest lookup must stay below linear growth: {small} -> {large}"
             );
         }
-    }
-}
-impl<V: Ord> VersionCounts<V> {
-    pub(super) fn new() -> Self {
-        Self {
-            counts: BTreeMap::new(),
-        }
-    }
-    pub(super) fn insert(&mut self, version: V) {
-        *self.counts.entry(version).or_default() += 1;
-    }
-    pub(super) fn remove(&mut self, version: &V) {
-        if let Some(count) = self.counts.get_mut(version) {
-            if *count == 1 {
-                self.counts.remove(version);
-            } else {
-                *count -= 1;
-            }
-        }
-    }
-    pub(super) fn oldest(&self) -> Option<&V> {
-        self.counts.first_key_value().map(|(version, _)| version)
     }
 }

@@ -143,3 +143,6 @@ pub(in crate::domain_computation::primary_graph) use producer::{
 #[cfg(test)]
 #[path = "mod_inline_type_budget.rs"]
 pub(crate) mod inline_type_budget;
+
+pub(in crate::domain_computation::primary_graph) use conditional::RefusedConditionalBatch;
+pub(in crate::domain_computation::primary_graph) use producer::RefusedProducerSeal;

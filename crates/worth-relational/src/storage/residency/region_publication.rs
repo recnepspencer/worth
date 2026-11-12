@@ -201,4 +201,4 @@ fn unavailable_delta<K: RecordKind>(
 
 #[cfg(test)]
 #[path = "region_publication/full/tests.rs"]
-mod kind_commitment_preimage_tests;
+mod full_tests;

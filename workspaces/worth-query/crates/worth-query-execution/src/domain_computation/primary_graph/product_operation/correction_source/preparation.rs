@@ -1,7 +1,10 @@
 //! Source material and exact target retained between inverse preparation and publication.
 use super::*;
 mod custody;
+mod directory_admission;
 mod home;
+mod identity;
+mod member_inverse;
 mod recovery;
 mod relation_inverse;
 mod workflow;
@@ -31,7 +34,7 @@ use worth_relational::facade::{
 pub struct WorthQueryPreparedCorrectionSource {
     coupled_capture: Option<fn(&super::occurrence::CorrectionOccurrence, &worth_execution::ExecutionRequest<'_, '_>) -> crate::domain_computation::primary_graph::application_attempt::coupled_outputs::DeclaredCoupledOutputDemands>,
     content: worth_relational::facade::content::RelationalContentAttachments,
-    authored_identity: Option<super::authored_identity::PreparedAuthoredIdentity>,
+    authored_identity: Option<super::authored_identity::PreparedAuthoredCorrection>,
     workflow: Option<PreparedWorkflowCorrection>,
     custody: PreparedCorrectionCustody,
     target: WorthQueryProductBranchReadIdentity,
@@ -49,10 +52,6 @@ pub struct WorthQueryPreparedCorrectionSource {
 }
 
 impl WorthQueryPreparedCorrectionSource {
-    #[expect(
-        clippy::disallowed_methods,
-        reason = "Type identity and names serve point lookup or diagnostics; canonical order uses declared identity"
-    )]
     pub(super) fn retain<
         Schema: ApplicationSchema,
         C: ApplicationCorrectionBinding<Schema>,
@@ -132,6 +131,7 @@ impl WorthQueryPreparedCorrectionSource {
     {
         use WorthQueryCorrectionDerivationDenial as Denial;
         let (target, source, ancestry, target_program, required_root) = checked.into_parts();
+        directory_admission::admit(target, source, &ancestry, &lineage, required_root.is_some())?;
         let basis = target.product().relational_basis();
         let target_parent = basis
             .observation()
@@ -143,7 +143,7 @@ impl WorthQueryPreparedCorrectionSource {
             .map_err(|_| Denial::ForeignPhase)?;
         let authored_identity = if lineage.role() == WorthQueryAftermathCausalRole::RecordedReverse
         {
-            super::authored_identity::PreparedAuthoredIdentity::prepare::<Schema, C>(
+            super::authored_identity::PreparedAuthoredCorrection::prepare::<Schema, C>(
                 source, &execution,
             )?
         } else {
@@ -259,6 +259,15 @@ impl WorthQueryPreparedCorrectionSource {
             .and_then(|identity| identity.retirement_anchor())
     }
 
+    pub(in crate::domain_computation::primary_graph) fn authored_declaration(
+        &self,
+    ) -> Option<&worth_query_declaration::facade::application_aftermath::DeclaredAuthoredCorrection>
+    {
+        self.authored_identity
+            .as_ref()
+            .map(|identity| identity.declaration())
+    }
+
     pub(in crate::domain_computation::primary_graph) fn authored_retirement_co_anchors(
         &self,
     ) -> Vec<EntityId> {
@@ -371,25 +380,3 @@ impl std::fmt::Debug for WorthQueryPreparedCorrectionSource {
             .finish_non_exhaustive()
     }
 }
-
-impl PartialEq for WorthQueryPreparedCorrectionSource {
-    fn eq(&self, other: &Self) -> bool {
-        self.runtime == other.runtime
-            && self.authored_identity == other.authored_identity
-            && self.workflow == other.workflow
-            && self.required_root == other.required_root
-            && self.target_program.same_support_as(&other.target_program)
-            && self.actor == other.actor
-            && self.scope == other.scope
-            && self.action_input == other.action_input
-            && self.action_binding == other.action_binding
-            && self.lineage == other.lineage
-            && self.intent == other.intent
-            && self.target_parent == other.target_parent
-            && self.target_branch == other.target_branch
-            && self.source_world() == other.source_world()
-            && self.source_commit() == other.source_commit()
-            && self.target == other.target
-    }
-}
-impl Eq for WorthQueryPreparedCorrectionSource {}

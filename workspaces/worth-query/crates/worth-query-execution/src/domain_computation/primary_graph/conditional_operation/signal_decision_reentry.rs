@@ -194,6 +194,7 @@ pub(super) fn retained_decision_counts(
             WorthQueryRetainedConditionalDecision::OperationProductUnpublished(
                 evidence,
                 custody,
+                _,
             ) => {
                 let _decision = evidence.signal().class();
                 let _custody = custody;

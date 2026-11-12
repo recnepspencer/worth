@@ -1,3 +1,4 @@
+use super::BridgeSemanticClaimOrigin;
 use std::collections::{BTreeMap, BTreeSet};
 use std::sync::{Arc, RwLock};
 
@@ -8,6 +9,7 @@ use crate::mapping::BridgeAspectRegistrationId;
 use super::{
     BridgeSignalAspectTargetDeclaration, BridgeSignalSlotRequest, InstalledCorrespondenceTarget,
 };
+mod authored;
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
 pub(super) struct AllocationKey {
@@ -20,7 +22,7 @@ pub(super) struct AllocationKey {
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
 pub(super) struct AuthoritativeAllocationRecord {
     pub(super) key: AllocationKey,
-    pub(super) owner: String,
+    pub(super) owner: BridgeSemanticClaimOrigin,
     pub(super) target_identity: AllocationTargetIdentity,
 }
 
@@ -31,7 +33,7 @@ pub(super) struct AllocationTargetIdentity {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
-enum AllocationSlotIdentity {
+pub(crate) enum AllocationSlotIdentity {
     Allocate,
     Exact(Aspect),
 }
@@ -54,14 +56,14 @@ struct AllocationTargetKey {
     signal_graph_instance_id: u64,
     partition: PartitionToken,
     node: worth_signal::facade::NodeId,
-    owner: String,
+    owner: BridgeSemanticClaimOrigin,
     target_identity: AllocationTargetIdentity,
 }
 
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub(crate) struct CorrespondenceAllocationRegistry {
     pub(super) authoritative_records: BTreeSet<AuthoritativeAllocationRecord>,
-    pub(super) owners: BTreeMap<AllocationKey, BTreeSet<String>>,
+    pub(super) owners: BTreeMap<AllocationKey, BTreeSet<BridgeSemanticClaimOrigin>>,
     retained_aspect_by_target: BTreeMap<AllocationTargetKey, Aspect>,
 }
 
@@ -134,10 +136,10 @@ pub(super) enum SlotAllocation {
 
 pub(super) fn allocate_slot(
     registry: &CorrespondenceAllocationRegistry,
-    pending: &BTreeMap<AllocationKey, BTreeSet<String>>,
+    pending: &BTreeMap<AllocationKey, BTreeSet<BridgeSemanticClaimOrigin>>,
     signal_graph_instance_id: u64,
     declaration: &BridgeSignalAspectTargetDeclaration,
-    owner: &str,
+    owner: &BridgeSemanticClaimOrigin,
     target_identity: &AllocationTargetIdentity,
 ) -> (SlotAllocation, usize) {
     match &declaration.slot {
@@ -154,7 +156,7 @@ pub(super) fn allocate_slot(
                 signal_graph_instance_id,
                 partition: declaration.partition.clone(),
                 node: declaration.node,
-                owner: owner.to_string(),
+                owner: owner.clone(),
                 target_identity: target_identity.clone(),
             };
             if let Some(aspect) = registry.retained_aspect_by_target.get(&retained_key) {

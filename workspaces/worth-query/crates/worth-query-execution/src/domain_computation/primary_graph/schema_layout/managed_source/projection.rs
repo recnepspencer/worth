@@ -102,11 +102,7 @@ fn scalar_fields(
         .fields()
         .iter()
         .map(|field| {
-            // This Native Source receiver carries child-field absence, not
-            // the lossless parent-aspect absence used by ordinary projections.
-            if field.entity() != shape.root_entity()
-                || field.presence() == worth_query_declaration::facade::application_query::ApplicationQueryResultFieldPresence::OptionalAspect
-            {
+            if field.entity() != shape.root_entity() {
                 return Err(unsupported(source));
             }
             fields

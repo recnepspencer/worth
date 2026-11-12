@@ -101,7 +101,11 @@ pub(crate) fn require_no_pending_home_journals(
         .map_err(ApplicationHomeOwnerAdmissionDenial::Execution)?;
     for journal in HOME_JOURNALS {
         match journal.admission {
-            HomeJournalAdmission::Native | HomeJournalAdmission::World => {}
+            // The concrete World-readmitted Home has already admitted these
+            // owners, including Signal's framed authored source before World.
+            HomeJournalAdmission::Native
+            | HomeJournalAdmission::Signal
+            | HomeJournalAdmission::World => {}
             HomeJournalAdmission::Transition => {
                 if !context
                     .transition
@@ -128,9 +132,6 @@ pub(crate) fn require_no_pending_home_journals(
                     .query_dispatch
                     .require_admitted(request)
                     .map_err(ApplicationHomeOwnerAdmissionDenial::QueryDispatch)?;
-            }
-            HomeJournalAdmission::RequireAbsent => {
-                require_empty_journal(context, journal.name, request)?;
             }
         }
     }

@@ -98,6 +98,7 @@ impl RelationalPublicationCompanion for TwoCellHints {
 pub use crate::domain_computation::primary_graph::output_lineage::invalidation::native_journey_tests::required_hints::prepare_update::prepare_update;
 
 #[test]
+#[expect(clippy::disallowed_methods, reason = "Client-race court")]
 fn two_branch_cells_preserve_prepared_fences_and_selected_branch_identity() {
     {
         let allowed_hints = 2_u64;

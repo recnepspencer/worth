@@ -63,10 +63,7 @@ pub fn validate_materialization_contract(
         .into());
     }
     validate_query_observation_binding(query_observation_identity, envelope)?;
-    Ok(validate_requested_replay_posture(
-        requested_families,
-        envelope,
-    )?)
+    validate_requested_replay_posture(requested_families, envelope)
 }
 
 fn validate_query_observation_binding(
@@ -122,24 +119,21 @@ fn query_observation_binding_error(
     envelope: &BridgeCausalExplanationEnvelope,
     query_observation_binding_count: usize,
 ) -> Result<CausalInspectionMaterializationError, WorthQueryEvidenceIdentityDerivationDenial> {
-    Ok(CausalInspectionMaterializationError::new(
-        kind,
-        |identity| {
-            identity
-                .field_evidence_identity(
-                    WorthQueryEvidenceTag::new("expected_query_observation"),
-                    query_observation_identity,
-                )
-                .field_usize(
-                    WorthQueryEvidenceTag::new("query_observation_binding_count"),
-                    query_observation_binding_count,
-                )
-                .field_value(
-                    WorthQueryEvidenceTag::new("envelope"),
-                    envelope.envelope_for_reporting(),
-                )
-        },
-    )?)
+    CausalInspectionMaterializationError::new(kind, |identity| {
+        identity
+            .field_evidence_identity(
+                WorthQueryEvidenceTag::new("expected_query_observation"),
+                query_observation_identity,
+            )
+            .field_usize(
+                WorthQueryEvidenceTag::new("query_observation_binding_count"),
+                query_observation_binding_count,
+            )
+            .field_value(
+                WorthQueryEvidenceTag::new("envelope"),
+                envelope.envelope_for_reporting(),
+            )
+    })
 }
 
 fn validate_requested_replay_posture(

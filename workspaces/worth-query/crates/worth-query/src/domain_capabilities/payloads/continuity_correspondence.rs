@@ -199,7 +199,7 @@ impl WorthQueryContinuityCorrespondenceSemantics {
                     ordering_contract.as_str(),
                 ),
         };
-        Ok(identity.seal()?)
+        identity.seal()
     }
 
     pub fn digest_fragment(&self) -> Result<String, IdentityDerivationDenial> {

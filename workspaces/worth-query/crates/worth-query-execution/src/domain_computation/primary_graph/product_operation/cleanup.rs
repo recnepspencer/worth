@@ -1,8 +1,6 @@
 //! Application-owned completion of product cleanup across Query and Bridge.
 
-use std::sync::{Arc, RwLock};
-
-use worth_runtime_bridge::facade::{BridgeConditionalDenial, BridgeSealedRuntimeAssembly};
+use worth_runtime_bridge::facade::BridgeConditionalDenial;
 
 use crate::domain_computation::execution_runtime::product_world::{
     OwnerCleanupRetirements, WorthQueryProductBranchOwnerCleanup,
@@ -21,7 +19,7 @@ pub enum WorthQueryApplicationProductBranchCleanupDenial {
 #[must_use = "product cleanup must be completed or retained for retry"]
 pub struct WorthQueryApplicationProductBranchCleanup {
     product: WorthQueryProductBranchOwnerCleanup,
-    conditional: Arc<RwLock<BridgeSealedRuntimeAssembly>>,
+    conditional: crate::domain_computation::primary_graph::managed_bridge::conditional_owner::ConditionalOwner,
 }
 
 impl std::fmt::Debug for WorthQueryApplicationProductBranchCleanup {
@@ -36,7 +34,7 @@ impl std::fmt::Debug for WorthQueryApplicationProductBranchCleanup {
 impl WorthQueryApplicationProductBranchCleanup {
     pub(in crate::domain_computation) fn new(
         product: WorthQueryProductBranchOwnerCleanup,
-        conditional: Arc<RwLock<BridgeSealedRuntimeAssembly>>,
+        conditional: crate::domain_computation::primary_graph::managed_bridge::conditional_owner::ConditionalOwner,
     ) -> Self {
         Self {
             product,
@@ -121,11 +119,10 @@ impl WorthQueryApplicationProductBranchCleanup {
             }
         };
         for basis in bases {
-            let result = {
-                conditional
-                    .write()
-                    .unwrap_or_else(std::sync::PoisonError::into_inner)
-                    .retire_owned_conditionals_on_signal_branch(&basis)
+            let result = match &conditional {
+                crate::domain_computation::primary_graph::managed_bridge::conditional_owner::ConditionalOwner::Memory(owner) => owner.write().unwrap_or_else(std::sync::PoisonError::into_inner).retire_owned_conditionals_on_signal_branch(&basis),
+                crate::domain_computation::primary_graph::managed_bridge::conditional_owner::ConditionalOwner::Authored(_)
+                | crate::domain_computation::primary_graph::managed_bridge::conditional_owner::ConditionalOwner::Stopped => Err(BridgeConditionalDenial::operation_route_refused("individual authored branch retirement requires its durable disposition")),
             };
             if let Err(denial) = result {
                 return Err(Self::failed(
@@ -150,7 +147,7 @@ impl WorthQueryApplicationProductBranchCleanup {
 
     fn failed(
         product: WorthQueryProductBranchOwnerCleanup,
-        conditional: Arc<RwLock<BridgeSealedRuntimeAssembly>>,
+        conditional: crate::domain_computation::primary_graph::managed_bridge::conditional_owner::ConditionalOwner,
         denial: WorthQueryApplicationProductBranchCleanupDenial,
     ) -> WorthQueryApplicationProductBranchCleanupFailure {
         WorthQueryApplicationProductBranchCleanupFailure {

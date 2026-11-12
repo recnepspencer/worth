@@ -10,6 +10,7 @@ use crate::validation::data::CustomInvariantAccessContract;
 
 mod bindings;
 mod catalog_commitment;
+mod ordered_predecessor;
 pub(crate) use bindings::SourceBindingCache;
 pub(crate) use catalog_commitment::SourceProgramCommitmentDenial;
 mod projection_routes;
@@ -26,6 +27,7 @@ pub(crate) struct SourceProgram {
     // In-memory bind order only; never persist, content-hash, or include in evidence.
     order: u64,
     pub(crate) path: DerivedRelationHandle,
+    pub(crate) ordered: Option<ordered_predecessor::OrderedSourceRecipe>,
     pub(crate) fields: Arc<[ManagedIndexSourceField]>,
     pub(crate) routes: Arc<[ManagedIndexSourceProjectionRoute]>,
     pub(crate) issuer: ManagedIndexSourceAudienceIssuer,
@@ -95,11 +97,17 @@ impl RelationalSchemaRegistry {
         projection_routes::validate_fields(self, row, &fields)?;
         projection_routes::validate_routes(self, row, &routes)?;
         projection_routes::validate_route_names(&routes)?;
-        path.entry.managed_source_binding.bind(path, fields, routes)
+        path.entry
+            .managed_source_binding
+            .bind(path, fields, routes, None)
     }
 }
 
 impl ManagedIndexSourceProgram {
+    pub fn has_ordered_predecessor(&self) -> bool {
+        self.0.ordered.is_some()
+    }
+
     pub fn scope_kind(&self) -> KindId {
         self.0
             .path

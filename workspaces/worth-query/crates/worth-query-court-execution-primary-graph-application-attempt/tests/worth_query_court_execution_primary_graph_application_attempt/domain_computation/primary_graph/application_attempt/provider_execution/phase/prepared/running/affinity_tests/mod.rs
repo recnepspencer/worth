@@ -1,3 +1,4 @@
+use worth_query_execution::facade::product::WorthQueryProductBranchCreationOutcome;
 use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::advancement::test_host_policy::TestHostRequest;
 pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::provider_execution::phase::prepared::running::start_managed_application_commit;
 pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::provider_execution::application_attempt_affinity::WorthQueryApplicationAttemptBasis;
@@ -303,9 +304,7 @@ pub fn fork_product(
             &worth_runtime_world::facade::RuntimeWorldCancellationSource::new().token(),
         )
         .expect("the product owner accepts the sibling request");
-    let worth_runtime_world::facade::RuntimeWorldBranchCreationOutcome::Performed(observation) =
-        outcome
-    else {
+    let WorthQueryProductBranchCreationOutcome::Performed(observation) = outcome else {
         panic!("the product owner must create an exact sibling: {outcome:?}")
     };
     observation.branch_identity().clone()

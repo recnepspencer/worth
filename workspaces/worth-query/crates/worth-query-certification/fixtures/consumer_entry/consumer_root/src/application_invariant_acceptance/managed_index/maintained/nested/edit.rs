@@ -15,6 +15,10 @@ pub enum Edit {
         item: String,
         value: String,
     },
+    Badge {
+        item: String,
+        value: Option<(bool, Option<bool>)>,
+    },
     Enabled {
         item: String,
         value: bool,

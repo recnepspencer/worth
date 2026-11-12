@@ -4,8 +4,6 @@ mod index_retirement;
 pub(crate) mod relational_certification;
 mod source_initial_inputs;
 
-mod restoration_header;
-
 mod schema_projection;
 
 mod incremental_indexes;

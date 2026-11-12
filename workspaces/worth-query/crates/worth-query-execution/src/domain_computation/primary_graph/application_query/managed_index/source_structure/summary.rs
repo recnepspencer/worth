@@ -28,14 +28,16 @@ where
         let node = nodes
             .node_at_ordinal(ordinal, control)?
             .ok_or_else(|| control.refuse(Stop::SourceStructureIncomplete))?;
-        let mut parts = [None; 3];
-        if let Some(slot) = region.source {
-            parts[0] = Some(provider_result(
+        let own = if let Some(slot) = region.source {
+            Some(provider_result(
                 execution,
                 control,
                 provider.source_summary(slot, source.get(slot)?, control),
-            )?);
-        }
+            )?)
+        } else {
+            None
+        };
+        let mut parts = [own.as_ref(), None, None];
         for (position, child) in region.children.into_iter().enumerate() {
             if let Some(child) = child {
                 let child = nodes
@@ -44,7 +46,7 @@ where
                 parts[position + 1] = Some(provider_result(
                     execution,
                     control,
-                    provider.node_summary(*child, control),
+                    provider.node_summary(child, control),
                 )?);
             }
         }
@@ -54,8 +56,8 @@ where
             control,
             provider.merge_summaries(parts, &sources, control),
         )?;
-        let actual = provider_result(execution, control, provider.node_summary(*node, control))?;
-        if actual != expected {
+        let actual = provider_result(execution, control, provider.node_summary(node, control))?;
+        if actual != &expected {
             return Err(control.refuse(Stop::SummaryMismatch).into());
         }
         Ok(())

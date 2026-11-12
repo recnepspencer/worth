@@ -76,17 +76,15 @@ impl HistorySubsystem {
         use crate::durability::canonical_commit_artifact::RelationalCanonicalCommitArtifact as Wire;
         use crate::history::RelationalCommitArtifact as Artifact;
         let expected = self.commit_artifact(positioned.commit.commit_id);
-        if let Some(existing) = &expected {
-            if let Some(resident) = existing.resident_envelope() {
-                if Wire::matches_positioned_payload_for_request(positioned, &resident, request)
-                    .map_err(RelationalHistoryRecoveryDenial::Source)?
-                {
-                    return Ok(PreparedRecoveredSourceCatalog {
-                        artifact: Arc::clone(existing),
-                        expected,
-                    });
-                }
-            }
+        if let Some(existing) = &expected
+            && let Some(resident) = existing.resident_envelope()
+            && Wire::matches_positioned_payload_for_request(positioned, &resident, request)
+                .map_err(RelationalHistoryRecoveryDenial::Source)?
+        {
+            return Ok(PreparedRecoveredSourceCatalog {
+                artifact: Arc::clone(existing),
+                expected,
+            });
         }
         let cell = expected
             .as_ref()

@@ -109,12 +109,25 @@ impl WorthQueryProductUnpublishedApplication {
                 effects.cause()
             }
             WorthQueryProductUnpublishedOwnerEffects::Recovered(effects) => {
-                if effects.native_effect().is_some() {
+                if effects.owner_effect_count() > 0 {
                     worth_runtime_world::facade::ProductUnpublishedCause::RecoveredWithoutProductMovement
                 } else {
                     worth_runtime_world::facade::ProductUnpublishedCause::OpenAttemptRetained
                 }
             }
+        }
+    }
+
+    /// The typed refusal that stopped an original open before any owner effect.
+    pub fn before_effect_refusal(&self) -> Option<worth_runtime_world::facade::NoEffectCause> {
+        match &self.effects {
+            WorthQueryProductUnpublishedOwnerEffects::Application(effects) => {
+                effects.before_effect_refusal()
+            }
+            WorthQueryProductUnpublishedOwnerEffects::ConditionalDefinition(value) => {
+                value.effects().before_effect_refusal()
+            }
+            WorthQueryProductUnpublishedOwnerEffects::Recovered(_) => None,
         }
     }
 
@@ -128,7 +141,7 @@ impl WorthQueryProductUnpublishedApplication {
                 effects.owner_effect_count()
             }
             WorthQueryProductUnpublishedOwnerEffects::Recovered(effects) => {
-                usize::from(effects.native_effect().is_some())
+                effects.owner_effect_count()
             }
         }
     }
@@ -184,7 +197,7 @@ impl WorthQueryProductUnpublishedApplication {
                 effects.live_obligation_count()
             }
             WorthQueryProductUnpublishedOwnerEffects::Recovered(effects) => {
-                usize::from(effects.native_effect().is_some())
+                effects.live_obligation_count()
             }
         }
     }

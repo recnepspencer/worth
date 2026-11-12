@@ -347,3 +347,8 @@ pub(crate) mod selected_product_reads;
 pub(crate) mod shared_root_progress;
 
 pub(crate) mod successor_generation_requires_fresh_typed_rebinding;
+
+#[test]
+fn definition_only_installation_preserves_authored_membership_without_temporal_execution() {
+    contribution_installation::definition_only::installed_definition_keeps_temporal_execution_closed();
+}

@@ -38,9 +38,7 @@ impl WorthQueryApplicationCleanupRequired {
         failure: WorthQueryMutationCleanupFailure,
         runtime: WorthQueryProductRuntime,
         original: Option<super::RetainedOriginalCleanupCommit>,
-        bridge: std::sync::Arc<
-            std::sync::RwLock<worth_runtime_bridge::facade::BridgeSealedRuntimeAssembly>,
-        >,
+        bridge: crate::domain_computation::primary_graph::managed_bridge::conditional_owner::ConditionalOwner,
     ) -> Box<Self> {
         assert!(
             self.parts.is_none(),

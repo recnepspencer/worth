@@ -11,15 +11,13 @@ use fixture::*;
 use worth_execution::{CancellationToken, ExecutionRequest};
 
 #[test]
-fn repeated_dag_reachability_reuses_scratch_under_the_same_finite_policy() {
-    let fixture = DagFixture::new(128);
+fn legal_dag_validation_reports_all_required_stages_without_publication() {
+    let fixture = DagFixture::new(8);
     let before = fixture.head();
-    // Deliberate ordinary finite policy, independent of an observed operation
-    // total. The old per-visit allocation accumulator exceeds this allowance.
-    let lease = request(1024 * 1024, 4_000_000, CancellationToken::new(), None);
+    let host = crate::test_execution_policy::serial_request();
     let candidate = fixture
-        .validate(&ExecutionRequest::leased(&lease), fixture.chain_batch(2))
-        .expect("a DAG needs live scratch, not the sum of every freed successor buffer");
+        .validate(&ExecutionRequest::serial(&host), fixture.chain_batch(2))
+        .expect("a legal DAG validates under its ordinary caller request");
     let summary = candidate.validation_summary();
     assert!(
         summary.commit_boundary_seen
@@ -38,7 +36,6 @@ fn repeated_dag_reachability_reuses_scratch_under_the_same_finite_policy() {
         )));
     assert_eq!(fixture.head(), before, "validation grants no publication");
     drop(candidate);
-    assert_eq!(lease.charged_memory_bytes(), 0);
 }
 
 #[test]

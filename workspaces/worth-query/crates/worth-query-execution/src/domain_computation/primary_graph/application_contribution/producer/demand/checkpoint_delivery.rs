@@ -16,10 +16,12 @@ use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationR
 mod publication;
 mod recovered;
 mod selected;
+mod selected_binding;
+use selected_binding::SelectedDeliveryBinding;
 mod unpublished;
 
 pub struct PreparedSelectedDelivery<'a> {
-    lowering: &'a std::sync::Arc<worth_runtime_bridge::facade::BridgeInstalledConditionalLowering>,
+    lowering: SelectedDeliveryBinding<'a>,
     ordinal: usize,
     preserved: bool,
 }
@@ -181,12 +183,29 @@ where
                 .output_readiness_routes
                 .get(producer_identity)
                 .expect("installation requires one readiness route for every output producer");
-            (&route.lowering, route.delivery_dependency_ordinal)
+            (
+                SelectedDeliveryBinding::Installed(&route.lowering),
+                route.delivery_dependency_ordinal,
+            )
         };
         let root = self
             .granular_invalidation_installation()
             .retain_product_shared_root();
-        let outcome = root.deliver_performed_relational_change(phase, lowering, ordinal, change);
+        let owner = self.runtime.bridge.conditional();
+        let binding = match lowering.admit_signal_basis(&owner, change.signal_basis()) {
+            Ok(binding) => binding,
+            Err(cause) => {
+                return finish(
+                    receipt.published(Delivery::Change(change), ready_backing),
+                    Some(denial(
+                        WorthQueryOutputDemandDenialKind::BridgeConditional(Box::new(cause.kind())),
+                        cause.detail().to_owned(),
+                    )),
+                )
+            }
+        };
+        drop(owner);
+        let outcome = root.deliver_performed_relational_change(phase, &binding, ordinal, change);
         let delivered = match outcome {
             Ok(crate::domain_computation::execution_runtime::product_world::WorthQueryPerformedRelationalProductChangeDeliveryOutcome::Success(delivered)) => delivered,
             Ok(outcome) => {

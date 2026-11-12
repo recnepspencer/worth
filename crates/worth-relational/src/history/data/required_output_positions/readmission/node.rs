@@ -3,7 +3,7 @@ use super::*;
 use crate::identity::data::{EntityId, PartitionId};
 
 pub(super) fn read(
-    cursor: &mut Cursor<'_, '_, '_>,
+    cursor: &mut Cursor<'_, '_>,
     context: &mut Readmission<'_, '_, '_>,
     depth: usize,
 ) -> Result<Option<Arc<PositionNode>>, Refusal> {
@@ -80,7 +80,7 @@ pub(super) fn read(
         _funding: memory,
     })))
 }
-fn source(cursor: &mut Cursor<'_, '_, '_>) -> Result<EntityId, Refusal> {
+fn source(cursor: &mut Cursor<'_, '_>) -> Result<EntityId, Refusal> {
     require_count(cursor.map_length(), 3)?;
     key(cursor, "partition_id")?;
     let partition = u32::try_from(cursor.unsigned().map_err(projected_stop)?)

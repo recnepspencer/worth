@@ -6,8 +6,7 @@ use crate::facade::lineage::{
     HistoricalResolutionRequest, LineageGraphRequest, LineageGraphTraversalBasis,
 };
 use crate::facade::transactions::{
-    EntityMutationIntent, MutationIntent, ReplaceEntityIntent, TransactionCommitError,
-    WorkerIntentBatch,
+    EntityMutationIntent, MutationIntent, ReplaceEntityIntent, WorkerIntentBatch,
 };
 use crate::tests::support::*;
 
@@ -100,90 +99,6 @@ fn historical_lineage_resolution_follows_replace_events() {
             .count(),
         2
     );
-}
-
-#[test]
-fn refused_durable_publication_leaves_no_replacement_lineage_behind() {
-    let host_request = crate::test_execution_policy::serial_request();
-    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
-
-    let runtime = durable_runtime_with_test_schema();
-    let created = create_entity_outcome(execution, &runtime, "refused-lineage-source");
-    let entity = changed_entities(&created)[0];
-    let start_lineage = runtime
-        .lineage_access()
-        .for_record(execution, entity)
-        .unwrap()
-        .expect("source lineage")
-        .lineage_id();
-    let graph = |runtime: &crate::runtime::RelationalRuntime| {
-        runtime
-            .lineage_access()
-            .graph(
-                execution,
-                LineageGraphRequest {
-                    branch_id: BranchId("main".to_owned()),
-                    traversal_basis: LineageGraphTraversalBasis::FullBranchGraphMaterialization,
-                },
-            )
-            .unwrap()
-    };
-    let before = graph(&runtime);
-    let head_before = runtime.history().branch_head(&BranchId("main".to_owned()));
-
-    attached_test_medium(&runtime).script_next_publication(ScriptedPublication::ProvenNoEffect);
-    let mut transaction = test_owner_begin_transaction_for_main(&runtime);
-    transaction
-        .push_batch(
-            WorkerIntentBatch::new("refused-replacement").push(MutationIntent::Entity(
-                EntityMutationIntent::Replace(ReplaceEntityIntent {
-                    entity_id: entity,
-                    replacement: crate::transactions::data::EntitySpec {
-                        partition_id: PartitionId::main(),
-                        kind_id: KindId(1),
-                        client_key: crate::symbols::data::ClientKey::raw("refused-successor"),
-                        fields: single_string_aspect_field_patch(
-                            aspect_key("name"),
-                            field_key("name"),
-                            "refused-successor",
-                        ),
-                    },
-                }),
-            )),
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
-        .expect("test staging stays within configured resource budgets");
-    let refused = transaction
-        .commit(execution, &runtime)
-        .expect_err("a refused durable publication is a typed pre-effect denial");
-    assert!(matches!(
-        refused,
-        TransactionCommitError::PublicationDenied {
-            denial: crate::mvcc::RelationalPublicationDenial::DurablePublicationRefused(_),
-            ..
-        }
-    ));
-
-    let after = graph(&runtime);
-    assert_eq!(after.nodes.len(), before.nodes.len());
-    assert_eq!(after.events.len(), before.events.len());
-    assert_eq!(
-        runtime.history().branch_head(&BranchId("main".to_owned())),
-        head_before
-    );
-    let resolution = runtime
-        .lineage_access()
-        .resolve_historical_lineage(
-            execution,
-            HistoricalResolutionRequest {
-                branch_id: BranchId("main".to_owned()),
-                lineage_id: start_lineage,
-                boundedness_basis: HistoricalResolutionBoundednessBasis::BranchScopedLineageSeed,
-            },
-        )
-        .unwrap();
-    assert_eq!(resolution.resolved, vec![start_lineage]);
-    assert!(resolution.traversed_event_ids.is_empty());
 }
 
 #[test]

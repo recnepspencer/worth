@@ -17,6 +17,7 @@ pub(crate) struct CanonicalAuthoredRestoration {
     pub(crate) retirement: CommitId,
     pub(crate) original_anchor: EntityId,
     pub(crate) anchor: EntityId,
+    pub(crate) owned_members: bool,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub(crate) co_anchors: Vec<(EntityId, EntityId)>,
     pub(crate) entities: Vec<(EntityId, EntityId)>,
@@ -314,6 +315,7 @@ pub(super) fn install(
     envelope.authored_cascade_restoration = Some(Arc::new(CanonicalAuthoredRestoration {
         _decoded_memory: None,
         retirement: restoration.retirement.commit.commit_id,
+        owned_members: old.owned_members,
         original_anchor: old.anchor,
         anchor,
         co_anchors,

@@ -200,17 +200,23 @@ pub(crate) fn apply_retained_entity_selection_draft(
         adjacency_policy: runtime.config.storage.adjacency_policy.clone(),
         cross_context_policy: runtime.config.storage.cross_context_policy,
     };
-    let outcome = crate::authority::mutation::retained_entity_selection::apply(
+    let outcome = crate::execution::transaction_stage(
         execution,
-        &mut state,
-        retained,
-        identity.proposed_version_id(),
-        &config,
-        schema.registry(),
-        schema.aspect_plans(),
-        &mut symbols,
-        &mut records,
-        runtime.commit_work_budget.clone(),
+        runtime.commit_work_budget.as_ref(),
+        || {
+            crate::authority::mutation::retained_entity_selection::apply(
+                execution,
+                &mut state,
+                retained,
+                identity.proposed_version_id(),
+                &config,
+                schema.registry(),
+                schema.aspect_plans(),
+                &mut symbols,
+                &mut records,
+                runtime.commit_work_budget.clone(),
+            )
+        },
     )?;
     state.content = content::prepare(
         execution,

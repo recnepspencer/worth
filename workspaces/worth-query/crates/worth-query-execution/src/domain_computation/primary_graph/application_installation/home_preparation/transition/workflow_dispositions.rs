@@ -30,13 +30,14 @@ impl<Schema: ApplicationSchemaComposition, Program>
         BeforeProgram,
     >(
         &self,
-        predecessor: &ReadmittedExistingHomeNativeMeaning<Before, BeforeProgram>,
+        predecessor: &PreparedExistingHomeSignalProgram<Before, BeforeProgram>,
         source: &WorthQueryHomeProgramTransitionReadSource<'_, '_>,
         choices: Option<&WorthQueryWorkflowDispositions>,
         maximum_work_units: usize,
     ) -> Result<Option<WorkerIntentBatch>, QueryHomeWorkflowDispositionDenial> {
         let target = &self._pending._state;
-        let (source_schema, source_roster) = predecessor.predecessor_program_support();
+        let source_schema = predecessor.predecessor_installed_schema();
+        let source_roster = predecessor.predecessor_program_roster();
         let source_revision = predecessor.predecessor_activation().0;
         let target_revision = &target.support.initial_revision;
         let mut compare = || {

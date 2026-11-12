@@ -217,7 +217,7 @@ fn observe_in_pin<Phase>(
     }
     .map_err(|stop| match stop {
         worth_relational::facade::runtime::BoundedFrontierReadStop::Admission(stop) => {
-            AdjacencyObservationDenial::Execution(stop.into())
+            AdjacencyObservationDenial::Execution(stop)
         }
         worth_relational::facade::runtime::BoundedFrontierReadStop::Limit(_) => {
             AdjacencyObservationDenial::WorkBudgetExceeded

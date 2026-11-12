@@ -9,7 +9,9 @@ mod historical_scope;
 
 mod member_children;
 
-pub(super) use program::{Child, ChildInput, Input, Output, Parent, Program as HierarchyProgram};
+pub(super) use program::{
+    Child, ChildInput, Input, Output, Parent, Program as HierarchyProgram, SeedInput,
+};
 
 mod recording_parent;
 

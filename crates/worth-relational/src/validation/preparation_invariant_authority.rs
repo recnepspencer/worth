@@ -30,6 +30,7 @@ impl PreparationInvariantAuthority<'_> {
         aggregate: Option<crate::aggregate_identity::AggregateProposalBorrow<'_>>,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         control: &crate::validation::engine::InvariantPreparationControl<'_, '_>,
+        prepare_sources: &mut dyn FnMut() -> Result<(), TransactionCommitError>,
     ) -> Result<crate::validation::engine::PendingProposedPass, TransactionCommitError> {
         let view = InvariantRuntimeView::from_preparation_for_state(
             self.runtime,
@@ -54,7 +55,8 @@ impl PreparationInvariantAuthority<'_> {
             Some(plan.invariant_contract()),
             control,
         )?;
-        let started = InvariantEngine::from_view(&view).begin_proposed(execution, request);
+        let started =
+            InvariantEngine::from_view(&view).begin_proposed(execution, request, prepare_sources);
         let started = match aggregate {
             Some(source) => source.settle(started, execution, control),
             None => started,
@@ -83,7 +85,7 @@ impl PreparationInvariantAuthority<'_> {
     ) -> Result<InvariantExecutionResult, TransactionCommitError> {
         let result = self.execute(
             InvariantRequestProfile::ProposedState,
-            &selected,
+            selected,
             working,
             pending,
             Some(created_entities),

@@ -1,8 +1,0 @@
-[
-  "a_damaged_cold_member_is_a_sticky_typed_transaction_read_refusal",
-  "tail_replay_refuses_a_damaged_touched_member_as_cold_storage_unavailable",
-  "recovered_nonhead_envelope_custody_ends_with_the_last_inflight_read",
-  "bounded_history_reads_only_the_selected_envelope_and_refuses_sticky_body_damage",
-  "patch_stream_demands_only_the_requested_batch_and_refuses_sticky_journal_damage",
-  "envelope_surfaces_keep_index_facts_readable_and_refuse_cold_body_damage"
-]

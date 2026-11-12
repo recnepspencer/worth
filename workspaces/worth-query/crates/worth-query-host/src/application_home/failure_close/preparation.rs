@@ -1,8 +1,20 @@
 //! Exact Query preparations retained while the same World refuses close.
 use super::*;
 pub(super) enum WorldQueryPreparation<Schema: ApplicationSchemaComposition, Program> {
-    ExistingComposition {
+    TransitionComposition {
         _query: ReadmittedExistingHomeNativeMeaning<Schema, Program>,
+        _cause: ApplicationHomeQueryCompositionDenial,
+    },
+    TransitionSignal {
+        _query: Box<QueryHomeSignalProgramPreparationRefused<Schema, Program>>,
+    },
+    TransitionProgramme {
+        _query: PreparedExistingHomeSignalProgram<Schema, Program>,
+        _handoff: ApplicationHomeProgrammeHandoffRefused,
+        _bindings: QueryHomeAuthoredBindings,
+    },
+    ExistingComposition {
+        _query: PreparedExistingHomeSignalProgram<Schema, Program>,
         _cause: ApplicationHomeQueryCompositionDenial,
     },
     ExistingSource(QueryExistingHomeSourceAttachmentRefused<Schema, Program>),
@@ -16,7 +28,7 @@ pub(super) enum WorldQueryPreparation<Schema: ApplicationSchemaComposition, Prog
     },
     ExistingAttachment(QueryExistingHomeWorldAttachmentRefused<Schema, Program>),
     Composition {
-        _query: ReadmittedHomeNativeMeaning<Schema, Program>,
+        _query: PreparedHomeSignalProgram<Schema, Program>,
         _cause: ApplicationHomeQueryCompositionDenial,
     },
     Source(QueryHomeSourceAttachmentRefused<Schema, Program>),
@@ -53,6 +65,9 @@ impl BootstrapFailure {
 impl<Schema: ApplicationSchemaComposition, Program> WorldQueryPreparation<Schema, Program> {
     pub(super) fn detail(&self) -> String {
         match self {
+            Self::TransitionComposition { _cause, .. } => format!("{_cause:?}"),
+            Self::TransitionSignal { _query } => format!("{:?}", _query.reason()),
+            Self::TransitionProgramme { _handoff, .. } => format!("{:?}", _handoff.reason()),
             Self::ExistingComposition { _cause, .. } => format!("{_cause:?}"),
             Self::ExistingSource(query) => query.reason().to_string(),
             Self::ExistingMaintenance { _cause, .. } => format!("{_cause:?}"),

@@ -89,11 +89,11 @@ where
         let native = match effects.source.as_ref() {
             Some(crate::recovery::recovered_publication::RecoveredNativeObservation::Original(
                 native,
-            )) => native,
+            )) => Some(native),
             Some(crate::recovery::recovered_publication::RecoveredNativeObservation::Prepared(
                 _,
             )) => return Err(Denial::Admission(RuntimeWorldRecoveryDenial::Busy)),
-            None => return Err(Denial::NoOwnerEffect),
+            None => None,
         };
         let cell = self
             .state
@@ -106,25 +106,50 @@ where
         if actual.snapshot() != effects.expected_head().snapshot() {
             return Err(Denial::PredecessorChanged);
         }
-        let (after, attempt) = self
-            .prepare_original_recovered_image(
+        use crate::history::RecoveredWorldOwnerEvidenceRef as Owners;
+        let owners = match (native, effects.record.signal.as_deref()) {
+            (Some(native), None) => Owners::RelationalOnly(native.custody()),
+            (None, Some(signal)) => Owners::SignalOnly(signal),
+            (Some(native), Some(signal)) => Owners::RelationalAndSignal {
+                relational: native.custody(),
+                signal,
+            },
+            (None, None) => return Err(Denial::NoOwnerEffect),
+        };
+        use crate::durability::WorldOpenComponentIntent as Intent;
+        let actual_intent = match owners {
+            Owners::RelationalOnly(_) => Intent::RelationalOnly,
+            Owners::SignalOnly(_) => Intent::SignalOnly,
+            Owners::RelationalAndSignal { .. } => Intent::RelationalAndSignal,
+        };
+        if actual_intent != effects.record.open.component_intent {
+            return Err(Denial::OwnerEffectsMismatch {
+                expected: effects.record.open.component_intent,
+                actual: actual_intent,
+            });
+        }
+        let prepared = self
+            .prepare_readmitted_successor(
+                execution,
                 effects.expected_head(),
                 &effects.record.open,
-                native,
+                owners,
                 effects
-                    .record
-                    .native_identity
-                    .clone()
-                    .ok_or(Denial::NoOwnerEffect)?,
+                    .expected_head()
+                    .basis()
+                    .correspondence_basis()
+                    .clone(),
             )
             .map_err(|cause| Denial::Readmission(Box::new(cause)))?;
+        let after = prepared.after;
+        let attempt = prepared.attempt;
+        let record_backing = prepared.record;
         let funding = execution
             .reserve_retained_memory(
                 (std::mem::size_of::<PreparedRecoveredPublication>()
-                    + std::mem::size_of::<crate::history::ReadmittedPublicationRecord>()
                     + std::mem::size_of::<crate::history::PreparedReadmittedPublicationRecord>()
                     + std::mem::size_of::<crate::history::CompositeRuntimeWorldCommit>()
-                    + 6 * std::mem::size_of::<usize>()) as u64,
+                    + 4 * std::mem::size_of::<usize>()) as u64,
             )
             .map_err(|cause| Denial::Durable(WorldDurableMediumDenial::Request(cause)))?;
         let capacity = self
@@ -152,7 +177,27 @@ where
         let transfer = pins
             .try_transfer_product_head(after.commit().basis())
             .map_err(|_| Denial::Durable(WorldDurableMediumDenial::CheckpointOriginRetention))?;
-        let subject = native.custody().effect().subject();
+        let relational = owners.relational().map(|native| {
+            let subject = native.effect().subject();
+            WorldRelationalEvidence {
+                commit: subject.receipt().commit_id.0,
+                position: subject.position().0,
+                digest: *subject.artifact_digest(),
+            }
+        });
+        let signal = owners
+            .signal()
+            .map(|signal| WorldSignalEvidence::from_point(signal.source_point().clone(), execution))
+            .transpose()
+            .map_err(Denial::Durable)?;
+        let evidence = match (relational, signal) {
+            (Some(relational), None) => WorldOccurrenceOwnerEvidence::RelationalOnly(relational),
+            (None, Some(signal)) => WorldOccurrenceOwnerEvidence::SignalOnly(signal),
+            (Some(relational), Some(signal)) => {
+                WorldOccurrenceOwnerEvidence::RelationalAndSignal { relational, signal }
+            }
+            (None, None) => return Err(Denial::NoOwnerEffect),
+        };
         let original_open =
             WorldDurableArtifact::from_readmitted_open(&effects.record.open, execution)
                 .map_err(Denial::Durable)?;
@@ -160,14 +205,7 @@ where
             WorldOccurrenceCustody::prepare(&original_open, execution).map_err(Denial::Durable)?;
         original_occurrence.bind_origin(after.commit().basis(), origin_pins);
         let occurrence = original_occurrence
-            .finalize(
-                WorldRelationalEvidence {
-                    commit: subject.receipt().commit_id.0,
-                    position: subject.position().0,
-                    digest: *subject.artifact_digest(),
-                },
-                effects.claim_incarnation(),
-            )
+            .finalize_owners(evidence, effects.claim_incarnation())
             .map_err(Denial::Durable)?
             .clone();
         let origin = original_occurrence.take_origin();
@@ -197,29 +235,41 @@ where
                 .unwrap_or_else(|e| e.into_inner()),
             RecoveredNativeCustody::Released,
         );
-        let RecoveredNativeCustody::Relational(native) = original else {
-            unreachable!("exclusive original source phase")
-        };
-        let native = match Arc::try_unwrap(native) {
-            Ok(native) => native,
-            Err(native) => {
-                *effects
-                    .record
-                    .native
-                    .lock()
-                    .unwrap_or_else(|e| e.into_inner()) =
-                    RecoveredNativeCustody::Relational(native);
-                permit.proven_no_effect();
-                effects.refresh_source();
-                return Err(Denial::Admission(RuntimeWorldRecoveryDenial::Busy));
+        let native = match original {
+            RecoveredNativeCustody::OpenOnly => None,
+            RecoveredNativeCustody::Relational(native) => match Arc::try_unwrap(native) {
+                Ok(native) => Some(native),
+                Err(native) => {
+                    *effects
+                        .record
+                        .native
+                        .lock()
+                        .unwrap_or_else(|e| e.into_inner()) =
+                        RecoveredNativeCustody::Relational(native);
+                    permit.proven_no_effect();
+                    effects.refresh_source();
+                    return Err(Denial::Admission(RuntimeWorldRecoveryDenial::Busy));
+                }
+            },
+            RecoveredNativeCustody::Prepared(_)
+            | RecoveredNativeCustody::Continuing(_)
+            | RecoveredNativeCustody::Working
+            | RecoveredNativeCustody::Released => {
+                unreachable!("the original source phase was admitted before preparation")
             }
         };
+        let owners = crate::history::RecoveredWorldOwnerEvidence::from_original_components(
+            native,
+            effects.record.signal.clone(),
+        )
+        .expect("the admitted original has an owner effect");
         let record = crate::history::ReadmittedPublicationRecord::prepare_original(
+            record_backing,
             effects.expected_head().snapshot().clone(),
             after,
             attempt,
             effects.claim_incarnation(),
-            native,
+            owners,
         );
         *effects
             .record

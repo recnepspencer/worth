@@ -82,17 +82,29 @@ pub(super) fn planning_evidence(
 pub(super) fn recover_stage(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &RelationalRuntime,
-    root_path: std::sync::Arc<crate::tests::support::TestDurableMedium>,
 ) -> RelationalRuntime {
-    let (_recovery, recovered) =
-        checkpoint_and_recover_with(execution, runtime, || persisted_strategy_runtime(root_path));
+    runtime
+        .durability_authority()
+        .checkpoint(execution)
+        .unwrap();
+    let plan = runtime
+        .durability()
+        .recovery_plan(
+            execution,
+            crate::durability::data::RecoveryVerificationMode::NormalRecoveryVerification,
+        )
+        .unwrap();
+    let mut recovered = strategy_runtime();
+    recovered
+        .durability_recovery()
+        .recover(execution, plan)
+        .unwrap();
     recovered
 }
 
 pub(super) fn recover_stage_from_final_history(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     source: &RelationalRuntime,
-    root_path: std::sync::Arc<crate::tests::support::TestDurableMedium>,
     source_head: crate::history::data::RelationalCommitReceipt,
     target_head: crate::history::data::RelationalCommitReceipt,
 ) -> RelationalRuntime {
@@ -201,7 +213,7 @@ pub(super) fn recover_stage_from_final_history(
         source.durability.cold_source(),
     )
     .with_commit_strategy_executors(source.commit_strategy_executor_registry().clone());
-    let mut recovered = persisted_strategy_runtime(root_path);
+    let mut recovered = strategy_runtime();
     recovered
         .durability_recovery()
         .recover(execution, plan)

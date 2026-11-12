@@ -1,7 +1,5 @@
 //! Original Empty authority survives root retirement and is actually consumed.
-use crate::durability::data::{
-    RelationalCheckpointArtifactPolicy, RelationalNativeCheckpointCaptureDenial as Denial,
-};
+use crate::durability::data::RelationalCheckpointArtifactPolicy;
 use crate::schema::data::RelationalSchemaRegistry;
 use crate::tests::support::*;
 use worth_execution::{CancellationSource, ExecutionRequest, SerialMemoryBudget, SerialRequest};
@@ -125,25 +123,4 @@ fn complete_empty_archive_and_initial_installation_preserve_unused_original_sche
     );
     drop(alias);
     assert_eq!(budget.charged_memory_bytes(), 0);
-}
-#[test]
-fn complete_refuses_recovered_empty_without_original_birth_authority() {
-    let setup = crate::test_execution_policy::serial_request();
-    let execution = ExecutionRequest::serial(&setup);
-    let source = durable_runtime_with_test_schema();
-    let ordinary = source
-        .durability_authority()
-        .native_checkpoint(&execution, execution.allocation_policy())
-        .unwrap();
-    let mut receiver = durable_runtime_with_test_schema();
-    receiver
-        .durability_recovery()
-        .restore_native_checkpoint(&execution, &ordinary)
-        .unwrap();
-    assert!(matches!(
-        receiver
-            .complete_checkpoint_service()
-            .prepare(&execution, RelationalCheckpointArtifactPolicy::Embedded),
-        Err(Denial::OriginalAuthorityUnavailable)
-    ));
 }

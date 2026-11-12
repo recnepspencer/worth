@@ -13,7 +13,6 @@ impl HistorySubsystem {
     /// retaining each artifact's original source and residency cell.
     pub(super) fn rebuild_checkpoint_catalog(
         &self,
-        _lane: &crate::storage::substrate::maintenance::ReconstructionLane<'_>,
         checkpoints: &[RelationalBranchCellCheckpoint],
     ) -> Result<(), String> {
         let mut descriptors = BTreeMap::new();

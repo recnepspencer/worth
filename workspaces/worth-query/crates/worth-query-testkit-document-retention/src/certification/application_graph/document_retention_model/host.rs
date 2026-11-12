@@ -58,6 +58,10 @@ pub use super::workflow::{
 
 #[path = "host/auxiliary_programs.rs"]
 mod auxiliary_programs;
+pub use auxiliary_programs::with_lifecycle_programs;
+#[path = "host/relational_installation.rs"]
+mod relational_installation;
+pub use relational_installation::RelationalRetentionContribution;
 #[path = "host/checkpoint_restore.rs"]
 pub mod checkpoint_restore;
 #[path = "host/trusted_time.rs"]
@@ -93,60 +97,9 @@ impl WorthQueryApplicationContribution<DocumentRetentionSchema> for DocumentRete
         (): Self::Configuration,
         setup: &mut WorthQueryApplicationContributionSetup<'_, DocumentRetentionSchema>,
     ) -> Result<(), primary_graph::WorthQueryPrimaryGraphInstallationDenial> {
-        setup.handler::<super::actor_generation::ActorLifecycleBinding, _>(
-            super::actor_generation::ActorLifecycleHandler,
-        )?;
-        setup.handler::<super::model_lifecycle::ModelLifecycleBinding, _>(
-            super::model_lifecycle::ModelLifecycleHandler,
-        )?;
-        setup.handler::<super::record_history::reaffirm::Binding, _>(
-            super::record_history::reaffirm::Handler,
-        )?;
-        setup.invariant(
-            DocumentRetentionV1::reference(),
-            ApplicationInvariantExecutionPoint::CommitBoundary,
-            resolve_first_rule,
-        )?;
-        setup.invariant(
-            DocumentRetentionV2::reference(),
-            ApplicationInvariantExecutionPoint::CommitBoundary,
-            resolve_second_rule,
-        )?;
-        setup
-            .handler::<SetRetentionBinding, _>(SetRetentionHandler::default())
-            .and_then(|()| {
-                setup.handler::<super::correctable_retention::CorrectableRetentionBinding, _>(
-                    ReviewedSetRetentionHandler,
-                )
-            })
-            .and_then(|()| {
-                setup.handler::<ReviewedSetRetentionBinding, _>(ReviewedSetRetentionHandler)
-            })
-            .and_then(|()| {
-                setup.handler::<OccurrenceSetRetentionBinding, _>(ReviewedSetRetentionHandler)
-            })
-            .and_then(|()| {
-                setup.handler::<ExplicitReviewedSetRetentionBinding, _>(ReviewedSetRetentionHandler)
-            })
-            .and_then(|()| setup.handler::<ReviewRequirementBinding, _>(ReviewRequirementHandler))
-            .and_then(|()| {
-                setup.handler::<UnlinkReviewRequirementBinding, _>(UnlinkReviewRequirementHandler)
-            })
-            .and_then(|()| {
-                setup.handler::<RetentionAssessmentBinding, _>(RetentionAssessmentHandler)
-            })
-            .and_then(|()| {
-                setup.handler::<OrdinaryRetentionAssessmentBinding, _>(
-                    OrdinaryRetentionAssessmentHandler,
-                )
-            })
-            .and_then(|()| {
-                setup.producer::<RetentionAssessmentProducer>(RetentionAssessmentProvider)
-            })
-            .and_then(|()| setup.conditional::<RetentionAssessmentReadiness>(()))
-            .and_then(|()| {
-                setup.handler::<WorkflowGrantStatusBinding, _>(WorkflowGrantStatusHandler)
-            })
+        relational_installation::install(setup)?;
+        setup.producer::<RetentionAssessmentProducer>(RetentionAssessmentProvider)?;
+        setup.conditional::<RetentionAssessmentReadiness>(())
     }
 }
 
@@ -261,7 +214,7 @@ where
                 DocumentRetentionSchema,
             >,
 {
-    let roster = auxiliary_programs::include(roster, initial.identity(), initial.revision());
+    let roster = with_lifecycle_programs(roster, initial.identity(), initial.revision());
     in_memory_rostered_program(
         initial,
         roster,

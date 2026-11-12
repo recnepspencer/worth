@@ -14,6 +14,7 @@ use worth_execution::{ExecutionResourceLease, MapKernelContext};
 #[derive(Debug, Serialize, Deserialize)]
 pub(crate) struct CanonicalAuthoredRetirement {
     pub(crate) anchor: EntityId,
+    pub(crate) owned_members: bool,
     pub(crate) birth: CommitId,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub(crate) co_anchors: Vec<(EntityId, CommitId)>,
@@ -122,6 +123,7 @@ pub(super) fn install(
     envelope.authored_cascade_retirement = Some(Arc::new(CanonicalAuthoredRetirement {
         _decoded_memory: None,
         anchor: predecessor.anchor,
+        owned_members: predecessor.owned_members,
         birth: predecessor.birth,
         co_anchors: predecessor.co_anchors.clone(),
         publications: Vec::new(),
@@ -223,6 +225,7 @@ pub(super) fn install(
     envelope.authored_cascade_retirement = Some(Arc::new(CanonicalAuthoredRetirement {
         _decoded_memory: None,
         anchor: predecessor.anchor,
+        owned_members: predecessor.owned_members,
         birth: predecessor.birth,
         co_anchors: predecessor.co_anchors,
         publications,

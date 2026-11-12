@@ -166,4 +166,5 @@ fn canonical_denial(
         _ => WorthQueryApplicationCapabilityInstallationDenialKind::CanonicalDigestSlotRejected,
     };
     WorthQueryApplicationCapabilityInstallationDenial::new(kind, subject)
+        .with_canonical_denial(denial)
 }

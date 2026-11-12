@@ -1,5 +1,4 @@
 mod authored_retirement;
-mod cold_index_refresh;
 pub(crate) mod durable_publication;
 #[path = "leased_preparation/mod.rs"]
 pub(crate) mod leased_preparation;
@@ -17,8 +16,7 @@ mod compound_publication;
 mod materialization;
 mod validated_proposal_memory;
 
-mod restoration_header;
-
 mod predecessor_basis;
 
+mod bulk_work_account;
 mod checkpoint_versions;

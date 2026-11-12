@@ -104,7 +104,7 @@ impl WorthQueryHomeProgramTransitionTarget<'_> {
     }
 }
 impl<Schema: ApplicationSchemaComposition, Program>
-    ReadmittedExistingHomeNativeMeaning<Schema, Program>
+    PreparedExistingHomeSignalProgram<Schema, Program>
 {
     pub fn home_program_transition_source<'owner, 'scope>(
         &'owner self,
@@ -128,7 +128,7 @@ impl<Schema: ApplicationSchemaComposition, Program>
             admitted,
             layout,
             receipt,
-            self.predecessor_program_support().1,
+            self.predecessor_program_roster(),
             observation,
             inspection,
         )

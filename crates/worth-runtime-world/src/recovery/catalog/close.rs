@@ -110,12 +110,12 @@ impl ProductUnpublishedRecoveryCatalog {
                     let receipt = native.custody().effect().subject().receipt();
                     Some(RecoveredCloseReceipt::copy_for_request(request, receipt)?)
                 }
-                RecoveredNativeCustody::Prepared(record) => {
-                    Some(RecoveredCloseReceipt::copy_for_request(
-                        request,
-                        record.effect().subject().receipt(),
-                    )?)
-                }
+                RecoveredNativeCustody::Prepared(record) => record
+                    .effect()
+                    .map(|effect| {
+                        RecoveredCloseReceipt::copy_for_request(request, effect.subject().receipt())
+                    })
+                    .transpose()?,
                 RecoveredNativeCustody::Released => return Err(Denial::CloseProgressInvariant),
                 RecoveredNativeCustody::Continuing(_) | RecoveredNativeCustody::Working => {
                     return Err(Denial::UnresolvedBusinessCustody)
@@ -164,7 +164,7 @@ impl ProductUnpublishedRecoveryCatalog {
                     Some(native.custody().effect().subject().receipt())
                 }
                 RecoveredNativeCustody::Prepared(record) => {
-                    Some(record.effect().subject().receipt())
+                    record.effect().map(|effect| effect.subject().receipt())
                 }
                 RecoveredNativeCustody::Released => return Err(Denial::PublicationFrontierChanged),
                 RecoveredNativeCustody::Continuing(_) | RecoveredNativeCustody::Working => {

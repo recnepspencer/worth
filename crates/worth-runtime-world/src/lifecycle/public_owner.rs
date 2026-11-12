@@ -73,7 +73,7 @@ where
             || operation.recovery_active != 0
             || state
                 .custody
-                .try_has_close_custody()
+                .try_unresolved_closed_custody(state.durable.is_some())
                 .map_err(|_| Denial::Busy)?
         {
             return Err(Denial::InconsistentSealedCatalog);
@@ -92,6 +92,7 @@ where
                 | super::RuntimeWorldCloseDenial::PublicationFrontierChanged
                 | super::RuntimeWorldCloseDenial::UnresolvedBusinessCustody
                 | super::RuntimeWorldCloseDenial::CleanupRequired
+                | super::RuntimeWorldCloseDenial::DurableCreationPending { .. }
                 | super::RuntimeWorldCloseDenial::RecoveredNativeRetirement(_)
                 | super::RuntimeWorldCloseDenial::CloseProgressPoisoned
                 | super::RuntimeWorldCloseDenial::CloseProgressInvariant

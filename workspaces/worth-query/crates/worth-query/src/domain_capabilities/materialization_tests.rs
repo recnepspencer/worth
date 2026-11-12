@@ -28,7 +28,7 @@ where
             WorthQueryDeclarationBoundContributionTarget,
         >,
 {
-    Ok(ready_payload(declaration_target(target_digest), payload)?)
+    ready_payload(declaration_target(target_digest), payload)
 }
 
 fn admitted_plan_ready_contribution<P>(
@@ -49,10 +49,7 @@ where
             WorthQueryAdmittedPlanBoundContributionTarget,
         >,
 {
-    Ok(ready_payload(
-        admitted_plan_target(target_digest)?,
-        payload,
-    )?)
+    ready_payload(admitted_plan_target(target_digest)?, payload)
 }
 
 fn lower_runtime_ready_contribution<P>(
@@ -73,10 +70,7 @@ where
             WorthQueryLowerRuntimeBoundaryBoundContributionTarget,
         >,
 {
-    Ok(ready_payload(
-        lower_runtime_target(target_digest)?,
-        payload,
-    )?)
+    ready_payload(lower_runtime_target(target_digest)?, payload)
 }
 
 fn forensic_support_profile() -> worth_foundational::FoundationalProfileSet {

@@ -19,6 +19,25 @@ impl RelationalDurableColdSource for RetryAfterFailure {
             .retain_members_for_request(request, members, issuer)
     }
 
+    fn read_member_owned(
+        &self,
+        request: &worth_execution::ExecutionRequest<'_, '_>,
+        original: &(dyn std::any::Any + Send + Sync),
+        member: RelationalDurableMemberLocator,
+        limit: u64,
+    ) -> Result<
+        worth_execution::ExecutionImmutableBytes,
+        crate::durability::medium::RelationalDurableOwnedReadRefusal,
+    > {
+        if let Some(cause) = *self.failure.lock().unwrap() {
+            return Err(
+                crate::durability::medium::RelationalDurableOwnedReadRefusal::Storage(cause),
+            );
+        }
+        self.source
+            .read_member_owned(request, original, member, limit)
+    }
+
     fn validate_member_custody_retirement(
         &self,
         original: &(dyn std::any::Any + Send + Sync),

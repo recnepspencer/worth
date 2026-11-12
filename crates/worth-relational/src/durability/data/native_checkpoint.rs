@@ -190,6 +190,20 @@ impl RelationalNativeCheckpoint {
             .advance(execution,context)
     }
 
+    /// Observe this capture's historical progress without advancing it.
+    /// Unbound decoded bytes have no progress; an active driver returns Busy.
+    pub fn acknowledgement_progress(
+        &self,
+    ) -> Result<
+        Option<crate::durability::medium::RelationalCheckpointAcknowledgementProgress>,
+        crate::durability::medium::RelationalCheckpointAcknowledgementDenial,
+    > {
+        self.publication
+            .as_ref()
+            .map(|owner| owner.progress())
+            .transpose()
+    }
+
     pub fn publication_subject(
         &self,
     ) -> Option<&crate::durability::medium::OpaqueCapturedCheckpointSubject> {

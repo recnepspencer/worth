@@ -19,7 +19,7 @@ struct ActivationEntry {
 
 /// Bounded coordination only. Entries contain no head or component selection.
 pub struct WorthQueryProductActivationRegistry {
-    state: Mutex<ActivationRegistryState>,
+    state: Arc<Mutex<ActivationRegistryState>>,
     capacity: Arc<ActivationCapacity>,
 }
 
@@ -42,21 +42,21 @@ impl WorthQueryProductActivationRegistry {
         }
         let live_occurrences = BTreeSet::new();
         Ok(Self {
-            state: Mutex::new(ActivationRegistryState {
+            state: Arc::new(Mutex::new(ActivationRegistryState {
                 gates,
                 reserved_gates: 0,
                 live_occurrences,
                 unavailable_programs: HashSet::new(),
                 in_flight_programs: HashMap::new(),
                 program_coordination_required: false,
-            }),
+            })),
             capacity: ActivationCapacity::new(limit.get()),
         })
     }
 
     pub(crate) fn reserve(
         &self,
-    ) -> Result<WorthQueryProductActivationReservation<'_>, WorthQueryProductActivationDenial> {
+    ) -> Result<WorthQueryProductActivationReservation, WorthQueryProductActivationDenial> {
         let capacity = self.capacity.reserve()?;
         let mut state = self
             .state
@@ -65,7 +65,7 @@ impl WorthQueryProductActivationRegistry {
         reserve_gate(&mut state)?;
         drop(state);
         Ok(WorthQueryProductActivationReservation {
-            registry: self,
+            state: self.state.clone(),
             gate: Arc::new(WorthQueryProductActivationGate::new(capacity)),
             program: None,
             program_reservation_active: false,
@@ -76,7 +76,7 @@ impl WorthQueryProductActivationRegistry {
     pub(crate) fn reserve_for_source_program(
         &self,
         program: Option<&ApplicationProgramRevision>,
-    ) -> Result<WorthQueryProductActivationReservation<'_>, WorthQueryProductActivationDenial> {
+    ) -> Result<WorthQueryProductActivationReservation, WorthQueryProductActivationDenial> {
         let capacity = self.capacity.reserve()?;
         let mut state = self
             .state
@@ -105,7 +105,7 @@ impl WorthQueryProductActivationRegistry {
         }
         drop(state);
         Ok(WorthQueryProductActivationReservation {
-            registry: self,
+            state: self.state.clone(),
             gate: Arc::new(WorthQueryProductActivationGate::new(capacity)),
             program: program.cloned(),
             program_reservation_active: true,
@@ -222,21 +222,32 @@ impl WorthQueryProductActivationRegistry {
 }
 
 /// Branch capacity admission precedes World branch creation.
-pub struct WorthQueryProductActivationReservation<'a> {
-    registry: &'a WorthQueryProductActivationRegistry,
+pub struct WorthQueryProductActivationReservation {
+    state: Arc<Mutex<ActivationRegistryState>>,
     gate: Arc<WorthQueryProductActivationGate>,
     program: Option<ApplicationProgramRevision>,
     program_reservation_active: bool,
     map_reservation_active: bool,
 }
 
-impl WorthQueryProductActivationReservation<'_> {
+impl WorthQueryProductActivationReservation {
     pub(crate) fn commit(mut self, branch: &ProductBranchObservation) {
-        let mut state = self
-            .registry
-            .state
+        self.commit_retained(branch);
+    }
+    pub(crate) fn commit_retained(&mut self, branch: &ProductBranchObservation) {
+        let original_state = self.state.clone();
+        let mut state = original_state
             .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner);
+        if !self.map_reservation_active && !self.program_reservation_active {
+            let original = state
+                .gates
+                .get(branch.branch_identity())
+                .expect("completed original activation");
+            assert_eq!(original.incarnation, branch.lifecycle_incarnation());
+            assert!(Arc::ptr_eq(&original.gate, &self.gate));
+            return;
+        }
         let replaced = state.gates.insert(
             branch.branch_identity().clone(),
             ActivationEntry {
@@ -285,14 +296,13 @@ impl WorthQueryProductActivationReservation<'_> {
     }
 }
 
-impl Drop for WorthQueryProductActivationReservation<'_> {
+impl Drop for WorthQueryProductActivationReservation {
     fn drop(&mut self) {
         if !self.program_reservation_active && !self.map_reservation_active {
             return;
         }
-        let mut state = self
-            .registry
-            .state
+        let original_state = self.state.clone();
+        let mut state = original_state
             .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner);
         self.release_map_reservation(&mut state);

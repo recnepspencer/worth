@@ -150,8 +150,8 @@ impl<Schema: ApplicationSchema> SourceQueryReaderAccess<'_, Schema> {
         }
         .map_err(|cause| {
             // A denied C audience cannot distinguish historical scope presence.
-            if let SourceScopePosture::Historical(absent) = &posture {
-                if matches!(
+            if let SourceScopePosture::Historical(absent) = &posture
+                && matches!(
                     cause.kind(),
                     WorthQueryApplicationQueryAdmissionDenialKind::Authorization(_)
                 ) {
@@ -174,7 +174,6 @@ impl<Schema: ApplicationSchema> SourceQueryReaderAccess<'_, Schema> {
                         },
                     });
                 }
-            }
             // Only these identity causes are issued after C authorization.
             // A stopped permission observation must not disclose a privately
             // resolved generation through its diagnostic attachment.

@@ -95,7 +95,7 @@ fn compose_explanation_runtime_semantics_identity(
         ),
         None => identity.field_shape(WorthQueryEvidenceTag::new("bridge_envelope"), "none"),
     };
-    Ok(identity.seal()?)
+    identity.seal()
 }
 
 fn compose_explanation_payload_identity(
@@ -119,7 +119,7 @@ fn compose_explanation_payload_identity(
         ),
         None => identity.field_shape(WorthQueryEvidenceTag::new("runtime_semantics"), "none"),
     };
-    Ok(identity.seal()?)
+    identity.seal()
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -221,12 +221,7 @@ impl WorthQueryExplanationContributionPayload {
         semantic_code: impl Into<String>,
         detail: impl Into<String>,
     ) -> Result<Self, IdentityDerivationDenial> {
-        Ok(Self::with_runtime_semantics(
-            posture,
-            semantic_code,
-            detail,
-            None,
-        )?)
+        Self::with_runtime_semantics(posture, semantic_code, detail, None)
     }
 
     pub fn with_runtime_semantics(

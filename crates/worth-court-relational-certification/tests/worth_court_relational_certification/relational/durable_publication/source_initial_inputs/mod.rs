@@ -8,6 +8,7 @@ use worth_testkit_relational::{
     durable_publication::{create_entity_outcome, current},
     initial_input_source::*,
 };
+mod associated_fork;
 pub(crate) mod checkpoint_admission;
 mod cold_indexes;
 mod index_decode_stops;
@@ -85,3 +86,7 @@ fn complete_source_recovery_restores_original_inputs_for_another_complete_captur
         )
         .is_ok());
 }
+
+mod fresh_admission;
+
+mod fresh_schema;

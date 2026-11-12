@@ -21,11 +21,11 @@ impl WorthQueryContinuityContributionAuthoring {
         semantic_code: impl Into<String>,
         detail: impl Into<String>,
     ) -> Result<Self, IdentityDerivationDenial> {
-        Ok(Self::new(
+        Self::new(
             WorthQueryContinuityContributionPosture::Preserved,
             semantic_code,
             detail,
-        )?)
+        )
     }
 
     pub fn preserved_rebind(
@@ -34,7 +34,7 @@ impl WorthQueryContinuityContributionAuthoring {
         semantic_code: impl Into<String>,
         detail: impl Into<String>,
     ) -> Result<Self, IdentityDerivationDenial> {
-        Ok(Self::with_runtime_semantics(
+        Self::with_runtime_semantics(
             WorthQueryContinuityContributionPosture::Preserved,
             semantic_code,
             detail,
@@ -44,18 +44,18 @@ impl WorthQueryContinuityContributionAuthoring {
                 prior_authoritative_identity,
                 [successor_authoritative_identity],
             )?,
-        )?)
+        )
     }
 
     pub fn split(
         semantic_code: impl Into<String>,
         detail: impl Into<String>,
     ) -> Result<Self, IdentityDerivationDenial> {
-        Ok(Self::new(
+        Self::new(
             WorthQueryContinuityContributionPosture::Split,
             semantic_code,
             detail,
-        )?)
+        )
     }
 
     pub fn split_successors<I, S>(
@@ -68,7 +68,7 @@ impl WorthQueryContinuityContributionAuthoring {
         I: IntoIterator<Item = S>,
         S: Into<String>,
     {
-        Ok(Self::with_runtime_semantics(
+        Self::with_runtime_semantics(
             WorthQueryContinuityContributionPosture::Split,
             semantic_code,
             detail,
@@ -78,18 +78,18 @@ impl WorthQueryContinuityContributionAuthoring {
                 prior_authoritative_identity,
                 successor_authoritative_identities,
             )?,
-        )?)
+        )
     }
 
     pub fn replaced(
         semantic_code: impl Into<String>,
         detail: impl Into<String>,
     ) -> Result<Self, IdentityDerivationDenial> {
-        Ok(Self::new(
+        Self::new(
             WorthQueryContinuityContributionPosture::Replaced,
             semantic_code,
             detail,
-        )?)
+        )
     }
 
     pub fn replaced_merge_successor(
@@ -98,7 +98,7 @@ impl WorthQueryContinuityContributionAuthoring {
         semantic_code: impl Into<String>,
         detail: impl Into<String>,
     ) -> Result<Self, IdentityDerivationDenial> {
-        Ok(Self::with_runtime_semantics(
+        Self::with_runtime_semantics(
             WorthQueryContinuityContributionPosture::Replaced,
             semantic_code,
             detail,
@@ -108,18 +108,18 @@ impl WorthQueryContinuityContributionAuthoring {
                 prior_authoritative_identity,
                 [successor_authoritative_identity],
             )?,
-        )?)
+        )
     }
 
     pub fn correspondence_only(
         semantic_code: impl Into<String>,
         detail: impl Into<String>,
     ) -> Result<Self, IdentityDerivationDenial> {
-        Ok(Self::new(
+        Self::new(
             WorthQueryContinuityContributionPosture::CorrespondenceOnly,
             semantic_code,
             detail,
-        )?)
+        )
     }
 
     pub fn for_admitted_intent_plan(
@@ -129,9 +129,9 @@ impl WorthQueryContinuityContributionAuthoring {
         WorthQueryRequestedContinuityContribution<WorthQueryAdmittedPlanBoundContributionTarget>,
         IdentityDerivationDenial,
     > {
-        Ok(self.bind_to_admitted_plan_target(
+        self.bind_to_admitted_plan_target(
             WorthQueryAdmittedPlanBoundContributionTarget::for_admitted_intent_plan(plan),
-        )?)
+        )
     }
 
     pub fn for_intent_declaration(
@@ -141,9 +141,9 @@ impl WorthQueryContinuityContributionAuthoring {
         WorthQueryRequestedContinuityContribution<WorthQueryDeclarationBoundContributionTarget>,
         IdentityDerivationDenial,
     > {
-        Ok(self.bind_to_declaration_target(
+        self.bind_to_declaration_target(
             WorthQueryDeclarationBoundContributionTarget::for_intent_declaration(declaration),
-        )?)
+        )
     }
 
     pub fn bind_to_admitted_plan_target(
@@ -153,7 +153,7 @@ impl WorthQueryContinuityContributionAuthoring {
         WorthQueryRequestedContinuityContribution<WorthQueryAdmittedPlanBoundContributionTarget>,
         IdentityDerivationDenial,
     > {
-        Ok(bind_requested(self.payload, target)?)
+        bind_requested(self.payload, target)
     }
 
     pub fn bind_to_declaration_target(
@@ -163,7 +163,7 @@ impl WorthQueryContinuityContributionAuthoring {
         WorthQueryRequestedContinuityContribution<WorthQueryDeclarationBoundContributionTarget>,
         IdentityDerivationDenial,
     > {
-        Ok(bind_requested(self.payload, target)?)
+        bind_requested(self.payload, target)
     }
 
     pub(crate) fn bind_to_installed_target<T>(
@@ -183,10 +183,10 @@ impl WorthQueryContinuityContributionAuthoring {
                 T,
             >,
     {
-        Ok(bind_requested::<
+        bind_requested::<
             WorthQueryContinuityContributionPayload,
             crate::domain_capabilities::WorthQueryInstalledDomainContributionTarget<T>,
-        >(self.payload, target)?)
+        >(self.payload, target)
     }
 
     fn new(

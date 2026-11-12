@@ -197,6 +197,10 @@ impl RuntimeWorldIdentityIssuer {
         Ok(current)
     }
 
+    pub(crate) fn branch_incarnation_frontier(&self) -> u64 {
+        self.next_branch_incarnation
+    }
+
     pub(crate) fn branch_incarnation(
         &mut self,
     ) -> Result<super::ProductBranchIncarnation, RuntimeWorldIdentityExhaustion> {

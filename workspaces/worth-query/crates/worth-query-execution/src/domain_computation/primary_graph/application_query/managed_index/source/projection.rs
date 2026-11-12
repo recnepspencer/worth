@@ -13,7 +13,7 @@ use crate::domain_computation::primary_graph::{
             WorthQueryApplicationProjectionNode as Row,
             WorthQueryApplicationWorkingProjectionTree as WorkingTree,
         },
-        read_execution::validate_relation_cardinality,
+        read_execution::{tree_materialization::field_presence, validate_relation_cardinality},
     },
     source_facts::SourceFactsAllocation,
 };
@@ -81,16 +81,13 @@ pub(super) fn project(
     rows: &ManagedIndexSourceRows<'_>,
     occurrence: ManagedIndexSourceOccurrence,
     graph: &WorthQueryInstalledGraphReadContract,
-    support: Option<ProjectionMembership<'_>>,
+    support: ProjectionMembership<'_>,
 ) -> Result<Entry, MaterialDenial> {
     let row_read = match support {
-        Some(ProjectionMembership::Forward(read)) => {
-            rows.prepare_row_from_read(read, &occurrence)?
-        }
-        Some(ProjectionMembership::Inverse(read)) => {
+        ProjectionMembership::Forward(read) => rows.prepare_row_from_read(read, &occurrence)?,
+        ProjectionMembership::Inverse(read) => {
             rows.prepare_row_from_occurrence(read, &occurrence)?
         }
-        None => rows.prepare_row(&occurrence)?,
     };
     let mut projector = Projector {
         execution,
@@ -123,6 +120,7 @@ pub(super) fn project(
             &mut projector,
             program,
             &occurrence,
+            &row_read,
             fields,
             comparison_depth,
         )?
@@ -135,7 +133,7 @@ pub(super) fn project(
             .try_reserve_exact(program.projection_routes().len())
             .map_err(|_| Storage::AllocationFailed)?;
         for (index, route) in program.projection_routes().iter().enumerate() {
-            let acquired = projector.acquire(program, &occurrence, index, "root", None)?;
+            let acquired = projector.acquire(program, &row_read, index, "root", None)?;
             let relation = acquired.relation;
             let read = acquired.read;
             let occurrences = acquired.occurrences;
@@ -220,28 +218,38 @@ impl Projector<'_, '_, '_> {
                 .ok_or(DerivedRelationReadDenial::Definition(
                     DerivedRelationDenial::InvalidExpression,
                 ))?;
-            let retain = |value: Option<&worth_foundational::facade::AspectValue>,
-                          content|
-             -> Result<_, MaterialDenial> {
-                match value {
-                    Some(value) => {
-                        self.allocation.claim(self.execution, value.owned_allocation_capacity_bytes() as u64)?;
+            let retain = |observed: worth_relational::facade::runtime::RelationalProjectedFieldObservation<'_>,
+                          content: Option<worth_relational::facade::content::RelationalContentFrame>| -> Result<_, MaterialDenial> {
+                let value = field_presence::value(
+                    Some(observed),
+                    projection.presence(),
+                    projection.result_path(),
+                )
+                .map_err(|_| {
+                    DerivedRelationReadDenial::Definition(DerivedRelationDenial::RecordUnavailable)
+                })?;
+                value
+                    .map(|value| {
+                        self.allocation.claim(
+                            self.execution,
+                            value.owned_allocation_capacity_bytes() as u64,
+                        )?;
                         Ok((value.clone(), content))
-                    }
-                    None if projection.presence().schema_presence() == worth_query_declaration::facade::application_schema::ApplicationFieldPresence::Optional => Ok((worth_foundational::facade::AspectValue::Null, content)),
-                    None => Err(DerivedRelationReadDenial::Definition(DerivedRelationDenial::RecordUnavailable).into()),
-                }
+                    })
+                    .transpose()
             };
-            let (value, content) = match source {
+            let retained = match source {
                 FieldSource::Root(read) => read.with_field_content(column, retain)??,
                 FieldSource::Endpoint(read, occurrence) => self
                     .rows
                     .with_projected_field_content(read, occurrence, column, retain)??,
             };
             self.dependency(ViewDependency::Field(entity, field.locator.clone()))?;
-            fields.push(Field::source(projection, value, content).map_err(
-                worth_relational::facade::runtime::ManagedIndexSourcePreparationDenial::Content,
-            )?);
+            if let Some((value, content)) = retained {
+                fields.push(Field::source(projection, value, content).map_err(
+                    worth_relational::facade::runtime::ManagedIndexSourcePreparationDenial::Content,
+                )?);
+            }
         }
         Ok(fields)
     }
@@ -256,15 +264,4 @@ impl Projector<'_, '_, '_> {
         }
         Ok(())
     }
-}
-
-pub(in crate::domain_computation::primary_graph::application_query::managed_index) fn project_row(
-    execution: &ExecutionRequest<'_, '_>,
-    program: &ManagedIndexSourceProgram,
-    rows: &ManagedIndexSourceRows<'_>,
-    occurrence: ManagedIndexSourceOccurrence,
-    graph: &WorthQueryInstalledGraphReadContract,
-) -> Result<(Tree, Arc<SourceFactsAllocation>), MaterialDenial> {
-    let entry = project(execution, program, rows, occurrence, graph, None)?;
-    Ok((entry.row, entry._allocation))
 }

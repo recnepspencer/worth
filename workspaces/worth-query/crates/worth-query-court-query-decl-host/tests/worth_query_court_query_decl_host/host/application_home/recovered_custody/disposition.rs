@@ -24,8 +24,14 @@ pub(super) fn apply(
         effects.cause(),
         ProductUnpublishedCause::RecoveredWithoutProductMovement
     );
-    assert_eq!(effects.attempt_identity(), &original_attempt);
-    assert_eq!(effects.expected_product().selected_commit(), &predecessor);
+    assert_eq!(
+        durable!(effects.attempt_identity()),
+        durable!(&original_attempt)
+    );
+    assert_eq!(
+        durable!(effects.expected_product().selected_commit()),
+        durable!(&predecessor)
+    );
     assert_eq!(
         serde_json::to_value(effects.native_semantic_result().unwrap()).unwrap(),
         original_meaning
@@ -43,7 +49,10 @@ pub(super) fn apply(
     ));
     assert_eq!(context.contacts.load(Ordering::SeqCst), 2);
     let mut recovery = effects.into_recovery();
-    assert_eq!(recovery.record_handle().identity(), &original_identity);
+    assert_eq!(
+        durable!(recovery.record_handle().identity()),
+        durable!(&original_identity)
+    );
     if close_prepared {
         let observation = home
             .runtime()
@@ -78,7 +87,10 @@ pub(super) fn apply(
             }
             other => panic!("same original Continued after close: {other:?}"),
         };
-        assert_eq!(effects.attempt_identity(), &original_attempt);
+        assert_eq!(
+            durable!(effects.attempt_identity()),
+            durable!(&original_attempt)
+        );
         assert!(!effects
             .next_actions()
             .contains(&ProductUnpublishedNextAction::ReleaseObligations));

@@ -17,7 +17,7 @@ fn working_page_reuses_initialized_allocation_and_preserves_tombstones() {
     let execution = ExecutionRequest::serial(&request);
     controlled(&execution, |control| {
         let cells = (0..2 * PAGE_SIZE)
-            .map(|i| Cell::new(Some(i as u64)))
+            .map(|i| RefCell::new(Some(i as u64)))
             .collect::<Vec<_>>();
         let base = NodePages::from_scratch(&execution, &cells, control)?;
         let mut edit = PageEdit::new(base.clone(), execution);
@@ -33,11 +33,11 @@ fn working_page_reuses_initialized_allocation_and_preserves_tombstones() {
             .as_ptr();
         for value in 0..128 {
             edit.replace(1, Some(value), control)?;
-            assert_eq!(edit.get(1, control)?, Some(value));
+            assert_eq!(edit.get(1, control)?.map(|node| *node), Some(value));
         }
         edit.replace(0, None, control)?;
         assert_eq!(
-            edit.get(0, control)?,
+            edit.get(0, control)?.map(|node| *node),
             None,
             "tombstone overrides actual base"
         );
@@ -83,7 +83,8 @@ fn edit_invoice(writes: usize, distinct: bool) -> u64 {
     );
     let execution = ExecutionRequest::serial(&request);
     let base = controlled(&execution, |control| {
-        NodePages::from_scratch(&execution, &[Cell::new(Some(1_u64))], control).map_err(Into::into)
+        NodePages::from_scratch(&execution, &[RefCell::new(Some(1_u64))], control)
+            .map_err(Into::into)
     })
     .unwrap();
     let ((), report) = ExecutionWorkCeiling::new(None)
@@ -205,7 +206,7 @@ fn working_page_batch_seals_shared_directory_ancestors_once() {
     let execution = ExecutionRequest::serial(&request);
     let base = controlled(&execution, |control| {
         let cells = (0..256 * PAGE_SIZE)
-            .map(|i| Cell::new(Some(i as u64)))
+            .map(|i| RefCell::new(Some(i as u64)))
             .collect::<Vec<_>>();
         NodePages::from_scratch(&execution, &cells, control).map_err(Into::into)
     })
@@ -300,7 +301,7 @@ fn working_page_batch_refusal_preserves_predecessor_and_releases_partial_seal() 
     let execution = ExecutionRequest::serial(&request);
     let base = controlled(&execution, |control| {
         let cells = (0..256 * PAGE_SIZE)
-            .map(|i| Cell::new(Some(i as u64)))
+            .map(|i| RefCell::new(Some(i as u64)))
             .collect::<Vec<_>>();
         NodePages::from_scratch(&execution, &cells, control).map_err(Into::into)
     })

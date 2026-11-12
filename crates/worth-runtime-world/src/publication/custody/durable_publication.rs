@@ -4,7 +4,7 @@ use crate::branch::{
 };
 use crate::durability::{
     WorldDurableArtifact, WorldDurableMediumBinding, WorldDurableMediumDenial,
-    WorldDurablePublicationStop, WorldRelationalEvidence,
+    WorldDurablePublicationStop,
 };
 use std::sync::Arc;
 
@@ -20,7 +20,7 @@ impl ActiveAttemptCustody {
 
     pub(crate) fn finalize_durable_occurrence(
         &mut self,
-        evidence: WorldRelationalEvidence,
+        evidence: crate::durability::WorldOccurrenceOwnerEvidence,
     ) -> Result<(Arc<WorldDurableMediumBinding>, WorldDurableArtifact), WorldDurableMediumDenial>
     {
         let mut lease = self.lease_resources();
@@ -49,7 +49,7 @@ impl ActiveAttemptCustody {
             occurrence.bind_origin(basis, pins);
         }
         let subject = occurrence
-            .finalize(evidence, binding.binding().incarnation())?
+            .finalize_owners(evidence, binding.binding().incarnation())?
             .clone();
         Ok((binding, subject))
     }

@@ -132,7 +132,5 @@ fn ready_support(
     >,
     IdentityDerivationDenial,
 > {
-    Ok(ready(authoring.bind_to_admitted_plan_target(
-        admitted_plan_target("plan-support")?,
-    )?)?)
+    ready(authoring.bind_to_admitted_plan_target(admitted_plan_target("plan-support")?)?)
 }

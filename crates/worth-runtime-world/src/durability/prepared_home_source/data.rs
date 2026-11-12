@@ -36,9 +36,6 @@ impl PreparedWorldHomeData {
             request,
             Some(&mut selected_native),
         )?;
-        if recovered.branches.len() > 1 {
-            return Err(Denial::OccurrenceReadmissionRequired);
-        }
         let catalog = native_catalog::prepare(&recovered, request, selected_native)?;
         let memory = request
             .reserve_retained_memory(size_of::<PreparedWorldHomeDataState>() as u64)

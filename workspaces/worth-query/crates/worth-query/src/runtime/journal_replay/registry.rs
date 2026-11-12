@@ -184,21 +184,19 @@ pub(in crate::runtime) fn published_artifact_replay_digest(
     WorthQueryEvidenceIdentity,
     crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial,
 > {
-    Ok(
-        WorthQueryEvidenceIdentity::compose(WorthQueryEvidenceScope::JournalReplayOutcome)
-            .field_usize(
-                WorthQueryEvidenceTag::new("published_artifact_generation_count"),
-                diagnostics.retained_generation_count(),
-            )
-            .field_value_sequence(
-                WorthQueryEvidenceTag::new("published_artifact_generation_ordinal"),
-                diagnostics
-                    .generations()
-                    .iter()
-                    .map(|generation| generation.ordinal().to_string()),
-            )
-            .seal()?,
-    )
+    WorthQueryEvidenceIdentity::compose(WorthQueryEvidenceScope::JournalReplayOutcome)
+        .field_usize(
+            WorthQueryEvidenceTag::new("published_artifact_generation_count"),
+            diagnostics.retained_generation_count(),
+        )
+        .field_value_sequence(
+            WorthQueryEvidenceTag::new("published_artifact_generation_ordinal"),
+            diagnostics
+                .generations()
+                .iter()
+                .map(|generation| generation.ordinal().to_string()),
+        )
+        .seal()
 }
 #[cfg(test)]
 #[path = "registry_inline_type_budget.rs"]

@@ -30,33 +30,33 @@ impl WorthQueryExplanationContributionAuthoring {
         semantic_code: impl Into<String>,
         detail: impl Into<String>,
     ) -> Result<Self, IdentityDerivationDenial> {
-        Ok(Self::new(
+        Self::new(
             WorthQueryExplanationContributionPosture::RequiresContext,
             semantic_code,
             detail,
-        )?)
+        )
     }
 
     pub fn explains_fallback(
         semantic_code: impl Into<String>,
         detail: impl Into<String>,
     ) -> Result<Self, IdentityDerivationDenial> {
-        Ok(Self::new(
+        Self::new(
             WorthQueryExplanationContributionPosture::ExplainsFallback,
             semantic_code,
             detail,
-        )?)
+        )
     }
 
     pub fn explains_ambiguity(
         semantic_code: impl Into<String>,
         detail: impl Into<String>,
     ) -> Result<Self, IdentityDerivationDenial> {
-        Ok(Self::new(
+        Self::new(
             WorthQueryExplanationContributionPosture::ExplainsAmbiguity,
             semantic_code,
             detail,
-        )?)
+        )
     }
 
     pub fn cross_runtime_causal_context(
@@ -69,7 +69,7 @@ impl WorthQueryExplanationContributionAuthoring {
         redaction_policy: CausalInspectionRedactionPolicy,
         materialization_policy: CausalInspectionMaterializationPolicy,
     ) -> Result<Self, IdentityDerivationDenial> {
-        Ok(Self::with_runtime_semantics(
+        Self::with_runtime_semantics(
             WorthQueryExplanationContributionPosture::RequiresContext,
             semantic_code,
             detail,
@@ -83,7 +83,7 @@ impl WorthQueryExplanationContributionAuthoring {
                 redaction_policy,
                 materialization_policy,
             )?,
-        )?)
+        )
     }
 
     pub fn cross_runtime_fallback_explanation(
@@ -96,7 +96,7 @@ impl WorthQueryExplanationContributionAuthoring {
         redaction_policy: CausalInspectionRedactionPolicy,
         materialization_policy: CausalInspectionMaterializationPolicy,
     ) -> Result<Self, IdentityDerivationDenial> {
-        Ok(Self::with_runtime_semantics(
+        Self::with_runtime_semantics(
             WorthQueryExplanationContributionPosture::ExplainsFallback,
             semantic_code,
             detail,
@@ -110,7 +110,7 @@ impl WorthQueryExplanationContributionAuthoring {
                 redaction_policy,
                 materialization_policy,
             )?,
-        )?)
+        )
     }
 
     pub fn store_backed_replay_gap_explanation(
@@ -122,7 +122,7 @@ impl WorthQueryExplanationContributionAuthoring {
         redaction_policy: CausalInspectionRedactionPolicy,
         materialization_policy: CausalInspectionMaterializationPolicy,
     ) -> Result<Self, IdentityDerivationDenial> {
-        Ok(Self::with_runtime_semantics(
+        Self::with_runtime_semantics(
             WorthQueryExplanationContributionPosture::ExplainsAmbiguity,
             semantic_code,
             detail,
@@ -136,7 +136,7 @@ impl WorthQueryExplanationContributionAuthoring {
                 redaction_policy,
                 materialization_policy,
             )?,
-        )?)
+        )
     }
 
     pub fn for_intent_declaration(
@@ -146,9 +146,9 @@ impl WorthQueryExplanationContributionAuthoring {
         WorthQueryRequestedExplanationContribution<WorthQueryDeclarationBoundContributionTarget>,
         IdentityDerivationDenial,
     > {
-        Ok(self.bind_to_declaration_target(
+        self.bind_to_declaration_target(
             WorthQueryDeclarationBoundContributionTarget::for_intent_declaration(declaration),
-        )?)
+        )
     }
 
     pub fn for_admitted_intent_plan(
@@ -158,9 +158,9 @@ impl WorthQueryExplanationContributionAuthoring {
         WorthQueryRequestedExplanationContribution<WorthQueryAdmittedPlanBoundContributionTarget>,
         IdentityDerivationDenial,
     > {
-        Ok(self.bind_to_admitted_plan_target(
+        self.bind_to_admitted_plan_target(
             WorthQueryAdmittedPlanBoundContributionTarget::for_admitted_intent_plan(plan),
-        )?)
+        )
     }
 
     pub fn for_lower_runtime_boundary_envelope(
@@ -172,11 +172,11 @@ impl WorthQueryExplanationContributionAuthoring {
         >,
         IdentityDerivationDenial,
     > {
-        Ok(self.bind_to_lower_runtime_boundary_target(
+        self.bind_to_lower_runtime_boundary_target(
             WorthQueryLowerRuntimeBoundaryBoundContributionTarget::for_lower_runtime_boundary_envelope(
                 envelope,
             ),
-        )?)
+        )
     }
 
     pub fn for_lower_runtime_boundary_source<S>(
@@ -191,7 +191,7 @@ impl WorthQueryExplanationContributionAuthoring {
     where
         S: WorthQueryLowerRuntimeBoundaryEnvelopeSource + ?Sized,
     {
-        Ok(self.for_lower_runtime_boundary_envelope(source.lower_runtime_boundary_envelope())?)
+        self.for_lower_runtime_boundary_envelope(source.lower_runtime_boundary_envelope())
     }
 
     pub fn bind_to_declaration_target(
@@ -201,7 +201,7 @@ impl WorthQueryExplanationContributionAuthoring {
         WorthQueryRequestedExplanationContribution<WorthQueryDeclarationBoundContributionTarget>,
         IdentityDerivationDenial,
     > {
-        Ok(bind_requested(self.payload, target)?)
+        bind_requested(self.payload, target)
     }
 
     pub fn bind_to_admitted_plan_target(
@@ -211,7 +211,7 @@ impl WorthQueryExplanationContributionAuthoring {
         WorthQueryRequestedExplanationContribution<WorthQueryAdmittedPlanBoundContributionTarget>,
         IdentityDerivationDenial,
     > {
-        Ok(bind_requested(self.payload, target)?)
+        bind_requested(self.payload, target)
     }
 
     pub fn bind_to_lower_runtime_boundary_target(
@@ -223,7 +223,7 @@ impl WorthQueryExplanationContributionAuthoring {
         >,
         IdentityDerivationDenial,
     > {
-        Ok(bind_requested(self.payload, target)?)
+        bind_requested(self.payload, target)
     }
 
     pub(crate) fn bind_to_installed_target<T>(
@@ -243,10 +243,10 @@ impl WorthQueryExplanationContributionAuthoring {
                 T,
             >,
     {
-        Ok(bind_requested::<
+        bind_requested::<
             WorthQueryExplanationContributionPayload,
             crate::domain_capabilities::WorthQueryInstalledDomainContributionTarget<T>,
-        >(self.payload, target)?)
+        >(self.payload, target)
     }
 
     fn new(

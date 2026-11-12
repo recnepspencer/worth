@@ -19,6 +19,7 @@ where
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         expected: ProductBranchObservation,
+        program_source: worth_proof::AdmittedBranchProgramSource,
         change: worth_relational::facade::mvcc::RelationalTransactionIntent,
         plan: &HomeProgramTransitionPlanDescription,
         original: &worth_foundational::facade::CompositeAttemptAssociation,
@@ -73,6 +74,7 @@ where
             owner.prepare_durable_open_with_assignment(
                 execution,
                 expected,
+                program_source,
                 change,
                 cancellation,
                 deadline,

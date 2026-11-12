@@ -50,6 +50,8 @@ pub(in crate::durability) fn open(
     out(&value.program_revision)?;
     match value.component_intent {
         super::super::WorldOpenComponentIntent::RelationalOnly => out(&[1]),
+        super::super::WorldOpenComponentIntent::SignalOnly => out(&[2]),
+        super::super::WorldOpenComponentIntent::RelationalAndSignal => out(&[3]),
     }
 }
 pub(in crate::durability) fn evidence(
@@ -164,6 +166,8 @@ impl<'a> Read<'a> {
         let program_revision = self.fixed()?;
         let component_intent = match self.fixed::<1>()? {
             [1] => super::super::WorldOpenComponentIntent::RelationalOnly,
+            [2] => super::super::WorldOpenComponentIntent::SignalOnly,
+            [3] => super::super::WorldOpenComponentIntent::RelationalAndSignal,
             _ => return Err(Denial::Malformed),
         };
         Ok(WorldOpenAttemptRecord {
@@ -187,11 +191,9 @@ impl<'a> Read<'a> {
         execution: &worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<super::super::RecordedWorldInitialComponents, super::super::WorldDurableMediumDenial>
     {
-        let components =
-            super::super::RecordedWorldInitialComponents::from_json_in(execution, self.bytes)?;
-        self.bytes = &[];
-        Ok(components)
+        super::initial_components::read(self, execution)
     }
+
     pub(super) fn release_evidence(
         &mut self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,

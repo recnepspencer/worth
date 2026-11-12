@@ -48,14 +48,13 @@ where
             return Err((self, Denial::NotReady));
         }
         self.execution.posture = WorthQueryHistoryGroupPosture::Aborting;
-        if let Some(candidate) = &self.execution.candidate {
-            if let Err(cause) = self
+        if let Some(candidate) = &self.execution.candidate
+            && let Err(cause) = self
                 .document
                 .outputs
                 .discard_recording(request, candidate.branch())
-            {
-                return Err((self, Denial::Outputs(cause)));
-            }
+        {
+            return Err((self, Denial::Outputs(cause)));
         }
         if let Some(reservation) = self.execution.reservation.take() {
             match self

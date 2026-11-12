@@ -2,6 +2,8 @@ pub use crate::durability::authority::CapturedRelationalCheckpointAdmissionImage
 pub use crate::durability::authority::{
     AdmittedNativeInterimReceiver, CapturedNativeInterimAdmission, CapturedNativeInterimComponent,
     CapturedNativeInterimOrigin, NativeInterimBootstrapContinuation,
+    ReadmittedRelationalAssociatedFork, RefusedRelationalForkReadmission,
+    RelationalForkReadmissionCause,
 };
 pub use crate::durability::authority::{
     FreshRelationalSourceAdmission, ObservedRelationalMemoryCommit, PreparedRelationalHomeRecovery,
@@ -44,14 +46,14 @@ pub use crate::durability::medium::RelationalInitialInputsPublicationStop;
 pub use crate::durability::medium::{
     CheckpointSelectionIdentity, CheckpointSelectionObservation, DurablePublicationFate,
     OpaqueCapturedCheckpointSubject, RelationalCheckpointAcknowledgementDenial,
-    RelationalDurabilityUnresolved, RelationalDurabilityUnresolvedSubject,
-    RelationalDurableCheckpointSource, RelationalDurableColdSource, RelationalDurableMedium,
-    RelationalDurableMemberCustody, RelationalDurableMemberLocator,
-    RelationalDurableMemberRetirement, RelationalDurableMemberRetirementObservation,
-    RelationalDurableMemberRetirementRefusal, RelationalDurablePublicationRefusal,
-    RelationalDurableRecoverySource, RelationalDurableTransitionReadFailure,
-    RelationalMediumRetirementDenial, RelationalMediumRetirementProgress,
-    RetiredRelationalDurableMemberCustody,
+    RelationalCheckpointAcknowledgementProgress, RelationalDurabilityUnresolved,
+    RelationalDurabilityUnresolvedSubject, RelationalDurableCheckpointSource,
+    RelationalDurableColdSource, RelationalDurableMedium, RelationalDurableMemberCustody,
+    RelationalDurableMemberLocator, RelationalDurableMemberRetirement,
+    RelationalDurableMemberRetirementObservation, RelationalDurableMemberRetirementRefusal,
+    RelationalDurablePublicationRefusal, RelationalDurableRecoverySource,
+    RelationalDurableTransitionReadFailure, RelationalMediumRetirementDenial,
+    RelationalMediumRetirementProgress, RetiredRelationalDurableMemberCustody,
 };
 pub use crate::durability::migration::ReadmittedCanonicalCommit;
 pub use crate::durability::source_initial_inputs::{

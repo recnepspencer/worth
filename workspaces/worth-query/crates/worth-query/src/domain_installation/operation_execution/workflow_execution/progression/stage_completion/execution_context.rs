@@ -22,12 +22,10 @@ impl<D: 'static, O: 'static, F: 'static, L: BasisOperationLane> WorthQueryWorkfl
             self.identity,
             stage.identity()
         );
-        Ok(
-            crate::workflow::synthetic_runtime_workflow_binding_scoped_for_snapshot_identity(
-                self.bound.definition().canonical_identity(),
-                &effect_binding_scope,
-                snapshot,
-            )?,
+        crate::workflow::synthetic_runtime_workflow_binding_scoped_for_snapshot_identity(
+            self.bound.definition().canonical_identity(),
+            &effect_binding_scope,
+            snapshot,
         )
     }
 

@@ -17,6 +17,8 @@ pub enum ApplicationHomeCheckpointDenial {
     ReadSourceBusy,
     Payload(worth_execution::ExecutionRequestArrayDenial),
     WorldSectionRequired,
+    SignalSectionRequired,
+    Signal(Box<worth_signal::facade::durability::SignalDurableAdvanceDenial>),
     CoverageAheadOfJournal,
     JournalDescriptionMismatch,
     CheckpointReadProtection(worth_store::physical_runtime::PhysicalCheckpointReadProtectionDenial),

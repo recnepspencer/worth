@@ -104,6 +104,7 @@ fn callback_terminal_defers_outstanding_capacity_turnover_until_physical_attempt
 }
 
 #[test]
+#[expect(clippy::disallowed_methods, reason = "Client-race court")]
 fn callback_winning_during_physical_send_keeps_capacity_until_completed_custody_settles() {
     let world = installed_world();
     let (entered_tx, entered_rx) = mpsc::sync_channel(1);

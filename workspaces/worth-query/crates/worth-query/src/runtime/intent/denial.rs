@@ -64,8 +64,7 @@ impl WorthQueryIntentDenialEvidence {
             .as_ref()
             .map(WorthQuerySnapshotIdentity::evidence_identity);
         let denial_digest =
-            (|| {
-                Ok(worth_query_evidence_identity(WorthQueryEvidenceScope::IntentDenialEvidence)
+            worth_query_evidence_identity(WorthQueryEvidenceScope::IntentDenialEvidence)
                 .field_shape(
                     WorthQueryEvidenceTag::new("intent_name"),
                     declaration.name(),
@@ -132,8 +131,7 @@ impl WorthQueryIntentDenialEvidence {
                         .as_ref()
                         .map(WorthQueryIntentDecisionTraceEnvelope::trace_digest),
                 )
-                .seal()?)
-            })();
+                .seal();
         Self {
             intent_name: declaration.name().to_string(),
             stage: denial.stage(),
@@ -235,6 +233,6 @@ impl WorthQueryIntentDenialEvidence {
     }
 
     pub fn denial_digest(&self) -> Result<&WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
-        Ok(self.denial_digest.as_ref().map_err(|cause| *cause)?)
+        self.denial_digest.as_ref().map_err(|cause| *cause)
     }
 }

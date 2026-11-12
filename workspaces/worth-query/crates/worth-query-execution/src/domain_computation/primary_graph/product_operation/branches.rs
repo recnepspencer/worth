@@ -10,6 +10,8 @@ use worth_runtime_world::facade::{
 
 use super::WorthQueryApplicationProductBranchCleanup;
 mod expected_basis;
+mod inventory;
+pub use inventory::{WorthQueryProductBranchInventory, WorthQueryProductBranchInventoryDenial};
 mod expected_source;
 mod owned_head;
 use super::{
@@ -178,10 +180,7 @@ impl<'runtime, Schema: ApplicationSchema> WorthQueryApplicationProductBranches<'
             .pending_owner_cleanup()
             .into_iter()
             .map(|cleanup| {
-                WorthQueryApplicationProductBranchCleanup::new(
-                    cleanup,
-                    std::sync::Arc::clone(&conditional),
-                )
+                WorthQueryApplicationProductBranchCleanup::new(cleanup, conditional.clone())
             })
             .collect()
     }

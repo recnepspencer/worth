@@ -18,7 +18,7 @@ impl BoxEditStorage for Storage<'_, '_, '_> {
         self.control.checkpoint(1).map_err(Into::into)
     }
     fn read(&mut self, id: Self::Id) -> Result<Node, Stop> {
-        self.nodes.get(id).map_err(Into::into)
+        self.nodes.get(id).map(|node| *node).map_err(Into::into)
     }
     fn append(&mut self, node: Node) -> Result<Self::Id, Stop> {
         let id = self.nodes.push(node)?;
@@ -52,7 +52,7 @@ pub(super) fn corrupt_leaf(
 ) -> Result<(), Stop> {
     let Some(mut id) = root else { return Ok(()) };
     for _ in 0..nodes.len() {
-        let mut node = nodes.get(id)?;
+        let mut node = *nodes.get(id)?;
         match node.links {
             BoxNodeLinks::Branch { left, .. } => id = left,
             BoxNodeLinks::Leaf { .. } => {

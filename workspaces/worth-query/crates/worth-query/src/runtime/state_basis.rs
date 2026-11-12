@@ -76,7 +76,7 @@ fn scoped_basis_snapshot(
     basis: &impl ScopedBasisProof,
     label: &str,
 ) -> Result<WorthQueryRuntimeStateSnapshot, IdentityDerivationDenial> {
-    Ok(WorthQueryRuntimeStateSnapshot::ready(
+    WorthQueryRuntimeStateSnapshot::ready(
         runtime_state_snapshot_basis_label_identity(&scoped_identity(
             "scoped_basis",
             basis.scoped_basis_digest(),
@@ -91,19 +91,17 @@ fn scoped_basis_snapshot(
             basis.authority().as_str(),
             basis.lifecycle().as_str()
         ),
-    )?)
+    )
 }
 
 fn scoped_identity(
     family: &'static str,
     digest: &str,
 ) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
-    Ok(
-        worth_query_evidence_identity(WorthQueryEvidenceScope::LowerRuntimeBoundaryEvidence)
-            .field_shape(WorthQueryEvidenceTag::new("identity_family"), family)
-            .field_shape(WorthQueryEvidenceTag::new("canonical_digest"), digest)
-            .seal()?,
-    )
+    worth_query_evidence_identity(WorthQueryEvidenceScope::LowerRuntimeBoundaryEvidence)
+        .field_shape(WorthQueryEvidenceTag::new("identity_family"), family)
+        .field_shape(WorthQueryEvidenceTag::new("canonical_digest"), digest)
+        .seal()
 }
 
 fn authority_lane_for_family(family: BasisFamily) -> WorthQueryAuthorityLane {

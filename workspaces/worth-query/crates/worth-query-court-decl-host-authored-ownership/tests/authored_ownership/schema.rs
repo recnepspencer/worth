@@ -1,3 +1,6 @@
+#[path = "schema/relational_installation.rs"]
+mod relational_installation;
+pub(super) use relational_installation::RelationalContribution;
 use worth_query_decl::facade::application_schema::fragment::{self, *};
 #[path = "schema/records.rs"]
 mod storage_model;
@@ -13,7 +16,7 @@ pub trait Scenario:
     type Boundary: sheet_boundary::Profile;
     type NodeProfile: node_profile::NodeProfile<Self>;
     const MODE: u8;
-    const COUPLED: bool = matches!(Self::MODE, 6..=12 | 14..=28 | 30 | 39 | 40 | 41 | 42 | 43 | 48 | 60 | 61 | 64 | 66 | 68 | 69 | 70);
+    const COUPLED: bool = matches!(Self::MODE, 6..=12 | 14..=28 | 30 | 39 | 40 | 41 | 42 | 43 | 48 | 60 | 61 | 64 | 66 | 68 | 69 | 70 | 72);
     const TWO_BODIES: bool = matches!(
         Self::MODE,
         7 | 8 | 9 | 15..=18 | 20 | 27 | 28 | 42 | 43 | 61 | 64
@@ -167,7 +170,7 @@ impl<S: Scenario> Registration<S> for Contracts {
                 schema
             };
             let schema = sheet_boundary::declare(heterogeneous::declare(content::declare(
-                stage_schema::declare(schema),
+                coupled::creation_inverse::wire::declare(stage_schema::declare(schema)),
             )));
             let schema = currentness_guards::declare(parameter_inverse::declare(
                 relation_splice::declare(schema),
@@ -240,35 +243,9 @@ impl<S: Scenario> WorthQueryApplicationContribution<S> for Contribution {
         _: (),
         setup: &mut WorthQueryApplicationContributionSetup<'_, S>,
     ) -> Result<(), WorthQueryPrimaryGraphInstallationDenial> {
-        if matches!(S::MODE, 30 | 39 | 40 | 41 | 60) {
-            setup.handler::<relation_splice::inspection::Binding<S>, _>(
-                relation_splice::inspection::Handler,
-            )?;
-        }
-        if S::MODE == 29 {
-            setup.handler::<projected_memberships::inspection::Binding<S>, _>(
-                projected_memberships::inspection::Handler,
-            )?;
-        }
-        if matches!(S::MODE, 48 | 68 | 69 | 70) {
-            setup.handler::<parameter_inverse::Binding<S>, _>(parameter_inverse::Handler)?;
-        }
-        if S::MODE == 70 {
-            setup.handler::<foreign_aggregate::BirthBinding<S>, _>(
-                foreign_aggregate::command::Handler,
-            )?;
-            setup.handler::<sheet_boundary::split_walk::ExtendBinding<S>, _>(
-                sheet_boundary::split_walk::Handler,
-            )?;
-        }
-        super::owned_action_feature::configure_create::<S>(setup)?;
-        setup.handler::<lifecycle::RetireBinding<S>, _>(lifecycle_handlers::Handler)?;
-        setup.handler::<lifecycle::RestoreBinding<S>, _>(lifecycle_handlers::Handler)?;
-        setup.handler::<lifecycle::PlainBinding<S>, _>(lifecycle_handlers::Handler)?;
-        setup.handler::<producer::Binding<S>, _>(producer::Provider)?;
+        relational_installation::configure::<S>(setup)?;
         setup.producer::<producer::Producer<S>>(producer::Provider)?;
         if S::COUPLED {
-            setup.handler::<coupled::producer::Binding<S>, _>(coupled::producer::Provider)?;
             setup.producer::<coupled::producer::Producer<S>>(coupled::producer::Provider)?;
             setup.conditional::<coupled::producer::readiness::Readiness>(())?;
         }

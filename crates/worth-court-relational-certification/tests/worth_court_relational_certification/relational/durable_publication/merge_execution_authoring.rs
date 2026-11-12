@@ -78,7 +78,7 @@ pub(super) fn create_entity_with_aspect_fields(
     )
 }
 
-pub(super) fn create_entity_with_aspect_fields_on_branch(
+fn create_entity_with_aspect_fields_on_branch(
     execution: &ExecutionRequest<'_, '_>,
     runtime: &RelationalRuntime,
     client_key: &str,

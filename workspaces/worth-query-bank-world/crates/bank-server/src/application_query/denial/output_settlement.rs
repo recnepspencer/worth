@@ -3,6 +3,7 @@ use super::*;
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum BankApplicationOutputSettlementDenialKind {
+    DurableStateAdmission(worth_query_host::facade::product::WorthQueryDurableStateAdmissionDenial),
     WorldRecovery(worth_query_host::facade::primary_graph::RuntimeWorldRecoveryDenial),
     RecoveryPublication(worth_query_host::facade::primary_graph::NoEffectCause),
     PublicationReceipt(worth_query_host::facade::primary_graph::WorthQueryApplicationIdempotencyResolutionDenialKind),
@@ -105,6 +106,7 @@ impl From<WorthQueryOutputDemandDenialKind> for BankApplicationOutputSettlementD
             Query::Closed => Bank::Closed,
             Query::DuplicatePerformedSource => Bank::DuplicatePerformedSource,
             Query::IncompleteDependencyCoverage => Bank::IncompleteDependencyCoverage,
+            Query::DurableStateAdmission(cause) => Bank::DurableStateAdmission(cause),
             Query::ManagedSourceExpansionUnsupported => Bank::ManagedSourceExpansionUnsupported,
             Query::UnobservedWrite(cause) => Bank::UnobservedWrite(cause),
         }

@@ -12,7 +12,7 @@ use worth_testkit_relational::{
 };
 
 #[test]
-fn execute_prepared_merge_reports_execution_counters_and_structural_summary() {
+fn execute_prepared_merge_reports_structural_summary_and_diagnostics() {
     let host_request = worth_testkit_relational::shared_relational_certification_test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 

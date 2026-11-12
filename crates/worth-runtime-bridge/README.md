@@ -5,7 +5,7 @@ Relational truth and derived Signal computation.
 
 Use it when one runtime must translate committed semantic changes, snapshots,
 branches, history, or writeback across that boundary without giving either
-side the other side’s authority.
+side the other sideÃ¢â‚¬â„¢s authority.
 
 For Query-installed conditional operations, application and domain code starts
 at `worth_query_decl::facade` and `worth_query_host::facade`. Query runtime construction supplies the
@@ -136,9 +136,9 @@ temporal wakes, on-demand triggers, dependency comparison, output comparison,
 and artifact reuse. Missing or extra providers deny installation.
 
 At execution, the Bridge obtains semantic observations from the exact snapshot,
-invokes Signal’s installed conditional contract, and returns
+invokes SignalÃ¢â‚¬â„¢s installed conditional contract, and returns
 `BridgeConditionalDecisionEvidence`. The Bridge does not reinterpret or
-restamp Signal’s decision.
+restamp SignalÃ¢â‚¬â„¢s decision.
 
 ### Read-Only Native Observation Custody
 
@@ -298,18 +298,114 @@ assembler reports no Native binding, evaluation or invalidation for a source-onl
 reference. The performed-source reporting case and three affected Bridge controls
 pass. This does not qualify connected producer assembly or rich Native materialization.
 
-### Initial baseline for an attached World
+### Correspondence baseline for an attached World
 
-`RecordedRuntimeWorldBaseline` records the versioned, uninstalled correspondence
-baseline and its registered source's stable adapter and graph-role meaning.
-`RuntimeWorldCorrespondencePort` exports only an actual admitted baseline with
-no installed semantic dependency. Readmission compares that recipe with the
-current registered source and consumes the Signal owner's fresh admitted
-InitialEmpty seed to mint a new local Bridge basis. Unsupported sources,
-installed dependencies and altered meaning refuse. Source profile and role
+`RecordedRuntimeWorldBaseline` version 2 records the correspondence baseline
+and its registered source's stable adapter and graph-role meaning. The port
+exports an actual admitted baseline; a selected installed correspondence is a
+different basis and refuses this export. Conditional declarations may be installed.
+Readmission compares the recipe with the current registered source and consumes
+the Signal owner's actual admitted branch basis to mint a fresh Bridge basis.
+Version 1, unsupported sources and altered meaning refuse. Source profile and role
 descriptions remain correlation data. Store's private Home composition supplies
 the same actual Native owner and registered source; a matching caller-supplied
 profile cannot construct the concrete Home stage.
+
+## Authored conditional definition recovery
+
+For platform composition, `BridgeConditionalRuntimeBuilder::capture_authored_definition`
+captures the actual program's Signal images and Bridge's versioned, checksummed
+section. That section retains conditional identities and locations, full
+portable dependency meaning, declared slots and exact performed lowering claims.
+Version 2 also records each provider role's protocol, version and complete
+authored parameters. Executable callbacks, values, scheduling and runtime
+identities stay outside these bytes. The retired providerless version refuses
+with `UnsupportedVersion`.
+The baseline identifies the source; definitions and claims recover from its Signal section.
+
+`Box<BridgeConditionalRuntimeBuilder>::readmit_authored_owner` consumes the fresh
+program and `BridgeAuthoredInstallationBindings`. Signal supplies each actual
+cold branch; Bridge readmits its mapping and graph capabilities, restores the
+recorded slots, and rebuilds branch-local dependency indexes, lowering registry
+and retention ledger. Branches share the consumed program rather than cloning
+its runtime. Definition bytes retain their charges; publication candidate slots
+start empty. Fresh source and provider objects come from installation.
+
+Provider owners implement `BridgeAuthoredConditionalProvider` and use the
+explicit `authored_condition`, `authored_wake`, `authored_compute` and other
+authored role builders. A memory-only role refuses durable capture. Retain
+`BridgeFreshAuthoredBindings` from the genuine fresh program and pass the
+recorded descriptions to its `providers` entry during readmission. Its installed
+decoders reconstruct the recorded parameters; returning the initial program's
+provider unchanged is insufficient. Additional decoder families must be
+installed explicitly with `with_authored_provider_decoders`. A successor keeps
+that original decoder set and obtains its executable provider from it before
+publication; candidate callback objects cannot replace installation services.
+Unknown families and unsupported versions return typed provider refusals.
+
+For an empty Signal source, the same boxed builder offers
+`prepare_initial_authored_source`. It captures its actual installed conditional
+definitions through the same Bridge codec and retains its original program with
+Signal's pending publication. `BridgeInitialSourcePublication::advance` drives
+the original definition and branch frames; `try_into_published` returns pending
+custody unchanged until the real branch ACK. The published handoff then consumes
+fresh `BridgeAuthoredInstallationBindings` through the same cold installation
+kernel. Preparation refusal returns the builder with its original Signal runtime
+restored. Store-backed courts cover a refused branch step after definition ACK,
+same-original retry, populated-source refusal and changed-build recomputation.
+Registered no-effect refusals use Signal's concrete proof and explicit retry
+port, preserving the same authored frames and builder. Ordinary observations
+keep their terminal answer; retry cannot erase a pending or unresolved physical
+original or publish a committed frame again.
+
+The privately constructed `BridgeReadmittedAuthoredAssembly` owns the durable
+Signal owner and exposes authored definition inspection. Cold multi-branch and
+changed-build courts cover this intrinsic entry. Store-backed owner courts also
+cover graceful reopen and a kill after all publications are terminal, comparing
+three branches with the memory-only authored program and demanding derived
+values anew under the same or a changed build. Home admits this same assembly
+before World reconciliation and restores a fresh projection for every recovered
+branch. Durable sibling creation inherits the source branch's authored section.
+Resource and temporal runtime custody retain their later recovery boundaries.
+
+`BridgeReadmittedAuthoredAssembly::begin_conditional_definition_publication`
+prepares the successor through Signal's original durable task. It preserves
+registration, allocation and performed-claim sections, reserves the new lowering
+before effects, and activates it after Signal commits. Only the acting branch
+changes. `with_authored_branch` lends a serving projection to its inspection;
+preparation,
+pending publication and a committed projection requiring readmission have typed
+refusals. Resume the retained original rather than submitting another definition.
+
+`begin_composite_conditional_definition_publication` consumes the actual Signal
+binding and composing issuer's grant. It shares the same projection preparation,
+Signal callback and committed-only activation as the standalone entry. The
+original retains its grant across a disposed request observation; resume it with
+`resume_composite_original`. The Signal advance records the attempt association.
+A foreign grant refuses before the callback, and callback refusal restores the
+predecessor projection. The standalone entry refuses after composite attachment.
+
+For a mixed World publication, `prepare_conditional_definition_publication`
+reserves the actual Bridge successor without running a Signal effect. The
+linear `WithSignal` route checks that preparation against its admitted source,
+settles Native first, then transfers it to Signal's existing original task.
+`BridgeDurableDefinitionCompletion` accepts only that original's committed
+Signal output and installed projection. Query publishes the generation obtained
+from this completion. An accepted World open stays retained across refusal;
+canceling it never invents a no-effect answer. Unresolved live publication
+custody refuses Home close. Track H reopens published authored state; an unclean
+tail with an associated effect but no occurrence or disposition refuses with
+`UncleanRecoveryUnsupported` (D18). Crash continuation of the retained original
+owner evidence belongs to track C.
+
+Writeback execution records and replay-comparison records are process-local
+diagnostics. Current enumeration returns retained entries; historical reads take
+an owner-issued `BridgeWritebackDiagnosticReference`, which retains neither the
+payload nor the owner. Reads distinguish `NeverRetained`,
+`ExpiredUnderCountLimit` and `NotRetainedAcrossReopen`; a foreign owner refuses.
+Latest-entry access names the current archive. Fresh installation starts that
+archive empty and separates it from prior runtime aliases. These records never
+authorize effect replay; recovery evidence comes from durable owner commits.
 
 ## Retire Home-owned Bridge custody
 

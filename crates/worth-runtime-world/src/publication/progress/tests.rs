@@ -21,6 +21,16 @@ fn owner_effect_projection_covers_zero_one_and_two_performed_owners() {
             SignalAttemptProgressPosture::Performed,
             2,
         ),
+        (
+            RelationalAttemptProgressPosture::Untouched,
+            SignalAttemptProgressPosture::DurabilityUnresolved,
+            1,
+        ),
+        (
+            RelationalAttemptProgressPosture::Settled,
+            SignalAttemptProgressPosture::DurabilityUnresolved,
+            2,
+        ),
     ];
     for (relational, signal, expected) in cases {
         assert_eq!(

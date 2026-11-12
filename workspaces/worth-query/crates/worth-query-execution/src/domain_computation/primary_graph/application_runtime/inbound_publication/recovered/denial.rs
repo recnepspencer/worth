@@ -19,7 +19,8 @@ impl Cause {
                     | Refusal::Readmission(_)
                     | Refusal::History(_)
                     | Refusal::Retention(_)
-                    | Refusal::NoOwnerEffect => Denial::RecoveryUnavailable,
+                    | Refusal::NoOwnerEffect
+                    | Refusal::OwnerEffectsMismatch { .. } => Denial::RecoveryUnavailable,
                 }
             }
             Self::Source(cause) => match cause {

@@ -1,5 +1,7 @@
 use crate::identity::{ProductBranchIdentity, ProductBranchIncarnation};
 use std::sync::Arc;
+mod durable_creation;
+mod readmitted_branch;
 
 use super::{
     ProductBranchInstallationWitness, ProductBranchName, ProductBranchObservation,

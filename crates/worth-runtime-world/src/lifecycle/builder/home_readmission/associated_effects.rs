@@ -50,6 +50,13 @@ pub(super) fn readmit(
         if association != open.association {
             return Err(Denial::ConflictingOpenAttempt);
         }
+        match open.component_intent {
+            crate::durability::WorldOpenComponentIntent::SignalOnly => {
+                return Err(Denial::OccurrenceEvidenceMismatch)
+            }
+            crate::durability::WorldOpenComponentIntent::RelationalOnly
+            | crate::durability::WorldOpenComponentIntent::RelationalAndSignal => {}
+        }
         if effects.contains(&association.attempt()) {
             return Err(Denial::DuplicateNativeEffect);
         }

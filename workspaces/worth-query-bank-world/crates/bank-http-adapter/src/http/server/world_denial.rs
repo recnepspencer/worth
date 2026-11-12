@@ -6,7 +6,8 @@ use worth_query_host::facade::primary_graph::{
     CompanionPreflightStop, CurrentProductReadDependencyDenial, NoEffectCause,
     RelationalOperationInterruption, RelationalPublicationDeferred,
     RelationalPublicationReadDependencyDenial, RuntimeWorldBranchAdmissionDenial,
-    RuntimeWorldRecoveryDenial, RuntimeWorldServiceDenial,
+    RuntimeWorldCorrespondenceAdmissionDenial, RuntimeWorldRecoveryDenial,
+    RuntimeWorldServiceDenial,
 };
 
 pub(super) fn recovery(cause: RuntimeWorldRecoveryDenial) -> BankHttpDenial {
@@ -60,6 +61,7 @@ pub(super) fn publication(cause: NoEffectCause) -> BankHttpDenial {
         NoEffectCause::StaleExpectedProductHead | NoEffectCause::StaleIncarnation => stale(),
         NoEffectCause::CapacityExhausted => unavailable(),
         NoEffectCause::CurrentReadDependency(cause) => current_read(cause),
+        NoEffectCause::CorrespondenceAdmissionDenied(cause) => correspondence(cause),
         NoEffectCause::RelationalDeferred(cause) => match cause {
             RelationalPublicationDeferred::CompanionPreflight(cause) => native_admission(cause),
             RelationalPublicationDeferred::CompanionRegistrationPending
@@ -78,6 +80,19 @@ pub(super) fn publication(cause: NoEffectCause) -> BankHttpDenial {
         | NoEffectCause::ReferenceGenerationExhausted
         | NoEffectCause::OwnerUnavailable
         | NoEffectCause::PreEffectFailure => operator(),
+    }
+}
+
+fn correspondence(cause: RuntimeWorldCorrespondenceAdmissionDenial) -> BankHttpDenial {
+    use RuntimeWorldCorrespondenceAdmissionDenial as D;
+    match cause {
+        D::InstalledCorrespondenceNotCurrent | D::InstalledGenerationDrift { .. } => {
+            BankHttpDenial::new(Kind::Stale, Next::ContactOperator)
+        }
+        D::AuthoredOwnerUnavailable | D::AuthoredBranchUnavailable { .. } => {
+            BankHttpDenial::new(Kind::Unavailable, Next::ContactOperator)
+        }
+        D::ForeignBridgeRuntime { .. } | D::SignalBranchBasisRequired => operator(),
     }
 }
 
@@ -124,6 +139,12 @@ fn branch(cause: RuntimeWorldBranchAdmissionDenial) -> BankHttpDenial {
         | D::RetiredBranch
         | D::HistoryEntryUnavailable => stale(),
         D::DurableBranchPublicationRequired
+        | D::HomeCreationRequestRequired
+        | D::MemoryCreationRequestRequired
+        | D::ProgramSourceRequired
+        | D::ForeignProgramSource
+        | D::ProgramSourceMismatch
+        | D::EmptyNativeForkSource
         | D::ForeignOwner
         | D::DuplicateName
         | D::IdentityExhausted
@@ -171,5 +192,39 @@ mod incarnation_tests {
             recovery(RuntimeWorldRecoveryDenial::HomeProgramTransitionRequired),
             BankHttpDenial::new(Kind::Unavailable, Next::ContactOperator)
         );
+    }
+    #[test]
+    fn correspondence_refusals_preserve_currentness_and_owner_availability_without_effect_replay() {
+        use RuntimeWorldCorrespondenceAdmissionDenial as D;
+        for (cause, kind) in [
+            (D::InstalledCorrespondenceNotCurrent, Kind::Stale),
+            (
+                D::InstalledGenerationDrift {
+                    expected_generation: 1,
+                    actual_generation: 2,
+                },
+                Kind::Stale,
+            ),
+            (D::AuthoredOwnerUnavailable, Kind::Unavailable),
+            (
+                D::AuthoredBranchUnavailable {
+                    signal_graph_instance_id: 1,
+                },
+                Kind::Unavailable,
+            ),
+            (
+                D::ForeignBridgeRuntime {
+                    expected_runtime_key: 1,
+                    actual_runtime_key: 2,
+                },
+                Kind::InternalDenied,
+            ),
+            (D::SignalBranchBasisRequired, Kind::InternalDenied),
+        ] {
+            assert_eq!(
+                publication(NoEffectCause::CorrespondenceAdmissionDenied(cause)),
+                BankHttpDenial::new(kind, Next::ContactOperator),
+            );
+        }
     }
 }

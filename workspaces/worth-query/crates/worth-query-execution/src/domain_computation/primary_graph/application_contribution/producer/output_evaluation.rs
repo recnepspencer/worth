@@ -1,4 +1,8 @@
 //! One actual producer field comparison, completed before Ready and retained through retries.
+use crate::domain_computation::primary_graph::{
+    conditional_operation::installation::route_binding::InstalledConditionalRoute,
+    managed_bridge::conditional_execution::ConditionalExecutionOwner,
+};
 pub(super) mod installation;
 pub(crate) mod native;
 use super::output_equivalence_contract::InstalledProducerOutputEquivalence;
@@ -18,7 +22,7 @@ use worth_relational::facade::{
 };
 use worth_runtime_bridge::facade::{
     BridgeConditionalDecisionEvidence, BridgeConditionalExecutionRequest,
-    BridgeExactOutputComparison, BridgeInstalledConditionalLowering, BridgeSealedRuntimeAssembly,
+    BridgeExactOutputComparison, BridgeInstalledConditionalLowering,
 };
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -88,11 +92,20 @@ impl ProducerOutputEvaluation {
 
 /// One installed comparison owns its exact field/role meaning and lowering.
 pub struct InstalledOutputComparison {
-    lowering: Arc<BridgeInstalledConditionalLowering>,
+    lowering: InstalledConditionalRoute,
     field: Arc<InstalledProducerOutputEquivalence>,
     role: Arc<str>,
     producer: String,
 }
+impl InstalledOutputComparison {
+    pub(in crate::domain_computation::primary_graph) fn admit_authored_declaration(
+        &mut self,
+        fresh: &worth_runtime_bridge::facade::BridgeFreshAuthoredBindings,
+    ) -> Result<(), worth_runtime_bridge::facade::BridgeAuthoredReadmissionDenial> {
+        self.lowering.admit_authored_declaration(fresh)
+    }
+}
+
 /// The value and dependency metadata come from this one actual readiness execution.
 pub(super) struct NativeOutputBasis<'a> {
     pub(super) receipt:
@@ -114,7 +127,7 @@ impl InstalledOutputComparison {
     pub(super) fn evaluate(
         &self,
         execution: ExecutionRequest<'_, '_>,
-        bridge: &BridgeSealedRuntimeAssembly,
+        bridge: &ConditionalExecutionOwner<'_>,
         truth: &WorthQueryConditionalTruthBasis,
         basis: NativeOutputBasis<'_>,
         ready: &PreparedReadyBacking,
@@ -158,8 +171,9 @@ impl InstalledOutputComparison {
                             "output comparison attempt exhausted",
                         )
                     })?;
-                    let signal = bridge
-                        .admit_exact_conditional_signal_basis(&self.lowering, truth.signal_basis())
+                    let signal = self
+                        .lowering
+                        .admit_signal_basis(bridge, truth.signal_basis())
                         .map_err(|cause| {
                             super::demand::bridge_denial::bridge_denial(&self.producer, cause)
                         })?;
@@ -168,7 +182,7 @@ impl InstalledOutputComparison {
                             execution,
                             &signal,
                             BridgeConditionalExecutionRequest {
-                                lowering: &self.lowering,
+                                lowering: signal.installed_lowering_ref(),
                                 query_binding_identity: &self.producer,
                                 query_capability_identity: attempt,
                                 snapshot_identity: truth.snapshot_projection(),

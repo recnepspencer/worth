@@ -92,13 +92,14 @@ impl AuthorityMarker for RelationalDurableCommitReadmission {}
 #[derive(Debug)]
 pub(crate) struct RelationalDurableTransitionPublication {
     positioned: PositionedBranchTransition,
+    digest: [u8; 32],
 }
 
 impl AuthorityMarker for RelationalDurableTransitionPublication {}
 
 impl RelationalDurableTransitionPublication {
-    pub(crate) fn into_positioned(self) -> PositionedBranchTransition {
-        self.positioned
+    pub(crate) fn into_evidence(self) -> (PositionedBranchTransition, [u8; 32]) {
+        (self.positioned, self.digest)
     }
 }
 
@@ -239,7 +240,9 @@ impl RelationalDurableMediumBinding {
                 digest: artifact.payload_digest(),
             },
             || RelationalDurableTransitionPublication {
-                positioned: transition,
+                positioned: transition
+                    .with_recorded_artifact_digest(Some(*artifact.payload_digest().as_bytes())),
+                digest: *artifact.payload_digest().as_bytes(),
             },
         )
     }
@@ -255,17 +258,6 @@ impl RelationalDurableMediumBinding {
         let medium = state.medium.take()?;
         let phase = phase.take().expect("the live medium owns its phase");
         Some(RelationalDurableMediumTransfer { medium, phase })
-    }
-
-    /// The in-crate test medium behind this binding, if it is one.
-    #[cfg(test)]
-    pub(crate) fn in_crate_test_medium(
-        &self,
-    ) -> Option<std::sync::Arc<crate::tests::support::TestDurableMedium>> {
-        self.state()
-            .medium
-            .as_ref()
-            .and_then(|medium| medium.in_crate_test_medium())
     }
 
     fn home_phase(&self) -> MutexGuard<'_, Option<RelationalHomeProgramPhase>> {

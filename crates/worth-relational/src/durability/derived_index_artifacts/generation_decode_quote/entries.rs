@@ -7,7 +7,7 @@ use std::sync::Arc;
 
 pub(in super::super) fn quote(
     value: BorrowedPayload<'_>,
-    request: &ExecutionRequest<'_, '_>,
+    request: &dyn PayloadCheckpoint,
 ) -> Result<u64, Refusal> {
     let mut bytes = 0;
     let mut variants = 0;
@@ -45,9 +45,9 @@ pub(in super::super) fn quote(
 }
 fn map<K: Ord + Clone, R: Clone>(
     value: BorrowedPayload<'_>,
-    request: &ExecutionRequest<'_, '_>,
-    key_quote: fn(BorrowedPayload<'_>, &ExecutionRequest<'_, '_>) -> Result<u64, Refusal>,
-    row_quote: fn(BorrowedPayload<'_>, &ExecutionRequest<'_, '_>) -> Result<u64, Refusal>,
+    request: &dyn PayloadCheckpoint,
+    key_quote: fn(BorrowedPayload<'_>, &dyn PayloadCheckpoint) -> Result<u64, Refusal>,
+    row_quote: fn(BorrowedPayload<'_>, &dyn PayloadCheckpoint) -> Result<u64, Refusal>,
 ) -> Result<u64, Refusal> {
     let mut bytes = 0;
     let count = value.pairs(request, |key, rows| {
@@ -81,7 +81,7 @@ fn map<K: Ord + Clone, R: Clone>(
 /// Every persistent container of both legs is priced as decode builds it:
 /// im Serde's intermediate Vec plus its node chunks, per outer map, inner map,
 /// relation set and inverse map. The owner's retained-size model is not a bound.
-fn legs(value: BorrowedPayload<'_>, request: &ExecutionRequest<'_, '_>) -> Result<u64, Refusal> {
+fn legs(value: BorrowedPayload<'_>, request: &dyn PayloadCheckpoint) -> Result<u64, Refusal> {
     if value.is_none() {
         return Ok(0);
     }
@@ -129,13 +129,10 @@ fn container<K, V>(count: usize) -> Result<u64, Refusal> {
     )?;
     Ok(bytes)
 }
-fn scalar(_: BorrowedPayload<'_>, _: &ExecutionRequest<'_, '_>) -> Result<u64, Refusal> {
+fn scalar(_: BorrowedPayload<'_>, _: &dyn PayloadCheckpoint) -> Result<u64, Refusal> {
     Ok(0)
 }
-fn comparison(
-    value: BorrowedPayload<'_>,
-    request: &ExecutionRequest<'_, '_>,
-) -> Result<u64, Refusal> {
+fn comparison(value: BorrowedPayload<'_>, request: &dyn PayloadCheckpoint) -> Result<u64, Refusal> {
     let raw = value.field("canonical_value_bytes", request)?;
     let mut octets = raw.octets(request)?;
     let count = octets.len();
@@ -143,10 +140,7 @@ fn comparison(
     octets.finish()?;
     vector::<u8>(count)
 }
-fn ordering(
-    value: BorrowedPayload<'_>,
-    request: &ExecutionRequest<'_, '_>,
-) -> Result<u64, Refusal> {
+fn ordering(value: BorrowedPayload<'_>, request: &dyn PayloadCheckpoint) -> Result<u64, Refusal> {
     let mut bytes = 0;
     let count = value
         .field("ordering_values", request)?

@@ -75,10 +75,7 @@ impl<'a, D: WorthQueryDomainEntryMarker, C: WorthQueryDomainOperatingContext<D>>
         I: WorthQueryDeclarationInput<D>,
         I::Family: WorthQueryGeometryActiveFaceSelectionHelperFamily<D>,
     {
-        Ok(continuation::prepare_preview_for_active_face_selection(
-            self.handle,
-            progression,
-        )?)
+        continuation::prepare_preview_for_active_face_selection(self.handle, progression)
     }
 
     pub fn prepare_preview_for_active_face_selection_outcome<I>(
@@ -92,12 +89,7 @@ impl<'a, D: WorthQueryDomainEntryMarker, C: WorthQueryDomainOperatingContext<D>>
         I: WorthQueryDeclarationInput<D>,
         I::Family: WorthQueryGeometryActiveFaceSelectionHelperFamily<D>,
     {
-        Ok(
-            continuation::prepare_preview_for_active_face_selection_outcome(
-                self.handle,
-                progression,
-            )?,
-        )
+        continuation::prepare_preview_for_active_face_selection_outcome(self.handle, progression)
     }
 
     pub fn prepare_preview_for_active_face_selection_checked<I>(
@@ -108,12 +100,7 @@ impl<'a, D: WorthQueryDomainEntryMarker, C: WorthQueryDomainOperatingContext<D>>
         I: WorthQueryDeclarationInput<D>,
         I::Family: WorthQueryGeometryActiveFaceSelectionHelperFamily<D>,
     {
-        Ok(
-            continuation::prepare_preview_for_active_face_selection_checked(
-                self.handle,
-                progression,
-            )?,
-        )
+        continuation::prepare_preview_for_active_face_selection_checked(self.handle, progression)
     }
 
     pub fn prepare_preview_for_active_face_selection_proof<I>(
@@ -124,12 +111,7 @@ impl<'a, D: WorthQueryDomainEntryMarker, C: WorthQueryDomainOperatingContext<D>>
         I: WorthQueryDeclarationInput<D>,
         I::Family: WorthQueryGeometryActiveFaceSelectionHelperFamily<D>,
     {
-        Ok(
-            continuation::prepare_preview_for_active_face_selection_proof(
-                self.handle,
-                progression,
-            )?,
-        )
+        continuation::prepare_preview_for_active_face_selection_proof(self.handle, progression)
     }
 
     pub fn prepare_runtime_route_for_active_face_selection<I>(
@@ -140,12 +122,7 @@ impl<'a, D: WorthQueryDomainEntryMarker, C: WorthQueryDomainOperatingContext<D>>
         I: WorthQueryDeclarationInput<D>,
         I::Family: WorthQueryGeometryActiveFaceSelectionHelperFamily<D>,
     {
-        Ok(
-            continuation::prepare_runtime_route_for_active_face_selection(
-                self.handle,
-                progression,
-            )?,
-        )
+        continuation::prepare_runtime_route_for_active_face_selection(self.handle, progression)
     }
 
     pub fn prepare_runtime_route_for_active_face_selection_outcome<I>(
@@ -159,11 +136,9 @@ impl<'a, D: WorthQueryDomainEntryMarker, C: WorthQueryDomainOperatingContext<D>>
         I: WorthQueryDeclarationInput<D>,
         I::Family: WorthQueryGeometryActiveFaceSelectionHelperFamily<D>,
     {
-        Ok(
-            continuation::prepare_runtime_route_for_active_face_selection_outcome(
-                self.handle,
-                progression,
-            )?,
+        continuation::prepare_runtime_route_for_active_face_selection_outcome(
+            self.handle,
+            progression,
         )
     }
 
@@ -175,11 +150,9 @@ impl<'a, D: WorthQueryDomainEntryMarker, C: WorthQueryDomainOperatingContext<D>>
         I: WorthQueryDeclarationInput<D>,
         I::Family: WorthQueryGeometryActiveFaceSelectionHelperFamily<D>,
     {
-        Ok(
-            continuation::prepare_runtime_route_for_active_face_selection_checked(
-                self.handle,
-                progression,
-            )?,
+        continuation::prepare_runtime_route_for_active_face_selection_checked(
+            self.handle,
+            progression,
         )
     }
 
@@ -191,11 +164,9 @@ impl<'a, D: WorthQueryDomainEntryMarker, C: WorthQueryDomainOperatingContext<D>>
         I: WorthQueryDeclarationInput<D>,
         I::Family: WorthQueryGeometryActiveFaceSelectionHelperFamily<D>,
     {
-        Ok(
-            continuation::prepare_runtime_route_for_active_face_selection_proof(
-                self.handle,
-                progression,
-            )?,
+        continuation::prepare_runtime_route_for_active_face_selection_proof(
+            self.handle,
+            progression,
         )
     }
 
@@ -207,12 +178,7 @@ impl<'a, D: WorthQueryDomainEntryMarker, C: WorthQueryDomainOperatingContext<D>>
         I: WorthQueryDeclarationInput<D>,
         I::Family: WorthQueryGeometryActiveFaceSelectionHelperFamily<D>,
     {
-        Ok(
-            continuation::prepare_current_truth_view_for_active_face_selection(
-                self.handle,
-                progression,
-            )?,
-        )
+        continuation::prepare_current_truth_view_for_active_face_selection(self.handle, progression)
     }
 
     pub fn prepare_current_truth_view_for_active_face_selection_outcome<I>(
@@ -226,11 +192,9 @@ impl<'a, D: WorthQueryDomainEntryMarker, C: WorthQueryDomainOperatingContext<D>>
         I: WorthQueryDeclarationInput<D>,
         I::Family: WorthQueryGeometryActiveFaceSelectionHelperFamily<D>,
     {
-        Ok(
-            continuation::prepare_current_truth_view_for_active_face_selection_outcome(
-                self.handle,
-                progression,
-            )?,
+        continuation::prepare_current_truth_view_for_active_face_selection_outcome(
+            self.handle,
+            progression,
         )
     }
 
@@ -242,11 +206,9 @@ impl<'a, D: WorthQueryDomainEntryMarker, C: WorthQueryDomainOperatingContext<D>>
         I: WorthQueryDeclarationInput<D>,
         I::Family: WorthQueryGeometryActiveFaceSelectionHelperFamily<D>,
     {
-        Ok(
-            continuation::prepare_current_truth_view_for_active_face_selection_checked(
-                self.handle,
-                progression,
-            )?,
+        continuation::prepare_current_truth_view_for_active_face_selection_checked(
+            self.handle,
+            progression,
         )
     }
 
@@ -258,11 +220,9 @@ impl<'a, D: WorthQueryDomainEntryMarker, C: WorthQueryDomainOperatingContext<D>>
         I: WorthQueryDeclarationInput<D>,
         I::Family: WorthQueryGeometryActiveFaceSelectionHelperFamily<D>,
     {
-        Ok(
-            continuation::prepare_current_truth_view_for_active_face_selection_proof(
-                self.handle,
-                progression,
-            )?,
+        continuation::prepare_current_truth_view_for_active_face_selection_proof(
+            self.handle,
+            progression,
         )
     }
 
@@ -274,11 +234,9 @@ impl<'a, D: WorthQueryDomainEntryMarker, C: WorthQueryDomainOperatingContext<D>>
         I: WorthQueryDeclarationInput<D>,
         I::Family: WorthQueryGeometryActiveFaceSelectionHelperFamily<D>,
     {
-        Ok(
-            continuation::prepare_historical_truth_view_for_active_face_selection(
-                self.handle,
-                progression,
-            )?,
+        continuation::prepare_historical_truth_view_for_active_face_selection(
+            self.handle,
+            progression,
         )
     }
 
@@ -293,11 +251,9 @@ impl<'a, D: WorthQueryDomainEntryMarker, C: WorthQueryDomainOperatingContext<D>>
         I: WorthQueryDeclarationInput<D>,
         I::Family: WorthQueryGeometryActiveFaceSelectionHelperFamily<D>,
     {
-        Ok(
-            continuation::prepare_historical_truth_view_for_active_face_selection_outcome(
-                self.handle,
-                progression,
-            )?,
+        continuation::prepare_historical_truth_view_for_active_face_selection_outcome(
+            self.handle,
+            progression,
         )
     }
 
@@ -309,11 +265,9 @@ impl<'a, D: WorthQueryDomainEntryMarker, C: WorthQueryDomainOperatingContext<D>>
         I: WorthQueryDeclarationInput<D>,
         I::Family: WorthQueryGeometryActiveFaceSelectionHelperFamily<D>,
     {
-        Ok(
-            continuation::prepare_historical_truth_view_for_active_face_selection_checked(
-                self.handle,
-                progression,
-            )?,
+        continuation::prepare_historical_truth_view_for_active_face_selection_checked(
+            self.handle,
+            progression,
         )
     }
 
@@ -325,11 +279,9 @@ impl<'a, D: WorthQueryDomainEntryMarker, C: WorthQueryDomainOperatingContext<D>>
         I: WorthQueryDeclarationInput<D>,
         I::Family: WorthQueryGeometryActiveFaceSelectionHelperFamily<D>,
     {
-        Ok(
-            continuation::prepare_historical_truth_view_for_active_face_selection_proof(
-                self.handle,
-                progression,
-            )?,
+        continuation::prepare_historical_truth_view_for_active_face_selection_proof(
+            self.handle,
+            progression,
         )
     }
 
@@ -359,9 +311,8 @@ impl<'a, D: WorthQueryDomainEntryMarker, C: WorthQueryDomainOperatingContext<D>>
         I: WorthQueryDeclarationInput<D>,
         I::Family: WorthQueryGeometryMaterialAttachmentHelperFamily<D>,
     {
-        Ok(self
-            .handle
-            .orchestrate_declaration_with_contributions_outcome(input.into_composed_input())?)
+        self.handle
+            .orchestrate_declaration_with_contributions_outcome(input.into_composed_input())
     }
 
     pub fn orchestrate_material_attachment_for_active_face_selection_checked<I>(
@@ -372,9 +323,8 @@ impl<'a, D: WorthQueryDomainEntryMarker, C: WorthQueryDomainOperatingContext<D>>
         I: WorthQueryDeclarationInput<D>,
         I::Family: WorthQueryGeometryMaterialAttachmentHelperFamily<D>,
     {
-        Ok(self
-            .handle
-            .orchestrate_declaration_with_contributions_checked(input.into_composed_input())?)
+        self.handle
+            .orchestrate_declaration_with_contributions_checked(input.into_composed_input())
     }
 
     pub fn orchestrate_material_attachment_for_active_face_selection_proof<I>(
@@ -385,8 +335,7 @@ impl<'a, D: WorthQueryDomainEntryMarker, C: WorthQueryDomainOperatingContext<D>>
         I: WorthQueryDeclarationInput<D>,
         I::Family: WorthQueryGeometryMaterialAttachmentHelperFamily<D>,
     {
-        Ok(self
-            .handle
-            .orchestrate_declaration_with_contributions_proof(input.into_composed_input())?)
+        self.handle
+            .orchestrate_declaration_with_contributions_proof(input.into_composed_input())
     }
 }

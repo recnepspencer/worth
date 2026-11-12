@@ -22,7 +22,7 @@ from prebuild_selection import required as required_prebuilds
 from ratchet import build_violations, compiler_observations, lane_budget, source_violations
 from reservations import configuration, original_reservations
 from standalone import execute as execute_standalone
-from workspace import WORKSPACES, repository_root
+from workspace import WORKSPACES, nextest_configuration_source, repository_root
 
 
 LANDING = tuple(name for name in LANES if name != 'scale')
@@ -155,7 +155,8 @@ def execute(repository, workspace, lanes, output, profile='dev', expression=None
     environment.update(prepare(repository, workspace, output / 'prebuilt', runner,
                                include_proof=proof_observations, compiler_scope=scope, profile=profile,
                                native_build=output / 'build'))
-    config = manifest.parent / '.config/nextest.toml'
+    config = nextest_configuration_source(repository, manifest)
+    print('nextest configuration source: ' + str(config), flush=True)
     reservations = original_reservations(config, nextest_profile, discovered, lambda index, query:
         list_tests(reuse, output / 'build' / f'reservation-{index}.json', runner, query))
     reservation_path = output / 'reservations.json'

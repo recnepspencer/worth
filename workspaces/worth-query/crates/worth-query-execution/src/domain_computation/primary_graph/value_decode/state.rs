@@ -35,7 +35,7 @@ impl ValueDecodeState {
         self.first.get()
     }
 
-    pub(super) fn refuse(&self, cause: Stop) {
+    pub(in crate::domain_computation::primary_graph) fn refuse(&self, cause: Stop) {
         self.first.set(self.first.get().or(Some(cause)));
     }
 

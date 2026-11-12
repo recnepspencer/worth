@@ -98,10 +98,16 @@ fn home_custody_disposes_released_original_membership_before_service_after_grace
             let (query, mut home, witness) = existing(directory.path(), &phase);
             let expected = home.select_query_root(&execution).unwrap();
             let cancellation = RuntimeWorldCancellationSource::new();
+            let source_revision = *home.binding().selected().revision().bytes();
+            let program_source = home.branch_program_source_owner().admit_source(
+                source_revision,
+                world_branch_program_source_commitment(&expected, source_revision).unwrap(),
+            );
             let port = home.world().publication_port();
             let mut outcome = port.open_publication_without_signal(
                 &execution,
                 expected.clone(),
+                program_source,
                 worth_relational::facade::mvcc::RelationalTransactionIntent::ordinary(),
                 &cancellation.token(),
                 None,

@@ -24,12 +24,10 @@ mod source_binding;
 impl HistorySubsystem {
     pub(super) fn rebuild_catalog_with_live_roots(
         &self,
-        lane: &crate::storage::substrate::maintenance::ReconstructionLane<'_>,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         symbols: &crate::symbols::data::StringInterner,
     ) -> Result<(), RelationalHistoryRecoveryDenial> {
         self.rebuild_catalog_with_live_roots_and_descriptors(
-            lane,
             execution,
             &std::collections::BTreeMap::new(),
             &std::collections::BTreeMap::new(),
@@ -40,7 +38,6 @@ impl HistorySubsystem {
 
     fn rebuild_catalog_with_live_roots_and_descriptors(
         &self,
-        _lane: &crate::storage::substrate::maintenance::ReconstructionLane<'_>,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         descriptors: &std::collections::BTreeMap<
             crate::history::data::CommitId,
@@ -194,7 +191,6 @@ impl HistorySubsystem {
 
     pub(crate) fn readmit_replayed_root_descriptor(
         &self,
-        lane: &crate::storage::substrate::maintenance::ReconstructionLane<'_>,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         commit_id: crate::history::data::CommitId,
         descriptor: crate::branch::RelationalBranchRootDescriptor,
@@ -263,7 +259,6 @@ impl HistorySubsystem {
         let mut recovered_roots = std::collections::BTreeMap::new();
         recovered_roots.insert(commit_id, Arc::clone(&canonical_root));
         self.rebuild_catalog_with_live_roots_and_descriptors(
-            lane,
             execution,
             &descriptors,
             &recovered_roots,
@@ -275,7 +270,6 @@ impl HistorySubsystem {
 
     pub(crate) fn record_recovered_commit(
         &self,
-        lane: &crate::storage::substrate::maintenance::ReconstructionLane<'_>,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         envelope: &Arc<CanonicalCommitEnvelope>,
         allow_reconstructed_replacement: bool,
@@ -297,7 +291,7 @@ impl HistorySubsystem {
                 )
                 .into());
             }
-            self.rebuild_catalog_with_live_roots(lane, execution, symbols)?;
+            self.rebuild_catalog_with_live_roots(execution, symbols)?;
         } else if catalog_artifact.is_none() {
             let artifact =
                 self.prepare_catalog_artifact_for_envelope(execution, Arc::clone(envelope), None)?;

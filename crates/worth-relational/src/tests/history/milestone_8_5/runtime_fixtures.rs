@@ -17,9 +17,7 @@ impl CommitStrategyExecutor for DeterministicFailureExecutor {
     }
 }
 
-pub(super) fn persisted_strategy_runtime(
-    medium: std::sync::Arc<crate::tests::support::TestDurableMedium>,
-) -> RelationalRuntime {
+pub(super) fn strategy_runtime() -> RelationalRuntime {
     let intent_descriptor = IntentReconciliationStrategy::descriptor(
         crate::facade::commit_strategies::CommitStrategyId(801),
     );
@@ -73,13 +71,11 @@ pub(super) fn persisted_strategy_runtime(
                 &replacement_descriptor,
             ),
         )
-        .build_durable(medium.attachment())
+        .build()
         .expect("valid native runtime configuration")
 }
 
-pub(super) fn persisted_replacement_strategy_runtime(
-    medium: std::sync::Arc<crate::tests::support::TestDurableMedium>,
-) -> RelationalRuntime {
+pub(super) fn replacement_strategy_runtime() -> RelationalRuntime {
     let replacement_descriptor = EntityReplacementReconciliationStrategy::descriptor(
         crate::facade::commit_strategies::CommitStrategyId(804),
     );
@@ -97,13 +93,11 @@ pub(super) fn persisted_replacement_strategy_runtime(
                 &replacement_descriptor,
             ),
         )
-        .build_durable(medium.attachment())
+        .build()
         .expect("valid native runtime configuration")
 }
 
-pub(super) fn persisted_strategy_runtime_without_executors(
-    medium: std::sync::Arc<crate::tests::support::TestDurableMedium>,
-) -> RelationalRuntime {
+pub(super) fn strategy_runtime_without_executors() -> RelationalRuntime {
     let intent_descriptor = IntentReconciliationStrategy::descriptor(
         crate::facade::commit_strategies::CommitStrategyId(801),
     );
@@ -132,13 +126,11 @@ pub(super) fn persisted_strategy_runtime_without_executors(
             CommitStrategyRegistration::new(replacement_descriptor)
                 .expect("replacement registration"),
         )
-        .build_durable(medium.attachment())
+        .build()
         .expect("valid native runtime configuration")
 }
 
-pub(super) fn persisted_strategy_runtime_with_failing_intent_executor(
-    medium: std::sync::Arc<crate::tests::support::TestDurableMedium>,
-) -> RelationalRuntime {
+pub(super) fn strategy_runtime_with_failing_intent_executor() -> RelationalRuntime {
     let intent_descriptor = IntentReconciliationStrategy::descriptor(
         crate::facade::commit_strategies::CommitStrategyId(801),
     );
@@ -185,7 +177,7 @@ pub(super) fn persisted_strategy_runtime_with_failing_intent_executor(
                 &replacement_descriptor,
             ),
         )
-        .build_durable(medium.attachment())
+        .build()
         .expect("valid native runtime configuration")
 }
 

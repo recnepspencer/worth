@@ -8,7 +8,7 @@ use super::{
 };
 
 fn basis(label: impl Into<String>) -> Result<ResolvedBasisProof, IdentityDerivationDenial> {
-    Ok(super::bridge_historical_basis(&label.into())?)
+    super::bridge_historical_basis(&label.into())
 }
 
 impl HistoricalEvaluationRequest {

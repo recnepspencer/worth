@@ -12,13 +12,13 @@ use crate::application_schema::{
 use std::marker::PhantomData;
 
 pub struct ApplicationAuthoredCorrection<Schema> {
-    compose: Box<
+    pub(super) compose: Box<
         dyn Fn() -> Result<DeclaredAuthoredCorrection, ApplicationSchemaDeclarationDenial>
             + Send
             + Sync,
     >,
     recipe: ApplicationFieldBindingRecipe,
-    co_recipes: Vec<ApplicationFieldBindingRecipe>,
+    pub(super) co_recipes: Vec<ApplicationFieldBindingRecipe>,
     marker: PhantomData<fn() -> Schema>,
 }
 
@@ -159,7 +159,7 @@ impl<Schema: ApplicationSchema> ApplicationAuthoredCorrection<Schema> {
         self
     }
 
-    fn from_family<Family: ApplicationAuthoredCorrectionFamily<Schema>>(
+    pub(super) fn from_family<Family: ApplicationAuthoredCorrectionFamily<Schema>>(
         source: &str,
         inverse: &str,
         posture: ApplicationMutationOutputPosture,

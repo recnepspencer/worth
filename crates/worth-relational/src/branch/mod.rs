@@ -106,7 +106,7 @@ pub(crate) use basis_registry::{
 pub(crate) use canonical_runtime_frame::{CANONICAL_RUNTIME_INSTANCE_ID, CANONICAL_TRANSACTION_ID};
 pub use coordination::RelationalBranchCoordinationCellId;
 pub(crate) use coordination::RelationalBranchCoordinationGuard;
-pub use fork::{RelationalForkDenial, RelationalForkOutcome};
+pub use fork::{RelationalAssociatedFork, RelationalForkDenial, RelationalForkOutcome};
 pub use fork_port::RelationalForkPort;
 pub use fork_source_basis::{AdmittedRelationalForkSourceBasis, RelationalForkSourceDescriptor};
 pub use identity::{RelationalBranchIdentity, RelationalBranchIdentityDenial};
@@ -172,7 +172,7 @@ pub(crate) use transition::{
 };
 pub use transition::{
     PositionedBranchTransition, RelationalBranchTransition, RelationalBranchTransitionSequence,
-    RelationalBranchTransitionStop,
+    RelationalBranchTransitionStop, RelationalCommittedTransitionEvidence,
 };
 pub use version::RelationalBranchVersion;
 

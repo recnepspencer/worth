@@ -89,11 +89,11 @@ impl WorthQueryRuntime {
                 .map(WorthQueryBasisAdmissionEvidenceRow::support_profile_token),
         )
         .collect::<Result<Vec<_>, _>>()?;
-        Ok(WorthQueryBranchBasisAdmission::new(
+        WorthQueryBranchBasisAdmission::new(
             &self.evidence_authority,
             label,
             effect_policy,
             evidence_rows,
-        )?)
+        )
     }
 }

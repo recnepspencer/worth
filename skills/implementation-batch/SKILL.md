@@ -116,11 +116,17 @@ boundary now.
 
 ## Stage 4: Verify and Close
 
-Run formatting and the narrowest checks that prove the changed behavior. Add
-broader package or workspace checks when shared APIs, authority, persistence,
-identity, replay, protocol, or other cross-cutting surfaces changed. Run
-compile-fail or equivalent negative checks when construction or type boundaries
-changed.
+Run formatting, cheap source checks and the narrowest evidence that proves the
+changed behavior. A shared API or cross-cutting change requires identifying
+affected boundaries; it does not automatically authorize workspace CI or every
+reverse dependency. Run focused compile-fail or equivalent negative evidence
+when construction or type boundaries changed.
+
+Read REVIEW.md and apply the repository's three QA lenses to the final slice:
+cad-qa-loop, cad-qa-tests and shared code-quality-qa for CAD kernel work;
+qa-loop, qa-tests and code-quality-qa for public platform work. Reuse adequate
+evidence and the selected reviewer arrangement. Three lenses do not imply
+three reviewers or repeated builds.
 
 Compare the result directly with every covered milestone obligation and the
 boundary brief. Confirm that:
@@ -141,3 +147,22 @@ Report:
 
 Do not call the slice complete when required evidence is missing or a competing
 ordinary authority remains.
+
+## Compile time is sacred
+
+During ordinary development, slice review and routine landing, use cheap source
+checks and the smallest meaningful compilation and test scope. Include compile,
+link and fixture construction cost when selecting evidence; test runtime alone
+does not describe its cost.
+
+Expensive gates belong at milestone completion, release verification or nightly
+jobs. They are not prerequisites for every edit, review, commit or slice landing.
+Do not expand automatically to all reverse dependencies or workspace CI.
+
+A concrete suspected defect may require an expensive focused reproducer. Name
+the uncertainty and why cheaper evidence cannot resolve it; this does not
+authorize a full gate. Do not invent a scheduling job by invoking this policy.
+
+Reuse valid evidence and rerun checks when a correction affects what they
+establish. Three QA lenses do not imply three builds, test runs or reviewers.
+Report deferred verification honestly; a focused pass is not a full gate pass.

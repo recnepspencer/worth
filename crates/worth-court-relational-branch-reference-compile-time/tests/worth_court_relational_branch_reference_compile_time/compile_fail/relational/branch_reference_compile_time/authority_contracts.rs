@@ -6,6 +6,26 @@ use worth_testkit_compiler::{
 pub(super) fn contracts() -> Vec<Contract<'static>> {
     vec![
         Contract {
+            fixture: "fork_basis_cannot_readmit.rs",
+            errors: &[Diagnostic::TypeMismatch {
+                pairs: &[Pair {
+                    expected: "&BranchId",
+                    found: "&AdmittedRelationalForkSourceBasis",
+                }],
+                symbols: &["BranchId", "AdmittedRelationalForkSourceBasis"],
+            }],
+        },
+        Contract {
+            fixture: "raw_branch_id_cannot_admit_current_basis.rs",
+            errors: &[Diagnostic::TypeMismatch {
+                pairs: &[Pair {
+                    expected: "&RelationalBranchIdentity",
+                    found: "&BranchId",
+                }],
+                symbols: &["RelationalBranchIdentity", "BranchId"],
+            }],
+        },
+        Contract {
             fixture: "descriptor_cannot_begin_transaction.rs",
             errors: &[Diagnostic::TypeMismatch {
                 pairs: &[Pair {

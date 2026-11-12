@@ -8,7 +8,7 @@ impl WorthQueryRuntime {
         receipts: Vec<WorthQueryMutationReceipt>,
         command_summaries: Vec<BatchCommandSummary>,
     ) -> Result<Vec<WorthQueryWriteReceipt>, IdentityDerivationDenial> {
-        Ok(receipts
+        receipts
             .into_iter()
             .zip(command_summaries)
             .map(|(receipt, summary)| {
@@ -54,6 +54,6 @@ impl WorthQueryRuntime {
                     WorthQueryAuthorityLane::AuthoritativeTruth,
                 )
             })
-            .collect::<Result<Vec<_>, _>>()?)
+            .collect::<Result<Vec<_>, _>>()
     }
 }

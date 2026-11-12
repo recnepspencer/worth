@@ -24,7 +24,7 @@ impl<S: ApplicationSchema, I: PrefixSourceIndex<S>> WorthQueryManagedIndexPredic
     }
     fn predicate_region_may_match(
         &self,
-        _: (),
+        _: &(),
         extrema: [&Probe; 2],
         row: WorthQueryManagedIndexSourceRow<'_, S, I>,
         control: &WorthQueryManagedIndexControl<'_>,

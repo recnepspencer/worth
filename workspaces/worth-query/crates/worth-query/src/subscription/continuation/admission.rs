@@ -89,7 +89,7 @@ pub fn admit_subscription_continuation_evidence_with_active_identity(
     }
 
     let source_for_denial = active_lane_digest.evidence_identity().clone();
-    Ok(SubscriptionContinuationEvidence::new(
+    SubscriptionContinuationEvidence::new(
         active_lane_digest,
         continuation_class,
         source_identity,
@@ -107,5 +107,5 @@ pub fn admit_subscription_continuation_evidence_with_active_identity(
             source_for_denial.clone(),
             ActiveSubscriptionCounters::default(),
         )
-    })?)
+    })
 }

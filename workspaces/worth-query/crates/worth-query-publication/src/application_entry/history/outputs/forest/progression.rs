@@ -201,8 +201,8 @@ impl<S: ApplicationSchema + 'static> WorthQueryHistoryWithOutputTrees<S> {
                     &program_publication_access(),
                     index,
                     |tree_authority| {
-                        if !entry.tree.has_original_attempt(&key)? {
-                            if selecting
+                        if !entry.tree.has_original_attempt(&key)?
+                            && (selecting
                                 || request
                                     .application
                                     .can_verify_selected_history_leaf(
@@ -210,10 +210,9 @@ impl<S: ApplicationSchema + 'static> WorthQueryHistoryWithOutputTrees<S> {
                                         &program_publication_access(),
                                         tree_authority,
                                     )
-                                    .map_err(Denial::GraphQualification)?
-                            {
-                                return Ok((true, None));
-                            }
+                                    .map_err(Denial::GraphQualification)?)
+                        {
+                            return Ok((true, None));
                         }
                         let step = if selecting {
                             Step::Selecting {

@@ -378,7 +378,7 @@ impl CapturedSymbolRequirements {
     }
     pub(super) fn get(&self, full: bool) -> Option<&CollectedSymbols> {
         if full {
-            self.full.then(|| self.owned.as_deref()).flatten()
+            self.full.then_some(self.owned.as_deref()).flatten()
         } else {
             Some(&self.head)
         }

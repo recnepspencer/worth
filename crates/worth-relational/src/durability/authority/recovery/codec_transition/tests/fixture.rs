@@ -341,3 +341,22 @@ pub(super) fn registry(version: u8) -> RelationalSchemaRegistry {
     }
     registry
 }
+
+pub(super) struct AuthoredCheckpointWorld<'host, 'scope> {
+    pub(super) world: World,
+    pub(super) checkpoint: RelationalNativeCheckpoint,
+    pub(super) execution: worth_execution::ExecutionRequest<'host, 'scope>,
+}
+pub(super) fn with_authored_checkpoint_world<R>(
+    observe: impl for<'host, 'scope> FnOnce(AuthoredCheckpointWorld<'host, 'scope>) -> R,
+) -> R {
+    let original = crate::test_execution_policy::serial_request();
+    let execution = worth_execution::ExecutionRequest::serial(&original);
+    let world = world(&execution, true);
+    let checkpoint = capture(&execution, &world.runtime);
+    observe(AuthoredCheckpointWorld {
+        world,
+        checkpoint,
+        execution,
+    })
+}

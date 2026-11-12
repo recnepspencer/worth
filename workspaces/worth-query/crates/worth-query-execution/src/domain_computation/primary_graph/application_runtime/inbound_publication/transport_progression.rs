@@ -96,6 +96,12 @@ where
             Ok(lease) => lease,
             Err(_) => return Outcome::Denied(evidence, Denial::ProductAdmission),
         };
+        // Ordinary selection carries the program observed at this exact occurrence.
+        let selected = match self.on_product(execution, lease) {
+            Ok(selected) => selected,
+            Err(_) => return Outcome::Denied(evidence, Denial::ProductAdmission),
+        };
+        let lease = selected.product();
         let candidate = match completion_candidate(
             Arc::clone(&evidence),
             self.runtime

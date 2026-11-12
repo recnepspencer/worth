@@ -26,7 +26,7 @@ impl CorrectionMaterialOwner {
             funding.push(
                 request
                     .reserve_retained_memory(retained)
-                    .map_err(|cause| Denial::Execution(cause.into()))?,
+                    .map_err(Denial::Execution)?,
             );
             let frame = QueryCorrectionMaterialFrame::readmit(bytes)?;
             catalog.fold(&frame)?;

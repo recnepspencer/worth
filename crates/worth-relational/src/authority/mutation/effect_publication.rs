@@ -49,13 +49,16 @@ pub(crate) fn record_publication_effect_for_mutation(
             entity_id,
             authoritative_patch,
             ..
-        } => record_entity_publication_fragment(
-            effect,
-            canonical_delta,
-            EntityPatchDetailKind::Deleted,
-            entity_id,
-            authoritative_patch,
-        ),
+        } => {
+            effect.publication.has_entity_deletions = true;
+            record_entity_publication_fragment(
+                effect,
+                canonical_delta,
+                EntityPatchDetailKind::Deleted,
+                entity_id,
+                authoritative_patch,
+            )
+        }
         RecordMutation::EntityMaterializationSuspended { entity_id, .. } => {
             record_entity_publication_fragment(
                 effect,

@@ -55,11 +55,11 @@ pub(super) fn row_set_control_expected_digest(
         .into_iter()
         .flatten()
         .collect::<Result<Vec<_>, _>>()?;
-    Ok(compose_certification_sequence_digest(
+    compose_certification_sequence_digest(
         "projection_consumption_oracle_row_set_control_expected_v1",
         "entry",
         entries,
-    )?)
+    )
 }
 
 pub(super) fn row_set_control_actual_digest(
@@ -79,11 +79,11 @@ pub(super) fn row_set_control_actual_digest(
             )
         }))
         .collect::<Result<Vec<_>, _>>()?;
-    Ok(compose_certification_sequence_digest(
+    compose_certification_sequence_digest(
         "projection_consumption_oracle_row_set_control_actual_v1",
         "entry",
         entries,
-    )?)
+    )
 }
 
 pub(super) fn grouped_worth_expected_digest(
@@ -112,11 +112,11 @@ pub(super) fn grouped_worth_expected_digest(
             ]
         })
         .collect::<Result<Vec<_>, _>>()?;
-    Ok(compose_certification_sequence_digest(
+    compose_certification_sequence_digest(
         "projection_consumption_oracle_grouped_worth_expected_v1",
         "entry",
         entries,
-    )?)
+    )
 }
 
 pub(super) fn grouped_worth_actual_digest(
@@ -150,11 +150,11 @@ pub(super) fn grouped_worth_actual_digest(
             )
         }))
         .collect::<Result<Vec<_>, _>>()?;
-    Ok(compose_certification_sequence_digest(
+    compose_certification_sequence_digest(
         "projection_consumption_oracle_grouped_worth_actual_v1",
         "entry",
         entries,
-    )?)
+    )
 }
 
 fn compose_oracle_entity_identity_entry(
@@ -162,14 +162,14 @@ fn compose_oracle_entity_identity_entry(
     entity_identity: &WorthQueryEntityIdentity,
 ) -> Result<String, IdentityDerivationDenial> {
     let evidence_identity = entity_identity.evidence_identity();
-    Ok(seal(
+    seal(
         certification_scope_encoder("projection_consumption_oracle_entity_identity_entry_v1")
             .field_shape(WorthQueryEvidenceTag::new("source_row"), source_row)
             .field_evidence_identity(
                 WorthQueryEvidenceTag::new("entity_identity"),
                 &evidence_identity,
             ),
-    )?)
+    )
 }
 
 fn compose_oracle_display_field_entry(
@@ -177,14 +177,14 @@ fn compose_oracle_display_field_entry(
     field_key: &str,
     value: &str,
 ) -> Result<String, IdentityDerivationDenial> {
-    Ok(compose_labeled_entry_digest(
+    compose_labeled_entry_digest(
         "projection_consumption_oracle_display_field_entry_v1",
         &[
             ("source_row", source_row),
             ("field_key", field_key),
             ("value", value),
         ],
-    )?)
+    )
 }
 
 fn compose_oracle_membership_entry(
@@ -192,7 +192,7 @@ fn compose_oracle_membership_entry(
     grouping_aspect: &AspectKey,
     grouping_value: &str,
 ) -> Result<String, IdentityDerivationDenial> {
-    Ok(compose_labeled_entry_digest(
+    compose_labeled_entry_digest(
         "projection_consumption_oracle_membership_entry_v1",
         &[
             ("source_row", source_row),
@@ -202,7 +202,7 @@ fn compose_oracle_membership_entry(
             ),
             ("grouping_value", grouping_value),
         ],
-    )?)
+    )
 }
 
 fn compose_oracle_relation_endpoint_entry(
@@ -210,7 +210,7 @@ fn compose_oracle_relation_endpoint_entry(
     grouping_aspect: Option<&AspectKey>,
     grouping_value: &str,
 ) -> Result<String, IdentityDerivationDenial> {
-    Ok(compose_labeled_entry_digest(
+    compose_labeled_entry_digest(
         "projection_consumption_oracle_relation_endpoint_entry_v1",
         &[
             ("source_row", source_row),
@@ -222,7 +222,7 @@ fn compose_oracle_relation_endpoint_entry(
             ),
             ("grouping_value", grouping_value),
         ],
-    )?)
+    )
 }
 
 fn terminal_grouping_aspect_digest_part(grouping_aspect: &AspectKey) -> &str {
@@ -233,11 +233,11 @@ fn compose_oracle_view_local_identity_entry(
     source_row: &str,
     view_local_identity: &str,
 ) -> Result<String, IdentityDerivationDenial> {
-    Ok(compose_labeled_entry_digest(
+    compose_labeled_entry_digest(
         "projection_consumption_oracle_view_local_identity_entry_v1",
         &[
             ("source_row", source_row),
             ("view_local_identity", view_local_identity),
         ],
-    )?)
+    )
 }

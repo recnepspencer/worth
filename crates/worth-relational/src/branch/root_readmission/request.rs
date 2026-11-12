@@ -58,7 +58,7 @@ fn bind_original(
     validate_schema_root(envelope, &descriptor)?;
     let (storage_root, content_accumulator) = axes::storage_root_for(&prepared.regions);
     require_descriptor_content(&descriptor, storage_root)?;
-    require_schema_authority(&schema, &envelope, &descriptor)?;
+    require_schema_authority(&schema, envelope, &descriptor)?;
     let schema_root = *descriptor.schema_root();
     let correctness_index = RelationalRootCorrectnessIndex::AuthoritativeFallback;
     let evidence = super::super::RelationalRootCommitEvidence::Original(Arc::clone(&original));

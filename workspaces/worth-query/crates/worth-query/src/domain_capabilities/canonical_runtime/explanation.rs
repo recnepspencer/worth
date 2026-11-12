@@ -59,7 +59,7 @@ pub fn materialize_canonical_explanation_artifact<T>(
 where
     T: WorthQueryDomainCapabilityTargetBinding,
 {
-    Ok(super::artifacts::materialize_domain_capability_canonical_runtime_artifact(contribution)?)
+    super::artifacts::materialize_domain_capability_canonical_runtime_artifact(contribution)
 }
 
 pub(crate) fn materialize_query_causal_inspection_artifact<T>(

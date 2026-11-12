@@ -4,7 +4,6 @@ use crate::{
     branch::AdmittedRelationalBranchBasis,
     history::data::{CanonicalCommitEnvelopeBody, CommitId},
     identity::data::{EntityId, KindId, RelationId},
-    runtime::RelationalPreparationRuntime,
     storage::overlay::{CurrentPartitionAccess, WorkingState},
     transactions::data::*,
 };
@@ -23,7 +22,7 @@ use std::collections::BTreeSet;
 
 pub(crate) struct Writer<'a, 'request, 'scope, 'kernel, 'authority> {
     pub(crate) execution: &'a ExecutionRequest<'request, 'scope>,
-    runtime: &'a RelationalPreparationRuntime,
+    config: &'a crate::config::data::StorageConfig,
     basis: &'a AdmittedRelationalBranchBasis,
     pub(crate) working: &'a mut WorkingState,
     identities:
@@ -41,9 +40,11 @@ impl<'a, 'request, 'scope, 'kernel, 'authority> Writer<'a, 'request, 'scope, 'ke
         }
     }
     #[allow(clippy::too_many_arguments)]
-    pub(crate) fn new(
+    /// Mutate within the supplied current-ownership checkpoint. The enclosing
+    /// preparation stage alone settles work; this writer receives no dispatcher.
+    pub(crate) fn in_stage(
         execution: &'a ExecutionRequest<'request, 'scope>,
-        runtime: &'a RelationalPreparationRuntime,
+        config: &'a crate::config::data::StorageConfig,
         basis: &'a AdmittedRelationalBranchBasis,
         working: &'a mut WorkingState,
         identities: &'a mut crate::authority::commit::phases::applied_mutation::PendingMutationIdentities,
@@ -56,7 +57,7 @@ impl<'a, 'request, 'scope, 'kernel, 'authority> Writer<'a, 'request, 'scope, 'ke
             .map_err(|cause| request(crate::execution::denial::lease_denial(cause)))?;
         Ok(Self {
             execution,
-            runtime,
+            config,
             basis,
             working,
             identities,
@@ -295,9 +296,9 @@ impl<'a, 'request, 'scope, 'kernel, 'authority> Writer<'a, 'request, 'scope, 'ke
         )?;
         let schema = self.basis.inner.root.schema_authority();
         let config = crate::config::data::MutationConfig {
-            cascade_delete_policy: self.runtime.config.storage.cascade_delete_policy,
-            adjacency_policy: self.runtime.config.storage.adjacency_policy.clone(),
-            cross_context_policy: self.runtime.config.storage.cross_context_policy,
+            cascade_delete_policy: self.config.cascade_delete_policy,
+            adjacency_policy: self.config.adjacency_policy.clone(),
+            cross_context_policy: self.config.cross_context_policy,
         };
         let applied = apply_plan_to_working_state(
             self.execution,
@@ -314,7 +315,9 @@ impl<'a, 'request, 'scope, 'kernel, 'authority> Writer<'a, 'request, 'scope, 'ke
             BranchLocalDeleteAllowance::default(),
             &mut self.identities.records,
             crate::authority::commit::pipeline::request_lease(self.execution),
-            self.runtime.commit_work_budget.clone(),
+            // The borrowed context belongs to the enclosing ownership stage.
+            // Nested mutation reports charge that stage, never redispatch its account.
+            None,
         )
         .map_err(|cause| match cause {
             MutationApplyDenial::Commit(cause) => cause,

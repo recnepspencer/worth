@@ -4,8 +4,22 @@ use worth_execution::ExecutionByteBuffer;
 
 use super::{write_record, Denial, WorldDurableMediumDenial, WorldRecord, HEADER, MAGIC, MAXIMUM};
 
-pub(in crate::durability) fn admitted_length(open: usize) -> Result<usize, Denial> {
-    open.checked_add(56)
+pub(in crate::durability) fn admitted_length(
+    open: usize,
+    intent: crate::durability::WorldOpenComponentIntent,
+) -> Result<usize, Denial> {
+    use crate::durability::WorldOpenComponentIntent;
+    let owner_bytes = match intent {
+        WorldOpenComponentIntent::RelationalOnly => 48,
+        WorldOpenComponentIntent::SignalOnly => {
+            8 + worth_signal::facade::durability::SignalRecordedSourcePoint::MAXIMUM_ENCODED_BYTES
+        }
+        WorldOpenComponentIntent::RelationalAndSignal => {
+            48 + 8
+                + worth_signal::facade::durability::SignalRecordedSourcePoint::MAXIMUM_ENCODED_BYTES
+        }
+    };
+    open.checked_add(1 + owner_bytes + 8)
         .filter(|total| *total <= MAXIMUM)
         .ok_or(Denial::SizeLimit)
 }

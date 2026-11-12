@@ -29,7 +29,7 @@ fn synthetic_preview_workflow_query_identity(
     binding_scope: &WorkflowBindingScopeField<'_>,
     preview_session_identity: &BridgePreviewSessionIdentity,
 ) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
-    Ok(apply_binding_scope_field(
+    apply_binding_scope_field(
         WorthQueryEvidenceIdentity::compose(WorthQueryEvidenceScope::WorkflowContextBinding)
             .field_shape(
                 WorthQueryEvidenceTag::new("identity_family"),
@@ -42,7 +42,7 @@ fn synthetic_preview_workflow_query_identity(
         WorthQueryEvidenceTag::new("preview_session"),
         &preview_session_identity.bridge_trust_boundary(),
     )
-    .seal()?)
+    .seal()
 }
 
 fn synthetic_preview_workflow_source_identity(
@@ -51,7 +51,7 @@ fn synthetic_preview_workflow_source_identity(
     evaluation_class: &WorkflowPreviewEvaluationClass,
     preview_session_identity: &BridgePreviewSessionIdentity,
 ) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
-    Ok(apply_binding_scope_field(
+    apply_binding_scope_field(
         WorthQueryEvidenceIdentity::compose(WorthQueryEvidenceScope::WorkflowContextBinding)
             .field_shape(
                 WorthQueryEvidenceTag::new("identity_family"),
@@ -68,7 +68,7 @@ fn synthetic_preview_workflow_source_identity(
         WorthQueryEvidenceTag::new("preview_session"),
         &preview_session_identity.bridge_trust_boundary(),
     )
-    .seal()?)
+    .seal()
 }
 
 fn synthetic_preview_workflow_basis_identity(
@@ -76,7 +76,7 @@ fn synthetic_preview_workflow_basis_identity(
     binding_scope: &WorkflowBindingScopeField<'_>,
     preview_session_identity: &BridgePreviewSessionIdentity,
 ) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
-    Ok(apply_binding_scope_field(
+    apply_binding_scope_field(
         WorthQueryEvidenceIdentity::compose(WorthQueryEvidenceScope::WorkflowContextBinding)
             .field_shape(
                 WorthQueryEvidenceTag::new("identity_family"),
@@ -93,7 +93,7 @@ fn synthetic_preview_workflow_basis_identity(
         WorthQueryEvidenceTag::new("preview_session"),
         &preview_session_identity.bridge_trust_boundary(),
     )
-    .seal()?)
+    .seal()
 }
 
 pub(crate) fn synthetic_preview_workflow_binding(
@@ -101,12 +101,12 @@ pub(crate) fn synthetic_preview_workflow_binding(
     preview_session_identity: BridgePreviewSessionIdentity,
     evaluation_class: WorkflowPreviewEvaluationClass,
 ) -> Result<WorkflowContextBinding, IdentityDerivationDenial> {
-    Ok(synthetic_preview_workflow_binding_scoped(
+    synthetic_preview_workflow_binding_scoped(
         source_label,
         "unscoped",
         preview_session_identity,
         evaluation_class,
-    )?)
+    )
 }
 
 pub(crate) fn synthetic_preview_workflow_binding_scoped(
@@ -115,13 +115,13 @@ pub(crate) fn synthetic_preview_workflow_binding_scoped(
     preview_session_identity: BridgePreviewSessionIdentity,
     evaluation_class: WorkflowPreviewEvaluationClass,
 ) -> Result<WorkflowContextBinding, IdentityDerivationDenial> {
-    Ok(synthetic_preview_workflow_binding_request_scoped(
+    synthetic_preview_workflow_binding_request_scoped(
         source_label,
         binding_scope_digest,
         preview_session_identity,
         evaluation_class,
         PreviewWorkflowFoundationRequest::compare_basis_pair(),
-    )?)
+    )
 }
 
 pub(crate) fn synthetic_preview_workflow_binding_request_scoped(

@@ -83,6 +83,7 @@ pub(super) fn prepare(
             &after,
             &effect.adjacency,
             &effect.records,
+            effect.has_entity_deletions,
             derived_laws::LawStage::Business,
             work,
         )?;

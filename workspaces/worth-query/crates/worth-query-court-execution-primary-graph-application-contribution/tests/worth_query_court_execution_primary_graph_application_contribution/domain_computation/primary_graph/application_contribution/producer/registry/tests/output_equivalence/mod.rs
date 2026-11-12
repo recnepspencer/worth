@@ -11,7 +11,7 @@ use schema::fragment::{self, RecordSelection};
 #[path = "records.rs"]
 mod records;
 use records::*;
-trait Fixture: ApplicationSchema {
+pub trait Fixture: ApplicationSchema {
     type Entity: fragment::Entity;
     type Field: RecordSelection<
         Entity = Self::Entity,

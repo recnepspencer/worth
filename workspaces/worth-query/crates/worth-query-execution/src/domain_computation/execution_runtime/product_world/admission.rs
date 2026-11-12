@@ -208,9 +208,15 @@ pub(super) fn map_world_denial(
         }
         RuntimeWorldServiceDenial::Denied(
             RuntimeWorldBranchAdmissionDenial::DuplicateName
+            | RuntimeWorldBranchAdmissionDenial::HomeCreationRequestRequired
+            | RuntimeWorldBranchAdmissionDenial::MemoryCreationRequestRequired
+            | RuntimeWorldBranchAdmissionDenial::ProgramSourceRequired
+            | RuntimeWorldBranchAdmissionDenial::ForeignProgramSource
+            | RuntimeWorldBranchAdmissionDenial::ProgramSourceMismatch
             | RuntimeWorldBranchAdmissionDenial::PlansOmitted
             | RuntimeWorldBranchAdmissionDenial::UnsupportedRetainedSourcePlan
             | RuntimeWorldBranchAdmissionDenial::RetainedSourceDurabilityUnsupported
+            | RuntimeWorldBranchAdmissionDenial::EmptyNativeForkSource
             | RuntimeWorldBranchAdmissionDenial::ForkSourceChanged
             | RuntimeWorldBranchAdmissionDenial::HistoryEntryUnavailable,
         ) => WorthQueryProductBranchAdmissionDenial::Refused(AdmissionRefusal::ObservationRejected),

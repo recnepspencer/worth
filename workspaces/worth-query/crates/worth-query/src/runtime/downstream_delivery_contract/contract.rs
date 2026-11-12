@@ -51,7 +51,7 @@ impl WorthQueryRuntimeDownstreamDeliveryContract {
     pub fn from_support_profile(
         profile: &WorthQueryRuntimeSupportProfile,
     ) -> Result<Self, IdentityDerivationDenial> {
-        Ok(Self::from_backend_posture(profile.posture())?)
+        Self::from_backend_posture(profile.posture())
     }
 
     pub fn from_backend_posture(

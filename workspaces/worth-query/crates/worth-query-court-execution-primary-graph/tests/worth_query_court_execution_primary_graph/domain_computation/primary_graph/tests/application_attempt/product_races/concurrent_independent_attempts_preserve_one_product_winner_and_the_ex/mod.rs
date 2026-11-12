@@ -1,6 +1,7 @@
 use crate::domain_computation::primary_graph::tests::application_attempt::product_races::*;
 
 #[test]
+#[expect(clippy::disallowed_methods, reason = "Client-race court")]
 fn concurrent_independent_attempts_preserve_one_product_winner_and_the_exact_loser_posture() {
     {
         let world = installed_authorization_world(true, worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system());

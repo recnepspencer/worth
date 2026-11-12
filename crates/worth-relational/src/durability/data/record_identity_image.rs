@@ -29,22 +29,6 @@ pub(crate) struct RecordIdentityImageData {
 impl DurableRecordIdentityState {
     pub(crate) const CURRENT_SCHEMA_VERSION: u16 = 2;
 
-    #[cfg(test)]
-    pub(crate) fn current(
-        generation_high_water: Vec<DurableRecordGenerationHighWater>,
-        reusable_slots: Vec<DurableReusableRecordSlot>,
-        append_frontiers: Vec<DurableRecordSlotFrontier>,
-        pending_reservations: Vec<DurablePendingRecordReservation>,
-    ) -> Self {
-        Self::current_with_memory(
-            generation_high_water,
-            reusable_slots,
-            append_frontiers,
-            pending_reservations,
-            None,
-        )
-    }
-
     pub(crate) fn current_with_memory(
         generation_high_water: Vec<DurableRecordGenerationHighWater>,
         reusable_slots: Vec<DurableReusableRecordSlot>,

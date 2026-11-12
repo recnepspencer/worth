@@ -203,7 +203,9 @@ fn host_transition_plans_on_nonempty_a_then_serves_writes_closes_and_reopens_b()
         0,
         "transition bodies do not invoke the installed supplier"
     );
+    let (_, scope) = super::pending_support::scope();
     set(home.runtime(), &scope, 0xd1601, 11);
+    let (_, scope) = super::pending_support::scope();
     assert_eq!(balance(home.runtime(), &scope), 11);
     (*home)
         .close(&execution)
@@ -216,8 +218,11 @@ fn host_transition_plans_on_nonempty_a_then_serves_writes_closes_and_reopens_b()
             }))
         })
         .unwrap();
+    let (_, scope) = super::pending_support::scope();
     assert_eq!(balance(home.runtime(), &scope), 11);
+    let (_, scope) = super::pending_support::scope();
     set(home.runtime(), &scope, 0xd1602, 12);
+    let (_, scope) = super::pending_support::scope();
     assert_eq!(balance(home.runtime(), &scope), 12);
     assert_eq!(planned.load(Ordering::SeqCst), 1);
     assert_eq!(initialized.load(Ordering::SeqCst), 1);

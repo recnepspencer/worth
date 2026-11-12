@@ -44,7 +44,9 @@ pub(super) fn prepare(
     let input = RelationalTransactionValidationInput::from_transaction(transaction);
     let (identity, source_interpretation) =
         owner.issue_mutation_proposal_identity(transaction.transaction_id, &input)?;
-    source_interpretation.bind_context(execution, context)?;
+    crate::execution::transaction_stage(execution, owner.commit_work_budget.as_ref(), || {
+        source_interpretation.bind_context(execution, context)
+    })?;
     transaction.reserve_preparation_client_keys(
         &mut symbols,
         owner.config.identity.client_key_symbol_policy,
@@ -150,14 +152,6 @@ pub(super) fn validate(
         validation_input,
     } = candidate.into_inner();
     let runtime = round.with_candidate_symbols(mutation.candidate_symbols());
-    mutation.prepare_managed_sources(
-        *execution,
-        &runtime,
-        selected,
-        &identity,
-        (validation_input.merge_parent_bases().is_empty() && !prepared.plan.view().has_selection())
-            .then_some(prepared.plan.view().commands()),
-    )?;
     let control = crate::validation::engine::InvariantPreparationControl::for_transaction(
         &validation_input,
         execution.allocation_policy(),
@@ -172,6 +166,17 @@ pub(super) fn validate(
         mutation.aggregate_source(selected),
         execution,
         &control,
+        &mut || {
+            mutation.prepare_managed_sources(
+                *execution,
+                &runtime,
+                selected,
+                &identity,
+                (validation_input.merge_parent_bases().is_empty()
+                    && !prepared.plan.view().has_selection())
+                .then_some(prepared.plan.view().commands()),
+            )
+        },
     )?;
     mutation.prepare_aggregate(execution, round, selected, prepared.plan.view().commands())?;
     let aggregate_admission = mutation.complete_aggregate_draft(

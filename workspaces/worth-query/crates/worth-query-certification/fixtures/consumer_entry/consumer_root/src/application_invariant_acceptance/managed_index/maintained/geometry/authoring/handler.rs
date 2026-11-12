@@ -60,6 +60,16 @@ impl OperationHandler<Catalog, Binding> for Handler {
                         edge: reader.mutation_target(&entity)?,
                     })
                 }
+                Edit::Unshare { directory, edge } => {
+                    let entity = edge_identity(reader, edge)?;
+                    reader
+                        .relations_to(ContainsEdge::reference(), &entity)
+                        .map_err(HandlerExecutionDenial::new)?;
+                    Ok(Decision::Unshare {
+                        directory: directory_target(reader, directory)?,
+                        edge: reader.mutation_target(&entity)?,
+                    })
+                }
                 Edit::RewireEnd { edge, end, .. } => {
                     let (edge, old) = end_targets(reader, edge)?;
                     Ok(Decision::Rewire {

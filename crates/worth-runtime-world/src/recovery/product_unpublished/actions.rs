@@ -20,7 +20,12 @@ impl RetainedNextActions {
         progress: &CompositeAttemptProgress,
         cause: ProductUnpublishedCause,
     ) -> Self {
-        if resources.durable_open.is_some() {
+        if let Some(creation) = resources.creation.as_ref().and_then(|c| c.durable.as_ref()) {
+            let mut actions =
+                [ProductUnpublishedNextAction::Inspect; RETAINED_NEXT_ACTION_CAPACITY];
+            actions[1] = creation.next_action();
+            Self { actions, length: 2 }
+        } else if resources.durable_open.is_some() {
             let mut actions =
                 [ProductUnpublishedNextAction::Inspect; RETAINED_NEXT_ACTION_CAPACITY];
             actions[1] = ProductUnpublishedNextAction::ReopenRequired;

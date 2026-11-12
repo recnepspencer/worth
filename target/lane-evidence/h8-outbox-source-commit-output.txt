@@ -1,5 +1,0 @@
-[codex/m3-host-home 5791602d56] fix(query): rebind original outbox contracts from installed meaning
- 24 files changed, 603 insertions(+), 122 deletions(-)
- create mode 100644 workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/provider/idempotency/snapshot_resolution/original_receipt/outbox/tests.rs
- create mode 100644 workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/provider/idempotency/snapshot_resolution/original_receipt/outbox/tests/installation.rs
- create mode 100644 workspaces/worth-query/crates/worth-query-testkit-installation/src/installation/outbox_contract_installation.rs

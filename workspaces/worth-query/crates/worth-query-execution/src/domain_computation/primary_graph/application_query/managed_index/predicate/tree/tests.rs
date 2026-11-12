@@ -8,14 +8,14 @@ use std::{
     },
 };
 
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+#[derive(Clone, Debug, Eq, PartialEq)]
 struct Enclosure(i64, i64);
 impl Summary for Enclosure {
-    fn merge(own: Self, children: [Option<Self>; 2]) -> Self {
+    fn merge(own: &Self, children: [Option<&Self>; 2]) -> Self {
         children
             .into_iter()
             .flatten()
-            .fold(own, |a, b| Self(a.0.min(b.0), a.1.max(b.1)))
+            .fold(own.clone(), |a, b| Self(a.0.min(b.0), a.1.max(b.1)))
     }
 }
 struct Receiver(WatchSlot, Arc<AtomicUsize>);
@@ -66,16 +66,31 @@ fn verify(tree: &Tree, expected: &BTreeMap<WatchSlot, i64>) {
         let left = walk(tree, n.children[0], Some(id), ordered, seen);
         ordered.push((n.probe, id));
         let right = walk(tree, n.children[1], Some(id), ordered, seen);
-        let h = left.map_or(0, |x| x.0).max(right.map_or(0, |x| x.0)) + 1;
-        assert!(left.map_or(0, |x| x.0).abs_diff(right.map_or(0, |x| x.0)) <= 1);
+        let h = left
+            .as_ref()
+            .map_or(0, |x| x.0)
+            .max(right.as_ref().map_or(0, |x| x.0))
+            + 1;
+        assert!(
+            left.as_ref()
+                .map_or(0, |x| x.0)
+                .abs_diff(right.as_ref().map_or(0, |x| x.0))
+                <= 1
+        );
         // Independently enclose the actual reachable values, not stored summaries.
         let mut values = vec![n.probe];
-        for child in [left, right].into_iter().flatten() {
+        for child in [&left, &right].into_iter().flatten() {
             values.extend([child.1 .0, child.1 .1]);
         }
         let enclosure = Enclosure(*values.iter().min().unwrap(), *values.iter().max().unwrap());
-        let extrema = [left.map_or(id, |x| x.2[0]), right.map_or(id, |x| x.2[1])];
-        assert_eq!((n.height, n.aggregate, n.extrema), (h, enclosure, extrema));
+        let extrema = [
+            left.as_ref().map_or(id, |x| x.2[0]),
+            right.as_ref().map_or(id, |x| x.2[1]),
+        ];
+        assert_eq!(
+            (n.height, &n.aggregate, n.extrema),
+            (h, &enclosure, extrema)
+        );
         Some((h, enclosure, extrema))
     }
     let mut ordered = Vec::new();

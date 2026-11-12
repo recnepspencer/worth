@@ -30,16 +30,16 @@ impl<S> HistoryJournal<'_, S> {
                     WorthQueryHistoryNavigationDenial::DiscoveryRecipeForeignDocument { step },
                 ));
             }
-            if recipes.entries.contains_key(&key) {
+            if recipes.entries.contains(&key) {
                 recipes.get(execution, step, model, &key)?;
                 return Ok(());
             }
         }
         let memory = super::super::allocation::reserve_arc::<HistoryDiscoveryRecipes>(execution)
             .map_err(ReadDenial::Preparation)?;
-        let mut entries = BTreeMap::new();
+        let mut entries = HistoryDiscoveryRecipeIndex::default();
         if let Some(recipes) = &node.discovery_recipes {
-            for (key, slot) in &recipes.entries {
+            for (key, slot) in recipes.entries.iter() {
                 execution
                     .run_native_with_checkpoint(|context| {
                         crate::domain_computation::primary_graph::admitted_capture::checkpoint(
@@ -49,40 +49,26 @@ impl<S> HistoryJournal<'_, S> {
                     .map_err(|cause| ReadDenial::Preparation(cause.into()))?
                     .0
                     .map_err(|cause| ReadDenial::Preparation(cause.into()))?;
-                let (allocation, _) = HistoryInsertionAllocation::reserve::<(
-                    HistoryDiscoveryRecipeKey,
-                    Slot,
-                )>(execution, entries.len(), 0)
-                .map_err(ReadDenial::Preparation)?;
-                entries.insert(
-                    key.clone(),
-                    Slot {
-                        entry: Arc::clone(&slot.entry),
-                        _allocation: allocation,
-                    },
-                );
+                entries
+                    .insert(execution, key.clone(), Arc::clone(&slot.entry))
+                    .map_err(ReadDenial::Preparation)?;
             }
         }
         let entry_memory = super::super::allocation::reserve_arc::<Entry>(execution)
             .map_err(ReadDenial::Preparation)?;
-        let (allocation, _) = HistoryInsertionAllocation::reserve::<(
-            HistoryDiscoveryRecipeKey,
-            Slot,
-        )>(execution, entries.len(), 0)
-        .map_err(ReadDenial::Preparation)?;
-        entries.insert(
-            key.clone(),
-            Slot {
-                entry: Arc::new(Entry {
+        entries
+            .insert(
+                execution,
+                key.clone(),
+                Arc::new(Entry {
                     step,
                     model: model.clone(),
                     key,
                     request,
                     _memory: entry_memory,
                 }),
-                _allocation: allocation,
-            },
-        );
+            )
+            .map_err(ReadDenial::Preparation)?;
         node.discovery_recipes = Some(Arc::new(HistoryDiscoveryRecipes {
             step,
             model: model.clone(),

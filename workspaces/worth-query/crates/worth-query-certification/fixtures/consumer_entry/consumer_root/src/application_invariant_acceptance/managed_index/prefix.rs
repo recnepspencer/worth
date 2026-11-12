@@ -13,9 +13,11 @@ use std::sync::atomic::Ordering;
 #[cfg(test)]
 use worth_query_consumer_values::PrefixIndexDenial;
 use worth_query_host::facade::primary_graph::*;
+#[path = "prefix/definition.rs"]
 mod definition;
 pub use definition::PrefixIndex;
 #[cfg(test)]
+#[path = "prefix/text_read.rs"]
 pub(super) mod text_read;
 
 impl PrefixSourceIndex<Catalog> for PrefixIndex {

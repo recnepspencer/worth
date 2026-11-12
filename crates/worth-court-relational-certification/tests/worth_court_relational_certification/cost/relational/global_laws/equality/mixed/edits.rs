@@ -128,7 +128,7 @@ impl Proposal {
         };
         let edge = self.model.edges[index].clone().unwrap();
         let t = live[rng.next() % live.len()];
-        let s = if rng.next() % 2 == 0 {
+        let s = if rng.next().is_multiple_of(2) {
             live[rng.next() % live.len()]
         } else {
             edge.s
@@ -163,7 +163,7 @@ impl Proposal {
         rng: &mut Rng,
         tally: &mut Tally,
     ) {
-        let kind = if rng.next() % 3 == 0 { 10 } else { 9 };
+        let kind = if rng.next().is_multiple_of(3) { 10 } else { 9 };
         let (s, t) = (live[rng.next() % live.len()], live[rng.next() % live.len()]);
         if s == t || self.model.has_pair(kind, s, t) {
             return;
@@ -191,7 +191,7 @@ impl Proposal {
             return;
         }
         self.touched_nodes.insert(index);
-        let replace = rng.next() % 2 == 0;
+        let replace = rng.next().is_multiple_of(2);
         self.model.cascade(index);
         if replace {
             let kind = 1 + (rng.next() % 3) as u32;

@@ -4,7 +4,7 @@ use crate::application_invariant_acceptance::managed_index::structure_fault::Fau
 
 pub(super) fn describe(
     calls: &Calls,
-    node: Node,
+    node: &Node,
     control: &WorthQueryManagedIndexControl<'_>,
 ) -> Result<WorthQueryManagedIndexNodeRegion, Stop> {
     control.checkpoint(1)?;
@@ -66,14 +66,14 @@ pub(super) fn cyclic_sources<S: ApplicationSchema, I: PrefixSourceIndex<S>>(
             cycle = Some(id);
         }
         if let Some(previous) = previous {
-            let mut node = nodes.get(previous)?;
+            let mut node = *nodes.get(previous)?;
             node.left = Some(id);
             nodes.replace(previous, node)?;
         }
         previous = Some(id);
     }
     if let (Some(last), Some(first)) = (previous, cycle) {
-        let mut node = nodes.get(last)?;
+        let mut node = *nodes.get(last)?;
         node.left = Some(first);
         nodes.replace(last, node)?;
     }

@@ -15,7 +15,12 @@ pub(crate) use protection::{
 };
 
 mod close;
+mod durable_creation;
 mod durable_movement;
+pub(crate) use durable_creation::{
+    ActualWorldCreationRelease, WorldCreationCellRetirement, WorldCreationPermitDenial,
+    WorldProductCreationPermit,
+};
 mod protection;
 use durable_movement::ProductMovementPhase;
 pub(crate) use durable_movement::WorldProductMovementPermit;

@@ -22,5 +22,6 @@ mod source;
 mod world;
 use schema::*;
 
+mod readers;
 mod reference;
 use reference::*;

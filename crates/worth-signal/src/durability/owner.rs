@@ -1,0 +1,222 @@
+//! The non-cloneable runtime root retains the sole canonical owner partition.
+use super::readmission::SignalOwnerSourceReadmission;
+use super::{
+    SignalDefinitionTransitionArtifact, SignalDurableBranchDescriptor, SignalDurableHomeBinding,
+    SignalDurableMedium, SignalOwnerReadmissionDenial,
+};
+use crate::branch::owner_services::durable_publication::{
+    SignalDurableBranchMutationPort, SignalDurablePublicationState,
+};
+use crate::branch::owner_services::SignalDurableBranchSourcePort;
+use crate::data::conditional_execution::InstalledSignalConditionalContract;
+use crate::logic::transaction::SignalRuntime;
+use std::{collections::BTreeMap, sync::Arc};
+use worth_execution::ExecutionRequest;
+use worth_foundational::facade::{
+    DurableSignalBranchIdentity, DurableSignalConditionalDefinitionOccurrence,
+};
+
+/// A Home occurrence paired with the contract installed in its actual recovered graph.
+pub struct SignalReadmittedConditionalContract {
+    occurrence: DurableSignalConditionalDefinitionOccurrence,
+    installed: InstalledSignalConditionalContract,
+}
+impl SignalReadmittedConditionalContract {
+    pub(crate) fn new(
+        occurrence: DurableSignalConditionalDefinitionOccurrence,
+        installed: InstalledSignalConditionalContract,
+    ) -> Self {
+        Self {
+            occurrence,
+            installed,
+        }
+    }
+    pub const fn occurrence(&self) -> DurableSignalConditionalDefinitionOccurrence {
+        self.occurrence
+    }
+    pub fn installed(&self) -> &InstalledSignalConditionalContract {
+        &self.installed
+    }
+}
+
+/// No raw runtime, mutable graph, or memory-only movement service can escape
+/// this root. Its weak source service reads the actual sealed branch cells.
+pub struct SignalDurableOwner<D, I, E, Ctx, T = ()>
+where
+    D: Copy + Ord + std::fmt::Debug + 'static,
+    I: Copy + Ord + 'static,
+    T: Copy + Ord + 'static,
+{
+    root: crate::branch::owner_services::SignalSealedOwnerRoot<D, I, T>,
+    pub(super) home_retirement:
+        std::sync::Mutex<Option<super::home_stop::SignalHomeRetirementBacking<D, I, E, Ctx, T>>>,
+    _runtime: std::sync::Mutex<Box<SignalRuntime<D, I, E, Ctx, T>>>,
+    pub(super) publication: Arc<SignalDurablePublicationState<D, I, T>>,
+    port: SignalDurableBranchSourcePort<D, I, T>,
+    basis: crate::branch::owner_services::SignalBranchBasisPort<D, I, T>,
+    contracts: BTreeMap<DurableSignalBranchIdentity, Vec<SignalReadmittedConditionalContract>>,
+}
+impl<D, I, E, Ctx, T> SignalDurableOwner<D, I, E, Ctx, T>
+where
+    D: Copy + Ord + std::fmt::Debug + 'static,
+    I: Copy + Ord + 'static,
+    T: Copy + Ord + 'static,
+{
+    pub(crate) fn from_readmitted(
+        runtime: Box<SignalRuntime<D, I, E, Ctx, T>>,
+        root: crate::branch::owner_services::SignalSealedOwnerRoot<D, I, T>,
+        source: SignalOwnerSourceReadmission,
+        medium: Arc<dyn SignalDurableMedium>,
+        vocabulary: Arc<super::SignalDurableTierVocabulary<T>>,
+        contracts: BTreeMap<DurableSignalBranchIdentity, Vec<SignalReadmittedConditionalContract>>,
+        execution: &ExecutionRequest<'_, '_>,
+    ) -> Result<Self, SignalOwnerReadmissionDenial> {
+        let owner = root.downgrade_owner();
+        let basis = root.basis_port();
+        let publication = SignalDurablePublicationState::new(
+            owner.clone(),
+            medium,
+            Arc::clone(&vocabulary),
+            source.into_locations(execution)?,
+            execution,
+        )?;
+        let port = SignalDurableBranchSourcePort::new(
+            owner,
+            Arc::downgrade(&publication),
+            publication.binding(),
+            vocabulary,
+        );
+        Ok(Self {
+            root,
+            home_retirement: std::sync::Mutex::new(None),
+            _runtime: std::sync::Mutex::new(runtime),
+            publication,
+            port,
+            basis,
+            contracts,
+        })
+    }
+    /// Issue read-only conditional execution from this same sealed durable owner.
+    pub fn issue_conditional_execution_service(
+        &self,
+        basis: &crate::branch::AdmittedSignalBranchBasis,
+        claimant: &crate::data::aspect::SignalAspectLoweringOwner,
+        source_authority: &worth_proof::ConditionalSourceObservationAuthority,
+    ) -> Result<
+        crate::branch::SignalConditionalExecutionPort<D, I, T>,
+        crate::branch::SignalConditionalServiceIssuanceDenial,
+    > {
+        crate::branch::SignalConditionalExecutionPort::issue(
+            self.root.downgrade_owner(),
+            basis,
+            claimant,
+            source_authority,
+        )
+    }
+    pub fn prepare_home_stop(
+        &self,
+        request: &ExecutionRequest<'_, '_>,
+    ) -> Result<
+        super::SignalPreparedAuthoredHomeStop<'_, D, I, T>,
+        super::SignalAuthoredHomeStopDenial,
+    > {
+        let publication = self.publication.prepare_home_stop(request)?;
+        let gate = self
+            .root
+            .prepare_home_stop(request)
+            .map_err(super::SignalAuthoredHomeStopDenial::Owner)?;
+        Ok(super::SignalPreparedAuthoredHomeStop {
+            gate,
+            _publication: publication,
+        })
+    }
+    /// Close future retained acquisitions after World has consumed the committed gate.
+    pub fn commit_home_stop(
+        &self,
+        request: &ExecutionRequest<'_, '_>,
+    ) -> Result<(), crate::branch::SignalOwnerStopDenial> {
+        self.root.commit_home_stop(request)
+    }
+    /// Actual committed membership count; comparing observations grants no admission authority.
+    pub fn published_advance_count(&self) -> Result<usize, SignalOwnerReadmissionDenial> {
+        self.publication.published_advance_count()
+    }
+    pub fn binding(&self) -> &SignalDurableHomeBinding {
+        self.publication.binding()
+    }
+    pub fn basis_port(&self) -> crate::branch::owner_services::SignalBranchBasisPort<D, I, T> {
+        self.basis.clone()
+    }
+    #[doc(hidden)]
+    pub fn signal_operation_control_for_test(
+        &self,
+    ) -> crate::branch::SignalOwnerOperationControlForTest {
+        self.root.operation_control_for_test()
+    }
+    pub fn source_port(&self) -> SignalDurableBranchSourcePort<D, I, T> {
+        self.port.clone()
+    }
+    pub fn capture_authored_home_image(
+        &self,
+        execution: &ExecutionRequest<'_, '_>,
+    ) -> Result<
+        super::SignalAuthoredHomeImage,
+        crate::branch::owner_services::SignalDurableAdvanceDenial,
+    > {
+        self.publication.capture_authored_home_image(execution)
+    }
+    pub fn take_installation_contracts(
+        &mut self,
+    ) -> BTreeMap<DurableSignalBranchIdentity, Vec<SignalReadmittedConditionalContract>> {
+        std::mem::take(&mut self.contracts)
+    }
+    /// Read an exact original source record, including historical snapshot source.
+    /// The descriptive artifact grants no live or historical branch admission.
+    pub fn read_definition_source(
+        &self,
+        descriptor: &SignalDurableBranchDescriptor,
+        execution: &ExecutionRequest<'_, '_>,
+    ) -> Result<SignalDefinitionTransitionArtifact, SignalOwnerReadmissionDenial> {
+        if descriptor.owner() != self.binding().owner() {
+            return Err(SignalOwnerReadmissionDenial::ForeignOwner);
+        }
+        self.publication
+            .read_definition_source(descriptor, execution)
+    }
+    pub fn read_original_advance(
+        &self,
+        original: worth_foundational::facade::SignalBranchAdvanceIdentity,
+        execution: &ExecutionRequest<'_, '_>,
+    ) -> Result<super::SignalBranchAdvanceArtifact, SignalOwnerReadmissionDenial> {
+        self.publication.read_original_advance(original, execution)
+    }
+    pub fn mutation_port(&self) -> SignalDurableBranchMutationPort<D, I, E, Ctx, T> {
+        SignalDurableBranchMutationPort::from_owner(&self.publication)
+    }
+    pub fn readmit_source_point(
+        &self,
+        point: &super::SignalRecordedSourcePoint,
+        execution: &ExecutionRequest<'_, '_>,
+    ) -> Result<super::SignalReadmittedSourcePoint, super::SignalSourcePointReadmissionDenial> {
+        self.port.readmit_source_point(point, execution)
+    }
+
+    /// Bind the actual composing issuer before exposing any composite services.
+    /// Previously issued standalone writer ports observe this same attachment.
+    pub fn bind_composite_owner(
+        &self,
+        authority: worth_proof::InstalledCompositeSignalPublicationAuthority,
+        execution: &ExecutionRequest<'_, '_>,
+    ) -> Result<
+        super::SignalCompositeOwnerServicePorts<D, I, E, Ctx, T>,
+        crate::branch::owner_services::SignalDurableAdvanceDenial,
+    > {
+        self.publication
+            .attach_composite_owner(authority, execution)?;
+        Ok(super::SignalCompositeOwnerServicePorts {
+            basis: self.basis_port(),
+            source: self.source_port(),
+            mutation: self.mutation_port(),
+        })
+    }
+}

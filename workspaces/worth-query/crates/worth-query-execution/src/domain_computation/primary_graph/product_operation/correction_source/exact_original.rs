@@ -78,7 +78,7 @@ pub(super) fn performed<S: ApplicationSchema>(
         .map_err(D::HistorySource)?;
     let mut matching = originals
         .original_observations()
-        .filter(|original| original.relational_commit() == fact.child.commit_id);
+        .filter(|original| original.relational_commit() == Some(fact.child.commit_id));
     let original = matching.next().ok_or(D::SourceUnavailable)?;
     if matching.next().is_some() {
         return Err(D::SourcePublicationMismatch);

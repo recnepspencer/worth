@@ -1,43 +1,39 @@
-use std::sync::Arc;
-
 use super::super::WorthQueryProductSharedRoot;
 
 impl WorthQueryProductSharedRoot {
     /// Delivers a performed change only inside this root's installed advancement.
     ///
     /// ```compile_fail,E0308
-    /// # use std::sync::Arc;
     /// # use worth_query_execution::facade::{
     /// #     application_contribution::WorthQueryAdvancementPhase,
     /// #     integration::WorthQueryProductSharedRoot,
     /// #     product::WorthQueryPerformedRelationalProductChange,
     /// #     provider_session::ExecutionRequest,
     /// # };
-    /// # use worth_runtime_bridge::facade::BridgeInstalledConditionalLowering;
+    /// # use worth_runtime_bridge::facade::BridgeConditionalSignalBasisBinding;
     /// # fn contract(
     /// #     root: &WorthQueryProductSharedRoot,
     /// #     phase: &WorthQueryAdvancementPhase<'_>,
     /// #     request: ExecutionRequest<'_, '_>,
-    /// #     lowering: &Arc<BridgeInstalledConditionalLowering>,
+    /// #     lowering: &BridgeConditionalSignalBasisBinding,
     /// #     change: WorthQueryPerformedRelationalProductChange,
     /// # ) {
     /// let _ = root.deliver_performed_relational_change(request, lowering, 0, change);
     /// # }
     /// ```
     /// ```
-    /// # use std::sync::Arc;
     /// # use worth_query_execution::facade::{
     /// #     application_contribution::WorthQueryAdvancementPhase,
     /// #     integration::WorthQueryProductSharedRoot,
     /// #     product::WorthQueryPerformedRelationalProductChange,
     /// #     provider_session::ExecutionRequest,
     /// # };
-    /// # use worth_runtime_bridge::facade::BridgeInstalledConditionalLowering;
+    /// # use worth_runtime_bridge::facade::BridgeConditionalSignalBasisBinding;
     /// # fn contract(
     /// #     root: &WorthQueryProductSharedRoot,
     /// #     phase: &WorthQueryAdvancementPhase<'_>,
     /// #     request: ExecutionRequest<'_, '_>,
-    /// #     lowering: &Arc<BridgeInstalledConditionalLowering>,
+    /// #     lowering: &BridgeConditionalSignalBasisBinding,
     /// #     change: WorthQueryPerformedRelationalProductChange,
     /// # ) {
     /// let _ = root.deliver_performed_relational_change(phase, lowering, 0, change);
@@ -48,7 +44,7 @@ impl WorthQueryProductSharedRoot {
         &self,
         phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
 
-        lowering: &Arc<worth_runtime_bridge::facade::BridgeInstalledConditionalLowering>,
+        lowering: &worth_runtime_bridge::facade::BridgeConditionalSignalBasisBinding,
         dependency_ordinal: usize,
         change: super::WorthQueryPerformedRelationalProductChange,
     ) -> Result<
@@ -89,21 +85,20 @@ impl WorthQueryProductSharedRoot {
         let bridge = bridge
             .read()
             .unwrap_or_else(std::sync::PoisonError::into_inner);
-        let signal_basis =
-            match bridge.admit_conditional_signal_basis(lowering, change.signal_basis()) {
-                Ok(signal_basis) => signal_basis,
-                Err(denial) => {
-                    return Err(Denial::new(
-                        Kind::Bridge(denial.kind()),
-                        denial.detail(),
-                        change,
-                    ))
-                }
-            };
+        let signal_basis = lowering;
+        if signal_basis.signal_basis().admission_identity()
+            != change.signal_basis().admission_identity()
+        {
+            return Err(Denial::new(
+                Kind::ForeignProductOccurrence,
+                "delivery binding belongs to another selected Signal occurrence",
+                change,
+            ));
+        }
         let patch = change.patch();
         let outcome = match bridge.deliver_authoritative_change(
             execution,
-            &signal_basis,
+            signal_basis,
             dependency_ordinal,
             patch,
         ) {

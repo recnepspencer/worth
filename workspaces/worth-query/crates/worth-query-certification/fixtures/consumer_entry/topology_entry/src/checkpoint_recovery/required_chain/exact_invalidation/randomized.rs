@@ -17,7 +17,10 @@ const HISTORY_EXECUTION_POLICY: worth_foundational::ExecutionRequestPolicy =
         worth_foundational::ExecutionBudget::new(
             std::num::NonZeroUsize::MIN,
             None,
-            Some(25_000_000),
+            // Forty seeded steps retain branch history across captures. Native
+            // charges every root's kind reconstruction since 8edb6e5653; this
+            // finite grant funds that cold work as well as ordinary advances.
+            Some(128_000_000),
         ),
     );
 

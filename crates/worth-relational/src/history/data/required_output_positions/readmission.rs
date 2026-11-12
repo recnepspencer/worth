@@ -74,7 +74,7 @@ impl RequiredOutputPublicationPositions {
         })
     }
 }
-fn key(cursor: &mut Cursor<'_, '_, '_>, expected: &str) -> Result<(), Refusal> {
+fn key(cursor: &mut Cursor<'_, '_>, expected: &str) -> Result<(), Refusal> {
     let raw = cursor.string_bytes().map_err(projected_stop)?;
     if raw.len() != expected.len() || raw != expected.as_bytes() {
         return Err(Refusal::InvalidProjectedMeaning);

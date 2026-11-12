@@ -18,12 +18,15 @@ pub use home_transition_open::{
     WorldHomeTransitionUnopenedDenial,
 };
 mod open_attempt;
+mod program_source;
 pub(crate) use open_attempt::WorldOpenAttemptOriginal;
 pub use open_attempt::{
     WorldNativePreparationDenial, WorldNativePreparationRefusal, WorldOpenAttemptOutcome,
     WorldOpenAttemptRefusal, WorldOpenedPublicationAttempt, WorldPendingOpenAttempt,
-    WorldPreparedPublicationWithoutSignal, WorldQueryNativePreparation,
+    WorldPreparedPublicationWithSignal, WorldPreparedPublicationWithoutSignal,
+    WorldQueryNativePreparation, WorldQuerySignalPreparation,
 };
+pub use program_source::world_branch_program_source_commitment;
 mod component_plan;
 mod conditional_definition;
 mod conditional_recovery;
@@ -35,7 +38,8 @@ mod custody;
 pub(crate) use custody::AttemptProductMovementFailure;
 pub(crate) use custody::{
     ActiveAttemptCustody, ActiveAttemptRecord, ActiveAttemptResources,
-    ConditionalDefinitionAttemptCustody, RetainedCommitDisposition,
+    AuthoredConditionalDefinitionAttemptCustody, ConditionalDefinitionAttemptCustody,
+    ReactivatedCreationFacts, RetainedCommitDisposition,
 };
 mod intent;
 mod no_effect;
@@ -47,6 +51,7 @@ mod product_cas;
 pub use product_cas::{
     WorldDurablePublicationDenial, WorldDurablePublicationOutcome, WorldPendingDurablePublication,
 };
+pub(crate) mod durable_signal;
 mod product_comparison;
 mod progress;
 mod progression;
@@ -81,8 +86,7 @@ pub use owner_results::{
 pub use performed::{
     CompositeLateCancellationPosture, ConsumedCompositePublication, PerformedCompositePublication,
 };
-#[cfg(test)]
-pub use product_cas::CompositePublicationReady;
+pub(crate) use product_cas::CompositePublicationReady;
 pub use product_comparison::ResolvedExpectedProductHead;
 pub(crate) use progress::RelationalRecoveryRoute;
 pub use progress::{

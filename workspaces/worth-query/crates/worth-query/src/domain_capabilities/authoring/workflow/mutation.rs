@@ -21,7 +21,7 @@ impl WorthQueryWorkflowContributionAuthoring {
         detail: impl Into<String>,
         preview_session_identity: BridgePreviewSessionIdentity,
     ) -> Result<Self, IdentityDerivationDenial> {
-        Ok(Self::with_runtime_semantics(
+        Self::with_runtime_semantics(
             WorthQueryWorkflowContributionPosture::PromotionEligible,
             semantic_code,
             detail,
@@ -32,7 +32,7 @@ impl WorthQueryWorkflowContributionAuthoring {
                 ),
                 WorkflowFreshnessPolicy::AllowExplicitRebind,
             ),
-        )?)
+        )
     }
 
     pub fn confirmation_required_mutation_reconciliation(
@@ -43,7 +43,7 @@ impl WorthQueryWorkflowContributionAuthoring {
         entity_id: EntityId,
         desired_aspect_fields: AspectFieldPatch,
     ) -> Result<Self, IdentityDerivationDenial> {
-        Ok(Self::with_runtime_and_lowering_semantics(
+        Self::with_runtime_and_lowering_semantics(
             WorthQueryWorkflowContributionPosture::ConfirmationRequired,
             semantic_code,
             detail,
@@ -60,7 +60,7 @@ impl WorthQueryWorkflowContributionAuthoring {
                     desired_aspect_fields,
                 },
             ),
-        )?)
+        )
     }
 
     pub fn confirmation_required_mutation_reconciliation_from_preflight(
@@ -71,7 +71,7 @@ impl WorthQueryWorkflowContributionAuthoring {
         entity_id: EntityId,
         desired_aspect_fields: AspectFieldPatch,
     ) -> Result<Self, IdentityDerivationDenial> {
-        Ok(Self::with_runtime_and_lowering_semantics(
+        Self::with_runtime_and_lowering_semantics(
             WorthQueryWorkflowContributionPosture::ConfirmationRequired,
             semantic_code,
             detail,
@@ -86,7 +86,7 @@ impl WorthQueryWorkflowContributionAuthoring {
                     desired_aspect_fields,
                 },
             ),
-        )?)
+        )
     }
 }
 

@@ -29,6 +29,7 @@ class QualificationEnvironmentTests(unittest.TestCase):
                      'CARGO_BUILD_TARGET', 'CARGO_PROFILE_DEV_DEBUG',
                      'CARGO_PROFILE_DIAGNOSTIC_TEST_OPT_LEVEL',
                      'CARGO_TARGET_X86_64_PC_WINDOWS_MSVC_RUSTFLAGS',
+                     'CARGO_TARGET_X86_64_PC_WINDOWS_MSVC_LINKER',
                      'cargo_profile_test_debug'):
             for value in ('', 'uncommitted'):
                 with self.subTest(name=name, value=value):

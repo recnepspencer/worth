@@ -1,3 +1,4 @@
+use super::BridgeSemanticClaimOrigin;
 use std::collections::{BTreeMap, BTreeSet};
 use std::sync::RwLockWriteGuard;
 
@@ -127,7 +128,7 @@ fn prepare_allocations<'runtime>(
     registry: RwLockWriteGuard<'runtime, CorrespondenceAllocationRegistry>,
     graph: &SignalGraph,
 ) -> Result<PreparedCorrespondenceBatch<'runtime>, CorrespondenceAdmissionOutcome> {
-    let mut pending_owners = BTreeMap::<AllocationKey, BTreeSet<String>>::new();
+    let mut pending_owners = BTreeMap::<AllocationKey, BTreeSet<BridgeSemanticClaimOrigin>>::new();
     let mut items = Vec::with_capacity(mapped.len());
     for mapped in mapped {
         let mut planned =

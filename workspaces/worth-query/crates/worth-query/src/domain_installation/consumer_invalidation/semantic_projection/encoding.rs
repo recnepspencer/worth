@@ -10,23 +10,21 @@ pub(super) fn impact_identity(
     roles: &[crate::domain_installation::WorthQuerySemanticDependencyRole],
     affected_dependency_count: usize,
 ) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
-    Ok(
-        WorthQueryEvidenceIdentity::compose(WorthQueryEvidenceScope::ConsumerInvalidationDelta)
-            .field_shape(WorthQueryEvidenceTag::new("projection"), "impact")
-            .field_value(
-                WorthQueryEvidenceTag::new("impact-class"),
-                class.canonical_name(),
-            )
-            .field_value_sequence(
-                WorthQueryEvidenceTag::new("impact-roles"),
-                roles.iter().map(|role| role.canonical_name()),
-            )
-            .field_usize(
-                WorthQueryEvidenceTag::new("affected-dependencies"),
-                affected_dependency_count,
-            )
-            .seal()?,
-    )
+    WorthQueryEvidenceIdentity::compose(WorthQueryEvidenceScope::ConsumerInvalidationDelta)
+        .field_shape(WorthQueryEvidenceTag::new("projection"), "impact")
+        .field_value(
+            WorthQueryEvidenceTag::new("impact-class"),
+            class.canonical_name(),
+        )
+        .field_value_sequence(
+            WorthQueryEvidenceTag::new("impact-roles"),
+            roles.iter().map(|role| role.canonical_name()),
+        )
+        .field_usize(
+            WorthQueryEvidenceTag::new("affected-dependencies"),
+            affected_dependency_count,
+        )
+        .seal()
 }
 
 pub(super) fn invalidation_identity(
@@ -35,7 +33,7 @@ pub(super) fn invalidation_identity(
     keys: &[WorthQueryInvalidationSemanticAccessKey],
 ) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
     let conditional_path = delta.conditional_provenance();
-    Ok(WorthQueryEvidenceIdentity::compose(WorthQueryEvidenceScope::ConsumerInvalidationDelta)
+    WorthQueryEvidenceIdentity::compose(WorthQueryEvidenceScope::ConsumerInvalidationDelta)
         .field_shape(WorthQueryEvidenceTag::new("projection"), "semantic-delta")
         .field_evidence_identity(WorthQueryEvidenceTag::new("impact"), impact.identity())
         .field_value(
@@ -99,7 +97,7 @@ pub(super) fn invalidation_identity(
                 crate::domain_installation::operation_execution::workflow_conditional_trace::conditional_trace_semantic_material,
             ),
         )
-        .seal()?)
+        .seal()
 }
 
 fn aspect_shape_name(value: worth_foundational::facade::AspectValuePosture) -> String {

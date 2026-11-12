@@ -120,6 +120,10 @@ fn fork_with_observation_withheld(
         RuntimeWorldBranchCreationOutcome::ProductUnpublished(effects) => {
             (pins_at_boundary, effects)
         }
+        RuntimeWorldBranchCreationOutcome::NoEffect(_)
+        | RuntimeWorldBranchCreationOutcome::ReleasedOriginal(_) => {
+            panic!("memory creation cannot return a Home publication fate")
+        }
         RuntimeWorldBranchCreationOutcome::Performed(_) => {
             panic!("a fork without observation authority cannot publish its destination")
         }

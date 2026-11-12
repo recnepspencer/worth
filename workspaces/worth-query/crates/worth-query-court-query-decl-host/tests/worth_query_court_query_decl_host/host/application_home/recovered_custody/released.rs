@@ -36,10 +36,13 @@ pub(super) fn observe(
         serde_json::to_value(released.semantic_result()).unwrap(),
         original.native_meaning
     );
-    assert_eq!(released.original_effect().identity(), &original.identity);
     assert_eq!(
-        released.original_effect().attempt_identity(),
-        &original.attempt
+        durable!(released.original_effect().identity()),
+        durable!(&original.identity)
+    );
+    assert_eq!(
+        durable!(released.original_effect().attempt_identity()),
+        durable!(&original.attempt)
     );
     assert!(released.original_effect().original_association().is_some());
     assert!(released

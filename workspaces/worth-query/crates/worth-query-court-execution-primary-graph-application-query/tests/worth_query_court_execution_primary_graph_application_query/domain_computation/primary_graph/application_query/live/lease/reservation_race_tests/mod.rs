@@ -24,6 +24,7 @@ use worth_query_execution::facade::domain_computation::WorthQueryApplicationIdem
 use worth_query_execution::facade::domain_computation::WorthQueryPrincipalResolutionMode;
 
 #[test]
+#[expect(clippy::disallowed_methods, reason = "Client-race court")]
 fn lease_opened_after_reservation_receives_the_exact_committed_successor() {
     let world = installed_authorization_world(
         true,

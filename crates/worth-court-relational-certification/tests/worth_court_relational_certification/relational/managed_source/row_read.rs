@@ -16,12 +16,12 @@ pub(super) fn observe(
         for occurrence in &occurrences {
             let prepared = rows.prepare_row_from_read(&forward, occurrence)?;
             assert!(
-                prepared.with_field(0, |value| value.is_none())?,
+                prepared.with_field(0, |value| value.value().is_none())?,
                 "optional projected field absence stays absent"
             );
             assert!(
-                prepared
-                    .with_field_content(0, |value, frame| value.is_none() && frame.is_none())?,
+                prepared.with_field_content(0, |value, frame| value.value().is_none()
+                    && frame.is_none())?,
                 "content acquisition preserves genuine optional absence"
             );
             let inverse = rows
@@ -39,7 +39,7 @@ pub(super) fn observe(
                 ));
             }
             let prepared = rows.prepare_row_from_occurrence(&inverse, occurrence)?;
-            assert!(prepared.with_field(0, |value| value.is_none())?);
+            assert!(prepared.with_field(0, |value| value.value().is_none())?);
             court.row_read_checks.lock().unwrap()[0] += 1;
             if let Some(cancel) = court.cancel_row_field.lock().unwrap().take() {
                 prepared.with_field(0, |_| cancel.cancel())?;
@@ -100,7 +100,7 @@ pub(super) fn observe(
                 {
                     assert!(rows
                         .prepare_row(&occurrence)?
-                        .with_field(0, |value| value.is_none())?);
+                        .with_field(0, |value| value.value().is_none())?);
                 } else {
                     assert!(matches!(
                         rows.prepare_row_from_read(&forward, &occurrence),

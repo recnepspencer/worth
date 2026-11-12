@@ -1,7 +1,7 @@
 //! Framing cannot extend the caller's narrowing or the prepared candidate's life.
 use super::*;
 use crate::durability::canonical_commit_artifact::{
-    RelationalCanonicalCommitArtifact, RelationalCanonicalCommitArtifactEncodeDenial,
+    MemoryFramePreparationDenial, RelationalCanonicalCommitArtifact,
 };
 
 pub(super) fn require(
@@ -28,7 +28,7 @@ pub(super) fn prepare_frame(
     deadline: Option<std::time::Instant>,
     frame: impl FnOnce() -> Result<
         Option<RelationalCanonicalCommitArtifact>,
-        RelationalCanonicalCommitArtifactEncodeDenial,
+        MemoryFramePreparationDenial,
     >,
 ) -> Result<Option<RelationalCanonicalCommitArtifact>, CanonicalPublicationRecordError> {
     let original = frame().map_err(CanonicalPublicationRecordError::MemoryFrame)?;

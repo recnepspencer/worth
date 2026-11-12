@@ -1,6 +1,7 @@
 //! Typed reconstructive inspection; these values confer no recovery authority.
 use crate::history::data::RecordAllocationClass;
 use std::collections::{BTreeMap, BTreeSet};
+mod model_comparison;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]
 /// Physical record coordinates decoded by the native checkpoint owner.
@@ -32,6 +33,7 @@ pub struct NativeCheckpointModelBytes<'a> {
 #[derive(Debug)]
 /// Reconstructive native model-byte view, allocator coordinates and live census.
 pub struct RelationalCheckpointInspection<'a> {
+    pub(in crate::durability) branch_cells: Vec<crate::branch::RelationalBranchCellCheckpoint>,
     pub model: NativeCheckpointModelBytes<'a>,
     /// Provisional symbol IDs can burn without publishing their meanings.
     pub symbol_identity_frontier: u32,

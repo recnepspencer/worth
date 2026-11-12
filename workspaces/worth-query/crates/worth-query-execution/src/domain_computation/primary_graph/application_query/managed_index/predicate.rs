@@ -21,13 +21,13 @@ use worth_query_declaration::facade::{
 /// A qualified fixed-data release algebra, also used during requestless removal.
 /// Implementations must do bounded fixed-width operations only: no allocation,
 /// dynamic state, Probe/Source loans, SDK/Query reentry, I/O or panics. Configuration
-/// opts in to this contract; Copy alone does not qualify an implementation.
-pub trait WorthQueryManagedIndexPredicateSummary: Copy + Eq + Send + Sync + 'static {
-    fn merge(own: Self, children: [Option<Self>; 2]) -> Self;
+/// opts in to this contract; Clone alone does not qualify an implementation.
+pub trait WorthQueryManagedIndexPredicateSummary: Clone + Eq + Send + Sync + 'static {
+    fn merge(own: &Self, children: [Option<&Self>; 2]) -> Self;
 }
 
 impl WorthQueryManagedIndexPredicateSummary for () {
-    fn merge(_: Self, _: [Option<Self>; 2]) {}
+    fn merge(_: &Self, _: [Option<&Self>; 2]) {}
 }
 
 /// Optional inverse routing for the same actual installed forward provider.
@@ -57,7 +57,7 @@ where
 
     fn predicate_region_may_match(
         &self,
-        summary: Self::PredicateSummary,
+        summary: &Self::PredicateSummary,
         extrema: [&Probe<S, I>; 2],
         row: Row<'_, S, I>,
         control: &Control<'_>,

@@ -15,6 +15,7 @@ use worth_signal::facade::{SignalError, SignalTransaction};
 mod bootstrap;
 mod conditional_recovery;
 mod durable;
+mod durable_definition;
 mod execution;
 mod incarnation;
 mod memory_cutover;
@@ -304,7 +305,9 @@ impl RuntimeWorldPublicationPort<(), (), (), (), ()> {
             RuntimeWorldPublicationOutcome::NoEffect(no_effect) => Outcome::NoEffect(no_effect),
             RuntimeWorldPublicationOutcome::ProductUnpublished(effects) => {
                 Outcome::ProductUnpublished(
-                    crate::publication::RuntimeWorldUnpublishedConditionalDefinition::new(effects),
+                    crate::publication::RuntimeWorldUnpublishedConditionalDefinition::from_effects(
+                        effects,
+                    ),
                 )
             }
         }

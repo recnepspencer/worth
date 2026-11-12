@@ -1,22 +1,23 @@
-//! Pure Home2 framing, not selected membership or Native/World authority.
+//! Pure three-owner framing, not selected membership or owner authority.
 use super::*;
 
 fn literal() -> Vec<u8> {
     vec![
-        87, 65, 80, 72, 67, 75, 80, 49, 2, 0, 0, 0, 2, 0, 1, 0, 2, 0, 0, 0, 0, 0, 0, 0, 4, 0, 1, 0,
-        0, 0, 0, 0, 0, 0, 0xaa, 0xbb, 0xcc,
+        87, 65, 80, 72, 67, 75, 80, 49, 3, 0, 0, 0, 3, 0, 1, 0, 2, 0, 0, 0, 0, 0, 0, 0, 4, 0, 1, 0,
+        0, 0, 0, 0, 0, 0, 2, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0xaa, 0xbb, 0xcc, 0xdd,
     ]
 }
 #[test]
-fn literal_two_owner_directory_preserves_both_opaque_sections() {
+fn literal_three_owner_directory_preserves_all_opaque_sections() {
     let bytes = literal();
     let sections = decode(&bytes).unwrap();
     assert_eq!(sections.relational, &[0xaau8, 0xbb]);
     assert_eq!(sections.world, &[0xccu8]);
+    assert_eq!(sections.signal, &[0xddu8]);
     let mut written = Vec::new();
-    emit(&[0xaa, 0xbb], &[0xcc], &mut written);
+    emit(&[0xaa, 0xbb], &[0xcc], &[0xdd], &mut written);
     assert_eq!(written, bytes);
-    assert_eq!(HEADER_BYTES, 34);
+    assert_eq!(HEADER_BYTES, 44);
 }
 #[test]
 fn old_missing_empty_duplicate_and_unrecognized_owners_refuse() {
@@ -43,11 +44,11 @@ fn old_missing_empty_duplicate_and_unrecognized_owners_refuse() {
         Err(HomeManifestDenial::Malformed)
     ));
     let mut unsupported = literal();
-    unsupported[24] = 2;
+    unsupported[24] = 3;
     assert!(matches!(
         decode(&unsupported),
         Err(HomeManifestDenial::UnsupportedOwner(
-            DurableOwnerFamily::Signal
+            DurableOwnerFamily::Bridge
         ))
     ));
     unsupported[24..26].copy_from_slice(&u16::MAX.to_le_bytes());

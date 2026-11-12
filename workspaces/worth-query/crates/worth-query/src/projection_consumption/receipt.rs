@@ -139,14 +139,12 @@ impl ProjectionConsumptionReceipt {
     pub fn transition_rules(
         &self,
     ) -> Result<ProjectionConsumptionTransitionRules, IdentityDerivationDenial> {
-        Ok(ProjectionConsumptionTransitionRules::current_phase_five_surface()?)
+        ProjectionConsumptionTransitionRules::current_phase_five_surface()
     }
 
     pub fn projection_consumption_envelope(
         &self,
     ) -> Result<SelfDescribingProjectionConsumptionEnvelope, IdentityDerivationDenial> {
-        Ok(SelfDescribingProjectionConsumptionEnvelope::from_receipt(
-            self,
-        )?)
+        SelfDescribingProjectionConsumptionEnvelope::from_receipt(self)
     }
 }

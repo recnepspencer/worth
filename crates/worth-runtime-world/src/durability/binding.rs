@@ -9,6 +9,8 @@ use worth_foundational::facade::WorldDurableJournal;
 use worth_proof::AuthorityMarker;
 mod capture_reservation;
 mod committed;
+mod refused;
+pub(crate) use refused::{ActualWorldNoEffectPublication, WorldPublicationRefusal};
 mod home_program;
 pub(crate) use committed::WorldCommittedPublication;
 pub(crate) use home_program::HomeProgramBindingReservation;
@@ -28,7 +30,7 @@ impl ActualWorldPublication {
 #[derive(Debug)]
 pub(crate) enum WorldDurablePublicationStop {
     Pending,
-    Refused(WorldDurableMediumDenial),
+    Refused(WorldPublicationRefusal),
     Unresolved,
     EvidenceRequired,
     Busy,
@@ -246,7 +248,9 @@ impl WorldDurableMediumBinding {
                         }
                         DurablePublicationFate::ProvenNoEffect { detail } => {
                             flight.subject = None;
-                            Err(WorldDurablePublicationStop::Refused(detail))
+                            Err(WorldDurablePublicationStop::Refused(
+                                WorldPublicationRefusal::new(subject.clone(), detail),
+                            ))
                         }
                         DurablePublicationFate::Indeterminate { detail: _ } => {
                             flight.barrier = Some(PublicationBarrier::PhysicalIndeterminate);

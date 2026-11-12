@@ -11,7 +11,7 @@ pub(super) fn evidence_value_identities(
     role: &'static str,
     values: &[String],
 ) -> Result<Vec<WorthQueryEvidenceIdentity>, IdentityDerivationDenial> {
-    Ok(values
+    values
         .iter()
         .map(|value| {
             worth_query_evidence_identity(WorthQueryEvidenceScope::BatchWriteReceipt)
@@ -19,14 +19,14 @@ pub(super) fn evidence_value_identities(
                 .field_value(WorthQueryEvidenceTag::new("value"), value)
                 .seal()
         })
-        .collect::<Result<Vec<_>, _>>()?)
+        .collect::<Result<Vec<_>, _>>()
 }
 
 pub(super) fn terminal_touch_projection_identities(
     role: &'static str,
     touches: &[WorthQueryAspectTouch],
 ) -> Result<Vec<WorthQueryEvidenceIdentity>, IdentityDerivationDenial> {
-    Ok(touches
+    touches
         .iter()
         .map(|touch| {
             worth_query_evidence_identity(WorthQueryEvidenceScope::BatchWriteReceipt)
@@ -37,7 +37,7 @@ pub(super) fn terminal_touch_projection_identities(
                 )
                 .seal()
         })
-        .collect::<Result<Vec<_>, _>>()?)
+        .collect::<Result<Vec<_>, _>>()
 }
 
 pub(in crate::runtime) fn terminal_live_view_ids(

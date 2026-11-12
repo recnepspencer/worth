@@ -1,4 +1,6 @@
+mod associated_branch_transitions;
 mod catalog_readmission;
+mod fork_effect;
 use crate::durability::data::RelationalRecoveryStop;
 pub use catalog_readmission::{
     ReadmittedRelationalHomeProgramCatalogs, RefusedRelationalHomeProgramCatalogReadmission,
@@ -6,6 +8,10 @@ pub use catalog_readmission::{
 };
 pub(crate) use codec_transition::{
     AdmittedRecoveredCodecPublication, RecoveredCodecPublicationCustody,
+};
+pub use fork_effect::{
+    ReadmittedRelationalAssociatedFork, RefusedRelationalForkReadmission,
+    RelationalForkReadmissionCause,
 };
 pub(super) mod admission;
 pub(super) mod codec_transition;

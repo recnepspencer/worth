@@ -143,8 +143,14 @@ impl BridgeSealedRuntimeAssembly {
             .take_definition_publication()?;
         let signal_basis = runtime.signal_services()?.issuance_basis();
         let correspondence = runtime.bridge.runtime_world_correspondence_port();
-        let correspondence_basis =
-            correspondence.admit_runtime_baseline(runtime.owned_signal_graph_instance_id());
+        let correspondence_basis = correspondence
+            .admit_runtime_baseline(runtime.owned_signal_graph_instance_id())
+            .map_err(|cause| {
+                BridgeConditionalDenial::new(
+                    super::BridgeConditionalDenialKind::StaleLowering,
+                    cause.to_string(),
+                )
+            })?;
         let affinity = BridgeSealedOwnerAffinity {
             signal_graph_instance_id: runtime.owned_signal_graph_instance_id(),
         };

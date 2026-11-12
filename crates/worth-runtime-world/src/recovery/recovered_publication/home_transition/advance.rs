@@ -73,7 +73,7 @@ impl OriginalHomeTransitionContinuation {
                         }
                         Err(WorldDurablePublicationStop::Refused(cause)) => {
                             loan.unsubmit();
-                            return Err(Denial::Medium(cause));
+                            return Err(Denial::Medium(cause.into_cause()));
                         }
                     }
                 }
@@ -118,7 +118,11 @@ impl OriginalHomeTransitionContinuation {
                         return Ok(OriginalContinuationAdvance::ReopenRequired);
                     };
                     if permit
-                        .publish_readmitted(&work.common.before, &mut work.head, &work.record)
+                        .publish_readmitted(
+                            &work.common.before,
+                            &mut work.head,
+                            work.record.record(),
+                        )
                         .is_err()
                     {
                         return Ok(OriginalContinuationAdvance::ReopenRequired);

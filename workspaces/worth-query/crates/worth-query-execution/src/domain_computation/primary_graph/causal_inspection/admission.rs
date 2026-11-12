@@ -244,7 +244,7 @@ fn decision_trace(
         } else {
             "reference-only inspection does not require bridge envelope materialization"
         };
-    Ok(CausalDecisionTraceIndex::new(vec![
+    CausalDecisionTraceIndex::new(vec![
         CausalDecisionTraceRow::new(
             "explanation_family",
             request.explanation_family().as_str(),
@@ -266,7 +266,7 @@ fn decision_trace(
             "query_evidence_reference_set",
             "requested evidence families are bounded by Phase 2 reference proof",
         )?,
-    ])?)
+    ])
 }
 
 fn inspection_digest(
@@ -276,11 +276,11 @@ fn inspection_digest(
     trace: &CausalDecisionTraceIndex,
     receipt: &CausalInspectionAdmissionReceipt,
 ) -> Result<CausalInspectionOutcomeIdentity, WorthQueryEvidenceIdentityDerivationDenial> {
-    Ok(compose_causal_outcome_identity(
+    compose_causal_outcome_identity(
         kind,
         subject.subject_identity(),
         decision.decision_identity(),
         trace.trace_identity(),
         receipt.receipt_identity(),
-    )?)
+    )
 }

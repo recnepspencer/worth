@@ -95,6 +95,16 @@ pub enum CheckpointSelectionObservation {
     Selected(CheckpointSelectionIdentity),
 }
 
+/// Historical acknowledgement progress of one original capture.
+/// Selection validity continues to be decided by the attached owner.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum RelationalCheckpointAcknowledgementProgress {
+    AwaitingSelectionObservation,
+    PlacingData,
+    RetiringSources,
+    Complete,
+}
+
 #[derive(Debug)]
 pub enum RelationalCheckpointAcknowledgementDenial {
     CaptureNotBound,

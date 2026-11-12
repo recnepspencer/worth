@@ -46,32 +46,13 @@ pub(crate) struct ApplicationHomeBridgeComposition {
     pub(super) ordinary: worth_runtime_bridge::facade::RuntimeBridge,
     pub(super) retirement: std::sync::Mutex<Option<super::close::PreparedHomeBridgeRetirement>>,
     pub(super) conditional:
-        Option<Arc<std::sync::RwLock<worth_runtime_bridge::facade::BridgeSealedRuntimeAssembly>>>,
-}
-pub(super) fn attach_query_bridge(
-    section: &worth_store_relational::RelationalStoreSection,
-    builder: worth_runtime_bridge::facade::UnattachedRelationalBridgeBuilder,
-    graph_role: String,
-    conditional_budget: worth_signal::facade::runtime::SignalConditionalEvaluationBudget,
-) -> Result<ApplicationHomeBridgeComposition, crate::ApplicationHomeOpenRefusal> {
-    let (source, ordinary) = build_bridge(section, builder, graph_role)?;
-    let conditional =
-        worth_runtime_bridge::facade::BridgeConditionalRuntimeBuilder::with_owned_signal_graph(
-            ordinary.clone(),
-            conditional_budget,
-        )
-        .and_then(|builder| builder.seal())
-        .map_err(crate::ApplicationHomeOpenRefusal::ConditionalBridge)?;
-    Ok(ApplicationHomeBridgeComposition {
-        source,
-        ordinary,
-        conditional: Some(Arc::new(std::sync::RwLock::new(conditional))),
-        retirement: std::sync::Mutex::new(None),
-    })
+        Option<Arc<worth_runtime_bridge::facade::BridgeReadmittedAuthoredAssembly>>,
 }
 /// Actual admitted Home custody. No Clone, raw identity constructor or second
 /// extraction exists outside the Home's private composition.
 pub(crate) struct UnclaimedWorldSlot {
+    signal: crate::signal_medium::UnclaimedSignalSlot,
+    program_source: Arc<worth_proof::InstalledBranchProgramSourceOwner>,
     medium: Arc<super::ApplicationWorldMedium>,
 }
 impl UnclaimedWorldSlot {
@@ -94,7 +75,13 @@ impl UnclaimedWorldSlot {
             .expect("fixed original World medium layout");
         let funding = request.reserve_retained_memory(layout.pad_to_align().size() as u64)?;
         let owner = Self::owner_identity_for_home(descriptor.identity);
+        let program_source = worth_proof::InstalledBranchProgramSourceOwner::fresh();
+        let program_authority = program_source.authority();
         Ok(Self {
+            signal: crate::signal_medium::UnclaimedSignalSlot::from_admitted_home(
+                &serving, descriptor,
+            ),
+            program_source: Arc::new(program_source),
             medium: Arc::new(super::ApplicationWorldMedium {
                 serving: std::sync::Mutex::new(Some(serving)),
                 _funding: funding,
@@ -106,6 +93,7 @@ impl UnclaimedWorldSlot {
                             *descriptor.binding.selected().revision().bytes(),
                         )
                     })
+                    .with_branch_program_source_authority(program_authority)
                     .with_home_transition_authority(transition)
                     .with_home_transition_attempt_frontier(transition_attempt_frontier),
                 placement: crate::open::physical_admission::placement(),
@@ -113,6 +101,14 @@ impl UnclaimedWorldSlot {
                 checkpoint: Arc::downgrade(checkpoint),
             }),
         })
+    }
+    pub(in crate::world_section) fn program_source_owner(
+        &self,
+    ) -> Arc<worth_proof::InstalledBranchProgramSourceOwner> {
+        Arc::clone(&self.program_source)
+    }
+    pub(crate) fn signal_slot(&self) -> &crate::signal_medium::UnclaimedSignalSlot {
+        &self.signal
     }
     pub(crate) fn publications(&self) -> Arc<super::WorldPublications> {
         self.medium.publications.clone()

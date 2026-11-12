@@ -1,11 +1,11 @@
-//! Independently reseal actual hostile v5 DATA; do not invoke producer commitments.
+//! Independently reseal actual hostile v8 DATA; do not invoke producer commitments.
 use sha2::{Digest, Sha256};
 
 pub(crate) fn reseal(frame: &mut [u8]) {
     assert_eq!(&frame[..8], b"WRTHRCCA");
-    assert_eq!(u16::from_le_bytes(frame[8..10].try_into().unwrap()), 5);
+    assert_eq!(u16::from_le_bytes(frame[8..10].try_into().unwrap()), 8);
     let mut digest = Sha256::new();
-    digest.update(b"worth.relational.canonical.v5\0");
+    digest.update(b"worth.relational.canonical.v8\0");
     digest.update(&frame[10..26]);
     for name in ["position", "canonical", "original_inputs"] {
         digest.update(Sha256::digest(crate::messagepack_value_spans::field(

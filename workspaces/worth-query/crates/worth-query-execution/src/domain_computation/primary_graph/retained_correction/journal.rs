@@ -26,7 +26,7 @@ impl MaterialPublication<'_> {
             state.funding.retain(
                 request
                     .reserve_retained_memory(retained)
-                    .map_err(|cause| Denial::Execution(cause.into()))?,
+                    .map_err(Denial::Execution)?,
             );
             state.pending = Some(Arc::new(frame));
         }

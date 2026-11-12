@@ -53,16 +53,22 @@ where
                 WorthQueryPrimaryGraphInstallationDenialKind::RelationalSchemaRejected,
                 format!("Product source admission: {denial:?}"),
             ))?,
-        &mut graph.bridge.conditional_lifecycle(),
+        &mut *graph.bridge.conditional_lifecycle().map_err(|cause|WorthQueryPrimaryGraphInstallationDenial::new(
+            WorthQueryPrimaryGraphInstallationDenialKind::RuntimeBridgeRejected,cause.detail()))?,
         graph.product_world_resources.clone(),
         graph.recovered_relational_authority.take(),
     ).map_err(|denial| WorthQueryPrimaryGraphInstallationDenial::new(
         WorthQueryPrimaryGraphInstallationDenialKind::RuntimeBridgeRejected,
         denial.detail(),
     ))?;
-    let conditional_cleanup_owner = super::super::conditional_cleanup::OwnedConditionalCleanup::new(
-        graph.bridge.conditional_operations(),
-    );
+    let cleanup_root=match graph.bridge.conditional_operations() {
+        crate::domain_computation::primary_graph::managed_bridge::conditional_owner::ConditionalOwner::Memory(owner)=>owner,
+        crate::domain_computation::primary_graph::managed_bridge::conditional_owner::ConditionalOwner::Authored(_)
+        |crate::domain_computation::primary_graph::managed_bridge::conditional_owner::ConditionalOwner::Stopped=>return Err(WorthQueryPrimaryGraphInstallationDenial::new(
+            WorthQueryPrimaryGraphInstallationDenialKind::RuntimeBridgeRejected,"standalone installation requires its actual memory owner")),
+    };
+    let conditional_cleanup_owner =
+        super::super::conditional_cleanup::OwnedConditionalCleanup::new(cleanup_root);
     Ok(assemble_application_runtime_with_product(
         graph,
         installed_schema,

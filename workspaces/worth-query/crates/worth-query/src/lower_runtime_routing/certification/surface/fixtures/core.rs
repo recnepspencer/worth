@@ -227,7 +227,7 @@ fn representative_snapshot_identity(
 fn representative_entity_identity(
     label: impl AsRef<str>,
 ) -> Result<WorthQueryEntityIdentity, IdentityDerivationDenial> {
-    Ok(crate::memory_workspace::admit_authored_entity_label(label)?)
+    crate::memory_workspace::admit_authored_entity_label(label)
 }
 
 pub(crate) fn representative_live_view_source_row(

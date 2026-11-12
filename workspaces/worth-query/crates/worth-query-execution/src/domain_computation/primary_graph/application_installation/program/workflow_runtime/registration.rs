@@ -12,6 +12,9 @@ impl<Schema: ApplicationSchema, Program> WorthQueryProgramApplicationRuntime<Sch
         workflow: &WorthQueryInstalledApplicationWorkflowSpec<Schema, Spec>,
         authentication: &WorthQueryAuthenticationEventSigningOwner<Schema>,
     ) -> Result<(), WorthQueryWorkflowRuntimeBindingDenial> {
+        self.runtime().runtime.product_runtime
+            .admit_directory_capability(crate::domain_computation::primary_graph::WorthQueryOperationDurableCapability::WorkflowExecution)
+            .map_err(WorthQueryWorkflowRuntimeBindingDenial::DurableStateAdmission)?;
         let runtime = std::sync::Arc::get_mut(&mut self.backing)
             .ok_or(WorthQueryWorkflowRuntimeBindingDenial::RuntimeKeepaliveRetained)?
             .runtime_mut();

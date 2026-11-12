@@ -122,6 +122,7 @@ pub fn configuration() -> TemporalContributionConfiguration {
         clock_control,
         contacts,
         install_route: true,
+        definition_only: false,
     }
 }
 
@@ -136,6 +137,12 @@ pub fn limits() -> WorthQueryApplicationLimits {
 }
 
 pub fn read_intent(application: &Application) -> IntentQueryResult {
+    read_intent_on_branch(application, application.current_world())
+}
+pub fn read_intent_on_branch(
+    application: &Application,
+    branch: product::WorthQueryProductBranch,
+) -> IntentQueryResult {
     let request = request_scope();
     let schema = application.installed_schema();
     let binding = schema
@@ -145,10 +152,7 @@ pub fn read_intent(application: &Application) -> IntentQueryResult {
     let external = block_on(authentication.authenticate((), &request)).unwrap();
     let selected = application
         .with_host_advancement(|host_phase| {
-            application
-                .on_branch(application.current_world())
-                .select(&host_phase)
-                .unwrap()
+            application.on_branch(branch).select(&host_phase).unwrap()
         })
         .expect("installed host call opens");
     let principal = application

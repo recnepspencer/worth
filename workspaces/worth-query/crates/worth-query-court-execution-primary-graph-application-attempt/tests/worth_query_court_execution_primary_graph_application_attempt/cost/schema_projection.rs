@@ -74,7 +74,7 @@ fn query_adjacency_fact_observation_builds_no_schema_projection() {
                             &execution,
                             runtime,
                             (*attempt.lease_for_test()).snapshot_for_test(),
-                            &(*(*attempt.lease_for_test()).layout_for_test()),
+                            (*attempt.lease_for_test()).layout_for_test(),
                             &key,
                         )
                         .unwrap();

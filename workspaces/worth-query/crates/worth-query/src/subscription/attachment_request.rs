@@ -58,13 +58,11 @@ impl SubscriptionConsumerAttachmentRequest {
 fn delivery_cursor_seed_identity(
     seed: &str,
 ) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
-    Ok(
-        WorthQueryEvidenceIdentity::compose(WorthQueryEvidenceScope::SubscriptionActivationReceipt)
-            .field_shape(
-                WorthQueryEvidenceTag::new("identity_family"),
-                "subscription_delivery_cursor_seed_v1",
-            )
-            .field_value(WorthQueryEvidenceTag::new("seed"), seed)
-            .seal()?,
-    )
+    WorthQueryEvidenceIdentity::compose(WorthQueryEvidenceScope::SubscriptionActivationReceipt)
+        .field_shape(
+            WorthQueryEvidenceTag::new("identity_family"),
+            "subscription_delivery_cursor_seed_v1",
+        )
+        .field_value(WorthQueryEvidenceTag::new("seed"), seed)
+        .seal()
 }

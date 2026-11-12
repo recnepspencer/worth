@@ -26,6 +26,9 @@ pub(super) fn classify(terminal: NoEffectCompositePublication) -> Outcome {
         Cause::CurrentReadDependency(cause) => QueryCause::CurrentReadDependency(cause),
         Cause::StaleIncarnation => QueryCause::StaleIncarnation,
         Cause::CorrespondenceRebindRequired => QueryCause::CorrespondenceRebindRequired,
+        Cause::CorrespondenceAdmissionDenied(cause) => {
+            QueryCause::CorrespondenceAdmissionDenied(cause)
+        }
         Cause::ReferenceGenerationExhausted => QueryCause::ReferenceGenerationExhausted,
         Cause::CapacityExhausted => QueryCause::CapacityExhausted,
         Cause::OwnerUnavailable => QueryCause::OwnerUnavailable,

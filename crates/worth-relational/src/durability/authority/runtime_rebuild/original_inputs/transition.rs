@@ -30,9 +30,19 @@ pub(super) fn copy_transition(
         | RelationalBranchTransition::Delete { branch, .. } => Some(branch.0.len()),
     }
     .ok_or_else(|| corrupt("transition source backing overflow"))?;
+    let association_bytes = entry
+        .caller_association
+        .as_ref()
+        .map_or(Some(0), |association| {
+            crate::history::data::RelationalCallerAssociation::payload_allocation_bytes(
+                association.as_bytes().len(),
+            )
+        })
+        .ok_or_else(|| corrupt("transition association backing overflow"))?;
     let bytes = arc_size::<PositionedBranchTransition>()?
         .checked_add(arc_size::<worth_execution::ExecutionMemoryReservation>()?)
         .and_then(|n| n.checked_add(dynamic as u64))
+        .and_then(|n| n.checked_add(association_bytes))
         .ok_or_else(|| corrupt("transition source control overflow"))?;
     let memory = request
         .reserve_retained_memory(bytes)
@@ -41,6 +51,8 @@ pub(super) fn copy_transition(
     let positioned =
         PositionedBranchTransition::admit(entry.sequence, entry.follows, entry.transition.clone())
             .with_schema_carrier(Some(entry.schema))
+            .with_caller_association(entry.caller_association.clone())
+            .with_recorded_artifact_digest(entry.artifact_digest)
             .with_source_memory(memory);
     Ok(RetainedBranchTransition {
         positioned: Arc::new(positioned),

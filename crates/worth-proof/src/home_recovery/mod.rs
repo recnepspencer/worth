@@ -77,3 +77,6 @@ mod transition_settled;
 pub use custody_readmitted::CustodyReadmitted;
 pub use query_readmitted::QueryReadmitted;
 pub use transition_settled::TransitionSettled;
+
+mod signal_readmitted;
+pub use signal_readmitted::SignalReadmitted;

@@ -9,6 +9,7 @@ use crate::domain_computation::primary_graph::{
     application_query::request_recipe::CapturedSourceQueryRequest,
     WorthQueryHistoryOutputReadDenial as ReadDenial,
 };
+use crate::equality_type_id::EqualityTypeId;
 use std::{
     collections::BTreeMap,
     sync::{Arc, Mutex},
@@ -16,10 +17,10 @@ use std::{
 use worth_execution::ExecutionRequest;
 use worth_relational::facade::transactions::RelationalExecutionDenialCause as Cause;
 
-#[derive(Clone, Eq, PartialEq, Ord, PartialOrd)]
+#[derive(Clone, Eq, PartialEq)]
 pub(in crate::domain_computation::primary_graph) struct HistoryDiscoveryRecipeKey {
-    connection: std::any::TypeId,
-    tree: (std::any::TypeId, std::any::TypeId, std::any::TypeId),
+    connection: EqualityTypeId,
+    tree: (EqualityTypeId, EqualityTypeId, EqualityTypeId),
     root: WorthQueryOperationScopeEntityBinding,
     root_partition: [u8; 32],
     parent: WorthQueryOperationScopeEntityBinding,
@@ -31,7 +32,7 @@ impl HistoryDiscoveryRecipeKey {
         parent: (WorthQueryOperationScopeEntityBinding, [u8; 32]),
     ) -> Self {
         Self {
-            connection: std::any::TypeId::of::<C>(),
+            connection: EqualityTypeId::of::<C>(),
             tree: profile.discovery_recipe_tree_identity(),
             root: WorthQueryOperationScopeEntityBinding::from_entity(
                 profile.source_intent().source_subject(),
@@ -40,6 +41,91 @@ impl HistoryDiscoveryRecipeKey {
             parent: parent.0,
             parent_partition: parent.1,
         }
+    }
+}
+#[derive(Clone, Eq, PartialEq, Ord, PartialOrd)]
+struct DeclaredRecipeKey {
+    root: WorthQueryOperationScopeEntityBinding,
+    root_partition: [u8; 32],
+    parent: WorthQueryOperationScopeEntityBinding,
+    parent_partition: [u8; 32],
+}
+impl From<&HistoryDiscoveryRecipeKey> for DeclaredRecipeKey {
+    fn from(key: &HistoryDiscoveryRecipeKey) -> Self {
+        Self {
+            root: key.root,
+            root_partition: key.root_partition,
+            parent: key.parent,
+            parent_partition: key.parent_partition,
+        }
+    }
+}
+/// One declared-order lookup, then equality within that declared key's bucket.
+#[derive(Default)]
+pub(super) struct HistoryDiscoveryRecipeIndex {
+    declared: BTreeMap<DeclaredRecipeKey, Vec<(HistoryDiscoveryRecipeKey, Slot)>>,
+    len: usize,
+}
+impl HistoryDiscoveryRecipeIndex {
+    pub(super) fn get(&self, key: &HistoryDiscoveryRecipeKey) -> Option<&Slot> {
+        self.declared
+            .get(&DeclaredRecipeKey::from(key))?
+            .iter()
+            .find_map(|(stored, slot)| (stored == key).then_some(slot))
+    }
+    pub(super) fn contains(&self, key: &HistoryDiscoveryRecipeKey) -> bool {
+        self.get(key).is_some()
+    }
+    pub(super) fn len(&self) -> usize {
+        self.len
+    }
+    pub(super) fn iter(&self) -> impl Iterator<Item = (&HistoryDiscoveryRecipeKey, &Slot)> {
+        self.declared
+            .values()
+            .flat_map(|bucket| bucket.iter().map(|(key, slot)| (key, slot)))
+    }
+    pub(super) fn values_mut(&mut self) -> impl Iterator<Item = &mut Slot> {
+        self.declared
+            .values_mut()
+            .flat_map(|bucket| bucket.iter_mut().map(|(_, slot)| slot))
+    }
+    pub(super) fn insert(
+        &mut self,
+        execution: &ExecutionRequest<'_, '_>,
+        key: HistoryDiscoveryRecipeKey,
+        entry: Arc<Entry>,
+    ) -> Result<(), Cause> {
+        let declared = DeclaredRecipeKey::from(&key);
+        let bucket = self.declared.get(&declared);
+        let growth = bucket.is_none_or(|bucket| bucket.len() == bucket.capacity());
+        // Keep the existing per-slot tree grant and charge the bucket's added element too.
+        let additional = if growth {
+            std::mem::size_of::<(HistoryDiscoveryRecipeKey, Slot)>()
+        } else {
+            0
+        };
+        let (allocation, _) = HistoryInsertionAllocation::reserve::<(
+            HistoryDiscoveryRecipeKey,
+            Slot,
+        )>(execution, self.len(), additional)?;
+        let bucket = self.declared.entry(declared).or_default();
+        if let Some((_, slot)) = bucket.iter_mut().find(|(stored, _)| stored == &key) {
+            *slot = Slot {
+                entry,
+                _allocation: allocation,
+            };
+        } else {
+            bucket.reserve_exact(1);
+            bucket.push((
+                key,
+                Slot {
+                    entry,
+                    _allocation: allocation,
+                },
+            ));
+            self.len += 1;
+        }
+        Ok(())
     }
 }
 pub(super) struct Entry {
@@ -56,7 +142,7 @@ pub(super) struct Slot {
 pub(in crate::domain_computation::primary_graph) struct HistoryDiscoveryRecipes {
     pub(super) step: WorthQueryHistoryNodeId,
     pub(super) model: HistoryModelIdentity,
-    pub(super) entries: BTreeMap<HistoryDiscoveryRecipeKey, Slot>,
+    pub(super) entries: HistoryDiscoveryRecipeIndex,
     pub(super) _memory: Option<worth_execution::ExecutionMemoryReservation>,
 }
 pub(in crate::domain_computation::primary_graph) struct HistoryDiscoveryRecipeRecorder {
@@ -66,7 +152,7 @@ pub(in crate::domain_computation::primary_graph) struct HistoryDiscoveryRecipeRe
     pub(super) _memory: Option<worth_execution::ExecutionMemoryReservation>,
 }
 enum RecorderState {
-    Recording(BTreeMap<HistoryDiscoveryRecipeKey, Slot>),
+    Recording(HistoryDiscoveryRecipeIndex),
     Sealed(Arc<HistoryDiscoveryRecipes>),
 }
 impl HistoryDiscoveryRecipeRecorder {
@@ -82,7 +168,9 @@ impl HistoryDiscoveryRecipeRecorder {
         Ok(Arc::new(Self {
             step,
             model,
-            state: Mutex::new(RecorderState::Recording(BTreeMap::new())),
+            state: Mutex::new(RecorderState::Recording(
+                HistoryDiscoveryRecipeIndex::default(),
+            )),
             _memory: memory,
         }))
     }
@@ -130,21 +218,12 @@ impl HistoryDiscoveryRecipeRecorder {
                 step: self.step,
             }));
         };
-        if entries.contains_key(&key) {
+        if entries.contains(&key) {
             return Err(ReadDenial::Authority(Denial::Busy));
         }
-        let (allocation, _) = HistoryInsertionAllocation::reserve::<(
-            HistoryDiscoveryRecipeKey,
-            Slot,
-        )>(execution, entries.len(), 0)
-        .map_err(ReadDenial::Preparation)?;
-        entries.insert(
-            key,
-            Slot {
-                entry,
-                _allocation: allocation,
-            },
-        );
+        entries
+            .insert(execution, key, entry)
+            .map_err(ReadDenial::Preparation)?;
         Ok(request)
     }
     pub(super) fn seal(

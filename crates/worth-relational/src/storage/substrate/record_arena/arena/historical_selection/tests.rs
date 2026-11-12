@@ -27,8 +27,6 @@ fn source() -> (RecordArena<EntityRecordKind>, EntityId) {
 }
 #[test]
 fn historical_slot_selection_keeps_the_issued_identity_and_birth_with_fresh_provenance() {
-    let host = crate::test_execution_policy::serial_request();
-    let request = worth_execution::ExecutionRequest::serial(&host);
     let (original, id) = source();
     for posture in [
         None,
@@ -50,7 +48,7 @@ fn historical_slot_selection_keeps_the_issued_identity_and_birth_with_fresh_prov
             }
         }
         current
-            .select_retained_version(&request, &id, original.get(&id).unwrap(), VersionId(19))
+            .select_retained_version_using(None, &id, original.get(&id).unwrap(), VersionId(19))
             .unwrap();
         let row = current.get(&id).unwrap();
         assert!(row.is_live());
@@ -82,20 +80,28 @@ fn historical_slot_selection_keeps_the_issued_identity_and_birth_with_fresh_prov
 }
 #[test]
 fn historical_slot_selection_refuses_a_reused_generation_or_a_nonlive_source() {
-    let host = crate::test_execution_policy::serial_request();
-    let request = worth_execution::ExecutionRequest::serial(&host);
     let (original, id) = source();
     let mut current = original.clone();
     let physical = current.physical_index(id.slot_index()).unwrap();
     current.generations.set(physical, 4);
     assert!(current
-        .select_retained_version(&request, &id, original.get(&id).unwrap(), VersionId(19))
+        .select_retained_version_using(None, &id, original.get(&id).unwrap(), VersionId(19))
         .is_err());
     assert_eq!(current.generations[physical], 4);
+    assert_eq!(
+        current
+            .metadata_history_at(id.slot_index())
+            .unwrap()
+            .get(0)
+            .unwrap()
+            .effective_at,
+        VersionId(11),
+    );
+    let mut current = original.clone();
     let mut retired = original.clone();
     retired.retire(id.slot_index(), VersionId(12)).unwrap();
     assert!(current
-        .select_retained_version(&request, &id, retired.get(&id).unwrap(), VersionId(19))
+        .select_retained_version_using(None, &id, retired.get(&id).unwrap(), VersionId(19))
         .is_err());
     assert_eq!(
         current
@@ -110,8 +116,6 @@ fn historical_slot_selection_refuses_a_reused_generation_or_a_nonlive_source() {
 
 #[test]
 fn selecting_another_record_with_equal_generation_and_kind_cannot_copy_its_payload() {
-    let host = crate::test_execution_policy::serial_request();
-    let request = worth_execution::ExecutionRequest::serial(&host);
     let (mut original, id) = source();
     let foreign = EntityId::new(id.partition_id, 8, id.generation_value());
     original
@@ -128,12 +132,7 @@ fn selecting_another_record_with_equal_generation_and_kind_cannot_copy_its_paylo
         .unwrap();
     let mut current = original.clone();
     assert!(current
-        .select_retained_version(
-            &request,
-            &id,
-            original.get(&foreign).unwrap(),
-            VersionId(19)
-        )
+        .select_retained_version_using(None, &id, original.get(&foreign).unwrap(), VersionId(19))
         .is_err());
     assert_eq!(
         current.get(&id).unwrap().extra().structural_fingerprint,
@@ -147,14 +146,12 @@ fn selecting_another_record_with_equal_generation_and_kind_cannot_copy_its_paylo
 
 #[test]
 fn selecting_a_version_refuses_a_conflicting_record_birth() {
-    let host = crate::test_execution_policy::serial_request();
-    let request = worth_execution::ExecutionRequest::serial(&host);
     let (original, id) = source();
     let mut current = original.clone();
     let physical = current.physical_index(id.slot_index()).unwrap();
     current.created_at.set(physical, VersionId(12));
     assert!(current
-        .select_retained_version(&request, &id, original.get(&id).unwrap(), VersionId(19))
+        .select_retained_version_using(None, &id, original.get(&id).unwrap(), VersionId(19))
         .is_err());
     assert_eq!(
         current.metadata_history_at(id.slot_index()).unwrap().len(),

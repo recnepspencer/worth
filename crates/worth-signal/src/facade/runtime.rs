@@ -1,5 +1,5 @@
 pub use crate::branch::{
-    PreparedInitialEmptySignalStop, SignalInitialEmptyStopDenial, SignalInitialEmptyStopRefused,
+    PreparedInitialEmptySignalStop, SignalInitialEmptyStopRefused, SignalOwnerStopDenial,
     StoppedInitialEmptySignalAllocation,
 };
 pub use crate::data::async_node::{

@@ -92,6 +92,9 @@ pub(super) fn prepare<Schema: ApplicationSchema, Operation, Input, Scope>(
     request: &worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope,
 ) -> Result<WorthQueryPreparedBranchAdoption, WorthQueryBranchAdoptionPreparationDenial> {
     admission.validate_current_authority().map_err(|cause| WorthQueryBranchAdoptionPreparationDenial::Authorization(super::super::authorization::WorthQueryProgramAdoptionAuthorizationDenial::Authorization(cause)))?;
+    selected.application().runtime.product_runtime
+        .admit_directory_capability(crate::domain_computation::primary_graph::WorthQueryOperationDurableCapability::ProgramAdoption)
+        .map_err(WorthQueryBranchAdoptionPreparationDenial::DurableStateAdmission)?;
     let (source, requirements) = requirements(selected, target)?;
     if &requirements != expected_requirements {
         return Err(WorthQueryBranchAdoptionPreparationDenial::RequirementsChanged);

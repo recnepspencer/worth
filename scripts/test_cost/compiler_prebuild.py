@@ -94,13 +94,38 @@ def unit_inputs(output):
                       'sources': sorted(fixtures.glob('*.rs')), 'audience': 'compiler-reader-unit-inputs'}])}
 
 
-def prepare(repository, workspace, output, cargo_runner, scope=CompilerScope.ALL):
+def select_fixture_sources(rows, roots):
+    """Narrow sources without widening or changing their declared audiences."""
+    selected, matched = {}, set()
+    roots = [Path(root).resolve() for root in roots]
+    for name, row in rows.items():
+        packages = []
+        for package in row['packages']:
+            sources = []
+            for source in package['sources']:
+                owners = {root for root in roots if Path(source).resolve().is_relative_to(root)}
+                if owners:
+                    matched.update(owners)
+                    sources.append(source)
+            if sources:
+                packages.append(dict(package, sources=sources))
+        selected[name] = dict(row, packages=packages)
+    if missing := set(roots) - matched:
+        raise ValueError(f'compiler source roots have no fixtures: {sorted(map(str, missing))}')
+    return selected
+
+
+def prepare(repository, workspace, output, cargo_runner, scope=CompilerScope.ALL, source_roots=()):
     repository, output = Path(repository).resolve(), Path(output).resolve()
     output.mkdir(parents=True, exist_ok=True)
     if scope is CompilerScope.NONE:
         return {}
     manifest = repository / WORKSPACES[workspace]
     rows, orphaned = environments(repository, workspace) if scope in (CompilerScope.ALL, CompilerScope.FIXTURES) else ({}, [])
+    if source_roots:
+        if scope is not CompilerScope.FIXTURES:
+            raise ValueError('source roots require compiler fixture scope')
+        rows = select_fixture_sources(rows, source_roots)
     (output / 'orphan-snapshots.json').write_text(json.dumps(orphaned, indent=2) + '\n', encoding='utf-8')
     environment = {}
     if workspace == 'store' and scope in (CompilerScope.ALL, CompilerScope.UNITS):

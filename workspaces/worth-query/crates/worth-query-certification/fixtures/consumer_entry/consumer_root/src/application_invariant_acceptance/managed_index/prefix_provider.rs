@@ -35,7 +35,7 @@ impl<S: ApplicationSchema, I: PrefixSourceIndex<S>> WorthQueryManagedIndexProvid
 {
     fn decompose(
         &self,
-        node: Node,
+        node: &Node,
         control: &WorthQueryManagedIndexControl<'_>,
     ) -> Result<WorthQueryManagedIndexNodeRegion, Stop> {
         structure::describe(&self.0, node, control)
@@ -61,7 +61,7 @@ impl<S: ApplicationSchema, I: PrefixSourceIndex<S>> WorthQueryManagedIndexProvid
     }
     fn merge_summaries(
         &self,
-        parts: [Option<Self::Summary>; 3],
+        parts: [Option<&Self::Summary>; 3],
         sources: &WorthQueryManagedIndexSummarySources<'_, '_, S, I>,
         control: &WorthQueryManagedIndexControl<'_>,
     ) -> Result<Self::Summary, Stop> {
@@ -90,17 +90,17 @@ impl<S: ApplicationSchema, I: PrefixSourceIndex<S>> WorthQueryManagedIndexProvid
             .record(prefix_cost_stages::Stage::MergeEnd);
         result
     }
-    fn node_summary(
+    fn node_summary<'node>(
         &self,
-        node: Node,
+        node: &'node Node,
         control: &WorthQueryManagedIndexControl<'_>,
-    ) -> Result<Self::Summary, Stop> {
+    ) -> Result<&'node Self::Summary, Stop> {
         control.checkpoint(1)?;
-        Ok(node.bounds)
+        Ok(&node.bounds)
     }
     fn summary_may_match(
         &self,
-        bounds: Self::Summary,
+        bounds: &Self::Summary,
         sources: &WorthQueryManagedIndexSummarySources<'_, '_, S, I>,
         probe: &Probe,
         control: &WorthQueryManagedIndexControl<'_>,
@@ -205,6 +205,8 @@ impl<S: ApplicationSchema, I: PrefixSourceIndex<S>> WorthQueryManagedIndexProvid
     ) -> Result<Option<WorthQueryManagedIndexNodeId>, Stop> {
         self.0.updates.fetch_add(1, Ordering::SeqCst);
         #[cfg(test)]
+        I::observe_update(&self.0, before, after, changes)?;
+        #[cfg(test)]
         self.0
             .cost_stages
             .record(prefix_cost_stages::Stage::UpdateBegin);
@@ -214,7 +216,7 @@ impl<S: ApplicationSchema, I: PrefixSourceIndex<S>> WorthQueryManagedIndexProvid
             // first child is therefore a retained edge when describe duplicates
             // it. No pure edit can replace that child before the hostile check.
             if let Some(root) = root {
-                let node = nodes.get(root)?;
+                let node = *nodes.get(root)?;
                 nodes.replace(root, node)?;
             }
             return Ok(root);

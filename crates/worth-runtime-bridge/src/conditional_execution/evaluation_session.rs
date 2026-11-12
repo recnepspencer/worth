@@ -4,7 +4,6 @@ use worth_signal::facade::branch::SignalConditionalEvaluationAdmission;
 
 use super::{
     BridgeConditionalDenial, BridgeConditionalDenialKind, BridgeInstalledConditionalLowering,
-    BridgeOwnedSignalRuntime,
 };
 
 type BridgeAdmittedSnapshot =
@@ -22,6 +21,10 @@ pub struct BridgeConditionalEvaluationAdmissionRequest<'a> {
 }
 
 impl<'a> BridgeConditionalEvaluationAdmissionRequest<'a> {
+    pub fn signal_basis(&self) -> &super::BridgeConditionalSignalBasisBinding {
+        self.signal_basis
+    }
+
     pub fn source_free_at_signal_basis(
         signal_basis: &'a super::BridgeConditionalSignalBasisBinding,
     ) -> Self {
@@ -69,7 +72,7 @@ impl std::fmt::Debug for BridgeConditionalEvaluationSession {
     }
 }
 
-impl BridgeOwnedSignalRuntime {
+impl super::execution_view::BridgeConditionalExecutionView<'_> {
     pub fn admit_conditional_evaluation(
         &self,
         request: BridgeConditionalEvaluationAdmissionRequest<'_>,
@@ -147,12 +150,19 @@ impl BridgeOwnedSignalRuntime {
                 )
                 })?
                 .map(Arc::new);
-        let services = self.signal_services()?;
+        let source_owner = self.source_owner()?;
         let signal_port = request.signal_basis.signal_port.clone();
         let signal = signal_port
             .admit_evaluation(
                 request.lowering.signal_contract(),
-                services.evaluation_source(source_snapshot.as_deref()),
+                match source_snapshot.as_deref() {
+                    Some(snapshot) => source_owner
+                        .admit(super::source_projection::conditional_source_projection(
+                            snapshot.snapshot_identity(),
+                        ))
+                        .into(),
+                    None => worth_proof::ConditionalEvaluationSource::NoRelationalSource,
+                },
             )
             .map_err(super::signal_service_denial::signal_service_denial)?;
         Ok(BridgeConditionalEvaluationSession {
@@ -170,6 +180,10 @@ impl BridgeOwnedSignalRuntime {
 }
 
 impl BridgeConditionalEvaluationSession {
+    pub fn signal_basis(&self) -> &worth_signal::facade::branch::AdmittedSignalBranchBasis {
+        self.signal_port.issuance_basis()
+    }
+
     pub const fn readmission_counters(
         &self,
     ) -> Option<super::BridgeConditionalEvaluationReadmissionCounters> {

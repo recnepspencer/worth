@@ -19,6 +19,7 @@ pub(in crate::aggregate_identity) fn validate(
     after: &InvariantStateView<'_>,
     adjacency: &[crate::authority::mutation::AdjacencyDelta],
     records: &[crate::transactions::data::RecordRef],
+    has_entity_deletions: bool,
     stage: LawStage,
     work: &mut AggregateWork<'_, '_, '_, '_>,
 ) -> BuildResult<()> {
@@ -49,11 +50,17 @@ pub(in crate::aggregate_identity) fn validate(
         let definition = DerivedRelationHandle {
             entry: Arc::clone(entry),
         };
-        let violation = derived_source::with_views(before, after, work, |before, after| {
-            let affected =
-                affected::collect(registry, &definition, adjacency, records, before, after)?;
-            laws::evaluate::validate(registry, &definition, &affected, before, after)
-        })?;
+        let violation = derived_source::with_views(
+            before,
+            after,
+            has_entity_deletions,
+            work,
+            |before, after| {
+                let affected =
+                    affected::collect(registry, &definition, adjacency, records, before, after)?;
+                laws::evaluate::validate(registry, &definition, &affected, before, after)
+            },
+        )?;
         if let Some(violation) = violation {
             let identity = &definition.parts().identity;
             let names = identity

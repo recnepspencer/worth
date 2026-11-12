@@ -1,7 +1,0 @@
-# Lifecycle entry boundary addition
-
-The actual one-MiB consumer overflow is output-demand Interest Drop calling the demand registry release cleanup. This is a public lifecycle boundary reached after installed advancement returned. The existing execution helper must guard the owning release, not private arrays or registry implementation.
-
-Independent advisory review by pc_merge_independent_review: APPROVE after source and whole-binary census inventory, without builds. Inventory also requires the managed-index public close and evict, final derived-view registry disposal, Bridge conditional runtime close, and legacy public shared-projection explicit dispose. All use the existing helper and separate non-inlined whole-owner bodies where needed, before locks and cleanup. Parameters remain owned/borrowed as before; no Send bound, stack override, thread, authority or new capability. Original unlock, counter, retry, proof and Drop ordering remains. Implicit shared-projection abandonment remains abandonment.
-
-Implementation adds six owner entry barriers in five files, with a private whole-body function for each original body except borrowed Interest Drop. Root Bridge and Query execution/legacy owner checks precede the focused consumer rebuild and Bank parents. Reuse unchanged helper/wasm evidence. The shared example's worker-only checkpoint refusal belongs to protected World/Query owners and is reported rather than hidden by changing its policy.

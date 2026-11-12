@@ -49,7 +49,7 @@ impl WorthQueryPreviewExecutionEvidence {
         source_evidence_identity: &WorthQueryEvidenceIdentity,
         aspect_touches: Vec<WorthQueryAspectTouch>,
     ) -> Result<Self, crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial> {
-        Ok(Self::new(
+        Self::new(
             basis_admission,
             kind,
             handle_name,
@@ -58,7 +58,7 @@ impl WorthQueryPreviewExecutionEvidence {
             source_evidence_identity,
             aspect_touches,
             None,
-        )?)
+        )
     }
 
     pub(in crate::runtime::preview) fn for_intent_strategy(
@@ -67,7 +67,7 @@ impl WorthQueryPreviewExecutionEvidence {
         source_evidence_identity: &WorthQueryEvidenceIdentity,
         intent_strategy_name: &str,
     ) -> Result<Self, crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial> {
-        Ok(Self::new(
+        Self::new(
             basis_admission,
             WorthQueryPreviewExecutionKind::PendingWriteIntent,
             handle_name,
@@ -76,7 +76,7 @@ impl WorthQueryPreviewExecutionEvidence {
             source_evidence_identity,
             Vec::new(),
             Some(intent_strategy_name.to_string()),
-        )?)
+        )
     }
 
     fn new(

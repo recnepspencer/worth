@@ -89,7 +89,7 @@ fn update(
             regions.remove(&partition);
         }
     }
-    if regions.len() == 0 {
+    if regions.is_empty() {
         if let Some(request) = request {
             directory.remove_for_request(&kind, request)?;
         } else {

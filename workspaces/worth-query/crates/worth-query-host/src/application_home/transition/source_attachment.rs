@@ -29,28 +29,45 @@ where
     ) -> Result<WorthQueryApplicationHome<B, BP>, OldRefused<B, BP>> {
         let Self {
             after,
-            home,
+            mut home,
             bridge,
         } = self;
-        let (source, _, conditional) = match home.query_composition_parts() {
+        let (source, _, _) = match home.query_composition_parts() {
             Ok(parts) => parts,
             Err(cause) => {
-                return Err(OldRefused::ExistingComposition {
+                return Err(OldRefused::TransitionComposition {
                     query: after,
                     home,
                     cause,
                 })
             }
         };
-        let after = match after.attach_existing_home_registered_source(
-            phase,
-            source,
-            bridge,
-            conditional,
-        ) {
+        let (after, builder, bindings) =
+            match after.prepare_existing_home_signal_program(phase, source, bridge) {
+                Ok(parts) => parts,
+                Err(query) => {
+                    return Err(OldRefused::TransitionSignalProgramPreparation {
+                        home,
+                        query: Box::new(query),
+                    })
+                }
+            };
+        let conditional = match home.handoff_query_programme(builder, &phase.execution_request()) {
+            Ok(conditional) => conditional,
+            Err(handoff) => {
+                return Err(OldRefused::TransitionProgrammeHandoff {
+                    query: after,
+                    home,
+                    handoff,
+                    _bindings: bindings,
+                })
+            }
+        };
+        let after = match after.attach_existing_home_authored_signal(conditional) {
             Ok(after) => after,
             Err(query) => return Err(OldRefused::ExistingSourceAttachment { query, home }),
         };
+        drop(bindings);
         let (query, home) = opening::existing::attach_world(phase, home, after, checkpoint_limits)?;
         opening::service::finish_service(phase, query, home, checkpoint_limits, observation)
     }

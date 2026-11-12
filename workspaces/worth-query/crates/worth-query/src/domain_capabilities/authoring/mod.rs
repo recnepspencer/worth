@@ -31,7 +31,5 @@ where
     T: WorthQueryDomainCapabilityTargetBinding,
     (P, T): AllowedContributionBinding<P, T>,
 {
-    Ok(create_requested_domain_capability_contribution(
-        target, payload,
-    )?)
+    create_requested_domain_capability_contribution(target, payload)
 }

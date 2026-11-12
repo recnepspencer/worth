@@ -106,7 +106,7 @@ fn closed_world_releases_its_bridge_and_retains_the_same_native_home_until_exter
     let recovery = match close {
         ApplicationHomeCloseOutcome::CloseRefused {
             reason: ApplicationHomeCloseDenial::Relational(RelationalSectionCloseDenial::Native(
-                worth_relational::facade::runtime::RelationalRuntimeCloseDenial::ReadCustodyRetained,
+                worth_relational::facade::runtime::RelationalRuntimeCloseDenial::ReadCustodyRetained(_),
             )),
             posture: ApplicationHomeClosePosture::RecoveryRequired(recovery),
         } => recovery,

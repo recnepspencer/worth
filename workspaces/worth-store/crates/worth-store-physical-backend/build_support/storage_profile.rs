@@ -210,6 +210,7 @@ mod tests {
         ] {
             inputs.push(("CARGO_ENCODED_RUSTFLAGS", profile.into()));
             assert!(is_supported(COMPILER, &inputs, &lock));
+            assert!(is_supported("rustc 1.99.1 (58cf8f9c3 2026-10-13)", &inputs, &lock));
             inputs.pop();
         }
         for profile in [
@@ -221,6 +222,8 @@ mod tests {
             "--cfg\u{1f}--verbose",
             "--cfg\u{1f}racy_asserts",
             "--sysroot=other",
+            "--verbose=other",
+            "-v",
             "-Zrandomize-layout",
             "--cfg",
             "-C",

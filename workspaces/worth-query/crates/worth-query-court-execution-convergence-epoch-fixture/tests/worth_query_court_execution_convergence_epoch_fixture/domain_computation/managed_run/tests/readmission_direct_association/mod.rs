@@ -142,6 +142,7 @@ pub fn direct_recovery_cleanup(
     }
 }
 
+#[expect(clippy::disallowed_methods, reason = "Foreign-thread court")]
 pub fn pending_direct_cleanup(
     cleanup: worth_query_execution::facade::domain_computation::WorthQueryDirectReadmissionCleanupRequired,
 ) -> worth_query_execution::facade::domain_computation::WorthQueryDirectReadmissionCleanupPending {

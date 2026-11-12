@@ -18,6 +18,7 @@ pub mod evidence_identity {
 #[doc(hidden)]
 pub mod causal_inspection {
     pub use crate::domain_computation::primary_graph::causal_inspection::*;
+    pub use crate::domain_computation::primary_graph::managed_bridge::causal_reporting::WorthQueryBridgeCausalReportingDenial;
 }
 
 /// Fresh application inspection; only its supported result and request vocabulary.
@@ -144,6 +145,11 @@ pub mod runtime {
 
 /// Read-only owner observations for cert-band consumers.
 pub mod certification {
+    pub use crate::domain_computation::primary_graph::application_query::managed_index::certification::{
+        measure_certification_request, WorthQueryCertificationManagedIndexPages,
+        WorthQueryCertificationManagedIndexPagesDenial,
+    };
+    pub use crate::domain_computation::primary_graph::application_runtime::certification_managed_index::WorthQueryCertificationManagedIndexRuntimeExt;
     pub use crate::domain_computation::primary_graph::{
         WorthQueryCertificationApplicationWork, WorthQueryCertificationCostObservation,
         WorthQueryCertificationCostRuntimeExt, WorthQueryCertificationCostScope,

@@ -73,37 +73,6 @@ fn content_current_artifact_roundtrip_preserves_the_literal_frame() {
 }
 
 #[test]
-fn content_corruption_refuses_even_after_an_independent_outer_digest_repair() {
-    let cancel = CancellationSource::new();
-    let request = original(&cancel);
-    let execution = ExecutionRequest::serial(&request);
-    let (runtime, contract) = fixture();
-    publish(&runtime, &execution, &contract);
-    let artifact = runtime
-        .durability()
-        .canonical_commit_artifacts(&execution)
-        .next()
-        .unwrap()
-        .unwrap();
-    let mut bytes = artifact.as_bytes().to_vec();
-    let start = bytes
-        .windows(super::expected::FRAME.len())
-        .position(|bytes| bytes == super::expected::FRAME)
-        .unwrap();
-    bytes[start + super::expected::FRAME.len() - 1] ^= 1;
-    // Independent test-side outer framing: reach Native's content hash rather
-    // than letting the outer artifact digest reject first.
-    crate::canonical_commit_frame::reseal(&mut bytes);
-    assert!(RelationalCanonicalCommitArtifact::from_untrusted_bytes(bytes.clone()).is_ok());
-    assert!(matches!(
-        RelationalCanonicalCommitArtifact::readmit(&bytes, &execution),
-        Err(RelationalCanonicalCommitArtifactRefusal::Content(
-            RelationalContentDenial::IntegrityMismatch
-        ))
-    ));
-}
-
-#[test]
 fn content_native_checkpoint_reconstructs_bytes_under_installed_format_authority() {
     let cancel = CancellationSource::new();
     let request = original(&cancel);

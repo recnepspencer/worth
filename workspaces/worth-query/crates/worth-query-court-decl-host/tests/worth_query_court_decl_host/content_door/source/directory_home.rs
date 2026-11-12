@@ -123,16 +123,7 @@ fn a_nonempty_declared_source_reads_and_mutates_after_directory_home_reopen() {
             .unwrap()
             .as_nanos()
     ));
-    let lease = ExecutionResourceLease::serial(LeaseRequest {
-        policy: ExecutionRequestPolicy::new(
-            ExecutionPosture::Serial,
-            DeterminismContract::CanonicalBitwise,
-            ExecutionBudget::new(std::num::NonZeroUsize::MIN, Some(128 * 1024 * 1024), None),
-        ),
-        cancellation: CancellationToken::new(),
-        deadline: None,
-    })
-    .unwrap();
+    let lease = lease();
     let execution = ExecutionRequest::leased(&lease);
     let first = Arc::new(Calls::default());
     let home = open(&location, &execution, first.clone(), true);
@@ -192,4 +183,18 @@ fn a_nonempty_declared_source_reads_and_mutates_after_directory_home_reopen() {
     home.close(&execution)
         .unwrap_or_else(|refused| panic!("second Source reopen close: {refused:?}"));
     std::fs::remove_dir_all(location).unwrap();
+}
+
+mod compensation_refusal;
+fn lease() -> ExecutionResourceLease<'static> {
+    ExecutionResourceLease::serial(LeaseRequest {
+        policy: ExecutionRequestPolicy::new(
+            ExecutionPosture::Serial,
+            DeterminismContract::CanonicalBitwise,
+            ExecutionBudget::new(std::num::NonZeroUsize::MIN, Some(128 * 1024 * 1024), None),
+        ),
+        cancellation: CancellationToken::new(),
+        deadline: None,
+    })
+    .unwrap()
 }

@@ -179,7 +179,9 @@ fn attached_medium_refuses_scoped_cutover_before_callback_or_medium_access() {
     let execution = &ExecutionRequest::serial(&host);
     let runtime = worth_relational::facade::runtime::RelationalRuntimeApi::builder()
         .schema_registry(fixture().build_registry())
-        .build_durable(Box::new(super::super::unaccessed_medium::UnaccessedMedium))
+        .build_durable(Box::new(
+            super::super::super::unaccessed_medium::UnaccessedMedium,
+        ))
         .unwrap();
     let source = runtime
         .admit_branch_basis(&runtime.main_branch_identity())

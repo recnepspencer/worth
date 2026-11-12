@@ -1,9 +1,8 @@
 //! A candidate read reborrows the actual observation and original request each time.
 mod projection;
 use super::{
-    invocation::decoded_provider, source::projection::project_row,
-    source::service::ManagedSourceRoot, WorthQueryManagedIndexProbeValue,
-    WorthQueryManagedIndexWorkDenial,
+    invocation::decoded_provider, source::service::ManagedSourceRoot,
+    WorthQueryManagedIndexProbeValue, WorthQueryManagedIndexWorkDenial,
 };
 use crate::domain_computation::primary_graph::application_query::{
     disclosure::WorthQueryApplicationQueryGovernance, WorthQueryApplicationProjection,

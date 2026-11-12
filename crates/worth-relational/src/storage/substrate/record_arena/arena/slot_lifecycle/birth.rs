@@ -1,7 +1,7 @@
 //! A single birth/reuse algorithm installs only fully prepared metadata.
 use super::*;
 impl<K: RecordKind> RecordArena<K> {
-    pub(super) fn write_reserved_slot_using(
+    pub(in crate::storage::substrate::record_arena::arena) fn write_reserved_slot_using(
         &mut self,
         init: SlotInit<K>,
         slot: usize,

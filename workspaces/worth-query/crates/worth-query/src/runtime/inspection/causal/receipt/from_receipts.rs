@@ -79,7 +79,7 @@ impl QueryObservationReceipt {
             inspection.inspection_identity(),
             "mutation-target-unspecified",
         )?;
-        Ok(Self::from_parts(ObservationReceiptParts {
+        Self::from_parts(ObservationReceiptParts {
             family: QueryObservationReceiptFamily::WriteReceipt,
             observation_receipt_identity: causal_observation_receipt_evidence_identity(
                 QueryObservationReceiptFamily::WriteReceipt,
@@ -105,7 +105,7 @@ impl QueryObservationReceipt {
             evidence_identities: evidence_identities
                 .into_iter()
                 .collect::<Result<Vec<_>, _>>()?,
-        })?)
+        })
     }
 
     pub fn from_intent_receipt_inspection(
@@ -119,7 +119,7 @@ impl QueryObservationReceipt {
         } else {
             CausalObservationOutcome::Suppressed
         };
-        Ok(Self::from_parts(ObservationReceiptParts {
+        Self::from_parts(ObservationReceiptParts {
             family: QueryObservationReceiptFamily::IntentReceipt,
             observation_receipt_identity: causal_observation_receipt_evidence_identity(
                 QueryObservationReceiptFamily::IntentReceipt,
@@ -162,7 +162,7 @@ impl QueryObservationReceipt {
                     )?,
                 )?,
             ],
-        })?)
+        })
     }
 
     pub fn from_intent_denial_inspection(
@@ -172,7 +172,7 @@ impl QueryObservationReceipt {
         let snapshot_basis_identity = inspection
             .snapshot_evidence_identity()
             .unwrap_or_else(not_executed_snapshot_basis_identity);
-        Ok(Self::from_parts(ObservationReceiptParts {
+        Self::from_parts(ObservationReceiptParts {
             family: QueryObservationReceiptFamily::IntentDenial,
             observation_receipt_identity: causal_observation_receipt_evidence_identity(
                 QueryObservationReceiptFamily::IntentDenial,
@@ -206,14 +206,14 @@ impl QueryObservationReceipt {
                     inspection.inspection_identity(),
                 )?,
             )?],
-        })?)
+        })
     }
 
     pub fn from_branch_intent_receipt_inspection(
         inspection: &WorthQueryBranchIntentReceiptInspection,
         inspection_basis: crate::basis_lifecycle::ScopedInspectionBasis,
     ) -> Result<Self, IdentityDerivationDenial> {
-        Ok(Self::from_parts(ObservationReceiptParts {
+        Self::from_parts(ObservationReceiptParts {
             family: QueryObservationReceiptFamily::BranchIntentReceipt,
             observation_receipt_identity: causal_observation_receipt_evidence_identity(
                 QueryObservationReceiptFamily::BranchIntentReceipt,
@@ -256,14 +256,14 @@ impl QueryObservationReceipt {
                     )?,
                 )?,
             ],
-        })?)
+        })
     }
 
     pub fn from_preview_outcome_inspection(
         inspection: &WorthQueryPreviewOutcomeInspection,
         inspection_basis: crate::basis_lifecycle::ScopedInspectionBasis,
     ) -> Result<Self, IdentityDerivationDenial> {
-        Ok(Self::from_parts(ObservationReceiptParts {
+        Self::from_parts(ObservationReceiptParts {
             family: QueryObservationReceiptFamily::PreviewOutcome,
             observation_receipt_identity: causal_observation_receipt_evidence_identity(
                 QueryObservationReceiptFamily::PreviewOutcome,
@@ -306,6 +306,6 @@ impl QueryObservationReceipt {
                     )?,
                 )?,
             ],
-        })?)
+        })
     }
 }

@@ -46,12 +46,26 @@ impl RelationalStoreSection {
     #[cfg(feature = "certification-test-authority")]
     pub(crate) fn capture_complete_home_checkpoint(
         &self,
-        complete: CompleteRelationalNativeCheckpoint,
+        complete: Option<CompleteRelationalNativeCheckpoint>,
         home: HomeIdentity,
         world_through: [u64; 3],
         world_digest: [u8; 32],
         request: &ExecutionRequest<'_, '_>,
+        observe_capture: Option<
+            &dyn Fn(&worth_relational::facade::durability::RelationalNativeCheckpoint),
+        >,
     ) -> Result<CapturedHomeRelationalSection, Denial> {
+        let complete = match complete {
+            Some(complete) => complete,
+            None => {
+                self.complete_checkpoint_preparation()
+                    .capture_native(request)?
+                    .0
+            }
+        };
+        if let Some(observe) = observe_capture {
+            observe(complete.checkpoint());
+        }
         let mut custody =
             SectionSelectionCustody::prepare(&self.cold_source, complete.checkpoint(), request)?;
         custody.selection = Some(self.checkpoint_selection.clone());

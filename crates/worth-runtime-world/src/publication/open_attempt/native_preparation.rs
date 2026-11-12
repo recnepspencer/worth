@@ -12,6 +12,7 @@ use worth_relational::facade::mvcc::{
 pub enum WorldNativePreparationDenial {
     Native(worth_relational::facade::transactions::TransactionCommitError),
     MissingAssociation,
+    ComponentIntent,
     ForeignAssociation,
     Lowering(crate::publication::NoEffectCause),
     Durable(crate::durability::WorldDurableMediumDenial),
@@ -21,8 +22,8 @@ pub enum WorldNativePreparationDenial {
 /// and capacities. It never presents the whole journey as no effect.
 #[derive(Debug)]
 pub struct WorldNativePreparationRefusal {
-    open: WorldOpenedPublicationAttempt,
-    cause: WorldNativePreparationDenial,
+    pub(super) open: WorldOpenedPublicationAttempt,
+    pub(super) cause: WorldNativePreparationDenial,
 }
 impl WorldNativePreparationRefusal {
     /// Transfer the same original open and its exact preparation refusal.
@@ -124,7 +125,7 @@ impl WorldOpenedPublicationAttempt {
 
     /// Consumes the one validated handler result before Native's existing
     /// preparation call. Association cannot be added to a sealed candidate.
-    fn bind_native_proposal(
+    pub(super) fn bind_native_proposal(
         &self,
         proposal: ValidatedRelationalProposal,
     ) -> Result<
@@ -166,30 +167,49 @@ impl WorldOpenedPublicationAttempt {
     }
 
     fn complete_native_preparation(
-        mut self,
+        self,
         candidate: PreparedRelationalCommitCandidate,
         request: &worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<WorldPreparedPublicationWithoutSignal, WorldNativePreparationRefusal> {
-        let Some(association) = candidate.caller_association() else {
+        if self.original.resolved.intent().changes_signal() {
             return Err(WorldNativePreparationRefusal {
                 open: self,
-                cause: WorldNativePreparationDenial::MissingAssociation,
+                cause: WorldNativePreparationDenial::ComponentIntent,
             });
-        };
-        let original = &self.original.open_record().association;
-        let observed = crate::durability::decode_association(
-            association.as_bytes(),
-            original.attempt().owner().home(),
-        );
-        if observed.as_ref() != Ok(original) {
-            return Err(WorldNativePreparationRefusal {
-                open: self,
-                cause: WorldNativePreparationDenial::ForeignAssociation,
-            });
+        }
+        let attempt = self.complete_component_preparation(Some(candidate), request)?;
+        Ok(WorldPreparedPublicationWithoutSignal {
+            prepared: WithoutSignal::seal(attempt),
+        })
+    }
+
+    pub(super) fn complete_component_preparation(
+        mut self,
+        candidate: Option<PreparedRelationalCommitCandidate>,
+        request: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> Result<ReservedCompositePublicationAttempt, WorldNativePreparationRefusal> {
+        if let Some(candidate) = candidate.as_ref() {
+            let Some(association) = candidate.caller_association() else {
+                return Err(WorldNativePreparationRefusal {
+                    open: self,
+                    cause: WorldNativePreparationDenial::MissingAssociation,
+                });
+            };
+            let original = &self.original.open_record().association;
+            let observed = crate::durability::decode_association(
+                association.as_bytes(),
+                original.attempt().owner().home(),
+            );
+            if observed.as_ref() != Ok(original) {
+                return Err(WorldNativePreparationRefusal {
+                    open: self,
+                    cause: WorldNativePreparationDenial::ForeignAssociation,
+                });
+            }
         }
         let plan = match crate::publication::lower_component_plans(
             self.original.resolved.clone(),
-            Some(candidate),
+            candidate,
             None,
             None,
             None,
@@ -222,9 +242,7 @@ impl WorldOpenedPublicationAttempt {
             original.custody,
             original.deadline,
         );
-        Ok(WorldPreparedPublicationWithoutSignal {
-            prepared: WithoutSignal::seal(attempt),
-        })
+        Ok(attempt)
     }
 
     pub fn retain(self) -> crate::recovery::ProductUnpublishedOwnerEffects {

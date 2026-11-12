@@ -94,7 +94,7 @@ impl WorthQueryRuntime {
         &self,
         handoff: WorthQueryAuthoritativeMutationExecutionHandoff,
     ) -> Result<WorthQueryAuthoritativeMutationExecutionBinding, IdentityDerivationDenial> {
-        Ok(WorthQueryAuthoritativeMutationExecutionBinding::from_handoff(handoff)?)
+        WorthQueryAuthoritativeMutationExecutionBinding::from_handoff(handoff)
     }
 
     pub(crate) fn execute_authoritative_mutation_execution_binding(

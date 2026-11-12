@@ -44,6 +44,10 @@ pub(super) fn capture(
 
     drop(effects);
     drop(recovery);
+    // Publish the sole Complete reopen identity while the real original is
+    // quiescent. Dropping an uncovered after-effect Home is D18's refusal case.
+    home.checkpoint(execution)
+        .unwrap_or_else(|cause| panic!("quiescent original Complete capture: {cause:?}"));
     drop(home);
     OriginalCustody {
         identity: original_identity,

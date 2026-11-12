@@ -70,13 +70,13 @@ impl WorthQueryRuntimeStateSnapshot {
         authority_lane: WorthQueryAuthorityLane,
         explanation: impl Into<String>,
     ) -> Result<Self, crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial> {
-        Ok(Self::new(
+        Self::new(
             WorthQueryRuntimeStateKind::Ready,
             basis_identity,
             result_shape_identity,
             authority_lane,
             explanation,
-        )?)
+        )
     }
 
     pub fn deferred(
@@ -90,13 +90,13 @@ impl WorthQueryRuntimeStateSnapshot {
             kind != WorthQueryRuntimeStateKind::Ready,
             "ready state should use WorthQueryRuntimeStateSnapshot::ready"
         );
-        Ok(Self::new(
+        Self::new(
             kind,
             basis_identity,
             result_shape_identity,
             authority_lane,
             explanation,
-        )?)
+        )
     }
 
     pub fn with_async_result_state(
@@ -249,31 +249,29 @@ fn compute_state_digest(
     WorthQueryEvidenceIdentity,
     crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial,
 > {
-    Ok(
-        worth_query_evidence_identity(WorthQueryEvidenceScope::RuntimeStateSnapshot)
-            .field_shape(WorthQueryEvidenceTag::new("kind"), kind.as_str())
-            .field_evidence_identity(WorthQueryEvidenceTag::new("basis_digest"), basis_identity)
-            .field_evidence_identity(
-                WorthQueryEvidenceTag::new("result_shape_digest"),
-                result_shape_identity,
-            )
-            .field_shape(
-                WorthQueryEvidenceTag::new("authority_lane"),
-                authority_lane.as_str(),
-            )
-            .field_value(WorthQueryEvidenceTag::new("explanation"), explanation)
-            .optional_evidence_identity(
-                WorthQueryEvidenceTag::new("ordinary_runtime_posture"),
-                ordinary_runtime_posture.map(WorthQueryOrdinaryRuntimePosture::evidence_identity),
-            )
-            .optional_evidence_identity(
-                WorthQueryEvidenceTag::new("async_result_state"),
-                async_result_state.map(WorthQueryRuntimeAsyncResultState::result_state_identity),
-            )
-            .optional_evidence_identity(
-                WorthQueryEvidenceTag::new("remask_posture"),
-                remask_posture.map(WorthQueryRuntimeRemaskPosture::remask_identity),
-            )
-            .seal()?,
-    )
+    worth_query_evidence_identity(WorthQueryEvidenceScope::RuntimeStateSnapshot)
+        .field_shape(WorthQueryEvidenceTag::new("kind"), kind.as_str())
+        .field_evidence_identity(WorthQueryEvidenceTag::new("basis_digest"), basis_identity)
+        .field_evidence_identity(
+            WorthQueryEvidenceTag::new("result_shape_digest"),
+            result_shape_identity,
+        )
+        .field_shape(
+            WorthQueryEvidenceTag::new("authority_lane"),
+            authority_lane.as_str(),
+        )
+        .field_value(WorthQueryEvidenceTag::new("explanation"), explanation)
+        .optional_evidence_identity(
+            WorthQueryEvidenceTag::new("ordinary_runtime_posture"),
+            ordinary_runtime_posture.map(WorthQueryOrdinaryRuntimePosture::evidence_identity),
+        )
+        .optional_evidence_identity(
+            WorthQueryEvidenceTag::new("async_result_state"),
+            async_result_state.map(WorthQueryRuntimeAsyncResultState::result_state_identity),
+        )
+        .optional_evidence_identity(
+            WorthQueryEvidenceTag::new("remask_posture"),
+            remask_posture.map(WorthQueryRuntimeRemaskPosture::remask_identity),
+        )
+        .seal()
 }

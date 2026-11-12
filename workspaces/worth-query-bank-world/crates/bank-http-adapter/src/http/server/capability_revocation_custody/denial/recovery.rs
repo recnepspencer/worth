@@ -20,6 +20,6 @@ pub(super) fn managed(cause: WorthQueryManagedApplicationRecoveryDenial) -> Bank
             }
         },
         D::ProviderBusy | D::ProviderCapacity | D::ProductUnavailable => unavailable(),
-        D::ForeignAdmission | D::BindingMismatch => operator(),
+        D::ForeignAdmission | D::BindingMismatch | D::Bridge(_) => operator(),
     }
 }

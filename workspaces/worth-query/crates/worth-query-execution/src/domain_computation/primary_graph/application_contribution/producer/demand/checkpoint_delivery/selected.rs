@@ -169,7 +169,7 @@ where
             .expect("readiness route retains its installed producer");
         let preserved = installed.executor.preserved_readiness_output(receipt);
         Ok(PreparedSelectedDelivery {
-            lowering: &route.lowering,
+            lowering: SelectedDeliveryBinding::Installed(&route.lowering),
             ordinal: route.delivery_dependency_ordinal,
             preserved,
         })

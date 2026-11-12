@@ -9,8 +9,10 @@ use super::{
 use crate::publication::patch::data::PatchStreamPosition;
 use std::io::{self, Write};
 use worth_execution::{ExecutionRequest, ExecutionRequestArrayBuilder};
+mod denial;
 #[cfg(test)]
 mod size_tests;
+pub(crate) use denial::MemoryFramePreparationDenial;
 
 impl Artifact {
     /// The position is reserved producer DATA. This issues bytes, not performed proof.
@@ -18,7 +20,7 @@ impl Artifact {
         position: PatchStreamPosition,
         prepared: &PreparedOriginalCanonicalPayload,
         request: &ExecutionRequest<'_, '_>,
-    ) -> Result<Self, Denial> {
+    ) -> Result<Self, MemoryFramePreparationDenial> {
         let envelope = prepared.envelope();
         let payload = ArtifactPayloadRef::new(position, envelope);
         let mut count = Sizing {
@@ -35,10 +37,13 @@ impl Artifact {
             commit_id: envelope.commit.commit_id,
             digest: prepared.at_position(position),
         };
-        let mut buffer = ExecutionRequestArrayBuilder::<u8>::allocate(*request, frame_len)?;
-        buffer.extend_from_slice(
-            &header.emit(u64::try_from(payload_len).map_err(|_| Denial::FrameSizeOverflow)?),
-        )?;
+        let mut buffer = ExecutionRequestArrayBuilder::<u8>::allocate(*request, frame_len)
+            .map_err(MemoryFramePreparationDenial::from)?;
+        buffer
+            .extend_from_slice(
+                &header.emit(u64::try_from(payload_len).map_err(|_| Denial::FrameSizeOverflow)?),
+            )
+            .map_err(MemoryFramePreparationDenial::from)?;
         let mut emission = Emission {
             buffer: &mut buffer,
             failure: None,
@@ -49,23 +54,26 @@ impl Artifact {
             return Err(Denial::CountEmissionMismatch {
                 counted: payload_len,
                 emitted: buffer.len().saturating_sub(HEADER_LEN),
-            });
+            }
+            .into());
         }
-        let bytes = buffer.seal()?.into_immutable_bytes();
+        let bytes = buffer
+            .seal_immutable_bytes()
+            .map_err(MemoryFramePreparationDenial::from)?;
         // These bytes were deterministically emitted from the exact immutable
         // owner whose two leaves were prepared, with count/emission agreement.
         // External bytes still pass the full frame verification door.
         let artifact = Self { bytes, header };
         request
             .consult()
-            .map_err(|cause| Denial::Request(cause.into()))?;
+            .map_err(|cause| MemoryFramePreparationDenial::Request(cause))?;
         Ok(artifact)
     }
 }
 struct Sizing<'r, 'a> {
     request: ExecutionRequest<'r, 'a>,
     length: usize,
-    failure: Option<Denial>,
+    failure: Option<MemoryFramePreparationDenial>,
 }
 impl Write for Sizing<'_, '_> {
     fn write(&mut self, bytes: &[u8]) -> io::Result<usize> {
@@ -76,17 +84,17 @@ impl Write for Sizing<'_, '_> {
         {
             Some(next) => next,
             None => {
-                self.failure = Some(Denial::FrameSizeOverflow);
+                self.failure = Some(Denial::FrameSizeOverflow.into());
                 return Err(stopped());
             }
         };
         if let Err(cause) = bounded_frame_len(next) {
-            self.failure = Some(cause);
+            self.failure = Some(cause.into());
             return Err(stopped());
         }
         for _ in bytes.chunks(64 * 1024) {
             if let Err(cause) = self.request.consult() {
-                self.failure = Some(Denial::Request(cause.into()));
+                self.failure = Some(MemoryFramePreparationDenial::Request(cause));
                 return Err(stopped());
             }
         }
@@ -99,7 +107,7 @@ impl Write for Sizing<'_, '_> {
 }
 struct Emission<'b, 'r, 'a> {
     buffer: &'b mut ExecutionRequestArrayBuilder<'r, 'a, u8>,
-    failure: Option<Denial>,
+    failure: Option<MemoryFramePreparationDenial>,
 }
 impl Write for Emission<'_, '_, '_> {
     fn write(&mut self, bytes: &[u8]) -> io::Result<usize> {
@@ -117,13 +125,15 @@ impl Write for Emission<'_, '_, '_> {
 }
 fn settle(
     result: Result<(), rmp_serde::encode::Error>,
-    failure: Option<Denial>,
-) -> Result<(), Denial> {
+    failure: Option<MemoryFramePreparationDenial>,
+) -> Result<(), MemoryFramePreparationDenial> {
     if let Some(failure) = failure {
         return Err(failure);
     }
-    result.map_err(|cause| Denial::PayloadEncoding {
-        detail: cause.to_string(),
+    result.map_err(|cause| {
+        MemoryFramePreparationDenial::Artifact(Denial::PayloadEncoding {
+            detail: cause.to_string(),
+        })
     })
 }
 fn stopped() -> io::Error {

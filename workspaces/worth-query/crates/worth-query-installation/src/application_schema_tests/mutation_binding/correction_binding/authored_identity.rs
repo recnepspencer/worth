@@ -54,6 +54,56 @@ mutation_binding!(
     test_principal_binding::<MutationSchema>(),
     RetiredOutputs
 );
+struct CreatedMemberOutputs;
+struct RetiredMemberOutputs;
+struct CreatedMembers;
+struct RetiredMembers;
+macro_rules! member_family {
+    ($Outputs:ident, $Family:ident, $posture:ident, $prefix:literal) => {
+        impl ApplicationMutationOutputContract<MutationSchema> for $Outputs {
+            const ROLES: &'static [ApplicationMutationOutputRoleDescriptor] = &[];
+            const ROLE_FAMILIES: &'static [ApplicationMutationOutputRoleFamilyDescriptor] =
+                &[<$Family as WorthQueryApplicationDeclaredOutputRoleFamily>::DESCRIPTOR];
+        }
+        impl WorthQueryApplicationOutputRoleFamily for $Family {
+            type Schema = MutationSchema;
+            type Contract = $Outputs;
+            type Entity = FixtureEntity;
+            const PREFIX: &'static str = $prefix;
+            const POSTURES: ApplicationMutationOutputPostureSet =
+                ApplicationMutationOutputPostureSet::one(Posture::$posture);
+            const MINIMUM: usize = 0;
+        }
+    };
+}
+member_family!(CreatedMemberOutputs, CreatedMembers, Create, "created.");
+member_family!(RetiredMemberOutputs, RetiredMembers, Retire, "retired.");
+mutation_binding!(
+    CreatedMembersBinding,
+    "fixture.authored.create-members.v1",
+    TestOperation<MutationSchema>,
+    TestInput,
+    TestInputBinding,
+    MutationDecision,
+    MutationDenialBinding,
+    "fixture.authored.create-members-handler.v1",
+    FixturePrincipalIdentityField::at("PrincipalIdentityField"),
+    test_principal_binding::<MutationSchema>(),
+    CreatedMemberOutputs
+);
+mutation_binding!(
+    RetiredMembersBinding,
+    "fixture.authored.retire-members.v1",
+    TestOperation<MutationSchema>,
+    TestInput,
+    TestInputBinding,
+    MutationDecision,
+    MutationDenialBinding,
+    "fixture.authored.retire-members-handler.v1",
+    FixturePrincipalIdentityField::at("PrincipalIdentityField"),
+    test_principal_binding::<MutationSchema>(),
+    RetiredMemberOutputs
+);
 
 #[test]
 fn authored_family_rejects_missing_role_or_changed_logical_key_meaning() {
@@ -185,3 +235,5 @@ fn authored_family_rejects_missing_role_or_changed_logical_key_meaning() {
         }
     }
 }
+
+mod live_owner;

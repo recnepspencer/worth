@@ -6,6 +6,9 @@ use super::*;
 #[derive(Debug)]
 /// Explains construction refusal; the caller receives its original operation description.
 pub enum WorthQueryOperationConstructionDenial {
+    DurableStateAdmission(
+        worth_query_execution::facade::product::WorthQueryDurableStateAdmissionDenial,
+    ),
     Action(worth_query_installation::facade::WorthQueryActionResolutionDenial),
     UndeclaredRoot,
     RequiredOutputSource,
@@ -109,6 +112,16 @@ impl<Schema: ApplicationSchema + 'static, Intent: ApplicationMutationIntent<Sche
             .owns_branch_selector(self.branch)
         {
             return Err((self, WorthQueryOperationConstructionDenial::ForeignRuntime));
+        }
+        if let Err(cause) = program
+            .runtime()
+            .product_runtime()
+            .admit_retained_original_operation_owner()
+        {
+            return Err((
+                self,
+                WorthQueryOperationConstructionDenial::DurableStateAdmission(cause),
+            ));
         }
         let installed_action = match program
             .installed_program()

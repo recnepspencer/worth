@@ -13,11 +13,12 @@ pub use crate::durability::{
     WorldCheckpointOriginRetirementDenial, WorldCheckpointPort, WorldCheckpointReadSource,
     WorldCheckpointReadView, WorldCheckpointSelection, WorldCheckpointSubject,
     WorldDurableArtifact, WorldDurableFrameDenial, WorldDurableHomeBinding,
-    WorldDurableMediumDenial, WorldHomeProgramLineage, WorldOriginalObservation,
-    WorldOriginalObservationDenial, WorldOriginalStateObservation, WorldProgramActivationHistory,
-    WorldProgramActivationHistoryEntry, WorldPublicationCompletion, WorldPublicationObservation,
-    WorldPublicationTaskPosture, WorldReadmissionDenial, WORLD_ARTIFACT_PROTOCOL,
-    WORLD_ARTIFACT_VERSION, WORLD_CHECKPOINT_PROTOCOL, WORLD_CHECKPOINT_VERSION,
+    WorldDurableMediumDenial, WorldHomeProgramLineage, WorldOpenComponentIntent,
+    WorldOriginalObservation, WorldOriginalObservationDenial, WorldOriginalStateObservation,
+    WorldProgramActivationHistory, WorldProgramActivationHistoryEntry, WorldPublicationCompletion,
+    WorldPublicationObservation, WorldPublicationTaskPosture, WorldReadmissionDenial,
+    WORLD_ARTIFACT_PROTOCOL, WORLD_ARTIFACT_VERSION, WORLD_CHECKPOINT_PROTOCOL,
+    WORLD_CHECKPOINT_VERSION,
 };
 
 // Public signatures below name the already-issued component owner bundles and
@@ -100,23 +101,27 @@ pub use crate::publication::{
     WorldHomeTransitionStepReservation, WorldHomeTransitionUnopenedDenial,
     WorldNativePreparationDenial, WorldNativePreparationRefusal, WorldOpenAttemptOutcome,
     WorldOpenAttemptRefusal, WorldOpenedPublicationAttempt, WorldPendingDurablePublication,
-    WorldPendingOpenAttempt, WorldPreparedPublicationWithoutSignal, WorldQueryNativePreparation,
+    WorldPendingOpenAttempt, WorldPreparedPublicationWithSignal,
+    WorldPreparedPublicationWithoutSignal, WorldQueryNativePreparation,
+    WorldQuerySignalPreparation,
 };
 
 pub use crate::lifecycle::{
     MissingRuntimeWorldInput, PreparedWorldHomeProgramBinding, PreparedWorldRelationalCutover,
-    RuntimeWorldBranchCreationOutcome, RuntimeWorldBranchPort, RuntimeWorldBuildDenial,
-    RuntimeWorldClock, RuntimeWorldClockSource, RuntimeWorldCloseDenial, RuntimeWorldCloseReport,
-    RuntimeWorldExecutionPlacement, RuntimeWorldHomeBuilder, RuntimeWorldInspectionPort,
-    RuntimeWorldInstant, RuntimeWorldLifecyclePort, RuntimeWorldObservationPort,
-    RuntimeWorldOwnedAsyncManagedRevalidationDenial, RuntimeWorldOwnedAsyncRequestAdmissionDenial,
-    RuntimeWorldOwnedAsyncRevalidationDenial, RuntimeWorldOwner, RuntimeWorldOwnerBuilder,
-    RuntimeWorldOwnerLifecycleObservation, RuntimeWorldOwnerUnavailable,
-    RuntimeWorldPreCloseAdmission, RuntimeWorldPublicationPort, RuntimeWorldRecoveredCustodyReport,
-    RuntimeWorldRecoveryPort, RuntimeWorldResultSnapshotCleanup,
-    RuntimeWorldResultSnapshotCleanupDenial, RuntimeWorldResultSnapshotCleanupProgress,
-    RuntimeWorldResultSnapshotCleanupReport, RuntimeWorldRetainedRecordReport,
-    RuntimeWorldServiceDenial, WorldHomeProgramBindingDenial,
+    RuntimeWorldBranchCreationCompletion, RuntimeWorldBranchCreationNoEffect,
+    RuntimeWorldBranchCreationOutcome, RuntimeWorldBranchCreationRelease, RuntimeWorldBranchPort,
+    RuntimeWorldBuildDenial, RuntimeWorldClock, RuntimeWorldClockSource, RuntimeWorldCloseDenial,
+    RuntimeWorldCloseReport, RuntimeWorldExecutionPlacement, RuntimeWorldHomeBranchCreationRequest,
+    RuntimeWorldInspectionPort, RuntimeWorldInstant, RuntimeWorldLifecyclePort,
+    RuntimeWorldObservationPort, RuntimeWorldOwnedAsyncManagedRevalidationDenial,
+    RuntimeWorldOwnedAsyncRequestAdmissionDenial, RuntimeWorldOwnedAsyncRevalidationDenial,
+    RuntimeWorldOwner, RuntimeWorldOwnerBuilder, RuntimeWorldOwnerLifecycleObservation,
+    RuntimeWorldOwnerUnavailable, RuntimeWorldPreCloseAdmission, RuntimeWorldPublicationPort,
+    RuntimeWorldRecoveredCustodyReport, RuntimeWorldRecoveryPort,
+    RuntimeWorldResultSnapshotCleanup, RuntimeWorldResultSnapshotCleanupDenial,
+    RuntimeWorldResultSnapshotCleanupProgress, RuntimeWorldResultSnapshotCleanupReport,
+    RuntimeWorldRetainedRecordReport, RuntimeWorldServiceDenial, RuntimeWorldUnboundHomeBuilder,
+    WorldHomeProgramBindingDenial, WorldSignalForkPreparationDenial,
 };
 
 pub use crate::publication::{
@@ -180,3 +185,11 @@ pub use crate::lifecycle::{
     RetiredRuntimeWorldHome, RuntimeWorldHomeRetirement, RuntimeWorldHomeRetirementDenial,
     RuntimeWorldHomeRetirementProgress,
 };
+
+pub use crate::lifecycle::{
+    RuntimeWorldAuthoredSignalAttachment, RuntimeWorldAuthoredSignalAttachmentDenial,
+};
+
+pub use crate::lifecycle::RuntimeWorldAuthoredHomeBuilder;
+
+pub use crate::publication::world_branch_program_source_commitment;

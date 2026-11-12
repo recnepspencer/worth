@@ -25,7 +25,7 @@ impl WorthQueryIntentExecutionProvenance {
         execution_outcome_digest: &str,
         snapshot_evidence_identity: &WorthQueryEvidenceIdentity,
     ) -> Result<Self, crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial> {
-        Ok(Self::new(
+        Self::new(
             binding.family(),
             binding.entrypoint(),
             binding.execution_seam(),
@@ -34,7 +34,7 @@ impl WorthQueryIntentExecutionProvenance {
             binding.binding_digest(),
             execution_outcome_digest,
             snapshot_evidence_identity,
-        )?)
+        )
     }
 
     pub(in crate::runtime) fn for_effect_binding(
@@ -42,7 +42,7 @@ impl WorthQueryIntentExecutionProvenance {
         execution_outcome_digest: &str,
         snapshot_evidence_identity: &WorthQueryEvidenceIdentity,
     ) -> Result<Self, crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial> {
-        Ok(Self::new(
+        Self::new(
             binding.family(),
             binding.entrypoint(),
             binding.execution_seam(),
@@ -51,7 +51,7 @@ impl WorthQueryIntentExecutionProvenance {
             binding.binding_digest(),
             execution_outcome_digest,
             snapshot_evidence_identity,
-        )?)
+        )
     }
 
     pub(in crate::runtime) fn for_shared_execution_parts(
@@ -64,7 +64,7 @@ impl WorthQueryIntentExecutionProvenance {
         execution_outcome_digest: &str,
         snapshot_evidence_identity: &WorthQueryEvidenceIdentity,
     ) -> Result<Self, crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial> {
-        Ok(Self::new(
+        Self::new(
             family,
             entrypoint,
             execution_seam,
@@ -73,7 +73,7 @@ impl WorthQueryIntentExecutionProvenance {
             execution_binding_digest,
             execution_outcome_digest,
             snapshot_evidence_identity,
-        )?)
+        )
     }
 
     pub(in crate::runtime) fn for_shared_execution_typed_parts(
@@ -86,7 +86,7 @@ impl WorthQueryIntentExecutionProvenance {
         execution_outcome_digest: &str,
         snapshot_evidence_identity: &WorthQueryEvidenceIdentity,
     ) -> Result<Self, crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial> {
-        Ok(Self::for_shared_execution_parts(
+        Self::for_shared_execution_parts(
             family,
             entrypoint,
             execution_seam,
@@ -95,7 +95,7 @@ impl WorthQueryIntentExecutionProvenance {
             execution_binding_digest,
             execution_outcome_digest,
             snapshot_evidence_identity,
-        )?)
+        )
     }
 
     fn new(

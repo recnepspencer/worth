@@ -150,7 +150,9 @@ impl RuntimeWorldPublicationPort<(), (), (), (), ()> {
             RuntimeWorldPublicationOutcome::ProductUnpublished(effects) => {
                 recovery.complete();
                 Outcome::ProductUnpublished(
-                    crate::publication::RuntimeWorldUnpublishedConditionalDefinition::new(effects),
+                    crate::publication::RuntimeWorldUnpublishedConditionalDefinition::from_effects(
+                        effects,
+                    ),
                 )
             }
         }

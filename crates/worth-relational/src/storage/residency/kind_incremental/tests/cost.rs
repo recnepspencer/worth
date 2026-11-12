@@ -3,16 +3,14 @@ use super::*;
 use worth_testkit_relational::maintenance::assert_change_bounded;
 
 fn work(records: usize, history: usize) -> u64 {
-    let host = crate::test_execution_policy::serial_request();
-    let execution = worth_execution::ExecutionRequest::serial(&host);
-    let mut partition = fixture::partition(records, &execution);
+    let mut partition = fixture::partition(records);
     for step in 0..history {
-        fixture::edit(&mut partition, 0, step, &execution);
+        fixture::edit(&mut partition, 0, step);
     }
     // Lifecycle and endpoints repeat every 15 steps. Establish the same live
     // starting point, then measure the same retarget at every history scale.
     let base_step = history.div_ceil(15) * 15;
-    fixture::edit(&mut partition, 0, base_step, &execution);
+    fixture::edit(&mut partition, 0, base_step);
     crate::storage::residency::rebuild_region_history_kind_buckets(
         &crate::storage::substrate::maintenance::ReconstructionLane::oracle(),
         &mut partition,
@@ -20,7 +18,7 @@ fn work(records: usize, history: usize) -> u64 {
     .unwrap();
     let prior = Arc::new(cold(&partition));
     let previous = partition.clone();
-    let journal = fixture::edit(&mut partition, 0, base_step + 2, &execution);
+    let journal = fixture::edit(&mut partition, 0, base_step + 2);
     let mut charged = 0;
     let updated = update_value(
         &mut partition,

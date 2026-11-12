@@ -65,7 +65,7 @@ pub(super) fn read(input: &RelationalDurableRecoverySource) -> Directory {
             .unwrap()
             .checkpoint()
             .bytes()
-            .strip_prefix(b"WORTH-REL-CHK18\n")
+            .strip_prefix(b"WORTH-REL-CHK22\n")
             .unwrap(),
     )
     .unwrap()

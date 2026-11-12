@@ -143,7 +143,7 @@ where
             graph.resource_support_ref(),
             runtime.installed_packages(),
         )
-        .map_err(Denial::Contributions)?;
+        .map_err(|refused| Denial::Contributions(refused.into_cause()))?;
     super::super::source_scope_ownership::seal(
         &graph.graph.layout,
         &mut graph.graph.application_publication,

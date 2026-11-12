@@ -66,6 +66,7 @@ pub enum WorkflowDefinitionBindingDenial {
 /// Why a workflow definition publication or retirement did not prepare.
 #[derive(Debug)]
 pub enum WorkflowDefinitionPreparationDenial {
+    DurableStateAdmission(crate::domain_computation::execution_runtime::product_world::WorthQueryDurableStateAdmissionDenial),
     ProductSelection(crate::basis::WorthQueryProductBranchAdmissionDenial),
     Binding(WorkflowDefinitionBindingDenial),
     Projection(WorthQueryOperationProjectionDenial),
@@ -75,6 +76,7 @@ pub enum WorkflowDefinitionPreparationDenial {
 impl std::fmt::Display for WorkflowDefinitionPreparationDenial {
     fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
+            Self::DurableStateAdmission(denial) => denial.fmt(formatter),
             Self::ProductSelection(denial) => {
                 write!(formatter, "workflow product selection: {denial:?}")
             }
@@ -150,6 +152,10 @@ where
         let bound = self
             .bind_workflow_definition_contract(contract)
             .map_err(WorkflowDefinitionPreparationDenial::Binding)?;
+        application.runtime.product_runtime
+            .admit_directory_capability(crate::domain_computation::primary_graph::WorthQueryOperationDurableCapability::WorkflowExecution)
+            .map_err(WorkflowDefinitionPreparationDenial::DurableStateAdmission)?;
+
         let (_, projection, _) = self
             .application()
             .mutation_projection

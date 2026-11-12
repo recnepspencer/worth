@@ -103,7 +103,7 @@ where
                     .expect("the native publication has a canonical commit");
                 runtime
                     .index_authority()
-                    .verify_index_basis_for_commit(&execution, &head)
+                    .verify_index_basis_for_commit(&execution, head)
                     .expect("the native publication refreshes its exact indexes");
             });
             Ok(())

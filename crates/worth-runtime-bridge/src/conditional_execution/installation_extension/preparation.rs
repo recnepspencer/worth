@@ -43,8 +43,10 @@ impl BridgeOwnedSignalRuntime {
                 "a definition successor must retain every exact installed semantic correspondence",
             ));
         }
-        let provider_admission =
-            provider_admission::admit_provider_set(&request.contract, &request.providers)?;
+        let provider_admission = provider_admission::admit_provider_set(
+            std::sync::Arc::new(request.contract.clone()),
+            &request.providers,
+        )?;
         let semantic_observation_plan =
             semantic_observation_plan::compile_semantic_observation_plan_from_dependencies(
                 &request.contract,

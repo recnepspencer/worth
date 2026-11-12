@@ -8,7 +8,7 @@ use crate::runtime::WorthQueryWriteCommand;
 pub(super) fn metadata_identities(
     command: &WorthQueryWriteCommand,
 ) -> Result<Vec<WorthQueryEvidenceIdentity>, IdentityDerivationDenial> {
-    Ok(command
+    command
         .mutation_metadata_ref()
         .into_iter()
         .flat_map(|metadata| metadata.entries())
@@ -22,13 +22,13 @@ pub(super) fn metadata_identities(
                 )
                 .seal()
         })
-        .collect::<Result<Vec<_>, _>>()?)
+        .collect::<Result<Vec<_>, _>>()
 }
 
 pub(super) fn naming_identity(
     command: &WorthQueryWriteCommand,
 ) -> Result<Option<WorthQueryEvidenceIdentity>, IdentityDerivationDenial> {
-    Ok(command
+    command
         .naming_intent()
         .map(|intent| {
             worth_query_evidence_identity(WorthQueryEvidenceScope::AuthoritativeMutationIntentSeed)
@@ -55,13 +55,13 @@ pub(super) fn naming_identity(
                 )
                 .seal()
         })
-        .transpose()?)
+        .transpose()
 }
 
 pub(super) fn continuity_identity(
     command: &WorthQueryWriteCommand,
 ) -> Result<Option<WorthQueryEvidenceIdentity>, IdentityDerivationDenial> {
-    Ok(command
+    command
         .continuity_intent()
         .map(|intent| {
             worth_query_evidence_identity(WorthQueryEvidenceScope::AuthoritativeMutationIntentSeed)
@@ -87,7 +87,7 @@ pub(super) fn continuity_identity(
                 )
                 .seal()
         })
-        .transpose()?)
+        .transpose()
 }
 
 pub(super) fn mutation_command_shape(command: &WorthQueryWriteCommand) -> &'static str {

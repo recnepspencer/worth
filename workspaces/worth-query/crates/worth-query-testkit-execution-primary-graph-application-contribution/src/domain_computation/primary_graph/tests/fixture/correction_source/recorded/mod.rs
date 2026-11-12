@@ -91,8 +91,17 @@ impl ApplicationCorrectionBinding<IdentityExecutionSchema> for RecordedLabelEdit
     fn inverse_key(key: &str) -> Result<String, ApplicationValueEncodeDenial> {
         Ok(format!("label-inverse:{key}"))
     }
+    fn reapplication_key(key: &str) -> Result<String, ApplicationValueEncodeDenial> {
+        Ok(format!("label-reapply:{key}"))
+    }
     fn visit<Visitor: ApplicationCorrectionVisitor<IdentityExecutionSchema>>(
         dispatch: ApplicationCorrectionDispatch<IdentityExecutionSchema, Self, Visitor>,
+    ) -> Visitor::Output {
+        dispatch.conventional()
+    }
+    /// The original label edit is reapplied through its ordinary admission.
+    fn visit_reapplication<Visitor: ApplicationReapplicationVisitor<IdentityExecutionSchema>>(
+        dispatch: ApplicationReapplicationDispatch<IdentityExecutionSchema, Self, Visitor>,
     ) -> Visitor::Output {
         dispatch.conventional()
     }

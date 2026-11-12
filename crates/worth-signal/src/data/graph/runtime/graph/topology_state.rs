@@ -15,6 +15,10 @@ pub(crate) enum RetainedTopologyIndexDenial {
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub(crate) struct EdgeTopology {
+    /// Derived reverse index of authored declarations, independent of runtime edges.
+    #[serde(skip, default)]
+    pub(in crate::data::graph) declared_dependents:
+        crate::data::persistent_ord_map::PersistentOrdMap<NodeId, im::OrdSet<NodeId>>,
     #[serde(default)]
     pub(in crate::data::graph) dependency_snapshots: DependencySnapshotStore,
     #[serde(default)]
@@ -65,6 +69,7 @@ impl EdgeTopology {
 
     pub(crate) fn fork_persistent(&mut self) -> Self {
         Self {
+            declared_dependents: self.declared_dependents.fork_persistent(),
             dependency_snapshots: self.dependency_snapshots.fork_persistent(),
             dependency_snapshot_shapes: self.dependency_snapshot_shapes.fork_persistent(),
             dependency_snapshot_storage_custody: self.dependency_snapshot_storage_custody.clone(),
@@ -78,6 +83,7 @@ impl EdgeTopology {
 
     pub(crate) fn operational_clone(&self) -> Self {
         Self {
+            declared_dependents: self.declared_dependents.operational_clone(),
             dependency_snapshots: self.dependency_snapshots.operational_clone(),
             dependency_snapshot_shapes: self.dependency_snapshot_shapes.operational_clone(),
             dependency_snapshot_storage_custody: None,
@@ -92,6 +98,7 @@ impl EdgeTopology {
     #[cfg(test)]
     pub(crate) fn fork_storage_identity(&self) -> Self {
         Self {
+            declared_dependents: self.declared_dependents.fork_storage_identity(),
             dependency_snapshots: self.dependency_snapshots.fork_storage_identity(),
             dependency_snapshot_shapes: self.dependency_snapshot_shapes.fork_storage_identity(),
             dependency_snapshot_storage_custody: self.dependency_snapshot_storage_custody.clone(),
@@ -105,8 +112,10 @@ impl EdgeTopology {
 
     #[cfg(test)]
     pub(crate) fn shares_storage_with(&self, other: &Self) -> bool {
-        self.dependency_snapshots
-            .shares_storage_with(&other.dependency_snapshots)
+        self.declared_dependents.ptr_eq(&other.declared_dependents)
+            && self
+                .dependency_snapshots
+                .shares_storage_with(&other.dependency_snapshots)
             && self
                 .dependency_snapshot_shapes
                 .shares_storage_with(&other.dependency_snapshot_shapes)

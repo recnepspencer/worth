@@ -200,3 +200,33 @@ fn candidate_role_scan_preserves_cancellation_as_interruption() {
         ))
     ));
 }
+
+#[test]
+fn member_family_matching_requires_the_declared_entity_and_lifecycle() {
+    let mut declaration = prepared(Posture::Retire).declaration;
+    let mut parts = declaration.parts().clone();
+    parts.source_role = "retired-member.".into();
+    parts.inverse_role = "restored-member.".into();
+    declaration = DeclaredAuthoredCorrection::from_untrusted_parts(parts).with_member_owner(
+        worth_query_declaration::facade::application_aftermath::PortablePreImageRelationLocus::from_untrusted_fields(
+            "OwnedBy".into(), "Number".into(), "Anchor".into()));
+    for inverse in [false, true] {
+        let (name, posture) = if inverse {
+            ("restored-member.first", Posture::Create)
+        } else {
+            ("retired-member.first", Posture::Retire)
+        };
+        assert_eq!(
+            declaration.member_role_suffix(name, posture, "Number", inverse),
+            Some("first")
+        );
+        assert_eq!(
+            declaration.member_role_suffix(name, posture, "Foreign", inverse),
+            None
+        );
+        assert_eq!(
+            declaration.member_role_suffix(name, Posture::Preserve, "Number", inverse),
+            None
+        );
+    }
+}

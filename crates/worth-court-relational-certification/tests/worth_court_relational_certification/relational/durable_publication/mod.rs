@@ -1,4 +1,5 @@
 //! Public Native durability workflows, independent of source-unit privacy.
+mod aggregate_validation;
 mod associated_effects;
 mod cold_envelope_custody;
 mod index_catalog;
@@ -105,3 +106,94 @@ mod merge_region_topology;
 mod merge_source_admission;
 mod merge_stale_execution;
 mod merge_unknown_source_admission;
+
+mod checkpoint_recovery_observation;
+mod native_checkpoint_reopen;
+
+mod checkpoint_branch_targets;
+
+mod checkpoint_branch_lifecycle;
+
+mod checkpoint_tail_and_indexes;
+
+mod checkpoint_successor_authority;
+
+mod checkpoint_source_capture;
+
+mod association_checkpoint_journeys;
+
+mod medium_publication_journeys;
+
+mod medium_member_retention;
+
+mod caller_association_journeys;
+
+mod recorded_original_checkpoint_journeys;
+
+mod checkpoint_protected_history;
+
+mod checkpoint_content_root;
+
+mod checkpoint_transition_continuation;
+
+mod medium_recovered_continuation;
+
+mod checkpoint_sparse_lineage;
+
+mod checkpoint_descriptor_continuity;
+
+mod checkpoint_schema_versions;
+
+mod checkpoint_declared_schema;
+
+mod checkpoint_inspection_observation;
+
+mod checkpoint_inspection_journeys;
+
+mod checkpoint_record_replacement;
+
+mod checkpoint_transition_descriptors;
+
+mod checkpoint_schema_plan_refusals;
+
+mod checkpoint_canonical_neutrality;
+
+mod checkpoint_managed_text;
+
+mod canonical_publication_touches;
+mod checkpoint_abandoned_keys;
+mod checkpoint_bulk_bindings;
+mod checkpoint_custom_versions;
+mod checkpoint_empty_head;
+mod checkpoint_funded_capture;
+mod checkpoint_index_affinity;
+mod checkpoint_index_generations;
+mod checkpoint_index_lagging;
+mod checkpoint_index_recovery;
+mod checkpoint_lineage_authority;
+mod checkpoint_lineage_issuance;
+mod checkpoint_lineage_publication;
+mod checkpoint_merge_continuity;
+mod merge_source_copy_identity;
+
+mod checkpoint_catalog_originals;
+
+mod checkpoint_pinned_root;
+
+mod checkpoint_recovered_readers;
+
+mod checkpoint_root_publications;
+
+mod checkpoint_shared_partition;
+
+mod checkpoint_birth_refusal;
+
+mod checkpoint_generation_identity;
+
+mod checkpoint_topology_reidentification;
+
+mod checkpoint_inspection_self_edge;
+mod checkpoint_shipping_lookup;
+mod checkpoint_truth_equivalence;
+
+mod checkpoint_subscriber_source;

@@ -12,11 +12,14 @@ use worth_store::physical_runtime::{AdmittedRecordPlacementPolicy, ServingPhysic
 impl RelationalStoreSection {
     pub fn prepare_captured_complete_checkpoint_for_test(
         &self,
-        checkpoint: worth_relational::facade::durability::CompleteRelationalNativeCheckpoint,
+        checkpoint: Option<
+            worth_relational::facade::durability::CompleteRelationalNativeCheckpoint,
+        >,
         home: worth_foundational::facade::HomeIdentity,
         world_through: [u64; 3],
         world_digest: [u8; 32],
         execution: &worth_execution::ExecutionRequest<'_, '_>,
+        observe_capture: Option<&dyn Fn(&RelationalNativeCheckpoint)>,
     ) -> Result<super::CapturedHomeRelationalSection, RelationalSectionCheckpointDenial> {
         self.capture_complete_home_checkpoint(
             checkpoint,
@@ -24,6 +27,7 @@ impl RelationalStoreSection {
             world_through,
             world_digest,
             execution,
+            observe_capture,
         )
     }
 

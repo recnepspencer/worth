@@ -25,10 +25,7 @@ pub(super) fn batch_target_digest(
                     .iter(),
             )
             .seal()?;
-    Ok(WorthQueryMutationEvidenceDigest::aggregate(
-        "batch-target",
-        identity,
-    )?)
+    WorthQueryMutationEvidenceDigest::aggregate("batch-target", identity)
 }
 
 pub(super) fn batch_existing_truth_binding_digest(
@@ -198,7 +195,7 @@ fn symbolic_target_reference_identity(
             collection.evidence_identity(),
         );
     }
-    Ok(identity.seal()?)
+    identity.seal()
 }
 
 fn symbolic_aspect_resolution_identity(
@@ -232,7 +229,7 @@ fn symbolic_aspect_resolution_identity(
             collection.evidence_identity(),
         );
     }
-    Ok(identity.seal()?)
+    identity.seal()
 }
 
 fn continuity_mutation_identity(
@@ -290,7 +287,7 @@ fn continuity_mutation_identity(
             collection.evidence_identity(),
         );
     }
-    Ok(identity.seal()?)
+    identity.seal()
 }
 
 fn naming_mutation_identity(
@@ -335,7 +332,7 @@ fn naming_mutation_identity(
             collection.evidence_identity(),
         );
     }
-    Ok(identity.seal()?)
+    identity.seal()
 }
 
 fn target_component_identity(
@@ -376,7 +373,7 @@ fn target_component_identity(
             &entity.evidence_identity(),
         );
     }
-    Ok(identity.seal()?)
+    identity.seal()
 }
 
 fn aggregate_sequence_identity(
@@ -388,5 +385,5 @@ fn aggregate_sequence_identity(
             .field_shape(WorthQueryEvidenceTag::new("role"), role)
             .field_evidence_identity_sequence(WorthQueryEvidenceTag::new("entry"), entries.iter())
             .seal()?;
-    Ok(WorthQueryMutationEvidenceDigest::aggregate(role, identity)?)
+    WorthQueryMutationEvidenceDigest::aggregate(role, identity)
 }

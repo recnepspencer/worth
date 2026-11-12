@@ -44,7 +44,16 @@ fn current_checkpoint_preserves_meaning_and_retired_or_unknown_versions_refuse()
         .unwrap();
     let restored_meaning =
         RelationalNativeCheckpoint::inspect_bytes(&execution, recaptured.bytes()).unwrap();
-    assert_eq!(now.model, restored_meaning.model);
+    assert!(now
+        .model_matches_rebound_runtime(
+            &restored_meaning,
+            &world
+                .runtime
+                .branch_identity(&BranchId("main".into()))
+                .unwrap(),
+            &restored.branch_identity(&BranchId("main".into())).unwrap(),
+        )
+        .unwrap());
     assert_eq!(now.live_records, restored_meaning.live_records);
     for prefix in [
         b"WORTH-REL-CHK18\n".as_slice(),

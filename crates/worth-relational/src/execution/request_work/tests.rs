@@ -139,3 +139,23 @@ fn remaining_work_child_refuses_the_next_charge_after_parent_deadline() {
         CommitExecutionDenialKind::Cause(RelationalExecutionDenialCause::DeadlineElapsed)
     );
 }
+
+#[test]
+fn original_work_recording_restores_its_previous_observer_after_unwinding() {
+    use super::RelationalWorkAccountRecorderForTest;
+    let recorder = RelationalWorkAccountRecorderForTest::new();
+    let (_, outer) = recorder.record_for_test(|| {
+        super::observation::record(3);
+        let refusal = std::panic::catch_unwind(|| {
+            recorder.record_for_test(|| {
+                super::observation::record(7);
+                panic!("original observer unwind");
+            })
+        });
+        assert!(refusal.is_err());
+        super::observation::record(5);
+    });
+    assert_eq!(outer, vec![3, 5]);
+    let (_, empty) = recorder.record_for_test(|| ());
+    assert!(empty.is_empty());
+}

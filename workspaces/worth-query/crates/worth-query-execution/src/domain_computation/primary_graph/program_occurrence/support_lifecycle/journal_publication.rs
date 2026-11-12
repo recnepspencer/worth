@@ -144,14 +144,12 @@ impl SupportJournalPublication<'_> {
             if let QueryProgramSupportRecord::Status {
                 revision, after, ..
             } = frame.record()
-            {
-                if let Some((_, entry)) = state
+                && let Some((_, entry)) = state
                     .entries
                     .iter_mut()
                     .find(|(known, _)| known.as_bytes() == revision.bytes())
-                {
-                    entry.status = *after;
-                }
+            {
+                entry.status = *after;
             }
             state
                 .journal

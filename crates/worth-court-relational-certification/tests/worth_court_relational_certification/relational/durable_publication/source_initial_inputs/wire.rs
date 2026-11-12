@@ -10,20 +10,22 @@ fn format_prefixes_refuse_predecessors_before_payload_bytes_are_available() {
         panic!("canonical predecessor must refuse from its ten-byte prefix");
     };
     assert_eq!(cause.produced().get(), 4);
-    let mut transition = b"WRTHRBTA".to_vec();
-    transition.extend_from_slice(&1u16.to_le_bytes());
-    let RelationalBranchTransitionArtifactFrameRefusal::UnsupportedVersion(cause) =
-        RelationalBranchTransitionArtifact::preflight_frame_version(&transition).unwrap_err()
-    else {
-        panic!("transition predecessor must refuse from its ten-byte prefix");
-    };
-    assert_eq!(cause.produced().get(), 1);
     canonical[8..10]
         .copy_from_slice(&RelationalCanonicalCommitArtifact::FORMAT_VERSION.to_le_bytes());
-    transition[8..10]
-        .copy_from_slice(&RelationalBranchTransitionArtifact::FORMAT_VERSION.to_le_bytes());
     RelationalCanonicalCommitArtifact::preflight_frame_version(&canonical).unwrap();
-    RelationalBranchTransitionArtifact::preflight_frame_version(&transition).unwrap();
+    for version in [1u16, 2] {
+        let mut transition = b"WRTHRBTA".to_vec();
+        transition.extend_from_slice(&version.to_le_bytes());
+        let RelationalBranchTransitionArtifactFrameRefusal::UnsupportedVersion(cause) =
+            RelationalBranchTransitionArtifact::preflight_frame_version(&transition).unwrap_err()
+        else {
+            panic!("transition predecessor must refuse from its ten-byte prefix");
+        };
+        assert_eq!(cause.produced().get(), u32::from(version));
+        transition[8..10]
+            .copy_from_slice(&RelationalBranchTransitionArtifact::FORMAT_VERSION.to_le_bytes());
+        RelationalBranchTransitionArtifact::preflight_frame_version(&transition).unwrap();
+    }
 }
 #[test]
 fn normalized_policy_rewrite_refuses_with_unchanged_canonical_index_and_resealed_wrapper() {
@@ -83,4 +85,20 @@ fn require_rewrite_refusal(rewrite: impl FnOnce(&mut serde_json::Value, &serde_j
             )
         ))
     ));
+}
+
+#[test]
+fn complete_source_refuses_prior_normalized_grammar_before_its_payload() {
+    let policy = worth_testkit_relational::shared_relational_certification_test_execution_policy::serial_request();
+    let request = ExecutionRequest::serial(&policy);
+    let mut prefix = b"WRTHRCS1".to_vec();
+    prefix.extend_from_slice(&1u32.to_le_bytes());
+    let length = prefix.len();
+    let bytes = ExecutionImmutableBytes::from_external_bytes(Arc::new(prefix.into_boxed_slice()));
+    let Err(RelationalInitialInputsRefusal::UnsupportedVersion(cause)) =
+        RelationalCompleteSourceArtifact::from_untrusted_region(bytes, 0..length, &request)
+    else {
+        panic!("the prior normalized grammar must refuse before payload admission");
+    };
+    assert_eq!(cause.produced().get(), 1);
 }

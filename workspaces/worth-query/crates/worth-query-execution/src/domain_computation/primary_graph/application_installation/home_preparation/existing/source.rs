@@ -1,13 +1,6 @@
 //! Existing source attachment has neither an initializer nor a seed publisher.
-use super::super::source::{
-    admit_registered_source,
-    assembly::{self, HomeQueryPreparation},
-};
+use super::super::source::assembly::HomeQueryPreparation;
 use super::*;
-use std::sync::{Arc, RwLock};
-use worth_runtime_bridge::facade::{
-    BridgeSealedRuntimeAssembly, RuntimeBridge, RuntimeBridgeRelationalSource,
-};
 /// Existing preparation carries recovered meaning and has no fresh initializer.
 /// Its positive handoff is a move of the genuine carrier:
 ///
@@ -68,59 +61,21 @@ pub struct PreparedExistingHomeQueryRuntime<Schema: ApplicationSchemaComposition
     pub(super) prepared: HomeQueryPreparation<Schema, Program>,
 }
 pub struct QueryExistingHomeSourceAttachmentRefused<Schema: ApplicationSchemaComposition, Program> {
-    _prepared: ReadmittedExistingHomeNativeMeaning<Schema, Program>,
-    _source: RuntimeBridgeRelationalSource,
-    _bridge: RuntimeBridge,
-    _conditional: Arc<RwLock<BridgeSealedRuntimeAssembly>>,
-    cause: WorthQueryPrimaryGraphInstallationDenial,
+    pub(in crate::domain_computation::primary_graph::application_installation::home_preparation) inner:
+        super::super::QueryHomeSourceAttachmentRefused<Schema, Program>,
 }
 impl<Schema: ApplicationSchemaComposition, Program>
     QueryExistingHomeSourceAttachmentRefused<Schema, Program>
 {
     pub fn reason(&self) -> &WorthQueryPrimaryGraphInstallationDenial {
-        &self.cause
+        self.inner.reason()
     }
 }
-impl<Schema: ApplicationSchemaComposition, Program>
-    ReadmittedExistingHomeNativeMeaning<Schema, Program>
-{
-    pub fn attach_existing_home_registered_source(
-        self,
-        _phase: &super::super::super::super::WorthQueryBootstrapAdvancementPhase<'_>,
-        source: RuntimeBridgeRelationalSource,
-        bridge: RuntimeBridge,
-        conditional: Arc<RwLock<BridgeSealedRuntimeAssembly>>,
-    ) -> Result<
-        PreparedExistingHomeQueryRuntime<Schema, Program>,
-        QueryExistingHomeSourceAttachmentRefused<Schema, Program>,
-    > {
-        let owner = match admit_registered_source(
-            &self.state,
-            &self.schema,
-            &source,
-            &bridge,
-            &conditional,
-        ) {
-            Ok(owner) => owner,
-            Err(cause) => {
-                return Err(QueryExistingHomeSourceAttachmentRefused {
-                    _prepared: self,
-                    _source: source,
-                    _bridge: bridge,
-                    _conditional: conditional,
-                    cause,
-                })
-            }
-        };
-        Ok(PreparedExistingHomeQueryRuntime {
-            prepared: assembly::assemble(
-                self.state,
-                self.schema,
-                self.restore_work,
-                owner,
-                bridge,
-                conditional,
-            ),
-        })
+
+impl<S: ApplicationSchemaComposition, P> PreparedExistingHomeQueryRuntime<S, P> {
+    pub(in crate::domain_computation::primary_graph::application_installation::home_preparation) fn from_authored_preparation(
+        prepared: HomeQueryPreparation<S, P>,
+    ) -> Self {
+        Self { prepared }
     }
 }

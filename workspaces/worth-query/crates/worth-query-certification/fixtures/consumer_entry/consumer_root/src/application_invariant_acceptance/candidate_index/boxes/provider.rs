@@ -58,7 +58,7 @@ pub struct Provider(pub Arc<Calls>);
 impl WorthQueryManagedIndexProvider<Catalog, BoxIndex> for Provider {
     fn decompose(
         &self,
-        node: Node,
+        node: &Node,
         control: &WorthQueryManagedIndexControl<'_>,
     ) -> Result<WorthQueryManagedIndexNodeRegion, Stop> {
         control.checkpoint(1)?;
@@ -91,7 +91,7 @@ impl WorthQueryManagedIndexProvider<Catalog, BoxIndex> for Provider {
     }
     fn merge_summaries(
         &self,
-        parts: [Option<Self::Summary>; 3],
+        parts: [Option<&Self::Summary>; 3],
         _sources: &WorthQueryManagedIndexSummarySources<'_, '_, Catalog, BoxIndex>,
         control: &WorthQueryManagedIndexControl<'_>,
     ) -> Result<Self::Summary, Stop> {
@@ -99,20 +99,21 @@ impl WorthQueryManagedIndexProvider<Catalog, BoxIndex> for Provider {
         parts
             .into_iter()
             .flatten()
+            .copied()
             .reduce(Box2::union)
             .ok_or(Stop::Domain(BoxIndexDenial::InvalidTopology))
     }
-    fn node_summary(
+    fn node_summary<'node>(
         &self,
-        node: Node,
+        node: &'node Node,
         control: &WorthQueryManagedIndexControl<'_>,
-    ) -> Result<Self::Summary, Stop> {
+    ) -> Result<&'node Self::Summary, Stop> {
         control.checkpoint(1)?;
-        Ok(node.bounds)
+        Ok(&node.bounds)
     }
     fn summary_may_match(
         &self,
-        bounds: Self::Summary,
+        bounds: &Self::Summary,
         _sources: &WorthQueryManagedIndexSummarySources<'_, '_, Catalog, BoxIndex>,
         probe: &Coordinates,
         control: &WorthQueryManagedIndexControl<'_>,

@@ -1,5 +1,10 @@
 //! Dense meaning tables retain every original open and historical occurrence.
 use super::WorldCheckpointCoverage;
+use crate::durability::readmission::CollectedWorldHistoryStep;
+use crate::durability::readmission::{
+    AdmittedWorldCreationIntent, AdmittedWorldCreationRelease, CollectedWorldOccurrence,
+    RecordedWorldBranchCreated,
+};
 use crate::durability::{
     AdmittedWorldDisposition, AdmittedWorldOccurrence, AdmittedWorldOpenAttempt,
     DecodedWorldRecord, DurableWorldHead, WorldDurableHomeBinding, WorldIdentityFrontiers,
@@ -61,16 +66,34 @@ impl Ord for WorldBranchImageKey {
 pub(crate) struct WorldImageHead {
     record: Arc<DecodedWorldRecord>,
     generation: DurableProductReferenceGeneration,
+    origin_position: u64,
+    event_position: u64,
 }
 impl WorldImageHead {
-    pub(crate) fn branch(record: Arc<DecodedWorldRecord>) -> Self {
-        let WorldRecord::Branch { head, .. } = &record.record else {
-            unreachable!("branch origin")
+    pub(crate) fn branch(record: Arc<DecodedWorldRecord>, origin_position: u64) -> Self {
+        let generation = match &record.record {
+            WorldRecord::Branch { head, .. } => head.generation,
+            WorldRecord::BranchCreated(created) => created.intent.destination.generation,
+            WorldRecord::Owner { .. }
+            | WorldRecord::OpenAttempt(_)
+            | WorldRecord::Occurrence { .. }
+            | WorldRecord::Released { .. }
+            | WorldRecord::Continued { .. }
+            | WorldRecord::CreationIntent(_)
+            | WorldRecord::CreationReleased { .. } => unreachable!("branch origin"),
         };
-        let generation = head.generation;
-        Self { record, generation }
+        Self {
+            record,
+            generation,
+            origin_position,
+            event_position: origin_position,
+        }
     }
-    pub(crate) fn occurrence(record: Arc<DecodedWorldRecord>) -> Result<Self, Denial> {
+    pub(crate) fn occurrence(
+        record: Arc<DecodedWorldRecord>,
+        origin_position: u64,
+        event_position: u64,
+    ) -> Result<Self, Denial> {
         let WorldRecord::OpenAttempt(open) = &record.record else {
             unreachable!("occurrence head")
         };
@@ -83,11 +106,23 @@ impl WorldImageHead {
         Ok(Self {
             record,
             generation: DurableProductReferenceGeneration::from_recorded(next),
+            origin_position,
+            event_position,
         })
     }
     pub(in crate::durability) fn program_record(&self) -> &DecodedWorldRecord {
         &self.record
     }
+    pub(crate) fn origin_position(&self) -> u64 {
+        self.origin_position
+    }
+    pub(crate) fn event_position(&self) -> u64 {
+        self.event_position
+    }
+    pub(crate) fn record(&self) -> &DecodedWorldRecord {
+        &self.record
+    }
+
     pub(crate) fn fields(
         &self,
     ) -> (
@@ -122,12 +157,23 @@ fn branch_fields(
 ) {
     match &record.record {
         WorldRecord::Branch { head, .. } => (&head.branch, head.incarnation, head.commit),
+        WorldRecord::BranchCreated(created) => {
+            let head = &created.intent.destination;
+            (&head.branch, head.incarnation, head.commit)
+        }
         WorldRecord::OpenAttempt(open) => (
             &open.expected.branch,
             open.expected.incarnation,
             open.commit,
         ),
-        _ => unreachable!("only a branch origin or occurrence owns a head"),
+        WorldRecord::Owner { .. }
+        | WorldRecord::Occurrence { .. }
+        | WorldRecord::Released { .. }
+        | WorldRecord::Continued { .. }
+        | WorldRecord::CreationIntent(_)
+        | WorldRecord::CreationReleased { .. } => {
+            unreachable!("only a branch origin or occurrence owns a head")
+        }
     }
 }
 
@@ -138,7 +184,34 @@ pub(crate) struct WorldCheckpointImage {
     pub(crate) frontiers: WorldIdentityFrontiers,
     pub(crate) branches: ExecutionOrderedMap<WorldBranchImageKey, ()>,
     pub(crate) occurrences: ExecutionOrderedMap<u64, AdmittedWorldOccurrence>,
+    pub(crate) creations: ExecutionOrderedMap<
+        DurableCompositePublicationAttemptIdentity,
+        AdmittedWorldCreationIntent,
+    >,
+    pub(crate) created:
+        ExecutionOrderedMap<DurableCompositePublicationAttemptIdentity, RecordedWorldBranchCreated>,
+    pub(crate) creation_releases: ExecutionOrderedMap<
+        DurableCompositePublicationAttemptIdentity,
+        AdmittedWorldCreationRelease,
+    >,
+    pub(crate) collected_occurrences: ExecutionOrderedMap<u64, CollectedWorldOccurrence>,
+    pub(crate) collected_steps: ExecutionOrderedMap<
+        (
+            DurableProductBranchIncarnation,
+            DurableProductReferenceGeneration,
+        ),
+        CollectedWorldHistoryStep,
+    >,
     pub(crate) history: ExecutionOrderedMap<DurableCompositeCommitIdentity, WorldImageHead>,
+    // Incarnations are globally issued by this owner, independently of names.
+    // A shared composite commit can therefore retain several exact references.
+    pub(crate) references: ExecutionOrderedMap<
+        (
+            DurableProductBranchIncarnation,
+            DurableProductReferenceGeneration,
+        ),
+        WorldImageHead,
+    >,
     pub(crate) heads: ExecutionOrderedMap<WorldBranchImageKey, WorldImageHead>,
     pub(crate) opens:
         ExecutionOrderedMap<DurableCompositePublicationAttemptIdentity, AdmittedWorldOpenAttempt>,
@@ -154,15 +227,19 @@ impl WorldCheckpointImage {
             frontiers: Default::default(),
             branches: Default::default(),
             occurrences: Default::default(),
+            creations: Default::default(),
+            created: Default::default(),
+            creation_releases: Default::default(),
+            collected_occurrences: Default::default(),
+            collected_steps: Default::default(),
             history: Default::default(),
+            references: Default::default(),
             heads: Default::default(),
             opens: Default::default(),
             dispositions: Default::default(),
         }
     }
-    pub(crate) fn branch_origins(&self) -> impl ExactSizeIterator<Item = &WorldBranchImageKey> {
-        self.branches.keys()
-    }
+
     pub(crate) fn first_branch(&self) -> Option<&WorldBranchImageKey> {
         self.branches.entry_at(0).map(|(key, ())| key)
     }

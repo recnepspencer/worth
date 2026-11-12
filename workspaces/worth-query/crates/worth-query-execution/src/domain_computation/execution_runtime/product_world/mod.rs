@@ -24,6 +24,7 @@ pub(crate) mod resources;
 mod retirement;
 mod runtime;
 mod shared_root;
+mod signal_lifecycle;
 mod source_head;
 mod source_installation;
 mod source_owner;
@@ -32,7 +33,10 @@ mod world_ports;
 pub(crate) use branch_close::WorthQueryProductBranchCloseScope;
 pub use branch_close::{WorthQueryProductBranchCloseDenial, WorthQueryProductBranchCloseReceipt};
 pub use clock::WorthQueryProductWorldClock;
-pub use creation::WorthQueryProductBranchCreationDenial;
+pub use creation::{
+    WorthQueryProductBranchCreationDenial, WorthQueryProductBranchCreationNoEffect,
+    WorthQueryProductBranchCreationOutcome, WorthQueryProductBranchCreationRelease,
+};
 pub use installation_denial::WorthQueryProductRuntimeInstallationDenial;
 pub(crate) use owner_cleanup::{
     OwnerCleanupRetirements, WorthQueryProductRetentionFollower, WorthQueryRetiredProductOccurrence,

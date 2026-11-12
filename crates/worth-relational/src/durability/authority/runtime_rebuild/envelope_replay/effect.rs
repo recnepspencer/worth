@@ -46,7 +46,7 @@ pub(super) fn replay_envelope_effect(
             }
         }
         recovered_branch_basis(restored, &envelope.branch_context)?;
-        apply_authoritative_commit_artifacts(lane, execution, restored, positioned, false, false)?;
+        apply_authoritative_commit_artifacts(execution, restored, positioned, false, false)?;
         let branch_basis = recovered_branch_basis(restored, &envelope.branch_context)?;
         let published_partition_delta = restored.storage_authority().affirm_no_partition_changes();
         let prepared_recovery = restored
@@ -89,6 +89,13 @@ pub(super) fn replay_envelope_effect(
         }
         return Ok(());
     }
+    super::super::index_catalog::reconstruct_predecessor(
+        lane,
+        execution,
+        restored,
+        &envelope.branch_context,
+        &catalog,
+    )?;
     if envelope.merge_parent_branches.is_empty() {
         replay_ordinary_commit(
             execution,
@@ -110,7 +117,6 @@ pub(super) fn replay_envelope_effect(
 }
 
 pub(super) fn restore_authoritative_artifacts_when_required(
-    lane: &crate::storage::substrate::maintenance::ReconstructionLane<'_>,
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     restored: &mut RelationalRuntime,
     positioned: &crate::history::data::PositionedCanonicalCommit,
@@ -121,7 +127,6 @@ pub(super) fn restore_authoritative_artifacts_when_required(
     if restore_authoritative_envelope {
         validate_recovered_history_parity(restored, envelope)?;
         apply_authoritative_commit_artifacts(
-            lane,
             execution,
             restored,
             positioned,

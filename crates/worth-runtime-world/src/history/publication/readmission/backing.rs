@@ -8,14 +8,14 @@ pub(crate) struct ReadmittedPublicationRecordBacking {
 }
 impl ReadmittedPublicationRecordBacking {
     pub(crate) fn backing_bytes() -> Option<usize> {
-        Some(
-            std::alloc::Layout::new::<[std::sync::atomic::AtomicUsize; 2]>()
-                .extend(std::alloc::Layout::new::<ReadmittedPublicationRecord>())
-                .ok()?
-                .0
-                .pad_to_align()
-                .size(),
-        )
+        let counter = std::alloc::Layout::new::<[std::sync::atomic::AtomicUsize; 2]>();
+        [
+            std::alloc::Layout::new::<ReadmittedPublicationRecord>(),
+            std::alloc::Layout::new::<NativePublicationMeaning>(),
+            std::alloc::Layout::new::<worth_signal::facade::durability::SignalReadmittedSourcePoint>(),
+        ].into_iter().try_fold(0usize, |total, item| {
+            total.checked_add(counter.extend(item).ok()?.0.pad_to_align().size())
+        })
     }
 
     pub(crate) fn prepare(

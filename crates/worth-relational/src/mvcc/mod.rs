@@ -29,8 +29,8 @@ pub(crate) use publication::PreparedCanonicalBranchMovement;
 pub use publication::RelationalInstalledApplicationPublicationAuthority;
 pub(crate) use publication::{origin_denial, RequiredOutputPublicationAdmission};
 pub use publication::{
-    CompanionBranchCell, CompanionBranchCellSlot, CompanionBranchImage, CompanionCellEditStop,
-    CompanionDerivedRootCleanup, CompanionDerivedRootInstalled,
+    AuthoredOwnedMemberKind, CompanionBranchCell, CompanionBranchCellSlot, CompanionBranchImage,
+    CompanionCellEditStop, CompanionDerivedRootCleanup, CompanionDerivedRootInstalled,
     CompanionDerivedRootPreparationStop, CompanionDerivedRootStopped, CompanionPreflightStop,
     CompanionPublicationCompletion, CompanionPublicationCompletionObserver,
     DiscardedRelationalCommitCandidate, ManagedIndexPublicCache, ManagedIndexPublicCacheRetirement,
@@ -83,13 +83,13 @@ pub use transaction::{
 };
 pub(crate) use validation::RelationalTransactionValidationInput;
 pub use validation::{
-    CustomInvariantExecutionReceipt, CustomInvariantNonApplicability,
-    RelationalMutationInvariantEvidence, RelationalMutationProposalIdentity,
-    ValidatedEntityStructTouch, ValidatedMutationFootprint, ValidatedMutationFootprintNotRequested,
-    ValidatedMutationFootprintProjection, ValidatedMutationFootprintWork, ValidatedMutationTouch,
-    ValidatedMutationTouchProjectionError, ValidatedMutationTouchProjectionWork,
-    ValidatedMutationTouches, ValidatedRelationMutation, ValidatedRelationMutationFootprint,
-    ValidatedRelationalProposal,
+    CustomInvariantExecutionReceipt, CustomInvariantNonApplicability, RecordedMemberRestoration,
+    RecordedMemberRestorationRefusal, RelationalMutationInvariantEvidence,
+    RelationalMutationProposalIdentity, ValidatedEntityStructTouch, ValidatedMutationFootprint,
+    ValidatedMutationFootprintNotRequested, ValidatedMutationFootprintProjection,
+    ValidatedMutationFootprintWork, ValidatedMutationTouch, ValidatedMutationTouchProjectionError,
+    ValidatedMutationTouchProjectionWork, ValidatedMutationTouches, ValidatedRelationMutation,
+    ValidatedRelationMutationFootprint, ValidatedRelationalProposal,
 };
 
 #[cfg(test)]

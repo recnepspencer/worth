@@ -87,11 +87,11 @@ fn exercise_ordinary(worker: bool) {
         &request,
         before,
         document.selection(&request).unwrap(),
-        0x1255_a1,
+        0x0012_55a1,
     )
     .unwrap();
     let selected =
-        super::super::courts::checkout(&document, &request, after, selected, 0x1255_a2).unwrap();
+        super::super::courts::checkout(&document, &request, after, selected, 0x0012_55a2).unwrap();
     assert!(discovery.saw("a") && !discovery.saw("b"));
     assert_eq!(reads.reads(), 0, "selected healthy roots remain unopened");
     assert_eq!(

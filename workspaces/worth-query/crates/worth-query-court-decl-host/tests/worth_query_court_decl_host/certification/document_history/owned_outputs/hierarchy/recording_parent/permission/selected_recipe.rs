@@ -46,7 +46,7 @@ fn exercise_selection(worker: bool) {
         &request,
         before,
         selection.clone(),
-        0x1255_c1,
+        0x0012_55c1,
     )
     .unwrap_err();
     assert_eq!(

@@ -70,15 +70,13 @@ pub(in crate::subscription) fn lifecycle_maintenance_delta_identity(
 pub(in crate::subscription) fn lifecycle_maintenance_delta_scope_identity(
     scope_label: &str,
 ) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
-    Ok(
-        WorthQueryEvidenceIdentity::compose(SUBSCRIPTION_IDENTITY_SCOPE)
-            .field_shape(
-                WorthQueryEvidenceTag::new("identity_family"),
-                "subscription_maintenance_delta_scope_v1",
-            )
-            .field_shape(WorthQueryEvidenceTag::new("scope"), scope_label)
-            .seal()?,
-    )
+    WorthQueryEvidenceIdentity::compose(SUBSCRIPTION_IDENTITY_SCOPE)
+        .field_shape(
+            WorthQueryEvidenceTag::new("identity_family"),
+            "subscription_maintenance_delta_scope_v1",
+        )
+        .field_shape(WorthQueryEvidenceTag::new("scope"), scope_label)
+        .seal()
 }
 
 pub(in crate::subscription) fn lifecycle_maintenance_delta_identity_typed(

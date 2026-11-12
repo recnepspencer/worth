@@ -24,33 +24,33 @@ impl WorthQuerySupportContributionAuthoring {
         semantic_code: impl Into<String>,
         detail: impl Into<String>,
     ) -> Result<Self, crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial> {
-        Ok(Self::new(
+        Self::new(
             WorthQuerySupportContributionPosture::DeclarationSupport,
             semantic_code,
             detail,
-        )?)
+        )
     }
 
     pub fn declaration_traceability(
         semantic_code: impl Into<String>,
         detail: impl Into<String>,
     ) -> Result<Self, crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial> {
-        Ok(Self::new(
+        Self::new(
             WorthQuerySupportContributionPosture::DeclarationTraceability,
             semantic_code,
             detail,
-        )?)
+        )
     }
 
     pub fn narrowed_support(
         semantic_code: impl Into<String>,
         detail: impl Into<String>,
     ) -> Result<Self, crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial> {
-        Ok(Self::new(
+        Self::new(
             WorthQuerySupportContributionPosture::NarrowedSupport,
             semantic_code,
             detail,
-        )?)
+        )
     }
 
     pub fn for_intent_declaration(
@@ -60,9 +60,9 @@ impl WorthQuerySupportContributionAuthoring {
         WorthQueryRequestedSupportContribution<WorthQueryDeclarationBoundContributionTarget>,
         IdentityDerivationDenial,
     > {
-        Ok(self.bind_to_declaration_target(
+        self.bind_to_declaration_target(
             WorthQueryDeclarationBoundContributionTarget::for_intent_declaration(declaration),
-        )?)
+        )
     }
 
     pub fn for_admitted_intent_plan(
@@ -72,9 +72,9 @@ impl WorthQuerySupportContributionAuthoring {
         WorthQueryRequestedSupportContribution<WorthQueryAdmittedPlanBoundContributionTarget>,
         IdentityDerivationDenial,
     > {
-        Ok(self.bind_to_admitted_plan_target(
+        self.bind_to_admitted_plan_target(
             WorthQueryAdmittedPlanBoundContributionTarget::for_admitted_intent_plan(plan),
-        )?)
+        )
     }
 
     pub fn for_lower_runtime_boundary_envelope(
@@ -86,11 +86,11 @@ impl WorthQuerySupportContributionAuthoring {
         >,
         IdentityDerivationDenial,
     > {
-        Ok(self.bind_to_lower_runtime_boundary_target(
+        self.bind_to_lower_runtime_boundary_target(
             WorthQueryLowerRuntimeBoundaryBoundContributionTarget::for_lower_runtime_boundary_envelope(
                 envelope,
             ),
-        )?)
+        )
     }
 
     pub fn for_lower_runtime_boundary_source<S>(
@@ -105,7 +105,7 @@ impl WorthQuerySupportContributionAuthoring {
     where
         S: WorthQueryLowerRuntimeBoundaryEnvelopeSource + ?Sized,
     {
-        Ok(self.for_lower_runtime_boundary_envelope(source.lower_runtime_boundary_envelope())?)
+        self.for_lower_runtime_boundary_envelope(source.lower_runtime_boundary_envelope())
     }
 
     pub fn bind_to_declaration_target(
@@ -115,7 +115,7 @@ impl WorthQuerySupportContributionAuthoring {
         WorthQueryRequestedSupportContribution<WorthQueryDeclarationBoundContributionTarget>,
         IdentityDerivationDenial,
     > {
-        Ok(bind_requested(self.payload, target)?)
+        bind_requested(self.payload, target)
     }
 
     pub fn bind_to_admitted_plan_target(
@@ -125,7 +125,7 @@ impl WorthQuerySupportContributionAuthoring {
         WorthQueryRequestedSupportContribution<WorthQueryAdmittedPlanBoundContributionTarget>,
         IdentityDerivationDenial,
     > {
-        Ok(bind_requested(self.payload, target)?)
+        bind_requested(self.payload, target)
     }
 
     pub fn bind_to_lower_runtime_boundary_target(
@@ -137,7 +137,7 @@ impl WorthQuerySupportContributionAuthoring {
         >,
         IdentityDerivationDenial,
     > {
-        Ok(bind_requested(self.payload, target)?)
+        bind_requested(self.payload, target)
     }
 
     pub(crate) fn bind_to_installed_target<T>(
@@ -157,10 +157,10 @@ impl WorthQuerySupportContributionAuthoring {
                 T,
             >,
     {
-        Ok(bind_requested::<
+        bind_requested::<
             WorthQuerySupportContributionPayload,
             crate::domain_capabilities::WorthQueryInstalledDomainContributionTarget<T>,
-        >(self.payload, target)?)
+        >(self.payload, target)
     }
 
     fn new(

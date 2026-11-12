@@ -15,7 +15,7 @@ use worth_execution::{
 fn reconstruction_funds_portable_admission_and_output_until_drop() {
     let plan = scalar_plan();
     let source = scalar_patch(&plan, text("original payload"));
-    let footprint = storage_footprint::quote(None, &source, &plan, true);
+    let footprint = quote_footprint(None, &source, &plan, true);
     let budget = SerialMemoryBudget::new(Some(footprint.peak));
     let output = run(&budget, None, &source, &plan, true).unwrap();
     let state = output.state.as_ref().unwrap();
@@ -77,11 +77,11 @@ fn reconstruction_releases_large_replaced_payload_before_retaining_small_output(
     assert!(current.owned_allocation_capacity_bytes() > 4096);
     // c65d042399/6df49ed086 add persistent-tree backing. The finite grant
     // comes from that owner's actual geometry, not a newly observed peak.
-    let footprint = storage_footprint::quote(Some(&current), &source, &plan, false);
+    let footprint = quote_footprint(Some(&current), &source, &plan, false);
     let small_current = state(&plan, text("before"));
     assert_eq!(
         footprint.peak,
-        storage_footprint::quote(Some(&small_current), &source, &plan, false).peak,
+        quote_footprint(Some(&small_current), &source, &plan, false).peak,
         "discarded input payload is borrowed, never multiplied into construction"
     );
     let budget = SerialMemoryBudget::new(Some(footprint.peak));
@@ -112,8 +112,8 @@ fn reconstruction_birth_canonicalizes_unique_fields_and_preserves_duplicate_refu
         }],
         field_clears: vec![field("a"), field("b")],
     }]);
-    let initial = storage_footprint::quote(None, &source, &plan, true);
-    let update = storage_footprint::quote(initial.next.as_ref(), &changed, &plan, false);
+    let initial = quote_footprint(None, &source, &plan, true);
+    let update = quote_footprint(initial.next.as_ref(), &changed, &plan, false);
     let budget = SerialMemoryBudget::new(Some(
         initial
             .peak
@@ -280,4 +280,49 @@ fn state(plan: &LoweredAspectContractPlan, value: AspectValue) -> AuthoritativeR
         panic!("pure admitted state")
     };
     state.into_parts().into_parts().0
+}
+
+fn quote_footprint(
+    current: Option<&AuthoritativeRecordAspectState>,
+    source: &PublishedAuthoritativePatch,
+    plan: &LoweredAspectContractPlan,
+    creation: bool,
+) -> storage_footprint::Footprint {
+    let host = crate::test_execution_policy::serial_request();
+    let execution = ExecutionRequest::serial(&host);
+    let (mut quote, _) = execution
+        .run_native_with_checkpoint(|context| {
+            storage_footprint::quote(current, source, plan, creation, context)
+        })
+        .unwrap();
+    quote.peak = quote.peak.checked_add(scope_entries()).unwrap();
+    quote
+}
+// The tested serial adapter owns two real metered scopes: in_scope's
+// run_serial and its nested run_with_checkpoint. Quote that same stack and
+// callback result type through the existing owner, without any payload work.
+fn scope_entries() -> u64 {
+    let budget = SerialMemoryBudget::new(None);
+    let cancellation = CancellationSource::new();
+    let host = SerialRequest::from_memory(budget.clone(), cancellation.token(), None);
+    let request = ExecutionRequest::serial(&host);
+    let mut entry = None;
+    let outcome = request
+        .in_scope(|lease| {
+            ExecutionWorkCeiling::new(request.work_ceiling()).run_with_checkpoint(
+                lease,
+                None,
+                |_| {
+                    entry = Some(budget.charged_memory_bytes());
+                    // Preserve apply's exact Result type. This empty data error
+                    // constructs no reconstructed payload or Original evidence.
+                    Err::<ReconstructedPayload, Stop>(Stop::Payload(String::new()))
+                },
+            )
+        })
+        .unwrap()
+        .unwrap();
+    drop(outcome);
+    assert_eq!(budget.charged_memory_bytes(), 0);
+    entry.expect("both actual reconstruction scopes were entered")
 }

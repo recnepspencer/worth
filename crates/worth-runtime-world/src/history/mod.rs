@@ -39,8 +39,9 @@ pub(crate) use publication::{
     MemoryPublicationMeaning, MemoryPublicationReceiver, MemoryPublicationReceiverScope,
 };
 pub(crate) use publication::{
-    PreparedReadmittedPublicationRecord, PublicationEvidence, ReadmittedPublicationRecord,
-    ReadmittedPublicationRecordBacking,
+    NativeReadmittedPublicationRecord, PreparedReadmittedPublicationRecord, PublicationEvidence,
+    ReadmittedPublicationRecord, ReadmittedPublicationRecordBacking, RecoveredWorldOwnerEvidence,
+    RecoveredWorldOwnerEvidenceRef,
 };
 pub use publication::{
     WorldObservedMemoryPublication, WorldReadmittedPublication, WorldReadmittedPublicationDenial,

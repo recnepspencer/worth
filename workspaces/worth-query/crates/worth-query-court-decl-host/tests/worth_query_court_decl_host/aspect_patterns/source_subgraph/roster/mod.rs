@@ -1,0 +1,54 @@
+//! Variable authored ownership through the ordinary source-subgraph host.
+use super::*;
+mod schema;
+pub(super) use schema::*;
+mod notes;
+pub(super) use notes::*;
+pub(super) mod local_member;
+mod operations;
+pub(super) use operations::*;
+mod correction;
+mod creation;
+pub(super) mod links;
+mod replacement;
+mod retirement;
+pub(super) use correction::{UndoCreate, UndoRetire};
+use replacement::*;
+pub(super) mod query;
+#[derive(Clone, Debug, Eq, PartialEq, WorthValue)]
+#[worth_value(crate = "worth_query_decl::facade::application_schema")]
+pub struct Row {
+    pub key: String,
+    pub value: u64,
+    pub next: Option<String>,
+    pub operand: Option<String>,
+}
+#[derive(Clone, Debug, WorthValue)]
+#[worth_value(crate = "worth_query_decl::facade::application_schema")]
+pub struct Image {
+    pub key: String,
+    pub value: u64,
+    pub members: Vec<Row>,
+}
+pub type AnchorTarget = WorthQueryInvariantMutationTarget<Schema, Source>;
+pub type MemberTarget = WorthQueryInvariantMutationTarget<Schema, Member>;
+pub type NoteTarget = WorthQueryInvariantMutationTarget<Schema, Note>;
+pub fn declare(
+    schema: ApplicationSchemaDeclarationBuilder<Schema>,
+) -> ApplicationSchemaDeclarationBuilder<Schema> {
+    local_member::declare(links::declare(query::declare(operations::declare(schema))))
+}
+pub fn configure(
+    setup: &mut WorthQueryApplicationContributionSetup<'_, Schema>,
+    fault: world::Fault,
+) -> Result<(), WorthQueryPrimaryGraphInstallationDenial> {
+    local_member::configure(setup, fault)?;
+    setup.handler::<links::Binding, _>(links::Handler)?;
+    setup.handler::<CreateBinding, _>(creation::Handler)?;
+    setup.handler::<RestoreBinding, _>(creation::RestorationHandler {
+        omit_anchor: fault == world::Fault::OmitRestoredAnchor,
+    })?;
+    setup.handler::<RetireBinding, _>(retirement::Handler {
+        retain_anchor: fault == world::Fault::RetainAuthoredAnchor,
+    })
+}

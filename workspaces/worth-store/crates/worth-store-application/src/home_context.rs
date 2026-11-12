@@ -70,6 +70,7 @@ pub(crate) struct HomeContext {
     pub(crate) query_corrections: Arc<crate::query_corrections::ApplicationQueryCorrections>,
     pub(crate) query_obligations: Arc<crate::query_obligations::ApplicationQueryObligations>,
     pub(crate) query_dispatch: Arc<crate::query_dispatch::ApplicationHomeDispatchJournal>,
+    pub(crate) signal_close_probe: Mutex<Option<std::sync::Weak<crate::StoreSignalMedium>>>,
     pub(crate) world_preparation:
         Option<crate::world_section::native_selection::HomeWorldPreparation>,
     pub(crate) opening_observation: crate::ApplicationHomeOpeningObservation,
@@ -79,6 +80,8 @@ pub(crate) struct HomeContext {
     pub(crate) world_publications: Arc<crate::world_section::WorldPublications>,
     pub(crate) world_origin_retirement:
         Option<worth_runtime_world::facade::WorldCheckpointOriginRetirement>,
+    pub(crate) signal_owner_retirement:
+        Option<worth_signal::facade::durability::SignalRetainedAuthoredHomeAllocation>,
     pub(crate) world_owner_retirement:
         Option<worth_runtime_world::facade::RuntimeWorldHomeRetirement>,
     pub(crate) world_close_report: Option<worth_runtime_world::facade::RuntimeWorldCloseReport>,

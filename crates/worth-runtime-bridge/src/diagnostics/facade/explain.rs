@@ -253,7 +253,10 @@ impl BridgeDiagnosticsFacade {
 
     pub fn explain_last_writeback_execution_record(
         &self,
-    ) -> Option<BridgeWritebackExecutionExplanation> {
+    ) -> Result<
+        BridgeWritebackExecutionExplanation,
+        worth_foundational::facade::DiagnosticRecordAbsence,
+    > {
         self.last_writeback_execution_record()
             .map(|record| BridgeWritebackExecutionExplanation::from_record(&record))
     }
@@ -309,7 +312,10 @@ impl BridgeDiagnosticsFacade {
 
     pub fn explain_last_writeback_replay_record(
         &self,
-    ) -> Option<BridgeWritebackReplayRecordExplanation> {
+    ) -> Result<
+        BridgeWritebackReplayRecordExplanation,
+        worth_foundational::facade::DiagnosticRecordAbsence,
+    > {
         self.last_writeback_replay_record()
             .map(|record| BridgeWritebackReplayRecordExplanation::from_record(&record))
     }

@@ -113,7 +113,7 @@ fn clearing_a_unique_field_frees_its_value_without_a_lookup() {
 }
 
 #[test]
-fn deleting_the_holder_does_not_free_its_value_in_the_same_program() {
+fn deleting_the_exact_holder_frees_its_value_in_the_same_atomic_program() {
     let facts = vec![
         Fact::Entity {
             entity_id: entity(1),
@@ -126,6 +126,45 @@ fn deleting_the_holder_does_not_free_its_value_in_the_same_program() {
             entity_id: entity(1),
         },
         create("a", "ada", Partition::Issued),
+    ];
+    assert_eq!(lower(Some(INDEX), facts, effects), Ok(()));
+}
+
+#[test]
+fn deleting_another_record_never_releases_the_selected_unique_holder() {
+    let facts = vec![
+        Fact::Entity {
+            entity_id: entity(2),
+            kind: KIND,
+        },
+        selection("ada", vec![entity(1)]),
+    ];
+    let effects = vec![
+        Effect::DeleteEntity {
+            entity_id: entity(2),
+        },
+        create("new", "ada", Partition::Issued),
+    ];
+    assert_eq!(
+        lower(Some(INDEX), facts, effects),
+        Err(Kind::UniqueValueTaken)
+    );
+}
+#[test]
+fn retirement_does_not_allow_two_successors_to_claim_one_unique_value() {
+    let facts = vec![
+        Fact::Entity {
+            entity_id: entity(1),
+            kind: KIND,
+        },
+        selection("ada", vec![entity(1)]),
+    ];
+    let effects = vec![
+        Effect::DeleteEntity {
+            entity_id: entity(1),
+        },
+        create("first", "ada", Partition::Issued),
+        create("second", "ada", Partition::Issued),
     ];
     assert_eq!(
         lower(Some(INDEX), facts, effects),

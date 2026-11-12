@@ -95,37 +95,35 @@ impl WorthQueryLowerRuntimeCloseoutRow {
     }
 
     fn row_identity(&self) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
-        Ok(WorthQueryEvidenceIdentity::compose(
-            WorthQueryEvidenceScope::LowerRuntimeBoundaryEvidence,
-        )
-        .field_shape(
-            WorthQueryEvidenceTag::new("identity_family"),
-            "lower_runtime_closeout_row_v1",
-        )
-        .field_shape(WorthQueryEvidenceTag::new("seam"), self.seam_key.as_str())
-        .field_shape(
-            WorthQueryEvidenceTag::new("capability"),
-            self.capability_label,
-        )
-        .field_shape(WorthQueryEvidenceTag::new("posture"), self.posture.as_str())
-        .field_shape(WorthQueryEvidenceTag::new("owner"), self.owner.as_str())
-        .field_shape(
-            WorthQueryEvidenceTag::new("route_kind"),
-            self.route_kind.as_str(),
-        )
-        .field_value(
-            WorthQueryEvidenceTag::new("closeout_target"),
-            self.closeout_target,
-        )
-        .field_value(
-            WorthQueryEvidenceTag::new("required_closeout"),
-            self.required_closeout,
-        )
-        .field_value(
-            WorthQueryEvidenceTag::new("certification_row"),
-            self.certification_row,
-        )
-        .seal()?)
+        WorthQueryEvidenceIdentity::compose(WorthQueryEvidenceScope::LowerRuntimeBoundaryEvidence)
+            .field_shape(
+                WorthQueryEvidenceTag::new("identity_family"),
+                "lower_runtime_closeout_row_v1",
+            )
+            .field_shape(WorthQueryEvidenceTag::new("seam"), self.seam_key.as_str())
+            .field_shape(
+                WorthQueryEvidenceTag::new("capability"),
+                self.capability_label,
+            )
+            .field_shape(WorthQueryEvidenceTag::new("posture"), self.posture.as_str())
+            .field_shape(WorthQueryEvidenceTag::new("owner"), self.owner.as_str())
+            .field_shape(
+                WorthQueryEvidenceTag::new("route_kind"),
+                self.route_kind.as_str(),
+            )
+            .field_value(
+                WorthQueryEvidenceTag::new("closeout_target"),
+                self.closeout_target,
+            )
+            .field_value(
+                WorthQueryEvidenceTag::new("required_closeout"),
+                self.required_closeout,
+            )
+            .field_value(
+                WorthQueryEvidenceTag::new("certification_row"),
+                self.certification_row,
+            )
+            .seal()
     }
 }
 

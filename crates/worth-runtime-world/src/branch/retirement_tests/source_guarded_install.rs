@@ -294,6 +294,10 @@ fn retained_after_both_forks(
 ) -> ProductUnpublishedOwnerEffects {
     let effects = match outcome {
         RuntimeWorldBranchCreationOutcome::ProductUnpublished(effects) => effects,
+        RuntimeWorldBranchCreationOutcome::NoEffect(_)
+        | RuntimeWorldBranchCreationOutcome::ReleasedOriginal(_) => {
+            panic!("memory creation cannot return a Home publication fate")
+        }
         RuntimeWorldBranchCreationOutcome::Performed(_) => {
             panic!("a fork cannot install a child from a head that is no longer current")
         }

@@ -104,6 +104,12 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         cost.cost
             .completion_candidate_prepares
             .fetch_add(1, Ordering::Relaxed);
+        // Ordinary selection carries the program observed at this exact occurrence.
+        let selected = match self.on_product(execution, lease) {
+            Ok(selected) => selected,
+            Err(_) => return Outcome::Denied(Denial::ProductAdmission),
+        };
+        let lease = selected.product();
         let candidate = match completion_candidate(
             self.runtime
                 .primary_provider

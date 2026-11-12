@@ -1,0 +1,10 @@
+{"count": 9, "kind": "leaf"}
+{"binary": "worth-signal", "slots": 1, "test": "data::graph::node_issuance::tests::recovered_node_bounds_change_future_issuance_without_changing_authored_source"}
+{"binary": "worth-signal", "slots": 1, "test": "data::graph::node_issuance::tests::unused_body_vacancies_and_retired_slots_bound_future_node_issuance"}
+{"binary": "worth-signal", "slots": 1, "test": "durability::authored_image::tests::authored_bytes_exclude_evaluated_edges_versions_and_node_state"}
+{"binary": "worth-signal", "slots": 1, "test": "durability::authored_image::tests::authored_image_has_explicit_empty_payload_and_refuses_unknown_versions"}
+{"binary": "worth-signal", "slots": 1, "test": "durability::authored_image::tests::bulk_declarations_are_captured_and_rejected_batches_preserve_the_source"}
+{"binary": "worth-signal", "slots": 1, "test": "durability::authored_image::tests::checksum_and_exact_length_cover_the_authored_frame"}
+{"binary": "worth-signal", "slots": 1, "test": "durability::authored_image::tests::definition_policy_changes_are_source_even_when_cached_versions_match"}
+{"binary": "worth-signal", "slots": 1, "test": "durability::authored_image::tests::memory_snapshot_keeps_declared_edges_separate_from_discovered_topology"}
+{"binary": "worth-testkit-compiler", "slots": 1, "test": "tests::recursive_or_character_class_globs_require_explicit_expansion"}

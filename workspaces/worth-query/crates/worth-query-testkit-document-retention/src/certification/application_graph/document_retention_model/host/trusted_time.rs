@@ -79,7 +79,7 @@ pub fn publish_on_first_program_with_trusted_time(
     time: impl WorthQueryRuntimeTimeSource + 'static,
 ) -> DocumentRetentionRuntime<RetentionProgramP0> {
     let initial = validated_first_program();
-    let roster = super::auxiliary_programs::include(
+    let roster = super::with_lifecycle_programs(
         WorthQueryApplicationProgramRoster::new().support(validated_second_program()),
         initial.identity(),
         initial.revision(),

@@ -324,7 +324,7 @@ mod tests {
         let host_request = crate::test_execution_policy::serial_request();
         let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
-        let runtime = durable_runtime_with_test_schema();
+        let runtime = runtime_with_test_schema();
         create_entity(execution, &runtime, "streamed-image-seed");
         let sibling = create_branch_from_main(&runtime, "streamed-image-sibling");
         let changed =

@@ -3,13 +3,11 @@ use super::*;
 pub(super) fn certify(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     recovery_plan: &crate::durability::data::RecoveryPlan,
-    recovered_root: &std::sync::Arc<crate::tests::support::TestDurableMedium>,
     commit_id: crate::facade::history::CommitId,
 ) -> (bool, bool) {
     let mut missing_executor_plan = recovery_plan.clone();
     missing_executor_plan.commit_strategy_executors = Default::default();
-    let mut missing_executor_runtime =
-        persisted_strategy_runtime_without_executors(recovered_root.clone());
+    let mut missing_executor_runtime = strategy_runtime_without_executors();
     missing_executor_runtime
         .durability_recovery()
         .recover(execution, missing_executor_plan)
@@ -36,8 +34,7 @@ pub(super) fn certify(
                 && mismatch.surface == ReplayObservableSurface::Strategy
         });
 
-    let mut failing_executor_runtime =
-        persisted_strategy_runtime_with_failing_intent_executor(recovered_root.clone());
+    let mut failing_executor_runtime = strategy_runtime_with_failing_intent_executor();
     let mut failing_executor_plan = recovery_plan.clone();
     failing_executor_plan.commit_strategy_executors = failing_executor_runtime
         .commit_strategy_executor_registry()

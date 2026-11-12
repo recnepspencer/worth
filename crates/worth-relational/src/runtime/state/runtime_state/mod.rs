@@ -20,7 +20,12 @@ mod preparation_home_contracts;
 mod preparation_round;
 mod preparation_runtime;
 mod prepared_close;
+mod publication_close_custody;
 mod publication_lifecycle;
+pub use publication_close_custody::{
+    RelationalPublicationCompanionCustody, RelationalPublicationCustodyHolders,
+    RelationalPublicationRegistryCustody,
+};
 mod publication_settlement_registry;
 mod tenure;
 #[cfg(test)]
@@ -44,7 +49,8 @@ pub(crate) use owner_lifecycle::{
 pub(crate) use preparation_runtime::RelationalPreparationOwnerBinding;
 pub(crate) use preparation_runtime::RelationalPreparationRuntime;
 pub use prepared_close::{
-    PreparedRelationalRuntimeClose, RelationalRuntimeCloseDenial, RelationalRuntimeCloseRefused,
+    PreparedRelationalRuntimeClose, RelationalReadCustodyHolders, RelationalRuntimeCloseDenial,
+    RelationalRuntimeCloseRefused,
 };
 pub(in crate::runtime) use publication_lifecycle::RelationalRuntimePublicationOwner;
 pub(crate) use publication_lifecycle::{

@@ -15,6 +15,7 @@ use crate::transactions::data::RecordRef;
 use crate::validation::data::{StructuralReadError, StructuralRelationView};
 
 mod home_target;
+mod ordered_birth;
 mod projections;
 pub(super) use home_target::discover_home_target;
 
@@ -35,6 +36,9 @@ pub(crate) fn discover(
 ) -> Result<PreparedManagedIndexScopeClosure, Denial> {
     before.require_derived_relation(&program.0.path)?;
     after.require_derived_relation(&program.0.path)?;
+    if let Some(birth) = ordered_birth::discover(program, records, adjacency, before, after)? {
+        return Ok(birth);
+    }
     let mut old = LifecycleSource(StructuralSource {
         view: before,
         reads: DerivedRelationReads::default(),

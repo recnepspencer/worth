@@ -5,6 +5,7 @@ pub use historical_selection::RelationalHistoricalOutputSelection;
 mod authored_cascade;
 mod authored_restoration;
 mod authored_retirement;
+pub use authored_retirement::AuthoredOwnedMemberKind;
 mod native_transition_succession;
 mod restored_producer_prior;
 pub use authored_cascade::RelationalAuthoredRetirement;

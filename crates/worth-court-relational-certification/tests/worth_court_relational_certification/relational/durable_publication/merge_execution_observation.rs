@@ -51,7 +51,7 @@ pub(super) fn read_entity_aspect_field_display(
         .expect("aspect field display value")
 }
 
-fn entity_field_display(
+pub(super) fn entity_field_display(
     record: &EntityReadRecord,
     aspect_key: &AspectKey,
     field: &FieldKey,
@@ -117,6 +117,12 @@ pub(super) struct VisibleRelationSummary {
 pub(super) struct VisibleTruthSummary {
     entity_names: Vec<String>,
     relations: Vec<VisibleRelationSummary>,
+}
+
+impl VisibleTruthSummary {
+    pub(super) fn counts(&self) -> (usize, usize) {
+        (self.entity_names.len(), self.relations.len())
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]

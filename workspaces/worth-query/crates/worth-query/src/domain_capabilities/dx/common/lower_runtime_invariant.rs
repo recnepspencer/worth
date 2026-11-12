@@ -69,7 +69,7 @@ impl WorthQueryLowerRuntimeGraphInvariantDenialContribution {
         crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial,
     > {
         let target = self.target;
-        Ok(materialize_common_lane(
+        materialize_common_lane(
             "invariant-capability",
             WorthQueryDomainCapabilityTargetKind::LowerRuntimeBoundaryEnvelope,
             WorthQueryInvariantCapabilityContributionPosture::InvariantDenial.as_str(),
@@ -82,7 +82,7 @@ impl WorthQueryLowerRuntimeGraphInvariantDenialContribution {
                 )
             },
             materialize_graph_composition_domain_invariant_denial,
-        )?)
+        )
     }
 
     pub fn materialize(

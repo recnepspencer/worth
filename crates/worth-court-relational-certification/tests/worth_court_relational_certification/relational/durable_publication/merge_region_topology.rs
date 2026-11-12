@@ -14,7 +14,7 @@ use worth_relational::facade::merge::{
 use worth_testkit_relational::durable_medium::TestDurableMedium;
 
 #[test]
-fn topology_region_conflict_detection_reports_bounded_neighborhood_counters() {
+fn topology_region_conflict_detection_preserves_neighborhood_evidence() {
     let host_request = worth_testkit_relational::shared_relational_certification_test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 

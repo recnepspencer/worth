@@ -12,6 +12,7 @@ mod active;
 mod slots;
 use slots::{RecoveryEntry, RecoveryRecordSlots};
 mod close;
+mod creation_reactivation;
 mod incarnation;
 mod initialization;
 mod page;

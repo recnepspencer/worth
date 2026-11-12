@@ -197,9 +197,7 @@ impl CausalEvidenceReferenceIndexError {
 pub fn causal_evidence_reference_index(
     records: impl IntoIterator<Item = CausalEvidenceReferenceIndexRecord>,
 ) -> Result<CausalEvidenceReferenceIndex, WorthQueryEvidenceIdentityDerivationDenial> {
-    Ok(CausalEvidenceReferenceIndex::new(
-        records.into_iter().collect(),
-    )?)
+    CausalEvidenceReferenceIndex::new(records.into_iter().collect())
 }
 
 pub fn causal_evidence_reference_index_record(

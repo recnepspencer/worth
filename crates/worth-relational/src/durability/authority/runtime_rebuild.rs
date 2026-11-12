@@ -112,6 +112,28 @@ pub(super) fn rebuild_runtime_from_plan(
             )?;
             checkpoint_work = Some(work);
         }
+        if let Some(original) = &plan.retained_transition_prefix {
+            restored
+                .history
+                .canonical_checkpoint_gate()
+                .restore_retained_transition_prefix(original, execution)
+                .map_err(|cause| match cause {
+                    crate::runtime::OriginalBranchSchemaInputsDenial::Request(cause) => {
+                        RelationalRecoveryStop::Request(cause.into())
+                    }
+                    crate::runtime::OriginalBranchSchemaInputsDenial::SizeOverflow => {
+                        RelationalRecoveryStop::Request(
+                            crate::execution::RelationalExecutionDenialCause::ChargedBytesOverflow,
+                        )
+                    }
+                    crate::runtime::OriginalBranchSchemaInputsDenial::OriginalPrefixMismatch => {
+                        crate::durability::checkpoints::region_directory::corrupt(
+                            "retained Memory transition prefix mismatch",
+                        )
+                        .into()
+                    }
+                })?;
+        }
         // Tail replay performs ordinary compare-and-publish cutovers. Seed its
         // fixed-depth current-head index from the exact restored branch cells
         // before the first replayed movement tries to retire a prior head.
@@ -280,7 +302,6 @@ pub(super) fn rebuild_runtime_from_plan(
         unshared_state(&mut restored)?
             .history
             .install_recovered_canonical_inventory(
-                lane,
                 execution,
                 recovered_canonical_commits,
                 &recovered_symbols,

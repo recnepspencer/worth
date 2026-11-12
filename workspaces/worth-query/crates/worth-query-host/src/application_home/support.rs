@@ -52,10 +52,10 @@ pub const fn directory_family_support(family: DurableStateFamily) -> DirectoryFa
         | BridgeConditionalDefinitions
         | BridgeSemanticRegistrations
         | BridgeCorrespondenceAllocation
-        | BridgeOwnedAsyncDefinitions
-        | BridgeDiagnosticRetention => DirectoryFamilySupport::RefusedUntil(5),
-        ProgramSupportLifecycle
-        | BranchAdoptionRecovery
+        | BridgeDiagnosticRetention => DirectoryFamilySupport::Supported(5),
+        BridgeOwnedAsyncDefinitions => DirectoryFamilySupport::RefusedUntil(7),
+        ProgramSupportLifecycle => DirectoryFamilySupport::Supported(6),
+        BranchAdoptionRecovery
         | StoppedBranchSetAdoption
         | OutputDemandRecords
         | OutputSourceCustody

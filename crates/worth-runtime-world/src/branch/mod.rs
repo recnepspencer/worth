@@ -10,7 +10,10 @@ pub use inventory::{ObservedProductBranches, ProductBranchInventoryDenial};
 mod name;
 pub(crate) mod observation;
 mod reference_cell;
-pub(crate) use reference_cell::WorldProductMovementPermit;
+pub(crate) use reference_cell::{
+    ActualWorldCreationRelease, WorldCreationCellRetirement, WorldCreationPermitDenial,
+    WorldProductCreationPermit, WorldProductMovementPermit,
+};
 mod reference_description;
 #[cfg(test)]
 pub(crate) use reference_cell::publication_unwind;

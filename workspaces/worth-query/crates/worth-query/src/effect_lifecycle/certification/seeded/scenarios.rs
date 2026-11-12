@@ -46,12 +46,12 @@ pub(super) fn seeded_rows(
     scenario_count: usize,
 ) -> Result<Vec<EffectLifecycleSeededCertificationRow>, IdentityDerivationDenial> {
     let mut stepper = SeedStepper::new(seed);
-    Ok((0..scenario_count)
+    (0..scenario_count)
         .map(|index| {
             let template = ScenarioTemplate::from_index(((seed as usize) + index) % TEMPLATE_COUNT);
             materialize_row(execution, template, index, &mut stepper)
         })
-        .collect::<Result<Vec<_>, _>>()?)
+        .collect::<Result<Vec<_>, _>>()
 }
 
 fn materialize_row(
@@ -151,44 +151,40 @@ pub(super) fn preview_derived_inspection_advisory(
 
 pub(super) fn runtime_workflow_binding() -> Result<WorkflowContextBinding, IdentityDerivationDenial>
 {
-    Ok(runtime_workflow_binding_with_snapshot(
-        WorthQuerySnapshotIdentity::from_relational_snapshot(
-            RelationalBridgeSnapshotIdentityParts::new(1, 1),
-        ),
-    )?)
+    runtime_workflow_binding_with_snapshot(WorthQuerySnapshotIdentity::from_relational_snapshot(
+        RelationalBridgeSnapshotIdentityParts::new(1, 1),
+    ))
 }
 
 pub(super) fn runtime_workflow_binding_with_snapshot(
     snapshot_identity: WorthQuerySnapshotIdentity,
 ) -> Result<WorkflowContextBinding, IdentityDerivationDenial> {
-    Ok(synthetic_runtime_workflow_binding_for_snapshot_identity(
+    synthetic_runtime_workflow_binding_for_snapshot_identity(
         "effect-lifecycle-seeded-runtime",
         snapshot_identity,
-    )?)
+    )
 }
 
 pub(super) fn runtime_workflow_binding_for_branch(
     snapshot_identity: WorthQuerySnapshotIdentity,
     branch: &str,
 ) -> Result<WorkflowContextBinding, IdentityDerivationDenial> {
-    Ok(
-        synthetic_runtime_workflow_binding_scoped_for_branch_snapshot_identity(
-            "effect-lifecycle-seeded-runtime",
-            "effect-lifecycle-seeded-branch",
-            snapshot_identity,
-            BranchId(branch.to_string()),
-        )?,
+    synthetic_runtime_workflow_binding_scoped_for_branch_snapshot_identity(
+        "effect-lifecycle-seeded-runtime",
+        "effect-lifecycle-seeded-branch",
+        snapshot_identity,
+        BranchId(branch.to_string()),
     )
 }
 
 pub(super) fn preview_workflow_binding(
     label: &str,
 ) -> Result<WorkflowContextBinding, IdentityDerivationDenial> {
-    Ok(synthetic_preview_workflow_binding(
+    synthetic_preview_workflow_binding(
         "effect-lifecycle-seeded-preview",
         BridgePreviewSessionIdentity::from_stable_name(label),
         WorkflowPreviewEvaluationClass::PromotionEligible,
-    )?)
+    )
 }
 
 pub(super) fn workflow_request(

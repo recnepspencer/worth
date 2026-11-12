@@ -39,7 +39,7 @@ pub(crate) fn collect(census: &mut crate::inline_type_sizes::Census) {
     {
         let mut owner = census.owner::<BranchState<(), (), ()>>("crates/worth-signal/src/logic/transaction/runtime/state/branching/branches/authority.rs", "BranchState", 128 * 1024);
         owner.field::<AuthorityState<()>>("authority");
-        owner.field::<DerivedState<(), ()>>("derived");
+        owner.field::<Box<DerivedState<(), ()>>>("derived");
         owner.field::<BranchAncestryState>("ancestry");
         owner.field::<BranchMutationLedger>("mutation_ledger");
         owner.field::<Option<

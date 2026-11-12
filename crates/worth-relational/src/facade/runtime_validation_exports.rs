@@ -29,7 +29,7 @@ pub use crate::validation::data::{
     StructuralRelationView, StructuralWalkDenial, StructuralWalkDenialKind, StructuralWalkReads,
     StructuralWalkStep,
 };
-pub use crate::validation::engine::InvariantExecutionResult;
+pub use crate::validation::engine::{InvariantExecutionResult, InvariantObservationKind};
 
 pub use crate::mvcc::{ManagedIndexSourceObservation, ManagedIndexSourceRebuild};
 pub use crate::validation::candidate_source::{

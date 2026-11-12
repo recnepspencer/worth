@@ -150,13 +150,13 @@ fn denied_effect(
             unsupported_effect_message(&normalized),
         ),
     };
-    Ok(DeniedEffectEligibility::new(
+    DeniedEffectEligibility::new(
         kind,
         &normalized,
         message,
         cause.as_str(),
         support_row_count,
-    )?)
+    )
 }
 
 fn deferred_effect(cause: EffectSupportCause) -> (EffectDeferredSupportContract, &'static str) {

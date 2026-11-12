@@ -51,6 +51,8 @@ impl WorldIdentityFrontiers {
                     Family::BootstrapAttempt,
                 )
             }
+            WorldRecord::CreationIntent(intent) => self.include_creation(intent),
+            WorldRecord::BranchCreated(created) => self.include_creation(&created.intent),
             WorldRecord::OpenAttempt(open) | WorldRecord::Occurrence { open, .. } => {
                 self.include_open(open)
             }
@@ -60,6 +62,10 @@ impl WorldIdentityFrontiers {
                 ..
             }
             | WorldRecord::Continued {
+                association,
+                custody,
+            }
+            | WorldRecord::CreationReleased {
                 association,
                 custody,
             } => {
@@ -81,6 +87,36 @@ impl WorldIdentityFrontiers {
             }
         }
     }
+    fn include_creation(
+        &mut self,
+        intent: &super::artifact::WorldCreationIntentRecord,
+    ) -> Result<(), RuntimeWorldIdentityExhaustion> {
+        use RuntimeWorldIdentityFamily as Family;
+        include(
+            &mut self.attempt,
+            intent.association.attempt().ordinal(),
+            Family::PublicationAttempt,
+        )?;
+        include(
+            &mut self.custody,
+            intent.custody.ordinal(),
+            Family::ProductUnpublishedOwnerEffects,
+        )?;
+        for head in [&intent.source, &intent.destination] {
+            include(
+                &mut self.branch,
+                head.incarnation.ordinal(),
+                Family::ProductBranchIncarnation,
+            )?;
+            include(
+                &mut self.commit,
+                head.commit.ordinal(),
+                Family::CompositeCommit,
+            )?;
+        }
+        Ok(())
+    }
+
     fn include_open(
         &mut self,
         open: &WorldOpenAttemptRecord,

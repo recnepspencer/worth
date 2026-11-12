@@ -7,6 +7,7 @@ struct Item {
     incarnation: u64,
     name: String,
     enabled: bool,
+    badge: Option<(bool, Option<bool>)>,
 }
 #[derive(Clone, Default)]
 pub(super) struct Model {
@@ -19,6 +20,8 @@ pub(super) struct Model {
 pub(super) struct Value {
     pub identity: String,
     pub name: String,
+    pub badge: Option<bool>,
+    pub detail: Option<bool>,
     pub children: Vec<Value>,
     pub parents: Vec<Value>,
 }
@@ -58,6 +61,7 @@ impl Model {
                         Item {
                             incarnation: *incarnation,
                             name: name.clone(),
+                            badge: None,
                             enabled: true
                         }
                     )
@@ -68,6 +72,7 @@ impl Model {
                 }
             }
             Edit::Name { item, value } => self.items.get_mut(item).unwrap().name = value.clone(),
+            Edit::Badge { item, value } => self.items.get_mut(item).unwrap().badge = *value,
             Edit::Enabled { item, value } => self.items.get_mut(item).unwrap().enabled = *value,
             Edit::Link { from, to, .. } => {
                 assert!(self.edges.insert((self.key(from), self.key(to))));
@@ -102,6 +107,16 @@ impl Model {
         Some(Value {
             identity: key.0.clone(),
             name: item.name.clone(),
+            badge: if levels >= 2 {
+                item.badge.map(|v| v.0)
+            } else {
+                None
+            },
+            detail: if levels >= 2 {
+                item.badge.and_then(|v| v.1)
+            } else {
+                None
+            },
             children,
             parents: Vec::new(),
         })
@@ -141,6 +156,8 @@ pub(super) fn values(rows: &[query::ItemRow]) -> Vec<Value> {
         .map(|row| Value {
             identity: row.identity.clone(),
             name: row.name.clone(),
+            badge: row.badge,
+            detail: row.detail,
             children: children(&row.children),
             parents: children(&row.parents),
         })
@@ -154,6 +171,8 @@ fn children(nodes: &[super::super::shape::Node]) -> Vec<Value> {
         .map(|row| Value {
             identity: row.identity.clone(),
             name: row.name.clone(),
+            badge: row.badge,
+            detail: row.detail,
             children: children(&row.children),
             parents: Vec::new(),
         })

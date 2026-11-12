@@ -10,6 +10,8 @@ use crate::domain_computation::execution_runtime::product_world::{
     WorthQueryProductBranchOwnerCleanup, WorthQueryProductBranchOwnerCleanupFailure,
 };
 
+mod continuation;
+pub use continuation::WorthQueryProductBranchCreationContinuation;
 mod inspection;
 use inspection::inspection;
 pub use inspection::{

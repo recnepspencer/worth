@@ -1,6 +1,10 @@
 //! Immutable node pages; isolated editors freeze each touched page once.
 use super::{Stop, WorthQueryManagedIndexControl};
-use std::{alloc::Layout, cell::Cell, sync::Arc};
+use std::{
+    alloc::Layout,
+    cell::{Cell, RefCell},
+    sync::Arc,
+};
 use worth_execution::{
     ExecutionArray, ExecutionMemoryReservation, ExecutionRequest, ExecutionRequestArrayBuilder,
 };
@@ -9,6 +13,7 @@ pub(super) const PAGE_BITS: u32 = 5;
 pub(super) const PAGE_SIZE: usize = 1 << PAGE_BITS;
 
 mod edit;
+pub(in super::super::super) mod inspection;
 pub(in super::super) use edit::PageEdit;
 
 pub(in super::super) struct NodePages<Node> {
@@ -43,10 +48,10 @@ impl<Node> Clone for NodePages<Node> {
     }
 }
 
-impl<Node: Copy> NodePages<Node> {
+impl<Node: Clone> NodePages<Node> {
     pub(in super::super) fn from_scratch(
         execution: &ExecutionRequest<'_, '_>,
-        scratch: &[Cell<Option<Node>>],
+        scratch: &[RefCell<Option<Node>>],
         control: &WorthQueryManagedIndexControl<'_>,
     ) -> Result<Self, Stop> {
         let page_count = scratch.len().div_ceil(PAGE_SIZE);
@@ -128,9 +133,9 @@ fn header_memory<T>(
     Ok(memory)
 }
 
-fn build<Node: Copy>(
+fn build<Node: Clone>(
     execution: &ExecutionRequest<'_, '_>,
-    scratch: &[Cell<Option<Node>>],
+    scratch: &[RefCell<Option<Node>>],
     start: usize,
     height: u32,
     control: &WorthQueryManagedIndexControl<'_>,
@@ -143,7 +148,11 @@ fn build<Node: Copy>(
         return page(
             execution,
             start,
-            |index| scratch.get(start * PAGE_SIZE + index).and_then(Cell::get),
+            |index| {
+                scratch
+                    .get(start * PAGE_SIZE + index)
+                    .and_then(|cell| cell.borrow_mut().take())
+            },
             control,
         );
     }
@@ -183,7 +192,7 @@ fn branch<Node>(
     }
 }
 
-fn page<Node: Copy>(
+fn page<Node: Clone>(
     execution: &ExecutionRequest<'_, '_>,
     key: usize,
     value: impl Fn(usize) -> Option<Node>,

@@ -23,6 +23,7 @@ pub(super) struct OriginalRecoveredClose {
     _claimed: Mutex<bool>,
     expected: crate::branch::ProductBranchObservation,
     native: Option<RecoveredNativeRetirement>,
+    signal: Option<Arc<worth_signal::facade::durability::SignalReadmittedSourcePoint>>,
     expected_basis: Option<crate::history::CompositeCommitRetirement>,
 }
 
@@ -82,6 +83,7 @@ impl OriginalRecoveredClose {
             open,
             continued: _,
             native_identity: _,
+            signal,
             expected,
             binding,
             native,
@@ -143,6 +145,7 @@ impl OriginalRecoveredClose {
             _claimed: claimed,
             expected,
             native,
+            signal,
             expected_basis: None,
         }
     }
@@ -159,6 +162,9 @@ impl OriginalRecoveredClose {
                 return Ok(false);
             }
         }
+        // Release the actual recovered Signal loan while its owner is still
+        // present, before the surrounding Home advances Signal retirement.
+        self.signal.take();
         if self.expected_basis.is_none() {
             self.expected
                 .try_retire_for_close()

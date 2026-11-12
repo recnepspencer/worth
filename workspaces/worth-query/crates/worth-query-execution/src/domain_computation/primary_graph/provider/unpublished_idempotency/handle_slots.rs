@@ -45,3 +45,17 @@ impl WorthQueryUnpublishedIdempotencyStore {
             .expect("successor uses its actual preissued slot")
     }
 }
+
+impl super::super::WorthQueryPrimaryGraphProvider {
+    /// Read-only exact recovery-index observation; terminal key meaning is separate.
+    pub fn retains_unpublished_recovery_for_test(
+        &self,
+        handle: &ProductUnpublishedRecoveryHandle,
+    ) -> bool {
+        self.unpublished_idempotency
+            .lock()
+            .unwrap_or_else(|e| e.into_inner())
+            .recovery_key(handle)
+            .is_some()
+    }
+}

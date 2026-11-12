@@ -11,7 +11,7 @@ fn member_directory_preserves_divergent_sibling_roots_and_pinned_reader() {
     let host_request = crate::test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
-    let runtime = durable_runtime_with_test_schema();
+    let runtime = runtime_with_test_schema();
     create_entity(execution, &runtime, "partition-alias-seed");
     let mut transaction = test_owner_begin_transaction_for_main(&runtime);
     transaction
@@ -42,7 +42,10 @@ fn member_directory_preserves_divergent_sibling_roots_and_pinned_reader() {
     let on_main = create_entity_outcome(execution, &runtime, "main-only");
     release_test_commit_snapshot(&runtime, &on_main);
 
-    let checkpoint = crate::tests::support::checkpoint_durably(execution, &runtime).unwrap();
+    let checkpoint = runtime
+        .durability_authority()
+        .checkpoint(execution)
+        .unwrap();
     assert_eq!(checkpoint.branch_roots.len(), 2);
     let native = runtime
         .durability_authority()
@@ -117,14 +120,12 @@ fn member_directory_preserves_divergent_sibling_roots_and_pinned_reader() {
         2
     );
 
-    let mut plan = crate::tests::support::recovery_plan_for(
-        execution,
-        &runtime,
-        RecoveryMode::NormalRecoveryVerification,
-    )
-    .unwrap();
+    let mut plan = runtime
+        .durability()
+        .recovery_plan(execution, RecoveryMode::NormalRecoveryVerification)
+        .unwrap();
     plan.checkpoint = Some(restored.checkpoint);
-    let mut recovered = durable_runtime_with_test_schema();
+    let mut recovered = runtime_with_test_schema();
     recovered
         .durability_recovery()
         .recover(execution, plan)
@@ -148,7 +149,7 @@ fn member_directory_preserves_divergent_sibling_roots_and_pinned_reader() {
 fn current_manifest_deduplicates_equal_region_members_and_round_trips() {
     let request = crate::test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&request);
-    let runtime = durable_runtime_with_test_schema();
+    let runtime = runtime_with_test_schema();
     create_entity(execution, &runtime, "manifest-roundtrip");
     let native = runtime
         .durability_authority()
@@ -191,7 +192,7 @@ fn current_manifest_deduplicates_equal_region_members_and_round_trips() {
 fn current_directory_rejects_damaged_duplicate_and_missing_members() {
     let request = crate::test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&request);
-    let runtime = durable_runtime_with_test_schema();
+    let runtime = runtime_with_test_schema();
     create_entity(execution, &runtime, "manifest-damage");
     let native = runtime
         .durability_authority()
@@ -236,7 +237,7 @@ fn current_directory_rejects_damaged_duplicate_and_missing_members() {
 fn native_capture_sections_count_current_directory_values() {
     let request = crate::test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&request);
-    let runtime = durable_runtime_with_test_schema();
+    let runtime = runtime_with_test_schema();
     create_entity(execution, &runtime, "manifest-sections");
     let native = runtime
         .durability_authority()
@@ -316,7 +317,7 @@ fn native_capture_sections_count_current_directory_values() {
 fn chk6_and_retired_inner_partition_grammars_are_refused() {
     let request = crate::test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&request);
-    let runtime = durable_runtime_with_test_schema();
+    let runtime = runtime_with_test_schema();
     create_entity(execution, &runtime, "retired-checkpoint");
     let native = runtime
         .durability_authority()

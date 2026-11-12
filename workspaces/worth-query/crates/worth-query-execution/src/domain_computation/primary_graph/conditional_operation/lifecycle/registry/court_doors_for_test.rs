@@ -1,6 +1,9 @@
 //! Sealed test doors over this module's private members.
 use super::*;
 
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub struct WorthQueryConditionalOperationAlreadyInstalled;
+
 impl<Schema> WorthQueryConditionalOperationRegistry<Schema> {
     #[doc(hidden)]
     pub fn admit_clock_for_test(
@@ -14,14 +17,10 @@ impl<Schema> WorthQueryConditionalOperationRegistry<Schema> {
 
 impl<Schema> WorthQueryConditionalOperationRegistry<Schema> {
     #[doc(hidden)]
-    #[expect(
-        clippy::result_unit_err,
-        reason = "The closed court mirrors the private installation refusal exactly; it introduces no production error contract"
-    )]
     pub fn install_for_test(
         &mut self,
         operation: Box<dyn WorthQueryInstalledConditionalOperation<Schema>>,
-    ) -> Result<(), ()> {
-        Self::install(self, operation)
+    ) -> Result<(), WorthQueryConditionalOperationAlreadyInstalled> {
+        Self::install(self, operation).map_err(|()| WorthQueryConditionalOperationAlreadyInstalled)
     }
 }

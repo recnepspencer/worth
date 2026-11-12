@@ -9,6 +9,7 @@ use crate::domain_computation::primary_graph::{
 /// and the rest of the Query runtime still alive. Directory leaves owner None.
 pub(in crate::domain_computation::primary_graph) struct ConditionalRuntimeCleanup<Schema> {
     owner: Option<OwnedConditionalCleanup>,
+    pub(in crate::domain_computation::primary_graph) definitions: crate::domain_computation::primary_graph::conditional_operation::definition_declarations::ConditionalDefinitionDeclarations,
     pub(in crate::domain_computation::primary_graph) operations: std::sync::Mutex<
         super::super::conditional_operation::WorthQueryConditionalOperationRegistry<Schema>,
     >,
@@ -46,6 +47,7 @@ impl<Schema> ConditionalRuntimeCleanup<Schema> {
     ) -> Self {
         Self {
             owner,
+            definitions: Default::default(),
             operations: std::sync::Mutex::new(operations),
             resources: Default::default(),
         }
@@ -91,6 +93,7 @@ impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
             .get_mut()
             .unwrap_or_else(std::sync::PoisonError::into_inner) = Default::default();
         self.conditional_cleanup.resources.clear();
+        self.conditional_cleanup.definitions.clear();
     }
 }
 

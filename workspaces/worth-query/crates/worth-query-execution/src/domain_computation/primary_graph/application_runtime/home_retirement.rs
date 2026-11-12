@@ -67,6 +67,7 @@ enum QueryRetirementStage {
     InboundCustody,
     TransportCustody,
     Participation,
+    InstalledConditionals,
     Provider,
     Projection,
     Granular,
@@ -90,7 +91,8 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         self.conditional_cleanup
             .preflight_home_retirement(request)?;
         self.installed_producers.preflight_home_retirement()?;
-        self.installed_conditionals.preflight_home_retirement()?;
+        self.installed_conditionals
+            .preflight_home_retirement(self.runtime.bridge.conditional_owner())?;
         // Every recorded attempt owns its one durable observation before close.
         let dispatch_custody = self
             .runtime
@@ -210,9 +212,7 @@ impl<Schema: ApplicationSchema> RetiringPrimaryGraphRuntime<Schema> {
         &mut self,
         request: &ExecutionRequest<'_, '_>,
         native: &worth_relational::facade::runtime::RelationalRuntime,
-        bridge_owner: &std::sync::Arc<
-            std::sync::RwLock<worth_runtime_bridge::facade::BridgeSealedRuntimeAssembly>,
-        >,
+        bridge_owner: &super::super::managed_bridge::conditional_owner::ConditionalOwner,
     ) -> Result<Progress, WorthQueryHomeRetirementDenial> {
         if self
             .runtime
@@ -300,6 +300,17 @@ impl<Schema: ApplicationSchema> RetiringPrimaryGraphRuntime<Schema> {
                 .primary_graph_mut()
                 .expect("same original serving graph")
                 .advance_home_retirement(request, native)?,
+            // The quiesced checkpoint already captured authored definitions.
+            // Installed projection authorities share the original graph source;
+            // release them before consuming source shares so the final source
+            // retirement owns the Native subscription detach.
+            QueryRetirementStage::InstalledConditionals => {
+                request
+                    .consult()
+                    .map_err(WorthQueryHomeRetirementDenial::Execution)?;
+                self.runtime.installed_conditionals = Default::default();
+                Progress::Complete
+            }
             QueryRetirementStage::Bridge => self.runtime.runtime.bridge.advance_home_retirement(
                 request,
                 native,
@@ -312,7 +323,8 @@ impl<Schema: ApplicationSchema> RetiringPrimaryGraphRuntime<Schema> {
                 QueryRetirementStage::Handlers => QueryRetirementStage::InboundCustody,
                 QueryRetirementStage::InboundCustody => QueryRetirementStage::TransportCustody,
                 QueryRetirementStage::TransportCustody => QueryRetirementStage::Participation,
-                QueryRetirementStage::Participation => QueryRetirementStage::Provider,
+                QueryRetirementStage::Participation => QueryRetirementStage::InstalledConditionals,
+                QueryRetirementStage::InstalledConditionals => QueryRetirementStage::Provider,
                 QueryRetirementStage::Provider => QueryRetirementStage::Projection,
                 QueryRetirementStage::Projection => QueryRetirementStage::Granular,
                 QueryRetirementStage::Granular => QueryRetirementStage::ProductSource,

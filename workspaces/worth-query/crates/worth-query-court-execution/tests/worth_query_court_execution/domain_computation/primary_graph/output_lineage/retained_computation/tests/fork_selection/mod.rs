@@ -5,7 +5,7 @@ use worth_query_execution::court_doors_for_test::equality_type_id::EqualityTypeI
 use worth_runtime_world::facade::ProductBranchCreationIntent;
 use worth_runtime_world::facade::ProductBranchCreationPlans;
 use worth_runtime_world::facade::RelationalBranchCreationPlan;
-use worth_runtime_world::facade::RuntimeWorldBranchCreationOutcome;
+use worth_query_execution::facade::product::WorthQueryProductBranchCreationOutcome;
 use worth_runtime_world::facade::RuntimeWorldCancellationSource;
 use worth_runtime_world::facade::SignalBranchCreationPlan;
 
@@ -36,7 +36,7 @@ fn nested_forks_select_the_captured_generation_and_stop_at_local_absence() {
             ),
         )
         .unwrap();
-        let RuntimeWorldBranchCreationOutcome::Performed(child) = world
+        let WorthQueryProductBranchCreationOutcome::Performed(child) = world
             .application
             .product_runtime()
             .create_product_branch_for_test(

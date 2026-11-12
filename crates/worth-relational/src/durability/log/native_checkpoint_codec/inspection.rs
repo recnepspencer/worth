@@ -99,6 +99,7 @@ pub(crate) fn inspect<'a>(
     take(&mut allocator, "append_frontiers")?;
     take(&mut allocator, "generation_high_water")?;
     Ok(RelationalCheckpointInspection {
+        branch_cells: decoded.branch_cells,
         model: NativeCheckpointModelBytes {
             envelope,
             fields,

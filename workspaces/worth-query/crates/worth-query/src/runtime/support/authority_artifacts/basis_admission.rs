@@ -34,16 +34,16 @@ impl WorthQueryBasisAdmissionEvidenceRow {
     pub fn support_profile_token(
         token: impl Into<String>,
     ) -> Result<Self, IdentityDerivationDenial> {
-        Ok(Self::tagged("support-profile-evidence", token)?)
+        Self::tagged("support-profile-evidence", token)
     }
 
     pub fn rows_from_values(
         values: impl IntoIterator<Item = impl Into<String>>,
     ) -> Result<Vec<Self>, IdentityDerivationDenial> {
-        Ok(values
+        values
             .into_iter()
             .map(|value| Self::tagged("basis-admission-evidence", value))
-            .collect::<Result<Vec<_>, _>>()?)
+            .collect::<Result<Vec<_>, _>>()
     }
 
     pub fn kind(&self) -> &'static str {
@@ -214,7 +214,7 @@ fn basis_admission_identity(
     authority_lane: WorthQueryAuthorityLane,
     evidence_rows: &[WorthQueryBasisAdmissionEvidenceRow],
 ) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
-    Ok(worth_query_evidence_identity(scope)
+    worth_query_evidence_identity(scope)
         .field_value(
             WorthQueryEvidenceTag::new("session_label_identity"),
             label.identity_digest().reporting_projection(),
@@ -233,5 +233,5 @@ fn basis_admission_identity(
                 .iter()
                 .map(|row| row.row_digest().reporting_projection()),
         )
-        .seal()?)
+        .seal()
 }

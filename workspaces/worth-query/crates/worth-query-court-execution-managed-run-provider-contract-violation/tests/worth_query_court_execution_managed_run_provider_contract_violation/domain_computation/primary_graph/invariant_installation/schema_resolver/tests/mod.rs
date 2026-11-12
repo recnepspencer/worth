@@ -13,16 +13,16 @@ use worth_query_execution::facade::domain_computation::WorthQueryExecutionRuntim
 use worth_query_execution::facade::domain_computation::WorthQueryPrimaryGraphInstallationDenial;
 use worth_query_execution::facade::domain_computation::WorthQueryPrimaryGraphInstallationDenialKind;
 use worth_query_installation::facade::*;
-struct BindingSchema<const PROFILE: u8>;
-struct Node;
+pub struct BindingSchema<const PROFILE: u8>;
+pub struct Node;
 use worth_query_declaration::facade::application_schema::fragment;
 impl fragment::Entity for Node {
     const NAME: &'static str = "Node";
     type Aspects = ();
     type Relations = (A, B);
 }
-struct A;
-struct B;
+pub struct A;
+pub struct B;
 impl fragment::Relation for A {
     const NAME: &'static str = "A";
     type To = Node;
@@ -37,7 +37,7 @@ impl fragment::Fragment for ResolverRecords {
     type Bindings = fragment::NoBindings;
     type Members = (Node,);
 }
-struct Set;
+pub struct Set;
 struct Rule;
 impl<const P: u8> ApplicationInvariantMarkerIdentity<BindingSchema<P>> for Rule {
     const IDENTIFIER: &'static str = "component-policy";

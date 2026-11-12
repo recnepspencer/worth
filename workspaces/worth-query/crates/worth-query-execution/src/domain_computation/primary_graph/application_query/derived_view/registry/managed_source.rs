@@ -15,7 +15,8 @@ pub(super) mod initialization;
 /// This lookup is mutated only under the registry mutex; it has no persistent
 /// map clones. Its dedicated grant covers the actual key and conservative node.
 pub(super) struct SourceBranchSlot {
-    slot: worth_relational::facade::mvcc::CompanionBranchCellSlot<ManagedIndexBranchImage>,
+    pub(super) slot:
+        worth_relational::facade::mvcc::CompanionBranchCellSlot<ManagedIndexBranchImage>,
     allocation: Arc<crate::domain_computation::primary_graph::source_facts::SourceFactsAllocation>,
 }
 impl SourceBranchSlot {
@@ -122,6 +123,20 @@ impl ManagedDerivedViewRegistry {
                 .transpose()?
                 .flatten();
             let retained = retained.as_ref().and_then(|entry| entry.payload());
+            let predecessor = if retained.is_none() && scope.scope_exists()? {
+                match scope.ordered_predecessor()? {
+                    Some(parent) => image
+                        .as_ref()
+                        .map(|image| image.payload().retained(source.program(), parent))
+                        .transpose()?
+                        .flatten(),
+                    _ => None,
+                }
+            } else {
+                None
+            };
+            let predecessor = predecessor.as_ref().filter(|entry| entry.physical_availability() == worth_relational::facade::runtime::ManagedIndexSourceAvailability::Available)
+                .and_then(|entry| entry.payload());
             if initializing && !scope.committed_scope_exists()? && scope.scope_exists()? {
                 roots.push(
                     service.prepare_initial(
@@ -136,7 +151,7 @@ impl ManagedDerivedViewRegistry {
                     )?,
                 );
             } else {
-                roots.push(service.prepare(execution, scope, retained)?);
+                roots.push(service.prepare(execution, scope, retained, predecessor)?);
             }
         }
         execution.consult().map_err(|cause| {

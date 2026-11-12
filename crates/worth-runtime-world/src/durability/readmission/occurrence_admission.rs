@@ -8,7 +8,7 @@ impl WorldCheckpointImage {
     pub(in crate::durability) fn admit_occurrence(
         &mut self,
         attempt: DurableCompositePublicationAttemptIdentity,
-        relational: super::super::WorldRelationalEvidence,
+        owners: super::super::artifact::WorldOccurrenceOwnerEvidence,
         publishing_incarnation: HomeIncarnation,
         position: u64,
         digest: [u8; 32],
@@ -19,6 +19,14 @@ impl WorldCheckpointImage {
             .get(&attempt)
             .ok_or(WorldReadmissionDenial::MissingOpenAttempt)?
             .clone();
+        if owners.component_intent() != open.component_intent {
+            return Err(WorldReadmissionDenial::OccurrenceEvidenceMismatch);
+        }
+        if let Some(signal) = owners.signal() {
+            if signal.point().descriptor().owner().home() != self.binding.owner().home() {
+                return Err(WorldReadmissionDenial::ForeignOwner);
+            }
+        }
         if publishing_incarnation > self.binding.incarnation() {
             return Err(WorldReadmissionDenial::FutureIncarnation);
         }
@@ -39,12 +47,14 @@ impl WorldCheckpointImage {
         if self.history.contains_key(&open.commit) || self.occurrences.contains_key(&position) {
             return Err(WorldReadmissionDenial::DuplicateIdentity);
         }
-        let successor = WorldImageHead::occurrence(open.record().clone())?;
+        let successor =
+            WorldImageHead::occurrence(open.record().clone(), current.origin_position(), position)?;
+        self.remember_reference(&successor, execution)?;
         super::journal::insert(&mut self.history, &open.commit, &successor, execution)?;
         super::journal::insert(&mut self.heads, &key, &successor, execution)?;
         let occurrence = AdmittedWorldOccurrence::from_validated_source(
             open,
-            relational,
+            owners,
             publishing_incarnation,
             position,
             digest,

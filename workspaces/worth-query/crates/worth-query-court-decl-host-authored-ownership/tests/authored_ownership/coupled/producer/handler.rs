@@ -107,7 +107,7 @@ impl<S: Scenario> OperationHandler<S, Binding<S>> for Provider {
                 }
             }
 
-            if matches!(S::MODE, 22 | 23 | 26 | 27 | 28 | 42 | 64) {
+            if matches!(S::MODE, 22 | 23 | 26 | 27 | 28 | 42 | 64 | 72) {
                 if S::MODE == 22 || (matches!(S::MODE, 27 | 28) && input.id == 10) {
                     let component = reader
                         .component_of(Components::reference(), &body)
@@ -167,8 +167,16 @@ impl<S: Scenario> OperationHandler<S, Binding<S>> for Provider {
                     ));
                 }
             }
-            let selected_stage = reader
-                .resolve_optional_entity(schema::id::<S>(), if S::MODE == 15 { 101 } else { 20 })?;
+            let selected_stage = reader.resolve_optional_entity(
+                schema::id::<S>(),
+                if S::MODE == 72 {
+                    input.id + 10
+                } else if S::MODE == 15 {
+                    101
+                } else {
+                    20
+                },
+            )?;
             let selected_stage =
                 if matches!(S::MODE, 30 | 40 | 41 | 43 | 61) && selected_stage.is_none() {
                     reader.resolve_optional_entity(schema::id::<S>(), 30)?
@@ -326,7 +334,7 @@ impl<S: Scenario> OperationHandler<S, Binding<S>> for Provider {
                     .expect("valid installed word content");
             }
             writer.create_output::<Cell<S>>(&cell)?;
-            if matches!(S::MODE, 22 | 23 | 26 | 27 | 28 | 42 | 64) {
+            if matches!(S::MODE, 22 | 23 | 26 | 27 | 28 | 42 | 64 | 72) {
                 writer.link(OwnCell::reference(), "owned-cell-successor", &cell, &body)?;
             }
             if S::MODE == 40 {

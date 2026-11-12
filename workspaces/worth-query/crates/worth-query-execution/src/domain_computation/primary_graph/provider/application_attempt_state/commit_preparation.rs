@@ -167,6 +167,7 @@ fn preparation_stop(
         }
         Some(Ok(_)) => Stop::PreEffectDenied(failure),
         None if failure.relation_preimage_failure().is_some()
+            || failure.preimage_retention_denial().is_some()
             || failure.candidate_support_failure().is_some() =>
         {
             Stop::PreEffectDenied(failure)

@@ -64,7 +64,11 @@ pub(crate) fn encode_checkpoint_members(
     for commit in &checkpoint.envelopes {
         let prepared = crate::durability::canonical_commit_artifact::PreparedOriginalCanonicalPayload::capture(commit.canonical_arc().clone(), execution)
             .map_err(crate::durability::checkpoint_history::capture::capture_stop)?;
-        let artifact = crate::durability::canonical_commit_artifact::RelationalCanonicalCommitArtifact::from_memory_publication(commit.position(), &prepared, execution)?;
+        let artifact = crate::durability::canonical_commit_artifact::RelationalCanonicalCommitArtifact::from_memory_publication(commit.position(), &prepared, execution)
+            .map_err(|cause| match cause {
+                crate::durability::canonical_commit_artifact::MemoryFramePreparationDenial::Request(cause) => RelationalNativeCheckpointCaptureDenial::Request(cause.into()),
+                crate::durability::canonical_commit_artifact::MemoryFramePreparationDenial::Artifact(cause) => cause.into(),
+            })?;
         let bytes = artifact.into_bytes();
         let member = super::member_frame::locator(bytes.bytes());
         rows.push(

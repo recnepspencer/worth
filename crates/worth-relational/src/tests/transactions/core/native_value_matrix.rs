@@ -83,9 +83,26 @@ fn ordinary_native_mutation_roundtrips_every_unbound_scalar_family() {
         );
     }
     let recovery_fixture = fixture.clone();
-    let (_, recovered) = checkpoint_and_recover_with(execution, &runtime, move || {
-        recovery_fixture.build_runtime()
-    });
+    let (_, recovered) = {
+        let recovered_factory = move || recovery_fixture.build_runtime();
+        runtime
+            .durability_authority()
+            .checkpoint(execution)
+            .unwrap();
+        let mut recovered_runtime = recovered_factory();
+        let checkpoint_plan = runtime
+            .durability()
+            .recovery_plan(
+                execution,
+                crate::durability::data::RecoveryVerificationMode::NormalRecoveryVerification,
+            )
+            .unwrap();
+        let recovery_outcome = recovered_runtime
+            .durability_recovery()
+            .recover(execution, checkpoint_plan)
+            .unwrap();
+        (recovery_outcome, recovered_runtime)
+    };
     let read = recovered
         .read_truth()
         .read_version(execution, committed.version_id)

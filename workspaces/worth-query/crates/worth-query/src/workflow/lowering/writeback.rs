@@ -268,27 +268,25 @@ fn writeback_causality_identity(
     declaration: &QueryWorkflowDeclaration,
     request_kind: BridgeRequestKind,
 ) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
-    Ok(WorthQueryEvidenceIdentity::compose(
-        WorthQueryEvidenceScope::RuntimeBridgeWritebackAuthority,
-    )
-    .field_shape(WorthQueryEvidenceTag::new("role"), "writeback_causality")
-    .field_evidence_identity(
-        WorthQueryEvidenceTag::new("binding"),
-        declaration.binding().binding_identity(),
-    )
-    .field_shape(
-        WorthQueryEvidenceTag::new("basis_family"),
-        declaration.binding().basis_family().as_str(),
-    )
-    .field_evidence_identity(
-        WorthQueryEvidenceTag::new("basis"),
-        declaration.binding().basis_identity(),
-    )
-    .field_shape(
-        WorthQueryEvidenceTag::new("request_kind"),
-        bridge_request_kind_label(request_kind),
-    )
-    .seal()?)
+    WorthQueryEvidenceIdentity::compose(WorthQueryEvidenceScope::RuntimeBridgeWritebackAuthority)
+        .field_shape(WorthQueryEvidenceTag::new("role"), "writeback_causality")
+        .field_evidence_identity(
+            WorthQueryEvidenceTag::new("binding"),
+            declaration.binding().binding_identity(),
+        )
+        .field_shape(
+            WorthQueryEvidenceTag::new("basis_family"),
+            declaration.binding().basis_family().as_str(),
+        )
+        .field_evidence_identity(
+            WorthQueryEvidenceTag::new("basis"),
+            declaration.binding().basis_identity(),
+        )
+        .field_shape(
+            WorthQueryEvidenceTag::new("request_kind"),
+            bridge_request_kind_label(request_kind),
+        )
+        .seal()
 }
 
 fn writeback_basis_identity(declaration: &QueryWorkflowDeclaration) -> WorthQueryEvidenceIdentity {
@@ -313,24 +311,22 @@ fn writeback_lowering_identity(
     bridge_declaration: &BridgeWritebackDeclaration,
     causality_identity: &WorthQueryEvidenceIdentity,
 ) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
-    Ok(WorthQueryEvidenceIdentity::compose(
-        WorthQueryEvidenceScope::RuntimeBridgeWritebackAuthority,
-    )
-    .field_shape(WorthQueryEvidenceTag::new("role"), "writeback_lowering")
-    .field_evidence_identity(
-        WorthQueryEvidenceTag::new("declaration"),
-        declaration.report().declaration_identity(),
-    )
-    .field_shape(
-        WorthQueryEvidenceTag::new("writeback_family"),
-        family.as_str(),
-    )
-    .field_bridge_authority_identity(
-        WorthQueryEvidenceTag::new("bridge_declaration"),
-        &bridge_declaration
-            .declaration_identity()
-            .bridge_trust_boundary(),
-    )
-    .field_evidence_identity(WorthQueryEvidenceTag::new("causality"), causality_identity)
-    .seal()?)
+    WorthQueryEvidenceIdentity::compose(WorthQueryEvidenceScope::RuntimeBridgeWritebackAuthority)
+        .field_shape(WorthQueryEvidenceTag::new("role"), "writeback_lowering")
+        .field_evidence_identity(
+            WorthQueryEvidenceTag::new("declaration"),
+            declaration.report().declaration_identity(),
+        )
+        .field_shape(
+            WorthQueryEvidenceTag::new("writeback_family"),
+            family.as_str(),
+        )
+        .field_bridge_authority_identity(
+            WorthQueryEvidenceTag::new("bridge_declaration"),
+            &bridge_declaration
+                .declaration_identity()
+                .bridge_trust_boundary(),
+        )
+        .field_evidence_identity(WorthQueryEvidenceTag::new("causality"), causality_identity)
+        .seal()
 }

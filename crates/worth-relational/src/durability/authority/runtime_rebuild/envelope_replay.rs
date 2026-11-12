@@ -64,7 +64,6 @@ pub(super) fn replay_readmitted_envelope(
                 DurabilityError::new(RecoveryFailureClass::CorruptCanonicalArtifact, detail)
             })?;
         let had_checkpoint_artifact = prepare_replay_context(
-            lane,
             execution,
             restored,
             envelope,
@@ -107,7 +106,6 @@ pub(super) fn replay_readmitted_envelope(
             .into());
         }
         restore_authoritative_artifacts_when_required(
-            lane,
             execution,
             restored,
             &positioned,

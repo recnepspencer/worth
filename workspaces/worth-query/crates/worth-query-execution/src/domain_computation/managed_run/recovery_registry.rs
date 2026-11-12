@@ -6,7 +6,7 @@
 //! starts at `1` in every instance; recovery effect/inspect authority binds to
 //! the runtime identity basis instead (Q8.20).
 
-use std::collections::{HashMap, HashSet};
+use std::collections::{BTreeMap, HashMap, HashSet};
 use std::sync::{Arc, Mutex};
 
 use crate::domain_computation::execution_runtime::WorthQueryRuntimeAuthorityIdentity;
@@ -50,8 +50,8 @@ impl WorthQueryRecoveryMintClaim {
 pub struct WorthQueryRecoveryMintAlreadyClaimed;
 
 /// Opaque registry slot. Not a public recovery identity and not Clone on the
-/// handle path â€” only the registry retains membership.
-#[derive(Clone, Copy, Debug, Eq, PartialEq, Hash)]
+/// handle path — only the registry retains membership.
+#[derive(Clone, Copy, Debug, Eq, PartialEq, Ord, PartialOrd, Hash)]
 pub struct WorthQueryRecoveryRegistrySlot(u64);
 
 impl WorthQueryRecoveryRegistrySlot {
@@ -67,7 +67,7 @@ struct RecoveryRegistryState {
     /// its claim back. Only `register_once` adds; every exit path removes.
     claims_by_slot: HashMap<WorthQueryRecoveryRegistrySlot, WorthQueryRecoveryMintClaim>,
     terminal_by_claim: HashMap<WorthQueryRecoveryMintClaim, RecoveryClaimDisposition>,
-    live: HashMap<WorthQueryRecoveryRegistrySlot, ()>,
+    live: BTreeMap<WorthQueryRecoveryRegistrySlot, ()>,
     durable: HashMap<WorthQueryRecoveryRegistrySlot, crate::domain_computation::application_aftermath::dispatch_journal::QueryRecordedRecoveryClaim>,
     deferred: std::collections::BTreeMap<worth_foundational::facade::DurableRecoveryClaimIdentity, DeferredRecoveryDisposition>,
     terminated: HashMap<WorthQueryRecoveryRegistrySlot, RecoveryClaimDisposition>,
@@ -82,7 +82,7 @@ impl RecoveryRegistryState {
             claimed_commits: HashSet::new(),
             claims_by_slot: HashMap::new(),
             terminal_by_claim: HashMap::new(),
-            live: HashMap::new(),
+            live: BTreeMap::new(),
             durable: HashMap::new(),
             deferred: Default::default(),
             terminated: HashMap::new(),
@@ -242,10 +242,6 @@ impl WorthQueryRecoveryHandleRegistry {
     /// into a cross-holder one, so it is fixture-only; no production path needs
     /// to ask the question, and clippy confirms it (the method is dead code in
     /// a build without this gate).
-    #[expect(
-        clippy::disallowed_methods,
-        reason = "The closed diagnostic snapshot sorts issued slot identities before exposure; ordinary registry operations remain point lookups"
-    )]
     pub(crate) fn enumerate_live(&self) -> Vec<WorthQueryRecoveryRegistrySlot> {
         let mut slots: Vec<_> = self
             .state

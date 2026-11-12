@@ -66,7 +66,7 @@ impl QueryObservationReceipt {
     ) -> Result<Self, IdentityDerivationDenial> {
         let inspection_basis = fixture_inspection_basis(outcome);
         let fixture_authority = fixture_authority_identity(outcome.as_str())?;
-        Ok(Self::from_parts(ObservationReceiptParts {
+        Self::from_parts(ObservationReceiptParts {
             family: QueryObservationReceiptFamily::Fixture,
             observation_receipt_identity: causal_observation_receipt_evidence_identity(
                 QueryObservationReceiptFamily::Fixture,
@@ -94,7 +94,7 @@ impl QueryObservationReceipt {
             )?,
             outcome,
             evidence_identities,
-        })?)
+        })
     }
 }
 
@@ -129,12 +129,10 @@ fn not_executed_snapshot_basis_identity() -> WorthQueryEvidenceIdentity {
 fn fixture_authority_identity(
     label: &str,
 ) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
-    Ok(
-        WorthQueryEvidenceIdentity::compose(WorthQueryEvidenceScope::CausalQueryObservationReceipt)
-            .field_shape(WorthQueryEvidenceTag::new("role"), "fixture_authority")
-            .field_value(WorthQueryEvidenceTag::new("label"), label)
-            .seal()?,
-    )
+    WorthQueryEvidenceIdentity::compose(WorthQueryEvidenceScope::CausalQueryObservationReceipt)
+        .field_shape(WorthQueryEvidenceTag::new("role"), "fixture_authority")
+        .field_value(WorthQueryEvidenceTag::new("label"), label)
+        .seal()
 }
 
 fn fixture_component_identity(
@@ -142,14 +140,12 @@ fn fixture_component_identity(
     component: &'static str,
     descriptor: &'static str,
 ) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
-    Ok(
-        WorthQueryEvidenceIdentity::compose(WorthQueryEvidenceScope::CausalQueryObservationReceipt)
-            .field_shape(WorthQueryEvidenceTag::new("role"), "fixture_component")
-            .field_shape(WorthQueryEvidenceTag::new("component"), component)
-            .field_value(WorthQueryEvidenceTag::new("label"), label)
-            .field_value(WorthQueryEvidenceTag::new("descriptor"), descriptor)
-            .seal()?,
-    )
+    WorthQueryEvidenceIdentity::compose(WorthQueryEvidenceScope::CausalQueryObservationReceipt)
+        .field_shape(WorthQueryEvidenceTag::new("role"), "fixture_component")
+        .field_shape(WorthQueryEvidenceTag::new("component"), component)
+        .field_value(WorthQueryEvidenceTag::new("label"), label)
+        .field_value(WorthQueryEvidenceTag::new("descriptor"), descriptor)
+        .seal()
 }
 
 fn result_shape_handle(
@@ -166,9 +162,7 @@ fn result_shape_handle(
                 descriptor.as_ref(),
             )
             .seal()?;
-    Ok(CausalResultShapeContextHandle::from_evidence_identity(
-        &identity,
-    )?)
+    CausalResultShapeContextHandle::from_evidence_identity(&identity)
 }
 
 fn target_handle(
@@ -185,7 +179,5 @@ fn target_handle(
                 descriptor.as_ref(),
             )
             .seal()?;
-    Ok(CausalObservationTargetHandle::from_evidence_identity(
-        &identity,
-    )?)
+    CausalObservationTargetHandle::from_evidence_identity(&identity)
 }

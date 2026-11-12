@@ -181,6 +181,11 @@ impl ProductBranchObservationMismatch {
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum RuntimeWorldBranchAdmissionDenial {
     DurableBranchPublicationRequired,
+    HomeCreationRequestRequired,
+    MemoryCreationRequestRequired,
+    ProgramSourceRequired,
+    ForeignProgramSource,
+    ProgramSourceMismatch,
     CancelledBeforeEffect,
     DeadlineBeforeEffect,
     OwnerUnavailable,
@@ -209,6 +214,8 @@ pub enum RuntimeWorldBranchAdmissionDenial {
     /// every shared exact axis of the admitted source basis, so forking it
     /// would silently create a branch from state the caller never observed.
     ForkSourceChanged,
+    /// Native deliberately permits forks only from a published, nonempty source.
+    EmptyNativeForkSource,
     /// A bounded history carrier did not contain the requested entry or had no
     /// owner-issued continuation for this product occurrence.
     HistoryEntryUnavailable,

@@ -60,7 +60,12 @@ fn installed_target_basis(target: &crate::correspondence::InstalledCorrespondenc
         &target.aspect.index().to_string(),
         precision,
         widening,
-        &target.allocation_sources.join("|"),
+        &target
+            .allocation_sources
+            .iter()
+            .map(crate::correspondence::BridgeSemanticClaimOrigin::identity_basis)
+            .collect::<Vec<_>>()
+            .join("|"),
     ]
     .into_iter()
     .map(|field| format!("{}:{field}", field.len()))

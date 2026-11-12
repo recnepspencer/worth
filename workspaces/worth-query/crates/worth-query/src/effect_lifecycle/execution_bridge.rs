@@ -113,15 +113,13 @@ fn effect_writeback_truth_commit_evidence(
     role: &str,
     declaration: &QueryWritebackDeclaration,
 ) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
-    Ok(WorthQueryEvidenceIdentity::compose(
-        WorthQueryEvidenceScope::RuntimeBridgeWritebackAuthority,
-    )
-    .field_shape(WorthQueryEvidenceTag::new("role"), role)
-    .field_evidence_identity(
-        WorthQueryEvidenceTag::new("causality"),
-        declaration.causality_binding().causality_identity(),
-    )
-    .seal()?)
+    WorthQueryEvidenceIdentity::compose(WorthQueryEvidenceScope::RuntimeBridgeWritebackAuthority)
+        .field_shape(WorthQueryEvidenceTag::new("role"), role)
+        .field_evidence_identity(
+            WorthQueryEvidenceTag::new("causality"),
+            declaration.causality_binding().causality_identity(),
+        )
+        .seal()
 }
 
 fn effect_writeback_truth_snapshot_evidence(
@@ -132,12 +130,10 @@ fn effect_writeback_truth_snapshot_evidence(
         "truth-snapshot-basis" => declaration.causality_binding().basis_identity(),
         _ => declaration.lowering_identity(),
     };
-    Ok(WorthQueryEvidenceIdentity::compose(
-        WorthQueryEvidenceScope::RuntimeBridgeWritebackAuthority,
-    )
-    .field_shape(WorthQueryEvidenceTag::new("role"), role)
-    .field_evidence_identity(WorthQueryEvidenceTag::new("basis"), basis_identity)
-    .seal()?)
+    WorthQueryEvidenceIdentity::compose(WorthQueryEvidenceScope::RuntimeBridgeWritebackAuthority)
+        .field_shape(WorthQueryEvidenceTag::new("role"), role)
+        .field_evidence_identity(WorthQueryEvidenceTag::new("basis"), basis_identity)
+        .seal()
 }
 
 fn query_writeback_effect_intent(

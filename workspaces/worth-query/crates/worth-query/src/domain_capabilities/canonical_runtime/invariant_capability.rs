@@ -30,7 +30,7 @@ pub fn materialize_canonical_invariant_capability_artifact<T>(
 where
     T: WorthQueryDomainCapabilityTargetBinding,
 {
-    Ok(super::artifacts::materialize_domain_capability_canonical_runtime_artifact(contribution)?)
+    super::artifacts::materialize_domain_capability_canonical_runtime_artifact(contribution)
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -300,16 +300,14 @@ where
 fn graph_invariant_summary(
     semantics: &WorthQueryGraphInvariantDenialRuntimeSemantics,
 ) -> Result<WorthQueryGraphCompositionDomainInvariantSummary, IdentityDerivationDenial> {
-    Ok(
-        WorthQueryGraphCompositionDomainInvariantSummary::from_parts(
-            semantics.declared_collections().to_vec(),
-            semantics.declared_symbols().to_vec(),
-            semantics.target_combination_families().to_vec(),
-            semantics.lifecycle_families().to_vec(),
-            semantics.program_identity().clone(),
-            semantics.breadth_identity().clone(),
-            semantics.counter_snapshot().to_string(),
-        )?,
+    WorthQueryGraphCompositionDomainInvariantSummary::from_parts(
+        semantics.declared_collections().to_vec(),
+        semantics.declared_symbols().to_vec(),
+        semantics.target_combination_families().to_vec(),
+        semantics.lifecycle_families().to_vec(),
+        semantics.program_identity().clone(),
+        semantics.breadth_identity().clone(),
+        semantics.counter_snapshot().to_string(),
     )
 }
 

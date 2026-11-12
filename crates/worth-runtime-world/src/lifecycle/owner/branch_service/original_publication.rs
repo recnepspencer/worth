@@ -47,10 +47,11 @@ where
             .iter()
             .filter(|(_, row)| row.open().association == association);
         let (_, occurrence) = matches.next().ok_or(Denial::NotReadmitted)?;
+        let relational = occurrence.relational().ok_or(Denial::NativeMismatch)?;
         if matches.next().is_some()
-            || occurrence.relational().commit != effect.subject().receipt().commit_id.0
-            || occurrence.relational().position != effect.subject().position().0
-            || &occurrence.relational().digest != effect.subject().artifact_digest()
+            || relational.commit != effect.subject().receipt().commit_id.0
+            || relational.position != effect.subject().position().0
+            || &relational.digest != effect.subject().artifact_digest()
         {
             return Err(Denial::NativeMismatch);
         }

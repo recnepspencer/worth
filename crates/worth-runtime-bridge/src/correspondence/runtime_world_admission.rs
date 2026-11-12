@@ -1,4 +1,7 @@
 mod admission;
+mod port;
+pub(crate) use port::RuntimeWorldCorrespondenceBranches;
+pub use port::RuntimeWorldCorrespondencePort;
 mod basis;
 mod denial;
 mod inspection;
@@ -12,5 +15,8 @@ pub use basis::AdmittedRuntimeWorldCorrespondenceBasis;
 pub use denial::RuntimeWorldCorrespondenceAdmissionDenial;
 pub use inspection::RuntimeWorldCorrespondenceInspectionCounters;
 
-pub(crate) use admission::{admit_baseline, admit_installed_basis, compare_current_basis};
+pub(crate) use admission::{
+    admit_baseline, admit_installed_basis, admit_installed_basis_in, compare_current_basis,
+    compare_current_basis_in,
+};
 pub(crate) use inspection::RuntimeWorldCorrespondenceInspectionLedger;

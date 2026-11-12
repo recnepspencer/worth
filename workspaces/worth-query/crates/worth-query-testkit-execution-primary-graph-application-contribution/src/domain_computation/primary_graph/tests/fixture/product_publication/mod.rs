@@ -44,7 +44,7 @@ pub fn publish_relational_mutation_on_application<
             .expect("the fixture publication has a canonical commit");
         runtime
             .index_authority()
-            .verify_index_basis_for_commit(request_execution, &head)
+            .verify_index_basis_for_commit(request_execution, head)
             .expect("native preparation carried this publication's index selections");
     });
 }

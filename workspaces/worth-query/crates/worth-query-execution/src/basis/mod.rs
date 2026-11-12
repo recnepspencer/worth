@@ -4,8 +4,9 @@ pub(crate) use product_branch::WorthQuerySourceProgramResolver;
 pub use product_branch::{
     WorthQueryExpectedProductBasisDescription, WorthQueryProductBranch,
     WorthQueryProductBranchAdmissionDenial, WorthQueryProductBranchAdmissionRefusalKind,
-    WorthQueryProductBranchCreateError, WorthQueryProductBranchCreationRecovery,
-    WorthQueryProductBranchCreationRecoveryCause, WorthQueryProductBranchCreationRecoveryFailure,
+    WorthQueryProductBranchCreateError, WorthQueryProductBranchCreationContinuation,
+    WorthQueryProductBranchCreationRecovery, WorthQueryProductBranchCreationRecoveryCause,
+    WorthQueryProductBranchCreationRecoveryFailure,
     WorthQueryProductBranchCreationRecoveryInspection,
     WorthQueryProductBranchCreationRecoveryNextAction,
     WorthQueryProductBranchCreationRecoveryRelease,

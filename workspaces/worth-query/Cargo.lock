@@ -1383,6 +1383,7 @@ dependencies = [
  "worth-query-host",
  "worth-query-testkit-document-retention",
  "worth-relational",
+ "worth-testkit-relational",
 ]
 
 [[package]]
@@ -1716,6 +1717,7 @@ dependencies = [
  "worth-query-testkit-host",
  "worth-relational",
  "worth-runtime-bridge",
+ "worth-runtime-world",
 ]
 
 [[package]]

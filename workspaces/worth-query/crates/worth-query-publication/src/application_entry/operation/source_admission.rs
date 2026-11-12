@@ -111,6 +111,16 @@ where
                 WorthQueryOperationConstructionDenial::ForeignRuntime,
             ));
         }
+        if let Err(cause) = runtime
+            .runtime()
+            .product_runtime()
+            .admit_retained_original_operation_owner()
+        {
+            return Err((
+                description,
+                WorthQueryOperationConstructionDenial::DurableStateAdmission(cause),
+            ));
+        }
         let installed_action = match runtime
             .installed_program()
             .resolve_action::<I::Binding, A>()

@@ -152,6 +152,7 @@ native-fresh-initialization crates/worth-testkit-relational/src/initial_input_so
 native-fresh-initialization workspaces/worth-store/crates/worth-store-relational/src/section/unshared.rs
 native-fresh-source-affinity crates/worth-runtime-world/src/lifecycle/builder/home_readmission/fresh_source.rs
 native-home-attachment workspaces/worth-store/crates/worth-store-application/src/relational_preparation/attachment.rs
+native-home-complete-checkpoint crates/worth-court-relational-certification/tests/worth_court_relational_certification/cost/relational/incremental_indexes/complete_carry.rs
 native-home-complete-checkpoint crates/worth-court-relational-certification/tests/worth_court_relational_certification/relational/durable_publication/source_initial_inputs/checkpoint_admission/capture_cost.rs
 native-home-complete-checkpoint crates/worth-court-relational-certification/tests/worth_court_relational_certification/relational/durable_publication/merge_descriptive_touches.rs
 native-home-complete-checkpoint crates/worth-court-relational-certification/tests/worth_court_relational_certification/relational/durable_publication/source_initial_inputs/index_decode_stops.rs
@@ -162,6 +163,15 @@ native-home-complete-checkpoint workspaces/worth-store/crates/worth-store-court-
 native-home-complete-checkpoint workspaces/worth-store/crates/worth-store-relational/src/section/checkpoint.rs
 native-home-composition workspaces/worth-store/crates/worth-store-application/src/world_section/attachment.rs
 native-home-original-source crates/worth-court-relational-certification/tests/worth_court_relational_certification/relational/durable_publication/source_initial_inputs/checkpoint_admission/cold_materialization/selected_image.rs
+installation workspaces/worth-query/crates/worth-query-court-execution-primary-graph-application-query/tests/worth_query_court_execution_primary_graph_application_query/domain_computation/primary_graph/application_query/projection/retained_projection/tests/reads/mod.rs
+native-home-complete-checkpoint crates/worth-court-relational-certification/tests/worth_court_relational_certification/relational/durable_publication/checkpoint_birth_refusal.rs
+native-fresh-home-source crates/worth-court-relational-certification/tests/worth_court_relational_certification/relational/durable_publication/source_initial_inputs/fresh_admission.rs
+native-fresh-source-affinity crates/worth-court-relational-certification/tests/worth_court_relational_certification/relational/durable_publication/source_initial_inputs/fresh_admission.rs
+native-fresh-home-source crates/worth-court-relational-certification/tests/worth_court_relational_certification/relational/durable_publication/source_initial_inputs/fresh_schema.rs
+native-fresh-initialization crates/worth-court-relational-certification/tests/worth_court_relational_certification/relational/durable_publication/source_initial_inputs/fresh_schema.rs
+native-durable-initial-installation crates/worth-court-relational-certification/tests/worth_court_relational_certification/relational/durable_publication/source_initial_inputs/fresh_schema.rs
+native-fresh-initial-installation crates/worth-court-relational-certification/tests/worth_court_relational_certification/relational/durable_publication/source_initial_inputs/fresh_schema.rs
+native-fresh-source-affinity crates/worth-court-relational-certification/tests/worth_court_relational_certification/relational/durable_publication/source_initial_inputs/fresh_schema.rs
 native-home-original-source crates/worth-court-relational-certification/tests/worth_court_relational_certification/relational/durable_publication/source_initial_inputs/index_decode_stops.rs
 native-home-original-source crates/worth-testkit-relational/src/initial_input_source.rs
 native-home-original-source workspaces/worth-store/crates/worth-store-relational/src/section/source_preparation.rs
@@ -239,3 +249,6 @@ query-dispatch-publication workspaces/worth-store/crates/worth-store-application
 query-home-dispatch workspaces/worth-query/crates/worth-query-host/src/application_home/opening/custody.rs
 query-home-dispatch workspaces/worth-query/crates/worth-query-host/src/application_home/opening/service.rs
 query-home-dispatch workspaces/worth-store/crates/worth-store-court-application/tests/worth_store_court_application/process/application/no_pending_owners/dispatch_journal.rs
+# Authored Signal admission uses the same actual Home fresh-source authority.
+native-world-fresh-source workspaces/worth-store/crates/worth-store-application/src/world_section/readmission/signal.rs
+native-world-fresh-source workspaces/worth-store/crates/worth-store-application/src/world_section/readmission/standalone_signal.rs

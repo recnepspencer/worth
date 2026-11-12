@@ -1,6 +1,14 @@
 //! Allocation-free slicing of this artifact's MessagePack input for typed quotes.
 use super::RelationalCanonicalCommitArtifactRefusal as Refusal;
-use worth_execution::ExecutionRequest;
+/// Traversal consumes interruption control, never execution construction authority.
+pub(crate) trait PayloadCheckpoint {
+    fn check_payload(&self) -> Result<(), crate::execution::RelationalExecutionDenialCause>;
+}
+impl PayloadCheckpoint for worth_execution::ExecutionRequest<'_, '_> {
+    fn check_payload(&self) -> Result<(), crate::execution::RelationalExecutionDenialCause> {
+        self.check_live().map_err(Into::into)
+    }
+}
 mod cursor;
 pub(crate) use cursor::Cursor;
 
@@ -25,7 +33,7 @@ impl<'a> BorrowedPayload<'a> {
     pub(crate) fn field(
         self,
         name: &str,
-        request: &ExecutionRequest<'_, '_>,
+        request: &dyn PayloadCheckpoint,
     ) -> Result<Self, Refusal> {
         let mut selected = None;
         self.fields(request, |field, raw| {
@@ -36,12 +44,12 @@ impl<'a> BorrowedPayload<'a> {
         })?;
         selected.ok_or_else(malformed)
     }
-    pub(crate) fn text_length(self, request: &ExecutionRequest<'_, '_>) -> Result<usize, Refusal> {
+    pub(crate) fn text_length(self, request: &dyn PayloadCheckpoint) -> Result<usize, Refusal> {
         Ok(self.text(request)?.len())
     }
     pub(crate) fn fields(
         self,
-        execution: &ExecutionRequest<'_, '_>,
+        execution: &dyn PayloadCheckpoint,
         mut visit: impl FnMut(&'a str, Self) -> Result<(), Refusal>,
     ) -> Result<(), Refusal> {
         let mut cursor = Cursor::new(self.0, execution);
@@ -56,7 +64,7 @@ impl<'a> BorrowedPayload<'a> {
 
     pub(crate) fn pairs(
         self,
-        request: &ExecutionRequest<'_, '_>,
+        request: &dyn PayloadCheckpoint,
         mut visit: impl FnMut(Self, Self) -> Result<(), Refusal>,
     ) -> Result<usize, Refusal> {
         let mut cursor = Cursor::new(self.0, request);
@@ -71,7 +79,7 @@ impl<'a> BorrowedPayload<'a> {
 
     pub(crate) fn elements(
         self,
-        execution: &ExecutionRequest<'_, '_>,
+        execution: &dyn PayloadCheckpoint,
         mut visit: impl FnMut(Self) -> Result<(), Refusal>,
     ) -> Result<usize, Refusal> {
         let mut cursor = Cursor::new(self.0, execution);
@@ -83,17 +91,17 @@ impl<'a> BorrowedPayload<'a> {
         Ok(count)
     }
 
-    pub(super) fn text(self, execution: &ExecutionRequest<'_, '_>) -> Result<&'a str, Refusal> {
+    pub(super) fn text(self, execution: &dyn PayloadCheckpoint) -> Result<&'a str, Refusal> {
         let mut cursor = Cursor::new(self.0, execution);
         let text = cursor.string()?;
         cursor.finish()?;
         Ok(text)
     }
 
-    pub(crate) fn octets<'request, 'authority>(
+    pub(crate) fn octets<'request>(
         self,
-        execution: &'request ExecutionRequest<'request, 'authority>,
-    ) -> Result<Octets<'a, 'request, 'authority>, Refusal> {
+        execution: &'request dyn PayloadCheckpoint,
+    ) -> Result<Octets<'a, 'request>, Refusal> {
         let mut cursor = Cursor::new(self.0, execution);
         let marker = *self.0.first().ok_or_else(malformed)?;
         let binary = matches!(marker, 0xc4..=0xc6);
@@ -120,7 +128,7 @@ impl<'a> BorrowedPayload<'a> {
     pub(super) fn optional_field(
         self,
         expected: &str,
-        execution: &ExecutionRequest<'_, '_>,
+        execution: &dyn PayloadCheckpoint,
     ) -> Result<Self, Refusal> {
         let mut found = None;
         self.fields(execution, |name, value| {
@@ -143,13 +151,13 @@ impl<'a> BorrowedPayload<'a> {
 
 /// A borrowed Native binary subcodec, whether Serde emitted bin or a byte array.
 /// No intermediate byte Vec is constructed by the allocation preflight.
-pub(crate) struct Octets<'a, 'request, 'authority> {
-    cursor: Cursor<'a, 'request, 'authority>,
+pub(crate) struct Octets<'a, 'request> {
+    cursor: Cursor<'a, 'request>,
     binary: bool,
     remaining: usize,
     count: usize,
 }
-impl Octets<'_, '_, '_> {
+impl Octets<'_, '_> {
     pub(crate) fn len(&self) -> usize {
         self.count
     }

@@ -1,9 +1,0 @@
-{
-  "head": "b8d9b28608f434c4c21bedb22dbb6da96d7b20d8",
-  "metadata": "target\\test-cost\\query\\queue1-same-directory-direct-unset\\build\\binaries.json",
-  "metadata_sha256": "a637d9049f8d5d1097d671e74bcbd988eb5118da26da10f91952f3117f79f4b1",
-  "executable": "C:\\programming\\worth worktees\\worktrees\\m3-p3-reopen\\workspaces\\worth-query\\target\\debug\\deps\\worth_query_court_query_decl_host-0388f5f36454721a.exe",
-  "executable_sha256": "472cfdf3ad3fa076010e9357716425fb00c3c151f5464d98dd6818608e251df3",
-  "case": "host::application_home::reopening::same_directory_reopens_reads_and_commits_without_replaying_initializer_or_old_key",
-  "RUST_MIN_STACK_present_at_direct_execution": false
-}

@@ -67,12 +67,12 @@ impl<D: WorthQueryDomainEntryMarker, C: WorthQueryDomainOperatingContext<D>>
                 }
             })
             .unwrap_or(WorthQueryDeclarationBridgeRoutingSupportStatus::Unsupported);
-        Ok(worth_query_checked_declaration_bridge_routing_on_handle(
+        worth_query_checked_declaration_bridge_routing_on_handle(
             self.handle_identity_digest(),
             self.operating_context_identity_digest(),
             support_status,
             subject,
-        )?)
+        )
     }
 
     pub fn bridge_continuation_support<I: WorthQueryDeclarationInput<D>>(

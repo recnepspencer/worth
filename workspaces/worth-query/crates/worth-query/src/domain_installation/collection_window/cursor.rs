@@ -36,7 +36,7 @@ impl WorthQueryCollectionCursor {
     pub fn identity_evidence(
         &self,
     ) -> Result<crate::WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
-        Ok(crate::WorthQueryEvidenceIdentity::compose(
+        crate::WorthQueryEvidenceIdentity::compose(
             crate::WorthQueryEvidenceScope::ProjectionConsumptionIdentity,
         )
         .field_shape(
@@ -63,7 +63,7 @@ impl WorthQueryCollectionCursor {
             crate::WorthQueryEvidenceTag::new("next-row"),
             self.next_row_ordinal,
         )
-        .seal()?)
+        .seal()
     }
 
     pub(super) fn rebind(

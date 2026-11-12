@@ -13,7 +13,7 @@ use worth_query_declaration::facade::{
     domain_computation::{WorthQueryResourceDimension, WorthQuerySemanticScaleAxis},
 };
 
-struct MutationSchema;
+pub(super) struct MutationSchema;
 struct MutationDecision;
 struct MutationDenial;
 worth_query_declaration::worth_query_structured_value_binding!(MutationDenialBinding for MutationDenial {

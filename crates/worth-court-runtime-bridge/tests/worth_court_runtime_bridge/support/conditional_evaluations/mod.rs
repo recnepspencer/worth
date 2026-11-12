@@ -1,4 +1,5 @@
 //! One public source-free Bridge assembly for conditional evaluation courts.
+mod authored_sources;
 use worth_foundational::facade::{AspectKey, FieldKey, ScalarAspectType};
 use worth_runtime_bridge::facade::*;
 use worth_signal::facade::{Aspect, NodeEvaluationResult};

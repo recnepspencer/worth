@@ -7,7 +7,7 @@ impl ManagedIndexSourceProjection<'_> {
         row: EntityId,
         kind: crate::identity::data::KindId,
         field: &super::super::ManagedIndexSourceField,
-        project: impl FnOnce(Option<&AspectValue>, Option<RelationalContentFrame>) -> T,
+        project: impl FnOnce(Observation<'_>, Option<RelationalContentFrame>) -> T,
     ) -> Result<T, super::super::ManagedIndexSourcePreparationDenial> {
         self.with_field_at(row, kind, field, |value| {
             let content = match &self.backing {
@@ -21,7 +21,7 @@ impl ManagedIndexSourceProjection<'_> {
                     row,
                     kind,
                     &field.locator,
-                    value,
+                    value.value(),
                 )?,
                 SourceProjectionBacking::Selected {
                     loan, execution, ..
@@ -39,7 +39,7 @@ impl ManagedIndexSourceProjection<'_> {
                         row,
                         kind,
                         &field.locator,
-                        value,
+                        value.value(),
                     )?
                 }
             };

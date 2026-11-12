@@ -29,6 +29,12 @@ impl WorldCheckpointImage {
                 request,
             )?;
         }
+        for intent in self.creations.values() {
+            insert(&mut custody, intent.position(), *intent.digest(), request)?;
+        }
+        for release in self.creation_releases.values() {
+            insert(&mut custody, release.position(), *release.digest(), request)?;
+        }
         validate(&custody, &coverage.custody, request)?;
         if self.occurrences.len() as u64 != coverage.occurrences.position {
             return Err(Denial::JournalSourceMismatch);

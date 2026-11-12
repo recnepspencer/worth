@@ -20,9 +20,10 @@ pub(in crate::http::server::query_denial) fn source(
         Source::Publication(cause) => {
             crate::http::server::relational_execution_denial::companion(cause.clone())
         }
-        Source::MissingParticipant | Source::IncompletePreparation | Source::RootUnavailable => {
-            unavailable()
-        }
+        Source::MissingParticipant
+        | Source::IncompletePreparation
+        | Source::RootUnavailable
+        | Source::PredecessorUnavailable { .. } => unavailable(),
         Source::Registration(_) | Source::ForeignSource | Source::PublicCacheIdentityExhausted => {
             internal_denied()
         }

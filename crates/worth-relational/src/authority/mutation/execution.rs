@@ -82,7 +82,9 @@ pub(crate) fn apply_plan_with_publication_edges(
 
     for intent in &apply_plan.merged_intents {
         let child = dispatch_intent(intent, &mut workspace, lease)?;
-        effect.accumulate(assemble_effect(child, &mut workspace)?);
+        effect.accumulate(
+            workspace.run_owned_mutation(|workspace| assemble_effect(child, workspace))?,
+        );
     }
 
     let preparation_telemetry = workspace.preparation_telemetry();

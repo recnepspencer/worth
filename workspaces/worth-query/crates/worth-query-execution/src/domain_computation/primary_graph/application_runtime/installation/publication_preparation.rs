@@ -59,6 +59,7 @@ pub(super) fn prepare_conditional<S: ApplicationSchema + 'static>(
         dyn super::super::super::conditional_operation::WorthQueryPendingConditionalOperation<S>,
     >],
     output_readiness: usize,
+    definitions: usize,
 ) -> Result<
     BootstrapPublicationStorage<PreparedPublication<S>>,
     super::super::super::conditional_operation::WorthQueryConditionalRuntimeInstallationDenial,
@@ -67,7 +68,7 @@ pub(super) fn prepare_conditional<S: ApplicationSchema + 'static>(
         publication_denial, require_complete_binding_inventory,
     };
     let prepared = preflight(input).map_err(publication_denial)?;
-    require_complete_binding_inventory(expected, bindings, output_readiness)?;
+    require_complete_binding_inventory(expected, bindings, output_readiness, definitions)?;
     Ok(
         BootstrapPublicationReservation::prepare(&phase.execution_request())
             .map_err(publication_denial)?

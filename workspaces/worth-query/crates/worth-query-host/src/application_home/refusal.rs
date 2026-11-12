@@ -13,7 +13,27 @@ mod unclean;
 pub use query_custody::{UnadmittedHomeQueryCustodyRefused, UnadmittedHomeQueryService};
 
 pub enum WorthQueryApplicationHomeOpenRefused<Schema: ApplicationSchemaComposition, Program> {
+    TransitionProgrammeHandoff {
+        query: PreparedExistingHomeSignalProgram<Schema, Program>,
+        home: super::runtime::DirectoryHome,
+        handoff: worth_store_application::ApplicationHomeProgrammeHandoffRefused,
+        _bindings: QueryHomeAuthoredBindings,
+    },
+
     Preparation(WorthQueryApplicationPreparationDenial),
+    TransitionSignalProgramPreparation {
+        home: DirectoryHome,
+        query: Box<QueryHomeSignalProgramPreparationRefused<Schema, Program>>,
+    },
+    TransitionComposition {
+        query: ReadmittedExistingHomeNativeMeaning<Schema, Program>,
+        home: DirectoryHome,
+        cause: ApplicationHomeQueryCompositionDenial,
+    },
+    SignalProgramPreparation {
+        home: PreparedQueryHomeSource,
+        query: Box<QueryHomeSignalProgramPreparationRefused<Schema, Program>>,
+    },
     Binding {
         query: PreparedHomeApplication<Schema, Program>,
         cause: worth_query_installation::facade::WorthQueryHomeBindingDenial,
@@ -57,12 +77,17 @@ pub enum WorthQueryApplicationHomeOpenRefused<Schema: ApplicationSchemaCompositi
         home: UnsharedReadmittedApplicationHome,
         cause: WorthQueryPrimaryGraphInstallationDenial,
     },
-    ExistingWorldReadmission {
+    ExistingWorldSourcePreparation {
         query: ReadmittedExistingHomeNativeMeaning<Schema, Program>,
         home: WorldHomeReadmissionRefused,
     },
+    ExistingWorldReadmission {
+        query: PreparedExistingHomeSignalProgram<Schema, Program>,
+        _bindings: QueryHomeAuthoredBindings,
+        home: WorldHomeReadmissionRefused,
+    },
     ExistingComposition {
-        query: ReadmittedExistingHomeNativeMeaning<Schema, Program>,
+        query: PreparedExistingHomeSignalProgram<Schema, Program>,
         home: DirectoryHome,
         cause: ApplicationHomeQueryCompositionDenial,
     },
@@ -93,12 +118,17 @@ pub enum WorthQueryApplicationHomeOpenRefused<Schema: ApplicationSchemaCompositi
         home: UnsharedReadmittedApplicationHome,
         cause: WorthQueryPrimaryGraphInstallationDenial,
     },
-    WorldReadmission {
+    WorldSourcePreparation {
         query: ReadmittedHomeNativeMeaning<Schema, Program>,
         home: WorldHomeReadmissionRefused,
     },
+    WorldReadmission {
+        query: PreparedHomeSignalProgram<Schema, Program>,
+        _bindings: QueryHomeAuthoredBindings,
+        home: WorldHomeReadmissionRefused,
+    },
     Composition {
-        query: ReadmittedHomeNativeMeaning<Schema, Program>,
+        query: PreparedHomeSignalProgram<Schema, Program>,
         home: DirectoryHome,
         cause: ApplicationHomeQueryCompositionDenial,
     },
@@ -162,6 +192,15 @@ impl<Schema: ApplicationSchemaComposition, Program>
 {
     pub fn detail(&self) -> String {
         match self {
+            Self::TransitionProgrammeHandoff { handoff, .. } => {
+                format!("authored programme handoff refused: {:?}", handoff.reason())
+            }
+
+            Self::SignalProgramPreparation { query, .. } => format!("{:?}", query.reason()),
+            Self::TransitionSignalProgramPreparation { query, .. } => {
+                format!("{:?}", query.reason())
+            }
+            Self::TransitionComposition { cause, .. } => format!("{cause:?}"),
             Self::Preparation(cause) => format!("{cause:?}"),
             Self::Binding { cause, .. } => format!("{cause:?}"),
             Self::Physical { cause, .. } => format!("{cause:?}"),
@@ -175,6 +214,7 @@ impl<Schema: ApplicationSchemaComposition, Program>
             Self::NativeFinalizationInput { cause, .. } => format!("{cause:?}"),
             Self::ExistingNativeFinalization { query, .. } => query.reason().to_string(),
             Self::ExistingBridgeDefinition { cause, .. } => cause.to_string(),
+            Self::ExistingWorldSourcePreparation { home, .. } => format!("{:?}", home.reason()),
             Self::ExistingWorldReadmission { home, .. } => format!("{:?}", home.reason()),
             Self::ExistingComposition { cause, .. } => format!("{cause:?}"),
             Self::ExistingSourceAttachment { query, .. } => query.reason().to_string(),
@@ -183,6 +223,7 @@ impl<Schema: ApplicationSchemaComposition, Program>
             Self::ExistingQueryAttachment { query, .. } => query.detail(),
             Self::NativeFinalization { query, .. } => query.reason().to_string(),
             Self::BridgeDefinition { cause, .. } => cause.to_string(),
+            Self::WorldSourcePreparation { home, .. } => format!("{:?}", home.reason()),
             Self::WorldReadmission { home, .. } => format!("{:?}", home.reason()),
             Self::Composition { cause, .. } => format!("{cause:?}"),
             Self::SourceAttachment { query, .. } => query.reason().to_string(),

@@ -1,6 +1,6 @@
 //! Initial temporal posture under the existing partition registry mutex.
 use super::SignalConditionalTemporalRegistry;
-use crate::branch::SignalInitialEmptyStopDenial as Denial;
+use crate::branch::SignalOwnerStopDenial as Denial;
 impl SignalConditionalTemporalRegistry {
     pub(in crate::branch::owner_services) fn try_initial_empty_stop_guard(
         &self,

@@ -169,3 +169,9 @@ fn a_retired_root_walk_releases_its_history_and_the_pins_only_it_held() {
 
 mod artifact_retention;
 mod artifact_source;
+
+mod branch_data;
+
+mod owner_evidence;
+
+mod durable_siblings;

@@ -53,15 +53,26 @@ pub(crate) struct RelationalPendingSettlementReservation {
 }
 
 impl RelationalPublicationSettlementRegistry {
-    pub(super) fn try_empty(&self) -> Result<bool, ()> {
-        match self.records.try_lock() {
-            Ok(value) => Ok(value.is_empty()),
-            Err(std::sync::TryLockError::Poisoned(error)) => Ok(error.into_inner().is_empty()),
-            Err(std::sync::TryLockError::WouldBlock) => Err(()),
-        }
+    pub(super) fn close_custody(&self) -> super::RelationalPublicationRegistryCustody {
+        let records = self.records();
+        super::RelationalPublicationRegistryCustody::observed(
+            records.len(),
+            records.keys().next().map(|commit| commit.0),
+        )
     }
-    pub(super) fn has_pending(&self) -> bool {
-        !self.records().is_empty()
+
+    pub(super) fn try_close_custody(&self) -> super::RelationalPublicationRegistryCustody {
+        let records = match self.records.try_lock() {
+            Ok(records) => records,
+            Err(std::sync::TryLockError::Poisoned(error)) => error.into_inner(),
+            Err(std::sync::TryLockError::WouldBlock) => {
+                return super::RelationalPublicationRegistryCustody::ContactHeld
+            }
+        };
+        super::RelationalPublicationRegistryCustody::observed(
+            records.len(),
+            records.keys().next().map(|commit| commit.0),
+        )
     }
 
     /// Reserve capacity and install one pending record before the publication

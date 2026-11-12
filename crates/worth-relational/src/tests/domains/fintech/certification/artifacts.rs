@@ -110,12 +110,12 @@ fn branch_summary(session: &CertifiedRelationalFintechSession) -> WorkflowArtifa
 fn diagnostics_summary(session: &CertifiedRelationalFintechSession) -> WorkflowArtifactProjection {
     let host_request = crate::test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
-    let recovery = crate::tests::support::recovery_plan_for(
-        execution,
-        &session.world.runtime,
-        RecoveryMode::NormalRecoveryVerification,
-    )
-    .unwrap();
+    let recovery = session
+        .world
+        .runtime
+        .durability()
+        .recovery_plan(execution, RecoveryMode::NormalRecoveryVerification)
+        .unwrap();
     let publication_diagnostics = session
         .world
         .runtime

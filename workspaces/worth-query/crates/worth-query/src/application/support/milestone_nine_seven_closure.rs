@@ -149,7 +149,7 @@ impl WorthQueryMilestoneNineSevenDerivedClosure {
     }
 
     pub fn support_profile_publication_contract() -> Result<Self, IdentityDerivationDenial> {
-        Ok(Self::derive_from_phase_closures(
+        Self::derive_from_phase_closures(
             REQUIRED_PHASES.into_iter().map(|phase| {
                 WorthQueryMilestoneNineSevenPhaseClosure::new(
                     phase,
@@ -158,7 +158,7 @@ impl WorthQueryMilestoneNineSevenDerivedClosure {
                 )
             }),
             ["store-backed execution parity belongs to Milestone 10"],
-        )?)
+        )
     }
 
     pub fn status(&self) -> WorthQueryMilestoneClosureStatus {

@@ -14,6 +14,8 @@ pub enum ApplicationHomeQueryRootDenial {
     RecoveryRequired(WorldDurableBootstrapRefusal),
     EvidenceRequired,
     Indeterminate,
+    InitialSignalBranchRequired { observed: usize },
+    Signal(worth_signal::facade::durability::SignalDurableSourceDenial),
 }
 
 impl WorldReadmittedApplicationHome<(), (), (), (), ()> {
@@ -48,13 +50,23 @@ impl WorldReadmittedApplicationHome<(), (), (), (), ()> {
             let (_, basis) = native
                 .observe_branch(&native.main_branch_identity())
                 .map_err(Denial::NativeBasis)?;
-            let signal = composition
+            let owner = composition
                 .conditional
                 .as_ref()
                 .ok_or(Denial::QueryCompositionNotAttached)?
-                .read()
-                .unwrap_or_else(std::sync::PoisonError::into_inner)
-                .admitted_signal_basis()
+                .signal_owner();
+            let source = owner.source_port();
+            let branches = source.branches().map_err(Denial::Signal)?;
+            if branches.len() != 1 {
+                return Err(Denial::InitialSignalBranchRequired {
+                    observed: branches.len(),
+                });
+            }
+            let descriptor = source.observe(branches[0].0).map_err(Denial::Signal)?;
+            let signal = source
+                .readmit_descriptor(&descriptor)
+                .map_err(Denial::Signal)?
+                .basis()
                 .clone();
             // This is the existing creation spelling, never a lookup guess for
             // an already recorded root, which was selected through its cell.

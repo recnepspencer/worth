@@ -2,42 +2,80 @@
 use super::*;
 use worth_query_declaration::facade::application_operation::ApplicationMutationOutputPosture as Posture;
 use worth_relational::facade::transactions::{EntityReference, RecordRef};
+/// The exact records whose every demanded field is retained. Under a
+/// live-owner declaration the attempt's other changed demanded fields are
+/// retained beside them, and zero anchors is an exact selection.
+pub(super) struct Selection<'a> {
+    pub(super) anchors: Vec<(RecordRef, &'a str)>,
+    pub(super) own_changes: bool,
+}
 pub(super) fn select(
     attempt: &WorthQueryPrimaryGraphApplicationAttempt,
-) -> Result<Option<Vec<(RecordRef, &str)>>, WorthQueryProviderSessionFailure> {
-    if let Some(prepared) = attempt
-        .aftermath_causality()
-        .map(|causality| causality.prepared_correction())
-        && let Some(anchor) = prepared.authored_retirement_anchor()
-    {
+) -> Result<Option<Selection<'_>>, WorthQueryProviderSessionFailure> {
+    if let Some(prepared) = attempt.recorded_reverse() {
+        // A recorded reverse retains by the anchors its preparation recorded.
+        // Its own binding's declaration never selects for it. A reapplied
+        // source is the forward attempt below.
+        let declaration = prepared.authored_declaration();
+        let own_changes =
+            declaration.is_some_and(|identity| identity.live_member_owner().is_some());
+        let anchor = prepared.authored_retirement_anchor();
         let co = prepared.authored_retirement_co_anchors();
-        if !co.is_empty() {
-            let mut anchors = Vec::with_capacity(co.len() + 1);
-            for id in std::iter::once(anchor).chain(co) {
-                let entity = attempt
-                    .native_publication_roles()
-                    .find_map(|(_, posture, entity, target)| {
-                        (posture == Posture::Retire && *target == EntityReference::Existing(id))
-                            .then_some(entity)
-                    })
-                    .ok_or_else(failure)?;
-                anchors.push((RecordRef::Entity(id), entity));
-            }
-            return Ok(Some(anchors));
+        // A declared co-anchor selects by record even when none was prepared:
+        // an optional one that is absent leaves the primary anchor alone, and
+        // the demand's other kinds retain nothing.
+        let anchored = anchor.is_some()
+            && (!co.is_empty()
+                || declaration.is_some_and(|identity| !identity.co_anchors().is_empty()));
+        if !own_changes && !anchored {
+            return Ok(None);
         }
+        let mut anchors = Vec::with_capacity(co.len() + 1);
+        for id in anchor.into_iter().chain(co) {
+            let entity = attempt
+                .native_publication_roles()
+                .find_map(|(_, posture, entity, target)| {
+                    (posture == Posture::Retire && *target == EntityReference::Existing(id))
+                        .then_some(entity)
+                })
+                .ok_or_else(failure)?;
+            anchors.push((RecordRef::Entity(id), entity));
+        }
+        return Ok(Some(Selection {
+            anchors,
+            own_changes,
+        }));
     }
-    let identity = attempt
-        .original_authority()
-        .retained_governed_input_carrier()
-        .and_then(|input| input.correction())
-        .and_then(|original| original.association().declaration().authored_identity());
+    let identity = attempt.authored_correction_identity();
+    // Live-owner member families select every member the mutation retires:
+    // zero members is an exact empty selection, never a fallback to the attempt.
     let Some(identity) = identity.filter(|identity| {
-        !identity.co_anchors().is_empty() && identity.parts().source_posture == Posture::Retire
+        identity.live_member_owner().is_some()
+            || (!identity.co_anchors().is_empty()
+                && identity.parts().source_posture == Posture::Retire)
     }) else {
         return Ok(None);
     };
     let mut anchors = Vec::with_capacity(identity.co_anchors().len() + 1);
     for declaration in std::iter::once(identity).chain(identity.co_anchors()) {
+        if declaration.member_owner().is_some() || declaration.live_member_owner().is_some() {
+            anchors.extend(attempt.native_publication_roles().filter_map(
+                |(role, posture, entity, target)| {
+                    match target {
+                        EntityReference::Existing(id)
+                            if declaration
+                                .member_role_suffix(role, posture, entity, false)
+                                .is_some()
+                                && posture == Posture::Retire =>
+                        {
+                            Some((RecordRef::Entity(*id), entity))
+                        }
+                        _ => None,
+                    }
+                },
+            ));
+            continue;
+        }
         let role = attempt
             .native_publication_roles()
             .find(|(name, posture, _, _)| {
@@ -49,7 +87,10 @@ pub(super) fn select(
             return Err(failure());
         }
     }
-    Ok(Some(anchors))
+    Ok(Some(Selection {
+        anchors,
+        own_changes: identity.live_member_owner().is_some(),
+    }))
 }
 fn failure() -> WorthQueryProviderSessionFailure {
     provider_failure(

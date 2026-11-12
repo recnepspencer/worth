@@ -3,6 +3,9 @@ use crate::durability::data::{DurabilityError, RecoveryFailureClass, RelationalR
 use crate::history::data::CanonicalIndexDefinitionDelta;
 use crate::runtime::RelationalRuntime;
 
+mod predecessor;
+pub(super) use predecessor::reconstruct_predecessor;
+
 #[derive(Debug, Clone)]
 pub(crate) struct RecoveredIndexCatalog {
     runtime_instance_id: u64,
@@ -20,6 +23,14 @@ impl RecoveredIndexCatalog {
         ),
         crate::transactions::data::TransactionCommitError,
     > {
+        self.require_runtime(runtime)?;
+        Ok((self.delta.clone(), self.authored.clone()))
+    }
+
+    fn require_runtime(
+        &self,
+        runtime: u64,
+    ) -> Result<(), crate::transactions::data::TransactionCommitError> {
         if runtime != self.runtime_instance_id {
             return Err(crate::transactions::data::TransactionCommitError::conflict(
                 crate::transactions::data::CommitConflict::new(
@@ -30,7 +41,7 @@ impl RecoveredIndexCatalog {
                 ),
             ));
         }
-        Ok((self.delta.clone(), self.authored.clone()))
+        Ok(())
     }
 }
 pub(super) fn readmit(

@@ -13,6 +13,7 @@ impl OperationHandler<Catalog, Binding> for Handler {
                 Edit::Directory { .. } => Decision::Directory(directory(reader, "catalog")?),
                 Edit::Item { directory: key, .. } => Decision::Directory(directory(reader, key)?),
                 Edit::Name { item: key, .. }
+                | Edit::Badge { item: key, .. }
                 | Edit::Enabled { item: key, .. }
                 | Edit::Retire { item: key } => Decision::Item(item(reader, key)?),
                 Edit::Share {
@@ -85,6 +86,8 @@ fn item(
         .map_err(HandlerExecutionDenial::new)?;
     reader.field(&entity, ItemName::at("ItemName"))?;
     reader.field(&entity, ItemEnabled::at("ItemEnabled"))?;
+    reader.field(&entity, BadgeFlag::at("BadgeFlag"))?;
+    reader.field(&entity, BadgeDetail::at("BadgeDetail"))?;
     reader.mutation_target(&entity)
 }
 fn apply(
@@ -169,6 +172,24 @@ fn apply(
             writer
                 .write_field(&target, ItemEnabled::at("ItemEnabled"), *value)
                 .map_err(HandlerExecutionDenial::new)?;
+        }
+        (Edit::Badge { value, .. }, Decision::Item(target)) => {
+            let target = writer
+                .projected_entity(&target)
+                .map_err(HandlerExecutionDenial::new)?;
+            match value {
+                Some((flag, detail)) => {
+                    writer
+                        .write_field(&target, BadgeFlag::at("BadgeFlag"), *flag)
+                        .map_err(HandlerExecutionDenial::new)?;
+                    writer
+                        .write_optional_field(&target, BadgeDetail::at("BadgeDetail"), *detail)
+                        .map_err(HandlerExecutionDenial::new)?;
+                }
+                None => writer
+                    .remove_aspect(&target, ItemBadge::reference())
+                    .map_err(HandlerExecutionDenial::new)?,
+            }
         }
         (Edit::Retire { .. }, Decision::Item(target)) => {
             let target = writer

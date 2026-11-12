@@ -97,15 +97,13 @@ fn trace_evidence_identity(
     role: &'static str,
     trace_identity: &str,
 ) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
-    Ok(
-        WorthQueryEvidenceIdentity::compose(WorthQueryEvidenceScope::InstalledDomainExecution)
-            .field_shape(WorthQueryEvidenceTag::new("identity_family"), role)
-            .field_value(
-                WorthQueryEvidenceTag::new("query_trace_identity"),
-                trace_identity,
-            )
-            .seal()?,
-    )
+    WorthQueryEvidenceIdentity::compose(WorthQueryEvidenceScope::InstalledDomainExecution)
+        .field_shape(WorthQueryEvidenceTag::new("identity_family"), role)
+        .field_value(
+            WorthQueryEvidenceTag::new("query_trace_identity"),
+            trace_identity,
+        )
+        .seal()
 }
 
 #[cfg(test)]

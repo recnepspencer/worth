@@ -47,7 +47,13 @@ impl Source {
                     entity_id: self.account,
                     fields: AspectFieldPatch::from_locator(
                         planned_single_field_locator(
-                            AspectKey::new("AccountIdentity").unwrap(),
+                            AspectKey::new(
+                                FieldSelection::<HomeRecords, Account, AccountIdentity, u64>::at(
+                                    "Balance",
+                                )
+                                .aspect(),
+                            )
+                            .unwrap(),
                             FieldKey::new("Balance").unwrap(),
                         ),
                         AspectValue::UInt64(balance),
@@ -61,6 +67,11 @@ impl Source {
         execution: &ExecutionRequest<'_, '_>,
         batch: WorkerIntentBatch,
     ) -> Published {
+        let source_revision = *self.home.binding().selected().revision().bytes();
+        let program_source = self.home.branch_program_source_owner().admit_source(
+            source_revision,
+            world_branch_program_source_commitment(&self.expected, source_revision).unwrap(),
+        );
         let cancellation = RuntimeWorldCancellationSource::new();
         let native = self.home.relational().runtime();
         let change = RelationalTransactionIntent::ordinary();
@@ -71,6 +82,7 @@ impl Source {
             .open_publication_without_signal(
                 execution,
                 self.expected.clone(),
+                program_source,
                 change.clone(),
                 &cancellation.token(),
                 None,

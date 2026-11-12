@@ -11,7 +11,7 @@ use worth_query_declaration::facade::application_schema::{
 
 use super::*;
 
-struct CoveredAftermathSchema;
+pub(super) struct CoveredAftermathSchema;
 struct UncoveredAftermathSchema;
 impl ApplicationSchema for CoveredAftermathSchema {
     const OWNER: &'static str = "typed-test";

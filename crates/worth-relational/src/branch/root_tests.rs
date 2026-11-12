@@ -3,7 +3,7 @@ use std::sync::Arc;
 use super::{RelationalBranchRootCaptureDenial, RelationalBranchVisibilityCommitment};
 use crate::history::data::{BranchId, CommitId};
 use crate::schema::data::SchemaId;
-use crate::tests::support::{create_entity_outcome, durable_runtime_with_test_schema};
+use crate::tests::support::{create_entity_outcome, runtime_with_test_schema};
 
 #[path = "root_tests/request.rs"]
 mod request;
@@ -15,7 +15,7 @@ fn committed_root_and_envelope(
     Arc<super::RelationalBranchRoot>,
     crate::history::data::CanonicalCommitEnvelope,
 ) {
-    let runtime = durable_runtime_with_test_schema();
+    let runtime = runtime_with_test_schema();
     let performed = create_entity_outcome(execution, &runtime, "branch-root-axis-binding");
     let root = runtime
         .history

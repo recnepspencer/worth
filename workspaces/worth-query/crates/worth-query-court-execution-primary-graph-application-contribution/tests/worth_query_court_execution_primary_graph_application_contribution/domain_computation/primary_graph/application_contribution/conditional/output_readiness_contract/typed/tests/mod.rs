@@ -50,7 +50,7 @@ type Record = fragment::FieldSelection<Model<0>, Node<0>, Publication<0>, Payloa
 type Key = fragment::FieldSelection<Model<0>, Node<0>, Identity, String>;
 mod changed;
 mod twin;
-struct Actual;
+pub struct Actual;
 impl schema::ApplicationSchema for Actual {
     const OWNER: &'static str = "Actual";
     const NAME: &'static str = "Actual";

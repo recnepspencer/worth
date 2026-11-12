@@ -24,6 +24,7 @@ worth-query-testkit-execution-primary-graph-application-contribution = { path = 
 worth-query-testkit-host = { path = "../worth-query-testkit-host" }
 worth-relational = { path = "../../../../crates/worth-relational" }
 worth-runtime-bridge = { path = "../../../../crates/worth-runtime-bridge" }
+worth-runtime-world = { path = "../../../../crates/worth-runtime-world" }
 
 [[test]]
 name = "worth_query_court_query_decl_host"

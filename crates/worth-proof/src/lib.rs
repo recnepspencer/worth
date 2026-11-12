@@ -7,9 +7,20 @@ mod band;
 mod binding;
 mod brand;
 mod collections;
+mod composite_signal_publication;
 mod composition;
+pub use composite_signal_publication::{
+    AdmittedCompositeSignalPublication, CompositeSignalPublicationAdmissionDenial,
+    InstalledCompositeSignalPublicationAuthority, InstalledCompositeSignalPublicationOwner,
+};
 pub mod contracts;
 mod durable_publication;
+mod proven_no_effect_publication;
+pub use proven_no_effect_publication::ProvenNoEffectPublication;
+mod signal_branch_readmission;
+pub use signal_branch_readmission::SignalBranchReadmitted;
+mod signal_owner_readmission;
+pub use signal_owner_readmission::SignalOwnerReadmitted;
 mod dx;
 mod effect;
 mod home_binding;
@@ -169,3 +180,16 @@ pub use source_observation::{
 
 #[doc(hidden)]
 pub use band::__band_guard_package_matches_any_prefix;
+
+pub use home_recovery::SignalReadmitted;
+
+mod branch_program_source;
+pub use branch_program_source::{
+    AdmittedBranchProgramSource, BranchProgramSourceAdmissionDenial,
+    InstalledBranchProgramSourceAuthority, InstalledBranchProgramSourceOwner,
+};
+
+mod bridge_program_installation;
+pub use bridge_program_installation::{
+    BridgeProgramInstallationBinding, BridgeProgramInstallationDenial, InstalledBridgeProgramOwner,
+};

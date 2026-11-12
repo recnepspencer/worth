@@ -1,13 +1,13 @@
 //! Admit the concrete delta headers before Serde, then quote each reconstructed entry.
 use super::super::generation_decode_quote::{add, roster, tree, vector};
 use super::*;
+use crate::durability::canonical_commit_artifact::borrowed_payload::PayloadCheckpoint;
 use crate::durability::canonical_commit_artifact::{
     borrowed_payload::BorrowedPayload, RelationalCanonicalCommitArtifactRefusal as Refusal,
 };
-use worth_execution::ExecutionRequest;
 pub(in super::super) fn quote_decode(
     raw: BorrowedPayload<'_>,
-    request: &ExecutionRequest<'_, '_>,
+    request: &dyn PayloadCheckpoint,
 ) -> Result<u64, Refusal> {
     let mut bytes = 0;
     let count = raw.field("generations", request)?.elements(request, |entry| {

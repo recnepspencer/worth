@@ -92,7 +92,7 @@ pub(super) fn coverage_row_identity(
     } else {
         composer = composer.field_shape(WorthQueryEvidenceTag::new("failure"), "none");
     }
-    Ok(composer.seal()?)
+    composer.seal()
 }
 
 pub(super) fn coverage_matrix_identity<'a, I>(
@@ -101,15 +101,13 @@ pub(super) fn coverage_matrix_identity<'a, I>(
 where
     I: IntoIterator<Item = &'a WorthQueryEvidenceIdentity>,
 {
-    Ok(
-        WorthQueryEvidenceIdentity::compose(WorthQueryEvidenceScope::SubscriptionActivationReceipt)
-            .field_shape(
-                WorthQueryEvidenceTag::new("identity_family"),
-                "query_subscription_family_coverage_matrix_v1",
-            )
-            .field_evidence_identity_sequence(WorthQueryEvidenceTag::new("row"), rows)
-            .seal()?,
-    )
+    WorthQueryEvidenceIdentity::compose(WorthQueryEvidenceScope::SubscriptionActivationReceipt)
+        .field_shape(
+            WorthQueryEvidenceTag::new("identity_family"),
+            "query_subscription_family_coverage_matrix_v1",
+        )
+        .field_evidence_identity_sequence(WorthQueryEvidenceTag::new("row"), rows)
+        .seal()
 }
 
 pub(super) fn coverage_evidence_variation_set_identity<'a, I>(
@@ -119,15 +117,13 @@ pub(super) fn coverage_evidence_variation_set_identity<'a, I>(
 where
     I: IntoIterator<Item = &'a WorthQueryEvidenceIdentity>,
 {
-    Ok(
-        WorthQueryEvidenceIdentity::compose(WorthQueryEvidenceScope::SubscriptionActivationReceipt)
-            .field_shape(
-                WorthQueryEvidenceTag::new("identity_family"),
-                identity_family,
-            )
-            .field_evidence_identity_sequence(WorthQueryEvidenceTag::new("variation"), values)
-            .seal()?,
-    )
+    WorthQueryEvidenceIdentity::compose(WorthQueryEvidenceScope::SubscriptionActivationReceipt)
+        .field_shape(
+            WorthQueryEvidenceTag::new("identity_family"),
+            identity_family,
+        )
+        .field_evidence_identity_sequence(WorthQueryEvidenceTag::new("variation"), values)
+        .seal()
 }
 
 pub(super) fn lifecycle_class_variation_set_identity<'a, I>(
@@ -136,15 +132,13 @@ pub(super) fn lifecycle_class_variation_set_identity<'a, I>(
 where
     I: IntoIterator<Item = &'a str>,
 {
-    Ok(
-        WorthQueryEvidenceIdentity::compose(WorthQueryEvidenceScope::SubscriptionActivationReceipt)
-            .field_shape(
-                WorthQueryEvidenceTag::new("identity_family"),
-                "query_subscription_lifecycle_class_variation_set_v1",
-            )
-            .field_value_sequence(WorthQueryEvidenceTag::new("class"), classes)
-            .seal()?,
-    )
+    WorthQueryEvidenceIdentity::compose(WorthQueryEvidenceScope::SubscriptionActivationReceipt)
+        .field_shape(
+            WorthQueryEvidenceTag::new("identity_family"),
+            "query_subscription_lifecycle_class_variation_set_v1",
+        )
+        .field_value_sequence(WorthQueryEvidenceTag::new("class"), classes)
+        .seal()
 }
 
 #[allow(clippy::too_many_arguments)]
@@ -161,49 +155,47 @@ pub(super) fn certified_family_coverage_handle_identity(
     admitted_row_count: usize,
     hostile_row_count: usize,
 ) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
-    Ok(
-        WorthQueryEvidenceIdentity::compose(WorthQueryEvidenceScope::SubscriptionActivationReceipt)
-            .field_shape(
-                WorthQueryEvidenceTag::new("identity_family"),
-                "query_subscription_certified_family_coverage_handle_v1",
-            )
-            .field_shape(WorthQueryEvidenceTag::new("family"), family)
-            .field_shape(WorthQueryEvidenceTag::new("posture"), posture)
-            .field_evidence_identity(WorthQueryEvidenceTag::new("matrix"), matrix_identity)
-            .field_evidence_identity(
-                WorthQueryEvidenceTag::new("basis_variations"),
-                basis_variation_identity,
-            )
-            .field_evidence_identity(
-                WorthQueryEvidenceTag::new("policy_variations"),
-                policy_variation_identity,
-            )
-            .field_evidence_identity(
-                WorthQueryEvidenceTag::new("tenant_variations"),
-                tenant_variation_identity,
-            )
-            .field_evidence_identity(
-                WorthQueryEvidenceTag::new("relationship_proof_variations"),
-                relationship_proof_variation_identity,
-            )
-            .field_evidence_identity(
-                WorthQueryEvidenceTag::new("view_shape_variations"),
-                view_shape_variation_identity,
-            )
-            .field_evidence_identity(
-                WorthQueryEvidenceTag::new("lifecycle_class_variations"),
-                lifecycle_class_variation_identity,
-            )
-            .field_usize(
-                WorthQueryEvidenceTag::new("admitted_row_count"),
-                admitted_row_count,
-            )
-            .field_usize(
-                WorthQueryEvidenceTag::new("hostile_row_count"),
-                hostile_row_count,
-            )
-            .seal()?,
-    )
+    WorthQueryEvidenceIdentity::compose(WorthQueryEvidenceScope::SubscriptionActivationReceipt)
+        .field_shape(
+            WorthQueryEvidenceTag::new("identity_family"),
+            "query_subscription_certified_family_coverage_handle_v1",
+        )
+        .field_shape(WorthQueryEvidenceTag::new("family"), family)
+        .field_shape(WorthQueryEvidenceTag::new("posture"), posture)
+        .field_evidence_identity(WorthQueryEvidenceTag::new("matrix"), matrix_identity)
+        .field_evidence_identity(
+            WorthQueryEvidenceTag::new("basis_variations"),
+            basis_variation_identity,
+        )
+        .field_evidence_identity(
+            WorthQueryEvidenceTag::new("policy_variations"),
+            policy_variation_identity,
+        )
+        .field_evidence_identity(
+            WorthQueryEvidenceTag::new("tenant_variations"),
+            tenant_variation_identity,
+        )
+        .field_evidence_identity(
+            WorthQueryEvidenceTag::new("relationship_proof_variations"),
+            relationship_proof_variation_identity,
+        )
+        .field_evidence_identity(
+            WorthQueryEvidenceTag::new("view_shape_variations"),
+            view_shape_variation_identity,
+        )
+        .field_evidence_identity(
+            WorthQueryEvidenceTag::new("lifecycle_class_variations"),
+            lifecycle_class_variation_identity,
+        )
+        .field_usize(
+            WorthQueryEvidenceTag::new("admitted_row_count"),
+            admitted_row_count,
+        )
+        .field_usize(
+            WorthQueryEvidenceTag::new("hostile_row_count"),
+            hostile_row_count,
+        )
+        .seal()
 }
 
 pub(super) fn coverage_width_identity(
@@ -264,18 +256,16 @@ pub(super) fn coverage_receipt_identity(
 pub(super) fn hostile_coverage_identity(
     hostile_rows: &[QuerySubscriptionFamilyCoverageRow],
 ) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
-    Ok(
-        WorthQueryEvidenceIdentity::compose(WorthQueryEvidenceScope::SubscriptionActivationReceipt)
-            .field_shape(
-                WorthQueryEvidenceTag::new("identity_family"),
-                "query_subscription_runtime_hostile_coverage_v1",
-            )
-            .field_evidence_identity_sequence(
-                WorthQueryEvidenceTag::new("hostile_row"),
-                hostile_rows.iter().map(|row| row.row_identity()),
-            )
-            .seal()?,
-    )
+    WorthQueryEvidenceIdentity::compose(WorthQueryEvidenceScope::SubscriptionActivationReceipt)
+        .field_shape(
+            WorthQueryEvidenceTag::new("identity_family"),
+            "query_subscription_runtime_hostile_coverage_v1",
+        )
+        .field_evidence_identity_sequence(
+            WorthQueryEvidenceTag::new("hostile_row"),
+            hostile_rows.iter().map(|row| row.row_identity()),
+        )
+        .seal()
 }
 
 pub(super) fn runtime_certification_bundle_identity(

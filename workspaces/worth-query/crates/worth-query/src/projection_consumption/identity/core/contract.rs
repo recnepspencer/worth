@@ -20,7 +20,7 @@ pub(crate) fn compose_support_row_digest(
     posture: &ProjectionConsumptionSupportPosture,
     detail_key: &str,
 ) -> Result<String, IdentityDerivationDenial> {
-    Ok(seal(
+    seal(
         consumption_scope_encoder("projection_consumption_support_row_v1")
             .field_shape(
                 WorthQueryEvidenceTag::new("source_family"),
@@ -29,7 +29,7 @@ pub(crate) fn compose_support_row_digest(
             .field_shape(WorthQueryEvidenceTag::new("fact_kind"), fact_kind.as_str())
             .field_shape(WorthQueryEvidenceTag::new("posture"), posture.as_str())
             .field_shape(WorthQueryEvidenceTag::new("detail"), detail_key),
-    )?)
+    )
 }
 
 pub(crate) fn compose_materialized_projection_contract_digest(
@@ -115,7 +115,7 @@ pub(crate) fn compose_materialized_projection_contract_digest(
         .iter()
         .map(compose_bound_fact_family_entry_digest)
         .collect::<Result<Vec<_>, _>>()?;
-    Ok(seal(
+    seal(
         encoder
             .field_value_sequence(
                 WorthQueryEvidenceTag::new("source_reference"),
@@ -125,5 +125,5 @@ pub(crate) fn compose_materialized_projection_contract_digest(
                 WorthQueryEvidenceTag::new("fact_family"),
                 fact_family_entries,
             ),
-    )?)
+    )
 }

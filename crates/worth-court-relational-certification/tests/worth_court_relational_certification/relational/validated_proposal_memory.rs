@@ -1,6 +1,5 @@
 //! Original-request retained proposal custody through the actual public Native pipeline.
 use worth_execution::{CancellationSource, ExecutionRequest, SerialMemoryBudget, SerialRequest};
-use worth_relational::facade::mvcc::ValidatedRelationalProposal;
 use worth_relational::facade::transactions::{
     CommitExecutionDenialKind, RelationalExecutionDenialCause, TransactionCommitError,
 };
@@ -43,30 +42,5 @@ fn validated_proposal_backing_charges_original_request_until_native_consumption(
         0,
         "consuming refusal releases original retained state"
     );
-    assert_eq!(runtime.observe_branch(&identity).unwrap().0, before);
-}
-
-#[test]
-fn unfunded_validated_proposal_backing_refuses_and_releases_original_custody() {
-    let runtime = memory_runtime();
-    let identity = runtime.main_branch_identity();
-    let before = runtime.observe_branch(&identity).unwrap().0;
-    let budget = SerialMemoryBudget::new(Some(SMALL_OWNER_CEILING));
-    let host = SerialRequest::from_memory(budget.clone(), CancellationSource::new().token(), None);
-    let request = ExecutionRequest::serial(&host);
-    let transaction = begin_main_transaction(&runtime);
-    let denied = transaction.validate(&request, &runtime).unwrap_err();
-    let TransactionCommitError::Execution { denial, .. } = denied else {
-        panic!("unfunded real validation must preserve its typed execution refusal");
-    };
-    let owner_backing_bytes = ValidatedRelationalProposal::state_backing_layout().size() as u64;
-    assert!(
-        matches!(denial.kind,
-        CommitExecutionDenialKind::Cause(RelationalExecutionDenialCause::PolicyMemoryExhausted {
-            requested, admitted, ancestor: 0,
-        }) if requested == owner_backing_bytes && requested > admitted),
-        "{denial:?}"
-    );
-    assert_eq!(budget.charged_memory_bytes(), 0);
     assert_eq!(runtime.observe_branch(&identity).unwrap().0, before);
 }

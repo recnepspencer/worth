@@ -104,6 +104,7 @@ fn released_no_effect_original_stays_released_after_graceful_close_and_reopen() 
     let fixture = super::world_occurrence_readmission::open(directory.path(), &execution);
     let bootstrap = fixture.bootstrap_root(&execution);
     let expected = bootstrap.product_branch().clone();
+    let predecessor = expected.selected_commit().ordinal();
     drop(bootstrap);
     let cancellation = RuntimeWorldCancellationSource::new();
     let prepared = fixture.prepare_publication(
@@ -178,5 +179,66 @@ fn released_no_effect_original_stays_released_after_graceful_close_and_reopen() 
     );
     assert!(source.original_observations().next().is_none());
     drop(source);
+    let current = fixture
+        .home
+        .world()
+        .observation_port()
+        .observe_root_product_branch()
+        .unwrap();
+    assert_eq!(current.selected_commit().ordinal(), predecessor);
+    assert!(fixture
+        .home
+        .world()
+        .inspection_port()
+        .recovery_page(None, std::num::NonZeroUsize::MIN)
+        .unwrap()
+        .rows()
+        .is_empty());
+    let prepared = fixture.prepare_publication(
+        &execution,
+        current,
+        crate::batches::create(1),
+        &cancellation.token(),
+    );
+    let mut performed = fixture
+        .publish(&execution, prepared, &cancellation.token())
+        .consume();
+    let successor = performed.take_successor_observation().unwrap();
+    assert_eq!(successor.reference_generation().get(), 1);
+    let selected = successor.selected_commit().ordinal();
+    assert!(
+        performed
+            .component_results()
+            .relational_settlement()
+            .unwrap()
+            .parents
+            .is_empty(),
+        "released no-effect preparation leaves the actual Empty predecessor"
+    );
+    drop((successor, performed));
+    super::world_occurrence_readmission::close(fixture.home, &execution);
+    let fixture = super::world_occurrence_readmission::open(directory.path(), &execution);
+    let source = fixture
+        .home
+        .world()
+        .inspection_port()
+        .observe_program_activation_history(&execution)
+        .unwrap();
+    assert_eq!(
+        source.original_state(attempt).unwrap().fate(),
+        WorldOriginalFate::Released
+    );
+    assert_eq!(source.original_states().count(), 2);
+    assert_eq!(source.original_observations().count(), 1);
+    drop(source);
+    let current = fixture
+        .home
+        .world()
+        .observation_port()
+        .observe_root_product_branch()
+        .unwrap();
+    assert_eq!(current.selected_commit().ordinal(), selected);
+    assert_eq!(current.reference_generation().get(), 1);
+    drop(current);
     super::world_occurrence_readmission::close(fixture.home, &execution);
 }

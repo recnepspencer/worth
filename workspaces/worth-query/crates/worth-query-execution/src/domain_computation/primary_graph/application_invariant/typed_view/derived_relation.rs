@@ -131,7 +131,9 @@ pub(in crate::domain_computation::primary_graph::application_invariant) fn nativ
                 Definition::InvalidMemberDomain | Definition::InvalidMemberCase => {
                     Kind::WrongEntityKind
                 }
-                Definition::InvalidGraphLaws => Kind::RelationNotInstalled,
+                Definition::InvalidGraphLaws
+                | Definition::OrderedPredecessorMembershipRequired
+                | Definition::OrderedPredecessorMustBeToOne => Kind::RelationNotInstalled,
                 Definition::InvalidEventChain => Kind::InvalidEventChain,
                 Definition::SourceProgramIdentityExhausted => Kind::SourceProgramIdentityExhausted,
             };

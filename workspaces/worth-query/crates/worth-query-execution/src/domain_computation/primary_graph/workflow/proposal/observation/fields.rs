@@ -11,7 +11,7 @@ pub(super) fn required_text(
 ) -> Result<String, WorthQueryApplicationAttemptDenial> {
     let value = observe_field_value(runtime, execution, snapshot, entity, kind, locator)?
         .ok_or_else(|| denial("workflow operation input field is unavailable"))?;
-    let Some(text) = (&value).raw_text() else {
+    let Some(text) = value.raw_text() else {
         return Err(denial("workflow operation input field has the wrong type"));
     };
     let text = text.to_owned();
@@ -66,7 +66,7 @@ pub(super) fn optional_identity(
         });
         return Ok(None);
     };
-    let Some(text) = (&value).raw_text() else {
+    let Some(text) = value.raw_text() else {
         return Err(denial(
             "workflow operation source identity has the wrong type",
         ));

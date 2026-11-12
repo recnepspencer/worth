@@ -31,12 +31,14 @@ pub(super) fn observe_rows(
     let read = rows.acquire_all()?;
     for root in rows.occurrences(&read)? {
         let prepared = rows.prepare_row_from_read(&read, &root)?;
-        prepared.with_field_content(0, |value, frame| check(value, frame, court, proposed))?;
+        prepared.with_field_content(0, |value, frame| {
+            check(value.value(), frame, court, proposed)
+        })?;
         let owners = rows.prepare_projection(&root, 0)?;
         let foreign = rows.prepare_projection(&root, 1)?;
         for owner in rows.projection_occurrences(&owners)? {
             rows.with_projected_field_content(&owners, &owner, 0, |value, frame| {
-                check(value, frame, court, proposed)
+                check(value.value(), frame, court, proposed)
             })?;
             let entered = std::cell::Cell::new(false);
             assert!(matches!(

@@ -3,31 +3,155 @@ workspace_manifests = ["workspaces/worth-query/crates/worth-query-certification/
 # Every explicit binary or canonical domain-value binding is registered here.
 # Sources and imports are resolved from Cargo roots and actual Rust modules.
 [[binding]]
+source = "workspaces/worth-query-bank-world/crates/worth-query-bank-testkit-domain/src/public_consumer_transcript/foreign_unit.rs"
+binding = "UnitlessMoney"
+posture = "domain"
+reason = "Reference-free money value exercised by the unit-mismatch transcript."
+forbidden_types = []
+
+[[binding]]
+source = "workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/managed_index/boxes/coordinates.rs"
+binding = "Binding"
+posture = "domain"
+reason = "Reference-free catalog value exercised by managed-index acceptance courts."
+forbidden_types = []
+
+[[binding]]
+source = "workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/managed_index/maintained/events/schema.rs"
+binding = "NameBinding"
+posture = "domain"
+reason = "Reference-free catalog value exercised by managed-index acceptance courts."
+forbidden_types = []
+
+[[binding]]
+source = "workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/managed_index/maintained/nested/schema.rs"
+binding = "NameBinding"
+posture = "domain"
+reason = "Reference-free catalog value exercised by managed-index acceptance courts."
+forbidden_types = []
+
+[[binding]]
+source = "workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/managed_index/maintained/schema.rs"
+binding = "NameBinding"
+posture = "domain"
+reason = "Reference-free catalog value exercised by managed-index acceptance courts."
+forbidden_types = []
+
+[[binding]]
+source = "workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/managed_index/prefix/text_read.rs"
+binding = "Lookalike"
+posture = "domain"
+reason = "Reference-free catalog value exercised by managed-index acceptance courts."
+forbidden_types = []
+
+[[binding]]
+source = "workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/managed_index/refusing/schema.rs"
+binding = "NameBinding"
+posture = "domain"
+reason = "Reference-free catalog value exercised by managed-index acceptance courts."
+forbidden_types = []
+
+[[binding]]
+source = "workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/managed_index/schema.rs"
+binding = "NameBinding"
+posture = "domain"
+reason = "Reference-free catalog value exercised by managed-index acceptance courts."
+forbidden_types = []
+
+[[binding]]
 source = "workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/topology_entry/src/domain_values/binding.rs"
 binding = "RatioBinding"
+posture = "domain"
+reason = "Reference-free domain value exercised by binding admission courts."
 forbidden_types = []
 
 [[binding]]
 source = "workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/topology_entry/src/domain_values/binding.rs"
 binding = "SpanBinding"
+posture = "domain"
+reason = "Reference-free domain value exercised by binding admission courts."
+forbidden_types = []
+
+[[binding]]
+source = "workspaces/worth-query/crates/worth-query-installation/src/application_schema/value_binding/compilation_tests.rs"
+binding = "OpaqueBinding"
+posture = "domain"
+reason = "Reference-free text exercised by value-binding installation tests."
+forbidden_types = []
+
+[[binding]]
+source = "workspaces/worth-query/crates/worth-query-installation/src/application_schema/value_binding/compilation_tests/domain_posture.rs"
+binding = "Unmarked"
+posture = "domain"
+reason = "Reference-free text exercised by value-binding installation tests."
 forbidden_types = []
 
 [[binding]]
 source = "workspaces/worth-query/crates/worth-query-testkit-certification-correction/src/certification/application_graph/correction/model/domain_binding.rs"
 binding = "InlineCounterBinding"
+posture = "domain"
+reason = "Reference-free domain value exercised by binding admission courts."
 forbidden_types = []
 
 [[binding]]
 source = "workspaces/worth-query/crates/worth-query-testkit-certification-correction/src/certification/application_graph/correction/model/write_admission/binary.rs"
 binding = "BrokenBinaryBinding"
+posture = "domain"
+reason = "Reference-free domain value exercised by binding admission courts."
 forbidden_types = []
 
 [[binding]]
 source = "workspaces/worth-query/crates/worth-query-testkit-certification-correction/src/certification/application_graph/correction/model/write_admission/canonical.rs"
 binding = "CanonicalBinding"
+posture = "domain"
+reason = "Reference-free domain value exercised by binding admission courts."
 forbidden_types = []
 
 [[binding]]
 source = "workspaces/worth-query/crates/worth-query-testkit-certification-correction/src/certification/application_graph/correction/model/write_admission/canonical.rs"
 binding = "DelegatedBinding"
+posture = "domain"
+reason = "Reference-free domain value exercised by binding admission courts."
+forbidden_types = []
+
+[[binding]]
+source = "workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/candidate_index/prefix/text_read.rs"
+binding = "Lookalike"
+posture = "domain"
+reason = "Reference-free catalog text exercised by source-field binding refusal courts."
+forbidden_types = []
+
+[[binding]]
+source = "workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/candidate_index/schema.rs"
+binding = "NameBinding"
+posture = "domain"
+reason = "Reference-free catalog text exercised by source-field binding refusal courts."
+forbidden_types = []
+
+[[binding]]
+source = "workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/managed_index/maintained/events/prefix/text_read.rs"
+binding = "Lookalike"
+posture = "domain"
+reason = "Reference-free catalog text exercised by source-field binding refusal courts."
+forbidden_types = []
+
+[[binding]]
+source = "workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/managed_index/maintained/nested/prefix/text_read.rs"
+binding = "Lookalike"
+posture = "domain"
+reason = "Reference-free catalog text exercised by source-field binding refusal courts."
+forbidden_types = []
+
+[[binding]]
+source = "workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/managed_index/maintained/prefix/text_read.rs"
+binding = "Lookalike"
+posture = "domain"
+reason = "Reference-free catalog text exercised by source-field binding refusal courts."
+forbidden_types = []
+
+[[binding]]
+source = "workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/managed_index/refusing/prefix/text_read.rs"
+binding = "Lookalike"
+posture = "domain"
+reason = "Reference-free catalog text exercised by source-field binding refusal courts."
 forbidden_types = []

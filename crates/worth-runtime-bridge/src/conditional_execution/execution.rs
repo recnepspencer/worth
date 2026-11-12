@@ -8,7 +8,7 @@ mod retained;
 use super::{
     BridgeConditionalDecisionEvidence, BridgeConditionalDenial, BridgeConditionalDenialKind,
     BridgeConditionalEvaluationAdmissionRequest, BridgeConditionalEvaluationSession,
-    BridgeInstalledConditionalLowering, BridgeOwnedSignalRuntime,
+    BridgeInstalledConditionalLowering,
 };
 use retained::{retain_bridge_decision, RetainedBridgeDecisionOutcome};
 
@@ -57,7 +57,7 @@ pub struct BridgeConditionalQueryContinuationAdmission<'a> {
     pub attempt: u64,
 }
 
-impl BridgeOwnedSignalRuntime {
+impl super::execution_view::BridgeConditionalExecutionView<'_> {
     pub fn execute(
         &self,
         execution_request: worth_execution::ExecutionRequest<'_, '_>,

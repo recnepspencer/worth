@@ -4,6 +4,7 @@ mod authored_coupling;
 mod authored_restoration;
 mod candidate_admission;
 mod material;
+mod owned_members;
 mod receipt_closure;
 mod relational_validation;
 mod validation_control;
@@ -106,6 +107,7 @@ impl WorthQueryPrimaryGraphProvider {
         if self.take_skipped_invariant_owner_execution() {
             return Err(owner_failure());
         }
+        self.validate_owned_member_rosters(execution, session)?;
         let material = self.invariant_candidate_material(session)?;
         self.validate_and_retain_candidate(execution, session, material, None, allocation_policy)
     }
@@ -120,6 +122,7 @@ impl WorthQueryPrimaryGraphProvider {
         if self.take_skipped_invariant_owner_execution() {
             return Err(owner_failure());
         }
+        self.validate_owned_member_rosters(execution, session)?;
         let material = self.invariant_candidate_material(session)?;
         self.validate_and_retain_candidate(
             execution,

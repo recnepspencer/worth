@@ -20,6 +20,7 @@ impl WorthQueryApplicationCommitDenial {
         }
         if failure.allocation_denial().is_some()
             || failure.relation_preimage_failure().is_some()
+            || failure.preimage_retention_denial().is_some()
             || failure.native_preparation_error().is_some()
             || failure.candidate_support_failure().is_some()
             || failure.output_verification_capacity_stop().is_some()

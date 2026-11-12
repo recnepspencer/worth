@@ -148,10 +148,18 @@ fn close_ignores_dropped_companion_client_without_weakening_rebind() {
         .activate(Arc::new(Unindexed))
         .unwrap();
     let refused = runtime.prepare_close().unwrap_err();
-    assert_eq!(
+    assert!(matches!(
         refused.reason(),
-        crate::runtime::RelationalRuntimeCloseDenial::PublicationCustodyRetained
-    );
+        crate::runtime::RelationalRuntimeCloseDenial::PublicationCustodyRetained(
+            crate::runtime::RelationalPublicationCustodyHolders {
+                candidates: crate::runtime::RelationalPublicationRegistryCustody::Empty,
+                settlements: crate::runtime::RelationalPublicationRegistryCustody::Empty,
+                companion: crate::runtime::RelationalPublicationCompanionCustody::Client {
+                    generation: 1
+                },
+            }
+        )
+    ));
     let runtime = refused.into_runtime();
     assert!(port
         .publication

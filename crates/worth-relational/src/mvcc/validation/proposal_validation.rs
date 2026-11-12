@@ -123,7 +123,9 @@ impl RelationalPreparationRuntime {
                     crate::mvcc::RelationalPublicationDenial::HomeProgramTransition(cause),
                 )
             })?;
-        transaction.require_home_program_body(execution)?;
+        crate::execution::transaction_stage(execution, self.commit_work_budget.as_ref(), || {
+            transaction.require_home_program_body(execution)
+        })?;
         require_not_interrupted(
             &transaction.control,
             &transaction.basis.inner.retention_binding,
@@ -150,24 +152,26 @@ impl RelationalPreparationRuntime {
         self.durability_admission
             .require_open()
             .map_err(TransactionCommitError::durability_unresolved)?;
-        if transaction.schema_authority_input.is_some() {
-            // Schema reframing is a declared whole-root operation; its capture
-            // must not reconstruct a cold region after candidate acceptance.
-            transaction.demand_preparation_regions(
-                execution,
-                &self.services.symbols,
-                &self.index_definitions,
-                &self.mirror_residency,
-            )?;
-        } else {
-            transaction.demand_preparation_inputs(
-                execution,
-                &self.services.symbols,
-                &self.index_definitions,
-            )?;
-        }
+        crate::execution::transaction_stage(execution, self.commit_work_budget.as_ref(), || {
+            if transaction.schema_authority_input.is_some() {
+                // Schema reframing is a declared whole-root operation; its capture
+                // must not reconstruct a cold region after candidate acceptance.
+                transaction.demand_preparation_regions(
+                    execution,
+                    &self.services.symbols,
+                    &self.index_definitions,
+                    &self.mirror_residency,
+                )?;
+            } else {
+                transaction.demand_preparation_inputs(
+                    execution,
+                    &self.services.symbols,
+                    &self.index_definitions,
+                )?;
+            }
+            transaction.prepare_home_target_coverage(execution, self)
+        })?;
         let validated_against_version = basis.observation().version_id();
-        transaction.prepare_home_target_coverage(execution, self)?;
         let validated_against_commit = basis.observation().commit_id();
         let round = self.prepare_proposal_round(execution, &mut transaction, &source, context)?;
         super::proposal_completion::complete(

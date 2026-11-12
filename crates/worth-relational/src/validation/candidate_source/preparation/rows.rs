@@ -114,7 +114,7 @@ impl ManagedIndexSourceRows<'_> {
                     scope: self.scope,
                     row,
                 },
-                read,
+                membership: super::row_read::OccurrenceMembership::Inverse(read),
             }))
     }
     /// Field borrows cannot escape the actual loan's exact state callback.
@@ -122,7 +122,7 @@ impl ManagedIndexSourceRows<'_> {
         &self,
         occurrence: &ManagedIndexSourceOccurrence,
         column: usize,
-        project: impl FnOnce(Option<&worth_foundational::facade::AspectValue>) -> T,
+        project: impl FnOnce(crate::runtime::RelationalProjectedFieldObservation<'_>) -> T,
     ) -> Result<T, ReadDenial> {
         self.prepare_row(occurrence)?.with_field(column, project)
     }

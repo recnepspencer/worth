@@ -12,12 +12,18 @@ pub struct Node {
     pub coordinate: (u32, u64, u32),
     pub identity: String,
     pub name: String,
+    pub badge: Option<bool>,
+    pub detail: Option<bool>,
     pub children: Vec<Node>,
 }
 pub struct ChildRelation;
 worth_query_portable_type!(ChildRelation => "nested-catalog.child-relation.v1");
 pub struct ChildIdentity;
 worth_query_portable_type!(ChildIdentity => "nested-catalog.child-identity.v1");
+pub struct ChildBadge;
+worth_query_portable_type!(ChildBadge => "nested-catalog.child-badge.v1");
+pub struct ChildDetail;
+worth_query_portable_type!(ChildDetail => "nested-catalog.child-detail.v1");
 pub struct ChildName;
 worth_query_portable_type!(ChildName => "nested-catalog.child-name.v1");
 pub struct GrandRelation;
@@ -70,11 +76,15 @@ pub(super) fn shape<Q: ApplicationQueryMarkerIdentity<Catalog>>(
         .field(query::identity())
         .field(query::name())
         .field(query::enabled())
+        .optional_aspect_field(query::badge::<Q, query::BadgeSlot>())
+        .optional_field(query::detail::<Q, query::DetailSlot>())
         .relation(
             relation::<Q, ChildRelation>(),
             Builder::new(Item::reference())
                 .field(identity::<Q, ChildIdentity>())
                 .field(name::<Q, ChildName>())
+                .optional_aspect_field(query::badge::<Q, ChildBadge>())
+                .optional_field(query::detail::<Q, ChildDetail>())
                 .relation(
                     relation::<Q, GrandRelation>(),
                     Builder::new(Item::reference())
@@ -109,6 +119,8 @@ pub(super) fn project<Q: ApplicationQueryMarkerIdentity<Catalog>>(
         .iter()
         .map(|child| {
             let mut value = node::<Q, ChildIdentity, ChildName>(&child)?;
+            value.badge = child.optional_aspect_field(query::badge::<Q, ChildBadge>())?;
+            value.detail = child.optional_field(query::detail::<Q, ChildDetail>())?;
             value.children = child
                 .many(relation::<Q, GrandRelation>())?
                 .iter()
@@ -142,6 +154,8 @@ fn node<
         ),
         identity: row.field(identity::<Q, I>())?,
         name: row.field(name::<Q, N>())?.into(),
+        badge: None,
+        detail: None,
         children: Vec::new(),
     })
 }

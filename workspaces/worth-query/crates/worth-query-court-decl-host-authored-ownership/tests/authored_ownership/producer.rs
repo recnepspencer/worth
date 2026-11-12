@@ -32,7 +32,7 @@ pub struct Role<S>(PhantomData<fn() -> S>);
 impl<S: Scenario> ApplicationMutationOutputContract<S> for Outputs {
     const ROLE_FAMILIES: &'static [ApplicationMutationOutputRoleFamilyDescriptor] = if matches!(
         S::MODE,
-        69
+        69 | 72
     ) {
         &[<sheet_boundary::InitialNodes<S> as WorthQueryApplicationDeclaredOutputRoleFamily>::DESCRIPTOR]
     } else if S::MODE == 70 {
@@ -169,7 +169,15 @@ impl<S: Scenario> OperationHandler<S, Binding<S>> for Provider {
             let stage = if S::COUPLED {
                 let stage = reader.resolve_entity(
                     schema::id::<S>(),
-                    if S::MODE == 17 && input.id == 11 {
+                    if S::MODE == 72 {
+                        if input.id == 10 {
+                            20
+                        } else if input.id == 40 {
+                            50
+                        } else {
+                            input.id
+                        }
+                    } else if S::MODE == 17 && input.id == 11 {
                         30
                     } else {
                         20
@@ -269,7 +277,8 @@ impl<S: Scenario> OperationHandler<S, Binding<S>> for Provider {
             if matches!(S::MODE, 42 | 64) {
                 writer.link(OwnCell::reference(), "owned-cell", &cell, &created)?;
             }
-            if matches!(S::MODE, 22 | 23 | 26 | 27 | 28) {
+            let retained_wire_body = S::MODE == 72 && matches!(input.id, 10 | 40);
+            if matches!(S::MODE, 22 | 23 | 26 | 27 | 28) || retained_wire_body {
                 writer.link(StageVisible::reference(), "body-visible", &source, &created)?;
                 writer.link(OwnCell::reference(), "owned-cell", &cell, &created)?;
             }

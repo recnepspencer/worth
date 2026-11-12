@@ -66,22 +66,24 @@ fn for_each_staged_bulk_relation_row<'a>(
     lease: Option<&ExecutionResourceLease<'_>>,
 ) -> Result<(), TransactionCommitError> {
     if let Some(lease) = lease {
-        for (row_index, row) in stage_leased_relation_rows(intent, workspace, lease)?
-            .into_iter()
-            .enumerate()
-        {
-            if let ImportStagedRow::Relation {
-                client_key: _,
-                source,
-                target,
-                fields,
-            } = row
-            {
-                apply_relation_row(
-                    intent, workspace, outcome, version_id, row_index, &source, &target, &fields,
-                )?;
+        let rows = stage_leased_relation_rows(intent, workspace, lease)?;
+        workspace.run_owned_mutation(|workspace| {
+            for (row_index, row) in rows.into_iter().enumerate() {
+                if let ImportStagedRow::Relation {
+                    client_key: _,
+                    source,
+                    target,
+                    fields,
+                } = row
+                {
+                    apply_relation_row(
+                        intent, workspace, outcome, version_id, row_index, &source, &target,
+                        &fields,
+                    )?;
+                }
             }
-        }
+            Ok::<_, TransactionCommitError>(())
+        })?;
         return Ok(());
     }
     let packet_count = coarse_preparation_packet_count(
@@ -135,32 +137,32 @@ fn for_each_staged_bulk_relation_row<'a>(
         });
     }
 
-    for (row_index, row) in stage_import_packets(workspace, packets, lease)?
-        .into_iter()
-        .enumerate()
-    {
-        match row {
-            ImportStagedRow::Relation {
-                client_key: _,
-                source,
-                target,
-                fields,
-            } => apply_relation_row(
-                intent, workspace, outcome, version_id, row_index, &source, &target, &fields,
-            )?,
-            ImportStagedRow::Entity { .. } => {
-                return Err(CommitConflict::new(
-                    crate::transactions::data::ConflictClass::BulkImportDomainMismatch {
-                        expected: BulkImportRowDomain::Relation,
-                        actual: BulkImportRowDomain::Entity,
-                        stage: BulkImportStage::RelationCreate,
-                    },
-                )
-                .into())
+    let rows = stage_import_packets(workspace, packets, lease)?;
+    workspace.run_owned_mutation(|workspace| {
+        for (row_index, row) in rows.into_iter().enumerate() {
+            match row {
+                ImportStagedRow::Relation {
+                    client_key: _,
+                    source,
+                    target,
+                    fields,
+                } => apply_relation_row(
+                    intent, workspace, outcome, version_id, row_index, &source, &target, &fields,
+                )?,
+                ImportStagedRow::Entity { .. } => {
+                    return Err(CommitConflict::new(
+                        crate::transactions::data::ConflictClass::BulkImportDomainMismatch {
+                            expected: BulkImportRowDomain::Relation,
+                            actual: BulkImportRowDomain::Entity,
+                            stage: BulkImportStage::RelationCreate,
+                        },
+                    )
+                    .into())
+                }
             }
         }
-    }
-    Ok(())
+        Ok(())
+    })
 }
 
 fn resolve_entity_reference(

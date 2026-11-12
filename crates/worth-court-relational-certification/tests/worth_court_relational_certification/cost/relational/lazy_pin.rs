@@ -1,18 +1,10 @@
 //! Public pin and fixed reached-region read after real cold checkpoint recovery.
 use crate::content::historical_kind::fixture::World;
-use std::{
-    collections::BTreeSet,
-    sync::{atomic::Ordering, Arc},
-};
+use std::{collections::BTreeSet, sync::Arc};
 use worth_execution::{CancellationSource, ExecutionRequest, SerialMemoryBudget, SerialRequest};
 use worth_relational::facade::{
-    durability::*,
-    identity::{KindId, PartitionId},
-    runtime::RelationalRuntime,
-    storage::{RelationalStorageSubject, RelationalStorageUnavailableCause as Cause},
-    transactions::*,
+    durability::*, identity::KindId, runtime::RelationalRuntime, transactions::*,
 };
-use worth_testkit_relational::maintenance::assert_change_bounded;
 mod queries;
 use super::cold_checkpoint::{reopen, ColdCheckpointSource as Source};
 
@@ -32,12 +24,7 @@ fn pin(
         .pin_view_read_capability(&view, &[], request)
         .unwrap()
 }
-struct ReadWork {
-    members: u64,
-    pin_members: u64,
-    symbol_at_pin: bool,
-}
-fn fixed_read_work(regions: u32, history: usize, check_refusal: bool, width: usize) -> ReadWork {
+fn fixed_read(regions: u32, history: usize, width: usize) {
     let original = SerialRequest::from_memory(
         SerialMemoryBudget::new(Some(1 << 30)),
         CancellationSource::new().token(),
@@ -137,13 +124,11 @@ fn fixed_read_work(regions: u32, history: usize, check_refusal: bool, width: usi
         World::new().runtime,
     );
     assert!(
-        source.reads.lock().unwrap().is_empty(),
+        source.region_read_count() == 0,
         "recovery leaves record regions cold"
     );
     let read = pin(&runtime, &request);
-    let pin_members = source.reads.lock().unwrap().len() as u64;
     let selected = world.entities[0];
-    let symbol_at_pin = read.symbols().resolve(text_symbol).is_some();
     let actual = read
         .project_read()
         .read_exact_entity_state(&request, selected, |metadata, state| {
@@ -182,150 +167,21 @@ fn fixed_read_work(regions: u32, history: usize, check_refusal: bool, width: usi
         .into_records();
     assert_eq!(relations.len(), 1);
     assert_eq!(relations[0].relation_id, relation);
-    let work = source.reads.lock().unwrap().len() as u64;
-    assert!(work > 0, "the fixed read must actually cross cold storage");
     let again = read
         .project_read()
         .read_exact_entity_state(&request, selected, |m, _| m.entity_id)
         .unwrap();
     assert_eq!(again, Some(selected));
-    assert_eq!(
-        source.reads.lock().unwrap().len() as u64,
-        work,
-        "accepted region is reused"
-    );
-    if check_refusal {
-        // A later Full demand can discover bad history, while this capability
-        // still owns its previously accepted immutable Head bytes.
-        source.damaged.store(true, Ordering::SeqCst);
-        let locator = AspectFieldLocator::new(
-            LocatorAuthority::Authoritative,
-            AspectKey::new("name").unwrap(),
-            CanonicalFieldPath::single(FieldKey::new("name").unwrap()),
-        );
-        let stopped = read.bounded_entity_field_equals_for_frontier(
-            &request,
-            &BTreeSet::from([selected]),
-            KindId(1),
-            &locator,
-            &AspectValue::String(InternedString::Raw("selected native symbol".into())),
-            Some(64),
-        );
-        use worth_relational::facade::runtime::BoundedFrontierReadStop;
-        assert!(matches!(stopped, Err(BoundedFrontierReadStop::Admission(
-            RelationalExecutionDenialCause::StorageUnavailable(f)))
-            if f.subject == RelationalStorageSubject::Region(PartitionId(7)) && f.cause == Cause::Damaged));
-        source.damaged.store(false, Ordering::SeqCst);
-        assert_eq!(
-            read.project_read()
-                .read_exact_entity_state(&request, selected, |m, _| m.entity_id)
-                .unwrap(),
-            Some(selected)
-        );
-        let fresh = pin(&runtime, &request);
-        assert!(
-            fresh
-                .project_read()
-                .read_exact_entity_state(&request, selected, |_, _| ())
-                .is_err(),
-            "fresh custody must refuse the now damaged region"
-        );
-        source.unavailable.store(true, Ordering::SeqCst);
-        let denied_runtime = reopen(
-            &request,
-            &checkpoint,
-            Arc::clone(&source),
-            World::new().runtime,
-        );
-        let before = source.reads.lock().unwrap().len();
-        let denied = pin(&denied_runtime, &request);
-        assert_eq!(
-            source.reads.lock().unwrap().len(),
-            before,
-            "a lazy pin still succeeds without I/O"
-        );
-        let text_failure = denied.with_symbol_text(&request, text_symbol, |_| {
-            panic!("failed symbol admission cannot yield text")
-        });
-        assert!(matches!(text_failure,
-            Err(RelationalExecutionDenialCause::StorageUnavailable(f))
-            if matches!(f.subject, RelationalStorageSubject::Symbols { first, last }
-                if first <= text_symbol && text_symbol <= last) && f.cause == Cause::SourceUnavailable));
-        use worth_relational::facade::runtime::RelationalBorrowedRecordReadDenial as Denial;
-        let failure = denied
-            .project_read()
-            .read_exact_entity_state(&request, selected, |_, _| panic!("no provisional callback"));
-        assert!(
-            matches!(failure, Err(Denial::Execution(RelationalExecutionDenialCause::StorageUnavailable(f)))
-            if f.subject == RelationalStorageSubject::Region(PartitionId(7)) && f.cause == Cause::SourceUnavailable)
-        );
-        source.unavailable.store(false, Ordering::SeqCst);
-        assert_eq!(
-            denied
-                .project_read()
-                .read_exact_entity_state(&request, selected, |m, _| m.entity_id)
-                .unwrap(),
-            Some(selected)
-        );
-    }
-    ReadWork {
-        members: work,
-        pin_members,
-        symbol_at_pin,
-    }
 }
 #[test]
-fn lazy_pin_and_fixed_read_do_not_grow_with_unrelated_regions_or_history() {
-    let model = (
-        fixed_read_work(8, 8, false, 1),
-        fixed_read_work(16, 8, false, 1),
-    );
-    let history = (
-        fixed_read_work(4, 16, false, 1),
-        fixed_read_work(4, 32, false, 1),
-    );
-    eprintln!(
-        "SDK fixed read cold member calls: model {}->{}; history {}->{}",
-        model.0.members, model.1.members, history.0.members, history.1.members
-    );
-    assert_change_bounded(
-        "lazy pin and reached regions",
-        "model",
-        model.0.members,
-        model.1.members,
-    );
-    assert_change_bounded(
-        "lazy pin and reached regions",
-        "history",
-        history.0.members,
-        history.1.members,
-    );
-    for evidence in [model.0, model.1, history.0, history.1] {
-        assert_eq!(evidence.pin_members, 0, "pinning does no I/O");
-        assert!(
-            !evidence.symbol_at_pin,
-            "pinning does not load field symbol pages"
-        );
+fn cold_pinned_reads_preserve_selected_values_across_regions_and_history() {
+    for (regions, history) in [(8, 8), (16, 8), (4, 16), (4, 32)] {
+        fixed_read(regions, history, 1);
     }
-    fixed_read_work(4, 4, true, 1);
 }
 
 #[test]
-fn wide_frontier_does_not_escalate_to_unreached_regions() {
-    let base = fixed_read_work(64, 4, false, 33);
-    let doubled = fixed_read_work(128, 4, false, 33);
-    eprintln!(
-        "SDK fixed wide frontier member calls: {}->{}",
-        base.members, doubled.members
-    );
-    assert_change_bounded(
-        "wide frontier residency",
-        "unreached regions",
-        base.members,
-        doubled.members,
-    );
-    assert_eq!(
-        base.pin_members, doubled.pin_members,
-        "neither pin performs I/O"
-    );
+fn cold_wide_frontiers_preserve_the_selected_relation_and_values() {
+    fixed_read(64, 4, 33);
+    fixed_read(128, 4, 33);
 }

@@ -65,7 +65,7 @@ impl fragment::Entity for Record {
         Option<OtherSamples>,
         Option<VersionedSamples>,
     );
-    type Relations = (ContainsSamples,);
+    type Relations = (ContainsSamples, ContainsOptionalSamples);
 }
 impl Record {
     pub fn reference() -> ApplicationEntityRef<Schema, Self> {
@@ -242,5 +242,16 @@ impl<C: ApplicationContentBinding> fragment::Scalar<BoundReference<C>> for Conte
     type Binding = ReferenceBinding<C>;
     fn content_format() -> Option<ApplicationContentBindingRecipe> {
         Some(ApplicationContentBindingRecipe::of::<C>())
+    }
+}
+
+pub struct ContainsOptionalSamples;
+impl fragment::Relation for ContainsOptionalSamples {
+    const NAME: &'static str = "ContainsOptionalSamples";
+    type To = Record;
+}
+impl ContainsOptionalSamples {
+    pub fn reference() -> ApplicationRelationRef<Schema, Self, Record, Record> {
+        relation(ContentModel, Record, Self)
     }
 }

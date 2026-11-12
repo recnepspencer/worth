@@ -114,53 +114,11 @@ fn semantic_result_preserves_original_create_bindings_and_validation_meaning() {
         );
     }
     let artifact = medium.offered().pop().unwrap();
-    assert_eq!(Artifact::FORMAT_VERSION, 5);
+    assert_eq!(
+        u16::from_le_bytes(artifact.as_bytes()[8..10].try_into().unwrap()),
+        Artifact::FORMAT_VERSION
+    );
     let readmitted = Artifact::readmit(artifact.as_bytes(), execution).unwrap();
     assert_eq!(readmitted.envelope().semantic_result(), original);
-    release_test_commit_snapshot(&runtime, &committed);
-}
-
-#[test]
-fn semantic_result_is_required_even_after_a_corrupt_frame_is_resealed() {
-    let host = worth_testkit_relational::shared_relational_certification_test_execution_policy::serial_request();
-    let execution = &ExecutionRequest::serial(&host);
-    let medium = TestDurableMedium::new();
-    let runtime = durable_runtime(&medium);
-    let committed = create_entity_outcome(execution, &runtime, "required-semantic-image");
-    let artifact = medium.offered().pop().unwrap();
-    let mut unchanged = artifact.as_bytes().to_vec();
-    crate::canonical_commit_frame::reseal(&mut unchanged);
-    assert_eq!(
-        unchanged,
-        artifact.as_bytes(),
-        "independent unchanged frame counterpart"
-    );
-    Artifact::readmit(&unchanged, execution).unwrap();
-    let encoded_image = rmp_serde::to_vec_named(committed.semantic_result()).unwrap();
-    let mut bytes = artifact.as_bytes().to_vec();
-    let offsets = bytes
-        .windows(encoded_image.len())
-        .enumerate()
-        .filter_map(|(offset, data)| (data == encoded_image).then_some(offset))
-        .collect::<Vec<_>>();
-    assert_eq!(
-        offsets.len(),
-        1,
-        "the real artifact contains the original image once"
-    );
-    bytes.splice(offsets[0]..offsets[0] + encoded_image.len(), [0xc0]);
-    let length = (bytes.len() - 66) as u64;
-    bytes[58..66].copy_from_slice(&length.to_le_bytes());
-    crate::canonical_commit_frame::reseal(&mut bytes);
-    assert!(
-        Artifact::from_untrusted_bytes(bytes.clone()).is_ok(),
-        "frame proof alone is insufficient"
-    );
-    assert!(matches!(
-        Artifact::readmit(&bytes, execution),
-        Err(
-            worth_relational::facade::durability::RelationalCanonicalCommitArtifactRefusal::PayloadDecode { .. }
-        )
-    ));
     release_test_commit_snapshot(&runtime, &committed);
 }

@@ -7,7 +7,7 @@ use super::actions::{
     build_branch_scoped_case_index, capture_world_snapshot, checkpoint_world,
     commit_case_trade_after_savepoint, correct_seeded_trade_candidate,
     diverge_case_trade_on_branch, emit_trade_correction_audit_record, merge_branch_into_main,
-    open_analysis_branch, open_audit_branch, recover_persisted_world, refresh_risk_views,
+    open_analysis_branch, open_audit_branch, recover_checkpointed_world, refresh_risk_views,
     register_case_book_index, release_snapshot_handle, repair_seeded_failed_settlement,
     shock_market_on_branch, stress_seeded_intraday_risk,
 };
@@ -16,9 +16,8 @@ use super::complexity::{
     assert_counter_at_most, contract_ids, measure_world_action, workflow_budgets, ComplexityBudget,
 };
 use super::failure_injection::{
-    damage_filed_checkpoint, drop_latest_parent_envelope_for_replay,
-    invalid_savepoint_rollback_code, replay_latest_commit_on_wrong_branch,
-    rollback_seeded_trade_correction_after_savepoint,
+    drop_latest_parent_envelope_for_replay, invalid_savepoint_rollback_code,
+    replay_latest_commit_on_wrong_branch, rollback_seeded_trade_correction_after_savepoint,
 };
 use super::fixture::FintechWorld;
 use super::invariants::{
@@ -107,7 +106,7 @@ fn fintech_scenario_selectors_expose_canonical_cases_and_expected_invariants() {
         "trade-correction.read.post-mutation"
     );
     assert_eq!(selection.probe_prefix, "trade-correction");
-    assert!(!selection.persisted);
+    assert!(!selection.checkpoint_recovery);
     assert_eq!(
         scenario_name("trade-correction", "baseline"),
         "fintech.trade-correction.baseline"

@@ -142,18 +142,43 @@ impl Inputs {
         })
     }
     /// External consumers use the identical source checker, without WORTH's
-    /// repository policy/configuration. Only a Git-owned manifest is admitted.
-    pub fn read_domain_sources(root: &Path, manifest: &str) -> Result<Self, String> {
-        let (paths, files) = source_files::read(root)?;
-        if !files.contains_key(manifest) {
-            return Err("consumer manifest is outside the Git input set".into());
+    /// repository policy/configuration or dependency resolution/compilation.
+    pub fn read_domain_sources(root: &Path, registry: &str) -> Result<Self, String> {
+        let (paths, mut files) = source_files::read(root)?;
+        let text = std::fs::read_to_string(root.join(registry))
+            .map_err(|error| format!("{registry}: {error}"))?;
+        files.insert(registry.to_owned(), text);
+        let mut manifests = BTreeSet::from(["Cargo.toml".to_owned()]);
+        manifests.extend(crate::domain_values::workspace_manifests(&files, registry)?);
+        let mut graphs = BTreeMap::new();
+        for manifest in manifests {
+            if !files.contains_key(&manifest) {
+                return Err(format!(
+                    "consumer manifest is outside the Git input set: {manifest}"
+                ));
+            }
+            let output = command(
+                root,
+                "cargo",
+                &[
+                    "metadata",
+                    "--no-deps",
+                    "--offline",
+                    "--format-version",
+                    "1",
+                    "--manifest-path",
+                    &manifest,
+                ],
+            )?;
+            let mut graph = decode_metadata(&output)?;
+            relativize(root, &mut graph);
+            graphs.insert(manifest, graph);
         }
-        let graph = metadata(root, manifest)?;
         Ok(Self {
             paths,
             files,
             manifests: BTreeMap::new(),
-            graphs: BTreeMap::from([(manifest.to_owned(), graph)]),
+            graphs,
             config: toml::Value::Table(Default::default()),
         })
     }
@@ -184,13 +209,19 @@ fn metadata(root: &Path, manifest: &str) -> Result<Metadata, String> {
         ],
     )?;
     let mut graph = decode_metadata(&output).map_err(|error| format!("{manifest}: {error}"))?;
+    if graph.resolve.is_none() {
+        return Err(format!("{manifest}: resolved metadata graph required"));
+    }
+    relativize(root, &mut graph);
+    Ok(graph)
+}
+fn relativize(root: &Path, graph: &mut Metadata) {
     for package in &mut graph.packages {
         package.manifest_path = relative(root, &package.manifest_path);
         for target in &mut package.targets {
             target.src_path = relative(root, &target.src_path);
         }
     }
-    Ok(graph)
 }
 fn relative(root: &Path, name: &str) -> String {
     let root = root
@@ -267,34 +298,40 @@ fn decode_metadata(bytes: &[u8]) -> Result<Metadata, String> {
             })
         })
         .collect::<Result<_, String>>()?;
-    let nodes = array(&v["resolve"], "nodes")?
-        .iter()
-        .map(|n| {
-            let deps = array(n, "deps")?
+    let nodes = if v["resolve"].is_null() {
+        None
+    } else {
+        Some(
+            array(&v["resolve"], "nodes")?
                 .iter()
-                .map(|d| {
-                    let dep_kinds = array(d, "dep_kinds")?
+                .map(|n| {
+                    let deps = array(n, "deps")?
                         .iter()
-                        .map(|k| Kind {
-                            kind: k["kind"].as_str().map(str::to_owned),
+                        .map(|d| {
+                            let dep_kinds = array(d, "dep_kinds")?
+                                .iter()
+                                .map(|k| Kind {
+                                    kind: k["kind"].as_str().map(str::to_owned),
+                                })
+                                .collect();
+                            Ok(Edge {
+                                pkg: text(d, "pkg")?,
+                                dep_kinds,
+                            })
                         })
-                        .collect();
-                    Ok(Edge {
-                        pkg: text(d, "pkg")?,
-                        dep_kinds,
+                        .collect::<Result<_, String>>()?;
+                    Ok(Node {
+                        id: text(n, "id")?,
+                        deps,
                     })
                 })
-                .collect::<Result<_, String>>()?;
-            Ok(Node {
-                id: text(n, "id")?,
-                deps,
-            })
-        })
-        .collect::<Result<_, String>>()?;
+                .collect::<Result<_, String>>()?,
+        )
+    };
     Ok(Metadata {
         packages,
         workspace_members: names(&v, "workspace_members")?,
-        resolve: Some(Resolve { nodes }),
+        resolve: nodes.map(|nodes| Resolve { nodes }),
     })
 }
 #[cfg(test)]

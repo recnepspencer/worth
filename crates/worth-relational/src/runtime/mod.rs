@@ -29,7 +29,9 @@ mod operation_control;
 mod schema_transition_admission;
 mod state;
 pub use state::{
-    PreparedRelationalRuntimeClose, RelationalRuntimeCloseDenial, RelationalRuntimeCloseRefused,
+    PreparedRelationalRuntimeClose, RelationalPublicationCompanionCustody,
+    RelationalPublicationCustodyHolders, RelationalPublicationRegistryCustody,
+    RelationalRuntimeCloseDenial, RelationalRuntimeCloseRefused,
 };
 
 pub use crate::config::data::RelationalRuntimeConfig;

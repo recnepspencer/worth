@@ -105,7 +105,7 @@ impl WorthQueryManagedIndexProvider<BankSchema, CurrentAccountsIndex> for Provid
     }
     fn decompose(
         &self,
-        node: Node,
+        node: &Node,
         control: &WorthQueryManagedIndexControl<'_>,
     ) -> Result<WorthQueryManagedIndexNodeRegion, Stop> {
         control.checkpoint(1)?;

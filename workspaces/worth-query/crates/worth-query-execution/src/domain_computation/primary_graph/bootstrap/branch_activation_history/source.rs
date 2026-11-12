@@ -115,8 +115,8 @@ fn compare(
 ) -> Result<(), Denial> {
     // Compare DATA with the existing one-way revision rendering. Never mint a
     // program revision or authority from an original's recorded digest.
-    if !matches!(value, AspectValue::String(text) if text.raw_text() == Some(CanonicalDigestId::new(revision).render_hex().as_str()))
-    {
+    let expected = CanonicalDigestId::new(revision).render_hex();
+    if value.raw_text() != Some(expected.as_str()) {
         return Err(Denial::HistoryProgramMismatch {
             branch: branch.branch_identity().clone(),
             commit: commit.clone(),
@@ -125,12 +125,7 @@ fn compare(
     Ok(())
 }
 fn recorded_revision(value: &AspectValue) -> Result<CanonicalDigestId, Denial> {
-    let Some(text) = (match value {
-        AspectValue::String(text) => text.raw_text(),
-        _ => None,
-    }) else {
-        return Err(Denial::SupportUnavailable);
-    };
+    let text = value.raw_text().ok_or(Denial::SupportUnavailable)?;
     CanonicalDigestId::parse_hex(text)
         .filter(|digest| digest.render_hex() == text)
         .ok_or(Denial::SupportUnavailable)

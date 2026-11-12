@@ -63,9 +63,9 @@ impl CanonicalCommitEnvelopeBody {
         };
         let charge = super::super::super::codec_retirement_closure::charge;
         charge(context, self.patch.authoritative_record_patches.len() + 1)?;
-        if self.producer_cascade_retirement.is_some()
+        if (!allow_empty && !event.owned_members && event.publications.is_empty())
+            || self.producer_cascade_retirement.is_some()
             || self.required_output_origin.is_some()
-            || (!allow_empty && event.publications.is_empty())
             || !self.patch.authoritative_record_patches.iter().any(|patch| {
                 patch.target == RecordRef::Entity(event.anchor)
                     && patch.structural_change == Change::Deleted
@@ -159,14 +159,14 @@ impl CanonicalCommitEnvelopeBody {
         self.validate_cascade_header(context)?;
         // Group validators certify their complete origin rosters. A standalone
         // publication has no component validator to establish that fact.
-        if self.producer_cascade_retirement.is_none() {
-            if let Some(origin) = &self.required_output_origin {
-                super::super::super::codec_retirement_closure::charge(
-                    context,
-                    origin.members.len() + 1,
-                )?;
-                self.validate_output_origin_header(origin)?;
-            }
+        if self.producer_cascade_retirement.is_none()
+            && let Some(origin) = &self.required_output_origin
+        {
+            super::super::super::codec_retirement_closure::charge(
+                context,
+                origin.members.len() + 1,
+            )?;
+            self.validate_output_origin_header(origin)?;
         }
         Ok(ValidatedOutputOrigins { envelope: self })
     }

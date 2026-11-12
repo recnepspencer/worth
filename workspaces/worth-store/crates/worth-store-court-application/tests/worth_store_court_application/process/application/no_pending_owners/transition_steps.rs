@@ -155,6 +155,7 @@ pub(super) fn steps(execute: bool, check_successor_refusal: bool, refuse_compila
             .prepare_home_transition_step(
                 &execution,
                 expected.clone(),
+                fixture.admit_initial_program_source(&expected),
                 change.clone(),
                 admitted.plan(),
                 admitted.original(),

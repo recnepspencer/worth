@@ -53,6 +53,22 @@ enum PreparedBody {
     },
 }
 impl ManagedIndexSourceProjection<'_> {
+    pub(in crate::validation::candidate_source) fn scope_identity(
+        &self,
+        scope: EntityId,
+    ) -> Result<Option<crate::derived_relation::DerivedRelationReadIdentity>, Denial> {
+        match &self.backing {
+            SourceProjectionBacking::Invariant { relations, .. } => {
+                Ok(Some(relations.derived_source_identity(
+                    &self.program.0.path,
+                    scope,
+                    DerivedRelationReadShape::Adjacency { reverse: false },
+                )?))
+            }
+            SourceProjectionBacking::Selected { .. } => Ok(None),
+        }
+    }
+
     pub(in crate::validation::candidate_source) fn owned_retention(
         &self,
         bytes: u64,
@@ -217,7 +233,7 @@ impl ManagedIndexSourceProjection<'_> {
         row: EntityId,
         kind: crate::identity::data::KindId,
         field: &super::super::ManagedIndexSourceField,
-        project: impl FnOnce(Option<&AspectValue>) -> T,
+        project: impl FnOnce(Observation<'_>) -> T,
     ) -> Result<T, Denial> {
         match &self.backing {
             SourceProjectionBacking::Invariant { .. } => {

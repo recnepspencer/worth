@@ -29,6 +29,7 @@ pub struct RetiredApplicationHomeAllocation {
     _location: std::path::PathBuf,
     _descriptor: crate::descriptor::HomeDescriptor,
     _world: Option<crate::world_section::RetiredHomeBridgeComposition>,
+    _signal: Option<worth_signal::facade::durability::SignalRetainedAuthoredHomeAllocation>,
     _world_owner: Option<worth_runtime_world::facade::RetiredRuntimeWorldHome>,
     _world_origin: Option<worth_runtime_world::facade::WorldCheckpointOriginRetirement>,
     _world_report: Option<worth_runtime_world::facade::RuntimeWorldCloseReport>,
@@ -42,10 +43,14 @@ impl RetiredApplicationHomeAllocation {
     }
 }
 
+mod physical_holders;
+pub use physical_holders::{ApplicationHomePhysicalCustodyHolders, HomeSignalPhysicalHolder};
+
 #[derive(Debug)]
 pub enum ApplicationHomeCloseDenial {
     ForeignCheckpointOperation,
     UnsupportedHomeMaintenance,
+    SignalInitialSource(Box<crate::signal_medium::HomeSignalInitialSourceDenial>),
     Bridge(worth_runtime_bridge::facade::BridgeHomeRetirementDenial),
     WorldCompositionRetained,
     WorldOwnerRetirement(worth_runtime_world::facade::RuntimeWorldHomeRetirementDenial),
@@ -59,7 +64,8 @@ pub enum ApplicationHomeCloseDenial {
     ),
     Execution(WorkCeilingDenial),
     Relational(RelationalSectionCloseDenial),
-    PhysicalCustodyRetained,
+    PhysicalCustodyRetained(ApplicationHomePhysicalCustodyHolders),
+    PhysicalCustodyPhaseMismatch,
     PhysicalCloseStartFailed {
         kind: std::io::ErrorKind,
         detail: String,
@@ -96,6 +102,14 @@ impl crate::ReadmittedApplicationHome {
         execution: &ExecutionRequest<'_, '_>,
         start: start::PhysicalCloseStart,
     ) -> ApplicationHomeCloseOutcome {
+        if let Some(slot) = self.context.world_slot.as_ref() {
+            if let Err(cause) = slot.signal_slot().settle_initial(execution) {
+                return ApplicationHomeCloseOutcome::CloseRefused {
+                    reason: ApplicationHomeCloseDenial::SignalInitialSource(Box::new(cause)),
+                    posture: ApplicationHomeClosePosture::Serving(self),
+                };
+            }
+        }
         if self.context.world_close_report.is_some() {
             return ApplicationHomeRecoveryCustody::after_world_close(self, None)
                 .release_started(execution, start);

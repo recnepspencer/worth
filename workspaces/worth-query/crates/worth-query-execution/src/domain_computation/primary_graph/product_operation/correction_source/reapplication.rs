@@ -55,6 +55,16 @@ where
         maximum_history,
         maximum_results,
     )?;
+    if target
+        .application()
+        .runtime
+        .product_runtime
+        .is_directory_home()
+    {
+        return Err(Denial::DurableStateAdmission(
+            crate::domain_computation::execution_runtime::product_world::WorthQueryDurableStateAdmissionDenial::UnsupportedCorrectionReapplication,
+        ));
+    }
     let selected =
         target.select_alternative_ancestry(phase, &alternative.selected, maximum_history)?;
     let active = alternative

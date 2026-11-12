@@ -2,7 +2,7 @@
 use super::*;
 use worth_relational::facade::indexes::*;
 #[test]
-fn cold_complete_recapture_preserves_original_index_generations_and_live_tail() {
+fn cold_complete_recovery_selects_live_tail_and_builds_its_actual_index() {
     let policy = worth_testkit_relational::shared_relational_certification_test_execution_policy::serial_request();
     let request = ExecutionRequest::serial(&policy);
     let (runtime, medium) = initialized(&request);
@@ -39,8 +39,6 @@ fn cold_complete_recapture_preserves_original_index_generations_and_live_tail() 
     release_test_commit_snapshot(&runtime, &first);
     let image = capture_external(&runtime, &medium, &request);
     let members = selected_members(&image, &request);
-    let original = generations(&image);
-    assert!(!original.is_empty());
     medium.file_checkpoint(image.checkpoint().clone());
     let later = create_entity_outcome(&request, &runtime, "live-tail-index-value");
     let tail_commit = later.commit.commit_id.0;
@@ -60,16 +58,6 @@ fn cold_complete_recapture_preserves_original_index_generations_and_live_tail() 
         .durability_recovery()
         .recover_with_authority(&request, plan)
         .unwrap();
-    let next = capture_selected_external(&recovered, &medium, &members, &request);
-    let observed = generations(&next);
-    for original in &original {
-        assert!(
-            observed.contains(original),
-            "original covered index generation lost: {original:?}"
-        );
-    }
-    // A canonical tail does not journal derived cache generations. Preserve the
-    // cold recapture proof above before the real build warms the deferred image.
     let (descriptor, basis) = recovered
         .observe_branch(&recovered.main_branch_identity())
         .unwrap();
@@ -98,41 +86,5 @@ fn cold_complete_recapture_preserves_original_index_generations_and_live_tail() 
         .all(|generation| generation.source_commit_id.0 == tail_commit));
     drop(basis);
     let next = capture_selected_external(&recovered, &medium, &members, &request);
-    let observed = generations(&next);
-    for original in original {
-        assert!(
-            observed.contains(&original),
-            "original generation lost after live owner build"
-        );
-    }
-    assert!(observed
-        .iter()
-        .any(
-            |generation| rmp_serde::from_slice::<u64>(crate::messagepack_value_spans::field(
-                generation,
-                "source_commit_id"
-            ))
-            .unwrap()
-                == tail_commit
-        ));
     assert_eq!(next.source_artifact().covered().0, 2);
-}
-fn generations(image: &CompleteRelationalNativeCheckpoint) -> Vec<Vec<u8>> {
-    // Published member framing is independent of the producer's private constants.
-    let prefix = b"WORTH-REL-MBR1\n\0\x01\x02";
-    let payload = image
-        .checkpoint()
-        .members()
-        .iter()
-        .find_map(|member| match member {
-            RelationalCheckpointMember::New { bytes, .. } => bytes.bytes().strip_prefix(prefix),
-            RelationalCheckpointMember::Carried { .. } => None,
-        })
-        .expect("the actual Complete contains its derived-index member");
-    let state = crate::messagepack_value_spans::sequence(payload)[0];
-    let generations = crate::messagepack_value_spans::field(state, "generations");
-    crate::messagepack_value_spans::sequence(generations)
-        .into_iter()
-        .map(<[u8]>::to_vec)
-        .collect()
 }

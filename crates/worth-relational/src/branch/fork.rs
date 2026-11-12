@@ -15,8 +15,13 @@ use super::identity::RelationalBranchIdentity;
 use super::reference::{RelationalBranchCellDenial, RelationalBranchReferenceObservation};
 use super::RelationalBranchVersion;
 
+#[path = "fork_association.rs"]
+mod association;
 #[path = "fork_port_operations.rs"]
 mod port_operations;
+#[path = "fork_publication.rs"]
+mod publication;
+pub use association::RelationalAssociatedFork;
 #[path = "fork_runtime_adapters.rs"]
 mod runtime_adapters;
 #[path = "fork_source_validation.rs"]
@@ -40,6 +45,7 @@ pub enum RelationalForkDenial {
     /// This receiver requires live immutable custody and supports no durable
     /// historical-root reopening. Refused before destination reservation.
     RetainedSourceDurabilityUnsupported,
+    DurableAssociationRequiresMedium,
     MissingArtifact,
     /// Original-request or structural refusal before derived fork selection is installed.
     IndexPreparation(Box<crate::indexes::data::DerivedIndexMaintenanceDenial>),

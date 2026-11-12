@@ -44,9 +44,7 @@ impl WorldSealedApplicationHome {
         &self,
         retire: impl FnOnce(
             &worth_relational::facade::runtime::RelationalRuntime,
-            &std::sync::Arc<
-                std::sync::RwLock<worth_runtime_bridge::facade::BridgeSealedRuntimeAssembly>,
-            >,
+            &std::sync::Arc<worth_runtime_bridge::facade::BridgeReadmittedAuthoredAssembly>,
         ) -> R,
     ) -> R {
         retire(
@@ -236,9 +234,22 @@ where
                 }),
             }
         }
+        if let Some(signal) = self.standalone_signal.take() {
+            match signal.retain_stopped_home_allocation(request) {
+                Ok(allocation) => self.home.context.signal_owner_retirement = Some(allocation),
+                Err((signal, cause)) => {
+                    self.standalone_signal = Some(signal);
+                    return Err(WorldHomeCloseRefused {home:self,reason:crate::ApplicationHomeCloseDenial::Bridge(
+                        worth_runtime_bridge::facade::BridgeHomeRetirementDenial::AuthoredSignal(Box::new(cause)))});
+                }
+            }
+        }
         let Self {
             mut home,
             world,
+            standalone_signal,
+            signal_checkpoint,
+            program_source_owner,
             world_cleanup,
             composition,
         } = self;
@@ -255,6 +266,9 @@ where
                     home: Self {
                         home,
                         world,
+                        standalone_signal,
+                        signal_checkpoint,
+                        program_source_owner,
                         world_cleanup: Some(cleanup),
                         composition,
                     },
@@ -262,6 +276,8 @@ where
                 })
             }
         }
+        // Actual standalone Signal allocation moved into this same Home's retirement custody.
+        debug_assert!(standalone_signal.is_none());
         Ok(WorldSealedApplicationHome { home, composition })
     }
 }

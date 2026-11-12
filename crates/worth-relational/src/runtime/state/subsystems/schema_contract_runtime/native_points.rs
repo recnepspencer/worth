@@ -45,10 +45,14 @@ impl NativeInvariantPoints {
         let memory = control.reserve(bytes)?;
         let mut points = std::array::from_fn(|point| Vec::with_capacity(counts[point]));
         for (point, entries) in points.iter_mut().enumerate() {
-            for registration in declared.iter().chain(native) {
-                control.checkpoint()?;
-                if includes(point, registration) {
-                    entries.push(registration.clone());
+            for rejects_deletion in [true, false] {
+                for registration in declared.iter().chain(native) {
+                    control.checkpoint()?;
+                    if includes(point, registration)
+                        && rejects_live_endpoint_deletion(registration) == rejects_deletion
+                    {
+                        entries.push(registration.clone());
+                    }
                 }
             }
         }
@@ -62,4 +66,13 @@ fn includes(point: usize, registration: &InvariantRegistration) -> bool {
     point == registration.execution_point as usize
         || (point == Point::ProposedState as usize
             && Point::ProposedState.includes(registration.execution_point))
+}
+
+fn rejects_live_endpoint_deletion(registration: &InvariantRegistration) -> bool {
+    matches!(
+        &registration.rule,
+        crate::validation::data::InvariantRule::EndpointDeletionIntegrityContract(contract)
+            if contract.mode
+                == crate::schema::data::EndpointDeletionIntegrityMode::RejectDeleteWithLiveRelations
+    )
 }

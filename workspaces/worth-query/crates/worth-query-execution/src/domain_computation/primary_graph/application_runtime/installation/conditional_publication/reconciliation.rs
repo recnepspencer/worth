@@ -1,5 +1,6 @@
 //! Reconcile the assembled service without retaining its producer frames.
 use super::*;
+use crate::domain_computation::primary_graph::conditional_operation::WorthQueryConditionalRuntimeInstallationDenialKind;
 #[inline(never)]
 pub(super) fn complete<S: ApplicationSchema + 'static>(
     prepared: BootstrapPublicationStorage<UnreconciledConditionalRuntime<S>>,
@@ -14,8 +15,20 @@ pub(super) fn complete<S: ApplicationSchema + 'static>(
         mut application,
     } = prepared.consume();
     conditional_operations.reconstruct_all(&application)?;
-    conditional_operations
-        .reconcile_all(&mut application.runtime.bridge.conditional_lifecycle())?;
+    let mut owner = application
+        .runtime
+        .bridge
+        .conditional_lifecycle()
+        .map_err(|cause| {
+            WorthQueryConditionalRuntimeInstallationDenial::new(
+                WorthQueryConditionalRuntimeInstallationDenialKind::BridgeConditional(Box::new(
+                    cause.kind(),
+                )),
+                cause.detail(),
+            )
+        })?;
+    conditional_operations.reconcile_all(&mut owner)?;
+    drop(owner);
     *application
         .conditional_cleanup
         .operations

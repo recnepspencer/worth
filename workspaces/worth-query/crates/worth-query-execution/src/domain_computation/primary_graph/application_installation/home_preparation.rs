@@ -40,7 +40,10 @@ pub use existing::{
 mod source;
 pub use native::{QueryHomeNativeInstallationRefused, QueryHomeNativeReadmissionRefused};
 pub use source::{
-    PreparedHomeQueryRuntime, QueryHomeInitialStateDenial, QueryHomeSourceAttachmentRefused,
+    PreparedExistingHomeSignalProgram, PreparedHomeQueryRuntime, PreparedHomeSignalProgram,
+    QueryHomeAuthoredBindings, QueryHomeInitialStateDenial,
+    QueryHomeSignalProgramPreparationDenial, QueryHomeSignalProgramPreparationRefused,
+    QueryHomeSourceAttachmentRefused,
 };
 
 pub struct PreparedHomeApplication<Schema: ApplicationSchemaComposition, Program> {

@@ -7,6 +7,7 @@ pub fn resources() -> WorthQueryInvalidationResources {
 }
 
 #[test]
+#[expect(clippy::disallowed_methods, reason = "Control-scope court")]
 fn constructing_under_a_factory_covers_the_receivers_workers_and_ends_on_drop() {
     let ordinary = resources();
     let guard = WorthQueryInvalidationEquivalenceForTest::arm_on_this_thread_for_test();
@@ -22,6 +23,7 @@ fn constructing_under_a_factory_covers_the_receivers_workers_and_ends_on_drop() 
     assert!(!controlled.invalidation_equivalence_is_armed_for_test());
 }
 #[test]
+#[expect(clippy::disallowed_methods, reason = "Control-scope court")]
 fn resources_installed_here_carry_the_arm_into_worker_construction() {
     let guard = WorthQueryInvalidationEquivalenceForTest::arm_on_this_thread_for_test();
     let resources = WorthQueryInvalidationResources::new();

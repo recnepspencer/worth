@@ -16,7 +16,7 @@ impl WorthQueryBatchWriteReceipt {
         else {
             return Ok(None);
         };
-        Ok(WorthQueryGraphCompositionEvidence::derive(
+        WorthQueryGraphCompositionEvidence::derive(
             &self.write_receipts,
             &self.graph_composition_breadth,
             &lifecycle_outcomes,
@@ -24,7 +24,7 @@ impl WorthQueryBatchWriteReceipt {
             self.affected_live_view_targets.len(),
             self.affected_derived_view_targets.len(),
             self.considered_computed_view_count,
-        )?)
+        )
     }
 
     pub fn graph_composition_assumption_summary(
@@ -33,9 +33,7 @@ impl WorthQueryBatchWriteReceipt {
         if self.graph_composition_program.is_empty() {
             return Ok(None);
         }
-        Ok(WorthQueryGraphCompositionAssumptionSummary::derive(
-            &self.write_receipts,
-        )?)
+        WorthQueryGraphCompositionAssumptionSummary::derive(&self.write_receipts)
     }
 
     pub fn graph_composition_lineage_summary(
@@ -44,17 +42,13 @@ impl WorthQueryBatchWriteReceipt {
         if self.graph_composition_program.is_empty() {
             return Ok(None);
         }
-        Ok(WorthQueryGraphCompositionLineageSummary::derive(
-            &self.write_receipts,
-        )?)
+        WorthQueryGraphCompositionLineageSummary::derive(&self.write_receipts)
     }
 
     pub fn graph_composition_lifecycle_outcomes(
         &self,
     ) -> Result<Option<WorthQueryGraphCompositionLifecycleOutcomes>, IdentityDerivationDenial> {
-        Ok(WorthQueryGraphCompositionLifecycleOutcomes::derive(
-            &self.graph_composition_program,
-        )?)
+        WorthQueryGraphCompositionLifecycleOutcomes::derive(&self.graph_composition_program)
     }
 
     pub fn graph_composition_resolution_map(&self) -> &WorthQueryGraphCompositionResolutionMap {

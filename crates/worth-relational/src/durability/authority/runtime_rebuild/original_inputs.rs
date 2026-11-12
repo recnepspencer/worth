@@ -288,7 +288,6 @@ pub(super) fn bind_replayed_schema(
     runtime
         .history
         .readmit_replayed_root_descriptor(
-            lane,
             request,
             envelope.commit.commit_id,
             descriptor,

@@ -5,6 +5,7 @@ pub(super) fn install<S: ApplicationSchema + 'static>(
     phase: &crate::domain_computation::primary_graph::WorthQueryBootstrapAdvancementPhase<'_>,
     published: BootstrapPublicationStorage<PublishedConditionalGraph<S>>,
     bindings: Vec<Box<dyn crate::domain_computation::primary_graph::conditional_operation::WorthQueryPendingConditionalOperation<S>>>,
+    definitions: Vec<Box<dyn crate::domain_computation::primary_graph::conditional_operation::PendingDefinitionDeclaration>>,
     output_readiness: Vec<Box<dyn crate::domain_computation::primary_graph::application_contribution::PendingOutputReadiness<S>>>,
     producers: &crate::domain_computation::primary_graph::application_contribution::WorthQueryInstalledApplicationProducerRegistry<S>,
 ) -> Result<
@@ -44,6 +45,8 @@ pub(super) fn install<S: ApplicationSchema + 'static>(
             graph.primary_graph_authority.provider_identity(),
             crate::domain_computation::primary_graph::application_branch::PRIMARY_APPLICATION_BRANCH,
         )?;
+    let definition_routes = crate::domain_computation::primary_graph::conditional_operation::install_pending_definitions(
+        definitions, graph.bridge.conditional_builder(), &graph.primary_graph_authority)?;
     let output_producer_routes = producers
         .install_signal_routes(graph.bridge.conditional_builder())
         .map_err(
@@ -51,7 +54,7 @@ pub(super) fn install<S: ApplicationSchema + 'static>(
         )?;
     let output_readiness_routes =
         crate::domain_computation::primary_graph::application_contribution::install_output_readiness_routes(
-            output_readiness,
+            &output_readiness,
             graph.bridge.conditional_builder(),
             &graph.primary_graph_authority,
         )?;
@@ -90,5 +93,6 @@ pub(super) fn install<S: ApplicationSchema + 'static>(
         output_producer_routes,
         output_readiness_routes,
         conditional_operations,
+        definition_routes,
     }))
 }

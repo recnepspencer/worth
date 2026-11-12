@@ -6,15 +6,18 @@ use crate::facade::runtime::{
 };
 use crate::history::data::RelationalDescriptiveTouch as Touch;
 
-fn durable_audit() -> RelationalRuntime {
-    durable_runtime_with_declared_aspect_schema(CascadeDeletePolicy::RetainDanglingForAudit)
+fn audit_runtime() -> RelationalRuntime {
+    runtime_with_declared_aspect_schema_profile(
+        RelationalRuntimeProfile::CertificationCore,
+        CascadeDeletePolicy::RetainDanglingForAudit,
+    )
 }
 
 #[test]
 fn audit_lifecycle_coverage_survives_unrelated_history_discard_and_durable_recovery() {
     let host = crate::test_execution_policy::serial_request();
     let execution = ExecutionRequest::serial(&host);
-    let runtime = durable_audit();
+    let runtime = audit_runtime();
     let a = create_entity(&execution, &runtime, "audit-source");
     let b = create_entity(&execution, &runtime, "audit-target");
     let c = create_entity(&execution, &runtime, "unaffected-source");
@@ -121,7 +124,22 @@ fn audit_lifecycle_coverage_survives_unrelated_history_discard_and_durable_recov
         ),
         [retired.commit.commit_id]
     );
-    let (_, recovered) = checkpoint_and_recover_with(&execution, &runtime, durable_audit);
+    runtime
+        .durability_authority()
+        .checkpoint(&execution)
+        .unwrap();
+    let plan = runtime
+        .durability()
+        .recovery_plan(
+            &execution,
+            crate::durability::data::RecoveryVerificationMode::NormalRecoveryVerification,
+        )
+        .unwrap();
+    let mut recovered = audit_runtime();
+    recovered
+        .durability_recovery()
+        .recover(&execution, plan)
+        .unwrap();
     let recovered_source = recovered
         .admit_branch_basis(
             &recovered

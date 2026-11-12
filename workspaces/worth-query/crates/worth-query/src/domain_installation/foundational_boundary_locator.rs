@@ -59,11 +59,9 @@ mod tests {
     use crate::evidence_identity::{WorthQueryEvidenceScope, WorthQueryEvidenceTag};
 
     fn identity(value: &str) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
-        Ok(
-            WorthQueryEvidenceIdentity::compose(WorthQueryEvidenceScope::InstalledDomainExecution)
-                .field_value(WorthQueryEvidenceTag::new("subject"), value)
-                .seal()?,
-        )
+        WorthQueryEvidenceIdentity::compose(WorthQueryEvidenceScope::InstalledDomainExecution)
+            .field_value(WorthQueryEvidenceTag::new("subject"), value)
+            .seal()
     }
 
     #[test]

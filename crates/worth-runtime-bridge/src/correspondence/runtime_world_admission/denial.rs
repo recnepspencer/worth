@@ -7,6 +7,11 @@ pub enum RuntimeWorldCorrespondenceAdmissionDenial {
         actual_runtime_key: u64,
     },
     InstalledCorrespondenceNotCurrent,
+    AuthoredOwnerUnavailable,
+    SignalBranchBasisRequired,
+    AuthoredBranchUnavailable {
+        signal_graph_instance_id: u64,
+    },
     InstalledGenerationDrift {
         expected_generation: u64,
         actual_generation: u64,
@@ -23,6 +28,10 @@ impl std::fmt::Display for RuntimeWorldCorrespondenceAdmissionDenial {
                 formatter,
                 "installed correspondence belongs to Bridge runtime {actual_runtime_key}, expected {expected_runtime_key}"
             ),
+            Self::SignalBranchBasisRequired => formatter.write_str("authored correspondence requires the actual admitted Signal branch basis"),
+            Self::AuthoredOwnerUnavailable => formatter.write_str("authored Bridge owner is unavailable"),
+            Self::AuthoredBranchUnavailable { signal_graph_instance_id } => write!(formatter,
+                "authored Bridge branch for Signal graph {signal_graph_instance_id} is not serving"),
             Self::InstalledCorrespondenceNotCurrent => {
                 formatter.write_str("installed correspondence is not current in its Bridge runtime")
             }

@@ -81,19 +81,12 @@ fn admit_row(
             )
             .ok_or_else(|| denied("Home idempotency required field is missing"))
     };
-    // Text read back from a reopened Home is stored text; both spell the same value.
-    fn text(value: &AspectValue) -> Option<&str> {
-        match value {
-            AspectValue::String(text) => text.raw_text(),
-            _ => None,
-        }
-    }
-    let Some(key) = text(field(&layout.key_locator)?) else {
-        return Err(denied("Home idempotency key has foreign shape"));
-    };
-    let Some(intent) = text(field(&layout.intent_locator)?) else {
-        return Err(denied("Home idempotency intent has foreign shape"));
-    };
+    let key = field(&layout.key_locator)?
+        .raw_text()
+        .ok_or_else(|| denied("Home idempotency key has foreign shape"))?;
+    let intent = field(&layout.intent_locator)?
+        .raw_text()
+        .ok_or_else(|| denied("Home idempotency intent has foreign shape"))?;
     context
         .checkpoint(
             u64::try_from(

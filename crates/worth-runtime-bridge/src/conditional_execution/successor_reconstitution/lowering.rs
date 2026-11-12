@@ -42,6 +42,7 @@ pub(super) fn readmit(
             crate::conditional_execution::liveness::BridgeConditionalLoweringLease::issue(),
         ),
         _definition_retention: installed._definition_retention.clone(),
+        _authored_source: installed._authored_source.clone(),
         counters: installed.counters,
     });
     lowering.bind_signal_port(Arc::clone(service));

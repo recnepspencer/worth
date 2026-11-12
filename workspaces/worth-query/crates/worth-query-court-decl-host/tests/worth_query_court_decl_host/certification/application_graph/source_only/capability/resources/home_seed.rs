@@ -59,7 +59,7 @@ fn directory_resource_seed_refuses_before_clock_provider_or_owner_effect() {
                 WorthQueryApplicationPreparationDenial::UnsupportedSeed(
                     WorthQueryDurableStateAdmissionDenial::Unsupported {
                         family: DurableStateFamily::BridgeOwnedAsyncDefinitions,
-                        supported_from_phase: 5,
+                        supported_from_phase: 7,
                     }
                 )
             )

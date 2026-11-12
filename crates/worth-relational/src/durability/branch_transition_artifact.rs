@@ -15,7 +15,7 @@
 //! | 58..66 | payload length (`u64`)                       |
 //! | 66..   | payload: MessagePack named map               |
 //!
-//! Version 2 carries `{sequence, follows, schema_carrier, transition}`. Both header fields are
+//! Version 3 requires `{sequence, follows, schema_carrier, caller_association, transition}`. Both header fields are
 //! inside the digested payload, so a rewritten header cannot pass
 //! readmission.
 

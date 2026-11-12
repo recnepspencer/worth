@@ -38,8 +38,14 @@ pub(crate) fn complete(
             "current ownership completion requires its Native storage grammar",
         ));
     };
-    let mut writer = Writer::new(
-        execution, runtime, basis, working, identities, candidate, context,
+    let mut writer = Writer::in_stage(
+        execution,
+        &runtime.config.storage,
+        basis,
+        working,
+        identities,
+        candidate,
+        context,
     )?;
     let absent_count = candidate.historical_absent_routes().count();
     if absent_count != 0 {
@@ -166,20 +172,19 @@ pub(crate) fn complete(
                     + candidate.required_output_codec_retirements.len()
                     + 1,
             )?;
-            if changed(&row.value.origin.meaning) {
-                if !successors
+            if changed(&row.value.origin.meaning)
+                && !successors
                     .iter()
                     .any(|(_, origin)| origin.meaning.same_route(&row.value.origin.meaning))
-                {
-                    claims_delta::retire(
-                        execution,
-                        basis,
-                        &mut writer,
-                        storage,
-                        row,
-                        replaced(&row.value.origin.meaning),
-                    )?;
-                }
+            {
+                claims_delta::retire(
+                    execution,
+                    basis,
+                    &mut writer,
+                    storage,
+                    row,
+                    replaced(&row.value.origin.meaning),
+                )?;
             }
         }
         routes.retain(|route| !replaced(&route.meaning));

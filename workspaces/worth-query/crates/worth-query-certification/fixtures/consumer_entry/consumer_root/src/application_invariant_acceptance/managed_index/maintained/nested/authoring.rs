@@ -2,6 +2,7 @@
 use super::schema::*;
 use worth_query_decl::facade::{application_operation::*, application_schema::*, *};
 use worth_query_host::facade::primary_graph::*;
+#[path = "authoring/handler.rs"]
 mod handler;
 use crate::application_invariant_acceptance::managed_index::maintained::nested::edit::Edit;
 pub(super) use handler::Handler;
@@ -27,6 +28,7 @@ worth_query_operation_creates!(EditGraph => [Directory,Item]);
 worth_query_operation_links!(EditGraph => [Contains,Children]);
 worth_query_operation_unlinks!(EditGraph => [Children]);
 worth_query_operation_deletes!(EditGraph => [Item]);
+worth_query_operation_removes_aspects!(EditGraph => [ItemBadge]);
 
 fn scope(_: &Edit) -> String {
     "catalog".into()
@@ -50,6 +52,8 @@ pub(super) fn declare(
         .operation_read_field(op, ItemIdentity::at("ItemIdentity"))
         .operation_read_field(op, ItemName::at("ItemName"))
         .operation_read_field(op, ItemEnabled::at("ItemEnabled"))
+        .operation_read_field(op, BadgeFlag::at("BadgeFlag"))
+        .operation_read_field(op, BadgeDetail::at("BadgeDetail"))
         .operation_read_relation(op, Children::reference())
         .operation_create(op, Directory::reference())
         .operation_create(op, Item::reference())
@@ -61,6 +65,9 @@ pub(super) fn declare(
         .operation_write(op, ItemIdentity::at("ItemIdentity"))
         .operation_write(op, ItemName::at("ItemName"))
         .operation_write(op, ItemEnabled::at("ItemEnabled"))
+        .operation_write(op, BadgeFlag::at("BadgeFlag"))
+        .operation_write(op, BadgeDetail::at("BadgeDetail"))
+        .operation_remove_aspect(op, ItemBadge::reference())
         .application_mutation_binding::<Binding>()
 }
 

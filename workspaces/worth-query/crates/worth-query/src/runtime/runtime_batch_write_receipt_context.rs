@@ -6,7 +6,7 @@ pub(super) fn batch_execution_provenance(
     shared_admission: Option<&WorthQueryWriteAdmissionExecutionRecord>,
     combined_receipt: &WorthQueryMutationReceipt,
 ) -> Result<Option<WorthQueryIntentExecutionProvenance>, IdentityDerivationDenial> {
-    Ok(shared_admission
+    shared_admission
         .map(|record| {
             let commit_label = combined_receipt
                 .commit_identity
@@ -25,7 +25,7 @@ pub(super) fn batch_execution_provenance(
                 &snapshot_evidence_identity,
             )
         })
-        .transpose()?)
+        .transpose()
 }
 
 pub(super) fn batch_decision_trace_envelope(

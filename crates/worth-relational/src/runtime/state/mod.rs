@@ -1,4 +1,8 @@
 pub use runtime_state::CompleteRelationalCheckpointPreparation;
+pub use runtime_state::{
+    RelationalPublicationCompanionCustody, RelationalPublicationCustodyHolders,
+    RelationalPublicationRegistryCustody,
+};
 pub(crate) use subsystems::{
     MutationRecordAllocations, MutationSymbolMeanings, OriginalBranchSchemaInputs,
     OriginalBranchSchemaInputsDenial, OriginalEmptySchemaInstallation,
@@ -26,7 +30,8 @@ pub(crate) use runtime_state::{
     RelationalSettlementReservationDenial, ReservedRelationalSettlement,
 };
 pub use runtime_state::{
-    PreparedRelationalRuntimeClose, RelationalRuntimeCloseDenial, RelationalRuntimeCloseRefused,
+    PreparedRelationalRuntimeClose, RelationalReadCustodyHolders, RelationalRuntimeCloseDenial,
+    RelationalRuntimeCloseRefused,
 };
 pub use runtime_state::{
     PreparedRelationalSourceClose, RelationalSourceClose, RelationalSourceCloseDenial,

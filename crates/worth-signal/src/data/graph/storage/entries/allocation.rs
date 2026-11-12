@@ -13,8 +13,9 @@ impl SignalGraph {
                 continue;
             }
             self.arena.free_slots.clear(index as usize);
+            let recorded = self.recorded_node_issuance.get(&index).copied();
             let slot = &mut self.arena.nodes[index as usize];
-            if slot.is_retired() {
+            if !slot.resume_recorded_issuance(recorded) {
                 continue;
             }
             self.arena.definitions[index as usize] = definition.clone();
@@ -28,13 +29,24 @@ impl SignalGraph {
             return node;
         }
 
-        let index = self.arena.nodes.len() as u32;
+        // An unused committed definition body may have recorded an incarnation
+        // beyond the canonical arena. Retire exhausted slots only when a later
+        // allocation actually needs them, preserving the recovered source bytes.
+        let (index, mut slot) = loop {
+            let index = self.arena.nodes.len() as u32;
+            let mut slot = Slot::vacant();
+            if slot.resume_recorded_issuance(self.recorded_node_issuance.get(&index).copied()) {
+                break (index, slot);
+            }
+            self.synchronize_node_allocator(
+                index.checked_add(1).expect("node index space exhausted"),
+            );
+        };
         if self.arena.nodes.exclusive_capacity() == Some(self.arena.nodes.len()) {
             // Vec's geometric growth amortizes appends without reserving a
             // thousand wide records for a one-node managed-execution graph.
             self.reserve_node_capacity(1);
         }
-        let mut slot = Slot::vacant();
         let generation = slot.occupy();
         self.arena.nodes.push_back(slot);
         self.arena.definitions.push_back(definition);

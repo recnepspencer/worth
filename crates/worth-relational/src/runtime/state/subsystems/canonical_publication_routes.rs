@@ -18,9 +18,8 @@ mod authored_writes;
 mod branch_transition_stream;
 #[path = "canonical_publication_routes/checkpoint_admission.rs"]
 mod checkpoint_admission;
-#[cfg(test)]
-#[path = "canonical_publication_routes/lifecycle_order_control.rs"]
-mod lifecycle_order_control;
+#[path = "canonical_publication_routes/fork_frontiers.rs"]
+mod fork_frontiers;
 #[path = "canonical_publication_routes/patch_position_reservation.rs"]
 mod patch_position_reservation;
 #[path = "canonical_publication_routes/pending_settlement.rs"]
@@ -66,8 +65,6 @@ pub(crate) struct RelationalCanonicalPublicationRoutes {
     settlement_route_visits: AtomicU64,
     branch_transitions: Arc<BranchTransitionStream>,
     lifecycle: RwLock<()>,
-    #[cfg(test)]
-    lifecycle_order: lifecycle_order_control::LifecycleOrderControl,
 }
 
 impl std::fmt::Debug for RelationalCanonicalPublicationRoutes {
@@ -102,9 +99,7 @@ pub(crate) enum CanonicalPublicationRecordError {
     /// reservation; it was assigned nothing.
     ReservationWaitStopped(worth_execution::WorkCeilingDenial),
     PositionCapacityExhausted,
-    MemoryFrame(
-        crate::durability::canonical_commit_artifact::RelationalCanonicalCommitArtifactEncodeDenial,
-    ),
+    MemoryFrame(crate::durability::canonical_commit_artifact::MemoryFramePreparationDenial),
     /// A caller narrowed the memory cutover and its deadline elapsed before
     /// canonical assignment. No position or owner effect was produced.
     CutoverDeadlineElapsed,
@@ -136,8 +131,6 @@ impl Default for RelationalCanonicalPublicationRoutes {
             settlement_route_visits: AtomicU64::new(0),
             branch_transitions: Arc::default(),
             lifecycle: RwLock::new(()),
-            #[cfg(test)]
-            lifecycle_order: Default::default(),
         }
     }
 }

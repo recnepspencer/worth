@@ -71,10 +71,10 @@ impl WorthQueryApplicationFacade {
     }
 
     pub fn support_report(&self) -> Result<WorthQuerySupportReport, IdentityDerivationDenial> {
-        Ok(WorthQuerySupportReport::from_validated_config_and_matrix(
+        WorthQuerySupportReport::from_validated_config_and_matrix(
             &self.config,
             self.support_matrix.clone(),
-        )?)
+        )
     }
 
     #[cfg(test)]

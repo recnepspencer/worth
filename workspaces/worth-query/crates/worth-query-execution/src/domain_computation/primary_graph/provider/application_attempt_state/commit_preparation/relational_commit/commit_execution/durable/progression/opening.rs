@@ -60,16 +60,16 @@ pub(super) fn advance(
         return Ok(Some(Progress::Pending(Stage::RecordingOriginalMeaning)));
     }
     preparation.stage = Stage::RecordingCorrectionMaterial;
-    if let Some(causality) = preparation.query.attempt.aftermath_causality() {
-        if let Err(cause) = provider.transfer_correction_preparation(
+    if let Some(causality) = preparation.query.attempt.aftermath_causality()
+        && let Err(cause) = provider.transfer_correction_preparation(
             causality.prepared_correction(),
             preparation.query.attempt.original_authority(),
             opened,
             &execution,
-        ) {
-            preparation.query_denial = Some(Cause::CorrectionMaterial(cause));
-            return Ok(Some(Progress::Pending(Stage::RecordingCorrectionMaterial)));
-        }
+        )
+    {
+        preparation.query_denial = Some(Cause::CorrectionMaterial(cause));
+        return Ok(Some(Progress::Pending(Stage::RecordingCorrectionMaterial)));
     }
     if let Err(cause) = provider.capture_correction_material(
         preparation.query.attempt.original_authority(),

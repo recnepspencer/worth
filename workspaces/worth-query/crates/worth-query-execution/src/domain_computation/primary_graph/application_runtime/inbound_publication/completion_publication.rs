@@ -68,6 +68,7 @@ impl PreparedCompletionPublication {
             .prepare_query_publication_without_signal(
                 execution,
                 binding.observation().clone(),
+                binding.admitted_program_source().map_err(Denial::Opening)?,
                 RelationalTransactionIntent::ordinary(),
                 control.cancellation(),
                 control.deadline(),
@@ -159,8 +160,6 @@ pub(super) fn opening_request_stop(
                 | Medium::Ordered(_)
                 | Medium::Frame(_)
                 | Medium::NativeDescription(_)
-                | Medium::SignalDescription(_)
-                | Medium::BridgeDescription(_)
                 | Medium::Unavailable
                 | Medium::PublicationBusy
                 | Medium::PublicationUnresolved
@@ -172,6 +171,8 @@ pub(super) fn opening_request_stop(
         }
         WorldOpenAttemptRefusal::TransitionAdmission(_)
         | WorldOpenAttemptRefusal::NotHomeBound
+        | WorldOpenAttemptRefusal::ProgramSourceOwnerRequired
+        | WorldOpenAttemptRefusal::ProgramSource(_)
         | WorldOpenAttemptRefusal::IdentityScope => None,
     }
 }

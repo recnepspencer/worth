@@ -36,10 +36,10 @@ fn recovered_publication_transfers_real_empty_predecessor_and_original_successor
         "later head is not substituted for the original effect"
     );
     let refused = runtime.prepare_close().unwrap_err();
-    assert_eq!(
+    assert!(matches!(
         refused.reason(),
-        worth_relational::facade::runtime::RelationalRuntimeCloseDenial::ReadCustodyRetained
-    );
+        worth_relational::facade::runtime::RelationalRuntimeCloseDenial::ReadCustodyRetained(_)
+    ));
     let runtime = refused.into_runtime();
     proof.consume(|custody| {
         let (effect, before, before_lease, after, after_lease) = custody.into_retained_parts();

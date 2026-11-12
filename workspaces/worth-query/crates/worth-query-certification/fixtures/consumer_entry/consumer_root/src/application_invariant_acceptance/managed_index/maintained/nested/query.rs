@@ -12,6 +12,8 @@ pub struct ItemRow {
     pub identity: String,
     pub name: String,
     pub enabled: bool,
+    pub badge: Option<bool>,
+    pub detail: Option<bool>,
     pub children: Vec<super::shape::Node>,
     pub parents: Vec<super::shape::Node>,
 }
@@ -28,6 +30,10 @@ worth_query_application_query!(pub PrefixQuery for Catalog,
 pub struct IdentitySlot;
 pub struct NameSlot;
 pub struct EnabledSlot;
+pub struct BadgeSlot;
+pub struct DetailSlot;
+worth_query_portable_type!(BadgeSlot => "nested-catalog.badge-slot.v1");
+worth_query_portable_type!(DetailSlot => "nested-catalog.detail-slot.v1");
 worth_query_portable_type!(IdentitySlot => "nested-catalog.identity-slot.v1");
 worth_query_portable_type!(NameSlot => "nested-catalog.name-slot.v1");
 worth_query_portable_type!(EnabledSlot => "nested-catalog.enabled-slot.v1");
@@ -37,6 +43,18 @@ pub fn identity<Q>() -> ApplicationQueryResultFieldRef<Q, IdentitySlot, Catalog,
 }
 pub fn name<Q>() -> ApplicationQueryResultFieldRef<Q, NameSlot, Catalog, ItemName> {
     ApplicationQueryResultFieldRef::new("name", ItemName::at("ItemName"))
+}
+pub(super) fn badge<
+    Q,
+    Slot: worth_query_decl::facade::portable_identity::WorthQueryPortableType,
+>() -> ApplicationQueryOptionalAspectFieldRef<Q, Slot, Catalog, BadgeFlag> {
+    ApplicationQueryOptionalAspectFieldRef::new("badge", BadgeFlag::at("BadgeFlag"))
+}
+pub(super) fn detail<
+    Q,
+    Slot: worth_query_decl::facade::portable_identity::WorthQueryPortableType,
+>() -> ApplicationQueryOptionalResultFieldRef<Q, Slot, Catalog, BadgeDetail> {
+    ApplicationQueryOptionalResultFieldRef::new("detail", BadgeDetail::at("BadgeDetail"))
 }
 pub fn enabled<Q>() -> ApplicationQueryResultFieldRef<Q, EnabledSlot, Catalog, ItemEnabled> {
     ApplicationQueryResultFieldRef::new("enabled", ItemEnabled::at("ItemEnabled"))
@@ -105,6 +123,8 @@ impl<Q: ApplicationQueryMarkerIdentity<Catalog>> WorthQueryApplicationProjection
             identity: row.field(identity())?,
             name: row.field(name())?.into(),
             enabled: row.field(enabled())?,
+            badge: row.optional_aspect_field(badge::<Q, BadgeSlot>())?,
+            detail: row.optional_field(detail::<Q, DetailSlot>())?,
             children: super::shape::project(row)?,
             parents: super::shape::project_parents(row)?,
         })

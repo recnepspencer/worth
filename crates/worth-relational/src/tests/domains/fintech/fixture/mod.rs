@@ -101,13 +101,7 @@ impl FintechWorld {
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         scale: FintechScale,
     ) -> Self {
-        Self::build(execution, scale, false)
-    }
-
-    pub(super) fn setup_persisted_world(
-        execution: &worth_execution::ExecutionRequest<'_, '_>,
-    ) -> Self {
-        Self::build(execution, FintechScale::smoke(), true)
+        Self::build(execution, scale)
     }
 
     pub(super) fn latest_snapshot(&self) -> SnapshotHandle {
@@ -278,21 +272,12 @@ impl FintechWorld {
         create_analysis_branch(execution, &self.runtime)
     }
 
-    fn build(
-        execution: &worth_execution::ExecutionRequest<'_, '_>,
-        scale: FintechScale,
-        persisted: bool,
-    ) -> Self {
-        let builder = RelationalRuntimeApi::builder()
+    fn build(execution: &worth_execution::ExecutionRequest<'_, '_>, scale: FintechScale) -> Self {
+        let runtime = RelationalRuntimeApi::builder()
             .profile(RelationalRuntimeProfile::AiWorkflow)
-            .schema_registry(fintech_schema_registry());
-        let runtime = if persisted {
-            builder
-                .build_durable(crate::tests::support::TestDurableMedium::new().attachment())
-                .expect("valid native runtime configuration")
-        } else {
-            builder.build().expect("valid native runtime configuration")
-        };
+            .schema_registry(fintech_schema_registry())
+            .build()
+            .expect("valid native runtime configuration");
         let case_seeds = seeded_trade_cases(scale);
         let seeded = seed_entities(execution, &runtime, &case_seeds);
         let workflow_cases = build_workflow_cases(&case_seeds, &seeded);

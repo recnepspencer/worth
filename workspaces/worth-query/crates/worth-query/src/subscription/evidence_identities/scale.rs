@@ -30,66 +30,64 @@ pub(in crate::subscription) fn active_lane_identity(
     performance_receipt_identity: &WorthQueryEvidenceIdentity,
     counters_identity: &WorthQueryEvidenceIdentity,
 ) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
-    Ok(
-        WorthQueryEvidenceIdentity::compose(SUBSCRIPTION_IDENTITY_SCOPE)
-            .field_shape(
-                WorthQueryEvidenceTag::new("identity_family"),
-                "active_subscription_lane_v1",
-            )
-            .field_evidence_identity(
-                WorthQueryEvidenceTag::new("activation"),
-                activation_identity,
-            )
-            .field_evidence_identity(WorthQueryEvidenceTag::new("admission"), admission_identity)
-            .field_evidence_identity(
-                WorthQueryEvidenceTag::new("query_declaration"),
-                query_declaration_identity,
-            )
-            .field_evidence_identity(
-                WorthQueryEvidenceTag::new("bridge_declaration"),
-                bridge_declaration_identity,
-            )
-            .field_evidence_identity(
-                WorthQueryEvidenceTag::new("future_selection"),
-                future_selection_projection_identity,
-            )
-            .field_evidence_identity(WorthQueryEvidenceTag::new("basis"), basis_binding_identity)
-            .field_shape(
-                WorthQueryEvidenceTag::new("scoped_declaration_basis"),
-                scoped_declaration_basis_digest,
-            )
-            .field_shape(
-                WorthQueryEvidenceTag::new("scoped_activation_basis"),
-                scoped_activation_basis_digest,
-            )
-            .field_evidence_identity(
-                WorthQueryEvidenceTag::new("checkpoint"),
-                checkpoint_identity,
-            )
-            .field_evidence_identity(
-                WorthQueryEvidenceTag::new("signal_strategy"),
-                signal_strategy_identity,
-            )
-            .field_shape(WorthQueryEvidenceTag::new("lifecycle"), lifecycle_posture)
-            .field_shape(WorthQueryEvidenceTag::new("delivery"), delivery_posture)
-            .field_shape(WorthQueryEvidenceTag::new("lookup"), lookup_class)
-            .field_shape(WorthQueryEvidenceTag::new("allocation"), allocation_policy)
-            .field_usize(
-                WorthQueryEvidenceTag::new("budget_registry"),
-                registry_lookup_width,
-            )
-            .field_usize(WorthQueryEvidenceTag::new("budget_fanout"), fanout_width)
-            .field_usize(
-                WorthQueryEvidenceTag::new("budget_allocation"),
-                allocation_scope_width,
-            )
-            .field_evidence_identity(
-                WorthQueryEvidenceTag::new("performance"),
-                performance_receipt_identity,
-            )
-            .field_evidence_identity(WorthQueryEvidenceTag::new("counters"), counters_identity)
-            .seal()?,
-    )
+    WorthQueryEvidenceIdentity::compose(SUBSCRIPTION_IDENTITY_SCOPE)
+        .field_shape(
+            WorthQueryEvidenceTag::new("identity_family"),
+            "active_subscription_lane_v1",
+        )
+        .field_evidence_identity(
+            WorthQueryEvidenceTag::new("activation"),
+            activation_identity,
+        )
+        .field_evidence_identity(WorthQueryEvidenceTag::new("admission"), admission_identity)
+        .field_evidence_identity(
+            WorthQueryEvidenceTag::new("query_declaration"),
+            query_declaration_identity,
+        )
+        .field_evidence_identity(
+            WorthQueryEvidenceTag::new("bridge_declaration"),
+            bridge_declaration_identity,
+        )
+        .field_evidence_identity(
+            WorthQueryEvidenceTag::new("future_selection"),
+            future_selection_projection_identity,
+        )
+        .field_evidence_identity(WorthQueryEvidenceTag::new("basis"), basis_binding_identity)
+        .field_shape(
+            WorthQueryEvidenceTag::new("scoped_declaration_basis"),
+            scoped_declaration_basis_digest,
+        )
+        .field_shape(
+            WorthQueryEvidenceTag::new("scoped_activation_basis"),
+            scoped_activation_basis_digest,
+        )
+        .field_evidence_identity(
+            WorthQueryEvidenceTag::new("checkpoint"),
+            checkpoint_identity,
+        )
+        .field_evidence_identity(
+            WorthQueryEvidenceTag::new("signal_strategy"),
+            signal_strategy_identity,
+        )
+        .field_shape(WorthQueryEvidenceTag::new("lifecycle"), lifecycle_posture)
+        .field_shape(WorthQueryEvidenceTag::new("delivery"), delivery_posture)
+        .field_shape(WorthQueryEvidenceTag::new("lookup"), lookup_class)
+        .field_shape(WorthQueryEvidenceTag::new("allocation"), allocation_policy)
+        .field_usize(
+            WorthQueryEvidenceTag::new("budget_registry"),
+            registry_lookup_width,
+        )
+        .field_usize(WorthQueryEvidenceTag::new("budget_fanout"), fanout_width)
+        .field_usize(
+            WorthQueryEvidenceTag::new("budget_allocation"),
+            allocation_scope_width,
+        )
+        .field_evidence_identity(
+            WorthQueryEvidenceTag::new("performance"),
+            performance_receipt_identity,
+        )
+        .field_evidence_identity(WorthQueryEvidenceTag::new("counters"), counters_identity)
+        .seal()
 }
 
 pub(in crate::subscription) fn scale_counter_snapshot_identity(
@@ -99,25 +97,23 @@ pub(in crate::subscription) fn scale_counter_snapshot_identity(
     admission_identity: &WorthQueryEvidenceIdentity,
     counter_identity: &WorthQueryEvidenceIdentity,
 ) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
-    Ok(
-        WorthQueryEvidenceIdentity::compose(SUBSCRIPTION_IDENTITY_SCOPE)
-            .field_shape(
-                WorthQueryEvidenceTag::new("identity_family"),
-                "query_subscription_scale_counter_snapshot_v1",
-            )
-            .field_shape(WorthQueryEvidenceTag::new("fixture_size"), fixture_size)
-            .field_usize(
-                WorthQueryEvidenceTag::new("fixture_row_count"),
-                fixture_row_count as usize,
-            )
-            .field_evidence_identity(
-                WorthQueryEvidenceTag::new("activation"),
-                activation_identity,
-            )
-            .field_evidence_identity(WorthQueryEvidenceTag::new("admission"), admission_identity)
-            .field_evidence_identity(WorthQueryEvidenceTag::new("counter"), counter_identity)
-            .seal()?,
-    )
+    WorthQueryEvidenceIdentity::compose(SUBSCRIPTION_IDENTITY_SCOPE)
+        .field_shape(
+            WorthQueryEvidenceTag::new("identity_family"),
+            "query_subscription_scale_counter_snapshot_v1",
+        )
+        .field_shape(WorthQueryEvidenceTag::new("fixture_size"), fixture_size)
+        .field_usize(
+            WorthQueryEvidenceTag::new("fixture_row_count"),
+            fixture_row_count as usize,
+        )
+        .field_evidence_identity(
+            WorthQueryEvidenceTag::new("activation"),
+            activation_identity,
+        )
+        .field_evidence_identity(WorthQueryEvidenceTag::new("admission"), admission_identity)
+        .field_evidence_identity(WorthQueryEvidenceTag::new("counter"), counter_identity)
+        .seal()
 }
 
 pub(in crate::subscription) fn scale_slope_report_identity(

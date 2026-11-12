@@ -56,7 +56,7 @@ pub(in crate::runtime) fn lower_runtime_support_row_identity(
                 );
         }
     }
-    Ok(identity.seal()?)
+    identity.seal()
 }
 
 pub(in crate::runtime) fn lower_runtime_support_rows_aggregate_identity<'a>(
@@ -66,15 +66,13 @@ pub(in crate::runtime) fn lower_runtime_support_rows_aggregate_identity<'a>(
         .into_iter()
         .map(lower_runtime_support_row_identity)
         .collect::<Result<Vec<_>, _>>()?;
-    Ok(
-        worth_query_evidence_identity(WorthQueryEvidenceScope::LowerRuntimeBoundaryEvidence)
-            .field_shape(
-                WorthQueryEvidenceTag::new("identity_family"),
-                "runtime_downstream_durable_resume_support_v1",
-            )
-            .field_evidence_identity_sequence(WorthQueryEvidenceTag::new("rows"), &row_identities)
-            .seal()?,
-    )
+    worth_query_evidence_identity(WorthQueryEvidenceScope::LowerRuntimeBoundaryEvidence)
+        .field_shape(
+            WorthQueryEvidenceTag::new("identity_family"),
+            "runtime_downstream_durable_resume_support_v1",
+        )
+        .field_evidence_identity_sequence(WorthQueryEvidenceTag::new("rows"), &row_identities)
+        .seal()
 }
 
 pub(in crate::runtime) fn runtime_downstream_delivery_contract_identity(

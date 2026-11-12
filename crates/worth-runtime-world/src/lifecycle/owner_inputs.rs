@@ -81,3 +81,39 @@ where
         &self.budgets
     }
 }
+
+/// Installation inputs retain the actual selected component owner family.
+/// Only the memory facade or the bound Home builder can construct this bundle.
+pub(super) struct RuntimeWorldInstalledOwnerInputs<D, I, E, Ctx, T>
+where
+    D: Copy + Ord + std::fmt::Debug + 'static,
+    I: Copy + Ord + 'static,
+    T: Copy + Ord + 'static,
+{
+    pub(super) relational: RelationalOwnerServicePorts,
+    pub(super) signal: super::signal_services::RuntimeWorldSignalServices<D, I, E, Ctx, T>,
+    pub(super) bridge: RuntimeWorldCorrespondencePort,
+    pub(super) budgets: RuntimeWorldBudgets,
+    pub(super) clock: RuntimeWorldClock,
+    pub(super) execution: InstalledExecution,
+}
+impl<D, I, E, Ctx, T> RuntimeWorldOwnerInputs<D, I, E, Ctx, T>
+where
+    D: Copy + Ord + std::fmt::Debug + 'static,
+    I: Copy + Ord + 'static,
+    T: Copy + Ord + 'static,
+{
+    pub(super) fn into_installed(self) -> RuntimeWorldInstalledOwnerInputs<D, I, E, Ctx, T> {
+        RuntimeWorldInstalledOwnerInputs {
+            relational: self.relational,
+            signal: super::signal_services::RuntimeWorldSignalServices::Memory {
+                services: self.signal,
+                definitions: self.signal_definition_publication,
+            },
+            bridge: self.bridge,
+            budgets: self.budgets,
+            clock: self.clock,
+            execution: self.execution,
+        }
+    }
+}

@@ -9,7 +9,6 @@ use super::super::recovered_counter_capacity::prepare_recovery_lineage_sequence;
 use super::super::root_inventory::RecoveredRootInventory;
 
 pub(super) fn prepare_replay_context(
-    lane: &crate::storage::substrate::maintenance::ReconstructionLane<'_>,
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     restored: &mut RelationalRuntime,
     envelope: &CanonicalCommitEnvelope,
@@ -21,7 +20,7 @@ pub(super) fn prepare_replay_context(
         .history
         .has_recorded_commit_envelope(envelope.commit.commit_id);
     validate_parent_closure(restored, envelope, available_commit_ids)?;
-    admit_carried_branch_checkpoint(lane, execution, restored, envelope, recovered_roots)?;
+    admit_carried_branch_checkpoint(execution, restored, envelope, recovered_roots)?;
     restored
         .history
         .require_recovered_branch(&envelope.branch_context)
@@ -46,7 +45,6 @@ pub(super) fn prepare_replay_context(
 }
 
 fn admit_carried_branch_checkpoint(
-    lane: &crate::storage::substrate::maintenance::ReconstructionLane<'_>,
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     restored: &mut RelationalRuntime,
     envelope: &CanonicalCommitEnvelope,
@@ -84,7 +82,6 @@ fn admit_carried_branch_checkpoint(
     restored
         .history
         .admit_recovered_branch_cell(
-            lane,
             execution,
             checkpoint,
             &envelope.branch_context,

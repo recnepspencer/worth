@@ -52,6 +52,20 @@ fn definition() -> ErasedApplicationManagedIndexDefinition {
 }
 
 #[test]
+fn ordered_predecessor_scope_round_trips_as_distinct_provider_meaning() {
+    let mut parts = definition().parts().clone();
+    parts.source.scope = ApplicationManagedIndexSourceScope::OrderedPredecessor;
+    let ordered = ApplicationSchemaMember::ManagedIndex {
+        definition: ErasedApplicationManagedIndexDefinition::from_untrusted_parts(parts),
+    };
+    let same = ApplicationSchemaMember::ManagedIndex {
+        definition: definition(),
+    };
+    assert_ne!(encode_member(&ordered), encode_member(&same));
+    assert_eq!(decode_member(&encode_member(&ordered)), ordered);
+}
+
+#[test]
 fn invariant_source_policy_revision_is_explicit_and_refuses_unversioned_or_future_bytes() {
     let member = ApplicationSchemaMember::InvariantManagedIndexSource {
         invariant: "UniqueNames".into(),

@@ -37,6 +37,7 @@ mod pipeline_preparation;
 mod reads;
 mod record_metadata;
 mod recovery;
+mod recovery_catalog;
 mod request_payment;
 mod root_view;
 mod schema_transition;

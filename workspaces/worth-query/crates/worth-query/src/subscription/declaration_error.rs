@@ -66,14 +66,12 @@ impl QuerySubscriptionDeclarationDenial {
         counters: QuerySubscriptionDeclarationCounters,
     ) -> Self {
         let message = message.into();
-        let diagnostic = (|| {
-            Ok(QuerySubscriptionDiagnosticEvidence::denied(
-                diagnostic_stage,
-                message.clone(),
-                source_identity,
-                &counters.evidence_identity(),
-            )?)
-        })();
+        let diagnostic = QuerySubscriptionDiagnosticEvidence::denied(
+            diagnostic_stage,
+            message.clone(),
+            source_identity,
+            &counters.evidence_identity(),
+        );
         Self {
             denial_kind,
             message,
@@ -93,7 +91,7 @@ impl QuerySubscriptionDeclarationDenial {
     pub fn diagnostic(
         &self,
     ) -> Result<&QuerySubscriptionDiagnosticEvidence, IdentityDerivationDenial> {
-        Ok(self.diagnostic.as_ref().map_err(|cause| *cause)?)
+        self.diagnostic.as_ref().map_err(|cause| *cause)
     }
 
     pub fn counters(&self) -> &QuerySubscriptionDeclarationCounters {

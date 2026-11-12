@@ -189,7 +189,7 @@ impl EffectExecutionReceipt {
     pub fn effect_envelope(
         &self,
     ) -> Result<SelfDescribingEffectEnvelope, IdentityDerivationDenial> {
-        Ok(SelfDescribingEffectEnvelope::from_receipt(self)?)
+        SelfDescribingEffectEnvelope::from_receipt(self)
     }
 
     pub fn materialize_diagnostics(
@@ -197,17 +197,13 @@ impl EffectExecutionReceipt {
         request: EffectDiagnosticsRequest,
     ) -> Result<EffectDiagnosticsMaterialization, IdentityDerivationDenial> {
         let envelope = self.effect_envelope()?;
-        Ok(EffectDiagnosticsMaterialization::from_receipt(
-            self, &envelope, request,
-        )?)
+        EffectDiagnosticsMaterialization::from_receipt(self, &envelope, request)
     }
 
     pub fn transition_rules(
         &self,
     ) -> Result<EffectReceiptTransitionRules, IdentityDerivationDenial> {
-        Ok(EffectReceiptTransitionRules::for_receipt_family(
-            self.receipt_family,
-        )?)
+        EffectReceiptTransitionRules::for_receipt_family(self.receipt_family)
     }
 
     pub fn target_evidence(&self) -> EffectReceiptTargetEvidence {

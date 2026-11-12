@@ -53,3 +53,7 @@ pub use cross_partition::*;
 #[path = "policy_models/payload.rs"]
 mod payload;
 pub use payload::*;
+
+#[path = "policy_models/deletion_protected.rs"]
+mod deletion_protected;
+pub use deletion_protected::*;

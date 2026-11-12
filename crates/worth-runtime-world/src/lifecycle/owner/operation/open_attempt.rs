@@ -23,11 +23,13 @@ where
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         expected: ProductBranchObservation,
+        source: worth_proof::AdmittedBranchProgramSource,
         change: worth_relational::facade::mvcc::RelationalTransactionIntent,
         cancellation: &RuntimeWorldCancellationToken,
         deadline: Option<RuntimeWorldInstant>,
     ) -> WorldOpenAttemptOutcome {
-        match self.prepare_durable_open(execution, expected, change, cancellation, deadline) {
+        match self.prepare_durable_open(execution, expected, source, change, cancellation, deadline)
+        {
             Ok(pending) => pending.advance(execution),
             Err(cause) => WorldOpenAttemptOutcome::Refused(cause),
         }
@@ -36,6 +38,7 @@ where
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         expected: ProductBranchObservation,
+        source: worth_proof::AdmittedBranchProgramSource,
         change: worth_relational::facade::mvcc::RelationalTransactionIntent,
         cancellation: &RuntimeWorldCancellationToken,
         deadline: Option<RuntimeWorldInstant>,
@@ -43,6 +46,7 @@ where
         self.prepare_durable_open_with_assignment(
             execution,
             expected,
+            source,
             change,
             cancellation,
             deadline,
@@ -54,7 +58,29 @@ where
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         expected: ProductBranchObservation,
+        source: worth_proof::AdmittedBranchProgramSource,
         change: worth_relational::facade::mvcc::RelationalTransactionIntent,
+        cancellation: &RuntimeWorldCancellationToken,
+        deadline: Option<RuntimeWorldInstant>,
+        assigned: Option<crate::publication::HomeTransitionOpenAssignment>,
+    ) -> Result<WorldPendingOpenAttempt, WorldOpenAttemptRefusal> {
+        self.prepare_component_durable_open(
+            execution,
+            expected,
+            source,
+            crate::publication::CompositeComponentIntent::relational_only(change),
+            cancellation,
+            deadline,
+            assigned,
+        )
+    }
+
+    pub(in crate::lifecycle) fn prepare_component_durable_open(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        expected: ProductBranchObservation,
+        source: worth_proof::AdmittedBranchProgramSource,
+        intent: crate::publication::CompositeComponentIntent,
         cancellation: &RuntimeWorldCancellationToken,
         deadline: Option<RuntimeWorldInstant>,
         assigned: Option<crate::publication::HomeTransitionOpenAssignment>,
@@ -69,6 +95,16 @@ where
             .as_ref()
             .ok_or(Refusal::NotHomeBound)?
             .clone();
+        let program_revision = source.program_revision();
+        let commitment =
+            crate::publication::world_branch_program_source_commitment(&expected, program_revision)
+                .map_err(Refusal::Durable)?;
+        binding
+            .binding()
+            .branch_program_source_authority()
+            .ok_or(Refusal::ProgramSourceOwnerRequired)?
+            .admit(&source, &commitment)
+            .map_err(Refusal::ProgramSource)?;
         if binding.occurrence_unresolved() {
             return Err(Refusal::Durable(
                 crate::durability::WorldDurableMediumDenial::PublicationUnresolved,
@@ -81,12 +117,9 @@ where
         if owner != binding.binding().owner() {
             return Err(Refusal::IdentityScope);
         }
-        let resolved = ResolvedExpectedProductHead::from_current(
-            crate::publication::CompositeComponentIntent::relational_only(change),
-            expected.clone(),
-            &current,
-        )
-        .map_err(|_| Refusal::IdentityScope)?;
+        let resolved =
+            ResolvedExpectedProductHead::from_current(intent.clone(), expected.clone(), &current)
+                .map_err(|_| Refusal::IdentityScope)?;
         if let Some(denied) = self.reservation_denial(&expected, cancellation, deadline) {
             return Err(Refusal::Reservation(denied));
         }
@@ -146,8 +179,18 @@ where
                     identities.product_unpublished_identity.ordinal(),
                 ),
                 expected: WorldHeadInput::from_observation(&expected).map_err(Refusal::Durable)?,
-                program_revision: binding.binding().program_revision(),
-                component_intent: crate::durability::WorldOpenComponentIntent::RelationalOnly,
+                program_revision,
+                component_intent: match intent {
+                    crate::publication::CompositeComponentIntent::RelationalOnly(_) => {
+                        crate::durability::WorldOpenComponentIntent::RelationalOnly
+                    }
+                    crate::publication::CompositeComponentIntent::SignalOnly => {
+                        crate::durability::WorldOpenComponentIntent::SignalOnly
+                    }
+                    crate::publication::CompositeComponentIntent::RelationalAndSignal(_) => {
+                        crate::durability::WorldOpenComponentIntent::RelationalAndSignal
+                    }
+                },
             }),
             execution,
         )

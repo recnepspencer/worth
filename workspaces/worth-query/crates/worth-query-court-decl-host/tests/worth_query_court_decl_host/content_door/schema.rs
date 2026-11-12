@@ -98,5 +98,7 @@ pub fn samples() -> ApplicationContentFieldRef<Values, codec::GridFormat> {
 pub fn declare(
     schema: ApplicationSchemaDeclarationBuilder<Schema>,
 ) -> ApplicationSchemaDeclarationBuilder<Schema> {
-    schema.principal_binding(Actor::reference())
+    schema
+        .principal_binding(Actor::reference())
+        .invariant(readers::invariant::definition())
 }

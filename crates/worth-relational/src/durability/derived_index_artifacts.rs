@@ -1,6 +1,7 @@
 pub(crate) mod captured_decode;
 mod checkpoint_delta;
 mod decode_budget;
+mod funding;
 mod generation_decode_quote;
 
 pub(crate) use checkpoint_delta::{CompleteIndexCheckpointView, DerivedIndexCheckpointArtifacts};
@@ -101,12 +102,12 @@ pub(crate) fn validate_checkpoint_generation(
             "checkpoint index generation kind mismatches definition",
         ));
     }
-    if let Entries::RelationJoin(index) = &generation.entries {
-        if !index.consistent_legs(lane) {
-            return Err(corrupt(
-                "checkpoint join leg state is missing or inconsistent",
-            ));
-        }
+    if let Entries::RelationJoin(index) = &generation.entries
+        && !index.consistent_legs(lane)
+    {
+        return Err(corrupt(
+            "checkpoint join leg state is missing or inconsistent",
+        ));
     }
     let source = history
         .commit_artifact(generation.source_commit_id)

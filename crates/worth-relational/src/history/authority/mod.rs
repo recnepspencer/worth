@@ -1,5 +1,3 @@
-mod corruption_court;
-pub use corruption_court::OutputOriginHeaderCorruptionForTest;
 mod replay_retention;
 #[cfg(test)]
 mod test_mutation;

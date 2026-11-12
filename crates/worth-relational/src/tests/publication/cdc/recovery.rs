@@ -1,13 +1,17 @@
 use crate::tests::support::*;
 
 #[test]
-fn subscriber_stream_recovers_from_durable_canonical_envelopes_when_checkpoint_is_not_in_memory() {
+fn memory_subscriber_stream_recovers_from_durable_canonical_envelopes_when_checkpoint_is_not_in_memory(
+) {
     let host_request = crate::test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
-    let runtime = durable_runtime_with_test_schema();
+    let runtime = runtime_with_test_schema();
     let first = create_entity_outcome(execution, &runtime, "a");
-    crate::tests::support::checkpoint_durably(execution, &runtime).unwrap();
+    runtime
+        .durability_authority()
+        .checkpoint(execution)
+        .unwrap();
     let _second = create_entity_outcome(execution, &runtime, "b");
 
     assert!(runtime
@@ -36,16 +40,22 @@ fn subscriber_stream_recovers_from_durable_canonical_envelopes_when_checkpoint_i
 }
 
 #[test]
-fn subscriber_stream_reports_durable_latest_available_checkpoint_when_latest_head_is_not_in_memory()
-{
+fn memory_subscriber_stream_reports_durable_latest_available_checkpoint_when_latest_head_is_not_in_memory(
+) {
     let host_request = crate::test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
-    let runtime = durable_runtime_with_test_schema();
+    let runtime = runtime_with_test_schema();
     let first = create_entity_outcome(execution, &runtime, "a");
-    crate::tests::support::checkpoint_durably(execution, &runtime).unwrap();
+    runtime
+        .durability_authority()
+        .checkpoint(execution)
+        .unwrap();
     let second = create_entity_outcome(execution, &runtime, "b");
-    crate::tests::support::checkpoint_durably(execution, &runtime).unwrap();
+    runtime
+        .durability_authority()
+        .checkpoint(execution)
+        .unwrap();
 
     assert!(runtime
         .history_authority()

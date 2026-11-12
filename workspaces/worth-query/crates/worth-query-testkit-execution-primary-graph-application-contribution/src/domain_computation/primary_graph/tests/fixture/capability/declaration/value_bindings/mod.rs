@@ -17,9 +17,7 @@ pub fn encode_capability_action(value: &CapabilityAction) -> InternedString {
 }
 
 pub fn decode_capability_action(value: InternedString) -> Option<CapabilityAction> {
-    let Some(value) = value.raw_text() else {
-        return None;
-    };
+    let value = value.raw_text()?;
     match value {
         "touch" => Some(CapabilityAction::Touch),
         "inspect" => Some(CapabilityAction::Inspect),
@@ -49,9 +47,7 @@ pub fn encode_capability_purpose(value: &CapabilityPurpose) -> InternedString {
 }
 
 pub fn decode_capability_purpose(value: InternedString) -> Option<CapabilityPurpose> {
-    let Some(value) = value.raw_text() else {
-        return None;
-    };
+    let value = value.raw_text()?;
     match value {
         "account-maintenance" => Some(CapabilityPurpose::AccountMaintenance),
         "audit" => Some(CapabilityPurpose::Audit),
@@ -76,9 +72,7 @@ pub fn encode_capability_status(value: &CapabilityStatus) -> InternedString {
 }
 
 pub fn decode_capability_status(value: InternedString) -> Option<CapabilityStatus> {
-    let Some(value) = value.raw_text() else {
-        return None;
-    };
+    let value = value.raw_text()?;
     match value {
         "active" => Some(CapabilityStatus::Active),
         "revoked" => Some(CapabilityStatus::Revoked),
@@ -103,9 +97,7 @@ pub fn encode_capability_disclosure(value: &CapabilityDisclosure) -> InternedStr
 }
 
 pub fn decode_capability_disclosure(value: InternedString) -> Option<CapabilityDisclosure> {
-    let Some(value) = value.raw_text() else {
-        return None;
-    };
+    let value = value.raw_text()?;
     match value {
         "account-activity" => Some(CapabilityDisclosure::AccountActivity),
         "private-label" => Some(CapabilityDisclosure::PrivateLabel),

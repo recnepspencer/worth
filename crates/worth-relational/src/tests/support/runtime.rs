@@ -125,31 +125,6 @@ pub(crate) fn runtime_with_test_schema_profile_and_chunks(
         .expect("valid native runtime configuration")
 }
 
-/// A runtime that publishes every commit to a fresh in-crate test medium.
-pub(crate) fn durable_runtime_with_test_schema() -> RelationalRuntime {
-    durable_runtime_with_test_schema_profile(RelationalRuntimeProfile::CertificationCore)
-}
-
-pub(crate) fn durable_runtime_with_test_schema_profile(
-    profile: RelationalRuntimeProfile,
-) -> RelationalRuntime {
-    RelationalRuntimeApi::builder()
-        .profile(profile)
-        .schema_registry(test_schema_registry())
-        .build_durable(TestDurableMedium::new().attachment())
-        .expect("valid native runtime configuration")
-}
-
-pub(crate) fn durable_runtime_with_declared_aspect_schema(
-    cascade_delete_policy: CascadeDeletePolicy,
-) -> RelationalRuntime {
-    RelationalRuntimeApi::builder()
-        .profile(RelationalRuntimeProfile::CertificationCore)
-        .schema_registry(declared_aspect_schema_registry(cascade_delete_policy))
-        .build_durable(TestDurableMedium::new().attachment())
-        .expect("valid native runtime configuration")
-}
-
 pub(crate) fn runtime_with_test_schema_and_chunks(
     entity_chunk_size: usize,
     relation_chunk_size: usize,

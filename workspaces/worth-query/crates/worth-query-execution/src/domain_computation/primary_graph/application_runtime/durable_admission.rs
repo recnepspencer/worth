@@ -32,6 +32,17 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         ] {
             require(family)?;
         }
+        let installed = self
+            .installed_schema
+            .installed_mutation_binding::<Binding>()
+            .map_err(Denial::DurableBindingAdmission)?;
+        self.runtime
+            .product_runtime
+            .admit_directory_correction_shape(
+                installed.operation().contracts().aftermath(),
+                installed.correction_binding(),
+            )
+            .map_err(Denial::DurableStateAdmission)?;
         let declared = self
             .mutation_handlers
             .declared_durable_capabilities::<Binding>()?
@@ -47,10 +58,6 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         for &capability in declared {
             require_capability(capability)?;
         }
-        let installed = self
-            .installed_schema
-            .installed_mutation_binding::<Binding>()
-            .map_err(Denial::DurableBindingAdmission)?;
         if Binding::REQUIRES_WORKFLOW_AUTHORITY
             || Binding::WORKFLOW_CONTROL
             || Binding::workflow_execution_requirements().is_applicable()

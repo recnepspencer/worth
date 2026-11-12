@@ -1,6 +1,8 @@
 //! One law for every program write of a unique field: the write lowers only
 //! when the sealed facts hold the field's indexed selection of that value,
-//! and that selection found no live entity but the one written. A program
+//! and that selection found no surviving holder but the one written.
+//! The sealed batch may delete a previous holder atomically; its observed
+//! indexed selection remains part of the admitted decision support. A program
 //! writes each unique value at most once.
 
 use crate::domain_computation::primary_graph::application_checkpoint::facts::FactSequence;
@@ -13,6 +15,7 @@ use worth_foundational::facade::{
 use worth_relational::facade::identity::{EntityId, KindId};
 
 use super::ObservedFactIndex;
+use crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationRealizedEffect as Effect;
 use crate::domain_computation::primary_graph::application_attempt::{
     WorthQueryApplicationAttemptDenial, WorthQueryApplicationAttemptDenialKind,
 };
@@ -24,6 +27,7 @@ pub(in crate::domain_computation::primary_graph::application_attempt::provider_b
     'layout,
 > {
     fields: WorthQueryUniqueFields<'layout>,
+    retiring: BTreeSet<EntityId>,
     written: BTreeSet<(
         KindId,
         AspectFieldLocator,
@@ -34,10 +38,18 @@ pub(in crate::domain_computation::primary_graph::application_attempt::provider_b
 impl<'layout> UniqueValueWrites<'layout> {
     pub(in crate::domain_computation::primary_graph::application_attempt::provider_binding) fn new(
         fields: WorthQueryUniqueFields<'layout>,
+        effects: &[Effect],
     ) -> Self {
         Self {
             fields,
             written: BTreeSet::new(),
+            retiring: effects
+                .iter()
+                .filter_map(|effect| match effect {
+                    Effect::DeleteEntity { entity_id } => Some(*entity_id),
+                    _ => None,
+                })
+                .collect(),
         }
     }
 
@@ -63,7 +75,7 @@ impl<'layout> UniqueValueWrites<'layout> {
         let candidates = facts.selection_candidates(index_id, kind, locator, value)?;
         if candidates
             .iter()
-            .any(|candidate| Some(*candidate) != writer)
+            .any(|candidate| Some(*candidate) != writer && !self.retiring.contains(candidate))
         {
             return Err(denial(
                 WorthQueryApplicationAttemptDenialKind::UniqueValueTaken,

@@ -134,7 +134,10 @@ fn two_field_cross_record_retention_denial_commits_nothing() {
         worth_execution::ExecutionAllocationPolicy::SystemAllocation,
     );
 
-    assert_retention_denied(&outcome);
+    assert_retention_denied(
+        &outcome,
+        WorthQueryPreImageRetentionDenial::AmbiguousDemandedField,
+    );
     world
         .application
         .with_host_advancement(|phase| assert_eq!(relational_head(&phase, &world), before))
