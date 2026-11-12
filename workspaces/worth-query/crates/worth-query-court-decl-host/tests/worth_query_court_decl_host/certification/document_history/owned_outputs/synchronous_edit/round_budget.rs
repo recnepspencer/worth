@@ -43,7 +43,7 @@ fn budget(worker: bool) {
         refusal,
     )) = outcome
     else {
-        panic!("the second actual start must refuse the whole edit")
+        panic!("the second actual start must refuse the whole edit: {outcome:?}")
     };
     let cause = refusal
         .coupled_producer_denial()
