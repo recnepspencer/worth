@@ -106,23 +106,13 @@ fn enumerate<A: ArtifactTreeListingAllocator>(
         super::listing_provider::open_with_allocator(directory, allocator)?;
     let mut observed = Vec::new();
     let mut names = 0_u64;
-    loop {
-        #[cfg(target_os = "macos")]
-        {
-            let live = listing_bytes(observed.capacity(), names)?
-                .checked_add(provider)
-                .ok_or_else(unqualified)?;
-            change(
-                allocator,
-                Change::Admit {
-                    boundary: Boundary::EntryName,
-                    required_bytes: live
-                        .checked_add(super::listing_storage::macos::CSTRING_BYTES)
-                        .ok_or_else(unqualified)?,
-                },
-            )?;
-        }
-        let Some(entry) = entries.next() else { break };
+    while let Some(entry) = next_admitted(
+        &mut entries,
+        observed.capacity(),
+        names,
+        provider,
+        allocator,
+    )? {
         if observed.len() == maximum_entries {
             return Err(ArtifactTreeFailure::limit(
                 observed.len() as u64 + 1,
@@ -202,6 +192,36 @@ fn enumerate<A: ArtifactTreeListingAllocator>(
     drop(entries);
     let retained = listing_bytes(observed.capacity(), names)?;
     Ok((observed, retained))
+}
+
+/// Native iteration may allocate even when it returns EOF or an extra entry.
+/// Keep admission and advancement in one step, before the caller inspects it.
+#[cfg(any(windows, target_os = "macos"))]
+fn next_admitted<A: ArtifactTreeListingAllocator, I: Iterator>(
+    entries: &mut I,
+    capacity: usize,
+    names: u64,
+    provider: u64,
+    allocator: &mut A,
+) -> Result<Option<I::Item>, ArtifactTreeAllocatedListingFailure<A::Denial>> {
+    #[cfg(target_os = "macos")]
+    {
+        let live = listing_bytes(capacity, names)?
+            .checked_add(provider)
+            .ok_or_else(unqualified)?;
+        change(
+            allocator,
+            Change::Admit {
+                boundary: Boundary::EntryName,
+                required_bytes: live
+                    .checked_add(super::listing_storage::macos::CSTRING_BYTES)
+                    .ok_or_else(unqualified)?,
+            },
+        )?;
+    }
+    #[cfg(windows)]
+    let _ = (capacity, names, provider, allocator);
+    Ok(entries.next())
 }
 
 #[cfg(any(windows, target_os = "macos"))]
