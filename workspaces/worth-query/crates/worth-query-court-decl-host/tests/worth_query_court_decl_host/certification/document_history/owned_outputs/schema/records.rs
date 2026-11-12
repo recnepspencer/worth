@@ -50,7 +50,7 @@ impl Principal {
 pub struct Model;
 impl Entity for Model {
     const NAME: &'static str = "Model";
-    type Aspects = (ModelFacts,);
+    type Aspects = (ModelFacts, Option<predecessor::content::Payload>);
     type Relations = (ModelMember,);
 }
 impl Model {

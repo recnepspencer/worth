@@ -57,6 +57,14 @@ impl ApplicationCorrectionBinding<Schema> for UndoDelete {
     fn inverse_key(key: &str) -> Result<String, ApplicationValueEncodeDenial> {
         Ok(format!("undo:{key}"))
     }
+    fn reapplication_key(key: &str) -> Result<String, ApplicationValueEncodeDenial> {
+        Ok(format!("reapply:{key}"))
+    }
+    fn visit_reapplication<V: ApplicationReapplicationVisitor<Schema>>(
+        dispatch: ApplicationReapplicationDispatch<Schema, Self, V>,
+    ) -> V::Output {
+        dispatch.conventional()
+    }
     fn visit<V: ApplicationCorrectionVisitor<Schema>>(
         dispatch: ApplicationCorrectionDispatch<Schema, Self, V>,
     ) -> V::Output {

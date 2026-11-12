@@ -16,7 +16,7 @@ pub enum Denial {
 worth_query_structured_value_binding!(pub ResultBinding for Edited { identity: "owned-outputs.edit-result.v1" });
 worth_query_structured_value_binding!(pub DenialBinding for Denial { identity: "owned-outputs.edit-denial.v1" });
 worth_query_structured_value_binding!(pub Input for Intent { identity: "owned-outputs.edit-model.v1" });
-worth_query_operation!(pub PatchModel for Schema, input Input; access { read_fields: [ModelKey::at("ModelKey"), ModelValue::at("ModelValue")]; writes: [ModelValue::at("ModelValue")]; });
+worth_query_operation!(pub PatchModel for Schema, input Input; access { read_fields: [ModelKey::at("ModelKey"), ModelValue::at("ModelValue"), predecessor::content::Values::at("Payload")]; writes: [ModelValue::at("ModelValue"), predecessor::content::Values::at("Payload")]; });
 fn scope(input: &Intent) -> String {
     input.key.clone()
 }
@@ -40,6 +40,7 @@ impl OperationHandler<Schema, Binding> for Handler {
         let result = (|| {
             let entity = reader.resolve_entity(ModelKey::at("ModelKey"), input.key.clone())?;
             reader.field(&entity, ModelValue::at("ModelValue"))?;
+            predecessor::content::prepare(reader, &entity)?;
             reader.mutation_target(&entity)
         })();
         match result {
@@ -53,12 +54,19 @@ impl OperationHandler<Schema, Binding> for Handler {
         target: WorthQueryInvariantMutationTarget<Schema, Model>,
         writer: &mut CandidateWriter<'_, Schema, Binding>,
     ) -> HandlerResult<Edited, Denial> {
-        let result = writer.projected_entity(&target).and_then(|entity| {
-            writer.write_field(&entity, ModelValue::at("ModelValue"), input.value)
-        });
+        let result = writer
+            .projected_entity(&target)
+            .map_err(HandlerExecutionDenial::new)
+            .and_then(|entity| {
+                writer
+                    .write_field(&entity, ModelValue::at("ModelValue"), input.value)
+                    .map_err(HandlerExecutionDenial::new)?;
+                predecessor::content::write(writer, &entity, input.value)
+                    .map_err(HandlerExecutionDenial::new)
+            });
         match result {
             Ok(()) => HandlerResult::Completed(Edited),
-            Err(error) => HandlerResult::ExecutionDenied(HandlerExecutionDenial::new(error)),
+            Err(error) => HandlerResult::ExecutionDenied(error),
         }
     }
 }
