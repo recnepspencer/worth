@@ -32,6 +32,7 @@ worth-store-wal.workspace = true
 
 [target.'cfg(target_os = "macos")'.dependencies]
 rustix = { version = "=1.1.5", features = ["fs"] }
+libc = "=0.2.190"
 
 [target.'cfg(windows)'.dependencies]
 winapi-util = "0.1"

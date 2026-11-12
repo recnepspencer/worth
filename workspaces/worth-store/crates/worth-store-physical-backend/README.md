@@ -33,3 +33,29 @@ name/roster capacity, plus small, expanding-uppercase, supplementary-Unicode,
 near-maximum and missing-file component opens. Their cumulative requested bytes
 count positive realloc growth; they do not measure transient old/new allocation
 overlap. That overlap remains covered by the source-derived envelopes.
+
+Native Mac confined recovery paths and listing qualify `aarch64-apple-darwin`
+with the exact stock Rust1.99.1 build above, pinned rustix1.1.5/libc0.2.190 and
+existing cap4.0.2 composition. The observed compiler cache may be sccache0.18.0
+or, for this Mac target only,0.19.0. Unknown compiler, target, flags, nested
+wrapper or package composition remains unsupported. This assumes trusted,
+unmodified compiler/cache/dependency sources; it is not binary attestation.
+
+One validated component opens relative to its held parent with no-follow.
+Listing observes the exact independent descriptor consumed by safe rustix Dir;
+failed observations and eager union-stack mounts refuse before construction.
+Its C-provider bound combines the public Darwin LP64 DIR/mutex layout with
+[Apple's audited ordinary provider source](https://github.com/apple-oss-distributions/Libc/tree/71bbe350ab79eef58113991d817ccc6165061a64/gen/FreeBSD),
+including private position header and overlapping2/8KiB buffers. This narrow
+supported composition assumes compatible system-provider mechanics; it does
+not qualify arbitrary macOS releases or other POSIX systems. No tell/seek/rewind
+is used. Checked u16 name bounds fund each iterator attempt before next(),
+including EOF/extra-entry, then name-copy/roster growth. Temporary CString and
+provider disposal precede retained-capacity settlement. Rust allocator probes
+do not measure libc malloc or establish the C bound.
+
+Mac mounted-filesystem observations use held-descriptor device/fsid/material
+facts at both admission entrances. Ephemeral fsid distinguishes APFS mount
+objects sharing a device; it never becomes persisted identity or authority.
+Matching aliases must agree materially; readonly and conflicting observations
+retain the existing typed refusal.

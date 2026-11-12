@@ -5,12 +5,20 @@ use std::path::PathBuf;
 
 pub const RELEASE_INPUT: &str = "observed-compiler-cache-release";
 const SUPPORTED_RELEASE: &str = "sccache 0.18.0";
+// Native Mac qualification also covers the installed release's ordinary Cargo
+// Rust wrapper composition, audited at sccache 965c01943a40c9df96264474bbe28ba98f2e1487.
+// This retains the trusted compiler/cache/source assumption above, not binary
+// attestation or admission of arbitrary future releases.
+const MAC_RELEASE: &str = "sccache 0.19.0";
 
 /// Like the compiler/dependency profile, this assumes the installed program and
 /// local cache are trusted and unmodified. A similarly named wrapper is not a
 /// supported composition. Workspace-wrapper nesting remains unsupported.
-pub fn is_supported(program: &str, release: &str) -> bool {
-    program.is_empty() || (named_sccache(Path::new(program)) && release == SUPPORTED_RELEASE)
+pub fn is_supported(program: &str, release: &str, target: &str) -> bool {
+    program.is_empty()
+        || (named_sccache(Path::new(program))
+            && (release == SUPPORTED_RELEASE
+                || (target == "aarch64-apple-darwin" && release == MAC_RELEASE)))
 }
 
 /// Observe the configured program rather than accepting a release from the
@@ -72,18 +80,50 @@ mod tests {
 
     #[test]
     fn only_direct_or_the_observed_transparent_release_is_supported() {
-        assert!(is_supported("", ""));
+        assert!(is_supported("", "", "x86_64-pc-windows-msvc"));
         for program in ["sccache", "sccache.exe", "C:/tools/sccache.exe"] {
-            assert!(is_supported(program, "sccache 0.18.0"));
-            assert!(!is_supported(program, ""));
-            assert!(!is_supported(program, "sccache 0.17.0"));
+            assert!(is_supported(
+                program,
+                "sccache 0.18.0",
+                "x86_64-pc-windows-msvc"
+            ));
+            assert!(!is_supported(program, "", "x86_64-pc-windows-msvc"));
+            assert!(!is_supported(
+                program,
+                "sccache 0.17.0",
+                "x86_64-pc-windows-msvc"
+            ));
         }
+        assert!(is_supported(
+            "/opt/homebrew/bin/sccache",
+            MAC_RELEASE,
+            "aarch64-apple-darwin"
+        ));
+        assert!(!is_supported(
+            "sccache",
+            MAC_RELEASE,
+            "x86_64-pc-windows-msvc"
+        ));
+        assert!(!is_supported(
+            "sccache",
+            "sccache 0.20.0",
+            "aarch64-apple-darwin"
+        ));
+        assert!(!is_supported(
+            "other-cache",
+            MAC_RELEASE,
+            "aarch64-apple-darwin"
+        ));
         for program in [
             "cache-wrapper.exe",
             "sccache-other.exe",
             "sccache.exe extra",
         ] {
-            assert!(!is_supported(program, "sccache 0.18.0"));
+            assert!(!is_supported(
+                program,
+                "sccache 0.18.0",
+                "x86_64-pc-windows-msvc"
+            ));
         }
     }
 }

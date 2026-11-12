@@ -108,7 +108,7 @@ impl RecoveryWalReadStorage for Storage {
     }
 }
 
-#[cfg(windows)]
+#[cfg(any(windows, target_os = "macos"))]
 #[test]
 fn wal_path_denials_precede_their_open_and_same_owner_retry_disposes_backing() {
     // This real C.4 owner exercises allocator ordering and confinement, not
@@ -182,7 +182,7 @@ fn wal_path_denials_precede_their_open_and_same_owner_retry_disposes_backing() {
     }
 }
 
-#[cfg(not(windows))]
+#[cfg(not(any(windows, target_os = "macos")))]
 #[test]
 fn unqualified_path_profile_denies_before_address_admission_or_payload() {
     let (_parent, observer, mut discovery) = discovery(
@@ -212,7 +212,7 @@ fn unqualified_path_profile_denies_before_address_admission_or_payload() {
     assert_eq!(observer.snapshot().positioned_read_attempts(), before);
 }
 
-#[cfg(windows)]
+#[cfg(any(windows, target_os = "macos"))]
 #[test]
 fn borrowed_serving_wal_observation_uses_the_live_owner_and_unique_reads() {
     use crate::filesystem_media::{
