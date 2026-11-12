@@ -87,7 +87,7 @@ fn persistent_members_equal_independent_sets_through_rekeys_and_retained_predece
         random = random.wrapping_mul(6364136223846793005).wrapping_add(1);
         let id = (random >> 32) % 64;
         let key = (random >> 48) % 8;
-        if random % 4 == 0 {
+        if random.is_multiple_of(4) {
             routing.remove_in(PartitionItemId(id), policy).unwrap();
             truth.remove(&id);
         } else {
